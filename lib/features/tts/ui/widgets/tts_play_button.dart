@@ -63,9 +63,9 @@ class TtsPlayButton extends StatelessWidget {
     // is "Wake agent", a bare triangle reads as "run the agent" rather than
     // "read this aloud".
     final glyph = switch (mode) {
-      TtsButtonMode.playing => Icons.stop_rounded,
-      TtsButtonMode.preparing => Icons.hourglass_empty,
-      TtsButtonMode.idle => Icons.volume_up_rounded,
+      TtsButtonMode.playing => LottiIcons.stop,
+      TtsButtonMode.preparing => LottiIcons.pending,
+      TtsButtonMode.idle => LottiIcons.volume,
     };
     // Idle plays; preparing/playing stop (preparing-stop cancels).
     final onTap = mode == TtsButtonMode.idle ? onPlay : onStop;

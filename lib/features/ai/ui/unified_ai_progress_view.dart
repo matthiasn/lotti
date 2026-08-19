@@ -19,6 +19,7 @@ import 'package:lotti/features/ai/ui/widgets/ai_error_display.dart';
 import 'package:lotti/features/ai/util/ai_error_utils.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
@@ -413,7 +414,7 @@ class _UnifiedAiProgressContentState
                             );
                           }
                         },
-                        icon: const Icon(Icons.copy_rounded, size: 18),
+                        icon: const Icon(LottiIcons.copy, size: 18),
                         label: Text(copyButtonLabel),
                       ),
                     ],

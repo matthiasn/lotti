@@ -12,7 +12,7 @@ class DesignSystemFloatingActionButton extends StatefulWidget {
   const DesignSystemFloatingActionButton({
     required this.semanticLabel,
     this.onPressed,
-    this.icon = Icons.add_rounded,
+    this.icon = LottiIcons.add,
     super.key,
   });
 

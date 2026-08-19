@@ -15,17 +15,17 @@ void main() {
 
   group('glyphForType', () {
     const expected = <GraphNodeType, IconData>{
-      GraphNodeType.task: Icons.check_circle_outline,
-      GraphNodeType.project: Icons.flag_outlined,
-      GraphNodeType.textEntry: Icons.notes,
-      GraphNodeType.audioEntry: Icons.mic_none,
-      GraphNodeType.imageEntry: Icons.image_outlined,
-      GraphNodeType.aiResponse: Icons.auto_awesome,
-      GraphNodeType.checklist: Icons.checklist,
-      GraphNodeType.checklistItem: Icons.check_box_outlined,
-      GraphNodeType.rating: Icons.star_outline,
-      GraphNodeType.mediaCollection: Icons.photo_library_outlined,
-      GraphNodeType.aggregate: Icons.hub_outlined,
+      GraphNodeType.task: LottiIcons.confirmCircled,
+      GraphNodeType.project: LottiIcons.flag,
+      GraphNodeType.textEntry: LottiIcons.note,
+      GraphNodeType.audioEntry: LottiIcons.micIdle,
+      GraphNodeType.imageEntry: LottiIcons.image,
+      GraphNodeType.aiResponse: LottiIcons.aiSpark,
+      GraphNodeType.checklist: LottiIcons.checkAll,
+      GraphNodeType.checklistItem: LottiIcons.checkboxChecked,
+      GraphNodeType.rating: LottiIcons.star,
+      GraphNodeType.mediaCollection: LottiIcons.photoLibrary,
+      GraphNodeType.aggregate: LottiIcons.hub,
     };
 
     test('returns the expected glyph for every node type', () {

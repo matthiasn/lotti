@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_contact_row.dart';
@@ -53,7 +52,7 @@ class ContactSupportRow extends ConsumerWidget {
     return DesignSystemContactRow(
       actions: [
         DesignSystemContactAction(
-          icon: const Icon(MdiIcons.emailOutline),
+          icon: const Icon(LottiIcons.mail),
           label: messages.contactUsLabel,
           iconKey: contactSupportEmailKey,
           onPressed: () => unawaited(
@@ -63,7 +62,7 @@ class ContactSupportRow extends ConsumerWidget {
           ),
         ),
         DesignSystemContactAction(
-          icon: const Icon(MdiIcons.bookOpenPageVariantOutline),
+          icon: const Icon(LottiIcons.book),
           label: messages.navSidebarManualLabel,
           iconKey: contactSupportManualKey,
           // The Manual's URL is locale-aware and owned by the manual-language

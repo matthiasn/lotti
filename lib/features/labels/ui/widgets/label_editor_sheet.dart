@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/labels/constants/label_color_presets.dart';
 import 'package:lotti/features/labels/state/label_editor_controller.dart';
 import 'package:lotti/features/labels/ui/widgets/category_selection_chip.dart';
@@ -102,7 +103,7 @@ class _LabelEditorSheetState extends ConsumerState<LabelEditorSheet> {
             Row(
               children: [
                 Icon(
-                  widget.label == null ? Icons.add : Icons.edit,
+                  widget.label == null ? LottiIcons.add : LottiIcons.edit,
                   color: Theme.of(context).colorScheme.primary,
                 ),
                 const SizedBox(width: 12),
@@ -238,7 +239,7 @@ class _LabelEditorSheetState extends ConsumerState<LabelEditorSheet> {
                       alignment: AlignmentDirectional.centerStart,
                       child: DesignSystemButton(
                         label: context.messages.settingsLabelsCategoriesAdd,
-                        leadingIcon: Icons.add,
+                        leadingIcon: LottiIcons.add,
                         variant: DesignSystemButtonVariant.secondary,
                         onPressed: () async {
                           final result = await showCategoryMultiPicker(

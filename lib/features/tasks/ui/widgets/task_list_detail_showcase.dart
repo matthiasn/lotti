@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_navigation_sidebar.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/widgetbook/widgetbook_helpers.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_detail_pane.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_list_pane.dart';
@@ -48,7 +49,7 @@ class TaskListDetailShowcase extends ConsumerWidget {
               settingsDestination: DesktopSidebarDestination(
                 label: context.messages.navTabTitleSettings,
                 iconBuilder: ({required active}) =>
-                    const Icon(Icons.settings_outlined),
+                    const Icon(LottiIcons.settings),
               ),
             ),
             Expanded(

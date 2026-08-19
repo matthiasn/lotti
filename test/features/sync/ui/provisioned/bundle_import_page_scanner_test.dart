@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/ui/provisioned/bundle_import_page.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -162,7 +163,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byIcon(Icons.qr_code_scanner), findsNothing);
+      expect(find.byIcon(LottiIcons.scanQr), findsNothing);
       expect(find.byType(MobileScanner), findsNothing);
       expect(find.byType(TextField), findsOneWidget);
     });

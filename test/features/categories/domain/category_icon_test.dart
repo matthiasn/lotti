@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/categories/domain/category_icon.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 void main() {
   group('CategoryIcon', () {
@@ -14,36 +15,64 @@ void main() {
         }
       });
 
+      test('every category shows a different picture', () {
+        // This is a *picker*: two choices that draw the same glyph are
+        // indistinguishable to the person choosing, no matter how different
+        // their names are. Material kept several of these apart only by
+        // spelling — `menu_book` vs `book`, `restaurant` vs `local_dining`,
+        // `self_improvement` vs `psychology` vs `mdi:headHeart` — and Lucide
+        // has one glyph for each of those pairs, so the migration collapsed
+        // eleven choices into look-alikes. (One pair, heartHealth and
+        // relationships, was already identical before it.)
+        final byGlyph = <int, List<CategoryIcon>>{};
+        for (final icon in CategoryIcon.values) {
+          byGlyph.putIfAbsent(icon.iconData.codePoint, () => []).add(icon);
+        }
+        final collisions = byGlyph.values.where((v) => v.length > 1).toList();
+
+        expect(
+          collisions,
+          isEmpty,
+          reason: 'these categories are drawn identically: $collisions',
+        );
+      });
+
       test('should return specific icons for known values', () {
-        expect(CategoryIcon.fitness.iconData, equals(Icons.fitness_center));
-        expect(CategoryIcon.running.iconData, equals(Icons.directions_run));
-        expect(CategoryIcon.yoga.iconData, equals(MdiIcons.yoga));
-        expect(CategoryIcon.home.iconData, equals(Icons.home));
-        expect(CategoryIcon.reading.iconData, equals(Icons.menu_book));
+        expect(CategoryIcon.fitness.iconData, equals(LottiIcons.fitness));
+        expect(CategoryIcon.running.iconData, equals(LottiIcons.running));
+        expect(CategoryIcon.yoga.iconData, equals(LucideIcons.accessibility));
+        expect(CategoryIcon.home.iconData, equals(LottiIcons.home));
+        expect(CategoryIcon.reading.iconData, equals(LucideIcons.bookOpen));
       });
 
       test('should return correct icons for new category icons', () {
-        expect(CategoryIcon.cycling.iconData, equals(Icons.directions_bike));
-        expect(CategoryIcon.hiking.iconData, equals(Icons.hiking));
-        expect(CategoryIcon.pets.iconData, equals(Icons.pets));
-        expect(CategoryIcon.coffee.iconData, equals(Icons.coffee));
-        expect(CategoryIcon.email.iconData, equals(Icons.email));
-        expect(CategoryIcon.movie.iconData, equals(Icons.movie));
-        expect(CategoryIcon.podcast.iconData, equals(Icons.podcasts));
-        expect(CategoryIcon.coding.iconData, equals(Icons.code));
-        expect(CategoryIcon.banking.iconData, equals(Icons.account_balance));
-        expect(CategoryIcon.celebration.iconData, equals(Icons.celebration));
-        expect(CategoryIcon.science.iconData, equals(Icons.science));
-        expect(CategoryIcon.spa.iconData, equals(Icons.spa));
-        expect(CategoryIcon.nature.iconData, equals(Icons.park));
+        expect(CategoryIcon.cycling.iconData, equals(LottiIcons.cycling));
+        expect(CategoryIcon.hiking.iconData, equals(LucideIcons.mountain));
+        expect(CategoryIcon.pets.iconData, equals(LucideIcons.pawPrint));
+        expect(CategoryIcon.coffee.iconData, equals(LucideIcons.coffee));
+        expect(CategoryIcon.email.iconData, equals(LucideIcons.mail));
+        expect(CategoryIcon.movie.iconData, equals(LucideIcons.clapperboard));
+        expect(CategoryIcon.podcast.iconData, equals(LucideIcons.podcast));
+        expect(CategoryIcon.coding.iconData, equals(LottiIcons.code));
+        expect(CategoryIcon.banking.iconData, equals(LucideIcons.landmark));
+        expect(CategoryIcon.celebration.iconData, equals(LottiIcons.celebrate));
+        expect(CategoryIcon.science.iconData, equals(LottiIcons.science));
+        expect(CategoryIcon.spa.iconData, equals(LucideIcons.flower2));
+        expect(CategoryIcon.nature.iconData, equals(LucideIcons.trees));
         expect(
           CategoryIcon.volunteer.iconData,
-          equals(Icons.volunteer_activism),
+          equals(LucideIcons.handHelping),
         );
-        expect(CategoryIcon.camping.iconData, equals(MdiIcons.tent));
-        expect(CategoryIcon.cooking.iconData, equals(MdiIcons.chefHat));
-        expect(CategoryIcon.prayer.iconData, equals(MdiIcons.handsPray));
-        expect(CategoryIcon.gratitude.iconData, equals(MdiIcons.handHeart));
+        expect(CategoryIcon.camping.iconData, equals(LucideIcons.tent));
+        expect(CategoryIcon.cooking.iconData, equals(LucideIcons.chefHat));
+        expect(
+          CategoryIcon.prayer.iconData,
+          equals(LucideIcons.handHeart),
+        );
+        expect(
+          CategoryIcon.gratitude.iconData,
+          equals(LucideIcons.sparkles),
+        );
       });
     });
 

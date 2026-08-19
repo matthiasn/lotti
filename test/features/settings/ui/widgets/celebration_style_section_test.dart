@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_selection.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_variant.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/state/celebration_preferences_controller.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/celebration_playground_page.dart';
 import 'package:lotti/features/settings/ui/widgets/celebration_style_section.dart';
@@ -151,7 +151,7 @@ void main() {
           of: find.text('Sparks'),
           matching: find.byType(CelebrationVariantCard),
         ),
-        matching: find.byIcon(Icons.tune_rounded),
+        matching: find.byIcon(LottiIcons.tune),
       ),
     );
     await tester.pumpAndSettle();

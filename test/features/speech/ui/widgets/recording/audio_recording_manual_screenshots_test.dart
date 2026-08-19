@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/state/recording_style.dart';
 import 'package:lotti/features/speech/helpers/automatic_prompt_visibility.dart';
 import 'package:lotti/features/speech/state/checkbox_visibility_provider.dart';
@@ -144,7 +145,7 @@ Future<void> _pumpActiveRecording(
                     linkedId: _linkedTaskId,
                     categoryId: _categoryId,
                   ),
-                  icon: const Icon(Icons.mic_rounded),
+                  icon: const Icon(LottiIcons.mic),
                   label: Text(
                     _t(
                       'Record habitat update',

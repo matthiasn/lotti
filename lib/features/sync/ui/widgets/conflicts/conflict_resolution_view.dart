@@ -129,7 +129,7 @@ class _ConflictResolutionViewState extends State<ConflictResolutionView> {
         if (widget.diff.shape != ConflictShape.typeChanged) ...[
           DesignSystemButton(
             label: messages.conflictPickerCombine,
-            leadingIcon: Icons.merge_rounded,
+            leadingIcon: LottiIcons.merge,
             fullWidth: true,
             onPressed: _busy ? null : _enterCombine,
           ),
@@ -291,7 +291,7 @@ class _SideToggle extends StatelessWidget {
       return Expanded(
         child: DesignSystemButton(
           label: label,
-          leadingIcon: isSelected ? Icons.check_rounded : null,
+          leadingIcon: isSelected ? LottiIcons.confirm : null,
           variant: isSelected
               ? DesignSystemButtonVariant.primary
               : DesignSystemButtonVariant.secondary,
@@ -322,7 +322,7 @@ class _RecommendedLabel extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Icon(
-          Icons.recommend_rounded,
+          LottiIcons.recommend,
           size: IconSizes.xs,
           color: accent,
         ),

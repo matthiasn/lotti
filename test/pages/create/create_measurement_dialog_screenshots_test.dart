@@ -205,10 +205,10 @@ void main() {
           find.text(_t('Sardines consumed', 'Verzehrte Sardinen')),
           findsOneWidget,
         );
-        expect(find.byIcon(Icons.add_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.add), findsOneWidget);
 
         await withClock(Clock.fixed(manualDemoNow), () async {
-          await tester.tap(find.byIcon(Icons.add_rounded));
+          await tester.tap(find.byIcon(LottiIcons.add));
           await settleFrames(tester, 10);
         });
         expect(

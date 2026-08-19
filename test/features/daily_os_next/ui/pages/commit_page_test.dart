@@ -9,6 +9,7 @@ import 'package:lotti/features/daily_os_next/ui/pages/commit_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/capacity_donut.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/hold_to_confirm.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/lock_in_scene.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -325,7 +326,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
 
-      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.tap(find.byIcon(LottiIcons.close));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
       await tester.pump(const Duration(milliseconds: 350));

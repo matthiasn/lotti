@@ -415,7 +415,7 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
                               size: CategoryIconConstants.standardIconSize,
                             )
                           : Icon(
-                              Icons.category,
+                              LottiIcons.category,
                               color: tokens.colors.text.mediumEmphasis,
                               size: CategoryIconConstants.standardIconSize,
                             ),
@@ -451,7 +451,7 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
                   ),
                 ),
                 Icon(
-                  Icons.chevron_right_rounded,
+                  LottiIcons.chevronRight,
                   size: tokens.spacing.step6,
                   color: tokens.colors.text.lowEmphasis,
                 ),

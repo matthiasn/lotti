@@ -56,7 +56,7 @@ void main() {
       final home = tester.widget<Text>(find.text('Home'));
       final current = tester.widget<Text>(find.text('Breadcrumbs'));
 
-      expect(find.byIcon(Icons.chevron_right_rounded), findsNWidgets(2));
+      expect(find.byIcon(LottiIcons.chevronRight), findsNWidgets(2));
       expect(home.style?.color, dsTokensLight.colors.text.highEmphasis);
       expect(current.style?.color, dsTokensLight.colors.interactive.enabled);
     });
@@ -180,7 +180,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byIcon(Icons.chevron_right_rounded));
+      await tester.tap(find.byIcon(LottiIcons.chevronRight));
       await tester.pump();
       expect(tapped, isTrue);
     });

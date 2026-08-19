@@ -397,7 +397,7 @@ class _EmptyState extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            Icons.hub_outlined,
+            LottiIcons.hub,
             size: 48,
             color: tokens.colors.text.lowEmphasis,
           ),

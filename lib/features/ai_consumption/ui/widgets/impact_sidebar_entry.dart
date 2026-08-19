@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/navigation/sidebar_subsection.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -21,8 +22,7 @@ class ImpactSidebarEntry extends StatelessWidget {
           builder: (context, active, _) {
             return SidebarSubsectionAction(
               label: context.messages.aiImpactTitle,
-              icon: Icons.eco_outlined,
-              activeIcon: Icons.eco_rounded,
+              icon: LottiIcons.eco,
               active: active,
               onTap: () => beamToNamed('/dashboards/impact'),
             );

@@ -30,17 +30,17 @@ class _InlineCalloutOverviewPage extends StatelessWidget {
       child: ListView(
         children: [
           DesignSystemInlineCallout(
-            icon: Icons.warning_rounded,
+            icon: LottiIcons.warning,
             text: context.messages.syncDevicesPausedBanner(1),
           ),
           SizedBox(height: tokens.spacing.step4),
           DesignSystemInlineCallout(
-            icon: Icons.lock_outline_rounded,
+            icon: LottiIcons.lock,
             text: context.messages.syncAddDeviceSecurityNote,
           ),
           SizedBox(height: tokens.spacing.step4),
           DesignSystemInlineCallout(
-            icon: Icons.info_outline_rounded,
+            icon: LottiIcons.info,
             tone: tokens.colors.alert.info.defaultColor,
             text: context.messages.designSystemCalloutInfoSample,
           ),

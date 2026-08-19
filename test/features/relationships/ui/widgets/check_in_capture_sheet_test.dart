@@ -11,6 +11,7 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_error_controller.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/check_in_transcription_service.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
@@ -506,8 +507,8 @@ void main() {
       await tester.pumpWidget(buildEditForm());
       await tester.pumpAndSettle();
 
-      await tester.ensureVisible(find.byIcon(Icons.delete_outline_rounded));
-      await tester.tap(find.byIcon(Icons.delete_outline_rounded));
+      await tester.ensureVisible(find.byIcon(LottiIcons.delete));
+      await tester.tap(find.byIcon(LottiIcons.delete));
       await tester.pumpAndSettle();
 
       expect(
@@ -527,7 +528,7 @@ void main() {
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.delete_outline_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.delete), findsNothing);
     });
 
     testWidgets('a refused delete keeps the check-in and reports it', (
@@ -539,8 +540,8 @@ void main() {
 
       await tester.pumpWidget(buildEditForm());
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.byIcon(Icons.delete_outline_rounded));
-      await tester.tap(find.byIcon(Icons.delete_outline_rounded));
+      await tester.ensureVisible(find.byIcon(LottiIcons.delete));
+      await tester.tap(find.byIcon(LottiIcons.delete));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Delete'));
       await tester.pumpAndSettle();
@@ -563,8 +564,8 @@ void main() {
 
       await tester.pumpWidget(buildEditForm());
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.byIcon(Icons.delete_outline_rounded));
-      await tester.tap(find.byIcon(Icons.delete_outline_rounded));
+      await tester.ensureVisible(find.byIcon(LottiIcons.delete));
+      await tester.tap(find.byIcon(LottiIcons.delete));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Delete'));
       await tester.pumpAndSettle();
@@ -707,8 +708,8 @@ void main() {
       await tester.pumpWidget(buildEditForm());
       await tester.pumpAndSettle();
 
-      await tester.ensureVisible(find.byIcon(Icons.delete_outline_rounded));
-      await tester.tap(find.byIcon(Icons.delete_outline_rounded));
+      await tester.ensureVisible(find.byIcon(LottiIcons.delete));
+      await tester.tap(find.byIcon(LottiIcons.delete));
       await tester.pumpAndSettle();
 
       await tester.ensureVisible(find.text('Delete'));
@@ -729,8 +730,8 @@ void main() {
       await tester.pumpWidget(buildEditForm());
       await tester.pumpAndSettle();
 
-      await tester.ensureVisible(find.byIcon(Icons.delete_outline_rounded));
-      await tester.tap(find.byIcon(Icons.delete_outline_rounded));
+      await tester.ensureVisible(find.byIcon(LottiIcons.delete));
+      await tester.tap(find.byIcon(LottiIcons.delete));
       await tester.pumpAndSettle();
 
       await tester.ensureVisible(find.text('Delete'));

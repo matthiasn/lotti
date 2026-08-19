@@ -135,7 +135,7 @@ class ProvisionedStatusWidget extends ConsumerWidget {
                   // a border, the pull would hang the stroke outside the rail.
                   variant: DesignSystemButtonVariant.dangerTertiary,
                   alignsLabelToLeadingEdge: true,
-                  leadingIcon: Icons.link_off_rounded,
+                  leadingIcon: LottiIcons.linkOff,
                   onPressed: () async {
                     // The app's destructive-confirm grammar, the same one the
                     // per-device removal uses: warning glyph, title, and

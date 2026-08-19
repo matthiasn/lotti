@@ -151,7 +151,7 @@ class _LinkedTasksWidgetState extends ConsumerState<LinkedTasksWidget> {
                 // was reachable only through an unlabelled overflow glyph
                 // holding a single item.
                 _LinkedTasksEmptyAction(
-                  icon: Icons.add,
+                  icon: LottiIcons.add,
                   label: context.messages.createNewLinkedTask,
                   onTap: () => _createNewLinkedTask(context, ref, taskId),
                 ),
@@ -213,7 +213,7 @@ class _LinkedTasksWidgetState extends ConsumerState<LinkedTasksWidget> {
 class _LinkedTasksEmptyAction extends StatelessWidget {
   const _LinkedTasksEmptyAction({
     required this.onTap,
-    this.icon = Icons.add_link,
+    this.icon = LottiIcons.link,
     this.label,
   });
 
@@ -257,8 +257,13 @@ class _LinkedTasksEmptyAction extends StatelessWidget {
       trailingExtra: linkedRowTrailingRail(
         context,
         child: Icon(
-          Icons.arrow_forward_ios,
-          size: tokens.spacing.step4,
+          // Not Material's `arrow_forward_ios`, which is a thin, tall iOS
+          // chevron: against the checklist card's pencil it read as a
+          // different weight class entirely, and it was sized off the
+          // *spacing* scale rather than the glyph scale, so it came out at 12
+          // against the pencil's 20.
+          LottiIcons.chevronRight,
+          size: IconSizes.m,
           color: tokens.colors.text.lowEmphasis,
         ),
       ),
@@ -365,7 +370,7 @@ class _LinkedTasksHeader extends ConsumerWidget {
                 // mode while the collapse gesture stayed live.
                 if (hasLinkedTasks) ...[
                   Icon(
-                    expanded ? Icons.keyboard_arrow_down : Icons.chevron_right,
+                    expanded ? LottiIcons.chevronDown : LottiIcons.chevronRight,
                     size: tokens.spacing.step5,
                     color: tokens.colors.text.mediumEmphasis,
                   ),
@@ -418,7 +423,7 @@ class _LinkedTasksHeader extends ConsumerWidget {
                     DesignSystemButton(
                       label: context.messages.linkTaskButton,
                       variant: DesignSystemButtonVariant.tertiary,
-                      leadingIcon: Icons.add_link,
+                      leadingIcon: LottiIcons.link,
                       onPressed: () => _showLinkTaskModal(context, ref, taskId),
                     )
                   else
@@ -431,7 +436,7 @@ class _LinkedTasksHeader extends ConsumerWidget {
                       label: '',
                       semanticsLabel: context.messages.linkExistingTask,
                       variant: DesignSystemButtonVariant.tertiary,
-                      leadingIcon: Icons.add_link,
+                      leadingIcon: LottiIcons.link,
                       onPressed: () => _showLinkTaskModal(context, ref, taskId),
                     ),
                 ],
@@ -459,7 +464,7 @@ class _LinkedTasksHeader extends ConsumerWidget {
                     child: PopupMenuButton<String>(
                       tooltip: context.messages.linkedTasksMenuTooltip,
                       icon: Icon(
-                        Icons.more_vert,
+                        LottiIcons.moreVertical,
                         // The overflow is the least important control in the header;
                         // it was also the heaviest mark in it.
                         color: tokens.colors.text.mediumEmphasis,
@@ -486,7 +491,7 @@ class _LinkedTasksHeader extends ConsumerWidget {
                             child: Row(
                               children: [
                                 Icon(
-                                  Icons.add_link,
+                                  LottiIcons.link,
                                   size: tokens.spacing.step5,
                                 ),
                                 SizedBox(width: tokens.spacing.step3),
@@ -502,7 +507,7 @@ class _LinkedTasksHeader extends ConsumerWidget {
                           value: 'create_new',
                           child: Row(
                             children: [
-                              Icon(Icons.add, size: tokens.spacing.step5),
+                              Icon(LottiIcons.add, size: tokens.spacing.step5),
                               SizedBox(width: tokens.spacing.step3),
                               Flexible(
                                 child: Text(
@@ -521,7 +526,7 @@ class _LinkedTasksHeader extends ConsumerWidget {
                             child: Row(
                               children: [
                                 Icon(
-                                  Icons.edit_rounded,
+                                  LottiIcons.edit,
                                   size: tokens.spacing.step5,
                                 ),
                                 SizedBox(width: tokens.spacing.step3),

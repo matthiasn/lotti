@@ -7,6 +7,7 @@ import 'package:lotti/features/ai/state/inference_profile_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/ui/inference_profile_page.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
 import '../../../widget_test_utils.dart';
@@ -52,7 +53,7 @@ void main() {
       await tester.pumpWidget(buildSubject(initialData: []));
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.tune), findsOneWidget);
+      expect(find.byIcon(LottiIcons.tune), findsOneWidget);
       expect(find.text('No inference profiles yet'), findsOneWidget);
     });
 
@@ -132,7 +133,7 @@ void main() {
       await tester.pumpWidget(buildSubject(initialData: profiles));
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.lock_outline), findsOneWidget);
+      expect(find.byIcon(LottiIcons.lock), findsOneWidget);
     });
 
     testWidgets('shows FAB for creating new profiles', (tester) async {
@@ -141,7 +142,7 @@ void main() {
 
       expect(find.byType(DesignSystemFloatingActionButton), findsOneWidget);
       // Default DS FAB icon is `add_rounded`, not `add`.
-      expect(find.byIcon(Icons.add_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.add), findsOneWidget);
       expect(
         find.byType(DesignSystemBottomNavigationFabPadding),
         findsOneWidget,

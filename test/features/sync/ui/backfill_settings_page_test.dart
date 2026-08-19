@@ -147,8 +147,8 @@ void main() {
       await pumpBody(tester);
 
       // missing = 0 → check icon (not bolt)
-      expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
-      expect(find.byIcon(Icons.bolt_outlined), findsNothing);
+      expect(find.byIcon(LottiIcons.confirmCircled), findsOneWidget);
+      expect(find.byIcon(LottiIcons.bolt), findsNothing);
     });
 
     testWidgets('missing > 0 swaps to bolt icon', (tester) async {
@@ -157,7 +157,7 @@ void main() {
       // advanced recovery group is closed, so its bolt icons (Catch
       // up now / Manual backfill) are NOT in the tree. The only bolt
       // is in the status row.
-      expect(find.byIcon(Icons.bolt_outlined), findsOneWidget);
+      expect(find.byIcon(LottiIcons.bolt), findsOneWidget);
     });
 
     testWidgets('live missing count updates the status row and ledger', (
@@ -266,7 +266,7 @@ void main() {
       // Initial load already called once.
       clearInteractions(mockSequenceService);
 
-      await tester.tap(find.byIcon(Icons.refresh));
+      await tester.tap(find.byIcon(LottiIcons.refresh));
       await tester.pump();
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 250));
@@ -300,9 +300,9 @@ void main() {
     testWidgets('leads the card with a control-tier glyph', (tester) async {
       await pumpBody(tester);
 
-      // The collapsed recovery group keeps its Icons.sync CTA out of the
+      // The collapsed recovery group keeps its LottiIcons.sync CTA out of the
       // tree, so the card's leading glyph is the only match.
-      final glyph = tester.widget<Icon>(find.byIcon(Icons.sync));
+      final glyph = tester.widget<Icon>(find.byIcon(LottiIcons.sync));
       expect(glyph.size, IconSizes.m);
     });
 
@@ -1636,7 +1636,7 @@ void main() {
       when(
         () => mockSequenceService.getBackfillStats(),
       ).thenAnswer((_) async => emptyStats);
-      await tester.tap(find.byIcon(Icons.refresh));
+      await tester.tap(find.byIcon(LottiIcons.refresh));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 250));
 

@@ -132,7 +132,7 @@ class _AiResponseSummaryState extends State<AiResponseSummary> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              _collapsed ? Icons.expand_more : Icons.expand_less,
+              _collapsed ? LottiIcons.expand : LottiIcons.collapse,
               size: 16,
               color: ai.accent,
             ),

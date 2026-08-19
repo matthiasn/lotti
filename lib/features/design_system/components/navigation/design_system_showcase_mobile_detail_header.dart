@@ -31,7 +31,7 @@ class DesignSystemBackControl extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              Icons.arrow_back_ios,
+              LottiIcons.chevronLeft,
               size: 20,
               color: foregroundColor,
             ),
@@ -83,7 +83,7 @@ class DesignSystemShowcaseMobileDetailHeader extends StatelessWidget {
         const Spacer(),
         trailing ??
             Icon(
-              Icons.more_vert_rounded,
+              LottiIcons.moreVertical,
               size: 24,
               color: foregroundColor,
             ),

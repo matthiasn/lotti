@@ -52,7 +52,7 @@ class OutboxSummaryHeader extends StatelessWidget {
             SizedBox(width: tokens.spacing.step2),
             DesignSystemButton(
               label: messages.outboxRetryAll,
-              leadingIcon: Icons.refresh_rounded,
+              leadingIcon: LottiIcons.refresh,
               variant: DesignSystemButtonVariant.secondary,
               onPressed: onRetryAll,
             ),
@@ -79,10 +79,10 @@ class OutboxSummaryHeader extends StatelessWidget {
   };
 
   IconData _icon(QueueState state) => switch (state) {
-    QueueState.synced => Icons.check_circle_rounded,
-    QueueState.sending => Icons.sync_rounded,
-    QueueState.waiting => Icons.schedule_rounded,
-    QueueState.failed => Icons.error_rounded,
-    QueueState.offline => Icons.cloud_off_rounded,
+    QueueState.synced => LottiIcons.confirmCircled,
+    QueueState.sending => LottiIcons.sync,
+    QueueState.waiting => LottiIcons.schedule,
+    QueueState.failed => LottiIcons.error,
+    QueueState.offline => LottiIcons.cloudOff,
   };
 }

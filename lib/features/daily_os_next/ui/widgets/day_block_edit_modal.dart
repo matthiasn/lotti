@@ -125,7 +125,7 @@ class DayBlockEditModal {
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(
-          Icons.edit_calendar_rounded,
+          LottiIcons.calendarEdit,
           size: tokens.spacing.step6,
           color: tokens.colors.interactive.enabled,
         ),
@@ -230,7 +230,7 @@ class _BlockEditOverview extends StatelessWidget {
                     DesignSystemTextInput(
                       controller: titleController,
                       label: context.messages.dailyOsNextBlockEditNameLabel,
-                      leadingIcon: Icons.title_rounded,
+                      leadingIcon: LottiIcons.text,
                       textCapitalization: TextCapitalization.sentences,
                     ),
                     SizedBox(height: tokens.spacing.step5),
@@ -262,7 +262,7 @@ class _BlockEditOverview extends StatelessWidget {
                       SizedBox(height: tokens.spacing.step5),
                       DesignSystemButton(
                         label: context.messages.dailyOsNextBlockEditOpenTask,
-                        leadingIcon: Icons.open_in_new_rounded,
+                        leadingIcon: LottiIcons.openExternal,
                         variant: DesignSystemButtonVariant.secondary,
                         size: DesignSystemButtonSize.large,
                         fullWidth: true,
@@ -283,7 +283,7 @@ class _BlockEditOverview extends StatelessWidget {
                   range.dateTo,
                 ),
                 leading: Icon(
-                  Icons.schedule_rounded,
+                  LottiIcons.schedule,
                   color: tokens.colors.interactive.enabled,
                   size: tokens.spacing.step6,
                 ),
@@ -297,7 +297,7 @@ class _BlockEditOverview extends StatelessWidget {
                   label: context.messages.dailyOsNextBlockEditWhyLabel,
                   value: block.reason!.trim(),
                   leading: Icon(
-                    Icons.auto_awesome_rounded,
+                    LottiIcons.aiSpark,
                     color: tokens.colors.interactive.enabled,
                     size: tokens.spacing.step6,
                   ),
@@ -441,7 +441,7 @@ class _SaveActionBar extends StatelessWidget {
         return DesignSystemGlassActionFooter(
           child: DesignSystemButton(
             label: context.messages.dailyOsNextBlockEditSave,
-            leadingIcon: Icons.check_rounded,
+            leadingIcon: LottiIcons.confirm,
             size: DesignSystemButtonSize.large,
             fullWidth: true,
             onPressed: canSave

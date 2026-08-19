@@ -48,21 +48,21 @@ void main() {
         items: [
           MobileNavMoreSheetItem(
             label: 'Projects',
-            icon: const Icon(Icons.folder_outlined),
+            icon: const Icon(LottiIcons.folder),
             onSelected: () {},
           ),
           MobileNavMoreSheetItem(
             label: 'Habits',
-            icon: const Icon(Icons.checklist_outlined),
+            icon: const Icon(LottiIcons.checkAll),
             onSelected: () {},
           ),
         ],
       );
 
       expect(find.text('Projects'), findsOneWidget);
-      expect(find.byIcon(Icons.folder_outlined), findsOneWidget);
+      expect(find.byIcon(LottiIcons.folder), findsOneWidget);
       expect(find.text('Habits'), findsOneWidget);
-      expect(find.byIcon(Icons.checklist_outlined), findsOneWidget);
+      expect(find.byIcon(LottiIcons.checkAll), findsOneWidget);
     });
 
     testWidgets('selecting a row dismisses the sheet, then navigates', (
@@ -74,12 +74,12 @@ void main() {
         items: [
           MobileNavMoreSheetItem(
             label: 'Projects',
-            icon: const Icon(Icons.folder_outlined),
+            icon: const Icon(LottiIcons.folder),
             onSelected: () => selections.add('projects'),
           ),
           MobileNavMoreSheetItem(
             label: 'Habits',
-            icon: const Icon(Icons.checklist_outlined),
+            icon: const Icon(LottiIcons.checkAll),
             onSelected: () => selections.add('habits'),
           ),
         ],
@@ -100,13 +100,13 @@ void main() {
         items: [
           MobileNavMoreSheetItem(
             label: 'Settings',
-            icon: const Icon(Icons.settings_outlined),
+            icon: const Icon(LottiIcons.settings),
             trailing: const Text('42', key: Key('trailing-badge')),
             onSelected: () {},
           ),
           MobileNavMoreSheetItem(
             label: 'Habits',
-            icon: const Icon(Icons.checklist_outlined),
+            icon: const Icon(LottiIcons.checkAll),
             onSelected: () {},
           ),
         ],
@@ -123,7 +123,7 @@ void main() {
                 of: find.text('Settings'),
                 matching: find.byType(InkWell),
               ),
-              matching: find.byIcon(Icons.chevron_right_rounded),
+              matching: find.byIcon(LottiIcons.chevronRight),
             )
             .first,
       );
@@ -143,7 +143,7 @@ void main() {
           for (final label in ['Projects', 'Habits', 'Calendar'])
             MobileNavMoreSheetItem(
               label: label,
-              icon: const Icon(Icons.folder_outlined),
+              icon: const Icon(LottiIcons.folder),
               onSelected: () {},
             ),
         ],
@@ -180,13 +180,13 @@ void main() {
         items: [
           MobileNavMoreSheetItem(
             label: 'Projects',
-            icon: const Icon(Icons.folder_outlined),
+            icon: const Icon(LottiIcons.folder),
             active: true,
             onSelected: () {},
           ),
           MobileNavMoreSheetItem(
             label: 'Habits',
-            icon: const Icon(Icons.checklist_outlined),
+            icon: const Icon(LottiIcons.checkAll),
             onSelected: () {},
           ),
         ],
@@ -204,7 +204,7 @@ void main() {
       );
 
       final activeIcon = IconTheme.of(
-        tester.element(find.byIcon(Icons.folder_outlined)),
+        tester.element(find.byIcon(LottiIcons.folder)),
       );
       expect(activeIcon.color, dsTokensLight.colors.interactive.enabled);
     });
@@ -217,7 +217,7 @@ void main() {
         items: [
           MobileNavMoreSheetItem(
             label: 'Projects',
-            icon: const Icon(Icons.folder_outlined),
+            icon: const Icon(LottiIcons.folder),
             onSelected: () {},
           ),
         ],
@@ -235,7 +235,7 @@ void main() {
           for (final label in ['Projects', 'Habits', 'Calendar'])
             MobileNavMoreSheetItem(
               label: label,
-              icon: const Icon(Icons.folder_outlined),
+              icon: const Icon(LottiIcons.folder),
               onSelected: () {},
             ),
         ],
@@ -258,7 +258,7 @@ void main() {
         items: [
           MobileNavMoreSheetItem(
             label: 'Projects',
-            icon: const Icon(Icons.folder_outlined),
+            icon: const Icon(LottiIcons.folder),
             onSelected: () {},
           ),
         ],
@@ -269,7 +269,7 @@ void main() {
       expect(
         find.descendant(
           of: find.byType(ContactSupportRow),
-          matching: find.byIcon(Icons.chevron_right_rounded),
+          matching: find.byIcon(LottiIcons.chevronRight),
         ),
         findsNothing,
       );
@@ -297,7 +297,7 @@ void main() {
         items: [
           MobileNavMoreSheetItem(
             label: 'Settings',
-            icon: const Icon(Icons.settings_rounded),
+            icon: const Icon(LottiIcons.settings),
             trailing: const SyncQueueCounts(),
             onSelected: () {},
           ),

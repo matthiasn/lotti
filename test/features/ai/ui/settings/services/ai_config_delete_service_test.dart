@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/ui/settings/services/ai_config_delete_service.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../widget_test_utils.dart'
@@ -334,7 +336,7 @@ void main() {
           // Check dialog structure
           expect(find.text('Delete Profile'), findsNWidgets(2));
           expect(find.text(testProfile.name), findsOneWidget);
-          expect(find.byIcon(Icons.tune), findsOneWidget); // Profile icon
+          expect(find.byIcon(LottiIcons.tune), findsOneWidget); // Profile icon
           expect(
             find.text(
               'This will permanently delete the inference profile.',
@@ -597,7 +599,7 @@ void main() {
           await tester.pump(const Duration(milliseconds: 300));
 
           // Check dialog structure
-          expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
+          expect(find.byIcon(LottiIcons.warning), findsOneWidget);
           expect(
             find.text('Delete Provider'),
             findsNWidgets(2),
@@ -609,7 +611,7 @@ void main() {
             find.text('Associated models will also be deleted'),
             findsOneWidget,
           );
-          expect(find.byIcon(Icons.hub), findsOneWidget); // Provider icon
+          expect(find.byIcon(LottiIcons.hub), findsOneWidget); // Provider icon
           expect(find.text('Cancel'), findsOneWidget);
           expect(
             find.text('Delete'),
@@ -641,7 +643,7 @@ void main() {
           // Check dialog structure
           expect(find.text('Delete Model'), findsNWidgets(2));
           expect(find.text(testModel.name), findsOneWidget);
-          expect(find.byIcon(Icons.smart_toy), findsOneWidget); // Model icon
+          expect(find.byIcon(LottiIcons.aiModel), findsOneWidget); // Model icon
           expect(
             find.text('This will permanently delete the model configuration.'),
             findsOneWidget,
@@ -677,7 +679,10 @@ void main() {
           // Check dialog structure
           expect(find.text('Delete Prompt'), findsNWidgets(2));
           expect(find.text(testPrompt.name), findsOneWidget);
-          expect(find.byIcon(Icons.psychology), findsOneWidget); // Prompt icon
+          expect(
+            find.byIcon(LottiIcons.reasoning),
+            findsOneWidget,
+          ); // Prompt icon
           expect(
             find.text('This will permanently delete the prompt template.'),
             findsOneWidget,
@@ -731,8 +736,18 @@ void main() {
             findsOneWidget,
           );
           expect(find.text('Undo'), findsOneWidget);
-          // Success/warning tone glyph from the DS toast spec.
-          expect(find.byIcon(Icons.warning_rounded), findsOneWidget);
+          // Success/warning tone glyph from the DS toast spec. Scoped to the
+          // toast: the confirmation dialog behind it carries its own warning
+          // triangle, and Material used to keep the two apart only by spelling
+          // (`warning_rounded` vs `warning_amber_rounded`) rather than by
+          // shape. Lucide has one triangle, so an unscoped finder sees both.
+          expect(
+            find.descendant(
+              of: find.byType(DesignSystemToast),
+              matching: find.byIcon(LottiIcons.warning),
+            ),
+            findsOneWidget,
+          );
         },
       );
 
@@ -823,7 +838,7 @@ void main() {
 
         // Assert error DS toast: error-tone glyph + localized title +
         // error detail in the description.
-        expect(find.byIcon(Icons.error_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.error), findsOneWidget);
         expect(
           find.text("Couldn't delete ${testModel.name}"),
           findsOneWidget,
@@ -1000,7 +1015,7 @@ void main() {
           // Dialog title, warning text, and icon must all reflect the Skill type.
           expect(find.text('Delete Skill'), findsNWidgets(2));
           expect(find.text(testSkill.name), findsOneWidget);
-          expect(find.byIcon(Icons.auto_fix_high), findsOneWidget);
+          expect(find.byIcon(LottiIcons.magic), findsOneWidget);
           expect(
             find.text('This will permanently delete the skill.'),
             findsOneWidget,

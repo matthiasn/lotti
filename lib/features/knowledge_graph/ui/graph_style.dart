@@ -19,27 +19,27 @@ import 'package:lotti/l10n/app_localizations.dart';
 IconData glyphForType(GraphNodeType type) {
   switch (type) {
     case GraphNodeType.task:
-      return Icons.check_circle_outline;
+      return LottiIcons.confirmCircled;
     case GraphNodeType.project:
-      return Icons.flag_outlined;
+      return LottiIcons.flag;
     case GraphNodeType.textEntry:
-      return Icons.notes;
+      return LottiIcons.note;
     case GraphNodeType.audioEntry:
-      return Icons.mic_none;
+      return LottiIcons.micIdle;
     case GraphNodeType.imageEntry:
-      return Icons.image_outlined;
+      return LottiIcons.image;
     case GraphNodeType.aiResponse:
-      return Icons.auto_awesome;
+      return LottiIcons.aiSpark;
     case GraphNodeType.checklist:
-      return Icons.checklist;
+      return LottiIcons.checkAll;
     case GraphNodeType.checklistItem:
-      return Icons.check_box_outlined;
+      return LottiIcons.checkboxChecked;
     case GraphNodeType.rating:
-      return Icons.star_outline;
+      return LottiIcons.star;
     case GraphNodeType.mediaCollection:
-      return Icons.photo_library_outlined;
+      return LottiIcons.photoLibrary;
     case GraphNodeType.aggregate:
-      return Icons.hub_outlined;
+      return LottiIcons.hub;
   }
 }
 

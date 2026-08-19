@@ -11,12 +11,12 @@ void main() {
     testWidgets('renders icon with correct size and color', (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          const SettingsIcon(icon: Icons.settings),
+          const SettingsIcon(icon: LottiIcons.settings),
           theme: DesignSystemTheme.light(),
         ),
       );
 
-      final icon = tester.widget<Icon>(find.byIcon(Icons.settings));
+      final icon = tester.widget<Icon>(find.byIcon(LottiIcons.settings));
       expect(icon.size, 20.0);
       expect(icon.color, dsTokensLight.colors.interactive.enabled);
     });
@@ -24,7 +24,7 @@ void main() {
     testWidgets('renders container with correct size', (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          const SettingsIcon(icon: Icons.settings),
+          const SettingsIcon(icon: LottiIcons.settings),
           theme: DesignSystemTheme.light(),
         ),
       );
@@ -40,7 +40,7 @@ void main() {
     ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          const SettingsIcon(icon: Icons.settings),
+          const SettingsIcon(icon: LottiIcons.settings),
           theme: DesignSystemTheme.light(),
         ),
       );

@@ -16,6 +16,7 @@ import 'package:lotti/features/categories/ui/widgets/category_name_field.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/glass_action_bar.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
@@ -427,7 +428,7 @@ void main() {
 
           await pumpCategoryDetailsPage(tester, settle: true);
 
-          await tester.tap(find.byIcon(Icons.chevron_left));
+          await tester.tap(find.byIcon(LottiIcons.chevronLeft));
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 350));
 
@@ -1062,7 +1063,7 @@ void main() {
 
         await pumpCategoryDetailsPage(tester, createMode: true, settle: true);
 
-        await tester.tap(find.byIcon(Icons.chevron_left));
+        await tester.tap(find.byIcon(LottiIcons.chevronLeft));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
 
@@ -1120,7 +1121,7 @@ void main() {
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 350));
 
-          await tester.tap(find.byIcon(Icons.chevron_left));
+          await tester.tap(find.byIcon(LottiIcons.chevronLeft));
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 350));
 
@@ -1168,7 +1169,7 @@ void main() {
 
           // Dismiss via the modal close button — no color was picked,
           // so the form stays pristine (Save remains disabled).
-          await tester.tap(find.byIcon(Icons.close_rounded).last);
+          await tester.tap(find.byIcon(LottiIcons.close).last);
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 350));
 
@@ -1226,7 +1227,7 @@ void main() {
 
           // Dismiss the modal; the field now names the new preset and
           // the dirty form enables Save.
-          await tester.tap(find.byIcon(Icons.close_rounded).last);
+          await tester.tap(find.byIcon(LottiIcons.close).last);
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 350));
 
@@ -1360,7 +1361,7 @@ void main() {
           expect(find.byType(CategoryIconPicker), findsOneWidget);
 
           // Dismiss without picking (tap close button in dialog header)
-          final closeBtn = find.widgetWithIcon(IconButton, Icons.close);
+          final closeBtn = find.widgetWithIcon(IconButton, LottiIcons.close);
           await tester.tap(closeBtn);
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 350));
@@ -1619,7 +1620,7 @@ void main() {
           await tester.pump();
 
           // Dismiss the modal via its close button.
-          await tester.tap(find.byIcon(Icons.close_rounded).last);
+          await tester.tap(find.byIcon(LottiIcons.close).last);
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 350));
           expect(find.byType(ColorPicker), findsNothing);

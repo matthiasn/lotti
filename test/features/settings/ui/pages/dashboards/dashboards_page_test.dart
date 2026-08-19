@@ -5,6 +5,7 @@ import 'package:lotti/features/categories/ui/widgets/category_icon_chip.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/dashboards_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -113,7 +114,7 @@ void main() {
           dashboards: [testDashboardConfig],
         );
 
-        expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
       });
     });
 
@@ -133,8 +134,8 @@ void main() {
             find.descendant(of: chipFinder, matching: find.text('S')),
             findsOneWidget,
           );
-          expect(find.byIcon(Icons.more_horiz), findsNothing);
-          expect(find.byIcon(Icons.category_outlined), findsNothing);
+          expect(find.byIcon(LottiIcons.more), findsNothing);
+          expect(find.byIcon(LottiIcons.category), findsNothing);
         },
       );
 
@@ -152,7 +153,7 @@ void main() {
 
           final chipFinder = find.byType(CategoryIconChip);
           expect(chipFinder, findsOneWidget);
-          expect(find.byIcon(Icons.more_horiz), findsNothing);
+          expect(find.byIcon(LottiIcons.more), findsNothing);
           // The dashboard's own initial ('S' for 'Some test dashboard'),
           // not the category's ('M' for Mindfulness)...
           expect(
@@ -180,7 +181,7 @@ void main() {
         final privateDashboard = testDashboardConfig.copyWith(private: true);
         await pumpDashboardsPage(tester, dashboards: [privateDashboard]);
 
-        expect(find.byIcon(Icons.lock_outline), findsOneWidget);
+        expect(find.byIcon(LottiIcons.lock), findsOneWidget);
       });
 
       testWidgets('hides lock icon when not private', (tester) async {
@@ -189,7 +190,7 @@ void main() {
           dashboards: [testDashboardConfig],
         );
 
-        expect(find.byIcon(Icons.lock_outline), findsNothing);
+        expect(find.byIcon(LottiIcons.lock), findsNothing);
       });
     });
 
@@ -240,7 +241,7 @@ void main() {
       ) async {
         await pumpDashboardsPage(tester);
 
-        expect(find.byIcon(Icons.dashboard_customize_outlined), findsOneWidget);
+        expect(find.byIcon(LottiIcons.dashboardEdit), findsOneWidget);
         expect(find.text('No dashboards yet'), findsOneWidget);
         expect(
           find.text('Tap the + button to create your first dashboard.'),
@@ -257,7 +258,7 @@ void main() {
         // the retries until the terminal AsyncError renders.
         await tester.pumpAndSettle();
 
-        expect(find.byIcon(Icons.error_outline), findsOneWidget);
+        expect(find.byIcon(LottiIcons.error), findsOneWidget);
         expect(find.text('Error loading dashboards'), findsOneWidget);
         expect(find.textContaining('boards broke'), findsOneWidget);
       });
@@ -324,7 +325,7 @@ void main() {
         await tester.pump();
 
         expect(find.byType(DesignSystemListItem), findsNothing);
-        expect(find.byIcon(Icons.search_off_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.searchOff), findsOneWidget);
         expect(find.text('No dashboards match "zzz"'), findsOneWidget);
       });
     });

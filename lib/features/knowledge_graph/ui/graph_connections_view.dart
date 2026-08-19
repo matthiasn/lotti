@@ -161,7 +161,7 @@ class _ConnectionRow extends StatelessWidget {
               ),
             ),
             Icon(
-              Icons.chevron_right_rounded,
+              LottiIcons.chevronRight,
               size: IconSizes.s,
               color: tokens.colors.text.lowEmphasis,
             ),

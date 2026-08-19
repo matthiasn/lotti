@@ -36,7 +36,7 @@ import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart'
     show categoryRepositoryProvider;
-import 'package:lotti/features/design_system/theme/generated/design_tokens.g.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_controller.dart';
@@ -485,7 +485,7 @@ void main() {
       // actually opens the picker.
       await tester.tap(
         find.ancestor(
-          of: find.byIcon(Icons.arrow_drop_down_rounded),
+          of: find.byIcon(LottiIcons.chevronDown),
           matching: find.byType(InkWell),
         ),
       );
@@ -507,7 +507,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       // Find visibility toggle button
-      final visibilityToggle = find.byIcon(Icons.visibility_rounded);
+      final visibilityToggle = find.byIcon(LottiIcons.visible);
       expect(visibilityToggle, findsOneWidget);
 
       // Tap to show API key
@@ -515,7 +515,7 @@ void main() {
       await tester.pump();
 
       // Should now show hide icon
-      expect(find.byIcon(Icons.visibility_off_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.hidden), findsOneWidget);
     });
 
     testWidgets('has back, save-as-draft and save-and-continue buttons', (
@@ -642,7 +642,7 @@ void main() {
       // styled box is wrapped in an InkWell now (not GestureDetector).
       await tester.tap(
         find.ancestor(
-          of: find.byIcon(Icons.arrow_drop_down_rounded),
+          of: find.byIcon(LottiIcons.chevronDown),
           matching: find.byType(InkWell),
         ),
       );
@@ -768,7 +768,7 @@ void main() {
         // API key field should not be visible
         expect(find.text('Authentication'), findsNothing);
         expect(find.text('API Key'), findsNothing);
-        expect(find.byIcon(Icons.key_rounded), findsNothing);
+        expect(find.byIcon(LottiIcons.key), findsNothing);
       },
     );
 
@@ -2006,7 +2006,7 @@ void main() {
       );
       expect(find.textContaining('first failure'), findsOneWidget);
 
-      await tester.tap(find.byIcon(Icons.refresh_rounded));
+      await tester.tap(find.byIcon(LottiIcons.refresh));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
@@ -2317,7 +2317,7 @@ void main() {
       await tester.pump();
 
       // Find and tap an add button (the circular button with add icon)
-      final addButton = find.byIcon(Icons.add_rounded).first;
+      final addButton = find.byIcon(LottiIcons.add).first;
       await tester.ensureVisible(addButton);
       await tester.pump();
 
@@ -2384,7 +2384,7 @@ void main() {
         await tester.ensureVisible(find.text('Available Models'));
         await tester.pump();
 
-        final addButton = find.byIcon(Icons.add_rounded).first;
+        final addButton = find.byIcon(LottiIcons.add).first;
         await tester.ensureVisible(addButton);
         await tester.pump();
         await tester.tap(addButton);
@@ -2682,7 +2682,7 @@ void main() {
       expect(find.text('Alpha Model'), findsOneWidget);
       expect(find.text('Beta Model'), findsNothing);
 
-      await tester.tap(find.byIcon(Icons.cancel_rounded));
+      await tester.tap(find.byIcon(LottiIcons.closeCircled));
       await tester.pump();
 
       expect(find.text('Alpha Model'), findsOneWidget);
@@ -3552,7 +3552,7 @@ void main() {
         // `_ProviderTypeField` that opens the picker.
         await tester.tap(
           find.ancestor(
-            of: find.byIcon(Icons.arrow_drop_down_rounded),
+            of: find.byIcon(LottiIcons.chevronDown),
             matching: find.byType(InkWell),
           ),
         );
@@ -3812,7 +3812,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 100));
 
-        await tester.tap(find.byIcon(Icons.chevron_left_rounded));
+        await tester.tap(find.byIcon(LottiIcons.chevronLeft));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 100));
 

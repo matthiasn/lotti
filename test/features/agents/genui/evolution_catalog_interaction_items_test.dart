@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:genui/genui.dart';
 import 'package:lotti/features/agents/genui/evolution_catalog.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 import '../../../widget_test_utils.dart';
@@ -22,7 +23,7 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(Icons.star_outline), findsNothing);
+      expect(find.byIcon(LottiIcons.star), findsNothing);
       expect(find.text('Approve & Save'), findsNothing);
     });
 
@@ -128,7 +129,7 @@ void main() {
           findsOneWidget,
         );
         expect(
-          find.byIcon(Icons.check_circle_rounded),
+          find.byIcon(LottiIcons.confirmCircled),
           findsOneWidget,
         );
       },
@@ -321,8 +322,8 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(Icons.priority_high), findsOneWidget);
-      final context = tester.element(find.byIcon(Icons.priority_high));
+      expect(find.byIcon(LottiIcons.warning), findsOneWidget);
+      final context = tester.element(find.byIcon(LottiIcons.warning));
       expect(
         find.text(context.messages.agentFeedbackHighPriorityTitle),
         findsOneWidget,
@@ -342,7 +343,7 @@ void main() {
         ),
       );
 
-      final context = tester.element(find.byIcon(Icons.priority_high));
+      final context = tester.element(find.byIcon(LottiIcons.warning));
       expect(
         find.textContaining(context.messages.agentFeedbackGrievancesTitle),
         findsOneWidget,
@@ -365,7 +366,7 @@ void main() {
         ),
       );
 
-      final context = tester.element(find.byIcon(Icons.priority_high));
+      final context = tester.element(find.byIcon(LottiIcons.warning));
       expect(
         find.textContaining(context.messages.agentFeedbackExcellenceTitle),
         findsOneWidget,
@@ -404,7 +405,7 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(Icons.priority_high), findsNothing);
+      expect(find.byIcon(LottiIcons.warning), findsNothing);
     });
 
     testWidgets('renders item without agentId gracefully', (tester) async {
@@ -438,7 +439,7 @@ void main() {
         ),
       );
 
-      final context = tester.element(find.byIcon(Icons.priority_high));
+      final context = tester.element(find.byIcon(LottiIcons.warning));
       expect(
         find.text('${context.messages.agentFeedbackGrievancesTitle} (3)'),
         findsOneWidget,

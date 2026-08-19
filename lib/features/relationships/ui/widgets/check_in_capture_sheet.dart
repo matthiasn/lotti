@@ -41,11 +41,11 @@ String checkInInteractionLabel(
 /// The icon for an interaction type — shared by the detail page's check-in
 /// rows and the journal card, so the two can't drift apart.
 IconData checkInInteractionIcon(CheckInInteractionType type) => switch (type) {
-  CheckInInteractionType.inPerson => Icons.people_rounded,
-  CheckInInteractionType.call => Icons.call_rounded,
-  CheckInInteractionType.videoCall => Icons.videocam_rounded,
-  CheckInInteractionType.message => Icons.chat_rounded,
-  CheckInInteractionType.other => Icons.forum_rounded,
+  CheckInInteractionType.inPerson => LottiIcons.people,
+  CheckInInteractionType.call => LottiIcons.call,
+  CheckInInteractionType.videoCall => LottiIcons.video,
+  CheckInInteractionType.message => LottiIcons.chat,
+  CheckInInteractionType.other => LottiIcons.forum,
 };
 
 /// The localized label for a sentiment — shared by the capture sheet and the
@@ -564,7 +564,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
           child: InputDecorator(
             decoration: InputDecoration(
               labelText: messages.checkInDateLabel,
-              prefixIcon: const Icon(Icons.calendar_today_rounded),
+              prefixIcon: const Icon(LottiIcons.today),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(tokens.radii.s),
               ),
@@ -613,7 +613,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
                 ? messages.checkInTranscribingLabel
                 : messages.checkInSpeakButton,
             variant: DesignSystemButtonVariant.outlined,
-            leadingIcon: Icons.mic_rounded,
+            leadingIcon: LottiIcons.mic,
             isLoading: _isTranscribing,
             onPressed: _isSaving || _isTranscribing ? null : _handleSpeak,
           ),
@@ -644,7 +644,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
                 tooltip: messages.deleteButton,
                 onPressed: _isSaving ? null : _handleDelete,
                 icon: Icon(
-                  Icons.delete_outline_rounded,
+                  LottiIcons.delete,
                   color: Theme.of(context).colorScheme.error,
                 ),
               ),

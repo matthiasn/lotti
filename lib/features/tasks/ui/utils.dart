@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/colors.dart';
 
@@ -8,14 +9,14 @@ import 'package:lotti/themes/colors.dart';
 /// icons without duplication.
 IconData taskIconFromStatusString(String status) =>
     switch (normalizeTaskStatusString(status)) {
-      'OPEN' => Icons.radio_button_unchecked,
-      'GROOMED' => Icons.edit_outlined,
-      'IN PROGRESS' => Icons.play_arrow_rounded,
-      'BLOCKED' => Icons.warning_sharp,
-      'ON HOLD' => Icons.pause,
-      'DONE' => Icons.check_circle_outline,
-      'REJECTED' => Icons.close_rounded,
-      String() => Icons.help_outline,
+      'OPEN' => LottiIcons.radioUnselected,
+      'GROOMED' => LottiIcons.edit,
+      'IN PROGRESS' => LottiIcons.play,
+      'BLOCKED' => LottiIcons.warning,
+      'ON HOLD' => LottiIcons.pause,
+      'DONE' => LottiIcons.confirmCircled,
+      'REJECTED' => LottiIcons.close,
+      String() => LottiIcons.help,
     };
 
 /// Returns the theme-aware accent [Color] for [status].

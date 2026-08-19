@@ -5,6 +5,7 @@ import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/ui/widgets/category_field.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -105,7 +106,7 @@ void main() {
     );
 
     // Find and tap the clear button
-    final clearButton = find.byIcon(Icons.close_rounded);
+    final clearButton = find.byIcon(LottiIcons.close);
     expect(clearButton, findsOneWidget);
     await tester.tap(clearButton);
     await tester.pumpAndSettle();
@@ -215,7 +216,7 @@ void main() {
 
     // Verify create category option is shown
     expect(find.text('New Category'), findsNWidgets(2));
-    expect(find.byIcon(Icons.add_circle_outline), findsOneWidget);
+    expect(find.byIcon(LottiIcons.addCircled), findsOneWidget);
   });
 
   testWidgets('displays category icon with correct size', (tester) async {

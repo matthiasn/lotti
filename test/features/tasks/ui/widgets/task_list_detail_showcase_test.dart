@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/state/task_live_data_provider.dart';
 import 'package:lotti/features/tasks/state/task_one_liner_provider.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_list_detail_showcase.dart';
@@ -140,7 +141,7 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(find.byIcon(Icons.filter_list_rounded).first);
+      await tester.tap(find.byIcon(LottiIcons.filter).first);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
 

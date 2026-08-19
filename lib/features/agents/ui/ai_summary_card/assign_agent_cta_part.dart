@@ -60,7 +60,7 @@ class AssignAgentCta extends ConsumerWidget {
           subtitleEmphasis: tokens.colors.text.lowEmphasis,
           size: DesignSystemListItemSize.small,
           leading: Icon(
-            Icons.auto_awesome_rounded,
+            LottiIcons.aiSpark,
             size: tokens.spacing.step5,
             // The AI accent, not the generic interactive one: this row is the
             // entry point to the agent feature, and it is the only place on an
@@ -68,7 +68,7 @@ class AssignAgentCta extends ConsumerWidget {
             color: tokens.colors.aiCard.accent,
           ),
           trailingExtra: Icon(
-            Icons.arrow_forward_ios,
+            LottiIcons.chevronRight,
             size: tokens.spacing.step4,
             color: tokens.colors.text.lowEmphasis,
           ),

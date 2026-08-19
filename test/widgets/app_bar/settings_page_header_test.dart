@@ -65,7 +65,7 @@ void main() {
       await _pumpHeader(tester, showBackButton: true);
 
       expect(find.text('Matrix Sync Maintenance'), findsOneWidget);
-      expect(find.byIcon(Icons.chevron_left), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronLeft), findsOneWidget);
     });
 
     testWidgets('accommodates large text scaling without overflow', (
@@ -81,7 +81,7 @@ void main() {
         contentHeight: 800,
       );
 
-      expect(find.byIcon(Icons.chevron_left), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronLeft), findsOneWidget);
       expect(
         find.textContaining('Extremely Long Matrix Sync Maintenance Header'),
         findsOneWidget,
@@ -91,7 +91,7 @@ void main() {
       await tester.drag(find.byType(CustomScrollView), const Offset(0, -300));
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.chevron_left), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronLeft), findsOneWidget);
     });
 
     testWidgets('renders across common text scales (1.0, 1.2, 2.0)', (
@@ -107,7 +107,7 @@ void main() {
           contentHeight: 300,
         );
         expect(find.text('Sync Stats'), findsOneWidget);
-        expect(find.byIcon(Icons.chevron_left), findsOneWidget);
+        expect(find.byIcon(LottiIcons.chevronLeft), findsOneWidget);
         expect(tester.takeException(), isNull);
       }
     });

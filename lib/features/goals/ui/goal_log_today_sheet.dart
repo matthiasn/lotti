@@ -144,7 +144,7 @@ class _GoalLogTodaySheetState extends ConsumerState<GoalLogTodaySheet> {
                     Semantics(
                       label: context.messages.completeHabitSuccessButton,
                       child: Icon(
-                        Icons.check_circle_rounded,
+                        LottiIcons.confirmCircled,
                         key: ValueKey('goal-log-today-done-${habit.habitId}'),
                         size: IconSizes.s,
                         color: tokens.colors.alert.success.defaultColor,
@@ -159,7 +159,7 @@ class _GoalLogTodaySheetState extends ConsumerState<GoalLogTodaySheet> {
                           : () => _markDone(habit),
                       variant: DesignSystemButtonVariant.secondary,
                       size: DesignSystemButtonSize.dense,
-                      leadingIcon: Icons.check_rounded,
+                      leadingIcon: LottiIcons.confirm,
                     ),
                 ],
               ),

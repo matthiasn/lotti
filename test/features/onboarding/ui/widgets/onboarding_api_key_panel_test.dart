@@ -12,6 +12,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/ui/settings/services/connection_verifier_service.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_api_key_panel.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
@@ -125,7 +126,7 @@ void main() {
       find.textContaining('Get a key at aistudio.google.com'),
       findsOneWidget,
     );
-    expect(find.byIcon(Icons.open_in_new_rounded), findsOneWidget);
+    expect(find.byIcon(LottiIcons.openExternal), findsOneWidget);
     expect(connectOnPressed(tester), isNull);
     // The disabled CTA narrates why it's inert at rest.
     expect(find.text('Enter a valid key to continue.'), findsOneWidget);
@@ -479,7 +480,7 @@ void main() {
 
     await pumpPanel(tester, type: InferenceProviderType.gemini);
 
-    await tester.tap(find.byIcon(Icons.open_in_new_rounded));
+    await tester.tap(find.byIcon(LottiIcons.openExternal));
     await tester.pump();
 
     verify(
@@ -495,7 +496,7 @@ void main() {
       onBack: () => backed = true,
     );
 
-    await tester.tap(find.byIcon(Icons.arrow_back_rounded));
+    await tester.tap(find.byIcon(LottiIcons.back));
     await tester.pump();
 
     expect(backed, isTrue);
@@ -521,7 +522,7 @@ void main() {
     );
 
     Focus.of(
-      tester.element(find.byIcon(Icons.arrow_back_rounded)),
+      tester.element(find.byIcon(LottiIcons.back)),
     ).requestFocus();
     await tester.pump();
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);

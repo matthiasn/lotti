@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/event_status.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/events/ui/widgets/event_status_picker.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -144,7 +145,7 @@ void main() {
       await tester.tap(find.text('open'));
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.check), findsOneWidget);
+      expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
     });
   });
 }

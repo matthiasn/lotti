@@ -21,6 +21,7 @@ import 'package:lotti/features/daily_os_next/ui/widgets/plan_view_toggle.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -177,7 +178,7 @@ void main() {
         expect(checkIns, 1);
 
         // The overflow menu offers no delete-plan entry without a plan.
-        await tester.tap(find.byIcon(Icons.more_vert_rounded));
+        await tester.tap(find.byIcon(LottiIcons.moreVertical));
         await tester.pump();
         expect(
           find.text(messages.dailyOsNextDayMenuDeletePlan),
@@ -227,7 +228,7 @@ void main() {
         );
         expect(find.text(messages.dailyOsNextDayCheckInCta), findsNothing);
 
-        await tester.tap(find.byIcon(Icons.more_vert_rounded));
+        await tester.tap(find.byIcon(LottiIcons.moreVertical));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 200));
         await tester.tap(find.text(messages.dailyOsNextDayMenuSettings));
@@ -985,7 +986,7 @@ void main() {
         );
         await tester.pump();
 
-        await tester.tap(find.byIcon(Icons.more_vert_rounded));
+        await tester.tap(find.byIcon(LottiIcons.moreVertical));
         await tester.pump();
         // Let the popup menu's open animation finish before tapping.
         await tester.pump(const Duration(milliseconds: 200));
@@ -1223,7 +1224,7 @@ void main() {
       await tester.pumpWidget(_wrap(DayPage(draft: _drafted())));
       await tester.pump();
 
-      await tester.tap(find.byIcon(Icons.more_vert_rounded));
+      await tester.tap(find.byIcon(LottiIcons.moreVertical));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
@@ -1251,7 +1252,7 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(find.byIcon(Icons.more_vert_rounded));
+      await tester.tap(find.byIcon(LottiIcons.moreVertical));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
@@ -1271,7 +1272,7 @@ void main() {
         final draft = _drafted();
         await _pumpDayPage(tester, draft: draft, agent: agent);
 
-        await tester.tap(find.byIcon(Icons.more_vert_rounded));
+        await tester.tap(find.byIcon(LottiIcons.moreVertical));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 200));
 
@@ -1328,7 +1329,7 @@ void main() {
 
         // The header shows a back button only when there's no dateStrip;
         // the popup-menu's more_vert icon stays in place.
-        await tester.tap(find.byIcon(Icons.arrow_back_rounded));
+        await tester.tap(find.byIcon(LottiIcons.back));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
         await tester.pump(const Duration(milliseconds: 400));
@@ -1561,7 +1562,7 @@ void main() {
       final agent = RecordingDayAgent();
       await _pumpDayPage(tester, draft: _drafted(), agent: agent);
 
-      await tester.tap(find.byIcon(Icons.more_vert_rounded));
+      await tester.tap(find.byIcon(LottiIcons.moreVertical));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 

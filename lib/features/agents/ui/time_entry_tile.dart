@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/agents/time_entry_datetime.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
@@ -52,7 +53,7 @@ class TimeEntryTile extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(top: 2),
             child: Icon(
-              Icons.timer_outlined,
+              LottiIcons.timer,
               size: 16,
               color: context.colorScheme.primary,
             ),

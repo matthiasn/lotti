@@ -13,6 +13,7 @@ import 'package:lotti/features/daily_os_next/ui/widgets/day_planning_thinking_sh
 import 'package:lotti/features/daily_os_next/ui/widgets/parsed_card.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/pending_card.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
@@ -300,7 +301,7 @@ void main() {
         ctaBottom,
         lessThan(phoneMediaQueryData.size.height - bottomNavHeight),
       );
-      expect(find.byIcon(Icons.mic_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.mic), findsOneWidget);
     });
 
     testWidgets(
@@ -336,7 +337,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 400));
         await tester.pump(const Duration(milliseconds: 200));
 
-        await tester.tap(find.byIcon(Icons.arrow_back_rounded).first);
+        await tester.tap(find.byIcon(LottiIcons.back).first);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
         await tester.pump(const Duration(milliseconds: 400));

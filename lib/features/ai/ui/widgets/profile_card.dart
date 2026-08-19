@@ -62,7 +62,7 @@ class ProfileCard extends StatelessWidget {
                     Padding(
                       padding: EdgeInsets.only(left: tokens.spacing.step3),
                       child: Icon(
-                        Icons.lock_outline,
+                        LottiIcons.lock,
                         size: tokens.spacing.step5,
                         color: tokens.colors.text.mediumEmphasis,
                       ),

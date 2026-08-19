@@ -74,7 +74,7 @@ void main() {
       await _pump(tester, initiallyExpanded: true);
 
       expect(find.text('My Checklist'), findsOneWidget);
-      expect(find.byIcon(Icons.expand_more), findsOneWidget);
+      expect(find.byIcon(LottiIcons.expand), findsOneWidget);
     });
 
     testWidgets('tapping chevron toggles expansion', (tester) async {
@@ -83,14 +83,14 @@ void main() {
       // Expanded → add field hit-testable (non-zero size)
       expect(find.byKey(_addFieldKey).hitTestable(), findsOneWidget);
 
-      await tester.tap(find.byIcon(Icons.expand_more));
+      await tester.tap(find.byIcon(LottiIcons.expand));
       await tester.pump(const Duration(milliseconds: 400));
 
       // Collapsed → add field clipped to zero, not hit-testable
       expect(find.byKey(_addFieldKey).hitTestable(), findsNothing);
 
       // Tap again → expands
-      await tester.tap(find.byIcon(Icons.expand_more));
+      await tester.tap(find.byIcon(LottiIcons.expand));
       await tester.pump(const Duration(milliseconds: 400));
 
       expect(find.byKey(_addFieldKey).hitTestable(), findsOneWidget);
@@ -112,7 +112,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 400));
 
         final titleBefore = tester.getTopLeft(find.text('My Checklist'));
-        final chevronBefore = tester.getCenter(find.byIcon(Icons.expand_more));
+        final chevronBefore = tester.getCenter(find.byIcon(LottiIcons.expand));
         final progressBefore = tester.getTopLeft(find.text('0/10 done'));
 
         // The header row's own box must be state-invariant too: a padding
@@ -132,7 +132,7 @@ void main() {
         );
         final rowSizeBefore = headerRowSize();
 
-        await tester.tap(find.byIcon(Icons.expand_more));
+        await tester.tap(find.byIcon(LottiIcons.expand));
         await tester.pump(const Duration(milliseconds: 400));
 
         expect(
@@ -146,7 +146,7 @@ void main() {
           reason: 'title moved on collapse',
         );
         expect(
-          tester.getCenter(find.byIcon(Icons.expand_more)),
+          tester.getCenter(find.byIcon(LottiIcons.expand)),
           chevronBefore,
           reason: 'chevron moved on collapse',
         );
@@ -156,7 +156,7 @@ void main() {
           reason: 'progress label moved on collapse',
         );
 
-        await tester.tap(find.byIcon(Icons.expand_more));
+        await tester.tap(find.byIcon(LottiIcons.expand));
         await tester.pump(const Duration(milliseconds: 400));
 
         expect(
@@ -165,7 +165,7 @@ void main() {
           reason: 'title moved on re-expand',
         );
         expect(
-          tester.getCenter(find.byIcon(Icons.expand_more)),
+          tester.getCenter(find.byIcon(LottiIcons.expand)),
           chevronBefore,
           reason: 'chevron moved on re-expand',
         );
@@ -490,7 +490,7 @@ void main() {
     testWidgets('menu icon hidden when no actions provided', (tester) async {
       await _pump(tester, initiallyExpanded: true);
       // No onDelete / onExportMarkdown / onShareMarkdown → no more_vert button.
-      expect(find.byIcon(Icons.more_vert), findsNothing);
+      expect(find.byIcon(LottiIcons.moreVertical), findsNothing);
     });
 
     testWidgets('selected filter tab renders with bold text', (tester) async {
@@ -586,7 +586,7 @@ void main() {
         onDelete: () => deleted = true,
       );
 
-      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.tap(find.byIcon(LottiIcons.moreVertical));
       await tester.pumpAndSettle();
 
       expect(find.text('Delete checklist?'), findsOneWidget);
@@ -612,7 +612,7 @@ void main() {
         onExportMarkdown: () => exported = true,
       );
 
-      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.tap(find.byIcon(LottiIcons.moreVertical));
       await tester.pumpAndSettle();
 
       expect(find.text('Export checklist as Markdown'), findsOneWidget);
@@ -633,7 +633,7 @@ void main() {
           onShareMarkdown: () => shared = true,
         );
 
-        await tester.tap(find.byIcon(Icons.more_vert));
+        await tester.tap(find.byIcon(LottiIcons.moreVertical));
         await tester.pumpAndSettle();
 
         expect(find.text('Share'), findsOneWidget);
@@ -658,7 +658,7 @@ void main() {
         completionRate: 1 / 3,
       );
 
-      expect(find.byIcon(Icons.drag_indicator), findsOneWidget);
+      expect(find.byIcon(LottiIcons.drag), findsOneWidget);
       expect(find.byKey(_addFieldKey).hitTestable(), findsNothing);
     });
 
@@ -785,7 +785,7 @@ void main() {
 
       // The TitleTextField shows a cancel_outlined icon when onCancel is set.
       // Tap it to cancel editing.
-      await tester.tap(find.byIcon(Icons.cancel_outlined));
+      await tester.tap(find.byIcon(LottiIcons.closeCircled));
       await tester.pump();
 
       // TitleTextField should be gone, title text re-appears.
@@ -830,7 +830,7 @@ void main() {
         expect(expandedText.maxLines, 1);
         expect(expandedText.overflow, TextOverflow.ellipsis);
 
-        await tester.tap(find.byIcon(Icons.expand_more));
+        await tester.tap(find.byIcon(LottiIcons.expand));
         await tester.pump(checklistCardCollapseAnimationDuration ~/ 2);
 
         // The outgoing body must collapse vertically only. If the cross-fade
@@ -891,7 +891,7 @@ void main() {
           await tester.pump();
 
           final cardWidth = tester.getSize(find.byType(ChecklistCard)).width;
-          await tester.tap(find.byIcon(Icons.expand_more));
+          await tester.tap(find.byIcon(LottiIcons.expand));
           await tester.pump(checklistCardCollapseAnimationDuration ~/ 2);
 
           expect(
@@ -918,7 +918,7 @@ void main() {
       );
 
       // drag_indicator is present but NOT wrapped in ReorderableDragStartListener.
-      expect(find.byIcon(Icons.drag_indicator), findsOneWidget);
+      expect(find.byIcon(LottiIcons.drag), findsOneWidget);
       expect(find.byType(ReorderableDragStartListener), findsNothing);
     });
 
@@ -935,7 +935,7 @@ void main() {
           totalCount: 2,
         );
 
-        expect(find.byIcon(Icons.drag_indicator), findsOneWidget);
+        expect(find.byIcon(LottiIcons.drag), findsOneWidget);
         expect(find.byType(ReorderableDragStartListener), findsOneWidget);
       },
     );
@@ -965,7 +965,7 @@ void main() {
       await tester.pump();
       expect(states, [true]);
 
-      await tester.tap(find.byIcon(Icons.expand_more));
+      await tester.tap(find.byIcon(LottiIcons.expand));
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(states, [true, false]);
@@ -1092,7 +1092,7 @@ void main() {
       await tester.pump();
 
       // Now collapse — should use real animation duration (250ms).
-      await tester.tap(find.byIcon(Icons.expand_more));
+      await tester.tap(find.byIcon(LottiIcons.expand));
 
       // After only 50ms, the cross-fade should still be in progress.
       await tester.pump(const Duration(milliseconds: 50));
@@ -1170,7 +1170,7 @@ void main() {
           onDelete: () => deleted = true,
         );
 
-        await tester.tap(find.byIcon(Icons.more_vert));
+        await tester.tap(find.byIcon(LottiIcons.moreVertical));
         await tester.pumpAndSettle();
 
         // Open the confirmation dialog via the Delete menu entry.

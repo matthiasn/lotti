@@ -38,47 +38,47 @@ class _SettingsShowcasePage extends StatelessWidget {
       (
         title: messages.settingsAiTitle,
         subtitle: messages.settingsAiSubtitle,
-        icon: Icons.psychology_rounded,
+        icon: LottiIcons.reasoning,
       ),
       (
         title: messages.agentSettingsTitle,
         subtitle: messages.agentSettingsSubtitle,
-        icon: Icons.smart_toy_outlined,
+        icon: LottiIcons.aiModel,
       ),
       (
         title: messages.settingsHabitsTitle,
         subtitle: messages.settingsHabitsSubtitle,
-        icon: Icons.repeat_rounded,
+        icon: LottiIcons.repeat,
       ),
       (
         title: messages.settingsCategoriesTitle,
         subtitle: messages.settingsCategoriesSubtitle,
-        icon: Icons.category_rounded,
+        icon: LottiIcons.category,
       ),
       (
         title: messages.settingsLabelsTitle,
         subtitle: messages.settingsLabelsSubtitle,
-        icon: Icons.label_rounded,
+        icon: LottiIcons.label,
       ),
       (
         title: messages.settingsMatrixTitle,
         subtitle: messages.settingsSyncSubtitle,
-        icon: Icons.sync,
+        icon: LottiIcons.sync,
       ),
       (
         title: messages.settingsThemingTitle,
         subtitle: messages.settingsThemingSubtitle,
-        icon: Icons.palette_rounded,
+        icon: LottiIcons.palette,
       ),
       (
         title: messages.settingsFlagsTitle,
         subtitle: messages.settingsFlagsSubtitle,
-        icon: Icons.tune_rounded,
+        icon: LottiIcons.tune,
       ),
       (
         title: messages.settingsAdvancedTitle,
         subtitle: messages.settingsAdvancedSubtitle,
-        icon: Icons.settings_rounded,
+        icon: LottiIcons.settings,
       ),
     ];
 

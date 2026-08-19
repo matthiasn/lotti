@@ -83,8 +83,8 @@ class _ModelRow extends StatelessWidget {
                   children: [
                     Icon(
                       selected
-                          ? Icons.check_circle_rounded
-                          : Icons.circle_outlined,
+                          ? LottiIcons.confirmCircled
+                          : LottiIcons.radioUnselected,
                       size: 20,
                       color: selected
                           ? ai.accent

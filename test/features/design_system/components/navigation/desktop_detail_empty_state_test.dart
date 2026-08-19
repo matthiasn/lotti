@@ -32,7 +32,7 @@ void main() {
       // subtitle1/highEmphasis title.
       expect(find.byType(DesignSystemEmptyState), findsOneWidget);
       final icon = tester.widget<Icon>(
-        find.byIcon(Icons.touch_app_outlined),
+        find.byIcon(LottiIcons.touch),
       );
       expect(icon.size, dsTokensDark.spacing.step9);
       expect(icon.color, dsTokensDark.colors.text.lowEmphasis);
@@ -51,12 +51,12 @@ void main() {
         tester,
         const DesktopDetailEmptyState(
           message: 'Pick something',
-          icon: Icons.inbox_outlined,
+          icon: LottiIcons.inbox,
         ),
       );
 
-      expect(find.byIcon(Icons.inbox_outlined), findsOneWidget);
-      expect(find.byIcon(Icons.touch_app_outlined), findsNothing);
+      expect(find.byIcon(LottiIcons.inbox), findsOneWidget);
+      expect(find.byIcon(LottiIcons.touch), findsNothing);
     });
   });
 }

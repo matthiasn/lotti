@@ -179,7 +179,7 @@ class TabSectionHeader extends StatelessWidget {
                   dimension: TapTargets.minimum,
                   child: Center(
                     child: TabHeaderIconButton(
-                      icon: Icons.filter_list_rounded,
+                      icon: LottiIcons.filter,
                       tooltip: filterTooltip,
                       onPressed: onFilterPressed,
                       active: filtersActive,

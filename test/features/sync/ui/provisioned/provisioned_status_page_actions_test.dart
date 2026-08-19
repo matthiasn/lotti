@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
 import 'package:lotti/features/sync/state/matrix_verification_modal_lock_provider.dart';
 import 'package:lotti/features/sync/state/provisioning_controller.dart';
@@ -336,7 +337,7 @@ void main() {
 
         // Close the modal via the top-bar close (X) button so the awaited
         // sheet future completes and the finally block runs.
-        final closeButton = find.byIcon(Icons.close_rounded);
+        final closeButton = find.byIcon(LottiIcons.close);
         await tester.ensureVisible(closeButton);
         await tester.tap(closeButton);
         await tester.pumpAndSettle();

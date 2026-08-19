@@ -110,7 +110,7 @@ class TaskMetaSummaryLine extends StatelessWidget {
             variant: DsPillVariant.muted,
             label: context.messages.taskSetCategoryLabel,
             leading: Icon(
-              Icons.category_outlined,
+              LottiIcons.category,
               size: kTaskChipGlyphSize,
               color: TaskShowcasePalette.mediumText(context),
             ),
@@ -294,7 +294,7 @@ class _DueSummaryTag extends StatelessWidget {
       // paints its own ink).
       labelColor: urgent ? null : TaskShowcasePalette.highText(context),
       leading: Icon(
-        Icons.calendar_today_outlined,
+        LottiIcons.today,
         size: kTaskChipGlyphSize,
         color: accent,
       ),
@@ -355,12 +355,12 @@ class _DetailsTrigger extends StatelessWidget {
       variant: DsPillVariant.muted,
       label: context.messages.taskMetaDetailsButton,
       leading: Icon(
-        Icons.tune_rounded,
+        LottiIcons.tune,
         size: kTaskChipGlyphSize,
         color: TaskShowcasePalette.mediumText(context),
       ),
       trailing: Icon(
-        Icons.expand_more_rounded,
+        LottiIcons.expand,
         size: kTaskChipGlyphSize,
         color: TaskShowcasePalette.mediumText(context),
       ),

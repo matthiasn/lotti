@@ -104,7 +104,7 @@ class _AiProviderDetailPageState extends ConsumerState<AiProviderDetailPage> {
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
+          icon: const Icon(LottiIcons.back),
           tooltip: messages.aiProviderDetailBackTooltip,
           onPressed: () => popAiSettingsDetail(context),
         ),
@@ -120,7 +120,7 @@ class _AiProviderDetailPageState extends ConsumerState<AiProviderDetailPage> {
             data: (config) {
               if (config is AiConfigInferenceProvider) {
                 return IconButton(
-                  icon: const Icon(Icons.edit_outlined),
+                  icon: const Icon(LottiIcons.edit),
                   tooltip: messages.aiProviderDetailEditTooltip,
                   onPressed: () => _openEditForm(focusApiKey: false),
                 );

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
@@ -39,8 +40,8 @@ void main() {
         find.byType(SegmentedButton<SearchMode>),
       );
       expect(segmented.selected, {SearchMode.fullText});
-      expect(find.byIcon(Icons.text_fields), findsOneWidget);
-      expect(find.byIcon(Icons.hub_outlined), findsOneWidget);
+      expect(find.byIcon(LottiIcons.text), findsOneWidget);
+      expect(find.byIcon(LottiIcons.hub), findsOneWidget);
       expect(find.text('Full Text'), findsOneWidget);
       expect(find.text('Vector'), findsOneWidget);
     });
@@ -53,7 +54,7 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(find.byIcon(Icons.hub_outlined));
+      await tester.tap(find.byIcon(LottiIcons.hub));
       await tester.pump();
 
       expect(fakeController.searchModeCalls, [SearchMode.vector]);

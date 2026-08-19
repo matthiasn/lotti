@@ -25,7 +25,7 @@ Future<void> showLinkedEntriesFilterModal({
   await ModalUtils.showSinglePageModal<void>(
     context: context,
     title: context.messages.journalLinkedEntriesFilterModalTitle,
-    closeButtonIcon: Icons.check_rounded,
+    closeButtonIcon: LottiIcons.confirm,
     closeButtonTooltip: context.messages.doneButton,
     onClosePressed: () {
       final value = draft.value;

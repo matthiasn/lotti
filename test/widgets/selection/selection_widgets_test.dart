@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/selection/selection.dart';
 
 import '../../test_helper.dart';
@@ -40,7 +41,7 @@ void main() {
 
       // Initially no selections
       expect(
-        find.byIcon(Icons.check_rounded),
+        find.byIcon(LottiIcons.confirm),
         findsOneWidget,
       ); // Only save button
 
@@ -50,7 +51,7 @@ void main() {
 
       // Should show checkmark
       expect(
-        find.byIcon(Icons.check_rounded),
+        find.byIcon(LottiIcons.confirm),
         findsNWidgets(2),
       ); // Option + save button
 
@@ -59,7 +60,7 @@ void main() {
       await tester.pump();
 
       expect(
-        find.byIcon(Icons.check_rounded),
+        find.byIcon(LottiIcons.confirm),
         findsNWidgets(3),
       ); // 2 options + save button
 
@@ -68,7 +69,7 @@ void main() {
       await tester.pump();
 
       expect(
-        find.byIcon(Icons.check_rounded),
+        find.byIcon(LottiIcons.confirm),
         findsNWidgets(2),
       ); // 1 option + save button
 
@@ -134,7 +135,7 @@ void main() {
                   return SelectionOption(
                     title: 'Item $index',
                     description: 'Description for item $index',
-                    icon: Icons.star,
+                    icon: LottiIcons.star,
                     isSelected: index == 0,
                     onTap: () {},
                   );
@@ -159,9 +160,9 @@ void main() {
       // Verify content
       expect(find.text('Item 0'), findsOneWidget);
       expect(find.text('Description for item 1'), findsOneWidget);
-      expect(find.byIcon(Icons.star), findsNWidgets(3));
+      expect(find.byIcon(LottiIcons.star), findsNWidgets(3));
       expect(
-        find.byIcon(Icons.check_rounded),
+        find.byIcon(LottiIcons.confirm),
         findsNWidgets(2),
       ); // Item 0 + save button
 
@@ -241,7 +242,7 @@ void main() {
                   padding: const EdgeInsets.all(20),
                   child: SelectionOption(
                     title: 'Option 1',
-                    icon: Icons.category,
+                    icon: LottiIcons.category,
                     isSelected: false,
                     onTap: () {},
                   ),
@@ -272,7 +273,7 @@ void main() {
                   padding: const EdgeInsets.all(20),
                   child: SelectionOption(
                     title: 'Option 1',
-                    icon: Icons.category,
+                    icon: LottiIcons.category,
                     isSelected: false,
                     onTap: () {},
                   ),
@@ -364,7 +365,7 @@ class _TestSelectionModalState extends State<_TestSelectionModal> {
 
               return SelectionOption(
                 title: option,
-                icon: Icons.category,
+                icon: LottiIcons.category,
                 isSelected: isSelected,
                 onTap: () => _toggleOption(option),
               );

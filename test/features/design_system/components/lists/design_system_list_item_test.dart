@@ -171,7 +171,7 @@ void main() {
             children: [
               Text('Projects'),
               SizedBox(width: 4),
-              Icon(Icons.folder_open, size: 12),
+              Icon(LottiIcons.folderOpen, size: 12),
             ],
           ),
           subtitleSpans: [
@@ -180,7 +180,7 @@ void main() {
               alignment: PlaceholderAlignment.middle,
               child: Padding(
                 padding: EdgeInsets.only(left: 4),
-                child: Icon(Icons.format_list_bulleted_rounded, size: 12),
+                child: Icon(LottiIcons.checkAll, size: 12),
               ),
             ),
             TextSpan(text: ' 5 tasks'),
@@ -189,7 +189,7 @@ void main() {
       );
 
       expect(find.text('Projects'), findsOneWidget);
-      expect(find.byIcon(Icons.folder_open), findsOneWidget);
+      expect(find.byIcon(LottiIcons.folderOpen), findsOneWidget);
       expect(
         find.byWidgetPredicate(
           (widget) =>
@@ -209,8 +209,8 @@ void main() {
         DesignSystemListItem(
           key: itemKey,
           title: 'With slots',
-          leading: const Icon(Icons.person),
-          trailing: const Icon(Icons.chevron_right),
+          leading: const Icon(LottiIcons.person),
+          trailing: const Icon(LottiIcons.chevronRight),
           onTap: () {},
         ),
       );
@@ -218,14 +218,14 @@ void main() {
       expect(
         find.descendant(
           of: find.byKey(itemKey),
-          matching: find.byIcon(Icons.person),
+          matching: find.byIcon(LottiIcons.person),
         ),
         findsOneWidget,
       );
       expect(
         find.descendant(
           of: find.byKey(itemKey),
-          matching: find.byIcon(Icons.chevron_right),
+          matching: find.byIcon(LottiIcons.chevronRight),
         ),
         findsOneWidget,
       );
@@ -239,10 +239,10 @@ void main() {
         DesignSystemListItem(
           key: itemKey,
           title: 'Extras',
-          leadingExtra: const Icon(Icons.circle, size: 8),
-          leading: const Icon(Icons.person),
-          trailing: const Icon(Icons.notifications),
-          trailingExtra: const Icon(Icons.chevron_right),
+          leadingExtra: const Icon(LottiIcons.radioUnselected, size: 8),
+          leading: const Icon(LottiIcons.person),
+          trailing: const Icon(LottiIcons.notification),
+          trailingExtra: const Icon(LottiIcons.chevronRight),
           onTap: () {},
         ),
       );
@@ -250,14 +250,14 @@ void main() {
       expect(
         find.descendant(
           of: find.byKey(itemKey),
-          matching: find.byIcon(Icons.circle),
+          matching: find.byIcon(LottiIcons.radioUnselected),
         ),
         findsOneWidget,
       );
       expect(
         find.descendant(
           of: find.byKey(itemKey),
-          matching: find.byIcon(Icons.chevron_right),
+          matching: find.byIcon(LottiIcons.chevronRight),
         ),
         findsOneWidget,
       );
@@ -539,7 +539,7 @@ void main() {
         const DesignSystemListItem(
           key: itemKey,
           title: 'Disabled',
-          leading: Icon(Icons.person),
+          leading: Icon(LottiIcons.person),
         ),
       );
 

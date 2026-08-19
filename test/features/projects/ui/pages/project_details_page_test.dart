@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/state/project_detail_controller.dart';
 import 'package:lotti/features/projects/state/project_detail_record_provider.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
@@ -643,7 +644,7 @@ void main() {
           );
 
           // Tap the back button rendered in the detail header.
-          final backButton = find.byIcon(Icons.arrow_back_ios);
+          final backButton = find.byIcon(LottiIcons.chevronLeft);
           expect(backButton, findsOneWidget);
           await tester.tap(backButton.first);
           await tester.pumpAndSettle();
@@ -787,9 +788,9 @@ void main() {
           await tester.pump(const Duration(milliseconds: 350));
 
           // The default test project has status 'Open'. The 'Open' option
-          // should have a check mark (Icons.check_rounded) indicating it is
+          // should have a check mark (LottiIcons.confirm) indicating it is
           // the currently selected status.
-          expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+          expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
 
           // Tap the deterministic row key so the underlying page's Open label
           // cannot be mistaken for the selected modal option.
@@ -815,35 +816,45 @@ void main() {
           await tester.pump(const Duration(milliseconds: 350));
 
           // Verify each status variant renders with its expected icon.
+          // Scoped to the picker row: the header behind the modal shows the
+          // current status with the same glyph at 24pt. Material spelled the
+          // two `radio_button_unchecked` and `radio_button_unchecked_rounded`
+          // — already the same circle, just two names — so this only ever
+          // found one because the spellings differed.
           expect(
-            find.byIcon(Icons.radio_button_unchecked),
+            find.byWidgetPredicate(
+              (w) =>
+                  w is Icon &&
+                  w.icon == LottiIcons.radioUnselected &&
+                  w.size == 16,
+            ),
             findsOneWidget,
             reason: 'Open status icon',
           );
           expect(
-            find.byIcon(Icons.play_circle_outline),
+            find.byIcon(LottiIcons.playCircled),
             findsOneWidget,
             reason: 'Active status icon',
           );
           expect(
-            find.byIcon(Icons.pause_circle_outline),
+            find.byIcon(LottiIcons.pauseCircled),
             findsOneWidget,
             reason: 'On Hold status icon',
           );
           expect(
-            find.byIcon(Icons.check_circle_outline),
+            find.byIcon(LottiIcons.confirmCircled),
             findsOneWidget,
             reason: 'Completed status icon',
           );
           expect(
-            find.byIcon(Icons.archive_outlined),
+            find.byIcon(LottiIcons.archive),
             findsOneWidget,
             reason: 'Archived status icon',
           );
 
           // Only the current status ('Open') should show the selection
           // check mark.
-          expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+          expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
         },
       );
     });

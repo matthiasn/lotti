@@ -41,12 +41,12 @@ void main() {
             children: [
               const TaskShowcaseCategoryChip(
                 label: 'Work',
-                icon: Icons.work_rounded,
+                icon: LottiIcons.work,
                 colorHex: '#4AB6E8',
               ),
               const SizedBox(height: 8),
               const TaskShowcaseMetaChip(
-                icon: Icons.watch_later_outlined,
+                icon: LottiIcons.schedule,
                 label: 'Due: Apr 1, 2026',
               ),
               const SizedBox(height: 8),
@@ -57,7 +57,7 @@ void main() {
               ),
               const SizedBox(height: 8),
               const TaskShowcaseSectionPill(
-                icon: Icons.timer_outlined,
+                icon: LottiIcons.timer,
                 label: 'Timer',
                 active: true,
               ),
@@ -228,13 +228,13 @@ void main() {
               mainAxisSize: MainAxisSize.min,
               children: [
                 TaskShowcaseSectionPill(
-                  icon: Icons.timer_outlined,
+                  icon: LottiIcons.timer,
                   label: 'Active',
                   active: true,
                 ),
                 SizedBox(height: 8),
                 TaskShowcaseSectionPill(
-                  icon: Icons.timer_outlined,
+                  icon: LottiIcons.timer,
                   label: 'Inactive',
                 ),
               ],
@@ -359,10 +359,10 @@ void main() {
         expect(find.text(context.messages.addActionAddTimer), findsOneWidget);
 
         for (final icon in const [
-          Icons.checklist_rounded,
-          Icons.image_outlined,
-          Icons.mic_none_rounded,
-          Icons.subdirectory_arrow_right_rounded,
+          LottiIcons.checkAll,
+          LottiIcons.image,
+          LottiIcons.micIdle,
+          LottiIcons.returnKey,
         ]) {
           expect(
             find.descendant(

@@ -393,8 +393,12 @@ void main() {
         const DsPill(
           variant: DsPillVariant.filled,
           label: 'Status',
-          leading: Icon(Icons.circle, key: ValueKey('lead'), size: 14),
-          trailing: Icon(Icons.expand_more, key: ValueKey('tail'), size: 14),
+          leading: Icon(
+            LottiIcons.radioUnselected,
+            key: ValueKey('lead'),
+            size: 14,
+          ),
+          trailing: Icon(LottiIcons.expand, key: ValueKey('tail'), size: 14),
         ),
       );
 

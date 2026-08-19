@@ -4,6 +4,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_filter_state.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_filter_chips.dart';
 import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../test_utils.dart';
 
@@ -50,11 +51,11 @@ void main() {
         // Should show capability chips for text, image, audio
         // Check both icons and labels
         expect(find.text('Text'), findsOneWidget);
-        expect(find.byIcon(Icons.text_fields), findsOneWidget);
+        expect(find.byIcon(LottiIcons.text), findsOneWidget);
         expect(find.text('Vision'), findsOneWidget);
-        expect(find.byIcon(Icons.visibility), findsOneWidget);
+        expect(find.byIcon(LottiIcons.visible), findsOneWidget);
         expect(find.text('Audio'), findsOneWidget);
-        expect(find.byIcon(Icons.hearing), findsOneWidget);
+        expect(find.byIcon(LottiIcons.hearing), findsOneWidget);
       });
 
       testWidgets('displays reasoning filter chip', (
@@ -63,7 +64,7 @@ void main() {
         await tester.pumpWidget(createWidget());
 
         expect(find.text('Reasoning'), findsOneWidget);
-        expect(find.byIcon(Icons.psychology), findsOneWidget);
+        expect(find.byIcon(LottiIcons.reasoning), findsOneWidget);
       });
 
       testWidgets('shows clear filters action when filters are active', (
@@ -77,7 +78,7 @@ void main() {
         await tester.pumpAndSettle(); // Allow AnimatedSwitcher to complete
 
         expect(find.text('Clear'), findsOneWidget);
-        expect(find.byIcon(Icons.clear), findsOneWidget);
+        expect(find.byIcon(LottiIcons.close), findsOneWidget);
       });
 
       testWidgets('hides clear filters when no filters are active', (
@@ -87,7 +88,7 @@ void main() {
         await tester.pumpAndSettle(); // Allow AnimatedSwitcher to complete
 
         expect(find.text('Clear'), findsNothing);
-        expect(find.byIcon(Icons.clear), findsNothing);
+        expect(find.byIcon(LottiIcons.close), findsNothing);
       });
     });
 
@@ -222,7 +223,7 @@ void main() {
         // Tap on the text label (more reliable than icon)
         await tester.tap(find.text('Reasoning'));
         // Verify both icon and text are present
-        expect(find.byIcon(Icons.psychology), findsOneWidget);
+        expect(find.byIcon(LottiIcons.reasoning), findsOneWidget);
         expect(find.text('Reasoning'), findsOneWidget);
         await tester.pump();
 
@@ -240,7 +241,7 @@ void main() {
         // Tap on the text label (more reliable than icon)
         await tester.tap(find.text('Reasoning'));
         // Verify both icon and text are present
-        expect(find.byIcon(Icons.psychology), findsOneWidget);
+        expect(find.byIcon(LottiIcons.reasoning), findsOneWidget);
         expect(find.text('Reasoning'), findsOneWidget);
         await tester.pump();
 
@@ -344,13 +345,13 @@ void main() {
 
         // Check that chips have proper icons and labels
         expect(find.text('Text'), findsOneWidget);
-        expect(find.byIcon(Icons.text_fields), findsOneWidget);
+        expect(find.byIcon(LottiIcons.text), findsOneWidget);
         expect(find.text('Vision'), findsOneWidget);
-        expect(find.byIcon(Icons.visibility), findsOneWidget);
+        expect(find.byIcon(LottiIcons.visible), findsOneWidget);
         expect(find.text('Audio'), findsOneWidget);
-        expect(find.byIcon(Icons.hearing), findsOneWidget);
+        expect(find.byIcon(LottiIcons.hearing), findsOneWidget);
         expect(find.text('Reasoning'), findsOneWidget);
-        expect(find.byIcon(Icons.psychology), findsOneWidget);
+        expect(find.byIcon(LottiIcons.reasoning), findsOneWidget);
       });
 
       testWidgets('maintains focus after chip selection', (

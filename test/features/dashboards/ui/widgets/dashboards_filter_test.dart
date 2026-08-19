@@ -82,7 +82,7 @@ void main() {
       final tokens = tester
           .element(find.byKey(const Key('dashboard_category_filter')))
           .designTokens;
-      expect(icon.icon, Icons.filter_alt_outlined);
+      expect(icon.icon, LottiIcons.filter);
       expect(icon.color, tokens.colors.text.lowEmphasis);
     });
 
@@ -106,7 +106,7 @@ void main() {
 
       // Deferred: staging a category does not change the filter behind the
       // sheet — the icon only flips once Apply commits.
-      expect(filterIcon(tester).icon, Icons.filter_alt_outlined);
+      expect(filterIcon(tester).icon, LottiIcons.filter);
 
       await applyPicker(tester);
 
@@ -114,7 +114,7 @@ void main() {
       final tokens = tester
           .element(find.byKey(const Key('dashboard_category_filter')))
           .designTokens;
-      expect(icon.icon, Icons.filter_alt_rounded);
+      expect(icon.icon, LottiIcons.filter);
       expect(icon.color, tokens.colors.text.highEmphasis);
     });
 
@@ -128,14 +128,14 @@ void main() {
       await tester.tap(find.text('Mindfulness'));
       await tester.pump();
       await applyPicker(tester);
-      expect(filterIcon(tester).icon, Icons.filter_alt_rounded);
+      expect(filterIcon(tester).icon, LottiIcons.filter);
 
       // Reopen (seeded with the committed set), deselect + Apply.
       await openPicker(tester);
       await tester.tap(find.text('Mindfulness'));
       await tester.pump();
       await applyPicker(tester);
-      expect(filterIcon(tester).icon, Icons.filter_alt_outlined);
+      expect(filterIcon(tester).icon, LottiIcons.filter);
     });
   });
 }

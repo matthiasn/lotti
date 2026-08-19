@@ -196,7 +196,7 @@ void main() {
     expect(find.byType(AudioProgressBar), findsOneWidget);
     expect(find.text('1x'), findsOneWidget);
     expect(find.bySemanticsLabel('Pause audio'), findsOneWidget);
-    expect(find.byIcon(Icons.article_outlined), findsNothing);
+    expect(find.byIcon(LottiIcons.description), findsNothing);
     expect(find.textContaining('Tap to play'), findsNothing);
   });
 
@@ -659,21 +659,21 @@ void main() {
             name: 'playing shows pause icon and live progress',
             status: AudioPlayerStatus.playing,
             active: true,
-            expectedIcon: Icons.pause_rounded,
+            expectedIcon: LottiIcons.pause,
             expectedProgress: activeProgress,
           ),
           (
             name: 'paused shows play icon and retains progress',
             status: AudioPlayerStatus.paused,
             active: true,
-            expectedIcon: Icons.play_arrow_rounded,
+            expectedIcon: LottiIcons.play,
             expectedProgress: activeProgress,
           ),
           (
             name: 'stopped shows play icon and resets progress to zero',
             status: AudioPlayerStatus.stopped,
             active: false,
-            expectedIcon: Icons.play_arrow_rounded,
+            expectedIcon: LottiIcons.play,
             expectedProgress: Duration.zero,
           ),
         ];
@@ -698,9 +698,9 @@ void main() {
         expect(find.byIcon(c.expectedIcon), findsOneWidget);
         expect(
           find.byIcon(
-            c.expectedIcon == Icons.pause_rounded
-                ? Icons.play_arrow_rounded
-                : Icons.pause_rounded,
+            c.expectedIcon == LottiIcons.pause
+                ? LottiIcons.play
+                : LottiIcons.pause,
           ),
           findsNothing,
         );

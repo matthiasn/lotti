@@ -43,7 +43,7 @@ class ConsumptionSummaryPill extends StatelessWidget {
         label: consumptionSummaryLabel(context, totals),
         labelColor: foregroundColor,
         leading: Icon(
-          Icons.eco_outlined,
+          LottiIcons.eco,
           size: IconSizes.xs,
           color: foregroundColor,
         ),

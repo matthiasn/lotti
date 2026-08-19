@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_rating/flutter_rating.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/event_status.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/events/ui/widgets/event_card.dart';
 import 'package:lotti/features/events/ui/widgets/event_cover_image.dart';
 
@@ -34,7 +35,7 @@ void main() {
       );
 
       expect(find.text('A surprise rooftop party.'), findsNothing);
-      expect(find.byIcon(Icons.place_outlined), findsNothing);
+      expect(find.byIcon(LottiIcons.location), findsNothing);
     });
 
     testWidgets('shows the rating + counts in the footer for a rated event', (
@@ -48,8 +49,8 @@ void main() {
       expect(find.byType(StarRating), findsOneWidget);
       expect(find.text('24'), findsOneWidget); // photoCount
       expect(find.text('2'), findsOneWidget); // taskCount
-      expect(find.byIcon(Icons.photo_library_outlined), findsOneWidget);
-      expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
+      expect(find.byIcon(LottiIcons.photoLibrary), findsOneWidget);
+      expect(find.byIcon(LottiIcons.confirmCircled), findsOneWidget);
     });
 
     testWidgets(
@@ -98,7 +99,7 @@ void main() {
         EventCard(data: buildEventCardData()),
       );
       expect(find.byType(Image), findsNothing);
-      expect(find.byIcon(Icons.event_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.calendar), findsOneWidget);
     });
 
     testWidgets('category name renders as an overlay pill', (tester) async {

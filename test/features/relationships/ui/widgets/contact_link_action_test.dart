@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/model/imported_contact.dart';
 import 'package:lotti/features/relationships/service/contacts_service.dart';
 import 'package:lotti/features/relationships/state/contact_import_controller.dart';
@@ -109,21 +110,21 @@ void main() {
     testWidgets('an unlinked person gets a single link button', (tester) async {
       await pump(tester, relationship: person());
 
-      expect(find.byIcon(Icons.person_search_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.contact_page_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.findPerson), findsOneWidget);
+      expect(find.byIcon(LottiIcons.contactCard), findsNothing);
     });
 
     testWidgets('a linked person gets the menu instead', (tester) async {
       await pump(tester, relationship: person(refs: {platformKey: 'os-1'}));
 
-      expect(find.byIcon(Icons.contact_page_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.person_search_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.contactCard), findsOneWidget);
+      expect(find.byIcon(LottiIcons.findPerson), findsNothing);
     });
 
     testWidgets('an empty ref counts as unlinked', (tester) async {
       await pump(tester, relationship: person(refs: {platformKey: ''}));
 
-      expect(find.byIcon(Icons.person_search_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.findPerson), findsOneWidget);
     });
 
     testWidgets('a ref belonging to another platform counts as unlinked — '
@@ -132,7 +133,7 @@ void main() {
 
       await pump(tester, relationship: person(refs: {otherPlatform: 'os-1'}));
 
-      expect(find.byIcon(Icons.person_search_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.findPerson), findsOneWidget);
     });
 
     testWidgets('renders nothing where there is no address book', (
@@ -151,7 +152,7 @@ void main() {
     ) async {
       await pump(tester, relationship: person(refs: {platformKey: 'os-1'}));
 
-      await tester.tap(find.byIcon(Icons.contact_page_rounded));
+      await tester.tap(find.byIcon(LottiIcons.contactCard));
       await tester.pumpAndSettle();
 
       expect(find.text('Update from contact'), findsOneWidget);
@@ -164,7 +165,7 @@ void main() {
         relationship: person(refs: {platformKey: 'os-1'}),
       );
 
-      await tester.tap(find.byIcon(Icons.contact_page_rounded));
+      await tester.tap(find.byIcon(LottiIcons.contactCard));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Update from contact'));
       await tester.pumpAndSettle();
@@ -178,7 +179,7 @@ void main() {
         relationship: person(refs: {platformKey: 'os-1'}),
       );
 
-      await tester.tap(find.byIcon(Icons.contact_page_rounded));
+      await tester.tap(find.byIcon(LottiIcons.contactCard));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Link a different contact'));
       await tester.pumpAndSettle();
@@ -189,7 +190,7 @@ void main() {
 
   group('what the user is told', () {
     Future<void> tapLink(WidgetTester tester) async {
-      await tester.tap(find.byIcon(Icons.person_search_rounded));
+      await tester.tap(find.byIcon(LottiIcons.findPerson));
       await tester.pumpAndSettle();
     }
 

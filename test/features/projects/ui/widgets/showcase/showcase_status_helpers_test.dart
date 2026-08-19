@@ -8,6 +8,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/ui/widgets/project_status_attributes.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_status_helpers.dart';
@@ -40,12 +41,12 @@ void main() {
 
     test('icon is distinct per status variant', () {
       const expectedIcons = <ProjectStatusKind, IconData>{
-        ProjectStatusKind.open: Icons.radio_button_unchecked_rounded,
-        ProjectStatusKind.active: Icons.play_arrow_rounded,
-        ProjectStatusKind.monitoring: Icons.visibility_outlined,
-        ProjectStatusKind.onHold: Icons.pause_circle_outline_rounded,
-        ProjectStatusKind.completed: Icons.check_circle_outline_rounded,
-        ProjectStatusKind.archived: Icons.archive_outlined,
+        ProjectStatusKind.open: LottiIcons.radioUnselected,
+        ProjectStatusKind.active: LottiIcons.play,
+        ProjectStatusKind.monitoring: LottiIcons.visible,
+        ProjectStatusKind.onHold: LottiIcons.pauseCircled,
+        ProjectStatusKind.completed: LottiIcons.confirmCircled,
+        ProjectStatusKind.archived: LottiIcons.archive,
       };
       expect(expectedIcons.keys, containsAll(ProjectStatusKind.values));
 

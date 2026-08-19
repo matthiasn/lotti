@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/action_menu_list_item.dart';
 import 'package:lotti/themes/theme.dart';
 
@@ -11,7 +12,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ActionMenuListItem(
-            icon: Icons.star_rounded,
+            icon: LottiIcons.star,
             title: 'Favorite',
             onTap: () {},
           ),
@@ -21,13 +22,13 @@ void main() {
       await tester.pump();
 
       // Verify leading icon
-      expect(find.byIcon(Icons.star_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.star), findsOneWidget);
 
       // Verify title
       expect(find.text('Favorite'), findsOneWidget);
 
       // ActionMenuListItem does NOT have a trailing plus icon (unlike CreateMenuListItem)
-      expect(find.byIcon(Icons.add), findsNothing);
+      expect(find.byIcon(LottiIcons.add), findsNothing);
     });
 
     testWidgets('triggers onTap callback when tapped', (tester) async {
@@ -36,7 +37,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ActionMenuListItem(
-            icon: Icons.lock_rounded,
+            icon: LottiIcons.lock,
             title: 'Private',
             onTap: () {
               tapped = true;
@@ -61,7 +62,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ActionMenuListItem(
-            icon: Icons.delete_outline_rounded,
+            icon: LottiIcons.delete,
             title: 'Delete entry',
             onTap: () {
               tapped = true;
@@ -83,14 +84,14 @@ void main() {
 
     testWidgets('displays all provided icons correctly', (tester) async {
       final testCases = [
-        (Icons.star_rounded, 'Favorite'),
-        (Icons.lock_rounded, 'Private'),
-        (Icons.flag_rounded, 'Flagged'),
-        (Icons.delete_outline_rounded, 'Delete entry'),
-        (Icons.share_rounded, 'Share'),
-        (Icons.add_link, 'Link from'),
-        (Icons.link_off_rounded, 'Unlink'),
-        (Icons.visibility_rounded, 'Hide link'),
+        (LottiIcons.star, 'Favorite'),
+        (LottiIcons.lock, 'Private'),
+        (LottiIcons.flag, 'Flagged'),
+        (LottiIcons.delete, 'Delete entry'),
+        (LottiIcons.share, 'Share'),
+        (LottiIcons.link, 'Link from'),
+        (LottiIcons.linkOff, 'Unlink'),
+        (LottiIcons.visible, 'Hide link'),
       ];
 
       for (final (icon, title) in testCases) {
@@ -118,7 +119,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ActionMenuListItem(
-            icon: Icons.star_rounded,
+            icon: LottiIcons.star,
             title: 'Favorite',
             onTap: () {},
           ),
@@ -128,7 +129,7 @@ void main() {
       await tester.pump();
 
       // Find the leading icon
-      final iconFinder = find.byIcon(Icons.star_rounded);
+      final iconFinder = find.byIcon(LottiIcons.star);
       final icon = tester.widget<Icon>(iconFinder);
 
       // Verify icon size matches theme constant (listItemIconSize)
@@ -139,7 +140,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ActionMenuListItem(
-            icon: Icons.lock_rounded,
+            icon: LottiIcons.lock,
             title: 'Private',
             onTap: () {},
           ),
@@ -160,7 +161,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ActionMenuListItem(
-            icon: Icons.star_rounded,
+            icon: LottiIcons.star,
             title: 'Favorite',
             onTap: () {},
             isDisabled: true,
@@ -171,7 +172,7 @@ void main() {
       await tester.pump();
 
       // Find the leading icon
-      final iconFinder = find.byIcon(Icons.star_rounded);
+      final iconFinder = find.byIcon(LottiIcons.star);
       final icon = tester.widget<Icon>(iconFinder);
 
       // Disabled icons have reduced alpha
@@ -182,7 +183,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ActionMenuListItem(
-            icon: Icons.delete_outline_rounded,
+            icon: LottiIcons.delete,
             title: 'Delete entry',
             onTap: () {},
             isDestructive: true,
@@ -206,7 +207,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ActionMenuListItem(
-            icon: Icons.star_rounded,
+            icon: LottiIcons.star,
             title: 'Favorite',
             onTap: () {},
             iconColor: customColor,
@@ -217,7 +218,7 @@ void main() {
       await tester.pump();
 
       // Find the leading icon
-      final iconFinder = find.byIcon(Icons.star_rounded);
+      final iconFinder = find.byIcon(LottiIcons.star);
       final icon = tester.widget<Icon>(iconFinder);
 
       // Verify custom icon color is applied
@@ -230,7 +231,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ActionMenuListItem(
-            icon: Icons.flag_rounded,
+            icon: LottiIcons.flag,
             title: 'Flagged',
             onTap: () {},
           ),
@@ -250,7 +251,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ActionMenuListItem(
-            icon: Icons.share_rounded,
+            icon: LottiIcons.share,
             title: 'Share',
             onTap: () {},
           ),
@@ -282,7 +283,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ActionMenuListItem(
-            icon: Icons.star_rounded,
+            icon: LottiIcons.star,
             title: longTitle,
             onTap: () {},
           ),
@@ -304,7 +305,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ActionMenuListItem(
-            icon: Icons.label_outline_rounded,
+            icon: LottiIcons.label,
             title: 'Labels',
             subtitle: 'Assign labels to organize this entry',
             onTap: () {},
@@ -325,7 +326,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ActionMenuListItem(
-            icon: Icons.star_rounded,
+            icon: LottiIcons.star,
             title: 'Favorite',
             onTap: () {},
           ),
@@ -357,7 +358,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ActionMenuListItem(
-            icon: Icons.star_rounded,
+            icon: LottiIcons.star,
             title: 'Favorite',
             subtitle: '',
             onTap: () {},
@@ -387,7 +388,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ActionMenuListItem(
-            icon: Icons.add_link,
+            icon: LottiIcons.link,
             title: 'Link from',
             onTap: () {},
           ),
@@ -414,7 +415,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ActionMenuListItem(
-            icon: Icons.visibility_rounded,
+            icon: LottiIcons.visible,
             title: 'Hide link',
             onTap: () {},
           ),
@@ -436,7 +437,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ActionMenuListItem(
-            icon: Icons.delete_outline_rounded,
+            icon: LottiIcons.delete,
             title: 'Delete entry',
             onTap: () {},
             isDestructive: true,
@@ -447,7 +448,7 @@ void main() {
       await tester.pump();
 
       // Find the leading icon
-      final iconFinder = find.byIcon(Icons.delete_outline_rounded);
+      final iconFinder = find.byIcon(LottiIcons.delete);
       final icon = tester.widget<Icon>(iconFinder);
 
       // Destructive icon should have a color (error color from theme)
@@ -460,7 +461,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ActionMenuListItem(
-            icon: Icons.delete_outline_rounded,
+            icon: LottiIcons.delete,
             title: 'Delete entry',
             onTap: () {},
             iconColor: customColor,
@@ -472,7 +473,7 @@ void main() {
       await tester.pump();
 
       // Find the leading icon
-      final iconFinder = find.byIcon(Icons.delete_outline_rounded);
+      final iconFinder = find.byIcon(LottiIcons.delete);
       final icon = tester.widget<Icon>(iconFinder);
 
       // When destructive, custom color should be ignored (error color used)
@@ -485,7 +486,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ActionMenuListItem(
-            icon: Icons.star_rounded,
+            icon: LottiIcons.star,
             title: 'Favorite',
             onTap: () {},
             iconColor: customColor,
@@ -497,7 +498,7 @@ void main() {
       await tester.pump();
 
       // Find the leading icon
-      final iconFinder = find.byIcon(Icons.star_rounded);
+      final iconFinder = find.byIcon(LottiIcons.star);
       final icon = tester.widget<Icon>(iconFinder);
 
       // When disabled, custom color should be ignored (disabled color used)

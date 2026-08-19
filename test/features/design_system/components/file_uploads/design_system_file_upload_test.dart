@@ -21,7 +21,7 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(Icons.upload_file), findsOneWidget);
+      expect(find.byIcon(LottiIcons.upload), findsOneWidget);
       expect(find.textContaining('Click to upload'), findsOneWidget);
       expect(find.textContaining('or drag and drop'), findsOneWidget);
       expect(find.text('SVG, PNG, JPG or GIF'), findsOneWidget);
@@ -88,7 +88,7 @@ void main() {
       final icon = tester.widget<Icon>(
         find.descendant(
           of: find.byKey(key),
-          matching: find.byIcon(Icons.upload_file),
+          matching: find.byIcon(LottiIcons.upload),
         ),
       );
 
@@ -226,7 +226,7 @@ void main() {
       );
 
       expect(find.text('20%'), findsOneWidget);
-      expect(find.byIcon(Icons.cancel_outlined), findsOneWidget);
+      expect(find.byIcon(LottiIcons.closeCircled), findsOneWidget);
     });
 
     testWidgets('shows check icon when complete', (tester) async {
@@ -241,7 +241,7 @@ void main() {
       );
 
       expect(find.text('100%'), findsOneWidget);
-      expect(find.byIcon(Icons.check_circle), findsOneWidget);
+      expect(find.byIcon(LottiIcons.confirmCircled), findsOneWidget);
     });
 
     testWidgets('check icon uses success color', (tester) async {
@@ -261,7 +261,7 @@ void main() {
       final icon = tester.widget<Icon>(
         find.descendant(
           of: find.byKey(key),
-          matching: find.byIcon(Icons.check_circle),
+          matching: find.byIcon(LottiIcons.confirmCircled),
         ),
       );
 
@@ -285,7 +285,7 @@ void main() {
 
       expect(find.text('Upload failed'), findsOneWidget);
       expect(find.text('Retry'), findsOneWidget);
-      expect(find.byIcon(Icons.refresh), findsOneWidget);
+      expect(find.byIcon(LottiIcons.refresh), findsOneWidget);
     });
 
     testWidgets('error state has red border', (tester) async {
@@ -332,7 +332,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byIcon(Icons.cancel_outlined));
+      await tester.tap(find.byIcon(LottiIcons.closeCircled));
       await tester.pump();
 
       expect(cancelled, isTrue);
@@ -353,7 +353,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byIcon(Icons.refresh));
+      await tester.tap(find.byIcon(LottiIcons.refresh));
       await tester.pump();
 
       expect(retried, isTrue);
@@ -419,7 +419,7 @@ void main() {
       final icon = tester.widget<Icon>(
         find.descendant(
           of: find.byKey(key),
-          matching: find.byIcon(Icons.upload_file),
+          matching: find.byIcon(LottiIcons.upload),
         ),
       );
 

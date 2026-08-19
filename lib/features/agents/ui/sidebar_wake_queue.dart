@@ -192,7 +192,7 @@ class _Header extends StatelessWidget {
             Tooltip(
               message: messages.sidebarWakesOpenList,
               child: Icon(
-                Icons.open_in_new_rounded,
+                LottiIcons.openExternal,
                 size: 14,
                 color: tokens.colors.text.lowEmphasis,
               ),
@@ -567,7 +567,7 @@ class _MoreWakesRow extends StatelessWidget {
             Tooltip(
               message: context.messages.sidebarWakesOpenList,
               child: Icon(
-                Icons.open_in_new_rounded,
+                LottiIcons.openExternal,
                 size: 14,
                 color: tokens.colors.text.mediumEmphasis,
               ),
@@ -637,7 +637,7 @@ class _CancelWakeButton extends StatelessWidget {
             width: 28,
             height: 28,
             child: Icon(
-              Icons.close_rounded,
+              LottiIcons.close,
               size: 14,
               color: tokens.colors.text.lowEmphasis,
             ),

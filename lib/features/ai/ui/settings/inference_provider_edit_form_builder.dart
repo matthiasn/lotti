@@ -33,7 +33,7 @@ extension _InferenceProviderEditPageForm on _InferenceProviderEditPageState {
     );
     final apiKeySuffix = IconButton(
       icon: Icon(
-        _showApiKey ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+        _showApiKey ? LottiIcons.hidden : LottiIcons.visible,
         color: context.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
       ),
       onPressed: _toggleApiKeyVisibility,
@@ -160,7 +160,7 @@ extension _InferenceProviderEditPageForm on _InferenceProviderEditPageState {
           // Provider Configuration Section
           AiFormSection(
             title: messages.apiKeyProviderConfigTitle,
-            icon: Icons.settings_rounded,
+            icon: LottiIcons.settings,
             description: messages.apiKeyProviderConfigDescription,
             children: [
               ProviderTypeField(
@@ -176,7 +176,7 @@ extension _InferenceProviderEditPageForm on _InferenceProviderEditPageState {
                 controller: formController.nameController,
                 onChanged: formController.nameChanged,
                 validator: (_) => formState.name.error?.displayMessage,
-                prefixIcon: Icons.label_outline_rounded,
+                prefixIcon: LottiIcons.label,
               ),
               if (usesBaseUrl) ...[
                 SizedBox(height: tokens.spacing.step6),
@@ -187,7 +187,7 @@ extension _InferenceProviderEditPageForm on _InferenceProviderEditPageState {
                   onChanged: formController.baseUrlChanged,
                   validator: (_) => formState.baseUrl.error?.displayMessage,
                   keyboardType: TextInputType.url,
-                  prefixIcon: Icons.link_rounded,
+                  prefixIcon: LottiIcons.link,
                 ),
               ] else ...[
                 SizedBox(height: tokens.spacing.step6),
@@ -202,7 +202,7 @@ extension _InferenceProviderEditPageForm on _InferenceProviderEditPageState {
           if (needsApiKey) ...[
             AiFormSection(
               title: messages.apiKeyAuthenticationTitle,
-              icon: Icons.security_rounded,
+              icon: LottiIcons.shield,
               description: messages.apiKeyAuthenticationDescription,
               children: [
                 AiTextField(
@@ -213,7 +213,7 @@ extension _InferenceProviderEditPageForm on _InferenceProviderEditPageState {
                   onChanged: formController.apiKeyChanged,
                   validator: (_) => formState.apiKey.error?.displayMessage,
                   obscureText: !_showApiKey,
-                  prefixIcon: Icons.key_rounded,
+                  prefixIcon: LottiIcons.key,
                   suffixIcon: apiKeySuffix,
                 ),
               ],
@@ -354,7 +354,7 @@ extension _InferenceProviderEditPageForm on _InferenceProviderEditPageState {
                 borderRadius: BorderRadius.circular(tokens.radii.l),
               ),
               child: Icon(
-                Icons.error_outline_rounded,
+                LottiIcons.error,
                 size: tokens.spacing.step9,
                 color: context.colorScheme.error,
               ),
@@ -380,7 +380,7 @@ extension _InferenceProviderEditPageForm on _InferenceProviderEditPageState {
             DesignSystemButton(
               label: messages.apiKeyEditGoBackButton,
               onPressed: () => popAiSettingsDetail(context),
-              leadingIcon: Icons.arrow_back_rounded,
+              leadingIcon: LottiIcons.back,
               variant: DesignSystemButtonVariant.secondary,
               size: DesignSystemButtonSize.large,
             ),

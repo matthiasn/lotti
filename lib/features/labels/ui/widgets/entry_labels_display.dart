@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/labels/ui/widgets/label_chip.dart';
@@ -104,7 +105,7 @@ class EntryLabelsDisplay extends ConsumerWidget {
                   entry.meta.categoryId,
                 ),
                 icon: Icon(
-                  Icons.edit_outlined,
+                  LottiIcons.edit,
                   size: 18,
                   color: colorScheme.outline,
                 ),

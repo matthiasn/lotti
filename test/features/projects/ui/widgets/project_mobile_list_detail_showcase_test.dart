@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/ui/widgets/project_mobile_detail_content.dart';
 import 'package:lotti/features/projects/ui/widgets/project_mobile_list_detail_showcase.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
@@ -196,7 +197,7 @@ void main() {
         );
 
         // Tap the clear icon → invokes onSearchCleared → updateSearchQuery('').
-        final clearIcon = find.byIcon(Icons.cancel_rounded).first;
+        final clearIcon = find.byIcon(LottiIcons.closeCircled).first;
         await tester.ensureVisible(clearIcon);
         await tester.tap(clearIcon);
         await tester.pump();
@@ -225,7 +226,7 @@ void main() {
         );
         await tester.pump();
 
-        final filterIcon = find.byIcon(Icons.filter_list_rounded).first;
+        final filterIcon = find.byIcon(LottiIcons.filter).first;
         await tester.ensureVisible(filterIcon);
         await tester.tap(filterIcon);
         await tester.pumpAndSettle();
@@ -262,7 +263,7 @@ void main() {
         );
 
         // Tap the clear icon → invokes onSearchCleared → updateSearchQuery('').
-        final clearIcon = find.byIcon(Icons.cancel_rounded).first;
+        final clearIcon = find.byIcon(LottiIcons.closeCircled).first;
         await tester.ensureVisible(clearIcon);
         await tester.tap(clearIcon);
         await tester.pump();
@@ -291,7 +292,7 @@ void main() {
         );
         await tester.pump();
 
-        final filterIcon = find.byIcon(Icons.filter_list_rounded).first;
+        final filterIcon = find.byIcon(LottiIcons.filter).first;
         await tester.ensureVisible(filterIcon);
         await tester.tap(filterIcon);
         await tester.pumpAndSettle();

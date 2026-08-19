@@ -262,7 +262,7 @@ class DashboardChartAddButton extends StatelessWidget {
         ),
         foregroundColor: tokens.colors.interactive.enabled,
       ),
-      icon: const Icon(Icons.add_rounded),
+      icon: const Icon(LottiIcons.add),
     );
   }
 }

@@ -126,7 +126,7 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
         // the Navigator stack, so the default arrow would silently
         // no-op — the helper falls back to beaming `/settings/ai`.
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
+          icon: const Icon(LottiIcons.back),
           // Overriding `leading` drops the AppBar's default
           // Material-localized tooltip; re-supply it so screen
           // readers and long-press hover hints stay parity-clean
@@ -155,7 +155,7 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
                 : messages.aiFormNoChanges,
             child: DesignSystemButton(
               label: messages.inferenceProfileSaveButton,
-              leadingIcon: Icons.save_rounded,
+              leadingIcon: LottiIcons.save,
               onPressed: _isDirty && !_isSaving ? _save : null,
             ),
           ),

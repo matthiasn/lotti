@@ -343,7 +343,7 @@ void main() {
           find.byType(TaskShowcaseMetaChip),
         );
         final dateChips = chips
-            .where((c) => c.icon == Icons.calendar_today_outlined)
+            .where((c) => c.icon == LottiIcons.today)
             .toList();
         expect(dateChips, hasLength(1));
       },
@@ -368,9 +368,7 @@ void main() {
       final chips = tester.widgetList<TaskShowcaseMetaChip>(
         find.byType(TaskShowcaseMetaChip),
       );
-      final dateChips = chips
-          .where((c) => c.icon == Icons.calendar_today_outlined)
-          .toList();
+      final dateChips = chips.where((c) => c.icon == LottiIcons.today).toList();
       expect(dateChips, isEmpty);
     });
 
@@ -403,7 +401,7 @@ void main() {
         );
 
         // DueDateText is rendered as a widget in the footer
-        expect(find.byIcon(Icons.event_rounded), findsAtLeastNWidgets(1));
+        expect(find.byIcon(LottiIcons.calendar), findsAtLeastNWidgets(1));
       },
     );
 
@@ -434,7 +432,7 @@ void main() {
       );
 
       // DueDateText should NOT appear for done tasks
-      expect(find.byIcon(Icons.event_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.calendar), findsNothing);
     });
 
     testWidgets('hides due date chip when task is rejected', (tester) async {
@@ -463,7 +461,7 @@ void main() {
         showDueDate: true,
       );
 
-      expect(find.byIcon(Icons.event_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.calendar), findsNothing);
     });
 
     testWidgets('hides due date chip when sortOption is byDueDate', (
@@ -494,7 +492,7 @@ void main() {
         showDueDate: true,
       );
 
-      expect(find.byIcon(Icons.event_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.calendar), findsNothing);
     });
 
     testWidgets('shows vector distance chip when vectorDistance is provided', (
@@ -512,9 +510,7 @@ void main() {
       final chips = tester.widgetList<TaskShowcaseMetaChip>(
         find.byType(TaskShowcaseMetaChip),
       );
-      final vectorChips = chips
-          .where((c) => c.icon == Icons.hub_outlined)
-          .toList();
+      final vectorChips = chips.where((c) => c.icon == LottiIcons.hub).toList();
       expect(vectorChips, hasLength(1));
       // The label is distance.toStringAsFixed(2) = "0.42"
       expect(vectorChips.first.label, '0.42');
@@ -532,9 +528,7 @@ void main() {
       final chips = tester.widgetList<TaskShowcaseMetaChip>(
         find.byType(TaskShowcaseMetaChip),
       );
-      final vectorChips = chips
-          .where((c) => c.icon == Icons.hub_outlined)
-          .toList();
+      final vectorChips = chips.where((c) => c.icon == LottiIcons.hub).toList();
       expect(vectorChips, isEmpty);
     });
   });

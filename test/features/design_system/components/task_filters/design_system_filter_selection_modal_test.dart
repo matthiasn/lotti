@@ -103,7 +103,7 @@ void main() {
       config: DesignSystemFilterFieldPageConfig(
         appearanceResolver: (id) => switch (id) {
           'open' => const DesignSystemFilterSelectionOptionAppearance(
-            icon: Icons.lock_open_rounded,
+            icon: LottiIcons.unlocked,
             foregroundColor: accent,
           ),
           'active' => const DesignSystemFilterSelectionOptionAppearance(
@@ -114,7 +114,7 @@ void main() {
       ),
     );
 
-    final icon = tester.widget<Icon>(find.byIcon(Icons.lock_open_rounded));
+    final icon = tester.widget<Icon>(find.byIcon(LottiIcons.unlocked));
     expect(icon.color, accent);
     final dot = tester.widget<Container>(
       find.descendant(of: option('active'), matching: find.byType(Container)),
@@ -167,7 +167,7 @@ void main() {
     expect(option('active'), findsOneWidget);
     expect(option('open'), findsNothing);
 
-    await tester.tap(find.byIcon(Icons.cancel_rounded));
+    await tester.tap(find.byIcon(LottiIcons.closeCircled));
     await tester.pump();
 
     expect(option('open'), findsOneWidget);
@@ -262,14 +262,14 @@ void main() {
       config: DesignSystemFilterFieldPageConfig(
         appearanceResolver: (id) => id == 'open'
             ? const DesignSystemFilterSelectionOptionAppearance(
-                icon: Icons.lock_open_rounded,
+                icon: LottiIcons.unlocked,
               )
             : null,
       ),
     );
 
     expect(
-      tester.widget<Icon>(find.byIcon(Icons.lock_open_rounded)).color,
+      tester.widget<Icon>(find.byIcon(LottiIcons.unlocked)).color,
       dsTokensLight.colors.text.mediumEmphasis,
     );
   });

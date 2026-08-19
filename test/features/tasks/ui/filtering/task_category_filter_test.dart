@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
@@ -171,7 +172,7 @@ void main() {
     expect(row('Personal'), findsOneWidget);
     expect(row(messages.taskCategoryAllLabel), findsNothing);
 
-    await tester.tap(find.byIcon(Icons.cancel_rounded));
+    await tester.tap(find.byIcon(LottiIcons.closeCircled));
     await tester.pump();
 
     expect(row(messages.taskCategoryAllLabel), findsOneWidget);

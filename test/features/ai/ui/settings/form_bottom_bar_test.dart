@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glass_kit/glass_kit.dart';
 import 'package:lotti/features/ai/ui/settings/form_bottom_bar.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../../widget_test_utils.dart';
 
@@ -35,7 +36,7 @@ void main() {
       );
 
       // Should show check icon and "no changes" text
-      expect(find.byIcon(Icons.check_circle_outline_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.confirmCircled), findsOneWidget);
 
       // The actual text depends on localization, so let's just check the icon exists
       // and the save button is disabled
@@ -44,7 +45,7 @@ void main() {
       final saveButton = find.byWidgetPredicate(
         (widget) =>
             widget is DesignSystemButton &&
-            widget.leadingIcon == Icons.save_rounded &&
+            widget.leadingIcon == LottiIcons.save &&
             widget.onPressed == null,
       );
       expect(saveButton, findsOneWidget);
@@ -89,7 +90,7 @@ void main() {
       );
 
       // Should show error icon
-      expect(find.byIcon(Icons.info_outline_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.info), findsOneWidget);
 
       // Save button should be disabled
       final saveButton = find.byWidgetPredicate(
@@ -119,8 +120,8 @@ void main() {
       );
 
       // Should not show status indicators
-      expect(find.byIcon(Icons.check_circle_outline_rounded), findsNothing);
-      expect(find.byIcon(Icons.info_outline_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.confirmCircled), findsNothing);
+      expect(find.byIcon(LottiIcons.info), findsNothing);
 
       // Save button should be enabled
       final saveButton = find.byWidgetPredicate(
@@ -212,7 +213,7 @@ void main() {
       final saveButton = find.byWidgetPredicate(
         (widget) =>
             widget is DesignSystemButton &&
-            widget.leadingIcon == Icons.save_rounded,
+            widget.leadingIcon == LottiIcons.save,
       );
       expect(saveButton, findsOneWidget);
 

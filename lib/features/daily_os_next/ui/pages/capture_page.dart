@@ -707,7 +707,7 @@ class _ReconcileCtaState extends ConsumerState<_ReconcileCta> {
             style: tokens.typography.styles.subtitle.subtitle1,
           ),
           SizedBox(width: tokens.spacing.step2),
-          const Icon(Icons.arrow_forward_rounded, size: 18),
+          const Icon(LottiIcons.forward, size: 18),
         ],
       ),
     );

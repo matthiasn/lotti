@@ -115,7 +115,7 @@ class TemplateInstanceRow extends ConsumerWidget {
         trailing: taskId == null
             ? null
             : (context) => IconButton(
-                icon: const Icon(Icons.open_in_new_rounded, size: 20),
+                icon: const Icon(LottiIcons.openExternal, size: 20),
                 tooltip: messages.agentTemplateInstanceOpenTask,
                 onPressed: () =>
                     getIt<NavService>().beamToNamed('/tasks/$taskId'),

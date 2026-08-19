@@ -157,7 +157,7 @@ class _OnboardingConnectPanelState extends State<OnboardingConnectPanel> {
                 Align(
                   alignment: Alignment.centerLeft,
                   child: _IconBtn(
-                    icon: Icons.arrow_back_rounded,
+                    icon: LottiIcons.back,
                     color: textHigh,
                     tooltip: MaterialLocalizations.of(
                       context,
@@ -204,7 +204,7 @@ class _OnboardingConnectPanelState extends State<OnboardingConnectPanel> {
                             turns: _showMore ? 0.5 : 0,
                             duration: MotionDurations.short4,
                             child: Icon(
-                              Icons.expand_more_rounded,
+                              LottiIcons.expand,
                               size: tokens.spacing.step4,
                               color: accent,
                             ),
@@ -407,7 +407,7 @@ class _ProviderTileState extends State<_ProviderTile> {
                     ),
                   ),
                   Icon(
-                    Icons.chevron_right_rounded,
+                    LottiIcons.chevronRight,
                     color: textHigh.withValues(alpha: 0.5),
                   ),
                 ],

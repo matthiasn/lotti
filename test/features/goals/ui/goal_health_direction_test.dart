@@ -18,15 +18,15 @@ void main() {
     test('icon per direction', () {
       expect(
         goalHealthDirectionIcon(GoalHealthDirection.up),
-        Icons.trending_up_rounded,
+        LottiIcons.trendingUp,
       );
       expect(
         goalHealthDirectionIcon(GoalHealthDirection.flat),
-        Icons.trending_flat_rounded,
+        LottiIcons.forward,
       );
       expect(
         goalHealthDirectionIcon(GoalHealthDirection.down),
-        Icons.trending_down_rounded,
+        LottiIcons.trendingDown,
       );
     });
 
@@ -71,7 +71,7 @@ void main() {
       ),
     );
 
-    expect(find.byIcon(Icons.trending_up_rounded), findsOneWidget);
+    expect(find.byIcon(LottiIcons.trendingUp), findsOneWidget);
     expect(find.text(en.goalHealthTrendUp), findsOneWidget);
   });
 }

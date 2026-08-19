@@ -45,6 +45,7 @@ import 'package:lotti/features/design_system/components/navigation/design_system
 import 'package:lotti/features/design_system/components/navigation/desktop_navigation_sidebar.dart';
 import 'package:lotti/features/design_system/components/time_pickers/design_system_picker_wheels.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/cover_art_thumbnail.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -808,30 +809,29 @@ Widget _dayShell(ScreenshotDevice device, {required DraftPlan draft}) {
           destinations: [
             destination(
               _t('Tasks', 'Aufgaben'),
-              Icons.check_circle_outline_rounded,
-              Icons.check_circle_rounded,
+              LottiIcons.confirmCircled,
+              LottiIcons.confirmCircled,
             ),
-            destination('Daily OS', Icons.today_outlined, Icons.today_rounded),
+            destination('Daily OS', LottiIcons.today, LottiIcons.today),
             destination(
               _t('Logbook', 'Logbuch'),
-              Icons.menu_book_outlined,
-              Icons.menu_book_rounded,
+              LottiIcons.book,
+              LottiIcons.book,
             ),
           ],
           activeIndex: 1,
           onDestinationSelected: (_) {},
           settingsDestination: destination(
             _t('Settings', 'Einstellungen'),
-            Icons.settings_outlined,
-            Icons.settings_rounded,
+            LottiIcons.settings,
+            LottiIcons.settings,
           ),
           onSettingsSelected: () {},
           utilityDestination: DesktopSidebarDestination(
             label: _t('Manual', 'Handbuch'),
-            iconBuilder: ({required active}) =>
-                const Icon(Icons.help_outline_rounded),
+            iconBuilder: ({required active}) => const Icon(LottiIcons.help),
             trailingBuilder: ({required active}) =>
-                const Icon(Icons.open_in_new_rounded),
+                const Icon(LottiIcons.openExternal),
             isLink: true,
             semanticsHint: _t(
               'Opens in your browser',
@@ -857,21 +857,21 @@ Widget _dayShell(ScreenshotDevice device, {required DraftPlan draft}) {
           items: [
             const DesignSystemFiveSlotNavBarItem(
               label: 'Daily OS',
-              icon: Icon(Icons.today_outlined),
-              activeIcon: Icon(Icons.today_rounded),
+              icon: Icon(LottiIcons.today),
+              activeIcon: Icon(LottiIcons.today),
               active: true,
             ),
             DesignSystemFiveSlotNavBarItem(
               label: _t('Tasks', 'Aufgaben'),
-              icon: const Icon(Icons.check_circle_outline_rounded),
+              icon: const Icon(LottiIcons.confirmCircled),
             ),
             DesignSystemFiveSlotNavBarItem(
               label: _t('Calendar', 'Kalender'),
-              icon: const Icon(Icons.calendar_month_outlined),
+              icon: const Icon(LottiIcons.calendar),
             ),
             DesignSystemFiveSlotNavBarItem(
               label: _t('Settings', 'Einstellungen'),
-              icon: const Icon(Icons.settings_outlined),
+              icon: const Icon(LottiIcons.settings),
             ),
           ],
         ),
@@ -1037,13 +1037,13 @@ Future<void> _tapPlanViewSegment(
 Future<void> _switchToDayView(WidgetTester tester) => _tapPlanViewSegment(
   tester,
   label: _messages(tester).dailyOsNextPlanViewDay,
-  icon: Icons.calendar_view_day_outlined,
+  icon: LottiIcons.viewRows,
 );
 
 Future<void> _switchToActivityView(WidgetTester tester) => _tapPlanViewSegment(
   tester,
   label: _messages(tester).dailyOsNextPlanViewActivity,
-  icon: Icons.timeline_outlined,
+  icon: LottiIcons.timeline,
 );
 
 Future<void> _enableArrangeMode(WidgetTester tester) async {

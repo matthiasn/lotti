@@ -35,6 +35,7 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
@@ -723,7 +724,7 @@ void main() {
         );
         // The logbook filter now opens from the TabSectionHeader's trailing
         // filter icon instead of the old sliver-appbar filter button.
-        await tester.tap(find.byIcon(Icons.filter_list_rounded));
+        await tester.tap(find.byIcon(LottiIcons.filter));
         await settleFrames(tester, 6);
         final messages = _messages(tester);
         expect(
@@ -1012,7 +1013,7 @@ void main() {
         );
 
         await tester.tap(
-          find.byIcon(Icons.keyboard_double_arrow_down_outlined).first,
+          find.byIcon(LottiIcons.chevronsDown).first,
         );
         await settleFrames(tester, 4);
         expect(

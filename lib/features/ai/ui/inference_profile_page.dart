@@ -5,6 +5,7 @@ import 'package:lotti/features/ai/state/inference_profile_controller.dart';
 import 'package:lotti/features/ai/ui/inference_profile_form.dart';
 import 'package:lotti/features/ai/ui/widgets/profile_card.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/settings_page_header.dart';
@@ -42,7 +43,7 @@ class InferenceProfilePage extends ConsumerWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          Icons.tune,
+                          LottiIcons.tune,
                           size: 48,
                           color: context.colorScheme.onSurfaceVariant
                               .withValues(alpha: 0.5),

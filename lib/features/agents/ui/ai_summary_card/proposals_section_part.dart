@@ -96,7 +96,7 @@ class ProposalsSection extends StatelessWidget {
               Row(
                 children: [
                   Icon(
-                    Icons.fact_check_outlined,
+                    LottiIcons.factCheck,
                     size: tokens.spacing.step5,
                     color: ai.titleText,
                   ),
@@ -183,7 +183,7 @@ class ProposalsSection extends StatelessWidget {
                       if (onConfirmAll != null)
                         DesignSystemButton(
                           label: messages.changeSetConfirmAll,
-                          leadingIcon: Icons.done_all_rounded,
+                          leadingIcon: LottiIcons.confirmAll,
                           variant: DesignSystemButtonVariant.outlined,
                           isLoading: confirmAllBusy,
                           onPressed: () => unawaited(onConfirmAll!()),
@@ -288,9 +288,7 @@ class _HistoryToggle extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
-                    open
-                        ? Icons.keyboard_arrow_down_rounded
-                        : Icons.chevron_right_rounded,
+                    open ? LottiIcons.chevronDown : LottiIcons.chevronRight,
                     size: tokens.spacing.step5,
                     color: ai.metaText,
                   ),

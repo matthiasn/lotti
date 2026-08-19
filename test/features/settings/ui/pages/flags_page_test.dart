@@ -8,6 +8,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/profiles/model/profile.dart';
 import 'package:lotti/features/profiles/model/profile_context.dart';
 import 'package:lotti/features/profiles/state/profile_providers.dart';
@@ -296,12 +297,12 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.byIcon(Icons.lock_outline_rounded), findsAtLeastNWidgets(1));
-      expect(find.byIcon(Icons.event_rounded), findsAtLeastNWidgets(1));
-      expect(find.byIcon(Icons.bolt_rounded), findsAtLeastNWidgets(1));
-      expect(find.byIcon(Icons.volume_up_rounded), findsAtLeastNWidgets(1));
+      expect(find.byIcon(LottiIcons.lock), findsAtLeastNWidgets(1));
+      expect(find.byIcon(LottiIcons.calendar), findsAtLeastNWidgets(1));
+      expect(find.byIcon(LottiIcons.bolt), findsAtLeastNWidgets(1));
+      expect(find.byIcon(LottiIcons.volume), findsAtLeastNWidgets(1));
       expect(
-        find.byIcon(Icons.tips_and_updates_outlined),
+        find.byIcon(LottiIcons.tip),
         findsAtLeastNWidgets(1),
       );
     });
@@ -335,7 +336,7 @@ void main() {
             name: 'whats-new',
             title: (m) => m.configFlagEnableWhatsNew,
             description: (m) => m.configFlagEnableWhatsNewDescription,
-            icon: Icons.new_releases_outlined,
+            icon: LottiIcons.verified,
             expectedToggle: const ConfigFlag(
               name: enableWhatsNewFlag,
               description: "Enable What's New feature?",
@@ -346,14 +347,14 @@ void main() {
             name: 'fork-healing',
             title: (m) => m.configFlagEnableForkHealing,
             description: (m) => m.configFlagEnableForkHealingDescription,
-            icon: Icons.call_merge_rounded,
+            icon: LottiIcons.merge,
             expectedToggle: null,
           ),
           (
             name: 'ai-summary-tts',
             title: (m) => m.configFlagEnableAiSummaryTts,
             description: (m) => m.configFlagEnableAiSummaryTtsDescription,
-            icon: Icons.volume_up_rounded,
+            icon: LottiIcons.volume,
             expectedToggle: const ConfigFlag(
               name: enableAiSummaryTtsFlag,
               description: 'Enable local AI summary playback?',
@@ -364,7 +365,7 @@ void main() {
             name: 'daily-os',
             title: (m) => m.configFlagEnableDailyOs,
             description: (m) => m.configFlagEnableDailyOsDescription,
-            icon: Icons.today_outlined,
+            icon: LottiIcons.today,
             expectedToggle: const ConfigFlag(
               name: enableDailyOsPageFlag,
               description: 'Enable DailyOS Page?',
@@ -375,7 +376,7 @@ void main() {
             name: 'daily-os-onboarding',
             title: (m) => m.configFlagDailyOsOnboardingEnabled,
             description: (m) => m.configFlagDailyOsOnboardingEnabledDescription,
-            icon: Icons.tips_and_updates_outlined,
+            icon: LottiIcons.tip,
             expectedToggle: const ConfigFlag(
               name: dailyOsOnboardingEnabledFlag,
               description: 'Enable the Daily OS onboarding walkthrough?',
@@ -552,11 +553,11 @@ void main() {
         expect(find.byType(DesignSystemListItem), findsOneWidget);
 
         // …then tap the X affordance the search bar exposes when text
-        // is present (`Icons.cancel_rounded` inside the trailing
+        // is present (`LottiIcons.closeCircled` inside the trailing
         // clear button). This is the real user path — the textfield's
         // own onChanged path is covered by the empty-query test
         // below.
-        final clearIcon = find.byIcon(Icons.cancel_rounded);
+        final clearIcon = find.byIcon(LottiIcons.closeCircled);
         expect(clearIcon, findsOneWidget);
         await tester.tap(clearIcon);
         await tester.pump(const Duration(milliseconds: 100));
@@ -886,67 +887,67 @@ void main() {
         name: recordLocationFlag,
         description: 'Record location?',
         status: false,
-        icon: Icons.map_rounded,
+        icon: LottiIcons.map,
       ),
       (
         name: enableTooltipFlag,
         description: 'Enable tooltips?',
         status: false,
-        icon: Icons.info_outline_rounded,
+        icon: LottiIcons.info,
       ),
       (
         name: enableLoggingFlag,
         description: 'Enable logging?',
         status: false,
-        icon: Icons.bug_report_rounded,
+        icon: LottiIcons.bug,
       ),
       (
         name: enableMatrixFlag,
         description: 'Enable Matrix sync?',
         status: false,
-        icon: Icons.sync_rounded,
+        icon: LottiIcons.sync,
       ),
       (
         name: resendAttachments,
         description: 'Resend attachments?',
         status: false,
-        icon: Icons.refresh_rounded,
+        icon: LottiIcons.refresh,
       ),
       (
         name: enableHabitsPageFlag,
         description: 'Enable Habits page?',
         status: false,
-        icon: Icons.repeat_rounded,
+        icon: LottiIcons.repeat,
       ),
       (
         name: enableDashboardsPageFlag,
         description: 'Enable Dashboards page?',
         status: false,
-        icon: Icons.dashboard_rounded,
+        icon: LottiIcons.dashboard,
       ),
       (
         name: enableUnifiedGoalsFlag,
         description: 'Enable unified Goals page?',
         status: false,
-        icon: Icons.track_changes_outlined,
+        icon: LottiIcons.focus,
       ),
       (
         name: enableRelationshipsFlag,
         description: 'Enable People Page?',
         status: false,
-        icon: Icons.people_outline_rounded,
+        icon: LottiIcons.people,
       ),
       (
         name: enableSessionRatingsFlag,
         description: 'Enable Session Ratings?',
         status: false,
-        icon: Icons.star_rate_rounded,
+        icon: LottiIcons.star,
       ),
       (
         name: enableProjectsFlag,
         description: 'Enable Projects?',
         status: false,
-        icon: Icons.folder_outlined,
+        icon: LottiIcons.folder,
       ),
     ];
 
@@ -1109,7 +1110,7 @@ void main() {
         expect(find.text(unknownFlagName), findsOneWidget);
         expect(find.text(unknownFlagDesc), findsOneWidget);
         expect(
-          find.descendant(of: row, matching: find.byIcon(Icons.settings)),
+          find.descendant(of: row, matching: find.byIcon(LottiIcons.settings)),
           findsOneWidget,
         );
       },

@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
@@ -304,7 +303,7 @@ class _CategoryPickerSheetState extends ConsumerState<CategoryPickerSheet> {
       badges: [
         if (isPrivate)
           Icon(
-            MdiIcons.security,
+            LottiIcons.shield,
             color: context.designTokens.colors.alert.error.defaultColor,
             size: CategoryIconConstants.iconSizeExtraSmall,
           ),
@@ -313,7 +312,7 @@ class _CategoryPickerSheetState extends ConsumerState<CategoryPickerSheet> {
           // definitions lists); kept here deliberately rather than minted as a
           // one-off token. Pending an app-wide token-promotion pass.
           const Icon(
-            MdiIcons.star,
+            LottiIcons.star,
             color: starredGold,
             size: CategoryIconConstants.iconSizeExtraSmall,
           ),
@@ -325,7 +324,7 @@ class _CategoryPickerSheetState extends ConsumerState<CategoryPickerSheet> {
     id: _kCategoryPickerClearSentinel,
     rowKey: const ValueKey('category-picker-clear'),
     leading: Icon(
-      Icons.block_rounded,
+      LottiIcons.block,
       color: context.designTokens.colors.text.mediumEmphasis,
       size: CategoryIconConstants.iconSizeMedium,
     ),
@@ -336,7 +335,7 @@ class _CategoryPickerSheetState extends ConsumerState<CategoryPickerSheet> {
     id: kCategoryPickerUnassignedSentinel,
     rowKey: const ValueKey('category-picker-unassigned'),
     leading: Icon(
-      Icons.block_rounded,
+      LottiIcons.block,
       color: context.designTokens.colors.text.mediumEmphasis,
       size: CategoryIconConstants.iconSizeMedium,
     ),

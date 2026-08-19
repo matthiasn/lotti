@@ -175,7 +175,7 @@ class AddDeviceActionBar extends StatelessWidget {
               ? DesignSystemButtonVariant.primary
               : DesignSystemButtonVariant.outlined,
           size: DesignSystemButtonSize.large,
-          leadingIcon: enabled ? Icons.sync_alt_rounded : Icons.lock_outline,
+          leadingIcon: enabled ? LottiIcons.compare : LottiIcons.lock,
           onPressed: enabled
               ? () => unawaited(
                   (onSendSettings ?? SyncModal.show)(context),
@@ -187,7 +187,7 @@ class AddDeviceActionBar extends StatelessWidget {
           label: messages.syncAddDeviceSendMessages,
           variant: DesignSystemButtonVariant.outlined,
           size: DesignSystemButtonSize.large,
-          leadingIcon: enabled ? Icons.history_rounded : Icons.lock_outline,
+          leadingIcon: enabled ? LottiIcons.restore : LottiIcons.lock,
           onPressed: enabled
               ? () {
                   signal.onboardingPreflightHandedOff = true;
@@ -267,7 +267,7 @@ class _BarCaption extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              Icons.verified_user_rounded,
+              LottiIcons.verified,
               size: IconSizes.xs,
               color: tokens.colors.alert.success.defaultColor,
             ),
@@ -748,7 +748,7 @@ class _AddDeviceViewState extends ConsumerState<AddDeviceView> {
         // quieter than the buttons offering to copy it.
         DesignSystemInlineCallout(
           key: const Key('add_device_security_note'),
-          icon: Icons.lock_outline_rounded,
+          icon: LottiIcons.lock,
           text: messages.syncAddDeviceSecurityNote,
         ),
         SizedBox(height: tokens.spacing.step5),
@@ -1035,7 +1035,7 @@ class _CodeRow extends StatelessWidget {
             DesignSystemButton(
               key: const Key('addDeviceCopyHandoverData'),
               label: messages.syncAddDeviceCopyCode,
-              leadingIcon: Icons.copy_rounded,
+              leadingIcon: LottiIcons.copy,
               variant: DesignSystemButtonVariant.outlined,
               onPressed: () => ClipboardHelper.copyTextAndNotify(
                 context,
@@ -1050,9 +1050,7 @@ class _CodeRow extends StatelessWidget {
               label: revealed
                   ? messages.syncAddDeviceHideCode
                   : messages.syncAddDeviceRevealCode,
-              leadingIcon: revealed
-                  ? Icons.visibility_off_outlined
-                  : Icons.visibility_outlined,
+              leadingIcon: revealed ? LottiIcons.hidden : LottiIcons.visible,
               variant: DesignSystemButtonVariant.outlined,
               onPressed: onToggle,
             ),

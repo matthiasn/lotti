@@ -75,15 +75,15 @@ class _MobileComponentSet extends StatelessWidget {
                 const Positioned(
                   left: 134.5,
                   top: 4,
-                  child: _MobileIcon(icon: Icons.more_horiz_rounded),
+                  child: _MobileIcon(icon: LottiIcons.more),
                 ),
                 const Positioned(
                   left: 238,
                   top: 4,
                   child: _MobileActionStrip(
                     icons: [
-                      Icons.more_horiz_rounded,
-                      Icons.more_horiz_rounded,
+                      LottiIcons.more,
+                      LottiIcons.more,
                     ],
                   ),
                 ),
@@ -106,7 +106,7 @@ class _MobileComponentSet extends StatelessWidget {
                   left: 278,
                   top: 6,
                   child: _MobileIcon(
-                    icon: Icons.person_add_alt_1_outlined,
+                    icon: LottiIcons.personAdd,
                     dimension: 32,
                   ),
                 ),
@@ -145,7 +145,7 @@ class _MobileComponentSet extends StatelessWidget {
                   left: 10,
                   top: 6,
                   child: _MobileIcon(
-                    icon: Icons.person_add_alt_1_outlined,
+                    icon: LottiIcons.personAdd,
                     dimension: 32,
                   ),
                 ),
@@ -163,7 +163,7 @@ class _MobileComponentSet extends StatelessWidget {
                   left: 278,
                   top: 6,
                   child: _MobileIcon(
-                    icon: Icons.person_add_alt_1_outlined,
+                    icon: LottiIcons.personAdd,
                     dimension: 32,
                   ),
                 ),
@@ -180,8 +180,8 @@ class _MobileComponentSet extends StatelessWidget {
                   top: 4,
                   child: _MobileActionStrip(
                     icons: [
-                      Icons.more_horiz_rounded,
-                      Icons.more_horiz_rounded,
+                      LottiIcons.more,
+                      LottiIcons.more,
                     ],
                   ),
                 ),
@@ -200,8 +200,8 @@ class _MobileComponentSet extends StatelessWidget {
                   top: 4,
                   child: _MobileActionStrip(
                     icons: [
-                      Icons.more_horiz_rounded,
-                      Icons.more_horiz_rounded,
+                      LottiIcons.more,
+                      LottiIcons.more,
                     ],
                   ),
                 ),
@@ -223,7 +223,7 @@ class _MobileComponentSet extends StatelessWidget {
                 const Positioned(
                   left: 228,
                   top: 4,
-                  child: _MobileIcon(icon: Icons.notifications_none_rounded),
+                  child: _MobileIcon(icon: LottiIcons.notification),
                 ),
                 const Positioned(
                   left: 272,
@@ -275,7 +275,7 @@ class _MobileBackLabel extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(
-          Icons.arrow_back_ios_new_rounded,
+          LottiIcons.chevronLeft,
           size: 20,
           color: tokens.colors.text.highEmphasis,
         ),

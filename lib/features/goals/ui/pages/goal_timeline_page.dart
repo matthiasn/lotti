@@ -65,7 +65,7 @@ class GoalTimelinePage extends ConsumerWidget {
           if (isActive)
             IconButton(
               key: const ValueKey('goal-timeline-checkin-action'),
-              icon: const Icon(Icons.mic_none_rounded),
+              icon: const Icon(LottiIcons.micIdle),
               tooltip: context.messages.goalCheckInRecordCta,
               onPressed: openComposer,
             ),

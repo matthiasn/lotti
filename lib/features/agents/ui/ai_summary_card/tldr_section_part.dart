@@ -78,7 +78,7 @@ class TldrHeader extends StatelessWidget {
                               border: Border.all(color: ai.border),
                             ),
                             child: Icon(
-                              Icons.auto_awesome_rounded,
+                              LottiIcons.aiSpark,
                               size: tokens.spacing.step6,
                               color: ai.accent,
                             ),
@@ -259,16 +259,14 @@ class TldrBody extends StatelessWidget {
                   label: expanded
                       ? messages.aiCardShowLess
                       : messages.aiCardReadMore,
-                  icon: expanded
-                      ? Icons.expand_less_rounded
-                      : Icons.expand_more_rounded,
+                  icon: expanded ? LottiIcons.collapse : LottiIcons.expand,
                   expanded: expanded,
                   onPressed: onToggle,
                 ),
               if (expanded)
                 _QuietDisclosureLink(
                   label: messages.aiCardOpenAgentInternals,
-                  icon: Icons.tune_rounded,
+                  icon: LottiIcons.tune,
                   onPressed: onOpenInternals,
                 ),
             ],

@@ -12,6 +12,9 @@ several.
 - **One source of visual truth.** Colors, spacing, type and radii come from a
   token file exported from design, generated into typed Dart, and consumed
   everywhere. Changing a token changes the app, not fifty files.
+- **One icon vocabulary.** Icons are named for what they mean — `confirm`,
+  `close`, `aiSpark` — and resolved centrally to Lucide's outlined family, so one
+  idea cannot wear four different faces in four different screens.
 - **A component library.** Buttons, inputs, search fields, dropdowns, chips,
   badges, avatars, tooltips, lists, filters, pickers, navigation, toasts,
   spinners and progress bars — all token-backed and consistent.
@@ -50,6 +53,8 @@ lib/features/design_system/
 The generator lives at `tool/design_system/generate_tokens.dart`, the token source
 at `assets/design_system/tokens.json`, and regeneration runs through
 `make design_system_import`.
+
+Icons are named in `theme/icon_tokens.dart` and policed by `make icon_check`.
 
 ## How it works
 

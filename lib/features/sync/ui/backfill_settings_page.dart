@@ -226,7 +226,7 @@ class _AutomaticBackfillCard extends StatelessWidget {
       child: Row(
         children: [
           Icon(
-            Icons.sync,
+            LottiIcons.sync,
             size: IconSizes.m,
             color: tokens.colors.interactive.enabled,
           ),

@@ -45,6 +45,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart'
     hide aiConfigRepositoryProvider;
 import 'package:lotti/features/daily_os_next/database/day_processing_db.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/state/onboarding_trigger_service.dart';
 import 'package:lotti/features/settings/constants/theming_settings_keys.dart';
 import 'package:lotti/features/settings/state/manual_language_controller.dart';
@@ -307,7 +308,7 @@ class TutorialCursorLayer extends StatelessWidget {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               const Icon(
-                                Icons.timer_outlined,
+                                LottiIcons.timer,
                                 size: 20,
                                 color: Color(0xFF2EE6A8),
                               ),

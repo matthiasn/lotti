@@ -18,9 +18,9 @@ Color goalHealthDirectionColor(
 /// The Material icon for a direction, stroked in the chip's hue by the row.
 IconData goalHealthDirectionIcon(GoalHealthDirection direction) =>
     switch (direction) {
-      GoalHealthDirection.up => Icons.trending_up_rounded,
-      GoalHealthDirection.flat => Icons.trending_flat_rounded,
-      GoalHealthDirection.down => Icons.trending_down_rounded,
+      GoalHealthDirection.up => LottiIcons.trendingUp,
+      GoalHealthDirection.flat => LottiIcons.forward,
+      GoalHealthDirection.down => LottiIcons.trendingDown,
     };
 
 /// The screen-reader label for a trend direction — the arrow is otherwise the

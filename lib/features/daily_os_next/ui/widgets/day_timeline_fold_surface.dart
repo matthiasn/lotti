@@ -143,7 +143,7 @@ class _FoldRegionToggle extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        Icons.unfold_less,
+                        LottiIcons.collapseBoth,
                         size: tokens.spacing.step3,
                         color: tokens.colors.text.lowEmphasis,
                       ),
@@ -215,7 +215,7 @@ class _CompressedFoldSurface extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                Icons.unfold_more,
+                LottiIcons.expandBoth,
                 size: tokens.spacing.step3,
                 color: tokens.colors.text.lowEmphasis,
               ),

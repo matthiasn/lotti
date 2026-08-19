@@ -60,7 +60,7 @@ class CategorySelectionChip extends StatelessWidget {
           onTap: onRemove,
           customBorder: const CircleBorder(),
           child: Icon(
-            Icons.close_rounded,
+            LottiIcons.close,
             size: tokens.spacing.step5,
             color: accent,
           ),

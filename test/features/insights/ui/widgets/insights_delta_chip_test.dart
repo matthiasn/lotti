@@ -82,15 +82,15 @@ void main() {
       // real swing earns.
       await pump(tester, current: 1009, previous: 1000);
       expect(find.text('+1%'), findsOneWidget);
-      expect(find.byIcon(Icons.arrow_upward_rounded), findsNothing);
-      expect(find.byIcon(Icons.arrow_downward_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.arrowUp), findsNothing);
+      expect(find.byIcon(LottiIcons.arrowDown), findsNothing);
     });
 
     testWidgets('a >=1% swing keeps the directional arrow', (tester) async {
       // +1.2% (1012 vs 1000) clears the dead-band → full directional treatment.
       await pump(tester, current: 1012, previous: 1000);
       expect(find.text('+1%'), findsOneWidget);
-      expect(find.byIcon(Icons.arrow_upward_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.arrowUp), findsOneWidget);
     });
 
     // The accent must clear WCAG AA 4.5:1 on the card in both themes; the green
@@ -107,7 +107,7 @@ void main() {
         theme: ThemeData.light(useMaterial3: true),
       );
       final lightIcon = tester.widget<Icon>(
-        find.byIcon(Icons.arrow_upward_rounded),
+        find.byIcon(LottiIcons.arrowUp),
       );
       expect(lightIcon.color, dsTokensLight.colors.alert.success.ink);
 
@@ -118,7 +118,7 @@ void main() {
         theme: ThemeData.dark(useMaterial3: true),
       );
       final darkIcon = tester.widget<Icon>(
-        find.byIcon(Icons.arrow_upward_rounded),
+        find.byIcon(LottiIcons.arrowUp),
       );
       expect(darkIcon.color, dsTokensDark.colors.alert.success.ink);
     });
@@ -133,7 +133,7 @@ void main() {
         theme: ThemeData.light(useMaterial3: true),
       );
       final lightIcon = tester.widget<Icon>(
-        find.byIcon(Icons.arrow_downward_rounded),
+        find.byIcon(LottiIcons.arrowDown),
       );
       expect(lightIcon.color, dsTokensLight.colors.alert.error.ink);
 
@@ -144,7 +144,7 @@ void main() {
         theme: ThemeData.dark(useMaterial3: true),
       );
       final darkIcon = tester.widget<Icon>(
-        find.byIcon(Icons.arrow_downward_rounded),
+        find.byIcon(LottiIcons.arrowDown),
       );
       expect(darkIcon.color, dsTokensDark.colors.alert.error.ink);
     });
@@ -164,7 +164,7 @@ void main() {
       );
       expect(find.text('+18%'), findsOneWidget); // direction still up
       final upIcon = tester.widget<Icon>(
-        find.byIcon(Icons.arrow_upward_rounded),
+        find.byIcon(LottiIcons.arrowUp),
       );
       expect(upIcon.color, dsTokensLight.colors.alert.error.ink);
 
@@ -176,7 +176,7 @@ void main() {
         theme: ThemeData.light(useMaterial3: true),
       );
       final downIcon = tester.widget<Icon>(
-        find.byIcon(Icons.arrow_downward_rounded),
+        find.byIcon(LottiIcons.arrowDown),
       );
       expect(downIcon.color, dsTokensLight.colors.alert.success.ink);
     });
@@ -193,7 +193,7 @@ void main() {
       );
       expect(find.text('+18%'), findsOneWidget);
       final icon = tester.widget<Icon>(
-        find.byIcon(Icons.arrow_upward_rounded),
+        find.byIcon(LottiIcons.arrowUp),
       );
       // The medium-emphasis neutral text colour — neither green nor clay.
       expect(icon.color, dsTokensLight.colors.text.mediumEmphasis);

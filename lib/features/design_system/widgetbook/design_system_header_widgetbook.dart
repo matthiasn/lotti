@@ -58,7 +58,7 @@ class _HeaderOverviewPage extends StatelessWidget {
                       width: 1440,
                       child: DesignSystemHeader(
                         leading: _HeaderIconButton(
-                          icon: Icons.settings_outlined,
+                          icon: LottiIcons.settings,
                           semanticsLabel: messages.navTabTitleSettings,
                         ),
                         title: messages.designSystemBreadcrumbProjectsLabel,
@@ -66,22 +66,22 @@ class _HeaderOverviewPage extends StatelessWidget {
                         primaryAction: _buildPrimaryAction(messages),
                         trailingActions: [
                           _HeaderIconButton(
-                            icon: Icons.search_rounded,
+                            icon: LottiIcons.search,
                             semanticsLabel:
                                 messages.designSystemHeaderSearchActionLabel,
                           ),
                           _HeaderIconButton(
-                            icon: Icons.notifications_none_rounded,
+                            icon: LottiIcons.notification,
                             semanticsLabel: messages
                                 .designSystemHeaderNotificationsActionLabel,
                           ),
                           _HeaderIconButton(
-                            icon: Icons.help_outline_rounded,
+                            icon: LottiIcons.help,
                             semanticsLabel:
                                 messages.designSystemHeaderHelpActionLabel,
                           ),
                           _HeaderIconButton(
-                            icon: Icons.settings_outlined,
+                            icon: LottiIcons.settings,
                             semanticsLabel: messages.navTabTitleSettings,
                           ),
                         ],
@@ -132,7 +132,7 @@ class _HeaderOverviewPage extends StatelessWidget {
       child: DesignSystemButton(
         label: messages.designSystemHeaderApiDocumentationLabel,
         variant: DesignSystemButtonVariant.secondary,
-        trailingIcon: Icons.open_in_new_rounded,
+        trailingIcon: LottiIcons.openExternal,
         onPressed: widgetbookNoop,
       ),
     );

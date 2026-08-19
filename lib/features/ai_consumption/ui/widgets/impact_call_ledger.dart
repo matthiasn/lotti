@@ -172,7 +172,7 @@ class _AttributionLedgerGroup extends StatelessWidget {
             tilePadding: EdgeInsets.zero,
             childrenPadding: EdgeInsets.only(left: tokens.spacing.step5),
             leading: Icon(
-              Icons.auto_awesome_outlined,
+              LottiIcons.aiSpark,
               color: tokens.colors.text.mediumEmphasis,
             ),
             title: Text(
@@ -228,13 +228,13 @@ class _LedgerRow extends StatelessWidget {
   final AiConsumptionEvent event;
 
   IconData get _icon => switch (event.responseType) {
-    AiConsumptionResponseType.agentTurn => Icons.smart_toy_outlined,
-    AiConsumptionResponseType.textGeneration => Icons.notes_outlined,
-    AiConsumptionResponseType.audioTranscription => Icons.mic_outlined,
-    AiConsumptionResponseType.imageAnalysis => Icons.image_search_outlined,
-    AiConsumptionResponseType.imageGeneration => Icons.brush_outlined,
-    AiConsumptionResponseType.promptGeneration => Icons.edit_note_outlined,
-    AiConsumptionResponseType.embeddingIndexing => Icons.hub_outlined,
+    AiConsumptionResponseType.agentTurn => LottiIcons.aiModel,
+    AiConsumptionResponseType.textGeneration => LottiIcons.note,
+    AiConsumptionResponseType.audioTranscription => LottiIcons.mic,
+    AiConsumptionResponseType.imageAnalysis => LottiIcons.searchImage,
+    AiConsumptionResponseType.imageGeneration => LottiIcons.brush,
+    AiConsumptionResponseType.promptGeneration => LottiIcons.editNote,
+    AiConsumptionResponseType.embeddingIndexing => LottiIcons.hub,
   };
 
   String _typeLabel(BuildContext context) {

@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -12,6 +11,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/functions/checklist_completion_functions.dart';
 import 'package:lotti/features/ai/services/checklist_completion_service.dart';
 import 'package:lotti/features/checklist/services/correction_capture_service.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/repository/app_clipboard_service.dart';
 import 'package:lotti/features/tasks/state/checklist_completion_controller.dart';
 import 'package:lotti/features/tasks/state/checklist_controller.dart';
@@ -374,12 +374,12 @@ void main() {
       final clip = result.clip;
 
       // Open the popup menu (the "more_vert" icon).
-      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.tap(find.byIcon(LottiIcons.moreVertical));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
       // Tap the export option.
-      await tester.tap(find.byIcon(MdiIcons.exportVariant));
+      await tester.tap(find.byIcon(LottiIcons.copy));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -401,12 +401,12 @@ void main() {
         );
 
         // Open the popup menu.
-        await tester.tap(find.byIcon(Icons.more_vert));
+        await tester.tap(find.byIcon(LottiIcons.moreVertical));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
         // Tap export.
-        await tester.tap(find.byIcon(MdiIcons.exportVariant));
+        await tester.tap(find.byIcon(LottiIcons.copy));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -465,10 +465,10 @@ void main() {
         await tester.pump();
 
         // Open menu and tap export.
-        await tester.tap(find.byIcon(Icons.more_vert));
+        await tester.tap(find.byIcon(LottiIcons.moreVertical));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
-        await tester.tap(find.byIcon(MdiIcons.exportVariant));
+        await tester.tap(find.byIcon(LottiIcons.copy));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -709,10 +709,10 @@ void main() {
         // Open the popup menu and trigger export.  The export calls
         // _resolveItems which hits the catchError branch (lines 65–74).
         // After recovering, the resolved list is empty → "nothing to export".
-        await tester.tap(find.byIcon(Icons.more_vert));
+        await tester.tap(find.byIcon(LottiIcons.moreVertical));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
-        await tester.tap(find.byIcon(MdiIcons.exportVariant));
+        await tester.tap(find.byIcon(LottiIcons.copy));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -777,7 +777,7 @@ void main() {
         expect(calls.any((c) => c.$1 == 'cl-xyz'), isTrue);
 
         // Tap the chevron to collapse.
-        final chevron = find.byIcon(Icons.expand_more);
+        final chevron = find.byIcon(LottiIcons.expand);
         await tester.ensureVisible(chevron);
         await tester.tap(chevron);
         await tester.pump();
@@ -807,10 +807,10 @@ void main() {
       await _pump(tester, items: [item1, item2]);
 
       // Open the popup menu and tap Share.
-      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.tap(find.byIcon(LottiIcons.moreVertical));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
-      await tester.tap(find.byIcon(Icons.ios_share));
+      await tester.tap(find.byIcon(LottiIcons.share));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -836,10 +836,10 @@ void main() {
           completionCounts: const (completedCount: 0, totalCount: 0),
         );
 
-        await tester.tap(find.byIcon(Icons.more_vert));
+        await tester.tap(find.byIcon(LottiIcons.moreVertical));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
-        await tester.tap(find.byIcon(Icons.ios_share));
+        await tester.tap(find.byIcon(LottiIcons.share));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -862,10 +862,10 @@ void main() {
         // Open the popup menu and tap Share — this will throw inside
         // onShareMarkdown; the catch block (lines 238-246) should log via
         // DomainLogger without propagating the exception.
-        await tester.tap(find.byIcon(Icons.more_vert));
+        await tester.tap(find.byIcon(LottiIcons.moreVertical));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
-        await tester.tap(find.byIcon(Icons.ios_share));
+        await tester.tap(find.byIcon(LottiIcons.share));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -892,10 +892,10 @@ void main() {
         final item1 = _makeItem(title: 'Task H');
         final result = await _pump(tester, items: [item1]);
 
-        await tester.tap(find.byIcon(Icons.more_vert));
+        await tester.tap(find.byIcon(LottiIcons.moreVertical));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
-        await tester.tap(find.byIcon(MdiIcons.exportVariant));
+        await tester.tap(find.byIcon(LottiIcons.copy));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 

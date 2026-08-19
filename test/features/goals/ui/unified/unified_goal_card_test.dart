@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_assessment_state.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
@@ -276,7 +277,7 @@ void main() {
     // The same chip the agents list and detail header use — one trend
     // vocabulary across every goal surface.
     expect(find.byType(GoalHealthDirectionChip), findsOneWidget);
-    expect(find.byIcon(Icons.trending_up_rounded), findsOneWidget);
+    expect(find.byIcon(LottiIcons.trendingUp), findsOneWidget);
   });
 
   testWidgets('a pending revision proposal surfaces as a header chip — the '

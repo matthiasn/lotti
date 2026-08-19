@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/dashboards/ui/widgets/dashboards_card.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -107,7 +108,7 @@ void main() {
       await tester.pump();
 
       expect(find.byType(DesignSystemListItem), findsOneWidget);
-      expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
     });
 
     testWidgets('shows divider when showDivider is true', (tester) async {

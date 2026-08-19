@@ -420,7 +420,7 @@ void main() {
           leading: IconButton(
             key: const ValueKey('compact-leading'),
             onPressed: () => taps++,
-            icon: const Icon(Icons.view_sidebar_rounded),
+            icon: const Icon(LottiIcons.sidebar),
           ),
         ),
       );

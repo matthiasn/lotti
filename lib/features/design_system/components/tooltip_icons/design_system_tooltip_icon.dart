@@ -30,7 +30,7 @@ class DesignSystemTooltipIcon extends StatelessWidget {
         label: semanticsLabel ?? message,
         button: true,
         child: Icon(
-          icon ?? Icons.help_outline_rounded,
+          icon ?? LottiIcons.help,
           size: _kIconSize,
           color: tokens.colors.text.mediumEmphasis,
         ),

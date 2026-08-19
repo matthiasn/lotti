@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/state/purge_controller.dart';
 import 'package:lotti/features/sync/ui/purge_modal.dart';
 
@@ -101,7 +102,7 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.byIcon(Icons.delete_forever_outlined), findsOneWidget);
+    expect(find.byIcon(LottiIcons.deleteForever), findsOneWidget);
     expect(find.text('100%'), findsNothing); // success state hides percentage
 
     controller!.completeOperation();

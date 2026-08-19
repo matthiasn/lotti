@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_avatar_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_badge_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_branding_widgetbook.dart';
@@ -159,8 +160,8 @@ class _ButtonSizeScale extends StatelessWidget {
             DesignSystemButton(
               label: _labelForSize(size),
               size: size,
-              leadingIcon: Icons.add,
-              trailingIcon: Icons.keyboard_arrow_down,
+              leadingIcon: LottiIcons.add,
+              trailingIcon: LottiIcons.chevronDown,
               onPressed: () {},
             ),
         ],
@@ -196,8 +197,8 @@ class _ButtonVariantMatrix extends StatelessWidget {
                       DesignSystemButton(
                         label: _labelForVariant(variant),
                         variant: variant,
-                        leadingIcon: Icons.add,
-                        trailingIcon: Icons.keyboard_arrow_down,
+                        leadingIcon: LottiIcons.add,
+                        trailingIcon: LottiIcons.chevronDown,
                         forcedState: entry.state,
                         onPressed: entry.enabled ? () {} : null,
                       ),

@@ -130,10 +130,8 @@ class _SetupIdentityRow extends StatelessWidget {
       // Names the action rather than repeating a route that is usually fully
       // visible; the full route lives in the semantics label.
       tooltip: tooltip,
-      leadingIcon: isError
-          ? Icons.error_outline_rounded
-          : Icons.psychology_outlined,
-      trailingIcon: Icons.chevron_right_rounded,
+      leadingIcon: isError ? LottiIcons.error : LottiIcons.reasoning,
+      trailingIcon: LottiIcons.chevronRight,
       ink: color,
       iconInk: isError ? tokens.colors.alert.error.defaultColor : ai.metaText,
       labelWidget: _TieredIdentityText(
@@ -192,7 +190,7 @@ class _ReportIdentityRow extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
-                    Icons.description_outlined,
+                    LottiIcons.description,
                     size: tokens.spacing.step5,
                     color: ai.metaText,
                   ),

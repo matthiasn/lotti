@@ -410,8 +410,8 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
                   // very low alpha to keep the repeating grip texture from
                   // competing with the checkbox + title for attention.
                   Icon(
-                    Icons.drag_indicator,
-                    size: 24,
+                    LottiIcons.drag,
+                    size: IconSizes.l,
                     color: tokens.colors.text.lowEmphasis.withValues(
                       alpha: 0.2,
                     ),
@@ -513,36 +513,93 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
                             resetToInitialValue: true,
                             onCancel: () => setState(() => _isEditing = false),
                           )
-                        : StrikethroughWipe(
-                            done: isStrikethrough,
-                            // Off → the strike-through still shows, but
-                            // applies instantly with no left-to-right wipe.
-                            // Folds in the master switch.
-                            animate: ref
-                                .watch(celebrationPreferencesProvider)
-                                .animateChecklistItems,
-                            text: item.data.title,
-                            baseStyle: tokens.typography.styles.body.bodySmall
-                                .copyWith(
-                                  color: tokens.colors.text.highEmphasis,
-                                ),
-                            struckStyle: tokens.typography.styles.body.bodySmall
-                                .copyWith(
-                                  color: tokens.colors.text.lowEmphasis,
-                                  decoration: TextDecoration.lineThrough,
-                                ),
-                            maxLines: 4,
-                            overflow: TextOverflow.fade,
+                        : GestureDetector(
+                            // Tapping the words opens the editor, the same as
+                            // the pencil. This does not collide with
+                            // check-off: that gesture belongs to the
+                            // checkbox's own 44x44 well above, so the title
+                            // was simply dead space — the pencil was the only
+                            // way in, and it is a 16pt target at the far end
+                            // of the row.
+                            //
+                            // Opaque so the whole title column responds,
+                            // including the gaps between wrapped lines, rather
+                            // than only the glyphs themselves.
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () => setState(() => _isEditing = true),
+                            child: StrikethroughWipe(
+                              done: isStrikethrough,
+                              // Off → the strike-through still shows, but
+                              // applies instantly with no left-to-right wipe.
+                              // Folds in the master switch.
+                              animate: ref
+                                  .watch(celebrationPreferencesProvider)
+                                  .animateChecklistItems,
+                              text: item.data.title,
+                              baseStyle: tokens.typography.styles.body.bodySmall
+                                  .copyWith(
+                                    color: tokens.colors.text.highEmphasis,
+                                  ),
+                              struckStyle: tokens
+                                  .typography
+                                  .styles
+                                  .body
+                                  .bodySmall
+                                  .copyWith(
+                                    color: tokens.colors.text.lowEmphasis,
+                                    decoration: TextDecoration.lineThrough,
+                                  ),
+                              maxLines: 4,
+                              overflow: TextOverflow.fade,
+                            ),
                           ),
                   ),
-                  // Edit icon
+                  // Edit affordance.
+                  //
+                  // Centred in a [TapTargets.minimum] slot rather than sitting
+                  // flush at the content edge, for two reasons. It puts the
+                  // glyph on the same trailing axis as the Linked Tasks row's
+                  // chevron — which is itself centred in a 48pt slot so it
+                  // lands where manage mode's unlink button sits — so the two
+                  // cards' trailing marks line up instead of missing each
+                  // other by 25pt. And it gives the pencil the 48pt target the
+                  // checkbox beside it already takes: at a bare 20pt glyph it
+                  // was the one control on this row below the floor.
+                  //
+                  // Deliberately quieter than the checkbox and the title: this
+                  // is a secondary route into a row whose primary action is
+                  // checking it off, so it is sized down to [IconSizes.s] and
+                  // dimmed, the same way the drag handle above steps back.
                   if (!_isEditing)
                     GestureDetector(
                       onTap: () => setState(() => _isEditing = true),
-                      child: Icon(
-                        Icons.mode_edit_outlined,
-                        size: 20,
-                        color: tokens.colors.text.lowEmphasis,
+                      // The extra trailing step3 is what puts this glyph on the
+                      // *same vertical line* as the Linked Tasks card's
+                      // chevron. That card insets its content by `cardPadding`
+                      // (16); this row insets by step3 (8), so two slots of
+                      // equal width still landed 8pt apart — close enough to
+                      // look like a mistake rather than a variation.
+                      child: SizedBox(
+                        // A step8 slot, not a full tap target: centred, it puts
+                        // the glyph on the same vertical line as the card
+                        // *header's* overflow control, which is the trailing
+                        // axis a reader actually sees. A 48pt slot sat 12pt
+                        // inboard of it and left ~33pt of dead margin.
+                        width: tokens.spacing.step8,
+                        height: TapTargets.minimum,
+                        child: Center(
+                          child: Icon(
+                            LottiIcons.edit,
+                            // Deliberately the caption tier. A pencil is a
+                            // dense glyph — at IconSizes.s it carried 2.5x the
+                            // chevron's ink and read as the loudest thing on a
+                            // row whose primary action is checking it off.
+                            size: IconSizes.xs,
+                            color: tokens.colors.text.lowEmphasis.withValues(
+                              alpha: 0.55,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                 ],
@@ -657,7 +714,9 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
             child: Padding(
               padding: EdgeInsets.only(left: tokens.spacing.step5),
               child: Icon(
-                item.data.isArchived ? Icons.unarchive : Icons.archive,
+                item.data.isArchived
+                    ? LottiIcons.unarchive
+                    : LottiIcons.archive,
                 color: Colors.white,
               ),
             ),
@@ -669,7 +728,7 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
             alignment: Alignment.centerRight,
             child: Padding(
               padding: EdgeInsets.only(right: tokens.spacing.step5),
-              child: const Icon(Icons.delete, color: Colors.white),
+              child: const Icon(LottiIcons.delete, color: Colors.white),
             ),
           ),
         ),
@@ -752,7 +811,7 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
             Row(
               children: [
                 Icon(
-                  Icons.insights,
+                  LottiIcons.insights,
                   size: 16,
                   color: _getSuggestionColor(suggestion.confidence),
                 ),
@@ -796,7 +855,7 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
                   .read(checklistCompletionServiceProvider.notifier)
                   .clearSuggestion(widget.itemId);
             },
-            icon: const Icon(Icons.check_circle, size: 18),
+            icon: const Icon(LottiIcons.confirmCircled, size: 18),
             label: Text(context.messages.checklistAiMarkComplete),
           ),
         ],

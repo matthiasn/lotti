@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/design_system/components/glass_action_bar.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
@@ -174,14 +175,14 @@ void main() {
             )
             .toList();
         expect(rows.map((row) => row.title), ['Favorite', 'Private', 'Active']);
-        expect(rows[0].icon, Icons.star_outline_rounded);
+        expect(rows[0].icon, LottiIcons.star);
         expect(rows[0].subtitle, isNull);
-        expect(rows[1].icon, Icons.lock_outline);
+        expect(rows[1].icon, LottiIcons.lock);
         expect(
           rows[1].subtitle,
           'Only visible when private entries are shown',
         );
-        expect(rows[2].icon, Icons.visibility_outlined);
+        expect(rows[2].icon, LottiIcons.visible);
         expect(
           rows[2].subtitle,
           'Shown on the Habits page',
@@ -268,7 +269,7 @@ void main() {
       (tester) async {
         await pumpPage(tester, EditHabitPage(habitId: habitFlossing.id));
 
-        await tester.tap(find.byIcon(Icons.chevron_left));
+        await tester.tap(find.byIcon(LottiIcons.chevronLeft));
         await tester.pump();
         expect(beamedTo, '/settings/habits');
 

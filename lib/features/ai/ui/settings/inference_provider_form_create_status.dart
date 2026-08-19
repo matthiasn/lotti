@@ -84,7 +84,7 @@ class ConnectionStatusStrip extends ConsumerWidget {
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
-                  Icons.check_rounded,
+                  LottiIcons.confirm,
                   size: tokens.spacing.step5,
                   color: tokens.colors.text.onInteractiveAlert,
                 ),
@@ -187,7 +187,7 @@ class ConnectionStatusStrip extends ConsumerWidget {
             height: tokens.spacing.step6,
             decoration: BoxDecoration(color: danger, shape: BoxShape.circle),
             child: Icon(
-              Icons.close_rounded,
+              LottiIcons.close,
               size: tokens.spacing.step5,
               color: tokens.colors.text.onInteractiveAlert,
             ),

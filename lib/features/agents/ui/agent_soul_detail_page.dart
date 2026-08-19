@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/ui/agent_soul_detail_info_tab.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
@@ -240,7 +241,7 @@ class _AgentSoulDetailPageState extends ConsumerState<AgentSoulDetailPage>
                           '${widget.soulId}/review',
                         ),
                         label: context.messages.agentSoulReviewTitle,
-                        leadingIcon: Icons.rate_review,
+                        leadingIcon: LottiIcons.editNote,
                         size: DesignSystemButtonSize.large,
                       ),
                     ],

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/relationships/model/imported_contact.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
@@ -242,7 +243,7 @@ void main() {
       expect(find.text('Anna'), findsOneWidget);
       expect(find.text('Ben'), findsOneWidget);
       // Exactly one star: Anna is important, Ben is not.
-      expect(find.byIcon(Icons.star_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.star), findsOneWidget);
       // Anna's subtitle is her last check-in, Ben's his tracking start —
       // and each names itself: on a recency screen a person added today
       // must not read as recently contacted.
@@ -358,7 +359,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byIcon(Icons.group_add_rounded));
+    await tester.tap(find.byIcon(LottiIcons.contactImport));
     await tester.pump();
 
     expect(rootObserver.pushes, 1, reason: 'pushed above the shell');

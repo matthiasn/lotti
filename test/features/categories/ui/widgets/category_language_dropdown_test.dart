@@ -2,6 +2,7 @@ import 'package:country_flags/country_flags.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/categories/ui/widgets/category_language_dropdown.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/settings/settings_picker_field.dart';
 
 import '../../../../test_helper.dart';
@@ -47,7 +48,7 @@ void main() {
       expect(find.text('Select Language'), findsOneWidget);
       expect(find.byType(CountryFlag), findsNothing);
       // The kit field renders the dropdown chevron.
-      expect(find.byIcon(Icons.keyboard_arrow_down_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronDown), findsOneWidget);
     });
 
     testWidgets('shows the language name and flag when selected', (
@@ -107,7 +108,7 @@ void main() {
         find.byType(SettingsPickerField),
       );
       expect(field.onClear, isNull);
-      expect(find.byIcon(Icons.close_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.close), findsNothing);
     });
   });
 }

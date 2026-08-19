@@ -39,7 +39,7 @@ class LogbookSearchModeRow extends ConsumerWidget {
                 context.messages.searchModeFullText,
                 style: captionStyle,
               ),
-              icon: Icon(Icons.text_fields, size: iconSize),
+              icon: Icon(LottiIcons.text, size: iconSize),
             ),
             ButtonSegment<SearchMode>(
               value: SearchMode.vector,
@@ -47,7 +47,7 @@ class LogbookSearchModeRow extends ConsumerWidget {
                 context.messages.searchModeVector,
                 style: captionStyle,
               ),
-              icon: Icon(Icons.hub_outlined, size: iconSize),
+              icon: Icon(LottiIcons.hub, size: iconSize),
             ),
           ],
         ),

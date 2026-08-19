@@ -152,7 +152,7 @@ class _Rating extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Icon(Icons.star_rounded, size: 16, color: starredGold),
+        const Icon(LottiIcons.star, size: 16, color: starredGold),
         SizedBox(width: tokens.spacing.step1),
         Text(
           _label(stars),
@@ -276,13 +276,13 @@ class _ContentsLine extends StatelessWidget {
     final parts = <Widget>[
       if (data.photoCount > 0)
         _Count(
-          icon: Icons.photo_library_rounded,
+          icon: LottiIcons.photoLibrary,
           label: context.messages.eventsMetricPhotos(data.photoCount),
           style: style,
         ),
       if (data.taskCount > 0)
         _Count(
-          icon: Icons.task_alt_rounded,
+          icon: LottiIcons.confirmCircled,
           label: context.messages.eventsMetricTasks(data.taskCount),
           style: style,
         ),

@@ -47,14 +47,14 @@ class GraphWorkspaceToolbar extends StatelessWidget {
             DesignSystemChip(
               key: const ValueKey('knowledge-graph-mode-graph'),
               label: context.messages.knowledgeGraphViewGraph,
-              leadingIcon: Icons.hub_outlined,
+              leadingIcon: LottiIcons.hub,
               selected: state.mode == GraphViewMode.graph,
               onPressed: () => onModeChanged(GraphViewMode.graph),
             ),
             DesignSystemChip(
               key: const ValueKey('knowledge-graph-mode-connections'),
               label: context.messages.knowledgeGraphViewConnections,
-              leadingIcon: Icons.view_list_outlined,
+              leadingIcon: LottiIcons.list,
               selected: state.mode == GraphViewMode.connections,
               onPressed: () => onModeChanged(GraphViewMode.connections),
             ),
@@ -72,7 +72,7 @@ class GraphWorkspaceToolbar extends StatelessWidget {
               child: IgnorePointer(
                 child: DesignSystemChip(
                   label: graphDensityLabel(context.messages, state.density),
-                  leadingIcon: Icons.blur_on_outlined,
+                  leadingIcon: LottiIcons.blur,
                   onPressed: () {}, // coverage:ignore-line
                 ),
               ),
@@ -82,7 +82,7 @@ class GraphWorkspaceToolbar extends StatelessWidget {
               label: state.filters.maxHops == 1
                   ? context.messages.knowledgeGraphOneHop
                   : context.messages.knowledgeGraphTwoHops,
-              leadingIcon: Icons.route_outlined,
+              leadingIcon: LottiIcons.route,
               selected: state.filters.maxHops == 1,
               onPressed: () => onFiltersChanged(
                 state.filters.copyWith(
@@ -93,7 +93,7 @@ class GraphWorkspaceToolbar extends StatelessWidget {
             DesignSystemChip(
               key: const ValueKey('knowledge-graph-open-filters'),
               label: context.messages.knowledgeGraphFilters,
-              leadingIcon: Icons.tune_rounded,
+              leadingIcon: LottiIcons.tune,
               selected: !state.filters.isEmpty,
               onPressed: () => _showFilters(context),
             ),
@@ -183,7 +183,7 @@ class _GraphFiltersPanelState extends State<GraphFiltersPanel> {
               IconButton(
                 tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
                 onPressed: () => Navigator.of(context).pop(),
-                icon: const Icon(Icons.close_rounded),
+                icon: const Icon(LottiIcons.close),
               ),
             ],
           ),

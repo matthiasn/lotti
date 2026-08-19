@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/supported_language.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/action_menu_list_item.dart';
@@ -33,7 +33,7 @@ class ModernUnlinkItem extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return ActionMenuListItem(
-      icon: Icons.link_off_rounded,
+      icon: LottiIcons.linkOff,
       title: context.messages.journalUnlinkHint,
       onTap: () async {
         const unlinkKey = 'unlinkKey';
@@ -42,7 +42,7 @@ class ModernUnlinkItem extends ConsumerWidget {
           title: context.messages.journalUnlinkQuestion,
           actions: [
             ModalSheetAction(
-              icon: Icons.warning,
+              icon: LottiIcons.warning,
               label: context.messages.journalUnlinkConfirm,
               key: unlinkKey,
               isDestructiveAction: true,
@@ -80,7 +80,7 @@ class ModernToggleHiddenItem extends ConsumerWidget {
     final notifier = ref.read(provider.notifier);
 
     return ActionMenuListItem(
-      icon: hidden ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+      icon: hidden ? LottiIcons.hidden : LottiIcons.visible,
       title: hidden
           ? context.messages.journalShowLinkHint
           : context.messages.journalHideLinkHint,
@@ -114,7 +114,7 @@ class ModernCopyImageItem extends ConsumerWidget {
     }
 
     return ActionMenuListItem(
-      icon: MdiIcons.contentCopy,
+      icon: LottiIcons.copy,
       title: context.messages.journalCopyImageLabel,
       onTap: () async {
         await notifier.copyImage();
@@ -155,7 +155,7 @@ class ModernCopyEntryTextItem extends ConsumerWidget {
     final title = markdown
         ? context.messages.copyAsMarkdown
         : context.messages.copyAsText;
-    final icon = markdown ? Icons.code : MdiIcons.contentCopy;
+    final icon = markdown ? LottiIcons.code : LottiIcons.copy;
 
     return ActionMenuListItem(
       icon: icon,
@@ -196,7 +196,7 @@ class ModernLabelsItem extends ConsumerWidget {
     }
 
     return ActionMenuListItem(
-      icon: MdiIcons.labelOutline,
+      icon: LottiIcons.label,
       title: context.messages.entryLabelsActionTitle,
       subtitle: context.messages.entryLabelsActionSubtitle,
       onTap: () async {
@@ -263,7 +263,7 @@ class ModernSetTaskLanguageItem extends ConsumerWidget {
             ),
           )
         : Icon(
-            Icons.language,
+            LottiIcons.language,
             size: AppTheme.listItemIconSize,
             color: context.colorScheme.onSurface,
           );

@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai_consumption/logic/consumption_formatting.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/consumption_summary_pill.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../../widget_test_utils.dart';
 import '../../test_utils.dart';
@@ -37,7 +38,7 @@ void main() {
     );
 
     expect(find.text('€0.42 · 12 Wh · 3.4 g'), findsOneWidget);
-    expect(find.byIcon(Icons.eco_outlined), findsOneWidget);
+    expect(find.byIcon(LottiIcons.eco), findsOneWidget);
     final tooltip = tester.widget<Tooltip>(find.byType(Tooltip));
     expect(
       tooltip.message,

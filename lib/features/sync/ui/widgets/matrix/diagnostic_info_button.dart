@@ -52,7 +52,7 @@ class DiagnosticInfoButton extends ConsumerWidget {
               DesignSystemButton(
                 label: context.messages.settingsMatrixDiagnosticCopyButton,
                 variant: DesignSystemButtonVariant.secondary,
-                leadingIcon: Icons.copy_rounded,
+                leadingIcon: LottiIcons.copy,
                 onPressed: () async {
                   await Clipboard.setData(ClipboardData(text: prettyJson));
                   if (dialogContext.mounted) {

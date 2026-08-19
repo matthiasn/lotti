@@ -23,6 +23,7 @@ import 'package:lotti/features/ai/ui/settings/services/ai_config_delete_service.
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_cards.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -280,7 +281,7 @@ void main() {
           findsOneWidget,
         );
         // No edit pencil in the AppBar when there is no provider to edit.
-        expect(find.byIcon(Icons.edit_outlined), findsNothing);
+        expect(find.byIcon(LottiIcons.edit), findsNothing);
       },
     );
 
@@ -313,7 +314,7 @@ void main() {
           findsOneWidget,
         );
         // AppBar edit pencil exists for a valid provider.
-        expect(find.byIcon(Icons.edit_outlined), findsAtLeastNWidgets(1));
+        expect(find.byIcon(LottiIcons.edit), findsAtLeastNWidgets(1));
 
         await settleTimers(tester);
       },
@@ -1556,7 +1557,7 @@ void main() {
         // The detail page is now mounted.
         expect(find.byType(AiProviderDetailPage), findsOneWidget);
 
-        await tester.tap(find.byIcon(Icons.arrow_back_rounded));
+        await tester.tap(find.byIcon(LottiIcons.back));
         await tester.pumpAndSettle();
 
         // After back-tap the route should have popped: outer button

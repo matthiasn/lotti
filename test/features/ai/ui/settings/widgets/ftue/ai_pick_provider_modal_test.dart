@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ftue/ai_pick_provider_modal.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../../../../widget_test_utils.dart';
 import 'ai_pick_provider_modal_test_helpers.dart';
@@ -181,7 +182,7 @@ void main() {
         await pumpModal(tester);
         final messages = hL10n(tester);
         // Initial selection is Gemini → exactly one check icon.
-        expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
 
         // Tap the OpenAI tile. The localised provider name is the
         // unique label inside the OpenAI row.
@@ -190,7 +191,7 @@ void main() {
 
         // After the swap there should still be exactly one check
         // icon, just on the OpenAI row now.
-        expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
       },
     );
 
@@ -353,14 +354,14 @@ void main() {
         await tester.pump();
 
         // One check icon at start (Gemini).
-        expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
 
         final messages = hL10n(tester);
         await tester.tap(find.text(messages.aiProviderOllamaName));
         await tester.pump();
 
         // Still exactly one check icon — the disabled tap was a no-op.
-        expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
       },
     );
   });

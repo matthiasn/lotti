@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/habits/state/habit_settings_controller.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_dashboard.dart';
 import 'package:lotti/get_it.dart';
@@ -144,7 +145,7 @@ void main() {
     );
 
     // Find and tap the close icon
-    final closeIcon = find.byIcon(Icons.close_rounded);
+    final closeIcon = find.byIcon(LottiIcons.close);
     expect(closeIcon, findsOneWidget);
 
     await tester.tap(closeIcon);
@@ -152,7 +153,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
 
     // After clearing, the close icon should no longer be visible
-    expect(find.byIcon(Icons.close_rounded), findsNothing);
+    expect(find.byIcon(LottiIcons.close), findsNothing);
 
     // The clear actually landed in the settings state: dashboardId is
     // null again, the change is marked dirty, and the text field no

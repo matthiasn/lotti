@@ -8,6 +8,7 @@ import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_call_ledger.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -150,7 +151,7 @@ void main() {
     expect(find.text('Agent turn · $time'), findsOneWidget);
     // 1500 tokens compact + credits + energy (0.012 kWh → 12 Wh).
     expect(find.text('1.5K tokens · €0.42 · 12 Wh'), findsOneWidget);
-    expect(find.byIcon(Icons.smart_toy_outlined), findsOneWidget);
+    expect(find.byIcon(LottiIcons.aiModel), findsOneWidget);
     // Under the cap → no truncation caption.
     expect(
       find.textContaining('Showing the newest'),
@@ -208,7 +209,7 @@ void main() {
     ).add_Hm().format(DateTime(2026, 6, 4, 9, 5));
     expect(find.text('Transcription · $time'), findsOneWidget);
     expect(find.text('800 tokens'), findsOneWidget);
-    expect(find.byIcon(Icons.mic_outlined), findsOneWidget);
+    expect(find.byIcon(LottiIcons.mic), findsOneWidget);
   });
 
   testWidgets('labels calls whose provider did not report metrics', (
@@ -229,7 +230,7 @@ void main() {
 
     expect(find.text('whisper-1'), findsOneWidget);
     expect(find.text('Not reported'), findsOneWidget);
-    expect(find.byIcon(Icons.mic_outlined), findsOneWidget);
+    expect(find.byIcon(LottiIcons.mic), findsOneWidget);
   });
 
   testWidgets('maps every response type to its icon and localized label', (
@@ -237,31 +238,31 @@ void main() {
   ) async {
     const cases = <AiConsumptionResponseType, (IconData, String)>{
       AiConsumptionResponseType.agentTurn: (
-        Icons.smart_toy_outlined,
+        LottiIcons.aiModel,
         'Agent turn',
       ),
       AiConsumptionResponseType.textGeneration: (
-        Icons.notes_outlined,
+        LottiIcons.note,
         'Text generation',
       ),
       AiConsumptionResponseType.audioTranscription: (
-        Icons.mic_outlined,
+        LottiIcons.mic,
         'Transcription',
       ),
       AiConsumptionResponseType.imageAnalysis: (
-        Icons.image_search_outlined,
+        LottiIcons.searchImage,
         'Image analysis',
       ),
       AiConsumptionResponseType.imageGeneration: (
-        Icons.brush_outlined,
+        LottiIcons.brush,
         'Image generation',
       ),
       AiConsumptionResponseType.promptGeneration: (
-        Icons.edit_note_outlined,
+        LottiIcons.editNote,
         'Prompt generation',
       ),
       AiConsumptionResponseType.embeddingIndexing: (
-        Icons.hub_outlined,
+        LottiIcons.hub,
         'Embedding indexing',
       ),
     };

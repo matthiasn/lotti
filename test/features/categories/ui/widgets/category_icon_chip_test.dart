@@ -6,6 +6,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/color.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -42,12 +43,12 @@ void main() {
         tester,
         const DefinitionIconChip(
           background: Colors.black,
-          icon: Icons.spa,
+          icon: LucideIcons.flower2,
           name: 'Health',
         ),
       );
 
-      expect(find.byIcon(Icons.spa), findsOneWidget);
+      expect(find.byIcon(LucideIcons.flower2), findsOneWidget);
       expect(find.text('H'), findsNothing);
     });
 
@@ -105,7 +106,7 @@ void main() {
 
       await pumpChip(tester, CategoryIconChip(category: category));
 
-      expect(find.byIcon(Icons.fitness_center), findsOneWidget);
+      expect(find.byIcon(LottiIcons.fitness), findsOneWidget);
       expect(find.text('F'), findsNothing);
       expect(innerChip(tester).background, colorFromCssHex('#FF0000'));
     });
@@ -133,7 +134,7 @@ void main() {
 
         await pumpChip(tester, const CategoryIconChip.fromId('missing'));
 
-        expect(find.byIcon(Icons.more_horiz), findsOneWidget);
+        expect(find.byIcon(LottiIcons.more), findsOneWidget);
 
         final tokens = tester
             .element(find.byType(CategoryIconChip))
@@ -154,7 +155,7 @@ void main() {
           const CategoryIconChip.fromId('missing', letterFrom: 'Run 5k'),
         );
 
-        expect(find.byIcon(Icons.more_horiz), findsNothing);
+        expect(find.byIcon(LottiIcons.more), findsNothing);
         expect(find.text('R'), findsOneWidget);
 
         final tokens = tester
@@ -187,7 +188,7 @@ void main() {
 
         // The item's initial, never the category's icon or initial.
         expect(find.text('R'), findsOneWidget);
-        expect(find.byIcon(Icons.fitness_center), findsNothing);
+        expect(find.byIcon(LottiIcons.fitness), findsNothing);
         expect(find.text('H'), findsNothing);
         expect(innerChip(tester).background, colorFromCssHex('#00FF00'));
       },
@@ -207,7 +208,7 @@ void main() {
 
         await pumpChip(tester, const CategoryIconChip.fromId('cat-health'));
 
-        expect(find.byIcon(Icons.fitness_center), findsOneWidget);
+        expect(find.byIcon(LottiIcons.fitness), findsOneWidget);
         expect(innerChip(tester).background, colorFromCssHex('#00FF00'));
       },
     );

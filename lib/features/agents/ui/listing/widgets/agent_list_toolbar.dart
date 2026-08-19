@@ -226,7 +226,7 @@ class _FiltersButton extends StatelessWidget {
     final messages = context.messages;
     final activeCount = state.activeFilterCount;
     return _ToolbarButton(
-      icon: Icons.tune,
+      icon: LottiIcons.tune,
       emphasised: activeCount > 0,
       onTap: () => showFiltersPopover(
         context: context,
@@ -260,7 +260,7 @@ class _GroupByButton extends StatelessWidget {
       orElse: () => axes.first,
     );
     return _ToolbarButton(
-      icon: Icons.layers_outlined,
+      icon: LottiIcons.layers,
       onTap: () async {
         final next = await showSingleSelectPopover<String>(
           context: context,
@@ -303,7 +303,7 @@ class _SortButton extends StatelessWidget {
       orElse: () => axes.first,
     );
     return _ToolbarButton(
-      icon: Icons.sort,
+      icon: LottiIcons.sort,
       onTap: () async {
         final next = await showSingleSelectPopover<String>(
           context: context,

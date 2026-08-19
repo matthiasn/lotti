@@ -7,7 +7,7 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/components/callouts/design_system_inline_callout.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
-import 'package:lotti/features/design_system/theme/generated/design_tokens.g.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/profiles/model/profile.dart';
 import 'package:lotti/features/profiles/model/profile_context.dart';
 import 'package:lotti/features/profiles/state/profile_providers.dart';
@@ -332,7 +332,7 @@ void main() {
         rowFor(tester, 'Blood Pressure').subtitle,
         'No data — check Lotti’s access in your health app',
       );
-      expect(find.byIcon(Icons.lock_outline_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.lock), findsOneWidget);
     });
   });
 
@@ -543,7 +543,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(rowFor(tester, 'Sleep').subtitle, 'No new samples');
-      expect(find.byIcon(Icons.check_circle_outline_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.confirmCircled), findsOneWidget);
     });
 
     testWidgets('a refused authorization tells the user what to do', (
@@ -561,7 +561,7 @@ void main() {
       );
       // A padlock, not an error cross: nothing malfunctioned, and the glyph
       // should point at where this is fixed rather than alarm about it.
-      expect(find.byIcon(Icons.lock_outline_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.lock), findsOneWidget);
     });
 
     testWidgets('a failure is surfaced rather than swallowed', (tester) async {
@@ -577,7 +577,7 @@ void main() {
         rowFor(tester, 'Workouts').subtitle,
         'Import failed — check the logs',
       );
-      expect(find.byIcon(Icons.error_outline_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.error), findsOneWidget);
     });
 
     testWidgets('only the tapped row changes', (tester) async {

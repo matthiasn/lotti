@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/template_selector.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../widget_test_utils.dart';
 import '../test_utils.dart';
@@ -86,7 +87,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // The kit field renders the clear affordance as a close icon.
-      final clearButton = find.byIcon(Icons.close_rounded);
+      final clearButton = find.byIcon(LottiIcons.close);
       expect(clearButton, findsOneWidget);
       await tester.tap(clearButton);
 
@@ -99,7 +100,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.close_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.close), findsNothing);
     });
 
     testWidgets('opens picker and selects template', (tester) async {
@@ -175,7 +176,7 @@ void main() {
       await tester.tap(find.byType(InkWell).first);
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
     });
 
     testWidgets('with kind eventAgent shows only event templates and the '

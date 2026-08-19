@@ -144,7 +144,7 @@ void main() {
       // Pins IconSizes.m, which equals the raw 18 it replaced.
       await pumpCard(tester);
 
-      final glyph = tester.widget<Icon>(find.byIcon(Icons.bar_chart_rounded));
+      final glyph = tester.widget<Icon>(find.byIcon(LottiIcons.chart));
       expect(glyph.size, IconSizes.m);
     });
 

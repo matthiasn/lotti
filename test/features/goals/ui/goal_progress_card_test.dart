@@ -2495,10 +2495,10 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(find.byIcon(Icons.check_rounded), findsOneWidget);
-    expect(find.byIcon(Icons.remove_rounded), findsOneWidget);
-    expect(find.byIcon(Icons.close_rounded), findsOneWidget);
-    expect(find.byIcon(Icons.radio_button_unchecked_rounded), findsOneWidget);
+    expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
+    expect(find.byIcon(LottiIcons.remove), findsOneWidget);
+    expect(find.byIcon(LottiIcons.close), findsOneWidget);
+    expect(find.byIcon(LottiIcons.radioUnselected), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('goal-habit-day-missed')));
     await tester.pump();
 
@@ -2612,7 +2612,7 @@ void main() {
       (cell.decoration! as BoxDecoration).color,
       tokens.colors.background.level03,
     );
-    expect(find.byIcon(Icons.remove_rounded), findsOneWidget);
+    expect(find.byIcon(LottiIcons.remove), findsOneWidget);
     expect(
       find.bySemanticsLabel('Aug 11, 2026: Skip'),
       findsOneWidget,
@@ -3225,7 +3225,7 @@ void main() {
       find.byKey(const ValueKey('goal-day-missed-walk-2026-08-10')),
       findsOneWidget,
     );
-    expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+    expect(find.byIcon(LottiIcons.close), findsOneWidget);
     // The missed cross OWNS the cell: at the compact size a corner letter
     // collides with the glyph, so the letter yields and the neighbouring
     // plain cells carry the axis.
@@ -3528,7 +3528,7 @@ void main() {
       ),
     );
 
-    expect(find.byIcon(Icons.edit_note_rounded), findsNWidgets(2));
+    expect(find.byIcon(LottiIcons.editNote), findsNWidgets(2));
     final messages = tester
         .widgetList<Tooltip>(find.byType(Tooltip))
         .map((tooltip) => tooltip.message)
@@ -3566,7 +3566,7 @@ void main() {
     final slot = tester.getRect(
       find.byKey(const ValueKey('goal-metric-bar-2026-08-10')),
     );
-    final icon = tester.getRect(find.byIcon(Icons.edit_note_rounded));
+    final icon = tester.getRect(find.byIcon(LottiIcons.editNote));
     expect(icon.top, greaterThanOrEqualTo(slot.top));
     expect(icon.bottom, lessThanOrEqualTo(slot.bottom));
   });

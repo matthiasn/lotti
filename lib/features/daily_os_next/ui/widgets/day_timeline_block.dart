@@ -634,7 +634,7 @@ class _BlockContent extends StatelessWidget {
                   children: [
                     if (isCal) ...[
                       Icon(
-                        Icons.event_rounded,
+                        LottiIcons.calendar,
                         size: 12,
                         color: tokens.colors.text.mediumEmphasis,
                       ),
@@ -642,7 +642,7 @@ class _BlockContent extends StatelessWidget {
                     ],
                     if (!tracked && isTaskLinked) ...[
                       Icon(
-                        Icons.link_rounded,
+                        LottiIcons.link,
                         size: 12,
                         color: tokens.colors.alert.info.defaultColor,
                       ),
@@ -681,14 +681,14 @@ class _BlockContent extends StatelessWidget {
                               ? tokens.spacing.step4
                               : tokens.spacing.step5,
                           onPressed: onEdit,
-                          icon: const Icon(Icons.edit_rounded),
+                          icon: const Icon(LottiIcons.edit),
                         ),
                       ),
                     ],
                     if (tracked && isDone) ...[
                       SizedBox(width: tokens.spacing.step1),
                       Icon(
-                        Icons.check_rounded,
+                        LottiIcons.confirm,
                         size: 12,
                         color: tokens.colors.alert.success.defaultColor,
                       ),
@@ -745,7 +745,7 @@ class _BlockReasonIcon extends StatelessWidget {
       child: Semantics(
         label: context.messages.dailyOsNextDayWhyChipLabel,
         child: Icon(
-          Icons.auto_awesome_rounded,
+          LottiIcons.aiSpark,
           size: tokens.typography.size.caption,
           color: tokens.colors.aiCard.accent.withValues(alpha: 0.8),
         ),

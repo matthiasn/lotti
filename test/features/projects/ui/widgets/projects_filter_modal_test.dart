@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/ui/widgets/projects_filter_modal.dart';
 
@@ -126,11 +127,11 @@ void main() {
       expect(find.text('Archived'), findsOneWidget);
 
       // Status options should have icons from projectStatusAttributes
-      expect(find.byIcon(Icons.radio_button_unchecked), findsOneWidget);
-      expect(find.byIcon(Icons.play_circle_outline), findsOneWidget);
-      expect(find.byIcon(Icons.pause_circle_outline), findsOneWidget);
-      expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
-      expect(find.byIcon(Icons.archive_outlined), findsOneWidget);
+      expect(find.byIcon(LottiIcons.radioUnselected), findsOneWidget);
+      expect(find.byIcon(LottiIcons.playCircled), findsOneWidget);
+      expect(find.byIcon(LottiIcons.pauseCircled), findsOneWidget);
+      expect(find.byIcon(LottiIcons.confirmCircled), findsOneWidget);
+      expect(find.byIcon(LottiIcons.archive), findsOneWidget);
     },
   );
 

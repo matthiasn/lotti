@@ -89,12 +89,12 @@ class DescriptionCard extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            Icons.expand_less_rounded,
+            LottiIcons.collapse,
             color: TaskShowcasePalette.mediumText(context),
           ),
           const SizedBox(width: 8),
           Icon(
-            Icons.more_vert_rounded,
+            LottiIcons.moreVertical,
             color: TaskShowcasePalette.mediumText(context),
           ),
         ],
@@ -126,7 +126,7 @@ class TimeTrackerCard extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            Icons.timer_outlined,
+            LottiIcons.timer,
             size: 18,
             color: TaskShowcasePalette.success(context),
           ),
@@ -139,7 +139,7 @@ class TimeTrackerCard extends StatelessWidget {
           ),
           SizedBox(width: tokens.spacing.step2),
           Icon(
-            Icons.expand_less_rounded,
+            LottiIcons.collapse,
             color: TaskShowcasePalette.mediumText(context),
           ),
         ],
@@ -180,7 +180,7 @@ class _TimeEntryTile extends StatelessWidget {
                 child: Row(
                   children: [
                     Icon(
-                      Icons.circle_outlined,
+                      LottiIcons.radioUnselected,
                       size: 14,
                       color: TaskShowcasePalette.mediumText(context),
                     ),
@@ -200,7 +200,7 @@ class _TimeEntryTile extends StatelessWidget {
                 ),
               ),
               Icon(
-                Icons.timer_outlined,
+                LottiIcons.timer,
                 size: 14,
                 color: TaskShowcasePalette.highText(context),
               ),
@@ -213,7 +213,7 @@ class _TimeEntryTile extends StatelessWidget {
               ),
               SizedBox(width: tokens.spacing.step1),
               Icon(
-                Icons.more_vert_rounded,
+                LottiIcons.moreVertical,
                 size: 16,
                 color: TaskShowcasePalette.mediumText(context),
               ),
@@ -272,7 +272,7 @@ class ChecklistCard extends StatelessWidget {
           ),
           SizedBox(width: tokens.spacing.step2),
           Icon(
-            Icons.expand_less_rounded,
+            LottiIcons.collapse,
             color: TaskShowcasePalette.mediumText(context),
           ),
         ],
@@ -283,13 +283,13 @@ class ChecklistCard extends StatelessWidget {
           Row(
             children: [
               TaskShowcaseSectionPill(
-                icon: Icons.checklist_rounded,
+                icon: LottiIcons.checkAll,
                 label: context.messages.taskStatusOpen,
                 active: true,
               ),
               SizedBox(width: tokens.spacing.step2),
               TaskShowcaseSectionPill(
-                icon: Icons.view_list_rounded,
+                icon: LottiIcons.list,
                 label: context.messages.taskStatusAll,
               ),
             ],
@@ -304,8 +304,8 @@ class ChecklistCard extends StatelessWidget {
               children: [
                 Icon(
                   record.checklistItems[index].done
-                      ? Icons.check_box_rounded
-                      : Icons.check_box_outline_blank_rounded,
+                      ? LottiIcons.checkboxChecked
+                      : LottiIcons.checkboxUnchecked,
                   color: record.checklistItems[index].done
                       ? TaskShowcasePalette.success(context)
                       : TaskShowcasePalette.mediumText(context),
@@ -431,7 +431,7 @@ class _AudioEntryTile extends StatelessWidget {
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
-                  Icons.play_arrow_rounded,
+                  LottiIcons.play,
                   size: 18,
                   color: TaskShowcasePalette.highText(context),
                 ),

@@ -123,13 +123,13 @@ class SidebarMonthCalendar extends StatelessWidget {
               ),
             ),
             _MonthNavButton(
-              icon: Icons.chevron_left_rounded,
+              icon: LottiIcons.chevronLeft,
               tooltip: materialLocalizations.previousMonthTooltip,
               onPressed: onPreviousMonth,
             ),
             SizedBox(width: tokens.spacing.step1),
             _MonthNavButton(
-              icon: Icons.chevron_right_rounded,
+              icon: LottiIcons.chevronRight,
               tooltip: materialLocalizations.nextMonthTooltip,
               onPressed: onNextMonth,
             ),

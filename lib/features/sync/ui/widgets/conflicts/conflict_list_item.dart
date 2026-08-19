@@ -104,7 +104,11 @@ class _WideLayout extends StatelessWidget {
         _ConflictIdMeta(viewModel: viewModel),
         if (hasTap) ...[
           SizedBox(width: tokens.spacing.step3),
-          Icon(Icons.chevron_right, size: 16, color: colors.text.lowEmphasis),
+          Icon(
+            LottiIcons.chevronRight,
+            size: 16,
+            color: colors.text.lowEmphasis,
+          ),
         ],
       ],
     );
@@ -155,7 +159,7 @@ class _CompactLayout extends StatelessWidget {
             const Spacer(),
             if (hasTap)
               Icon(
-                Icons.chevron_right,
+                LottiIcons.chevronRight,
                 size: 16,
                 color: colors.text.lowEmphasis,
               ),

@@ -1,10 +1,10 @@
 import 'package:fl_chart/fl_chart.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/dashboards/state/survey_data.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -198,7 +198,7 @@ void main() {
       await hPumpSurveyChart(tester, chartConfig: chartConfig);
 
       expect(find.text('GHQ12'), findsOneWidget);
-      expect(find.byIcon(Icons.add_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.add), findsOneWidget);
     });
 
     testWidgets('GHQ12 entry produces one spot with correct y value', (
@@ -306,7 +306,7 @@ void main() {
   group('DashboardSurveyChart — add-button launches survey', () {
     /// Taps the add-button and lets the survey modal sheet open.
     Future<void> tapAdd(WidgetTester tester) async {
-      await tester.tap(find.byIcon(Icons.add_rounded));
+      await tester.tap(find.byIcon(LottiIcons.add));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
     }

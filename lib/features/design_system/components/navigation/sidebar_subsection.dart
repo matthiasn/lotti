@@ -41,15 +41,23 @@ class SidebarSubsectionAction extends StatelessWidget {
   const SidebarSubsectionAction({
     required this.label,
     required this.icon,
-    required this.activeIcon,
     required this.active,
     required this.onTap,
+    this.activeIcon,
     super.key,
   });
 
   final String label;
   final IconData icon;
-  final IconData activeIcon;
+
+  /// The glyph for the selected state, when one exists.
+  ///
+  /// Optional because Lucide is stroke-only: most glyphs have no filled
+  /// counterpart, and requiring this made callers pass the same icon twice,
+  /// which reads as a swap that does nothing. Leave it null and the active
+  /// state is carried by the accent colour and label weight this component
+  /// already applies.
+  final IconData? activeIcon;
   final bool active;
   final VoidCallback onTap;
 
@@ -101,7 +109,7 @@ class SidebarSubsectionAction extends StatelessWidget {
                   child: Row(
                     children: [
                       Icon(
-                        active ? activeIcon : icon,
+                        active ? (activeIcon ?? icon) : icon,
                         size: tokens.spacing.step5,
                         color: foregroundColor,
                       ),

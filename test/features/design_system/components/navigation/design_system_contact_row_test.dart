@@ -37,25 +37,25 @@ void main() {
     return DesignSystemContactRow(
       actions: [
         DesignSystemContactAction(
-          icon: const Icon(Icons.mail_outline_rounded),
+          icon: const Icon(LottiIcons.mail),
           label: 'Contact Us',
           iconKey: emailKey,
           onPressed: () => onAction?.call('email'),
         ),
         DesignSystemContactAction(
-          icon: const Icon(Icons.menu_book_outlined),
+          icon: const Icon(LottiIcons.book),
           label: 'Manual',
           iconKey: manualKey,
           onPressed: () => onAction?.call('manual'),
         ),
         DesignSystemContactAction(
-          icon: const Icon(Icons.code),
+          icon: const Icon(LottiIcons.code),
           label: 'GitHub',
           iconKey: githubKey,
           onPressed: () => onAction?.call('github'),
         ),
         DesignSystemContactAction(
-          icon: const Icon(Icons.forum_outlined),
+          icon: const Icon(LottiIcons.forum),
           label: 'Discord',
           iconKey: discordKey,
           onPressed: () => onAction?.call('discord'),
@@ -72,10 +72,10 @@ void main() {
       await tester.pump();
 
       expect(find.text('Contact Us'), findsNothing);
-      expect(find.byIcon(Icons.mail_outline_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.menu_book_outlined), findsOneWidget);
-      expect(find.byIcon(Icons.code), findsOneWidget);
-      expect(find.byIcon(Icons.forum_outlined), findsOneWidget);
+      expect(find.byIcon(LottiIcons.mail), findsOneWidget);
+      expect(find.byIcon(LottiIcons.book), findsOneWidget);
+      expect(find.byIcon(LottiIcons.code), findsOneWidget);
+      expect(find.byIcon(LottiIcons.forum), findsOneWidget);
     });
 
     testWidgets('draws no rule above the group', (tester) async {
@@ -197,10 +197,10 @@ void main() {
       await tester.pump();
 
       for (final icon in [
-        Icons.mail_outline_rounded,
-        Icons.menu_book_outlined,
-        Icons.code,
-        Icons.forum_outlined,
+        LottiIcons.mail,
+        LottiIcons.book,
+        LottiIcons.code,
+        LottiIcons.forum,
       ]) {
         final iconTheme = IconTheme.of(tester.element(find.byIcon(icon)));
         expect(iconTheme.size, IconSizes.m);

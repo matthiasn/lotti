@@ -33,6 +33,7 @@ import 'package:lotti/features/daily_os_next/ui/widgets/day_planning_glass_actio
 import 'package:lotti/features/design_system/components/glass_action_bar.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_navigation_sidebar.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 
 import 'manual_screenshot_utils.dart';
@@ -384,26 +385,26 @@ Widget _desktopDayApp() {
               destinations: [
                 destination(
                   'Tasks',
-                  Icons.check_circle_outline_rounded,
-                  Icons.check_circle_rounded,
+                  LottiIcons.confirmCircled,
+                  LottiIcons.confirmCircled,
                 ),
                 destination(
                   'Daily OS',
-                  Icons.today_outlined,
-                  Icons.today_rounded,
+                  LottiIcons.today,
+                  LottiIcons.today,
                 ),
                 destination(
                   'Logbook',
-                  Icons.menu_book_outlined,
-                  Icons.menu_book_rounded,
+                  LottiIcons.book,
+                  LottiIcons.book,
                 ),
               ],
               activeIndex: 1,
               onDestinationSelected: (_) {},
               settingsDestination: destination(
                 'Settings',
-                Icons.settings_outlined,
-                Icons.settings_rounded,
+                LottiIcons.settings,
+                LottiIcons.settings,
               ),
               onSettingsSelected: () {},
               onToggleCollapsed: () {},

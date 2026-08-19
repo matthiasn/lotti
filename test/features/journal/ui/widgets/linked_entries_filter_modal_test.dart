@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/linked_entries_filter_modal.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -78,7 +79,7 @@ void main() {
     );
     final dismissButton = tester.widget<IconButton>(
       find.ancestor(
-        of: find.byIcon(Icons.check_rounded),
+        of: find.byIcon(LottiIcons.confirm),
         matching: find.byType(IconButton),
       ),
     );

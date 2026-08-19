@@ -5,6 +5,7 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/empty_states/design_system_empty_state.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/state/task_live_data_provider.dart';
 import 'package:lotti/features/tasks/state/task_one_liner_provider.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_list_pane.dart';
@@ -214,7 +215,7 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(find.byIcon(Icons.filter_list_rounded).first);
+      await tester.tap(find.byIcon(LottiIcons.filter).first);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
 
@@ -238,7 +239,7 @@ void main() {
         await tester.pump();
 
         // In split-view mode the Row layout is rendered; tap the filter icon.
-        final filterIcon = find.byIcon(Icons.filter_list_rounded).first;
+        final filterIcon = find.byIcon(LottiIcons.filter).first;
         await tester.ensureVisible(filterIcon);
         await tester.tap(filterIcon);
         await tester.pump();
@@ -275,7 +276,7 @@ void main() {
       );
 
       // Tap the clear (cancel) icon to invoke onSearchCleared.
-      final clearButton = find.byIcon(Icons.cancel_rounded).first;
+      final clearButton = find.byIcon(LottiIcons.closeCircled).first;
       await tester.ensureVisible(clearButton);
       await tester.tap(clearButton);
       await tester.pump();
@@ -313,7 +314,7 @@ void main() {
       );
 
       // Tap the clear icon to invoke onSearchCleared.
-      final clearButton = find.byIcon(Icons.cancel_rounded).first;
+      final clearButton = find.byIcon(LottiIcons.closeCircled).first;
       await tester.ensureVisible(clearButton);
       await tester.tap(clearButton);
       await tester.pump();

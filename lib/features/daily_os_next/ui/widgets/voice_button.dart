@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:lotti/features/ai/ui/animation/ai_state_shader_animation.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -221,11 +220,11 @@ class _VoiceButtonState extends State<VoiceButton>
   }
 
   IconData get _glyph => switch (widget.phase) {
-    CapturePhase.listening => Icons.stop_rounded,
+    CapturePhase.listening => LottiIcons.stop,
     CapturePhase.idle ||
     CapturePhase.error ||
     CapturePhase.transcribing ||
-    CapturePhase.captured => MdiIcons.microphone,
+    CapturePhase.captured => LottiIcons.mic,
   };
 
   @override

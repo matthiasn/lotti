@@ -14,8 +14,8 @@ import 'package:lotti/services/nav_service.dart';
 /// Trailing icon in `TabSectionHeader` that opens the synced-notifications
 /// inbox popover.
 ///
-/// The icon flips between [Icons.notifications_none_rounded] and
-/// [Icons.notifications_active_rounded] based on the live unseen count from
+/// The icon flips between [LottiIcons.notification] and
+/// [LottiIcons.notificationActive] based on the live unseen count from
 /// [unseenNotificationCountProvider], and renders a small badge with the
 /// number when at least one alert is unseen. Tapping the icon toggles a
 /// [MenuAnchor]-hosted popover whose contents are driven by
@@ -59,8 +59,8 @@ class _NotificationBellState extends ConsumerState<NotificationBell> {
     final unseen = ref.watch(unseenNotificationCountProvider).value ?? 0;
     final hasUnseen = unseen > 0;
     final iconData = hasUnseen
-        ? Icons.notifications_active_rounded
-        : Icons.notifications_none_rounded;
+        ? LottiIcons.notificationActive
+        : LottiIcons.notification;
 
     // Capture the bell's own context so a row tap can navigate even after
     // the popover overlay (and therefore the row's own context) is torn down
@@ -359,7 +359,7 @@ class _InboxRow extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Icon(
-              Icons.notifications_active_rounded,
+              LottiIcons.notificationActive,
               size: 18,
               color: tokens.colors.interactive.enabled,
             ),
@@ -397,7 +397,7 @@ class _InboxRow extends StatelessWidget {
               visualDensity: VisualDensity.compact,
               tooltip: messages.notificationInboxDismiss,
               icon: Icon(
-                Icons.close_rounded,
+                LottiIcons.close,
                 size: 18,
                 color: tokens.colors.text.lowEmphasis,
               ),

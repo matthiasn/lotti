@@ -25,6 +25,7 @@ import 'package:lotti/features/ai/ui/unified_ai_popup_menu.dart';
 import 'package:lotti/features/ai/ui/unified_ai_skills_modal.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:mocktail/mocktail.dart';
@@ -785,7 +786,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       // Act - Open the modal
-      await tester.tap(find.byIcon(Icons.assistant_outlined));
+      await tester.tap(find.byIcon(LottiIcons.assistant));
       await tester.pumpAndSettle();
 
       // Verify modal is open
@@ -862,7 +863,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        await tester.tap(find.byIcon(Icons.assistant_outlined));
+        await tester.tap(find.byIcon(LottiIcons.assistant));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
         await tester.tap(find.text('Prompt Generation Skill'));
@@ -943,7 +944,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        await tester.tap(find.byIcon(Icons.assistant_outlined));
+        await tester.tap(find.byIcon(LottiIcons.assistant));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Prompt Generation Skill'));
         await tester.pumpAndSettle();
@@ -1004,7 +1005,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        await tester.tap(find.byIcon(Icons.assistant_outlined));
+        await tester.tap(find.byIcon(LottiIcons.assistant));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Prompt Generation Skill'));
         await tester.pumpAndSettle();
@@ -1075,7 +1076,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        await tester.tap(find.byIcon(Icons.assistant_outlined));
+        await tester.tap(find.byIcon(LottiIcons.assistant));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Prompt Generation Skill'));
         await tester.pumpAndSettle();
@@ -1168,7 +1169,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        await tester.tap(find.byIcon(Icons.assistant_outlined));
+        await tester.tap(find.byIcon(LottiIcons.assistant));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
         await tester.tap(find.text('Prompt Generation Skill'));
@@ -1232,7 +1233,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         // Open the modal
-        await tester.tap(find.byIcon(Icons.assistant_outlined));
+        await tester.tap(find.byIcon(LottiIcons.assistant));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -1319,7 +1320,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         // Open the modal
-        await tester.tap(find.byIcon(Icons.assistant_outlined));
+        await tester.tap(find.byIcon(LottiIcons.assistant));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -1400,7 +1401,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        await tester.tap(find.byIcon(Icons.assistant_outlined));
+        await tester.tap(find.byIcon(LottiIcons.assistant));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
         await tester.tap(find.text('Generate Cover Art'));
@@ -1478,7 +1479,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        await tester.tap(find.byIcon(Icons.assistant_outlined));
+        await tester.tap(find.byIcon(LottiIcons.assistant));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
         await tester.tap(find.text('Generate Cover Art'));
@@ -1488,7 +1489,7 @@ void main() {
         expect(find.text('Nano Banana'), findsOneWidget); // picker shown
 
         // Dismiss the picker — the handler must abort, never opening cover art.
-        await tester.tap(find.byIcon(Icons.close_rounded).first);
+        await tester.tap(find.byIcon(LottiIcons.close).first);
         await tester.pump();
         await tester.pump(const Duration(seconds: 1));
 
@@ -1527,7 +1528,7 @@ void main() {
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 300));
 
-          await tester.tap(find.byIcon(Icons.assistant_outlined));
+          await tester.tap(find.byIcon(LottiIcons.assistant));
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 300));
           await tester.tap(find.text(variant.skillName));
@@ -1574,7 +1575,7 @@ void main() {
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 300));
 
-          await tester.tap(find.byIcon(Icons.assistant_outlined));
+          await tester.tap(find.byIcon(LottiIcons.assistant));
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 300));
           await tester.tap(find.text(variant.skillName));
@@ -1624,7 +1625,7 @@ void main() {
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 300));
 
-          await tester.tap(find.byIcon(Icons.assistant_outlined));
+          await tester.tap(find.byIcon(LottiIcons.assistant));
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 300));
           await tester.tap(find.text(variant.skillName));
@@ -1676,7 +1677,7 @@ void main() {
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 300));
 
-          await tester.tap(find.byIcon(Icons.assistant_outlined));
+          await tester.tap(find.byIcon(LottiIcons.assistant));
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 300));
           await tester.tap(find.text(variant.skillName));
@@ -1746,7 +1747,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        await tester.tap(find.byIcon(Icons.assistant_outlined));
+        await tester.tap(find.byIcon(LottiIcons.assistant));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
         await tester.tap(find.text(_transcriptionOverrideVariant.skillName));
@@ -1754,10 +1755,10 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         // Two providers -> the provider page shows two drill-down rows.
-        expect(find.byIcon(Icons.chevron_right_rounded), findsNWidgets(2));
+        expect(find.byIcon(LottiIcons.chevronRight), findsNWidgets(2));
 
         // Drill into the first provider, then pick its model.
-        await tester.tap(find.byIcon(Icons.chevron_right_rounded).first);
+        await tester.tap(find.byIcon(LottiIcons.chevronRight).first);
         await tester.pumpAndSettle();
         await tester.tap(find.text('Voxtral Local'));
         await tester.pumpAndSettle();
@@ -1830,7 +1831,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        await tester.tap(find.byIcon(Icons.assistant_outlined));
+        await tester.tap(find.byIcon(LottiIcons.assistant));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
         await tester.tap(find.text(_transcriptionOverrideVariant.skillName));
@@ -1910,7 +1911,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        await tester.tap(find.byIcon(Icons.assistant_outlined));
+        await tester.tap(find.byIcon(LottiIcons.assistant));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Prompt Generation Skill'));
         await tester.pumpAndSettle();
@@ -2006,7 +2007,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      await tester.tap(find.byIcon(Icons.assistant_outlined));
+      await tester.tap(find.byIcon(LottiIcons.assistant));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.text(_transcriptionOverrideVariant.skillName));

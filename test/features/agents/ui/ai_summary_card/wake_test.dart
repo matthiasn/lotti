@@ -5,6 +5,7 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -27,7 +28,7 @@ void main() {
 
       expect(find.text('AI summary'), findsOneWidget);
       expect(find.text('Update now'), findsOneWidget);
-      expect(find.byIcon(Icons.refresh_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.refresh), findsOneWidget);
     });
 
     testWidgets('setup identity opens the persistent agent setup sheet', (
@@ -141,8 +142,8 @@ void main() {
           findsOneWidget,
         );
         expect(find.text('Update now'), findsOneWidget);
-        expect(find.byIcon(Icons.refresh_rounded), findsOneWidget);
-        expect(find.byIcon(Icons.close_rounded), findsNothing);
+        expect(find.byIcon(LottiIcons.refresh), findsOneWidget);
+        expect(find.byIcon(LottiIcons.close), findsNothing);
         expect(find.textContaining('0:30'), findsNothing);
         await tester.tap(find.byKey(const ValueKey('taskAgentWakeButton')));
         verify(() => taskAgentService.triggerReanalysis(any())).called(1);
@@ -312,7 +313,7 @@ void main() {
       expect(find.bySemanticsLabel(RegExp('No AI setup')), findsOneWidget);
       // The disabled toggle carries the needs-setup explanation as a tooltip
       // instead of a permanent caption line.
-      expect(find.byIcon(Icons.info_outline_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.info), findsOneWidget);
       final wakeButton = tester.widget<DesignSystemButton>(
         find.byKey(const ValueKey('taskAgentWakeButton')),
       );

@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/create/create_entry_action_button.dart';
 import 'package:lotti/features/journal/ui/widgets/create/create_menu_list_item.dart';
 import 'package:lotti/get_it.dart';
@@ -31,7 +32,7 @@ void main() {
 
       expect(find.byType(DesignSystemFloatingActionButton), findsOneWidget);
       expect(find.byType(FloatingActionButton), findsNothing);
-      expect(find.byIcon(Icons.add_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.add), findsOneWidget);
 
       final size = tester.getSize(
         find.byType(DesignSystemFloatingActionButton),
@@ -83,7 +84,7 @@ void main() {
       // The modal body renders its menu items; the Timer item proves the
       // linkedFromId made it through (it only shows with a linked id).
       expect(find.byType(CreateMenuListItem), findsWidgets);
-      expect(find.byIcon(Icons.timer_outlined), findsOneWidget);
+      expect(find.byIcon(LottiIcons.timer), findsOneWidget);
     },
   );
 }

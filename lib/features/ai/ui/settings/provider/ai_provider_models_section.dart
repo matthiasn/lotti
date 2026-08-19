@@ -43,7 +43,7 @@ class ModelsSection extends StatelessWidget {
       trailing: DesignSystemButton(
         label: messages.aiProviderDetailAddModelButton,
         variant: DesignSystemButtonVariant.secondary,
-        leadingIcon: Icons.add_rounded,
+        leadingIcon: LottiIcons.add,
         onPressed: onAddModel,
       ),
       child: models.isEmpty

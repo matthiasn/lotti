@@ -277,7 +277,11 @@ class LinkedTaskSectionHeader extends StatelessWidget {
             width: leadingRailWidth ?? tokens.spacing.step5,
             child: accent == null
                 ? null
-                : Icon(Icons.block, size: tokens.spacing.step5, color: accent),
+                : Icon(
+                    LottiIcons.block,
+                    size: tokens.spacing.step5,
+                    color: accent,
+                  ),
           ),
           // Same gap DesignSystemListItem puts after its leading slot, so the
           // header label lands on the row title's left edge instead of near it.

@@ -13,6 +13,7 @@ import 'package:lotti/features/agents/ui/evolution/evolution_chat_state.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_chat_bubble.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_message_input.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_typing_indicator.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../../helpers/fallbacks.dart';
 import '../../../../widget_test_utils.dart';
@@ -129,7 +130,7 @@ void main() {
       await tester.pump();
 
       // Tap the send button.
-      await tester.tap(find.byIcon(Icons.send_rounded));
+      await tester.tap(find.byIcon(LottiIcons.send));
       await tester.pump();
 
       expect(capturedNotifier!.sentMessages, contains('my message'));

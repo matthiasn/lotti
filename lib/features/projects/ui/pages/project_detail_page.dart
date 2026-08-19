@@ -5,6 +5,7 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/components/calendar_pickers/design_system_date_picker_modal.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
@@ -211,7 +212,7 @@ class _ProjectDetailPageState extends ConsumerState<ProjectDetailPage> {
                           context,
                         ).backButtonTooltip,
                         onPressed: _handleBackNavigation,
-                        icon: const Icon(Icons.arrow_back),
+                        icon: const Icon(LottiIcons.back),
                       )
                     : null,
                 title: Text(
@@ -242,7 +243,7 @@ class _ProjectDetailPageState extends ConsumerState<ProjectDetailPage> {
                       // Status Section
                       LottiFormSection(
                         title: messages.projectStatusChangeTitle,
-                        icon: Icons.flag_outlined,
+                        icon: LottiIcons.flag,
                         children: [
                           ProjectStatusPicker(
                             currentStatus: project.data.status,
@@ -263,7 +264,7 @@ class _ProjectDetailPageState extends ConsumerState<ProjectDetailPage> {
                       // Title & Target Date Section
                       LottiFormSection(
                         title: messages.projectTitleLabel,
-                        icon: Icons.folder_outlined,
+                        icon: LottiIcons.folder,
                         children: [
                           LottiTextField(
                             controller: _titleController,
@@ -300,7 +301,7 @@ class _ProjectDetailPageState extends ConsumerState<ProjectDetailPage> {
                       if (healthMetrics.asData?.value case final metrics?) ...[
                         LottiFormSection(
                           title: messages.projectHealthSectionTitle,
-                          icon: Icons.monitor_heart_outlined,
+                          icon: LottiIcons.heartRate,
                           children: [
                             ProjectHealthIndicator(metrics: metrics),
                           ],

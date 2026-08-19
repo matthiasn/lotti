@@ -129,13 +129,13 @@ void main() {
         const DesignSystemTextInput(
           key: key,
           label: 'Search',
-          leadingIcon: Icons.search,
-          trailingIcon: Icons.clear,
+          leadingIcon: LottiIcons.search,
+          trailingIcon: LottiIcons.close,
         ),
       );
 
-      expect(find.byIcon(Icons.search), findsOneWidget);
-      expect(find.byIcon(Icons.clear), findsOneWidget);
+      expect(find.byIcon(LottiIcons.search), findsOneWidget);
+      expect(find.byIcon(LottiIcons.close), findsOneWidget);
     });
 
     testWidgets('calls onChanged when text is entered', (tester) async {
@@ -180,7 +180,7 @@ void main() {
         tester,
         DesignSystemTextInput(
           label: 'Search',
-          trailingIcon: Icons.clear,
+          trailingIcon: LottiIcons.close,
           trailingIconTooltip: 'Clear search',
           onTrailingIconTap: () => clearCount++,
         ),
@@ -588,7 +588,7 @@ void main() {
         DesignSystemTextInput(
           label: 'Goal name',
           readOnly: true,
-          trailingIcon: Icons.edit_outlined,
+          trailingIcon: LottiIcons.edit,
           trailingIconTooltip: 'Edit goal name',
           trailingIconKey: const Key('unlock-title'),
           onTrailingIconTap: () => unlocks++,
@@ -608,14 +608,14 @@ void main() {
         tester,
         const DesignSystemTextInput(
           label: 'Search',
-          trailingIcon: Icons.clear,
+          trailingIcon: LottiIcons.close,
           trailingIconKey: Key('decorative-trailing'),
         ),
       );
 
       // A decorative icon has no affordance to key.
       expect(find.byKey(const Key('decorative-trailing')), findsNothing);
-      expect(find.byIcon(Icons.clear), findsOneWidget);
+      expect(find.byIcon(LottiIcons.close), findsOneWidget);
     });
 
     testWidgets('a swapped external controller drives the field', (
@@ -776,8 +776,8 @@ void main() {
         tester,
         const DesignSystemTextInput(
           label: 'With Icons',
-          leadingIcon: Icons.search,
-          trailingIcon: Icons.clear,
+          leadingIcon: LottiIcons.search,
+          trailingIcon: LottiIcons.close,
         ),
       );
 

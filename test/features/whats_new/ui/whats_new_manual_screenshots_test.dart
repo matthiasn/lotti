@@ -23,12 +23,14 @@ import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/demo/media/demo_media_asset.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/pages/settings_root_page.dart';
 import 'package:lotti/features/whats_new/model/whats_new_content.dart';
 import 'package:lotti/features/whats_new/model/whats_new_release.dart';
 import 'package:lotti/features/whats_new/model/whats_new_state.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
 import 'package:lotti/features/whats_new/ui/whats_new_modal.dart';
+import 'package:lotti/features/whats_new/ui/whats_new_navigation_footer.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -311,7 +313,16 @@ void main() {
 
       expect(find.text('v0.9.1049'), findsOneWidget);
       if (pastRelease) {
-        await tester.tap(find.byIcon(Icons.chevron_right));
+        // Scoped to the footer: every release-note row also ends in a
+        // chevron. Material kept the two apart as `chevron_right` and
+        // `chevron_right_rounded` — two names for the same arrow — so this
+        // tap is ambiguous the moment they share one glyph.
+        await tester.tap(
+          find.descendant(
+            of: find.byType(NavigationFooter),
+            matching: find.byIcon(LottiIcons.chevronRight),
+          ),
+        );
         await settleFrames(tester, 10);
         expect(find.text('v0.9.1048'), findsOneWidget);
       }

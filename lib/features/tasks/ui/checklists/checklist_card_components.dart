@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/checklists/consts.dart';
@@ -117,7 +116,7 @@ class Header extends StatelessWidget {
                           : context.messages.checklistExpandTooltip,
                       onPressed: onToggleExpand,
                       icon: Icon(
-                        Icons.expand_more,
+                        LottiIcons.expand,
                         size: 24,
                         color: tokens.colors.text.lowEmphasis,
                       ),
@@ -192,7 +191,7 @@ class SortingHeader extends StatelessWidget {
     final handle = Padding(
       padding: EdgeInsets.only(right: tokens.spacing.step3),
       child: Icon(
-        Icons.drag_indicator,
+        LottiIcons.drag,
         size: 28,
         color: tokens.colors.text.lowEmphasis.withValues(alpha: 0.7),
       ),
@@ -457,7 +456,7 @@ class _HeaderMenu extends StatelessWidget {
       ),
       child: PopupMenuButton<String>(
         tooltip: context.messages.checklistMoreTooltip,
-        icon: const Icon(Icons.more_vert, size: 20),
+        icon: const Icon(LottiIcons.moreVertical, size: 20),
         position: PopupMenuPosition.under,
         onSelected: (value) async {
           Future<void> deleteAction() async {
@@ -499,7 +498,13 @@ class _HeaderMenu extends StatelessWidget {
               value: 'export',
               child: Row(
                 children: [
-                  const Icon(MdiIcons.exportVariant, size: 18),
+                  // Copy, not share: this item writes markdown to the
+                  // clipboard, while the item below hands it to the OS share
+                  // sheet. Material spelled them `mdi:exportVariant` and
+                  // `ios_share`, which Lucide expresses with one glyph — so
+                  // after the migration the menu offered the same picture
+                  // twice for two different actions.
+                  const Icon(LottiIcons.copy, size: 18),
                   SizedBox(width: tokens.spacing.step3),
                   Flexible(
                     child: Text(
@@ -516,7 +521,7 @@ class _HeaderMenu extends StatelessWidget {
               value: 'share',
               child: Row(
                 children: [
-                  const Icon(Icons.ios_share, size: 18),
+                  const Icon(LottiIcons.share, size: 18),
                   SizedBox(width: tokens.spacing.step3),
                   Flexible(
                     child: Text(
@@ -533,7 +538,7 @@ class _HeaderMenu extends StatelessWidget {
               value: 'delete',
               child: Row(
                 children: [
-                  const Icon(Icons.delete_outline, size: 18),
+                  const Icon(LottiIcons.delete, size: 18),
                   SizedBox(width: tokens.spacing.step3),
                   Flexible(
                     child: Text(

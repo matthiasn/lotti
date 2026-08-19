@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/ui/lotti_animated_checkbox.dart';
 
 void main() {
@@ -39,7 +40,7 @@ void main() {
       );
 
       // Should show check icon when checked
-      expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
     });
 
     testWidgets('shows unchecked state when value is false', (tester) async {
@@ -53,7 +54,7 @@ void main() {
       );
 
       // Should not show check icon when unchecked
-      expect(find.byIcon(Icons.check_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.confirm), findsNothing);
     });
 
     testWidgets('calls onChanged when tapped and enabled', (tester) async {
@@ -109,12 +110,12 @@ void main() {
           child: const LottiAnimatedCheckbox(
             label: 'Test',
             enabled: false,
-            disabledIcon: Icons.mic_off_outlined,
+            disabledIcon: LottiIcons.micIdle,
           ),
         ),
       );
 
-      expect(find.byIcon(Icons.mic_off_outlined), findsOneWidget);
+      expect(find.byIcon(LottiIcons.micIdle), findsOneWidget);
     });
 
     testWidgets('shows subtitle when provided and disabled', (tester) async {
@@ -166,7 +167,7 @@ void main() {
       );
 
       // Initially unchecked
-      expect(find.byIcon(Icons.check_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.confirm), findsNothing);
 
       // Tap to check
       await tester.tap(find.byType(LottiAnimatedCheckbox));
@@ -257,7 +258,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 200));
 
       // Should now show check icon
-      expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
     });
 
     testWidgets('handles null value as false', (tester) async {
@@ -270,7 +271,7 @@ void main() {
       );
 
       // Should not show check icon when value is null
-      expect(find.byIcon(Icons.check_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.confirm), findsNothing);
     });
 
     testWidgets('respects minimum hit target size', (tester) async {
@@ -353,12 +354,12 @@ void main() {
           child: const LottiAnimatedCheckbox(
             label: 'Test',
             enabled: false,
-            disabledIcon: Icons.lock,
+            disabledIcon: LottiIcons.lock,
           ),
         ),
       );
 
-      final icon = tester.widget<Icon>(find.byIcon(Icons.lock));
+      final icon = tester.widget<Icon>(find.byIcon(LottiIcons.lock));
       expect(
         icon.color,
         theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),

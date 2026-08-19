@@ -405,7 +405,7 @@ class _NoGoalsYet extends StatelessWidget {
       child: Column(
         children: [
           Icon(
-            Icons.flag_outlined,
+            LottiIcons.flag,
             size: IconSizes.l,
             color: tokens.colors.text.lowEmphasis,
           ),
@@ -421,7 +421,7 @@ class _NoGoalsYet extends StatelessWidget {
           DesignSystemButton(
             key: const ValueKey('unified-goals-empty-cta'),
             label: context.messages.agentsCreateGoal,
-            leadingIcon: Icons.add_rounded,
+            leadingIcon: LottiIcons.add,
             variant: DesignSystemButtonVariant.secondary,
             onPressed: () => beamToNamed(goalCreatePath),
           ),

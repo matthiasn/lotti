@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/modern_icon_container.dart';
 
@@ -10,7 +11,7 @@ void main() {
 
   group('ModernIconContainer Tests', () {
     testWidgets('renders icon with default colors', (tester) async {
-      const testIcon = Icons.star;
+      const testIcon = LottiIcons.star;
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -36,7 +37,7 @@ void main() {
     });
 
     testWidgets('custom icon color is applied', (tester) async {
-      const testIcon = Icons.star;
+      const testIcon = LottiIcons.star;
       const customColor = Colors.red;
 
       await tester.pumpWidget(
@@ -84,7 +85,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           const ModernIconContainer(
-            icon: Icons.star,
+            icon: LottiIcons.star,
             isCompact: true,
           ),
         ),
@@ -104,7 +105,7 @@ void main() {
       );
 
       // Check icon size
-      final icon = tester.widget<Icon>(find.byIcon(Icons.star));
+      final icon = tester.widget<Icon>(find.byIcon(LottiIcons.star));
       expect(icon.size, AppTheme.iconSizeCompact);
     });
 
@@ -112,7 +113,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           const ModernIconContainer(
-            icon: Icons.star,
+            icon: LottiIcons.star,
             // isCompact defaults to false
           ),
         ),
@@ -126,7 +127,7 @@ void main() {
       expect(container.constraints?.maxHeight, AppTheme.iconContainerSize);
 
       // Check icon size
-      final icon = tester.widget<Icon>(find.byIcon(Icons.star));
+      final icon = tester.widget<Icon>(find.byIcon(LottiIcons.star));
       expect(icon.size, AppTheme.iconSize);
     });
 
@@ -138,7 +139,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           const ModernIconContainer(
-            icon: Icons.star,
+            icon: LottiIcons.star,
             gradient: customGradient,
           ),
         ),
@@ -157,7 +158,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           const ModernIconContainer(
-            icon: Icons.star,
+            icon: LottiIcons.star,
             borderColor: customBorderColor,
           ),
         ),
@@ -217,7 +218,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           const ModernIconContainer(
-            icon: Icons.star,
+            icon: LottiIcons.star,
           ),
         ),
       );
@@ -235,7 +236,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           const ModernIconContainer(
-            icon: Icons.star,
+            icon: LottiIcons.star,
           ),
         ),
       );
@@ -255,7 +256,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           const ModernIconContainer(
-            icon: Icons.star,
+            icon: LottiIcons.star,
           ),
         ),
       );

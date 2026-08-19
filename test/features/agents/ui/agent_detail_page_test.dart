@@ -12,6 +12,7 @@ import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_detail_page.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -604,7 +605,7 @@ void main() {
       // Verify we can find the page before tapping.
       expect(find.byType(AgentDetailPage), findsOneWidget);
 
-      await tester.tap(find.byIcon(Icons.chevron_left));
+      await tester.tap(find.byIcon(LottiIcons.chevronLeft));
       await tester.pumpAndSettle();
 
       // Navigator.pop removes the page from the tree.
@@ -625,7 +626,7 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(find.byIcon(Icons.chevron_left));
+      await tester.tap(find.byIcon(LottiIcons.chevronLeft));
       await tester.pump();
 
       verify(() => mockNavService.beamBack()).called(1);
@@ -640,12 +641,12 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.chevron_left), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronLeft), findsOneWidget);
 
-      await tester.tap(find.byIcon(Icons.chevron_left));
+      await tester.tap(find.byIcon(LottiIcons.chevronLeft));
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.chevron_left), findsNothing);
+      expect(find.byIcon(LottiIcons.chevronLeft), findsNothing);
       verifyNever(() => mockNavService.beamBack());
     });
 
@@ -655,7 +656,7 @@ void main() {
 
       expect(find.byType(AgentDetailPage), findsOneWidget);
 
-      await tester.tap(find.byIcon(Icons.chevron_left));
+      await tester.tap(find.byIcon(LottiIcons.chevronLeft));
       await tester.pumpAndSettle();
 
       expect(find.byType(AgentDetailPage), findsNothing);
@@ -672,7 +673,7 @@ void main() {
 
       expect(find.byType(AgentDetailPage), findsOneWidget);
 
-      await tester.tap(find.byIcon(Icons.chevron_left));
+      await tester.tap(find.byIcon(LottiIcons.chevronLeft));
       await tester.pumpAndSettle();
 
       expect(find.byType(AgentDetailPage), findsNothing);

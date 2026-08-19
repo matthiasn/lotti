@@ -122,23 +122,23 @@ class _BottomNavigationShellShowcase extends StatelessWidget {
     return [
       DesignSystemFiveSlotNavBarItem(
         label: context.messages.navTabTitleTasks,
-        icon: const Icon(Icons.check_circle_outline_rounded),
-        activeIcon: const Icon(Icons.check_circle_rounded),
+        icon: const Icon(LottiIcons.confirmCircled),
+        activeIcon: const Icon(LottiIcons.confirmCircled),
         active: true,
       ),
       DesignSystemFiveSlotNavBarItem(
         label: context.messages.navTabTitleJournal,
-        icon: const Icon(Icons.book_outlined),
-        activeIcon: const Icon(Icons.book_rounded),
+        icon: const Icon(LottiIcons.book),
+        activeIcon: const Icon(LottiIcons.book),
       ),
       DesignSystemFiveSlotNavBarItem(
         label: context.messages.navTabTitleSettings,
-        icon: const Icon(Icons.settings_outlined),
-        activeIcon: const Icon(Icons.settings_rounded),
+        icon: const Icon(LottiIcons.settings),
+        activeIcon: const Icon(LottiIcons.settings),
       ),
       DesignSystemFiveSlotNavBarItem(
         label: context.messages.navTabTitleMore,
-        icon: const Icon(Icons.more_horiz_rounded),
+        icon: const Icon(LottiIcons.more),
       ),
     ];
   }
@@ -263,25 +263,25 @@ class _SubComponentsShowcase extends StatelessWidget {
             children: [
               _NavigationTabItem(
                 label: myDaily,
-                icon: Icons.calendar_today_outlined,
+                icon: LottiIcons.today,
                 active: true,
                 symbol: false,
               ),
               _NavigationTabItem(
                 label: myDaily,
-                icon: Icons.calendar_today_outlined,
+                icon: LottiIcons.today,
                 active: false,
                 symbol: false,
               ),
               const _NavigationTabItem(
                 label: 'Label',
-                icon: Icons.account_circle_rounded,
+                icon: LottiIcons.person,
                 active: true,
                 symbol: true,
               ),
               const _NavigationTabItem(
                 label: 'Label',
-                icon: Icons.account_circle_rounded,
+                icon: LottiIcons.person,
                 active: false,
                 symbol: true,
               ),
@@ -314,7 +314,7 @@ class _AccessoryField extends StatelessWidget {
           child: Row(
             children: [
               Icon(
-                Icons.search_rounded,
+                LottiIcons.search,
                 size: 20,
                 color: tokens.colors.text.mediumEmphasis,
               ),
@@ -330,7 +330,7 @@ class _AccessoryField extends StatelessWidget {
                 ),
               ),
               Icon(
-                Icons.close_rounded,
+                LottiIcons.close,
                 size: 20,
                 color: tokens.colors.text.mediumEmphasis,
               ),
@@ -375,7 +375,7 @@ class _AccessoryCircleButton extends StatelessWidget {
         height: 60,
         child: Center(
           child: Icon(
-            Icons.search_rounded,
+            LottiIcons.search,
             color: tokens.colors.text.mediumEmphasis,
             size: 20,
           ),

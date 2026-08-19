@@ -12,6 +12,7 @@ import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
 import 'package:lotti/features/design_system/components/dropdowns/design_system_dropdown.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/link_task_modal.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/relationship_type_selector.dart';
@@ -358,7 +359,7 @@ void main() {
       // DesignSystemSearch renders the hint both as a visible overlay and as
       // the (transparent) TextField hint, so allow more than one match.
       expect(find.text('Search tasks…'), findsWidgets);
-      expect(find.byIcon(Icons.search_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.search), findsOneWidget);
     });
 
     testWidgets(
@@ -835,10 +836,10 @@ void main() {
       await search(tester, 'search text');
 
       // Clear button should appear
-      expect(find.byIcon(Icons.cancel_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.closeCircled), findsOneWidget);
 
       // Tap clear button
-      await tester.tap(find.byIcon(Icons.cancel_rounded));
+      await tester.tap(find.byIcon(LottiIcons.closeCircled));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
 
@@ -1611,7 +1612,7 @@ void main() {
         await openModal(tester);
 
         expect(find.text(label), findsOneWidget);
-        // Rejected's icon (Icons.close_rounded) is also the Wolt modal's own
+        // Rejected's icon (LottiIcons.close) is also the Wolt modal's own
         // close button — scope to the picker list so the two don't collide.
         expect(
           find.descendant(
@@ -1780,7 +1781,7 @@ void main() {
           await tester.pump();
 
           // Gone before the write lands.
-          await tester.tap(find.byIcon(Icons.close_rounded));
+          await tester.tap(find.byIcon(LottiIcons.close));
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 900));
           expect(find.text('Link existing task'), findsNothing);

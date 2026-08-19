@@ -54,7 +54,7 @@ class DesignSystemStepper extends StatelessWidget {
           children: [
             _StepperGlyph(
               key: decrementKey,
-              icon: Icons.remove_rounded,
+              icon: LottiIcons.remove,
               tooltip: decrementTooltip,
               onPressed: onDecrement,
             ),
@@ -72,7 +72,7 @@ class DesignSystemStepper extends StatelessWidget {
             ),
             _StepperGlyph(
               key: incrementKey,
-              icon: Icons.add_rounded,
+              icon: LottiIcons.add,
               tooltip: incrementTooltip,
               onPressed: onIncrement,
             ),

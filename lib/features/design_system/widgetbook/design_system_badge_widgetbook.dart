@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:widgetbook/widgetbook.dart';
 
 WidgetbookComponent buildDesignSystemBadgeWidgetbookComponent() {
@@ -79,7 +80,7 @@ class _BadgeTypeScale extends StatelessWidget {
         DesignSystemBadge.number(value: '99+'),
         DesignSystemBadge.number(value: '999+'),
         DesignSystemBadge.filled(label: 'Primary'),
-        DesignSystemBadge.icon(icon: Icons.check_rounded),
+        DesignSystemBadge.icon(icon: LottiIcons.confirm),
         DesignSystemBadge.outlined(label: 'Outlined'),
       ],
     );
@@ -189,11 +190,11 @@ String _labelForTone(DesignSystemBadgeTone tone) {
 
 IconData _iconForTone(DesignSystemBadgeTone tone) {
   return switch (tone) {
-    DesignSystemBadgeTone.primary => Icons.check_rounded,
-    DesignSystemBadgeTone.secondary => Icons.check_rounded,
-    DesignSystemBadgeTone.danger => Icons.error_rounded,
-    DesignSystemBadgeTone.warning => Icons.warning_amber_rounded,
-    DesignSystemBadgeTone.success => Icons.check_rounded,
-    DesignSystemBadgeTone.neutral => Icons.remove_rounded,
+    DesignSystemBadgeTone.primary => LottiIcons.confirm,
+    DesignSystemBadgeTone.secondary => LottiIcons.confirm,
+    DesignSystemBadgeTone.danger => LottiIcons.error,
+    DesignSystemBadgeTone.warning => LottiIcons.warning,
+    DesignSystemBadgeTone.success => LottiIcons.confirm,
+    DesignSystemBadgeTone.neutral => LottiIcons.remove,
   };
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/selection/selection_modal_base.dart';
 import 'package:lotti/widgets/selection/selection_save_button.dart';
 
@@ -71,13 +72,13 @@ void main() {
         await tester.pumpWidget(
           createTestWidget(
             title: 'Test Modal',
-            trailing: const Icon(Icons.info),
+            trailing: const Icon(LottiIcons.info),
             child: const Text('Test Content'),
           ),
         );
         await tester.pump();
 
-        expect(find.byIcon(Icons.info), findsOneWidget);
+        expect(find.byIcon(LottiIcons.info), findsOneWidget);
       });
 
       testWidgets('show method opens modal correctly', (tester) async {
@@ -248,7 +249,7 @@ void main() {
                 5,
                 (index) => ListTile(
                   title: Text('Item $index'),
-                  leading: const Icon(Icons.star),
+                  leading: const Icon(LottiIcons.star),
                 ),
               ),
             ),
@@ -258,7 +259,7 @@ void main() {
 
         expect(find.byType(ListView), findsOneWidget);
         expect(find.byType(ListTile), findsNWidgets(5));
-        expect(find.byIcon(Icons.star), findsNWidgets(5));
+        expect(find.byIcon(LottiIcons.star), findsNWidgets(5));
       });
     });
 

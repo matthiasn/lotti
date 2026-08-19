@@ -146,7 +146,7 @@ AppBar _dailyOsNextRouteAppBar(BuildContext context) {
     backgroundColor: tokens.colors.background.level01,
     elevation: 0,
     leading: IconButton(
-      icon: const Icon(Icons.arrow_back_rounded),
+      icon: const Icon(LottiIcons.back),
       tooltip: context.messages.dailyOsNextDayBack,
       onPressed: () => Navigator.of(context).maybePop(),
     ),

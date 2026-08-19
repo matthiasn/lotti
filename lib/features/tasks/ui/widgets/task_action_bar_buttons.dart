@@ -103,7 +103,7 @@ class TrackTimePill extends StatelessWidget {
                           semanticLabel: stopSemanticLabel,
                         )
                       : Icon(
-                          Icons.timer_outlined,
+                          LottiIcons.timer,
                           size: TaskActionBar.iconSize,
                           color: foreground,
                         ),
@@ -196,7 +196,7 @@ class _PillStopButton extends StatelessWidget {
           child: const SizedBox.square(
             dimension: TaskActionBar.pillStopButtonSize,
             child: Icon(
-              Icons.stop_rounded,
+              LottiIcons.stop,
               size: TaskActionBar.pillStopIconSize,
               color: Colors.white,
             ),
@@ -220,7 +220,7 @@ class AddMenuPill extends StatelessWidget {
   const AddMenuPill({
     required this.label,
     required this.onPressed,
-    this.icon = Icons.add_rounded,
+    this.icon = LottiIcons.add,
     this.tooltip,
     super.key,
   });
@@ -283,7 +283,7 @@ class AddMenuPill extends StatelessWidget {
                 // this trigger opens a sheet and must say so from the
                 // pixels — the tooltip never surfaces on touch.
                 Icon(
-                  Icons.expand_more_rounded,
+                  LottiIcons.expand,
                   size: TaskActionBar.iconSize,
                   color: tokens.colors.text.mediumEmphasis,
                 ),

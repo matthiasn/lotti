@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/ui/chat/agent_chat_view.dart';
 import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
 import 'package:lotti/features/ai_chat/ui/controllers/chat_recorder_controller.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/waveform_bars.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../../widget_test_utils.dart';
 import '../evolution/widgets/evolution_recorder_test_utils.dart';
@@ -100,7 +101,7 @@ void main() {
     await tester.enterText(find.byType(TextField), 'Keep me honest.');
     await tester.pump();
     expect(draft, 'Keep me honest.');
-    await tester.tap(find.byIcon(Icons.send_rounded));
+    await tester.tap(find.byIcon(LottiIcons.send));
     expect(sent, isTrue);
   });
 
@@ -407,8 +408,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.mic_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.send_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.mic), findsOneWidget);
+      expect(find.byIcon(LottiIcons.send), findsNothing);
     });
 
     testWidgets('shows send when text is present and mic when cleared', (
@@ -442,20 +443,20 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.mic_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.send_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.mic), findsOneWidget);
+      expect(find.byIcon(LottiIcons.send), findsNothing);
 
       await tester.enterText(find.byType(TextField), 'Hello');
       await tester.pump();
 
-      expect(find.byIcon(Icons.send_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.mic_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.send), findsOneWidget);
+      expect(find.byIcon(LottiIcons.mic), findsNothing);
 
       await tester.enterText(find.byType(TextField), '');
       await tester.pump();
 
-      expect(find.byIcon(Icons.mic_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.send_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.mic), findsOneWidget);
+      expect(find.byIcon(LottiIcons.send), findsNothing);
     });
 
     testWidgets('tapping the mic starts recording', (tester) async {
@@ -487,7 +488,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.mic_rounded));
+      await tester.tap(find.byIcon(LottiIcons.mic));
       await tester.pump();
 
       expect(startCalled, isTrue);
@@ -522,8 +523,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(WaveformBars), findsOneWidget);
-      expect(find.byIcon(Icons.close_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.stop_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.close), findsOneWidget);
+      expect(find.byIcon(LottiIcons.stop), findsOneWidget);
       expect(find.byType(TextField), findsNothing);
     });
 
@@ -556,13 +557,13 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.tap(find.byIcon(LottiIcons.close));
       await tester.pump();
       expect(cancelCalled, isTrue);
 
       // The controller transitions to idle, so the mic reappears.
       await tester.pumpAndSettle();
-      expect(find.byIcon(Icons.mic_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.mic), findsOneWidget);
     });
 
     testWidgets('stop button calls the recorder', (tester) async {
@@ -594,7 +595,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.stop_rounded));
+      await tester.tap(find.byIcon(LottiIcons.stop));
       await tester.pump();
       expect(stopCalled, isTrue);
     });
@@ -637,7 +638,7 @@ void main() {
         'I walked this morning.',
       );
       expect(draft, 'I walked this morning.');
-      expect(find.byIcon(Icons.send_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.send), findsOneWidget);
     });
 
     testWidgets('shows partial transcript while processing', (tester) async {
@@ -670,7 +671,7 @@ void main() {
 
       expect(find.text('Transcribing audio…'), findsOneWidget);
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
-      expect(find.byIcon(Icons.mic_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.mic), findsOneWidget);
       expect(find.byType(TextField), findsNothing);
     });
 
@@ -703,7 +704,7 @@ void main() {
       await tester.pump();
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
-      expect(find.byIcon(Icons.mic_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.mic), findsOneWidget);
       expect(find.byType(TextField), findsNothing);
     });
 
@@ -842,7 +843,7 @@ void main() {
 
       expect(draft, '');
       expect(controller.clearResultCalls, greaterThan(0));
-      expect(find.byIcon(Icons.mic_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.mic), findsOneWidget);
     });
 
     testWidgets('mic button is hidden while sending', (tester) async {
@@ -871,8 +872,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.mic_rounded), findsNothing);
-      expect(find.byIcon(Icons.send_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.mic), findsNothing);
+      expect(find.byIcon(LottiIcons.send), findsNothing);
     });
   });
 

@@ -82,7 +82,7 @@ class DayHeader extends StatelessWidget {
             ),
             const ProcessingCategoryFilterButton(),
             PopupMenuButton<_DayMenuAction>(
-              icon: const Icon(Icons.more_vert_rounded),
+              icon: const Icon(LottiIcons.moreVertical),
               tooltip: context.messages.dailyOsNextDayMoreTooltip,
               onSelected: (action) {
                 switch (action) {
@@ -101,7 +101,7 @@ class DayHeader extends StatelessWidget {
                   PopupMenuItem<_DayMenuAction>(
                     value: _DayMenuAction.settings,
                     child: ListTile(
-                      leading: const Icon(Icons.settings_outlined),
+                      leading: const Icon(LottiIcons.settings),
                       title: Text(
                         popupContext.messages.dailyOsNextDayMenuSettings,
                       ),
@@ -111,7 +111,7 @@ class DayHeader extends StatelessWidget {
                 PopupMenuItem<_DayMenuAction>(
                   value: _DayMenuAction.inspectAgent,
                   child: ListTile(
-                    leading: const Icon(Icons.psychology_alt_outlined),
+                    leading: const Icon(LottiIcons.reasoning),
                     title: Text(
                       popupContext.messages.dailyOsNextDayMenuInspectAgent,
                     ),
@@ -121,7 +121,7 @@ class DayHeader extends StatelessWidget {
                 PopupMenuItem<_DayMenuAction>(
                   value: _DayMenuAction.knowledge,
                   child: ListTile(
-                    leading: const Icon(Icons.auto_awesome_outlined),
+                    leading: const Icon(LottiIcons.aiSpark),
                     title: Text(
                       popupContext.messages.dailyOsNextKnowledgeTitle,
                     ),
@@ -132,7 +132,7 @@ class DayHeader extends StatelessWidget {
                   PopupMenuItem<_DayMenuAction>(
                     value: _DayMenuAction.deletePlan,
                     child: ListTile(
-                      leading: const Icon(Icons.delete_outline_rounded),
+                      leading: const Icon(LottiIcons.delete),
                       title: Text(
                         popupContext.messages.dailyOsNextDayMenuDeletePlan,
                       ),
@@ -167,7 +167,7 @@ class _DefaultDayHeaderTitle extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, size: 20),
+          icon: const Icon(LottiIcons.back, size: 20),
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
           tooltip: context.messages.dailyOsNextDayBack,

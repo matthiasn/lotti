@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_activity_log.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/ai_attribution_summary.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../widget_test_utils.dart';
 import '../../ai_consumption/test_utils.dart';
@@ -130,8 +131,8 @@ void main() {
 
       // First report expanded — GptMarkdown renders content.
       // The second report should be collapsed.
-      expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
-      expect(find.byIcon(Icons.chevron_right), findsNWidgets(2));
+      expect(find.byIcon(LottiIcons.chevronDown), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronRight), findsNWidgets(2));
       expect(find.byType(AiAttributionSummary), findsOneWidget);
     });
 
@@ -150,19 +151,19 @@ void main() {
       await tester.pumpAndSettle();
 
       // Initially expanded (index 0).
-      expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronDown), findsOneWidget);
 
       // Tap to collapse.
       await tester.tap(find.byType(InkWell));
       await tester.pump();
 
-      expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
 
       // Tap to expand again.
       await tester.tap(find.byType(InkWell));
       await tester.pump();
 
-      expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronDown), findsOneWidget);
     });
 
     testWidgets('a report whose body is empty still shows its summary', (

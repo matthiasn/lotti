@@ -175,7 +175,7 @@ class _ChartSelectTrigger extends StatelessWidget {
                     ),
                     SizedBox(width: spacing.step2),
                     Icon(
-                      Icons.arrow_drop_down,
+                      LottiIcons.chevronDown,
                       color: tokens.colors.text.mediumEmphasis,
                       size: spacing.step6,
                     ),
@@ -487,7 +487,7 @@ class _ChartModeSelector extends StatelessWidget {
             onPressed: () => onAggregationChanged(aggregationType),
             leadingIcon: aggregationType == selectedAggregation
                 ? Icon(
-                    Icons.check_rounded,
+                    LottiIcons.confirm,
                     color: colors.interactive.enabled,
                     size: spacing.step5,
                   )
@@ -592,9 +592,7 @@ class _ChartModePill extends StatelessWidget {
                   ),
                   SizedBox(width: spacing.step2),
                   Icon(
-                    expanded
-                        ? Icons.keyboard_arrow_up_rounded
-                        : Icons.keyboard_arrow_down_rounded,
+                    expanded ? LottiIcons.chevronUp : LottiIcons.chevronDown,
                     size: spacing.step4,
                     color: expanded
                         ? colors.interactive.enabled
@@ -709,7 +707,7 @@ class _PickerSelectionIndicator extends StatelessWidget {
         ),
         child: selected
             ? Icon(
-                Icons.check_rounded,
+                LottiIcons.confirm,
                 color: colors.text.onInteractiveAlert,
                 size: spacing.step4,
               )

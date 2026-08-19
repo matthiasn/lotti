@@ -340,12 +340,12 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
   List<AiCardMenuAction> _buildCardMenu(AiConfig config) {
     return [
       AiCardMenuAction(
-        icon: Icons.edit_outlined,
+        icon: LottiIcons.edit,
         label: context.messages.aiCardMenuActionEdit,
         onSelected: () => _handleConfigTap(config),
       ),
       AiCardMenuAction(
-        icon: Icons.delete_outline_rounded,
+        icon: LottiIcons.delete,
         label: context.messages.aiCardMenuActionDelete,
         isDestructive: true,
         onSelected: () => _deleteService.deleteConfig(

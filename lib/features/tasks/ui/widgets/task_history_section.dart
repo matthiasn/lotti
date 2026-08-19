@@ -73,7 +73,7 @@ class TaskHistorySection extends StatelessWidget {
                         turns: expanded ? 0.0 : -0.25,
                         duration: const Duration(milliseconds: 200),
                         child: Icon(
-                          Icons.expand_more,
+                          LottiIcons.expand,
                           size: 24,
                           color: tokens.colors.text.lowEmphasis,
                         ),

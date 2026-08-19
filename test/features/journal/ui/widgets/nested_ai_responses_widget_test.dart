@@ -9,6 +9,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary.dart';
 import 'package:lotti/features/design_system/components/motion/size_fade_entrance.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/linked_ai_responses_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/nested_ai_responses_widget.dart';
@@ -351,7 +352,7 @@ void main() {
       );
       // Should show the AI icon in header
       expect(
-        find.byIcon(Icons.auto_fix_high_outlined),
+        find.byIcon(LottiIcons.magic),
         findsAtLeastNWidgets(1),
       );
       // Should have Dismissible for the AI response
@@ -548,7 +549,7 @@ void main() {
       expect(rotationTransition, findsOneWidget);
 
       // Get initial rotation value — when expanded, the natural
-      // downward `Icons.expand_more` icon is at 0 turns.
+      // downward `LottiIcons.expand` icon is at 0 turns.
       final initialRotation = tester.widget<RotationTransition>(
         rotationTransition,
       );

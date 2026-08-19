@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/selection/selection_save_button.dart';
 
 import '../../test_helper.dart';
@@ -16,7 +17,7 @@ void main() {
           child: SelectionSaveButton(
             onPressed: onPressed,
             label: label,
-            icon: icon ?? Icons.check_rounded,
+            icon: icon ?? LottiIcons.confirm,
           ),
         ),
       );
@@ -32,7 +33,7 @@ void main() {
         await tester.pump();
 
         expect(find.text('Save'), findsOneWidget);
-        expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
         expect(find.byType(SelectionSaveButton), findsOneWidget);
       });
 
@@ -53,13 +54,13 @@ void main() {
         await tester.pumpWidget(
           createTestWidget(
             onPressed: () {},
-            icon: Icons.done_all,
+            icon: LottiIcons.confirmAll,
           ),
         );
         await tester.pump();
 
-        expect(find.byIcon(Icons.done_all), findsOneWidget);
-        expect(find.byIcon(Icons.check_rounded), findsNothing);
+        expect(find.byIcon(LottiIcons.confirmAll), findsOneWidget);
+        expect(find.byIcon(LottiIcons.confirm), findsNothing);
       });
 
       testWidgets('takes full width of parent', (tester) async {
@@ -99,7 +100,7 @@ void main() {
         );
         await tester.pump();
 
-        final icon = tester.widget<Icon>(find.byIcon(Icons.check_rounded));
+        final icon = tester.widget<Icon>(find.byIcon(LottiIcons.confirm));
         expect(icon.size, 20);
       });
     });

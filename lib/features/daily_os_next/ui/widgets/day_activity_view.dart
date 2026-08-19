@@ -156,7 +156,7 @@ class _ActivityErrorState extends StatelessWidget {
               label: context.messages.dailyOsNextActivityRetryLoad,
               onPressed: onRetry,
               variant: DesignSystemButtonVariant.secondary,
-              leadingIcon: Icons.refresh_rounded,
+              leadingIcon: LottiIcons.refresh,
             ),
           ],
         ),
@@ -178,7 +178,7 @@ class _ActivityEmptyState extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              Icons.timeline_rounded,
+              LottiIcons.timeline,
               color: tokens.colors.text.lowEmphasis,
             ),
             SizedBox(height: tokens.spacing.step3),
@@ -240,11 +240,11 @@ class _ActivityCard extends StatelessWidget {
             children: [
               Icon(
                 switch (entry.kind) {
-                  DayActivityEntryKind.plan => Icons.auto_awesome_rounded,
-                  DayActivityEntryKind.summary => Icons.summarize_rounded,
-                  DayActivityEntryKind.checkIn => Icons.notes_rounded,
-                  DayActivityEntryKind.recording => Icons.mic_none_rounded,
-                  DayActivityEntryKind.agentJob => Icons.error_outline_rounded,
+                  DayActivityEntryKind.plan => LottiIcons.aiSpark,
+                  DayActivityEntryKind.summary => LottiIcons.summarize,
+                  DayActivityEntryKind.checkIn => LottiIcons.note,
+                  DayActivityEntryKind.recording => LottiIcons.micIdle,
+                  DayActivityEntryKind.agentJob => LottiIcons.error,
                 },
                 color: entry.kind == DayActivityEntryKind.agentJob
                     ? tokens.colors.text.lowEmphasis
@@ -340,7 +340,7 @@ class _ActivityCard extends StatelessWidget {
                         ? context.messages.dailyOsNextActivityAgentActionFailed
                         : null,
                     variant: DesignSystemButtonVariant.secondary,
-                    leadingIcon: Icons.refresh_rounded,
+                    leadingIcon: LottiIcons.refresh,
                   ),
                 if (entry.processingJob?.lastFailureClass ==
                     DayProcessingFailureClass.setupRequired)
@@ -358,7 +358,7 @@ class _ActivityCard extends StatelessWidget {
                           : '/settings/ai',
                     ),
                     variant: DesignSystemButtonVariant.secondary,
-                    leadingIcon: Icons.settings_rounded,
+                    leadingIcon: LottiIcons.settings,
                   ),
                 if (transcript != null)
                   DesignSystemButton(
@@ -366,14 +366,14 @@ class _ActivityCard extends StatelessWidget {
                         ? context.messages.dailyOsNextActivityUseToRefine
                         : context.messages.dailyOsNextActivityUseToPlan,
                     onPressed: onUse,
-                    leadingIcon: Icons.auto_awesome_rounded,
+                    leadingIcon: LottiIcons.aiSpark,
                   ),
                 if (onDelete != null)
                   _AsyncActivityButton(
                     label: context.messages.dailyOsNextActivityDeleteRecording,
                     action: onDelete!,
                     variant: DesignSystemButtonVariant.secondary,
-                    leadingIcon: Icons.delete_outline_rounded,
+                    leadingIcon: LottiIcons.delete,
                   ),
               ],
             ),

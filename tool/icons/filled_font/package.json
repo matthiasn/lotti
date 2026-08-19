@@ -1,0 +1,7 @@
+{
+  "name": "lotti-filled-icon-font",
+  "private": true,
+  "type": "module",
+  "scripts": { "build": "node build.mjs" },
+  "dependencies": { "svgtofont": "^6.2.0" }
+}

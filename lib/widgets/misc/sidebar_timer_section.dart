@@ -118,7 +118,7 @@ class _SidebarTimerCard extends StatelessWidget {
     // red audio card so the two stop buttons can never be confused.
     return SidebarLiveCard(
       accent: tokens.colors.interactive.enabled,
-      glyph: Icons.timer_outlined,
+      glyph: LottiIcons.timer,
       statusLabel: messages.sidebarTimerStatusLabel,
       title: title,
       timeText: durationText,
@@ -172,7 +172,7 @@ class _StopTimerButton extends StatelessWidget {
             child: SizedBox(
               width: 28,
               height: 28,
-              child: Icon(Icons.stop_rounded, size: 16, color: accent),
+              child: Icon(LottiIcons.stop, size: 16, color: accent),
             ),
           ),
         ),

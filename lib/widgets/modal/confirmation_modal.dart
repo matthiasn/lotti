@@ -37,7 +37,7 @@ Future<bool> showConfirmationModal({
           // Warning Icon
           if (isDestructive)
             Icon(
-              Icons.warning_amber_rounded,
+              LottiIcons.warning,
               size: spacing.step9,
               color: theme.colorScheme.error,
             ),

@@ -444,7 +444,7 @@ class _AgendaEmptyState extends StatelessWidget {
             child: Column(
               children: [
                 Icon(
-                  Icons.wb_twilight_rounded,
+                  LottiIcons.twilight,
                   size: tokens.spacing.step6,
                   color: tokens.colors.text.lowEmphasis,
                 ),

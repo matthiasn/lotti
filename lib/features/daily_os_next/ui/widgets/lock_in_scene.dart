@@ -191,7 +191,7 @@ class _LockOrb extends StatelessWidget {
       ),
       child: Center(
         child: Icon(
-          showCheck ? Icons.check_rounded : Icons.lock_outline_rounded,
+          showCheck ? LottiIcons.confirm : LottiIcons.lock,
           size: 56,
           color: tokens.colors.text.onInteractiveAlert,
         ),

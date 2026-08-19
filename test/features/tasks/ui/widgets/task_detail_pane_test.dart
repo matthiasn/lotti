@@ -6,8 +6,10 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/model/task_list_detail_models.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_detail_pane.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_shared_widgets.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -353,7 +355,7 @@ void main() {
       );
 
       // The mobile header includes a back button.
-      final backButtons = find.byIcon(Icons.arrow_back_ios_rounded);
+      final backButtons = find.byIcon(LottiIcons.chevronLeft);
       if (backButtons.evaluate().isNotEmpty) {
         await tester.tap(backButtons.first);
         await tester.pump();
@@ -422,7 +424,7 @@ void main() {
         expect(find.text('Today, 9:15 · voice memo'), findsOneWidget);
         expect(find.text('0:42'), findsOneWidget);
         expect(find.text('Discussed the rollout plan…'), findsOneWidget);
-        expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.play), findsOneWidget);
 
         // The waveform widget receives the entry's samples verbatim.
         final waveform = tester.widget<TaskShowcaseWaveform>(
@@ -437,6 +439,21 @@ void main() {
     setUp(setUpTestGetIt);
     tearDown(tearDownTestGetIt);
 
+    /// The checklist row's own ticked box, told apart from the "Todo" entry in
+    /// the pane's action list — which is also a ticked box, and was only ever
+    /// distinguishable because Material spelled the two `check_box_rounded` and
+    /// `check_box_outlined`. Lucide has one, so the done item is identified by
+    /// the success tint the checklist gives it.
+    Finder doneCheckbox(WidgetTester tester) => find.byWidgetPredicate(
+      (w) =>
+          w is Icon &&
+          w.icon == LottiIcons.checkboxChecked &&
+          w.color ==
+              TaskShowcasePalette.success(
+                tester.element(find.byType(TaskShowcaseDetailContent)),
+              ),
+    );
+
     testWidgets('renders check_box_rounded icon for done items', (
       tester,
     ) async {
@@ -450,10 +467,10 @@ void main() {
       await _pumpDetailContent(tester, record, width: 400);
 
       // Done item → filled checkbox icon
-      expect(find.byIcon(Icons.check_box_rounded), findsOneWidget);
+      expect(doneCheckbox(tester), findsOneWidget);
       // Pending item → blank checkbox icon
       expect(
-        find.byIcon(Icons.check_box_outline_blank_rounded),
+        find.byIcon(LottiIcons.checkboxUnchecked),
         findsOneWidget,
       );
     });
@@ -486,7 +503,7 @@ void main() {
 
       await _pumpDetailContent(tester, record, width: 800);
 
-      expect(find.byIcon(Icons.check_box_rounded), findsOneWidget);
+      expect(doneCheckbox(tester), findsOneWidget);
       expect(find.text('Done'), findsOneWidget);
     });
   });
@@ -506,7 +523,7 @@ void main() {
 
       // The due date chip contains a formatted date string.
       expect(
-        find.byIcon(Icons.watch_later_outlined),
+        find.byIcon(LottiIcons.schedule),
         findsAtLeastNWidgets(1),
       );
     });
@@ -519,7 +536,7 @@ void main() {
 
       await _pumpDetailContent(tester, record, width: 400);
 
-      expect(find.byIcon(Icons.watch_later_outlined), findsNothing);
+      expect(find.byIcon(LottiIcons.schedule), findsNothing);
     });
 
     testWidgets('renders all label chips', (tester) async {

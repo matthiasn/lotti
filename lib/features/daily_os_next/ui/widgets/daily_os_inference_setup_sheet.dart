@@ -204,14 +204,14 @@ class _DailyOsInferenceSetupSheetBodyState
         DesignSystemListItem(
           title: context.messages.dailyOsSettingsUseDefault,
           subtitle: context.messages.dailyOsSettingsUseDefaultDescription,
-          leading: const Icon(Icons.account_tree_outlined),
+          leading: const Icon(LottiIcons.tree),
           trailing: _pendingAction == _PendingInferenceAction.reset
               ? _progressIndicator(
                   tokens,
                   const Key('daily_os_inference_reset_progress'),
                 )
               : !hasProfileOverride && overrideId == null
-              ? const Icon(Icons.check_rounded)
+              ? const Icon(LottiIcons.confirm)
               : null,
           selected: !hasProfileOverride && overrideId == null,
           onTap: _busy || config == null
@@ -233,13 +233,13 @@ class _DailyOsInferenceSetupSheetBodyState
           subtitle: hasProfileOverride
               ? context.messages.dailyOsSettingsProfileOverrideActive
               : context.messages.dailyOsSettingsChooseProfileDescription,
-          leading: const Icon(Icons.schema_outlined),
+          leading: const Icon(LottiIcons.tree),
           trailing: _pendingAction == _PendingInferenceAction.profile
               ? _progressIndicator(
                   tokens,
                   const Key('daily_os_inference_profile_progress'),
                 )
-              : const Icon(Icons.chevron_right_rounded),
+              : const Icon(LottiIcons.chevronRight),
           selected: hasProfileOverride,
           onTap: _busy || config == null || options == null
               ? null
@@ -253,13 +253,13 @@ class _DailyOsInferenceSetupSheetBodyState
           subtitle: overrideId == null
               ? context.messages.dailyOsSettingsChooseModelDescription
               : context.messages.dailyOsSettingsDirectOverrideActive,
-          leading: const Icon(Icons.psychology_outlined),
+          leading: const Icon(LottiIcons.reasoning),
           trailing: _pendingAction == _PendingInferenceAction.model
               ? _progressIndicator(
                   tokens,
                   const Key('daily_os_inference_model_progress'),
                 )
-              : const Icon(Icons.chevron_right_rounded),
+              : const Icon(LottiIcons.chevronRight),
           selected: overrideId != null,
           onTap: _busy || config == null || options == null || !canOverrideModel
               ? null

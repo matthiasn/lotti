@@ -122,7 +122,7 @@ class _SyncSetupEmptyStateState extends ConsumerState<SyncSetupEmptyState> {
                 key: const Key('sync_setup_cta'),
                 label: messages.syncSetupCta,
                 size: DesignSystemButtonSize.large,
-                leadingIcon: Icons.qr_code_scanner,
+                leadingIcon: LottiIcons.scanQr,
                 onPressed: _openWizard,
               ),
               SizedBox(height: tokens.spacing.step5),

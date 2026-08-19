@@ -51,7 +51,7 @@ class SequenceLogPopulateProgress extends StatelessWidget {
         SizedBox(height: tokens.spacing.step5),
         if (error != null)
           Icon(
-            Icons.error_outline,
+            LottiIcons.error,
             size: IconSizes.xxxl,
             color: tokens.colors.alert.error.defaultColor,
           )
@@ -59,7 +59,7 @@ class SequenceLogPopulateProgress extends StatelessWidget {
           Column(
             children: [
               Icon(
-                Icons.check_circle_outline,
+                LottiIcons.confirmCircled,
                 size: IconSizes.xxxl,
                 color: tokens.colors.alert.success.defaultColor,
               ),

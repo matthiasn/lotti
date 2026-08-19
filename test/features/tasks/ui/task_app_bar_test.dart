@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/task_app_bar.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -133,7 +134,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.chevron_left), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronLeft), findsOneWidget);
     });
 
     testWidgets('uses JournalSliverAppBar for non-Task entry', (tester) async {
@@ -201,7 +202,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // App bar should have chevron_left icon for back navigation
-      expect(find.byIcon(Icons.chevron_left), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronLeft), findsOneWidget);
     });
 
     testWidgets('task with cover art renders SliverAppBar correctly', (
@@ -247,7 +248,7 @@ void main() {
       // Compact app bar should be rendered
       expect(find.byType(SliverAppBar), findsOneWidget);
       // Should still have back button
-      expect(find.byIcon(Icons.chevron_left), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronLeft), findsOneWidget);
     });
   });
 }

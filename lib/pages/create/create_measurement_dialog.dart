@@ -88,7 +88,7 @@ abstract final class MeasurementCaptureModal {
                 child: DesignSystemButton(
                   key: const ValueKey('measurement-date-time-done'),
                   label: modalContext.messages.doneButton,
-                  leadingIcon: Icons.check_rounded,
+                  leadingIcon: LottiIcons.confirm,
                   size: DesignSystemButtonSize.large,
                   fullWidth: true,
                   onPressed: draft.commitPickerChanges,
@@ -501,7 +501,7 @@ class _MeasurementSaveFooter extends StatelessWidget {
             key: const Key('measurement_save'),
             label: context.messages.addMeasurementSaveButton,
             size: DesignSystemButtonSize.large,
-            leadingIcon: Icons.check_rounded,
+            leadingIcon: LottiIcons.confirm,
             fullWidth: true,
             isLoading: state.isSaving,
             onPressed: draft.canSave
@@ -936,7 +936,7 @@ class _ObservedAtField extends StatelessWidget {
                     ),
                   ),
                   Icon(
-                    Icons.edit_calendar_outlined,
+                    LottiIcons.calendarEdit,
                     size: tokens.spacing.step6,
                     color: tokens.colors.text.mediumEmphasis,
                   ),

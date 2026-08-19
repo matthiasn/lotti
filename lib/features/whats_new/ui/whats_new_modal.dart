@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/whats_new/model/whats_new_content.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
 import 'package:lotti/features/whats_new/ui/whats_new_hero_banner.dart';
@@ -227,7 +228,7 @@ class WhatsNewModal {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            Icons.check_circle_outline_rounded,
+            LottiIcons.confirmCircled,
             size: 48,
             color: colorScheme.primary.withValues(alpha: 0.7),
           ),
@@ -260,7 +261,7 @@ class WhatsNewModal {
               // Re-show modal with all releases now visible
               await show(context, ref);
             },
-            icon: const Icon(Icons.history_rounded, size: 18),
+            icon: const Icon(LottiIcons.restore, size: 18),
             label: const Text('View past releases'),
           ),
         ],

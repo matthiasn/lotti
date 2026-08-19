@@ -89,9 +89,7 @@ class ProjectSelectionModalBody extends StatelessWidget {
                       ? currentProjectId == null
                       : item.project!.meta.id == currentProjectId,
                   leading: Icon(
-                    item.isNone
-                        ? Icons.do_not_disturb_alt_outlined
-                        : Icons.folder_outlined,
+                    item.isNone ? LottiIcons.block : LottiIcons.folder,
                     color: tokens.colors.text.mediumEmphasis,
                     size: tokens.spacing.step6,
                   ),

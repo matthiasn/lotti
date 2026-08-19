@@ -1087,7 +1087,7 @@ void main() {
             find.byKey(const ValueKey('cancel_recording')),
             findsOneWidget,
           );
-          expect(find.byIcon(Icons.close), findsOneWidget);
+          expect(find.byIcon(LottiIcons.close), findsOneWidget);
           expect(find.text('Stop'), findsOneWidget);
         },
       );
@@ -1230,7 +1230,7 @@ void main() {
           findsOneWidget,
         );
         // Recording → shows the pause glyph.
-        expect(find.byIcon(Icons.pause), findsOneWidget);
+        expect(find.byIcon(LottiIcons.pause), findsOneWidget);
         // Cancel and stop stay alongside it.
         expect(find.byKey(const ValueKey('cancel_recording')), findsOneWidget);
         expect(find.text('Stop'), findsOneWidget);
@@ -1268,8 +1268,8 @@ void main() {
             find.byKey(const ValueKey('pause_resume_button')),
             findsOneWidget,
           );
-          expect(find.byIcon(Icons.play_arrow), findsOneWidget);
-          expect(find.byIcon(Icons.pause), findsNothing);
+          expect(find.byIcon(LottiIcons.play), findsOneWidget);
+          expect(find.byIcon(LottiIcons.pause), findsNothing);
         },
       );
 
@@ -1303,7 +1303,7 @@ void main() {
             findsOneWidget,
           );
           // Paused → shows the play (resume) glyph.
-          expect(find.byIcon(Icons.play_arrow), findsOneWidget);
+          expect(find.byIcon(LottiIcons.play), findsOneWidget);
           // Stop controls remain visible while paused.
           expect(find.text('Stop'), findsOneWidget);
 
@@ -1313,8 +1313,8 @@ void main() {
 
           expect(resumeCalled, isTrue);
           // Same button; glyph swaps back to pause.
-          expect(find.byIcon(Icons.pause), findsOneWidget);
-          expect(find.byIcon(Icons.play_arrow), findsNothing);
+          expect(find.byIcon(LottiIcons.pause), findsOneWidget);
+          expect(find.byIcon(LottiIcons.play), findsNothing);
         },
       );
     });

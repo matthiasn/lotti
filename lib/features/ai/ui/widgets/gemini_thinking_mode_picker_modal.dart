@@ -88,10 +88,10 @@ class GeminiThinkingModePickerContent extends StatelessWidget {
 
   static IconData icon(GeminiThinkingMode mode) {
     return switch (mode) {
-      GeminiThinkingMode.minimal => Icons.flash_on_rounded,
-      GeminiThinkingMode.low => Icons.speed_rounded,
-      GeminiThinkingMode.medium => Icons.psychology_alt_rounded,
-      GeminiThinkingMode.high => Icons.auto_awesome_rounded,
+      GeminiThinkingMode.minimal => LottiIcons.bolt,
+      GeminiThinkingMode.low => LottiIcons.speed,
+      GeminiThinkingMode.medium => LottiIcons.reasoning,
+      GeminiThinkingMode.high => LottiIcons.aiSpark,
     };
   }
 }

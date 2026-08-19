@@ -4,6 +4,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/widgets/dashboards/dashboard_category.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -104,12 +105,12 @@ void main() {
             categoryId: 'cat-a',
           );
 
-          expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+          expect(find.byIcon(LottiIcons.close), findsOneWidget);
 
           // Without a selected category – close button absent.
           await pumpWidget(tester, setCategory: (_) {});
 
-          expect(find.byIcon(Icons.close_rounded), findsNothing);
+          expect(find.byIcon(LottiIcons.close), findsNothing);
         },
       );
 
@@ -145,7 +146,7 @@ void main() {
           categoryId: 'cat-a',
         );
 
-        final clearButton = find.byIcon(Icons.close_rounded);
+        final clearButton = find.byIcon(LottiIcons.close);
         await tester.ensureVisible(clearButton);
         await tester.tap(clearButton);
         await tester.pump();

@@ -233,20 +233,20 @@ class AiProviderSetupResultModal extends StatelessWidget {
         SizedBox(height: tokens.spacing.step5),
         if (data.totalModels > 0)
           _ResultBullet(
-            icon: Icons.memory_rounded,
+            icon: LottiIcons.memory,
             text: messages.aiSetupResultBulletModels(data.totalModels),
             accent: aiProviderAccent(type: data.providerType, tokens: tokens),
           ),
         SizedBox(height: tokens.spacing.step3),
         _ResultBullet(
-          icon: Icons.tune_rounded,
+          icon: LottiIcons.tune,
           text: messages.aiSetupResultBulletProfile(data.profileName),
           accent: aiProviderAccent(type: data.providerType, tokens: tokens),
         ),
         if (data.categoryName != null) ...[
           SizedBox(height: tokens.spacing.step3),
           _ResultBullet(
-            icon: Icons.folder_outlined,
+            icon: LottiIcons.folder,
             text: data.categoryCreated
                 ? messages.aiSetupResultBulletCategoryCreated(
                     data.categoryName!,

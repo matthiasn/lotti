@@ -17,6 +17,7 @@ import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart'
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
@@ -685,7 +686,7 @@ void main() {
         // A frame, so the confirm control (hidden while the field still
         // matches the title it opened on) is in the tree to tap.
         await tester.pump();
-        await tester.tap(find.byIcon(Icons.check_rounded));
+        await tester.tap(find.byIcon(LottiIcons.confirm));
         await tester.pump();
 
         expect(tracker.saveCalls, hasLength(1));
@@ -1066,7 +1067,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.byIcon(Icons.block), findsNothing);
+      expect(find.byIcon(LottiIcons.block), findsNothing);
     });
 
     testWidgets(
@@ -1116,14 +1117,14 @@ void main() {
         expect(find.textContaining('Fix the outage'), findsNothing);
         final tooltip = tester.widget<Tooltip>(
           find.ancestor(
-            of: find.byIcon(Icons.block),
+            of: find.byIcon(LottiIcons.block),
             matching: find.byType(Tooltip),
           ),
         );
         // ...but the tooltip still names it, at no layout cost.
         expect(tooltip.message, 'Blocked by Fix the outage');
 
-        await tester.tap(find.byIcon(Icons.block));
+        await tester.tap(find.byIcon(LottiIcons.block));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -1192,13 +1193,13 @@ void main() {
 
         final tooltip = tester.widget<Tooltip>(
           find.ancestor(
-            of: find.byIcon(Icons.block),
+            of: find.byIcon(LottiIcons.block),
             matching: find.byType(Tooltip),
           ),
         );
         expect(tooltip.message, 'Tap to see 2 blockers');
 
-        await tester.tap(find.byIcon(Icons.block));
+        await tester.tap(find.byIcon(LottiIcons.block));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -1237,12 +1238,12 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        expect(find.byIcon(Icons.block), findsOneWidget);
+        expect(find.byIcon(LottiIcons.block), findsOneWidget);
         expect(find.text('Blocker not synced yet'), findsOneWidget);
 
         final pill = tester.widget<DsPill>(
           find.ancestor(
-            of: find.byIcon(Icons.block),
+            of: find.byIcon(LottiIcons.block),
             matching: find.byType(DsPill),
           ),
         );

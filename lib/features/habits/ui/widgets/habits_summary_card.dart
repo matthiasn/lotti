@@ -329,7 +329,7 @@ class _StreakBadge extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            Icons.local_fire_department_rounded,
+            LottiIcons.streak,
             size: tokens.spacing.step5,
             color: accent,
           ),

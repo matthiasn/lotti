@@ -257,7 +257,7 @@ class _LabelDetailsPageState extends ConsumerState<LabelDetailsPage> {
             SettingsSwitchRow(
               title: messages.privateLabel,
               subtitle: messages.privateSwitchDescription,
-              icon: Icons.lock_outline,
+              icon: LottiIcons.lock,
               value: state.isPrivate,
               onChanged: (value) =>
                   controller.setPrivate(isPrivateValue: value),
@@ -350,7 +350,7 @@ class _LabelDetailsPageState extends ConsumerState<LabelDetailsPage> {
           alignment: AlignmentDirectional.centerStart,
           child: DesignSystemButton(
             label: context.messages.settingsLabelsCategoriesAdd,
-            leadingIcon: Icons.add,
+            leadingIcon: LottiIcons.add,
             variant: DesignSystemButtonVariant.secondary,
             onPressed: () async {
               final result = await showCategoryMultiPicker(

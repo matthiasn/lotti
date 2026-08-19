@@ -211,7 +211,7 @@ class _GoalRecordOfferCardState extends ConsumerState<GoalRecordOfferCard> {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.edit_note_rounded, color: accent),
+                    Icon(LottiIcons.editNote, color: accent),
                     SizedBox(width: tokens.spacing.step2),
                     Expanded(
                       child: Text(
@@ -296,7 +296,7 @@ class _GoalRecordOfferCardState extends ConsumerState<GoalRecordOfferCard> {
                             ? _record
                             : null,
                         isLoading: _saving,
-                        leadingIcon: Icons.edit_note_rounded,
+                        leadingIcon: LottiIcons.editNote,
                       ),
                       DesignSystemButton(
                         label: context.messages.goalRecordOfferDismiss,
@@ -343,7 +343,7 @@ class _RecordOfferRow extends StatelessWidget {
               ? context.messages.goalRecordOfferDeselectRow
               : context.messages.goalRecordOfferSelectRow,
           icon: Icon(
-            selected ? Icons.check_circle_rounded : Icons.cancel_outlined,
+            selected ? LottiIcons.confirmCircled : LottiIcons.closeCircled,
             color: selected
                 ? tokens.colors.alert.success.defaultColor
                 : tokens.colors.text.lowEmphasis,

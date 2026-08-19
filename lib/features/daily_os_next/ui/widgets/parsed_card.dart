@@ -83,17 +83,17 @@ class _KindBadge extends StatelessWidget {
       ParsedItemKind.newTask => (
         tokens.colors.interactive.enabled,
         context.messages.dailyOsNextReconcileBadgeNew,
-        Icons.add_rounded,
+        LottiIcons.add,
       ),
       ParsedItemKind.matched => (
         tokens.colors.alert.info.ink,
         context.messages.dailyOsNextReconcileBadgeMatched,
-        Icons.link_rounded,
+        LottiIcons.link,
       ),
       ParsedItemKind.update => (
         tokens.colors.alert.success.ink,
         context.messages.dailyOsNextReconcileBadgeUpdate,
-        Icons.check_rounded,
+        LottiIcons.confirm,
       ),
     };
     return Container(
@@ -171,7 +171,7 @@ class _MatchedTaskChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.link_rounded, size: tokens.spacing.step3, color: accent),
+          Icon(LottiIcons.link, size: tokens.spacing.step3, color: accent),
           SizedBox(width: tokens.spacing.step2),
           Flexible(
             child: Wrap(
@@ -208,7 +208,7 @@ class _MatchedTaskChip extends StatelessWidget {
               child: Padding(
                 padding: EdgeInsets.all(tokens.spacing.step1),
                 child: Icon(
-                  Icons.close_rounded,
+                  LottiIcons.close,
                   size: tokens.spacing.step3,
                   color: tokens.colors.text.mediumEmphasis,
                 ),
@@ -233,7 +233,7 @@ class _ProposedUpdateLine extends StatelessWidget {
     return Row(
       children: [
         Icon(
-          Icons.check_circle_outline_rounded,
+          LottiIcons.confirmCircled,
           size: tokens.spacing.step3,
           color: success,
         ),
@@ -288,7 +288,7 @@ class _EstimateChip extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(
-          Icons.schedule_rounded,
+          LottiIcons.schedule,
           size: tokens.spacing.step3,
           color: tokens.colors.text.lowEmphasis,
         ),
@@ -322,7 +322,7 @@ class _TimeAnchorChip extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(
-          Icons.outlined_flag_rounded,
+          LottiIcons.flag,
           size: tokens.spacing.step3,
           color: tokens.colors.text.mediumEmphasis,
         ),
@@ -351,7 +351,7 @@ class _LowConfidenceTag extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(
-          Icons.warning_amber_rounded,
+          LottiIcons.warning,
           size: tokens.spacing.step3,
           color: warning,
         ),

@@ -44,14 +44,14 @@ class RowActions extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         _SquareIconButton(
-          icon: Icons.close_rounded,
+          icon: LottiIcons.close,
           tooltip: context.messages.changeSetSwipeReject,
           onPressed: onReject,
           variant: _SquareIconVariant.outline,
         ),
         SizedBox(width: context.designTokens.spacing.step2),
         _SquareIconButton(
-          icon: Icons.check_rounded,
+          icon: LottiIcons.confirm,
           tooltip: context.messages.changeSetSwipeConfirm,
           onPressed: onConfirm,
           variant: _SquareIconVariant.accent,
@@ -152,7 +152,7 @@ class ResolvedTag extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (isConfirmed) ...[
-            Icon(Icons.check, size: 12, color: color),
+            Icon(LottiIcons.confirm, size: 12, color: color),
             const SizedBox(width: 4),
           ],
           Text(

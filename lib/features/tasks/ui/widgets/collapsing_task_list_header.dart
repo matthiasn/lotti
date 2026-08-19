@@ -433,7 +433,7 @@ class TaskListCompactHeaderBar extends StatelessWidget {
                                         // title is a button, and this says
                                         // so.
                                         child: Icon(
-                                          Icons.expand_more_rounded,
+                                          LottiIcons.expand,
                                           size: IconSizes.s,
                                           color:
                                               tokens.colors.text.mediumEmphasis,
@@ -474,14 +474,14 @@ class TaskListCompactHeaderBar extends StatelessWidget {
               ),
               TabHeaderIconButton(
                 key: CollapsingTaskListHeaderKeys.compactSearchButton,
-                icon: Icons.search_rounded,
+                icon: LottiIcons.search,
                 tooltip: searchTooltip,
                 onPressed: onSearchRequested,
                 active: searchActive,
               ),
               TabHeaderIconButton(
                 key: CollapsingTaskListHeaderKeys.compactFilterButton,
-                icon: Icons.filter_list_rounded,
+                icon: LottiIcons.filter,
                 tooltip: filterTooltip,
                 onPressed: onFilterPressed,
                 active: filtersActive,

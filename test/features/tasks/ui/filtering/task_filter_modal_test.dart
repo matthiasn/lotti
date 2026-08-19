@@ -16,6 +16,7 @@ import 'package:lotti/features/design_system/components/selection/design_system_
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_modal.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
@@ -938,7 +939,7 @@ void main() {
         await tester.pumpAndSettle();
 
         final backButton = find.ancestor(
-          of: find.byIcon(Icons.arrow_back_rounded),
+          of: find.byIcon(LottiIcons.back),
           matching: find.byType(IconButton),
         );
         tester.widget<IconButton>(backButton).onPressed!();

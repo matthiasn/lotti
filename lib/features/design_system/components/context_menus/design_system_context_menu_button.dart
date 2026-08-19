@@ -16,7 +16,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 class DesignSystemContextMenuButton extends StatefulWidget {
   const DesignSystemContextMenuButton({
     required this.items,
-    this.icon = Icons.more_horiz_rounded,
+    this.icon = LottiIcons.more,
     this.tooltip,
     this.iconColor,
     this.semanticsLabel,

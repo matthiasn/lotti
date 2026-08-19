@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/knowledge_graph/domain/graph_models.dart';
 import 'package:lotti/features/knowledge_graph/domain/graph_projection.dart';
 import 'package:lotti/features/knowledge_graph/state/graph_viewport_controller.dart';
@@ -188,7 +189,7 @@ void main() {
     expect(filters.last.maxAgeDays, isNull);
     expect(filters.last.taskStatuses, {GraphTaskStatus.inProgress});
 
-    await tester.tap(find.byIcon(Icons.close_rounded));
+    await tester.tap(find.byIcon(LottiIcons.close));
     await tester.pumpAndSettle();
     expect(find.text('Relationships'), findsNothing);
   });

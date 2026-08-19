@@ -25,7 +25,7 @@ import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/dropdowns/design_system_dropdown.dart';
-import 'package:lotti/features/design_system/theme/generated/design_tokens.g.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -582,7 +582,7 @@ void main() {
         await tester.pump();
         expect(find.byType(AiProviderCard), findsOneWidget);
 
-        await tester.tap(find.byIcon(Icons.cancel_rounded));
+        await tester.tap(find.byIcon(LottiIcons.closeCircled));
         await tester.pump(const Duration(milliseconds: 350));
         await tester.pump();
 
@@ -1081,7 +1081,7 @@ void main() {
         );
 
         // Open the card's `⋯` menu.
-        await tester.tap(find.byIcon(Icons.more_horiz_rounded));
+        await tester.tap(find.byIcon(LottiIcons.more));
         await tester.pumpAndSettle();
         // Two rows expected: Edit + Delete (from `_buildCardMenu`).
         expect(find.text('Edit'), findsOneWidget);
@@ -1128,7 +1128,7 @@ void main() {
           profiles: const <AiConfig>[],
         );
 
-        await tester.tap(find.byIcon(Icons.more_horiz_rounded));
+        await tester.tap(find.byIcon(LottiIcons.more));
         await tester.pumpAndSettle();
 
         await tester.tap(find.text('Delete'));

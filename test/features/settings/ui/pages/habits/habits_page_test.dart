@@ -75,7 +75,7 @@ void main() {
         await pumpHabitsPage(tester, habits: [habitFlossing]);
 
         expect(find.text(habitFlossing.name), findsOneWidget);
-        expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
       });
 
       testWidgets('sorts habits alphabetically by name', (tester) async {
@@ -115,8 +115,8 @@ void main() {
             find.descendant(of: chipFinder, matching: find.text('F')),
             findsOneWidget,
           );
-          expect(find.byIcon(Icons.more_horiz), findsNothing);
-          expect(find.byIcon(Icons.category_outlined), findsNothing);
+          expect(find.byIcon(LottiIcons.more), findsNothing);
+          expect(find.byIcon(LottiIcons.category), findsNothing);
         },
       );
 
@@ -139,7 +139,7 @@ void main() {
 
           final chipFinder = find.byType(CategoryIconChip);
           expect(chipFinder, findsOneWidget);
-          expect(find.byIcon(Icons.more_horiz), findsNothing);
+          expect(find.byIcon(LottiIcons.more), findsNothing);
           // The habit's own initial ('F' for Flossing), not the
           // category's ('M' for Mindfulness)...
           expect(
@@ -175,37 +175,37 @@ void main() {
             (
               description: 'shows lock icon when private',
               habit: habitFlossing.copyWith(private: true),
-              icon: Icons.lock_outline,
+              icon: LottiIcons.lock,
               expected: true,
             ),
             (
               description: 'hides lock icon when not private',
               habit: habitFlossing,
-              icon: Icons.lock_outline,
+              icon: LottiIcons.lock,
               expected: false,
             ),
             (
               description: 'shows inactive icon when not active',
               habit: habitFlossing.copyWith(active: false),
-              icon: Icons.visibility_off_outlined,
+              icon: LottiIcons.hidden,
               expected: true,
             ),
             (
               description: 'hides inactive icon when active',
               habit: habitFlossing,
-              icon: Icons.visibility_off_outlined,
+              icon: LottiIcons.hidden,
               expected: false,
             ),
             (
               description: 'shows outlined star icon when favorite',
               habit: habitFlossing.copyWith(priority: true),
-              icon: Icons.star_rounded,
+              icon: LottiIcons.star,
               expected: true,
             ),
             (
               description: 'hides star icon when not favorite',
               habit: habitFlossing,
-              icon: Icons.star_rounded,
+              icon: LottiIcons.star,
               expected: false,
             ),
           ];
@@ -229,12 +229,12 @@ void main() {
         );
         await pumpHabitsPage(tester, habits: [fullHabit]);
 
-        expect(find.byIcon(Icons.lock_outline), findsOneWidget);
-        expect(find.byIcon(Icons.visibility_off_outlined), findsOneWidget);
+        expect(find.byIcon(LottiIcons.lock), findsOneWidget);
+        expect(find.byIcon(LottiIcons.hidden), findsOneWidget);
         // One icon weight across the trailing slot — the star is an
         // outline like its lock/eye-off neighbors; amber carries the
         // favorite signal.
-        final star = find.byIcon(Icons.star_rounded);
+        final star = find.byIcon(LottiIcons.star);
         expect(star, findsOneWidget);
         final tokens = tester.element(star).designTokens;
         expect(
@@ -289,7 +289,7 @@ void main() {
       ) async {
         await pumpHabitsPage(tester);
 
-        expect(find.byIcon(Icons.repeat_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.repeat), findsOneWidget);
         expect(find.text('No habits yet'), findsOneWidget);
         expect(
           find.text('Tap the + button to create your first habit.'),
@@ -306,7 +306,7 @@ void main() {
         // the retries until the terminal AsyncError renders.
         await tester.pumpAndSettle();
 
-        expect(find.byIcon(Icons.error_outline), findsOneWidget);
+        expect(find.byIcon(LottiIcons.error), findsOneWidget);
         expect(find.text('Error loading habits'), findsOneWidget);
         expect(find.textContaining('habits broke'), findsOneWidget);
       });
@@ -345,7 +345,7 @@ void main() {
         await tester.pump();
 
         expect(find.byType(DesignSystemListItem), findsNothing);
-        expect(find.byIcon(Icons.search_off_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.searchOff), findsOneWidget);
         expect(find.text('No habits match "zzz"'), findsOneWidget);
       });
 

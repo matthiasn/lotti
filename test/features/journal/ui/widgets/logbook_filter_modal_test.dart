@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
@@ -85,9 +86,9 @@ void main() {
       expect(find.byType(DesignSystemFilterChoicePill), findsNWidgets(3));
 
       // Each toggle carries its rounded icon (state-independent).
-      expect(find.byIcon(Icons.star_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.flag_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.shield_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.star), findsOneWidget);
+      expect(find.byIcon(LottiIcons.flag), findsOneWidget);
+      expect(find.byIcon(LottiIcons.shield), findsOneWidget);
     });
 
     testWidgets('active filters render as selected pills', (tester) async {
@@ -112,9 +113,9 @@ void main() {
 
     // Each filter toggles its own DisplayFilter value through setFilters.
     for (final filter in [
-      (icon: Icons.star_rounded, value: DisplayFilter.starredEntriesOnly),
-      (icon: Icons.flag_rounded, value: DisplayFilter.flaggedEntriesOnly),
-      (icon: Icons.shield_rounded, value: DisplayFilter.privateEntriesOnly),
+      (icon: LottiIcons.star, value: DisplayFilter.starredEntriesOnly),
+      (icon: LottiIcons.flag, value: DisplayFilter.flaggedEntriesOnly),
+      (icon: LottiIcons.shield, value: DisplayFilter.privateEntriesOnly),
     ]) {
       testWidgets('tapping ${filter.value.name} filter calls setFilters', (
         tester,
@@ -140,7 +141,7 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(find.byIcon(Icons.flag_rounded));
+      await tester.tap(find.byIcon(LottiIcons.flag));
       await tester.pump();
 
       expect(
@@ -162,7 +163,7 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(find.byIcon(Icons.star_rounded));
+      await tester.tap(find.byIcon(LottiIcons.star));
       await tester.pump();
 
       expect(fakeController.filtersCalls, isNotEmpty);
@@ -271,7 +272,7 @@ void main() {
         final target = navigation == 'Done'
             ? find.widgetWithText(DesignSystemButton, 'Done')
             : find.ancestor(
-                of: find.byIcon(Icons.arrow_back_rounded),
+                of: find.byIcon(LottiIcons.back),
                 matching: find.byType(IconButton),
               );
         await tester.tap(target);
@@ -317,7 +318,7 @@ void main() {
         // must hit the same controller instance the page uses.
         await openModal(tester);
 
-        await tester.tap(find.byIcon(Icons.star_rounded));
+        await tester.tap(find.byIcon(LottiIcons.star));
         await tester.pump();
 
         expect(fakeController.filtersCalls, isNotEmpty);

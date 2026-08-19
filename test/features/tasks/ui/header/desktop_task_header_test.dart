@@ -237,8 +237,8 @@ void main() {
         expect(find.text('Bug fix, Release blocker'), findsOneWidget);
         expect(find.text('Details'), findsOneWidget);
         // No ellipsis in the header — lives in the app bar.
-        expect(find.byIcon(Icons.more_vert_rounded), findsNothing);
-        expect(find.byIcon(Icons.more_horiz), findsNothing);
+        expect(find.byIcon(LottiIcons.moreVertical), findsNothing);
+        expect(find.byIcon(LottiIcons.more), findsNothing);
       },
     );
 
@@ -476,13 +476,13 @@ void main() {
       // Untouched, the field offers no confirm/cancel: on a freshly opened
       // editor both would be no-ops, and reviewers read the bare X as
       // "delete the task I just made".
-      expect(find.byIcon(Icons.check_rounded), findsNothing);
-      expect(find.byIcon(Icons.close_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.confirm), findsNothing);
+      expect(find.byIcon(LottiIcons.close), findsNothing);
 
       await tester.enterText(find.byType(TextField), 'Payment flow');
       await tester.pump();
-      expect(find.byIcon(Icons.check_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
+      expect(find.byIcon(LottiIcons.close), findsOneWidget);
     });
 
     testWidgets(
@@ -499,7 +499,7 @@ void main() {
         // The persistent pencil was removed: it drifted into a dead gutter
         // beside short / wrapping titles. The edit affordance is the whole
         // title (covered by the tap / Semantics / keyboard tests).
-        expect(find.byIcon(Icons.edit_outlined), findsNothing);
+        expect(find.byIcon(LottiIcons.edit), findsNothing);
         expect(find.text('Payment confirmation'), findsOneWidget);
       },
     );
@@ -520,7 +520,7 @@ void main() {
         // *list* says about this task; the detail page asks for one.
         expect(find.text('Name this task'), findsOneWidget);
         expect(find.text('No title'), findsNothing);
-        expect(find.byIcon(Icons.edit_outlined), findsNothing);
+        expect(find.byIcon(LottiIcons.edit), findsNothing);
         expect(find.byType(TextField), findsNothing);
 
         // The prompt wears real field chrome so it reads as tappable rather
@@ -780,7 +780,7 @@ void main() {
       );
       await tester.enterText(find.byType(TextField), 'Payment flow');
       await tester.pump();
-      await tester.tap(find.byIcon(Icons.check_rounded));
+      await tester.tap(find.byIcon(LottiIcons.confirm));
       await tester.pump();
 
       expect(saved, 'Payment flow');
@@ -802,7 +802,7 @@ void main() {
       );
       await tester.enterText(find.byType(TextField), 'Different title');
       await tester.pump();
-      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.tap(find.byIcon(LottiIcons.close));
       await tester.pump();
 
       expect(saves, 0);
@@ -1382,7 +1382,7 @@ void main() {
         );
         // There is nothing to commit, so there is no commit button to press.
         // The guard is now structural rather than a no-op handler.
-        expect(find.byIcon(Icons.check_rounded), findsNothing);
+        expect(find.byIcon(LottiIcons.confirm), findsNothing);
         expect(saves, 0, reason: 'same text should not trigger onTitleSaved');
         expect(find.byType(TextField), findsOneWidget);
       },
@@ -1402,7 +1402,7 @@ void main() {
         );
         await tester.enterText(find.byType(TextField), '   ');
         await tester.pump();
-        await tester.tap(find.byIcon(Icons.check_rounded));
+        await tester.tap(find.byIcon(LottiIcons.confirm));
         await tester.pump();
 
         expect(

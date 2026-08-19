@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/selection/selection_modal_base.dart';
@@ -195,7 +196,7 @@ class _ProviderCard extends StatelessWidget {
                     ),
                   ),
                   child: Icon(
-                    Icons.cloud_outlined,
+                    LottiIcons.cloud,
                     color: isSelected
                         ? context.colorScheme.primary
                         : context.colorScheme.onSurface.withValues(alpha: 0.8),
@@ -256,7 +257,7 @@ class _ProviderCard extends StatelessWidget {
                       ],
                     ),
                     child: Icon(
-                      Icons.check_rounded,
+                      LottiIcons.confirm,
                       color: context.colorScheme.onPrimary,
                       size: 16,
                     ),
@@ -309,7 +310,7 @@ class _ErrorState extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            Icons.error_outline_rounded,
+            LottiIcons.error,
             size: 48,
             color: context.colorScheme.error.withValues(alpha: 0.7),
           ),
@@ -339,7 +340,7 @@ class _EmptyProvidersState extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            Icons.cloud_off_rounded,
+            LottiIcons.cloudOff,
             size: 48,
             color: context.colorScheme.onSurface.withValues(alpha: 0.4),
           ),

@@ -272,7 +272,7 @@ class _Header extends StatelessWidget {
         ? null
         : FilledButton.icon(
             onPressed: onCreateInHeader,
-            icon: const Icon(Icons.add),
+            icon: const Icon(LottiIcons.add),
             label: Text(context.messages.eventsNewEvent),
           );
     final categoryChips = categories.isEmpty
@@ -373,7 +373,7 @@ class _SearchField extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Icon(Icons.search, size: 20, color: cs.onSurfaceVariant),
+              Icon(LottiIcons.search, size: 20, color: cs.onSurfaceVariant),
               SizedBox(width: tokens.spacing.step2),
               Text(
                 context.messages.eventsSearchHint,

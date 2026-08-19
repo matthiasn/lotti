@@ -24,17 +24,18 @@ void main() {
       DesktopSidebarDestination(
         label: 'Journal',
         iconBuilder: ({required bool active}) =>
-            Icon(active ? Icons.book : Icons.book_outlined),
+            Icon(active ? LottiIconsFilled.bookmark : LottiIcons.book),
       ),
       DesktopSidebarDestination(
         label: 'Tasks',
-        iconBuilder: ({required bool active}) =>
-            Icon(active ? Icons.task_alt : Icons.task_alt_outlined),
+        iconBuilder: ({required bool active}) => Icon(
+          active ? LottiIconsFilled.circle : LottiIcons.confirmCircled,
+        ),
       ),
       DesktopSidebarDestination(
         label: 'Habits',
         iconBuilder: ({required bool active}) =>
-            Icon(active ? Icons.repeat : Icons.repeat_outlined),
+            Icon(active ? LottiIconsFilled.heart : LottiIcons.repeat),
       ),
     ];
   }
@@ -43,7 +44,7 @@ void main() {
     return DesktopSidebarDestination(
       label: 'Settings',
       iconBuilder: ({required bool active}) =>
-          Icon(active ? Icons.settings : Icons.settings_outlined),
+          Icon(active ? LottiIconsFilled.star : LottiIcons.settings),
     );
   }
 
@@ -183,10 +184,9 @@ void main() {
         final semanticsHandle = tester.ensureSemantics();
         final utility = DesktopSidebarDestination(
           label: 'Manual',
-          iconBuilder: ({required bool active}) =>
-              const Icon(Icons.help_outline_rounded),
+          iconBuilder: ({required bool active}) => const Icon(LottiIcons.help),
           trailingBuilder: ({required bool active}) =>
-              const Icon(Icons.open_in_new_rounded),
+              const Icon(LottiIcons.openExternal),
           isLink: true,
           semanticsHint: 'Opens in your browser',
         );
@@ -211,7 +211,7 @@ void main() {
 
         await pumpSidebar(collapsed: false);
 
-        expect(find.byIcon(Icons.open_in_new_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.openExternal), findsOneWidget);
         expect(
           tester.getCenter(find.text('Manual')).dy,
           lessThan(tester.getCenter(find.text('Settings')).dy),
@@ -230,8 +230,8 @@ void main() {
         await pumpSidebar(collapsed: true);
 
         expect(find.text('Manual'), findsNothing);
-        expect(find.byIcon(Icons.help_outline_rounded), findsOneWidget);
-        await tester.tap(find.byIcon(Icons.help_outline_rounded));
+        expect(find.byIcon(LottiIcons.help), findsOneWidget);
+        await tester.tap(find.byIcon(LottiIcons.help));
         await tester.pump();
         expect(utilityTaps, 2);
         semanticsHandle.dispose();
@@ -253,10 +253,10 @@ void main() {
         await tester.pump();
 
         // Tasks is active -> filled icon; Journal/Habits stay outlined.
-        expect(find.byIcon(Icons.task_alt), findsOneWidget);
-        expect(find.byIcon(Icons.task_alt_outlined), findsNothing);
-        expect(find.byIcon(Icons.book_outlined), findsOneWidget);
-        expect(find.byIcon(Icons.repeat_outlined), findsOneWidget);
+        expect(find.byIcon(LottiIconsFilled.circle), findsOneWidget);
+        expect(find.byIcon(LottiIcons.confirmCircled), findsNothing);
+        expect(find.byIcon(LottiIcons.book), findsOneWidget);
+        expect(find.byIcon(LottiIcons.repeat), findsOneWidget);
       },
     );
 
@@ -277,8 +277,8 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.byIcon(Icons.settings), findsOneWidget);
-        expect(find.byIcon(Icons.settings_outlined), findsNothing);
+        expect(find.byIcon(LottiIconsFilled.star), findsOneWidget);
+        expect(find.byIcon(LottiIcons.settings), findsNothing);
       },
     );
 
@@ -435,7 +435,7 @@ void main() {
                 DesktopSidebarDestination(
                   label: 'Tasks',
                   iconBuilder: ({required bool active}) =>
-                      const Icon(Icons.list_outlined),
+                      const Icon(LottiIcons.list),
                   trailingBuilder: ({required bool active}) => const SizedBox(
                     key: trailingKey,
                     width: 32,
@@ -474,7 +474,7 @@ void main() {
               DesktopSidebarDestination(
                 label: 'Insights',
                 iconBuilder: ({required bool active}) =>
-                    const Icon(Icons.insert_chart_outlined),
+                    const Icon(LottiIcons.chart),
               ),
             ],
             activeIndex: 0,
@@ -517,7 +517,7 @@ void main() {
                       DesktopSidebarDestination(
                         label: label,
                         iconBuilder: ({required bool active}) =>
-                            const Icon(Icons.settings_rounded),
+                            const Icon(LottiIcons.settings),
                         trailingBuilder: trailing == null
                             ? null
                             : ({required bool active}) => trailing,
@@ -629,7 +629,7 @@ void main() {
         await tester.pump();
 
         final iconCentre = tester
-            .getCenter(find.byIcon(Icons.settings_rounded))
+            .getCenter(find.byIcon(LottiIcons.settings))
             .dy;
         final labelCentre = tester.getCenter(find.text('Settings')).dy;
         expect((iconCentre - labelCentre).abs(), lessThan(1));
@@ -642,7 +642,7 @@ void main() {
         await tester.pump();
 
         final iconCentre = tester
-            .getCenter(find.byIcon(Icons.settings_rounded))
+            .getCenter(find.byIcon(LottiIcons.settings))
             .dy;
         final labelCentre = tester.getCenter(find.text('Settings')).dy;
 
@@ -654,14 +654,14 @@ void main() {
       testWidgets('the icon does not grow with the text scale', (tester) async {
         await tester.pumpWidget(narrowSidebar(width: 320));
         await tester.pump();
-        final baseIcon = tester.getSize(find.byIcon(Icons.settings_rounded));
+        final baseIcon = tester.getSize(find.byIcon(LottiIcons.settings));
 
         await tester.pumpWidget(narrowSidebar(width: 320, textScale: 2));
         await tester.pump();
 
         // Deliberate: a glyph that scaled with the text would take the width
         // the label needs more.
-        expect(tester.getSize(find.byIcon(Icons.settings_rounded)), baseIcon);
+        expect(tester.getSize(find.byIcon(LottiIcons.settings)), baseIcon);
       });
     });
 
@@ -683,7 +683,7 @@ void main() {
                         DesktopSidebarDestination(
                           label: 'Projects',
                           iconBuilder: ({required bool active}) =>
-                              const Icon(Icons.folder_outlined),
+                              const Icon(LottiIcons.folder),
                         ),
                       ],
                       activeIndex: 0,
@@ -757,7 +757,7 @@ void main() {
       await tester.pump();
 
       expect(find.text('New'), findsNothing);
-      expect(find.byIcon(Icons.add_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.add), findsNothing);
     });
 
     testWidgets(
@@ -767,11 +767,13 @@ void main() {
         final destinations = [
           DesktopSidebarDestination(
             label: 'Journal',
-            iconBuilder: ({required bool active}) => const Icon(Icons.book),
+            iconBuilder: ({required bool active}) =>
+                const Icon(LottiIcons.book),
           ),
           DesktopSidebarDestination(
             label: 'Tasks',
-            iconBuilder: ({required bool active}) => const Icon(Icons.task_alt),
+            iconBuilder: ({required bool active}) =>
+                const Icon(LottiIcons.confirmCircled),
             expandedChildBuilder: () => const Padding(
               key: childKey,
               padding: EdgeInsets.all(4),
@@ -856,7 +858,8 @@ void main() {
         );
         final settings = DesktopSidebarDestination(
           label: 'Settings',
-          iconBuilder: ({required bool active}) => const Icon(Icons.settings),
+          iconBuilder: ({required bool active}) =>
+              const Icon(LottiIcons.settings),
         );
 
         await tester.pumpWidget(
@@ -910,7 +913,8 @@ void main() {
         const bandKey = Key('footer-band');
         final settings = DesktopSidebarDestination(
           label: 'Settings',
-          iconBuilder: ({required bool active}) => const Icon(Icons.settings),
+          iconBuilder: ({required bool active}) =>
+              const Icon(LottiIcons.settings),
         );
 
         await tester.pumpWidget(
@@ -997,9 +1001,9 @@ void main() {
       expect(find.text('Journal'), findsNothing);
       expect(find.text('Tasks'), findsNothing);
       expect(find.text('Habits'), findsNothing);
-      expect(find.byIcon(Icons.book), findsOneWidget);
-      expect(find.byIcon(Icons.task_alt_outlined), findsOneWidget);
-      expect(find.byIcon(Icons.repeat_outlined), findsOneWidget);
+      expect(find.byIcon(LottiIconsFilled.bookmark), findsOneWidget);
+      expect(find.byIcon(LottiIcons.confirmCircled), findsOneWidget);
+      expect(find.byIcon(LottiIcons.repeat), findsOneWidget);
     });
 
     testWidgets(
@@ -1019,10 +1023,10 @@ void main() {
         await tester.pump();
 
         // Tasks is active -> filled icon; Journal/Habits stay outlined.
-        expect(find.byIcon(Icons.task_alt), findsOneWidget);
-        expect(find.byIcon(Icons.book_outlined), findsOneWidget);
-        expect(find.byIcon(Icons.repeat_outlined), findsOneWidget);
-        expect(find.byIcon(Icons.task_alt_outlined), findsNothing);
+        expect(find.byIcon(LottiIconsFilled.circle), findsOneWidget);
+        expect(find.byIcon(LottiIcons.book), findsOneWidget);
+        expect(find.byIcon(LottiIcons.repeat), findsOneWidget);
+        expect(find.byIcon(LottiIcons.confirmCircled), findsNothing);
       },
     );
 
@@ -1063,9 +1067,9 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(find.byIcon(Icons.task_alt_outlined));
+      await tester.tap(find.byIcon(LottiIcons.confirmCircled));
       await tester.pump();
-      await tester.tap(find.byIcon(Icons.repeat_outlined));
+      await tester.tap(find.byIcon(LottiIcons.repeat));
       await tester.pump();
 
       expect(selected, [1, 2]);
@@ -1090,7 +1094,7 @@ void main() {
         await tester.pump();
 
         expect(find.text('Settings'), findsNothing);
-        expect(find.byIcon(Icons.settings_outlined), findsOneWidget);
+        expect(find.byIcon(LottiIcons.settings), findsOneWidget);
 
         // Each collapsed destination wraps its content in a Tooltip keyed to
         // the label so the user can discover the name on hover.
@@ -1106,7 +1110,7 @@ void main() {
         expect(tooltipMessages, contains('Settings'));
         expect(tooltipMessages, contains('Journal'));
 
-        await tester.tap(find.byIcon(Icons.settings_outlined));
+        await tester.tap(find.byIcon(LottiIcons.settings));
         await tester.pump();
         expect(settingsTapped, isTrue);
       },

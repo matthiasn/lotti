@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
 
 /// Glados generator for task-status-like strings.
@@ -111,67 +112,67 @@ void main() {
     test('OPEN returns radio_button_unchecked', () {
       expect(
         taskIconFromStatusString('OPEN'),
-        equals(Icons.radio_button_unchecked),
+        equals(LottiIcons.radioUnselected),
       );
     });
 
     test('GROOMED returns edit_outlined', () {
       expect(
         taskIconFromStatusString('GROOMED'),
-        equals(Icons.edit_outlined),
+        equals(LottiIcons.edit),
       );
     });
 
     test('IN PROGRESS returns play_arrow_rounded', () {
       expect(
         taskIconFromStatusString('IN PROGRESS'),
-        equals(Icons.play_arrow_rounded),
+        equals(LottiIcons.play),
       );
     });
 
     test('BLOCKED returns warning_sharp', () {
       expect(
         taskIconFromStatusString('BLOCKED'),
-        equals(Icons.warning_sharp),
+        equals(LottiIcons.warning),
       );
     });
 
     test('ON HOLD returns pause', () {
-      expect(taskIconFromStatusString('ON HOLD'), equals(Icons.pause));
+      expect(taskIconFromStatusString('ON HOLD'), equals(LottiIcons.pause));
     });
 
     test('DONE returns check_circle_outline', () {
       expect(
         taskIconFromStatusString('DONE'),
-        equals(Icons.check_circle_outline),
+        equals(LottiIcons.confirmCircled),
       );
     });
 
     test('REJECTED returns close_rounded', () {
       expect(
         taskIconFromStatusString('REJECTED'),
-        equals(Icons.close_rounded),
+        equals(LottiIcons.close),
       );
     });
 
     test('unknown status returns help_outline', () {
       expect(
         taskIconFromStatusString('TOTALLY_UNKNOWN'),
-        equals(Icons.help_outline),
+        equals(LottiIcons.help),
       );
     });
 
     test('accepts alias OPENING (normalized to OPEN)', () {
       expect(
         taskIconFromStatusString('OPENING'),
-        equals(Icons.radio_button_unchecked),
+        equals(LottiIcons.radioUnselected),
       );
     });
 
     test('accepts alias INPROGRESS (normalized to IN PROGRESS)', () {
       expect(
         taskIconFromStatusString('INPROGRESS'),
-        equals(Icons.play_arrow_rounded),
+        equals(LottiIcons.play),
       );
     });
   });
@@ -196,7 +197,7 @@ void main() {
       test('known status "$status" does not return the fallback icon', () {
         expect(
           taskIconFromStatusString(status),
-          isNot(equals(Icons.help_outline)),
+          isNot(equals(LottiIcons.help)),
         );
       });
     }
@@ -209,7 +210,7 @@ void main() {
       glados.ExploreConfig(numRuns: 150),
     ).test('fallback icon iff normalized status is unknown', (s) {
       final isKnown = _knownNormalized.contains(normalizeTaskStatusString(s));
-      final usesFallback = taskIconFromStatusString(s) == Icons.help_outline;
+      final usesFallback = taskIconFromStatusString(s) == LottiIcons.help;
       expect(usesFallback, equals(!isKnown));
     }, tags: 'glados');
   });

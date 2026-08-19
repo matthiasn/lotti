@@ -463,7 +463,7 @@ class _LaggardFootnote extends StatelessWidget {
     return Row(
       children: [
         Icon(
-          Icons.lightbulb_outline_rounded,
+          LottiIcons.tip,
           size: tokens.spacing.step4,
           color: tokens.colors.text.mediumEmphasis,
         ),
@@ -505,10 +505,10 @@ class _TrendChip extends StatelessWidget {
     final flat = delta == 0;
     final color = up ? successColor : tokens.colors.text.mediumEmphasis;
     final icon = flat
-        ? Icons.trending_flat_rounded
+        ? LottiIcons.forward
         : up
-        ? Icons.arrow_upward_rounded
-        : Icons.arrow_downward_rounded;
+        ? LottiIcons.arrowUp
+        : LottiIcons.arrowDown;
     final sign = up ? '+' : (flat ? '' : '−');
 
     return Semantics(

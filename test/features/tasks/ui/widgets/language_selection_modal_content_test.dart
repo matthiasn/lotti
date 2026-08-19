@@ -2,6 +2,7 @@ import 'package:country_flags/country_flags.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/supported_language.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/widgets/settings_card.dart';
 import 'package:lotti/features/tasks/ui/widgets/language_selection_modal_content.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -143,7 +144,7 @@ void main() {
       );
 
       expect(find.text('Clear'), findsOneWidget);
-      expect(find.byIcon(Icons.clear), findsOneWidget);
+      expect(find.byIcon(LottiIcons.close), findsOneWidget);
     });
 
     testWidgets('clear option removes language selection', (tester) async {
@@ -173,7 +174,7 @@ void main() {
       final l10n = AppLocalizations.of(
         tester.element(find.byType(TextField)),
       )!;
-      expect(find.byIcon(Icons.search_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.search), findsOneWidget);
       expect(find.text(l10n.searchHint), findsOneWidget);
     });
 

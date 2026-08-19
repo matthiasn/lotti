@@ -348,7 +348,7 @@ class _TaskActionBarState extends ConsumerState<TaskActionBar> {
                     SizedBox(width: spacing.step4),
                     DsGlassRoundButton(
                       key: TaskActionBar.audioKey,
-                      icon: Icons.mic_rounded,
+                      icon: LottiIcons.mic,
                       semanticLabel: isRecordingAudio
                           ? messages.taskActionBarAudioRecordingActive
                           : messages.taskFirstRunRecordAudio,
@@ -375,7 +375,7 @@ class _TaskActionBarState extends ConsumerState<TaskActionBar> {
                     SizedBox(width: spacing.step4),
                     DsGlassRoundButton(
                       key: TaskActionBar.checklistKey,
-                      icon: Icons.checklist_rounded,
+                      icon: LottiIcons.checkAll,
                       semanticLabel: messages.taskFirstRunAddChecklist,
                       onPressed: _onChecklistPressed,
                     ),
@@ -384,7 +384,7 @@ class _TaskActionBarState extends ConsumerState<TaskActionBar> {
                     SizedBox(width: spacing.step4),
                     DsGlassRoundButton(
                       key: TaskActionBar.imageKey,
-                      icon: Icons.image_rounded,
+                      icon: LottiIcons.image,
                       semanticLabel: messages.addActionImportImage,
                       onPressed: _onImagePressed,
                     ),
@@ -415,7 +415,7 @@ class _TaskActionBarState extends ConsumerState<TaskActionBar> {
                   else
                     DsGlassRoundButton(
                       key: TaskActionBar.moreKey,
-                      icon: Icons.add_rounded,
+                      icon: LottiIcons.add,
                       semanticLabel: messages.createEntryTriggerHintFull,
                       onPressed: _onMorePressed,
                     ),

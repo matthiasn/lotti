@@ -384,7 +384,7 @@ void main() {
   testWidgets('dashboard charts — dark', (tester) async {
     await _pump(tester, brightness: Brightness.dark);
     expect(find.textContaining('Water'), findsOneWidget);
-    expect(find.byIcon(Icons.add_rounded), findsNWidgets(2));
+    expect(find.byIcon(LottiIcons.add), findsNWidgets(2));
     await _capture(tester, '01_dashboard_charts_dark');
   });
 
@@ -404,7 +404,7 @@ void main() {
       brightness: Brightness.dark,
       contentWidth: 480,
     );
-    expect(find.byIcon(Icons.add_rounded), findsNWidgets(2));
+    expect(find.byIcon(LottiIcons.add), findsNWidgets(2));
     await _capture(tester, '03_dashboard_charts_narrow_pane_dark');
   });
 }

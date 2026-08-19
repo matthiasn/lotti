@@ -39,8 +39,8 @@ void main() {
         expect(find.text('31'), findsOneWidget);
         expect(find.text('24'), findsOneWidget);
 
-        await tester.tap(find.byIcon(Icons.chevron_left_rounded));
-        await tester.tap(find.byIcon(Icons.chevron_right_rounded));
+        await tester.tap(find.byIcon(LottiIcons.chevronLeft));
+        await tester.tap(find.byIcon(LottiIcons.chevronRight));
         expect(previous, 1);
         expect(next, 1);
       },

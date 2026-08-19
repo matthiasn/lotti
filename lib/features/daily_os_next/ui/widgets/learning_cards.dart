@@ -78,15 +78,15 @@ class _BulletRow extends StatelessWidget {
     final tokens = context.designTokens;
     final (icon, color) = switch (bullet.tone) {
       LearningBulletTone.info => (
-        Icons.arrow_forward_rounded,
+        LottiIcons.forward,
         tokens.colors.alert.info.defaultColor,
       ),
       LearningBulletTone.positive => (
-        Icons.auto_awesome_rounded,
+        LottiIcons.aiSpark,
         tokens.colors.interactive.enabled,
       ),
       LearningBulletTone.warning => (
-        Icons.shuffle_rounded,
+        LottiIcons.shuffle,
         tokens.colors.alert.warning.defaultColor,
       ),
     };

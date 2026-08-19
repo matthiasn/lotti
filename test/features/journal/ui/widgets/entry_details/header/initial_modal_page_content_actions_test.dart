@@ -6,6 +6,7 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/initial_modal_page_content.dart';
@@ -218,7 +219,7 @@ void main() {
       await tester.pumpWidget(buildGeoWrapper(entry));
       await tester.pump();
 
-      expect(find.byIcon(Icons.map_outlined), findsOneWidget);
+      expect(find.byIcon(LottiIcons.map), findsOneWidget);
     });
   });
 
@@ -273,7 +274,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byIcon(Icons.link_off_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.linkOff), findsOneWidget);
     });
 
     testWidgets('shows toggle hidden item when link is provided', (
@@ -300,7 +301,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byIcon(Icons.visibility_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.visible), findsOneWidget);
     });
   });
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/confirmation_progress_modal.dart';
 import 'package:lotti/features/sync/state/purge_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -29,7 +30,7 @@ class PurgeModal {
                 const SizedBox(height: 16),
                 if (progress == 1.0 && !isPurging)
                   Icon(
-                    Icons.delete_forever_outlined,
+                    LottiIcons.deleteForever,
                     size: 48,
                     color: Theme.of(context).colorScheme.error,
                   )

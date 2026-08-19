@@ -34,8 +34,8 @@ void main() {
   }) {
     return DesignSystemFiveSlotNavBarItem(
       label: label,
-      icon: const Icon(Icons.circle_outlined),
-      activeIcon: const Icon(Icons.circle),
+      icon: const Icon(LottiIcons.radioUnselected),
+      activeIcon: const Icon(LottiIconsFilled.circle),
       active: active,
       onTap: onTap,
       semanticsLabel: semanticsLabel,
@@ -354,8 +354,8 @@ void main() {
 
       // Active slot swaps to the filled icon; inactive slots keep the
       // outlined one.
-      expect(find.byIcon(Icons.circle), findsOneWidget);
-      expect(find.byIcon(Icons.circle_outlined), findsNWidgets(2));
+      expect(find.byIcon(LottiIconsFilled.circle), findsOneWidget);
+      expect(find.byIcon(LottiIcons.radioUnselected), findsNWidgets(2));
 
       final activeLabel = tester.widget<Text>(find.text('Tasks'));
       final inactiveLabel = tester.widget<Text>(find.text('Journal'));
@@ -478,7 +478,7 @@ void main() {
             label: 'Settings',
             icon: const Badge(
               label: Text('3'),
-              child: Icon(Icons.settings_outlined),
+              child: Icon(LottiIcons.settings),
             ),
             onTap: () {},
           ),

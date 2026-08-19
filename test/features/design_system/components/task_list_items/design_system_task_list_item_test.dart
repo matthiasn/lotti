@@ -79,7 +79,7 @@ void main() {
       );
 
       expect(findRichTextContaining('8:00-9:30am'), findsOneWidget);
-      expect(find.byIcon(Icons.access_time), findsOneWidget);
+      expect(find.byIcon(LottiIcons.schedule), findsOneWidget);
     });
 
     testWidgets('does not render time icon when no time range', (
@@ -99,7 +99,7 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(Icons.access_time), findsNothing);
+      expect(find.byIcon(LottiIcons.schedule), findsNothing);
     });
 
     testWidgets('calls onTap when tapped', (tester) async {
@@ -233,25 +233,25 @@ void main() {
           DesignSystemTaskPriority.p0,
           'P0',
           dsTokensLight.colors.alert.error.ink,
-          Icons.priority_high_rounded,
+          LottiIcons.warning,
         ),
         (
           DesignSystemTaskPriority.p1,
           'P1',
           dsTokensLight.colors.alert.error.ink,
-          Icons.local_fire_department_rounded,
+          LottiIcons.streak,
         ),
         (
           DesignSystemTaskPriority.p2,
           'P2',
           dsTokensLight.colors.alert.warning.ink,
-          Icons.circle,
+          LottiIconsFilled.circle,
         ),
         (
           DesignSystemTaskPriority.p3,
           'P3',
           dsTokensLight.colors.text.mediumEmphasis,
-          Icons.circle,
+          LottiIcons.radioUnselected,
         ),
       ];
 
@@ -261,8 +261,12 @@ void main() {
           DesignSystemTaskListItem(
             title: 'Task',
             priority: priority,
-            status: DesignSystemTaskStatus.open,
-            statusLabel: 'Open',
+            // Deliberately not `open`: its glyph is a plain ring, and so is
+            // P3's outlined priority dot. Material spelled those two rings
+            // differently, Lucide has one — so an `open` fixture makes this
+            // finder ambiguous about which mark it is asserting on.
+            status: DesignSystemTaskStatus.onHold,
+            statusLabel: 'On hold',
             onTap: () {},
           ),
         );
@@ -408,10 +412,10 @@ void main() {
         (
           DesignSystemTaskStatus.blocked,
           'Blocked',
-          Icons.warning_amber_rounded,
+          LottiIcons.warning,
         ),
-        (DesignSystemTaskStatus.open, 'Open', Icons.circle_outlined),
-        (DesignSystemTaskStatus.onHold, 'On Hold', Icons.pause_rounded),
+        (DesignSystemTaskStatus.open, 'Open', LottiIcons.radioUnselected),
+        (DesignSystemTaskStatus.onHold, 'On Hold', LottiIcons.pause),
       ];
 
       for (final (status, label, expectedIcon) in cases) {

@@ -524,7 +524,7 @@ class _InferenceProviderEditPageState
                     elevation: 0,
                     leading: IconButton(
                       icon: Icon(
-                        Icons.chevron_left_rounded,
+                        LottiIcons.chevronLeft,
                         color: context.colorScheme.onSurface,
                         size: 28,
                       ),

@@ -4,6 +4,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/soul_query_providers.dart';
 import 'package:lotti/features/agents/ui/soul_selector.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 import '../../../widget_test_utils.dart';
@@ -75,7 +76,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.clear), findsOneWidget);
+      expect(find.byIcon(LottiIcons.close), findsOneWidget);
     });
 
     testWidgets('no clear button when no soul selected', (tester) async {
@@ -86,7 +87,7 @@ void main() {
       await tester.pumpWidget(buildSubject(souls: souls));
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.clear), findsNothing);
+      expect(find.byIcon(LottiIcons.close), findsNothing);
     });
 
     testWidgets('clear button calls onSoulSelected with null', (
@@ -106,7 +107,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.clear));
+      await tester.tap(find.byIcon(LottiIcons.close));
       await tester.pump();
 
       expect(selectedId, isNull);
@@ -177,7 +178,7 @@ void main() {
       await tester.tap(find.byType(InkWell).first);
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
     });
 
     testWidgets('disabled when no souls available', (tester) async {
@@ -208,7 +209,7 @@ void main() {
       await tester.tap(find.byType(InkWell).first);
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.psychology_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.reasoning), findsOneWidget);
     });
   });
 }

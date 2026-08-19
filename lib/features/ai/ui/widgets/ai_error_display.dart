@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/ai/model/inference_error.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
@@ -145,7 +146,7 @@ class _AiErrorDisplayState extends State<AiErrorDisplay> {
                   const SizedBox(height: AppTheme.errorModalSpacingButton),
                   DesignSystemButton(
                     onPressed: widget.onRetry,
-                    leadingIcon: Icons.refresh_rounded,
+                    leadingIcon: LottiIcons.refresh,
                     label: context.messages.aiInferenceErrorRetryButton,
                     size: DesignSystemButtonSize.large,
                   ),
@@ -161,19 +162,19 @@ class _AiErrorDisplayState extends State<AiErrorDisplay> {
   IconData _getErrorIcon() {
     switch (widget.error.type) {
       case InferenceErrorType.networkConnection:
-        return Icons.wifi_off_rounded;
+        return LottiIcons.wifiOff;
       case InferenceErrorType.timeout:
-        return Icons.schedule_rounded;
+        return LottiIcons.schedule;
       case InferenceErrorType.authentication:
-        return Icons.lock_outline_rounded;
+        return LottiIcons.lock;
       case InferenceErrorType.rateLimit:
-        return Icons.speed_rounded;
+        return LottiIcons.speed;
       case InferenceErrorType.invalidRequest:
-        return Icons.error_outline_rounded;
+        return LottiIcons.error;
       case InferenceErrorType.serverError:
-        return Icons.cloud_off_rounded;
+        return LottiIcons.cloudOff;
       case InferenceErrorType.unknown:
-        return Icons.help_outline_rounded;
+        return LottiIcons.help;
     }
   }
 

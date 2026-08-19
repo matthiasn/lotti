@@ -25,6 +25,7 @@ import 'package:lotti/features/ai/ui/widgets/ai_error_display.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart'
     show categoryRepositoryProvider;
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -915,7 +916,7 @@ Digital painting of a vibrant sunset over misty mountains, warm orange and purpl
       await tester.pump(const Duration(milliseconds: 300));
 
       // Should show copy button for image prompt generation
-      expect(find.byIcon(Icons.copy_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.copy), findsOneWidget);
     });
 
     testWidgets('shows copy button for regular prompt generation with result', (
@@ -978,7 +979,7 @@ Implement OAuth 2.0 authentication flow in Flutter using the oauth2 package.''',
       await tester.pump(const Duration(milliseconds: 300));
 
       // Should show copy button for prompt generation
-      expect(find.byIcon(Icons.copy_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.copy), findsOneWidget);
     });
 
     testWidgets(
@@ -1058,7 +1059,7 @@ Generate a widget that renders a login form.''',
 
         await tester.pump(const Duration(milliseconds: 300));
 
-        await tester.tap(find.byIcon(Icons.copy_rounded));
+        await tester.tap(find.byIcon(LottiIcons.copy));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 

@@ -20,7 +20,7 @@ void main() {
           value: 0.7,
           label: 'Progress bar label',
           progressText: '70%',
-          trailingIcon: Icons.star_outline_rounded,
+          trailingIcon: LottiIcons.star,
         ),
       );
 
@@ -29,7 +29,7 @@ void main() {
       final icon = tester.widget<Icon>(
         find.descendant(
           of: find.byKey(barKey),
-          matching: find.byIcon(Icons.star_outline_rounded),
+          matching: find.byIcon(LottiIcons.star),
         ),
       );
       final fill = tester.widget<ColoredBox>(_fillFinder(barKey).first);
@@ -80,7 +80,7 @@ void main() {
           style: DesignSystemProgressBarStyle.chunky,
           label: 'Mega prize label',
           progressText: '45/60',
-          trailingIcon: Icons.star_outline_rounded,
+          trailingIcon: LottiIcons.star,
         ),
       );
 
@@ -191,7 +191,7 @@ void main() {
           value: 0.5,
           label: 'Tasks',
           progressText: '3 of 5 tasks completed',
-          trailingIcon: Icons.star_outline_rounded,
+          trailingIcon: LottiIcons.star,
         ),
         width: 160,
       );

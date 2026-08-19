@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/inference_error.dart';
 import 'package:lotti/features/ai/ui/widgets/ai_error_display.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../../widget_test_utils.dart';
 
@@ -69,7 +70,7 @@ void main() {
         await tester.pumpWidget(createTestWidget(error: testError));
         await tester.pump();
 
-        expect(find.byIcon(Icons.wifi_off_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.wifiOff), findsOneWidget);
       });
 
       testWidgets('card border is tinted with the theme error color', (
@@ -93,13 +94,13 @@ void main() {
 
     group('error type icons', () {
       final iconTests = <InferenceErrorType, IconData>{
-        InferenceErrorType.networkConnection: Icons.wifi_off_rounded,
-        InferenceErrorType.timeout: Icons.schedule_rounded,
-        InferenceErrorType.authentication: Icons.lock_outline_rounded,
-        InferenceErrorType.rateLimit: Icons.speed_rounded,
-        InferenceErrorType.invalidRequest: Icons.error_outline_rounded,
-        InferenceErrorType.serverError: Icons.cloud_off_rounded,
-        InferenceErrorType.unknown: Icons.help_outline_rounded,
+        InferenceErrorType.networkConnection: LottiIcons.wifiOff,
+        InferenceErrorType.timeout: LottiIcons.schedule,
+        InferenceErrorType.authentication: LottiIcons.lock,
+        InferenceErrorType.rateLimit: LottiIcons.speed,
+        InferenceErrorType.invalidRequest: LottiIcons.error,
+        InferenceErrorType.serverError: LottiIcons.cloudOff,
+        InferenceErrorType.unknown: LottiIcons.help,
       };
 
       for (final entry in iconTests.entries) {
@@ -415,7 +416,7 @@ void main() {
         await tester.pump();
 
         // Icon should be visible
-        expect(find.byIcon(Icons.wifi_off_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.wifiOff), findsOneWidget);
 
         // Text should be selectable for accessibility
         expect(find.byType(SelectableText), findsWidgets);

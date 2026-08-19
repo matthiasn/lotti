@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
@@ -88,7 +89,7 @@ class _AgentControlsState extends ConsumerState<AgentControls> {
                       },
                     ),
               icon: Icon(
-                Icons.delete_forever_rounded,
+                LottiIcons.deleteForever,
                 color: context.colorScheme.error,
               ),
               label: Text(
@@ -113,19 +114,19 @@ class _AgentControlsState extends ConsumerState<AgentControls> {
           if (isActive)
             FilledButton.tonalIcon(
               onPressed: _busy ? null : () => _runAction(_pauseAgent),
-              icon: const Icon(Icons.pause_rounded),
+              icon: const Icon(LottiIcons.pause),
               label: Text(context.messages.agentControlsPauseButton),
             ),
           if (isDormant)
             FilledButton.tonalIcon(
               onPressed: _busy ? null : () => _runAction(_resumeAgent),
-              icon: const Icon(Icons.play_arrow_rounded),
+              icon: const Icon(LottiIcons.play),
               label: Text(context.messages.agentControlsResumeButton),
             ),
           if (isActive || isDormant)
             OutlinedButton.icon(
               onPressed: _busy ? null : _triggerReanalysis,
-              icon: const Icon(Icons.refresh_rounded),
+              icon: const Icon(LottiIcons.refresh),
               label: Text(context.messages.agentControlsReanalyzeButton),
             ),
           if (isActive || isDormant)
@@ -146,7 +147,7 @@ class _AgentControlsState extends ConsumerState<AgentControls> {
                       },
                     ),
               icon: Icon(
-                Icons.delete_forever_rounded,
+                LottiIcons.deleteForever,
                 color: context.colorScheme.error,
               ),
               label: Text(

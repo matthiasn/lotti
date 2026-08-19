@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/selection/selection_option.dart';
 
 void main() {
@@ -32,14 +33,14 @@ void main() {
         await tester.pumpWidget(
           createTestWidget(
             title: 'Test Option',
-            icon: Icons.settings,
+            icon: LottiIcons.settings,
             isSelected: false,
             onTap: () {},
           ),
         );
 
         expect(find.text('Test Option'), findsOneWidget);
-        expect(find.byIcon(Icons.settings), findsOneWidget);
+        expect(find.byIcon(LottiIcons.settings), findsOneWidget);
         expect(find.byType(InkWell), findsOneWidget);
         expect(find.byType(Container), findsAtLeastNWidgets(2));
       });
@@ -49,7 +50,7 @@ void main() {
           createTestWidget(
             title: 'Test Option',
             description: 'This is a description',
-            icon: Icons.settings,
+            icon: LottiIcons.settings,
             isSelected: false,
             onTap: () {},
           ),
@@ -64,7 +65,7 @@ void main() {
         await tester.pumpWidget(
           createTestWidget(
             title: 'Test Option',
-            icon: Icons.settings,
+            icon: LottiIcons.settings,
             isSelected: false,
             onTap: () {},
           ),
@@ -82,7 +83,7 @@ void main() {
           createTestWidget(
             title: 'Test Option',
             description: longDescription,
-            icon: Icons.settings,
+            icon: LottiIcons.settings,
             isSelected: false,
             onTap: () {},
           ),
@@ -107,13 +108,13 @@ void main() {
         await tester.pumpWidget(
           createTestWidget(
             title: 'Test Option',
-            icon: Icons.settings,
+            icon: LottiIcons.settings,
             isSelected: true,
             onTap: () {},
           ),
         );
 
-        expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
       });
 
       testWidgets(
@@ -122,13 +123,13 @@ void main() {
           await tester.pumpWidget(
             createTestWidget(
               title: 'Test Option',
-              icon: Icons.settings,
+              icon: LottiIcons.settings,
               isSelected: false,
               onTap: () {},
             ),
           );
 
-          expect(find.byIcon(Icons.check_rounded), findsNothing);
+          expect(find.byIcon(LottiIcons.confirm), findsNothing);
 
           // Find the empty circle container
           final circleContainers = tester
@@ -162,7 +163,7 @@ void main() {
         await tester.pumpWidget(
           createTestWidget(
             title: 'Test Option',
-            icon: Icons.settings,
+            icon: LottiIcons.settings,
             isSelected: true,
             onTap: () {},
             selectionIndicator: customIndicator,
@@ -170,14 +171,14 @@ void main() {
         );
 
         expect(find.byKey(const Key('custom_indicator')), findsOneWidget);
-        expect(find.byIcon(Icons.check_rounded), findsNothing);
+        expect(find.byIcon(LottiIcons.confirm), findsNothing);
       });
 
       testWidgets('applies different styling when selected', (tester) async {
         await tester.pumpWidget(
           createTestWidget(
             title: 'Test Option',
-            icon: Icons.settings,
+            icon: LottiIcons.settings,
             isSelected: true,
             onTap: () {},
           ),
@@ -207,7 +208,7 @@ void main() {
         await tester.pumpWidget(
           createTestWidget(
             title: 'Test Option',
-            icon: Icons.settings,
+            icon: LottiIcons.settings,
             isSelected: false,
             onTap: () => tapped = true,
           ),
@@ -221,7 +222,7 @@ void main() {
         await tester.pumpWidget(
           createTestWidget(
             title: 'Test Option',
-            icon: Icons.settings,
+            icon: LottiIcons.settings,
             isSelected: false,
             onTap: () {},
           ),
@@ -237,7 +238,7 @@ void main() {
         await tester.pumpWidget(
           createTestWidget(
             title: 'Test Option',
-            icon: Icons.settings,
+            icon: LottiIcons.settings,
             isSelected: false,
             onTap: () => tapCount++,
           ),
@@ -261,7 +262,7 @@ void main() {
             home: Scaffold(
               body: SelectionOption(
                 title: 'Test Option',
-                icon: Icons.settings,
+                icon: LottiIcons.settings,
                 isSelected: false,
                 onTap: () {},
               ),
@@ -280,7 +281,7 @@ void main() {
         await tester.pumpWidget(
           createTestWidget(
             title: 'Test Option',
-            icon: Icons.settings,
+            icon: LottiIcons.settings,
             isSelected: false,
             onTap: () {},
           ),
@@ -289,7 +290,7 @@ void main() {
         final icon = tester.widget<Icon>(
           find.descendant(
             of: find.byType(SelectionOption),
-            matching: find.byIcon(Icons.settings),
+            matching: find.byIcon(LottiIcons.settings),
           ),
         );
 
@@ -302,7 +303,7 @@ void main() {
         await tester.pumpWidget(
           createTestWidget(
             title: 'Test Option',
-            icon: Icons.settings,
+            icon: LottiIcons.settings,
             isSelected: false,
             onTap: () {},
           ),
@@ -317,7 +318,7 @@ void main() {
           createTestWidget(
             title: 'Test Option',
             description: 'Test description',
-            icon: Icons.settings,
+            icon: LottiIcons.settings,
             isSelected: true,
             onTap: () {},
           ),
@@ -335,7 +336,7 @@ void main() {
         await tester.pumpWidget(
           createTestWidget(
             title: '',
-            icon: Icons.settings,
+            icon: LottiIcons.settings,
             isSelected: false,
             onTap: () {},
           ),
@@ -350,7 +351,7 @@ void main() {
         await tester.pumpWidget(
           createTestWidget(
             title: longTitle,
-            icon: Icons.settings,
+            icon: LottiIcons.settings,
             isSelected: false,
             onTap: () {},
           ),
@@ -365,7 +366,7 @@ void main() {
             home: Scaffold(
               body: SelectionOption(
                 title: 'Test Option',
-                icon: Icons.settings,
+                icon: LottiIcons.settings,
                 isSelected: false,
                 onTap: () {}, // Required parameter, can't be null
               ),

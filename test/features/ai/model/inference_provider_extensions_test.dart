@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_provider_extensions.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../widget_test_utils.dart';
 
@@ -10,20 +11,20 @@ void main() {
     group('icon', () {
       test('returns distinct icon for each provider type', () {
         final icons = <InferenceProviderType, IconData>{
-          InferenceProviderType.alibaba: Icons.cloud_queue,
-          InferenceProviderType.anthropic: Icons.auto_awesome,
-          InferenceProviderType.openAi: Icons.psychology,
-          InferenceProviderType.gemini: Icons.diamond,
-          InferenceProviderType.melious: Icons.eco,
-          InferenceProviderType.mistral: Icons.record_voice_over,
-          InferenceProviderType.openRouter: Icons.hub,
-          InferenceProviderType.ollama: Icons.computer,
-          InferenceProviderType.genericOpenAi: Icons.cloud,
-          InferenceProviderType.nebiusAiStudio: Icons.rocket_launch,
-          InferenceProviderType.omlx: Icons.developer_board_rounded,
-          InferenceProviderType.whisper: Icons.mic,
-          InferenceProviderType.voxtral: Icons.graphic_eq,
-          InferenceProviderType.mlxAudio: Icons.memory_rounded,
+          InferenceProviderType.alibaba: LottiIcons.cloud,
+          InferenceProviderType.anthropic: LottiIcons.aiSpark,
+          InferenceProviderType.openAi: LottiIcons.reasoning,
+          InferenceProviderType.gemini: LottiIcons.gem,
+          InferenceProviderType.melious: LottiIcons.eco,
+          InferenceProviderType.mistral: LottiIcons.voice,
+          InferenceProviderType.openRouter: LottiIcons.hub,
+          InferenceProviderType.ollama: LottiIcons.computer,
+          InferenceProviderType.genericOpenAi: LottiIcons.cloud,
+          InferenceProviderType.nebiusAiStudio: LottiIcons.rocket,
+          InferenceProviderType.omlx: LottiIcons.memory,
+          InferenceProviderType.whisper: LottiIcons.mic,
+          InferenceProviderType.voxtral: LottiIcons.waveform,
+          InferenceProviderType.mlxAudio: LottiIcons.memory,
         };
 
         for (final entry in icons.entries) {

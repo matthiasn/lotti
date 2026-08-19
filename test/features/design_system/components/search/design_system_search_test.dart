@@ -88,14 +88,14 @@ void main() {
         const Size(244, 56),
       );
       expect(
-        tester.getTopLeft(find.byIcon(Icons.search_rounded)).dx,
+        tester.getTopLeft(find.byIcon(LottiIcons.search)).dx,
         closeTo(12, 0.1),
       );
       expect(
         tester.getTopLeft(visibleHintFinder).dx,
         closeTo(44, 0.1),
       );
-      expect(find.byIcon(Icons.cancel_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.closeCircled), findsNothing);
 
       final mediumEditableText = tester.widget<EditableText>(
         find.byType(EditableText),
@@ -145,14 +145,14 @@ void main() {
 
       final placeholderCenter = tester.getCenter(visibleHintFinder).dy;
       final placeholderTop = tester.getTopLeft(visibleHintFinder).dy;
-      final iconCenter = tester.getCenter(find.byIcon(Icons.search_rounded)).dy;
+      final iconCenter = tester.getCenter(find.byIcon(LottiIcons.search)).dy;
       expect((placeholderCenter - iconCenter).abs(), lessThanOrEqualTo(1.5));
 
       await tester.enterText(find.byType(TextField), 'Lotti search');
       await tester.pump();
 
       expect(find.text('Lotti search'), findsOneWidget);
-      expect(find.byIcon(Icons.cancel_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.closeCircled), findsOneWidget);
       expect(
         (tester.getCenter(find.text('Lotti search')).dy - iconCenter).abs(),
         lessThanOrEqualTo(1.5),
@@ -185,13 +185,13 @@ void main() {
       await tester.enterText(find.byType(TextField), 'Lotti search');
       await tester.pump();
       // Typing reveals the clear affordance.
-      expect(find.byIcon(Icons.cancel_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.closeCircled), findsOneWidget);
 
-      await tester.tap(find.byIcon(Icons.cancel_rounded));
+      await tester.tap(find.byIcon(LottiIcons.closeCircled));
       await tester.pump();
 
       expect(find.text('Lotti search'), findsNothing);
-      expect(find.byIcon(Icons.cancel_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.closeCircled), findsNothing);
       expect(cleared, isTrue);
     });
 
@@ -246,7 +246,7 @@ void main() {
         const Size(244, 48),
       );
       expect(
-        tester.getTopLeft(find.byIcon(Icons.search_rounded)).dx,
+        tester.getTopLeft(find.byIcon(LottiIcons.search)).dx,
         closeTo(12, 0.1),
       );
       expect(
@@ -269,11 +269,11 @@ void main() {
       );
       expect(
         (tester.getCenter(find.text('Lotti search')).dy -
-                tester.getCenter(find.byIcon(Icons.search_rounded)).dy)
+                tester.getCenter(find.byIcon(LottiIcons.search)).dy)
             .abs(),
         lessThanOrEqualTo(1.5),
       );
-      await tester.tap(find.byIcon(Icons.search_rounded));
+      await tester.tap(find.byIcon(LottiIcons.search));
       await tester.pump();
 
       expect(searched, 'Lotti search');
@@ -360,7 +360,7 @@ void main() {
         // External controller drives the field and its non-empty text shows
         // the clear button.
         expect(find.text('external value'), findsOneWidget);
-        expect(find.byIcon(Icons.cancel_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.closeCircled), findsOneWidget);
 
         // Rebuild with no controller -> falls back to a fresh internal
         // controller (lines 71-72), which is empty.
@@ -368,7 +368,7 @@ void main() {
         await tester.pump();
 
         expect(find.text('external value'), findsNothing);
-        expect(find.byIcon(Icons.cancel_rounded), findsNothing);
+        expect(find.byIcon(LottiIcons.closeCircled), findsNothing);
 
         // Mutating the now-detached external controller must NOT rebuild the
         // widget (its listener was removed on line 69).
@@ -381,7 +381,7 @@ void main() {
         await tester.enterText(find.byType(TextField), 'typed internally');
         await tester.pump();
         expect(find.text('typed internally'), findsOneWidget);
-        expect(find.byIcon(Icons.cancel_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.closeCircled), findsOneWidget);
       },
     );
 
@@ -404,7 +404,7 @@ void main() {
 
         expect(find.text('internal value'), findsNothing);
         expect(find.text('now external'), findsOneWidget);
-        expect(find.byIcon(Icons.cancel_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.closeCircled), findsOneWidget);
         expect(tester.takeException(), isNull);
 
         // The external controller's listener was re-added (line 77): clearing
@@ -412,7 +412,7 @@ void main() {
         externalController.clear();
         await tester.pump();
         expect(find.text('now external'), findsNothing);
-        expect(find.byIcon(Icons.cancel_rounded), findsNothing);
+        expect(find.byIcon(LottiIcons.closeCircled), findsNothing);
       },
     );
 

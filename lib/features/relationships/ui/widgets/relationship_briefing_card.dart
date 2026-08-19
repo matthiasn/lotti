@@ -169,7 +169,7 @@ class _RelationshipBriefingCardState
                   '/people/${widget.relationship.meta.id}/chat',
                 ),
                 icon: Icon(
-                  Icons.chat_bubble_outline_rounded,
+                  LottiIcons.chat,
                   size: tokens.spacing.step5,
                 ),
               ),

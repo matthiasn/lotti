@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_navigation_sidebar.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_state.dart';
 import 'package:lotti/features/projects/ui/widgets/project_detail_pane.dart';
 import 'package:lotti/features/projects/ui/widgets/project_list_detail_showcase.dart';
@@ -136,7 +137,7 @@ void main() {
         expect(readState(container).searchQuery, 'Device');
 
         // Tap the clear icon -> onSearchCleared -> updateSearchQuery('').
-        final clearIcon = find.byIcon(Icons.cancel_rounded).first;
+        final clearIcon = find.byIcon(LottiIcons.closeCircled).first;
         await tester.ensureVisible(clearIcon);
         await tester.tap(clearIcon);
         await tester.pump();
@@ -151,7 +152,7 @@ void main() {
       (tester) async {
         await pumpShowcase(tester);
 
-        final filterIcon = find.byIcon(Icons.filter_list_rounded).first;
+        final filterIcon = find.byIcon(LottiIcons.filter).first;
         await tester.ensureVisible(filterIcon);
         await tester.tap(filterIcon);
         await tester.pumpAndSettle();
@@ -171,7 +172,7 @@ void main() {
       (tester) async {
         final container = await pumpShowcase(tester);
 
-        await tester.tap(find.byIcon(Icons.filter_list_rounded).first);
+        await tester.tap(find.byIcon(LottiIcons.filter).first);
         await tester.pumpAndSettle();
 
         // Drill into the category selection modal and pick the "Study"

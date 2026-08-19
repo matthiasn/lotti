@@ -203,7 +203,7 @@ class ProviderTypeField extends StatelessWidget {
                     ),
                   ),
                   Icon(
-                    Icons.arrow_drop_down_rounded,
+                    LottiIcons.chevronDown,
                     color: context.colorScheme.onSurfaceVariant.withValues(
                       alpha: 0.6,
                     ),
@@ -240,7 +240,7 @@ class EmbeddedProviderHint extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(Icons.memory_rounded, color: visual.accent),
+          Icon(LottiIcons.memory, color: visual.accent),
           SizedBox(width: tokens.spacing.step3),
           Expanded(
             child: Text(
@@ -299,7 +299,7 @@ class AvailableModelsSection extends ConsumerWidget {
             SizedBox(height: tokens.spacing.step4),
             AiFormSection(
               title: messages.apiKeyAvailableModelsTitle,
-              icon: Icons.psychology_rounded,
+              icon: LottiIcons.reasoning,
               description: messages.apiKeyAvailableModelsDescription,
               children: [
                 ...knownModels.map((knownModel) {
@@ -653,7 +653,7 @@ class _DynamicModelsError extends ConsumerWidget {
       child: Row(
         children: [
           Icon(
-            Icons.error_outline_rounded,
+            LottiIcons.error,
             color: context.colorScheme.error,
             size: tokens.spacing.step6,
           ),
@@ -672,7 +672,7 @@ class _DynamicModelsError extends ConsumerWidget {
             onPressed: () =>
                 ref.invalidate(_dynamicKnownModelsProvider(providerId)),
             tooltip: messages.aiProviderConnectionRetryButton,
-            icon: const Icon(Icons.refresh_rounded),
+            icon: const Icon(LottiIcons.refresh),
           ),
         ],
       ),
@@ -798,29 +798,29 @@ class _KnownModelTileState extends ConsumerState<_KnownModelTile> {
     final id = widget.knownModel.providerModelId.toLowerCase();
     // Image generation (text -> image).
     if (widget.knownModel.outputModalities.contains(Modality.image)) {
-      return Icons.palette_rounded;
+      return LottiIcons.palette;
     }
     // Audio transcription.
     if (widget.knownModel.inputModalities.contains(Modality.audio)) {
-      return Icons.mic_rounded;
+      return LottiIcons.mic;
     }
     // OCR / document reading.
     if (id.contains('ocr')) {
-      return Icons.document_scanner_rounded;
+      return LottiIcons.scanDocument;
     }
     // Code-focused models (covers `codestral`, which contains `code`).
     if (id.contains('code')) {
-      return Icons.code_rounded;
+      return LottiIcons.code;
     }
     // Reasoning / thinking.
     if (widget.knownModel.isReasoningModel) {
-      return Icons.psychology_alt_rounded;
+      return LottiIcons.reasoning;
     }
     // Vision (image input).
     if (widget.knownModel.inputModalities.contains(Modality.image)) {
-      return Icons.image_search_rounded;
+      return LottiIcons.searchImage;
     }
-    return Icons.smart_toy_rounded;
+    return LottiIcons.aiModel;
   }
 
   @override
@@ -1015,7 +1015,7 @@ class _TileTrailingAction extends StatelessWidget {
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                isAdded ? Icons.remove_rounded : Icons.add_rounded,
+                isAdded ? LottiIcons.remove : LottiIcons.add,
                 size: tokens.spacing.step5,
                 color: tint,
               ),

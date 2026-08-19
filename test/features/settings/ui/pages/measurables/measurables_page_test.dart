@@ -99,8 +99,8 @@ void main() {
           await pumpMeasurablesPage(tester, measurables: [measurableWater]);
 
           // No repeated decorative trend-line glyph.
-          expect(find.byIcon(Icons.trending_up_rounded), findsNothing);
-          expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
+          expect(find.byIcon(LottiIcons.trendingUp), findsNothing);
+          expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
 
           // The chip carries the measurable's first letter so rows are
           // distinguishable at a glance.
@@ -145,25 +145,25 @@ void main() {
             (
               description: 'shows lock icon when private',
               measurable: measurableWater.copyWith(private: true),
-              icon: Icons.lock_outline,
+              icon: LottiIcons.lock,
               expected: true,
             ),
             (
               description: 'hides lock icon when not private',
               measurable: measurableWater,
-              icon: Icons.lock_outline,
+              icon: LottiIcons.lock,
               expected: false,
             ),
             (
               description: 'shows outlined star icon when favorite',
               measurable: measurableWater.copyWith(favorite: true),
-              icon: Icons.star_rounded,
+              icon: LottiIcons.star,
               expected: true,
             ),
             (
               description: 'hides star icon when not favorite',
               measurable: measurableWater,
-              icon: Icons.star_rounded,
+              icon: LottiIcons.star,
               expected: false,
             ),
           ];
@@ -189,11 +189,11 @@ void main() {
         );
         await pumpMeasurablesPage(tester, measurables: [fullMeasurable]);
 
-        expect(find.byIcon(Icons.lock_outline), findsOneWidget);
+        expect(find.byIcon(LottiIcons.lock), findsOneWidget);
         // One icon weight across the trailing slot — the star is an
         // outline like its lock neighbor; amber carries the favorite
         // signal.
-        final star = find.byIcon(Icons.star_rounded);
+        final star = find.byIcon(LottiIcons.star);
         expect(star, findsOneWidget);
         final tokens = tester.element(star).designTokens;
         expect(
@@ -263,7 +263,7 @@ void main() {
         // the retries until the terminal AsyncError renders.
         await tester.pumpAndSettle();
 
-        expect(find.byIcon(Icons.error_outline), findsOneWidget);
+        expect(find.byIcon(LottiIcons.error), findsOneWidget);
         expect(find.text('Error loading measurables'), findsOneWidget);
         expect(find.textContaining('types broke'), findsOneWidget);
       });
@@ -301,7 +301,7 @@ void main() {
         await tester.pump();
 
         expect(find.byType(DesignSystemListItem), findsNothing);
-        expect(find.byIcon(Icons.search_off_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.searchOff), findsOneWidget);
         expect(find.text('No measurables match "zzz"'), findsOneWidget);
       });
     });

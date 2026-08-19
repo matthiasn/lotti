@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_activity_log.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../widget_test_utils.dart';
 import '../test_utils.dart';
@@ -199,7 +200,7 @@ void main() {
       expect(find.text('wakeCompleted'), findsOneWidget);
       // Only the prompt row carries a payload, so exactly one row is
       // expandable.
-      expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
 
       // Expanding the prompt row reveals the persisted prompt text.
       await tester.tap(find.text('System Prompt'));
@@ -250,7 +251,7 @@ void main() {
       await tester.pump();
 
       // Expand icon should be shown for any kind with a contentId.
-      expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
 
       // Tap to expand and see the payload text.
       await tester.tap(find.byType(InkWell));
@@ -283,7 +284,7 @@ void main() {
       await tester.pump();
 
       // Expand icon should be visible
-      expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
 
       // Text should not be visible initially
       expect(find.text('This is the observation text'), findsNothing);
@@ -296,7 +297,7 @@ void main() {
 
       // Now the observation text should be visible
       expect(find.text('This is the observation text'), findsOneWidget);
-      expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronDown), findsOneWidget);
     });
 
     testWidgets('shows error message in red when present', (tester) async {

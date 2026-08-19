@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_voice_controls.dart';
 import 'package:lotti/features/ai_chat/ui/controllers/chat_recorder_controller.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 import '../../../../../widget_test_utils.dart';
@@ -35,8 +36,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const ValueKey('evolution_waveform')), findsOneWidget);
-    expect(find.byIcon(Icons.close), findsOneWidget);
-    expect(find.byIcon(Icons.stop), findsOneWidget);
+    expect(find.byIcon(LottiIcons.close), findsOneWidget);
+    expect(find.byIcon(LottiIcons.stop), findsOneWidget);
   });
 
   testWidgets('cancel button invokes onCancel', (tester) async {
@@ -49,7 +50,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byIcon(Icons.close));
+    await tester.tap(find.byIcon(LottiIcons.close));
     await tester.pump();
 
     expect(cancelled, isTrue);
@@ -65,7 +66,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byIcon(Icons.stop));
+    await tester.tap(find.byIcon(LottiIcons.stop));
     await tester.pump();
 
     expect(stopped, isTrue);

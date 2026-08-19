@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/main.dart' as app;
 
 void main() {
@@ -19,11 +19,11 @@ void main() {
 
           expect(find.text('Search...'), findsWidgets);
 
-          final add = find.byIcon(Icons.add).first;
+          final add = find.byIcon(LottiIcons.add).first;
           await tester.tap(add);
           await tester.pumpAndSettle();
 
-          final addText = find.byIcon(MdiIcons.textLong).first;
+          final addText = find.byIcon(LottiIcons.note).first;
           await tester.tap(addText);
           await tester.pumpAndSettle();
 
@@ -36,13 +36,13 @@ void main() {
           // the unit tests for the editor widget itself.
           expect(editor, findsOneWidget);
 
-          final saveIcon = find.byIcon(Icons.save);
+          final saveIcon = find.byIcon(LottiIcons.save);
           await tester.tap(saveIcon);
           await tester.pumpAndSettle();
 
           //expect(find.text(testText), findsOneWidget);
 
-          final settings = find.byIcon(Icons.settings_outlined);
+          final settings = find.byIcon(LottiIcons.settings);
           await tester.tap(settings);
           await tester.pumpAndSettle();
 
@@ -57,7 +57,7 @@ void main() {
           expect(find.text('Maintenance'), findsOneWidget);
 
           const testTag = 'integration-test-tag';
-          await tester.tap(find.byIcon(MdiIcons.tag));
+          await tester.tap(find.byIcon(LottiIcons.label));
           await tester.pumpAndSettle();
 
           // Make local retries idempotent if an earlier run stopped before
@@ -65,7 +65,7 @@ void main() {
           if (find.text(testTag).evaluate().isNotEmpty) {
             await tester.tap(find.text(testTag));
             await tester.pumpAndSettle();
-            await tester.tap(find.byIcon(MdiIcons.trashCanOutline));
+            await tester.tap(find.byIcon(LottiIcons.delete));
             await tester.pumpAndSettle();
             expect(find.text(testTag), findsNothing);
           }
@@ -73,7 +73,7 @@ void main() {
           await tester.tap(find.byKey(const Key('add_tag_action')));
           await tester.pumpAndSettle();
 
-          await tester.tap(find.byIcon(MdiIcons.tagPlusOutline));
+          await tester.tap(find.byIcon(LottiIcons.label));
           await tester.pumpAndSettle();
 
           await tester.enterText(
@@ -90,7 +90,7 @@ void main() {
           await tester.tap(find.text(testTag));
           await tester.pumpAndSettle();
 
-          await tester.tap(find.byIcon(MdiIcons.trashCanOutline));
+          await tester.tap(find.byIcon(LottiIcons.delete));
           await tester.pumpAndSettle();
 
           expect(find.text(testTag), findsNothing);

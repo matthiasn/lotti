@@ -33,8 +33,8 @@ void main() {
         text.style?.fontSize,
         dsTokensLight.typography.styles.body.bodySmall.fontSize,
       );
-      expect(find.byIcon(Icons.remove_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.add_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.remove), findsOneWidget);
+      expect(find.byIcon(LottiIcons.add), findsOneWidget);
     });
 
     testWidgets('each glyph sits in a circular level02 container', (
@@ -168,11 +168,11 @@ void main() {
       // The disabled glyph drops to low emphasis; the live one keeps the
       // interactive accent.
       expect(
-        tester.widget<Icon>(find.byIcon(Icons.remove_rounded)).color,
+        tester.widget<Icon>(find.byIcon(LottiIcons.remove)).color,
         dsTokensLight.colors.text.lowEmphasis,
       );
       expect(
-        tester.widget<Icon>(find.byIcon(Icons.add_rounded)).color,
+        tester.widget<Icon>(find.byIcon(LottiIcons.add)).color,
         dsTokensLight.colors.interactive.enabled,
       );
 

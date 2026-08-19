@@ -152,7 +152,7 @@ class NodeInspectorPanel extends StatelessWidget {
                       children: [
                         if (onBack != null)
                           _NavButton(
-                            icon: Icons.arrow_back_rounded,
+                            icon: LottiIcons.back,
                             tooltip: context.messages.knowledgeGraphBack,
                             onTap: canGoBack ? onBack : null,
                             tokens: tokens,
@@ -160,7 +160,7 @@ class NodeInspectorPanel extends StatelessWidget {
                         if (onRecenter != null) ...[
                           SizedBox(width: tokens.spacing.step2),
                           _NavButton(
-                            icon: Icons.center_focus_strong_rounded,
+                            icon: LottiIcons.focus,
                             tooltip: context.messages.knowledgeGraphRecenter,
                             onTap: onRecenter,
                             tokens: tokens,
@@ -175,7 +175,7 @@ class NodeInspectorPanel extends StatelessWidget {
                     top: tokens.spacing.step3,
                     right: tokens.spacing.step3,
                     child: _NavButton(
-                      icon: Icons.open_in_full_rounded,
+                      icon: LottiIcons.expandFull,
                       tooltip: context.messages.knowledgeGraphOpenDetails,
                       onTap: onOpen,
                       tokens: tokens,
@@ -423,7 +423,7 @@ class _InspectorContentState extends State<_InspectorContent> {
                                     Row(
                                       children: [
                                         Icon(
-                                          Icons.auto_awesome_rounded,
+                                          LottiIcons.aiSpark,
                                           size: IconSizes.s,
                                           color: widget.cat,
                                         ),
@@ -445,7 +445,7 @@ class _InspectorContentState extends State<_InspectorContent> {
                                           turns: _summaryExpanded ? 0.5 : 0,
                                           duration: kThemeAnimationDuration,
                                           child: Icon(
-                                            Icons.expand_more_rounded,
+                                            LottiIcons.expand,
                                             size: IconSizes.s,
                                             color: tokens
                                                 .colors
@@ -621,7 +621,7 @@ class _MoreBelowButton extends StatelessWidget {
                 ),
                 SizedBox(width: tokens.spacing.step1),
                 Icon(
-                  Icons.keyboard_arrow_down_rounded,
+                  LottiIcons.chevronDown,
                   size: IconSizes.s,
                   color: cat,
                 ),
@@ -726,7 +726,7 @@ class _MediaCarousel extends StatelessWidget {
                         errorBuilder: (_, _, _) => ColoredBox(
                           color: tokens.colors.background.level02,
                           child: Icon(
-                            Icons.broken_image_outlined,
+                            LottiIcons.imageBroken,
                             color: tokens.colors.text.lowEmphasis,
                           ),
                         ),
@@ -910,7 +910,7 @@ class _Footer extends StatelessWidget {
           SizedBox(height: tokens.spacing.step4),
           Row(
             children: [
-              Icon(Icons.schedule_rounded, size: 14, color: cat),
+              Icon(LottiIcons.schedule, size: 14, color: cat),
               SizedBox(width: tokens.spacing.step2),
               Text(
                 createdLabel,

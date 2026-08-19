@@ -62,7 +62,7 @@ class ConnectionSection extends StatelessWidget {
       trailing: DesignSystemButton(
         label: messages.aiProviderDetailEditButton,
         variant: DesignSystemButtonVariant.secondary,
-        leadingIcon: Icons.edit_outlined,
+        leadingIcon: LottiIcons.edit,
         onPressed: onEdit,
       ),
       child: Container(

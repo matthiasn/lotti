@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/empty_states/design_system_empty_state.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 /// Placeholder shown in the detail pane of a desktop split layout
 /// when no item has been selected yet.
@@ -10,7 +11,7 @@ import 'package:lotti/features/design_system/components/empty_states/design_syst
 class DesktopDetailEmptyState extends StatelessWidget {
   const DesktopDetailEmptyState({
     required this.message,
-    this.icon = Icons.touch_app_outlined,
+    this.icon = LottiIcons.touch,
     super.key,
   });
 

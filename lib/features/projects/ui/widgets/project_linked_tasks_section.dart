@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -22,7 +23,7 @@ class ProjectLinkedTasksSection extends StatelessWidget {
 
     return LottiFormSection(
       title: messages.projectLinkedTasks,
-      icon: Icons.task_alt,
+      icon: LottiIcons.confirmCircled,
       children: [
         if (tasks.isEmpty)
           Padding(
@@ -56,7 +57,7 @@ class _TaskTile extends StatelessWidget {
     return ListTile(
       dense: true,
       contentPadding: EdgeInsets.zero,
-      leading: const Icon(Icons.task_alt, size: 20),
+      leading: const Icon(LottiIcons.confirmCircled, size: 20),
       title: Text(
         task.data.title.isEmpty ? messages.taskUntitled : task.data.title,
         maxLines: 1,

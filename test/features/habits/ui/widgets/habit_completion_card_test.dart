@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/habits/state/habit_completion_controller.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_action_row.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_completion_card.dart';
@@ -152,9 +153,9 @@ void main() {
       ];
       await pumpCard(tester);
 
-      expect(find.byIcon(Icons.check_rounded), findsOneWidget); // success cell
-      expect(find.byIcon(Icons.close_rounded), findsOneWidget); // fail cell
-      expect(find.byIcon(Icons.remove_rounded), findsOneWidget); // skip cell
+      expect(find.byIcon(LottiIcons.confirm), findsOneWidget); // success cell
+      expect(find.byIcon(LottiIcons.close), findsOneWidget); // fail cell
+      expect(find.byIcon(LottiIcons.remove), findsOneWidget); // skip cell
 
       final labels = tester
           .widgetList<Semantics>(find.byType(Semantics))
@@ -175,12 +176,12 @@ void main() {
       ];
       await pumpCard(tester);
 
-      expect(find.byIcon(Icons.close_rounded), findsNothing);
-      expect(find.byIcon(Icons.remove_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.close), findsNothing);
+      expect(find.byIcon(LottiIcons.remove), findsNothing);
       // No success cell, and the not-done button is a hollow "+" — so the strip
       // shows no check glyph at all.
-      expect(find.byIcon(Icons.check_rounded), findsNothing);
-      expect(find.byIcon(Icons.add_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.confirm), findsNothing);
+      expect(find.byIcon(LottiIcons.add), findsOneWidget);
     });
   });
 

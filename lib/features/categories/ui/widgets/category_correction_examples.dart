@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
@@ -64,7 +65,7 @@ class CategoryCorrectionExamples extends StatelessWidget {
             child: Row(
               children: [
                 Icon(
-                  Icons.warning_amber_rounded,
+                  LottiIcons.warning,
                   color: context.colorScheme.error,
                   size: 20,
                 ),
@@ -99,7 +100,7 @@ class CategoryCorrectionExamples extends StatelessWidget {
             child: Row(
               children: [
                 Icon(
-                  Icons.info_outline,
+                  LottiIcons.info,
                   color: context.colorScheme.onSurfaceVariant,
                   size: 20,
                 ),
@@ -177,7 +178,7 @@ class _CorrectionExampleTile extends StatelessWidget {
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 16),
         child: const Icon(
-          Icons.delete,
+          LottiIcons.delete,
           color: Colors.white,
         ),
       ),

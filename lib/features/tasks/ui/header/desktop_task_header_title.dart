@@ -257,7 +257,7 @@ class TitleEditor extends StatelessWidget {
                   children: [
                     SizedBox(width: tokens.spacing.step3),
                     _IconAction(
-                      icon: Icons.check_rounded,
+                      icon: LottiIcons.confirm,
                       // The interactive accent, not `alert.success` — that
                       // hue is the app's own *Done* task status, and spending
                       // it on "save this text" put two unrelated greens
@@ -270,7 +270,7 @@ class TitleEditor extends StatelessWidget {
                     ),
                     SizedBox(width: tokens.spacing.step2),
                     _IconAction(
-                      icon: Icons.close_rounded,
+                      icon: LottiIcons.close,
                       color: TaskShowcasePalette.mediumText(context),
                       semanticLabel: MaterialLocalizations.of(
                         context,

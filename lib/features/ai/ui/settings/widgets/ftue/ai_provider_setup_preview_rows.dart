@@ -202,7 +202,7 @@ class _ReadOnlyModelRow extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(
-            Icons.check_circle_outline_rounded,
+            LottiIcons.confirmCircled,
             size: 20,
             color: tokens.colors.text.lowEmphasis,
           ),

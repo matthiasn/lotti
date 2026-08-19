@@ -6,7 +6,7 @@ import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_part.dart';
 import 'package:lotti/features/agents/ui/localized_change_summary.dart';
-import 'package:lotti/features/design_system/theme/motion_tokens.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_de.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
 import 'package:mocktail/mocktail.dart';
@@ -47,7 +47,7 @@ void main() {
         final rejectZone = tester.getRect(
           find
               .ancestor(
-                of: find.byIcon(Icons.close_rounded),
+                of: find.byIcon(LottiIcons.close),
                 matching: find.byType(InkWell),
               )
               .first,
@@ -55,7 +55,7 @@ void main() {
         final acceptZone = tester.getRect(
           find
               .ancestor(
-                of: find.byIcon(Icons.check_rounded),
+                of: find.byIcon(LottiIcons.confirm),
                 matching: find.byType(InkWell),
               )
               .first,
@@ -103,7 +103,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        await tester.tap(find.byIcon(Icons.check_rounded));
+        await tester.tap(find.byIcon(LottiIcons.confirm));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -118,7 +118,7 @@ void main() {
         );
         await tester.pump(ProposalMotion.collapse);
         expect(find.byType(ProposalRow), findsOneWidget);
-        expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
       },
     );
 
@@ -152,7 +152,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        await tester.tap(find.byIcon(Icons.check_rounded));
+        await tester.tap(find.byIcon(LottiIcons.confirm));
         // A couple of frames is enough — no resolve/collapse animation runs
         // under reduced motion, so the row is pruned without a timed window.
         await tester.pump();
@@ -188,7 +188,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        await tester.tap(find.byIcon(Icons.close_rounded).first);
+        await tester.tap(find.byIcon(LottiIcons.close).first);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -365,8 +365,11 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // Before any drag the reject backdrop is not shown.
-        expect(find.byIcon(Icons.close), findsNothing);
+        // Before any drag only the row's own reject button carries a cross.
+        // Material spelled that one `close_rounded` and the swipe backdrop's
+        // `close`, so this used to read `findsNothing`; Lucide has one cross,
+        // so the backdrop's appearance is a count going 1 -> 2.
+        expect(find.byIcon(LottiIcons.close), findsOneWidget);
 
         // Hold a left drag at -50px: past the -30 intent threshold but
         // short of the -70 reject trigger, so the row stays in the
@@ -380,7 +383,7 @@ void main() {
         // The reject intent label + the backdrop close icon are now
         // rendered by the gradient layer.
         expect(find.text('Reject'), findsOneWidget);
-        expect(find.byIcon(Icons.close), findsOneWidget);
+        expect(find.byIcon(LottiIcons.close), findsNWidgets(2));
 
         // Releasing below the trigger must not call the service.
         await gesture.up();
@@ -429,8 +432,8 @@ void main() {
 
         // The compact branch now shows the confirm/reject buttons as a
         // visible affordance (in addition to swipe).
-        expect(find.byIcon(Icons.check_rounded), findsOneWidget);
-        expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
+        expect(find.byIcon(LottiIcons.close), findsOneWidget);
 
         // Swiping the row right past the trigger still confirms too — the
         // gesture remains available alongside the buttons.
@@ -522,8 +525,8 @@ void main() {
 
         // The verdict actions are present at every width and share the
         // text's band instead of owning a separate rail below it.
-        final check = find.byIcon(Icons.check_rounded);
-        final close = find.byIcon(Icons.close_rounded);
+        final check = find.byIcon(LottiIcons.confirm);
+        final close = find.byIcon(LottiIcons.close);
         expect(check, findsOneWidget);
         expect(close, findsOneWidget);
         final textRect = tester.getRect(rowText);
@@ -543,11 +546,11 @@ void main() {
         final rowText = find.textContaining(bodyText);
         expect(rowText, findsOneWidget);
         expect(find.textContaining('Add · '), findsOneWidget);
-        expect(find.byIcon(Icons.check_rounded), findsOneWidget);
-        expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
+        expect(find.byIcon(LottiIcons.close), findsOneWidget);
         // Actions trail the text on the same band.
         expect(
-          tester.getCenter(find.byIcon(Icons.check_rounded)).dx,
+          tester.getCenter(find.byIcon(LottiIcons.confirm)).dx,
           greaterThan(tester.getRect(rowText).right),
         );
       },
@@ -587,7 +590,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         // Tap confirm and let the resolve badge firm in.
-        await tester.tap(find.byIcon(Icons.check_rounded));
+        await tester.tap(find.byIcon(LottiIcons.confirm));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 100));
 
@@ -595,9 +598,9 @@ void main() {
         // "Confirmed" word — not a spinner; the ✕ button is hidden, and the
         // only check glyph on screen is the badge's.
         expect(find.text('Confirmed'), findsOneWidget);
-        expect(find.byIcon(Icons.close_rounded), findsNothing);
+        expect(find.byIcon(LottiIcons.close), findsNothing);
         expect(find.byType(CircularProgressIndicator), findsNothing);
-        expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
 
         // Release the future: on success the row acknowledges in place, then
         // collapses away (the confirm button does not return — the row leaves).
@@ -612,7 +615,7 @@ void main() {
         await tester.pump(ProposalMotion.collapse);
         await tester.pump();
         expect(find.byType(ProposalRow), findsNothing);
-        expect(find.byIcon(Icons.check_rounded), findsNothing);
+        expect(find.byIcon(LottiIcons.confirm), findsNothing);
       },
     );
   });

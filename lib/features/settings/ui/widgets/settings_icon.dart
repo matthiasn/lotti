@@ -25,7 +25,7 @@ class SettingsIcon extends StatelessWidget {
 
   /// Standard trailing chevron used on navigable settings rows.
   static Widget trailingChevron(DsTokens tokens) => Icon(
-    Icons.chevron_right_rounded,
+    LottiIcons.chevronRight,
     size: tokens.spacing.step6,
     color: tokens.colors.text.lowEmphasis,
   );

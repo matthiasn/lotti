@@ -240,7 +240,7 @@ class _ProjectMobileHeader extends StatelessWidget {
                 if (category != null)
                   CategoryTag(
                     label: category.name,
-                    icon: category.icon?.iconData ?? Icons.label_outline,
+                    icon: category.icon?.iconData ?? LottiIcons.label,
                     color: colorFromCssHex(
                       category.color ?? defaultCategoryColorHex,
                     ),
@@ -248,14 +248,14 @@ class _ProjectMobileHeader extends StatelessWidget {
                   )
                 else if (onCategoryTap != null)
                   OutlinedMetaTag(
-                    icon: Icons.label_outline,
+                    icon: LottiIcons.label,
                     label: context.messages.habitCategoryLabel,
                     onTap: onCategoryTap,
                     isPlaceholder: true,
                   ),
                 if (record.project.data.targetDate case final targetDate?)
                   OutlinedMetaTag(
-                    icon: Icons.watch_later_outlined,
+                    icon: LottiIcons.schedule,
                     label: DateFormat.yMMMd(
                       Localizations.localeOf(context).toString(),
                     ).format(targetDate),
@@ -263,7 +263,7 @@ class _ProjectMobileHeader extends StatelessWidget {
                   )
                 else if (onTargetDateTap != null)
                   OutlinedMetaTag(
-                    icon: Icons.watch_later_outlined,
+                    icon: LottiIcons.schedule,
                     label: context.messages.projectTargetDateLabel,
                     onTap: onTargetDateTap,
                     isPlaceholder: true,

@@ -699,7 +699,11 @@ class _ProposalRowState extends ConsumerState<ProposalRow>
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         if (dx > 0)
-                          Icon(Icons.check, size: 14, color: intentColor),
+                          Icon(
+                            LottiIcons.confirm,
+                            size: 14,
+                            color: intentColor,
+                          ),
                         if (dx > 0) SizedBox(width: tokens.spacing.step2),
                         Text(
                           intentLabel,
@@ -711,7 +715,7 @@ class _ProposalRowState extends ConsumerState<ProposalRow>
                         ),
                         if (dx < 0) SizedBox(width: tokens.spacing.step2),
                         if (dx < 0)
-                          Icon(Icons.close, size: 14, color: intentColor),
+                          Icon(LottiIcons.close, size: 14, color: intentColor),
                       ],
                     ),
             ),
@@ -878,7 +882,7 @@ class _ResolveBadge extends StatelessWidget {
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           alignment: Alignment.center,
           child: Icon(
-            accept ? Icons.check_rounded : Icons.close_rounded,
+            accept ? LottiIcons.confirm : LottiIcons.close,
             size: 17,
             // A dark glyph on the bright verdict fill — maximum contrast on the
             // card, and fully token-driven (the card's own background colour).

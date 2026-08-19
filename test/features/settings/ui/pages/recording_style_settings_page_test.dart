@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/state/recording_style.dart';
 import 'package:lotti/features/settings/ui/pages/recording_style_settings_page.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
@@ -78,7 +79,7 @@ void main() {
     expect(find.text('Analogue — VU meter'), findsOneWidget);
     expect(find.text('Modern — energy orb'), findsOneWidget);
     // Exactly one card carries the checked radio cue.
-    expect(find.byIcon(Icons.radio_button_checked_rounded), findsOneWidget);
+    expect(find.byIcon(LottiIcons.radioSelected), findsOneWidget);
 
     final row = find.ancestor(
       of: find.text('Analogue — VU meter'),
@@ -87,7 +88,7 @@ void main() {
     expect(
       find.descendant(
         of: row.first,
-        matching: find.byIcon(Icons.radio_button_checked_rounded),
+        matching: find.byIcon(LottiIcons.radioSelected),
       ),
       findsOneWidget,
     );
@@ -125,7 +126,7 @@ void main() {
     expect(
       find.descendant(
         of: row.first,
-        matching: find.byIcon(Icons.radio_button_checked_rounded),
+        matching: find.byIcon(LottiIcons.radioSelected),
       ),
       findsOneWidget,
       reason: 'Analogue becomes checked after the tap, without remounting',
@@ -175,7 +176,7 @@ void main() {
       expect(
         find.descendant(
           of: row.first,
-          matching: find.byIcon(Icons.radio_button_checked_rounded),
+          matching: find.byIcon(LottiIcons.radioSelected),
         ),
         findsOneWidget,
       );

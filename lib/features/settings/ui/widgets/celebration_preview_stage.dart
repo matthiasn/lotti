@@ -162,7 +162,7 @@ class _DonePill extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            Icons.check_circle_rounded,
+            LottiIcons.confirmCircled,
             size: tokens.spacing.step4,
             color: accent,
           ),
@@ -200,7 +200,7 @@ class _ChecklistDummy extends StatelessWidget {
             borderRadius: BorderRadius.circular(tokens.radii.xs),
           ),
           child: Icon(
-            Icons.check_rounded,
+            LottiIcons.confirm,
             size: tokens.spacing.step4,
             color: tokens.colors.surface.enabled,
           ),
@@ -247,7 +247,7 @@ class _HabitDummy extends StatelessWidget {
           ),
           SizedBox(width: tokens.spacing.step2),
           Icon(
-            Icons.add_circle_rounded,
+            LottiIcons.addCircled,
             size: tokens.spacing.step5,
             color: accent,
           ),

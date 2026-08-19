@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/image_paste_controller.dart';
 import 'package:lotti/features/journal/state/journal_focus_controller.dart';
@@ -47,7 +48,7 @@ class CreateEventItem extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return CreateMenuListItem(
       onHoverChanged: onHoverChanged,
-      icon: Icons.event_rounded,
+      icon: LottiIcons.calendar,
       title: context.messages.addActionAddEvent,
       subtitle: context.messages.addActionAddEventHint,
       // Chevron for the same reason as the task row: creates, then opens.
@@ -95,7 +96,7 @@ class CreateTaskItem extends ConsumerWidget {
       // `add_task`, not `task_alt`: the row creates a task, and the ticked
       // circle of `task_alt` painted "done" in the accent that elsewhere
       // means "create" — glyph and colour disagreeing about the verb.
-      icon: Icons.add_task_rounded,
+      icon: LottiIcons.addTask,
       // The relationship rides the TITLE, not just the subtitle — titles are
       // what get scanned, and inside a task page a bare "Add a task" is
       // ambiguous three ways (sibling? subtask? edit this one?). From the
@@ -156,7 +157,7 @@ class CreateChecklistItem extends ConsumerWidget {
 
     return CreateMenuListItem(
       onHoverChanged: onHoverChanged,
-      icon: Icons.checklist_rounded,
+      icon: LottiIcons.checkAll,
       // The same strings the first-run card uses for the same action — one
       // action, one name AND one explanation, on every surface that offers
       // it.
@@ -194,7 +195,7 @@ class CreateAudioItem extends ConsumerWidget {
 
     return CreateMenuListItem(
       onHoverChanged: onHoverChanged,
-      icon: Icons.mic_rounded,
+      icon: LottiIcons.mic,
       // The card's string, its chevron AND its subtitle: the
       // does-tapping-start-recording ambiguity belongs to the action, not to
       // the surface it appears on.
@@ -241,7 +242,7 @@ class CreateTimerItem extends ConsumerWidget {
 
     return CreateMenuListItem(
       onHoverChanged: onHoverChanged,
-      icon: Icons.timer_outlined,
+      icon: LottiIcons.timer,
       // Verb + subtitle, because "Timer" alone never said the clock starts
       // the moment the row is tapped.
       title: context.messages.addActionStartTimer,
@@ -300,7 +301,7 @@ class CreateTextItem extends ConsumerWidget {
 
     return CreateMenuListItem(
       onHoverChanged: onHoverChanged,
-      icon: Icons.notes_rounded,
+      icon: LottiIcons.note,
       // The first-run card's string — "Text Entry" and "Write a note" were
       // the same action wearing two names one tap apart.
       title: context.messages.taskFirstRunWriteNote,
@@ -355,7 +356,7 @@ class ImportImageItem extends ConsumerWidget {
       // Outlined, matching the stroke weight of every other leading glyph in
       // the sheet — the filled library icon was the one row shouting in
       // solid teal.
-      icon: Icons.photo_library_outlined,
+      icon: LottiIcons.photoLibrary,
       title: context.messages.addActionImportImage,
       subtitle: context.messages.addActionImportImageHint,
       // Chevron: the tap opens a gallery / file picker, not a direct create.
@@ -411,7 +412,7 @@ class CreateScreenshotItem extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return CreateMenuListItem(
       onHoverChanged: onHoverChanged,
-      icon: Icons.screenshot_monitor_rounded,
+      icon: LottiIcons.screenshot,
       title: context.messages.addActionAddScreenshot,
       // Says what is captured (the screen) and where it goes — the row's
       // one-word ancestor scared cautious users off entirely.
@@ -462,7 +463,7 @@ class PasteImageItem extends ConsumerWidget {
 
     return CreateMenuListItem(
       onHoverChanged: onHoverChanged,
-      icon: Icons.content_paste_rounded,
+      icon: LottiIcons.copy,
       title: context.messages.addActionAddImageFromClipboard,
       subtitle: context.messages.addActionAddImageFromClipboardHint,
       onTap: () {

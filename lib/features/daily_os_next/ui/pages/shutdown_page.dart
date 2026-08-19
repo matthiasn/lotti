@@ -33,7 +33,7 @@ class ShutdownPage extends ConsumerWidget {
           ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
+          icon: const Icon(LottiIcons.back),
           tooltip: context.messages.dailyOsNextDayBack,
           onPressed: () => Navigator.of(context).maybePop(),
         ),
@@ -180,7 +180,7 @@ class _CompletedSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _SectionHeader(
-          icon: Icons.check_circle_outline_rounded,
+          icon: LottiIcons.confirmCircled,
           label: context.messages.dailyOsNextShutdownCompletedOverline,
           count: items.length,
         ),
@@ -214,7 +214,7 @@ class _CompletedRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.check_rounded, size: 16, color: success),
+          Icon(LottiIcons.confirm, size: 16, color: success),
           SizedBox(width: tokens.spacing.step3),
           Expanded(
             child: Column(
@@ -266,7 +266,7 @@ class _CarryoverSection extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _SectionHeader(
-          icon: Icons.arrow_circle_right_outlined,
+          icon: LottiIcons.forwardCircled,
           label: context.messages.dailyOsNextShutdownCarryoverOverline,
           count: data.carryover.length,
         ),
@@ -366,7 +366,7 @@ class _CarryoverActions extends StatelessWidget {
       runSpacing: tokens.spacing.step2,
       children: [
         FilledButton.icon(
-          icon: const Icon(Icons.arrow_forward_rounded, size: 14),
+          icon: const Icon(LottiIcons.forward, size: 14),
           label: Text(item.suggestedTarget),
           style: FilledButton.styleFrom(
             backgroundColor: teal,
@@ -440,7 +440,7 @@ class _DecisionPill extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.check_rounded, size: 14, color: teal),
+          Icon(LottiIcons.confirm, size: 14, color: teal),
           SizedBox(width: tokens.spacing.step2),
           Text(
             label,

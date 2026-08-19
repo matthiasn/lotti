@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Presentation helpers for [InferenceProviderType] — localized labels, the
@@ -45,33 +46,33 @@ extension InferenceProviderTypeExtension on InferenceProviderType {
   IconData get icon {
     switch (this) {
       case InferenceProviderType.alibaba:
-        return Icons.cloud_queue;
+        return LottiIcons.cloud;
       case InferenceProviderType.anthropic:
-        return Icons.auto_awesome;
+        return LottiIcons.aiSpark;
       case InferenceProviderType.openAi:
-        return Icons.psychology;
+        return LottiIcons.reasoning;
       case InferenceProviderType.gemini:
-        return Icons.diamond;
+        return LottiIcons.gem;
       case InferenceProviderType.melious:
-        return Icons.eco;
+        return LottiIcons.eco;
       case InferenceProviderType.mistral:
-        return Icons.record_voice_over;
+        return LottiIcons.voice;
       case InferenceProviderType.mlxAudio:
-        return Icons.memory_rounded;
+        return LottiIcons.memory;
       case InferenceProviderType.omlx:
-        return Icons.developer_board_rounded;
+        return LottiIcons.memory;
       case InferenceProviderType.openRouter:
-        return Icons.hub;
+        return LottiIcons.hub;
       case InferenceProviderType.ollama:
-        return Icons.computer;
+        return LottiIcons.computer;
       case InferenceProviderType.genericOpenAi:
-        return Icons.cloud;
+        return LottiIcons.cloud;
       case InferenceProviderType.nebiusAiStudio:
-        return Icons.rocket_launch;
+        return LottiIcons.rocket;
       case InferenceProviderType.whisper:
-        return Icons.mic;
+        return LottiIcons.mic;
       case InferenceProviderType.voxtral:
-        return Icons.graphic_eq;
+        return LottiIcons.waveform;
     }
   }
 

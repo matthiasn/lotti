@@ -353,7 +353,7 @@ void main() {
 
       // A live credential must not be readable just because the sheet is open.
       expect(find.text(handover), findsNothing);
-      expect(find.byIcon(Icons.visibility_outlined), findsOneWidget);
+      expect(find.byIcon(LottiIcons.visible), findsOneWidget);
 
       await tapVisible(
         tester,
@@ -361,7 +361,7 @@ void main() {
       );
 
       expect(find.text(handover), findsOneWidget);
-      expect(find.byIcon(Icons.visibility_off_outlined), findsOneWidget);
+      expect(find.byIcon(LottiIcons.hidden), findsOneWidget);
     });
 
     testWidgets('offers copying by name, not by a bare glyph', (tester) async {
@@ -1093,8 +1093,8 @@ void main() {
       // themselves; the caption below says why in one line.
       await pumpBar(tester, devices: existing);
 
-      expect(find.byIcon(Icons.lock_outline), findsNWidgets(2));
-      expect(find.byIcon(Icons.sync_alt_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.lock), findsNWidgets(2));
+      expect(find.byIcon(LottiIcons.compare), findsNothing);
     });
 
     testWidgets('is quiet, and says so, while it cannot be pressed', (

@@ -116,8 +116,11 @@ class TaskExpandableAppBar extends ConsumerWidget {
                 ),
               ),
               child: const Icon(
-                Icons.hub_outlined,
-                size: 26,
+                LottiIcons.hub,
+                // The glass buttons sit on cover art, so the glyph is white
+                // regardless of theme — this is the one place a literal is
+                // right, because the surface behind it is a photograph.
+                size: IconSizes.l,
                 color: Colors.white,
               ),
             ),
@@ -132,8 +135,8 @@ class TaskExpandableAppBar extends ConsumerWidget {
           inLinkedEntries: false,
         ),
         child: const Icon(
-          Icons.more_horiz,
-          size: 26,
+          LottiIcons.more,
+          size: IconSizes.l,
           color: Colors.white,
         ),
       ),

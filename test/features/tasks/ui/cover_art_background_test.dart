@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_image_widget.dart';
 import 'package:lotti/features/tasks/ui/cover_art_background.dart';
 import 'package:lotti/get_it.dart';
@@ -404,7 +405,7 @@ void main() {
         expect(viewer.heroTag, 'task_cover_art_image-1');
         final photoView = tester.widget<PhotoView>(find.byType(PhotoView));
         expect(photoView.enableRotation, isTrue);
-        expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.close), findsOneWidget);
       });
     });
 

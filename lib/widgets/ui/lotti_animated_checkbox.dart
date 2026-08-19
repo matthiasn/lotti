@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 /// A custom animated checkbox widget with label and optional subtitle.
 ///
@@ -71,7 +72,7 @@ class LottiAnimatedCheckbox extends StatelessWidget {
                   ),
                   child: isChecked
                       ? Icon(
-                          Icons.check_rounded,
+                          LottiIcons.confirm,
                           size: 13,
                           color: theme.colorScheme.onPrimary,
                         )

@@ -126,7 +126,7 @@ class _CloseButton extends StatelessWidget {
           child: Padding(
             padding: EdgeInsets.all(tokens.spacing.step2),
             child: Icon(
-              Icons.close_rounded,
+              LottiIcons.close,
               size: 18,
               color: tokens.colors.text.highEmphasis,
             ),

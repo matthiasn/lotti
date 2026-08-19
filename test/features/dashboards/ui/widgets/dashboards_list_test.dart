@@ -5,6 +5,7 @@ import 'package:lotti/features/dashboards/state/dashboards_page_controller.dart'
 import 'package:lotti/features/dashboards/ui/widgets/dashboards_card.dart';
 import 'package:lotti/features/dashboards/ui/widgets/dashboards_list.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -218,7 +219,7 @@ void main() {
       await tester.pump();
 
       expect(
-        find.byIcon(Icons.chevron_right_rounded),
+        find.byIcon(LottiIcons.chevronRight),
         findsOneWidget,
       );
     });

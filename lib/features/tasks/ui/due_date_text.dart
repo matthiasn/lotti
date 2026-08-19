@@ -1,6 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/util/due_date_utils.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
@@ -76,7 +77,7 @@ class _DueDateTextState extends State<DueDateText> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            Icons.event_rounded,
+            LottiIcons.calendar,
             size: AppTheme.statusIndicatorFontSize,
             color: color,
           ),

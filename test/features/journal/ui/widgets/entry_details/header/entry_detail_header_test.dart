@@ -154,7 +154,10 @@ void main() {
       );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
-      final starIconActiveFinder = find.byIcon(Icons.star_rounded);
+      // The entry is starred, so the header shows the *filled* star. Lucide
+      // is stroke-only and has no filled set, so this glyph comes from the
+      // generated LottiFilled font — see tool/icons/filled_font/README.md.
+      final starIconActiveFinder = find.byIcon(LottiIconsFilled.star);
       expect(starIconActiveFinder, findsOneWidget);
 
       await tester.tap(starIconActiveFinder);
@@ -182,7 +185,9 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       // Now the flag icon should be visible
-      final flagIconFinder = find.byIcon(Icons.flag);
+      // Flagged, so the filled flag — this is the one toggle that had no
+      // colour signal at all, and would otherwise be indistinguishable.
+      final flagIconFinder = find.byIcon(LottiIconsFilled.flag);
       expect(flagIconFinder, findsOneWidget);
 
       await tester.tap(flagIconFinder);
@@ -226,7 +231,7 @@ void main() {
         expect(tester.takeException(), isNull);
         // ...and the trailing overflow control is present and rendered within
         // the 280px width (not clipped off the right edge).
-        final overflow = find.byIcon(Icons.more_horiz);
+        final overflow = find.byIcon(LottiIcons.more);
         expect(overflow, findsOneWidget);
         expect(tester.getTopRight(overflow).dx, lessThanOrEqualTo(280));
       },
@@ -280,10 +285,10 @@ void main() {
 
         expect(tester.takeException(), isNull);
         // All four trailing controls render...
-        expect(find.byIcon(Icons.assistant_outlined), findsOneWidget);
-        expect(find.byIcon(Icons.flag), findsOneWidget);
-        expect(find.byIcon(Icons.star_rounded), findsOneWidget);
-        expect(find.byIcon(Icons.more_horiz), findsOneWidget);
+        expect(find.byIcon(LottiIcons.assistant), findsOneWidget);
+        expect(find.byIcon(LottiIconsFilled.flag), findsOneWidget);
+        expect(find.byIcon(LottiIconsFilled.star), findsOneWidget);
+        expect(find.byIcon(LottiIcons.more), findsOneWidget);
         // ...separated by compact step2 gaps.
         final spacing = _headerSpacing(tester);
         expect(_trailingGapWidths(tester), List.filled(3, spacing.step2));
@@ -293,7 +298,7 @@ void main() {
         // first trailing slot, so its left edge marks that width.
         final compactRail = 4 * AppTheme.headerActionWidth + 3 * spacing.step2;
         final aiButton = find.ancestor(
-          of: find.byIcon(Icons.assistant_outlined),
+          of: find.byIcon(LottiIcons.assistant),
           matching: find.byType(IconButton),
         );
         expect(
@@ -341,7 +346,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        expect(find.byIcon(Icons.assistant_outlined), findsOneWidget);
+        expect(find.byIcon(LottiIcons.assistant), findsOneWidget);
         expect(
           _trailingGapWidths(tester),
           List.filled(3, _headerSpacing(tester).step2),
@@ -385,10 +390,10 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         expect(tester.takeException(), isNull);
-        expect(find.byIcon(Icons.assistant_outlined), findsNothing);
-        expect(find.byIcon(Icons.flag), findsOneWidget);
-        expect(find.byIcon(Icons.star_rounded), findsOneWidget);
-        expect(find.byIcon(Icons.more_horiz), findsOneWidget);
+        expect(find.byIcon(LottiIcons.assistant), findsNothing);
+        expect(find.byIcon(LottiIconsFilled.flag), findsOneWidget);
+        expect(find.byIcon(LottiIconsFilled.star), findsOneWidget);
+        expect(find.byIcon(LottiIcons.more), findsOneWidget);
         expect(
           _trailingGapWidths(tester),
           List.filled(2, _headerSpacing(tester).step2),
@@ -445,8 +450,8 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         expect(tester.takeException(), isNull);
-        expect(find.byIcon(Icons.expand_more), findsOneWidget);
-        expect(find.byIcon(Icons.assistant_outlined), findsOneWidget);
+        expect(find.byIcon(LottiIcons.expand), findsOneWidget);
+        expect(find.byIcon(LottiIcons.assistant), findsOneWidget);
         // Four compact gaps between the five controls.
         final spacing = _headerSpacing(tester);
         expect(_trailingGapWidths(tester), List.filled(4, spacing.step2));
@@ -454,7 +459,7 @@ void main() {
         // chevron is the first trailing slot, so its left edge marks it.
         final compactRail = 5 * AppTheme.headerActionWidth + 4 * spacing.step2;
         final chevronButton = find.ancestor(
-          of: find.byIcon(Icons.expand_more),
+          of: find.byIcon(LottiIcons.expand),
           matching: find.byType(IconButton),
         );
         expect(
@@ -492,7 +497,7 @@ void main() {
 
       // The rating edit pencil lives in the header action cluster (not orphaned
       // in the summary body), so it renders for a RatingEntry header.
-      expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
+      expect(find.byIcon(LottiIcons.edit), findsOneWidget);
     });
 
     testWidgets('tapping the rating edit affordance opens the rating modal', (
@@ -531,7 +536,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      await tester.tap(find.byIcon(Icons.edit_outlined));
+      await tester.tap(find.byIcon(LottiIcons.edit));
       await tester.pumpAndSettle();
 
       // The header's onPressed routed into RatingModal.show with the entry's
@@ -550,12 +555,12 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      final moreHorizIconFinder = find.byIcon(Icons.more_horiz);
+      final moreHorizIconFinder = find.byIcon(LottiIcons.more);
       await tester.tap(moreHorizIconFinder);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      final lockIconFinder = find.byIcon(Icons.lock_open_rounded);
+      final lockIconFinder = find.byIcon(LottiIcons.unlocked);
 
       expect(lockIconFinder, findsOneWidget);
 
@@ -596,14 +601,14 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      final moreHorizIconFinder = find.byIcon(Icons.more_horiz);
+      final moreHorizIconFinder = find.byIcon(LottiIcons.more);
       await tester.tap(moreHorizIconFinder);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
       // Map action should not be visible when there's no geolocation
-      final mapIconOutlinedFinder = find.byIcon(Icons.map_outlined);
-      final mapIconFilledFinder = find.byIcon(Icons.map_rounded);
+      final mapIconOutlinedFinder = find.byIcon(LottiIcons.map);
+      final mapIconFilledFinder = find.byIcon(LottiIcons.map);
       expect(mapIconOutlinedFinder, findsNothing);
       expect(mapIconFilledFinder, findsNothing);
 
@@ -628,7 +633,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      final moreHorizIconFinder = find.byIcon(Icons.more_horiz);
+      final moreHorizIconFinder = find.byIcon(LottiIcons.more);
       await tester.tap(moreHorizIconFinder);
       // Give overlay animation an extra frame to complete to avoid
       // transient debugNeedsLayout during hit testing on fractional translations.
@@ -637,7 +642,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       // The map action should be visible with the outlined icon initially
-      final mapIconFinder = find.byIcon(Icons.map_outlined);
+      final mapIconFinder = find.byIcon(LottiIcons.map);
       expect(mapIconFinder, findsOneWidget);
       expect(find.text('Show map'), findsOneWidget);
 
@@ -673,14 +678,14 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      final moreHorizIconFinder = find.byIcon(Icons.more_horiz);
+      final moreHorizIconFinder = find.byIcon(LottiIcons.more);
       await tester.tap(moreHorizIconFinder);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
       // Map action should not be visible for tasks even with geolocation
-      final mapIconOutlinedFinder = find.byIcon(Icons.map_outlined);
-      final mapIconFilledFinder = find.byIcon(Icons.map_rounded);
+      final mapIconOutlinedFinder = find.byIcon(LottiIcons.map);
+      final mapIconFilledFinder = find.byIcon(LottiIcons.map);
       expect(mapIconOutlinedFinder, findsNothing);
       expect(mapIconFilledFinder, findsNothing);
     });
@@ -734,7 +739,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        expect(find.byIcon(Icons.assistant_outlined), findsOneWidget);
+        expect(find.byIcon(LottiIcons.assistant), findsOneWidget);
       },
     );
 
@@ -752,7 +757,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        expect(find.byIcon(Icons.assistant_outlined), findsNothing);
+        expect(find.byIcon(LottiIcons.assistant), findsNothing);
       },
     );
   });
@@ -839,8 +844,8 @@ void main() {
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 300));
 
-          expect(find.byIcon(Icons.more_horiz), findsOneWidget);
-          expect(find.byIcon(Icons.expand_more), findsNothing);
+          expect(find.byIcon(LottiIcons.more), findsOneWidget);
+          expect(find.byIcon(LottiIcons.expand), findsNothing);
         });
       });
 
@@ -865,10 +870,10 @@ void main() {
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 300));
 
-          expect(find.byIcon(Icons.expand_more), findsOneWidget);
-          expect(find.byIcon(Icons.more_horiz), findsOneWidget);
+          expect(find.byIcon(LottiIcons.expand), findsOneWidget);
+          expect(find.byIcon(LottiIcons.more), findsOneWidget);
           // When expanded, no thumbnail or mic icon in the header
-          expect(find.byIcon(Icons.mic_rounded), findsNothing);
+          expect(find.byIcon(LottiIcons.mic), findsNothing);
         });
       });
 
@@ -894,11 +899,11 @@ void main() {
             await tester.pump();
             await tester.pump(const Duration(milliseconds: 300));
 
-            expect(find.byIcon(Icons.mic_rounded), findsOneWidget);
+            expect(find.byIcon(LottiIcons.mic), findsOneWidget);
             // testAudioEntry has duration of 1 hour -> h:mm:ss format
             expect(find.text('1:00:00'), findsOneWidget);
-            expect(find.byIcon(Icons.expand_more), findsOneWidget);
-            expect(find.byIcon(Icons.more_horiz), findsNothing);
+            expect(find.byIcon(LottiIcons.expand), findsOneWidget);
+            expect(find.byIcon(LottiIcons.more), findsNothing);
           },
         );
 
@@ -922,7 +927,7 @@ void main() {
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 300));
 
-          expect(find.byIcon(Icons.mic_rounded), findsNothing);
+          expect(find.byIcon(LottiIcons.mic), findsNothing);
         });
       });
 
@@ -950,10 +955,10 @@ void main() {
             await tester.pump();
             await tester.pump(const Duration(milliseconds: 300));
 
-            expect(find.byIcon(Icons.description_outlined), findsOneWidget);
-            expect(find.byIcon(Icons.expand_more), findsOneWidget);
+            expect(find.byIcon(LottiIcons.description), findsOneWidget);
+            expect(find.byIcon(LottiIcons.expand), findsOneWidget);
             expect(find.byType(EntryDatetimeWidget), findsOneWidget);
-            expect(find.byIcon(Icons.more_horiz), findsNothing);
+            expect(find.byIcon(LottiIcons.more), findsNothing);
           },
         );
 
@@ -977,9 +982,9 @@ void main() {
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 300));
 
-          expect(find.byIcon(Icons.description_outlined), findsNothing);
-          expect(find.byIcon(Icons.expand_more), findsOneWidget);
-          expect(find.byIcon(Icons.more_horiz), findsOneWidget);
+          expect(find.byIcon(LottiIcons.description), findsNothing);
+          expect(find.byIcon(LottiIcons.expand), findsOneWidget);
+          expect(find.byIcon(LottiIcons.more), findsOneWidget);
         });
       });
 
@@ -1006,7 +1011,7 @@ void main() {
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 300));
 
-          final collapseArrow = find.byIcon(Icons.expand_more);
+          final collapseArrow = find.byIcon(LottiIcons.expand);
           expect(collapseArrow, findsOneWidget);
 
           await tester.tap(collapseArrow);
@@ -1036,7 +1041,7 @@ void main() {
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 300));
 
-          final collapseArrow = find.byIcon(Icons.expand_more);
+          final collapseArrow = find.byIcon(LottiIcons.expand);
           final expectedLabel = tester
               .element(collapseArrow)
               .messages
@@ -1413,7 +1418,7 @@ void main() {
               await tester.pump();
               await tester.pump(const Duration(milliseconds: 300));
 
-              expect(find.byIcon(Icons.more_horiz), findsOneWidget);
+              expect(find.byIcon(LottiIcons.more), findsOneWidget);
             }
           },
         );
@@ -1440,10 +1445,10 @@ void main() {
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 300));
 
-          expect(find.byIcon(Icons.more_horiz), findsOneWidget);
-          expect(find.byIcon(Icons.expand_more), findsOneWidget);
+          expect(find.byIcon(LottiIcons.more), findsOneWidget);
+          expect(find.byIcon(LottiIcons.expand), findsOneWidget);
           expect(find.byType(EntryDatetimeWidget), findsOneWidget);
-          expect(find.byIcon(Icons.mic_rounded), findsNothing);
+          expect(find.byIcon(LottiIcons.mic), findsNothing);
         });
       });
 
@@ -1471,9 +1476,9 @@ void main() {
 
           expect(find.byType(EntryDatetimeWidget), findsOneWidget);
           // AI, flag, 3-dots all hidden when collapsed
-          expect(find.byIcon(Icons.more_horiz), findsNothing);
-          expect(find.byIcon(Icons.flag_outlined), findsNothing);
-          expect(find.byIcon(Icons.flag), findsNothing);
+          expect(find.byIcon(LottiIcons.more), findsNothing);
+          expect(find.byIcon(LottiIcons.flag), findsNothing);
+          expect(find.byIcon(LottiIconsFilled.flag), findsNothing);
         });
       });
 
@@ -1500,7 +1505,7 @@ void main() {
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 300));
 
-          expect(find.byIcon(Icons.flag), findsOneWidget);
+          expect(find.byIcon(LottiIconsFilled.flag), findsOneWidget);
         });
       });
     });
@@ -1764,7 +1769,7 @@ void main() {
       /// distributed by the Row, which no assertion about spacer widgets can
       /// see.
       double categoryToNextGap(WidgetTester tester) =>
-          tester.getTopLeft(buttonFor(Icons.assistant_outlined)).dx -
+          tester.getTopLeft(buttonFor(LottiIcons.assistant)).dx -
           tester.getTopRight(find.byType(CategorySelectionIconButton)).dx;
 
       testWidgets('the category sits one uniform gap from the AI menu', (
@@ -1817,7 +1822,7 @@ void main() {
           moreOrLessEquals(width - rail),
         );
         expect(
-          tester.getTopRight(buttonFor(Icons.more_horiz)).dx,
+          tester.getTopRight(buttonFor(LottiIcons.more)).dx,
           moreOrLessEquals(width),
         );
       });

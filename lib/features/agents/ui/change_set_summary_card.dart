@@ -19,7 +19,7 @@ import 'package:lotti/features/agents/ui/localized_change_summary.dart';
 import 'package:lotti/features/agents/ui/time_entry_tile.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
-import 'package:lotti/features/design_system/theme/motion_tokens.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/modern_base_card.dart';
@@ -164,7 +164,7 @@ class _ChangeSetCardState extends ConsumerState<_ChangeSetCard> {
           Row(
             children: [
               Icon(
-                Icons.pending_actions,
+                LottiIcons.pending,
                 size: 20,
                 color: context.colorScheme.primary,
               ),
@@ -349,7 +349,7 @@ class _ChangeItemTileState extends ConsumerState<_ChangeItemTile> {
               padding: const EdgeInsets.only(left: AppTheme.cardPadding),
               child: Row(
                 children: [
-                  const Icon(Icons.check, color: Colors.white),
+                  const Icon(LottiIcons.confirm, color: Colors.white),
                   const SizedBox(width: 8),
                   Text(
                     context.messages.changeSetSwipeConfirm,
@@ -381,7 +381,7 @@ class _ChangeItemTileState extends ConsumerState<_ChangeItemTile> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  const Icon(Icons.close, color: Colors.white),
+                  const Icon(LottiIcons.close, color: Colors.white),
                 ],
               ),
             ),

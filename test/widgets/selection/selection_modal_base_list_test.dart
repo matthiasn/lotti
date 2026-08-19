@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/selection/selection_modal_base.dart';
 import 'package:lotti/widgets/selection/selection_option.dart';
 import 'package:lotti/widgets/selection/selection_save_button.dart';
@@ -251,7 +252,10 @@ void main() {
                       final option = options[index];
                       final titles = ['Option 1', 'Option 2'];
                       final descriptions = ['First option', 'Second option'];
-                      final icons = [Icons.looks_one, Icons.looks_two];
+                      final icons = [
+                        LottiIcons.stepNumber,
+                        LottiIcons.stepNumber,
+                      ];
 
                       return SelectionOption(
                         title: titles[index],

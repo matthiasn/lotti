@@ -357,7 +357,7 @@ class _DemoAiIntroPanel extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  Icons.science_outlined,
+                  LottiIcons.science,
                   size: tokens.spacing.step8,
                   color: tokens.colors.interactive.enabled,
                 ),

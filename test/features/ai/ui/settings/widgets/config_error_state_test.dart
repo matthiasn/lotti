@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/config_error_state.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../../../widget_test_utils.dart';
 
@@ -24,7 +25,7 @@ void main() {
 
       await tester.pumpWidget(createWidget(error: errorMessage));
 
-      expect(find.byIcon(Icons.error_outline), findsOneWidget);
+      expect(find.byIcon(LottiIcons.error), findsOneWidget);
       expect(find.text('Error loading configurations'), findsOneWidget);
       expect(find.text(errorMessage), findsOneWidget);
     });
@@ -44,7 +45,7 @@ void main() {
       );
 
       expect(find.text('RETRY'), findsOneWidget);
-      expect(find.byIcon(Icons.refresh), findsOneWidget);
+      expect(find.byIcon(LottiIcons.refresh), findsOneWidget);
 
       await tester.tap(find.text('RETRY'));
       await tester.pump();
@@ -70,7 +71,7 @@ void main() {
     ) async {
       await tester.pumpWidget(createWidget(error: 'Error'));
 
-      final icon = tester.widget<Icon>(find.byIcon(Icons.error_outline));
+      final icon = tester.widget<Icon>(find.byIcon(LottiIcons.error));
       expect(icon.size, 64);
       // Color is theme-dependent, so we just verify it's set
       expect(icon.color, isNotNull);
@@ -153,7 +154,7 @@ void main() {
       expect(primaryButton, findsOneWidget);
 
       // The button should have a retry icon
-      expect(find.byIcon(Icons.refresh), findsOneWidget);
+      expect(find.byIcon(LottiIcons.refresh), findsOneWidget);
 
       // The button should have a retry label
       expect(find.text('RETRY'), findsOneWidget);

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tts/ui/widgets/tts_play_button.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -46,7 +47,7 @@ void main() {
       onStop: () => stopped++,
     );
 
-    expect(find.byIcon(Icons.volume_up_rounded), findsOneWidget);
+    expect(find.byIcon(LottiIcons.volume), findsOneWidget);
     expect(indicator(tester), isNull);
 
     await tester.tap(find.byType(TtsPlayButton));
@@ -65,7 +66,7 @@ void main() {
       onStop: () => stopped++,
     );
 
-    expect(find.byIcon(Icons.stop_rounded), findsOneWidget);
+    expect(find.byIcon(LottiIcons.stop), findsOneWidget);
     expect(indicator(tester)?.value, 0.5);
 
     await tester.tap(find.byType(TtsPlayButton));
@@ -86,8 +87,8 @@ void main() {
     expect(indicator(tester)?.value, isNull); // indeterminate
     // Distinct glyph from idle (speaker) and playing (stop), so the state is
     // legible by shape alone even under reduced motion.
-    expect(find.byIcon(Icons.hourglass_empty), findsOneWidget);
-    expect(find.byIcon(Icons.volume_up_rounded), findsNothing);
+    expect(find.byIcon(LottiIcons.pending), findsOneWidget);
+    expect(find.byIcon(LottiIcons.volume), findsNothing);
 
     await tester.tap(find.byType(TtsPlayButton));
     expect(stopped, 1);

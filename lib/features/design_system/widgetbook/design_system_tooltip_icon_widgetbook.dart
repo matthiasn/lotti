@@ -94,7 +94,7 @@ class _TooltipIconVariants extends StatelessWidget {
           children: [
             DesignSystemTooltipIcon(
               message: messages.designSystemTooltipIconMessageSample,
-              icon: Icons.info_outline_rounded,
+              icon: LottiIcons.info,
             ),
             const SizedBox(height: 8),
             Text(
@@ -108,7 +108,7 @@ class _TooltipIconVariants extends StatelessWidget {
           children: [
             DesignSystemTooltipIcon(
               message: messages.designSystemTooltipIconMessageSample,
-              icon: Icons.warning_amber_rounded,
+              icon: LottiIcons.warning,
             ),
             const SizedBox(height: 8),
             Text(

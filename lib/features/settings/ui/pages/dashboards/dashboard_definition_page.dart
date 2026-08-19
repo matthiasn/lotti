@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
@@ -337,7 +336,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                         title: context.messages.dashboardDeleteQuestion,
                         actions: [
                           ModalSheetAction(
-                            icon: Icons.warning,
+                            icon: LottiIcons.warning,
                             label: context.messages.dashboardDeleteConfirm,
                             key: deleteKey,
                             isDestructiveAction: true,
@@ -427,7 +426,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                     initialValue: widget.dashboard.private,
                                     title: messages.privateLabel,
                                     subtitle: messages.privateSwitchDescription,
-                                    icon: Icons.lock_outline,
+                                    icon: LottiIcons.lock,
                                   ),
                                   FormSwitch(
                                     name: 'active',
@@ -435,7 +434,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                     title: messages.activeLabel,
                                     subtitle: messages
                                         .dashboardActiveSwitchDescription,
-                                    icon: Icons.visibility_outlined,
+                                    icon: LottiIcons.visible,
                                   ),
                                 ],
                               ),
@@ -449,7 +448,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                           children: [
                             if (dashboardItems.isEmpty)
                               _DashboardEditorHintRow(
-                                icon: Icons.insights,
+                                icon: LottiIcons.insights,
                                 text: messages.dashboardNoChartsAdded,
                               )
                             else
@@ -504,7 +503,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                           children: [
                             if (habitSelectItems.isEmpty)
                               _DashboardEditorHintRow(
-                                icon: MdiIcons.lightningBolt,
+                                icon: LottiIcons.bolt,
                                 text: messages.dashboardNoHabitsForCharts,
                               )
                             else
@@ -515,11 +514,11 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                 buttonText: messages.dashboardAddHabitButton,
                                 semanticsLabel:
                                     messages.dashboardAddHabitButton,
-                                iconData: Icons.insights,
+                                iconData: LottiIcons.insights,
                               ),
                             if (measurableDataTypes.isEmpty)
                               _DashboardEditorHintRow(
-                                icon: Icons.insights,
+                                icon: LottiIcons.insights,
                                 text: messages.dashboardNoMeasurablesForCharts,
                               )
                             else
@@ -531,7 +530,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                     messages.dashboardAddMeasurementButton,
                                 semanticsLabel:
                                     messages.dashboardAddMeasurementButton,
-                                iconData: Icons.insights,
+                                iconData: LottiIcons.insights,
                               ),
                             ChartMultiSelect<HealthTypeConfig>(
                               multiSelectItems: healthSelectItems,
@@ -539,7 +538,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                               title: messages.dashboardAddHealthTitle,
                               buttonText: messages.dashboardAddHealthButton,
                               semanticsLabel: messages.dashboardAddHealthButton,
-                              iconData: MdiIcons.stethoscope,
+                              iconData: LottiIcons.stethoscope,
                             ),
                             ChartMultiSelect<DashboardSurveyItem>(
                               multiSelectItems: surveySelectItems,
@@ -547,7 +546,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                               title: messages.dashboardAddSurveyTitle,
                               buttonText: messages.dashboardAddSurveyButton,
                               semanticsLabel: messages.dashboardAddSurveyButton,
-                              iconData: MdiIcons.clipboardOutline,
+                              iconData: LottiIcons.clipboard,
                             ),
                             ChartMultiSelect<DashboardWorkoutItem>(
                               multiSelectItems: workoutSelectItems,
@@ -556,7 +555,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                               buttonText: messages.dashboardAddWorkoutButton,
                               semanticsLabel:
                                   messages.dashboardAddWorkoutButton,
-                              iconData: Icons.sports_gymnastics,
+                              iconData: LottiIcons.fitness,
                             ),
                           ],
                         ),
@@ -573,7 +572,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                               child: DesignSystemButton(
                                 key: const Key('dashboard_copy'),
                                 label: messages.dashboardCopyLabel,
-                                leadingIcon: Icons.copy_rounded,
+                                leadingIcon: LottiIcons.copy,
                                 variant: DesignSystemButtonVariant.secondary,
                                 onPressed: copyDashboard,
                               ),

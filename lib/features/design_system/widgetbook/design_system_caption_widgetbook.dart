@@ -94,7 +94,7 @@ class _CaptionVariantMatrix extends StatelessWidget {
                     description: messages.designSystemCaptionDescriptionSample,
                     iconPosition: iconPos,
                     icon: iconPos != DesignSystemCaptionIconPosition.none
-                        ? Icons.info_rounded
+                        ? LottiIcons.info
                         : null,
                     primaryAction: hasActions
                         ? DesignSystemButton(

@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_internals_body.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../test_helper.dart';
 import '../test_data/entity_factories.dart';
@@ -98,7 +99,7 @@ void main() {
       );
       expect(find.text('Agent internals'), findsOneWidget);
 
-      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.tap(find.byIcon(LottiIcons.close));
       await tester.pumpAndSettle();
 
       expect(find.text('Agent internals'), findsNothing);

@@ -1,0 +1,6 @@
+{
+  "_comment": "Legacy Material/MDI icon references still to be migrated to LottiIcons. Regenerate with: dart run tool/icons/validate.dart --update-baseline. This number only ever goes down.",
+  "_total": 0,
+  "files": {
+  }
+}

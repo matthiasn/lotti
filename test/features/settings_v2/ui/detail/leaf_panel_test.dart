@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings_v2/domain/settings_node.dart';
 import 'package:lotti/features/settings_v2/ui/detail/default_panel.dart';
 import 'package:lotti/features/settings_v2/ui/detail/leaf_panel.dart';
@@ -14,7 +15,7 @@ import '../../../../widget_test_utils.dart';
 // cache.
 SettingsNode _backfillLeaf() => const SettingsNode(
   id: 'sync/backfill',
-  icon: Icons.cloud_download_outlined,
+  icon: LottiIcons.cloudDownload,
   title: 'Backfill Sync',
   desc: '',
   panel: 'test-unregistered-sync-backfill',
@@ -22,7 +23,7 @@ SettingsNode _backfillLeaf() => const SettingsNode(
 
 SettingsNode _unregisteredLeaf() => const SettingsNode(
   id: 'ghost',
-  icon: Icons.question_mark_rounded,
+  icon: LottiIcons.help,
   title: 'Ghost Panel',
   desc: '',
   panel: 'ghost-panel',
@@ -128,20 +129,20 @@ void main() {
         // a fresh root pump).
         const branch = SettingsNode(
           id: 'sync',
-          icon: Icons.sync_rounded,
+          icon: LottiIcons.sync,
           title: 'Sync',
           desc: '',
         );
         const first = SettingsNode(
           id: 'sync/backfill',
-          icon: Icons.cloud_download_outlined,
+          icon: LottiIcons.cloudDownload,
           title: 'Backfill',
           desc: '',
           panel: 'unregistered-first',
         );
         const second = SettingsNode(
           id: 'sync/stats',
-          icon: Icons.bar_chart_rounded,
+          icon: LottiIcons.chart,
           title: 'Stats',
           desc: '',
           panel: 'unregistered-second',
@@ -203,20 +204,20 @@ void main() {
         // place would surface the stale body forever.
         const branch = SettingsNode(
           id: 'sync',
-          icon: Icons.sync_rounded,
+          icon: LottiIcons.sync,
           title: 'Sync',
           desc: '',
         );
         const initial = SettingsNode(
           id: 'sync/backfill',
-          icon: Icons.cloud_download_outlined,
+          icon: LottiIcons.cloudDownload,
           title: 'Initial Title',
           desc: '',
           panel: 'unreg-payload-initial',
         );
         const updated = SettingsNode(
           id: 'sync/backfill',
-          icon: Icons.cloud_download_outlined,
+          icon: LottiIcons.cloudDownload,
           title: 'Updated Title',
           desc: '',
           panel: 'unreg-payload-updated',
@@ -280,27 +281,27 @@ void main() {
         // panel got wired up while they were away).
         const branch = SettingsNode(
           id: 'sync',
-          icon: Icons.sync_rounded,
+          icon: LottiIcons.sync,
           title: 'Sync',
           desc: '',
         );
         const aInitial = SettingsNode(
           id: 'sync/backfill',
-          icon: Icons.cloud_download_outlined,
+          icon: LottiIcons.cloudDownload,
           title: 'A Initial',
           desc: '',
           panel: 'unreg-revisit-a-initial',
         );
         const aUpdated = SettingsNode(
           id: 'sync/backfill',
-          icon: Icons.cloud_download_outlined,
+          icon: LottiIcons.cloudDownload,
           title: 'A Updated',
           desc: '',
           panel: 'unreg-revisit-a-updated',
         );
         const sibling = SettingsNode(
           id: 'sync/stats',
-          icon: Icons.bar_chart_rounded,
+          icon: LottiIcons.chart,
           title: 'Sibling',
           desc: '',
           panel: 'unreg-revisit-sibling',

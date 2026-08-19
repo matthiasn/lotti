@@ -277,7 +277,7 @@ class TaskShowcaseDesktopTopBar extends StatelessWidget {
           ),
           const Spacer(),
           Icon(
-            Icons.notifications_none_rounded,
+            LottiIcons.notification,
             color: TaskShowcasePalette.highText(context),
             size: 28,
           ),
@@ -327,7 +327,7 @@ class TaskShowcaseDesktopActionBar extends StatelessWidget {
                     child: Row(
                       children: [
                         Icon(
-                          Icons.timer_outlined,
+                          LottiIcons.timer,
                           size: 20,
                           color: TaskShowcasePalette.highText(context),
                         ),
@@ -344,10 +344,10 @@ class TaskShowcaseDesktopActionBar extends StatelessWidget {
                   ),
                   SizedBox(width: tokens.spacing.step3),
                   for (final icon in const [
-                    Icons.checklist_rounded,
-                    Icons.image_outlined,
-                    Icons.mic_none_rounded,
-                    Icons.subdirectory_arrow_right_rounded,
+                    LottiIcons.checkAll,
+                    LottiIcons.image,
+                    LottiIcons.micIdle,
+                    LottiIcons.returnKey,
                   ]) ...[
                     _TaskShowcaseRoundAction(icon: icon),
                     SizedBox(width: tokens.spacing.step3),

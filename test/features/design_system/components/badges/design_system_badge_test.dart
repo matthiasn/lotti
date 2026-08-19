@@ -387,7 +387,7 @@ void main() {
       await _pumpBadge(
         tester,
         const DesignSystemBadge.icon(
-          icon: Icons.check_rounded,
+          icon: LottiIcons.confirm,
           tone: DesignSystemBadgeTone.success,
           semanticLabel: 'Success status',
         ),
@@ -402,7 +402,7 @@ void main() {
               widget.data.color == dsTokensLight.colors.text.onInteractiveAlert,
         ),
       );
-      final icon = tester.widget<Icon>(find.byIcon(Icons.check_rounded));
+      final icon = tester.widget<Icon>(find.byIcon(LottiIcons.confirm));
 
       expect(_badgeSize(tester), const Size.square(20));
       expect(
@@ -417,7 +417,7 @@ void main() {
         iconTheme.data.color,
         dsTokensLight.colors.text.onInteractiveAlert,
       );
-      expect(icon.icon, Icons.check_rounded);
+      expect(icon.icon, LottiIcons.confirm);
       expect(find.bySemanticsLabel('Success status'), findsOneWidget);
     });
 

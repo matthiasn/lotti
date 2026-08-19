@@ -8,6 +8,7 @@ import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
 import 'package:lotti/features/dashboards/config/dashboard_workout_config.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/glass_action_bar.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
@@ -194,7 +195,9 @@ void main() {
 
         expect(find.text('Edit dashboard'), findsOneWidget);
 
-        await tester.tap(find.widgetWithIcon(IconButton, Icons.chevron_left));
+        await tester.tap(
+          find.widgetWithIcon(IconButton, LottiIcons.chevronLeft),
+        );
         await tester.pump();
 
         expect(beamedTo, '/settings/dashboards');
@@ -225,12 +228,12 @@ void main() {
             )
             .toList();
         expect(rows.map((row) => row.title), ['Private', 'Active']);
-        expect(rows[0].icon, Icons.lock_outline);
+        expect(rows[0].icon, LottiIcons.lock);
         expect(
           rows[0].subtitle,
           'Only visible when private entries are shown',
         );
-        expect(rows[1].icon, Icons.visibility_outlined);
+        expect(rows[1].icon, LottiIcons.visible);
         expect(
           rows[1].subtitle,
           'Shown in the dashboards list',
@@ -630,7 +633,7 @@ void main() {
       // is set.
       final clearCategoryButtonFinder = find.descendant(
         of: categoryFieldFinder,
-        matching: find.byIcon(Icons.close_rounded),
+        matching: find.byIcon(LottiIcons.close),
       );
       expect(
         clearCategoryButtonFinder,

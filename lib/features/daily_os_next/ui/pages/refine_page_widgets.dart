@@ -239,7 +239,7 @@ class _TranscriptReview extends ConsumerWidget {
             onPressed: canSubmit
                 ? () => unawaited(notifier.submitReviewedTranscript())
                 : null,
-            icon: const Icon(Icons.arrow_forward_rounded, size: 16),
+            icon: const Icon(LottiIcons.forward, size: 16),
             label: Text(context.messages.dailyOsNextRefineTitle),
             style: FilledButton.styleFrom(
               backgroundColor: tokens.colors.interactive.enabled,
@@ -303,7 +303,7 @@ class _ActionRow extends ConsumerWidget {
       alignment: WrapAlignment.end,
       children: [
         TextButton.icon(
-          icon: const Icon(Icons.undo_rounded, size: 14),
+          icon: const Icon(LottiIcons.undo, size: 14),
           label: Text(messages.dailyOsNextRefineRevert),
           style: TextButton.styleFrom(
             foregroundColor: tokens.colors.text.mediumEmphasis,
@@ -311,7 +311,7 @@ class _ActionRow extends ConsumerWidget {
           onPressed: notifier.revert,
         ),
         TextButton.icon(
-          icon: Icon(Icons.mic_rounded, size: 14, color: teal),
+          icon: Icon(LottiIcons.mic, size: 14, color: teal),
           label: Text(messages.dailyOsNextRefineKeepTalking),
           style: TextButton.styleFrom(foregroundColor: teal),
           onPressed: notifier.keepTalking,

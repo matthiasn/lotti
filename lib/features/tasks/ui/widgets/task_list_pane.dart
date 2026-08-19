@@ -61,7 +61,7 @@ class TaskListPane extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
               child: state.visibleSections.isEmpty
                   ? DesignSystemEmptyState(
-                      icon: Icons.list_outlined,
+                      icon: LottiIcons.list,
                       title: context.messages.taskShowcaseNoResults,
                       // Self-gating: renders only outside demo mode AND when
                       // the journal is truly empty (never on a filter miss).
@@ -334,7 +334,7 @@ class TaskListActiveFilters extends StatelessWidget {
             DesignSystemChip(
               label: context.messages.tasksFilterClearAll,
               onPressed: onClearAll,
-              leadingIcon: Icons.close_rounded,
+              leadingIcon: LottiIcons.close,
             ),
         ],
       ),
@@ -401,7 +401,7 @@ class _TaskListSearchHeader extends StatelessWidget {
                 tooltip: context.messages.tasksFilterTitle,
                 onPressed: onFilterPressed,
                 icon: Icon(
-                  Icons.filter_list_rounded,
+                  LottiIcons.filter,
                   color: TaskShowcasePalette.accent(context),
                 ),
               ),

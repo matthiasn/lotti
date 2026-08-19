@@ -85,7 +85,7 @@ class _SearchFieldState extends State<SearchField> {
       ),
       child: Row(
         children: [
-          Icon(Icons.search, size: 13, color: colors.text.lowEmphasis),
+          Icon(LottiIcons.search, size: 13, color: colors.text.lowEmphasis),
           SizedBox(width: tokens.spacing.step3),
           Expanded(
             child: TextField(
@@ -129,7 +129,7 @@ class _SearchFieldState extends State<SearchField> {
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
               iconSize: 12,
-              icon: const Icon(Icons.close),
+              icon: const Icon(LottiIcons.close),
               color: colors.text.mediumEmphasis,
               tooltip: messages.agentInstancesSearchClear,
               onPressed: () {

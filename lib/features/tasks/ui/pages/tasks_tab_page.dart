@@ -430,7 +430,7 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
           titleLeading: canHideListPane
               ? TabHeaderIconButton(
                   key: const ValueKey('tasks-hide-list-pane-expanded'),
-                  icon: Icons.view_sidebar_rounded,
+                  icon: LottiIcons.sidebar,
                   tooltip: context.messages.listPaneHideTooltip,
                   onPressed: splitController!.hideListPane,
                 )
@@ -492,7 +492,7 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
       leading: canHideListPane
           ? TabHeaderIconButton(
               key: const ValueKey('tasks-hide-list-pane-compact'),
-              icon: Icons.view_sidebar_rounded,
+              icon: LottiIcons.sidebar,
               tooltip: context.messages.listPaneHideTooltip,
               onPressed: splitController!.hideListPane,
             )
@@ -628,7 +628,7 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
                                                 .step9,
                                           ),
                                           child: DesignSystemEmptyState(
-                                            icon: Icons.list_outlined,
+                                            icon: LottiIcons.list,
                                             title: context
                                                 .messages
                                                 .taskShowcaseNoResults,
@@ -839,7 +839,7 @@ class _TasksTabActiveFilters extends ConsumerWidget {
               ? context.messages.tasksAgentFilterHasAgent
               : context.messages.tasksAgentFilterNoAgent,
           accentColor: accent,
-          leadingIcon: Icons.smart_toy_outlined,
+          leadingIcon: LottiIcons.aiModel,
           onRemove: () => unawaited(
             controller.applyBatchFilterUpdate(
               agentAssignmentFilter: AgentAssignmentFilter.all,
@@ -937,7 +937,7 @@ class _TasksTabActiveFilters extends ConsumerWidget {
         ActiveFilterChip(
           label: title,
           accentColor: accent,
-          leadingIcon: Icons.folder_outlined,
+          leadingIcon: LottiIcons.folder,
           onRemove: () => unawaited(
             controller.applyBatchFilterUpdate(
               projectIds: projectIds.difference({id}),
@@ -969,7 +969,7 @@ class _TasksTabActiveFilters extends ConsumerWidget {
             // louder, squarer component glued onto it.
             size: DesignSystemChipSize.compactPill,
             label: context.messages.tasksFilterClearAll,
-            leadingIcon: Icons.close_rounded,
+            leadingIcon: LottiIcons.close,
             onPressed: () => unawaited(_clearAll(controller, searchActive)),
           ),
         ),

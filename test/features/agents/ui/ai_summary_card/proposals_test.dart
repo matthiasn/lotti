@@ -248,7 +248,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      await tester.tap(find.byIcon(Icons.check_rounded));
+      await tester.tap(find.byIcon(LottiIcons.confirm));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -465,7 +465,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      await tester.tap(find.byIcon(Icons.close_rounded).first);
+      await tester.tap(find.byIcon(LottiIcons.close).first);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -506,7 +506,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      await tester.tap(find.byIcon(Icons.close_rounded).first);
+      await tester.tap(find.byIcon(LottiIcons.close).first);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -643,12 +643,12 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      await tester.tap(find.byIcon(Icons.check_rounded));
+      await tester.tap(find.byIcon(LottiIcons.confirm));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Failed to apply change'), findsWidgets);
-      expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
     });
 
     testWidgets('rejectItem returning false surfaces an error toast', (
@@ -675,7 +675,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      await tester.tap(find.byIcon(Icons.close_rounded).first);
+      await tester.tap(find.byIcon(LottiIcons.close).first);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -711,7 +711,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      await tester.tap(find.byIcon(Icons.check_rounded));
+      await tester.tap(find.byIcon(LottiIcons.confirm));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -1139,7 +1139,7 @@ void main() {
         // The Confirm all button (a tonal accent pill) now shows a spinner
         // in place of the done-all icon. No proposal row is busy here, so the
         // only spinner in the tree is the Confirm-all one.
-        expect(find.byIcon(Icons.done_all_rounded), findsNothing);
+        expect(find.byIcon(LottiIcons.confirmAll), findsNothing);
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
         // Release the future so the test tear-down doesn't hang.
@@ -1200,7 +1200,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        await tester.tap(find.byIcon(Icons.check_rounded).first);
+        await tester.tap(find.byIcon(LottiIcons.confirm).first);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 50));
 
@@ -1282,7 +1282,7 @@ void main() {
         expect(find.textContaining('Alpha proposal'), findsOneWidget);
         expect(find.textContaining('Beta proposal'), findsOneWidget);
 
-        await tester.tap(find.byIcon(Icons.check_rounded).first);
+        await tester.tap(find.byIcon(LottiIcons.confirm).first);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 50));
 
@@ -1462,7 +1462,7 @@ void main() {
 
         // Commit row A; it begins resolving (and reports it), so the section is
         // now settling. Row A's own buttons collapse to a spinner.
-        await tester.tap(find.byIcon(Icons.check_rounded).first);
+        await tester.tap(find.byIcon(LottiIcons.confirm).first);
         await tester.pump();
 
         // Tap row B's confirm button — it must be inert while the section is
@@ -1470,7 +1470,7 @@ void main() {
         // resolve badge also renders a check glyph, so `.first` could hit that
         // inert badge and pass for the wrong reason; row B sits below row A, so
         // its button is always the last check glyph in tree order.
-        await tester.tap(find.byIcon(Icons.check_rounded).last);
+        await tester.tap(find.byIcon(LottiIcons.confirm).last);
         await tester.pump(const Duration(milliseconds: 50));
         verifyNever(() => service.confirmItem(csB, 0));
 
@@ -1487,7 +1487,7 @@ void main() {
         // Only row B remains, and it is interactive again.
         expect(find.byType(ProposalRow), findsOneWidget);
 
-        await tester.tap(find.byIcon(Icons.check_rounded).first);
+        await tester.tap(find.byIcon(LottiIcons.confirm).first);
         await tester.pump();
         verify(() => service.confirmItem(csB, 0)).called(1);
       },

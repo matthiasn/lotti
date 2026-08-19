@@ -319,7 +319,7 @@ class _OnboardingApiKeyPanelState extends ConsumerState<OnboardingApiKeyPanel> {
                         onPressed: _busy ? null : widget.onBack,
                         iconSize: tokens.spacing.step5,
                         color: textHigh,
-                        icon: const Icon(Icons.arrow_back_rounded),
+                        icon: const Icon(LottiIcons.back),
                       ),
                     ),
                   ),
@@ -393,9 +393,7 @@ class _OnboardingApiKeyPanelState extends ConsumerState<OnboardingApiKeyPanel> {
                             ? null
                             : () => setState(() => _obscure = !_obscure),
                         icon: Icon(
-                          _obscure
-                              ? Icons.visibility_outlined
-                              : Icons.visibility_off_outlined,
+                          _obscure ? LottiIcons.visible : LottiIcons.hidden,
                           color: textMed,
                           size: tokens.spacing.step5,
                         ),
@@ -469,7 +467,7 @@ class _OnboardingApiKeyPanelState extends ConsumerState<OnboardingApiKeyPanel> {
                       : verifyState is ConnectionCheckChecking
                       ? messages.onboardingApiKeyVerifying
                       : messages.onboardingApiKeyConnect,
-                  leadingIcon: Icons.arrow_forward_rounded,
+                  leadingIcon: LottiIcons.forward,
                   size: DesignSystemButtonSize.large,
                   fullWidth: true,
                 ),
@@ -583,7 +581,7 @@ class _GetKeyLink extends StatelessWidget {
             ),
             SizedBox(width: tokens.spacing.step1),
             Icon(
-              Icons.open_in_new_rounded,
+              LottiIcons.openExternal,
               size: tokens.spacing.step4,
               color: accent,
             ),
@@ -638,7 +636,7 @@ class _VerifyStatus extends StatelessWidget {
         return _line(
           context,
           leading: Icon(
-            Icons.check_circle_rounded,
+            LottiIcons.confirmCircled,
             color: success,
             size: tokens.spacing.step5,
           ),
@@ -654,7 +652,7 @@ class _VerifyStatus extends StatelessWidget {
         return _line(
           context,
           leading: Icon(
-            Icons.error_outline_rounded,
+            LottiIcons.error,
             color: danger,
             size: tokens.spacing.step5,
           ),
@@ -668,7 +666,7 @@ class _VerifyStatus extends StatelessWidget {
         return _line(
           context,
           leading: Icon(
-            Icons.error_outline_rounded,
+            LottiIcons.error,
             color: danger,
             size: tokens.spacing.step5,
           ),

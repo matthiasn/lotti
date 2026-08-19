@@ -4,6 +4,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_preferences_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/processing_category_filter_button.dart';
 import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -61,7 +62,7 @@ void main() {
   }
 
   Future<void> openPicker(WidgetTester tester) async {
-    await tester.tap(find.byIcon(Icons.filter_alt_outlined));
+    await tester.tap(find.byIcon(LottiIcons.filter));
     await tester.pump();
     await tester.pump(_modalEnterDuration);
   }

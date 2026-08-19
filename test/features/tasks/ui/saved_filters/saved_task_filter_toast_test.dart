@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/saved_task_filter_toast.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -104,7 +105,7 @@ void main() {
       // than the legacy ad-hoc SnackBar this helper used to build.
       final inSnackBar = find.descendant(
         of: find.byType(SnackBar),
-        matching: find.byIcon(Icons.check_circle_rounded),
+        matching: find.byIcon(LottiIcons.confirmCircled),
       );
       expect(inSnackBar, findsOneWidget);
     },

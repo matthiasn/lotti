@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_rating/flutter_rating.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/event_status.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/events/ui/model/event_view_data.dart';
 import 'package:lotti/features/events/ui/widgets/event_detail_view.dart';
 import 'package:lotti/features/events/ui/widgets/event_photo_gallery.dart';
@@ -119,7 +120,7 @@ void main() {
         find.text('A surprise 30th for Anna on the rooftop.'),
         findsOneWidget,
       );
-      expect(find.byIcon(Icons.refresh), findsOneWidget);
+      expect(find.byIcon(LottiIcons.refresh), findsOneWidget);
     });
 
     testWidgets('renders all three timeline entry kinds', (tester) async {
@@ -133,7 +134,7 @@ void main() {
       final caption = tester.widget<Text>(find.text('The reveal moment.'));
       expect(caption.style?.fontStyle, FontStyle.italic);
       expect(find.text("Anna's speech."), findsOneWidget);
-      expect(find.byIcon(Icons.play_circle_outline), findsOneWidget);
+      expect(find.byIcon(LottiIcons.playCircled), findsOneWidget);
       expect(find.text('Voice note · 0:42'), findsOneWidget);
       expect(find.text('Toast from Dad'), findsOneWidget);
     });
@@ -206,8 +207,8 @@ void main() {
       expect(find.text('Book the venue'), findsOneWidget);
       expect(find.text('Share the album'), findsOneWidget);
       expect(find.text('Due Fri'), findsOneWidget);
-      expect(find.byIcon(Icons.check_circle), findsOneWidget);
-      expect(find.byIcon(Icons.radio_button_unchecked), findsOneWidget);
+      expect(find.byIcon(LottiIcons.confirmCircled), findsOneWidget);
+      expect(find.byIcon(LottiIcons.radioUnselected), findsOneWidget);
     });
 
     testWidgets('renders a task status label in its status colour', (
@@ -317,7 +318,7 @@ void main() {
         EventDetailView(data: _emptyData(), onAddCover: () => coverAdds++),
         size: _tallMobile,
       );
-      await tester.tap(find.byIcon(Icons.add_a_photo_outlined));
+      await tester.tap(find.byIcon(LottiIcons.addPhoto));
       expect(coverAdds, 1);
 
       // With a cover present, the add-cover affordance is gone.
@@ -326,7 +327,7 @@ void main() {
         EventDetailView(data: buildEventDetailData(), onAddCover: () {}),
         size: _tallMobile,
       );
-      expect(find.byIcon(Icons.add_a_photo_outlined), findsNothing);
+      expect(find.byIcon(LottiIcons.addPhoto), findsNothing);
     });
 
     testWidgets(
@@ -473,7 +474,7 @@ void main() {
         size: _tallMobile,
       );
 
-      await tester.tap(find.byIcon(Icons.more_horiz));
+      await tester.tap(find.byIcon(LottiIcons.more));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Delete event'));
       await tester.pumpAndSettle();
@@ -492,7 +493,7 @@ void main() {
         size: _tallMobile,
       );
 
-      await tester.tap(find.byIcon(Icons.more_horiz));
+      await tester.tap(find.byIcon(LottiIcons.more));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Change cover'));
       await tester.pumpAndSettle();
@@ -520,8 +521,8 @@ void main() {
         size: _tallMobile,
       );
 
-      await tester.tap(find.byIcon(Icons.arrow_back));
-      await tester.tap(find.byIcon(Icons.refresh));
+      await tester.tap(find.byIcon(LottiIcons.back));
+      await tester.tap(find.byIcon(LottiIcons.refresh));
       await tester.tap(find.text('Add').first);
       await tester.tap(find.text('Add').last);
 
@@ -539,7 +540,7 @@ void main() {
         EventDetailView(data: buildEventDetailData()),
         size: _tallMobile,
       );
-      expect(find.byIcon(Icons.chevron_right), findsNothing);
+      expect(find.byIcon(LottiIcons.chevronRight), findsNothing);
     });
 
     testWidgets('tapping a timeline row opens its source entry', (
@@ -555,7 +556,7 @@ void main() {
         size: _tallMobile,
       );
 
-      expect(find.byIcon(Icons.chevron_right), findsNWidgets(3));
+      expect(find.byIcon(LottiIcons.chevronRight), findsNWidgets(3));
       await tester.tap(find.text("Anna's speech."));
       await tester.pump();
 
@@ -579,7 +580,7 @@ void main() {
       );
 
       // Each openable task row carries an "open" chevron and is tappable.
-      expect(find.byIcon(Icons.chevron_right), findsNWidgets(2));
+      expect(find.byIcon(LottiIcons.chevronRight), findsNWidgets(2));
       await tester.tap(find.text('Share the album'));
       await tester.pump();
       expect(opened, ['task-2']);
@@ -598,7 +599,7 @@ void main() {
         size: _tallMobile,
       );
 
-      expect(find.byIcon(Icons.chevron_right), findsNothing);
+      expect(find.byIcon(LottiIcons.chevronRight), findsNothing);
       await tester.tap(find.text('No id task'));
       await tester.pump();
       expect(opens, 0);
@@ -611,7 +612,7 @@ void main() {
         size: _tallMobile,
       );
       expect(find.text('Summary'), findsNothing);
-      expect(find.byIcon(Icons.refresh), findsNothing);
+      expect(find.byIcon(LottiIcons.refresh), findsNothing);
     });
   });
 }

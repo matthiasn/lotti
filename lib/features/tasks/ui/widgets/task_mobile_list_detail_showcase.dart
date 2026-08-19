@@ -151,7 +151,7 @@ class _TaskMobileListScreen extends StatelessWidget {
                       ),
                     ),
                     Icon(
-                      Icons.notifications_none_rounded,
+                      LottiIcons.notification,
                       size: 34,
                       color: TaskShowcasePalette.highText(context),
                     ),
@@ -175,7 +175,7 @@ class _TaskMobileListScreen extends StatelessWidget {
                     IconButton(
                       onPressed: onFilterPressed,
                       icon: Icon(
-                        Icons.filter_list_rounded,
+                        LottiIcons.filter,
                         color: TaskShowcasePalette.accent(context),
                       ),
                     ),
@@ -192,7 +192,7 @@ class _TaskMobileListScreen extends StatelessWidget {
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                   child: state.visibleSections.isEmpty
                       ? DesignSystemEmptyState(
-                          icon: Icons.list_outlined,
+                          icon: LottiIcons.list,
                           title: context.messages.taskShowcaseNoResults,
                         )
                       : TaskListSectionsList(
@@ -287,12 +287,12 @@ class _TaskMobileBottomNavigation extends StatelessWidget {
                           label: context
                               .messages
                               .designSystemNavigationMyDailyLabel,
-                          icon: const Icon(Icons.calendar_today_outlined),
+                          icon: const Icon(LottiIcons.today),
                         ),
                         DesignSystemNavigationTabBarItem(
                           label: context.messages.navTabTitleTasks,
                           icon: const Icon(
-                            Icons.format_list_bulleted_rounded,
+                            LottiIcons.checkAll,
                           ),
                           active: true,
                         ),
@@ -300,13 +300,13 @@ class _TaskMobileBottomNavigation extends StatelessWidget {
                           label: context
                               .messages
                               .designSystemBreadcrumbProjectsLabel,
-                          icon: const Icon(Icons.folder_rounded),
+                          icon: const Icon(LottiIcons.folder),
                         ),
                         DesignSystemNavigationTabBarItem(
                           label: context
                               .messages
                               .designSystemNavigationInsightsLabel,
-                          icon: const Icon(Icons.bar_chart_rounded),
+                          icon: const Icon(LottiIcons.chart),
                         ),
                       ],
                     ),

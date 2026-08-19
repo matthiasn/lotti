@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/state/project_health_metrics.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/colors.dart';
@@ -65,27 +66,27 @@ class ProjectHealthIndicator extends StatelessWidget {
     ProjectHealthBand.surviving => (
       messages.projectHealthBandSurviving,
       isLight ? projectStatusDarkBlue : projectStatusBlue,
-      Icons.sentiment_neutral_rounded,
+      LottiIcons.moodNeutral,
     ),
     ProjectHealthBand.onTrack => (
       messages.projectHealthBandOnTrack,
       isLight ? projectStatusDarkGreen : projectStatusGreen,
-      Icons.sentiment_satisfied_alt_rounded,
+      LottiIcons.moodGood,
     ),
     ProjectHealthBand.watch => (
       messages.projectHealthBandWatch,
       Theme.of(context).colorScheme.tertiary,
-      Icons.visibility_outlined,
+      LottiIcons.visible,
     ),
     ProjectHealthBand.atRisk => (
       messages.projectHealthBandAtRisk,
       isLight ? projectStatusDarkOrange : projectStatusOrange,
-      Icons.warning_amber_rounded,
+      LottiIcons.warning,
     ),
     ProjectHealthBand.blocked => (
       messages.projectHealthBandBlocked,
       isLight ? taskStatusDarkRed : taskStatusRed,
-      Icons.block_outlined,
+      LottiIcons.block,
     ),
   };
 }

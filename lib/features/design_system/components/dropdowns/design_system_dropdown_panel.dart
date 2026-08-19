@@ -130,7 +130,7 @@ class _DropdownMenuRow extends StatelessWidget {
                 if (!hasCheckbox && item.selected) ...[
                   SizedBox(width: sizeSpec.menuCheckboxGap),
                   Icon(
-                    Icons.check_rounded,
+                    LottiIcons.confirm,
                     size: sizeSpec.checkboxGlyphSize,
                     color: styleSpec.selectedMarkColor,
                   ),
@@ -175,7 +175,7 @@ class _DropdownSelectionBox extends StatelessWidget {
         child: selected
             ? Center(
                 child: Icon(
-                  Icons.check_rounded,
+                  LottiIcons.confirm,
                   size: sizeSpec.checkboxGlyphSize,
                   color: styleSpec.checkboxGlyphColor,
                 ),

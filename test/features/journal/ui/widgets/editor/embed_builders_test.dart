@@ -3,6 +3,7 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_quill/quill_delta.dart';
 import 'package:flutter_quill_extensions/flutter_quill_extensions.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/embed_builders.dart';
 
 void main() {
@@ -110,7 +111,7 @@ void main() {
 
       // Rendered output: warning glyph plus the labelled fallback text
       // carrying the unknown embed's type name.
-      expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.warning), findsOneWidget);
       expect(find.text('Unsupported content (unsupported)'), findsOneWidget);
     });
   });

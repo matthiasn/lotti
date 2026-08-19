@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/sync_reauth_modal.dart';
 
 import '../../../../../widget_test_utils.dart';
@@ -220,7 +221,7 @@ void main() {
 
       // The Wolt close affordance pops without a result — the caller must read
       // that as "not removed" rather than inheriting a null-shaped success.
-      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.tap(find.byIcon(LottiIcons.close));
       await tester.pumpAndSettle();
 
       expect(outcome, isFalse);

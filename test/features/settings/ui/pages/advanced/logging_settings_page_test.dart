@@ -6,6 +6,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/logging_settings_page.dart';
 import 'package:lotti/features/settings/ui/widgets/settings_icon.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -279,13 +280,13 @@ void main() {
     testWidgets('renders global, domain, and slow-query icons', (tester) async {
       await pumpPage(tester);
 
-      expect(find.byIcon(Icons.article_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.description), findsOneWidget);
       // One tune icon per domain.
       expect(
-        find.byIcon(Icons.tune_rounded),
+        find.byIcon(LottiIcons.tune),
         findsNWidgets(LogDomain.values.length),
       );
-      expect(find.byIcon(Icons.speed_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.speed), findsOneWidget);
     });
 
     testWidgets('uses design system grouped list layout', (tester) async {

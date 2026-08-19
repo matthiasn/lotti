@@ -53,7 +53,7 @@ class VerificationCeremonyHeader extends StatelessWidget {
       child: Row(
         children: [
           Icon(
-            Icons.devices_other_rounded,
+            LottiIcons.devices,
             size: IconSizes.l,
             color: tokens.colors.text.mediumEmphasis,
           ),
@@ -151,7 +151,7 @@ class VerificationEmojiStage extends StatelessWidget {
               label: awaitingOtherDevice
                   ? messages.settingsMatrixContinueVerificationLabel
                   : messages.syncVerifyTheyMatch,
-              leadingIcon: awaitingOtherDevice ? null : Icons.check_rounded,
+              leadingIcon: awaitingOtherDevice ? null : LottiIcons.confirm,
               size: DesignSystemButtonSize.large,
               fullWidth: true,
             );

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/event_status.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/events/ui/widgets/event_summary_card.dart';
 
 import '../../test_utils.dart';
@@ -20,11 +21,11 @@ void main() {
       expect(find.text('A surprise rooftop party.'), findsOneWidget);
       // Rating star + one-decimal value (top-right), then the contents counts
       // as icon + localized word.
-      expect(find.byIcon(Icons.star_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.star), findsOneWidget);
       expect(find.text('5.0'), findsOneWidget);
-      expect(find.byIcon(Icons.photo_library_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.photoLibrary), findsOneWidget);
       expect(find.text('24 photos'), findsOneWidget);
-      expect(find.byIcon(Icons.task_alt_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.confirmCircled), findsOneWidget);
       expect(find.text('2 tasks'), findsOneWidget);
     });
 
@@ -52,9 +53,9 @@ void main() {
       expect(find.textContaining('Planned'), findsOneWidget);
       // A not-yet-happened, unrated event shows no rating metric, but its
       // prep-task count still surfaces.
-      expect(find.byIcon(Icons.star_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.star), findsNothing);
       // The prep-task count still surfaces for an upcoming event.
-      expect(find.byIcon(Icons.task_alt_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.confirmCircled), findsOneWidget);
       expect(find.text('2 tasks'), findsOneWidget);
     });
 
@@ -68,7 +69,7 @@ void main() {
         ),
       );
       // A completed event with no rating must not read as "rated 0".
-      expect(find.byIcon(Icons.star_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.star), findsNothing);
     });
 
     testWidgets('shows a half-star rating label', (tester) async {
@@ -104,9 +105,9 @@ void main() {
           ),
         ),
       );
-      expect(find.byIcon(Icons.star_rounded), findsNothing);
-      expect(find.byIcon(Icons.photo_library_rounded), findsNothing);
-      expect(find.byIcon(Icons.task_alt_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.star), findsNothing);
+      expect(find.byIcon(LottiIcons.photoLibrary), findsNothing);
+      expect(find.byIcon(LottiIcons.confirmCircled), findsNothing);
     });
 
     testWidgets('falls back to the category glyph when there is no cover', (
@@ -118,7 +119,7 @@ void main() {
       );
       // No cover image → EventCoverImage renders its fallback glyph.
       expect(find.byType(Image), findsNothing);
-      expect(find.byIcon(Icons.event_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.calendar), findsOneWidget);
     });
 
     testWidgets('is tappable', (tester) async {

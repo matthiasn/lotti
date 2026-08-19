@@ -586,7 +586,7 @@ void main() {
         StackTrace.empty,
       );
       await tester.pumpWidget(makeTestableWidgetNoScroll(fallback));
-      expect(find.byIcon(Icons.broken_image_outlined), findsOneWidget);
+      expect(find.byIcon(LottiIcons.imageBroken), findsOneWidget);
     });
 
     testWidgets('does not reserve media space when the task has no photos', (
@@ -1023,8 +1023,8 @@ void main() {
         onRecenter: () => recenterTaps++,
       );
 
-      final backIcon = find.byIcon(Icons.arrow_back_rounded);
-      final recenterIcon = find.byIcon(Icons.center_focus_strong_rounded);
+      final backIcon = find.byIcon(LottiIcons.back);
+      final recenterIcon = find.byIcon(LottiIcons.focus);
       expect(backIcon, findsOneWidget);
       expect(recenterIcon, findsOneWidget);
 
@@ -1051,7 +1051,7 @@ void main() {
         onRecenter: () {},
       );
 
-      final backIcon = find.byIcon(Icons.arrow_back_rounded);
+      final backIcon = find.byIcon(LottiIcons.back);
       // The disabled back button still renders (so the control doesn't pop in
       // and out as history changes).
       expect(backIcon, findsOneWidget);
@@ -1066,8 +1066,8 @@ void main() {
         'null', (tester) async {
       // node() with the default pumpPanel nav params (all null/false).
       await pumpPanel(tester, node: node());
-      expect(find.byIcon(Icons.arrow_back_rounded), findsNothing);
-      expect(find.byIcon(Icons.center_focus_strong_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.back), findsNothing);
+      expect(find.byIcon(LottiIcons.focus), findsNothing);
     });
 
     testWidgets('renders the open-details button and fires onOpen on tap when '
@@ -1075,7 +1075,7 @@ void main() {
       var openTaps = 0;
       await pumpPanel(tester, node: node(), onOpen: () => openTaps++);
 
-      final openIcon = find.byIcon(Icons.open_in_full_rounded);
+      final openIcon = find.byIcon(LottiIcons.expandFull);
       expect(openIcon, findsOneWidget);
 
       await tester.tap(openIcon);
@@ -1088,7 +1088,7 @@ void main() {
     ) async {
       // node() with the default pumpPanel nav params (onOpen null).
       await pumpPanel(tester, node: node());
-      expect(find.byIcon(Icons.open_in_full_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.expandFull), findsNothing);
     });
   });
 

@@ -11,6 +11,7 @@ import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart'
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/glass_action_bar.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
@@ -418,7 +419,7 @@ void main() {
       );
 
       // Tap the Add category button (label is localized).
-      final addButton = find.byIcon(Icons.add);
+      final addButton = find.byIcon(LottiIcons.add);
       expect(addButton, findsOneWidget);
       await tester.ensureVisible(addButton);
       await tester.tap(addButton);
@@ -518,7 +519,7 @@ void main() {
           ],
         );
 
-        await tester.tap(find.byIcon(Icons.chevron_left));
+        await tester.tap(find.byIcon(LottiIcons.chevronLeft));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -627,7 +628,7 @@ void main() {
           row.subtitle,
           'Only visible when private entries are shown',
         );
-        expect(row.icon, Icons.lock_outline);
+        expect(row.icon, LottiIcons.lock);
 
         // The toggle moved out of Basic settings entirely.
         expect(
@@ -754,7 +755,7 @@ void main() {
       await tester.ensureVisible(workChip);
       final deleteIcon = find.descendant(
         of: find.widgetWithText(CategorySelectionChip, 'Work'),
-        matching: find.byIcon(Icons.close_rounded),
+        matching: find.byIcon(LottiIcons.close),
       );
       expect(deleteIcon, findsOneWidget);
       await tester.tap(deleteIcon);
@@ -908,7 +909,7 @@ void main() {
         expect(find.byType(CategorySelectionChip), findsNothing);
 
         // Open the category selection modal.
-        final addButton = find.byIcon(Icons.add);
+        final addButton = find.byIcon(LottiIcons.add);
         await tester.ensureVisible(addButton);
         await tester.tap(addButton);
         await tester.pump();

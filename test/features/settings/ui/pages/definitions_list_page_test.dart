@@ -37,7 +37,7 @@ Future<void> _pumpPage(
               key: ValueKey('row-$item-divider-${divider.showDivider}'),
               title: Text(item),
             ),
-        emptyIcon: Icons.inbox_outlined,
+        emptyIcon: LottiIcons.inbox,
         emptyTitle: 'Nothing here yet',
         emptyHint: 'Tap create to add an item',
         noMatchMessage: (query) => 'No items match "$query"',
@@ -89,7 +89,7 @@ Future<Color> _pumpHoverRows(
             onTap: () {},
           );
         },
-        emptyIcon: Icons.inbox_outlined,
+        emptyIcon: LottiIcons.inbox,
         emptyTitle: 'Nothing here yet',
         emptyHint: 'Tap create to add an item',
         noMatchMessage: (query) => 'No items match "$query"',
@@ -246,7 +246,7 @@ void main() {
           await _enterQuery(tester, 'apple');
           expect(_rowTitles(tester), ['Apple']);
 
-          await tester.tap(find.byIcon(Icons.cancel_rounded));
+          await tester.tap(find.byIcon(LottiIcons.closeCircled));
           await tester.pump();
 
           expect(_rowTitles(tester), ['Apple', 'Banana']);
@@ -261,7 +261,7 @@ void main() {
         (tester) async {
           await _pumpPage(tester, itemsAsync: const AsyncValue.data([]));
 
-          expect(find.byIcon(Icons.inbox_outlined), findsOneWidget);
+          expect(find.byIcon(LottiIcons.inbox), findsOneWidget);
           expect(find.text('Nothing here yet'), findsOneWidget);
           expect(find.text('Tap create to add an item'), findsOneWidget);
           // One create affordance: the inline button carries it; the
@@ -278,7 +278,7 @@ void main() {
 
           expect(find.byType(DesignSystemSearch), findsNothing);
           expect(find.text('Nothing here yet'), findsOneWidget);
-          expect(find.byIcon(Icons.search_off_rounded), findsNothing);
+          expect(find.byIcon(LottiIcons.searchOff), findsNothing);
         },
       );
     });
@@ -295,7 +295,7 @@ void main() {
           await _enterQuery(tester, ' zzz ');
 
           expect(find.byType(ListTile), findsNothing);
-          expect(find.byIcon(Icons.search_off_rounded), findsOneWidget);
+          expect(find.byIcon(LottiIcons.searchOff), findsOneWidget);
           expect(find.text('No items match "zzz"'), findsOneWidget);
         },
       );
@@ -358,7 +358,7 @@ void main() {
             ),
           );
 
-          expect(find.byIcon(Icons.error_outline), findsOneWidget);
+          expect(find.byIcon(LottiIcons.error), findsOneWidget);
           expect(find.text('Failed to load items'), findsOneWidget);
           expect(find.textContaining('boom'), findsOneWidget);
           // No search field or rows render alongside the error shell.
@@ -491,7 +491,7 @@ void main() {
               displayName: (item) => item,
               itemBuilder: (context, item, {required ListRowDivider divider}) =>
                   ListTile(title: Text(item)),
-              emptyIcon: Icons.inbox_outlined,
+              emptyIcon: LottiIcons.inbox,
               emptyTitle: 'Nothing here yet',
               emptyHint: 'Tap create to add an item',
               noMatchMessage: (query) => 'No items match "$query"',

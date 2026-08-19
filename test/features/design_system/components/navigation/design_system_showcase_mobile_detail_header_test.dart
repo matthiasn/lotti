@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_showcase_mobile_detail_header.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../../widget_test_utils.dart';
 
@@ -32,7 +33,7 @@ void main() {
 
       final backText = tester.widget<Text>(find.text('Back'));
 
-      expect(find.byIcon(Icons.arrow_back_ios), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronLeft), findsOneWidget);
       expect(backText.style?.fontSize, 14);
       expect(backText.style?.fontWeight, FontWeight.w400);
       expect(backText.style?.height, closeTo(20 / 14, 0.001));
@@ -50,7 +51,7 @@ void main() {
 
       final backText = tester.widget<Text>(find.text('Back'));
 
-      expect(find.byIcon(Icons.arrow_back_ios), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronLeft), findsOneWidget);
       expect(backText.style?.fontSize, 14);
       expect(backText.style?.fontWeight, FontWeight.w400);
       expect(backText.style?.height, closeTo(20 / 14, 0.001));
@@ -88,7 +89,7 @@ void main() {
       );
 
       expect(find.byType(DesignSystemBackControl), findsNothing);
-      expect(find.byIcon(Icons.more_vert_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.moreVertical), findsOneWidget);
     });
   });
 }

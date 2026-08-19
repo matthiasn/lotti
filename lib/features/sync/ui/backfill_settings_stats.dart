@@ -42,7 +42,7 @@ class StatusRow extends StatelessWidget {
           children: [
             Expanded(
               child: _StatusCell(
-                icon: Icons.inbox_outlined,
+                icon: LottiIcons.inbox,
                 label: messages.backfillStatusInboundQueue,
                 value: inbound,
                 valueColor: tokens.colors.text.highEmphasis,
@@ -52,8 +52,8 @@ class StatusRow extends StatelessWidget {
             Expanded(
               child: _StatusCell(
                 icon: missingActive
-                    ? Icons.bolt_outlined
-                    : Icons.check_circle_outline,
+                    ? LottiIcons.bolt
+                    : LottiIcons.confirmCircled,
                 label: messages.backfillStatusMissing,
                 value: missing,
                 valueColor: missingActive
@@ -64,7 +64,7 @@ class StatusRow extends StatelessWidget {
             VerticalDivider(width: 1, thickness: 1, color: divider),
             Expanded(
               child: _StatusCell(
-                icon: Icons.error_outline,
+                icon: LottiIcons.error,
                 label: messages.backfillStatusSkipped,
                 value: skipped,
                 labelColor: skippedActive
@@ -171,7 +171,7 @@ class SyncStatsCard extends StatelessWidget {
           Row(
             children: [
               Icon(
-                Icons.bar_chart_rounded,
+                LottiIcons.chart,
                 size: IconSizes.m,
                 color: tokens.colors.text.mediumEmphasis,
               ),
@@ -195,7 +195,7 @@ class SyncStatsCard extends StatelessWidget {
                   ),
                 ),
               DesignSystemIconAction(
-                icon: Icons.refresh,
+                icon: LottiIcons.refresh,
                 tooltip: messages.backfillStatsRefresh,
                 isBusy: isLoading,
                 onPressed: isLoading ? null : onRefresh,

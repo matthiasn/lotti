@@ -93,7 +93,7 @@ abstract final class SyncModal {
               children: [
                 if (progress == 100 && !isSyncing) ...[
                   Icon(
-                    Icons.check_circle_outline,
+                    LottiIcons.confirmCircled,
                     size: IconSizes.xxxl,
                     color: Theme.of(context).colorScheme.primary,
                   ),
@@ -125,7 +125,7 @@ abstract final class SyncModal {
                         Navigator.of(context).pop();
                       }
                     },
-                    leadingIcon: Icons.check_circle_rounded,
+                    leadingIcon: LottiIcons.confirmCircled,
                   ),
                 ] else
                   Row(
@@ -195,13 +195,13 @@ abstract final class SyncModal {
     Color iconColor;
 
     if (isCompleted) {
-      icon = Icons.check_circle_outline;
+      icon = LottiIcons.confirmCircled;
       iconColor = colorScheme.primary;
     } else if (isCurrent) {
-      icon = Icons.sync;
+      icon = LottiIcons.sync;
       iconColor = colorScheme.primary;
     } else {
-      icon = Icons.circle_outlined;
+      icon = LottiIcons.radioUnselected;
       iconColor = colorScheme.outline;
     }
 

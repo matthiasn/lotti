@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/time_span_bar.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -24,7 +25,7 @@ void main() {
       expect(find.text('13:00'), findsOneWidget);
       expect(find.text('15:30'), findsOneWidget);
       expect(find.text('2h 30m'), findsOneWidget);
-      expect(find.byIcon(Icons.schedule_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.schedule), findsOneWidget);
     });
   });
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/relationship_data.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/service/contact_launcher.dart';
 import 'package:lotti/features/relationships/service/pending_interaction_store.dart';
 import 'package:lotti/features/relationships/ui/widgets/contact_quick_actions.dart';
@@ -98,9 +99,9 @@ void main() {
     testWidgets('a mobile number offers call and message', (tester) async {
       await pump(tester, channel(ContactChannelType.mobile, '+15550109999'));
 
-      expect(find.byIcon(Icons.call_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.sms_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.mail_outline_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.call), findsOneWidget);
+      expect(find.byIcon(LottiIcons.sms), findsOneWidget);
+      expect(find.byIcon(LottiIcons.mail), findsNothing);
     });
 
     testWidgets('a landline offers call but never a message composer', (
@@ -108,15 +109,15 @@ void main() {
     ) async {
       await pump(tester, channel(ContactChannelType.phone, '+493090182'));
 
-      expect(find.byIcon(Icons.call_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.sms_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.call), findsOneWidget);
+      expect(find.byIcon(LottiIcons.sms), findsNothing);
     });
 
     testWidgets('an email address offers only mail', (tester) async {
       await pump(tester, channel(ContactChannelType.email, 'anna@example.com'));
 
-      expect(find.byIcon(Icons.mail_outline_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.call_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.mail), findsOneWidget);
+      expect(find.byIcon(LottiIcons.call), findsNothing);
     });
 
     testWidgets('a messaging handle offers nothing rather than a guessed '
@@ -147,8 +148,8 @@ void main() {
 
       await pump(tester, channel(ContactChannelType.mobile, '+15550109999'));
 
-      expect(find.byIcon(Icons.call_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.sms_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.call), findsOneWidget);
+      expect(find.byIcon(LottiIcons.sms), findsNothing);
     });
 
     testWidgets('shows nothing for a number that maps to no URI', (
@@ -172,7 +173,7 @@ void main() {
           .map((icon) => icon.icon)
           .toList();
 
-      expect(icons, [Icons.call_rounded, Icons.sms_rounded]);
+      expect(icons, [LottiIcons.call, LottiIcons.sms]);
     });
   });
 
@@ -181,7 +182,7 @@ void main() {
       final target = channel(ContactChannelType.mobile, '+15550109999');
       await pump(tester, target);
 
-      await tester.tap(find.byIcon(Icons.call_rounded));
+      await tester.tap(find.byIcon(LottiIcons.call));
       await tester.pumpAndSettle();
 
       expect(launcher.launched, [(target, ContactAction.call)]);
@@ -194,7 +195,7 @@ void main() {
         channel(ContactChannelType.mobile, '+15550109999'),
       );
 
-      await tester.tap(find.byIcon(Icons.call_rounded));
+      await tester.tap(find.byIcon(LottiIcons.call));
       await tester.pumpAndSettle();
 
       expect(store.remembered!.relationshipId, 'anna');
@@ -204,7 +205,7 @@ void main() {
     testWidgets('remembers a message as a message', (tester) async {
       await pump(tester, channel(ContactChannelType.mobile, '+15550109999'));
 
-      await tester.tap(find.byIcon(Icons.sms_rounded));
+      await tester.tap(find.byIcon(LottiIcons.sms));
       await tester.pumpAndSettle();
 
       expect(store.remembered!.interactionType, CheckInInteractionType.message);
@@ -215,7 +216,7 @@ void main() {
     ) async {
       await pump(tester, channel(ContactChannelType.email, 'anna@example.com'));
 
-      await tester.tap(find.byIcon(Icons.mail_outline_rounded));
+      await tester.tap(find.byIcon(LottiIcons.mail));
       await tester.pumpAndSettle();
 
       expect(store.remembered!.interactionType, CheckInInteractionType.message);
@@ -227,7 +228,7 @@ void main() {
 
       await pump(tester, channel(ContactChannelType.mobile, '+15550109999'));
 
-      await tester.tap(find.byIcon(Icons.call_rounded));
+      await tester.tap(find.byIcon(LottiIcons.call));
       await tester.pumpAndSettle();
 
       expect(store.remembered, isNull);
@@ -238,7 +239,7 @@ void main() {
 
       await pump(tester, channel(ContactChannelType.mobile, '+15550109999'));
 
-      await tester.tap(find.byIcon(Icons.call_rounded));
+      await tester.tap(find.byIcon(LottiIcons.call));
       await tester.pumpAndSettle();
 
       expect(find.text('Nothing on this device can open that'), findsOneWidget);
@@ -247,7 +248,7 @@ void main() {
     testWidgets('says nothing when the launch succeeds', (tester) async {
       await pump(tester, channel(ContactChannelType.mobile, '+15550109999'));
 
-      await tester.tap(find.byIcon(Icons.call_rounded));
+      await tester.tap(find.byIcon(LottiIcons.call));
       await tester.pumpAndSettle();
 
       expect(find.text('Nothing on this device can open that'), findsNothing);
@@ -288,14 +289,14 @@ void main() {
         build(channel(ContactChannelType.phone, '+15550109999')),
       );
       await tester.pumpAndSettle();
-      expect(find.byIcon(Icons.sms_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.sms), findsNothing);
 
       await tester.pumpWidget(
         build(channel(ContactChannelType.mobile, '+15550109999')),
       );
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.sms_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.sms), findsOneWidget);
     });
   });
 }

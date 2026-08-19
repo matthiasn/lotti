@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -153,8 +154,8 @@ void main() {
     await tester.pump(SidebarTimerSection.animationDuration);
 
     expect(find.byType(InkWell), findsNothing);
-    expect(find.byIcon(Icons.timer_outlined), findsNothing);
-    expect(find.byIcon(Icons.stop_rounded), findsNothing);
+    expect(find.byIcon(LottiIcons.timer), findsNothing);
+    expect(find.byIcon(LottiIcons.stop), findsNothing);
   });
 
   testWidgets('shows task title and formatted duration when timer active', (
@@ -176,8 +177,8 @@ void main() {
 
     expect(find.text('Payment confirmation'), findsOneWidget);
     expect(find.text('01:23:45'), findsOneWidget);
-    expect(find.byIcon(Icons.timer_outlined), findsOneWidget);
-    expect(find.byIcon(Icons.stop_rounded), findsOneWidget);
+    expect(find.byIcon(LottiIcons.timer), findsOneWidget);
+    expect(find.byIcon(LottiIcons.stop), findsOneWidget);
   });
 
   testWidgets(
@@ -279,7 +280,7 @@ void main() {
     await tester.pump();
     await tester.pump(SidebarTimerSection.animationDuration);
 
-    await tester.tap(find.byIcon(Icons.stop_rounded));
+    await tester.tap(find.byIcon(LottiIcons.stop));
     // Two pumps for the broadcast stream + rebuild, then settle the
     // fade-out so the outgoing card is removed from the tree.
     await tester.pump();
@@ -288,7 +289,7 @@ void main() {
     expect(timeService.stopCalls, equals(1));
     verifyNever(() => navService.beamToNamed(any()));
     // After stopping, the section collapses
-    expect(find.byIcon(Icons.timer_outlined), findsNothing);
+    expect(find.byIcon(LottiIcons.timer), findsNothing);
   });
 
   testWidgets('falls back to "(untitled)" when task has empty title', (
@@ -335,8 +336,8 @@ void main() {
       await tester.pump(SidebarTimerSection.animationDuration);
 
       expect(find.text('Refine sidebar visibility'), findsOneWidget);
-      expect(find.byIcon(Icons.timer_outlined), findsOneWidget);
-      expect(find.byIcon(Icons.stop_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.timer), findsOneWidget);
+      expect(find.byIcon(LottiIcons.stop), findsOneWidget);
     },
   );
 
@@ -362,7 +363,7 @@ void main() {
       await tester.pump(SidebarTimerSection.animationDuration);
 
       expect(find.text('Tracked'), findsOneWidget);
-      expect(find.byIcon(Icons.stop_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.stop), findsOneWidget);
     },
   );
 
@@ -393,7 +394,7 @@ void main() {
       await tester.pump(SidebarTimerSection.animationDuration);
 
       expect(find.text('Sticky'), findsOneWidget);
-      expect(find.byIcon(Icons.stop_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.stop), findsOneWidget);
     },
   );
 
@@ -415,7 +416,7 @@ void main() {
       await tester.pump();
       await tester.pump(SidebarTimerSection.animationDuration);
 
-      expect(find.byIcon(Icons.timer_outlined), findsOneWidget);
+      expect(find.byIcon(LottiIcons.timer), findsOneWidget);
     },
   );
 
@@ -431,7 +432,7 @@ void main() {
     await tester.pump();
     await tester.pump(SidebarTimerSection.animationDuration);
 
-    await tester.tap(find.byIcon(Icons.timer_outlined));
+    await tester.tap(find.byIcon(LottiIcons.timer));
     await tester.pump();
 
     expect(lastBeamedPath(), equals('/journal/linked-6'));

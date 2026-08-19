@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 /// Scrim treatment painted over an event cover photo.
 enum EventCoverScrim {
@@ -25,7 +26,7 @@ class EventCoverImage extends StatelessWidget {
     required this.image,
     required this.fallbackColor,
     this.cropX = 0.5,
-    this.icon = Icons.event_rounded,
+    this.icon = LottiIcons.calendar,
     this.scrim = EventCoverScrim.card,
     this.decodeWidth,
     this.child,

@@ -303,7 +303,7 @@ void main() {
             trailing: const Text('72'),
             action: IconButton(
               onPressed: () => tapped = true,
-              icon: const Icon(Icons.add_rounded),
+              icon: const Icon(LottiIcons.add),
             ),
           ),
         ),
@@ -313,7 +313,7 @@ void main() {
       expect(find.text('Resting, beats per minute'), findsOneWidget);
       expect(find.text('72'), findsOneWidget);
 
-      await tester.tap(find.byIcon(Icons.add_rounded));
+      await tester.tap(find.byIcon(LottiIcons.add));
       expect(tapped, isTrue);
     });
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/modern_status_chip.dart';
@@ -71,7 +72,7 @@ void main() {
     testWidgets('icon is displayed when provided', (tester) async {
       const testLabel = 'Blocked';
       const testColor = Colors.red;
-      const testIcon = Icons.block;
+      const testIcon = LottiIcons.block;
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -198,7 +199,7 @@ void main() {
     testWidgets('normal mode uses standard sizes', (tester) async {
       const testLabel = 'On Hold';
       const testColor = Colors.red;
-      const testIcon = Icons.pause;
+      const testIcon = LottiIcons.pause;
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -301,7 +302,7 @@ void main() {
     testWidgets('spacing between icon and text is correct', (tester) async {
       const testLabel = 'Done';
       const testColor = Colors.green;
-      const testIcon = Icons.check_circle;
+      const testIcon = LottiIcons.confirmCircled;
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(

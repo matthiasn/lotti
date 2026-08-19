@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/ai_attribution_summary.dart';
@@ -86,7 +85,7 @@ class _TranscriptListItemState extends State<TranscriptListItem> {
                   );
                 },
                 icon: Icon(
-                  MdiIcons.trashCanOutline,
+                  LottiIcons.delete,
                   size: tokens.spacing.step5,
                 ),
               ),
@@ -102,9 +101,7 @@ class _TranscriptListItemState extends State<TranscriptListItem> {
               ),
               onPressed: toggleShow,
               icon: Icon(
-                show
-                    ? Icons.keyboard_double_arrow_up_outlined
-                    : Icons.keyboard_double_arrow_down_outlined,
+                show ? LottiIcons.chevronsUp : LottiIcons.chevronsDown,
                 size: tokens.spacing.step5,
               ),
             ),

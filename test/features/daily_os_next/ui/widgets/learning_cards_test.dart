@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/learning_cards.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -78,9 +79,9 @@ void main() {
       expect(find.text('Energy: strong morning'), findsOneWidget);
       expect(find.text('Beware mid-day context switching'), findsOneWidget);
       // Tone-specific icons: info → arrow, positive → sparkle, warning → shuffle.
-      expect(find.byIcon(Icons.arrow_forward_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.auto_awesome_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.shuffle_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.forward), findsOneWidget);
+      expect(find.byIcon(LottiIcons.aiSpark), findsOneWidget);
+      expect(find.byIcon(LottiIcons.shuffle), findsOneWidget);
     });
 
     testWidgets('nudge card variant shows Accept + Decline pill buttons', (
@@ -102,7 +103,7 @@ void main() {
         findsOneWidget,
       );
       // The nudge variant has no standard bullet icons.
-      expect(find.byIcon(Icons.arrow_forward_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.forward), findsNothing);
     });
 
     testWidgets('nudge actions wrap without overflowing a narrow card', (
@@ -155,7 +156,7 @@ void main() {
         findsOneWidget,
       );
       // Standard bullets still render with their icons.
-      expect(find.byIcon(Icons.arrow_forward_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.forward), findsOneWidget);
     });
 
     testWidgets('empty list renders no card content', (tester) async {

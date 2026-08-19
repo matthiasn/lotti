@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/events/ui/widgets/event_cover_image.dart';
 
 import '../../test_utils.dart';
@@ -30,7 +31,7 @@ void main() {
 
       expect(find.byType(Image), findsOneWidget);
       // No fallback glyph when a real image is present.
-      expect(find.byIcon(Icons.event_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.calendar), findsNothing);
     });
 
     testWidgets('renders a fallback glyph + gradient when image is null', (
@@ -44,7 +45,7 @@ void main() {
 
       expect(find.byType(Image), findsNothing);
       // The default fallback glyph.
-      expect(find.byIcon(Icons.event_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.calendar), findsOneWidget);
     });
 
     testWidgets('maps cropX to the cover image alignment', (tester) async {
@@ -98,7 +99,7 @@ void main() {
       await tester.pump();
 
       // The error builder swaps the failed image for the fallback glyph.
-      expect(find.byIcon(Icons.event_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.calendar), findsOneWidget);
     });
 
     testWidgets('hero scrim adds the global darken + two gradients', (

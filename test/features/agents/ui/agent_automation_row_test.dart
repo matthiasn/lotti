@@ -110,7 +110,7 @@ void main() {
       await pumpRow(tester, subject(onRunNow: () => runs++));
 
       expect(find.text('Update now'), findsOneWidget);
-      expect(find.byIcon(Icons.refresh_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.refresh), findsOneWidget);
       await tester.tap(trigger());
       expect(runs, 1);
     });
@@ -186,7 +186,7 @@ void main() {
         toggleWidget.tooltipMessage,
         'Choose an AI setup before turning on automatic updates.',
       );
-      expect(find.byIcon(Icons.info_outline_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.info), findsOneWidget);
     });
   });
 
@@ -434,7 +434,7 @@ void main() {
         // A worded action, not a bare glyph beside the switch it does not
         // control.
         expect(find.text('Skip once'), findsOneWidget);
-        expect(find.byIcon(Icons.close_rounded), findsNothing);
+        expect(find.byIcon(LottiIcons.close), findsNothing);
         await tester.tap(
           find.byKey(const ValueKey('taskAgentSkipScheduledUpdate')),
         );
@@ -789,7 +789,7 @@ void main() {
             .getTopLeft(find.byKey(const ValueKey('taskAgentStatusCluster')))
             .dx;
         expect(
-          tester.getTopLeft(find.byIcon(Icons.refresh_rounded)).dx,
+          tester.getTopLeft(find.byIcon(LottiIcons.refresh)).dx,
           moreOrLessEquals(column, epsilon: 0.5),
           reason: 'the trigger glyph left the leading column',
         );

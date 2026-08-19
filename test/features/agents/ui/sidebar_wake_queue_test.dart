@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/state/agent_pending_wake_providers.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/sidebar_wake_queue.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -92,7 +93,7 @@ void main() {
         find.text(element.messages.sidebarWakesHeader),
         findsNothing,
       );
-      expect(find.byIcon(Icons.open_in_new_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.openExternal), findsNothing);
 
       completer.complete(const []);
       await tester.pump();
@@ -114,7 +115,7 @@ void main() {
         find.text(element.messages.sidebarWakesHeader),
         findsNothing,
       );
-      expect(find.byIcon(Icons.open_in_new_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.openExternal), findsNothing);
       expect(find.byType(InkWell), findsNothing);
     },
   );
@@ -187,7 +188,7 @@ void main() {
     );
 
     // Header and overflow row both open the full Wake Cycles page.
-    expect(find.byIcon(Icons.open_in_new_rounded), findsNWidgets(2));
+    expect(find.byIcon(LottiIcons.openExternal), findsNWidgets(2));
   });
 
   testWidgets(
@@ -381,7 +382,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
       });
 
-      await tester.tap(find.byIcon(Icons.open_in_new_rounded));
+      await tester.tap(find.byIcon(LottiIcons.openExternal));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -774,7 +775,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
       });
 
-      await tester.tap(find.byIcon(Icons.open_in_new_rounded));
+      await tester.tap(find.byIcon(LottiIcons.openExternal));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 

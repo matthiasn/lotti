@@ -72,7 +72,7 @@ class _ReferenceImageSelectionWidgetState
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                Icons.error_outline_rounded,
+                LottiIcons.error,
                 size: IconSizes.xxxl,
                 color: context.colorScheme.error,
               ),
@@ -210,7 +210,7 @@ class _ReferenceImageSelectionWidgetState
                       state.selectionCount,
                     )
                   : context.messages.referenceImageContinue,
-              leadingIcon: Icons.arrow_forward_rounded,
+              leadingIcon: LottiIcons.forward,
               size: DesignSystemButtonSize.large,
               onPressed: state.isProcessing
                   ? null
@@ -290,7 +290,7 @@ class _ImageGridTile extends StatelessWidget {
                       errorBuilder: (context, error, stackTrace) => ColoredBox(
                         color: colorScheme.surfaceContainerHighest,
                         child: Icon(
-                          Icons.broken_image_outlined,
+                          LottiIcons.imageBroken,
                           color: colorScheme.onSurfaceVariant,
                         ),
                       ),
@@ -314,7 +314,7 @@ class _ImageGridTile extends StatelessWidget {
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
-                        Icons.check,
+                        LottiIcons.confirm,
                         size: IconSizes.s,
                         color: colorScheme.onPrimary,
                       ),
@@ -336,7 +336,7 @@ class _ImageGridTile extends StatelessWidget {
                           borderRadius: BorderRadius.circular(tokens.radii.xs),
                         ),
                         child: Icon(
-                          Icons.link_rounded,
+                          LottiIcons.link,
                           size: IconSizes.xs,
                           color: colorScheme.onSecondaryContainer,
                         ),

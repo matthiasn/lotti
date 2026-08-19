@@ -135,17 +135,17 @@ class JournalFilter extends ConsumerWidget {
       children: [
         pill(
           filter: DisplayFilter.starredEntriesOnly,
-          icon: Icons.star_rounded,
+          icon: LottiIcons.star,
           label: context.messages.journalFilterStarred,
         ),
         pill(
           filter: DisplayFilter.flaggedEntriesOnly,
-          icon: Icons.flag_rounded,
+          icon: LottiIcons.flag,
           label: context.messages.journalFilterFlagged,
         ),
         pill(
           filter: DisplayFilter.privateEntriesOnly,
-          icon: Icons.shield_rounded,
+          icon: LottiIcons.shield,
           label: context.messages.journalFilterPrivate,
         ),
       ],
@@ -221,7 +221,7 @@ class _LogbookCategoryActionBar extends StatelessWidget {
       padding: EdgeInsets.all(context.designTokens.spacing.step5),
       primary: DesignSystemButton(
         label: context.messages.doneButton,
-        leadingIcon: Icons.check_rounded,
+        leadingIcon: LottiIcons.confirm,
         size: DesignSystemButtonSize.large,
         fullWidth: true,
         onPressed: onDone,

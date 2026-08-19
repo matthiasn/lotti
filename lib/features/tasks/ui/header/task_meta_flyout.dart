@@ -174,7 +174,7 @@ class TaskMetaFieldRow extends StatelessWidget {
           Expanded(child: value),
           if (onTap != null)
             Icon(
-              Icons.chevron_right,
+              LottiIcons.chevronRight,
               size: IconSizes.s,
               color: TaskShowcasePalette.lowText(context),
             ),

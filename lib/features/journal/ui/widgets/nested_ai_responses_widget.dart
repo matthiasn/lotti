@@ -6,6 +6,7 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/components/motion/size_fade_entrance.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/linked_ai_responses_controller.dart';
 import 'package:lotti/features/tasks/ui/widgets/viewport_stable_animated_size.dart';
@@ -74,7 +75,7 @@ class _NestedAiResponsesWidgetState
       curve: Curves.easeInOut,
     );
     // Standard expand/collapse caret: collapsed → right (-0.25 turns
-    // from the natural downward `Icons.expand_more`), expanded → down.
+    // from the natural downward `LottiIcons.expand`), expanded → down.
     _rotationAnimation =
         Tween<double>(
           begin: -0.25,
@@ -281,7 +282,7 @@ class _NestedAiResponsesWidgetState
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              Icons.auto_fix_high_outlined,
+              LottiIcons.magic,
               size: 16,
               color: colorScheme.primary,
             ),
@@ -297,7 +298,7 @@ class _NestedAiResponsesWidgetState
             RotationTransition(
               turns: _rotationAnimation,
               child: Icon(
-                Icons.expand_more,
+                LottiIcons.expand,
                 size: 18,
                 color: colorScheme.onSurfaceVariant,
               ),
@@ -327,7 +328,7 @@ class _NestedAiResponsesWidgetState
               child: Padding(
                 padding: EdgeInsets.all(10),
                 child: Icon(
-                  Icons.delete,
+                  LottiIcons.delete,
                   color: Colors.white,
                 ),
               ),

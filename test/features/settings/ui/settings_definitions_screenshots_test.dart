@@ -38,6 +38,7 @@ import 'package:lotti/features/dashboards/ui/pages/dashboard_page.dart';
 import 'package:lotti/features/dashboards/ui/pages/dashboards_list_page.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_survey_chart.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/labels/ui/pages/label_details_page.dart';
@@ -1420,7 +1421,7 @@ void main() {
         await tester.tap(
           find.descendant(
             of: surveyChart,
-            matching: find.byIcon(Icons.add_rounded),
+            matching: find.byIcon(LottiIcons.add),
           ),
         );
         await settleFrames(tester, 8);

@@ -116,7 +116,7 @@ void main() {
 
       // Bare sparkle icon with the reason in the tooltip — no labelled
       // pill out-shouting the title.
-      expect(find.byIcon(Icons.auto_awesome_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.aiSpark), findsOneWidget);
       expect(find.text('WHY'), findsNothing);
       expect(find.byTooltip('High-energy window 8–10:30.'), findsOneWidget);
     });
@@ -141,7 +141,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byIcon(Icons.auto_awesome_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.aiSpark), findsNothing);
       expect(find.text('WHY'), findsNothing);
     });
 
@@ -461,7 +461,7 @@ void main() {
 
       // The check glyph already says done; a full bar would be redundant.
       expect(find.byType(LinearProgressIndicator), findsNothing);
-      expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
     });
 
     // State grammar after the declutter pass: in-progress is a bare
@@ -529,7 +529,7 @@ void main() {
       await tester.pump();
 
       expect(find.text('Done'), findsNothing);
-      final check = tester.widget<Icon>(find.byIcon(Icons.check_rounded));
+      final check = tester.widget<Icon>(find.byIcon(LottiIcons.confirm));
       expect(check.color, dsTokensLight.colors.alert.success.defaultColor);
     });
 

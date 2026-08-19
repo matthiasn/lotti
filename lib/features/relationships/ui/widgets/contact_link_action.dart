@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/service/contacts_service.dart';
 import 'package:lotti/features/relationships/state/contact_import_controller.dart';
 import 'package:lotti/features/relationships/state/contact_link_controller.dart';
@@ -84,7 +85,7 @@ class ContactLinkAction extends ConsumerWidget {
     if (!_isLinked) {
       return IconButton(
         tooltip: context.messages.relationshipLinkContact,
-        icon: const Icon(Icons.person_search_rounded),
+        icon: const Icon(LottiIcons.findPerson),
         onPressed: () => _run(
           context,
           ref,
@@ -97,7 +98,7 @@ class ContactLinkAction extends ConsumerWidget {
 
     return PopupMenuButton<_LinkMenuChoice>(
       tooltip: context.messages.relationshipUpdateFromContact,
-      icon: const Icon(Icons.contact_page_rounded),
+      icon: const Icon(LottiIcons.contactCard),
       onSelected: (choice) => _run(
         context,
         ref,

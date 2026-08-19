@@ -75,7 +75,7 @@ class _ContextMenuVariants extends StatelessWidget {
       3,
       (i) => DesignSystemContextMenuItem(
         label: 'Item ${i + 1}',
-        icon: Icons.file_copy_outlined,
+        icon: LottiIcons.copy,
         onTap: () {},
       ),
     );
@@ -85,13 +85,13 @@ class _ContextMenuVariants extends StatelessWidget {
         6,
         (i) => DesignSystemContextMenuItem(
           label: 'Item ${i + 1}',
-          icon: Icons.file_copy_outlined,
+          icon: LottiIcons.copy,
           onTap: () {},
         ),
       ),
       DesignSystemContextMenuItem(
         label: messages.designSystemContextMenuDeleteLabel,
-        icon: Icons.delete_outline,
+        icon: LottiIcons.delete,
         isDestructive: true,
         onTap: () {},
       ),

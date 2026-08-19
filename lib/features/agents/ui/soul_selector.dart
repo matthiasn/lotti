@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/soul_query_providers.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/selection/selection_modal_base.dart';
@@ -72,10 +73,10 @@ class SoulSelector extends ConsumerWidget {
             children: [
               if (selectedSoulId != null)
                 IconButton(
-                  icon: const Icon(Icons.clear, size: 18),
+                  icon: const Icon(LottiIcons.close, size: 18),
                   onPressed: () => onSoulSelected(null),
                 ),
-              const Icon(Icons.arrow_drop_down),
+              const Icon(LottiIcons.chevronDown),
             ],
           ),
           enabled: !isLoading && souls.isNotEmpty,
@@ -141,7 +142,7 @@ class _SoulPickerContent extends StatelessWidget {
                   child: Row(
                     children: [
                       Icon(
-                        Icons.psychology_rounded,
+                        LottiIcons.reasoning,
                         size: 20,
                         color: isSelected
                             ? context.colorScheme.primary
@@ -163,7 +164,7 @@ class _SoulPickerContent extends StatelessWidget {
                       ),
                       if (isSelected)
                         Icon(
-                          Icons.check_rounded,
+                          LottiIcons.confirm,
                           color: context.colorScheme.primary,
                           size: 20,
                         ),

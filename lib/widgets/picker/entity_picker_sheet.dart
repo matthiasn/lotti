@@ -583,7 +583,7 @@ class _PickerCreateRow extends StatelessWidget {
     final row = DesignSystemSelectionRow(
       key: rowKey,
       title: query,
-      leading: const Icon(Icons.add_circle_outline),
+      leading: const Icon(LottiIcons.addCircled),
       type: DesignSystemSelectionRowType.action,
       onTap: onTap,
     );

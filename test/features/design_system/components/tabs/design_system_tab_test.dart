@@ -86,8 +86,8 @@ void main() {
           size: DesignSystemTabSize.small,
           label: 'Pending',
           counter: '10',
-          leadingIcon: Icons.schedule_rounded,
-          trailingIcon: Icons.close_rounded,
+          leadingIcon: LottiIcons.schedule,
+          trailingIcon: LottiIcons.close,
           onPressed: _noop,
         ),
       );
@@ -126,13 +126,13 @@ void main() {
       final leadingIcon = tester.widget<Icon>(
         find.descendant(
           of: find.byKey(tabKey),
-          matching: find.byIcon(Icons.schedule_rounded),
+          matching: find.byIcon(LottiIcons.schedule),
         ),
       );
       final trailingIcon = tester.widget<Icon>(
         find.descendant(
           of: find.byKey(tabKey),
-          matching: find.byIcon(Icons.close_rounded),
+          matching: find.byIcon(LottiIcons.close),
         ),
       );
 
@@ -212,8 +212,8 @@ void main() {
           key: tabKey,
           selected: false,
           label: 'Disabled',
-          leadingIcon: Icons.schedule_rounded,
-          trailingIcon: Icons.close_rounded,
+          leadingIcon: LottiIcons.schedule,
+          trailingIcon: LottiIcons.close,
           onPressed: null,
         ),
       );
@@ -222,13 +222,13 @@ void main() {
       final leadingIcon = tester.widget<Icon>(
         find.descendant(
           of: find.byKey(tabKey),
-          matching: find.byIcon(Icons.schedule_rounded),
+          matching: find.byIcon(LottiIcons.schedule),
         ),
       );
       final trailingIcon = tester.widget<Icon>(
         find.descendant(
           of: find.byKey(tabKey),
-          matching: find.byIcon(Icons.close_rounded),
+          matching: find.byIcon(LottiIcons.close),
         ),
       );
       final inkWell = tester.widget<InkWell>(
@@ -363,8 +363,8 @@ void main() {
               context,
               label: 'Pending',
               counter: '100',
-              leadingIcon: Icons.schedule_rounded,
-              trailingIcon: Icons.close_rounded,
+              leadingIcon: LottiIcons.schedule,
+              trailingIcon: LottiIcons.close,
             );
             return const SizedBox.shrink();
           },
@@ -413,12 +413,12 @@ void main() {
           selected: false,
           label: '',
           semanticsLabel: 'Pending tab',
-          leadingIcon: Icons.schedule_rounded,
+          leadingIcon: LottiIcons.schedule,
           onPressed: _noop,
         ),
       );
 
-      expect(find.byIcon(Icons.schedule_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.schedule), findsOneWidget);
       expect(find.bySemanticsLabel('Pending tab'), findsOneWidget);
 
       semantics.dispose();

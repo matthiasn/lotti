@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/ui/listing/agent_list_data.dart';
 import 'package:lotti/features/agents/ui/listing/agent_list_filter_state.dart';
 import 'package:lotti/features/agents/ui/listing/agent_listing_shell.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -216,7 +217,7 @@ void main() {
         expect(find.text('CUSTOM-TRAIL-1'), findsOneWidget);
         expect(find.text('CUSTOM-TRAIL-2'), findsOneWidget);
         // Default chevron shouldn't render when trailing is supplied.
-        expect(find.byIcon(Icons.chevron_right), findsNothing);
+        expect(find.byIcon(LottiIcons.chevronRight), findsNothing);
       },
     );
 
@@ -229,7 +230,7 @@ void main() {
             _row(id: 'r1', title: 'Row 1', onTap: () {}),
           ]),
         );
-        expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+        expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
       },
     );
 
@@ -240,7 +241,7 @@ void main() {
           tester,
           rowsAsync: AsyncValue.data([_row(id: 'r1', title: 'Row 1')]),
         );
-        expect(find.byIcon(Icons.chevron_right), findsNothing);
+        expect(find.byIcon(LottiIcons.chevronRight), findsNothing);
       },
     );
   });

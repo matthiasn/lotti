@@ -215,7 +215,7 @@ void main() {
         tester,
         const DesignSystemChip(
           label: 'With icon',
-          leadingIcon: Icons.location_on_rounded,
+          leadingIcon: LottiIcons.location,
           showRemove: true,
           onPressed: _noop,
         ),
@@ -240,8 +240,8 @@ void main() {
 
       expect(iconTheme.data.color, dsTokensLight.colors.text.mediumEmphasis);
       expect(iconTheme.data.size, dsTokensLight.typography.lineHeight.caption);
-      expect(find.byIcon(Icons.location_on_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.cancel_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.location), findsOneWidget);
+      expect(find.byIcon(LottiIcons.closeCircled), findsOneWidget);
       expect(squareSlots.length, 2);
     });
 
@@ -330,12 +330,12 @@ void main() {
         const DesignSystemChip(
           label: 'Failed',
           semanticsLabel: 'Failed, 2',
-          leadingIcon: Icons.filter_alt_rounded,
+          leadingIcon: LottiIcons.filter,
           onPressed: _noop,
         ),
       );
 
-      expect(find.byIcon(Icons.filter_alt_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.filter), findsOneWidget);
       expect(find.text('Failed'), findsOneWidget);
       expect(find.bySemanticsLabel('Failed, 2'), findsOneWidget);
       expect(find.bySemanticsLabel('Failed'), findsNothing);
@@ -347,7 +347,7 @@ void main() {
       expect(
         () => DesignSystemChip(
           label: 'Invalid',
-          leadingIcon: Icons.schedule_rounded,
+          leadingIcon: LottiIcons.schedule,
           avatar: Container(),
           onPressed: _noop,
         ),

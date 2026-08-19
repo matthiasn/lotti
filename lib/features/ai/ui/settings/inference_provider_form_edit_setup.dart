@@ -123,7 +123,7 @@ class _AiSetupSectionState extends ConsumerState<AiSetupSection> {
         SizedBox(height: tokens.spacing.step7),
         AiFormSection(
           title: messages.aiSetupWizardTitle,
-          icon: Icons.auto_awesome_rounded,
+          icon: LottiIcons.aiSpark,
           description: messages.aiSetupWizardDescription(
             _providerName(context),
           ),
@@ -155,7 +155,7 @@ class _AiSetupSectionState extends ConsumerState<AiSetupSection> {
                           borderRadius: BorderRadius.circular(tokens.radii.s),
                         ),
                         child: Icon(
-                          Icons.settings_suggest_rounded,
+                          LottiIcons.settings,
                           color: context.colorScheme.primary,
                           size: tokens.spacing.step6,
                         ),
@@ -200,7 +200,7 @@ class _AiSetupSectionState extends ConsumerState<AiSetupSection> {
                     child: Row(
                       children: [
                         Icon(
-                          Icons.info_outline_rounded,
+                          LottiIcons.info,
                           size: tokens.spacing.step5,
                           color: context.colorScheme.primary,
                         ),
@@ -224,7 +224,7 @@ class _AiSetupSectionState extends ConsumerState<AiSetupSection> {
                     child: DesignSystemButton(
                       fullWidth: true,
                       isLoading: _isRunning,
-                      leadingIcon: Icons.auto_awesome,
+                      leadingIcon: LottiIcons.aiSpark,
                       label: _isRunning
                           ? messages.aiSetupWizardRunningButton
                           : messages.aiSetupWizardRunButton,

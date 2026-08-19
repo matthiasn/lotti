@@ -141,7 +141,7 @@ class _AddProviderStepIndicator extends StatelessWidget {
     final separator = Padding(
       padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step3),
       child: Icon(
-        Icons.chevron_right_rounded,
+        LottiIcons.chevronRight,
         size: tokens.spacing.step5,
         color: tokens.colors.text.lowEmphasis,
       ),
@@ -310,7 +310,7 @@ class AddProviderFooterBar extends StatelessWidget {
             label: messages.aiProviderConnectBackToProviders,
             variant: DesignSystemButtonVariant.tertiary,
             size: DesignSystemButtonSize.large,
-            leadingIcon: Icons.arrow_back_rounded,
+            leadingIcon: LottiIcons.back,
             onPressed: isSaving ? null : onBack,
           ),
           Wrap(
@@ -326,7 +326,7 @@ class AddProviderFooterBar extends StatelessWidget {
               DesignSystemButton(
                 label: messages.aiProviderConnectSaveAndContinue,
                 size: DesignSystemButtonSize.large,
-                trailingIcon: Icons.arrow_forward_rounded,
+                trailingIcon: LottiIcons.forward,
                 onPressed: canSaveAndContinue && !isSaving
                     ? onSaveAndContinue
                     : null,

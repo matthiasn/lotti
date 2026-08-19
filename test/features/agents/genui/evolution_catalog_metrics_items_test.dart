@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/genui/evolution_catalog.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../widget_test_utils.dart';
 import 'evolution_catalog_test_helpers.dart';
@@ -19,7 +20,7 @@ void main() {
 
       // AnimatedCrossFade renders both children, so we expect 2 Text widgets.
       expect(find.text('Users prefer short reports.'), findsNWidgets(2));
-      expect(find.byIcon(Icons.psychology), findsOneWidget);
+      expect(find.byIcon(LottiIcons.reasoning), findsOneWidget);
     });
 
     testWidgets('renders hypothesis icon correctly', (tester) async {
@@ -32,7 +33,7 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(Icons.lightbulb_outline), findsOneWidget);
+      expect(find.byIcon(LottiIcons.tip), findsOneWidget);
     });
 
     testWidgets('renders decision icon correctly', (tester) async {
@@ -45,7 +46,7 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(Icons.gavel), findsOneWidget);
+      expect(find.byIcon(LottiIcons.legal), findsOneWidget);
     });
 
     testWidgets('renders pattern icon correctly', (tester) async {
@@ -58,7 +59,7 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(Icons.pattern), findsOneWidget);
+      expect(find.byIcon(LottiIcons.pattern), findsOneWidget);
     });
 
     testWidgets('renders fallback icon for unknown kind', (tester) async {
@@ -71,7 +72,7 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(Icons.note), findsOneWidget);
+      expect(find.byIcon(LottiIcons.note), findsOneWidget);
     });
 
     testWidgets('starts collapsed and shows chevron_right icon', (
@@ -88,8 +89,8 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(Icons.chevron_right), findsOneWidget);
-      expect(find.byIcon(Icons.keyboard_arrow_down), findsNothing);
+      expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronDown), findsNothing);
 
       // The collapsed text should have maxLines: 2
       final collapsedText = tester
@@ -119,8 +120,8 @@ void main() {
       await tester.tap(find.byType(GestureDetector).first);
       await tester.pump(const Duration(milliseconds: 200));
 
-      expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
-      expect(find.byIcon(Icons.chevron_right), findsNothing);
+      expect(find.byIcon(LottiIcons.chevronDown), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronRight), findsNothing);
     });
 
     testWidgets('collapses again on second tap', (tester) async {
@@ -136,12 +137,12 @@ void main() {
       // Tap to expand (bounded pump settles the 200ms cross-fade).
       await tester.tap(find.byType(GestureDetector).first);
       await tester.pump(const Duration(milliseconds: 200));
-      expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronDown), findsOneWidget);
 
       // Tap again to collapse.
       await tester.tap(find.byType(GestureDetector).first);
       await tester.pump(const Duration(milliseconds: 200));
-      expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
     });
   });
 
@@ -272,7 +273,7 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(Icons.compare_arrows), findsOneWidget);
+      expect(find.byIcon(LottiIcons.compare), findsOneWidget);
     });
   });
 }

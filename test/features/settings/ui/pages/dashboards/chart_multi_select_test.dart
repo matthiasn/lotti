@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/chart_multi_select.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 
@@ -27,15 +28,15 @@ void main() {
             title: 'Select Items',
             buttonText: 'Add Items',
             semanticsLabel: 'Add items button',
-            iconData: Icons.add,
+            iconData: LottiIcons.add,
           ),
         ),
       );
       await tester.pumpAndSettle();
 
       expect(find.text('Add Items'), findsOneWidget);
-      expect(find.byIcon(Icons.add), findsOneWidget);
-      expect(find.byIcon(Icons.arrow_drop_down), findsOneWidget);
+      expect(find.byIcon(LottiIcons.add), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronDown), findsOneWidget);
       expect(find.bySemanticsLabel('Add items button'), findsOneWidget);
     });
 
@@ -48,7 +49,7 @@ void main() {
             title: 'Select Items',
             buttonText: 'Add Items',
             semanticsLabel: 'Add items button',
-            iconData: Icons.add,
+            iconData: LottiIcons.add,
           ),
         ),
       );
@@ -66,7 +67,7 @@ void main() {
             title: 'Select Items',
             buttonText: 'Add Items',
             semanticsLabel: 'Add items button',
-            iconData: Icons.add,
+            iconData: LottiIcons.add,
           ),
         ),
       );
@@ -77,7 +78,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Modal should be open - verify by checking for modal content
-      expect(find.byIcon(Icons.search_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.search), findsOneWidget);
       expect(find.text('First Item'), findsOneWidget);
       expect(find.text('Second Item'), findsOneWidget);
     });
@@ -91,7 +92,7 @@ void main() {
             title: 'Select Items',
             buttonText: 'Add Items',
             semanticsLabel: 'Add items button',
-            iconData: Icons.add,
+            iconData: LottiIcons.add,
           ),
         ),
       );
@@ -102,7 +103,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Search field should be visible
-      expect(find.byIcon(Icons.search_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.search), findsOneWidget);
 
       // Items should be displayed
       expect(find.text('First Item'), findsOneWidget);
@@ -123,7 +124,7 @@ void main() {
             title: 'Select Items',
             buttonText: 'Add Items',
             semanticsLabel: 'Add items button',
-            iconData: Icons.add,
+            iconData: LottiIcons.add,
           ),
         ),
       );
@@ -157,7 +158,7 @@ void main() {
             title: 'Select Items',
             buttonText: 'Add Items',
             semanticsLabel: 'Add items button',
-            iconData: Icons.add,
+            iconData: LottiIcons.add,
           ),
         ),
       );
@@ -190,7 +191,7 @@ void main() {
             title: 'Select Items',
             buttonText: 'Add Items',
             semanticsLabel: 'Add items button',
-            iconData: Icons.add,
+            iconData: LottiIcons.add,
           ),
         ),
       );
@@ -223,7 +224,7 @@ void main() {
             title: 'Select Items',
             buttonText: 'Add Items',
             semanticsLabel: 'Add items button',
-            iconData: Icons.add,
+            iconData: LottiIcons.add,
           ),
         ),
       );
@@ -250,7 +251,7 @@ void main() {
             title: 'Select Items',
             buttonText: 'Add Items',
             semanticsLabel: 'Add items button',
-            iconData: Icons.add,
+            iconData: LottiIcons.add,
           ),
         ),
       );
@@ -267,7 +268,7 @@ void main() {
       expect(find.text('Second Item'), findsNothing);
 
       // Tap clear button
-      await tester.tap(find.byIcon(Icons.cancel_rounded));
+      await tester.tap(find.byIcon(LottiIcons.closeCircled));
       await tester.pumpAndSettle();
 
       // All items should be visible again
@@ -285,7 +286,7 @@ void main() {
             title: 'Select Items',
             buttonText: 'Add Items',
             semanticsLabel: 'Add items button',
-            iconData: Icons.add,
+            iconData: LottiIcons.add,
           ),
         ),
       );
@@ -323,7 +324,7 @@ void main() {
             title: 'Measurement Charts',
             buttonText: 'Measurement Charts',
             semanticsLabel: 'Measurement Charts',
-            iconData: Icons.insights,
+            iconData: LottiIcons.insights,
           ),
         ),
       );
@@ -514,7 +515,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(onConfirmCalled, isFalse);
-      expect(find.byIcon(Icons.search_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.search), findsNothing);
     });
   });
 }

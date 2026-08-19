@@ -135,7 +135,7 @@ class _EstimatedTimeStickyActionBar extends StatelessWidget {
       ],
       primary: DesignSystemButton(
         label: context.messages.doneButton,
-        leadingIcon: Icons.check_rounded,
+        leadingIcon: LottiIcons.confirm,
         size: DesignSystemButtonSize.large,
         fullWidth: true,
         onPressed: onDone,

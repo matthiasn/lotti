@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/widgets/selection/unified_toggle.dart';
 
@@ -251,7 +252,7 @@ void main() {
           home: Scaffold(
             body: UnifiedAiToggleField(
               label: 'AI Feature',
-              icon: Icons.auto_awesome,
+              icon: LottiIcons.aiSpark,
               value: value,
               onChanged: (newValue) {
                 value = newValue;
@@ -261,7 +262,7 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(Icons.auto_awesome), findsOneWidget);
+      expect(find.byIcon(LottiIcons.aiSpark), findsOneWidget);
     });
 
     testWidgets('tap toggles value', (WidgetTester tester) async {

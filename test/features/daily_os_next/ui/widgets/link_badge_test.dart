@@ -24,7 +24,7 @@ void main() {
       final tokens = context.designTokens;
       final label = tester.widget<Text>(find.text('Q3 strategy deck'));
       expect(label.style?.color, tokens.colors.alert.info.ink);
-      expect(find.byIcon(Icons.link_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.link), findsOneWidget);
 
       await tester.tap(find.byType(LinkBadge));
       expect(taps, 1);

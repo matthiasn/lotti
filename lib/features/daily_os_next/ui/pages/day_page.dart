@@ -647,7 +647,7 @@ class _PlanReviewStrip extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Icon(
-                      Icons.auto_awesome_rounded,
+                      LottiIcons.aiSpark,
                       size: tokens.spacing.step4,
                       color: tokens.colors.interactive.enabled,
                     ),
@@ -681,25 +681,25 @@ class _PlanReviewStrip extends StatelessWidget {
                 children: [
                   FilledButton.icon(
                     onPressed: onLooksGood,
-                    icon: const Icon(Icons.check_rounded),
+                    icon: const Icon(LottiIcons.confirm),
                     label: Text(messages.dailyOsNextReviewLooksGood),
                   ),
                   OutlinedButton.icon(
                     onPressed: () =>
                         onQuickRefinement(_QuickRefinement.tooMuch),
-                    icon: const Icon(Icons.remove_circle_outline_rounded),
+                    icon: const Icon(LottiIcons.removeCircled),
                     label: Text(messages.dailyOsNextReviewTooMuch),
                   ),
                   OutlinedButton.icon(
                     onPressed: () =>
                         onQuickRefinement(_QuickRefinement.moveLighter),
-                    icon: const Icon(Icons.low_priority_rounded),
+                    icon: const Icon(LottiIcons.lowPriority),
                     label: Text(messages.dailyOsNextReviewMoveLighter),
                   ),
                   OutlinedButton.icon(
                     onPressed: () =>
                         onQuickRefinement(_QuickRefinement.addBuffer),
-                    icon: const Icon(Icons.add_rounded),
+                    icon: const Icon(LottiIcons.add),
                     label: Text(messages.dailyOsNextReviewAddBuffer),
                   ),
                 ],
@@ -741,7 +741,7 @@ class _CompactReviewActions extends StatelessWidget {
       children: [
         FilledButton.icon(
           onPressed: onLooksGood,
-          icon: const Icon(Icons.check_rounded),
+          icon: const Icon(LottiIcons.confirm),
           label: Text(
             messages.dailyOsNextReviewLooksGood,
             maxLines: 1,
@@ -756,21 +756,21 @@ class _CompactReviewActions extends StatelessWidget {
             PopupMenuItem(
               value: _QuickRefinement.tooMuch,
               child: _QuickReviewMenuItem(
-                icon: Icons.remove_circle_outline_rounded,
+                icon: LottiIcons.removeCircled,
                 label: messages.dailyOsNextReviewTooMuch,
               ),
             ),
             PopupMenuItem(
               value: _QuickRefinement.moveLighter,
               child: _QuickReviewMenuItem(
-                icon: Icons.low_priority_rounded,
+                icon: LottiIcons.lowPriority,
                 label: messages.dailyOsNextReviewMoveLighter,
               ),
             ),
             PopupMenuItem(
               value: _QuickRefinement.addBuffer,
               child: _QuickReviewMenuItem(
-                icon: Icons.add_rounded,
+                icon: LottiIcons.add,
                 label: messages.dailyOsNextReviewAddBuffer,
               ),
             ),
@@ -804,7 +804,7 @@ class _ReviewAdjustButton extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.tune_rounded, size: 18, color: teal),
+            Icon(LottiIcons.tune, size: 18, color: teal),
             SizedBox(width: tokens.spacing.step2),
             Flexible(
               child: Text(
@@ -818,7 +818,7 @@ class _ReviewAdjustButton extends StatelessWidget {
               ),
             ),
             SizedBox(width: tokens.spacing.step1),
-            Icon(Icons.expand_more_rounded, size: 18, color: teal),
+            Icon(LottiIcons.expand, size: 18, color: teal),
           ],
         ),
       ),
@@ -869,7 +869,7 @@ class _DayFooterActions extends StatelessWidget {
     final tokens = context.designTokens;
     final refineButton = OutlinedButton.icon(
       onPressed: onRefine,
-      icon: Icon(Icons.mic_rounded, size: 14, color: teal),
+      icon: Icon(LottiIcons.mic, size: 14, color: teal),
       label: Text(
         context.messages.dailyOsNextDayRefineCta,
         maxLines: 1,
@@ -898,7 +898,7 @@ class _DayFooterActions extends StatelessWidget {
     final primaryButton = OutlinedButton.icon(
       onPressed: onShutdown,
       icon: Icon(
-        Icons.nights_stay_outlined,
+        LottiIcons.night,
         size: 14,
         color: tokens.colors.text.mediumEmphasis,
       ),
@@ -954,7 +954,7 @@ class _NoPlanFooter extends StatelessWidget {
       key: const Key('daily_os_day_check_in_cta'),
       onPressed: onCheckIn,
       icon: Icon(
-        needsInferenceSetup ? Icons.settings_outlined : Icons.mic_rounded,
+        needsInferenceSetup ? LottiIcons.settings : LottiIcons.mic,
         size: 14,
       ),
       label: Text(
@@ -1024,9 +1024,7 @@ class _DailyOsSetupNudge extends StatelessWidget {
           child: Row(
             children: [
               Icon(
-                inferenceMissing
-                    ? Icons.warning_amber_rounded
-                    : Icons.person_add_alt_1_outlined,
+                inferenceMissing ? LottiIcons.warning : LottiIcons.personAdd,
                 color: tokens.colors.interactive.enabled,
               ),
               SizedBox(width: tokens.spacing.step3),

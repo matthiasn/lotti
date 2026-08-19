@@ -114,7 +114,7 @@ void main() {
     );
 
     expect(
-      tester.widget<Icon>(find.byIcon(Icons.view_sidebar_rounded)).color,
+      tester.widget<Icon>(find.byIcon(LottiIcons.sidebar)).color,
       dsTokensDark.colors.text.highEmphasis,
     );
   });

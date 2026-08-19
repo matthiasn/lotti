@@ -159,25 +159,29 @@ List<InlineSpan> _taskMetadataSpans({
     DesignSystemTaskPriority.p0 => (
       tokens.colors.alert.error.ink,
       'P0',
-      Icons.priority_high_rounded,
+      LottiIcons.warning,
       spec.metaIconSize,
     ),
     DesignSystemTaskPriority.p1 => (
       tokens.colors.alert.error.ink,
       'P1',
-      Icons.local_fire_department_rounded,
+      LottiIcons.streak,
       spec.metaIconSize,
     ),
     DesignSystemTaskPriority.p2 => (
       tokens.colors.alert.warning.ink,
       'P2',
-      Icons.circle,
+      // A *filled* dot against p3's outlined one. Material drew this pair as
+      // `circle` / `circle_outlined`; Lucide is stroke-only, so without the
+      // generated filled glyph both priorities collapsed to the same mark and
+      // only the colour told them apart.
+      LottiIconsFilled.circle,
       spec.priorityDotSize,
     ),
     DesignSystemTaskPriority.p3 => (
       tokens.colors.text.mediumEmphasis,
       'P3',
-      Icons.circle,
+      LottiIcons.radioUnselected,
       spec.priorityDotSize,
     ),
   };
@@ -210,7 +214,7 @@ List<InlineSpan> _taskMetadataSpans({
       WidgetSpan(
         alignment: PlaceholderAlignment.middle,
         child: Icon(
-          Icons.access_time,
+          LottiIcons.schedule,
           size: spec.metaIconSize,
           color: tokens.colors.text.mediumEmphasis,
         ),
@@ -243,9 +247,9 @@ class _StatusIndicator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final icon = switch (status) {
-      DesignSystemTaskStatus.open => Icons.circle_outlined,
-      DesignSystemTaskStatus.blocked => Icons.warning_amber_rounded,
-      DesignSystemTaskStatus.onHold => Icons.pause_rounded,
+      DesignSystemTaskStatus.open => LottiIcons.radioUnselected,
+      DesignSystemTaskStatus.blocked => LottiIcons.warning,
+      DesignSystemTaskStatus.onHold => LottiIcons.pause,
     };
 
     final iconColor = switch (status) {

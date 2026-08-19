@@ -95,11 +95,11 @@ class InsightsDeltaChip extends StatelessWidget {
     } else if (pct! > 0) {
       text = '+$pct%';
       color = up;
-      glyph = Icons.arrow_upward_rounded;
+      glyph = LottiIcons.arrowUp;
     } else {
       text = '$pct%'; // already carries the minus sign
       color = down;
-      glyph = Icons.arrow_downward_rounded;
+      glyph = LottiIcons.arrowDown;
     }
 
     final base = prominent

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_circle_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../../../widget_test_utils.dart';
 
@@ -9,7 +10,7 @@ void main() {
   tearDown(tearDownTestGetIt);
 
   Widget buildSubject({
-    IconData icon = Icons.mic,
+    IconData icon = LottiIcons.mic,
     VoidCallback? onPressed,
     bool forceActive = false,
     String? tooltip,
@@ -30,14 +31,14 @@ void main() {
     await tester.pumpWidget(buildSubject());
     await tester.pumpAndSettle();
 
-    expect(find.byIcon(Icons.mic), findsOneWidget);
+    expect(find.byIcon(LottiIcons.mic), findsOneWidget);
 
     // With no onPressed and forceActive false, the button is disabled and
     // renders the inactive (muted) icon color rather than the active one.
     final iconButton = tester.widget<IconButton>(find.byType(IconButton));
     expect(iconButton.onPressed, isNull);
 
-    final icon = tester.widget<Icon>(find.byIcon(Icons.mic));
+    final icon = tester.widget<Icon>(find.byIcon(LottiIcons.mic));
     expect(icon.color, isNot(Colors.white));
   });
 
@@ -48,7 +49,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byIcon(Icons.mic));
+    await tester.tap(find.byIcon(LottiIcons.mic));
     await tester.pump();
 
     expect(tapped, isTrue);
@@ -64,7 +65,7 @@ void main() {
     expect(iconButton.onPressed, isNull);
 
     // Tap should not throw — button is disabled
-    await tester.tap(find.byIcon(Icons.mic));
+    await tester.tap(find.byIcon(LottiIcons.mic));
     await tester.pump();
   });
 
@@ -75,7 +76,7 @@ void main() {
     await tester.pump();
 
     // forceActive makes icon white (active state) even without onPressed
-    final icon = tester.widget<Icon>(find.byIcon(Icons.mic));
+    final icon = tester.widget<Icon>(find.byIcon(LottiIcons.mic));
     expect(icon.color, Colors.white);
   });
 

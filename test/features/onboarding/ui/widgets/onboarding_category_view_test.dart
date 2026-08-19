@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_category_view.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -11,13 +12,13 @@ import '../../../../widget_test_utils.dart';
 void main() {
   const accent = Color(0xFF00C2A8);
   const options = [
-    OnboardingCategoryOption(label: 'Work', icon: Icons.work_outline_rounded),
+    OnboardingCategoryOption(label: 'Work', icon: LottiIcons.work),
     OnboardingCategoryOption(
       label: 'Fitness',
-      icon: Icons.fitness_center_rounded,
+      icon: LottiIcons.fitness,
     ),
-    OnboardingCategoryOption(label: 'Family', icon: Icons.home_rounded),
-    OnboardingCategoryOption(label: 'Friends', icon: Icons.group_rounded),
+    OnboardingCategoryOption(label: 'Family', icon: LottiIcons.home),
+    OnboardingCategoryOption(label: 'Friends', icon: LottiIcons.people),
   ];
 
   Future<void> pumpView(
@@ -86,14 +87,14 @@ void main() {
     await pumpView(tester, selected: const {'Work'});
 
     // Each option carries its own (consistent) category icon for identity.
-    expect(find.byIcon(Icons.work_outline_rounded), findsOneWidget);
-    expect(find.byIcon(Icons.fitness_center_rounded), findsOneWidget);
-    expect(find.byIcon(Icons.home_rounded), findsOneWidget);
-    expect(find.byIcon(Icons.group_rounded), findsOneWidget);
+    expect(find.byIcon(LottiIcons.work), findsOneWidget);
+    expect(find.byIcon(LottiIcons.fitness), findsOneWidget);
+    expect(find.byIcon(LottiIcons.home), findsOneWidget);
+    expect(find.byIcon(LottiIcons.people), findsOneWidget);
     // The selected chip additionally shows the trailing check (selection cue).
-    expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+    expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
     // The "add your own" chip keeps its add glyph.
-    expect(find.byIcon(Icons.add_rounded), findsOneWidget);
+    expect(find.byIcon(LottiIcons.add), findsOneWidget);
     for (final option in options) {
       expect(find.text(option.label), findsOneWidget);
     }
@@ -228,7 +229,7 @@ void main() {
     (tester) async {
       await pumpView(tester, selected: const {});
 
-      expect(find.byIcon(Icons.check_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.confirm), findsNothing);
       for (final option in options) {
         expect(find.text(option.label), findsOneWidget);
       }

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
 import 'package:lotti/features/projects/ui/widgets/project_selection_modal_content.dart';
 
@@ -89,7 +90,7 @@ void main() {
       );
 
       expect(find.text('No project'), findsOneWidget);
-      expect(find.byIcon(Icons.do_not_disturb_alt_outlined), findsOneWidget);
+      expect(find.byIcon(LottiIcons.block), findsOneWidget);
       expect(find.byType(Divider), findsNothing);
 
       final row = tester.widget<DesignSystemSelectionRow>(
@@ -153,7 +154,7 @@ void main() {
       );
       expect(noneRow.selected, isFalse);
       expect(projectRow.selected, isTrue);
-      expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
     });
 
     testWidgets('shows a loading state while projects resolve', (tester) async {

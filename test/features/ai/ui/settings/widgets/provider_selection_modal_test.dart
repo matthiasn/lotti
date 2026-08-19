@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/provider_selection_modal.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../test_utils.dart';
 
@@ -117,7 +118,7 @@ void main() {
         // Should show empty state message
         expect(find.text('No providers found'), findsOneWidget);
         expect(find.text('Create an inference provider first'), findsOneWidget);
-        expect(find.byIcon(Icons.cloud_off_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.cloudOff), findsOneWidget);
       });
 
       testWidgets('shows loading state initially', (WidgetTester tester) async {
@@ -165,7 +166,7 @@ void main() {
         expect(inkWells, findsAtLeastNWidgets(1));
 
         // Provider cards should have proper icons and text
-        expect(find.byIcon(Icons.cloud_outlined), findsAtLeastNWidgets(1));
+        expect(find.byIcon(LottiIcons.cloud), findsAtLeastNWidgets(1));
         // Note: No longer expect arrow icons since we use checkmarks for selection
       });
     });
@@ -280,7 +281,7 @@ void main() {
           await tester.pump();
 
           // Should show checkmark for selected provider
-          expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+          expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
 
           // Should show empty circles for non-selected providers
           // The empty circle is represented by a Container with border decoration
@@ -331,7 +332,7 @@ void main() {
         expect(find.text('Test Provider 2'), findsOneWidget);
 
         // Should have checkmark icon for selected provider
-        expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
       });
     });
 
@@ -492,7 +493,7 @@ void main() {
         await tester.pump();
 
         // If error occurs, should show error message
-        final errorIcon = find.byIcon(Icons.error_outline_rounded);
+        final errorIcon = find.byIcon(LottiIcons.error);
         final errorText = find.text('Error loading providers');
 
         // These might not be present if no error occurs, but structure should be correct

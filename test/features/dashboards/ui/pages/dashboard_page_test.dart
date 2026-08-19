@@ -6,6 +6,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/dashboards/ui/pages/dashboard_page.dart';
 import 'package:lotti/features/dashboards/ui/widgets/dashboard_widget.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/dashboard_definition_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
@@ -253,7 +254,7 @@ void main() {
         expect(find.text(testDashboardConfig.name), findsOneWidget);
         expect(find.byType(TimeSpanSegmentedControl), findsOneWidget);
         // The edit-definition link.
-        expect(find.byIcon(Icons.tune_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.tune), findsOneWidget);
         // The desktop header has no back button (the dashboards list stays
         // visible beside this pane) — this is what sets it apart from mobile.
         expect(find.byType(BackWidget), findsNothing);
@@ -303,7 +304,7 @@ void main() {
         );
         await tester.pump(const Duration(milliseconds: 300));
 
-        await tester.tap(find.byIcon(Icons.tune_rounded));
+        await tester.tap(find.byIcon(LottiIcons.tune));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
 
@@ -346,7 +347,7 @@ void main() {
         );
         await tester.pump(const Duration(milliseconds: 300));
 
-        await tester.tap(find.byIcon(Icons.tune_rounded));
+        await tester.tap(find.byIcon(LottiIcons.tune));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
 

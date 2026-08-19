@@ -132,7 +132,7 @@ class AiModelCard extends StatelessWidget {
               SizedBox(width: tokens.spacing.step3),
               if (onDelete != null)
                 IconButton(
-                  icon: const Icon(Icons.delete_outline_rounded),
+                  icon: const Icon(LottiIcons.delete),
                   color: tokens.colors.alert.error.ink,
                   tooltip: messages.aiModelCardDeleteTooltip,
                   visualDensity: VisualDensity.compact,
@@ -202,8 +202,8 @@ class _ModelDownloadStatus extends StatelessWidget {
           IconButton(
             icon: Icon(
               status == MlxAudioModelStatus.downloading
-                  ? Icons.open_in_new_rounded
-                  : Icons.download_rounded,
+                  ? LottiIcons.openExternal
+                  : LottiIcons.download,
             ),
             tooltip: status == MlxAudioModelStatus.downloading
                 ? messages.aiModelDownloadOpenProgressTooltip

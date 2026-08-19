@@ -8,6 +8,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/image_paste_controller.dart';
@@ -162,7 +163,7 @@ void main() {
       await pumpAndOpenModal(tester);
 
       // Verify Timer item is present (timer icon)
-      expect(find.byIcon(Icons.timer_outlined), findsOneWidget);
+      expect(find.byIcon(LottiIcons.timer), findsOneWidget);
     });
 
     testWidgets(
@@ -213,7 +214,7 @@ void main() {
           find.text(messages.taskFirstRunAddChecklist),
           findsOneWidget,
         );
-        expect(find.byIcon(Icons.timer_outlined), findsNothing);
+        expect(find.byIcon(LottiIcons.timer), findsNothing);
       },
     );
 
@@ -221,7 +222,7 @@ void main() {
       await pumpAndOpenModal(tester, linkedFromId: null);
 
       // Verify Timer item is NOT present
-      expect(find.byIcon(Icons.timer_outlined), findsNothing);
+      expect(find.byIcon(LottiIcons.timer), findsNothing);
     });
 
     testWidgets('hides Event item when enableEventsFlag is false', (
@@ -243,7 +244,7 @@ void main() {
       await pumpAndOpenModal(tester, linkedFromId: null);
 
       // Verify Event item is NOT present
-      expect(find.byIcon(Icons.event_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.calendar), findsNothing);
     });
 
     testWidgets(
@@ -257,7 +258,7 @@ void main() {
 
         await pumpAndOpenModal(tester, linkedFromId: null);
 
-        expect(find.byIcon(Icons.event_rounded), findsNothing);
+        expect(find.byIcon(LottiIcons.calendar), findsNothing);
 
         await flagController.close();
       },
@@ -272,7 +273,7 @@ void main() {
 
       await pumpAndOpenModal(tester, linkedFromId: null);
 
-      expect(find.byIcon(Icons.event_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.calendar), findsNothing);
     });
 
     testWidgets(
@@ -281,9 +282,9 @@ void main() {
       (tester) async {
         // Default clipboard (empty) — no row.
         await pumpAndOpenModal(tester);
-        expect(find.byIcon(Icons.content_paste_rounded), findsNothing);
+        expect(find.byIcon(LottiIcons.copy), findsNothing);
 
-        await tester.tap(find.byIcon(Icons.close_rounded));
+        await tester.tap(find.byIcon(LottiIcons.close));
         await tester.pumpAndSettle();
 
         // Clipboard holds an image — the row appears.
@@ -297,7 +298,7 @@ void main() {
             )).overrideWithBuild((ref, notifier) async => true),
           ],
         );
-        expect(find.byIcon(Icons.content_paste_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.copy), findsOneWidget);
       },
     );
 
@@ -311,11 +312,11 @@ void main() {
       );
 
       // Verify core icons are present
-      expect(find.byIcon(Icons.event_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.add_task_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.mic_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.timer_outlined), findsOneWidget);
-      expect(find.byIcon(Icons.notes_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.calendar), findsOneWidget);
+      expect(find.byIcon(LottiIcons.addTask), findsOneWidget);
+      expect(find.byIcon(LottiIcons.mic), findsOneWidget);
+      expect(find.byIcon(LottiIcons.timer), findsOneWidget);
+      expect(find.byIcon(LottiIcons.note), findsOneWidget);
     });
 
     // -----------------------------------------------------------------------

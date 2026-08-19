@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/date_time/datetime_bottom_sheet.dart';
 import 'package:lotti/widgets/date_time/datetime_field.dart';
 
@@ -67,10 +68,10 @@ void main() {
       );
 
       // Verify clear button is visible
-      expect(find.byIcon(Icons.clear), findsOneWidget);
+      expect(find.byIcon(LottiIcons.close), findsOneWidget);
 
       // Tap clear button
-      await tester.tap(find.byIcon(Icons.clear));
+      await tester.tap(find.byIcon(LottiIcons.close));
       await tester.pump();
 
       expect(clearCount, 1);

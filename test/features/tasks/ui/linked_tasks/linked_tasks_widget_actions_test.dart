@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/dropdowns/design_system_dropdown.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/state/linkable_tasks_controller.dart';
 import 'package:lotti/features/tasks/state/linked_tasks_controller.dart';
@@ -242,7 +243,7 @@ void main() {
           outgoing: [buildTask(id: 'out-1')],
         );
 
-        await tester.tap(find.byIcon(Icons.more_vert));
+        await tester.tap(find.byIcon(LottiIcons.moreVertical));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -263,7 +264,7 @@ void main() {
           manageMode: true,
         );
 
-        await tester.tap(find.byIcon(Icons.more_vert));
+        await tester.tap(find.byIcon(LottiIcons.moreVertical));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -294,10 +295,10 @@ void main() {
       );
 
       // Default chevron in browse mode.
-      expect(find.byIcon(Icons.arrow_forward_ios), findsOneWidget);
-      expect(find.byIcon(Icons.link_off), findsNothing);
+      expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
+      expect(find.byIcon(LottiIcons.linkOff), findsNothing);
 
-      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.tap(find.byIcon(LottiIcons.moreVertical));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.text('Manage links…'));
@@ -305,8 +306,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       // Chevron replaced by the unlink X.
-      expect(find.byIcon(Icons.arrow_forward_ios), findsNothing);
-      expect(find.byIcon(Icons.link_off), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronRight), findsNothing);
+      expect(find.byIcon(LottiIcons.linkOff), findsOneWidget);
 
       // The mode now says so in the header and offers its own way out, rather
       // than hiding the exit back inside the menu it was entered from.
@@ -317,9 +318,9 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.byIcon(Icons.arrow_forward_ios), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
       expect(find.widgetWithText(DesignSystemButton, 'Done'), findsNothing);
-      expect(find.byIcon(Icons.link_off), findsNothing);
+      expect(find.byIcon(LottiIcons.linkOff), findsNothing);
     });
 
     testWidgets(
@@ -346,7 +347,7 @@ void main() {
           outgoing: [buildTask(id: 'out-1', title: 'Outgoing Task')],
         );
 
-        await tester.tap(find.byIcon(Icons.add_link));
+        await tester.tap(find.byIcon(LottiIcons.link));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -431,7 +432,7 @@ void main() {
     // — matching today's exact behavior for tests that don't care about the
     // new relationship-picker UI itself (see the dedicated group below).
     Future<void> tapCreateNewLinkedTask(WidgetTester tester) async {
-      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.tap(find.byIcon(LottiIcons.moreVertical));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.text('Create new linked task…'));
@@ -622,7 +623,7 @@ void main() {
           extraOverrides: createFlowOverrides(parentCategoryId: null),
         );
 
-        await tester.tap(find.byIcon(Icons.more_vert));
+        await tester.tap(find.byIcon(LottiIcons.moreVertical));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
         await tester.tap(find.text('Create new linked task…'));
@@ -640,7 +641,7 @@ void main() {
 
         // The shared modal dismisses via its own close affordance; there is
         // no bespoke Cancel button to press.
-        await tester.tap(find.byIcon(Icons.close_rounded));
+        await tester.tap(find.byIcon(LottiIcons.close));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -676,7 +677,7 @@ void main() {
           ),
         ).thenAnswer((_) async => false);
 
-        await tester.tap(find.byIcon(Icons.more_vert));
+        await tester.tap(find.byIcon(LottiIcons.moreVertical));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
         await tester.tap(find.text('Create new linked task…'));
@@ -730,7 +731,7 @@ void main() {
           ),
         ).thenAnswer((_) async => false);
 
-        await tester.tap(find.byIcon(Icons.more_vert));
+        await tester.tap(find.byIcon(LottiIcons.moreVertical));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
         await tester.tap(find.text('Create new linked task…'));
@@ -799,7 +800,7 @@ void main() {
           ),
         ).thenAnswer((_) async => true);
 
-        await tester.tap(find.byIcon(Icons.more_vert));
+        await tester.tap(find.byIcon(LottiIcons.moreVertical));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
         await tester.tap(find.text('Create new linked task…'));
@@ -856,7 +857,7 @@ void main() {
           ),
         ).thenAnswer((_) async => true);
 
-        await tester.tap(find.byIcon(Icons.more_vert));
+        await tester.tap(find.byIcon(LottiIcons.moreVertical));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
         await tester.tap(find.text('Create new linked task…'));
@@ -891,7 +892,7 @@ void main() {
         manageMode: true,
       );
 
-      await tester.tap(find.byIcon(Icons.link_off));
+      await tester.tap(find.byIcon(LottiIcons.linkOff));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -919,7 +920,7 @@ void main() {
         manageMode: true,
       );
 
-      await tester.tap(find.byIcon(Icons.link_off));
+      await tester.tap(find.byIcon(LottiIcons.linkOff));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -966,7 +967,7 @@ void main() {
         manageMode: true,
       );
 
-      await tester.tap(find.byIcon(Icons.link_off));
+      await tester.tap(find.byIcon(LottiIcons.linkOff));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.widgetWithText(DesignSystemButton, 'Cancel'));
@@ -993,7 +994,7 @@ void main() {
           manageMode: true,
         );
 
-        await tester.tap(find.byIcon(Icons.swap_horiz_rounded));
+        await tester.tap(find.byIcon(LottiIcons.compare));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -1042,7 +1043,7 @@ void main() {
           manageMode: true,
         );
 
-        await tester.tap(find.byIcon(Icons.more_vert));
+        await tester.tap(find.byIcon(LottiIcons.moreVertical));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
         await tester.tap(find.text('Link existing task…'));
@@ -1071,7 +1072,7 @@ void main() {
           findsNothing,
         );
 
-        await tester.tap(find.byIcon(Icons.add_link));
+        await tester.tap(find.byIcon(LottiIcons.link));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
 

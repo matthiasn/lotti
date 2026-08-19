@@ -264,7 +264,7 @@ class _ChipContent extends StatelessWidget {
         SizedBox.square(
           dimension: accessoryBoxSize,
           child: const Center(
-            child: Icon(Icons.cancel_rounded),
+            child: Icon(LottiIcons.closeCircled),
           ),
         ),
       );

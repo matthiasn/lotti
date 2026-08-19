@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
@@ -61,10 +62,10 @@ void main() {
       await pumpAppBar(
         tester,
         showBackButton: false,
-        actions: const [Icon(Icons.settings)],
+        actions: const [Icon(LottiIcons.settings)],
       );
 
-      expect(find.byIcon(Icons.settings), findsOneWidget);
+      expect(find.byIcon(LottiIcons.settings), findsOneWidget);
     });
   });
 
@@ -76,7 +77,7 @@ void main() {
         makeTestableWidget2(
           const Scaffold(
             appBar: TitleWidgetAppBar(
-              title: Icon(Icons.star),
+              title: Icon(LottiIcons.star),
               showBackButton: false,
               margin: EdgeInsets.symmetric(horizontal: 10),
             ),
@@ -85,11 +86,11 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byIcon(Icons.star), findsOneWidget);
+      expect(find.byIcon(LottiIcons.star), findsOneWidget);
 
       final container = tester.widget<Container>(
         find.ancestor(
-          of: find.byIcon(Icons.star),
+          of: find.byIcon(LottiIcons.star),
           matching: find.byType(Container),
         ),
       );
@@ -157,7 +158,7 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
 
       final button = find.byType(IconButton);
-      final icon = tester.widget<Icon>(find.byIcon(Icons.chevron_left));
+      final icon = tester.widget<Icon>(find.byIcon(LottiIcons.chevronLeft));
       expect(icon.size, 30);
       final expectedLabel = MaterialLocalizations.of(
         tester.element(button),

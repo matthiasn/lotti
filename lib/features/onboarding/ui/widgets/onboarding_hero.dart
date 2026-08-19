@@ -384,7 +384,7 @@ class OnboardingHeroPanel extends StatelessWidget {
                       child: DesignSystemButton(
                         onPressed: onExploreDemo,
                         label: context.messages.demoOnboardingExplore,
-                        leadingIcon: Icons.science_outlined,
+                        leadingIcon: LottiIcons.science,
                         size: DesignSystemButtonSize.large,
                         fullWidth: true,
                       ),
@@ -398,7 +398,7 @@ class OnboardingHeroPanel extends StatelessWidget {
                     child: DesignSystemButton(
                       onPressed: onConnect,
                       label: context.messages.onboardingWelcomeConnectButton,
-                      leadingIcon: Icons.arrow_forward_rounded,
+                      leadingIcon: LottiIcons.forward,
                       variant: leadsWithDemo
                           ? DesignSystemButtonVariant.secondary
                           : DesignSystemButtonVariant.primary,

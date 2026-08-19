@@ -72,7 +72,7 @@ class MeasurementSuggestions extends ConsumerWidget {
               label: label,
               // The bolt cues that the chip is a one-tap instant log (it saves
               // and closes), not a value that merely fills the field.
-              leadingIcon: Icons.bolt_rounded,
+              leadingIcon: LottiIcons.bolt,
               semanticsLabel: context.messages.measurementQuickLogSemantic(
                 label,
               ),

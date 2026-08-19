@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/callouts/design_system_inline_callout.dart';
@@ -152,7 +151,7 @@ class _SyncDevicesListState extends ConsumerState<SyncDevicesList> {
               size: IconSizes.s,
               strokeWidth: BorderWidths.emphasis,
             )
-          : const Icon(MdiIcons.refresh),
+          : const Icon(LottiIcons.refresh),
     );
 
     if (devices == null) {
@@ -268,7 +267,7 @@ class _SyncDevicesListState extends ConsumerState<SyncDevicesList> {
                   DesignSystemButton(
                     key: const Key('sync_devices_add_device'),
                     label: messages.syncAddDeviceAction,
-                    leadingIcon: Icons.add_rounded,
+                    leadingIcon: LottiIcons.add,
                     tapTargetSize: MaterialTapTargetSize.padded,
                     onPressed: () => unawaited(AddDeviceModal.show(context)),
                   ),
@@ -281,7 +280,7 @@ class _SyncDevicesListState extends ConsumerState<SyncDevicesList> {
           SizedBox(height: tokens.spacing.step3),
           DesignSystemInlineCallout(
             key: const Key('sync_devices_paused_banner'),
-            icon: Icons.warning_rounded,
+            icon: LottiIcons.warning,
             text: bannerText,
           ),
         ],
@@ -390,7 +389,7 @@ class _JustJoinedBanner extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Icon(
-                  Icons.auto_awesome_rounded,
+                  LottiIcons.aiSpark,
                   size: IconSizes.l,
                   color: tokens.colors.interactive.enabled,
                 ),
@@ -421,7 +420,7 @@ class _JustJoinedBanner extends StatelessWidget {
                   padding: EdgeInsets.zero,
                   onPressed: onDismiss,
                   icon: Icon(
-                    Icons.close_rounded,
+                    LottiIcons.close,
                     size: IconSizes.s,
                     color: tokens.colors.text.mediumEmphasis,
                   ),
@@ -436,13 +435,13 @@ class _JustJoinedBanner extends StatelessWidget {
                 DesignSystemButton(
                   key: const Key('sync_devices_send_settings'),
                   label: messages.syncAddDeviceSendSettings,
-                  leadingIcon: Icons.sync_alt_rounded,
+                  leadingIcon: LottiIcons.compare,
                   onPressed: () => unawaited(SyncModal.show(context)),
                 ),
                 DesignSystemButton(
                   key: const Key('sync_devices_send_messages'),
                   label: messages.syncAddDeviceSendMessages,
-                  leadingIcon: Icons.history_rounded,
+                  leadingIcon: LottiIcons.restore,
                   variant: DesignSystemButtonVariant.outlined,
                   onPressed: () => unawaited(ReSyncModal.show(context)),
                 ),

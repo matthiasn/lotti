@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/state/agent_pending_wake_providers.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/pending_wakes/agent_pending_wakes_page.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -338,7 +339,7 @@ void main() {
         agentService: mockService,
       );
 
-      await tester.tap(find.byIcon(Icons.delete_outline_rounded));
+      await tester.tap(find.byIcon(LottiIcons.delete));
       await tester.pump();
 
       verify(() => mockService.cancelPendingWake('agent-1')).called(1);
@@ -368,7 +369,7 @@ void main() {
           agentService: mockService,
         );
 
-        await tester.tap(find.byIcon(Icons.delete_outline_rounded));
+        await tester.tap(find.byIcon(LottiIcons.delete));
         await tester.pump();
         await tester.pump();
 
@@ -410,7 +411,7 @@ void main() {
           agentService: mockService,
         );
 
-        await tester.tap(find.byIcon(Icons.delete_outline_rounded));
+        await tester.tap(find.byIcon(LottiIcons.delete));
         await tester.pump();
         await tester.pump();
 
@@ -452,19 +453,19 @@ void main() {
           agentService: mockService,
         );
 
-        await tester.tap(find.byIcon(Icons.delete_outline_rounded));
+        await tester.tap(find.byIcon(LottiIcons.delete));
         await tester.pump();
 
         // While the future is unresolved the delete icon is replaced by a
         // spinner.
-        expect(find.byIcon(Icons.delete_outline_rounded), findsNothing);
+        expect(find.byIcon(LottiIcons.delete), findsNothing);
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
         // Resolving the future restores the delete affordance.
         gate.complete();
         await tester.pump();
         expect(find.byType(CircularProgressIndicator), findsNothing);
-        expect(find.byIcon(Icons.delete_outline_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.delete), findsOneWidget);
         verify(() => mockService.clearScheduledWake('agent-busy')).called(1);
       });
     },
@@ -742,7 +743,7 @@ void main() {
           agentService: mockService,
         );
 
-        await tester.tap(find.byIcon(Icons.delete_outline_rounded));
+        await tester.tap(find.byIcon(LottiIcons.delete));
         // Drain the microtask queue so the catch + finally branches run.
         await tester.pump();
         await tester.pump();
@@ -750,7 +751,7 @@ void main() {
         verify(() => mockService.cancelPendingWake('agent-fail')).called(1);
         // Finally restored the delete affordance — no leftover spinner.
         expect(find.byType(CircularProgressIndicator), findsNothing);
-        expect(find.byIcon(Icons.delete_outline_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.delete), findsOneWidget);
       });
     },
   );

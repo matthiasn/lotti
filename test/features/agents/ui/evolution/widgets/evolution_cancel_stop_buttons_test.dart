@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_cancel_stop_buttons.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_circle_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../../../widget_test_utils.dart';
 
@@ -30,8 +31,8 @@ void main() {
     await tester.pump();
 
     expect(find.byType(EvolutionCircleButton), findsNWidgets(2));
-    expect(find.byIcon(Icons.close), findsOneWidget);
-    expect(find.byIcon(Icons.stop), findsOneWidget);
+    expect(find.byIcon(LottiIcons.close), findsOneWidget);
+    expect(find.byIcon(LottiIcons.stop), findsOneWidget);
     expect(find.byTooltip('Cancel recording'), findsOneWidget);
     expect(find.byTooltip('Stop recording'), findsOneWidget);
   });
@@ -46,7 +47,7 @@ void main() {
     );
     await tester.pump();
 
-    await tester.tap(find.byIcon(Icons.close));
+    await tester.tap(find.byIcon(LottiIcons.close));
     expect(cancels, 1);
     expect(stops, 0);
   });
@@ -59,7 +60,7 @@ void main() {
     );
     await tester.pump();
 
-    await tester.tap(find.byIcon(Icons.stop));
+    await tester.tap(find.byIcon(LottiIcons.stop));
     expect(stops, 1);
     expect(cancels, 0);
   });

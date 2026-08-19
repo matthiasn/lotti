@@ -214,13 +214,13 @@ void main() {
       final bookmark = tester.widget<Icon>(
         find.descendant(
           of: find.byKey(SavedTaskFilterRailKeys.savedButton),
-          matching: find.byIcon(Icons.bookmarks_outlined),
+          matching: find.byIcon(LottiIcons.bookmark),
         ),
       );
       final glyph = tester.widget<Icon>(
         find.descendant(
           of: find.byKey(SavedTaskFilterRailKeys.savedButton),
-          matching: find.byIcon(Icons.unfold_more_rounded),
+          matching: find.byIcon(LottiIcons.expandBoth),
         ),
       );
       expect(bookmark.color, high);
@@ -251,11 +251,11 @@ void main() {
       expect(
         find.descendant(
           of: find.byKey(SavedTaskFilterRailKeys.savedButton),
-          matching: find.byIcon(Icons.unfold_more_rounded),
+          matching: find.byIcon(LottiIcons.expandBoth),
         ),
         findsOneWidget,
       );
-      expect(find.byIcon(Icons.expand_more_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.expand), findsNothing);
     },
   );
 
@@ -282,7 +282,7 @@ void main() {
     expect(
       find.descendant(
         of: find.byKey(SavedTaskFilterRailKeys.saveChip),
-        matching: find.byIcon(Icons.add_rounded),
+        matching: find.byIcon(LottiIcons.add),
       ),
       findsOneWidget,
     );

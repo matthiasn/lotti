@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/habits/ui/widgets/habits_tool_button.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -16,7 +17,7 @@ void main() {
     return tester.pumpWidget(
       makeTestableWidgetWithScaffold(
         HabitsToolButton(
-          icon: Icons.search,
+          icon: LottiIcons.search,
           active: active,
           onPressed: onPressed ?? () {},
           semanticLabel: semanticLabel,
@@ -28,7 +29,7 @@ void main() {
 
   /// Reads the [Icon] widget's resolved color for the tool button.
   Color iconColor(WidgetTester tester) =>
-      tester.widget<Icon>(find.byIcon(Icons.search)).color!;
+      tester.widget<Icon>(find.byIcon(LottiIcons.search)).color!;
 
   /// Reads the [Material] color backing the circular toggle. The button's own
   /// Material is the nearest ancestor of the icon (Scaffold/MaterialApp add
@@ -37,7 +38,7 @@ void main() {
       .widget<Material>(
         find
             .ancestor(
-              of: find.byIcon(Icons.search),
+              of: find.byIcon(LottiIcons.search),
               matching: find.byType(Material),
             )
             .first,
@@ -47,14 +48,14 @@ void main() {
   testWidgets('renders the provided icon', (tester) async {
     await pumpButton(tester, active: false);
 
-    expect(find.byIcon(Icons.search), findsOneWidget);
+    expect(find.byIcon(LottiIcons.search), findsOneWidget);
   });
 
   testWidgets('tapping invokes onPressed', (tester) async {
     var taps = 0;
     await pumpButton(tester, active: false, onPressed: () => taps++);
 
-    await tester.tap(find.byIcon(Icons.search));
+    await tester.tap(find.byIcon(LottiIcons.search));
     await tester.pump();
 
     expect(taps, 1);

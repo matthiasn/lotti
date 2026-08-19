@@ -247,7 +247,7 @@ class _DateStrip extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         IconButton(
-          icon: const Icon(Icons.chevron_left_rounded),
+          icon: const Icon(LottiIcons.chevronLeft),
           tooltip: material.previousPageTooltip,
           onPressed: onPrev,
         ),
@@ -287,7 +287,7 @@ class _DateStrip extends StatelessWidget {
           ),
         ),
         IconButton(
-          icon: const Icon(Icons.chevron_right_rounded),
+          icon: const Icon(LottiIcons.chevronRight),
           tooltip: material.nextPageTooltip,
           onPressed: onNext,
         ),
@@ -300,7 +300,7 @@ class _DateStrip extends StatelessWidget {
           DesignSystemButton(
             key: const Key('daily_os_date_strip_today'),
             label: messages.dailyOsTodayButton,
-            leadingIcon: Icons.today_rounded,
+            leadingIcon: LottiIcons.today,
             variant: DesignSystemButtonVariant.outlined,
             size: DesignSystemButtonSize.dense,
             // The row is already 48dp tall because of the chevrons, so the

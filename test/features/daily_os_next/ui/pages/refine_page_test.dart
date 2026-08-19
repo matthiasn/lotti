@@ -17,6 +17,7 @@ import 'package:lotti/features/daily_os_next/ui/time_format.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/diff_row.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/live_waveform.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/voice_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -649,7 +650,7 @@ void main() {
       expect(find.byType(RefinePage), findsOneWidget);
 
       // Tap the leading close IconButton → Navigator.maybePop pops the route.
-      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.tap(find.byIcon(LottiIcons.close));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
       await tester.pump(const Duration(milliseconds: 350));

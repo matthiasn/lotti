@@ -456,9 +456,7 @@ class _FreshnessCluster extends StatelessWidget {
             key: ValueKey(
               isStale ? 'taskAgentStaleGlyph' : 'taskAgentFreshGlyph',
             ),
-            isStale
-                ? Icons.warning_amber_rounded
-                : Icons.check_circle_outline_rounded,
+            isStale ? LottiIcons.warning : LottiIcons.confirmCircled,
             size: tokens.spacing.step5,
             color: isStale
                 ? tokens.colors.alert.warning.defaultColor
@@ -672,7 +670,7 @@ class _UpdateNowButton extends StatelessWidget {
       label: isRunning
           ? messages.aiSummaryThinkingLabel
           : messages.taskAgentUpdateNow,
-      leadingIcon: Icons.refresh_rounded,
+      leadingIcon: LottiIcons.refresh,
       isLoading: isRunning,
       // Caption tier: the footer must not field a string at the same size and
       // weight as the card's hero action one hairline above it.
@@ -739,9 +737,7 @@ class _AutomationSetting extends StatelessWidget {
           semanticsLabel: messages.taskAgentAutomaticUpdatesLabel,
           // The disabled switch explains itself on demand instead of
           // spending a permanent caption line on it.
-          tooltipIcon: needsSetupHint == null
-              ? null
-              : Icons.info_outline_rounded,
+          tooltipIcon: needsSetupHint == null ? null : LottiIcons.info,
           tooltipMessage: needsSetupHint,
           enabled: enabled,
           onChanged: onChanged,

@@ -534,12 +534,12 @@ class _SavedButton extends StatelessWidget {
       variant: DsPillVariant.filled,
       label: label,
       leading: Icon(
-        Icons.bookmarks_outlined,
+        LottiIcons.bookmark,
         size: IconSizes.xs,
         color: glyphColor,
       ),
       trailing: Icon(
-        Icons.unfold_more_rounded,
+        LottiIcons.expandBoth,
         size: IconSizes.xs,
         color: glyphColor,
       ),
@@ -595,7 +595,7 @@ class _SaveChip extends StatelessWidget {
     // bookmark_add, not a bare +: unlabelled, a plain + is the FAB's glyph
     // in the same frame and reads as "new task" rather than "save this view".
     final glyph = Icon(
-      labelled ? Icons.add_rounded : Icons.bookmark_add_outlined,
+      labelled ? LottiIcons.add : LottiIcons.bookmark,
       size: labelled ? IconSizes.xs : IconSizes.s,
       color: accent,
     );

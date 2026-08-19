@@ -206,7 +206,7 @@ class _ReflectionCardState extends ConsumerState<ReflectionCard> {
             Row(
               children: [
                 FilledButton.icon(
-                  icon: const Icon(Icons.mic_rounded, size: 14),
+                  icon: const Icon(LottiIcons.mic, size: 14),
                   label: Text(messages.dailyOsNextShutdownReflectionSpeak),
                   style: FilledButton.styleFrom(
                     backgroundColor: teal,
@@ -288,7 +288,7 @@ class ShutdownFooter extends StatelessWidget {
       ),
       secondary: [
         TextButton.icon(
-          icon: const Icon(Icons.arrow_back_rounded, size: 16),
+          icon: const Icon(LottiIcons.back, size: 16),
           label: Text(messages.dailyOsNextDayBack),
           style: TextButton.styleFrom(
             foregroundColor: tokens.colors.text.mediumEmphasis,
@@ -304,7 +304,7 @@ class ShutdownFooter extends StatelessWidget {
         ),
       ],
       primary: FilledButton.icon(
-        icon: const Icon(Icons.check_rounded, size: 14),
+        icon: const Icon(LottiIcons.confirm, size: 14),
         label: Text(messages.dailyOsNextShutdownCloseDay),
         style: FilledButton.styleFrom(
           backgroundColor: teal,

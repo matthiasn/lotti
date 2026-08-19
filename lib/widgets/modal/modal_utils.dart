@@ -132,7 +132,7 @@ class ModalUtils {
     Widget? titleWidget,
     bool isTopBarLayerAlwaysVisible = true,
     bool showCloseButton = false,
-    IconData closeButtonIcon = Icons.close_rounded,
+    IconData closeButtonIcon = LottiIcons.close,
     String? closeButtonTooltip,
     VoidCallback? onClosePressed,
     void Function()? onTapBack,
@@ -157,7 +157,7 @@ class ModalUtils {
           ? _navigationButton(
               context: context,
               tooltip: materialLocalizations.backButtonTooltip,
-              icon: Icons.arrow_back_rounded,
+              icon: LottiIcons.back,
               onPressed: onTapBack,
             )
           : leadingNavBarWidget,
@@ -227,7 +227,7 @@ class ModalUtils {
     bool hasTopBarLayer = true,
     Widget Function(Widget)? modalDecorator,
     bool showCloseButton = true,
-    IconData closeButtonIcon = Icons.close_rounded,
+    IconData closeButtonIcon = LottiIcons.close,
     String? closeButtonTooltip,
     VoidCallback? onClosePressed,
     bool? useRootNavigator,
@@ -322,7 +322,7 @@ class ModalUtils {
           ? _navigationButton(
               context: context,
               tooltip: materialLocalizations.backButtonTooltip,
-              icon: Icons.arrow_back_rounded,
+              icon: LottiIcons.back,
               onPressed: onTapBack,
             )
           : null,
@@ -331,7 +331,7 @@ class ModalUtils {
               builder: (navigationContext) => _navigationButton(
                 context: navigationContext,
                 tooltip: materialLocalizations.closeButtonTooltip,
-                icon: Icons.close_rounded,
+                icon: LottiIcons.close,
                 onPressed: () => Navigator.of(navigationContext).pop(),
               ),
             )

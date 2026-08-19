@@ -91,7 +91,7 @@ class InsightsPeriodStepper extends StatelessWidget {
         ? null
         : InsightsPillButton(
             label: messages.insightsCompare,
-            icon: Icons.compare_arrows_rounded,
+            icon: LottiIcons.compare,
             outlined: true,
             active: selection.compareEnabled,
             onTap: onToggleCompare!,
@@ -266,7 +266,7 @@ class _NavCluster extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _ClusterButton(
-                  icon: Icons.chevron_left_rounded,
+                  icon: LottiIcons.chevronLeft,
                   tooltip: messages.insightsPeriodPrevious,
                   onPressed: onStepBack,
                 ),
@@ -281,7 +281,7 @@ class _NavCluster extends StatelessWidget {
                   _PeriodLabel(label: label, onTap: onOpenCalendar),
                 _ClusterDivider(tokens: tokens),
                 _ClusterButton(
-                  icon: Icons.chevron_right_rounded,
+                  icon: LottiIcons.chevronRight,
                   tooltip: messages.insightsPeriodNext,
                   onPressed: onStepForward,
                 ),
@@ -371,7 +371,7 @@ class _UnitDropdown extends StatelessWidget {
               ),
               SizedBox(width: tokens.spacing.step1),
               Icon(
-                Icons.expand_more_rounded,
+                LottiIcons.expand,
                 size: tokens.spacing.step5,
                 color: tokens.colors.text.mediumEmphasis,
               ),
@@ -425,7 +425,7 @@ class _PeriodLabel extends StatelessWidget {
             // A calendar glyph marks the label as the jump-to-date affordance;
             // without it the most powerful navigation reads as static text.
             Icon(
-              Icons.calendar_today_rounded,
+              LottiIcons.today,
               size: tokens.spacing.step4,
               color: tokens.colors.text.mediumEmphasis,
             ),

@@ -10,6 +10,7 @@ import 'package:glados/glados.dart'
         Generator,
         Glados,
         any;
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings_v2/domain/settings_node.dart';
 import 'package:lotti/features/settings_v2/domain/settings_tree_data.dart';
 import 'package:lotti/features/settings_v2/domain/settings_tree_index.dart';
@@ -488,13 +489,13 @@ void main() {
     final duplicate = [
       const SettingsNode(
         id: 'dup',
-        icon: Icons.star,
+        icon: LottiIcons.star,
         title: 'first',
         desc: 'desc',
       ),
       const SettingsNode(
         id: 'dup',
-        icon: Icons.star_border,
+        icon: LottiIcons.star,
         title: 'second',
         desc: 'desc',
       ),

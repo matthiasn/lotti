@@ -3,7 +3,6 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
@@ -12,6 +11,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/design_system/components/headers/tab_section_header.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
@@ -225,7 +225,7 @@ void main() {
 
       // test text entry is starred
       expect(
-        (tester.firstWidget(find.byIcon(MdiIcons.star)) as Icon).color,
+        (tester.firstWidget(find.byIcon(LottiIcons.star)) as Icon).color,
         starredGold,
       );
     });
@@ -259,8 +259,8 @@ void main() {
       expect(find.text('94.49 kg'), findsOneWidget);
 
       // weight task is neither starred nor private (icons invisible)
-      expect(find.byIcon(MdiIcons.star).hitTestable(), findsNothing);
-      expect(find.byIcon(MdiIcons.security).hitTestable(), findsNothing);
+      expect(find.byIcon(LottiIcons.star).hitTestable(), findsNothing);
+      expect(find.byIcon(LottiIcons.shield).hitTestable(), findsNothing);
     });
 
     testWidgets(
@@ -317,10 +317,10 @@ void main() {
         );
 
         // test measurement is not starred (icon invisible)
-        expect(find.byIcon(MdiIcons.star).hitTestable(), findsNothing);
+        expect(find.byIcon(LottiIcons.star).hitTestable(), findsNothing);
 
         // test measurement is private (icon visible & red)
-        expect(find.byIcon(MdiIcons.security).hitTestable(), findsOneWidget);
+        expect(find.byIcon(LottiIcons.shield).hitTestable(), findsOneWidget);
       },
     );
 
@@ -361,8 +361,8 @@ void main() {
       );
 
       // test measurement is neither starred nor private (icons invisible)
-      expect(find.byIcon(MdiIcons.star).hitTestable(), findsNothing);
-      expect(find.byIcon(MdiIcons.security).hitTestable(), findsNothing);
+      expect(find.byIcon(LottiIcons.star).hitTestable(), findsNothing);
+      expect(find.byIcon(LottiIcons.shield).hitTestable(), findsNothing);
     });
 
     testWidgets('page shows empty state when no entries', (tester) async {
@@ -520,7 +520,7 @@ void main() {
       await pumpWithDelay(tester);
 
       // Verify security icon is visible
-      expect(find.byIcon(MdiIcons.security), findsOneWidget);
+      expect(find.byIcon(LottiIcons.shield), findsOneWidget);
     });
   });
 
@@ -705,13 +705,13 @@ void main() {
       expect(fakeController.searchStringCalls, ['penguins']);
 
       // The search glyph re-submits the current text…
-      await tester.tap(find.byIcon(Icons.search_rounded));
+      await tester.tap(find.byIcon(LottiIcons.search));
       await tester.pump();
       expect(fakeController.searchStringCalls, ['penguins', 'penguins']);
 
       // …and the clear affordance resets the query to the empty string —
       // once via the clear callback and once via the field's change stream.
-      await tester.tap(find.byIcon(Icons.cancel_rounded));
+      await tester.tap(find.byIcon(LottiIcons.closeCircled));
       await tester.pump();
       expect(fakeController.searchStringCalls, [
         'penguins',
@@ -726,7 +726,7 @@ void main() {
     ) async {
       await pumpPage(tester);
 
-      await tester.tap(find.byIcon(Icons.filter_list_rounded));
+      await tester.tap(find.byIcon(LottiIcons.filter));
       // Bounded pumps instead of pumpAndSettle: the page's loading spinner
       // (null pagingController branch) animates forever and would time out.
       await tester.pump();

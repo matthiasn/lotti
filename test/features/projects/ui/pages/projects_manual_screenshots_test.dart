@@ -26,6 +26,7 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/state/project_detail_controller.dart';
@@ -575,7 +576,7 @@ void main() {
           mobile: const ProjectsTabPage(),
           desktop: const ProjectsTabPage(),
         );
-        await tester.tap(find.byIcon(Icons.filter_list_rounded));
+        await tester.tap(find.byIcon(LottiIcons.filter));
         await settleFrames(tester, 6);
         final messages = _messages(tester);
         expect(

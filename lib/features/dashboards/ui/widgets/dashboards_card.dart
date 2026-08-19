@@ -32,7 +32,7 @@ class DashboardCard extends StatelessWidget {
         size: CategoryIconConstants.iconSizeMedium,
       ),
       trailing: Icon(
-        Icons.chevron_right_rounded,
+        LottiIcons.chevronRight,
         size: tokens.spacing.step6,
         color: tokens.colors.text.lowEmphasis,
       ),

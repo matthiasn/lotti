@@ -27,7 +27,7 @@ void main() {
         await pump(
           tester,
           DesignSystemEmptyState(
-            icon: Icons.inbox_outlined,
+            icon: LottiIcons.inbox,
             title: 'Nothing here',
             hint: 'Add something to begin.',
             action: TextButton(
@@ -37,7 +37,7 @@ void main() {
           ),
         );
 
-        final icon = tester.widget<Icon>(find.byIcon(Icons.inbox_outlined));
+        final icon = tester.widget<Icon>(find.byIcon(LottiIcons.inbox));
         expect(icon.size, dsTokensDark.spacing.step9);
         expect(icon.color, dsTokensDark.colors.text.lowEmphasis);
 
@@ -68,12 +68,12 @@ void main() {
         await pump(
           tester,
           const DesignSystemEmptyState(
-            icon: Icons.menu_book_outlined,
+            icon: LottiIcons.book,
             hint: 'New entries will open here.',
           ),
         );
 
-        expect(find.byIcon(Icons.menu_book_outlined), findsOneWidget);
+        expect(find.byIcon(LottiIcons.book), findsOneWidget);
         final hint = tester.widget<Text>(
           find.text('New entries will open here.'),
         );
@@ -100,7 +100,7 @@ void main() {
       await pump(
         tester,
         const DesignSystemEmptyState(
-          icon: Icons.touch_app_outlined,
+          icon: LottiIcons.touch,
           title: 'Select a task',
         ),
       );

@@ -94,7 +94,7 @@ class _OnboardingMetricsBodyState extends State<OnboardingMetricsBody> {
               child: DesignSystemListItem(
                 title: 'Failed to load onboarding metrics',
                 subtitle: '${snapshot.error}',
-                leading: const SettingsIcon(icon: Icons.error_outline_rounded),
+                leading: const SettingsIcon(icon: LottiIcons.error),
                 onTap: _refresh,
               ),
             );
@@ -104,29 +104,29 @@ class _OnboardingMetricsBodyState extends State<OnboardingMetricsBody> {
 
           final summary = <({IconData icon, String title, String value})>[
             (
-              icon: Icons.event_available_outlined,
+              icon: LottiIcons.eventConfirmed,
               title: context.messages.onboardingMetricsInstallFirstSeenUtc,
               value: state.installFirstSeen?.toUtc().toIso8601String() ?? '—',
             ),
             (
-              icon: Icons.calendar_today_outlined,
+              icon: LottiIcons.today,
               title: context.messages.onboardingMetricsActiveDays,
               value: '${state.activeDaysCount}',
             ),
             (
-              icon: Icons.looks_one_outlined,
+              icon: LottiIcons.stepNumber,
               title: context.messages.onboardingMetricsActiveDaysInFirstSeven,
               value: '${state.activeDaysInFirst7}',
             ),
             (
-              icon: Icons.flag_outlined,
+              icon: LottiIcons.flag,
               title: context.messages.onboardingMetricsBaselineCohort,
               value: state.isBaselineCohort
                   ? context.messages.onboardingMetricsYes
                   : context.messages.onboardingMetricsNo,
             ),
             (
-              icon: Icons.auto_awesome,
+              icon: LottiIcons.aiSpark,
               title: context.messages.onboardingMetricsReachedRealAha,
               value: state.reachedRealAha
                   ? context.messages.onboardingMetricsYes
@@ -148,14 +148,14 @@ class _OnboardingMetricsBodyState extends State<OnboardingMetricsBody> {
                 DesignSystemListItem(
                   title: name.wireName,
                   subtitle: '${state.countOf(name)}',
-                  leading: const SettingsIcon(icon: Icons.bar_chart_rounded),
+                  leading: const SettingsIcon(icon: LottiIcons.chart),
                   showDivider: true,
                   dividerIndent: SettingsIcon.dividerIndent(tokens),
                 ),
               DesignSystemListItem(
                 title: context.messages.settingsOnboardingTestResetTitle,
                 subtitle: context.messages.settingsOnboardingTestResetSubtitle,
-                leading: const SettingsIcon(icon: Icons.delete_outline_rounded),
+                leading: const SettingsIcon(icon: LottiIcons.delete),
                 trailing: SettingsIcon.trailingChevron(tokens),
                 dividerIndent: SettingsIcon.dividerIndent(tokens),
                 onTap: _resetTestState,

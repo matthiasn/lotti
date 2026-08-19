@@ -87,7 +87,7 @@ class _AudioPlaceholder extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(Icons.play_circle_outline, size: IconSizes.s, color: cs.primary),
+        Icon(LottiIcons.playCircled, size: IconSizes.s, color: cs.primary),
         SizedBox(width: tokens.spacing.step2),
         Flexible(
           child: Text(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 const taskSummaryConst = 'TaskSummary';
 const imageAnalysisConst = 'ImageAnalysis';
@@ -66,20 +67,20 @@ extension AiResponseTypeDisplay on AiResponseType {
     switch (this) {
       // ignore: deprecated_member_use_from_same_package
       case AiResponseType.taskSummary:
-        return Icons.summarize_outlined;
+        return LottiIcons.summarize;
       case AiResponseType.imageAnalysis:
-        return Icons.image_outlined;
+        return LottiIcons.image;
       case AiResponseType.audioTranscription:
-        return Icons.mic_outlined;
+        return LottiIcons.mic;
       // ignore: deprecated_member_use_from_same_package
       case AiResponseType.checklistUpdates:
-        return Icons.checklist_rtl_outlined;
+        return LottiIcons.checkAll;
       case AiResponseType.promptGeneration:
-        return Icons.auto_fix_high_outlined;
+        return LottiIcons.magic;
       case AiResponseType.imagePromptGeneration:
-        return Icons.palette_outlined;
+        return LottiIcons.palette;
       case AiResponseType.imageGeneration:
-        return Icons.auto_awesome_outlined;
+        return LottiIcons.aiSpark;
     }
   }
 

@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/state/event_agent_providers.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/events/ui/widgets/event_ai_summary_card.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -56,7 +57,7 @@ void main() {
         findsOneWidget,
       );
       // No agent → no re-wake affordance.
-      expect(find.byIcon(Icons.refresh), findsNothing);
+      expect(find.byIcon(LottiIcons.refresh), findsNothing);
     });
 
     testWidgets('renders nothing when there is no fallback', (tester) async {
@@ -64,7 +65,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 50));
 
       expect(find.text('Summary'), findsNothing);
-      expect(find.byIcon(Icons.auto_awesome), findsNothing);
+      expect(find.byIcon(LottiIcons.aiSpark), findsNothing);
     });
   });
 
@@ -110,7 +111,7 @@ void main() {
 
       expect(find.text("Couldn't load the recap."), findsOneWidget);
       expect(find.text(awaitingHint), findsNothing);
-      expect(find.byIcon(Icons.refresh), findsOneWidget);
+      expect(find.byIcon(LottiIcons.refresh), findsOneWidget);
     });
   });
 
@@ -130,7 +131,7 @@ void main() {
       // The punchy tldr is shown, not the raw markdown body.
       expect(find.text('A warm rooftop birthday. 🎂'), findsOneWidget);
       expect(find.textContaining('# The night'), findsNothing);
-      expect(find.byIcon(Icons.refresh), findsOneWidget);
+      expect(find.byIcon(LottiIcons.refresh), findsOneWidget);
     });
 
     testWidgets('falls back to the report body when there is no tldr', (
@@ -157,7 +158,7 @@ void main() {
         find.text('Add a photo or note and the recap will appear here.'),
         findsOneWidget,
       );
-      expect(find.byIcon(Icons.refresh), findsOneWidget);
+      expect(find.byIcon(LottiIcons.refresh), findsOneWidget);
     });
 
     testWidgets('refresh re-wakes the agent via triggerReanalysis', (
@@ -175,7 +176,7 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 50));
 
-      await tester.tap(find.byIcon(Icons.refresh));
+      await tester.tap(find.byIcon(LottiIcons.refresh));
       await tester.pump(const Duration(milliseconds: 50));
 
       verify(() => service.triggerReanalysis(agentId)).called(1);

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings_v2/domain/settings_node.dart';
 import 'package:lotti/features/settings_v2/ui/detail/default_panel.dart';
 
@@ -7,7 +8,7 @@ import '../../../../widget_test_utils.dart';
 
 SettingsNode _flagsLeaf() => const SettingsNode(
   id: 'flags',
-  icon: Icons.flag_outlined,
+  icon: LottiIcons.flag,
   title: 'Flags',
   desc: 'Feature flags',
   panel: 'flags',
@@ -36,7 +37,7 @@ void main() {
       tester,
     ) async {
       await _pump(tester, _flagsLeaf());
-      expect(find.byIcon(Icons.construction_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.build), findsOneWidget);
     });
 
     testWidgets('renders the "Panel not yet implemented" headline', (
@@ -66,7 +67,7 @@ void main() {
           tester,
           const SettingsNode(
             id: 'orphan-id',
-            icon: Icons.question_mark_rounded,
+            icon: LottiIcons.help,
             title: 'Orphan',
             desc: '',
           ),

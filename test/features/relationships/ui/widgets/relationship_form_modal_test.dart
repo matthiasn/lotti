@@ -7,6 +7,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/features/categories/ui/widgets/category_field.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
@@ -904,7 +905,7 @@ void main() {
       await tester.pumpWidget(buildForm(initial: categorized()));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.tap(find.byIcon(LottiIcons.close));
       await tester.pumpAndSettle();
 
       await tester.ensureVisible(find.text('Save'));
@@ -968,7 +969,7 @@ void main() {
       await tester.pumpWidget(buildForm(initial: categorized()));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.tap(find.byIcon(LottiIcons.close));
       await tester.pumpAndSettle();
       await tester.tap(find.byType(SwitchListTile));
       await tester.pumpAndSettle();

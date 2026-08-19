@@ -110,7 +110,7 @@ class JournalRootPage extends ConsumerWidget {
                               context.designTokens.spacing.step6,
                         ),
                         child: DesignSystemEmptyState(
-                          icon: Icons.menu_book_outlined,
+                          icon: LottiIcons.book,
                           hint: context.messages.logbookNewEntriesHint,
                         ),
                       );

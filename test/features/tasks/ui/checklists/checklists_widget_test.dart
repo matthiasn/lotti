@@ -13,6 +13,7 @@ import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/design_system/components/motion/size_fade_entrance.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
@@ -316,7 +317,7 @@ void main() {
       expect(find.text('Checklist 2'), findsOneWidget);
       // The inline `+` add button has been removed — adding a checklist now
       // lives on the FAB's create-entry menu (CreateChecklistItem).
-      expect(find.byIcon(Icons.add_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.add), findsNothing);
       // Checklists-level sort menu is shown when there are multiple checklists
       expect(find.byKey(const Key('checklists-menu')), findsOneWidget);
       final entrances = tester
@@ -338,7 +339,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 350));
 
         final title = find.text('Checklist 1');
-        final chevron = find.byIcon(Icons.expand_more).first;
+        final chevron = find.byIcon(LottiIcons.expand).first;
         final titleBefore = tester.getTopLeft(title);
         final chevronBefore = tester.getCenter(chevron);
 
@@ -623,7 +624,7 @@ void main() {
       // checklist is exclusively via the FAB.
       expect(find.byType(ChecklistCardWrapper), findsNothing);
       expect(find.text('Checklists'), findsNothing);
-      expect(find.byIcon(Icons.add_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.add), findsNothing);
       expect(find.byKey(const Key('checklists-menu')), findsNothing);
     });
 
@@ -721,7 +722,7 @@ void main() {
       await tester.pumpWidget(createTestWidget());
 
       // The add button is rendered but tapping requires full widget tree
-      // await tester.tap(find.byIcon(Icons.add_rounded));
+      // await tester.tap(find.byIcon(LottiIcons.add));
       // await tester.pump();
 
       // verify(() => mockChecklistRepository.createChecklist(taskId: 'task1'))
@@ -796,10 +797,10 @@ void main() {
       await tester.pump(const Duration(milliseconds: 350));
 
       // Test that the menu contains the sort option
-      expect(find.byIcon(Icons.sort), findsOneWidget);
+      expect(find.byIcon(LottiIcons.sort), findsOneWidget);
 
       // Tap on sort option
-      await tester.tap(find.byIcon(Icons.sort));
+      await tester.tap(find.byIcon(LottiIcons.sort));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
       await tester.pump(const Duration(milliseconds: 350));
@@ -827,7 +828,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
         await tester.pump(const Duration(milliseconds: 350));
-        await tester.tap(find.byIcon(Icons.sort));
+        await tester.tap(find.byIcon(LottiIcons.sort));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
         await tester.pump(const Duration(milliseconds: 350));
@@ -881,7 +882,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
         await tester.pump(const Duration(milliseconds: 350));
-        await tester.tap(find.byIcon(Icons.sort));
+        await tester.tap(find.byIcon(LottiIcons.sort));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
         await tester.pump(const Duration(milliseconds: 350));
@@ -951,7 +952,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
         await tester.pump(const Duration(milliseconds: 350));
-        await tester.tap(find.byIcon(Icons.sort));
+        await tester.tap(find.byIcon(LottiIcons.sort));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
         await tester.pump(const Duration(milliseconds: 350));

@@ -258,8 +258,8 @@ class _HabitActionRowState extends ConsumerState<HabitActionRow>
             children: [
               Icon(
                 completionType == HabitCompletionType.fail
-                    ? Icons.cancel_rounded
-                    : Icons.check_circle_rounded,
+                    ? LottiIcons.closeCircled
+                    : LottiIcons.confirmCircled,
                 color: habitCompletionColor(completionType),
               ),
               SizedBox(width: tokens.spacing.step4),
@@ -335,13 +335,13 @@ class _HabitActionRowState extends ConsumerState<HabitActionRow>
               background: _SwipeActionBackground(
                 alignment: Alignment.centerLeft,
                 color: habitCompletionColor(HabitCompletionType.success),
-                icon: Icons.check_circle_rounded,
+                icon: LottiIcons.confirmCircled,
                 label: messages.completeHabitSuccessButton,
               ),
               secondaryBackground: _SwipeActionBackground(
                 alignment: Alignment.centerRight,
                 color: habitCompletionColor(HabitCompletionType.fail),
-                icon: Icons.cancel_rounded,
+                icon: LottiIcons.closeCircled,
                 label: messages.completeHabitFailButton,
               ),
               confirmDismiss: (direction) async {
@@ -486,7 +486,7 @@ class _HabitCardBody extends StatelessWidget {
                         children: [
                           if (habitDefinition.priority ?? false) ...[
                             Icon(
-                              Icons.star_rounded,
+                              LottiIcons.star,
                               size: tokens.spacing.step5,
                               color: starredGold,
                             ),
@@ -651,7 +651,7 @@ class _StreakChainState extends State<_StreakChain>
                 ],
                 SizedBox(width: tokens.spacing.step2),
                 Icon(
-                  Icons.local_fire_department_rounded,
+                  LottiIcons.streak,
                   size: tokens.spacing.step5,
                   color: tokens.colors.interactive.enabled,
                 ),
@@ -739,7 +739,7 @@ class _CompleteButton extends StatelessWidget {
                 transitionBuilder: (child, animation) =>
                     ScaleTransition(scale: animation, child: child),
                 child: Icon(
-                  completed ? Icons.check_circle_rounded : Icons.add_rounded,
+                  completed ? LottiIcons.confirmCircled : LottiIcons.add,
                   key: ValueKey(completed),
                   color: completed ? doneColor : accent,
                   size: tokens.spacing.step7,

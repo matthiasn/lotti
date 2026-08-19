@@ -15,6 +15,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/journal/state/journal_focus_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
@@ -204,7 +205,7 @@ void main() {
       );
 
       // test text entry is starred
-      expect(find.byIcon(Icons.star_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIconsFilled.star), findsOneWidget);
 
       // Decoder bars are mounted at the bottom of the page Stack and retain
       // the three entry-processing routes plus tap-to-progress behavior.
@@ -324,8 +325,8 @@ void main() {
       // test weight entry is not starred: the favorite toggle is always shown
       // (so the header action set is consistent across types), so an unstarred
       // entry renders the outline star, not the filled one.
-      expect(find.byIcon(Icons.star_rounded), findsNothing);
-      expect(find.byIcon(Icons.star_outline_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIconsFilled.star), findsNothing);
+      expect(find.byIcon(LottiIcons.star), findsOneWidget);
     });
 
     // -------------------------------------------------------------------------

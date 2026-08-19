@@ -501,7 +501,7 @@ class _CategoryChip extends StatelessWidget {
         // Trailing check is the non-colour selection cue (accessibility).
         if (selected) ...[
           SizedBox(width: tokens.spacing.step2),
-          Icon(Icons.check_rounded, size: tokens.spacing.step5, color: fg),
+          Icon(LottiIcons.confirm, size: tokens.spacing.step5, color: fg),
         ],
       ],
     );
@@ -607,7 +607,7 @@ class _AddOwnChip extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              Icons.add_rounded,
+              LottiIcons.add,
               size: tokens.spacing.step5,
               color: textMedium,
             ),

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
@@ -100,8 +99,8 @@ class HabitsChartCard extends ConsumerWidget {
                       isSelected: state.zeroBased,
                       icon: Icon(
                         state.zeroBased
-                            ? MdiIcons.unfoldMoreHorizontal
-                            : MdiIcons.unfoldLessHorizontal,
+                            ? LottiIcons.expandBoth
+                            : LottiIcons.collapseBoth,
                         size: tokens.spacing.step5,
                         color: tokens.colors.text.mediumEmphasis,
                       ),

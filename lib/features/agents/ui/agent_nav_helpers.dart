@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 
@@ -41,13 +42,13 @@ void navigateToAgentInstance(String agentId) {
 
 /// Standard back button used across agent UI pages.
 ///
-/// Uses [Icons.chevron_left] at size 30 with the outline color from
+/// Uses [LottiIcons.chevronLeft] at size 30 with the outline color from
 /// the current theme, and includes a localized back-button tooltip.
 IconButton agentBackButton(BuildContext context, {VoidCallback? onPressed}) {
   return IconButton(
     tooltip: MaterialLocalizations.of(context).backButtonTooltip,
     icon: Icon(
-      Icons.chevron_left,
+      LottiIcons.chevronLeft,
       size: 30,
       color: Theme.of(context).colorScheme.outline,
     ),

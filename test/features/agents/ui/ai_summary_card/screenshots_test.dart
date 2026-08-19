@@ -36,6 +36,7 @@ import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../daily_os_next/screenshot_harness.dart';
 import '../../test_data/entity_factories.dart';
@@ -265,9 +266,9 @@ Future<void> _capture(
       case _Hover.none:
         break;
       case _Hover.modelRow:
-        await _hoverOver(tester, find.byIcon(Icons.psychology_outlined));
+        await _hoverOver(tester, find.byIcon(LottiIcons.reasoning));
       case _Hover.header:
-        await _hoverOver(tester, find.byIcon(Icons.auto_awesome_rounded));
+        await _hoverOver(tester, find.byIcon(LottiIcons.aiSpark));
     }
   });
 

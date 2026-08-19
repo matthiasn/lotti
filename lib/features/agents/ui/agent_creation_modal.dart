@@ -122,7 +122,7 @@ class _TemplateSelectionPageState extends State<_TemplateSelectionPage> {
               title: template.displayName,
               subtitle: _templateKindLabel(context, template.kind),
               leading: Icon(
-                Icons.smart_toy_outlined,
+                LottiIcons.aiModel,
                 size: 20,
                 color: tokens.colors.interactive.enabled,
               ),

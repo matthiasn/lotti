@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_list_scaffold.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_list_scaffold_widgets.dart';
 
@@ -69,13 +70,13 @@ void main() {
                 _TestFilter.waiting: SyncFilterOption<_TestItem>(
                   labelBuilder: (_) => 'waiting',
                   predicate: (_) => true,
-                  icon: Icons.schedule_rounded,
+                  icon: LottiIcons.schedule,
                   hideCountWhenZero: true,
                 ),
                 _TestFilter.failed: SyncFilterOption<_TestItem>(
                   labelBuilder: (_) => 'failed',
                   predicate: (_) => true,
-                  icon: Icons.error_outline_rounded,
+                  icon: LottiIcons.error,
                   countAccentColor: accent,
                 ),
               },

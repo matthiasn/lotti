@@ -187,7 +187,7 @@ class DemoTryButton extends ConsumerWidget {
 
     return DesignSystemButton(
       label: context.messages.demoTryButton,
-      leadingIcon: Icons.science_outlined,
+      leadingIcon: LottiIcons.science,
       variant: DesignSystemButtonVariant.secondary,
       onPressed: () => unawaited(launchDemoEnter(context, gateway: gateway)),
     );

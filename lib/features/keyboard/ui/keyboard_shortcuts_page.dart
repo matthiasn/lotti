@@ -90,7 +90,7 @@ Future<void> showKeyboardShortcutsOverlay(BuildContext context) {
                         dialogContext,
                       ).closeButtonTooltip,
                       onPressed: () => Navigator.of(dialogContext).pop(),
-                      icon: const Icon(Icons.close_rounded),
+                      icon: const Icon(LottiIcons.close),
                     ),
                   ],
                 ),

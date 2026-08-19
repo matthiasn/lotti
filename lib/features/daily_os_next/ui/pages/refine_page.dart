@@ -431,7 +431,7 @@ class RefinePage extends ConsumerWidget {
           ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.close_rounded),
+          icon: const Icon(LottiIcons.close),
           tooltip: context.messages.dailyOsNextDayBack,
           onPressed: () => Navigator.of(context).maybePop(),
         ),

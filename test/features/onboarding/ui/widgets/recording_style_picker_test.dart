@@ -80,8 +80,8 @@ void main() {
   ) async {
     await pumpPicker(tester); // default selection is modern
     // Exactly one card is selected at a time.
-    expect(find.byIcon(Icons.radio_button_checked_rounded), findsOneWidget);
-    expect(find.byIcon(Icons.radio_button_unchecked_rounded), findsOneWidget);
+    expect(find.byIcon(LottiIcons.radioSelected), findsOneWidget);
+    expect(find.byIcon(LottiIcons.radioUnselected), findsOneWidget);
   });
 
   testWidgets(

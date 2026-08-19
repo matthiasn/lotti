@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/ui/goal_agent_chat_pane.dart';
 
@@ -96,7 +97,7 @@ void main() {
 
     await tester.enterText(find.byType(TextField), 'What should I do today?');
     await tester.pump();
-    expect(find.byIcon(Icons.send_rounded), findsOneWidget);
+    expect(find.byIcon(LottiIcons.send), findsOneWidget);
   });
 
   testWidgets('an unresolved health load shows NO coarse label — loading is '

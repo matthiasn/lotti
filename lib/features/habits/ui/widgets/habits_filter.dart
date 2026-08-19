@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/ui/widgets/habits_tool_button.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -19,7 +20,7 @@ class HabitsFilter extends ConsumerWidget {
 
     return HabitsToolButton(
       key: const Key('habit_category_filter'),
-      icon: isFiltering ? Icons.filter_alt : Icons.filter_alt_outlined,
+      icon: LottiIcons.filter,
       active: isFiltering,
       semanticLabel: context.messages.habitCategoryLabel,
       onPressed: () async {

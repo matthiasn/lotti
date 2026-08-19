@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/ui/profile_selector.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/inference_profile_controller.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/settings/settings_picker_field.dart';
 
@@ -154,9 +155,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+    expect(find.byIcon(LottiIcons.close), findsOneWidget);
 
-    await tester.tap(find.byIcon(Icons.close_rounded));
+    await tester.tap(find.byIcon(LottiIcons.close));
     await tester.pumpAndSettle();
 
     expect(clearedTo, isNull);
@@ -211,7 +212,7 @@ void main() {
     await tester.tap(find.byType(InkWell).first);
     await tester.pumpAndSettle();
 
-    expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+    expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
   });
 
   testWidgets('shows desktop icon for desktopOnly profiles', (tester) async {
@@ -234,7 +235,7 @@ void main() {
     await tester.tap(find.byType(InkWell).first);
     await tester.pumpAndSettle();
 
-    expect(find.byIcon(Icons.desktop_windows_outlined), findsOneWidget);
+    expect(find.byIcon(LottiIcons.computer), findsOneWidget);
   });
 
   testWidgets('disabled when no profiles available', (tester) async {
@@ -253,7 +254,7 @@ void main() {
       findsOneWidget,
     );
     // The dropdown arrow is still visible but InkWell.onTap is null.
-    expect(find.byIcon(Icons.keyboard_arrow_down_rounded), findsOneWidget);
+    expect(find.byIcon(LottiIcons.chevronDown), findsOneWidget);
   });
 
   group('SettingsProfilePickerField', () {
@@ -333,7 +334,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // The kit field renders the clear affordance as a close icon.
-      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.tap(find.byIcon(LottiIcons.close));
       await tester.pumpAndSettle();
 
       expect(clearedTo, isNull);
@@ -366,7 +367,7 @@ void main() {
       );
       expect(find.text('missing-profile'), findsNothing);
 
-      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.tap(find.byIcon(LottiIcons.close));
       await tester.pump();
 
       expect(clearedTo, isNull);

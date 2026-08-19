@@ -134,7 +134,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
         title: messages.measurableDeleteQuestion,
         actions: [
           ModalSheetAction(
-            icon: Icons.warning,
+            icon: LottiIcons.warning,
             label: messages.measurableDeleteConfirm,
             key: deleteKey,
             isDestructiveAction: true,
@@ -239,14 +239,14 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                     name: 'favorite',
                     initialValue: item.favorite ?? false,
                     title: messages.favoriteLabel,
-                    icon: Icons.star_outline_rounded,
+                    icon: LottiIcons.star,
                   ),
                   FormSwitch(
                     name: 'private',
                     initialValue: item.private,
                     title: messages.privateLabel,
                     subtitle: messages.privateSwitchDescription,
-                    icon: Icons.lock_outline,
+                    icon: LottiIcons.lock,
                   ),
                 ],
               ),

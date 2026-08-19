@@ -129,7 +129,7 @@ class GoalAgentChatPane extends ConsumerWidget {
               child: Row(
                 children: [
                   Icon(
-                    Icons.auto_awesome_rounded,
+                    LottiIcons.aiSpark,
                     color: tokens.colors.interactive.enabled,
                   ),
                   SizedBox(width: tokens.spacing.step3),

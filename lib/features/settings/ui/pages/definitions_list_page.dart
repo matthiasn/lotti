@@ -160,7 +160,7 @@ class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>>
                 ? [
                     DesignSystemButton(
                       label: widget.createLabel,
-                      leadingIcon: Icons.add,
+                      leadingIcon: LottiIcons.add,
                       onPressed: widget.onCreate,
                     ),
                   ]
@@ -180,7 +180,7 @@ class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>>
             error: (error, _) => [
               SliverFillRemaining(
                 child: _ListStateMessage(
-                  icon: Icons.error_outline,
+                  icon: LottiIcons.error,
                   iconColor:
                       context.designTokens.colors.alert.error.defaultColor,
                   title: widget.errorTitle,
@@ -282,7 +282,7 @@ class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>>
     if (!noItemsAtAll && query.isNotEmpty) {
       return SliverFillRemaining(
         child: _ListStateMessage(
-          icon: Icons.search_off_rounded,
+          icon: LottiIcons.searchOff,
           title: widget.noMatchMessage(query),
           action: widget.noMatchActionBuilder?.call(context, query),
         ),
@@ -301,7 +301,7 @@ class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>>
             ? null
             : DesignSystemButton(
                 label: widget.createLabel,
-                leadingIcon: Icons.add,
+                leadingIcon: LottiIcons.add,
                 onPressed: widget.onCreate,
               ),
       ),

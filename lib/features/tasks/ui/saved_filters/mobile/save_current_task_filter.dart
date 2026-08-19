@@ -150,7 +150,7 @@ class _SaveFilterNameFormState extends State<_SaveFilterNameForm> {
           primary: DesignSystemButton(
             key: SaveCurrentTaskFilterKeys.saveButton,
             label: messages.tasksSavedFiltersSavePopupSave,
-            leadingIcon: Icons.bookmark_add_rounded,
+            leadingIcon: LottiIcons.bookmark,
             size: DesignSystemButtonSize.large,
             fullWidth: true,
             onPressed: _canSave ? _submit : null,

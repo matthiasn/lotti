@@ -73,22 +73,22 @@ class AiProfileCard extends StatelessWidget {
 
     final slots = <_ProfileSlot>[
       _ProfileSlot(
-        icon: Icons.psychology_rounded,
+        icon: LottiIcons.reasoning,
         label: messages.aiCapabilityChipThinking,
         modelId: profile.thinkingModelId,
       ),
       _ProfileSlot(
-        icon: Icons.image_outlined,
+        icon: LottiIcons.image,
         label: messages.aiCapabilityChipImageRecognition,
         modelId: profile.imageRecognitionModelId,
       ),
       _ProfileSlot(
-        icon: Icons.mic_none_rounded,
+        icon: LottiIcons.micIdle,
         label: messages.aiCapabilityChipTranscription,
         modelId: profile.transcriptionModelId,
       ),
       _ProfileSlot(
-        icon: Icons.brush_outlined,
+        icon: LottiIcons.brush,
         label: messages.aiCapabilityChipImageGeneration,
         modelId: profile.imageGenerationModelId,
       ),
@@ -214,7 +214,7 @@ class _ProfileSlotRow extends StatelessWidget {
         ),
         SizedBox(width: tokens.spacing.step2),
         Icon(
-          Icons.arrow_forward_rounded,
+          LottiIcons.forward,
           size: 12,
           color: tokens.colors.text.lowEmphasis,
         ),

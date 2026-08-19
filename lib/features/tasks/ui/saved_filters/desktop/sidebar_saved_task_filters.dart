@@ -112,7 +112,7 @@ class _SidebarSavedTaskFiltersState
               _DisclosureRow(
                 key: SidebarSavedTaskFiltersKeys.showMore,
                 label: messages.tasksSavedFiltersShowMore(hiddenCount),
-                icon: Icons.expand_more_rounded,
+                icon: LottiIcons.expand,
                 onTap: () => setState(() => _showAll = true),
               )
             else if (_showAll &&
@@ -121,7 +121,7 @@ class _SidebarSavedTaskFiltersState
               _DisclosureRow(
                 key: SidebarSavedTaskFiltersKeys.showLess,
                 label: messages.tasksSavedFiltersShowLess,
-                icon: Icons.expand_less_rounded,
+                icon: LottiIcons.collapse,
                 onTap: () => setState(() => _showAll = false),
               ),
           ],
@@ -204,7 +204,7 @@ class _SectionHeader extends StatelessWidget {
                     child: Padding(
                       padding: EdgeInsets.all(tokens.spacing.step2),
                       child: Icon(
-                        Icons.tune_rounded,
+                        LottiIcons.tune,
                         size: tokens.spacing.step4,
                         color: tokens.colors.text.mediumEmphasis,
                       ),
@@ -328,7 +328,7 @@ class _AllTasksIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     return Icon(
-      Icons.inbox_outlined,
+      LottiIcons.inbox,
       size: tokens.spacing.step4,
       color: tokens.colors.text.mediumEmphasis,
     );

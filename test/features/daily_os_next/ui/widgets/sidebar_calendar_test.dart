@@ -141,13 +141,13 @@ void main() {
         );
         await tester.pump();
 
-        await tester.tap(find.byIcon(Icons.chevron_right_rounded));
+        await tester.tap(find.byIcon(LottiIcons.chevronRight));
         await tester.pump();
         expect(find.text('June 2026'), findsOneWidget);
 
-        await tester.tap(find.byIcon(Icons.chevron_left_rounded));
+        await tester.tap(find.byIcon(LottiIcons.chevronLeft));
         await tester.pump();
-        await tester.tap(find.byIcon(Icons.chevron_left_rounded));
+        await tester.tap(find.byIcon(LottiIcons.chevronLeft));
         await tester.pump();
         expect(find.text('April 2026'), findsOneWidget);
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/ui/widgets/category_correction_examples.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../../test_helper.dart';
 
@@ -70,7 +71,7 @@ void main() {
         ),
         findsOneWidget,
       );
-      expect(find.byIcon(Icons.info_outline), findsOneWidget);
+      expect(find.byIcon(LottiIcons.info), findsOneWidget);
     });
 
     testWidgets('shows empty-state message when examples is an empty list', (
@@ -108,7 +109,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byIcon(Icons.warning_amber_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.warning), findsNothing);
     });
   });
 
@@ -235,7 +236,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byIcon(Icons.warning_amber_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.warning), findsNothing);
     });
 
     testWidgets('renders all tiles for a small list', (tester) async {
@@ -298,7 +299,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.warning), findsOneWidget);
       // Warning text should mention the count and the max prompt limit.
       expect(find.textContaining('401'), findsOneWidget);
       expect(
@@ -331,7 +332,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byIcon(Icons.warning_amber_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.warning), findsNothing);
     });
   });
 
@@ -388,7 +389,7 @@ void main() {
       await gesture.moveBy(const Offset(-200, 0));
       await tester.pump();
 
-      expect(find.byIcon(Icons.delete), findsOneWidget);
+      expect(find.byIcon(LottiIcons.delete), findsOneWidget);
 
       await gesture.cancel();
       await tester.pumpAndSettle();

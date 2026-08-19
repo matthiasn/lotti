@@ -14,6 +14,7 @@ import 'package:lotti/features/agents/ui/soul_selector.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
@@ -262,7 +263,7 @@ class _AgentTemplateDetailPageState
                           '${widget.templateId}/review',
                         ),
                         label: context.messages.agentRitualReviewTitle,
-                        leadingIcon: Icons.rate_review,
+                        leadingIcon: LottiIcons.editNote,
                         size: DesignSystemButtonSize.large,
                       ),
                     ],

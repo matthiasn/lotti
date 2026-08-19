@@ -24,7 +24,7 @@ void main() {
       expect(
         find.descendant(
           of: find.byKey(key),
-          matching: find.byIcon(Icons.help_outline_rounded),
+          matching: find.byIcon(LottiIcons.help),
         ),
         findsOneWidget,
       );
@@ -38,7 +38,7 @@ void main() {
           const DesignSystemTooltipIcon(
             key: key,
             message: 'Info text',
-            icon: Icons.info_outline_rounded,
+            icon: LottiIcons.info,
           ),
           theme: DesignSystemTheme.light(),
         ),
@@ -47,7 +47,7 @@ void main() {
       expect(
         find.descendant(
           of: find.byKey(key),
-          matching: find.byIcon(Icons.info_outline_rounded),
+          matching: find.byIcon(LottiIcons.info),
         ),
         findsOneWidget,
       );

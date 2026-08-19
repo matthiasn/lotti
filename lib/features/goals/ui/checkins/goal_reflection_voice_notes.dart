@@ -97,7 +97,7 @@ class GoalReflectionVoiceNotes extends ConsumerWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      Icons.mic_rounded,
+                      LottiIcons.mic,
                       size: IconSizes.xs,
                       color: tokens.colors.interactive.enabled,
                     ),

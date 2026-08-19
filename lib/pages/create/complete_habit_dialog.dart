@@ -265,7 +265,7 @@ class _CompletionForm extends StatelessWidget {
                       padding: EdgeInsets.all(tokens.spacing.step3),
                       icon: Semantics(
                         label: messages.habitCloseCompletionLabel,
-                        child: const Icon(Icons.close_rounded),
+                        child: const Icon(LottiIcons.close),
                       ),
                       onPressed: onClose,
                     ),

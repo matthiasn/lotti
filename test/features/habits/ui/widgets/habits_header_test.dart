@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
 import 'package:lotti/features/habits/ui/widgets/habits_filter.dart';
@@ -71,7 +72,7 @@ void main() {
 
     expect(fake.toggleShowSearchCalls, 0);
 
-    await tester.tap(find.byIcon(Icons.search));
+    await tester.tap(find.byIcon(LottiIcons.search));
     await tester.pump(const Duration(milliseconds: 100));
 
     expect(fake.toggleShowSearchCalls, 1);
@@ -86,10 +87,10 @@ void main() {
     // The header has two tool buttons (search + category filter); pick the
     // search one by its icon.
     final button = tester.widget<HabitsToolButton>(
-      find.widgetWithIcon(HabitsToolButton, Icons.search),
+      find.widgetWithIcon(HabitsToolButton, LottiIcons.search),
     );
     expect(button.active, showSearch);
-    expect(button.icon, Icons.search);
+    expect(button.icon, LottiIcons.search);
   }
 
   testWidgets('search tool button is active when state.showSearch is true', (
@@ -159,14 +160,17 @@ void main() {
 
     expect(find.text('Habits'), findsOneWidget);
     expect(find.byType(HabitStatusSegmentedControl), findsOneWidget);
-    expect(find.widgetWithIcon(HabitsToolButton, Icons.search), findsOneWidget);
+    expect(
+      find.widgetWithIcon(HabitsToolButton, LottiIcons.search),
+      findsOneWidget,
+    );
 
     // The filter dropped to its own row: it sits below the search tool.
     final filterTop = tester
         .getTopLeft(find.byType(HabitStatusSegmentedControl))
         .dy;
     final searchTop = tester
-        .getTopLeft(find.widgetWithIcon(HabitsToolButton, Icons.search))
+        .getTopLeft(find.widgetWithIcon(HabitsToolButton, LottiIcons.search))
         .dy;
     expect(filterTop, greaterThan(searchTop));
   });

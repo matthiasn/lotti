@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/split_buttons/design_system_split_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_split_button_widgetbook.dart';
 
 import 'widgetbook_test_helpers.dart';
@@ -19,8 +19,8 @@ void main() {
       expect(find.text('Small'), findsAtLeastNWidgets(1));
       expect(find.text('Compact'), findsAtLeastNWidgets(1));
       expect(find.text('Default'), findsAtLeastNWidgets(1));
-      expect(find.byIcon(Icons.keyboard_arrow_down), findsWidgets);
-      expect(find.byIcon(Icons.keyboard_arrow_up), findsWidgets);
+      expect(find.byIcon(LottiIcons.chevronDown), findsWidgets);
+      expect(find.byIcon(LottiIcons.chevronUp), findsWidgets);
 
       await tester.tap(find.byType(DesignSystemSplitButton).first);
       await tester.pump();

@@ -53,7 +53,7 @@ class SettingsDeleteRow extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
-                  Icons.delete_outline_rounded,
+                  LottiIcons.delete,
                   size: spacing.step5,
                   color: foreground,
                 ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/app_bar/settings_header_bar.dart';
@@ -41,7 +42,7 @@ void main() {
       // Tapping back returns to the launcher: the page stack popped (mirroring
       // the system back gesture) instead of a URL-history beamBack that no-ops
       // on the drill-down.
-      await tester.tap(find.byIcon(Icons.chevron_left));
+      await tester.tap(find.byIcon(LottiIcons.chevronLeft));
       await tester.pumpAndSettle();
       expect(find.text('go'), findsOneWidget);
       expect(find.text('Maintenance'), findsNothing);
@@ -65,7 +66,7 @@ void main() {
     );
 
     await tester.pumpAndSettle();
-    await tester.tap(find.byIcon(Icons.chevron_left));
+    await tester.tap(find.byIcon(LottiIcons.chevronLeft));
     await tester.pumpAndSettle();
     expect(backs, 1);
   });
@@ -90,7 +91,7 @@ void main() {
       );
 
       await tester.pumpAndSettle();
-      await tester.tap(find.byIcon(Icons.chevron_left));
+      await tester.tap(find.byIcon(LottiIcons.chevronLeft));
       await tester.pumpAndSettle();
       // ignore: unnecessary_lambdas
       verify(() => nav.beamBack()).called(1);

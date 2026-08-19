@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/widgets/settings_card.dart';
 
 import '../../../../test_helper.dart';
@@ -12,16 +13,16 @@ void main() {
           onTap: () {},
           title: 'Sync',
           subtitle: const Text('Everything in order'),
-          leading: const Icon(Icons.sync),
-          trailing: const Icon(Icons.chevron_right),
+          leading: const Icon(LottiIcons.sync),
+          trailing: const Icon(LottiIcons.chevronRight),
         ),
       ),
     );
 
     expect(find.text('Sync'), findsOneWidget);
     expect(find.text('Everything in order'), findsOneWidget);
-    expect(find.byIcon(Icons.sync), findsOneWidget);
-    expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+    expect(find.byIcon(LottiIcons.sync), findsOneWidget);
+    expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
   });
 
   testWidgets('invokes onTap when the tile is tapped', (tester) async {

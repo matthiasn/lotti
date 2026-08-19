@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/themes/theme.dart';
 
 /// Reusable selection option widget for modal selections
@@ -180,7 +181,7 @@ class _DefaultSelectionIndicator extends StatelessWidget {
           ],
         ),
         child: Icon(
-          Icons.check_rounded,
+          LottiIcons.confirm,
           color: context.colorScheme.onPrimary,
           size: 16,
         ),

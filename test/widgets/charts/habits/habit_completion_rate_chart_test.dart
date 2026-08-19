@@ -3,6 +3,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
 import 'package:lotti/get_it.dart';
@@ -175,7 +176,7 @@ void main() {
       // 50% average → 30 pts to the 80% goal (gain-framed, not pass/fail).
       expect(find.textContaining('30 pts to goal'), findsOneWidget);
       // A full prior week exists and is identical → flat trend.
-      expect(find.byIcon(Icons.trending_flat_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.forward), findsOneWidget);
       // The never-kept habit is named as the laggard, gain-framed.
       expect(find.textContaining(habitFlossingDueLater.name), findsOneWidget);
       expect(find.textContaining('kept 0 of 14'), findsOneWidget);
@@ -217,9 +218,9 @@ void main() {
         state: HabitsState.initial().copyWith(days: days, timeSpanDays: 7),
       );
 
-      expect(find.byIcon(Icons.trending_flat_rounded), findsNothing);
-      expect(find.byIcon(Icons.arrow_upward_rounded), findsNothing);
-      expect(find.byIcon(Icons.arrow_downward_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.forward), findsNothing);
+      expect(find.byIcon(LottiIcons.arrowUp), findsNothing);
+      expect(find.byIcon(LottiIcons.arrowDown), findsNothing);
     });
   });
 

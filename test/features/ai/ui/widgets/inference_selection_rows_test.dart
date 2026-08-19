@@ -64,7 +64,7 @@ void main() {
         tokens: dsTokensLight,
       ),
     );
-    expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
+    expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
 
     await tester.tap(find.byKey(const ValueKey('provider-row')));
     expect(taps, 1);
@@ -113,7 +113,7 @@ void main() {
     expect(overrideRow.selectedLabel, 'Selected');
     expect(find.text('Default'), findsOneWidget);
     expect(find.text('Selected'), findsOneWidget);
-    expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+    expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
 
     await tester.tap(find.byKey(const ValueKey('default-row')));
     await tester.tap(find.byKey(const ValueKey('override-row')));

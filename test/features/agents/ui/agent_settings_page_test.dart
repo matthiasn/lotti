@@ -17,6 +17,7 @@ import 'package:lotti/features/agents/ui/listing/widgets/soul_avatar.dart';
 import 'package:lotti/features/agents/ui/pending_wakes/agent_pending_wakes_page.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -320,7 +321,7 @@ void main() {
       );
       // The new shared row uses an hourglass icon for "pending" wakes,
       // sourced from `_PendingWakeTrailing`'s leading.
-      expect(find.byIcon(Icons.hourglass_bottom_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.pending), findsOneWidget);
     });
 
     testWidgets('keeps all tab bodies mounted in an IndexedStack', (
@@ -445,7 +446,7 @@ void main() {
       await tester.tap(find.text(context.messages.agentTemplatesTitle));
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.byIcon(Icons.add_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.add), findsOneWidget);
     });
 
     testWidgets('shows error state when templates fail to load', (
@@ -559,7 +560,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
 
-      await tester.tap(find.byIcon(Icons.add_rounded));
+      await tester.tap(find.byIcon(LottiIcons.add));
 
       expect(navigatedPath, '/settings/agents/templates/create');
     });
@@ -707,7 +708,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
 
-      await tester.tap(find.byIcon(Icons.add_rounded));
+      await tester.tap(find.byIcon(LottiIcons.add));
 
       expect(navigatedPath, '/settings/agents/souls/create');
     });
@@ -802,7 +803,7 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.pump(const Duration(milliseconds: 100));
 
-      await tester.tap(find.byIcon(Icons.chevron_left));
+      await tester.tap(find.byIcon(LottiIcons.chevronLeft));
       await tester.pump();
 
       verify(mockNavService.beamBack).called(1);

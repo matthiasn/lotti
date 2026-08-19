@@ -48,7 +48,7 @@ final evolutionProposalItem = CatalogItem(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const ModernIconContainer(
-                  icon: Icons.auto_awesome_rounded,
+                  icon: LottiIcons.aiSpark,
                   isCompact: true,
                 ),
                 SizedBox(width: tokens.spacing.step4),
@@ -262,7 +262,7 @@ final soulProposalItem = CatalogItem(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const ModernIconContainer(
-                  icon: Icons.psychology_rounded,
+                  icon: LottiIcons.reasoning,
                   isCompact: true,
                 ),
                 SizedBox(width: tokens.spacing.step4),
@@ -302,7 +302,7 @@ final soulProposalItem = CatalogItem(
                 child: Row(
                   children: [
                     Icon(
-                      Icons.warning_amber_rounded,
+                      LottiIcons.warning,
                       color: colorScheme.error,
                       size: 20,
                     ),

@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/ui/empty_state_widget.dart';
 
 void main() {
   group('EmptyStateWidget Tests', () {
     testWidgets('displays required elements', (tester) async {
-      const icon = Icons.folder_open;
+      const icon = LottiIcons.folderOpen;
       const title = 'No items found';
 
       await tester.pumpWidget(
@@ -30,7 +31,7 @@ void main() {
     });
 
     testWidgets('displays description when provided', (tester) async {
-      const icon = Icons.search_off;
+      const icon = LottiIcons.searchOff;
       const title = 'No results';
       const description = 'Try adjusting your search filters';
 
@@ -59,7 +60,7 @@ void main() {
         const MaterialApp(
           home: Scaffold(
             body: EmptyStateWidget(
-              icon: Icons.inbox,
+              icon: LottiIcons.inbox,
               title: 'Empty inbox',
               iconSize: iconSize,
             ),
@@ -67,7 +68,7 @@ void main() {
         ),
       );
 
-      final icon = tester.widget<Icon>(find.byIcon(Icons.inbox));
+      final icon = tester.widget<Icon>(find.byIcon(LottiIcons.inbox));
       expect(icon.size, iconSize);
     });
 
@@ -76,14 +77,14 @@ void main() {
         const MaterialApp(
           home: Scaffold(
             body: EmptyStateWidget(
-              icon: Icons.inbox,
+              icon: LottiIcons.inbox,
               title: 'Empty inbox',
             ),
           ),
         ),
       );
 
-      final icon = tester.widget<Icon>(find.byIcon(Icons.inbox));
+      final icon = tester.widget<Icon>(find.byIcon(LottiIcons.inbox));
       expect(icon.size, 48);
     });
 
@@ -94,7 +95,7 @@ void main() {
         const MaterialApp(
           home: Scaffold(
             body: EmptyStateWidget(
-              icon: Icons.folder_open,
+              icon: LottiIcons.folderOpen,
               title: 'No items',
             ),
           ),
@@ -122,7 +123,7 @@ void main() {
         const MaterialApp(
           home: Scaffold(
             body: EmptyStateWidget(
-              icon: Icons.folder_open,
+              icon: LottiIcons.folderOpen,
               title: 'No items',
               showContainer: false,
             ),
@@ -151,7 +152,7 @@ void main() {
         const MaterialApp(
           home: Scaffold(
             body: EmptyStateWidget(
-              icon: Icons.search,
+              icon: LottiIcons.search,
               title: 'No results found',
               description: 'Try a different search term',
             ),
@@ -182,7 +183,7 @@ void main() {
           theme: theme,
           home: const Scaffold(
             body: EmptyStateWidget(
-              icon: Icons.inbox,
+              icon: LottiIcons.inbox,
               title: 'Empty',
               description: 'No items to display',
             ),
@@ -191,7 +192,7 @@ void main() {
       );
 
       // Icon should use disabled color
-      final icon = tester.widget<Icon>(find.byIcon(Icons.inbox));
+      final icon = tester.widget<Icon>(find.byIcon(LottiIcons.inbox));
       expect(icon.color, theme.disabledColor);
 
       // Description should use disabled color
@@ -218,7 +219,7 @@ void main() {
               child: SizedBox(
                 width: 300,
                 child: EmptyStateWidget(
-                  icon: Icons.info,
+                  icon: LottiIcons.info,
                   title: longTitle,
                   description: longDescription,
                 ),
@@ -238,7 +239,7 @@ void main() {
         const MaterialApp(
           home: Scaffold(
             body: EmptyStateWidget(
-              icon: Icons.folder,
+              icon: LottiIcons.folder,
               title: 'Empty folder',
               description: 'Add files to get started',
             ),

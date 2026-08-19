@@ -268,8 +268,8 @@ AgentListRowData _vmToRow(PendingWakeVm vm, AppLocalizations messages) {
 
 IconData _wakeIcon(PendingWakeType type) {
   return switch (type) {
-    PendingWakeType.pending => Icons.hourglass_bottom_rounded,
-    PendingWakeType.scheduled => Icons.alarm_rounded,
+    PendingWakeType.pending => LottiIcons.pending,
+    PendingWakeType.scheduled => LottiIcons.alarm,
   };
 }
 
@@ -402,7 +402,7 @@ class _PendingWakeTrailingState extends ConsumerState<_PendingWakeTrailing> {
             onPressed: _delete,
             tooltip: context.messages.agentPendingWakesDeleteTooltip,
             icon: Icon(
-              Icons.delete_outline_rounded,
+              LottiIcons.delete,
               color: colors.text.mediumEmphasis,
             ),
           ),

@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/duration_widget.dart';
 import 'package:lotti/features/ratings/state/session_ended_controller.dart';
@@ -300,7 +301,7 @@ void main() {
           await tester.pump();
 
           // The record button should be visible
-          final recordButton = find.byIcon(Icons.fiber_manual_record_sharp);
+          final recordButton = find.byIcon(LottiIcons.recordDot);
           expect(recordButton, findsOneWidget);
 
           await tester.tap(recordButton);

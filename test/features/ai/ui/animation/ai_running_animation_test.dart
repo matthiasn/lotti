@@ -11,6 +11,7 @@ import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.da
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/ai/ui/animation/ai_state_shader_animation.dart';
 import 'package:lotti/features/ai/ui/unified_ai_progress_view.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../../test_helper.dart';
 
@@ -257,7 +258,7 @@ void main() {
       expect(find.byType(UnifiedAiProgressContent), findsOneWidget);
 
       await tester.tap(
-        find.widgetWithIcon(IconButton, Icons.arrow_back_rounded),
+        find.widgetWithIcon(IconButton, LottiIcons.back),
       );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));

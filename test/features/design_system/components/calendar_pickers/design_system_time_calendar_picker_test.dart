@@ -138,8 +138,8 @@ void main() {
       );
 
       expect(find.text('2025'), findsOneWidget);
-      expect(find.byIcon(Icons.chevron_left_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronLeft), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
       expect(find.text('Jan'), findsOneWidget);
       expect(find.text('Dec'), findsOneWidget);
 

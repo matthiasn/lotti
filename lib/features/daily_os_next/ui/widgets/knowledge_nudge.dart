@@ -56,7 +56,7 @@ class KnowledgeNudge extends ConsumerWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.auto_awesome_rounded, size: 14, color: accent),
+              Icon(LottiIcons.aiSpark, size: 14, color: accent),
               SizedBox(width: tokens.spacing.step2),
               Flexible(
                 child: Text(
@@ -70,7 +70,7 @@ class KnowledgeNudge extends ConsumerWidget {
               ),
               SizedBox(width: tokens.spacing.step1),
               Icon(
-                Icons.chevron_right_rounded,
+                LottiIcons.chevronRight,
                 size: 16,
                 color: tokens.colors.text.lowEmphasis,
               ),

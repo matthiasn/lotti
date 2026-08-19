@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
@@ -434,7 +435,7 @@ void main() {
         ),
         findsOneWidget,
       );
-      expect(find.byIcon(Icons.format_list_bulleted_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.checkAll), findsOneWidget);
     });
 
     testWidgets('displays one-liner when available', (tester) async {

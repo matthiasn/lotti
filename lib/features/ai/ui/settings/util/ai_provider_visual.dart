@@ -166,16 +166,16 @@ String? aiProviderKeyConsoleUrl(InferenceProviderType? type) {
 /// state's compact chips. Centralised so the two surfaces can't drift.
 IconData aiProviderIcon(InferenceProviderType? type) {
   return switch (type) {
-    InferenceProviderType.gemini => Icons.auto_awesome_rounded,
-    InferenceProviderType.openAi => Icons.circle_rounded,
-    InferenceProviderType.anthropic => Icons.psychology_rounded,
-    InferenceProviderType.ollama => Icons.computer_rounded,
-    InferenceProviderType.omlx => Icons.developer_board_rounded,
-    InferenceProviderType.melious => Icons.eco_rounded,
-    InferenceProviderType.mistral => Icons.air_rounded,
-    InferenceProviderType.mlxAudio => Icons.memory_rounded,
-    InferenceProviderType.alibaba => Icons.cloud_rounded,
-    _ => Icons.smart_toy_rounded,
+    InferenceProviderType.gemini => LottiIcons.aiSpark,
+    InferenceProviderType.openAi => LottiIcons.radioUnselected,
+    InferenceProviderType.anthropic => LottiIcons.reasoning,
+    InferenceProviderType.ollama => LottiIcons.computer,
+    InferenceProviderType.omlx => LottiIcons.memory,
+    InferenceProviderType.melious => LottiIcons.eco,
+    InferenceProviderType.mistral => LottiIcons.air,
+    InferenceProviderType.mlxAudio => LottiIcons.memory,
+    InferenceProviderType.alibaba => LottiIcons.cloud,
+    _ => LottiIcons.aiModel,
   };
 }
 

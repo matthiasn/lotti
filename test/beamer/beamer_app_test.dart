@@ -816,8 +816,7 @@ void main() {
         find.byWidgetPredicate(
           (w) =>
               w is Icon &&
-              (w.icon == Icons.track_changes_outlined ||
-                  w.icon == Icons.track_changes_rounded),
+              (w.icon == LottiIcons.focus || w.icon == LottiIcons.focus),
         ),
         findsWidgets,
       );
@@ -862,7 +861,7 @@ void main() {
       final peopleGlyph = find.byWidgetPredicate(
         (w) =>
             w is Icon &&
-            (w.icon == Icons.people_outlined || w.icon == Icons.people_rounded),
+            (w.icon == LottiIcons.people || w.icon == LottiIcons.people),
       );
       expect(peopleGlyph, findsWidgets);
       // Mounted but not active, so its Beamer child sits offstage in the
@@ -1609,9 +1608,9 @@ void main() {
 
       expect(tasksItem.label, 'Tasks');
       expect(icon, isA<Icon>());
-      expect((icon as Icon).icon, Icons.list_outlined);
+      expect((icon as Icon).icon, LottiIcons.list);
       expect(activeIcon, isA<Icon>());
-      expect((activeIcon! as Icon).icon, Icons.list_rounded);
+      expect((activeIcon! as Icon).icon, LottiIcons.list);
 
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump();
@@ -1902,9 +1901,9 @@ void main() {
       expect(tasksDestination.label, 'Tasks');
       expect(tasksDestination.trailingBuilder, isNull);
       expect(icon, isA<Icon>());
-      expect((icon as Icon).icon, Icons.list_outlined);
+      expect((icon as Icon).icon, LottiIcons.list);
       expect(activeIcon, isA<Icon>());
-      expect((activeIcon as Icon).icon, Icons.list_rounded);
+      expect((activeIcon as Icon).icon, LottiIcons.list);
 
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump();

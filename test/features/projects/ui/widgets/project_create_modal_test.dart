@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/categories/ui/widgets/category_field.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/ui/app_command_controller.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
@@ -485,7 +486,7 @@ void main() {
     testWidgets('target date can be picked and cleared', (tester) async {
       await pumpForm(tester);
 
-      await tester.tap(find.byIcon(Icons.calendar_today));
+      await tester.tap(find.byIcon(LottiIcons.today));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
       expect(find.byType(CalendarDatePicker), findsOneWidget);
@@ -495,11 +496,11 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       // After picking, a clear affordance appears.
-      expect(find.byIcon(Icons.clear), findsOneWidget);
+      expect(find.byIcon(LottiIcons.close), findsOneWidget);
 
-      await tester.tap(find.byIcon(Icons.clear));
+      await tester.tap(find.byIcon(LottiIcons.close));
       await tester.pump();
-      expect(find.byIcon(Icons.clear), findsNothing);
+      expect(find.byIcon(LottiIcons.close), findsNothing);
     });
 
     testWidgets('Primary+S dispatches save and creates the project', (

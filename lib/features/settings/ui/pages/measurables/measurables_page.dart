@@ -51,7 +51,7 @@ class MeasurablesPage extends ConsumerWidget {
       title: messages.settingsMeasurablesTitle,
       searchHint: messages.settingsMeasurablesSearchHint,
       displayName: (dataType) => dataType.displayName,
-      emptyIcon: Icons.trending_up_rounded,
+      emptyIcon: LottiIcons.trendingUp,
       emptyTitle: messages.settingsMeasurablesEmptyState,
       emptyHint: messages.settingsMeasurablesEmptyStateHint,
       noMatchMessage: messages.settingsMeasurablesNoMatchQuery,
@@ -102,7 +102,7 @@ class _MeasurableListItem extends StatelessWidget {
               child: Semantics(
                 label: context.messages.privateLabel,
                 child: Icon(
-                  Icons.lock_outline,
+                  LottiIcons.lock,
                   size: 18,
                   color: tokens.colors.text.mediumEmphasis,
                 ),
@@ -114,14 +114,14 @@ class _MeasurableListItem extends StatelessWidget {
               child: Semantics(
                 label: context.messages.favoriteLabel,
                 child: Icon(
-                  Icons.star_rounded,
+                  LottiIcons.star,
                   size: 18,
                   color: tokens.colors.text.mediumEmphasis,
                 ),
               ),
             ),
           Icon(
-            Icons.chevron_right_rounded,
+            LottiIcons.chevronRight,
             size: tokens.spacing.step6,
             color: tokens.colors.text.lowEmphasis,
           ),

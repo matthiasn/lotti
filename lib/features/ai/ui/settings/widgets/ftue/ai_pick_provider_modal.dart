@@ -320,7 +320,7 @@ class _AiPickProviderModalState extends State<AiPickProviderModal> {
             DesignSystemButton(
               label: messages.aiPickProviderContinueButton,
               size: DesignSystemButtonSize.large,
-              trailingIcon: Icons.arrow_forward_rounded,
+              trailingIcon: LottiIcons.forward,
               onPressed: () => Navigator.of(context).pop(
                 AiPickProviderResult.confirmed(_selected),
               ),
@@ -487,7 +487,7 @@ class _RadioIndicator extends StatelessWidget {
         height: size,
         decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
         child: Icon(
-          Icons.check_rounded,
+          LottiIcons.confirm,
           size: tokens.spacing.step5,
           color: tokens.colors.text.onInteractiveAlert,
         ),

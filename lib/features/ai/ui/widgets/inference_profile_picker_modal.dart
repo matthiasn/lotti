@@ -111,7 +111,7 @@ class _InferenceProfileRow extends StatelessWidget {
       selected: selected,
       selectedLabel: selectedLabel,
       leading: Icon(
-        Icons.account_tree_outlined,
+        LottiIcons.tree,
         color: tokens.colors.text.mediumEmphasis,
         size: tokens.spacing.step6,
       ),
@@ -119,7 +119,7 @@ class _InferenceProfileRow extends StatelessWidget {
           ? Tooltip(
               message: desktopOnlyLabel,
               child: Icon(
-                Icons.desktop_windows_outlined,
+                LottiIcons.computer,
                 color: tokens.colors.text.mediumEmphasis,
                 size: tokens.spacing.step5,
               ),

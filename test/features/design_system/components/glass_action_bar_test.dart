@@ -53,13 +53,13 @@ void main() {
       await _pump(
         tester,
         DsGlassRoundButton(
-          icon: Icons.mic_rounded,
+          icon: LottiIcons.mic,
           semanticLabel: 'Record',
           onPressed: () => taps++,
         ),
       );
 
-      expect(find.byIcon(Icons.mic_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.mic), findsOneWidget);
       await tester.tap(find.byType(DsGlassRoundButton));
       expect(taps, 1);
     });
@@ -73,13 +73,13 @@ void main() {
           children: [
             DsGlassRoundButton(
               key: const Key('default'),
-              icon: Icons.add,
+              icon: LottiIcons.add,
               semanticLabel: 'Add',
               onPressed: () {},
             ),
             DsGlassRoundButton(
               key: const Key('big'),
-              icon: Icons.add,
+              icon: LottiIcons.add,
               semanticLabel: 'Add big',
               diameter: 64,
               onPressed: () {},
@@ -102,14 +102,14 @@ void main() {
       await _pump(
         tester,
         DsGlassRoundButton(
-          icon: Icons.stop,
+          icon: LottiIcons.stop,
           semanticLabel: 'Stop',
           iconColor: const Color(0xFFAABBCC),
           onPressed: () {},
         ),
       );
 
-      final icon = tester.widget<Icon>(find.byIcon(Icons.stop));
+      final icon = tester.widget<Icon>(find.byIcon(LottiIcons.stop));
       expect(icon.color, const Color(0xFFAABBCC));
     });
 
@@ -120,7 +120,7 @@ void main() {
         await _pump(
           tester,
           DsGlassRoundButton(
-            icon: Icons.bolt,
+            icon: LottiIcons.bolt,
             semanticLabel: 'Active',
             backgroundColor: bg,
             onPressed: () {},
@@ -140,7 +140,7 @@ void main() {
         await _pump(
           tester,
           DsGlassRoundButton(
-            icon: Icons.bolt,
+            icon: LottiIcons.bolt,
             semanticLabel: 'Idle',
             onPressed: () {},
           ),
@@ -165,14 +165,14 @@ void main() {
         await _pump(
           tester,
           DsGlassRoundButton(
-            icon: Icons.close,
+            icon: LottiIcons.close,
             semanticLabel: 'Close',
             onPressed: () {},
           ),
         );
 
         final tokens = _tokens(tester, DsGlassRoundButton);
-        final icon = tester.widget<Icon>(find.byIcon(Icons.close));
+        final icon = tester.widget<Icon>(find.byIcon(LottiIcons.close));
         expect(icon.color, tokens.colors.text.highEmphasis);
       },
     );
@@ -183,7 +183,7 @@ void main() {
       await _pump(
         tester,
         DsGlassRoundButton(
-          icon: Icons.mic_rounded,
+          icon: LottiIcons.mic,
           semanticLabel: 'Record',
           onPressed: () {},
         ),
@@ -206,13 +206,13 @@ void main() {
         tester,
         DsGlassPill(
           label: 'Build day',
-          icon: Icons.arrow_forward_rounded,
+          icon: LottiIcons.forward,
           onTap: () => taps++,
         ),
       );
 
       expect(find.text('Build day'), findsOneWidget);
-      expect(find.byIcon(Icons.arrow_forward_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.forward), findsOneWidget);
       await tester.tap(find.byType(DsGlassPill));
       expect(taps, 1);
     });
@@ -302,7 +302,7 @@ void main() {
           tester,
           DsGlassPill(
             label: 'Neutral',
-            icon: Icons.arrow_forward_rounded,
+            icon: LottiIcons.forward,
             onTap: () {},
           ),
         );
@@ -312,7 +312,7 @@ void main() {
         expect(text.style?.color, tokens.colors.text.highEmphasis);
 
         final icon = tester.widget<Icon>(
-          find.byIcon(Icons.arrow_forward_rounded),
+          find.byIcon(LottiIcons.forward),
         );
         expect(icon.color, tokens.colors.text.highEmphasis);
       },

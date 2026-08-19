@@ -5,6 +5,7 @@ import 'package:lotti/features/agents/ui/listing/widgets/agent_list_group_sectio
 import 'package:lotti/features/agents/ui/listing/widgets/agent_list_row.dart';
 import 'package:lotti/features/agents/ui/listing/widgets/soul_avatar.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 import '../../../../../widget_test_utils.dart';
@@ -69,12 +70,12 @@ void main() {
       tester,
     ) async {
       await _pumpHeader(tester, group: _group(), expanded: true);
-      expect(find.byIcon(Icons.expand_more), findsOneWidget);
-      expect(find.byIcon(Icons.chevron_right), findsNothing);
+      expect(find.byIcon(LottiIcons.expand), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronRight), findsNothing);
 
       await _pumpHeader(tester, group: _group(), expanded: false);
-      expect(find.byIcon(Icons.chevron_right), findsOneWidget);
-      expect(find.byIcon(Icons.expand_more), findsNothing);
+      expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
+      expect(find.byIcon(LottiIcons.expand), findsNothing);
     });
 
     testWidgets('tapping the header invokes onToggle', (tester) async {
@@ -139,12 +140,12 @@ void main() {
       await _pumpHeader(
         tester,
         group: _group(
-          leading: const AgentListIconLeading(icon: Icons.psychology),
+          leading: const AgentListIconLeading(icon: LottiIcons.reasoning),
         ),
         expanded: true,
       );
 
-      expect(find.byIcon(Icons.psychology), findsOneWidget);
+      expect(find.byIcon(LottiIcons.reasoning), findsOneWidget);
       expect(find.byType(SoulAvatar), findsNothing);
     });
   });

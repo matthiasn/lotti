@@ -202,7 +202,7 @@ class _PreviewRow extends StatelessWidget {
       ),
       child: checked
           ? Icon(
-              Icons.check_rounded,
+              LottiIcons.confirm,
               size: tokens.spacing.step4,
               color: tokens.colors.surface.enabled,
             )
@@ -250,7 +250,7 @@ class _PreviewRow extends StatelessWidget {
           if (onTap != null) ...[
             SizedBox(width: tokens.spacing.step2),
             Icon(
-              Icons.play_arrow_rounded,
+              LottiIcons.play,
               size: tokens.spacing.step5,
               color: accent,
             ),

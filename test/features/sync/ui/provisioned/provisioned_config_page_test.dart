@@ -237,7 +237,7 @@ void main() {
         find.text(context.messages.provisionedSyncDone),
         findsOneWidget,
       );
-      expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
       // Honest about the gate: the header names the two remaining steps.
       expect(
         find.text(context.messages.syncPairedStepsLeft),
@@ -315,7 +315,7 @@ void main() {
         find.text(context.messages.provisionedSyncErrorLoginFailed),
         findsOneWidget,
       );
-      expect(find.byIcon(Icons.error_outline), findsOneWidget);
+      expect(find.byIcon(LottiIcons.error), findsOneWidget);
       // The remedies live in the sticky bar — the position the rest of the
       // wizard trained the user on — not as a grey pill inside the card.
       expect(
@@ -453,7 +453,7 @@ void main() {
       await pumpConfigWidget(tester, const ProvisioningState.done());
 
       final context = tester.element(find.byType(ProvisionedConfigWidget));
-      expect(find.byIcon(Icons.lock_outline_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.lock), findsOneWidget);
       // The Maintenance fallback route belongs to the unlocked step; while
       // the ceremony gates everything it would name an unreachable path.
       expect(

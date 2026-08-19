@@ -6,6 +6,7 @@ import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_block_edit_modal.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/time_pickers/design_system_picker_wheels.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/settings/settings_picker_field.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
@@ -354,7 +355,7 @@ void main() {
     );
 
     await tester.enterText(find.byType(TextField), 'Unsaved fish protocol');
-    await tester.tap(find.byIcon(Icons.close_rounded).first);
+    await tester.tap(find.byIcon(LottiIcons.close).first);
     await tester.pumpAndSettle();
 
     expect(result, isNull);
@@ -373,7 +374,7 @@ void main() {
     await tester.tap(find.text('Deep Work'));
     await tester.pumpAndSettle();
     expect(find.text('Mysterious Operations'), findsOneWidget);
-    await tester.tap(find.byIcon(Icons.close_rounded).last);
+    await tester.tap(find.byIcon(LottiIcons.close).last);
     await tester.pumpAndSettle();
 
     expect(find.text('Edit block'), findsOneWidget);

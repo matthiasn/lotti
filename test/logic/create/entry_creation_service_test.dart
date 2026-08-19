@@ -11,6 +11,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/create/create_menu_list_item.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
@@ -532,9 +533,9 @@ void main() {
 
         // The menu modal rendered its items (Event/Task/Audio/Timer/Text).
         expect(find.byType(CreateMenuListItem), findsWidgets);
-        expect(find.byIcon(Icons.add_task_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.addTask), findsOneWidget);
         // Timer item only present because linkedFromId was provided.
-        expect(find.byIcon(Icons.timer_outlined), findsOneWidget);
+        expect(find.byIcon(LottiIcons.timer), findsOneWidget);
       },
     );
   });
