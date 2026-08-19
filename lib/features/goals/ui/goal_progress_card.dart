@@ -326,6 +326,41 @@ class _CompactDayCell extends StatelessWidget {
     // separate the hues can still act on.
     final showsPartialDot =
         rating == null && state == GoalCompactDayState.partial;
+    // The weekday tag lives in the corner, so it renders alongside the
+    // center marks instead of yielding to them.
+    final letterTag = goalDayCellLetter(
+      tokens,
+      letter: weekdayLetter,
+      cellSize: size,
+      filled: rating != null || state == GoalCompactDayState.full,
+    );
+    final Widget? centerMark = showsPartialDot
+        ? Center(
+            child: goalPartialDayDot(
+              tokens,
+              // The dot has to stay legible inside the square it marks, so
+              // it scales with it rather than sitting at one fixed size.
+              size <= IconSizes.xs
+                  ? tokens.spacing.step1
+                  : tokens.spacing.step2,
+            ),
+          )
+        : rating != null
+        // The verdict's own shape at every size. Collapsing the three
+        // non-met verdicts into one dot on the list's 12px cells left
+        // Improving, Mixed and Missed distinguishable by hue alone —
+        // which is the one thing the shapes exist to avoid.
+        ? Center(
+            child: Icon(
+              goalAssessmentRatingGlyph(rating),
+              size: size * 0.75,
+              // The ink of the fill's OWN family. Painting every glyph in
+              // the success ink put a green tick's colour on a red missed
+              // cell and an orange mixed one.
+              color: goalAssessmentRatingInk(tokens, rating),
+            ),
+          )
+        : null;
     final cell = Container(
       width: size,
       height: size,
@@ -335,39 +370,10 @@ class _CompactDayCell extends StatelessWidget {
             : goalAssessmentRatingFill(tokens, rating),
         borderRadius: BorderRadius.circular(goalDayCellRadius(tokens)),
       ),
-      child: showsPartialDot
-          ? Center(
-              child: goalPartialDayDot(
-                tokens,
-                // The dot has to stay legible inside the square it marks, so
-                // it scales with it rather than sitting at one fixed size.
-                size <= IconSizes.xs
-                    ? tokens.spacing.step1
-                    : tokens.spacing.step2,
-              ),
-            )
-          : rating != null
-          // The verdict's own shape at every size. Collapsing the three
-          // non-met verdicts into one dot on the list's 12px cells left
-          // Improving, Mixed and Missed distinguishable by hue alone —
-          // which is the one thing the shapes exist to avoid.
-          ? Center(
-              child: Icon(
-                goalAssessmentRatingGlyph(rating),
-                size: size * 0.75,
-                // The ink of the fill's OWN family. Painting every glyph in
-                // the success ink put a green tick's colour on a red missed
-                // cell and an orange mixed one.
-                color: goalAssessmentRatingInk(tokens, rating),
-              ),
-            )
-          // A plain cell carries its weekday initial — the verdict glyph and
-          // the partial dot always outrank it.
-          : goalDayCellLetter(
-              tokens,
-              letter: weekdayLetter,
-              cellSize: size,
-              filled: state == GoalCompactDayState.full,
+      child: centerMark == null && letterTag == null
+          ? null
+          : Stack(
+              children: [?centerMark, ?letterTag],
             ),
     );
     // Every cell shares one outer footprint; today only adds the dashed
@@ -399,6 +405,10 @@ class _CompactDayCell extends StatelessWidget {
           type: MaterialType.transparency,
           child: InkWell(
             onTap: onTap,
+            // The design system's hover fill, on its own transparent Material
+            // ABOVE the card surface — ink painted on the Scaffold's Material
+            // sits under the opaque card and never shows.
+            hoverColor: tokens.colors.surface.hover,
             borderRadius: BorderRadius.circular(tokens.radii.s),
             child: ConstrainedBox(
               constraints: const BoxConstraints(
@@ -538,36 +548,47 @@ String goalAssessmentRatingLabel(
   GoalAssessmentRating.missed => context.messages.goalAssessmentMissed,
 };
 
-/// The weekday's one-letter initial, nested inside its own day cell.
+/// The weekday's one-letter initial, tucked into the bottom-left corner of
+/// its own day cell.
 ///
 /// Replaces the separate label row that used to run above every track: one
 /// letter per node keeps the weekday axis without spending a full row on it.
-/// Null when the cell is too small to hold a legible letter — a squeezed
-/// ninety-day track drops the letters rather than painting mush — or when
-/// the cell carries a stronger mark (a verdict glyph, the partial dot, a
-/// missed cross), which always wins the center.
+/// A quiet corner tag rather than a centered label, so the center stays free
+/// for the marks that outrank it — a verdict glyph, the partial dot, the
+/// missed cross — and the letter can coexist with all of them. Scaled down
+/// with the cell (never up past the caption size), and null when the cell is
+/// too small to hold a legible letter — a squeezed ninety-day track drops
+/// the letters rather than painting mush.
 ///
 /// Ink follows the fill so the letter stays readable on both states: the
-/// on-alert ink over the saturated done fill, medium emphasis over the
-/// neutral no-entry fill.
+/// on-alert ink over a saturated fill, medium emphasis over the neutral and
+/// washed fills. Returns a [Positioned]; the cell hosts it in a [Stack].
 Widget? goalDayCellLetter(
   DsTokens tokens, {
   required String? letter,
   required double cellSize,
   required bool filled,
 }) {
-  if (letter == null || cellSize < IconSizes.s) return null;
-  return Center(
-    child: FittedBox(
-      fit: BoxFit.scaleDown,
-      child: Text(
-        letter,
-        maxLines: 1,
-        style: tokens.typography.styles.others.caption.copyWith(
-          color: filled
-              ? tokens.colors.text.onInteractiveAlert
-              : tokens.colors.text.mediumEmphasis,
-          height: 1,
+  if (letter == null || cellSize < IconSizes.l) return null;
+  return PositionedDirectional(
+    start: cellSize * 0.14,
+    bottom: cellSize * 0.1,
+    child: SizedBox(
+      // The scale bound: the caption glyph shrinks into this box, so the
+      // letter stays a small corner annotation at every cell size instead
+      // of competing with the mark in the center.
+      height: cellSize * 0.32,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text(
+          letter,
+          maxLines: 1,
+          style: tokens.typography.styles.others.caption.copyWith(
+            color: filled
+                ? tokens.colors.text.onInteractiveAlert
+                : tokens.colors.text.mediumEmphasis,
+            height: 1,
+          ),
         ),
       ),
     ),
@@ -599,7 +620,6 @@ class GoalProgressCard extends StatelessWidget {
   const GoalProgressCard({
     required this.progress,
     this.onHabitOutcomeSelected,
-    this.alsoInGoalTitlesByHabitId = const {},
     this.habitsHeadingTrailing,
     this.scrollGroup,
     super.key,
@@ -616,12 +636,6 @@ class GoalProgressCard extends StatelessWidget {
 
   /// The page's unison day-track scroll group; every extended track joins.
   final LinkedScrollGroup? scrollGroup;
-
-  /// For each habit id, the OTHER goals sharing it, pre-joined for display
-  /// ("Heart Health"). A habit is recorded once and reflected everywhere
-  /// (design handover §5) — the suffix says where else that one recording
-  /// lands. Empty means: render no suffix.
-  final Map<String, String> alsoInGoalTitlesByHabitId;
 
   @override
   Widget build(BuildContext context) {
@@ -667,8 +681,6 @@ class GoalProgressCard extends StatelessWidget {
             today: progress.today,
             onHabitOutcomeSelected: onHabitOutcomeSelected,
             showLegend: index == 0,
-            alsoInGoals:
-                alsoInGoalTitlesByHabitId[progress.habits[index].habitId],
             scrollGroup: scrollGroup,
           ),
           SizedBox(height: tokens.spacing.step3),
@@ -881,6 +893,7 @@ class _ReflectTodayRow extends StatelessWidget {
       type: MaterialType.transparency,
       child: InkWell(
         onTap: onReflect,
+        hoverColor: tokens.colors.surface.hover,
         borderRadius: BorderRadius.circular(tokens.radii.s),
         child: ConstrainedBox(
           // Moving this out of a tappable section card into an inner InkWell
@@ -936,7 +949,6 @@ class _HabitDimensionCard extends StatelessWidget {
     required this.today,
     required this.onHabitOutcomeSelected,
     required this.showLegend,
-    this.alsoInGoals,
     this.scrollGroup,
   });
 
@@ -944,9 +956,6 @@ class _HabitDimensionCard extends StatelessWidget {
   final GoalHabitProgressView habit;
   final DateTime today;
   final GoalHabitOutcomeSelected? onHabitOutcomeSelected;
-
-  /// The other goals sharing this habit, pre-joined; null renders nothing.
-  final String? alsoInGoals;
 
   /// Whether this card carries the shared day-cell key. Set on the FIRST habit
   /// card only — one legend per goal, and placed where a reader meets the
@@ -984,16 +993,6 @@ class _HabitDimensionCard extends StatelessWidget {
             met: habit.deficit == 0,
             hasData: true,
           ),
-          if (alsoInGoals case final alsoIn?) ...[
-            SizedBox(height: tokens.spacing.step1),
-            Text(
-              context.messages.goalDetailAlsoInGoal(alsoIn),
-              key: ValueKey('goal-habit-also-in-${habit.habitId}'),
-              style: tokens.typography.styles.others.caption.copyWith(
-                color: tokens.colors.text.lowEmphasis,
-              ),
-            ),
-          ],
           SizedBox(height: tokens.spacing.step4),
           _HabitProgressRow(
             habit: habit,
@@ -1632,7 +1631,16 @@ class _DimensionHeader extends StatelessWidget {
             SizedBox(width: tokens.spacing.step3),
             Expanded(child: identity),
             SizedBox(width: tokens.spacing.step3),
-            Flexible(child: readingBlock(alignEnd: true)),
+            // Non-flex, so the Expanded identity absorbs every spare pixel
+            // and the block sits flush against the card's trailing edge — a
+            // loose Flexible parked its own unused allocation AFTER the
+            // block, which is what left it floating mid-row. Bounded to half
+            // the card so a long reading still ellipsizes instead of
+            // overflowing the row.
+            ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: constraints.maxWidth / 2),
+              child: readingBlock(alignEnd: true),
+            ),
           ],
         );
       },
@@ -1802,7 +1810,9 @@ GoalDayTrackMetrics goalDayTrackMetrics(
     pitch: pitch,
     labelHeight: math.max(IconSizes.s, label.height),
     // The square shrinks with its column, or neighbouring cells would touch
-    // and the track would read as one bar.
+    // and the track would read as one bar — but it never GROWS past the
+    // authored chip size: spreading the span means wider gutters between
+    // same-sized nodes, not inflated squares.
     cellSize: math.min(
       ControlSizes.iconChipCompact,
       math.max(IconSizes.xs, pitch - tokens.spacing.step2),
@@ -2102,14 +2112,21 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (cadenceFitsInline)
-                    Flexible(
+                    Expanded(
                       child: Text(cadence, maxLines: 1, style: cadenceStyle),
                     )
                   else
                     const Spacer(),
                   if (note != null) ...[
                     SizedBox(width: tokens.spacing.step3),
-                    Flexible(
+                    // Non-flex behind a tight Expanded, so the note sits
+                    // flush against the trailing edge like the corner block
+                    // above it; bounded so it wraps rather than overflowing
+                    // a narrow card.
+                    ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: constraints.maxWidth * 0.6,
+                      ),
                       child: Text(
                         note,
                         textAlign: TextAlign.end,
@@ -2275,6 +2292,36 @@ class _ProgressDayCell extends StatelessWidget {
             width: BorderWidths.emphasis,
           )
         : null;
+    // The corner tag renders alongside the center marks — the whole point of
+    // moving it out of the center is that a cross or a dot no longer costs
+    // the cell its place on the weekday axis.
+    final letterTag = goalDayCellLetter(
+      tokens,
+      letter: weekdayLetter,
+      cellSize: visualDimension,
+      filled: missed || dayState == GoalCompactDayState.full,
+    );
+    // The glyph scales with the square it sits in, so a squeezed column
+    // does not paint a 12px cross onto a 14px cell.
+    final Widget? centerMark = missed
+        ? Center(
+            child: Icon(
+              Icons.close_rounded,
+              size: glyphSize,
+              color: tokens.colors.alert.error.ink,
+            ),
+          )
+        : skipped
+        ? Center(
+            child: Icon(
+              Icons.remove_rounded,
+              size: glyphSize,
+              color: tokens.colors.text.mediumEmphasis,
+            ),
+          )
+        : dayState == GoalCompactDayState.partial
+        ? Center(child: goalPartialDayDot(tokens, tokens.spacing.step2))
+        : null;
     Widget cell = Container(
       key: ValueKey(
         'goal-habit-day-visual-$habitId-'
@@ -2291,27 +2338,10 @@ class _ProgressDayCell extends StatelessWidget {
         borderRadius: BorderRadius.circular(tokens.radii.s),
         border: border,
       ),
-      // The glyph scales with the square it sits in, so a squeezed column
-      // does not paint a 12px cross onto a 14px cell.
-      child: missed
-          ? Icon(
-              Icons.close_rounded,
-              size: glyphSize,
-              color: tokens.colors.alert.error.ink,
-            )
-          : skipped
-          ? Icon(
-              Icons.remove_rounded,
-              size: glyphSize,
-              color: tokens.colors.text.mediumEmphasis,
-            )
-          : dayState == GoalCompactDayState.partial
-          ? Center(child: goalPartialDayDot(tokens, tokens.spacing.step2))
-          : goalDayCellLetter(
-              tokens,
-              letter: weekdayLetter,
-              cellSize: visualDimension,
-              filled: dayState == GoalCompactDayState.full,
+      child: centerMark == null && letterTag == null
+          ? null
+          : Stack(
+              children: [?centerMark, ?letterTag],
             ),
     );
     if (dayState == GoalCompactDayState.partial) {
@@ -2509,18 +2539,26 @@ class _HabitDayOutcomeMenuState extends State<_HabitDayOutcomeMenu> {
       ],
       builder: (context, controller, child) => Tooltip(
         message: widget.semanticLabel,
-        child: InkWell(
-          onTap: widget.enabled
-              ? () {
-                  if (controller.isOpen) {
-                    controller.close();
-                  } else {
-                    controller.open();
+        // A local transparent Material with the design system's hover fill:
+        // without it the ink painted on the Scaffold's Material, underneath
+        // the opaque card, so the one grid the user edits daily gave no
+        // hover feedback at all.
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            onTap: widget.enabled
+                ? () {
+                    if (controller.isOpen) {
+                      controller.close();
+                    } else {
+                      controller.open();
+                    }
                   }
-                }
-              : null,
-          borderRadius: BorderRadius.circular(tokens.radii.s),
-          child: widget.child,
+                : null,
+            hoverColor: tokens.colors.surface.hover,
+            borderRadius: BorderRadius.circular(tokens.radii.s),
+            child: widget.child,
+          ),
         ),
       ),
     );

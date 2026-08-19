@@ -816,15 +816,13 @@ flowchart TD
   size, so the two surfaces draw the same instrument at the same scale (the
   strip's earlier 12px list default read as illegible dots). The detail page
   is the §4b dashboard: a centered column capped at the unified-Goals
-  measure (`kUnifiedGoalsContentMaxWidth`, 900 — what the Habits dashboard
-  effectively renders beside the desktop sidebar, shared by the goals
-  list) whose hero stack leads with the
+  measure (`kUnifiedGoalsContentMaxWidth`, 760 — deliberately narrower than
+  the Habits dashboard's effective ~900 after design review of the goal
+  cards; shared by the goals list) whose hero stack leads with the
   timestamped Agent's-read card, the deterministic This-week card
   (`GoalThisWeekCard` — whole-goal strip, Reflect-on-today, yesterday
   tally) beneath it, both at the full content width on every viewport,
-  with the Habits and Signals sections beneath (habit cards name the other
-  goals sharing them via `goalHabitMembershipsProvider` — one recording,
-  reflected everywhere), a goal-scoped completion-rate chart (`HabitsChartCard(habitIds: …)` — the shared card
+  with the Habits and Signals sections beneath, a goal-scoped completion-rate chart (`HabitsChartCard(habitIds: …)` — the shared card
   computed on the goal's slice of the habits day maps via
   `scopeHabitsStateToHabits`, same range tabs), and the cost/automation
   plumbing riding the read card itself. Daily reflections have NO
@@ -869,6 +867,13 @@ flowchart TD
   range: a picker on the first evidence heading (Habits, or Signals for a
   signal-only goal; backed by the habits controller's shared
   `timeSpanDays`) keys `goalAgentProgressViewForSpanProvider`, which
+  DEFAULTS to auto-fit — until the user picks a preset on this page, the
+  page drives the shared span to the day count that fits the content width
+  at the authored day-cell density (`_fitSpanDays`), so the default fills
+  the card with days instead of dead space, without stretching cells or
+  gutters and without a scroller; no picker segment highlights in auto
+  mode, and the completion chart and heatmap data follow the same fitted
+  span. It
   renders the whole-goal strip and every habit and signal day track over
   the same span ending today. Switching ranges preserves the last rendered
   progress while the replacement span loads, so established content never
@@ -878,17 +883,21 @@ flowchart TD
   range. The retained snapshot is scoped to the active spec version and only
   promoted from a settled provider value, so a spec reload cannot relabel
   prior-spec evidence. A day track FITS before it scrolls:
-  `goalDayTrackMetrics` narrows the column pitch — and the square inside it —
-  until the whole span fits the width it was given, and only a span that
+  `goalDayTrackMetrics` narrows the column pitch — and the square inside it
+  — until the whole span fits the width it was given, and only a span that
   overflows even at the legibility floor becomes a trailing-anchored
   (`reverse: true`) scroller joined to one `LinkedScrollGroup`, where every
-  track then pans in unison. The habit squares and the whole-goal strip
-  carry their weekday axis INSIDE the cells (`goalDayCellLetter`: the
-  one-letter initial, suppressed below `IconSizes.s` and outranked by the
-  verdict glyph, the partial dot and the missed cross) instead of a label
+  track then pans in unison. The habit squares and the whole-goal strip carry their weekday
+  axis INSIDE the cells (`goalDayCellLetter`: a small bottom-left corner
+  initial that coexists with the center marks — verdict glyph, partial dot,
+  missed cross — and is suppressed below `IconSizes.l`) instead of a label
   row above the track; only the hand-painted metric bars keep a caption
   axis (`_WeekdayTrack`), below the bars, since a variable-height bar
-  cannot host a letter. One policy
+  cannot host a letter. Every tappable element on these cards carries the
+  design system's `surface.hover` fill on its own transparent `Material` —
+  ink painted on the Scaffold's Material sits under the opaque cards and
+  never shows, which is why the day grids and rail rows previously had no
+  hover feedback. One policy
   (`_fitOrScroll`), by WIDTH, for all three tracks: deciding by day count
   wrapped a span that provably fitted, and a fortnight at the authored pitch
   is wider than a phone card, so the scroller opened with the first days of

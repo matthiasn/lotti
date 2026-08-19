@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
@@ -2340,6 +2341,70 @@ void main() {
     expect(find.text('Dismissed'), findsNothing);
   });
 
+  testWidgets('the page opens in AUTO span mode: the shared range is driven '
+      'to the day count that fits the content width', (tester) async {
+    final habitsController = FakeHabitsController(
+      HabitsState.initial(now: DateTime(2026, 8, 11)),
+    );
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const GoalAgentDetailPage(agentId: 'goal-1'),
+        overrides: [
+          habitsControllerProvider.overrideWith(() => habitsController),
+          agentIdentityProvider(
+            'goal-1',
+          ).overrideWith((ref) async => goalIdentity),
+          goalAgentHealthProvider('goal-1').overrideWith(
+            (ref) async => (
+              trackStatus: GoalTrackStatus.onTrack,
+              attainment: 1.0,
+              reportOneLiner: null,
+              pendingProposals: 0,
+              spec: null,
+              direction: null,
+              deficit: null,
+              buffer: null,
+            ),
+          ),
+          selfTargetedPendingChangeSetsProvider(
+            'goal-1',
+          ).overrideWith((ref) async => []),
+          agentMessagesByThreadProvider(
+            'goal-1',
+          ).overrideWith((ref) async => {}),
+          agentReportProvider('goal-1').overrideWith((ref) async => null),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // The fitted span: as many authored-pitch day columns as the content
+    // column holds — computed here from the same tokens the page reads, so
+    // the test tracks the density rather than a magic number.
+    final tokens = tester
+        .element(find.byType(GoalAgentDetailPage))
+        .designTokens;
+    final pitch = ControlSizes.iconChipCompact + tokens.spacing.step2;
+    // The same width source the page estimates from (the harness's
+    // MediaQuery, not the render box).
+    final surfaceWidth = MediaQuery.sizeOf(
+      tester.element(find.byType(GoalAgentDetailPage)),
+    ).width;
+    final contentWidth =
+        math.min(
+          kUnifiedGoalsContentMaxWidth,
+          surfaceWidth - tokens.spacing.step6 * 2,
+        ) -
+        tokens.spacing.cardPadding * 2;
+    final expectedFit = (contentWidth / pitch).floor().clamp(7, 90);
+    expect(
+      expectedFit,
+      isNot(HabitsState.initial(now: DateTime(2026)).timeSpanDays),
+      reason: 'the fixture must actually exercise the auto request',
+    );
+    expect(habitsController.lastTimeSpan, expectedFit);
+  });
+
   testWidgets('desktop keeps chat beside watched habits', (tester) async {
     const desktopSize = Size(1400, 1000);
     setTestSurfaceSize(tester, desktopSize);
@@ -3453,26 +3518,14 @@ void main() {
             'goal-1',
           ).overrideWith((ref) async => {}),
           agentReportProvider('goal-1').overrideWith((ref) async => null),
-          goalHabitMembershipsProvider.overrideWith(
-            (ref) async => {
-              'walk': [
-                (agentId: 'goal-1', title: 'Move more'),
-                (agentId: 'goal-2', title: 'Heart Health'),
-              ],
-            },
-          ),
         ],
       ),
     );
     await tester.pumpAndSettle();
 
-    // A habit shared with another goal names it — one recording, reflected
-    // everywhere — while the owning goal itself is never listed in the
-    // suffix (the page header is where its own name belongs).
-    final alsoIn = tester.widget<Text>(
-      find.byKey(const ValueKey('goal-habit-also-in-walk')),
-    );
-    expect(alsoIn.data, 'Also in Heart Health');
+    // The "Also in {goal}" suffix is gone — a card lists its own evidence,
+    // not the other goals watching the same habit.
+    expect(find.textContaining('Also in'), findsNothing);
 
     // ONE page-level range picker on the Habits heading governs every day
     // track and the chart — the chart card's own picker is hidden here, so

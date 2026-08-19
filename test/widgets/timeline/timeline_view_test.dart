@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/timeline/timeline_models.dart';
 import 'package:lotti/widgets/timeline/timeline_view.dart';
 
@@ -103,6 +104,22 @@ void main() {
       expect(find.byIcon(Icons.chevron_right), findsOneWidget);
       await tester.tap(find.text('09:14'));
       expect(opened, 1);
+
+      // Hover wiring: the row's ink rides a LOCAL transparent Material with
+      // the design-system hover fill — painted on the Scaffold's Material it
+      // would sit under the opaque card and never show.
+      final ink = tester.widget<InkWell>(find.byType(InkWell).first);
+      final tokens = tester.element(find.byType(TimelineView)).designTokens;
+      expect(ink.hoverColor, tokens.colors.surface.hover);
+      final material = tester.widget<Material>(
+        find
+            .ancestor(
+              of: find.byType(InkWell).first,
+              matching: find.byType(Material),
+            )
+            .first,
+      );
+      expect(material.type, MaterialType.transparency);
     });
 
     testWidgets('a trailing widget rides the header row, fully right-aligned', (

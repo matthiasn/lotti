@@ -299,10 +299,17 @@ class _TimelineTile extends StatelessWidget {
     );
 
     if (!canOpen) return row;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(tokens.radii.s),
-      child: row,
+    // A local transparent Material carries the hover fill: the rail sits on
+    // an opaque card, so ink painted on the Scaffold's Material below it
+    // never showed and openable rows gave no pointer feedback.
+    return Material(
+      type: MaterialType.transparency,
+      child: InkWell(
+        onTap: onTap,
+        hoverColor: tokens.colors.surface.hover,
+        borderRadius: BorderRadius.circular(tokens.radii.s),
+        child: row,
+      ),
     );
   }
 }
@@ -541,15 +548,19 @@ class _InlineTextAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    return InkWell(
-      onTap: onPressed,
-      borderRadius: BorderRadius.circular(tokens.radii.s),
-      child: Padding(
-        padding: EdgeInsets.symmetric(vertical: tokens.spacing.step1),
-        child: Text(
-          label,
-          style: tokens.typography.styles.body.bodySmall.copyWith(
-            color: tokens.colors.interactive.enabled,
+    return Material(
+      type: MaterialType.transparency,
+      child: InkWell(
+        onTap: onPressed,
+        hoverColor: tokens.colors.surface.hover,
+        borderRadius: BorderRadius.circular(tokens.radii.s),
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: tokens.spacing.step1),
+          child: Text(
+            label,
+            style: tokens.typography.styles.body.bodySmall.copyWith(
+              color: tokens.colors.interactive.enabled,
+            ),
           ),
         ),
       ),

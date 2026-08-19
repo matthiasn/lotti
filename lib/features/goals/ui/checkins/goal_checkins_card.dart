@@ -88,27 +88,31 @@ class GoalCheckInsCard extends ConsumerWidget {
           ),
           if (hasMore && onSeeAll != null) ...[
             SizedBox(height: tokens.spacing.step2),
-            InkWell(
-              key: const ValueKey('goal-checkin-see-all'),
-              onTap: onSeeAll,
-              borderRadius: BorderRadius.circular(tokens.radii.s),
-              child: Padding(
-                padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      context.messages.goalCheckInsSeeAll,
-                      style: tokens.typography.styles.body.bodySmall.copyWith(
+            Material(
+              type: MaterialType.transparency,
+              child: InkWell(
+                key: const ValueKey('goal-checkin-see-all'),
+                onTap: onSeeAll,
+                hoverColor: tokens.colors.surface.hover,
+                borderRadius: BorderRadius.circular(tokens.radii.s),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        context.messages.goalCheckInsSeeAll,
+                        style: tokens.typography.styles.body.bodySmall.copyWith(
+                          color: tokens.colors.interactive.enabled,
+                        ),
+                      ),
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        size: IconSizes.xs,
                         color: tokens.colors.interactive.enabled,
                       ),
-                    ),
-                    Icon(
-                      Icons.chevron_right_rounded,
-                      size: IconSizes.xs,
-                      color: tokens.colors.interactive.enabled,
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),

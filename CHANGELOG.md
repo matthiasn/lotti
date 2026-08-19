@@ -9,14 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Cleaner goal cards.** Each habit and signal card now carries one stacked
   block in its top-right corner — the key reading ("7 this window · target
   5", "121 / 81 mmHg") with its status ("On track", "Needs attention")
-  directly beneath it in its own colour — instead of both floating inline on
-  the title row. The duplicate "5× per 7 days" line is gone; the date span
-  now notes "slides at midnight" for rolling weeks. Weekday initials sit
-  inside the day squares themselves rather than in a separate label row, so
-  the cards are denser without losing the axis, and legends and summary
-  lines center under the charts they explain. Shape now tells you what is
-  tappable: buttons and controls stay fully rounded, while informative chips
-  (status, trend, verdict, cost) take a small fixed corner.
+  directly beneath it in its own colour, flush to the card's edge — instead
+  of both floating inline on the title row. The duplicate "5× per 7 days"
+  line is gone; the date span now notes "slides at midnight" for rolling
+  weeks. Each day square carries a small weekday initial in its corner —
+  beside, not instead of, the marks for missed, skipped and judged days. Legends and summary lines center under the charts they explain.
+  Shape now tells you what is tappable: buttons and controls stay fully
+  rounded, while informative chips (status, trend, verdict, cost) take a
+  small fixed corner. And hovering actually shows: day squares, reflection
+  rows, "Reflect on today" and the check-ins rail all give pointer feedback
+  on desktop. The goal pages themselves got tighter: the content column
+  narrowed from 900 to 760 pixels, the default range now shows exactly as
+  many days as fit the card at the normal density (pick 14d/30d/90d to
+  override), and the "Also in {goal}" suffix on shared habits is gone.
 - **Daily reflections live in the check-ins rail.** The long "Daily
   reflections" list is gone from the goal page's main column; each
   reflection is one tight row in the check-ins rail — date and time leading,

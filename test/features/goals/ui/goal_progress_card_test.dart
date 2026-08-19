@@ -560,18 +560,21 @@ void main() {
   ) async {
     // The strip and the habit squares now live on two widgets (the page
     // stacks the This-week hero above the evidence sections), but they are
-    // still the same seven days one card apart — the shared pitch remains
-    // the contract.
+    // still the same days one card apart — the shared pitch remains the
+    // contract. Fourteen days, the detail page's smallest span: that is the
+    // configuration the page actually renders, and the one where both
+    // tracks derive the same width-filling pitch from the same card width.
     final progress = GoalProgressView(
       today: today,
       compositeRule: GoalCompositeRuleKind.all,
+      compactWindowDays: 14,
       habits: [
         GoalHabitProgressView(
           habitId: 'gym',
           name: 'Gym',
           targetCount: 3,
           days: [
-            for (var offset = 6; offset >= 0; offset--) day(offset, 0),
+            for (var offset = 13; offset >= 0; offset--) day(offset, 0),
           ],
           successfulWeeks: 0,
         ),
@@ -2828,9 +2831,9 @@ void main() {
       // The full-word label row above the squares is gone; the axis is the
       // one-letter initial nested inside each cell.
       expect(find.text('Wed'), findsNothing);
+      final letterFormat = DateFormat.EEEEE('en');
       final tokens = tester.element(find.byType(GoalProgressCard)).designTokens;
       final expectedPitch = ControlSizes.iconChipCompact + tokens.spacing.step2;
-      final letterFormat = DateFormat.EEEEE('en');
       double? previousCenter;
       for (var offset = 6; offset >= 0; offset--) {
         final date = today.subtract(Duration(days: offset));
@@ -3166,6 +3169,54 @@ void main() {
     },
   );
 
+  testWidgets('interactive day cells carry the hover fill on a local '
+      'Material', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            habits: [
+              GoalHabitProgressView(
+                habitId: 'walk',
+                name: 'Walk',
+                targetCount: 3,
+                days: [
+                  for (var offset = 6; offset >= 0; offset--) day(offset, 0),
+                ],
+                successfulWeeks: 0,
+              ),
+            ],
+          ),
+          onHabitOutcomeSelected:
+              ({required day, required habitId, required outcome}) async =>
+                  true,
+        ),
+      ),
+    );
+
+    final tokens = tester.element(find.byType(GoalProgressCard)).designTokens;
+    final cell = find.byKey(
+      const ValueKey('goal-habit-day-walk-2026-08-11'),
+    );
+    final ink = tester.widget<InkWell>(
+      find.descendant(of: cell, matching: find.byType(InkWell)).first,
+    );
+    // The design-system hover fill, painted on a LOCAL transparent Material:
+    // ink drawn on the Scaffold's Material sits underneath the opaque card
+    // and never shows, which is exactly the missing-hover bug this guards.
+    expect(ink.hoverColor, tokens.colors.surface.hover);
+    final material = tester.widget<Material>(
+      find
+          .ancestor(
+            of: find.descendant(of: cell, matching: find.byType(InkWell)),
+            matching: find.byType(Material),
+          )
+          .first,
+    );
+    expect(material.type, MaterialType.transparency);
+  });
+
   testWidgets('a recorded miss is visibly distinct from an empty day', (
     tester,
   ) async {
@@ -3205,6 +3256,18 @@ void main() {
       findsOneWidget,
     );
     expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+    // The weekday tag lives in the corner, so the missed cross does not
+    // cost the cell its place on the day axis: both render in one cell.
+    expect(
+      find.descendant(
+        of: find.byKey(
+          const ValueKey('goal-habit-day-visual-walk-2026-08-10'),
+        ),
+        matching: find.text('M'),
+      ),
+      findsOneWidget,
+      reason: 'Mon Aug 10 keeps its initial beside the missed cross',
+    );
   });
 
   testWidgets('a failed completion save clears the busy state and reports it', (
@@ -3686,6 +3749,7 @@ void main() {
       ),
     );
 
+    final tokens = tester.element(find.byType(GoalProgressCard)).designTokens;
     final reading = tester.getRect(find.text('3 of 3 this window'));
     final status = tester.getRect(find.text('On track'));
     final card = tester.getRect(find.byType(DesignSystemSectionCard).first);
@@ -3693,10 +3757,14 @@ void main() {
     // Stacked typography: the key reading on top, the verdict as a
     // supporting line directly beneath it — never inline beside it.
     expect(status.top, greaterThanOrEqualTo(reading.bottom - 1));
-    // One end-aligned corner element on a wide card: both lines share the
-    // trailing edge, in the card's right half rather than floating mid-row.
+    // One end-aligned corner element, FLUSH against the card's padding edge
+    // — a loose Flexible used to park its unused allocation after the block
+    // and leave it floating mid-row.
     expect(status.right, closeTo(reading.right, 1));
-    expect(reading.right, greaterThan(card.center.dx));
+    expect(
+      reading.right,
+      closeTo(card.right - tokens.spacing.cardPadding, 1),
+    );
   });
 
   testWidgets('signal legends and summary lines center under their charts', (

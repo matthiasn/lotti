@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
@@ -87,6 +88,36 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
   String? _lastProgressSpecId;
   int? _lastProgressSpanDays;
   int? _rangeRecoveryRequestedFor;
+
+  /// Whether the user has explicitly chosen a range on this page. Until they
+  /// do, the page runs in AUTO mode: the shared span is driven to the number
+  /// of days that exactly fits the content width at the authored day-cell
+  /// density — the default fills the card with days instead of leaving dead
+  /// space, without stretching cells or gutters, and without a scroller.
+  bool _rangePicked = false;
+
+  /// The fitted span already requested, so auto mode issues one controller
+  /// write per computed value rather than one per rebuild.
+  int? _autoSpanRequestedFor;
+
+  /// How many day columns fit the content column at the authored pitch.
+  ///
+  /// The width is an estimate from the window (the pane behind a desktop
+  /// sidebar is narrower), deliberately on the generous side: a span a few
+  /// days too wide goes through the tracks' own fit-before-scroll policy and
+  /// shrinks the columns slightly, which still fills the card edge to edge.
+  int _fitSpanDays(BuildContext context) {
+    final tokens = context.designTokens;
+    final pitch = goalDayTrackMetrics(context, dayCount: 1).pitch;
+    final contentWidth =
+        math.min(
+          kUnifiedGoalsContentMaxWidth,
+          MediaQuery.sizeOf(context).width - tokens.spacing.step6 * 2,
+        ) -
+        tokens.spacing.cardPadding * 2;
+    if (pitch <= 0 || contentWidth <= pitch) return 7;
+    return (contentWidth / pitch).floor().clamp(7, 90);
+  }
 
   /// Whether the desktop chat drawer is open. The drawer stays MOUNTED
   /// either way (a slid-out overlay, not a conditional subtree), so the
@@ -346,6 +377,22 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
     final timeSpanDays = ref.watch(
       habitsControllerProvider.select((state) => state.timeSpanDays),
     );
+    // AUTO span: until the user picks a range here, drive the shared span to
+    // the day count that fits the content width — the completion chart, the
+    // heatmap data and every day track then follow the same fitted span, so
+    // the page keeps its one-range contract in auto mode too.
+    final fitSpanDays = _fitSpanDays(context);
+    if (!_rangePicked &&
+        timeSpanDays != fitSpanDays &&
+        _autoSpanRequestedFor != fitSpanDays) {
+      _autoSpanRequestedFor = fitSpanDays;
+      // Post-frame: a controller write mid-build would rebuild the page
+      // while it is already building.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || _rangePicked) return;
+        ref.read(habitsControllerProvider.notifier).setTimeSpan(fitSpanDays);
+      });
+    }
     final progressAsync = spec == null
         ? null
         : ref.watch(
@@ -425,21 +472,6 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
             ),
           ),
     ];
-    // The OTHER goals sharing each of this goal's habits, pre-joined for the
-    // habit cards' "also in {goal}" suffix (§5: one recording, reflected
-    // everywhere).
-    final memberships =
-        ref.watch(goalHabitMembershipsProvider).value ??
-        const <String, List<GoalHabitMembership>>{};
-    final alsoInGoalTitlesByHabitId = <String, String>{
-      for (final entry in memberships.entries)
-        if ([
-              for (final m in entry.value)
-                if (m.agentId != agentId) m.title,
-            ]
-            case final others when others.isNotEmpty)
-          entry.key: others.join(', '),
-    };
     final report = ref.watch(agentReportProvider(agentId)).value;
     AgentReportEntity? latestReport;
     if (report is AgentReportEntity &&
@@ -667,13 +699,17 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
               // The page-wide range picker rides the first evidence
               // heading — one control for every day track and the chart.
               habitsHeadingTrailing: TimeSpanSegmentedControl(
+                // In auto mode the fitted span matches no segment, so none
+                // highlights — which is the honest reading: no preset is
+                // active until one is chosen.
                 timeSpanDays: renderedTimeSpanDays,
-                onValueChanged: ref
-                    .read(habitsControllerProvider.notifier)
-                    .setTimeSpan,
+                onValueChanged: (days) {
+                  // An explicit pick ends auto mode for this page instance.
+                  _rangePicked = true;
+                  ref.read(habitsControllerProvider.notifier).setTimeSpan(days);
+                },
                 segments: HabitsChartCard.timeSpans,
               ),
-              alsoInGoalTitlesByHabitId: alsoInGoalTitlesByHabitId,
               onHabitOutcomeSelected: !isActive
                   ? null
                   : ({
