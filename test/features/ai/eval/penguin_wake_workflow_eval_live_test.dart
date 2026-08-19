@@ -14,6 +14,7 @@ import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/demo/seed/demo_world.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
@@ -277,13 +278,36 @@ void main() {
       // whole set rather than on individual traps is what makes it a real
       // test — "found something to do" is the failure, whatever it was.
       if (!scenario.expectsProposals) {
+        // Minus what the scenario explicitly permits. The no-op wake allows the
+        // `waiting-on` label: its note says the task is still waiting on an
+        // external party, so the label restates the evidence rather than
+        // inventing progress, and every evaluated model proposed it.
+        final unexpected = proposedTools
+            .where((tool) => !scenario.allowedProposalTools.contains(tool))
+            .toList();
         expect(
-          proposedTools,
+          unexpected,
           isEmpty,
           reason:
               'INVENTED WORK: ${scenario.summary} Proposed anyway: '
-              '$proposedTools with ${jsonEncode(proposedArgs)}. $where',
+              '$unexpected with ${jsonEncode(proposedArgs)}. $where',
         );
+        // Permission to add the supported label is not permission to invent
+        // one, so an allowed tool still has to carry the right argument —
+        // otherwise the allowance would pass any label at all.
+        if (scenario.id == PenguinWakeScenarioId.noOp) {
+          for (final args in proposedArgs) {
+            final labelId = args['id'];
+            if (labelId == null) continue;
+            expect(
+              labelId,
+              demoWaitingLabelId,
+              reason:
+                  'FABRICATION: the only label the note supports is '
+                  'waiting-on. $where',
+            );
+          }
+        }
       }
       if (scenario.id == PenguinWakeScenarioId.noOp) {
         // The live contract is TaskAgentEvidenceSynthesis.reportDirective,
@@ -315,6 +339,34 @@ void main() {
           reason: 'the report should still describe the standing blocker',
         );
       }
+      // ---- The report the scenario expects ------------------------------
+      // Declared by every scenario since the suite was written and checked by
+      // nothing, which left "the report must change" stated and untested. It
+      // matters most for the case below: every fix for no-op churn pushes a
+      // model toward doing less, and without this a model that has gone silent
+      // on real news reads exactly like one that is correctly restrained.
+      if (scenario.expectsReport) {
+        expect(
+          agentReport,
+          isNotNull,
+          reason:
+              'MISSED: the wake published no report at all. '
+              '${scenario.summary} $where',
+        );
+        if (scenario.id != PenguinWakeScenarioId.requalification) {
+          // A follow-up wake starts from the seeded prior report, so leaving
+          // the standing one byte-identical means the news never reached the
+          // user.
+          expect(
+            agentReport?.oneLiner,
+            isNot(penguinWakePriorReportOneLiner),
+            reason:
+                'MISSED: the situation changed and the standing report was '
+                'left untouched. ${scenario.summary} $where',
+          );
+        }
+      }
+
       // ---- Proposals already awaiting the user --------------------------
       // Re-proposing a queued change puts the same decision in front of the
       // user twice. The pending list is in the context precisely so the agent

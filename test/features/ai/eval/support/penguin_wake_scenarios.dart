@@ -44,6 +44,16 @@ enum PenguinWakeScenarioId {
   /// progress it cannot support.
   noOp,
 
+  /// A follow-up wake where something genuinely DID change.
+  ///
+  /// The counterweight to the no-op scenario, and the reason it has to exist:
+  /// every fix for no-op churn pushes a model toward doing less, and nothing
+  /// in this catalog could tell "correctly restrained" from "too timid to
+  /// report real news". The prior report says Bay C is blocked on the sensor
+  /// swap; the closing note says the swap is done, the seam was walked and the
+  /// leak was found. Standing pat here is a failure, not restraint.
+  materialChange,
+
   /// A proposal for the very change the model is about to suggest is already
   /// queued and awaiting the user.
   ///
@@ -60,6 +70,7 @@ class PenguinWakeScenario {
     required this.expectsProposals,
     required this.expectsReport,
     this.forbiddenToolNames = const {},
+    this.allowedProposalTools = const {},
   });
 
   final PenguinWakeScenarioId id;
@@ -71,7 +82,27 @@ class PenguinWakeScenario {
   final bool expectsProposals;
 
   /// Whether a correct wake writes or revises a report.
+  ///
+  /// Asserted by the live test, in both directions: a scenario that expects a
+  /// report fails if the standing one is left untouched, and the no-op case
+  /// fails if it is rewritten. The field was declared on every scenario and
+  /// checked by nothing until 2026-08-18, which made "the report must change"
+  /// an expectation the suite stated and never tested.
   final bool expectsReport;
+
+  /// Tools a wake may propose even when it should otherwise propose nothing.
+  ///
+  /// The no-op wake is the case. Its note reports no movement — "still no date
+  /// from the parts store" — and every evaluated model responded by proposing
+  /// the `waiting-on` label. That is supported by the evidence, is not a
+  /// duplicate (the task carries `blocked`, not `waiting-on`), and is not
+  /// speculative, so the contract's "skip no-ops, duplicates, speculative
+  /// changes" does not forbid it. Asserting against it made four models from
+  /// three vendors fail for doing something reasonable.
+  ///
+  /// Everything else stays forbidden, and the label itself is still checked:
+  /// permission to add `waiting-on` is not permission to invent a label.
+  final Set<String> allowedProposalTools;
 
   /// Tools a correct wake must not call, even though it may call others.
   ///
@@ -93,10 +124,19 @@ class PenguinWakeScenario {
     PenguinWakeScenarioId.noOp: PenguinWakeScenario(
       id: PenguinWakeScenarioId.noOp,
       summary:
-          'Nothing materially changed: propose no data changes, do not '
-          'republish the report, and do not invent progress.',
+          'The note reports no movement: do not republish the report and do '
+          'not invent progress. Labelling what the note describes is fine.',
       expectsProposals: false,
       expectsReport: false,
+      allowedProposalTools: {TaskAgentToolNames.assignTaskLabel},
+    ),
+    PenguinWakeScenarioId.materialChange: PenguinWakeScenario(
+      id: PenguinWakeScenarioId.materialChange,
+      summary:
+          'The blocker cleared and the leak was found since the last report: '
+          'publish the change and propose the work the note supports.',
+      expectsProposals: true,
+      expectsReport: true,
     ),
     PenguinWakeScenarioId.pendingProposal: PenguinWakeScenario(
       id: PenguinWakeScenarioId.pendingProposal,

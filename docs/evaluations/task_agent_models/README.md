@@ -233,6 +233,62 @@ sources, an instruction the context contradicts, a report that must decline to
 conclude. Until then a pass here means "not obviously broken", and a model
 choice should rest on latency and cost, which is all the table above measures.
 
+## 2026-08-19: two prompt fixes for no-op churn, both rejected
+
+`noOp` fails on every model, every sample, every run — 0/48 across four models
+from three vendors. The contract states the rule twice: wake-protocol step 4
+("Otherwise end with a brief plain-text note and do not republish") and the
+live report directive ("finish with a brief plain-text note and do not
+republish unchanged content"). Nobody follows it.
+
+Two edits were measured against a 48-wake baseline, both sides, with the
+`materialChange` guard in place to catch over-correction.
+
+**Attempt 1 — promote the restraint clause to its own numbered step.** The
+narrow, structural-only change: same words, moved out of a subordinate clause
+on a step about *doing* something. Predicted `REPUBLISHED` would fall and
+`INVENTED WORK` would hold.
+
+Neither happened. `noOp` was unchanged in count *and* failure mode. The suite
+total rose 15/36 to 18/36 — entirely inside `pendingProposal`, a scenario the
+edit never touched. **Re-running with the edit reverted produced 18/36 again,
+model for model.** The gain was not the edit; it was variance, and without the
+control it would have shipped.
+
+**Attempt 2 — a materiality gate as the first protocol step.** A genuine
+addition rather than a move: decide whether anything material changed before
+any action step, and if not, call no tools at all. Worded as a general
+principle, deliberately saying nothing about the fixture's own note.
+
+It made things worse. Models proposing data changes on a no-op wake went from
+7/12 to **11/12**: qwen went from proposing nothing in 3 of 3 runs to inventing
+work in 2 of 3, and glm from 2 of 3 clean to 0 of 3. `noOp` stayed 0/12 and the
+total fell 30/48 to 29/48. `materialChange` held 12/12, so this is not
+over-correction — it is the opposite.
+
+The mechanism is legible afterwards: asking a model to *decide whether*
+anything changed hands it a reasoning step whose natural output is finding
+something to do. Two models that had been quietly idle started acting.
+
+### The lever that is not being pulled
+
+Both attempts confirm what this log already recorded on 2026-08-18: prompt
+edits redistribute attention rather than add a rule, while the structural fixes
+had no such tail. The goal agent does not ask for restraint — it **withholds**
+the ad tools its deterministic tier has ruled out.
+
+The task agent has the same deterministic knowledge and does not use it.
+`TaskAgentContextBuilder` computes "Changed Since Last Wake" and knows exactly
+which entity ids moved; the workflow then offers the full mutation surface
+regardless. Withholding mutation tools when nothing changed would make the
+failure unreachable instead of discouraged, which is the one intervention shape
+that has worked in either suite.
+
+Noise floor, from four identical runs: `requalification` and `materialChange`
+are stable at 12/12, `noOp` at 0/12, and `pendingProposal` swings +/-2 of 3 per
+model for deepseek and glm while kimi (3/3) and qwen (0/3) never move. Any
+`pendingProposal` claim inside that band is noise.
+
 ## 2026-08-18: the matrix had been running one scenario
 
 The real-wake suite has three scenarios. `scripts/penguin_wake_eval_matrix.sh`

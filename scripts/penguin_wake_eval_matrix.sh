@@ -34,7 +34,21 @@ MODELS="${PENGUIN_WAKE_EVAL_MODELS:-glm-5.2 kimi-k3 qwen3.5-397b-a17b qwen3.6-27
 # `pendingProposal`, so the matrix reported 6/6 for a suite that was really
 # 2/6. A restraint scenario that never runs cannot catch churn, which is the
 # failure these scenarios exist for.
-SCENARIOS="${PENGUIN_WAKE_EVAL_SCENARIOS:-requalification noOp pendingProposal}"
+#
+# Derived from the enum, not listed here. A hand-kept copy went stale within
+# the hour: `materialChange` was added and the first matrix run after it
+# silently measured three scenarios while reporting totals out of 9, which is
+# the same failure this script was just fixed for at the scenario level.
+SCENARIO_NAMES=$(
+  sed -n '/^enum PenguinWakeScenarioId {/,/^}/p' \
+    test/features/ai/eval/support/penguin_wake_scenarios.dart |
+    grep -oE '^  [a-z][a-zA-Z]*,' | tr -d ' ,'
+)
+SCENARIOS="${PENGUIN_WAKE_EVAL_SCENARIOS:-$SCENARIO_NAMES}"
+if [[ -z "${SCENARIOS// /}" ]]; then
+  echo "Could not derive the scenario list from PenguinWakeScenarioId." >&2
+  exit 2
+fi
 
 if [[ -z "${PENGUIN_WAKE_EVAL_API_KEY:-}" ]]; then
   echo "PENGUIN_WAKE_EVAL_API_KEY is not set." >&2
@@ -79,7 +93,11 @@ run_one() {
   fi
 }
 
-echo "Running $SAMPLES sample(s) per model, up to $MAX_PARALLEL at a time."
+# Printed because the silent version fooled the person who wrote this fix: a
+# run covering one scenario looks exactly like a run covering all of them.
+echo "Models:    $(echo $MODELS | tr '\n' ' ')"
+echo "Scenarios: $(echo $SCENARIOS | tr '\n' ' ')"
+echo "Running $SAMPLES sample(s) per model per scenario, up to $MAX_PARALLEL at a time."
 start=$(date +%s)
 for model in $MODELS; do
   for scenario in $SCENARIOS; do
