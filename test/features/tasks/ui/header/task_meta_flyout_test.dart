@@ -13,7 +13,9 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
+import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
+import 'package:lotti/features/projects/ui/widgets/project_selection_modal_content.dart';
 import 'package:lotti/features/tasks/model/task_progress_state.dart';
 import 'package:lotti/features/tasks/state/task_progress_controller.dart';
 import 'package:lotti/features/tasks/ui/header/task_meta_flyout.dart';
@@ -526,6 +528,44 @@ void main() {
       await settle(tester);
 
       expect(find.text('Done'), findsOneWidget);
+    });
+
+    testWidgets('the project row opens the project picker', (tester) async {
+      when(() => mockCache.getCategoryById('cat-1')).thenReturn(
+        CategoryDefinition(
+          id: 'cat-1',
+          createdAt: now,
+          updatedAt: now,
+          name: 'Work',
+          color: '#FF0000',
+          vectorClock: null,
+          private: false,
+          active: true,
+        ),
+      );
+      final projectRepo = MockProjectRepository();
+      when(
+        () => projectRepo.updateStream,
+      ).thenAnswer((_) => const Stream<Set<String>>.empty());
+
+      final task = buildTask(categoryId: 'cat-1');
+      await tester.pumpWidget(
+        pumpFlyout(
+          task: task,
+          extraOverrides: [
+            projectRepositoryProvider.overrideWithValue(projectRepo),
+            projectsForCategoryProvider(
+              'cat-1',
+            ).overrideWith((ref) async => const []),
+          ],
+        ),
+      );
+      await settle(tester);
+
+      await tester.tap(find.text('Project'));
+      await settle(tester);
+
+      expect(find.byType(ProjectSelectionModalContent), findsOneWidget);
     });
 
     testWidgets('the labels row opens the label selector', (tester) async {

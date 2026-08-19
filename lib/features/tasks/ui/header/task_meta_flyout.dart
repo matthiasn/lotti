@@ -34,9 +34,7 @@ import 'package:lotti/widgets/modal/modal_utils.dart';
 /// permanent button-styled chrome on the page — the header keeps a compact
 /// read-only summary and this fly-out holds the full detail plus the editing
 /// affordances.
-class TaskMetaFlyout {
-  const TaskMetaFlyout._();
-
+abstract final class TaskMetaFlyout {
   /// Opens the fly-out for [taskId] near the header ("Details" affordance).
   static Future<void> show(BuildContext context, {required String taskId}) {
     return ModalUtils.showSinglePageModal<void>(

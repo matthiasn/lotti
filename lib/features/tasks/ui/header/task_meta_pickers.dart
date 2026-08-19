@@ -26,9 +26,7 @@ import 'package:lotti/widgets/modal/modal_utils.dart';
 /// Each method opens the existing modal picker for one attribute and persists
 /// the selection through `EntryController`. Concentrated here so the fly-out
 /// and the header connector cannot drift apart in how an attribute is edited.
-class TaskMetaPickers {
-  const TaskMetaPickers._();
-
+abstract final class TaskMetaPickers {
   /// Opens the status picker; when the task just became `BLOCKED` and carries
   /// no blocker link yet, follows up with the blocking-task picker so the
   /// user can name what it waits on.
