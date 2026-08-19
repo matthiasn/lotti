@@ -11,7 +11,7 @@ sources:
   - id: beamer-app
     resource: ../../lib/beamer/beamer_app.dart
     title: MyBeamerApp and AppScreen
-    last_modified: 2026-08-05
+    last_modified: 2026-08-19
   - id: contact-support-row
     resource: ../../lib/widgets/misc/contact_support_row.dart
     title: ContactSupportRow — the Contact Us footer, wired to its destinations
@@ -30,8 +30,12 @@ sources:
     last_modified: 2026-06-21
   - id: nav-service
     resource: ../../lib/services/nav_service.dart
-    title: NavService — tab index and delegate registry
-    last_modified: 2026-07-28
+    title: NavService — tab index, delegate registry and persisted nav state
+    last_modified: 2026-08-19
+  - id: journal-root-page
+    resource: ../../lib/features/journal/ui/pages/journal_root_page.dart
+    title: JournalRootPage — the logbook split and its background auto-selection
+    last_modified: 2026-08-19
   - id: pane-width-controller
     resource: ../../lib/features/design_system/state/pane_width_controller.dart
     title: Persisted desktop pane widths and collapse state
@@ -172,6 +176,82 @@ normalizes the active route back to `/tasks`, just like the other removable
 destinations. The global Daily OS command uses the same live flag as its
 availability predicate, so shortcuts, menus and the command palette cannot
 dispatch the removed destination's `-1` index.
+
+# Navigation state is persisted, per tab
+
+The app comes back on the screen it was left on — same tab, same route inside
+that tab — after a cold start or a hot restart. `NavService` writes the whole
+picture to the settings row `NAV_STATE` as one `NavStateSnapshot` JSON blob:
+
+```json
+{ "v": 1, "active": "/tasks", "routes": { "/tasks": "/tasks/<uuid>", "/journal": "/journal/<uuid>" } }
+```
+
+The active tab is stored as its **root path**, never as an index: indices are
+positional, so a stored `3` names a different tab as soon as a flag toggles.
+Every navigation writes the row fire-and-forget; `NAV_LAST_ROUTE` is the
+pre-JSON single-route key and is still read once as a migration fallback, never
+written.
+
+`registerSingletons` awaits `restoreNavigationState()` before `runApp`, so the
+first frame is already correct rather than flashing Tasks. Restore has to
+straddle the config flags, which arrive asynchronously and decide which tabs
+exist at all:
+
+```mermaid
+stateDiagram-v2
+  [*] --> Reset
+  Reset --> RoutesRestored: restoreNavigationState reads NAV_STATE
+  Reset --> Tasks: nothing saved, or a corrupt row
+  RoutesRestored --> PendingTab: per-tab routes beamed, active tab parked
+  RoutesRestored --> Active: flags already emitted during the await
+  PendingTab --> Active: flags emit, saved tab is enabled
+  PendingTab --> Tasks: flags emit, saved tab is behind a disabled flag
+  Active --> Active: later flag changes leave it alone
+  note right of PendingTab
+    The parked tab is consumed once.
+    Flag changes after boot must not
+    pull the user back to it.
+  end note
+```
+
+A corrupt or unknown-version row degrades to "nothing saved" — the Tasks
+landing — rather than throwing during bootstrap.
+
+## Background tabs must not steal the foreground
+
+Every tab is mounted at once, so a tab the user is not looking at still builds
+and can navigate. `beamToNamed` switches the **active tab** as a side effect, so
+it is for user-initiated navigation only; anything firing from a background tab
+uses **`beamWithinTab`**, which moves that tab's delegate and records its route
+without touching `index`.
+
+The logbook's newest-entry auto-selection (`_AutoSelectNewestEntry` in
+`journal_root_page.dart`) is the case that proved it: it only exists in the
+desktop split, so it first mounted on every crossing of the desktop breakpoint
+— from the *offstage* Logbook tab — and through `beamToNamed` it yanked the user
+onto Logbook from wherever they actually were. Its "already there" guard reads
+`routeForTab('/journal')`, that tab's own route, not `currentPath`, which is the
+active tab's.
+
+## Crossing the breakpoint keeps the stacks alive
+
+The desktop and mobile branches of `AppScreen.build` are structurally different
+trees. The tab content is therefore rendered through one `_buildContentStack`
+helper carrying a `GlobalKey`, so crossing 960px **reparents** the subtree
+instead of destroying it. Without the key, every `Beamer` was unmounted and
+re-inflated: `BeamerState.dispose` nulls its delegate's `parent` *after* the
+replacement's `didChangeDependencies` has already short-circuited on the parent
+it still had, leaving every nested delegate orphaned from the root router — and
+every page stack, scroll offset and piece of in-flight state discarded.
+
+Because nothing rebuilds the delegates by accident any more, the form-factor
+change has to be announced: `NavService.isDesktopMode` is a **setter** that, on
+an actual change, schedules a post-frame `update()` on every delegate so each
+location re-runs `buildPages` for the new form factor (`AppScreen.build` assigns
+it during build, hence the deferral). That is what turns a desktop right-pane
+task detail into a pushed mobile detail page on the way down, and back again on
+the way up.
 
 # Locations and path patterns
 
@@ -390,7 +470,9 @@ Two rules hold it together:
 | App shell, tab chrome, mobile/desktop split | [`lib/beamer/beamer_app.dart`](../../lib/beamer/beamer_app.dart) |
 | Delegate definitions | [`lib/beamer/beamer_delegates.dart`](../../lib/beamer/beamer_delegates.dart) |
 | Per-tab locations and path patterns | [`lib/beamer/locations/`](../../lib/beamer/locations) |
-| Index, delegate registry, flag gating | [`lib/services/nav_service.dart`](../../lib/services/nav_service.dart) |
+| Index, delegate registry, flag gating, state persistence | [`lib/services/nav_service.dart`](../../lib/services/nav_service.dart) |
+| Restore hook, awaited before `runApp` | [`lib/get_it.dart`](../../lib/get_it.dart) |
+| Logbook auto-selection, the background-navigation case | [`lib/features/journal/ui/pages/journal_root_page.dart`](../../lib/features/journal/ui/pages/journal_root_page.dart) |
 | Mobile overflow sheet | [`lib/widgets/nav_bar/mobile_nav_more_sheet.dart`](../../lib/widgets/nav_bar/mobile_nav_more_sheet.dart) |
 | Contact Us footer, wired | [`lib/widgets/misc/contact_support_row.dart`](../../lib/widgets/misc/contact_support_row.dart) |
 | Contact Us footer, presentation | [`lib/features/design_system/components/navigation/design_system_contact_row.dart`](../../lib/features/design_system/components/navigation/design_system_contact_row.dart) |

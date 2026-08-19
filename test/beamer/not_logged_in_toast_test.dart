@@ -121,6 +121,9 @@ Future<MockNavService> _stubNavService() async {
     await _createEmptyDelegate('/settings'),
   );
   when(() => mockNav.currentPath).thenReturn('/');
+  // The shell seeds its tab from the service so a restored index is on
+  // screen from the FIRST frame; an unstubbed int getter returns null.
+  when(() => mockNav.index).thenReturn(0);
   when(() => mockNav.isDesktopMode).thenReturn(false);
   when(
     () => mockNav.desktopSelectedTaskId,

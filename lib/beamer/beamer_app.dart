@@ -391,6 +391,46 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     navService.relationshipsDelegate,
   ]);
 
+  /// Identity for the tab content across the desktop/mobile breakpoint.
+  ///
+  /// The two layouts are structurally different trees, so without a
+  /// [GlobalKey] crossing the breakpoint UNMOUNTS every `Beamer` and inflates
+  /// a fresh one. That is not merely wasteful: `BeamerState.dispose` nulls its
+  /// delegate's `parent`, and the replacement's `didChangeDependencies` has
+  /// already short-circuited on the parent it still had — so every nested
+  /// delegate ends up orphaned from the root router, and every page stack,
+  /// scroll offset and piece of in-flight state is thrown away. Keyed, the
+  /// subtree is REPARENTED instead, and a resize keeps the user exactly where
+  /// they were.
+  ///
+  /// The form-factor change still has to reach the delegates, since the
+  /// locations branch on it — `NavService.isDesktopMode`'s setter does that.
+  final GlobalKey _contentStackKey = GlobalKey(debugLabel: 'app-content-stack');
+
+  /// The one tab host, shared by both layouts. Only the active tab animates
+  /// and can take focus; the rest stay mounted and offstage.
+  Widget _buildContentStack({
+    required int index,
+    required List<Widget> beamerChildren,
+  }) {
+    return KeyedSubtree(
+      key: _contentStackKey,
+      child: IndexedStack(
+        index: index,
+        children: [
+          for (var i = 0; i < beamerChildren.length; i++)
+            TickerMode(
+              enabled: i == index,
+              child: ExcludeFocus(
+                excluding: i != index,
+                child: beamerChildren[i],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   bool _notLoggedInToastShown = false;
 
   /// Guards against the FTUE welcome being shown more than once per
@@ -610,8 +650,14 @@ class _AppScreenState extends ConsumerState<AppScreen> {
 
     return StreamBuilder<int>(
       stream: navService.getIndexStream(),
+      // Seeded from the service, not from 0: nav state is restored before
+      // `runApp`, so by the time this subscribes the index has already been
+      // set — and a stream delivers even a replayed value asynchronously.
+      // Without this the FIRST frame renders Tasks and only then swaps to the
+      // restored tab, which is the flash the restore exists to avoid.
+      initialData: navService.index,
       builder: (context, snapshot) {
-        final rawIndex = snapshot.data ?? 0;
+        final rawIndex = snapshot.data ?? navService.index;
         final isProjectsPageEnabled = navService.isProjectsPageEnabled;
         final isDailyOsPageEnabled = navService.isDailyOsPageEnabled;
         final isHabitsPageEnabled = navService.isHabitsPageEnabled;
@@ -822,18 +868,9 @@ class _AppScreenState extends ConsumerState<AppScreen> {
                     child: Stack(
                       children: [
                         const IncomingVerificationWrapper(),
-                        IndexedStack(
+                        _buildContentStack(
                           index: index,
-                          children: [
-                            for (var i = 0; i < beamerChildren.length; i++)
-                              TickerMode(
-                                enabled: i == index,
-                                child: ExcludeFocus(
-                                  excluding: i != index,
-                                  child: beamerChildren[i],
-                                ),
-                              ),
-                          ],
+                          beamerChildren: beamerChildren,
                         ),
                       ],
                     ),
@@ -1040,18 +1077,9 @@ class _AppScreenState extends ConsumerState<AppScreen> {
             dockSurface: showBottomNav
                 ? _nudgeBannerSurfaceFor(destinations[index].kind)
                 : null,
-            child: IndexedStack(
+            child: _buildContentStack(
               index: index,
-              children: [
-                for (var i = 0; i < beamerChildren.length; i++)
-                  TickerMode(
-                    enabled: i == index,
-                    child: ExcludeFocus(
-                      excluding: i != index,
-                      child: beamerChildren[i],
-                    ),
-                  ),
-              ],
+              beamerChildren: beamerChildren,
             ),
           ),
           if (showBottomNav) ...[

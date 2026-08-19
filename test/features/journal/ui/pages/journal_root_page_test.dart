@@ -30,27 +30,34 @@ void main() {
 
   late FakeJournalPageController fakeController;
   late ValueNotifier<String?> selectedEntryId;
+  late MockNavService mockNavService;
 
   setUp(() async {
     selectedEntryId = ValueNotifier<String?>(null);
-    // Auto-select beams `/journal/<id>` rather than writing the notifier
-    // directly (the URL is the single source of truth). In production
-    // `JournalLocation.buildPages` then derives the selection from that route;
-    // here there is no Beamer, so the override stands in for that round-trip so
-    // the tests still assert auto-select lands on the right entry.
-    beamToNamedOverride = (path) {
-      selectedEntryId.value = path.split('/').last;
-    };
+    mockNavService = MockNavService();
     await setUpTestGetIt(
       additionalSetup: () {
         final mockUserActivityService = MockUserActivityService();
         when(mockUserActivityService.updateActivity).thenReturn(null);
         getIt.registerSingleton<UserActivityService>(mockUserActivityService);
-        final mockNavService = MockNavService();
         when(() => mockNavService.isDesktopMode).thenReturn(false);
-        // Auto-select reads currentPath to skip re-beaming an already-current
-        // route; a non-entry path keeps the guard open so the beam proceeds.
-        when(() => mockNavService.currentPath).thenReturn('/journal');
+        // Auto-select consults the LOGBOOK TAB's own route (not the active
+        // tab's `currentPath`) to skip re-beaming an already-current route; the
+        // bare root keeps the guard open so the beam proceeds.
+        when(() => mockNavService.routeForTab('/journal')).thenReturn(
+          '/journal',
+        );
+        // Auto-select beams `/journal/<id>` rather than writing the notifier
+        // directly (the URL is the single source of truth). In production
+        // `JournalLocation.buildPages` then derives the selection from that
+        // route; here there is no Beamer, so this stands in for that
+        // round-trip and the tests still assert where auto-select landed.
+        when(() => mockNavService.beamWithinTab(any())).thenAnswer((
+          invocation,
+        ) {
+          final path = invocation.positionalArguments.first as String;
+          selectedEntryId.value = path.split('/').last;
+        });
         when(
           () => mockNavService.desktopSelectedEntryId,
         ).thenReturn(selectedEntryId);
@@ -74,7 +81,6 @@ void main() {
   });
 
   tearDown(() async {
-    beamToNamedOverride = null;
     await tearDownTestGetIt();
     selectedEntryId.dispose();
   });
@@ -321,6 +327,29 @@ void main() {
         await tester.pump();
         await tester.pump();
         expect(selectedEntryId.value, testTextEntry.meta.id);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pumpAndSettle();
+      },
+    );
+
+    testWidgets(
+      'auto-select stays inside the logbook tab instead of activating it',
+      (tester) async {
+        await pumpWithFeed(tester, [testTextEntry]);
+        expect(selectedEntryId.value, testTextEntry.meta.id);
+
+        // Every tab is mounted at once, so this widget also runs while the
+        // user is on Tasks — most visibly on every crossing of the desktop
+        // breakpoint, which is when the desktop split first mounts. Routing
+        // the auto-selection through `beamToNamed` would switch the ACTIVE
+        // tab to Logbook and steal the user off whatever they were doing.
+        verify(
+          () =>
+              mockNavService.beamWithinTab('/journal/${testTextEntry.meta.id}'),
+        ).called(1);
+        verifyNever(() => mockNavService.beamToNamed(any()));
+        verifyNever(() => mockNavService.setIndex(any()));
 
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pumpAndSettle();

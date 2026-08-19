@@ -1,7 +1,8 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:beamer/beamer.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
@@ -9,7 +10,72 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:rxdart/rxdart.dart';
 
+/// Legacy settings key: a single route string, the active tab's path.
+/// Still READ once at restore as a migration fallback for [navStateKey]'s
+/// `active` field, never written any more.
 const String lastRouteKey = 'NAV_LAST_ROUTE';
+
+/// Settings key holding the whole navigation state as JSON — the active tab
+/// and every tab's own route. See [NavStateSnapshot].
+const String navStateKey = 'NAV_STATE';
+
+/// The persisted navigation state: which tab was active and where each tab
+/// stood within its own Beamer stack.
+///
+/// The active tab is stored as its ROOT PATH rather than as an index, because
+/// indices shift whenever a feature flag toggles a tab in or out — a stored
+/// `3` means a different tab after the flag streams emit, a stored `/goals`
+/// does not.
+@immutable
+class NavStateSnapshot {
+  const NavStateSnapshot({required this.activeRootPath, required this.routes});
+
+  /// Parses [json], returning null for anything malformed or of an unknown
+  /// version. A corrupt row must degrade to "no saved state" (land on Tasks),
+  /// never throw during bootstrap.
+  static NavStateSnapshot? decode(String? json) {
+    if (json == null || json.isEmpty) return null;
+    try {
+      final decoded = jsonDecode(json);
+      if (decoded is! Map<String, dynamic>) return null;
+      if (decoded['v'] != _version) return null;
+      final active = decoded['active'];
+      if (active is! String || active.isEmpty) return null;
+      final rawRoutes = decoded['routes'];
+      final routes = <String, String>{};
+      if (rawRoutes is Map) {
+        for (final entry in rawRoutes.entries) {
+          final key = entry.key;
+          final value = entry.value;
+          if (key is String && value is String && value.isNotEmpty) {
+            routes[key] = value;
+          }
+        }
+      }
+      return NavStateSnapshot(activeRootPath: active, routes: routes);
+    } on FormatException {
+      return null;
+    }
+  }
+
+  static const int _version = 1;
+
+  /// Root path of the tab that was active, e.g. `/tasks`.
+  final String activeRootPath;
+
+  /// Root path -> the route that tab stood at, e.g. `/tasks` -> `/tasks/<id>`.
+  final Map<String, String> routes;
+
+  String encode() => jsonEncode({
+    'v': _version,
+    'active': activeRootPath,
+    'routes': routes,
+  });
+
+  /// The active tab's own route — what a caller asking "where is the user?"
+  /// wants, falling back to the tab root when that tab has no deeper route.
+  String get activeRoute => routes[activeRootPath] ?? activeRootPath;
+}
 
 /// Lightweight snapshot of the current settings route for the desktop
 /// split-pane view.
@@ -27,6 +93,15 @@ class NavService {
     _journalDb = journalDb ?? getIt<JournalDb>();
     _settingsDb = settingsDb ?? getIt<SettingsDb>();
     resetTabsToRoots();
+
+    // Attached AFTER the reset above, so seeding the tabs is not itself
+    // mistaken for navigation worth persisting. Every tab's stack can be moved
+    // without going through this service — `beamBack`, the settings tree's own
+    // `Beamer.of(context).beamToReplacementNamed`, a direct delegate call — so
+    // the delegates themselves are what we watch.
+    for (final spec in _tabSpecs) {
+      spec.delegate.addListener(_schedulePersist);
+    }
 
     _navigationFlagsSub =
         Rx.combineLatest7<
@@ -90,9 +165,66 @@ class NavService {
   >
   _navigationFlagsSub;
 
+  bool _isDesktopMode = false;
+
   /// Whether the app is currently in desktop layout mode (sidebar visible).
   /// Set by `AppScreen` based on the current window width.
-  bool isDesktopMode = false;
+  bool get isDesktopMode => _isDesktopMode;
+
+  /// Crossing the desktop/mobile breakpoint changes what every route MEANS:
+  /// the locations branch on this flag to decide whether a detail is a pushed
+  /// page (mobile) or a right-hand pane (desktop). The shell keeps its nav
+  /// subtree alive across the breakpoint (see the `GlobalKey` in `AppScreen`),
+  /// so nothing rebuilds the delegates by accident any more — the change has
+  /// to be announced, or a task opened on desktop would resize down to a
+  /// detail-less list.
+  ///
+  /// Deferred to after the frame because `AppScreen.build` assigns this
+  /// DURING build, and `update(rebuild: true)` notifies listeners.
+  set isDesktopMode(bool value) {
+    if (_isDesktopMode == value) return;
+    _isDesktopMode = value;
+    _rebuildAllDelegatesAfterFrame();
+  }
+
+  void _rebuildAllDelegatesAfterFrame() {
+    if (_layoutRebuildScheduled) return;
+    _layoutRebuildScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _layoutRebuildScheduled = false;
+      if (_disposed) return;
+      for (final spec in _tabSpecs) {
+        // `takePriority: false`: re-rendering every tab for the new form
+        // factor must not reshuffle which delegate is the active one.
+        spec.delegate.update(takePriority: false);
+      }
+    });
+  }
+
+  bool _layoutRebuildScheduled = false;
+  bool _disposed = false;
+
+  /// Suppresses persistence while [restoreNavigationState] is reading, so the
+  /// config-flag streams landing mid-restore cannot overwrite the saved row
+  /// with the not-yet-restored default.
+  bool _restoreInFlight = false;
+
+  /// The active tab's root path pending restore, held until the config-flag
+  /// streams have emitted at least once.
+  ///
+  /// At construction every flag reads `false`, so a saved tab behind a flag
+  /// (`/goals`, `/projects`, …) is not yet in [_enabledTabSpecs] and
+  /// `_normalizePath` would drop it to Tasks. Consumed by the first
+  /// [_handleNavigationFlagsUpdated].
+  String? _pendingActiveRootPath;
+
+  /// Whether the config-flag streams have emitted at least once, i.e. whether
+  /// [_enabledTabSpecs] reflects reality yet.
+  bool _flagsReceived = false;
+
+  /// Coalesces the saves triggered by delegate notifications, so one
+  /// navigation (which can notify several delegates) costs one write.
+  bool _persistScheduled = false;
 
   /// Desktop split-pane task detail stack.
   ///
@@ -154,7 +286,15 @@ class NavService {
   bool _isRelationshipsPageEnabled = false;
 
   String currentPath = '/tasks';
-  final indexStreamController = StreamController<int>.broadcast();
+
+  /// Replays the current index to new subscribers.
+  ///
+  /// Restore runs before `runApp`, so the emission that selects the restored
+  /// tab happens before `AppScreen` — or any controller keyed on tab
+  /// visibility — has subscribed. A plain broadcast controller drops it, and
+  /// the shell would sit on Tasks while the service and the delegates were
+  /// already somewhere else entirely.
+  final indexStreamController = BehaviorSubject<int>.seeded(0);
 
   final tasksIndex = 0;
 
@@ -190,8 +330,96 @@ class NavService {
       // on later, and a stale route must not be waiting behind it.
       spec.delegate.beamToReplacementNamed(spec.rootPath);
     }
+    _pendingActiveRootPath = null;
     currentPath = _enabledTabSpecs.first.rootPath;
     index = 0;
+  }
+
+  /// Restores the tab routes and the active tab persisted by the previous
+  /// session, so the app comes back on exactly the screen it was left on.
+  ///
+  /// Awaited from `registerSingletons` BEFORE `runApp`, so the restored state
+  /// is in place for the very first frame rather than flashing Tasks first.
+  ///
+  /// The active tab cannot be applied here: the config-flag streams have not
+  /// emitted yet, so a flag-gated tab is not in [_enabledTabSpecs] and would
+  /// be normalised away. It is parked in [_pendingActiveRootPath] and applied
+  /// by the first [_handleNavigationFlagsUpdated]. The per-tab routes ARE
+  /// applied immediately: the delegates exist regardless of their flags.
+  ///
+  /// Nothing saved, or a corrupt row, leaves the constructor's
+  /// [resetTabsToRoots] result standing — Tasks, all tabs at their roots.
+  Future<void> restoreNavigationState() async {
+    // Set BEFORE the first await: the flag streams emit on a later microtask,
+    // and their `_setIndexInternal` would otherwise write `{active: /tasks}`
+    // over the very row this method is still reading.
+    _restoreInFlight = true;
+    try {
+      await _restoreNavigationState();
+    } finally {
+      _restoreInFlight = false;
+    }
+    unawaited(_persistState());
+  }
+
+  Future<void> _restoreNavigationState() async {
+    final snapshot =
+        NavStateSnapshot.decode(await _settingsDb.itemByKey(navStateKey)) ??
+        await _legacySnapshot();
+    if (snapshot == null) return;
+
+    for (final spec in _tabSpecs) {
+      final route = snapshot.routes[spec.rootPath];
+      if (route == null || route == spec.rootPath) continue;
+      if (!_matchesRootPath(route, spec.rootPath)) continue;
+      spec.delegate.beamToReplacementNamed(route);
+    }
+
+    _pendingActiveRootPath = snapshot.activeRootPath;
+    currentPath = snapshot.activeRoute;
+    // The flag streams may already have emitted while this method awaited the
+    // settings reads, in which case nothing is coming to consume the pending
+    // tab and it has to be applied here instead.
+    if (_flagsReceived) {
+      _consumePendingActiveTab();
+    }
+  }
+
+  /// Selects the tab parked by [restoreNavigationState], if any and if its
+  /// flag allows it. Returns true when it took over selection, so the caller
+  /// skips its own normalisation.
+  bool _consumePendingActiveTab() {
+    final pendingActiveRootPath = _pendingActiveRootPath;
+    if (pendingActiveRootPath == null) return false;
+    _pendingActiveRootPath = null;
+
+    final restored = _specForPath(pendingActiveRootPath);
+    if (restored == null) {
+      // The saved tab's flag is off — leave the path for the caller to
+      // normalise, which lands on Tasks exactly as an install with nothing
+      // saved does.
+      currentPath = pendingActiveRootPath;
+      return false;
+    }
+    currentPath = _routeForSpec(restored);
+    _setIndexInternal(
+      beamerDelegates.indexOf(restored.delegate),
+      syncPath: false,
+    );
+    return true;
+  }
+
+  /// Reads the pre-JSON `NAV_LAST_ROUTE` row, so an install upgrading into
+  /// this version still comes back on its last tab instead of on Tasks.
+  Future<NavStateSnapshot?> _legacySnapshot() async {
+    final route = await _settingsDb.itemByKey(lastRouteKey);
+    if (route == null || route.isEmpty) return null;
+    final spec = _specForAnyPath(route);
+    if (spec == null) return null;
+    return NavStateSnapshot(
+      activeRootPath: spec.rootPath,
+      routes: {spec.rootPath: route},
+    );
   }
 
   bool get isHabitsPageEnabled => _isHabitsPageEnabled;
@@ -271,16 +499,87 @@ class NavService {
     return null;
   }
 
+  /// Like [_specForPath] but over every tab, enabled or not.
+  ///
+  /// Route persistence and restore both run while the config flags still read
+  /// `false` (at construction) or may have moved since a route was saved. A
+  /// disabled tab still owns its route — it just cannot be the active one.
+  ({bool enabled, String rootPath, BeamerDelegate delegate})? _specForAnyPath(
+    String path,
+  ) {
+    for (final spec in _tabSpecs) {
+      if (_matchesRootPath(path, spec.rootPath)) {
+        return spec;
+      }
+    }
+    return null;
+  }
+
   String _normalizePath(String path) {
     return _specForPath(path) == null ? _enabledTabSpecs.first.rootPath : path;
   }
 
-  void _setIndexInternal(int newIndex, {bool emit = true}) {
+  /// The root path of the tab at [index].
+  ///
+  /// Falls back to the first enabled tab when [index] is out of range, which
+  /// it transiently is whenever a feature flag shrinks the tab list — the
+  /// same staleness the shell guards with `clampNavigationIndex`.
+  ///
+  /// Indexes [_enabledTabSpecs] rather than searching [beamerDelegates] for a
+  /// match: the delegate list is built from those very specs, in that order,
+  /// so a search could never fail and its "not found" arm was unreachable.
+  String get _activeRootPath {
+    final specs = _enabledTabSpecs.toList(growable: false);
+    if (index < 0 || index >= specs.length) return specs.first.rootPath;
+    return specs[index].rootPath;
+  }
+
+  /// [syncPath] is false for callers that have ALREADY set [currentPath] to
+  /// the route they are about to beam to: the target delegate still holds its
+  /// previous route at that point, so deriving the path from it would clobber
+  /// the newer value with the older one.
+  void _setIndexInternal(
+    int newIndex, {
+    bool emit = true,
+    bool syncPath = true,
+  }) {
     index = newIndex;
+    if (syncPath) {
+      currentPath = routeForTab(_activeRootPath);
+    }
     delegateByIndex(index).update(rebuild: false);
+    unawaited(_persistState());
     if (emit) {
       emitState();
     }
+  }
+
+  /// Coalesces a save to the end of the current microtask: one navigation can
+  /// notify several delegates (the form-factor rebuild notifies all of them),
+  /// and that is still one state worth writing once.
+  void _schedulePersist() {
+    if (_persistScheduled || _disposed || _restoreInFlight) return;
+    _persistScheduled = true;
+    scheduleMicrotask(() {
+      _persistScheduled = false;
+      unawaited(_persistState());
+    });
+  }
+
+  /// Writes the active tab and every tab's route to [navStateKey].
+  ///
+  /// Fire-and-forget from the navigation call sites; failures are non-fatal
+  /// (the next navigation writes again, and a missing row just means the next
+  /// cold start lands on Tasks).
+  Future<void> _persistState() async {
+    if (_disposed || _restoreInFlight) return;
+    await _settingsDb.saveSettingsItem(
+      navStateKey,
+      NavStateSnapshot(
+        activeRootPath: _activeRootPath,
+        routes: _routesByTabFromDelegates(),
+      ).encode(),
+    );
   }
 
   void _handleNavigationFlagsUpdated(
@@ -303,6 +602,13 @@ class NavService {
     _isEventsPageEnabled = flags.events;
     _isRelationshipsPageEnabled = flags.relationships;
     _cachedBeamerDelegates = null;
+    _flagsReceived = true;
+
+    // First emission after a restore: the flags are finally known, so a saved
+    // flag-gated tab can be selected. Consumed once — later flag changes must
+    // move the user off a tab that just disappeared, not back onto the tab
+    // they were on at boot.
+    if (_consumePendingActiveTab()) return;
 
     final previousPath = currentPath;
     final normalizedPath = _normalizePath(previousPath);
@@ -339,7 +645,10 @@ class NavService {
     }
 
     currentPath = normalizedPath;
-    _setIndexInternal(beamerDelegates.indexOf(matchingSpec.delegate));
+    _setIndexInternal(
+      beamerDelegates.indexOf(matchingSpec.delegate),
+      syncPath: false,
+    );
   }
 
   List<BeamerDelegate> get beamerDelegates => _cachedBeamerDelegates ??=
@@ -443,20 +752,86 @@ class NavService {
     desktopSelectedTaskId.value = next.last;
   }
 
+  /// User-initiated navigation: beams to [path] AND brings its tab to the
+  /// front. For navigation originating in a tab that is not the active one,
+  /// use [beamWithinTab] instead.
   void beamToNamed(String path, {Object? data}) {
     final normalizedPath = _normalizePath(path);
     setPath(normalizedPath);
-    unawaited(persistNamedRoute(normalizedPath));
     delegateByIndex(index).beamToNamed(normalizedPath, data: data);
   }
 
-  Future<void> persistNamedRoute(String route) async {
-    await _settingsDb.saveSettingsItem(lastRouteKey, route);
-    currentPath = route;
+  /// Beams [path] inside the tab that OWNS it, without making that tab
+  /// active.
+  ///
+  /// Every tab is mounted at once inside the shell's `IndexedStack`, so a
+  /// background tab builds — and can navigate — while the user is somewhere
+  /// else entirely. The logbook's newest-entry auto-selection is the case
+  /// that matters: routing it through [beamToNamed] made merely crossing the
+  /// desktop breakpoint yank the user onto the Logbook tab.
+  ///
+  /// The route is still recorded and persisted, so returning to that tab —
+  /// or restarting the app — lands on it.
+  void beamWithinTab(String path, {Object? data}) {
+    final spec = _specForAnyPath(path);
+    if (spec == null) return;
+    if (spec.rootPath == _activeRootPath) {
+      currentPath = path;
+    }
+    // The delegate notifies, which schedules the save.
+    spec.delegate.beamToNamed(path, data: data);
   }
 
+  /// The route the given tab currently stands at, or its root when it has
+  /// never been navigated deeper.
+  String routeForTab(String rootPath) {
+    final spec = _specForAnyPath(rootPath);
+    return spec == null ? rootPath : _routeForSpec(spec);
+  }
+
+  /// The route [spec]'s delegate currently stands at.
+  ///
+  /// Read straight off the delegate rather than from a map this service
+  /// maintains: plenty of navigation never passes through here at all —
+  /// [beamBack], the settings tree's own
+  /// `Beamer.of(context).beamToReplacementNamed`, `linked_tasks_widget`'s
+  /// direct delegate call — and a parallel map would quietly disagree with
+  /// the stack it claims to describe. Backing out of a detail page would
+  /// then still restore that detail on the next launch.
+  String _routeForSpec(
+    ({bool enabled, String rootPath, BeamerDelegate delegate}) spec,
+  ) {
+    final uri = spec.delegate.configuration.uri;
+    final route = uri.hasQuery ? uri.toString() : uri.path;
+    // A delegate that has never been beamed reports '/'; that is not a route
+    // this tab can be restored to.
+    return _matchesRootPath(route, spec.rootPath) ? route : spec.rootPath;
+  }
+
+  Map<String, String> _routesByTabFromDelegates() {
+    final routes = <String, String>{};
+    for (final spec in _tabSpecs) {
+      final route = _routeForSpec(spec);
+      if (route != spec.rootPath) routes[spec.rootPath] = route;
+    }
+    return routes;
+  }
+
+  /// Records [route] as its tab's current position and persists the state.
+  ///
+  /// For callers that beam a delegate themselves (the agent helpers) and need
+  /// the service's view of where that tab stands to keep up.
+  Future<void> persistNamedRoute(String route) async {
+    currentPath = route;
+    await _persistState();
+  }
+
+  /// The active tab's route as persisted by the previous session.
   Future<String?> getSavedRoute() async {
-    return _settingsDb.itemByKey(lastRouteKey);
+    final snapshot =
+        NavStateSnapshot.decode(await _settingsDb.itemByKey(navStateKey)) ??
+        await _legacySnapshot();
+    return snapshot?.activeRoute;
   }
 
   void beamBack({Object? data}) {
@@ -464,6 +839,10 @@ class NavService {
   }
 
   Future<void> dispose() async {
+    _disposed = true;
+    for (final spec in _tabSpecs) {
+      spec.delegate.removeListener(_schedulePersist);
+    }
     desktopTaskDetailStack.dispose();
     desktopSelectedTaskId.dispose();
     desktopSelectedProjectId.dispose();
