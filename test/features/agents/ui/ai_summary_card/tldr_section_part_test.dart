@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -74,6 +75,53 @@ void main() {
       await tester.tap(find.text('Task Laura'));
       expect(agentTaps, 1);
     });
+
+    testWidgets(
+      'hovering the header block brightens its own ink instead of painting '
+      'an overlay',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidget(
+            TldrHeader(agentName: 'Task Laura', onAgentTap: () {}),
+          ),
+        );
+
+        final ai = tester
+            .element(find.text('Task Laura'))
+            .designTokens
+            .colors
+            .aiCard;
+        Color? nameInk() =>
+            tester.widget<Text>(find.text('Task Laura')).style?.color;
+        Color? badgeBorder() {
+          final container = tester.widget<Container>(
+            find
+                .ancestor(
+                  of: find.byIcon(LottiIcons.aiSpark),
+                  matching: find.byType(Container),
+                )
+                .first,
+          );
+          return (container.decoration! as BoxDecoration).border?.top.color;
+        }
+
+        expect(nameInk(), ai.metaText);
+        expect(badgeBorder(), ai.border);
+
+        final gesture = await tester.createGesture(
+          kind: PointerDeviceKind.mouse,
+        );
+        await gesture.addPointer(location: Offset.zero);
+        addTearDown(gesture.removePointer);
+        await gesture.moveTo(tester.getCenter(find.text('Task Laura')));
+        await tester.pump();
+
+        // The block answers hover itself: the badge border firms to the
+        // accent and the agent name lifts a step.
+        expect(nameInk(), ai.bodyText);
+        expect(badgeBorder(), ai.accent);
+      },
+    );
 
     testWidgets('the tap target hugs the badge and title, not the whole row', (
       tester,

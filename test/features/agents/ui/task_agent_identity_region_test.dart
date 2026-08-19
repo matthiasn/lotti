@@ -203,6 +203,36 @@ void main() {
     );
   });
 
+  testWidgets(
+    'hovering an error row lifts its ink to the error hover tone',
+    (tester) async {
+      const message =
+          'Choose a saved setup or thinking model before this agent can run.';
+      await pumpRegion(
+        tester,
+        data: const TaskAgentModelIdentityViewData(
+          presentation: TaskAgentIdentityPresentation.disabled,
+        ),
+      );
+
+      final tokens = tester
+          .element(find.byType(TaskAgentIdentityRegion))
+          .designTokens;
+      Color? rowInk() => tester.widget<Text>(find.text(message)).style?.color;
+      expect(rowInk(), tokens.colors.alert.error.ink);
+
+      final gesture = await tester.createGesture(
+        kind: PointerDeviceKind.mouse,
+      );
+      await gesture.addPointer(location: Offset.zero);
+      addTearDown(gesture.removePointer);
+      await gesture.moveTo(tester.getCenter(find.text(message)));
+      await tester.pump();
+
+      expect(rowInk(), tokens.colors.alert.error.hover);
+    },
+  );
+
   testWidgets('broken setup keeps historical report attribution visible', (
     tester,
   ) async {

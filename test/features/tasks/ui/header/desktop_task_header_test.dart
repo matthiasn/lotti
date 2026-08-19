@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -276,6 +277,35 @@ void main() {
         expect(details, 1);
       },
     );
+    testWidgets(
+      'hovering a crumb lifts its own ink instead of painting a background',
+      (tester) async {
+        await _pumpDesktop(
+          tester,
+          DesktopTaskHeader(
+            data: _fixture(category: _categoryFixture),
+            onTitleSaved: (_) {},
+            onProjectTap: () {},
+          ),
+        );
+
+        Color? projectInk() =>
+            tester.widget<Text>(find.text('No project')).style?.color;
+        final context = tester.element(find.text('No project'));
+        expect(projectInk(), TaskShowcasePalette.mediumText(context));
+
+        final gesture = await tester.createGesture(
+          kind: PointerDeviceKind.mouse,
+        );
+        await gesture.addPointer(location: Offset.zero);
+        addTearDown(gesture.removePointer);
+        await gesture.moveTo(tester.getCenter(find.text('No project')));
+        await tester.pump();
+
+        expect(projectInk(), TaskShowcasePalette.highText(context));
+      },
+    );
+
     testWidgets(
       'crumb segments without tap handlers render as plain non-tappable '
       'padding',

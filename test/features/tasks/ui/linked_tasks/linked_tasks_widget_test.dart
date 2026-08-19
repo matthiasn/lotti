@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,6 +14,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
+import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -526,6 +528,35 @@ void main() {
       expect(find.text('3'), findsOneWidget);
       expect(find.byIcon(LottiIcons.moreVertical), findsOneWidget);
     });
+
+    testWidgets(
+      'hovering the header brightens the disclosure chevron, no overlay',
+      (tester) async {
+        await pumpWidget(
+          tester,
+          incoming: [],
+          outgoing: [buildTask(id: 'out-1', title: 'Outgoing 1')],
+        );
+
+        final chevron = find.descendant(
+          of: find.byType(DsQuietInk),
+          matching: find.byType(Icon),
+        );
+        final tokens = tester.element(find.text('Linked Tasks')).designTokens;
+        Color? chevronInk() => tester.widget<Icon>(chevron.first).color;
+        expect(chevronInk(), tokens.colors.text.mediumEmphasis);
+
+        final gesture = await tester.createGesture(
+          kind: PointerDeviceKind.mouse,
+        );
+        await gesture.addPointer(location: Offset.zero);
+        addTearDown(gesture.removePointer);
+        await gesture.moveTo(tester.getCenter(find.text('Linked Tasks')));
+        await tester.pump();
+
+        expect(chevronInk(), tokens.colors.text.highEmphasis);
+      },
+    );
 
     testWidgets(
       'badge count reflects only Task entities, not generic entries',

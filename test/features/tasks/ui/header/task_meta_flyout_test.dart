@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,7 +12,9 @@ import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
+import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
@@ -231,6 +234,35 @@ void main() {
       expect(find.text('0m of 2h'), findsOneWidget);
       expect(find.byType(LinearProgressIndicator), findsOneWidget);
     });
+
+    testWidgets(
+      'hovering a row brightens its chevron instead of filling the band',
+      (tester) async {
+        await tester.pumpWidget(pumpFlyout(task: buildTask()));
+        await settle(tester);
+
+        final chevron = find.descendant(
+          of: find.ancestor(
+            of: find.text('Status'),
+            matching: find.byType(DsQuietInk),
+          ),
+          matching: find.byIcon(LottiIcons.chevronRight),
+        );
+        final context = tester.element(find.text('Status'));
+        Color? chevronInk() => tester.widget<Icon>(chevron).color;
+        expect(chevronInk(), TaskShowcasePalette.lowText(context));
+
+        final gesture = await tester.createGesture(
+          kind: PointerDeviceKind.mouse,
+        );
+        await gesture.addPointer(location: Offset.zero);
+        addTearDown(gesture.removePointer);
+        await gesture.moveTo(tester.getCenter(find.text('Status')));
+        await tester.pump();
+
+        expect(chevronInk(), TaskShowcasePalette.highText(context));
+      },
+    );
 
     testWidgets('unset fields read "Not set" at low emphasis', (tester) async {
       final task = buildTask();
