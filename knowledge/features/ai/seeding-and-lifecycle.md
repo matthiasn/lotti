@@ -5,17 +5,21 @@ description: Provider-gated profile seeds, why deletion needed a tombstone, and 
 resource: ../../../lib/features/ai/util/profile_seeding_service.dart
 tags: [ai, seeding, migration, soft-delete, lifecycle]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-08-10T00:00:00Z }
+generated: { by: claude-code/opus-5, at: 2026-08-19T00:00:00Z }
 stale_after: 2026-11-10
 sources:
   - id: seeding
     resource: ../../../lib/features/ai/util/profile_seeding_service.dart
     title: ProfileSeedingService
-    last_modified: 2026-08-10
+    last_modified: 2026-08-19
   - id: repo
     resource: ../../../lib/features/ai/repository/ai_config_repository.dart
     title: AiConfigRepository — soft and hard delete
     last_modified: 2026-07-25
+  - id: model-prepopulation
+    resource: ../../../lib/features/ai/util/model_prepopulation_service.dart
+    title: ModelPrepopulationService — backfill and renamed-id repair
+    last_modified: 2026-08-19
   - id: skill-lookup
     resource: ../../../lib/features/ai/skills/skill_lookup.dart
     title: resolveAssignedSkill — why skills resolve from code, not the store
@@ -32,7 +36,7 @@ each gated on a provider type via `providerTypeByProfileId`:
 | `Gemini Flash`, `Gemini Pro` | Gemini provider |
 | `OpenAI` | OpenAI provider |
 | `Mistral (EU)` | Mistral provider |
-| `Melious.ai` | Melious provider |
+| `Melious.ai`, `Melious.ai (Flash)` | Melious provider |
 | `Chinese AI Profile` | Alibaba provider |
 | `Anthropic Claude` | Anthropic provider |
 | `Local (Ollama)`, `Local Gemma 4 (Ollama)`, `Local Gemma 4 Power (Ollama)` | Ollama provider |
@@ -61,6 +65,12 @@ Operational details of the seeded definitions:
   for image generation. Melious FTUE installs a wider set than the profile
   binds — Qwen3.5 122B A10B, Mistral Small 4 119B Instruct, Voxtral Small 24B
   and Whisper Large v3 Turbo are offered as one-dropdown alternatives.
+- `Melious.ai (Flash)` is the same stack with the cheap thinking model in
+  front: DeepSeek V4 Flash for everyday thinking, Kimi K3 retained for high-end
+  thinking *and* image recognition because Flash is text-in/text-out, and the
+  same Whisper Large v3 and Flux 2 Klein 9B. It seeds ALONGSIDE `Melious.ai`
+  rather than replacing it, and carries no seed generation of its own — the
+  Melious migrations below are keyed on `profileMeliousId` and never touch it.
 - `Local Gemma 4 Power (Ollama)` currently ships with no default skill
   assignments.
 
@@ -201,6 +211,16 @@ What `upgradeExisting()` does backfill, after model rows exist:
 - Moves untouched generation-1 Melious seeds to GLM 5.2 thinking, Kimi K3
   high-end thinking *and* image recognition, and Whisper Large v3 transcription
   (**generation 2**). Image generation already points at Flux 2 Klein 9B.
+
+Model *rows* have their own one-shot repair, separate from profile slots.
+`ModelPrepopulationService.migrateRenamedModelIds` runs before the backfill and
+rewrites a row whose provider-native id was renamed, **in place** — profile
+slots and direct-model overrides store `AiConfigModel.id`, so editing
+`providerModelId` on the existing row repairs every reference at once, where a
+new row would leave them all pointing at the dead id. Soft-deleted rows migrate
+too, since leaving one resurrects the dead id on restore. The only entry today
+is Melious `deepseek-v4-flash` → `deepseek-v4-flash-0731`: the bare alias is
+listed by the provider and never servable.
 
 **Melious stores a seed generation** after each one-shot migration, so later user
 model choices are never reclassified as legacy defaults, and provider-native

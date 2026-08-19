@@ -45,7 +45,10 @@ SCENARIO_NAMES=$(
     grep -oE '^  [a-z][a-zA-Z]*,' | tr -d ' ,'
 )
 SCENARIOS="${PENGUIN_WAKE_EVAL_SCENARIOS:-$SCENARIO_NAMES}"
-if [[ -z "${SCENARIOS// /}" ]]; then
+# Whitespace of any kind, not just literal spaces: a tab-only or newline-only
+# override expands to zero scenarios, and the script would otherwise finish
+# cleanly having evaluated nothing.
+if [[ -z "${SCENARIOS//[[:space:]]/}" ]]; then
   echo "Could not derive the scenario list from PenguinWakeScenarioId." >&2
   exit 2
 fi
@@ -72,7 +75,10 @@ LOTTI_PENGUIN_WAKE_EVAL_LIVE= fvm flutter test "$TEST_PATH" >/dev/null 2>&1
 # reads like a harness problem. Deriving it means a trap added to the test
 # cannot go missing here.
 TRAP_NAMES=$(grep -oE "'[A-Z][A-Z ]{4,}:" "$TEST_PATH" | tr -d "':" | sort -u | paste -sd '|')
-TRAPS="(${TRAP_NAMES:-INVENTED WORK|DUPLICATE PROPOSAL}|HTTP [0-9]+)"
+# Provider failures are not model behaviour, and reading "unknown, see log"
+# for a five-minute timeout sends the reader hunting for a defect that is not
+# there.
+TRAPS="(${TRAP_NAMES:-INVENTED WORK|DUPLICATE PROPOSAL}|HTTP [0-9]+|[A-Za-z]*InferenceException|TimeoutException)"
 
 run_one() {
   local model="$1" scenario="$2" sample="$3"
@@ -95,8 +101,8 @@ run_one() {
 
 # Printed because the silent version fooled the person who wrote this fix: a
 # run covering one scenario looks exactly like a run covering all of them.
-echo "Models:    $(echo $MODELS | tr '\n' ' ')"
-echo "Scenarios: $(echo $SCENARIOS | tr '\n' ' ')"
+echo "Models:    $(tr '\n' ' ' <<<"$MODELS")"
+echo "Scenarios: $(tr '\n' ' ' <<<"$SCENARIOS")"
 echo "Running $SAMPLES sample(s) per model per scenario, up to $MAX_PARALLEL at a time."
 start=$(date +%s)
 for model in $MODELS; do

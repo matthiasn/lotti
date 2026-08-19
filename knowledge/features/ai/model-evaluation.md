@@ -5,7 +5,7 @@ description: The four eval harnesses, what each can and cannot catch, and the me
 resource: ../../../tool
 tags: [ai, evaluation, benchmarking, model-selection]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T00:00:00Z }
+generated: { by: claude-code/opus-5, at: 2026-08-19T00:00:00Z }
 stale_after: 2026-10-19
 sources:
   - id: tools
@@ -19,7 +19,11 @@ sources:
   - id: eval-docs
     resource: ../../../docs/evaluations/task_agent_models/README.md
     title: Task-agent model evaluations
-    last_modified: 2026-07-12
+    last_modified: 2026-08-19
+  - id: real-wake
+    resource: ../../../test/features/ai/eval/penguin_wake_workflow_eval_live_test.dart
+    title: Penguin real-wake eval — the tier that scores persisted outcomes
+    last_modified: 2026-08-19
 ---
 
 Four harnesses sit at increasing levels of fidelity. Each catches a failure the
@@ -31,11 +35,24 @@ one below it cannot.
 | `tool/local_task_agent_inference_eval.sh` | `ConversationRepository`, the real system-prompt scaffold, the full tool surface, the same continuation loop | A model that emits isolated calls but **cannot complete the wake contract** |
 | `tool/local_task_agent_workflow_eval.sh` | `TaskAgentWorkflow.execute` with seeded Laura directives | Whether production persistence outputs actually appear — a `ChangeSetEntity` with the expected suggestions and an `AgentReportEntity` from `update_report` |
 | `tool/melious_task_agent_model_eval.sh` | The conversation-level evaluator as a Melious model × prompt matrix | Cross-model comparison on app-shaped scenarios |
+| `scripts/penguin_wake_eval_matrix.sh` | `TaskAgentWorkflow` over **seeded real databases** — journal, agent and FTS5 — carrying the penguin demo world | What a wake actually persisted, including churn the inference tiers cannot see |
 
-None of them replays a real user database or renders UI. The workflow eval uses
-test doubles with deterministic task/project context, but exercises the same
-workflow, strategy, change-set, report-writing and forced-report retry mechanics
-an in-app wake uses.
+The last one is the only tier that reaches `TaskAgentContextBuilder`. Every
+scenario in the tiers above authors its own `userMessage`, so none of them
+exercises the 853 lines of production logic that decide what the model is
+actually shown; a field dropped there, a log window mis-truncated or an id
+leaked passes all of them. It is also the only tier that scores persisted
+`ChangeSetEntity` and `AgentReportEntity` rather than attempted tool calls.
+
+That difference is not theoretical. On 2026-08-19 the same four models scored
+41/42 on the inference matrix and 30/48 on this one, and the gap was entirely
+restraint: every model republishes an unchanged standing report on a wake whose
+note reports no movement.
+
+None of the first four replays a real user database or renders UI. The workflow
+eval uses test doubles with deterministic task/project context, but exercises
+the same workflow, strategy, change-set, report-writing and forced-report retry
+mechanics an in-app wake uses.
 
 ```mermaid
 flowchart LR

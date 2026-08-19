@@ -10,6 +10,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
@@ -244,21 +245,33 @@ void main() {
       // as the valid one alone, so a check reading only proposals would pass a
       // fabrication it never saw. The action log records jsonEncode(args) at
       // call time, which is the only place the invented element survives.
-      final actionPayloadIds = <String>[
+      // Paired with the tool that produced them, so a label assertion looks at
+      // label calls and nothing else. An earlier version filtered by id PREFIX
+      // instead, which skipped any id that did not look like a label — so a
+      // fabricated `label-unknown` performed no assertion at all and scored as
+      // correct, which is precisely the hole the check exists to close.
+      final wakeActions = [
         for (final message in actionMessages)
           if (message.metadata.runKey == runKey)
-            if (message.contentEntryId case final String id) id,
+            if (message.contentEntryId case final String id)
+              (toolName: message.metadata.toolName, payloadId: id),
       ];
-      final actionPayloads = actionPayloadIds.isEmpty
+      final actionPayloads = wakeActions.isEmpty
           ? const <String, AgentDomainEntity>{}
-          : await harness.agentRepository.getEntitiesByIds(actionPayloadIds);
-      final calledToolArgs = <Map<String, dynamic>>[];
-      for (final entity in actionPayloads.values) {
+          : await harness.agentRepository.getEntitiesByIds([
+              for (final action in wakeActions) action.payloadId,
+            ]);
+      final calledToolArgs =
+          <({String? toolName, Map<String, dynamic> args})>[];
+      for (final action in wakeActions) {
+        final entity = actionPayloads[action.payloadId];
         if (entity case AgentMessagePayloadEntity(:final content)) {
           final text = content['text'];
           if (text is! String) continue;
           final decoded = jsonDecode(text);
-          if (decoded is Map<String, dynamic>) calledToolArgs.add(decoded);
+          if (decoded is Map<String, dynamic>) {
+            calledToolArgs.add((toolName: action.toolName, args: decoded));
+          }
         }
       }
 
@@ -307,7 +320,16 @@ void main() {
         // `waiting-on` label: its note says the task is still waiting on an
         // external party, so the label restates the evidence rather than
         // inventing progress, and every evaluated model proposed it.
-        final unexpected = proposedTools
+        // From the action log, for the same reason the label ids are: a
+        // proposal `ChangeSetBuilder` deduplicated against a still-open one
+        // never becomes a persisted item, so reading `proposedTools` here lets
+        // a wake call a forbidden tool and still show an empty set. What the
+        // model attempted is the question; what survived persistence is not.
+        final proposalToolNames = {
+          ...proposedTools,
+          ...calledTools.where(AgentToolRegistry.deferredTools.contains),
+        };
+        final unexpected = proposalToolNames
             .where((tool) => !scenario.allowedProposalTools.contains(tool))
             .toList();
         expect(
@@ -324,20 +346,25 @@ void main() {
           // Read from the action log, not the change set: a label the exploder
           // rejected never reaches `proposedArgs`, so checking there would
           // clear exactly the fabrication this asserts against.
+          const labelTools = {
+            TaskAgentToolNames.assignTaskLabel,
+            TaskAgentToolNames.assignTaskLabels,
+          };
           final attemptedLabelIds = <String>[
-            for (final args in calledToolArgs) ...[
-              if (args['id'] case final String id) id,
-              if (args['labels'] case final List<dynamic> labels)
-                for (final label in labels)
-                  if (label is Map<String, dynamic>)
-                    if (label['id'] case final String id) id,
-            ],
+            for (final call in calledToolArgs)
+              if (labelTools.contains(call.toolName)) ...[
+                if (call.args['id'] case final String id) id,
+                if (call.args['labels'] case final List<dynamic> labels)
+                  for (final label in labels)
+                    if (label is Map<String, dynamic>)
+                      if (label['id'] case final String id) id else '<no id>'
+                    else if (label is String)
+                      label,
+              ],
           ];
+          // Every attempted id, with no prefix gate: an id that does not look
+          // like a label is exactly the fabrication worth catching.
           for (final labelId in attemptedLabelIds) {
-            if (!labelId.startsWith('manual-label-') &&
-                !labelId.startsWith('manual-project-')) {
-              continue;
-            }
             expect(
               labelId,
               demoWaitingLabelId,
@@ -410,12 +437,21 @@ void main() {
           // under a fresh tagline satisfied every check here: the grounding
           // terms "Bay C", "leak" and "seam" are all in the PRIOR report,
           // which describes the leak as neither found nor ruled out.
+          // Each field against its OWN prior value. Comparing `content` with
+          // the prior TLDR passed any report that kept the old body, since a
+          // body never equals a one-paragraph summary.
           expect(
-            [agentReport?.tldr, agentReport?.content],
-            isNot(contains(penguinWakePriorReportTldr)),
+            agentReport?.tldr,
+            isNot(penguinWakePriorReportTldr),
             reason:
-                'MISSED: the report body was carried over unchanged under a '
-                'new tagline. $where',
+                'MISSED: the tldr was carried over unchanged under a new '
+                'tagline. $where',
+          );
+          expect(
+            agentReport?.content,
+            isNot(penguinWakePriorReportContent),
+            reason:
+                'MISSED: the report body was carried over unchanged. $where',
           );
           // Terms that exist ONLY in the closing note, never in the prior
           // report, so they cannot be satisfied by restating the old blocker:
