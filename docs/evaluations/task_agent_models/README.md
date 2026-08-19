@@ -280,9 +280,16 @@ the ad tools its deterministic tier has ruled out.
 The task agent has the same deterministic knowledge and does not use it.
 `TaskAgentContextBuilder` computes "Changed Since Last Wake" and knows exactly
 which entity ids moved; the workflow then offers the full mutation surface
-regardless. Withholding mutation tools when nothing changed would make the
-failure unreachable instead of discouraged, which is the one intervention shape
-that has worked in either suite.
+regardless. Withholding mutation tools would make the failure unreachable
+instead of discouraged, which is the one intervention shape that has worked in
+either suite.
+
+**Not the whole surface, though.** A no-op wake is triggered by something — a
+note that reports no movement — and labelling what that note describes is
+legitimate: every evaluated model proposes `waiting-on`, and the scenario now
+allows it. A blanket withhold would suppress the one proposal here that is
+correct, so the lever is "withhold what advances the task", not "withhold
+everything".
 
 Noise floor, from four identical runs: `requalification` and `materialChange`
 are stable at 12/12, `noOp` at 0/12, and `pendingProposal` swings +/-2 of 3 per

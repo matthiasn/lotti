@@ -10,6 +10,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
@@ -307,7 +308,16 @@ void main() {
         // `waiting-on` label: its note says the task is still waiting on an
         // external party, so the label restates the evidence rather than
         // inventing progress, and every evaluated model proposed it.
-        final unexpected = proposedTools
+        // From the action log, for the same reason the label ids are: a
+        // proposal `ChangeSetBuilder` deduplicated against a still-open one
+        // never becomes a persisted item, so reading `proposedTools` here lets
+        // a wake call a forbidden tool and still show an empty set. What the
+        // model attempted is the question; what survived persistence is not.
+        final proposalToolNames = {
+          ...proposedTools,
+          ...calledTools.where(AgentToolRegistry.deferredTools.contains),
+        };
+        final unexpected = proposalToolNames
             .where((tool) => !scenario.allowedProposalTools.contains(tool))
             .toList();
         expect(

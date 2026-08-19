@@ -22,10 +22,15 @@ enum PenguinWakeScenarioId {
   /// deadline request, and a debt that reads like a completion.
   requalification,
 
-  /// Nothing report-worthy happened since the last wake.
+  /// A note arrived that reports no movement.
   ///
-  /// A prior report already describes the state accurately and the newest note
-  /// adds no fact that changes it, so a correct wake proposes no data changes.
+  /// Not "nothing happened" — the wake has a real trigger, a new note. It is
+  /// the common production case of a status-quo update: a prior report already
+  /// describes the state and the note adds no fact that changes it.
+  ///
+  /// "No data changes" is therefore not quite the rule. Restating what the
+  /// note already says is allowed — see `allowedProposalTools`, which permits
+  /// the `waiting-on` label and nothing else. Advancing the task is not.
   ///
   /// It also publishes no report. The live contract is
   /// `TaskAgentEvidenceSynthesis.reportDirective`, which
@@ -128,7 +133,22 @@ class PenguinWakeScenario {
           'not invent progress. Labelling what the note describes is fine.',
       expectsProposals: false,
       expectsReport: false,
-      allowedProposalTools: {TaskAgentToolNames.assignTaskLabel},
+      // What the wake may still do: describe the task, not advance it.
+      //
+      // Both label tools, because the batch form is the same action under
+      // another name and models use either. `set_task_language` because the
+      // contract permits it "only when it is currently absent" and the demo
+      // task carries no languageCode at all — flagging it fails a model for
+      // following the rule.
+      //
+      // Everything that moves the task forward — status, due date, priority,
+      // estimate, checklist items — stays forbidden, which is the actual
+      // content of "nothing materially changed".
+      allowedProposalTools: {
+        TaskAgentToolNames.assignTaskLabel,
+        TaskAgentToolNames.assignTaskLabels,
+        TaskAgentToolNames.setTaskLanguage,
+      },
     ),
     PenguinWakeScenarioId.materialChange: PenguinWakeScenario(
       id: PenguinWakeScenarioId.materialChange,
