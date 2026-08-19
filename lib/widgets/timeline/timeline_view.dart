@@ -191,7 +191,14 @@ class _TimelineTile extends StatelessWidget {
     final tokens = context.designTokens;
     final cs = context.colorScheme;
     final entryId = beat.entryId;
-    final canOpen = onOpenBeat != null && entryId != null;
+    // A beat's own tap outranks the entry navigation; either way the row is
+    // "openable" and earns the chevron.
+    final onTap =
+        beat.onTap ??
+        (onOpenBeat != null && entryId != null
+            ? () => onOpenBeat!(entryId)
+            : null);
+    final canOpen = onTap != null;
     final accent = beat.accent ?? cs.primary;
 
     final dotSize = beat.glyph == null
@@ -232,22 +239,45 @@ class _TimelineTile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
+                      // spaceBetween pins the leading labels to the start and
+                      // the trailing slot to the end while BOTH stay
+                      // shrinkable: a non-flex trailing widget could starve
+                      // the time label on narrow cards (large text scales,
+                      // longer locales) and overflow the row.
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          beat.timeLabel,
-                          style: tokens.typography.styles.body.bodySmall
-                              .copyWith(color: cs.onSurfaceVariant),
-                        ),
-                        if (beat.kindLabel != null) ...[
-                          SizedBox(width: tokens.spacing.step2),
-                          Flexible(
-                            child: Text(
-                              beat.kindLabel!,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: calmEyebrowStyle(tokens, color: accent),
-                            ),
+                        Flexible(
+                          child: Row(
+                            children: [
+                              Text(
+                                beat.timeLabel,
+                                style: tokens.typography.styles.body.bodySmall
+                                    .copyWith(color: cs.onSurfaceVariant),
+                              ),
+                              if (beat.kindLabel != null) ...[
+                                SizedBox(width: tokens.spacing.step2),
+                                Flexible(
+                                  child: Text(
+                                    beat.kindLabel!,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: calmEyebrowStyle(
+                                      tokens,
+                                      color: accent,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
+                        ),
+                        // Fully right-aligned, on the SAME row as the time
+                        // and kind — a status-only beat stays one tight line.
+                        // Flexible, so an oversized trailing widget shrinks
+                        // instead of pushing the row into overflow.
+                        if (beat.trailing != null) ...[
+                          SizedBox(width: tokens.spacing.step2),
+                          Flexible(child: beat.trailing!),
                         ],
                       ],
                     ),
@@ -277,10 +307,17 @@ class _TimelineTile extends StatelessWidget {
     );
 
     if (!canOpen) return row;
-    return InkWell(
-      onTap: () => onOpenBeat!(entryId),
-      borderRadius: BorderRadius.circular(tokens.radii.s),
-      child: row,
+    // A local transparent Material carries the hover fill: the rail sits on
+    // an opaque card, so ink painted on the Scaffold's Material below it
+    // never showed and openable rows gave no pointer feedback.
+    return Material(
+      type: MaterialType.transparency,
+      child: InkWell(
+        onTap: onTap,
+        hoverColor: tokens.colors.surface.hover,
+        borderRadius: BorderRadius.circular(tokens.radii.s),
+        child: row,
+      ),
     );
   }
 }
@@ -519,15 +556,19 @@ class _InlineTextAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    return InkWell(
-      onTap: onPressed,
-      borderRadius: BorderRadius.circular(tokens.radii.s),
-      child: Padding(
-        padding: EdgeInsets.symmetric(vertical: tokens.spacing.step1),
-        child: Text(
-          label,
-          style: tokens.typography.styles.body.bodySmall.copyWith(
-            color: tokens.colors.interactive.enabled,
+    return Material(
+      type: MaterialType.transparency,
+      child: InkWell(
+        onTap: onPressed,
+        hoverColor: tokens.colors.surface.hover,
+        borderRadius: BorderRadius.circular(tokens.radii.s),
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: tokens.spacing.step1),
+          child: Text(
+            label,
+            style: tokens.typography.styles.body.bodySmall.copyWith(
+              color: tokens.colors.interactive.enabled,
+            ),
           ),
         ),
       ),

@@ -5,6 +5,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [1.0.11]
+### Changed
+- **Cleaner goal cards.** Each habit and signal card now carries one stacked
+  block in its top-right corner — the key reading ("7 this window · target
+  5", "121 / 81 mmHg") with its status ("On track", "Needs attention")
+  directly beneath it in its own colour, flush to the card's edge — instead
+  of both floating inline on the title row. The duplicate "5× per 7 days"
+  line is gone; the date span now notes "slides at midnight" for rolling
+  weeks. Each plain day square carries a small weekday initial in its
+  corner (a marked day — missed, skipped, judged — keeps its mark alone),
+  and a habit's reading now names its window outright — "1 of 3 · calendar
+  week" — since the track can show several windows' worth of days. Legends and summary lines center under the charts they explain.
+  Shape now tells you what is tappable: buttons and controls stay fully
+  rounded, while informative chips (status, trend, verdict, cost) take a
+  small fixed corner. And hovering actually shows: day squares, reflection
+  rows, "Reflect on today" and the check-ins rail all give pointer feedback
+  on desktop. The goal pages themselves got tighter: the content column
+  narrowed from 900 to 760 pixels, the default range now shows exactly as
+  many days as fit the card at the normal density (pick 14d/30d/90d to
+  override), and the "Also in {goal}" suffix on shared habits is gone.
+- **Daily reflections live in the check-ins rail.** The long "Daily
+  reflections" list is gone from the goal page's main column; each
+  reflection is one tight row in the check-ins rail — date and time leading,
+  verdict pill fully right-aligned — and tapping the row reopens that day's
+  reflection. The "Rated by you" / "suggested, you accepted" attribution and
+  the retired-banner "Interactions" list are no longer shown.
+
 ### Fixed
 - **A recording that cannot be transcribed says so.** Asking for a transcript
   on an entry that belongs to no task and no category used to do nothing at

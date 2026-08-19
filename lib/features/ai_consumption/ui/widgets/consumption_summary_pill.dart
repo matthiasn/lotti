@@ -15,11 +15,17 @@ class ConsumptionSummaryPill extends StatelessWidget {
   const ConsumptionSummaryPill({
     required this.totals,
     required this.foregroundColor,
+    this.cornerRadius,
     super.key,
   });
 
   final ConsumptionTotals totals;
   final Color foregroundColor;
+
+  /// Corner radius override, passed through to [DsPill]. Surfaces that
+  /// reserve full rounding for clickable elements pass their small-chip
+  /// radius here — this pill informs, it does not act.
+  final double? cornerRadius;
 
   @override
   Widget build(BuildContext context) {
@@ -30,6 +36,7 @@ class ConsumptionSummaryPill extends StatelessWidget {
       child: DsPill(
         variant: DsPillVariant.filled,
         bordered: true,
+        cornerRadius: cornerRadius,
         label: consumptionSummaryLabel(context, totals),
         labelColor: foregroundColor,
         leading: Icon(

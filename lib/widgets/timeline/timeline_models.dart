@@ -143,6 +143,8 @@ class TimelineBeat {
     this.kindLabel,
     this.glyph,
     this.accent,
+    this.trailing,
+    this.onTap,
   });
 
   /// Already-formatted clock (or clock-and-date) label. Formatting needs a
@@ -171,6 +173,17 @@ class TimelineBeat {
   /// Tints the dot and the kind label. Null falls back to the theme's primary,
   /// again preserving the Events appearance.
   final Color? accent;
+
+  /// Caller-supplied widget pinned to the trailing edge of the header row —
+  /// a verdict pill, a count. Keeps a beat to ONE tight row where its whole
+  /// payload is a status: leading time and kind, trailing state, nothing
+  /// stacked beneath. Null renders the header exactly as before.
+  final Widget? trailing;
+
+  /// Row-level tap for beats that open something other than a journal entry
+  /// (a reflection sheet, a picker). Takes precedence over the [entryId]
+  /// navigation; the chevron affordance follows whichever is active.
+  final VoidCallback? onTap;
 }
 
 /// A labelled run of beats — one day, one month, or an unlabelled single run.

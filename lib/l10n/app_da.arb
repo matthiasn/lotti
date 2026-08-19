@@ -2941,6 +2941,8 @@
   "goalDimensionCategoryTimeSource": "Sporet kategoritid",
   "goalDimensionHabitReading": "{currentCount} af {targetCount} dette vindue",
   "goalDimensionHabitReadingOverTarget": "{currentCount} dette vindue · mål {targetCount}",
+  "goalDimensionHabitReadingOverTargetWindowed": "{currentCount} · mål {targetCount} · {window}",
+  "goalDimensionHabitReadingWindowed": "{currentCount} af {targetCount} · {window}",
   "goalDimensionHabitSource": "Afslutning af vaner",
   "goalDimensionHealthSource": "Sundhedsdata",
   "goalDimensionImprovingNote": "Ikke i mål endnu, men den seneste måling bevægede sig mod målet.",

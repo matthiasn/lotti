@@ -36,6 +36,7 @@ class DsPill extends StatelessWidget {
     this.selected = false,
     this.onTap,
     this.onLongPress,
+    this.cornerRadius,
     super.key,
   }) : assert(
          variant != DsPillVariant.tinted || color != null,
@@ -96,12 +97,20 @@ class DsPill extends StatelessWidget {
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
 
+  /// Corner radius override. Defaults to the fully-rounded
+  /// `radii.badgesPills`. Surfaces that separate affordances by shape —
+  /// clickable elements fully rounded, informative chips at the small fixed
+  /// radius — pass `tokens.radii.smallChips` for a non-tappable instance.
+  final double? cornerRadius;
+
   static const double height = 28;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final radius = BorderRadius.circular(tokens.radii.badgesPills);
+    final radius = BorderRadius.circular(
+      cornerRadius ?? tokens.radii.badgesPills,
+    );
     final hPadding = tokens.spacing.step3;
     final gap = tokens.spacing.step2;
 
@@ -207,7 +216,7 @@ class DsPill extends StatelessWidget {
         // keeps the border reading as "unset" next to the solid chips, so the
         // stronger stroke costs nothing semantically.
         color: tokens.colors.decorative.level03,
-        radius: tokens.radii.badgesPills,
+        radius: cornerRadius ?? tokens.radii.badgesPills,
         child: content,
       ),
     };

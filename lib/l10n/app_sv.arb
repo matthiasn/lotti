@@ -2941,6 +2941,8 @@
   "goalDimensionCategoryTimeSource": "Spårad kategoritid",
   "goalDimensionHabitReading": "{currentCount} av {targetCount} detta fönster",
   "goalDimensionHabitReadingOverTarget": "{currentCount} detta fönster · mål {targetCount}",
+  "goalDimensionHabitReadingOverTargetWindowed": "{currentCount} · mål {targetCount} · {window}",
+  "goalDimensionHabitReadingWindowed": "{currentCount} av {targetCount} · {window}",
   "goalDimensionHabitSource": "Vana avslut",
   "goalDimensionHealthSource": "Hälsodata",
   "goalDimensionImprovingNote": "Inte framme än, men det senaste värdet rörde sig mot målet.",

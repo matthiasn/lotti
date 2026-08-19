@@ -184,6 +184,61 @@ void main() {
       expect(decoration.border?.top.color, accent.withValues(alpha: 0.5));
     });
 
+    testWidgets('cornerRadius overrides the fully rounded default', (
+      tester,
+    ) async {
+      // Surfaces that split affordance by shape (clickable → pill,
+      // informative → small fixed radius) pass their small-chip radius for
+      // non-tappable instances; the default stays the fully rounded pill.
+      await pump(
+        tester,
+        DsPill(
+          variant: DsPillVariant.filled,
+          label: 'Informative',
+          cornerRadius: dsTokensDark.radii.smallChips,
+        ),
+      );
+
+      final decorated = tester
+          .widgetList<DecoratedBox>(
+            find.descendant(
+              of: find.byType(DsPill),
+              matching: find.byType(DecoratedBox),
+            ),
+          )
+          .first;
+      final decoration = decorated.decoration as BoxDecoration;
+      expect(
+        decoration.borderRadius,
+        BorderRadius.circular(dsTokensDark.radii.smallChips),
+      );
+    });
+
+    testWidgets('muted variant honours the cornerRadius override too', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        DsPill(
+          variant: DsPillVariant.muted,
+          label: 'Unset',
+          cornerRadius: dsTokensDark.radii.smallChips,
+        ),
+      );
+
+      final dashedPainter = tester
+          .widgetList<CustomPaint>(
+            find.descendant(
+              of: find.byType(DsPill),
+              matching: find.byType(CustomPaint),
+            ),
+          )
+          .map((paint) => paint.painter)
+          .whereType<DashedBorderPainter>()
+          .single;
+      expect(dashedPainter.radius, dsTokensDark.radii.smallChips);
+    });
+
     testWidgets('muted variant paints a dashed border', (tester) async {
       await pump(
         tester,

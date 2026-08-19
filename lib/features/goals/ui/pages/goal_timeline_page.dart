@@ -5,8 +5,11 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
+import 'package:lotti/features/goals/state/goal_assessment_state.dart';
+import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/checkins/goal_checkin_composer.dart';
 import 'package:lotti/features/goals/ui/checkins/goal_checkin_timeline.dart';
+import 'package:lotti/features/goals/ui/goal_assessment_widgets.dart';
 import 'package:lotti/features/goals/ui/goal_routes.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -30,6 +33,12 @@ class GoalTimelinePage extends ConsumerWidget {
     final isActive = goalIdentity?.lifecycle == AgentLifecycle.active;
     final health = ref.watch(goalAgentHealthProvider(agentId)).value;
     final title = health?.spec?.title ?? goalIdentity?.displayName ?? '';
+    final spec = health?.spec;
+    final progress = spec == null
+        ? null
+        : ref.watch(goalAgentProgressViewProvider(agentId)).value;
+    final assessments =
+        ref.watch(goalAssessmentHistoryProvider(agentId)).value ?? const [];
 
     void openComposer() => GoalCheckInComposer.show(
       context,
@@ -71,7 +80,21 @@ class GoalTimelinePage extends ConsumerWidget {
             tokens.spacing.step5 +
                 DesignSystemBottomNavigationBar.occupiedHeight(context),
           ),
-          child: GoalCheckInTimeline(agentId: agentId),
+          child: GoalCheckInTimeline(
+            agentId: agentId,
+            // The full history must reopen reflections exactly like the
+            // inline preview — the same shared sheet, gated the same way.
+            onOpenReflection: !(isActive && spec != null && progress != null)
+                ? null
+                : (day) => showGoalDayAssessmentSheet(
+                    context,
+                    agentId: agentId,
+                    spec: spec,
+                    progress: progress,
+                    assessments: assessments,
+                    day: day,
+                  ),
+          ),
         ),
       ),
     );

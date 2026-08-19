@@ -2691,6 +2691,8 @@
   "goalDimensionCategoryTimeSource": "Čas sledované kategorie",
   "goalDimensionHabitReading": "{currentCount} z {targetCount} tohoto okna",
   "goalDimensionHabitReadingOverTarget": "{currentCount} tohoto okna · cíl {targetCount}",
+  "goalDimensionHabitReadingOverTargetWindowed": "{currentCount} · cíl {targetCount} · {window}",
+  "goalDimensionHabitReadingWindowed": "{currentCount} z {targetCount} · {window}",
   "goalDimensionHabitSource": "Dokončení návyků",
   "goalDimensionHealthSource": "Zdravotní údaje",
   "goalDimensionImprovingNote": "Ještě ne u cíle, ale poslední hodnota se k němu posunula.",

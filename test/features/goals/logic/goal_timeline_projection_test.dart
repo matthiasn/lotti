@@ -97,7 +97,8 @@ void main() {
       expect((items.single as GoalReflectionItem).record.id, 'later');
     });
 
-    test('excludes reflections judged under a superseded spec', () {
+    test('keeps reflections judged under a superseded spec — a revision must '
+        'not erase the history', () {
       final items = goalTimelineItems(
         entries: const [],
         assessments: [
@@ -116,9 +117,13 @@ void main() {
         specVersionId: 'spec-1',
       );
 
-      // A verdict passed on criteria that no longer exist is not a judgement
-      // of the goal as it stands.
-      expect(items.map((i) => i.id), ['current']);
+      // The rail is the goal's only reflection surface: notes and verdicts
+      // recorded under earlier criteria stay readable there. Only the day
+      // STRIP's colouring stays spec-scoped.
+      expect(
+        items.map((i) => i.id).toSet(),
+        {'old-spec', 'current'},
+      );
     });
 
     test('drops entries that are not check-ins, and empty notes', () {

@@ -35,17 +35,15 @@ const kDetailContentMaxWidth = 960.0;
 const kActionListContentMaxWidth = 520.0;
 
 /// The unified Goals surfaces' content measure — the goals list and the goal
-/// detail dashboard — sized to what the Habits dashboard actually renders.
-/// Habits declares an 1100 band but derives its gutters from the WINDOW
-/// width while drawing beside the desktop sidebar, so its effective content
-/// is ~1100 minus the sidebar — about 900 in practice. These surfaces
-/// measure their own pane, so they carry the effective number directly:
-/// a true 900 here looks like Habits, where a true 1100 read much wider.
-/// (Originally 700 per the "Goals, Unified" handover, which proved
-/// needlessly narrow in use.) Non-binding below this width — both surfaces
-/// keep their own gutters on small screens, so content never touches the
-/// edges.
-const kUnifiedGoalsContentMaxWidth = 900.0;
+/// detail dashboard. Deliberately narrower than what the Habits dashboard
+/// effectively renders (~900 beside the desktop sidebar): design review of
+/// the goal cards found the 900 measure too wide for their content — the
+/// corner reading blocks and day tracks read better on a tighter card.
+/// (Originally 700 per the "Goals, Unified" handover, then 900 for Habits
+/// parity; 760 is the reviewed middle.) Non-binding below this width — both
+/// surfaces keep their own gutters on small screens, so content never
+/// touches the edges.
+const kUnifiedGoalsContentMaxWidth = 760.0;
 
 /// The width at which a page header folds its tools (filter tabs, search)
 /// from one row beside the title into a second line beneath it — the

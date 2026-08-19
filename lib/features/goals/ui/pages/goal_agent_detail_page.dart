@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
@@ -18,7 +19,6 @@ import 'package:lotti/features/agents/ui/widgets/ai_card_chrome.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart'
     show WakeRunCompletion;
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
-import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
@@ -40,7 +40,6 @@ import 'package:lotti/features/goals/ui/goal_health_direction.dart';
 import 'package:lotti/features/goals/ui/goal_log_today_sheet.dart';
 import 'package:lotti/features/goals/ui/goal_progress_card.dart';
 import 'package:lotti/features/goals/ui/goal_routes.dart';
-import 'package:lotti/features/goals/ui/goal_status_chip.dart';
 import 'package:lotti/features/goals/ui/unified/unified_goal_status.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
@@ -62,12 +61,13 @@ import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 /// One goal — the §4b dashboard: header (name · unified status pill ·
 /// trend), the hero stack (the timestamped Agent's-read card above the
 /// deterministic Goal-days card, each at the full content width), active
-/// banners and pending proposals,
-/// then the Habits and Signals evidence sections, the reflection history,
-/// the About-this-agent expander (cost pills + automation), and the
-/// bounded banner timeline. Desktop hosts the durable conversation as a
-/// non-modal right-overlay drawer; mobile opens the same projection as a
-/// pushed page.
+/// banners and pending proposals, then the Habits and Signals evidence
+/// sections and the About-this-agent expander (cost pills + automation).
+/// Daily reflections live in the check-ins rail rather than the main
+/// column, and the retired-banner timeline is gone — the rail is the one
+/// place "what I've said about this goal" is read. Desktop hosts the
+/// durable conversation as a non-modal right-overlay drawer; mobile opens
+/// the same projection as a pushed page.
 class GoalAgentDetailPage extends ConsumerStatefulWidget {
   const GoalAgentDetailPage({required this.agentId, super.key});
 
@@ -88,6 +88,36 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
   String? _lastProgressSpecId;
   int? _lastProgressSpanDays;
   int? _rangeRecoveryRequestedFor;
+
+  /// Whether the user has explicitly chosen a range on this page. Until they
+  /// do, the page runs in AUTO mode: the shared span is driven to the number
+  /// of days that exactly fits the content width at the authored day-cell
+  /// density — the default fills the card with days instead of leaving dead
+  /// space, without stretching cells or gutters, and without a scroller.
+  bool _rangePicked = false;
+
+  /// The fitted span already requested, so auto mode issues one controller
+  /// write per computed value rather than one per rebuild.
+  int? _autoSpanRequestedFor;
+
+  /// How many day columns fit the content column at the authored pitch.
+  ///
+  /// The width is an estimate from the window (the pane behind a desktop
+  /// sidebar is narrower), deliberately on the generous side: a span a few
+  /// days too wide goes through the tracks' own fit-before-scroll policy and
+  /// shrinks the columns slightly, which still fills the card edge to edge.
+  int _fitSpanDays(BuildContext context) {
+    final tokens = context.designTokens;
+    final pitch = goalDayTrackMetrics(context, dayCount: 1).pitch;
+    final contentWidth =
+        math.min(
+          kUnifiedGoalsContentMaxWidth,
+          MediaQuery.sizeOf(context).width - tokens.spacing.step6 * 2,
+        ) -
+        tokens.spacing.cardPadding * 2;
+    if (pitch <= 0 || contentWidth <= pitch) return 7;
+    return (contentWidth / pitch).floor().clamp(7, 90);
+  }
 
   /// Whether the desktop chat drawer is open. The drawer stays MOUNTED
   /// either way (a slid-out overlay, not a conditional subtree), so the
@@ -169,29 +199,14 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
     required GoalProgressView progress,
     required List<GoalAssessmentRecord> assessments,
     required DateTime day,
-  }) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      // Keeps the sheet clear of the status bar: without it the big date
-      // title collided with the system clock.
-      useSafeArea: true,
-      builder: (context) => GoalDayAssessmentSheet(
-        agentId: agentId,
-        specVersionId: spec.id,
-        specVersion: spec.version,
-        day: day,
-        progress: progress,
-        // Reopening a judged day shows what was recorded. Arriving blank
-        // offered Met with an empty note, and saving replaced the real
-        // reflection with that default — note and dimension verdicts included.
-        existing: latestAssessmentsByDay(
-          assessments,
-          specVersionId: spec.id,
-        )[DateTime.utc(day.year, day.month, day.day)],
-      ),
-    );
-  }
+  }) => showGoalDayAssessmentSheet(
+    context,
+    agentId: agentId,
+    spec: spec,
+    progress: progress,
+    assessments: assessments,
+    day: day,
+  );
 
   /// Opens the anytime check-in composer.
   ///
@@ -347,6 +362,22 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
     final timeSpanDays = ref.watch(
       habitsControllerProvider.select((state) => state.timeSpanDays),
     );
+    // AUTO span: until the user picks a range here, drive the shared span to
+    // the day count that fits the content width — the completion chart, the
+    // heatmap data and every day track then follow the same fitted span, so
+    // the page keeps its one-range contract in auto mode too.
+    final fitSpanDays = _fitSpanDays(context);
+    if (!_rangePicked &&
+        timeSpanDays != fitSpanDays &&
+        _autoSpanRequestedFor != fitSpanDays) {
+      _autoSpanRequestedFor = fitSpanDays;
+      // Post-frame: a controller write mid-build would rebuild the page
+      // while it is already building.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || _rangePicked) return;
+        ref.read(habitsControllerProvider.notifier).setTimeSpan(fitSpanDays);
+      });
+    }
     final progressAsync = spec == null
         ? null
         : ref.watch(
@@ -426,24 +457,6 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
             ),
           ),
     ];
-    final history =
-        ref.watch(goalNudgeHistoryProvider(agentId)).value ??
-        const <GoalNudgeEntity>[];
-    // The OTHER goals sharing each of this goal's habits, pre-joined for the
-    // habit cards' "also in {goal}" suffix (§5: one recording, reflected
-    // everywhere).
-    final memberships =
-        ref.watch(goalHabitMembershipsProvider).value ??
-        const <String, List<GoalHabitMembership>>{};
-    final alsoInGoalTitlesByHabitId = <String, String>{
-      for (final entry in memberships.entries)
-        if ([
-              for (final m in entry.value)
-                if (m.agentId != agentId) m.title,
-            ]
-            case final others when others.isNotEmpty)
-          entry.key: others.join(', '),
-    };
     final report = ref.watch(agentReportProvider(agentId)).value;
     AgentReportEntity? latestReport;
     if (report is AgentReportEntity &&
@@ -671,13 +684,17 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
               // The page-wide range picker rides the first evidence
               // heading — one control for every day track and the chart.
               habitsHeadingTrailing: TimeSpanSegmentedControl(
+                // In auto mode the fitted span matches no segment, so none
+                // highlights — which is the honest reading: no preset is
+                // active until one is chosen.
                 timeSpanDays: renderedTimeSpanDays,
-                onValueChanged: ref
-                    .read(habitsControllerProvider.notifier)
-                    .setTimeSpan,
+                onValueChanged: (days) {
+                  // An explicit pick ends auto mode for this page instance.
+                  _rangePicked = true;
+                  ref.read(habitsControllerProvider.notifier).setTimeSpan(days);
+                },
                 segments: HabitsChartCard.timeSpans,
               ),
-              alsoInGoalTitlesByHabitId: alsoInGoalTitlesByHabitId,
               onHabitOutcomeSelected: !isActive
                   ? null
                   : ({
@@ -719,13 +736,9 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
             showTimeSpanPicker: false,
           ),
         ],
-        if (progress != null && assessments.isNotEmpty) ...[
-          SizedBox(height: tokens.spacing.cardItemSpacing),
-          GoalAssessmentHistoryCard(
-            records: assessments,
-            progress: progress,
-          ),
-        ],
+        // Daily reflections deliberately do NOT get a main-column card:
+        // they live in the check-ins rail (the flyout on desktop, the
+        // check-ins card on phones), where each one is a tight single row.
         if (showChatAction) ...[
           SizedBox(height: tokens.spacing.cardItemSpacing),
           DesignSystemButton(
@@ -739,10 +752,6 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
             size: DesignSystemButtonSize.medium,
             fullWidth: true,
           ),
-        ],
-        if (history.isNotEmpty) ...[
-          SizedBox(height: tokens.spacing.cardItemSpacing),
-          _GoalHistorySection(history: history),
         ],
       ];
       // Eager, not lazy: the section count is small and bounded, and the
@@ -1784,86 +1793,6 @@ class _GoalReportCardState extends State<_GoalReportCard>
           ),
         ],
       ],
-    );
-  }
-}
-
-class _GoalHistorySection extends StatefulWidget {
-  const _GoalHistorySection({required this.history});
-
-  final List<GoalNudgeEntity> history;
-
-  @override
-  State<_GoalHistorySection> createState() => _GoalHistorySectionState();
-}
-
-class _GoalHistorySectionState extends State<_GoalHistorySection> {
-  /// Initial render bound. `goalNudgeHistoryProvider` is deliberately
-  /// unbounded, and this page builds eagerly (no lazy list on this surface),
-  /// so a mature goal must not pay layout for years of retired banners on
-  /// page open. Show more reveals the full list — a user choice, still
-  /// eagerly built once made.
-  static const int _initialRows = 20;
-
-  bool _showAll = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final history = _showAll
-        ? widget.history
-        : widget.history.take(_initialRows).toList(growable: false);
-    return DesignSystemSectionCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            context.messages.goalDetailTimelineTitle,
-            style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-              color: tokens.colors.text.highEmphasis,
-            ),
-          ),
-          SizedBox(height: tokens.spacing.step3),
-          for (var index = 0; index < history.length; index++) ...[
-            if (index > 0)
-              Divider(
-                height: tokens.spacing.step4,
-                color: tokens.colors.decorative.level01,
-              ),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Text(
-                    '“${history[index].brief.headline}”',
-                    style: tokens.typography.styles.body.bodySmall.copyWith(
-                      color: tokens.colors.text.mediumEmphasis,
-                    ),
-                  ),
-                ),
-                SizedBox(width: tokens.spacing.step3),
-                Text(
-                  goalNudgeStatusLabel(context, history[index].status),
-                  style: tokens.typography.styles.others.caption.copyWith(
-                    color: tokens.colors.text.lowEmphasis,
-                  ),
-                ),
-              ],
-            ),
-          ],
-          if (!_showAll && widget.history.length > _initialRows) ...[
-            SizedBox(height: tokens.spacing.step1),
-            DesignSystemButton(
-              label: context.messages.aiResponseShowMore,
-              onPressed: () => setState(() => _showAll = true),
-              variant: DesignSystemButtonVariant.tertiary,
-              size: DesignSystemButtonSize.dense,
-              trailingIcon: Icons.expand_more_rounded,
-              alignsLabelToLeadingEdge: true,
-            ),
-          ],
-        ],
-      ),
     );
   }
 }

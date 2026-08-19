@@ -6587,6 +6587,24 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String goalDimensionHabitReadingOverTargetWindowed(
+    int currentCount,
+    int targetCount,
+    String window,
+  ) {
+    return '$currentCount · obiettivo $targetCount · $window';
+  }
+
+  @override
+  String goalDimensionHabitReadingWindowed(
+    int currentCount,
+    int targetCount,
+    String window,
+  ) {
+    return '$currentCount di $targetCount · $window';
+  }
+
+  @override
   String get goalDimensionHabitSource => 'Completamenti di abitudini';
 
   @override

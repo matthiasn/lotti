@@ -816,18 +816,34 @@ flowchart TD
   size, so the two surfaces draw the same instrument at the same scale (the
   strip's earlier 12px list default read as illegible dots). The detail page
   is the §4b dashboard: a centered column capped at the unified-Goals
-  measure (`kUnifiedGoalsContentMaxWidth`, 900 — what the Habits dashboard
-  effectively renders beside the desktop sidebar, shared by the goals
-  list) whose hero stack leads with the
+  measure (`kUnifiedGoalsContentMaxWidth`, 760 — deliberately narrower than
+  the Habits dashboard's effective ~900 after design review of the goal
+  cards; shared by the goals list) whose hero stack leads with the
   timestamped Agent's-read card, the deterministic This-week card
   (`GoalThisWeekCard` — whole-goal strip, Reflect-on-today, yesterday
   tally) beneath it, both at the full content width on every viewport,
-  with the Habits and Signals sections beneath (habit cards name the other
-  goals sharing them via `goalHabitMembershipsProvider` — one recording,
-  reflected everywhere), a goal-scoped completion-rate chart (`HabitsChartCard(habitIds: …)` — the shared card
+  with the Habits and Signals sections beneath, a goal-scoped completion-rate chart (`HabitsChartCard(habitIds: …)` — the shared card
   computed on the goal's slice of the habits day maps via
   `scopeHabitsStateToHabits`, same range tabs), and the cost/automation
-  plumbing riding the read card itself. The read card wears the SAME
+  plumbing riding the read card itself. Daily reflections have NO
+  main-column card: they render only in the check-ins rail, each as one
+  tight row whose verdict pill rides the timeline header's trailing slot
+  (`TimelineBeat.trailing`) and whose row tap (`TimelineBeat.onTap`)
+  reopens the same reflection sheet the day strip uses; provenance
+  ("Rated by you" / "suggested, you accepted") stays on the record but is
+  not rendered. The retired-banner list ("Interactions" — past ads with
+  Superseded/Dismissed outcomes) is gone from the dashboard entirely;
+  `goalNudgeHistoryProvider` remains for bookkeeping but no page surface
+  reads it. Each dimension card pins one stacked corner element top-right:
+  the key reading over its status caption (semantic ink), replacing the
+  old inline title-row pair. The reading names its window CONCRETELY
+  ("1 of 3 · calendar week") because the track below can show several
+  windows' worth of days; the cadence line is gone for every window type,
+  and the rolling week's period line carries "slides at midnight". Legends and one-sentence summaries center under
+  the charts they annotate. Chip shape encodes affordance on every goal
+  surface: clickable elements are fully rounded (`radii.badgesPills`);
+  informative chips — status/trend/verdict/cost — take the fixed
+  `radii.smallChips` corner. The read card wears the SAME
   "intelligence" panel as the task agent section on Task Details — the
   shared `aiCardDecoration` chrome and `TldrHeader`, the shared
   `AgentAutomationRow` reload affordances, and the goal's cumulative
@@ -852,6 +868,13 @@ flowchart TD
   range: a picker on the first evidence heading (Habits, or Signals for a
   signal-only goal; backed by the habits controller's shared
   `timeSpanDays`) keys `goalAgentProgressViewForSpanProvider`, which
+  DEFAULTS to auto-fit — until the user picks a preset on this page, the
+  page drives the shared span to the day count that fits the content width
+  at the authored day-cell density (`_fitSpanDays`), so the default fills
+  the card with days instead of dead space, without stretching cells or
+  gutters and without a scroller; no picker segment highlights in auto
+  mode, and the completion chart and heatmap data follow the same fitted
+  span. It
   renders the whole-goal strip and every habit and signal day track over
   the same span ending today. Switching ranges preserves the last rendered
   progress while the replacement span loads, so established content never
@@ -861,11 +884,22 @@ flowchart TD
   range. The retained snapshot is scoped to the active spec version and only
   promoted from a settled provider value, so a spec reload cannot relabel
   prior-spec evidence. A day track FITS before it scrolls:
-  `goalDayTrackMetrics` narrows the column pitch — and the square and weekday
-  caption inside it, down to a one-letter form — until the whole span fits the
-  width it was given, and only a span that overflows even at the legibility
-  floor becomes a trailing-anchored (`reverse: true`) scroller joined to one
-  `LinkedScrollGroup`, where every track then pans in unison. One policy
+  `goalDayTrackMetrics` narrows the column pitch — and the square inside it
+  — until the whole span fits the width it was given, and only a span that
+  overflows even at the legibility floor becomes a trailing-anchored
+  (`reverse: true`) scroller joined to one `LinkedScrollGroup`, where every
+  track then pans in unison. The habit squares and the whole-goal strip carry their weekday
+  axis INSIDE the cells (`goalDayCellLetter`: a small bottom-left corner
+  initial that yields to a center mark — verdict glyph, partial dot, missed
+  cross, which collide with it at the compact cell size — and is suppressed
+  below `IconSizes.l`) instead of a label
+  row above the track; only the hand-painted metric bars keep a caption
+  axis (`_WeekdayTrack`), below the bars, since a variable-height bar
+  cannot host a letter. Every tappable element on these cards carries the
+  design system's `surface.hover` fill on its own transparent `Material` —
+  ink painted on the Scaffold's Material sits under the opaque cards and
+  never shows, which is why the day grids and rail rows previously had no
+  hover feedback. One policy
   (`_fitOrScroll`), by WIDTH, for all three tracks: deciding by day count
   wrapped a span that provably fitted, and a fortnight at the authored pitch
   is wider than a phone card, so the scroller opened with the first days of
@@ -1370,9 +1404,11 @@ playable.
 Key pieces:
 
 - `lib/features/goals/logic/goal_timeline_projection.dart` — pure merge of
-  linked journal entries and standing reflections, newest first, spec-scoped
-  so a verdict passed on superseded criteria is not shown as a judgement of
-  the current goal. Full history renders in bounded pages instead of eagerly
+  linked journal entries and standing reflections, newest first. Reflection
+  history deliberately survives spec revisions: the rail is the goal's only
+  reflection surface, so records judged under superseded criteria stay
+  readable there (only the day strip's colouring stays spec-scoped).
+  Reflections are withheld entirely while the active spec is unknown. Full history renders in bounded pages instead of eagerly
   mounting every audio player; the inline card remains a short preview.
 - `lib/features/goals/service/goal_checkin_transcription_trigger.dart` — asks
   the shared skill pipeline to transcribe a recording that has just been

@@ -269,7 +269,10 @@ class _GoalCheckInTimelineState extends ConsumerState<GoalCheckInTimeline> {
         );
 
       case final GoalReflectionItem reflection:
-        final rating = reflection.record.rating;
+        final record = reflection.record;
+        final rating = record.rating;
+        final note = record.note?.trim();
+        final onOpen = widget.onOpenReflection;
         return TimelineBeat(
           id: reflection.id,
           timeLabel: timeLabel,
@@ -278,63 +281,58 @@ class _GoalCheckInTimelineState extends ConsumerState<GoalCheckInTimeline> {
           // The verdict's own colour, so the rail agrees with the day strip
           // and the reflection sheet rather than inventing a third vocabulary.
           accent: goalAssessmentRatingSurfaceInk(tokens, rating),
-          content: TimelineBeatContent.custom(
-            _ReflectionBody(
-              record: reflection.record,
-              onOpen: widget.onOpenReflection,
-            ),
-          ),
+          // One tight row: the verdict rides the header's trailing slot,
+          // fully right-aligned, instead of stacking beneath the label. No
+          // "Rated by you"-style attribution — the provenance stays on the
+          // record, it is not day-to-day reading.
+          trailing: _ReflectionTrailing(record: record),
+          onTap: onOpen == null ? null : () => onOpen(record.day),
+          content: note == null || note.isEmpty
+              ? const TimelineBeatContent.text('')
+              : TimelineBeatContent.custom(
+                  Text(
+                    note,
+                    style: tokens.typography.styles.body.bodyMedium.copyWith(
+                      color: tokens.colors.text.mediumEmphasis,
+                    ),
+                  ),
+                ),
         );
     }
   }
 }
 
-class _ReflectionBody extends StatelessWidget {
-  const _ReflectionBody({required this.record, this.onOpen});
+/// The reflection row's trailing slot: the day's verdict pill, prefixed by
+/// the per-dimension count when the user rated dimensions individually.
+class _ReflectionTrailing extends StatelessWidget {
+  const _ReflectionTrailing({required this.record});
 
   final GoalAssessmentRecord record;
-  final ValueChanged<DateTime>? onOpen;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final note = record.note?.trim();
     final dimensions = record.dimensionRatings.length;
-
-    final body = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Row(
-          children: [
-            _VerdictPill(rating: record.rating),
-            if (dimensions > 0) ...[
-              SizedBox(width: tokens.spacing.step2),
-              Text(
-                context.messages.goalCheckInDimensionsRated(dimensions),
-                style: tokens.typography.styles.others.caption.copyWith(
-                  color: tokens.colors.text.lowEmphasis,
-                ),
+        if (dimensions > 0) ...[
+          // The caption yields first under width pressure — the verdict pill
+          // is the part of this slot that must survive a narrow card.
+          Flexible(
+            child: Text(
+              context.messages.goalCheckInDimensionsRated(dimensions),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: tokens.colors.text.lowEmphasis,
               ),
-            ],
-          ],
-        ),
-        if (note != null && note.isNotEmpty) ...[
-          SizedBox(height: tokens.spacing.step2),
-          Text(
-            note,
-            style: tokens.typography.styles.body.bodyMedium.copyWith(
-              color: tokens.colors.text.mediumEmphasis,
             ),
           ),
+          SizedBox(width: tokens.spacing.step2),
         ],
+        _VerdictPill(rating: record.rating),
       ],
-    );
-
-    if (onOpen == null) return body;
-    return InkWell(
-      onTap: () => onOpen!(record.day),
-      borderRadius: BorderRadius.circular(tokens.radii.s),
-      child: body,
     );
   }
 }
@@ -354,10 +352,14 @@ class _VerdictPill extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: goalAssessmentRatingFill(tokens, rating).withValues(alpha: 0.16),
-        borderRadius: BorderRadius.circular(tokens.radii.s),
+        // Informative, not tappable: the small-chip radius, never the pill —
+        // full rounding is reserved for clickable elements on this surface.
+        borderRadius: BorderRadius.circular(tokens.radii.smallChips),
       ),
       child: Text(
         goalAssessmentRatingLabel(context, rating),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: tokens.typography.styles.others.caption.copyWith(
           color: goalAssessmentRatingSurfaceInk(tokens, rating),
           fontWeight: tokens.typography.weight.semiBold,

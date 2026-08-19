@@ -327,6 +327,12 @@ void main() {
       find.text('Cutoff held, but the evening was scattered.'),
       findsOneWidget,
     );
+    // One tight row: the verdict pill rides the header's trailing slot,
+    // level with the kind label and to its right — never stacked beneath it.
+    final kind = tester.getRect(find.text('DAILY REFLECTION'));
+    final pill = tester.getRect(find.text('Mixed'));
+    expect(pill.center.dy, closeTo(kind.center.dy, 2));
+    expect(pill.left, greaterThan(kind.right));
 
     await tester.tap(find.text('Mixed'));
     // Tapping a reflection reopens the same sheet the day strip does, rather

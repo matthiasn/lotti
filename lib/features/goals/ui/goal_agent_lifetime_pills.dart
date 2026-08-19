@@ -34,6 +34,9 @@ class GoalAgentLifetimePills extends ConsumerWidget {
           ConsumptionSummaryPill(
             totals: totals,
             foregroundColor: foreground,
+            // Informative, not tappable: goal surfaces reserve the fully
+            // rounded pill shape for clickable elements.
+            cornerRadius: tokens.radii.smallChips,
           ),
         ],
       ),

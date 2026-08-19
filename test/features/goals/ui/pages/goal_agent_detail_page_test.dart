@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
@@ -2278,8 +2279,8 @@ void main() {
     );
   });
 
-  testWidgets('past ads stay browsable in the timeline with their localized '
-      'outcome', (tester) async {
+  testWidgets('past ads never render on the dashboard — the retired-banner '
+      'timeline is gone', (tester) async {
     final past =
         AgentDomainEntity.goalNudge(
               id: 'ad-past',
@@ -2334,39 +2335,22 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.textContaining('Six days of quiet soles.'), findsOneWidget);
-    expect(find.text('Dismissed'), findsOneWidget);
+    // Retired banners are agent bookkeeping, not day-to-day reading: even
+    // with history present the page renders none of it.
+    expect(find.textContaining('Six days of quiet soles.'), findsNothing);
+    expect(find.text('Dismissed'), findsNothing);
   });
 
-  testWidgets('a long timeline renders a bounded first page — the eager '
-      'layout must not pay for years of retired banners on open', (
-    tester,
-  ) async {
-    GoalNudgeEntity past(int index) =>
-        AgentDomainEntity.goalNudge(
-              id: 'ad-past-$index',
-              agentId: 'goal-1',
-              status: NudgeStatus.dismissed,
-              brief: NudgeBrief(
-                headline: 'Past voice $index',
-                tone: NudgeTone.nudge,
-                animation: NudgeBannerAnimation.steady,
-              ),
-              briefDigest: 'd-$index',
-              createdAt: DateTime(2026, 8, 9),
-              updatedAt: DateTime(2026, 8, 9),
-              vectorClock: null,
-            )
-            as GoalNudgeEntity;
+  testWidgets('the page opens in AUTO span mode: the shared range is driven '
+      'to the day count that fits the content width', (tester) async {
+    final habitsController = FakeHabitsController(
+      HabitsState.initial(now: DateTime(2026, 8, 11)),
+    );
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'goal-1'),
         overrides: [
-          habitsControllerProvider.overrideWith(
-            () => FakeHabitsController(
-              HabitsState.initial(now: DateTime(2026, 8, 11)),
-            ),
-          ),
+          habitsControllerProvider.overrideWith(() => habitsController),
           agentIdentityProvider(
             'goal-1',
           ).overrideWith((ref) async => goalIdentity),
@@ -2382,9 +2366,6 @@ void main() {
               buffer: null,
             ),
           ),
-          goalNudgeHistoryProvider(
-            'goal-1',
-          ).overrideWith((ref) async => [for (var i = 0; i < 25; i++) past(i)]),
           selfTargetedPendingChangeSetsProvider(
             'goal-1',
           ).overrideWith((ref) async => []),
@@ -2397,41 +2378,34 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // First page only: 20 of the 25 rows are built, plus the reveal.
+    // The fitted span: as many authored-pitch day columns as the content
+    // column holds — computed here from the same tokens the page reads, so
+    // the test tracks the density rather than a magic number.
+    final tokens = tester
+        .element(find.byType(GoalAgentDetailPage))
+        .designTokens;
+    final pitch = ControlSizes.iconChipCompact + tokens.spacing.step2;
+    // The same width source the page estimates from (the harness's
+    // MediaQuery, not the render box).
+    final surfaceWidth = MediaQuery.sizeOf(
+      tester.element(find.byType(GoalAgentDetailPage)),
+    ).width;
+    final contentWidth =
+        math.min(
+          kUnifiedGoalsContentMaxWidth,
+          surfaceWidth - tokens.spacing.step6 * 2,
+        ) -
+        tokens.spacing.cardPadding * 2;
+    final expectedFit = (contentWidth / pitch).floor().clamp(7, 90);
     expect(
-      find.textContaining('Past voice', skipOffstage: false),
-      findsNWidgets(20),
+      expectedFit,
+      isNot(HabitsState.initial(now: DateTime(2026)).timeSpanDays),
+      reason: 'the fixture must actually exercise the auto request',
     );
-    expect(
-      find.textContaining('Past voice 19', skipOffstage: false),
-      findsOneWidget,
-    );
-    expect(
-      find.textContaining('Past voice 20', skipOffstage: false),
-      findsNothing,
-    );
-
-    final showMore = find.widgetWithText(DesignSystemButton, 'Show more');
-    await tester.scrollUntilVisible(
-      showMore,
-      400,
-      scrollable: find
-          .descendant(
-            of: find.byType(SingleChildScrollView).first,
-            matching: find.byType(Scrollable),
-          )
-          .first,
-    );
-    await tester.tap(showMore);
-    await tester.pump();
-    expect(
-      find.textContaining('Past voice', skipOffstage: false),
-      findsNWidgets(25),
-    );
+    expect(habitsController.lastTimeSpan, expectedFit);
   });
 
-  testWidgets('desktop keeps chat beside watched habits and complete banner '
-      'history', (tester) async {
+  testWidgets('desktop keeps chat beside watched habits', (tester) async {
     const desktopSize = Size(1400, 1000);
     setTestSurfaceSize(tester, desktopSize);
     final completionService = MockGoalHabitCompletionService();
@@ -2706,7 +2680,7 @@ void main() {
     expect(find.text('Watching'), findsNothing);
     expect(find.text('Morning walk'), findsOneWidget);
     expect(find.text('Monthly walk'), findsOneWidget);
-    expect(find.text('20× · calendar month'), findsOneWidget);
+    expect(find.textContaining('· calendar month'), findsOneWidget);
     expect(find.textContaining('null / 6'), findsNothing);
 
     await tester.tap(
@@ -2725,20 +2699,16 @@ void main() {
     ).called(1);
     expect(progressReads, 2);
 
-    // The page builds EAGERLY (a Column in a SingleChildScrollView, not a
-    // lazy list): the below-the-fold history section is already in the tree
-    // before any scroll. A lazily built list would not have mounted it yet.
-    expect(find.textContaining('Shoes by the door.'), findsOneWidget);
-
-    await tester.drag(
-      find.byType(SingleChildScrollView).first,
-      const Offset(0, -600),
+    // Retired banners never render — the "Interactions" list is gone from
+    // the dashboard even when history exists.
+    expect(
+      find.textContaining('Shoes by the door.', skipOffstage: false),
+      findsNothing,
     );
-    await tester.pumpAndSettle();
-    expect(find.textContaining('Shoes by the door.'), findsOneWidget);
-    expect(find.textContaining('One lap still counts.'), findsOneWidget);
-    expect(find.text('Retired'), findsOneWidget);
-    expect(find.text('Dismissed'), findsOneWidget);
+    expect(
+      find.textContaining('One lap still counts.', skipOffstage: false),
+      findsNothing,
+    );
   });
 
   testWidgets('desktop withholds chat from a dormant goal agent', (
@@ -3548,32 +3518,20 @@ void main() {
             'goal-1',
           ).overrideWith((ref) async => {}),
           agentReportProvider('goal-1').overrideWith((ref) async => null),
-          goalHabitMembershipsProvider.overrideWith(
-            (ref) async => {
-              'walk': [
-                (agentId: 'goal-1', title: 'Move more'),
-                (agentId: 'goal-2', title: 'Heart Health'),
-              ],
-            },
-          ),
         ],
       ),
     );
     await tester.pumpAndSettle();
 
-    // A habit shared with another goal names it — one recording, reflected
-    // everywhere — while the owning goal itself is never listed in the
-    // suffix (the page header is where its own name belongs).
-    final alsoIn = tester.widget<Text>(
-      find.byKey(const ValueKey('goal-habit-also-in-walk')),
-    );
-    expect(alsoIn.data, 'Also in Heart Health');
+    // The "Also in {goal}" suffix is gone — a card lists its own evidence,
+    // not the other goals watching the same habit.
+    expect(find.textContaining('Also in'), findsNothing);
 
     // ONE page-level range picker on the Habits heading governs every day
     // track and the chart — the chart card's own picker is hidden here, so
     // the page never renders two controls fighting over one shared span.
     expect(find.byType(TimeSpanSegmentedControl), findsOneWidget);
-    expect(find.textContaining('3× per 7 days'), findsOneWidget);
+    expect(find.textContaining('0 of 3 · rolling 7 days'), findsOneWidget);
     // The full-width hero stack pushes the evidence sections below the fold
     // on the default test surface.
     tester
@@ -3590,13 +3548,13 @@ void main() {
 
     // The new provider-family key is unresolved, but established evidence
     // remains on screen instead of flashing the whole progress section away.
-    expect(find.textContaining('3× per 7 days'), findsOneWidget);
+    expect(find.textContaining('0 of 3 · rolling 7 days'), findsOneWidget);
     expect(find.byKey(const ValueKey('goal-habit-plot-walk')), findsOneWidget);
 
     progress30.complete(progressFor(5));
     await tester.pumpAndSettle();
-    expect(find.textContaining('5× per 7 days'), findsOneWidget);
-    expect(find.textContaining('3× per 7 days'), findsNothing);
+    expect(find.textContaining('0 of 5 · rolling 7 days'), findsOneWidget);
+    expect(find.textContaining('0 of 3 · rolling 7 days'), findsNothing);
 
     tester
         .widget<TimeSpanSegmentedControl>(
@@ -3607,7 +3565,7 @@ void main() {
       habitsController.state.copyWith(timeSpanDays: 90),
     );
     await tester.pump();
-    expect(find.textContaining('5× per 7 days'), findsOneWidget);
+    expect(find.textContaining('0 of 5 · rolling 7 days'), findsOneWidget);
 
     progress90.completeError(StateError('range unavailable'));
     await tester.pump();
@@ -3625,7 +3583,7 @@ void main() {
           .timeSpanDays,
       30,
     );
-    expect(find.textContaining('5× per 7 days'), findsOneWidget);
+    expect(find.textContaining('0 of 5 · rolling 7 days'), findsOneWidget);
     expect(find.byType(HabitCompletionRateChart), findsNothing);
 
     habitsController.emit(
@@ -3662,12 +3620,12 @@ void main() {
 
     // A same-family-key reload after the active spec changes must not promote
     // the previous spec's AsyncValue as though it belonged to the new spec.
-    expect(find.textContaining('5× per 7 days'), findsNothing);
+    expect(find.textContaining('0 of 5 · rolling 7 days'), findsNothing);
     expect(find.byKey(const ValueKey('goal-habit-plot-walk')), findsNothing);
 
     progressV2.complete(progressFor(7));
     await tester.pumpAndSettle();
-    expect(find.textContaining('7× per 7 days'), findsOneWidget);
+    expect(find.textContaining('0 of 7 · rolling 7 days'), findsOneWidget);
   });
 
   testWidgets("the read's age ticks across its bucket boundary without any "

@@ -6503,6 +6503,24 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String goalDimensionHabitReadingOverTargetWindowed(
+    int currentCount,
+    int targetCount,
+    String window,
+  ) {
+    return '$currentCount · mål $targetCount · $window';
+  }
+
+  @override
+  String goalDimensionHabitReadingWindowed(
+    int currentCount,
+    int targetCount,
+    String window,
+  ) {
+    return '$currentCount af $targetCount · $window';
+  }
+
+  @override
   String get goalDimensionHabitSource => 'Afslutning af vaner';
 
   @override

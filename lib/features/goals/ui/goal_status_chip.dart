@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/goal_enums.dart';
-import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -49,7 +48,8 @@ class GoalStatusChip extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: color.withValues(alpha: SurfaceAlphas.tint),
-        borderRadius: BorderRadius.circular(tokens.radii.s),
+        // Informative, not tappable: the small-chip radius, never the pill.
+        borderRadius: BorderRadius.circular(tokens.radii.smallChips),
       ),
       child: Text(
         goalTrackStatusLabel(context.messages, status),
@@ -58,17 +58,3 @@ class GoalStatusChip extends StatelessWidget {
     );
   }
 }
-
-/// The user-facing label for a PAST ad's outcome in the detail timeline.
-/// Pipeline states (`draft`/`ready`/`active`/`failed`) never render here.
-String goalNudgeStatusLabel(BuildContext context, NudgeStatus status) =>
-    switch (status) {
-      NudgeStatus.dismissed => context.messages.goalNudgeStatusDismissed,
-      NudgeStatus.retired => context.messages.goalNudgeStatusRetired,
-      NudgeStatus.expired => context.messages.goalNudgeStatusExpired,
-      NudgeStatus.superseded => context.messages.goalNudgeStatusSuperseded,
-      NudgeStatus.draft ||
-      NudgeStatus.ready ||
-      NudgeStatus.active ||
-      NudgeStatus.failed => '',
-    };

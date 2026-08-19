@@ -11121,6 +11121,26 @@ abstract class AppLocalizations {
   /// **'{currentCount} this window · target {targetCount}'**
   String goalDimensionHabitReadingOverTarget(int currentCount, int targetCount);
 
+  /// Windowed habit reading when the count has passed the target, where an "X of Y" fraction would read as broken.
+  ///
+  /// In en, this message translates to:
+  /// **'{currentCount} · target {targetCount} · {window}'**
+  String goalDimensionHabitReadingOverTargetWindowed(
+    int currentCount,
+    int targetCount,
+    String window,
+  );
+
+  /// Corner reading on a habit card: window count, target, and the concrete window it covers — the track below can show several windows' worth of days, so "this window" alone was ambiguous.
+  ///
+  /// In en, this message translates to:
+  /// **'{currentCount} of {targetCount} · {window}'**
+  String goalDimensionHabitReadingWindowed(
+    int currentCount,
+    int targetCount,
+    String window,
+  );
+
   /// No description provided for @goalDimensionHabitSource.
   ///
   /// In en, this message translates to:

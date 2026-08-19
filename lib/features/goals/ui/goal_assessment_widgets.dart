@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
@@ -27,6 +28,46 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 double _sectionGap(DsTokens tokens) => tokens.spacing.step5;
 double _bindGap(DsTokens tokens) => tokens.spacing.step2;
 double _rowGap(DsTokens tokens) => tokens.spacing.step1;
+
+/// Opens one day's reflection sheet — THE one doorway, shared by the day
+/// strip (via the detail page), the check-ins rail and the full timeline
+/// page. Two call sites building the sheet by hand is how they stop
+/// agreeing on what a reopened day shows.
+///
+/// The existing-record lookup stays scoped to the ACTIVE spec: reopening a day judged
+/// under superseded criteria arrives blank, because saving records a NEW
+/// verdict under the current criteria — the old record remains in the rail's
+/// history.
+void showGoalDayAssessmentSheet(
+  BuildContext context, {
+  required String agentId,
+  required GoalSpecVersionEntity spec,
+  required GoalProgressView progress,
+  required List<GoalAssessmentRecord> assessments,
+  required DateTime day,
+}) {
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    // Keeps the sheet clear of the status bar: without it the big date
+    // title collided with the system clock.
+    useSafeArea: true,
+    builder: (context) => GoalDayAssessmentSheet(
+      agentId: agentId,
+      specVersionId: spec.id,
+      specVersion: spec.version,
+      day: day,
+      progress: progress,
+      // Reopening a judged day shows what was recorded. Arriving blank
+      // offered Met with an empty note, and saving replaced the real
+      // reflection with that default.
+      existing: latestAssessmentsByDay(
+        assessments,
+        specVersionId: spec.id,
+      )[DateTime.utc(day.year, day.month, day.day)],
+    ),
+  );
+}
 
 /// The verdict choices, in order, derived from the enum itself.
 ///
@@ -480,104 +521,8 @@ List<_MeasuredRow> _measuredRows(
   ];
 }
 
-class GoalAssessmentHistoryCard extends StatelessWidget {
-  const GoalAssessmentHistoryCard({
-    required this.records,
-    required this.progress,
-    super.key,
-  });
-
-  final List<GoalAssessmentRecord> records;
-  final GoalProgressView progress;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final locale = Localizations.localeOf(context).toLanguageTag();
-    return DesignSystemSectionCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            context.messages.goalAssessmentHistoryTitle,
-            style: tokens.typography.styles.subtitle.subtitle1,
-          ),
-          SizedBox(height: tokens.spacing.step3),
-          for (var index = 0; index < records.length; index++) ...[
-            if (index > 0)
-              Divider(
-                height: tokens.spacing.step4,
-                color: tokens.colors.decorative.level01,
-              ),
-            Builder(
-              builder: (context) {
-                final record = records[index];
-                final suggestedBy = record.suggestedBy?.trim();
-                final provenance = switch (record.provenance) {
-                  GoalAssessmentProvenance.suggestedAndAccepted
-                      when suggestedBy != null && suggestedBy.isNotEmpty =>
-                    context.messages.goalAssessmentSuggestedProvenance(
-                      suggestedBy,
-                    ),
-                  GoalAssessmentProvenance.suggestedAndAccepted =>
-                    context.messages.goalAssessmentSuggestedProvenanceGeneric,
-                  GoalAssessmentProvenance.ratedByUser =>
-                    context.messages.goalAssessmentUserProvenance,
-                };
-                return Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        DateFormat.MMMEd(locale).format(record.day),
-                        style: tokens.typography.styles.body.bodySmall,
-                      ),
-                    ),
-                    _AssessmentRatingPill(rating: record.rating),
-                    SizedBox(width: tokens.spacing.step3),
-                    Flexible(
-                      child: Text(
-                        provenance,
-                        textAlign: TextAlign.end,
-                        style: tokens.typography.styles.others.caption.copyWith(
-                          color: tokens.colors.text.lowEmphasis,
-                        ),
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _AssessmentRatingPill extends StatelessWidget {
-  const _AssessmentRatingPill({required this.rating});
-
-  final GoalAssessmentRating rating;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    // Shared with the seven-day strip: the history and the strip are two views
-    // of the same verdict and must not colour or name it differently.
-    final color = goalAssessmentRatingFill(tokens, rating);
-    final label = goalAssessmentRatingLabel(context, rating);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: SurfaceAlphas.washControl),
-        borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
-      ),
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: tokens.spacing.step3,
-          vertical: tokens.spacing.step1,
-        ),
-        child: Text(label, style: tokens.typography.styles.others.caption),
-      ),
-    );
-  }
-}
+// The reflection HISTORY deliberately has no widget here any more: reflections
+// render as tight single rows in the goal's check-ins rail (see
+// `goal_checkin_timeline.dart`), which also dropped the "Rated by you" /
+// "suggested, you accepted" attribution — the provenance is still recorded on
+// every [GoalAssessmentRecord], it just is not day-to-day reading.
