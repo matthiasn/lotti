@@ -35,6 +35,9 @@ class ConsumptionSummaryPill extends StatelessWidget {
       message: consumptionSummaryTooltip(context, totals),
       child: DsPill(
         variant: DsPillVariant.filled,
+        // A read-out, not a control: the tight tag corners keep it from
+        // masquerading as a button (corner-radius convention).
+        shape: DsPillShape.tag,
         bordered: true,
         cornerRadius: cornerRadius,
         label: consumptionSummaryLabel(context, totals),
