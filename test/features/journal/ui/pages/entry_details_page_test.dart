@@ -322,11 +322,11 @@ void main() {
         findsOneWidget,
       );
 
-      // test weight entry is not starred: the favorite toggle is always shown
-      // (so the header action set is consistent across types), so an unstarred
-      // entry renders the outline star, not the filled one.
+      // test weight entry is not starred: the header's star slot is a state
+      // readout, shown only while the entry is starred (the toggle itself
+      // lives in the overflow menu), so neither star glyph renders here.
       expect(find.byIcon(LottiIconsFilled.star), findsNothing);
-      expect(find.byIcon(LottiIcons.star), findsOneWidget);
+      expect(find.byIcon(LottiIcons.star), findsNothing);
     });
 
     // -------------------------------------------------------------------------
