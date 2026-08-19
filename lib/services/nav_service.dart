@@ -7,6 +7,7 @@ import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:rxdart/rxdart.dart';
 
@@ -356,6 +357,13 @@ class NavService {
     _restoreInFlight = true;
     try {
       await _restoreNavigationState();
+    } catch (error, stackTrace) {
+      // `registerSingletons` awaits this before `runApp`, so an unreadable
+      // settings row must not take the whole app down with it. Degrade to
+      // what the constructor already set up — Tasks, every tab at its root —
+      // which is the same place an install with nothing saved starts.
+      _pendingActiveRootPath = null;
+      _logNavigationError('restoreNavigationState', error, stackTrace);
     } finally {
       _restoreInFlight = false;
     }
@@ -568,17 +576,42 @@ class NavService {
 
   /// Writes the active tab and every tab's route to [navStateKey].
   ///
-  /// Fire-and-forget from the navigation call sites; failures are non-fatal
-  /// (the next navigation writes again, and a missing row just means the next
-  /// cold start lands on Tasks).
+  /// Fire-and-forget from the navigation call sites, so a failure has to be
+  /// caught here to be non-fatal at all: uncaught, it would surface as an
+  /// unhandled async error on EVERY navigation for as long as the storage
+  /// problem lasts. Losing a write costs nothing more than the next cold
+  /// start landing on Tasks, and the next navigation writes again.
   Future<void> _persistState() async {
     if (_disposed || _restoreInFlight) return;
-    await _settingsDb.saveSettingsItem(
-      navStateKey,
-      NavStateSnapshot(
-        activeRootPath: _activeRootPath,
-        routes: _routesByTabFromDelegates(),
-      ).encode(),
+    try {
+      await _settingsDb.saveSettingsItem(
+        navStateKey,
+        NavStateSnapshot(
+          activeRootPath: _activeRootPath,
+          routes: _routesByTabFromDelegates(),
+        ).encode(),
+      );
+    } catch (error, stackTrace) {
+      _logNavigationError('persistState', error, stackTrace);
+    }
+  }
+
+  /// Reports a swallowed navigation-persistence failure.
+  ///
+  /// Guarded on registration: NavService is built in unit harnesses that wire
+  /// nothing but the two databases, and a logger lookup must not turn a
+  /// degraded path into a crash.
+  void _logNavigationError(
+    String subDomain,
+    Object error,
+    StackTrace stackTrace,
+  ) {
+    if (!getIt.isRegistered<DomainLogger>()) return;
+    getIt<DomainLogger>().error(
+      LogDomain.navigation,
+      error,
+      stackTrace: stackTrace,
+      subDomain: subDomain,
     );
   }
 

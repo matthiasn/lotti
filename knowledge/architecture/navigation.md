@@ -1,7 +1,7 @@
 ---
 type: Architecture
 title: Navigation and app shell
-description: Eight independent Beamer stacks behind one IndexedStack, the rules that decide which chrome each route gets, and the one footer in that chrome that leaves the app entirely.
+description: Ten independent Beamer stacks behind one IndexedStack, how the active tab and every tab's route are persisted and restored, the rules that decide which chrome each route gets, and the one footer in that chrome that leaves the app entirely.
 resource: ../../lib/beamer
 tags: [architecture, navigation, beamer, routing, app-shell]
 status: stable
@@ -56,7 +56,7 @@ sources:
 
 # One stack per tab
 
-Lotti does not have a single navigation stack. It has **nine**, one per
+Lotti does not have a single navigation stack. It has **ten**, one per
 top-level destination, each a `BeamerDelegate` with its own history:
 
 | Destination | Root path | Enabled |
@@ -67,6 +67,7 @@ top-level destination, each a `BeamerDelegate` with its own history:
 | Goals (unified) | `/goals` | `enable_unified_goals` |
 | Habits | `/habits` | flag |
 | Dashboards | `/dashboards` | flag |
+| People | `/people` | `enable_relationships` |
 | Journal | `/journal` | always |
 | Events | `/events` | flag |
 | Settings | `/settings` | always |
@@ -94,6 +95,8 @@ flowchart TD
   Stack --> P["Beamer(projectsDelegate)"]
   Stack --> H["Beamer(habitsDelegate)"]
   Stack --> D["Beamer(dashboardsDelegate)"]
+  Stack --> G["Beamer(goalsDelegate)"]
+  Stack --> R["Beamer(relationshipsDelegate)"]
   Stack --> J["Beamer(journalDelegate)"]
   Stack --> E["Beamer(eventsDelegate)"]
   Stack --> S["Beamer(settingsDelegate)"]
@@ -156,8 +159,12 @@ active. It exposes:
 
 - `beamerDelegates` — the ordered list of *enabled* delegates, cached and
   invalidated when navigation feature flags change.
-- `index` plus `indexStreamController`, the broadcast stream the shell listens
-  to.
+- `index` plus `indexStreamController`, a `BehaviorSubject` the shell and the
+  per-tab controllers listen to. It **replays** the current index to every new
+  subscriber: nav state is restored before `runApp`, so the emission that
+  selects the restored tab happens before any of them has subscribed, and a
+  plain broadcast stream would drop it and leave them all believing the app is
+  on Tasks.
 - `setPath(path)`, which resolves a path to its owning delegate and switches the
   index to match.
 

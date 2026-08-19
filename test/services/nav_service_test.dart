@@ -7,6 +7,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
@@ -1267,6 +1268,83 @@ void main() {
         expect(bench.navService.index, 0);
         expect(bench.navService.currentPath, '/tasks');
       });
+    });
+
+    group('storage failures are non-fatal', () {
+      test('an unreadable settings row does not abort bootstrap', () async {
+        final settingsDb = MockSettingsDb();
+        when(() => settingsDb.itemByKey(any())).thenThrow(
+          Exception('settings db unavailable'),
+        );
+        when(
+          () => settingsDb.saveSettingsItem(any(), any()),
+        ).thenAnswer((_) async => 1);
+
+        final bench = _NavFlagBench(settingsDb: settingsDb);
+
+        // `registerSingletons` awaits this before `runApp`; letting the read
+        // throw would take the whole app down instead of landing on Tasks.
+        await expectLater(
+          bench.navService.restoreNavigationState(),
+          completes,
+        );
+        bench.emitAll(enabled: true);
+
+        expect(bench.navService.index, 0);
+        expect(bench.navService.currentPath, '/tasks');
+      });
+
+      test(
+        'a failing write does not escape as an unhandled async error',
+        () async {
+          final settingsDb = MockSettingsDb();
+          when(() => settingsDb.itemByKey(any())).thenAnswer((_) async => null);
+          when(
+            () => settingsDb.saveSettingsItem(any(), any()),
+          ).thenThrow(Exception('disk full'));
+
+          // Swallowed, but not silently — a storage problem the user can do
+          // nothing about still has to be diagnosable.
+          final logger = MockDomainLogger();
+          when(
+            () => logger.error(
+              any<LogDomain>(),
+              any<Object>(),
+              stackTrace: any<StackTrace>(named: 'stackTrace'),
+              subDomain: any<String>(named: 'subDomain'),
+            ),
+          ).thenReturn(null);
+          getIt.registerSingleton<DomainLogger>(logger);
+          addTearDown(() => getIt.unregister<DomainLogger>());
+
+          final bench = _NavFlagBench(settingsDb: settingsDb)
+            ..emitAll(enabled: true);
+
+          // Every persist is fire-and-forget, so an uncaught failure would
+          // surface as an unhandled async error on EVERY navigation for as long
+          // as the storage problem lasts.
+          final errors = <Object>[];
+          await runZonedGuarded(() async {
+            bench.navService.beamToNamed('/journal');
+            await pumpEventQueue();
+          }, (error, stack) => errors.add(error));
+
+          expect(errors, isEmpty);
+          expect(
+            bench.navService.index,
+            bench.navService.journalIndex,
+            reason: 'navigation itself still succeeds',
+          );
+          verify(
+            () => logger.error(
+              LogDomain.navigation,
+              any<Object>(),
+              stackTrace: any<StackTrace>(named: 'stackTrace'),
+              subDomain: 'persistState',
+            ),
+          ).called(greaterThan(0));
+        },
+      );
     });
 
     group('stale index', () {
