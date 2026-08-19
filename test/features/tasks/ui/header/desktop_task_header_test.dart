@@ -308,22 +308,44 @@ void main() {
   // An unset category no longer reports itself in the crumb at all. The old
   // "No category" segment — a hollow square plus a low-emphasis caption — was
   // the first element in reading order and read as a disabled checkbox from
-  // another design system; every panel reviewer flagged it. The category
-  // offer now lives in the metadata fly-out's Category row, and the crumb
-  // renders only when there is real ancestry to show.
+  // another design system; every panel reviewer flagged it. The offer lives
+  // in the summary lane as a dashed "Set category" chip (and in the fly-out's
+  // Category row), and the crumb renders only when there is real ancestry to
+  // show.
   group('DesktopTaskHeader — breadcrumb without a category', () {
     testWidgets(
-      'renders no crumb and no dashed offer — the category affordance lives '
-      'in the fly-out',
+      'renders no crumb; the summary lane carries the dashed "Set category" '
+      'offer instead',
       (tester) async {
+        var categoryTaps = 0;
         await _pumpDesktop(
           tester,
-          DesktopTaskHeader(data: _fixture(), onTitleSaved: (_) {}),
+          DesktopTaskHeader(
+            data: _fixture(),
+            onTitleSaved: (_) {},
+            onCategoryTap: () => categoryTaps++,
+          ),
         );
 
         expect(find.text('No category'), findsNothing);
-        expect(find.text('Set category'), findsNothing);
-        // The summary lane still stands, ending in the fly-out trigger.
+        // The inline offer opens the category picker directly — it is an
+        // action, so it keeps the fully-rounded interactive shell.
+        expect(find.text('Set category'), findsOneWidget);
+        expect(
+          tester
+              .widget<DsPill>(
+                find.ancestor(
+                  of: find.text('Set category'),
+                  matching: find.byType(DsPill),
+                ),
+              )
+              .shape,
+          DsPillShape.pill,
+        );
+        await tester.tap(find.text('Set category'));
+        await tester.pump();
+        expect(categoryTaps, 1);
+        // The summary lane still ends in the fly-out trigger.
         expect(find.text('Details'), findsOneWidget);
       },
     );

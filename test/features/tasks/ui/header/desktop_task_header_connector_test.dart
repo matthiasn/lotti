@@ -515,10 +515,11 @@ void main() {
     );
 
     testWidgets(
-      'offers no crumb at all when the task has no category',
+      'offers no crumb but an inline "Set category" chip when the task has '
+      'no category, and the chip opens the picker directly',
       (tester) async {
         // Without a category there is no ancestry to show: no crumb, no
-        // separator — the category offer lives in the fly-out's Category row.
+        // separator — the summary lane carries the dashed offer instead.
         final task = buildTask();
 
         await tester.pumpWidget(pumpConnector(task: task));
@@ -526,9 +527,18 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         expect(find.text('No category'), findsNothing);
-        expect(find.text('Set category'), findsNothing);
         expect(find.text('No project'), findsNothing);
         expect(find.text('/'), findsNothing);
+        expect(find.text('Set category'), findsOneWidget);
+
+        await tester.tap(find.text('Set category'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Straight to the picker — no fly-out detour for the one attribute
+        // the header actively offers.
+        expect(find.byType(CategoryPickerSheet), findsOneWidget);
+        expect(find.byType(TaskMetaFlyoutContent), findsNothing);
       },
     );
 

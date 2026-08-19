@@ -249,8 +249,11 @@ The header body is Crumb → Title → AI one-liner → Summary:
 4. **Summary** — one compact lane (`TaskMetaSummaryLine`) of informational
    read-outs plus the "Details" fly-out trigger.
 
-**Without a category the crumb renders nothing at all**, and the category
-affordance is the fly-out's Category row. A project is scoped to a category —
+**Without a category the crumb renders nothing at all**, and the summary lane
+carries a dashed "Set category" offer (verb-form, muted shell, fully-rounded
+— it is an action) that opens the category picker directly; the fly-out's
+Category row covers the same edit once a category exists. The crumb segment
+and the dashed offer never coexist. A project is scoped to a category —
 `ProjectRepository.linkTaskToProject` refuses a cross-category link — so an
 uncategorized task cannot acquire one, and the connector passes a null
 `onProjectTap`; the separator and the project segment appear only once a
@@ -258,7 +261,8 @@ category is set.
 
 **Metadata is set once and rarely changed, so it no longer wears
 always-visible button-styled chrome.** The summary lane is read-outs only:
-`[status] → [blocked-by?] → [priority] → [due?] → [labels?] → Details`.
+`[status] → [blocked-by?] → [priority] → [due?] → [labels?] →
+[Set category?] → Details`.
 Every read-out wears `DsPillShape.tag` — the tight `radii.xs` (4) corner —
 so a fact can never be mistaken for the fully-rounded filter/action pills
 elsewhere on the page. The one lever in the lane, the **Details** trigger,

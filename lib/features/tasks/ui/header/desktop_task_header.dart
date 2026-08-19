@@ -276,6 +276,11 @@ class _DesktopTaskHeaderState extends State<DesktopTaskHeader> {
             labels: widget.data.labels,
             blockedBySlot: widget.blockedBySlot,
             onOpenDetails: widget.onOpenDetails,
+            // With no category the crumb renders nothing, so the summary
+            // lane carries the inline offer — the two affordances never
+            // coexist.
+            showSetCategory: widget.data.category == null,
+            onCategoryTap: widget.onCategoryTap,
           ),
         ],
       ),

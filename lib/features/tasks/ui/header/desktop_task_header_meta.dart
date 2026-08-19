@@ -42,6 +42,8 @@ class TaskMetaSummaryLine extends StatelessWidget {
     required this.labels,
     required this.onOpenDetails,
     this.blockedBySlot,
+    this.showSetCategory = false,
+    this.onCategoryTap,
     super.key,
   });
 
@@ -53,6 +55,17 @@ class TaskMetaSummaryLine extends StatelessWidget {
   /// Opens the metadata fly-out. Wired to the Details trigger and to every
   /// read-out tag, so a tap on the fact lands on its editor too.
   final VoidCallback? onOpenDetails;
+
+  /// Whether to offer the dashed "Set category" chip. True exactly when the
+  /// task has no category — the crumb then shows no category segment, so this
+  /// chip is the header's inline category affordance (the fly-out's Category
+  /// row is one tap further away, and an uncategorized task is the state
+  /// worth an inline offer).
+  final bool showSetCategory;
+
+  /// Opens the category picker directly — the same callback the crumb's
+  /// category segment uses once a category exists.
+  final VoidCallback? onCategoryTap;
 
   /// Optional "Blocked by" chip (link-derived readiness, ADR 0042 §4 —
   /// independent of [status]). An alarm, not routine metadata, so it stays on
@@ -89,6 +102,20 @@ class TaskMetaSummaryLine extends StatelessWidget {
           _DueSummaryTag(dueDate: dueDate, onTap: onOpenDetails),
         if (labels.isNotEmpty)
           _LabelsSummaryTag(labels: labels, onTap: onOpenDetails),
+        // An offer, not a read-out: dashed muted shell on the fully-rounded
+        // interactive radius, opening the category picker directly. Verb
+        // form, matching the grammar the old add-lane established.
+        if (showSetCategory)
+          DsPill(
+            variant: DsPillVariant.muted,
+            label: context.messages.taskSetCategoryLabel,
+            leading: Icon(
+              Icons.category_outlined,
+              size: kTaskChipGlyphSize,
+              color: TaskShowcasePalette.mediumText(context),
+            ),
+            onTap: onCategoryTap,
+          ),
         _DetailsTrigger(onTap: onOpenDetails),
       ],
     );
