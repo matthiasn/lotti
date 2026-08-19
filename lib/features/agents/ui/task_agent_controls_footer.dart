@@ -84,9 +84,13 @@ class TaskAgentControlsFooter extends StatelessWidget {
         color: ai.footerWash,
         border: Border(top: BorderSide(color: ai.borderSoft)),
       ),
+      // Vertical inset deliberately smaller than the horizontal: the rows
+      // inside are minimum-height boxes taller than their ink, so they bring
+      // their own air, and a step4 band inset on top of that made the footer
+      // claim more of the card than the summary it annotates.
       padding: EdgeInsets.symmetric(
         horizontal: tokens.spacing.step4,
-        vertical: tokens.spacing.step4,
+        vertical: tokens.spacing.step2,
       ),
       // The wash band spans the card, but the content snaps to the same
       // reading measure as the summary and proposal rows.
@@ -119,12 +123,11 @@ class TaskAgentControlsFooter extends StatelessWidget {
                   onCountdownExpired: onCountdownExpired,
                 ),
               ),
-              // No declared gap: the automation row's last box and the
-              // identity row below it are both `step8` minimums with smaller
-              // ink inside, so ~20 logical px of air already exists between
-              // the two baselines. Adding `step4` on top of that is what made
-              // the band read as three widely-spaced peers rather than one
-              // settings block.
+              // No declared gap: the automation row's last box (`step7`) and
+              // the identity row below it (`step6`) are minimums with smaller
+              // ink inside, so air already exists between the two baselines.
+              // Adding `step4` on top of that is what made the band read as
+              // three widely-spaced peers rather than one settings block.
               TaskAgentIdentityRegion(
                 data: identityData,
                 onSetupTap: onSetupTap,

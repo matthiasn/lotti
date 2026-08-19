@@ -183,7 +183,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   automatic-updates row used to paint a grey rectangle around things that do
   not look like buttons. Those targets now answer the pointer themselves —
   a label or chevron brightens, a circle's outline firms — and nothing gains
-  a button shape it does not have at rest.
+  a button shape it does not have at rest. The AI card's settings footer
+  also got quieter and tighter: the model/setup line and the Skip action are
+  plain links now (their text brightens on hover), and the band's rows and
+  padding shrank so it stops claiming more of the card than the summary it
+  annotates.
 - **Goal chat now remembers and reliably answers.** Recent exchanges reach the
   agent with each message, and a question saved just before a restart is
   recovered instead of appearing ignored. Invalid banner actions can no longer

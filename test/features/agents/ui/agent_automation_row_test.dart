@@ -210,9 +210,10 @@ void main() {
       // The row is the target, not a box beside the switch. An earlier
       // revision reserved a step9 square around a 24px-tall track and left it
       // inert: it cost the column 48px of height while the only tappable part
-      // stayed the track. Now the whole row height is real, and it is one
-      // step8 box like every other row in the band.
-      expect(tester.getSize(target).height, tokens.spacing.step8);
+      // stayed the track. Now the whole row height is real, and it is a
+      // step7 box — enough to breathe around the track without the footer
+      // claiming more of the card than the summary it annotates.
+      expect(tester.getSize(target).height, tokens.spacing.step7);
       expect(
         tester.getSize(target).width,
         greaterThan(tokens.spacing.step9 * 2),
