@@ -1645,6 +1645,46 @@ void main() {
     });
   });
 
+  group('AppScreen restored tab', () {
+    testWidgets(
+      'renders the restored tab on the FIRST frame, with no emission to '
+      'wait for',
+      (tester) async {
+        final mockNavService = MockNavService();
+        await _stubNavService(
+          mockNavService,
+          // Nav state is restored before `runApp`, so the emission that
+          // selected the tab is long gone by the time the shell subscribes.
+          // An empty stream is exactly that cold-start situation.
+          indexStream: const Stream<int>.empty(),
+          isProjectsEnabled: () => true,
+          isDailyOsEnabled: () => true,
+          isHabitsEnabled: () => true,
+          isDashboardsEnabled: () => true,
+        );
+        when(() => mockNavService.index).thenReturn(4);
+        await _registerAppScreenGetIt(mockNavService);
+        addTearDown(tearDownTestGetIt);
+
+        await _pumpAppScreen(
+          tester,
+          navService: mockNavService,
+          viewportSize: _desktopViewportSize,
+        );
+
+        // Seeded from the service rather than defaulting to 0 — otherwise the
+        // app opens on Tasks and the whole restore is invisible to the user.
+        expect(
+          tester.widget<IndexedStack>(find.byType(IndexedStack)).index,
+          4,
+        );
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
+  });
+
   group('AppScreen breakpoint crossing', () {
     testWidgets(
       'keeps the tab content mounted and the delegates attached across a '

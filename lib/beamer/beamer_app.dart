@@ -650,8 +650,14 @@ class _AppScreenState extends ConsumerState<AppScreen> {
 
     return StreamBuilder<int>(
       stream: navService.getIndexStream(),
+      // Seeded from the service, not from 0: nav state is restored before
+      // `runApp`, so by the time this subscribes the index has already been
+      // set — and a stream delivers even a replayed value asynchronously.
+      // Without this the FIRST frame renders Tasks and only then swaps to the
+      // restored tab, which is the flash the restore exists to avoid.
+      initialData: navService.index,
       builder: (context, snapshot) {
-        final rawIndex = snapshot.data ?? 0;
+        final rawIndex = snapshot.data ?? navService.index;
         final isProjectsPageEnabled = navService.isProjectsPageEnabled;
         final isDailyOsPageEnabled = navService.isDailyOsPageEnabled;
         final isHabitsPageEnabled = navService.isHabitsPageEnabled;

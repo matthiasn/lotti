@@ -832,14 +832,14 @@ void main() {
         navService.beamToNamed('/tasks'); // ignore: cascade_invocations
         expect(navService.index, 0);
 
-        // Subscribe first, then trigger the navigation so the emission
-        // happens after the listener is attached.
-        final nextIndex = navService.getIndexStream().first;
+        // The stream replays the current index to every new subscriber, so
+        // skip that and wait for the emission the navigation causes.
+        final nextIndex = navService.getIndexStream().skip(1).first;
 
         // tapIndex to journal fires setIndex → emitState.
         navService.tapIndex(navService.journalIndex);
 
-        // Await the first emitted value.
+        // Await the first emitted value after the replay.
         expect(await nextIndex, navService.journalIndex);
       });
     });
@@ -1174,14 +1174,59 @@ void main() {
       });
     });
 
+    group('routes that bypass NavService', () {
+      test('backing out of a detail page is what gets persisted', () async {
+        final bench = _NavFlagBench()..emitAll(enabled: true);
+        final navService = bench.navService..beamToNamed('/tasks/task-9');
+        await pumpEventQueue();
+        expect(navService.routeForTab('/tasks'), '/tasks/task-9');
+
+        // `beamBack` moves the delegate without going through any of this
+        // service's navigation methods. A route map maintained on the side
+        // would still be pointing at the detail, and the next launch would
+        // reopen the page the user just backed out of.
+        navService.beamBack();
+        await pumpEventQueue();
+
+        expect(navService.routeForTab('/tasks'), '/tasks');
+        expect(
+          await navService.getSavedRoute(),
+          '/tasks',
+          reason: 'the persisted row must agree with the live stack',
+        );
+      });
+
+      test('a delegate beamed directly is still persisted', () async {
+        final bench = _NavFlagBench()..emitAll(enabled: true);
+        final navService = bench.navService;
+
+        // What `settings_tree_url_sync` does via
+        // `Beamer.of(context).beamToReplacementNamed`, and what
+        // `linked_tasks_widget` does straight on the delegate.
+        navService.settingsDelegate.beamToReplacementNamed(
+          '/settings/advanced',
+        );
+        await pumpEventQueue();
+
+        expect(navService.routeForTab('/settings'), '/settings/advanced');
+        expect(
+          NavStateSnapshot.decode(
+            await bench.settingsDb.itemByKey(navStateKey),
+          )?.routes['/settings'],
+          '/settings/advanced',
+        );
+      });
+    });
+
     group('background navigation', () {
       test('beamWithinTab moves the tab without activating it', () async {
         final bench = _NavFlagBench()..emitAll(enabled: true);
         final navService = bench.navService;
 
         expect(navService.index, 0, reason: 'the user is on Tasks');
+        // Skip the replayed current index; only a CHANGE matters here.
         final emitted = <int>[];
-        final sub = navService.getIndexStream().listen(emitted.add);
+        final sub = navService.getIndexStream().skip(1).listen(emitted.add);
         addTearDown(sub.cancel);
 
         // What the logbook's newest-entry auto-selection does from the
@@ -1203,6 +1248,15 @@ void main() {
         // and after a restart.
         navService.tapIndex(navService.journalIndex);
         expect(navService.currentPath, '/journal/entry-42');
+
+        // Once Logbook IS the active tab, the same call does move the
+        // service's notion of where the user is — auto-select re-runs there
+        // whenever the selection is cleared.
+        navService.beamWithinTab('/journal/entry-43');
+        await pumpEventQueue();
+
+        expect(navService.currentPath, '/journal/entry-43');
+        expect(navService.index, navService.journalIndex);
       });
 
       test('beamWithinTab ignores a path no tab owns', () async {
@@ -1212,6 +1266,46 @@ void main() {
 
         expect(bench.navService.index, 0);
         expect(bench.navService.currentPath, '/tasks');
+      });
+    });
+
+    group('stale index', () {
+      test(
+        'persists the first enabled tab when the index is out of range',
+        () async {
+          final bench = _NavFlagBench()..emitAll(enabled: true);
+          final navService = bench.navService..beamToNamed('/habits');
+          await pumpEventQueue();
+
+          // Turning flags off shrinks the tab list under a larger index — the
+          // same staleness the shell guards with `clampNavigationIndex`. A save
+          // landing in that window must not index past the end of the list.
+          navService.index = 99;
+          await navService.persistNamedRoute('/habits');
+
+          expect(
+            NavStateSnapshot.decode(
+              await bench.settingsDb.itemByKey(navStateKey),
+            )?.activeRootPath,
+            '/tasks',
+          );
+        },
+      );
+    });
+
+    group('index stream', () {
+      test('replays the current index to a late subscriber', () async {
+        final bench = _NavFlagBench()..emitAll(enabled: true);
+        final navService = bench.navService..beamToNamed('/journal');
+        expect(navService.index, navService.journalIndex);
+
+        // The shell and the per-tab controllers all subscribe AFTER restore
+        // has already selected the tab — restore runs before `runApp`. A
+        // non-replaying broadcast stream drops that emission and leaves every
+        // one of them believing the app is on Tasks.
+        final seen = await navService.getIndexStream().first;
+
+        expect(seen, navService.journalIndex);
       });
     });
 

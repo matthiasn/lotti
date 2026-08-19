@@ -306,6 +306,9 @@ void main() {
         () => nav.desktopSelectedTaskId,
       ).thenReturn(ValueNotifier<String?>(null));
       when(() => nav.currentPath).thenReturn('/');
+      // The shell seeds its tab from the service so a restored index is on
+      // screen from the FIRST frame; an unstubbed int getter returns null.
+      when(() => nav.index).thenReturn(0);
     }
 
     setUp(() async {

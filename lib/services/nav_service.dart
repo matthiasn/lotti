@@ -94,6 +94,15 @@ class NavService {
     _settingsDb = settingsDb ?? getIt<SettingsDb>();
     resetTabsToRoots();
 
+    // Attached AFTER the reset above, so seeding the tabs is not itself
+    // mistaken for navigation worth persisting. Every tab's stack can be moved
+    // without going through this service — `beamBack`, the settings tree's own
+    // `Beamer.of(context).beamToReplacementNamed`, a direct delegate call — so
+    // the delegates themselves are what we watch.
+    for (final spec in _tabSpecs) {
+      spec.delegate.addListener(_schedulePersist);
+    }
+
     _navigationFlagsSub =
         Rx.combineLatest7<
               bool,
@@ -213,9 +222,9 @@ class NavService {
   /// [_enabledTabSpecs] reflects reality yet.
   bool _flagsReceived = false;
 
-  /// Per-tab routes, keyed by tab root path. The persisted half of the
-  /// nine independent Beamer stacks.
-  final Map<String, String> _routesByTab = <String, String>{};
+  /// Coalesces the saves triggered by delegate notifications, so one
+  /// navigation (which can notify several delegates) costs one write.
+  bool _persistScheduled = false;
 
   /// Desktop split-pane task detail stack.
   ///
@@ -277,7 +286,15 @@ class NavService {
   bool _isRelationshipsPageEnabled = false;
 
   String currentPath = '/tasks';
-  final indexStreamController = StreamController<int>.broadcast();
+
+  /// Replays the current index to new subscribers.
+  ///
+  /// Restore runs before `runApp`, so the emission that selects the restored
+  /// tab happens before `AppScreen` — or any controller keyed on tab
+  /// visibility — has subscribed. A plain broadcast controller drops it, and
+  /// the shell would sit on Tasks while the service and the delegates were
+  /// already somewhere else entirely.
+  final indexStreamController = BehaviorSubject<int>.seeded(0);
 
   final tasksIndex = 0;
 
@@ -313,7 +330,6 @@ class NavService {
       // on later, and a stale route must not be waiting behind it.
       spec.delegate.beamToReplacementNamed(spec.rootPath);
     }
-    _routesByTab.clear();
     _pendingActiveRootPath = null;
     currentPath = _enabledTabSpecs.first.rootPath;
     index = 0;
@@ -356,7 +372,6 @@ class NavService {
       final route = snapshot.routes[spec.rootPath];
       if (route == null || route == spec.rootPath) continue;
       if (!_matchesRootPath(route, spec.rootPath)) continue;
-      _routesByTab[spec.rootPath] = route;
       spec.delegate.beamToReplacementNamed(route);
     }
 
@@ -386,7 +401,7 @@ class NavService {
       currentPath = pendingActiveRootPath;
       return false;
     }
-    currentPath = _routesByTab[restored.rootPath] ?? restored.rootPath;
+    currentPath = _routeForSpec(restored);
     _setIndexInternal(
       beamerDelegates.indexOf(restored.delegate),
       syncPath: false,
@@ -504,17 +519,19 @@ class NavService {
     return _specForPath(path) == null ? _enabledTabSpecs.first.rootPath : path;
   }
 
-  /// The root path of the tab at [index], or Tasks when the index is stale.
+  /// The root path of the tab at [index].
+  ///
+  /// Falls back to the first enabled tab when [index] is out of range, which
+  /// it transiently is whenever a feature flag shrinks the tab list — the
+  /// same staleness the shell guards with `clampNavigationIndex`.
+  ///
+  /// Indexes [_enabledTabSpecs] rather than searching [beamerDelegates] for a
+  /// match: the delegate list is built from those very specs, in that order,
+  /// so a search could never fail and its "not found" arm was unreachable.
   String get _activeRootPath {
-    final delegates = beamerDelegates;
-    if (index < 0 || index >= delegates.length) {
-      return _enabledTabSpecs.first.rootPath;
-    }
-    final active = delegates[index];
-    for (final spec in _enabledTabSpecs) {
-      if (identical(spec.delegate, active)) return spec.rootPath;
-    }
-    return _enabledTabSpecs.first.rootPath;
+    final specs = _enabledTabSpecs.toList(growable: false);
+    if (index < 0 || index >= specs.length) return specs.first.rootPath;
+    return specs[index].rootPath;
   }
 
   /// [syncPath] is false for callers that have ALREADY set [currentPath] to
@@ -528,14 +545,25 @@ class NavService {
   }) {
     index = newIndex;
     if (syncPath) {
-      final rootPath = _activeRootPath;
-      currentPath = _routesByTab[rootPath] ?? rootPath;
+      currentPath = routeForTab(_activeRootPath);
     }
     delegateByIndex(index).update(rebuild: false);
     unawaited(_persistState());
     if (emit) {
       emitState();
     }
+  }
+
+  /// Coalesces a save to the end of the current microtask: one navigation can
+  /// notify several delegates (the form-factor rebuild notifies all of them),
+  /// and that is still one state worth writing once.
+  void _schedulePersist() {
+    if (_persistScheduled || _disposed || _restoreInFlight) return;
+    _persistScheduled = true;
+    scheduleMicrotask(() {
+      _persistScheduled = false;
+      unawaited(_persistState());
+    });
   }
 
   /// Writes the active tab and every tab's route to [navStateKey].
@@ -549,7 +577,7 @@ class NavService {
       navStateKey,
       NavStateSnapshot(
         activeRootPath: _activeRootPath,
-        routes: Map<String, String>.of(_routesByTab),
+        routes: _routesByTabFromDelegates(),
       ).encode(),
     );
   }
@@ -617,7 +645,6 @@ class NavService {
     }
 
     currentPath = normalizedPath;
-    _routesByTab[matchingSpec.rootPath] = normalizedPath;
     _setIndexInternal(
       beamerDelegates.indexOf(matchingSpec.delegate),
       syncPath: false,
@@ -748,27 +775,53 @@ class NavService {
   void beamWithinTab(String path, {Object? data}) {
     final spec = _specForAnyPath(path);
     if (spec == null) return;
-    _routesByTab[spec.rootPath] = path;
     if (spec.rootPath == _activeRootPath) {
       currentPath = path;
     }
+    // The delegate notifies, which schedules the save.
     spec.delegate.beamToNamed(path, data: data);
-    unawaited(_persistState());
   }
 
   /// The route the given tab currently stands at, or its root when it has
   /// never been navigated deeper.
-  String routeForTab(String rootPath) => _routesByTab[rootPath] ?? rootPath;
+  String routeForTab(String rootPath) {
+    final spec = _specForAnyPath(rootPath);
+    return spec == null ? rootPath : _routeForSpec(spec);
+  }
+
+  /// The route [spec]'s delegate currently stands at.
+  ///
+  /// Read straight off the delegate rather than from a map this service
+  /// maintains: plenty of navigation never passes through here at all —
+  /// [beamBack], the settings tree's own
+  /// `Beamer.of(context).beamToReplacementNamed`, `linked_tasks_widget`'s
+  /// direct delegate call — and a parallel map would quietly disagree with
+  /// the stack it claims to describe. Backing out of a detail page would
+  /// then still restore that detail on the next launch.
+  String _routeForSpec(
+    ({bool enabled, String rootPath, BeamerDelegate delegate}) spec,
+  ) {
+    final uri = spec.delegate.configuration.uri;
+    final route = uri.hasQuery ? uri.toString() : uri.path;
+    // A delegate that has never been beamed reports '/'; that is not a route
+    // this tab can be restored to.
+    return _matchesRootPath(route, spec.rootPath) ? route : spec.rootPath;
+  }
+
+  Map<String, String> _routesByTabFromDelegates() {
+    final routes = <String, String>{};
+    for (final spec in _tabSpecs) {
+      final route = _routeForSpec(spec);
+      if (route != spec.rootPath) routes[spec.rootPath] = route;
+    }
+    return routes;
+  }
 
   /// Records [route] as its tab's current position and persists the state.
   ///
   /// For callers that beam a delegate themselves (the agent helpers) and need
   /// the service's view of where that tab stands to keep up.
   Future<void> persistNamedRoute(String route) async {
-    final spec = _specForAnyPath(route);
-    if (spec != null) {
-      _routesByTab[spec.rootPath] = route;
-    }
     currentPath = route;
     await _persistState();
   }
@@ -787,6 +840,9 @@ class NavService {
 
   Future<void> dispose() async {
     _disposed = true;
+    for (final spec in _tabSpecs) {
+      spec.delegate.removeListener(_schedulePersist);
+    }
     desktopTaskDetailStack.dispose();
     desktopSelectedTaskId.dispose();
     desktopSelectedProjectId.dispose();
