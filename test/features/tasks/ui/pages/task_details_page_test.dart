@@ -18,6 +18,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_detail_linked_from.dart';
 import 'package:lotti/features/journal/ui/widgets/linked_entries_with_timer.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
 import 'package:lotti/features/tasks/state/task_link_groups_controller.dart';
@@ -276,6 +277,48 @@ void main() {
           reason:
               'the column adopts the block measure so the field, the chip '
               'lane and the card share one right edge',
+        );
+      },
+    );
+
+    testWidgets(
+      'a first-run task drops the History header but keeps the entry-stream '
+      'widgets, so reverse-linked entries stay reachable',
+      (tester) async {
+        // `watchTaskIsFirstRun` examines only OUTGOING links, so a blank task
+        // can still carry entries that link TO it. Hiding the whole history
+        // subtree on first-run would disappear those with no way to expand —
+        // the bare stream (which renders nothing when truly empty) must stay.
+        final blank = testTask.copyWith(
+          data: testTask.data.copyWith(title: '', checklistIds: const []),
+          entryText: null,
+        );
+        when(
+          () => mockJournalDb.journalEntityById(testTask.meta.id),
+        ).thenAnswer((_) async => blank);
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            TaskDetailsPage(taskId: testTask.id),
+            overrides: [
+              ...hTaskDetailsPageOverrides(),
+              linkedEntriesControllerProvider(
+                testTask.meta.id,
+              ).overrideWith(FakeLinkedEntriesController.new),
+              taskAgentProvider.overrideWith((ref, id) async => null),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(TaskFirstRunActions), findsOneWidget);
+        expect(find.text('History'), findsNothing);
+        expect(
+          find.byType(LinkedEntriesWithTimer, skipOffstage: false),
+          findsOneWidget,
+        );
+        expect(
+          find.byType(LinkedFromEntriesWidget, skipOffstage: false),
+          findsOneWidget,
         );
       },
     );

@@ -423,6 +423,26 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
     );
   }
 
+  /// The dated entry stream: outgoing linked entries plus reverse links.
+  /// Both widgets collapse to nothing on a task without entries.
+  Widget _buildEntryStream(Task task, String? highlightedEntryId) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: <Widget>[
+        LinkedEntriesWithTimer(
+          item: task,
+          entryKeyBuilder: _getEntryKey,
+          highlightedEntryId: highlightedEntryId,
+          hideTaskEntries: true,
+        ),
+        LinkedFromEntriesWidget(
+          task,
+          hideTaskEntries: true,
+        ),
+      ],
+    ).animate().fadeIn(duration: const Duration(milliseconds: 100));
+  }
+
   @override
   Widget build(BuildContext context) {
     final focusProvider = taskFocusControllerProvider(widget.taskId);
@@ -611,33 +631,24 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
                       // The dated log history lives behind a collapsed-by-
                       // default section: it is the page's longest region, and
                       // the summary / todos / linked tasks above it are what a
-                      // reader needs first. A first-run task has no history
-                      // yet, so the section (header included) stands down.
+                      // reader needs first. A first-run task drops the
+                      // History header — but NOT the entry widgets: the
+                      // first-run predicate examines only *outgoing* links,
+                      // so a blank task can still carry entries that link TO
+                      // it, and hiding the whole subtree would disappear
+                      // them with no way to expand. The bare column renders
+                      // nothing when there is truly nothing.
                       child: isFirstRun
-                          ? const SizedBox.shrink()
+                          ? _buildEntryStream(task, highlightedEntryId)
                           : TaskHistorySection(
                               expanded: _historyExpanded,
                               onToggle: () => setState(
                                 () => _historyExpanded = !_historyExpanded,
                               ),
-                              child:
-                                  Column(
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    children: <Widget>[
-                                      LinkedEntriesWithTimer(
-                                        item: task,
-                                        entryKeyBuilder: _getEntryKey,
-                                        highlightedEntryId: highlightedEntryId,
-                                        hideTaskEntries: true,
-                                      ),
-                                      LinkedFromEntriesWidget(
-                                        task,
-                                        hideTaskEntries: true,
-                                      ),
-                                    ],
-                                  ).animate().fadeIn(
-                                    duration: const Duration(milliseconds: 100),
-                                  ),
+                              child: _buildEntryStream(
+                                task,
+                                highlightedEntryId,
+                              ),
                             ),
                     ),
                   ),

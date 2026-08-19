@@ -93,7 +93,9 @@ class TaskMetaFlyoutContent extends ConsumerWidget {
               ref,
               taskId: taskId,
               categoryId: categoryId,
-              current: ref.read(projectForTaskProvider(taskId)).asData?.value,
+              // `.value` keeps the picker's current selection through a
+              // background reload (same rationale as _ProjectValue).
+              current: ref.read(projectForTaskProvider(taskId)).value,
             ),
           ),
         TaskMetaFieldRow(
@@ -149,10 +151,6 @@ class TaskMetaFieldRow extends StatelessWidget {
   final Widget value;
   final VoidCallback? onTap;
 
-  /// One shared width for every row's label column, so the values align into
-  /// a scannable second column.
-  static const double labelColumnWidth = 96;
-
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -164,7 +162,9 @@ class TaskMetaFieldRow extends StatelessWidget {
       child: Row(
         children: [
           SizedBox(
-            width: labelColumnWidth,
+            // One shared width for every row's label column (step12 = 96),
+            // so the values align into a scannable second column.
+            width: tokens.spacing.step12,
             child: Text(
               label,
               style: tokens.typography.styles.others.caption.copyWith(
@@ -310,7 +310,10 @@ class _ProjectValue extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final project = ref.watch(projectForTaskProvider(taskId)).asData?.value;
+    // `.value`, not `.asData`: a background invalidation (task or project
+    // notification) re-enters loading while retaining the previous value,
+    // and an established project must not flash "No project" during it.
+    final project = ref.watch(projectForTaskProvider(taskId)).value;
     if (project == null) {
       return Text(
         context.messages.projectPickerUnassigned,
@@ -424,6 +427,9 @@ class _TimeValue extends ConsumerWidget {
         SizedBox(width: tokens.spacing.step3),
         ClipRRect(
           borderRadius: BorderRadius.circular(tokens.radii.xs),
+          // The same 36×6 bar the old header estimate chip carried — kept
+          // verbatim so the read-out is visually continuous with what it
+          // replaced (no sizing token matches a 6px bar height).
           child: SizedBox(
             width: 36,
             height: 6,
