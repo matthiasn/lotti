@@ -89,7 +89,7 @@ void main() {
     expect(find.text('today'), findsOneWidget);
   });
 
-  testWidgets('an authored rolling window keeps its actual cadence label', (
+  testWidgets('an authored rolling window is named in the corner reading', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -114,7 +114,10 @@ void main() {
       ),
     );
 
-    expect(find.text('4× · rolling 10 days'), findsOneWidget);
+    // The cadence line is gone entirely — the corner reading carries the
+    // count, the target AND the concrete window.
+    expect(find.text('4× · rolling 10 days'), findsNothing);
+    expect(find.text('0 of 4 · rolling 10 days'), findsOneWidget);
   });
 
   for (final locale in AppLocalizations.supportedLocales) {
@@ -1809,8 +1812,8 @@ void main() {
 
     // "6 of 3 this window" parses as a broken fraction; the count with its
     // target named beside it does not.
-    expect(find.text('6 of 3 this window'), findsNothing);
-    expect(find.text('6 this window · target 3'), findsOneWidget);
+    expect(find.text('6 of 3 · rolling 7 days'), findsNothing);
+    expect(find.text('6 · target 3 · rolling 7 days'), findsOneWidget);
   });
 
   testWidgets('the check-off suggestion reads as the prompt it is', (
@@ -2205,7 +2208,8 @@ void main() {
     );
 
     expect(find.text('Aug 1 – Aug 31'), findsOneWidget);
-    expect(find.text('2× · calendar month'), findsOneWidget);
+    expect(find.text('2× · calendar month'), findsNothing);
+    expect(find.textContaining('· calendar month'), findsOneWidget);
     expect(find.textContaining('/ 6'), findsNothing);
     // A month of days narrows its columns to fit rather than panning, so the
     // first of the month is on screen with the last.
@@ -3043,50 +3047,6 @@ void main() {
     expect(find.textContaining('/ 6 weeks'), findsNothing);
   });
 
-  testWidgets('a narrow authored cadence moves intact below the habit name', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      makeTestableWidgetNoScroll(
-        Center(
-          child: SizedBox(
-            width: 260,
-            child: GoalProgressCard(
-              progress: GoalProgressView(
-                today: today,
-                habits: [
-                  GoalHabitProgressView(
-                    habitId: 'walk',
-                    name: 'A deliberately long habit name',
-                    targetCount: 4,
-                    window: const GoalWindow.rollingDays(count: 10),
-                    days: [
-                      for (var offset = 9; offset >= 0; offset--)
-                        day(offset, offset < 4 ? 1 : 0),
-                    ],
-                    successfulWeeks: 2,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-
-    final cadenceFinder = find.text('4× · rolling 10 days');
-    final cadence = tester.widget<Text>(cadenceFinder);
-    expect(cadence.maxLines, isNull);
-    expect(cadence.overflow, isNot(TextOverflow.ellipsis));
-    expect(
-      tester.getTopLeft(cadenceFinder).dy,
-      greaterThan(
-        tester.getBottomLeft(find.text('A deliberately long habit name')).dy,
-      ),
-      reason: 'the full authored cadence gets its own row when space is tight',
-    );
-  });
-
   testWidgets(
     'compact habit day follows the mobile handoff and ignores its current outcome',
     (
@@ -3256,8 +3216,9 @@ void main() {
       findsOneWidget,
     );
     expect(find.byIcon(Icons.close_rounded), findsOneWidget);
-    // The weekday tag lives in the corner, so the missed cross does not
-    // cost the cell its place on the day axis: both render in one cell.
+    // The missed cross OWNS the cell: at the compact size a corner letter
+    // collides with the glyph, so the letter yields and the neighbouring
+    // plain cells carry the axis.
     expect(
       find.descendant(
         of: find.byKey(
@@ -3265,8 +3226,8 @@ void main() {
         ),
         matching: find.text('M'),
       ),
-      findsOneWidget,
-      reason: 'Mon Aug 10 keeps its initial beside the missed cross',
+      findsNothing,
+      reason: 'the mark outranks the weekday initial in one small cell',
     );
   });
 
@@ -3750,7 +3711,7 @@ void main() {
     );
 
     final tokens = tester.element(find.byType(GoalProgressCard)).designTokens;
-    final reading = tester.getRect(find.text('3 of 3 this window'));
+    final reading = tester.getRect(find.text('3 of 3 · rolling 7 days'));
     final status = tester.getRect(find.text('On track'));
     final card = tester.getRect(find.byType(DesignSystemSectionCard).first);
 

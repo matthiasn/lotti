@@ -2684,6 +2684,8 @@
   "goalDimensionCategoryTimeSource": "Timp de categorie urmărit",
   "goalDimensionHabitReading": "{currentCount} din {targetCount} această fereastră",
   "goalDimensionHabitReadingOverTarget": "{currentCount} această fereastră · țintă {targetCount}",
+  "goalDimensionHabitReadingOverTargetWindowed": "{currentCount} · țintă {targetCount} · {window}",
+  "goalDimensionHabitReadingWindowed": "{currentCount} din {targetCount} · {window}",
   "goalDimensionHabitSource": "Completari de obiceiuri",
   "goalDimensionHealthSource": "Date de sănătate",
   "goalDimensionImprovingNote": "Încă nu, dar ultima măsurătoare s-a apropiat de țintă.",

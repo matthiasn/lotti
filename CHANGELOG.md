@@ -12,8 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   directly beneath it in its own colour, flush to the card's edge — instead
   of both floating inline on the title row. The duplicate "5× per 7 days"
   line is gone; the date span now notes "slides at midnight" for rolling
-  weeks. Each day square carries a small weekday initial in its corner —
-  beside, not instead of, the marks for missed, skipped and judged days. Legends and summary lines center under the charts they explain.
+  weeks. Each plain day square carries a small weekday initial in its
+  corner (a marked day — missed, skipped, judged — keeps its mark alone),
+  and a habit's reading now names its window outright — "1 of 3 · calendar
+  week" — since the track can show several windows' worth of days. Legends and summary lines center under the charts they explain.
   Shape now tells you what is tappable: buttons and controls stay fully
   rounded, while informative chips (status, trend, verdict, cost) take a
   small fixed corner. And hovering actually shows: day squares, reflection

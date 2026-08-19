@@ -6571,6 +6571,24 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String goalDimensionHabitReadingOverTargetWindowed(
+    int currentCount,
+    int targetCount,
+    String window,
+  ) {
+    return '$currentCount · cíl $targetCount · $window';
+  }
+
+  @override
+  String goalDimensionHabitReadingWindowed(
+    int currentCount,
+    int targetCount,
+    String window,
+  ) {
+    return '$currentCount z $targetCount · $window';
+  }
+
+  @override
   String get goalDimensionHabitSource => 'Dokončení návyků';
 
   @override

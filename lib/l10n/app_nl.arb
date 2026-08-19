@@ -2940,6 +2940,8 @@
   "goalDimensionCategoryTimeSource": "Bijgehouden categorietijd",
   "goalDimensionHabitReading": "{currentCount} van {targetCount} in dit venster",
   "goalDimensionHabitReadingOverTarget": "{currentCount} in dit venster · doel {targetCount}",
+  "goalDimensionHabitReadingOverTargetWindowed": "{currentCount} · doel {targetCount} · {window}",
+  "goalDimensionHabitReadingWindowed": "{currentCount} van {targetCount} · {window}",
   "goalDimensionHabitSource": "Gewoontevoltooiingen",
   "goalDimensionHealthSource": "Gezondheidsgegevens",
   "goalDimensionImprovingNote": "Nog niet, maar de laatste meting ging richting het doel.",

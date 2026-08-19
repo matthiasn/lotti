@@ -2684,6 +2684,8 @@
   "goalDimensionCategoryTimeSource": "Temps de catégorie suivi",
   "goalDimensionHabitReading": "{currentCount} de {targetCount} cette fenêtre",
   "goalDimensionHabitReadingOverTarget": "{currentCount} cette fenêtre · objectif {targetCount}",
+  "goalDimensionHabitReadingOverTargetWindowed": "{currentCount} · objectif {targetCount} · {window}",
+  "goalDimensionHabitReadingWindowed": "{currentCount} de {targetCount} · {window}",
   "goalDimensionHabitSource": "Achèvements d'habitudes",
   "goalDimensionHealthSource": "Données de santé",
   "goalDimensionImprovingNote": "Pas encore, mais la dernière mesure s'est rapprochée de la cible.",

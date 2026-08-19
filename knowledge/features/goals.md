@@ -836,9 +836,10 @@ flowchart TD
   `goalNudgeHistoryProvider` remains for bookkeeping but no page surface
   reads it. Each dimension card pins one stacked corner element top-right:
   the key reading over its status caption (semantic ink), replacing the
-  old inline title-row pair, and the rolling week's cadence line is gone —
-  the corner block carries the count/target, the period line carries
-  "slides at midnight". Legends and one-sentence summaries center under
+  old inline title-row pair. The reading names its window CONCRETELY
+  ("1 of 3 · calendar week") because the track below can show several
+  windows' worth of days; the cadence line is gone for every window type,
+  and the rolling week's period line carries "slides at midnight". Legends and one-sentence summaries center under
   the charts they annotate. Chip shape encodes affordance on every goal
   surface: clickable elements are fully rounded (`radii.badgesPills`);
   informative chips — status/trend/verdict/cost — take the fixed
@@ -889,8 +890,9 @@ flowchart TD
   (`reverse: true`) scroller joined to one `LinkedScrollGroup`, where every
   track then pans in unison. The habit squares and the whole-goal strip carry their weekday
   axis INSIDE the cells (`goalDayCellLetter`: a small bottom-left corner
-  initial that coexists with the center marks — verdict glyph, partial dot,
-  missed cross — and is suppressed below `IconSizes.l`) instead of a label
+  initial that yields to a center mark — verdict glyph, partial dot, missed
+  cross, which collide with it at the compact cell size — and is suppressed
+  below `IconSizes.l`) instead of a label
   row above the track; only the hand-painted metric bars keep a caption
   axis (`_WeekdayTrack`), below the bars, since a variable-height bar
   cannot host a letter. Every tappable element on these cards carries the

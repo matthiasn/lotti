@@ -326,14 +326,6 @@ class _CompactDayCell extends StatelessWidget {
     // separate the hues can still act on.
     final showsPartialDot =
         rating == null && state == GoalCompactDayState.partial;
-    // The weekday tag lives in the corner, so it renders alongside the
-    // center marks instead of yielding to them.
-    final letterTag = goalDayCellLetter(
-      tokens,
-      letter: weekdayLetter,
-      cellSize: size,
-      filled: rating != null || state == GoalCompactDayState.full,
-    );
     final Widget? centerMark = showsPartialDot
         ? Center(
             child: goalPartialDayDot(
@@ -361,6 +353,18 @@ class _CompactDayCell extends StatelessWidget {
             ),
           )
         : null;
+    // The corner weekday tag renders only when the center is empty: at the
+    // compact cell size a glyph and a corner letter collide, and the glyph
+    // is the rarer, more meaningful mark — neighbouring plain cells keep
+    // carrying the axis.
+    final letterTag = centerMark != null
+        ? null
+        : goalDayCellLetter(
+            tokens,
+            letter: weekdayLetter,
+            cellSize: size,
+            filled: rating != null || state == GoalCompactDayState.full,
+          );
     final cell = Container(
       width: size,
       height: size,
@@ -553,12 +557,13 @@ String goalAssessmentRatingLabel(
 ///
 /// Replaces the separate label row that used to run above every track: one
 /// letter per node keeps the weekday axis without spending a full row on it.
-/// A quiet corner tag rather than a centered label, so the center stays free
-/// for the marks that outrank it — a verdict glyph, the partial dot, the
-/// missed cross — and the letter can coexist with all of them. Scaled down
-/// with the cell (never up past the caption size), and null when the cell is
-/// too small to hold a legible letter — a squeezed ninety-day track drops
-/// the letters rather than painting mush.
+/// A quiet corner tag rather than a centered label. It yields entirely to
+/// the marks that outrank it — a verdict glyph, the partial dot, the missed
+/// cross — because at the compact cell size a corner letter and a center
+/// glyph collide; the rarer mark wins and neighbouring plain cells keep
+/// carrying the axis. Scaled down with the cell (never up past the caption
+/// size), and null when the cell is too small to hold a legible letter — a
+/// squeezed ninety-day track drops the letters rather than painting mush.
 ///
 /// Ink follows the fill so the letter stays readable on both states: the
 /// on-alert ink over a saturated fill, medium emphasis over the neutral and
@@ -977,18 +982,23 @@ class _HabitDimensionCard extends StatelessWidget {
             kind: GoalDimensionKind.habit,
             title: habit.name,
             source: context.messages.goalDimensionHabitSource,
-            // Past the target the "X of Y" frame stops parsing — "6 of 3 this
-            // window" reads as a broken fraction rather than as three
-            // completions to spare — so an exceeded quota states the count and
-            // names the target beside it.
+            // The reading names its window CONCRETELY — "1 of 3 · calendar
+            // week" — because the track below can show several windows'
+            // worth of days, and "this window" read as a claim about the
+            // whole visible span. Past the target the "X of Y" frame stops
+            // parsing — "6 of 3" reads as a broken fraction rather than as
+            // three completions to spare — so an exceeded quota states the
+            // count and names the target beside it.
             reading: habit.successesInWindow > habit.targetCount
-                ? context.messages.goalDimensionHabitReadingOverTarget(
+                ? context.messages.goalDimensionHabitReadingOverTargetWindowed(
                     habit.successesInWindow,
                     habit.targetCount,
+                    goalWindowLabel(context, habit.window),
                   )
-                : context.messages.goalDimensionHabitReading(
+                : context.messages.goalDimensionHabitReadingWindowed(
                     habit.successesInWindow,
                     habit.targetCount,
+                    goalWindowLabel(context, habit.window),
                   ),
             met: habit.deficit == 0,
             hasData: true,
@@ -2013,19 +2023,11 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
         ? null
         : context.messages.goalDaysToRecover(habit.deficit);
     final rollingWeek = habit.window == const GoalWindow.rollingDays(count: 7);
-    // The header's corner block already states "N this window · target M",
-    // so restating "M× per 7 days" here was the same fact twice on one card.
-    // Only a non-weekly window still names its cadence, because "this
-    // window" alone does not say WHICH window that is; the rolling week's
-    // one unique fact — that the window slides — moves onto the period line,
-    // which is the thing that actually slides.
-    final cadence = rollingWeek
-        ? null
-        : goalHabitTargetLabel(
-            context,
-            targetCount: habit.targetCount,
-            window: habit.window,
-          );
+    // NO cadence line at all: the corner block now carries count, target AND
+    // the concrete window ("1 of 3 · calendar week"), so a "3× · calendar
+    // week" line here would be the same facts twice on one card. The rolling
+    // week's one unique fact — that the window slides — rides the period
+    // line, which is the thing that actually slides.
     final cadenceStyle = tokens.typography.styles.others.caption.copyWith(
       color: tokens.colors.text.lowEmphasis,
     );
@@ -2083,15 +2085,6 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final inlineHeaderWidth = cadence == null
-            ? 0.0
-            : chartTextWidth(context, cadence, cadenceStyle) +
-                  (note == null
-                      ? 0
-                      : tokens.spacing.step3 +
-                            chartTextWidth(context, note, noteStyle));
-        final cadenceFitsInline =
-            cadence != null && inlineHeaderWidth <= constraints.maxWidth;
         // The track is sized to the width it actually has, so a fortnight of
         // days fits the card instead of opening scrolled past its own first
         // day.
@@ -2104,46 +2097,28 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // What this habit asks for | how far off it is. One meaning per
-            // side, so neither has to be read as a qualifier of the other.
-            // The row only exists when it has something to hold: a cadence
-            // that had to wrap and no deficit note left it as a lone Spacer,
-            // a zero-height row right-aligning a sibling that is not there.
-            if (cadenceFitsInline || note != null)
+            // The deficit note, flush to the trailing edge under the corner
+            // block it qualifies; bounded so it wraps rather than
+            // overflowing a narrow card.
+            if (note != null) ...[
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (cadenceFitsInline)
-                    Expanded(
-                      child: Text(cadence, maxLines: 1, style: cadenceStyle),
-                    )
-                  else
-                    const Spacer(),
-                  if (note != null) ...[
-                    SizedBox(width: tokens.spacing.step3),
-                    // Non-flex behind a tight Expanded, so the note sits
-                    // flush against the trailing edge like the corner block
-                    // above it; bounded so it wraps rather than overflowing
-                    // a narrow card.
-                    ConstrainedBox(
-                      constraints: BoxConstraints(
-                        maxWidth: constraints.maxWidth * 0.6,
-                      ),
-                      child: Text(
-                        note,
-                        textAlign: TextAlign.end,
-                        style: noteStyle,
-                      ),
+                  const Spacer(),
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: constraints.maxWidth * 0.6,
                     ),
-                  ],
+                    child: Text(
+                      note,
+                      textAlign: TextAlign.end,
+                      style: noteStyle,
+                    ),
+                  ),
                 ],
               ),
-            if (cadence != null && !cadenceFitsInline) ...[
-              SizedBox(height: tokens.spacing.step1),
-              Text(cadence, style: cadenceStyle),
-            ],
-            if (cadence != null || note != null)
               SizedBox(height: tokens.spacing.step3),
+            ],
             // The span the squares below cover, on the same rail as the
             // squares themselves — it used to sit a chart's y-axis gutter to
             // their left, keyed to a plot this card does not draw. A rolling
@@ -2219,19 +2194,6 @@ String goalWindowLabel(BuildContext context, GoalWindow window) =>
       GoalWindowCalendarMonth() => context.messages.goalWindowCalendarMonth,
     };
 
-/// Formats one habit's target without reinterpreting non-weekly criteria as a
-/// rolling seven-day goal.
-String goalHabitTargetLabel(
-  BuildContext context, {
-  required int targetCount,
-  required GoalWindow window,
-}) => window == const GoalWindow.rollingDays(count: 7)
-    ? context.messages.goalProgressHabitTarget(targetCount)
-    : context.messages.goalProgressHabitTargetWindow(
-        targetCount,
-        goalWindowLabel(context, window),
-      );
-
 class _ProgressDayCell extends StatelessWidget {
   const _ProgressDayCell({
     required this.day,
@@ -2294,15 +2256,6 @@ class _ProgressDayCell extends StatelessWidget {
             width: BorderWidths.emphasis,
           )
         : null;
-    // The corner tag renders alongside the center marks — the whole point of
-    // moving it out of the center is that a cross or a dot no longer costs
-    // the cell its place on the weekday axis.
-    final letterTag = goalDayCellLetter(
-      tokens,
-      letter: weekdayLetter,
-      cellSize: visualDimension,
-      filled: missed || dayState == GoalCompactDayState.full,
-    );
     // The glyph scales with the square it sits in, so a squeezed column
     // does not paint a 12px cross onto a 14px cell.
     final Widget? centerMark = missed
@@ -2324,6 +2277,18 @@ class _ProgressDayCell extends StatelessWidget {
         : dayState == GoalCompactDayState.partial
         ? Center(child: goalPartialDayDot(tokens, tokens.spacing.step2))
         : null;
+    // The corner weekday tag renders only when the center is empty: at the
+    // compact cell size a cross, dash or dot and a corner letter collide,
+    // and the mark is the rarer, more meaningful of the two — neighbouring
+    // plain cells keep carrying the axis.
+    final letterTag = centerMark != null
+        ? null
+        : goalDayCellLetter(
+            tokens,
+            letter: weekdayLetter,
+            cellSize: visualDimension,
+            filled: dayState == GoalCompactDayState.full,
+          );
     Widget cell = Container(
       key: ValueKey(
         'goal-habit-day-visual-$habitId-'

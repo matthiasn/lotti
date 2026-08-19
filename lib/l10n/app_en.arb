@@ -3693,6 +3693,36 @@
       }
     }
   },
+  "goalDimensionHabitReadingOverTargetWindowed": "{currentCount} · target {targetCount} · {window}",
+  "@goalDimensionHabitReadingOverTargetWindowed": {
+    "description": "Windowed habit reading when the count has passed the target, where an \"X of Y\" fraction would read as broken.",
+    "placeholders": {
+      "currentCount": {
+        "type": "int"
+      },
+      "targetCount": {
+        "type": "int"
+      },
+      "window": {
+        "type": "String"
+      }
+    }
+  },
+  "goalDimensionHabitReadingWindowed": "{currentCount} of {targetCount} · {window}",
+  "@goalDimensionHabitReadingWindowed": {
+    "description": "Corner reading on a habit card: window count, target, and the concrete window it covers — the track below can show several windows' worth of days, so \"this window\" alone was ambiguous.",
+    "placeholders": {
+      "currentCount": {
+        "type": "int"
+      },
+      "targetCount": {
+        "type": "int"
+      },
+      "window": {
+        "type": "String"
+      }
+    }
+  },
   "goalDimensionHabitSource": "Habit completions",
   "goalDimensionHealthSource": "Health data",
   "goalDimensionImprovingNote": "Not there yet, but the last reading moved toward the target.",

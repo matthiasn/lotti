@@ -2680,7 +2680,7 @@ void main() {
     expect(find.text('Watching'), findsNothing);
     expect(find.text('Morning walk'), findsOneWidget);
     expect(find.text('Monthly walk'), findsOneWidget);
-    expect(find.text('20× · calendar month'), findsOneWidget);
+    expect(find.textContaining('· calendar month'), findsOneWidget);
     expect(find.textContaining('null / 6'), findsNothing);
 
     await tester.tap(
@@ -3531,7 +3531,7 @@ void main() {
     // track and the chart — the chart card's own picker is hidden here, so
     // the page never renders two controls fighting over one shared span.
     expect(find.byType(TimeSpanSegmentedControl), findsOneWidget);
-    expect(find.textContaining('0 of 3 this window'), findsOneWidget);
+    expect(find.textContaining('0 of 3 · rolling 7 days'), findsOneWidget);
     // The full-width hero stack pushes the evidence sections below the fold
     // on the default test surface.
     tester
@@ -3548,13 +3548,13 @@ void main() {
 
     // The new provider-family key is unresolved, but established evidence
     // remains on screen instead of flashing the whole progress section away.
-    expect(find.textContaining('0 of 3 this window'), findsOneWidget);
+    expect(find.textContaining('0 of 3 · rolling 7 days'), findsOneWidget);
     expect(find.byKey(const ValueKey('goal-habit-plot-walk')), findsOneWidget);
 
     progress30.complete(progressFor(5));
     await tester.pumpAndSettle();
-    expect(find.textContaining('0 of 5 this window'), findsOneWidget);
-    expect(find.textContaining('0 of 3 this window'), findsNothing);
+    expect(find.textContaining('0 of 5 · rolling 7 days'), findsOneWidget);
+    expect(find.textContaining('0 of 3 · rolling 7 days'), findsNothing);
 
     tester
         .widget<TimeSpanSegmentedControl>(
@@ -3565,7 +3565,7 @@ void main() {
       habitsController.state.copyWith(timeSpanDays: 90),
     );
     await tester.pump();
-    expect(find.textContaining('0 of 5 this window'), findsOneWidget);
+    expect(find.textContaining('0 of 5 · rolling 7 days'), findsOneWidget);
 
     progress90.completeError(StateError('range unavailable'));
     await tester.pump();
@@ -3583,7 +3583,7 @@ void main() {
           .timeSpanDays,
       30,
     );
-    expect(find.textContaining('0 of 5 this window'), findsOneWidget);
+    expect(find.textContaining('0 of 5 · rolling 7 days'), findsOneWidget);
     expect(find.byType(HabitCompletionRateChart), findsNothing);
 
     habitsController.emit(
@@ -3620,12 +3620,12 @@ void main() {
 
     // A same-family-key reload after the active spec changes must not promote
     // the previous spec's AsyncValue as though it belonged to the new spec.
-    expect(find.textContaining('0 of 5 this window'), findsNothing);
+    expect(find.textContaining('0 of 5 · rolling 7 days'), findsNothing);
     expect(find.byKey(const ValueKey('goal-habit-plot-walk')), findsNothing);
 
     progressV2.complete(progressFor(7));
     await tester.pumpAndSettle();
-    expect(find.textContaining('0 of 7 this window'), findsOneWidget);
+    expect(find.textContaining('0 of 7 · rolling 7 days'), findsOneWidget);
   });
 
   testWidgets("the read's age ticks across its bucket boundary without any "

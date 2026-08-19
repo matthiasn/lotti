@@ -6510,6 +6510,24 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String goalDimensionHabitReadingOverTargetWindowed(
+    int currentCount,
+    int targetCount,
+    String window,
+  ) {
+    return '$currentCount · mål $targetCount · $window';
+  }
+
+  @override
+  String goalDimensionHabitReadingWindowed(
+    int currentCount,
+    int targetCount,
+    String window,
+  ) {
+    return '$currentCount av $targetCount · $window';
+  }
+
+  @override
   String get goalDimensionHabitSource => 'Vana avslut';
 
   @override

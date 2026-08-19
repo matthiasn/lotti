@@ -6624,6 +6624,24 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String goalDimensionHabitReadingOverTargetWindowed(
+    int currentCount,
+    int targetCount,
+    String window,
+  ) {
+    return '$currentCount · țintă $targetCount · $window';
+  }
+
+  @override
+  String goalDimensionHabitReadingWindowed(
+    int currentCount,
+    int targetCount,
+    String window,
+  ) {
+    return '$currentCount din $targetCount · $window';
+  }
+
+  @override
   String get goalDimensionHabitSource => 'Completari de obiceiuri';
 
   @override
