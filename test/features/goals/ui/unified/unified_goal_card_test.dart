@@ -261,6 +261,29 @@ void main() {
     expect(navigated, ['/goals/details/goal-1']);
   });
 
+  testWidgets('the header paints no hover overlay — it is a card region, '
+      'not a button', (tester) async {
+    await pump(
+      tester,
+      agentHealth: health(
+        agentId: 'goal-1',
+        trackStatus: GoalTrackStatus.onTrack,
+      ),
+      progressView: progress(),
+    );
+
+    final ink = tester.widget<InkWell>(
+      find
+          .ancestor(of: find.text('Fitness'), matching: find.byType(InkWell))
+          .first,
+    );
+    expect(ink.hoverColor, Colors.transparent);
+    expect(
+      ink.overlayColor?.resolve({WidgetState.hovered}),
+      Colors.transparent,
+    );
+  });
+
   testWidgets('a significant trend renders the shared direction chip', (
     tester,
   ) async {

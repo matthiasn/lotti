@@ -1,8 +1,10 @@
 import 'package:clock/clock.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/model/goal_timeline_item.dart';
 import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
 import 'package:lotti/features/goals/ui/checkins/goal_checkins_card.dart';
@@ -135,5 +137,41 @@ void main() {
 
     // maxBeats null means the rail is already showing the loaded history.
     expect(find.byKey(const ValueKey('goal-checkin-see-all')), findsNothing);
+  });
+
+  testWidgets('See all is a quiet link: no hover fill, its own ink lifts', (
+    tester,
+  ) async {
+    await pump(
+      tester,
+      items: [
+        for (var i = 0; i < 5; i++) checkIn('c$i', minutesAgo: i),
+      ],
+      maxBeats: 3,
+      onSeeAll: () {},
+    );
+
+    final row = find.byKey(const ValueKey('goal-checkin-see-all'));
+    final ink = tester.widget<InkWell>(
+      find.descendant(of: row, matching: find.byType(InkWell)),
+    );
+    expect(ink.hoverColor, Colors.transparent);
+    expect(
+      ink.overlayColor?.resolve({WidgetState.hovered}),
+      Colors.transparent,
+    );
+
+    final tokens = tester.element(row).designTokens;
+    Text label() => tester.widget<Text>(find.text('See all check-ins'));
+    expect(label().style?.color, tokens.colors.interactive.enabled);
+
+    final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await gesture.addPointer();
+    addTearDown(gesture.removePointer);
+    await gesture.moveTo(tester.getCenter(row));
+    await tester.pump();
+    expect(label().style?.color, tokens.colors.interactive.hover);
+    await gesture.moveTo(Offset.zero);
+    await tester.pump();
   });
 }
