@@ -48,13 +48,13 @@ class LabelsListPage extends ConsumerWidget {
       searchHint: messages.settingsLabelsSearchHint,
       displayName: (label) => label.name,
       searchText: (label) => '${label.name} ${label.description ?? ''}',
-      emptyIcon: Icons.label_outline,
+      emptyIcon: LottiIcons.label,
       emptyTitle: messages.settingsLabelsEmptyState,
       emptyHint: messages.settingsLabelsEmptyStateHint,
       noMatchMessage: messages.settingsLabelsNoMatchQuery,
       noMatchActionBuilder: (context, query) => DesignSystemButton(
         label: context.messages.settingsLabelsNoMatchCreate(query),
-        leadingIcon: Icons.add,
+        leadingIcon: LottiIcons.add,
         onPressed: () {
           final encoded = Uri.encodeComponent(query);
           beamToNamed('/settings/labels/create?name=$encoded');
@@ -109,13 +109,13 @@ class _LabelListItem extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(right: 4),
               child: Icon(
-                Icons.lock_outline,
+                LottiIcons.lock,
                 size: 18,
                 color: tokens.colors.text.mediumEmphasis,
               ),
             ),
           Icon(
-            Icons.chevron_right_rounded,
+            LottiIcons.chevronRight,
             size: tokens.spacing.step6,
             color: tokens.colors.text.lowEmphasis,
           ),

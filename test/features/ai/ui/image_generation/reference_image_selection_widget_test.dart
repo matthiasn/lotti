@@ -7,6 +7,7 @@ import 'package:lotti/features/ai/state/reference_image_selection_controller.dar
 import 'package:lotti/features/ai/ui/image_generation/reference_image_selection_widget.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 
 import '../../../../test_helper.dart';
@@ -729,7 +730,7 @@ void main() {
         expect(coloredBox.color, theme.colorScheme.surfaceContainerHighest);
 
         final icon = coloredBox.child! as Icon;
-        expect(icon.icon, Icons.broken_image_outlined);
+        expect(icon.icon, LottiIcons.imageBroken);
         expect(icon.color, theme.colorScheme.onSurfaceVariant);
       },
     );
@@ -756,7 +757,7 @@ void main() {
       );
 
       // Should show error icon
-      expect(find.byIcon(Icons.error_outline_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.error), findsOneWidget);
 
       // Should show localized error message
       expect(
@@ -1014,7 +1015,7 @@ void main() {
       await tester.pump();
 
       // Should show exactly one link icon (for the linked-task image)
-      expect(find.byIcon(Icons.link_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.link), findsOneWidget);
     });
 
     testWidgets('does not show link icon on direct images', (tester) async {
@@ -1043,7 +1044,7 @@ void main() {
       await tester.pump();
 
       // No link icons should appear for directly linked images
-      expect(find.byIcon(Icons.link_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.link), findsNothing);
     });
 
     group('continue button label', () {

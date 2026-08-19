@@ -12,6 +12,7 @@ import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/events/ui/pages/event_detail_page.dart';
 import 'package:lotti/features/events/ui/widgets/event_cover_image.dart';
 import 'package:lotti/features/events/ui/widgets/event_cover_picker.dart';
@@ -210,7 +211,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 10));
 
-    expect(find.byIcon(Icons.error_outline_rounded), findsOneWidget);
+    expect(find.byIcon(LottiIcons.error), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsNothing);
   });
 
@@ -388,12 +389,12 @@ void main() {
         controllerBuilder: () => rec,
       );
 
-      await tester.tap(find.byIcon(Icons.more_horiz));
+      await tester.tap(find.byIcon(LottiIcons.more));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Delete event'));
       await tester.pumpAndSettle();
       // The destructive confirm action carries the warning glyph.
-      await tester.tap(find.byIcon(Icons.warning_rounded));
+      await tester.tap(find.byIcon(LottiIcons.warning));
       await tester.pumpAndSettle();
 
       expect(rec.deletes, 1);
@@ -410,7 +411,7 @@ void main() {
         controllerBuilder: () => rec,
       );
 
-      await tester.tap(find.byIcon(Icons.more_horiz));
+      await tester.tap(find.byIcon(LottiIcons.more));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Change cover'));
       await tester.pumpAndSettle();
@@ -429,7 +430,7 @@ void main() {
 
     testWidgets('the back button is wired to maybePop', (tester) async {
       await pumpResolved(tester, linked: const []);
-      await tester.tap(find.byIcon(Icons.arrow_back));
+      await tester.tap(find.byIcon(LottiIcons.back));
       await tester.pump();
       // maybePop on the root no-ops, but the handler ran without leaving.
       expect(find.byType(EventDetailView), findsOneWidget);

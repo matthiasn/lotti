@@ -55,9 +55,7 @@ class _TimelineToolbar extends StatelessWidget {
             child: IconButton(
               onPressed: onToggleMode,
               icon: Icon(
-                showingBoth
-                    ? Icons.view_carousel_outlined
-                    : Icons.view_week_outlined,
+                showingBoth ? LottiIcons.viewCarousel : LottiIcons.viewColumns,
               ),
             ),
           ),
@@ -68,8 +66,8 @@ class _TimelineToolbar extends StatelessWidget {
                 key: const Key('daily_os_timeline_arrange_toggle'),
                 isSelected: arrangeMode,
                 onPressed: onToggleArrange,
-                selectedIcon: const Icon(Icons.open_with_rounded),
-                icon: const Icon(Icons.open_with_outlined),
+                selectedIcon: const Icon(LottiIcons.drag),
+                icon: const Icon(LottiIcons.drag),
               ),
             ),
         ],

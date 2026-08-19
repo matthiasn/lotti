@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/genui/category_ratings_card.dart';
 import 'package:lotti/features/agents/genui/evolution_catalog_helpers.dart';
 import 'package:lotti/features/agents/genui/evolution_catalog_schemas.dart';
 import 'package:lotti/features/agents/ui/agent_palette.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/cards/modern_base_card.dart';
 
@@ -159,7 +160,7 @@ final highPriorityFeedbackItem = CatalogItem(
             Row(
               children: [
                 const Icon(
-                  Icons.priority_high,
+                  LottiIcons.warning,
                   size: 18,
                   color: AgentPalette.red,
                 ),

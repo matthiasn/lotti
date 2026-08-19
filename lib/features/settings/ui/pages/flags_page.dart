@@ -149,51 +149,51 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
   IconData _iconForFlag(String flagName) {
     switch (flagName) {
       case privateFlag:
-        return Icons.lock_outline_rounded;
+        return LottiIcons.lock;
       case enableNotificationsFlag:
-        return Icons.notifications_active_rounded;
+        return LottiIcons.notificationActive;
       case recordLocationFlag:
-        return Icons.map_rounded;
+        return LottiIcons.map;
       case enableTooltipFlag:
-        return Icons.info_outline_rounded;
+        return LottiIcons.info;
       case enableAiStreamingFlag:
-        return Icons.bolt_rounded;
+        return LottiIcons.bolt;
       case enableAiSummaryTtsFlag:
-        return Icons.volume_up_rounded;
+        return LottiIcons.volume;
       case enableLoggingFlag:
-        return Icons.bug_report_rounded;
+        return LottiIcons.bug;
       case enableMatrixFlag:
-        return Icons.sync_rounded;
+        return LottiIcons.sync;
       case resendAttachments:
-        return Icons.refresh_rounded;
+        return LottiIcons.refresh;
       case enableHabitsPageFlag:
-        return Icons.repeat_rounded;
+        return LottiIcons.repeat;
       case enableDashboardsPageFlag:
-        return Icons.dashboard_rounded;
+        return LottiIcons.dashboard;
       case enableUnifiedGoalsFlag:
-        return Icons.track_changes_outlined;
+        return LottiIcons.focus;
       case enableDailyOsPageFlag:
-        return Icons.today_outlined;
+        return LottiIcons.today;
       case enableEventsFlag:
-        return Icons.event_rounded;
+        return LottiIcons.calendar;
       case enableRelationshipsFlag:
-        return Icons.people_outline_rounded;
+        return LottiIcons.people;
       case enableSessionRatingsFlag:
-        return Icons.star_rate_rounded;
+        return LottiIcons.star;
       case enableProjectsFlag:
-        return Icons.folder_outlined;
+        return LottiIcons.folder;
       case enableEmbeddingsFlag:
-        return Icons.hub_outlined;
+        return LottiIcons.hub;
       case enableVectorSearchFlag:
-        return Icons.manage_search_rounded;
+        return LottiIcons.search;
       case enableWhatsNewFlag:
-        return Icons.new_releases_outlined;
+        return LottiIcons.verified;
       case dailyOsOnboardingEnabledFlag:
-        return Icons.tips_and_updates_outlined;
+        return LottiIcons.tip;
       case enableForkHealingFlag:
-        return Icons.call_merge_rounded;
+        return LottiIcons.merge;
       default:
-        return Icons.settings;
+        return LottiIcons.settings;
     }
   }
 

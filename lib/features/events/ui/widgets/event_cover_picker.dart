@@ -151,7 +151,7 @@ class _AddPhotoTile extends StatelessWidget {
           width: size,
           height: size,
           child: Icon(
-            Icons.add_a_photo_outlined,
+            LottiIcons.addPhoto,
             color: cs.onSurfaceVariant,
           ),
         ),

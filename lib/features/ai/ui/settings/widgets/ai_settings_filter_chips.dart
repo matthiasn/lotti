@@ -5,6 +5,7 @@ import 'package:lotti/features/ai/ui/settings/ai_settings_filter_state.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/provider_chip_constants.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/provider_filter_chips_row.dart';
 import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
@@ -89,7 +90,7 @@ class AiSettingsFilterChips extends ConsumerWidget {
                     message: context.messages.aiSettingsClearAllFiltersTooltip,
                     child: DesignSystemChip(
                       label: context.messages.aiSettingsClearFiltersButton,
-                      leadingIcon: Icons.clear,
+                      leadingIcon: LottiIcons.close,
                       onPressed: () {
                         onFilterChanged(filterState.resetCurrentTabFilters());
                       },
@@ -107,15 +108,19 @@ class AiSettingsFilterChips extends ConsumerWidget {
     final capabilities = [
       (
         Modality.text,
-        Icons.text_fields,
+        LottiIcons.text,
         context.messages.aiSettingsModalityText,
       ),
       (
         Modality.image,
-        Icons.visibility,
+        LottiIcons.visible,
         context.messages.aiSettingsModalityVision,
       ),
-      (Modality.audio, Icons.hearing, context.messages.aiSettingsModalityAudio),
+      (
+        Modality.audio,
+        LottiIcons.hearing,
+        context.messages.aiSettingsModalityAudio,
+      ),
     ];
 
     return Wrap(
@@ -158,7 +163,7 @@ class AiSettingsFilterChips extends ConsumerWidget {
         Tooltip(
           message: context.messages.aiSettingsFilterByReasoningTooltip,
           child: DesignSystemChip(
-            leadingIcon: Icons.psychology,
+            leadingIcon: LottiIcons.reasoning,
             label: context.messages.aiSettingsReasoningLabel,
             selected: filterState.reasoningFilter,
             onPressed: () {

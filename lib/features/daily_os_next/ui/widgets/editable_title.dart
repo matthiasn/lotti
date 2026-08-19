@@ -175,7 +175,7 @@ class _EditableTitleState extends State<EditableTitle> {
                 opacity: _hovering ? 0.6 : 0.0,
                 duration: const Duration(milliseconds: 120),
                 child: Icon(
-                  Icons.edit_outlined,
+                  LottiIcons.edit,
                   size: tokens.typography.size.caption,
                   color: tokens.colors.text.lowEmphasis,
                 ),

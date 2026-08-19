@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_chat_bubble.dart';
 import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/chat_interface/thinking_disclosure.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../../../widget_test_utils.dart';
 
@@ -126,7 +127,7 @@ void main() {
         // A system note reports on the session rather than speaking in it, so
         // it carries no container and no icon competing with the turns
         // around it.
-        expect(find.byIcon(Icons.info_outline_rounded), findsNothing);
+        expect(find.byIcon(LottiIcons.info), findsNothing);
         expect(
           find.ancestor(
             of: find.text('Session started'),

@@ -14,6 +14,7 @@ import 'package:lotti/features/ai_consumption/ui/widgets/impact_kpi_row.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_model_table.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_ranked_table.dart';
 import 'package:lotti/features/categories/state/categories_list_controller.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/insights/model/insights_models.dart'
     show InsightsPeriodUnit;
 import 'package:lotti/features/insights/ui/widgets/insights_period_stepper.dart';
@@ -400,7 +401,7 @@ void main() {
       await pumpBody(tester, surface: const Size(1280, 2400));
 
       // The scope chip is marked by its filter icon.
-      final chip = find.byIcon(Icons.filter_alt_outlined);
+      final chip = find.byIcon(LottiIcons.filter);
       expect(chip, findsNothing);
 
       // Drive the chart's bucket-selected callback (the chart→ledger drill
@@ -455,7 +456,7 @@ void main() {
 
       // Two chips: the in-viewport one under the model chart and the combined
       // one above the ledger, both labelled with the model.
-      expect(find.byIcon(Icons.filter_alt_outlined), findsNWidgets(2));
+      expect(find.byIcon(LottiIcons.filter), findsNWidgets(2));
       expect(find.textContaining('glm-5.2'), findsWidgets);
     });
   });
@@ -472,7 +473,7 @@ void main() {
       );
       card.onBucketSelected!(DateTime(2026, 6, 5));
       await tester.pump();
-      expect(find.byIcon(Icons.filter_alt_outlined), findsOneWidget);
+      expect(find.byIcon(LottiIcons.filter), findsOneWidget);
 
       final stepper = tester.widget<InsightsPeriodStepper>(
         find.byType(InsightsPeriodStepper),
@@ -481,7 +482,7 @@ void main() {
       stepper.onStep(-1);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 600));
-      expect(find.byIcon(Icons.filter_alt_outlined), findsNothing);
+      expect(find.byIcon(LottiIcons.filter), findsNothing);
 
       // The other period controls are wired too (and also clear the drill).
       stepper.onSelectUnit(InsightsPeriodUnit.month);
@@ -496,7 +497,7 @@ void main() {
       );
       weeklyCard.onBucketSelected!(DateTime(2026, 3, 2));
       await tester.pump();
-      expect(find.byIcon(Icons.filter_alt_outlined), findsOneWidget);
+      expect(find.byIcon(LottiIcons.filter), findsOneWidget);
     });
   });
 
@@ -590,7 +591,7 @@ void main() {
     ]);
     await pumpBody(tester, notifications: notifications);
     expect(find.byType(BarChart), findsOneWidget);
-    expect(find.byIcon(Icons.sync_problem_rounded), findsNothing);
+    expect(find.byIcon(LottiIcons.syncProblem), findsNothing);
 
     // The next window fetch fails; the established dashboard must stay.
     when(
@@ -605,7 +606,7 @@ void main() {
     await tester.pump();
 
     expect(find.byType(BarChart), findsOneWidget);
-    expect(find.byIcon(Icons.sync_problem_rounded), findsOneWidget);
+    expect(find.byIcon(LottiIcons.syncProblem), findsOneWidget);
     expect(
       find.text("Couldn't refresh — showing the last loaded data"),
       findsOneWidget,
@@ -619,7 +620,7 @@ void main() {
     await pumpBody(tester, surface: const Size(1280, 2600));
 
     await withClock(Clock.fixed(fixedNow), () async {
-      Finder chips() => find.byIcon(Icons.filter_alt_outlined);
+      Finder chips() => find.byIcon(LottiIcons.filter);
       // Isolate a category → an in-chart chip + the combined ledger chip.
       await tester.tap(
         find.descendant(

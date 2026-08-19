@@ -198,7 +198,7 @@ class DesignSystemSelectionRow extends StatelessWidget {
         );
       case DesignSystemSelectionRowType.navigation:
         return Icon(
-          Icons.chevron_right_rounded,
+          LottiIcons.chevronRight,
           color: tokens.colors.text.mediumEmphasis,
           size: tokens.spacing.step6,
         );
@@ -231,7 +231,7 @@ class _SelectionMarker extends StatelessWidget {
           SizedBox(width: tokens.spacing.step2),
         ],
         Icon(
-          Icons.check_rounded,
+          LottiIcons.confirm,
           color: accent,
           size: tokens.spacing.step6,
         ),

@@ -57,7 +57,7 @@ class TaskDetailShowListButton extends StatelessWidget {
       semanticLabel: label,
       tooltip: label,
       child: Icon(
-        Icons.view_sidebar_rounded,
+        LottiIcons.sidebar,
         size: IconSizes.m,
         color: dsTokensDark.colors.text.highEmphasis,
       ),

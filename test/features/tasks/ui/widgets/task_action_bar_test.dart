@@ -248,7 +248,7 @@ void main() {
     // Idle state: localized "Track time" label + stopwatch icon, no
     // inset stop button.
     expect(find.text('Track time'), findsOneWidget);
-    expect(find.byIcon(Icons.timer_outlined), findsOneWidget);
+    expect(find.byIcon(LottiIcons.timer), findsOneWidget);
     expect(find.byKey(TaskActionBar.trackTimeStopKey), findsNothing);
   });
 
@@ -302,7 +302,7 @@ void main() {
       // 1m30s → "01:30".
       expect(find.text('01:30'), findsOneWidget);
       expect(find.byKey(TaskActionBar.trackTimeStopKey), findsOneWidget);
-      expect(find.byIcon(Icons.timer_outlined), findsNothing);
+      expect(find.byIcon(LottiIcons.timer), findsNothing);
       expect(find.text('Track time'), findsNothing);
     },
   );
@@ -443,8 +443,8 @@ void main() {
       await _settleStream(tester);
 
       expect(find.text('Track time'), findsOneWidget);
-      expect(find.byIcon(Icons.timer_outlined), findsOneWidget);
-      expect(find.byIcon(Icons.stop_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.timer), findsOneWidget);
+      expect(find.byIcon(LottiIcons.stop), findsNothing);
     },
   );
 
@@ -778,7 +778,7 @@ void main() {
     final trackIcon = tester.widget<Icon>(
       find.descendant(
         of: find.byKey(TaskActionBar.trackTimeKey),
-        matching: find.byIcon(Icons.timer_outlined),
+        matching: find.byIcon(LottiIcons.timer),
       ),
     );
     expect(trackIcon.shadows, isNull);

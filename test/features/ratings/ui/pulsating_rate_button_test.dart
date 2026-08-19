@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/rating_data.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/ratings/repository/rating_repository.dart';
 import 'package:lotti/features/ratings/ui/pulsating_rate_button.dart';
 import 'package:lotti/features/ratings/ui/session_rating_modal.dart';
@@ -66,7 +67,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byIcon(Icons.star_rate_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.star), findsNothing);
     });
 
     testWidgets('reduced motion shows the button steady, without pulsing', (
@@ -92,11 +93,11 @@ void main() {
 
       // The button is shown at full opacity — the 0.4→1.0 pulse fade never
       // runs under reduced motion — and stays steady across time.
-      final icon = tester.widget<Icon>(find.byIcon(Icons.star_rate_rounded));
+      final icon = tester.widget<Icon>(find.byIcon(LottiIcons.star));
       expect(icon.color!.a, 1.0);
       await tester.pump(const Duration(seconds: 2));
       final iconAfter = tester.widget<Icon>(
-        find.byIcon(Icons.star_rate_rounded),
+        find.byIcon(LottiIcons.star),
       );
       expect(iconAfter.color!.a, 1.0);
     });
@@ -134,7 +135,7 @@ void main() {
       // Mid-pulse: the 0.4→1.0 opacity fade is running, so it's below full.
       await tester.pump(const Duration(milliseconds: 500));
       expect(
-        tester.widget<Icon>(find.byIcon(Icons.star_rate_rounded)).color!.a,
+        tester.widget<Icon>(find.byIcon(LottiIcons.star)).color!.a,
         lessThan(1.0),
       );
 
@@ -142,7 +143,7 @@ void main() {
       reduceMotion.value = true;
       await tester.pump();
       expect(
-        tester.widget<Icon>(find.byIcon(Icons.star_rate_rounded)).color!.a,
+        tester.widget<Icon>(find.byIcon(LottiIcons.star)).color!.a,
         1.0,
       );
     });
@@ -153,7 +154,7 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.pump();
 
-      expect(find.byIcon(Icons.star_rate_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.star), findsOneWidget);
       expect(find.byType(IconButton), findsOneWidget);
 
       // Drain animation to avoid pending timer errors
@@ -168,7 +169,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byIcon(Icons.star_rate_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.star), findsNothing);
     });
 
     testWidgets('button remains visible after pulse animation completes', (
@@ -177,13 +178,13 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.pump();
 
-      expect(find.byIcon(Icons.star_rate_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.star), findsOneWidget);
 
       // Drain all pulse cycles
       await drainPulseAnimation(tester);
 
       // Button should still be visible (just not pulsing anymore)
-      expect(find.byIcon(Icons.star_rate_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.star), findsOneWidget);
       expect(tester.binding.transientCallbackCount, 0);
     });
 
@@ -231,7 +232,7 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      expect(find.byIcon(Icons.star_rate_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.star), findsNothing);
     });
   });
 }

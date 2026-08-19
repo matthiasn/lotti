@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/events/state/event_view_mapping.dart';
 import 'package:lotti/features/events/state/events_overview_controller.dart';
@@ -50,7 +51,7 @@ class _EventsOverviewPageState extends ConsumerState<EventsOverviewPage> {
         backgroundColor: dsPageSurface(context),
         body: Center(
           child: Icon(
-            Icons.error_outline_rounded,
+            LottiIcons.error,
             color: context.colorScheme.error,
           ),
         ),

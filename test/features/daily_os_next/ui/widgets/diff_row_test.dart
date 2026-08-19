@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/time_format.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/diff_row.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -176,9 +177,9 @@ void main() {
         testWidgets('shows correct icon for $kind', (tester) async {
           await _pumpKind(tester, kind);
           final expectedIcon = switch (kind) {
-            PlanDiffChangeKind.moved => Icons.swap_vert_rounded,
-            PlanDiffChangeKind.added => Icons.add_rounded,
-            PlanDiffChangeKind.dropped => Icons.close_rounded,
+            PlanDiffChangeKind.moved => LottiIcons.sort,
+            PlanDiffChangeKind.added => LottiIcons.add,
+            PlanDiffChangeKind.dropped => LottiIcons.close,
           };
           expect(
             find.byWidgetPredicate(
@@ -274,10 +275,7 @@ void main() {
           // Arrow icon
           expect(
             find.byWidgetPredicate(
-              (w) =>
-                  w is Icon &&
-                  w.icon == Icons.arrow_forward_rounded &&
-                  w.size == 12,
+              (w) => w is Icon && w.icon == LottiIcons.forward && w.size == 12,
             ),
             findsOneWidget,
           );
@@ -307,7 +305,7 @@ void main() {
           );
           expect(
             find.byWidgetPredicate(
-              (w) => w is Icon && w.icon == Icons.arrow_forward_rounded,
+              (w) => w is Icon && w.icon == LottiIcons.forward,
             ),
             findsNothing,
           );
@@ -414,7 +412,7 @@ void main() {
           // No arrow icon since toStart is null
           expect(
             find.byWidgetPredicate(
-              (w) => w is Icon && w.icon == Icons.arrow_forward_rounded,
+              (w) => w is Icon && w.icon == LottiIcons.forward,
             ),
             findsNothing,
           );

@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/project_data.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/ui/widgets/project_status_chip.dart';
 import 'package:lotti/utils/file_utils.dart';
 
@@ -40,11 +40,11 @@ void main() {
     };
 
     for (final (label, icon) in [
-      ('Open', Icons.radio_button_unchecked),
-      ('Active', Icons.play_circle_outline),
-      ('On Hold', Icons.pause_circle_outline),
-      ('Completed', Icons.check_circle_outline),
-      ('Archived', Icons.archive_outlined),
+      ('Open', LottiIcons.radioUnselected),
+      ('Active', LottiIcons.playCircled),
+      ('On Hold', LottiIcons.pauseCircled),
+      ('Completed', LottiIcons.confirmCircled),
+      ('Archived', LottiIcons.archive),
     ]) {
       testWidgets('renders $label status with its label and icon', (
         tester,

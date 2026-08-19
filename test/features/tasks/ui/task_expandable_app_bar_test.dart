@@ -195,7 +195,7 @@ void main() {
       await pumpMobile(tester, buildTestWidget(task, 'image-1'));
       await tester.pump();
 
-      expect(find.byIcon(Icons.chevron_left), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronLeft), findsOneWidget);
     });
 
     testWidgets(
@@ -216,7 +216,7 @@ void main() {
         // GlassBackButton uses GlassActionButton internally, plus one for the
         // more menu. Nested graph details hide the graph hub button.
         expect(find.byType(GlassActionButton), findsNWidgets(2));
-        expect(find.byIcon(Icons.hub_outlined), findsNothing);
+        expect(find.byIcon(LottiIcons.hub), findsNothing);
       },
     );
 
@@ -234,7 +234,7 @@ void main() {
         // Hub + more menu. The desktop back arrow only appears when a linked
         // task sits on top of the detail stack, and this one is the base.
         expect(find.byType(GlassActionButton), findsNWidgets(2));
-        expect(find.byIcon(Icons.hub_outlined), findsOneWidget);
+        expect(find.byIcon(LottiIcons.hub), findsOneWidget);
       },
     );
 
@@ -250,8 +250,8 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.byIcon(Icons.hub_outlined), findsNothing);
-        expect(find.byIcon(Icons.more_horiz), findsOneWidget);
+        expect(find.byIcon(LottiIcons.hub), findsNothing);
+        expect(find.byIcon(LottiIcons.more), findsOneWidget);
       },
     );
 
@@ -266,7 +266,7 @@ void main() {
         );
         await tester.pump();
 
-        await tester.tap(find.byIcon(Icons.hub_outlined));
+        await tester.tap(find.byIcon(LottiIcons.hub));
         await tester.pumpAndSettle(const Duration(milliseconds: 500));
 
         expect(find.byType(TaskKnowledgeGraphPage), findsOneWidget);
@@ -279,7 +279,7 @@ void main() {
       await pumpMobile(tester, buildTestWidget(task, 'image-1'));
       await tester.pump();
 
-      expect(find.byIcon(Icons.more_horiz), findsOneWidget);
+      expect(find.byIcon(LottiIcons.more), findsOneWidget);
     });
 
     testWidgets('contains CoverArtBackground', (tester) async {
@@ -392,7 +392,7 @@ void main() {
       await pumpMobile(tester, buildTestWidget(task, 'image-1'));
       await tester.pump();
 
-      final icon = tester.widget<Icon>(find.byIcon(Icons.chevron_left));
+      final icon = tester.widget<Icon>(find.byIcon(LottiIcons.chevronLeft));
       expect(icon.color, Colors.white);
     });
 
@@ -402,7 +402,7 @@ void main() {
       await pumpMobile(tester, buildTestWidget(task, 'image-1'));
       await tester.pump();
 
-      final icon = tester.widget<Icon>(find.byIcon(Icons.more_horiz));
+      final icon = tester.widget<Icon>(find.byIcon(LottiIcons.more));
       expect(icon.color, Colors.white);
     });
 
@@ -495,7 +495,7 @@ void main() {
         await pumpMobile(tester, buildTestWidget(task, 'image-1'));
         await tester.pumpAndSettle();
 
-        await tester.tap(find.byIcon(Icons.more_horiz));
+        await tester.tap(find.byIcon(LottiIcons.more));
         await tester.pumpAndSettle();
 
         // The modal surfaces the shared "entryActions" title — find it to

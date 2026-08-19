@@ -537,9 +537,9 @@ void main() {
       expect(find.byType(LinearProgressIndicator), findsOneWidget);
       expect(find.text('50%'), findsOneWidget);
       expect(find.text('1 / 10'), findsOneWidget);
-      expect(find.byIcon(Icons.sync), findsOneWidget);
+      expect(find.byIcon(LottiIcons.sync), findsOneWidget);
       expect(
-        find.byIcon(Icons.check_circle_outline),
+        find.byIcon(LottiIcons.confirmCircled),
         findsAtLeastNWidgets(1),
       );
 

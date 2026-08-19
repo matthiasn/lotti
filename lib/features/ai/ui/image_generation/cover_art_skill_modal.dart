@@ -208,13 +208,13 @@ class _CoverArtProgressViewState extends ConsumerState<_CoverArtProgressView> {
                 AiThinkingShaderPresence(isRunning: isRunning),
                 if (isError)
                   Icon(
-                    Icons.error_outline_rounded,
+                    LottiIcons.error,
                     size: spacing.step9,
                     color: colorScheme.error,
                   )
                 else if (isComplete)
                   Icon(
-                    Icons.check_circle_outline_rounded,
+                    LottiIcons.confirmCircled,
                     size: spacing.step9,
                     color: colorScheme.primary,
                   ),

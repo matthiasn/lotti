@@ -107,7 +107,7 @@ class ActiveFilterChip extends StatelessWidget {
                 // steps, so it stays an explicit constant here rather than
                 // being snapped to a neighbouring tier that would weaken it.
                 Icon(
-                  Icons.cancel_rounded,
+                  LottiIcons.closeCircled,
                   size: 20,
                   color: removeIconColor,
                 ),

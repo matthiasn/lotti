@@ -137,11 +137,11 @@ class _ChangeBadge extends StatelessWidget {
   IconData _iconFor(PlanDiffChangeKind kind) {
     switch (kind) {
       case PlanDiffChangeKind.moved:
-        return Icons.swap_vert_rounded;
+        return LottiIcons.sort;
       case PlanDiffChangeKind.added:
-        return Icons.add_rounded;
+        return LottiIcons.add;
       case PlanDiffChangeKind.dropped:
-        return Icons.close_rounded;
+        return LottiIcons.close;
     }
   }
 
@@ -193,7 +193,7 @@ class _DecisionButtonRow extends StatelessWidget {
       children: [
         OutlinedButton.icon(
           onPressed: onReject,
-          icon: const Icon(Icons.close_rounded, size: 14),
+          icon: const Icon(LottiIcons.close, size: 14),
           label: Text(context.messages.changeSetSwipeReject),
           style: OutlinedButton.styleFrom(
             foregroundColor: tokens.colors.text.mediumEmphasis,
@@ -210,7 +210,7 @@ class _DecisionButtonRow extends StatelessWidget {
         ),
         FilledButton.icon(
           onPressed: onAccept,
-          icon: const Icon(Icons.check_rounded, size: 14),
+          icon: const Icon(LottiIcons.confirm, size: 14),
           label: Text(context.messages.dailyOsNextRefineAccept),
           style: FilledButton.styleFrom(
             backgroundColor: tokens.colors.interactive.enabled,
@@ -259,7 +259,7 @@ class _DecisionPill extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            accepted ? Icons.check_rounded : Icons.close_rounded,
+            accepted ? LottiIcons.confirm : LottiIcons.close,
             size: 14,
             color: color,
           ),
@@ -303,7 +303,7 @@ class _TimeChipsRow extends StatelessWidget {
           ),
         if (change.fromStart != null && change.toStart != null)
           Icon(
-            Icons.arrow_forward_rounded,
+            LottiIcons.forward,
             size: 12,
             color: tokens.colors.text.lowEmphasis,
           ),

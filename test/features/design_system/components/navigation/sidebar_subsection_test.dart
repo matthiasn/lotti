@@ -48,8 +48,8 @@ void main() {
         makeTestableWidgetNoScroll(
           SidebarSubsectionAction(
             label: 'Time Analysis',
-            icon: Icons.bar_chart_outlined,
-            activeIcon: Icons.bar_chart_rounded,
+            icon: LottiIcons.star,
+            activeIcon: LottiIconsFilled.star,
             active: false,
             onTap: () => taps++,
           ),
@@ -58,8 +58,8 @@ void main() {
       await tester.pump();
 
       expect(find.text('Time Analysis'), findsOneWidget);
-      expect(find.byIcon(Icons.bar_chart_outlined), findsOneWidget);
-      expect(find.byIcon(Icons.bar_chart_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.star), findsOneWidget);
+      expect(find.byIcon(LottiIconsFilled.star), findsNothing);
       final tokens = tester
           .element(find.byType(SidebarSubsectionAction))
           .designTokens;
@@ -90,8 +90,8 @@ void main() {
         makeTestableWidgetNoScroll(
           SidebarSubsectionAction(
             label: 'AI Impact',
-            icon: Icons.eco_outlined,
-            activeIcon: Icons.eco_rounded,
+            icon: LottiIcons.favorite,
+            activeIcon: LottiIconsFilled.heart,
             active: true,
             onTap: () {},
           ),
@@ -99,8 +99,8 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byIcon(Icons.eco_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.eco_outlined), findsNothing);
+      expect(find.byIcon(LottiIconsFilled.heart), findsOneWidget);
+      expect(find.byIcon(LottiIcons.favorite), findsNothing);
 
       final tokens = tester
           .element(find.byType(SidebarSubsectionAction))

@@ -744,7 +744,7 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
           DesignSystemButton(
             label: context.messages.goalChatTalkToAgent,
             onPressed: () => beamToNamed(goalChatPath(agentId)),
-            leadingIcon: Icons.chat_bubble_outline_rounded,
+            leadingIcon: LottiIcons.chat,
             // Secondary: the persistent app-bar action is the primary
             // doorway; this tail button is the convenience for readers who
             // reached the bottom.
@@ -838,14 +838,14 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
             if (isActive)
               IconButton(
                 key: const ValueKey('goal-detail-checkin-action'),
-                icon: const Icon(Icons.mic_none_rounded),
+                icon: const Icon(LottiIcons.micIdle),
                 tooltip: context.messages.goalCheckInRecordCta,
                 onPressed: openComposer,
               ),
             if (!desktop && chatAvailable)
               IconButton(
                 key: const ValueKey('goal-detail-chat-action'),
-                icon: const Icon(Icons.chat_bubble_outline_rounded),
+                icon: const Icon(LottiIcons.chat),
                 tooltip: context.messages.goalChatTalkToAgent,
                 onPressed: () => beamToNamed(goalChatPath(agentId)),
               ),
@@ -872,7 +872,7 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
                       child: DesignSystemButton(
                         key: const ValueKey('goal-detail-talk-to'),
                         label: context.messages.goalChatTalkToAgent,
-                        leadingIcon: Icons.chat_bubble_outline_rounded,
+                        leadingIcon: LottiIcons.chat,
                         variant: DesignSystemButtonVariant.secondary,
                         size: DesignSystemButtonSize.dense,
                         onPressed: () => _setChatOpen(open: !_chatOpen),
@@ -1150,7 +1150,7 @@ class _GoalChatDrawer extends StatelessWidget {
                       ),
                       IconButton(
                         key: const ValueKey('goal-chat-drawer-close'),
-                        icon: const Icon(Icons.close_rounded),
+                        icon: const Icon(LottiIcons.close),
                         tooltip: MaterialLocalizations.of(
                           context,
                         ).closeButtonTooltip,
@@ -1544,7 +1544,7 @@ class _AgentReadCardState extends ConsumerState<_AgentReadCard> {
                       onPressed: widget.onAskWhy,
                       variant: DesignSystemButtonVariant.tertiary,
                       size: DesignSystemButtonSize.dense,
-                      trailingIcon: Icons.arrow_forward_rounded,
+                      trailingIcon: LottiIcons.forward,
                       alignsLabelToLeadingEdge: true,
                     ),
                   ],
@@ -1559,7 +1559,7 @@ class _AgentReadCardState extends ConsumerState<_AgentReadCard> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Icon(
-                          Icons.error_outline_rounded,
+                          LottiIcons.error,
                           size:
                               tokens.typography.styles.body.bodySmall.fontSize,
                           color: tokens.colors.alert.error.ink,
@@ -1786,9 +1786,7 @@ class _GoalReportCardState extends State<_GoalReportCard>
             onPressed: _toggle,
             variant: DesignSystemButtonVariant.tertiary,
             size: DesignSystemButtonSize.dense,
-            trailingIcon: _expanded
-                ? Icons.expand_less_rounded
-                : Icons.expand_more_rounded,
+            trailingIcon: _expanded ? LottiIcons.collapse : LottiIcons.expand,
             alignsLabelToLeadingEdge: true,
           ),
         ],
@@ -1833,7 +1831,7 @@ class _GoalActionsMenuButton extends ConsumerWidget {
     final tokens = context.designTokens;
     final danger = tokens.colors.alert.error.ink;
     return PopupMenuButton<_GoalDetailMenuAction>(
-      icon: const Icon(Icons.more_vert_rounded),
+      icon: const Icon(LottiIcons.moreVertical),
       onSelected: (action) async {
         switch (action) {
           case _GoalDetailMenuAction.edit:
@@ -1877,7 +1875,7 @@ class _GoalActionsMenuButton extends ConsumerWidget {
             value: _GoalDetailMenuAction.edit,
             child: Row(
               children: [
-                const Icon(Icons.edit_outlined),
+                const Icon(LottiIcons.edit),
                 SizedBox(width: tokens.spacing.step3),
                 Expanded(
                   child: Text(
@@ -1893,7 +1891,7 @@ class _GoalActionsMenuButton extends ConsumerWidget {
             value: _GoalDetailMenuAction.updateRead,
             child: Row(
               children: [
-                const Icon(Icons.refresh_rounded),
+                const Icon(LottiIcons.refresh),
                 SizedBox(width: tokens.spacing.step3),
                 Expanded(
                   child: Text(
@@ -1917,7 +1915,7 @@ class _GoalActionsMenuButton extends ConsumerWidget {
           value: _GoalDetailMenuAction.internals,
           child: Row(
             children: [
-              const Icon(Icons.tune_rounded),
+              const Icon(LottiIcons.tune),
               SizedBox(width: tokens.spacing.step3),
               Expanded(
                 child: Text(
@@ -1932,7 +1930,7 @@ class _GoalActionsMenuButton extends ConsumerWidget {
           value: _GoalDetailMenuAction.delete,
           child: Row(
             children: [
-              Icon(Icons.delete_outline_rounded, color: danger),
+              Icon(LottiIcons.delete, color: danger),
               SizedBox(width: tokens.spacing.step3),
               Text(
                 context.messages.goalDeleteMenuItem,
@@ -2136,7 +2134,7 @@ class _GoalBannerShellReturnCountdownState
       key: const ValueKey('goal-banner-shell-return-countdown'),
       children: [
         Icon(
-          Icons.snooze_rounded,
+          LottiIcons.snooze,
           size: tokens.typography.styles.others.caption.fontSize,
           color: tokens.colors.text.lowEmphasis,
         ),

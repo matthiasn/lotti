@@ -152,7 +152,7 @@ class RelationshipDetailsPage extends ConsumerWidget {
             relationshipId: relationshipId,
           ),
           label: Text(context.messages.relationshipLogCheckIn),
-          icon: const Icon(Icons.waving_hand_rounded),
+          icon: const Icon(LottiIcons.greeting),
         ),
       ),
       body: SafeArea(
@@ -164,7 +164,7 @@ class RelationshipDetailsPage extends ConsumerWidget {
               actions: [
                 if (data.important)
                   Icon(
-                    Icons.star_rounded,
+                    LottiIcons.star,
                     color: tokens.colors.interactive.enabled,
                   ),
                 // Renders nothing on desktop, where channels are typed by
@@ -176,12 +176,12 @@ class RelationshipDetailsPage extends ConsumerWidget {
                     context: context,
                     relationship: relationship,
                   ),
-                  icon: const Icon(Icons.edit_rounded),
+                  icon: const Icon(LottiIcons.edit),
                 ),
                 IconButton(
                   tooltip: context.messages.deleteButton,
                   onPressed: () => _handleDelete(context, ref, relationship),
-                  icon: const Icon(Icons.delete_outline_rounded),
+                  icon: const Icon(LottiIcons.delete),
                 ),
               ],
             ),
@@ -287,15 +287,14 @@ class _RelationshipHeader extends StatelessWidget {
       children: [
         chip(
           relationshipStatusLabel(context, data.status),
-          Icons.circle_outlined,
+          LottiIcons.radioUnselected,
         ),
         if (cadenceDays != null)
           chip(
             relationshipCadenceLabel(context, cadenceDays),
-            Icons.update_rounded,
+            LottiIcons.refresh,
           ),
-        if (data.nickname != null)
-          chip(data.nickname!, Icons.tag_faces_rounded),
+        if (data.nickname != null) chip(data.nickname!, LottiIcons.moodGood),
       ],
     );
   }
@@ -481,7 +480,7 @@ class _LinkedTasksSection extends ConsumerWidget {
             ),
             TextButton.icon(
               onPressed: () => _pickTask(context, ref),
-              icon: const Icon(Icons.add_link_rounded),
+              icon: const Icon(LottiIcons.link),
               label: Text(context.messages.relationshipLinkTaskButton),
             ),
           ],
@@ -499,7 +498,7 @@ class _LinkedTasksSection extends ConsumerWidget {
               dense: true,
               contentPadding: EdgeInsets.zero,
               leading: Icon(
-                Icons.task_alt_rounded,
+                LottiIcons.confirmCircled,
                 color: tokens.colors.text.mediumEmphasis,
               ),
               title: Text(
@@ -524,7 +523,7 @@ class _LinkedTasksSection extends ConsumerWidget {
               trailing: IconButton(
                 tooltip: context.messages.unlinkTaskTitle,
                 onPressed: () => _unlinkTask(context, ref, task),
-                icon: const Icon(Icons.link_off_rounded),
+                icon: const Icon(LottiIcons.linkOff),
               ),
               onTap: () => beamToNamed('/tasks/${task.meta.id}'),
             ),

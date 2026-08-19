@@ -2,6 +2,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
 import 'package:lotti/features/projects/ui/widgets/project_tasks_panel.dart';
 
@@ -97,8 +98,8 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('45m'), findsOneWidget);
-      expect(find.byIcon(Icons.timer_outlined), findsOneWidget);
-      expect(find.byIcon(Icons.arrow_forward_ios_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.timer), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronRight), findsNothing);
     });
 
     testWidgets('calls onTap when the row is tapped', (tester) async {
@@ -203,7 +204,7 @@ void main() {
       );
       await tester.pump();
 
-      final icon = tester.widget<Icon>(find.byIcon(Icons.timer_outlined));
+      final icon = tester.widget<Icon>(find.byIcon(LottiIcons.timer));
       expect(icon.size, 16);
     });
 

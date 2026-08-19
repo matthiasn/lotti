@@ -96,22 +96,22 @@ class _StateBadge extends StatelessWidget {
     final (color, icon, label) = switch (item.reason) {
       PendingItemReason.overdue => (
         tokens.colors.alert.error.ink,
-        Icons.warning_amber_rounded,
+        LottiIcons.warning,
         _overdueLabel(context, item),
       ),
       PendingItemReason.inProgress => (
         tokens.colors.alert.warning.ink,
-        Icons.adjust_rounded,
+        LottiIcons.focus,
         messages.dailyOsNextStateInProgress(item.sessionCount ?? 0),
       ),
       PendingItemReason.missedRecurring => (
         tokens.colors.alert.info.ink,
-        Icons.refresh_rounded,
+        LottiIcons.refresh,
         messages.dailyOsNextStateRecurringMissed,
       ),
       PendingItemReason.dueToday => (
         tokens.colors.interactive.enabled,
-        Icons.today_rounded,
+        LottiIcons.today,
         _dueLabel(context, item),
       ),
     };
@@ -187,27 +187,27 @@ class _TriageButtonRow extends StatelessWidget {
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         _PrimaryAction(
-          icon: Icons.add_rounded,
+          icon: LottiIcons.add,
           label: messages.dailyOsNextTriageToday,
           onPressed: () => onTriage(TriageAction.today),
         ),
         _SecondaryAction(
-          icon: Icons.bolt_rounded,
+          icon: LottiIcons.bolt,
           label: messages.dailyOsNextTriageDoNow,
           onPressed: () => onTriage(TriageAction.doNow),
         ),
         _SecondaryAction(
-          icon: Icons.timelapse_rounded,
+          icon: LottiIcons.timelapse,
           label: messages.dailyOsNextTriageDefer,
           onPressed: () => onTriage(TriageAction.defer),
         ),
         _SecondaryAction(
-          icon: Icons.check_rounded,
+          icon: LottiIcons.confirm,
           label: messages.dailyOsNextTriageDone,
           onPressed: () => onTriage(TriageAction.done),
         ),
         _GhostAction(
-          icon: Icons.close_rounded,
+          icon: LottiIcons.close,
           tooltip: messages.dailyOsNextTriageDrop,
           onPressed: () => onTriage(TriageAction.drop),
         ),
@@ -339,7 +339,7 @@ class _DecisionPill extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.check_rounded, size: 14, color: teal),
+          Icon(LottiIcons.confirm, size: 14, color: teal),
           SizedBox(width: tokens.spacing.step2),
           Text(
             label,

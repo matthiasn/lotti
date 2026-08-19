@@ -83,7 +83,10 @@ void main() {
       matching: find.byType(Row),
     );
     expect(
-      find.descendant(of: codePill.first, matching: find.byIcon(Icons.code)),
+      find.descendant(
+        of: codePill.first,
+        matching: find.byIcon(LottiIcons.code),
+      ),
       findsOneWidget,
     );
     final codeVisual = find.byKey(
@@ -200,7 +203,7 @@ void main() {
     expect(pill.labelColor, dsTokensLight.colors.text.mediumEmphasis);
     expect(decoration.color, dsTokensLight.colors.surface.enabled);
     expect(
-      tester.widget<Icon>(find.byIcon(Icons.timer_outlined)).color,
+      tester.widget<Icon>(find.byIcon(LottiIcons.timer)).color,
       dsTokensLight.colors.alert.warning.defaultColor,
     );
   });
@@ -337,7 +340,7 @@ void main() {
       dsTokensLight.colors.decorative.level02,
     );
     expect(
-      tester.widget<Icon>(find.byIcon(Icons.mic_none_outlined)).color,
+      tester.widget<Icon>(find.byIcon(LottiIcons.micIdle)).color,
       dsTokensLight.colors.text.lowEmphasis,
     );
   });

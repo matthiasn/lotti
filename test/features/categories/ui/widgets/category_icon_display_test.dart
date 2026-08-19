@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_display.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 void main() {
   group('CategoryIconDisplay', () {
@@ -37,7 +38,7 @@ void main() {
       );
 
       // Should find the fitness icon
-      expect(find.byIcon(Icons.fitness_center), findsOneWidget);
+      expect(find.byIcon(LottiIcons.fitness), findsOneWidget);
       // Should not find fallback text
       expect(find.text(CategoryIconStrings.fallbackCharacter), findsNothing);
     });
@@ -189,7 +190,7 @@ void main() {
         ),
       );
 
-      final iconWidget = tester.widget<Icon>(find.byIcon(Icons.fitness_center));
+      final iconWidget = tester.widget<Icon>(find.byIcon(LottiIcons.fitness));
       const expectedIconSize =
           customSize * CategoryIconConstants.iconSizeMultiplier;
       expect(iconWidget.size, equals(expectedIconSize));

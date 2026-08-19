@@ -18,7 +18,7 @@ void main() {
       // Empty actions short-circuit to SizedBox.shrink — no trigger at all,
       // so the v2 cards don't show a useless `⋯` button.
       expect(find.byType(DesignSystemContextMenuButton), findsNothing);
-      expect(find.byIcon(Icons.more_horiz_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.more), findsNothing);
     });
 
     testWidgets('the `⋯` trigger meets the 48px minimum touch target', (
@@ -29,7 +29,7 @@ void main() {
           AiCardActionMenuButton(
             actions: [
               AiCardMenuAction(
-                icon: Icons.edit_outlined,
+                icon: LottiIcons.edit,
                 label: 'Edit',
                 onSelected: () {},
               ),
@@ -56,12 +56,12 @@ void main() {
             AiCardActionMenuButton(
               actions: [
                 AiCardMenuAction(
-                  icon: Icons.edit_outlined,
+                  icon: LottiIcons.edit,
                   label: 'Edit',
                   onSelected: () => editCount++,
                 ),
                 AiCardMenuAction(
-                  icon: Icons.delete_outline_rounded,
+                  icon: LottiIcons.delete,
                   label: 'Delete',
                   isDestructive: true,
                   onSelected: () => deleteCount++,
@@ -71,9 +71,9 @@ void main() {
           ),
         );
 
-        expect(find.byIcon(Icons.more_horiz_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.more), findsOneWidget);
 
-        await tester.tap(find.byIcon(Icons.more_horiz_rounded));
+        await tester.tap(find.byIcon(LottiIcons.more));
         await tester.pumpAndSettle();
 
         expect(find.text('Edit'), findsOneWidget);
@@ -112,17 +112,17 @@ void main() {
         AiCardActionMenuButton(
           actions: [
             AiCardMenuAction(
-              icon: Icons.edit_outlined,
+              icon: LottiIcons.edit,
               label: 'First',
               onSelected: () => firstCount++,
             ),
             AiCardMenuAction(
-              icon: Icons.copy_outlined,
+              icon: LottiIcons.copy,
               label: 'Second',
               onSelected: () => secondCount++,
             ),
             AiCardMenuAction(
-              icon: Icons.delete_outline_rounded,
+              icon: LottiIcons.delete,
               label: 'Third',
               isDestructive: true,
               onSelected: () => thirdCount++,
@@ -132,7 +132,7 @@ void main() {
       );
 
       await tester.pumpWidget(harness());
-      await tester.tap(find.byIcon(Icons.more_horiz_rounded));
+      await tester.tap(find.byIcon(LottiIcons.more));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Second'));
       await tester.pumpAndSettle();
@@ -142,7 +142,7 @@ void main() {
       expect(thirdCount, 0);
 
       // Reopen and tap the first row to confirm routing is stable.
-      await tester.tap(find.byIcon(Icons.more_horiz_rounded));
+      await tester.tap(find.byIcon(LottiIcons.more));
       await tester.pumpAndSettle();
       await tester.tap(find.text('First'));
       await tester.pumpAndSettle();

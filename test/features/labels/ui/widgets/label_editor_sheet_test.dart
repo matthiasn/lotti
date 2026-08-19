@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/state/label_editor_controller.dart';
 import 'package:lotti/features/labels/ui/widgets/label_editor_sheet.dart';
@@ -116,7 +117,7 @@ void main() {
       expect(find.text('Edit label'), findsNothing);
       // line 326: createButton label on the FilledButton.
       expect(find.text('Create'), findsOneWidget);
-      expect(find.byIcon(Icons.add), findsWidgets);
+      expect(find.byIcon(LottiIcons.add), findsWidgets);
     });
 
     testWidgets('shows edit title and Save button when editing a label', (
@@ -128,7 +129,7 @@ void main() {
       expect(find.text('Edit label'), findsOneWidget);
       expect(find.text('Create label'), findsNothing);
       expect(find.text('Save'), findsOneWidget);
-      expect(find.byIcon(Icons.edit), findsOneWidget);
+      expect(find.byIcon(LottiIcons.edit), findsOneWidget);
       // Name field is seeded from the label.
       expect(find.widgetWithText(TextField, 'Urgent'), findsOneWidget);
     });

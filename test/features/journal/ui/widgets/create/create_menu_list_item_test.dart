@@ -20,7 +20,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           CreateMenuListItem(
-            icon: Icons.notes_rounded,
+            icon: LottiIcons.note,
             title: title,
             subtitle: subtitle,
             opensSheet: opensSheet,
@@ -41,18 +41,18 @@ void main() {
       expect(find.byType(DesignSystemListItem), findsOneWidget);
       expect(find.text('Write a note'), findsOneWidget);
       expect(find.text('Jot down details in a linked note.'), findsOneWidget);
-      expect(find.byIcon(Icons.notes_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.note), findsOneWidget);
     });
 
     testWidgets('trailing glyph says what the tap does: + creates in place, '
         'chevron opens another surface', (tester) async {
       await pump(tester);
-      expect(find.byIcon(Icons.add_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.chevron_right_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.add), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronRight), findsNothing);
 
       await pump(tester, opensSheet: true);
-      expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.add_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
+      expect(find.byIcon(LottiIcons.add), findsNothing);
     });
 
     testWidgets(
@@ -65,8 +65,8 @@ void main() {
         final tokens = tester
             .element(find.byType(CreateMenuListItem))
             .designTokens;
-        final leading = tester.widget<Icon>(find.byIcon(Icons.notes_rounded));
-        final trailing = tester.widget<Icon>(find.byIcon(Icons.add_rounded));
+        final leading = tester.widget<Icon>(find.byIcon(LottiIcons.note));
+        final trailing = tester.widget<Icon>(find.byIcon(LottiIcons.add));
 
         expect(leading.color, tokens.colors.interactive.enabled);
         expect(leading.size, tokens.spacing.step5);

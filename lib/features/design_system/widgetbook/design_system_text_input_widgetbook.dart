@@ -107,8 +107,8 @@ class _TextInputVariants extends StatelessWidget {
           child: DesignSystemTextInput(
             label: messages.designSystemInputLabelSample,
             hintText: messages.designSystemInputHintSample,
-            leadingIcon: Icons.search,
-            trailingIcon: Icons.clear,
+            leadingIcon: LottiIcons.search,
+            trailingIcon: LottiIcons.close,
           ),
         ),
         _variant(

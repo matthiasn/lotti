@@ -74,7 +74,7 @@ class SoulEvolutionReviewPage extends ConsumerWidget {
             ),
             SizedBox(height: tokens.spacing.step4),
             _SectionHeader(
-              icon: Icons.history_rounded,
+              icon: LottiIcons.restore,
               title: context.messages.agentRitualReviewSessionHistory,
             ),
             SizedBox(height: tokens.spacing.step4),

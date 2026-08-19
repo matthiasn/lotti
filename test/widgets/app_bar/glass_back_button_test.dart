@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/app_bar/glass_action_button.dart';
 import 'package:lotti/widgets/app_bar/glass_back_button.dart';
 import 'package:lotti/widgets/app_bar/glass_icon_container.dart';
@@ -17,27 +18,27 @@ void main() {
     testWidgets('renders chevron_left icon', (tester) async {
       await _pump(tester, const GlassBackButton());
 
-      expect(find.byIcon(Icons.chevron_left), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronLeft), findsOneWidget);
     });
 
     testWidgets('uses white icon color by default', (tester) async {
       await _pump(tester, const GlassBackButton());
 
-      final icon = tester.widget<Icon>(find.byIcon(Icons.chevron_left));
+      final icon = tester.widget<Icon>(find.byIcon(LottiIcons.chevronLeft));
       expect(icon.color, Colors.white);
     });
 
     testWidgets('uses custom icon color when provided', (tester) async {
       await _pump(tester, const GlassBackButton(iconColor: Colors.red));
 
-      final icon = tester.widget<Icon>(find.byIcon(Icons.chevron_left));
+      final icon = tester.widget<Icon>(find.byIcon(LottiIcons.chevronLeft));
       expect(icon.color, Colors.red);
     });
 
     testWidgets('uses default icon size of 24', (tester) async {
       await _pump(tester, const GlassBackButton());
 
-      final icon = tester.widget<Icon>(find.byIcon(Icons.chevron_left));
+      final icon = tester.widget<Icon>(find.byIcon(LottiIcons.chevronLeft));
       expect(icon.size, 24);
     });
 
@@ -53,7 +54,7 @@ void main() {
     testWidgets('uses custom icon size when provided', (tester) async {
       await _pump(tester, const GlassBackButton(iconSize: 32));
 
-      final icon = tester.widget<Icon>(find.byIcon(Icons.chevron_left));
+      final icon = tester.widget<Icon>(find.byIcon(LottiIcons.chevronLeft));
       expect(icon.size, 32);
     });
 

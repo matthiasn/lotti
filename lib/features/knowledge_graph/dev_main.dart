@@ -68,7 +68,7 @@ class _KnowledgeGraphDevAppState extends State<KnowledgeGraphDevApp> {
                         ),
                       IconButton(
                         tooltip: 'Toggle theme',
-                        icon: Icon(_dark ? Icons.dark_mode : Icons.light_mode),
+                        icon: Icon(_dark ? LottiIcons.night : LottiIcons.day),
                         onPressed: () => setState(() => _dark = !_dark),
                       ),
                     ],

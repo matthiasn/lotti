@@ -146,10 +146,10 @@ QuillSimpleToolbarButtonOptions _buttonOptions(
           ),
         ),
     codeBlock: const QuillToolbarToggleStyleButtonOptions(
-      iconData: Icons.data_object,
+      iconData: LottiIcons.code,
     ),
     toggleCheckList: const QuillToolbarToggleCheckListButtonOptions(
-      iconData: Icons.checklist_rounded,
+      iconData: LottiIcons.checkAll,
     ),
   );
 }
@@ -184,7 +184,7 @@ QuillSimpleToolbarConfig _fullConfig(
     showSearchButton: false,
     customButtons: [
       QuillToolbarCustomButtonOptions(
-        icon: const Icon(Icons.horizontal_rule),
+        icon: const Icon(LottiIcons.divider),
         tooltip: context.messages.editorInsertDivider,
         onPressed: () => insertDividerEmbed(controller),
       ),
@@ -261,7 +261,7 @@ QuillSimpleToolbarConfig _advancedConfig(
     showSearchButton: false,
     customButtons: [
       QuillToolbarCustomButtonOptions(
-        icon: const Icon(Icons.horizontal_rule),
+        icon: const Icon(LottiIcons.divider),
         tooltip: context.messages.editorInsertDivider,
         onPressed: () => insertDividerEmbed(controller),
       ),
@@ -284,7 +284,7 @@ class _MoreFormattingButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     return IconButton(
-      icon: const Icon(Icons.more_horiz),
+      icon: const Icon(LottiIcons.more),
       color: tokens.colors.text.mediumEmphasis,
       tooltip: context.messages.editorMoreFormatting,
       padding: EdgeInsets.zero,
@@ -355,7 +355,7 @@ class _ToolbarActions extends ConsumerWidget {
           width: _trailingControlSize,
           child: unsaved
               ? IconButton(
-                  icon: const Icon(Icons.close_rounded),
+                  icon: const Icon(LottiIcons.close),
                   color: tokens.colors.text.mediumEmphasis,
                   tooltip: context.messages.editorDiscardChanges,
                   padding: EdgeInsets.zero,
@@ -413,7 +413,7 @@ class _ToolbarSaveButton extends ConsumerWidget {
         label: context.messages.saveLabel,
         // Always present (greyed when clean) so the chip keeps a fixed width and
         // the narrow toolbar never reflows between clean and dirty states.
-        leadingIcon: Icons.save_rounded,
+        leadingIcon: LottiIcons.save,
         // null onPressed → the button renders its disabled (quiet) state.
         onPressed: unsaved
             ? () {

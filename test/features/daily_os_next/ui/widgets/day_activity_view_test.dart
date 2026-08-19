@@ -12,6 +12,7 @@ import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 import 'package:lotti/features/daily_os_next/state/day_activity_provider.dart';
 import 'package:lotti/features/daily_os_next/state/day_processing_runtime_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_activity_view.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_widget.dart';
 import 'package:lotti/features/speech/state/audio_waveform_provider.dart';
@@ -532,7 +533,7 @@ void main() {
       await tester.pump();
 
       expect(find.byType(AudioPlayerWidget), findsOneWidget);
-      expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.play), findsOneWidget);
       // The saved wording is edited in place through the shared journal
       // editor, keyed by the recording's journal id; the plain transcript
       // line disappears in favour of the editable document.

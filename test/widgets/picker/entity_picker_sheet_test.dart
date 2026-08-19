@@ -256,14 +256,14 @@ void main() {
       expect(
         find.descendant(
           of: find.byKey(const ValueKey('row-beta')),
-          matching: find.byIcon(Icons.check_rounded),
+          matching: find.byIcon(LottiIcons.confirm),
         ),
         findsOneWidget,
       );
       expect(
         find.descendant(
           of: find.byKey(const ValueKey('row-alpha')),
-          matching: find.byIcon(Icons.check_rounded),
+          matching: find.byIcon(LottiIcons.confirm),
         ),
         findsNothing,
       );
@@ -292,7 +292,7 @@ void main() {
       expect(
         find.descendant(
           of: row,
-          matching: find.byIcon(Icons.check_rounded),
+          matching: find.byIcon(LottiIcons.confirm),
         ),
         findsOneWidget,
       );
@@ -490,7 +490,7 @@ void main() {
       expect(lastQuery, 'beta');
 
       // The clear affordance (cancel glyph) empties the query.
-      await tester.tap(find.byIcon(Icons.cancel_rounded));
+      await tester.tap(find.byIcon(LottiIcons.closeCircled));
       await tester.pump();
       expect(lastQuery, '');
     });

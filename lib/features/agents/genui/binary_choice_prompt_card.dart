@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/cards/modern_base_card.dart';
 import 'package:lotti/widgets/cards/modern_icon_container.dart';
 
@@ -67,7 +68,7 @@ class _BinaryChoicePromptCardState extends State<BinaryChoicePromptCard> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const ModernIconContainer(
-                  icon: Icons.help_outline_rounded,
+                  icon: LottiIcons.help,
                   isCompact: true,
                 ),
                 const SizedBox(width: 12),

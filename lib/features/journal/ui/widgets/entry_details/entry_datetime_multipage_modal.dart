@@ -1,6 +1,5 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -108,7 +107,7 @@ class EntryDateTimeMultiPageModal {
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(
-          MdiIcons.calendarClock,
+          LottiIcons.calendarTime,
           size: tokens.spacing.step6,
           color: tokens.colors.interactive.enabled,
         ),
@@ -428,7 +427,7 @@ class _DateSelectionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return DesignSystemButton(
       label: _formatFullDate(context, date),
-      leadingIcon: Icons.calendar_month_rounded,
+      leadingIcon: LottiIcons.calendar,
       variant: DesignSystemButtonVariant.secondary,
       size: DesignSystemButtonSize.large,
       fullWidth: true,
@@ -544,7 +543,7 @@ class _SaveActionBar extends ConsumerWidget {
         return DesignSystemGlassActionFooter(
           child: DesignSystemButton(
             label: context.messages.journalDateSaveButton,
-            leadingIcon: Icons.check_rounded,
+            leadingIcon: LottiIcons.confirm,
             size: DesignSystemButtonSize.large,
             fullWidth: true,
             onPressed: canSave

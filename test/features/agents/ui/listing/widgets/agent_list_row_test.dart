@@ -5,6 +5,7 @@ import 'package:lotti/features/agents/ui/listing/agent_list_data.dart';
 import 'package:lotti/features/agents/ui/listing/widgets/agent_list_row.dart';
 import 'package:lotti/features/agents/ui/listing/widgets/soul_avatar.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../../../widget_test_utils.dart';
 
@@ -114,10 +115,10 @@ void main() {
     ) async {
       await _pumpRow(
         tester,
-        _row(leading: const AgentListIconLeading(icon: Icons.alarm)),
+        _row(leading: const AgentListIconLeading(icon: LottiIcons.alarm)),
       );
 
-      expect(find.byIcon(Icons.alarm), findsOneWidget);
+      expect(find.byIcon(LottiIcons.alarm), findsOneWidget);
       expect(find.byType(SoulAvatar), findsNothing);
     });
 
@@ -127,7 +128,7 @@ void main() {
       var tapped = 0;
       await _pumpRow(tester, _row(onTap: () => tapped++));
 
-      expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
       await tester.tap(find.byType(AgentListRow));
       expect(tapped, 1);
     });
@@ -139,17 +140,17 @@ void main() {
         tester,
         _row(
           onTap: () {},
-          trailing: (context) => const Icon(Icons.star),
+          trailing: (context) => const Icon(LottiIcons.star),
         ),
       );
 
-      expect(find.byIcon(Icons.star), findsOneWidget);
-      expect(find.byIcon(Icons.chevron_right), findsNothing);
+      expect(find.byIcon(LottiIcons.star), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronRight), findsNothing);
     });
 
     testWidgets('non-tappable rows render no chevron', (tester) async {
       await _pumpRow(tester, _row());
-      expect(find.byIcon(Icons.chevron_right), findsNothing);
+      expect(find.byIcon(LottiIcons.chevronRight), findsNothing);
     });
 
     testWidgets('narrow constraints switch to the compact stacked layout', (
@@ -206,7 +207,7 @@ void main() {
         _row(
           pills: const [AgentListPill(label: 'scheduled')],
           metaRight: metadata,
-          trailing: (_) => const Icon(Icons.star),
+          trailing: (_) => const Icon(LottiIcons.star),
         ),
         width: 280,
       );
@@ -219,7 +220,7 @@ void main() {
       expect(paragraph.didExceedMaxLines, isTrue);
       expect(
         tester.getRect(find.text(metadata)).right,
-        lessThanOrEqualTo(tester.getRect(find.byIcon(Icons.star)).left),
+        lessThanOrEqualTo(tester.getRect(find.byIcon(LottiIcons.star)).left),
       );
     });
 

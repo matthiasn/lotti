@@ -8,6 +8,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
@@ -399,10 +400,10 @@ void main() {
         // Four identical chevrons over four different behaviours told the
         // user nothing — and two of these rows retire the whole card from
         // under the finger.
-        expect(glyphFor('Write a note'), Icons.add_rounded);
-        expect(glyphFor('Add a checklist'), Icons.add_rounded);
-        expect(glyphFor('Record a voice note'), Icons.chevron_right_rounded);
-        expect(glyphFor('Assign an agent'), Icons.chevron_right_rounded);
+        expect(glyphFor('Write a note'), LottiIcons.add);
+        expect(glyphFor('Add a checklist'), LottiIcons.add);
+        expect(glyphFor('Record a voice note'), LottiIcons.chevronRight);
+        expect(glyphFor('Assign an agent'), LottiIcons.chevronRight);
       },
     );
 

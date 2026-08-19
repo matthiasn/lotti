@@ -2,6 +2,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/insights/logic/time_bucketing.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:lotti/features/insights/state/insights_providers.dart';
@@ -89,7 +90,7 @@ void main() {
       await pumpAt(tester, DateTime(2026, 3, 15, 16));
       final march = tester.getSize(find.byType(GridView)).height;
 
-      await tester.tap(find.byIcon(Icons.chevron_left_rounded));
+      await tester.tap(find.byIcon(LottiIcons.chevronLeft));
       await tester.pump();
 
       expect(find.text('February 2026'), findsOneWidget);
@@ -104,7 +105,7 @@ void main() {
       await pumpAt(tester, DateTime(2026, 2, 15, 16));
       final february = tester.getSize(find.byType(GridView)).height;
 
-      await tester.tap(find.byIcon(Icons.chevron_right_rounded));
+      await tester.tap(find.byIcon(LottiIcons.chevronRight));
       await tester.pump();
 
       expect(find.text('March 2026'), findsOneWidget);

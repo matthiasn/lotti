@@ -164,7 +164,7 @@ class _ProjectTasksPanelHeader extends StatelessWidget {
         ),
         SizedBox(width: tokens.spacing.step2),
         Icon(
-          Icons.timer_outlined,
+          LottiIcons.timer,
           size: tokens.typography.lineHeight.subtitle2,
           color: ShowcasePalette.timeGreen(context),
         ),
@@ -304,7 +304,7 @@ class _TaskSummaryRowSurfaceState extends State<_TaskSummaryRowSurface> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              Icons.timer_outlined,
+                              LottiIcons.timer,
                               size: tokens.typography.lineHeight.caption,
                               color: ShowcasePalette.lowText(context),
                             ),

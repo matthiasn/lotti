@@ -25,7 +25,7 @@ class LinkBadge extends StatelessWidget {
         color: info,
         label: label,
         leading: Icon(
-          Icons.link_rounded,
+          LottiIcons.link,
           size: tokens.typography.size.caption,
           color: info,
         ),

@@ -90,7 +90,7 @@ class TaskCompactAppBar extends ConsumerWidget {
       if (showGraph)
         IconButton(
           icon: Icon(
-            Icons.hub_outlined,
+            LottiIcons.hub,
             color: iconColor,
           ),
           tooltip: context.messages.knowledgeGraphTooltip,
@@ -102,7 +102,7 @@ class TaskCompactAppBar extends ConsumerWidget {
         ),
       IconButton(
         icon: Icon(
-          Icons.more_horiz,
+          LottiIcons.more,
           color: iconColor,
         ),
         // The page carries a second `more_horiz` in its bottom bar opening an

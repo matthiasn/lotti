@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/agents/genui/evolution_catalog_helpers.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/cards/modern_base_card.dart';
 import 'package:lotti/widgets/cards/modern_icon_container.dart';
@@ -102,7 +103,7 @@ class _CategoryRatingsCardState extends State<CategoryRatingsCard> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const ModernIconContainer(
-                  icon: Icons.star_rounded,
+                  icon: LottiIcons.star,
                   isCompact: true,
                 ),
                 const SizedBox(width: 12),
@@ -184,8 +185,8 @@ class _CategoryRatingsCardState extends State<CategoryRatingsCard> {
                                 padding: const EdgeInsets.only(right: 8),
                                 child: Icon(
                                   selected
-                                      ? Icons.star_rounded
-                                      : Icons.star_border_rounded,
+                                      ? LottiIconsFilled.star
+                                      : LottiIcons.star,
                                   size: 26,
                                   color: selected
                                       ? colorScheme.tertiary
@@ -229,7 +230,7 @@ class _CategoryRatingsCardState extends State<CategoryRatingsCard> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          Icons.check_circle_rounded,
+                          LottiIcons.confirmCircled,
                           size: 18,
                           color: colorScheme.primary,
                         ),

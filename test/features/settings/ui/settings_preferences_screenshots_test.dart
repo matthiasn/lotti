@@ -23,6 +23,7 @@ import 'package:lotti/features/agents/state/ritual_review_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_variant.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
@@ -341,7 +342,7 @@ void main() {
             findsOneWidget,
           );
           expect(
-            find.byIcon(Icons.radio_button_checked_rounded),
+            find.byIcon(LottiIcons.radioSelected),
             findsOneWidget,
           );
           await captureScreenshot(

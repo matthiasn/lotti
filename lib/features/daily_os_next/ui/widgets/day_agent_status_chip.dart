@@ -37,18 +37,18 @@ class DayAgentStatusChip extends ConsumerWidget {
     final (color, icon, label) = switch (persona) {
       DayAgentPersonaState.working => (
         tokens.colors.alert.info.ink,
-        Icons.autorenew_rounded,
+        LottiIcons.refresh,
         messages.dailyOsNextDayAgentStatusWorking,
       ),
       DayAgentPersonaState.attention => (
         tokens.colors.alert.warning.ink,
-        Icons.priority_high_rounded,
+        LottiIcons.warning,
         messages.dailyOsNextDayAgentStatusAttention,
       ),
       // idle returned above, so the remaining case is celebrating.
       _ => (
         tokens.colors.alert.success.ink,
-        Icons.celebration_outlined,
+        LottiIcons.celebrate,
         messages.dailyOsNextDayAgentStatusDayClosed,
       ),
     };

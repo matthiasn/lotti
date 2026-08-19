@@ -33,7 +33,7 @@ class RelationshipsPage extends ConsumerWidget {
         child: FloatingActionButton.extended(
           onPressed: () => showRelationshipCreateModal(context: context),
           label: Text(context.messages.relationshipCreateTitle),
-          icon: const Icon(Icons.person_add_rounded),
+          icon: const Icon(LottiIcons.personAdd),
         ),
       ),
       body: SafeArea(
@@ -108,7 +108,7 @@ class _EmptyState extends StatelessWidget {
       child: Column(
         children: [
           Icon(
-            Icons.people_outlined,
+            LottiIcons.people,
             size: tokens.spacing.step12,
             color: tokens.colors.text.lowEmphasis,
           ),
@@ -140,7 +140,7 @@ class _RelationshipRow extends StatelessWidget {
     return ListTile(
       contentPadding: EdgeInsets.symmetric(horizontal: tokens.spacing.step4),
       leading: Icon(
-        Icons.person_rounded,
+        LottiIcons.person,
         color: tokens.colors.text.mediumEmphasis,
       ),
       title: Text(
@@ -169,7 +169,7 @@ class _RelationshipRow extends StatelessWidget {
       ),
       trailing: data.important
           ? Icon(
-              Icons.star_rounded,
+              LottiIcons.star,
               color: tokens.colors.interactive.enabled,
             )
           : null,
@@ -194,7 +194,7 @@ class _ImportContactsAction extends ConsumerWidget {
 
     return IconButton(
       tooltip: context.messages.relationshipImportAction,
-      icon: const Icon(Icons.group_add_rounded),
+      icon: const Icon(LottiIcons.contactImport),
       // Pushed above the shell on mobile, not onto the tab's own navigator:
       // the import screen docks its Import action in a `bottomNavigationBar`,
       // and the floating nav pill is painted over each tab's page stack — so

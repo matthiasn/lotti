@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/profiles/model/profile.dart';
 import 'package:lotti/features/profiles/model/profile_context.dart';
 import 'package:lotti/features/profiles/state/profile_providers.dart';
@@ -23,7 +24,7 @@ void main() {
         const tree = <SettingsNode>[
           SettingsNode(
             id: 'flags',
-            icon: Icons.flag_outlined,
+            icon: LottiIcons.flag,
             title: 'Flags',
             desc: '',
             panel: 'flags',
@@ -121,7 +122,7 @@ void main() {
       const treeB = <SettingsNode>[
         SettingsNode(
           id: 'flags',
-          icon: Icons.flag_outlined,
+          icon: LottiIcons.flag,
           title: 'Flags',
           desc: '',
           panel: 'flags',

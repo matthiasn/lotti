@@ -1724,7 +1724,7 @@ class _MappingStep extends StatelessWidget {
           subtitle: messages.goalFormHabitSignal,
           titleMaxLines: 2,
           leading: Icon(
-            Icons.task_alt_rounded,
+            LottiIcons.confirmCircled,
             size: IconSizes.s,
             color: tokens.colors.text.mediumEmphasis,
           ),
@@ -1757,7 +1757,7 @@ class _MappingStep extends StatelessWidget {
           title: messages.goalCreateStepsTargetLabel,
           subtitle: messages.goalFormStepsSignal,
           leading: Icon(
-            Icons.directions_walk_rounded,
+            LottiIcons.walk,
             size: IconSizes.s,
             color: tokens.colors.text.mediumEmphasis,
           ),
@@ -1814,7 +1814,7 @@ class _MappingStep extends StatelessWidget {
           title: messages.dashboardHealthBloodPressure,
           subtitle: messages.goalFormHealthReadingsSignal,
           leading: Icon(
-            Icons.monitor_heart_outlined,
+            LottiIcons.heartRate,
             size: IconSizes.s,
             color: tokens.colors.text.mediumEmphasis,
           ),
@@ -1923,7 +1923,7 @@ class _MappingStep extends StatelessWidget {
           title: messages.goalFormHealthWeight,
           subtitle: messages.goalFormHealthReadingsSignal,
           leading: Icon(
-            Icons.monitor_weight_outlined,
+            LottiIcons.weight,
             size: IconSizes.s,
             color: tokens.colors.text.mediumEmphasis,
           ),
@@ -2098,7 +2098,7 @@ class _MappingStep extends StatelessWidget {
             key: const ValueKey('goal-form-intention'),
             controller: statement,
             label: messages.goalFormStatementLabel,
-            leadingIcon: Icons.edit_note_rounded,
+            leadingIcon: LottiIcons.editNote,
             errorText: statementError,
             onChanged: (_) => onStatementChanged?.call(),
           ),
@@ -2179,7 +2179,7 @@ class _MappingStep extends StatelessWidget {
               child: Row(
                 children: [
                   Icon(
-                    Icons.straighten_rounded,
+                    LottiIcons.measure,
                     color: GoalAccentHues.aurora(
                       Theme.of(context).brightness,
                     ),
@@ -2220,7 +2220,7 @@ class _MappingStep extends StatelessWidget {
                     ),
                   ),
                   DesignSystemIconAction(
-                    icon: Icons.close_rounded,
+                    icon: LottiIcons.close,
                     tooltip: context.messages.aiCardProposalKindRemove,
                     onPressed: () => onMeasurableChanged(
                       measurableId: measurable.id,
@@ -2315,7 +2315,7 @@ class _MappingStep extends StatelessWidget {
                 onLabelRemoved: onLabelTimeRemoved,
               ),
             ),
-            leadingIcon: Icons.add_rounded,
+            leadingIcon: LottiIcons.add,
             variant: isDesktopLayout(context)
                 ? DesignSystemButtonVariant.tertiary
                 : DesignSystemButtonVariant.secondary,
@@ -2327,7 +2327,7 @@ class _MappingStep extends StatelessWidget {
               child: Row(
                 children: [
                   Icon(
-                    Icons.account_tree_outlined,
+                    LottiIcons.tree,
                     color: tokens.colors.interactive.enabled,
                   ),
                   SizedBox(width: tokens.spacing.step3),
@@ -2385,7 +2385,7 @@ class _MappingStep extends StatelessWidget {
             key: const ValueKey('goal-form-title-mapping'),
             controller: title,
             label: messages.goalFormGoalNameLabel,
-            leadingIcon: Icons.flag_outlined,
+            leadingIcon: LottiIcons.flag,
             errorText: titleError,
             onChanged: (_) => onTitleChanged(),
           ),
@@ -2396,7 +2396,7 @@ class _MappingStep extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Icon(
-                Icons.calendar_view_week_rounded,
+                LottiIcons.viewColumns,
                 size: IconSizes.s,
                 color: tokens.colors.text.mediumEmphasis,
               ),
@@ -2593,7 +2593,7 @@ class _CategoryTimeTargetCard extends StatelessWidget {
           Row(
             children: [
               Icon(
-                Icons.schedule_rounded,
+                LottiIcons.schedule,
                 color: tokens.colors.text.mediumEmphasis,
               ),
               SizedBox(width: tokens.spacing.step3),
@@ -2615,7 +2615,7 @@ class _CategoryTimeTargetCard extends StatelessWidget {
                 ),
               ),
               DesignSystemIconAction(
-                icon: Icons.close_rounded,
+                icon: LottiIcons.close,
                 tooltip: context.messages.aiCardProposalKindRemove,
                 onPressed: onRemove,
               ),
@@ -2744,7 +2744,7 @@ class _LabelTimeTargetCard extends StatelessWidget {
           Row(
             children: [
               Icon(
-                Icons.label_outline_rounded,
+                LottiIcons.label,
                 color: tokens.colors.text.mediumEmphasis,
               ),
               SizedBox(width: tokens.spacing.step3),
@@ -2766,7 +2766,7 @@ class _LabelTimeTargetCard extends StatelessWidget {
                 ),
               ),
               DesignSystemIconAction(
-                icon: Icons.close_rounded,
+                icon: LottiIcons.close,
                 tooltip: context.messages.aiCardProposalKindRemove,
                 onPressed: onRemove,
               ),
@@ -3016,7 +3016,7 @@ class _DimensionSourcePickerState extends State<_DimensionSourcePicker> {
             DesignSystemTextInput(
               controller: _search,
               hintText: context.messages.searchHint,
-              leadingIcon: Icons.search_rounded,
+              leadingIcon: LottiIcons.search,
               onChanged: (value) => setState(() => _query = value),
             ),
             SizedBox(height: tokens.spacing.step3),
@@ -3244,7 +3244,7 @@ class _DimensionSourcePickerState extends State<_DimensionSourcePicker> {
                   if (visible.isEmpty && query.isEmpty)
                     DesignSystemButton(
                       label: context.messages.settingsMeasurablesCreateTitle,
-                      leadingIcon: Icons.add_rounded,
+                      leadingIcon: LottiIcons.add,
                       variant: DesignSystemButtonVariant.secondary,
                       fullWidth: true,
                       onPressed: () {
@@ -3481,7 +3481,7 @@ class _ConfirmationStepState extends State<_ConfirmationStep> {
           key: const ValueKey('goal-form-persona'),
           controller: widget.persona,
           label: messages.goalFormPersonaLabel,
-          leadingIcon: Icons.auto_awesome_rounded,
+          leadingIcon: LottiIcons.aiSpark,
           errorText: widget.personaError,
           enabled: widget.enabled,
           onChanged: (_) => widget.onPersonaChanged(),
@@ -3528,11 +3528,11 @@ class _ConfirmationStepState extends State<_ConfirmationStep> {
                 key: const ValueKey('goal-form-title'),
                 controller: widget.title,
                 label: messages.goalFormGoalNameLabel,
-                leadingIcon: Icons.flag_outlined,
+                leadingIcon: LottiIcons.flag,
                 errorText: widget.titleError,
                 enabled: widget.enabled,
                 readOnly: !editingTitle,
-                trailingIcon: editingTitle ? null : Icons.edit_outlined,
+                trailingIcon: editingTitle ? null : LottiIcons.edit,
                 trailingIconTooltip: editingTitle
                     ? null
                     : messages.goalFormGoalNameLabel,
@@ -3550,7 +3550,7 @@ class _ConfirmationStepState extends State<_ConfirmationStep> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Icon(
-              Icons.eco_outlined,
+              LottiIcons.eco,
               size: IconSizes.s,
               color: tokens.colors.text.mediumEmphasis,
             ),

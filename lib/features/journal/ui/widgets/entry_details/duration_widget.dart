@@ -163,7 +163,7 @@ class _DurationWidgetState extends ConsumerState<DurationWidget> {
             Visibility(
               visible: isRecent && showRecordIcon && !isRecording,
               child: IconButton(
-                icon: const Icon(Icons.fiber_manual_record_sharp),
+                icon: const Icon(LottiIcons.recordDot),
                 iconSize: 20,
                 tooltip: context.messages.addActionAddTimeRecording,
                 color: context.colorScheme.error,
@@ -182,7 +182,7 @@ class _DurationWidgetState extends ConsumerState<DurationWidget> {
             Visibility(
               visible: isRecording,
               child: IconButton(
-                icon: const Icon(Icons.stop),
+                icon: const Icon(LottiIcons.stop),
                 iconSize: 20,
                 tooltip: context.messages.doneButton,
                 color: labelColor,

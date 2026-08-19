@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/app_bar/glass_icon_container.dart';
 
 import '../../widget_test_utils.dart';
@@ -17,18 +18,18 @@ void main() {
       await _pump(
         tester,
         const GlassIconContainer(
-          child: Icon(Icons.arrow_back),
+          child: Icon(LottiIcons.back),
         ),
       );
 
-      expect(find.byIcon(Icons.arrow_back), findsOneWidget);
+      expect(find.byIcon(LottiIcons.back), findsOneWidget);
     });
 
     testWidgets('uses default size of 40', (tester) async {
       await _pump(
         tester,
         const GlassIconContainer(
-          child: Icon(Icons.close),
+          child: Icon(LottiIcons.close),
         ),
       );
 
@@ -48,7 +49,7 @@ void main() {
         tester,
         const GlassIconContainer(
           size: 60,
-          child: Icon(Icons.menu),
+          child: Icon(LottiIcons.menu),
         ),
       );
 
@@ -67,7 +68,7 @@ void main() {
       await _pump(
         tester,
         const GlassIconContainer(
-          child: Icon(Icons.settings),
+          child: Icon(LottiIcons.settings),
         ),
       );
 
@@ -85,7 +86,7 @@ void main() {
       await _pump(
         tester,
         const GlassIconContainer(
-          child: Icon(Icons.home),
+          child: Icon(LottiIcons.home),
         ),
       );
 
@@ -97,7 +98,7 @@ void main() {
         tester,
         const GlassIconContainer(
           borderRadius: 8,
-          child: Icon(Icons.star),
+          child: Icon(LottiIcons.star),
         ),
       );
 
@@ -113,7 +114,7 @@ void main() {
       await _pump(
         tester,
         const GlassIconContainer(
-          child: Icon(Icons.favorite),
+          child: Icon(LottiIcons.favorite),
         ),
       );
 
@@ -132,7 +133,7 @@ void main() {
       await _pump(
         tester,
         const GlassIconContainer(
-          child: Icon(Icons.check),
+          child: Icon(LottiIcons.confirm),
         ),
       );
 
@@ -155,7 +156,7 @@ void main() {
         IconButton(
           onPressed: () => tapped = true,
           icon: const GlassIconContainer(
-            child: Icon(Icons.chevron_left),
+            child: Icon(LottiIcons.chevronLeft),
           ),
         ),
       );

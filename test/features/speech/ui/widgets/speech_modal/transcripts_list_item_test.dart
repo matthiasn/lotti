@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -118,7 +117,7 @@ void main() {
       expect(find.textContaining('Model: Gemini'), findsOneWidget);
 
       // Expand to see the transcript text
-      await tester.tap(find.byIcon(Icons.keyboard_double_arrow_down_outlined));
+      await tester.tap(find.byIcon(LottiIcons.chevronsDown));
       await tester.pump();
 
       // Check that the transcript text is present after expansion
@@ -231,35 +230,35 @@ void main() {
 
       // Initially collapsed - should show down arrow
       expect(
-        find.byIcon(Icons.keyboard_double_arrow_down_outlined),
+        find.byIcon(LottiIcons.chevronsDown),
         findsOneWidget,
       );
       expect(
-        find.byIcon(Icons.keyboard_double_arrow_up_outlined),
+        find.byIcon(LottiIcons.chevronsUp),
         findsNothing,
       );
 
       // Tap to expand
-      await tester.tap(find.byIcon(Icons.keyboard_double_arrow_down_outlined));
+      await tester.tap(find.byIcon(LottiIcons.chevronsDown));
       await tester.pump();
 
       // Should now show up arrow
       expect(
-        find.byIcon(Icons.keyboard_double_arrow_up_outlined),
+        find.byIcon(LottiIcons.chevronsUp),
         findsOneWidget,
       );
       expect(
-        find.byIcon(Icons.keyboard_double_arrow_down_outlined),
+        find.byIcon(LottiIcons.chevronsDown),
         findsNothing,
       );
 
       // Tap to collapse
-      await tester.tap(find.byIcon(Icons.keyboard_double_arrow_up_outlined));
+      await tester.tap(find.byIcon(LottiIcons.chevronsUp));
       await tester.pump();
 
       // Should show down arrow again
       expect(
-        find.byIcon(Icons.keyboard_double_arrow_down_outlined),
+        find.byIcon(LottiIcons.chevronsDown),
         findsOneWidget,
       );
     });
@@ -270,7 +269,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       final visibilityFinder = find.ancestor(
-        of: find.byIcon(MdiIcons.trashCanOutline),
+        of: find.byIcon(LottiIcons.delete),
         matching: find.byType(Visibility),
       );
 
@@ -284,11 +283,11 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       // Expand the tile
-      await tester.tap(find.byIcon(Icons.keyboard_double_arrow_down_outlined));
+      await tester.tap(find.byIcon(LottiIcons.chevronsDown));
       await tester.pump();
 
       final visibilityFinder = find.ancestor(
-        of: find.byIcon(MdiIcons.trashCanOutline),
+        of: find.byIcon(LottiIcons.delete),
         matching: find.byType(Visibility),
       );
 
@@ -297,7 +296,7 @@ void main() {
       expect(
         tester
             .widget<IconButton>(
-              find.widgetWithIcon(IconButton, MdiIcons.trashCanOutline),
+              find.widgetWithIcon(IconButton, LottiIcons.delete),
             )
             .tooltip,
         'Delete',
@@ -371,7 +370,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       // Expand to show content
-      await tester.tap(find.byIcon(Icons.keyboard_double_arrow_down_outlined));
+      await tester.tap(find.byIcon(LottiIcons.chevronsDown));
       await tester.pump();
 
       // Find the direct Padding widget containing SelectableText
@@ -460,7 +459,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       // Expand to show content
-      await tester.tap(find.byIcon(Icons.keyboard_double_arrow_down_outlined));
+      await tester.tap(find.byIcon(LottiIcons.chevronsDown));
       await tester.pump();
 
       // Check that transcript uses SelectableText
@@ -509,7 +508,7 @@ void main() {
 
       // Each should have their own toggle button
       expect(
-        find.byIcon(Icons.keyboard_double_arrow_down_outlined),
+        find.byIcon(LottiIcons.chevronsDown),
         findsNWidgets(3),
       );
     });
@@ -574,11 +573,11 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       // Expand to show delete button
-      await tester.tap(find.byIcon(Icons.keyboard_double_arrow_down_outlined));
+      await tester.tap(find.byIcon(LottiIcons.chevronsDown));
       await tester.pump();
 
       // Tap the delete button
-      await tester.tap(find.byIcon(MdiIcons.trashCanOutline));
+      await tester.tap(find.byIcon(LottiIcons.delete));
       await tester.pump();
 
       // Verify that updateDbEntity was called
@@ -650,7 +649,7 @@ void main() {
 
       // Delete button is hidden (opacity 0) but still in widget tree
       // Try to tap at the position where the delete button is
-      final deleteButtonFinder = find.byIcon(MdiIcons.trashCanOutline);
+      final deleteButtonFinder = find.byIcon(LottiIcons.delete);
       expect(deleteButtonFinder, findsOneWidget);
 
       // Try to tap the hidden button (warnIfMissed: false since we know it's hidden)

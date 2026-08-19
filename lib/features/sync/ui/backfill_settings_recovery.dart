@@ -124,7 +124,7 @@ class _AdvancedRecoveryGroupState extends State<AdvancedRecoveryGroup>
                         ),
                       ),
                       child: Icon(
-                        Icons.chevron_right,
+                        LottiIcons.chevronRight,
                         size: IconSizes.m,
                         color: tokens.colors.text.mediumEmphasis,
                       ),
@@ -168,11 +168,11 @@ class _AdvancedRecoveryGroupState extends State<AdvancedRecoveryGroup>
 
     return [
       _RecoveryAction(
-        icon: Icons.bolt_outlined,
+        icon: LottiIcons.bolt,
         title: messages.queueCatchUpNowButton,
         description: messages.backfillCatchUpDescription,
         ctaLabel: messages.queueCatchUpNowButton,
-        ctaIcon: Icons.bolt_outlined,
+        ctaIcon: LottiIcons.bolt,
         tone: _RecoveryTone.primary,
         onPressed: coordinator == null
             ? null
@@ -180,24 +180,24 @@ class _AdvancedRecoveryGroupState extends State<AdvancedRecoveryGroup>
       ),
       if (widget.skipped > 0)
         _RecoveryAction(
-          icon: Icons.refresh_rounded,
+          icon: LottiIcons.refresh,
           title: messages.queueSkippedCardTitle,
           description: messages.queueSkippedCardBody(widget.skipped),
           ctaLabel: messages.queueSkippedRetryAll,
-          ctaIcon: Icons.refresh_rounded,
+          ctaIcon: LottiIcons.refresh,
           tone: _RecoveryTone.primary,
           onPressed: coordinator == null
               ? null
               : () => _retrySkipped(context, coordinator.queue),
         ),
       _RecoveryAction(
-        icon: Icons.history_rounded,
+        icon: LottiIcons.restore,
         title: messages.backfillManualTitle,
         description: messages.backfillManualDescription,
         ctaLabel: stats.isProcessing
             ? messages.backfillManualProcessing
             : messages.backfillManualTrigger,
-        ctaIcon: Icons.sync,
+        ctaIcon: LottiIcons.sync,
         tone: _RecoveryTone.primary,
         isBusy: stats.isProcessing,
         onPressed: controllerBusy
@@ -207,13 +207,13 @@ class _AdvancedRecoveryGroupState extends State<AdvancedRecoveryGroup>
                   .triggerFullBackfill(),
       ),
       _RecoveryAction(
-        icon: Icons.restore_rounded,
+        icon: LottiIcons.restore,
         title: messages.backfillResetUnresolvableTitle,
         description: messages.backfillResetUnresolvableDescription,
         ctaLabel: stats.isResetting
             ? messages.backfillResetUnresolvableProcessing
             : messages.backfillResetUnresolvableTrigger,
-        ctaIcon: Icons.restore_rounded,
+        ctaIcon: LottiIcons.restore,
         tone: _RecoveryTone.primary,
         isBusy: stats.isResetting,
         onPressed: (controllerBusy || unresolvable == 0)
@@ -223,13 +223,13 @@ class _AdvancedRecoveryGroupState extends State<AdvancedRecoveryGroup>
                   .resetUnresolvable(),
       ),
       _RecoveryAction(
-        icon: Icons.replay_rounded,
+        icon: LottiIcons.replay,
         title: messages.backfillReRequestTitle,
         description: messages.backfillReRequestDescription,
         ctaLabel: stats.isReRequesting
             ? messages.backfillReRequestProcessing
             : messages.backfillReRequestTrigger,
-        ctaIcon: Icons.replay_rounded,
+        ctaIcon: LottiIcons.replay,
         tone: _RecoveryTone.ghost,
         isBusy: stats.isReRequesting,
         onPressed: (controllerBusy || requested == 0)
@@ -239,13 +239,13 @@ class _AdvancedRecoveryGroupState extends State<AdvancedRecoveryGroup>
                   .triggerReRequest(),
       ),
       _RecoveryAction(
-        icon: Icons.group_outlined,
+        icon: LottiIcons.people,
         title: messages.backfillAskPeersTitle,
         description: messages.backfillAskPeersDescription,
         ctaLabel: stats.isResettingAllUnresolvable
             ? messages.backfillAskPeersProcessing
             : messages.backfillAskPeersTrigger(unresolvable),
-        ctaIcon: Icons.group_outlined,
+        ctaIcon: LottiIcons.people,
         tone: _RecoveryTone.primary,
         isBusy: stats.isResettingAllUnresolvable,
         onPressed: (controllerBusy || unresolvable == 0)
@@ -253,13 +253,13 @@ class _AdvancedRecoveryGroupState extends State<AdvancedRecoveryGroup>
             : () => _confirmAndResetAllUnresolvable(context, unresolvable),
       ),
       _RecoveryAction(
-        icon: Icons.block_outlined,
+        icon: LottiIcons.block,
         title: messages.backfillRetireStuckTitle,
         description: messages.backfillRetireStuckDescription,
         ctaLabel: stats.isRetiringStuck
             ? messages.backfillRetireStuckProcessing
             : messages.backfillRetireStuckTrigger(openCount),
-        ctaIcon: Icons.block_outlined,
+        ctaIcon: LottiIcons.block,
         tone: _RecoveryTone.dangerGhost,
         isBusy: stats.isRetiringStuck,
         onPressed: (controllerBusy || openCount == 0)
@@ -267,13 +267,13 @@ class _AdvancedRecoveryGroupState extends State<AdvancedRecoveryGroup>
             : () => _confirmAndRetireStuck(context, openCount),
       ),
       _RecoveryAction(
-        icon: Icons.schedule_rounded,
+        icon: LottiIcons.schedule,
         title: messages.backfillAgentClocksTitle,
         description: messages.backfillAgentClocksDescription,
         ctaLabel: _isRepairingAgentClocks
             ? messages.backfillManualProcessing
             : messages.backfillAgentClocksTrigger,
-        ctaIcon: Icons.schedule_rounded,
+        ctaIcon: LottiIcons.schedule,
         tone: _RecoveryTone.primary,
         isBusy: _isRepairingAgentClocks,
         onPressed: (controllerBusy || _isRepairingAgentClocks)

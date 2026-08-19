@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
@@ -10,7 +11,7 @@ class SelectionSaveButton extends StatelessWidget {
   const SelectionSaveButton({
     required this.onPressed,
     this.label,
-    this.icon = Icons.check_rounded,
+    this.icon = LottiIcons.confirm,
     super.key,
   });
 

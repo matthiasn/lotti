@@ -8,6 +8,7 @@ import 'package:lotti/features/categories/ui/widgets/category_icon_picker.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/utils/color.dart';
@@ -248,7 +249,7 @@ class _CategoryCreateModalState extends ConsumerState<CategoryCreateModal> {
                   ),
                   child: Center(
                     child: Icon(
-                      _selectedIcon?.iconData ?? Icons.category,
+                      _selectedIcon?.iconData ?? LottiIcons.category,
                       color: _selectedIcon != null
                           ? _pickerColor
                           : Theme.of(context).colorScheme.onSurfaceVariant,
@@ -276,7 +277,7 @@ class _CategoryCreateModalState extends ConsumerState<CategoryCreateModal> {
                   ),
                 ),
                 const Icon(
-                  Icons.arrow_forward_ios,
+                  LottiIcons.chevronRight,
                   size: CategoryIconConstants.arrowIconSize,
                 ),
               ],

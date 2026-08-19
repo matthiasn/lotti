@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/widgetbook/checklist_widgetbook.dart';
 import 'package:widgetbook/widgetbook.dart';
 
@@ -45,8 +46,8 @@ void main() {
     ) async {
       await pumpUseCase(tester);
 
-      expect(find.byIcon(Icons.expand_more), findsOneWidget);
-      expect(find.byIcon(Icons.more_vert), findsOneWidget);
+      expect(find.byIcon(LottiIcons.expand), findsOneWidget);
+      expect(find.byIcon(LottiIcons.moreVertical), findsOneWidget);
     });
 
     testWidgets('renders open items by default (filtered)', (tester) async {
@@ -97,10 +98,10 @@ void main() {
     testWidgets('edit icons are present and tappable', (tester) async {
       await pumpUseCase(tester);
 
-      expect(find.byIcon(Icons.mode_edit_outlined), findsNWidgets(2));
+      expect(find.byIcon(LottiIcons.edit), findsNWidgets(2));
 
       // Tap edit on first item — shows inline TextField
-      await tester.tap(find.byIcon(Icons.mode_edit_outlined).first);
+      await tester.tap(find.byIcon(LottiIcons.edit).first);
       await tester.pump();
 
       // Add item field + inline edit field
@@ -110,7 +111,7 @@ void main() {
     testWidgets('inline edit saves new title on submit', (tester) async {
       await pumpUseCase(tester);
 
-      await tester.tap(find.byIcon(Icons.mode_edit_outlined).first);
+      await tester.tap(find.byIcon(LottiIcons.edit).first);
       await tester.pump();
 
       final editField = find.byType(TextField).first;
@@ -192,7 +193,7 @@ void main() {
     testWidgets('drag handles are present', (tester) async {
       await pumpUseCase(tester);
 
-      expect(find.byIcon(Icons.drag_indicator), findsNWidgets(2));
+      expect(find.byIcon(LottiIcons.drag), findsNWidgets(2));
     });
 
     testWidgets('renders in dark mode without errors', (tester) async {
@@ -228,13 +229,13 @@ void main() {
 
       expect(find.text('Fix payment status update bug'), findsOneWidget);
 
-      await tester.tap(find.byIcon(Icons.expand_more));
+      await tester.tap(find.byIcon(LottiIcons.expand));
       await tester.pump();
 
       expect(find.text('Fix payment status update bug'), findsNothing);
       expect(find.text('0/2 done'), findsOneWidget);
 
-      await tester.tap(find.byIcon(Icons.expand_more));
+      await tester.tap(find.byIcon(LottiIcons.expand));
       await tester.pump();
 
       expect(find.text('Fix payment status update bug'), findsOneWidget);
@@ -256,7 +257,7 @@ void main() {
       await pumpUseCase(tester);
 
       // Start editing
-      await tester.tap(find.byIcon(Icons.mode_edit_outlined).first);
+      await tester.tap(find.byIcon(LottiIcons.edit).first);
       await tester.pump();
 
       // Clear text and submit empty — should cancel edit
@@ -268,7 +269,7 @@ void main() {
       // Original title still there (edit cancelled)
       expect(find.text('Fix payment status update bug'), findsOneWidget);
       // Edit icon back (no longer in editing mode)
-      expect(find.byIcon(Icons.mode_edit_outlined), findsNWidgets(2));
+      expect(find.byIcon(LottiIcons.edit), findsNWidgets(2));
     });
 
     testWidgets('tapping Open tab while already on Open triggers callback', (

@@ -133,7 +133,7 @@ class _SyncNodeProfileBodyState extends ConsumerState<SyncNodeProfileBody> {
                 : messages.aiFormNoChanges,
             child: DesignSystemButton(
               label: messages.settingsSyncNodeProfileSaveButton,
-              leadingIcon: Icons.save_rounded,
+              leadingIcon: LottiIcons.save,
               onPressed: (_isSaving || !_hasUnsavedChanges) ? null : _save,
             ),
           ),

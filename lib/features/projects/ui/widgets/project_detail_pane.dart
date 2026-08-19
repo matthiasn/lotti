@@ -149,7 +149,7 @@ class _DetailHeader extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Icon(
-                Icons.more_vert_rounded,
+                LottiIcons.moreVertical,
                 size: 20,
                 color: ShowcasePalette.mediumText(context),
               ),
@@ -161,7 +161,7 @@ class _DetailHeader extends StatelessWidget {
               if (record.category case final category?)
                 CategoryTag(
                   label: category.name,
-                  icon: category.icon?.iconData ?? Icons.label_outline,
+                  icon: category.icon?.iconData ?? LottiIcons.label,
                   color: colorFromCssHex(
                     category.color ?? defaultCategoryColorHex,
                   ),
@@ -170,7 +170,7 @@ class _DetailHeader extends StatelessWidget {
               if (record.project.data.targetDate case final targetDate?) ...[
                 SizedBox(width: tokens.spacing.step3),
                 OutlinedMetaTag(
-                  icon: Icons.calendar_today_outlined,
+                  icon: LottiIcons.today,
                   label: DateFormat.yMMMd(
                     Localizations.localeOf(context).toString(),
                   ).format(targetDate),
@@ -179,7 +179,7 @@ class _DetailHeader extends StatelessWidget {
               ] else if (onTargetDateTap != null) ...[
                 SizedBox(width: tokens.spacing.step3),
                 OutlinedMetaTag(
-                  icon: Icons.calendar_today_outlined,
+                  icon: LottiIcons.today,
                   label: context.messages.projectTargetDateLabel,
                   onTap: onTargetDateTap,
                 ),

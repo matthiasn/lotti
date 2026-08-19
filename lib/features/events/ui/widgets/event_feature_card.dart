@@ -83,7 +83,7 @@ class EventFeatureCard extends StatelessWidget {
                       Row(
                         children: [
                           Icon(
-                            Icons.event_outlined,
+                            LottiIcons.calendar,
                             size: 15,
                             color: Colors.white.withValues(alpha: 0.85),
                           ),

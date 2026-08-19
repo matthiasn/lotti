@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 
@@ -27,10 +28,10 @@ class ProjectTargetDateField extends StatelessWidget {
       child: InputDecorator(
         decoration: InputDecoration(
           labelText: messages.projectTargetDateLabel,
-          prefixIcon: const Icon(Icons.calendar_today, size: 20),
+          prefixIcon: const Icon(LottiIcons.today, size: 20),
           suffixIcon: targetDate != null
               ? IconButton(
-                  icon: const Icon(Icons.clear, size: 20),
+                  icon: const Icon(LottiIcons.close, size: 20),
                   onPressed: onCleared,
                 )
               : null,

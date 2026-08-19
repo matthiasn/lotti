@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/features/agents/ui/agent_report_section.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../widget_test_utils.dart';
 
@@ -61,7 +62,7 @@ void main() {
       );
 
       // Tap expand button
-      await tester.tap(find.byIcon(Icons.expand_more));
+      await tester.tap(find.byIcon(LottiIcons.expand));
       await tester.pumpAndSettle();
 
       // Now both TLDR and additional content visible
@@ -88,7 +89,7 @@ void main() {
         expect(gptMarkdowns, isNotEmpty);
 
         // No expand button since there is no additional content
-        expect(find.byIcon(Icons.expand_more), findsNothing);
+        expect(find.byIcon(LottiIcons.expand), findsNothing);
       },
     );
 
@@ -105,7 +106,7 @@ void main() {
       expect(gptMarkdown.data, 'First paragraph.');
 
       // Expand button should exist since there's additional content
-      expect(find.byIcon(Icons.expand_more), findsOneWidget);
+      expect(find.byIcon(LottiIcons.expand), findsOneWidget);
     });
 
     testWidgets('parses bold TLDR prefix pattern', (tester) async {
@@ -123,10 +124,10 @@ void main() {
       expect(gptMarkdown.data, contains('Quick summary'));
 
       // Expand button should exist for the details section
-      expect(find.byIcon(Icons.expand_more), findsOneWidget);
+      expect(find.byIcon(LottiIcons.expand), findsOneWidget);
 
       // Expand to verify additional content
-      await tester.tap(find.byIcon(Icons.expand_more));
+      await tester.tap(find.byIcon(LottiIcons.expand));
       await tester.pumpAndSettle();
 
       final markdowns = tester
@@ -150,7 +151,7 @@ void main() {
       expect(gptMarkdowns.first.data, contains('Just the summary'));
 
       // No expand button since there is no additional content
-      expect(find.byIcon(Icons.expand_more), findsNothing);
+      expect(find.byIcon(LottiIcons.expand), findsNothing);
     });
 
     testWidgets('uses explicit tldr when provided', (tester) async {
@@ -170,7 +171,7 @@ void main() {
       expect(gptMarkdowns.first.data, 'Explicit TLDR summary');
 
       // Expand to verify full content is the content field, not re-parsed
-      await tester.tap(find.byIcon(Icons.expand_more));
+      await tester.tap(find.byIcon(LottiIcons.expand));
       await tester.pumpAndSettle();
 
       final expanded = tester
@@ -212,7 +213,7 @@ void main() {
       );
       expect(gptMarkdown.data, 'Just the TLDR');
       // No expand button since there's no additional content.
-      expect(find.byIcon(Icons.expand_more), findsNothing);
+      expect(find.byIcon(LottiIcons.expand), findsNothing);
     });
 
     testWidgets('explicit tldr with non-empty content shows expand button', (
@@ -223,7 +224,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byIcon(Icons.expand_more), findsOneWidget);
+      expect(find.byIcon(LottiIcons.expand), findsOneWidget);
     });
 
     testWidgets('collapses back on second tap', (tester) async {
@@ -232,7 +233,7 @@ void main() {
       await tester.pump();
 
       // Expand
-      await tester.tap(find.byIcon(Icons.expand_more));
+      await tester.tap(find.byIcon(LottiIcons.expand));
       await tester.pumpAndSettle();
       expect(
         tester.widgetList<GptMarkdown>(find.byType(GptMarkdown)).length,
@@ -240,7 +241,7 @@ void main() {
       );
 
       // Collapse
-      await tester.tap(find.byIcon(Icons.expand_more));
+      await tester.tap(find.byIcon(LottiIcons.expand));
       await tester.pumpAndSettle();
       expect(
         tester.widgetList<GptMarkdown>(find.byType(GptMarkdown)).length,
@@ -260,7 +261,7 @@ void main() {
       expect(find.byType(GptMarkdown), findsOneWidget);
 
       // Expand to see additional content with links too
-      await tester.tap(find.byIcon(Icons.expand_more));
+      await tester.tap(find.byIcon(LottiIcons.expand));
       await tester.pumpAndSettle();
 
       expect(
@@ -277,7 +278,7 @@ void main() {
       await tester.pump();
 
       // Expand
-      await tester.tap(find.byIcon(Icons.expand_more));
+      await tester.tap(find.byIcon(LottiIcons.expand));
       await tester.pumpAndSettle();
 
       // Verify both sections are rendered

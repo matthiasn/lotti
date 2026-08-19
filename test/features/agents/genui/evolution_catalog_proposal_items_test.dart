@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:genui/genui.dart';
 import 'package:lotti/features/agents/genui/evolution_catalog.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 import '../../../widget_test_utils.dart';
@@ -368,7 +369,7 @@ void main() {
         find.text('Also affects: Laura Project Analyst, Tom Task Agent'),
         findsOneWidget,
       );
-      expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.warning), findsOneWidget);
     });
 
     testWidgets('hides cross-template notice when absent', (tester) async {
@@ -381,7 +382,7 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(Icons.warning_amber_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.warning), findsNothing);
     });
 
     testWidgets('hides rationale when empty', (tester) async {

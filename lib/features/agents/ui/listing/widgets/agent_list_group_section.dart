@@ -71,7 +71,7 @@ class AgentListGroupHeader extends StatelessWidget {
             child: Row(
               children: [
                 Icon(
-                  expanded ? Icons.expand_more : Icons.chevron_right,
+                  expanded ? LottiIcons.expand : LottiIcons.chevronRight,
                   size: 14,
                   color: colors.text.lowEmphasis,
                 ),

@@ -469,7 +469,7 @@ class _ViewfinderStandIn extends StatelessWidget {
             ),
             child: Center(
               child: Icon(
-                Icons.qr_code_2_rounded,
+                LottiIcons.scanQr,
                 size: side * 0.3,
                 color: tokens.colors.text.lowEmphasis,
               ),

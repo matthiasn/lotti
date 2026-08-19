@@ -15,6 +15,7 @@ import 'package:lotti/features/ai/ui/unified_ai_popup_menu.dart';
 import 'package:lotti/features/ai/ui/unified_ai_skills_modal.dart';
 import 'package:lotti/features/demo/ai/demo_ai_gate.dart';
 import 'package:lotti/features/demo/seed/demo_seed_manifest.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_api_key_panel.dart';
 import 'package:lotti/features/profiles/model/profile.dart';
 import 'package:lotti/features/profiles/model/profile_context.dart';
@@ -225,7 +226,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       // Assert
-      expect(find.byIcon(Icons.assistant_outlined), findsOneWidget);
+      expect(find.byIcon(LottiIcons.assistant), findsOneWidget);
       expect(find.byType(IconButton), findsOneWidget);
     });
 
@@ -251,7 +252,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       // Assert
-      expect(find.byIcon(Icons.assistant_outlined), findsNothing);
+      expect(find.byIcon(LottiIcons.assistant), findsNothing);
       expect(find.byType(IconButton), findsNothing);
       expect(find.byType(SizedBox), findsOneWidget);
     });
@@ -278,7 +279,7 @@ void main() {
       await tester.pump();
 
       // Assert
-      expect(find.byIcon(Icons.assistant_outlined), findsNothing);
+      expect(find.byIcon(LottiIcons.assistant), findsNothing);
       expect(find.byType(IconButton), findsNothing);
       expect(find.byType(SizedBox), findsOneWidget);
 
@@ -310,7 +311,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       // Assert
-      expect(find.byIcon(Icons.assistant_outlined), findsNothing);
+      expect(find.byIcon(LottiIcons.assistant), findsNothing);
       expect(find.byType(IconButton), findsNothing);
       expect(find.byType(SizedBox), findsOneWidget);
     });
@@ -341,7 +342,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       // Act
-      await tester.tap(find.byIcon(Icons.assistant_outlined));
+      await tester.tap(find.byIcon(LottiIcons.assistant));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -383,7 +384,7 @@ void main() {
         expect(find.byType(IconButton), findsOneWidget);
         expect(find.byType(GlassActionButton), findsNothing);
         final icon = tester.widget<Icon>(
-          find.byIcon(Icons.assistant_outlined),
+          find.byIcon(LottiIcons.assistant),
         );
         expect(icon.color, const Color(0xFF00FF00));
 
@@ -463,7 +464,7 @@ void main() {
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 300));
 
-          await tester.tap(find.byIcon(Icons.assistant_outlined));
+          await tester.tap(find.byIcon(LottiIcons.assistant));
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 400));
 
@@ -492,7 +493,7 @@ void main() {
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 300));
 
-          await tester.tap(find.byIcon(Icons.assistant_outlined));
+          await tester.tap(find.byIcon(LottiIcons.assistant));
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 400));
           expect(find.text('AI in the demo is pretend'), findsOneWidget);
@@ -548,7 +549,7 @@ void main() {
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 300));
 
-          await tester.tap(find.byIcon(Icons.assistant_outlined));
+          await tester.tap(find.byIcon(LottiIcons.assistant));
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 300));
 

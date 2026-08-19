@@ -218,7 +218,7 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
           tooltip: context.messages.sessionRatingEditButton,
           iconSize: AppTheme.headerActionIconSize,
           icon: Icon(
-            Icons.edit_outlined,
+            LottiIcons.edit,
             color: tokens.colors.text.mediumEmphasis,
           ),
           onPressed: () => RatingModal.show(
@@ -232,8 +232,8 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
           tooltip: context.messages.journalToggleFlaggedTitle,
           onPressed: notifier.toggleFlagged,
           value: entry?.meta.flag == EntryFlag.import,
-          icon: Icons.flag_outlined,
-          activeIcon: Icons.flag,
+          icon: LottiIcons.flag,
+          activeIcon: LottiIconsFilled.flag,
           activeColor: context.colorScheme.error,
           iconSize: AppTheme.headerActionIconSize,
         ),
@@ -245,15 +245,15 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
           tooltip: context.messages.journalToggleStarredTitle,
           onPressed: notifier.toggleStarred,
           value: entry.meta.starred ?? false,
-          icon: Icons.star_outline_rounded,
-          activeIcon: Icons.star_rounded,
+          icon: LottiIcons.star,
+          activeIcon: LottiIconsFilled.star,
           activeColor: starredGold,
           iconSize: AppTheme.headerActionIconSize,
         ),
       IconButton(
         tooltip: context.messages.taskActionBarMoreActions,
         iconSize: AppTheme.headerActionIconSize,
-        icon: Icon(Icons.more_horiz, color: tokens.colors.text.mediumEmphasis),
+        icon: Icon(LottiIcons.more, color: tokens.colors.text.mediumEmphasis),
         onPressed: () => ExtendedHeaderModal.show(
           context: context,
           entryId: id,
@@ -314,7 +314,7 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
           tooltip: collapseLabel,
           isSelected: !widget.isCollapsed,
           icon: Icon(
-            Icons.expand_more,
+            LottiIcons.expand,
             color: tokens.colors.text.mediumEmphasis,
           ),
           onPressed: widget.onToggleCollapse,
@@ -388,7 +388,7 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
               (AppTheme.thumbnailSize * AppTheme.thumbnailCacheMultiplier)
                   .toInt(),
           errorBuilder: (_, _, _) => const Icon(
-            Icons.image_outlined,
+            LottiIcons.image,
             size: AppTheme.previewIconSize,
           ),
         ),
@@ -398,7 +398,7 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
 
   Widget _buildAudioIcon(BuildContext context) {
     return Icon(
-      Icons.mic_rounded,
+      LottiIcons.mic,
       size: AppTheme.previewIconSize,
       color: context.colorScheme.onSurfaceVariant,
     );
@@ -406,7 +406,7 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
 
   Widget _buildTextIcon(BuildContext context) {
     return Icon(
-      Icons.description_outlined,
+      LottiIcons.description,
       size: AppTheme.previewIconSize,
       color: context.colorScheme.onSurfaceVariant,
     );

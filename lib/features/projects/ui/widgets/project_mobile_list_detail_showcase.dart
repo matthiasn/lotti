@@ -4,6 +4,7 @@ import 'package:lotti/features/design_system/components/avatars/design_system_av
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_navigation_tab_bar.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_showcase_mobile_chrome.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_state.dart';
 import 'package:lotti/features/projects/ui/widgets/project_mobile_detail_content.dart';
@@ -148,7 +149,7 @@ class _ProjectMobileListScreen extends StatelessWidget {
                   onSearchPressed: onSearchChanged,
                   onProjectTap: (item) => onProjectOpened(item.project.meta.id),
                   titleTrailing: Icon(
-                    Icons.notifications_none_rounded,
+                    LottiIcons.notification,
                     size: 34,
                     color: ShowcasePalette.highText(context),
                   ),
@@ -156,7 +157,7 @@ class _ProjectMobileListScreen extends StatelessWidget {
                     tooltip: context.messages.projectsFilterTooltip,
                     onPressed: onFilterPressed,
                     icon: Icon(
-                      Icons.filter_list_rounded,
+                      LottiIcons.filter,
                       size: 24,
                       color: ShowcasePalette.teal(context),
                     ),
@@ -195,26 +196,26 @@ class _ProjectMobileListScreen extends StatelessWidget {
                                 label: context
                                     .messages
                                     .designSystemNavigationMyDailyLabel,
-                                icon: const Icon(Icons.calendar_today_outlined),
+                                icon: const Icon(LottiIcons.today),
                               ),
                               DesignSystemNavigationTabBarItem(
                                 label: context.messages.navTabTitleTasks,
                                 icon: const Icon(
-                                  Icons.format_list_bulleted_rounded,
+                                  LottiIcons.checkAll,
                                 ),
                               ),
                               DesignSystemNavigationTabBarItem(
                                 label: context
                                     .messages
                                     .designSystemBreadcrumbProjectsLabel,
-                                icon: const Icon(Icons.folder_rounded),
+                                icon: const Icon(LottiIcons.folder),
                                 active: true,
                               ),
                               DesignSystemNavigationTabBarItem(
                                 label: context
                                     .messages
                                     .designSystemNavigationInsightsLabel,
-                                icon: const Icon(Icons.bar_chart_rounded),
+                                icon: const Icon(LottiIcons.chart),
                               ),
                             ],
                           ),

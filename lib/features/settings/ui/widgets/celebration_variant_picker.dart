@@ -90,7 +90,7 @@ class CelebrationVariantPicker extends StatelessWidget {
             // greyed-out leftover cards. They reuse each variant's tuned params,
             // so there is nothing to customize on them.
             _SurpriseOptionRow(
-              icon: Icons.shuffle_rounded,
+              icon: LottiIcons.shuffle,
               title: messages.settingsCelebrationsVariantRandom,
               subtitle: messages.settingsCelebrationsVariantRandomDescription,
               selected: selected is RandomSelection,
@@ -98,7 +98,7 @@ class CelebrationVariantPicker extends StatelessWidget {
             ),
             SizedBox(height: tokens.spacing.step2),
             _SurpriseOptionRow(
-              icon: Icons.auto_awesome_motion_rounded,
+              icon: LottiIcons.aiStack,
               title: messages.settingsCelebrationsVariantCombine,
               subtitle: messages.settingsCelebrationsVariantCombineDescription,
               selected: selected is CombineSelection,
@@ -244,7 +244,7 @@ class _CelebrationVariantCardState extends State<CelebrationVariantCard>
                                   child: playing
                                       ? null
                                       : Icon(
-                                          Icons.play_arrow_rounded,
+                                          LottiIcons.play,
                                           size: tokens.spacing.step5,
                                           color: tokens.colors.surface.enabled,
                                         ),
@@ -326,7 +326,7 @@ class _CardTuneButton extends StatelessWidget {
           child: Padding(
             padding: EdgeInsets.all(tokens.spacing.step1),
             child: Icon(
-              Icons.tune_rounded,
+              LottiIcons.tune,
               size: tokens.spacing.step4,
               color: selected
                   ? tokens.colors.interactive.enabled
@@ -425,7 +425,9 @@ class _SurpriseOptionRow extends StatelessWidget {
                 ),
                 SizedBox(width: tokens.spacing.step2),
                 Icon(
-                  selected ? Icons.check_circle_rounded : Icons.circle_outlined,
+                  selected
+                      ? LottiIcons.confirmCircled
+                      : LottiIcons.radioUnselected,
                   size: tokens.spacing.step5,
                   color: selected ? accent : tokens.colors.decorative.level02,
                 ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/categories/ui/widgets/category_switch_tiles.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/settings/settings_switch_row.dart';
 
 import '../../../../test_helper.dart';
@@ -13,22 +14,22 @@ const _expectedTiles = <SwitchFieldType, (String, String?, IconData)>{
   SwitchFieldType.favorite: (
     'Favorite',
     null,
-    Icons.star_outline_rounded,
+    LottiIcons.star,
   ),
   SwitchFieldType.private: (
     'Private',
     'Only visible when private entries are shown',
-    Icons.lock_outline,
+    LottiIcons.lock,
   ),
   SwitchFieldType.active: (
     'Active',
     'Selectable for new entries',
-    Icons.visibility_outlined,
+    LottiIcons.visible,
   ),
   SwitchFieldType.availableForDayPlan: (
     'Day planning',
     'Make this category available for selection in the day plan',
-    Icons.today_outlined,
+    LottiIcons.today,
   ),
 };
 

@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_params.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_variant.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_burst.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/widgets/celebration_preview_hero.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -25,7 +26,7 @@ void main() {
     expect(find.byType(InkWell), findsOneWidget);
     // Neighbours stay unchecked so the only teal/check on screen marks the live
     // row (avoids a salience inversion) — nothing is checked before any tap.
-    expect(find.byIcon(Icons.check_rounded), findsNothing);
+    expect(find.byIcon(LottiIcons.confirm), findsNothing);
   });
 
   testWidgets('uses supplied demo titles for the contextual checklist', (
@@ -56,7 +57,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
 
     // The live row is now the only checked row and a burst is on screen.
-    expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+    expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
     expect(find.byType(CompletionBurst), findsOneWidget);
 
     await tester.pumpAndSettle();
@@ -77,7 +78,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
 
     // The row still checks off (feedback), but no particle burst plays.
-    expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+    expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
     expect(find.byType(CompletionBurst), findsNothing);
   });
 
@@ -99,7 +100,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+    expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
     expect(find.byType(CompletionBurst), findsOneWidget);
 
     await tester.pumpAndSettle();

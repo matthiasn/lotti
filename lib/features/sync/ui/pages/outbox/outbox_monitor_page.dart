@@ -205,7 +205,7 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
               status == OutboxStatus.sending ||
               status == null;
         },
-        icon: Icons.schedule_rounded,
+        icon: LottiIcons.schedule,
         hideCountWhenZero: true,
         countAccentColor: colors.alert.warning.ink,
       ),
@@ -213,14 +213,14 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
         labelBuilder: (ctx) => ctx.messages.outboxFilterFailed,
         predicate: (item) =>
             _statusFromIndex(item.status) == OutboxStatus.error,
-        icon: Icons.error_outline_rounded,
+        icon: LottiIcons.error,
         hideCountWhenZero: true,
         countAccentColor: colors.alert.error.ink,
       ),
       _OutboxListFilter.sent: SyncFilterOption<OutboxItem>(
         labelBuilder: (ctx) => ctx.messages.outboxStatusSent,
         predicate: (item) => _statusFromIndex(item.status) == OutboxStatus.sent,
-        icon: Icons.check_circle_outline_rounded,
+        icon: LottiIcons.confirmCircled,
         showCount: false,
       ),
     };
@@ -234,7 +234,7 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
       headerSliver: _OutboxHeader(counts: _counts(), onRetryAll: _retryAll),
       filters: filters,
       initialFilter: _OutboxListFilter.waiting,
-      emptyIcon: Icons.inbox_rounded,
+      emptyIcon: LottiIcons.inbox,
       emptyTitleBuilder: (ctx) => ctx.messages.outboxMonitorEmptyTitle,
       emptyDescriptionBuilder: (ctx) =>
           ctx.messages.outboxMonitorEmptyDescription,

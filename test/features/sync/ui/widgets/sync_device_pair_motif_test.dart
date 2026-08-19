@@ -37,8 +37,8 @@ void main() {
     testWidgets('always draws the two machines', (tester) async {
       await pumpMotif(tester, SyncDevicePairMotifState.idle);
 
-      expect(find.byIcon(Icons.smartphone_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.laptop_mac_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.phone), findsOneWidget);
+      expect(find.byIcon(LottiIcons.laptop), findsOneWidget);
     });
 
     testWidgets('idle leaves the gap open: hollow neutral dots', (
@@ -85,7 +85,7 @@ void main() {
       // repeating controller would make this time out.
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.smartphone_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.phone), findsOneWidget);
     });
 
     testWidgets('reduced motion parks the stream at steady mid-strength', (
@@ -135,7 +135,7 @@ void main() {
       expect(bar.color, tokens.colors.interactive.enabled);
       // Trust established: the machines take full ink.
       expect(
-        tester.widget<Icon>(find.byIcon(Icons.smartphone_rounded)).color,
+        tester.widget<Icon>(find.byIcon(LottiIcons.phone)).color,
         tokens.colors.text.highEmphasis,
       );
     });

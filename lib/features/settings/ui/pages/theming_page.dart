@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/features/theming/state/theming_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -53,22 +54,20 @@ class ThemingBody extends ConsumerWidget {
                 DsSegment(
                   ThemeMode.dark,
                   context.messages.settingsThemingDark,
-                  icon: Icons.nightlight_outlined,
-                  activeIcon: Icons.nightlight,
+                  icon: LottiIcons.night,
+                  activeIcon: LottiIconsFilled.moon,
                 ),
                 DsSegment(
                   ThemeMode.system,
                   context.messages.settingsThemingAutomatic,
-                  icon: isMobile ? Icons.smartphone : Icons.laptop,
-                  activeIcon: isMobile
-                      ? Icons.smartphone_outlined
-                      : Icons.laptop_outlined,
+                  icon: isMobile ? LottiIcons.phone : LottiIcons.laptop,
+                  activeIcon: isMobile ? LottiIcons.phone : LottiIcons.laptop,
                 ),
                 DsSegment(
                   ThemeMode.light,
                   context.messages.settingsThemingLight,
-                  icon: Icons.wb_sunny_outlined,
-                  activeIcon: Icons.sunny,
+                  icon: LottiIcons.day,
+                  activeIcon: LottiIcons.day,
                 ),
               ],
             ),

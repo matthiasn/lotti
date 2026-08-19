@@ -400,7 +400,7 @@ void main() {
     await tester.tap(
       find.descendant(
         of: find.byType(TabSectionHeader),
-        matching: find.byIcon(Icons.filter_list_rounded),
+        matching: find.byIcon(LottiIcons.filter),
       ),
     );
     await tester.pump();
@@ -481,7 +481,7 @@ void main() {
       expect(find.textContaining('Active label filters'), findsNothing);
       expect(find.text('Focus'), findsOneWidget);
 
-      await tester.tap(find.byIcon(Icons.add_rounded));
+      await tester.tap(find.byIcon(LottiIcons.add));
       await tester.pump();
       expect(createdCategoryId, 'cat-1');
     },
@@ -555,7 +555,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    await tester.tap(find.byIcon(Icons.add_rounded));
+    await tester.tap(find.byIcon(LottiIcons.add));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
@@ -728,7 +728,7 @@ void main() {
         final chip = tester.widget<ActiveFilterChip>(
           find.byType(ActiveFilterChip),
         );
-        expect(chip.leadingIcon, Icons.smart_toy_outlined);
+        expect(chip.leadingIcon, LottiIcons.aiModel);
         expect(chip.label, 'Has Agent');
 
         await tester.tap(find.byType(ActiveFilterChip));
@@ -841,7 +841,7 @@ void main() {
           find.byType(ActiveFilterChip),
         );
         expect(chip.label, isNotEmpty);
-        expect(chip.leadingIcon, Icons.radio_button_unchecked);
+        expect(chip.leadingIcon, LottiIcons.radioUnselected);
 
         // Tapping the chip's InkWell fires onRemove, which the widget wires
         // to applyBatchFilterUpdate(statuses: {}).
@@ -1316,7 +1316,7 @@ void main() {
         expect(emptyState, findsOneWidget);
         expect(
           tester.widget<DesignSystemEmptyState>(emptyState).icon,
-          Icons.list_outlined,
+          LottiIcons.list,
         );
         expect(
           find.descendant(of: emptyState, matching: find.text(message)),
@@ -1540,7 +1540,7 @@ void main() {
         find.byType(ActiveFilterChip),
       );
       expect(chip.label, 'Migration');
-      expect(chip.leadingIcon, Icons.folder_outlined);
+      expect(chip.leadingIcon, LottiIcons.folder);
 
       await tester.tap(find.byType(ActiveFilterChip));
       await tester.pump();

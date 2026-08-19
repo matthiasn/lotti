@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../../widget_test_utils.dart';
 
@@ -129,7 +130,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
         expect(find.byType(DesignSystemToast), findsOneWidget);
 
-        await tester.tap(find.byIcon(Icons.close_rounded));
+        await tester.tap(find.byIcon(LottiIcons.close));
         // Pump past the exit animation without waiting for the SnackBar
         // display-duration timer (pumpAndSettle would block on it).
         await tester.pump();
@@ -156,7 +157,7 @@ void main() {
         await tester.pump();
 
         expect(find.byType(DesignSystemToast), findsOneWidget);
-        expect(find.byIcon(Icons.close_rounded), findsNothing);
+        expect(find.byIcon(LottiIcons.close), findsNothing);
 
         // The SnackBar itself must block swipe-to-dismiss so the toast
         // cannot disappear before its duration elapses.

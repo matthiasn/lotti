@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/ui/pages/conflicts/conflict_detail_shared.dart';
 import 'package:lotti/features/sync/ui/widgets/conflicts/conflict_resolution_view.dart';
 import 'package:lotti/features/sync/ui/widgets/conflicts/entry_field_diff.dart';
@@ -92,7 +92,7 @@ void main() {
         computeEntryDiff(entryOf(starred: true), entryOf(starred: false)),
       );
       await tester.tap(
-        find.widgetWithIcon(DesignSystemButton, Icons.merge_rounded),
+        find.widgetWithIcon(DesignSystemButton, LottiIcons.merge),
       );
       await tester.pump();
 
@@ -113,7 +113,7 @@ void main() {
         computeEntryDiff(entryOf(starred: true), entryOf(starred: false)),
       );
       await tester.tap(
-        find.widgetWithIcon(DesignSystemButton, Icons.merge_rounded),
+        find.widgetWithIcon(DesignSystemButton, LottiIcons.merge),
       );
       await tester.pump();
 
@@ -137,7 +137,7 @@ void main() {
         computeEntryDiff(entryOf(starred: true), entryOf(starred: false)),
       );
       await tester.tap(
-        find.widgetWithIcon(DesignSystemButton, Icons.merge_rounded),
+        find.widgetWithIcon(DesignSystemButton, LottiIcons.merge),
       );
       await tester.pump();
 
@@ -164,7 +164,7 @@ void main() {
         computeEntryDiff(entryOf(starred: true), entryOf(starred: false)),
       );
       await tester.tap(
-        find.widgetWithIcon(DesignSystemButton, Icons.merge_rounded),
+        find.widgetWithIcon(DesignSystemButton, LottiIcons.merge),
       );
       await tester.pump();
       expect(find.text('Start from'), findsOneWidget);
@@ -175,7 +175,7 @@ void main() {
       // Combine entry-point button is offered again.
       expect(find.text('Start from'), findsNothing);
       expect(
-        find.widgetWithIcon(DesignSystemButton, Icons.merge_rounded),
+        find.widgetWithIcon(DesignSystemButton, LottiIcons.merge),
         findsOneWidget,
       );
     });
@@ -186,7 +186,7 @@ void main() {
       await pump(tester, computeEntryDiff(entryOf(), taskOf()));
 
       expect(
-        find.widgetWithIcon(DesignSystemButton, Icons.merge_rounded),
+        find.widgetWithIcon(DesignSystemButton, LottiIcons.merge),
         findsNothing,
       );
       expect(find.text('Use this device'), findsOneWidget);

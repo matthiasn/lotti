@@ -89,7 +89,8 @@ class _EventStatusRow extends StatelessWidget {
                   ),
                 ),
               ),
-              if (selected) Icon(Icons.check, size: 18, color: cs.primary),
+              if (selected)
+                Icon(LottiIcons.confirm, size: 18, color: cs.primary),
             ],
           ),
         ),

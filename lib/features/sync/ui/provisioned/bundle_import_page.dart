@@ -366,7 +366,7 @@ class _OnlyOwnCodeWarning extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(
-          Icons.lock_outline_rounded,
+          LottiIcons.lock,
           size: IconSizes.s,
           color: tokens.colors.alert.warning.defaultColor,
         ),
@@ -423,7 +423,7 @@ class _FirstDeviceCard extends ConsumerWidget {
             key: const Key('bundle_import_open_manual'),
             label: messages.syncPairOpenManual,
             variant: DesignSystemButtonVariant.outlined,
-            leadingIcon: Icons.menu_book_outlined,
+            leadingIcon: LottiIcons.book,
             onPressed: () => unawaited(
               openManualInBrowser(
                 systemLocale: WidgetsBinding.instance.platformDispatcher.locale,
@@ -600,7 +600,7 @@ class _ScannerViewState extends State<_ScannerView> {
         DesignSystemButton(
           key: const Key('bundle_import_enter_manually'),
           label: messages.syncPairEnterManually,
-          leadingIcon: Icons.content_paste,
+          leadingIcon: LottiIcons.copy,
           variant: DesignSystemButtonVariant.outlined,
           size: DesignSystemButtonSize.large,
           fullWidth: true,
@@ -733,7 +733,7 @@ class _CameraUnavailable extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              Icons.no_photography_outlined,
+              LottiIcons.cameraOff,
               size: IconSizes.xxl,
               color: tokens.colors.text.mediumEmphasis,
             ),
@@ -829,7 +829,7 @@ class _ManualEntry extends StatelessWidget {
                   child: DesignSystemButton(
                     key: const Key('bundle_import_paste_again'),
                     onPressed: onPaste,
-                    leadingIcon: Icons.content_paste,
+                    leadingIcon: LottiIcons.copy,
                     label: messages.provisionedSyncPasteClipboard,
                     variant: DesignSystemButtonVariant.outlined,
                   ),
@@ -837,7 +837,7 @@ class _ManualEntry extends StatelessWidget {
               ] else
                 DesignSystemButton(
                   onPressed: onPaste,
-                  leadingIcon: Icons.content_paste,
+                  leadingIcon: LottiIcons.copy,
                   label: messages.provisionedSyncPasteClipboard,
                   size: DesignSystemButtonSize.large,
                   fullWidth: true,
@@ -853,7 +853,7 @@ class _ManualEntry extends StatelessWidget {
             child: DesignSystemInlineAction(
               key: const Key('bundle_import_scan_instead'),
               onTap: useCamera,
-              leadingIcon: Icons.qr_code_scanner,
+              leadingIcon: LottiIcons.scanQr,
               label: messages.syncPairScanLink,
               semanticsLabel: messages.syncPairScanLink,
             ),
@@ -926,7 +926,7 @@ class _DecodedView extends StatelessWidget {
         DesignSystemButton(
           onPressed: onConnect,
           label: messages.syncPairConnectButton,
-          leadingIcon: Icons.check_rounded,
+          leadingIcon: LottiIcons.confirm,
           size: DesignSystemButtonSize.large,
           fullWidth: true,
         ),
@@ -948,7 +948,7 @@ class _DecodedView extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Icon(
-              Icons.warning_amber_rounded,
+              LottiIcons.warning,
               size: IconSizes.xs,
               color: tokens.colors.alert.warning.defaultColor,
             ),

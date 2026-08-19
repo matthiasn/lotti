@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 /// Lightweight builder for Quill's horizontal rule embed (type: 'divider').
 class DividerEmbedBuilder extends EmbedBuilder {
@@ -67,7 +68,7 @@ class UnknownEmbedBuilder extends EmbedBuilder {
       child: Row(
         children: [
           Icon(
-            Icons.warning_amber_rounded,
+            LottiIcons.warning,
             size: 18,
             color: theme.colorScheme.onSurfaceVariant,
           ),

@@ -72,14 +72,14 @@ void main() {
           title: 'With icon',
           description: 'Description text.',
           iconPosition: DesignSystemCaptionIconPosition.left,
-          icon: Icons.info_rounded,
+          icon: LottiIcons.info,
         ),
       );
 
       final icon = tester.widget<Icon>(
         find.descendant(
           of: find.byKey(captionKey),
-          matching: find.byIcon(Icons.info_rounded),
+          matching: find.byIcon(LottiIcons.info),
         ),
       );
 
@@ -106,14 +106,14 @@ void main() {
           title: 'Top icon',
           description: 'Description text.',
           iconPosition: DesignSystemCaptionIconPosition.top,
-          icon: Icons.error_rounded,
+          icon: LottiIcons.error,
         ),
       );
 
       expect(
         find.descendant(
           of: find.byKey(captionKey),
-          matching: find.byIcon(Icons.error_rounded),
+          matching: find.byIcon(LottiIcons.error),
         ),
         findsOneWidget,
       );
@@ -129,7 +129,7 @@ void main() {
           title: 'Error caption',
           description: 'Something went wrong.',
           iconPosition: DesignSystemCaptionIconPosition.left,
-          icon: Icons.error_rounded,
+          icon: LottiIcons.error,
           iconColor: Colors.red,
         ),
       );
@@ -137,7 +137,7 @@ void main() {
       final icon = tester.widget<Icon>(
         find.descendant(
           of: find.byKey(captionKey),
-          matching: find.byIcon(Icons.error_rounded),
+          matching: find.byIcon(LottiIcons.error),
         ),
       );
 

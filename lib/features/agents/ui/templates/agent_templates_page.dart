@@ -5,6 +5,7 @@ import 'package:lotti/features/agents/ui/agent_palette.dart';
 import 'package:lotti/features/agents/ui/listing/agent_list_data.dart';
 import 'package:lotti/features/agents/ui/listing/agent_listing_shell.dart';
 import 'package:lotti/features/agents/ui/templates/template_view_model.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -77,7 +78,7 @@ AgentListRowData _vmToRow(TemplateVm vm, AppLocalizations messages) {
     title: vm.displayName,
     subtitle: vm.modelId,
     leading: AgentListIconLeading(
-      icon: Icons.smart_toy_outlined,
+      icon: LottiIcons.aiModel,
       // Pending-review templates get a coloured icon so the dot's intent
       // (something needs your attention) survives the move from the
       // legacy positioned-overlay decoration.

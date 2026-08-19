@@ -5,6 +5,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/ai/state/embedding_backfill_controller.dart';
 import 'package:lotti/features/ai/ui/settings/embedding_backfill_modal.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -120,7 +121,7 @@ void main() {
       expect(find.text('Cancel'), findsOneWidget);
 
       // Verify no destructive warning icon (isDestructive: false)
-      expect(find.byIcon(Icons.warning_amber_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.warning), findsNothing);
 
       // Verify categories are shown
       expect(find.text('Work'), findsOneWidget);
@@ -254,7 +255,7 @@ void main() {
       await _openModalSelectAndConfirm(tester);
 
       // Verify error icon is shown
-      expect(find.byIcon(Icons.error_outline), findsOneWidget);
+      expect(find.byIcon(LottiIcons.error), findsOneWidget);
 
       // Verify error message text
       expect(find.text('Embeddings are disabled'), findsOneWidget);
@@ -286,7 +287,7 @@ void main() {
       await _openModalSelectAndConfirm(tester);
 
       // Verify check icon is shown
-      expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
+      expect(find.byIcon(LottiIcons.confirmCircled), findsOneWidget);
 
       // Verify 100% text
       expect(find.text('100%'), findsOneWidget);

@@ -50,7 +50,7 @@ void main() {
         dsTokensLight.colors.text.onInteractiveAlert,
       );
       expect(
-        find.byIcon(Icons.keyboard_arrow_down),
+        find.byIcon(LottiIcons.chevronDown),
         findsOneWidget,
       );
     });
@@ -74,7 +74,7 @@ void main() {
 
       final decoration = _splitButtonDecoration(tester);
       final shape = decoration.shape as RoundedRectangleBorder;
-      final icon = tester.widget<Icon>(find.byIcon(Icons.keyboard_arrow_up));
+      final icon = tester.widget<Icon>(find.byIcon(LottiIcons.chevronUp));
       final richText = _findTextNode(tester, 'Compact');
 
       expect(
@@ -90,7 +90,7 @@ void main() {
               2,
         ),
       );
-      expect(icon.icon, Icons.keyboard_arrow_up);
+      expect(icon.icon, LottiIcons.chevronUp);
       expectTextStyle(
         richText.text.style!,
         dsTokensLight.typography.styles.subtitle.subtitle2,
@@ -186,7 +186,7 @@ void main() {
       );
 
       expect(divider.width, dsTokensLight.spacing.step1 / 2);
-      expect(find.byIcon(Icons.keyboard_arrow_up), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronUp), findsOneWidget);
     });
 
     testWidgets('provides a default accessible label for the dropdown action', (
@@ -254,7 +254,7 @@ void main() {
 
       await tester.tap(find.text('Disabled'));
       await tester.pump();
-      await tester.tap(find.byIcon(Icons.keyboard_arrow_down));
+      await tester.tap(find.byIcon(LottiIcons.chevronDown));
       await tester.pump();
 
       expect(mainTapCount, 0);

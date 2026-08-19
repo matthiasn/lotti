@@ -209,10 +209,10 @@ void main() {
         tester,
         selected: false,
         onTap: () => taps++,
-        leading: const Icon(Icons.flag_outlined),
+        leading: const Icon(LottiIcons.flag),
       );
 
-      expect(find.byIcon(Icons.flag_outlined), findsOneWidget);
+      expect(find.byIcon(LottiIcons.flag), findsOneWidget);
       expect(
         tester.getSize(find.byType(DesignSystemFilterChoicePill)).height,
         greaterThanOrEqualTo(dsTokensLight.spacing.step9),

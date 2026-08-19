@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/ui/agent_creation_modal.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/inference_profile_controller.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/platform.dart' as platform;
 
@@ -392,7 +393,7 @@ void main() {
     );
 
     // Tap back button to return to template page.
-    await tester.tap(find.byIcon(Icons.arrow_back_rounded));
+    await tester.tap(find.byIcon(LottiIcons.back));
     await tester.pumpAndSettle();
 
     // Back on template selection.
@@ -522,7 +523,7 @@ void main() {
 
     // The trailing widget for desktop-only profiles is the desktop_windows
     // icon — verifies the trailing branch in _ProfileList.
-    expect(find.byIcon(Icons.desktop_windows_outlined), findsOneWidget);
+    expect(find.byIcon(LottiIcons.computer), findsOneWidget);
   });
 
   testWidgets(
@@ -822,7 +823,7 @@ void main() {
       expect(find.text('Mobile Profile'), findsOneWidget);
       expect(find.text('Desktop Profile'), findsNothing);
       expect(find.byType(Divider), findsNothing);
-      expect(find.byIcon(Icons.desktop_windows_outlined), findsNothing);
+      expect(find.byIcon(LottiIcons.computer), findsNothing);
     },
   );
 

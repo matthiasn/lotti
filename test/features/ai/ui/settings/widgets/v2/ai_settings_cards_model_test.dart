@@ -5,6 +5,7 @@ import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_cards.dart';
 import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
 
 import '../../../../../../widget_test_utils.dart';
@@ -53,7 +54,7 @@ void main() {
         );
         await tester.pump();
         expect(find.byTooltip('Delete model'), findsNothing);
-        expect(find.byIcon(Icons.delete_outline_rounded), findsNothing);
+        expect(find.byIcon(LottiIcons.delete), findsNothing);
       },
     );
 

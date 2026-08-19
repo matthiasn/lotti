@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/ui/time_entry_tile.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../widget_test_utils.dart';
 
@@ -26,7 +27,7 @@ void main() {
       expect(find.text('10:30'), findsOneWidget);
       expect(find.text('11:15'), findsOneWidget);
       expect(find.text('Wrote integration tests'), findsOneWidget);
-      expect(find.byIcon(Icons.timer_outlined), findsOneWidget);
+      expect(find.byIcon(LottiIcons.timer), findsOneWidget);
     });
 
     testWidgets('shows "running" label when endTime key is absent', (

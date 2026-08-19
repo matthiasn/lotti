@@ -13,6 +13,7 @@ import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/ai/ui/animation/ai_state_shader_animation.dart';
 import 'package:lotti/features/ai/ui/image_generation/cover_art_skill_modal.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 
 import '../../../../test_helper.dart';
@@ -294,7 +295,7 @@ void main() {
       await tester.pump();
 
       // Error icon should be visible
-      expect(find.byIcon(Icons.error_outline_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.error), findsOneWidget);
     });
 
     testWidgets(
@@ -414,7 +415,7 @@ void main() {
 
       // Should show completion state
       expect(find.text('Cover art ready!'), findsOneWidget);
-      expect(find.byIcon(Icons.check_circle_outline_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.confirmCircled), findsOneWidget);
       expect(
         tester
             .widget<AiThinkingShaderPresence>(
@@ -428,7 +429,7 @@ void main() {
       // the completion icon remains visible in the stable status region.
       await tester.pump(AiRunningDecoderBars.transitionDuration);
       expect(find.byType(AiThinkingLineShader), findsNothing);
-      expect(find.byIcon(Icons.check_circle_outline_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.confirmCircled), findsOneWidget);
     });
 
     testWidgets(
@@ -567,7 +568,7 @@ void main() {
 
       // Should show error state
       expect(find.text('Failed to generate image'), findsOneWidget);
-      expect(find.byIcon(Icons.error_outline_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.error), findsOneWidget);
       expect(
         tester
             .widget<AiThinkingShaderPresence>(
@@ -578,7 +579,7 @@ void main() {
       );
       await tester.pump(AiRunningDecoderBars.transitionDuration);
       expect(find.byType(AiThinkingLineShader), findsNothing);
-      expect(find.byIcon(Icons.error_outline_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.error), findsOneWidget);
     });
 
     testWidgets(
@@ -645,7 +646,7 @@ void main() {
         // ...plus the provider's verbatim reason, not an invented description.
         expect(find.text('PROHIBITED_CONTENT'), findsOneWidget);
         expect(find.text('Failed to generate image'), findsNothing);
-        expect(find.byIcon(Icons.error_outline_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.error), findsOneWidget);
       },
     );
   });

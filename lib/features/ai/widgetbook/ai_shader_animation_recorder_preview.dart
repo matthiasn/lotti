@@ -494,7 +494,7 @@ class _VoiceRecorderDrivenPreviewState
               label: _isLoadingInputDevices
                   ? 'Loading inputs'
                   : 'Refresh inputs',
-              leadingIcon: Icons.refresh_rounded,
+              leadingIcon: LottiIcons.refresh,
               variant: DesignSystemButtonVariant.tertiary,
               onPressed: _isLoadingInputDevices || _isRecording
                   ? null
@@ -502,9 +502,7 @@ class _VoiceRecorderDrivenPreviewState
             ),
             DesignSystemButton(
               label: _isRecording ? 'Stop mic' : 'Start mic',
-              leadingIcon: _isRecording
-                  ? Icons.stop_rounded
-                  : Icons.mic_none_rounded,
+              leadingIcon: _isRecording ? LottiIcons.stop : LottiIcons.micIdle,
               variant: _isRecording
                   ? DesignSystemButtonVariant.danger
                   : DesignSystemButtonVariant.secondary,

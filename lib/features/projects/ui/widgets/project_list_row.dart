@@ -184,7 +184,7 @@ List<InlineSpan> _metaSpans(
     WidgetSpan(
       alignment: PlaceholderAlignment.middle,
       child: Icon(
-        Icons.format_list_bulleted_rounded,
+        LottiIcons.checkAll,
         size: tokens.typography.lineHeight.caption,
         color: ShowcasePalette.lowText(context),
       ),

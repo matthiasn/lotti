@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_success_view.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -37,7 +38,7 @@ void main() {
   testWidgets('renders the checkmark, copy and CTA', (tester) async {
     await pumpView(tester, reduceMotion: true);
 
-    expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+    expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
     expect(find.text("You're all set"), findsOneWidget);
     expect(find.textContaining('turn your words into tasks'), findsOneWidget);
     expect(
@@ -81,7 +82,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 150));
       expect(tester.takeException(), isNull);
     }
-    expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+    expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
     expect(find.text("You're all set"), findsOneWidget);
   });
 

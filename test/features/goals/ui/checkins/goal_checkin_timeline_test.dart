@@ -7,6 +7,7 @@ import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/model/goal_assessment.dart';
 import 'package:lotti/features/goals/model/goal_timeline_item.dart';
 import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
@@ -503,7 +504,7 @@ void main() {
     // entry id and an open handler are present, so two of the three beats
     // carry it and the agent-side reflection, which is no journal entry,
     // does not.
-    expect(find.byIcon(Icons.chevron_right), findsNWidgets(2));
+    expect(find.byIcon(LottiIcons.chevronRight), findsNWidgets(2));
 
     final routes = <String>[];
     beamToNamedOverride = routes.add;

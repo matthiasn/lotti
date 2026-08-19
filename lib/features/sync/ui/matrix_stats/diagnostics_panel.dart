@@ -102,7 +102,7 @@ class _DiagnosticsPanelState extends State<DiagnosticsPanel> {
                           ),
                         ),
                         DesignSystemIconAction(
-                          icon: Icons.refresh_rounded,
+                          icon: LottiIcons.refresh,
                           tooltip:
                               messages.matrixStatsRefreshDiagnosticsTooltip,
                           onPressed: () => setState(() {

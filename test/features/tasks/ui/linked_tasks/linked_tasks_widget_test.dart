@@ -14,6 +14,7 @@ import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/state/linkable_tasks_controller.dart';
 import 'package:lotti/features/tasks/state/linked_tasks_controller.dart';
@@ -439,10 +440,10 @@ void main() {
           ),
           findsOneWidget,
         );
-        expect(find.byIcon(Icons.add_link), findsOneWidget);
+        expect(find.byIcon(LottiIcons.link), findsOneWidget);
         // Nothing to count, expand, or list yet.
         expect(find.text('0'), findsNothing);
-        expect(find.byIcon(Icons.keyboard_arrow_down), findsNothing);
+        expect(find.byIcon(LottiIcons.chevronDown), findsNothing);
         expect(find.byType(LinkedTaskRow), findsNothing);
       },
     );
@@ -465,7 +466,7 @@ void main() {
         expect(find.byType(DesignSystemListItem), findsNothing);
         expect(find.text('Linked Tasks'), findsNothing);
         expect(find.text('Link a task…'), findsNothing);
-        expect(find.byIcon(Icons.add_link), findsNothing);
+        expect(find.byIcon(LottiIcons.link), findsNothing);
         expect(
           find.descendant(
             of: find.byType(LinkedTasksWidget),
@@ -504,9 +505,9 @@ void main() {
 
       // With a list to add to, the header carries the action and the empty
       // state's worded row is gone.
-      expect(find.byIcon(Icons.add_link), findsOneWidget);
+      expect(find.byIcon(LottiIcons.link), findsOneWidget);
       expect(find.text('Link a task…'), findsNothing);
-      expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronDown), findsOneWidget);
     });
 
     testWidgets('shows title and count badge for linked tasks', (
@@ -523,7 +524,7 @@ void main() {
 
       expect(find.text('Linked Tasks'), findsOneWidget);
       expect(find.text('3'), findsOneWidget);
-      expect(find.byIcon(Icons.more_vert), findsOneWidget);
+      expect(find.byIcon(LottiIcons.moreVertical), findsOneWidget);
     });
 
     testWidgets(
@@ -573,7 +574,7 @@ void main() {
 
           expect(find.text(flat.title), findsOneWidget);
           // Browse-mode chevron is still the row's affordance...
-          expect(find.byIcon(Icons.arrow_forward_ios), findsOneWidget);
+          expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
           // ...but no direction caption or arrow glyph.
           expect(find.text('to'), findsNothing);
           expect(find.text('from'), findsNothing);
@@ -668,8 +669,15 @@ void main() {
           status: entry.value,
         );
       }
-      expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.circle_outlined), findsNothing);
+      expect(find.byIcon(LottiIcons.play), findsOneWidget);
+      // There used to be a `find.byIcon(LottiIcons.radioUnselected), findsNothing`
+      // here, guarding against the row drawing its own bare ring instead of
+      // going through the shared status glyph — which used the *other* Material
+      // spelling, `radio_button_unchecked`. Lucide has one ring for both, so
+      // that assertion now forbids exactly the glyph it was written to permit.
+      // The per-title checks above already assert each row's icon equals
+      // `taskIconFromStatusString`, which is the shared mapping, so nothing is
+      // left uncovered.
     });
 
     testWidgets('long titles remain fully available without ellipsis', (
@@ -795,7 +803,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
       expect(find.text('Task A linked'), findsNothing);
-      expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
 
       // Swap to task-b without recreating the widget tree above.
       await tester.pumpWidget(
@@ -821,7 +829,7 @@ void main() {
 
       // didUpdateWidget should have reset _expanded back to true for task-b.
       expect(find.text('Task B linked'), findsOneWidget);
-      expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronDown), findsOneWidget);
     });
 
     testWidgets('starts expanded and toggles on header tap', (tester) async {
@@ -832,21 +840,21 @@ void main() {
       );
 
       expect(find.text('Outgoing Task'), findsOneWidget);
-      expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronDown), findsOneWidget);
 
       await tester.tap(find.text('Linked Tasks'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Outgoing Task'), findsNothing);
-      expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
 
       await tester.tap(find.text('Linked Tasks'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Outgoing Task'), findsOneWidget);
-      expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronDown), findsOneWidget);
     });
 
     // The other half of the header contract. The scale loop below proves the
@@ -973,7 +981,7 @@ void main() {
 
             expect(tester.takeException(), isNull);
             // The way out must still be there, not merely un-crashed.
-            expect(find.byIcon(Icons.more_vert), findsOneWidget);
+            expect(find.byIcon(LottiIcons.moreVertical), findsOneWidget);
           },
         );
       }
@@ -1003,7 +1011,7 @@ void main() {
           manageMode: true,
         );
 
-        await tester.tap(find.byIcon(Icons.link_off));
+        await tester.tap(find.byIcon(LottiIcons.linkOff));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 

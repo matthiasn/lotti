@@ -128,9 +128,7 @@ class _TimeSpentCardState extends State<TimeSpentCard> {
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
                 icon: Icon(
-                  _expanded
-                      ? Icons.keyboard_arrow_up_rounded
-                      : Icons.keyboard_arrow_down_rounded,
+                  _expanded ? LottiIcons.chevronUp : LottiIcons.chevronDown,
                   size: tokens.typography.size.bodySmall,
                 ),
                 label: Text(
@@ -197,7 +195,7 @@ class _TimeSpentRow extends StatelessWidget {
           if (done) ...[
             SizedBox(width: tokens.spacing.step2),
             Icon(
-              Icons.check_rounded,
+              LottiIcons.confirm,
               size: tokens.typography.size.bodySmall,
               color: tokens.colors.alert.success.defaultColor,
             ),

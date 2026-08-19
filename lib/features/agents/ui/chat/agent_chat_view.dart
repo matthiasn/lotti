@@ -375,8 +375,8 @@ class _IdleComposer extends StatelessWidget {
             enabled: !isSending,
             textCapitalization: TextCapitalization.sentences,
             trailingIcon: hasText
-                ? Icons.send_rounded
-                : (canRecord ? Icons.mic_rounded : null),
+                ? LottiIcons.send
+                : (canRecord ? LottiIcons.mic : null),
             onTrailingIconTap: hasText
                 ? (canSend ? onSend : null)
                 : (canRecord ? onStartRecording : null),
@@ -421,13 +421,13 @@ class _RecordingControls extends StatelessWidget {
             ),
             SizedBox(width: tokens.spacing.step3),
             _CircleIconButton(
-              icon: Icons.close_rounded,
+              icon: LottiIcons.close,
               onPressed: onCancel,
               tooltip: context.messages.chatInputCancelRecording,
             ),
             SizedBox(width: tokens.spacing.step2),
             _CircleIconButton(
-              icon: Icons.stop_rounded,
+              icon: LottiIcons.stop,
               onPressed: onStop,
               tooltip: context.messages.chatInputStopTranscribe,
             ),
@@ -485,7 +485,7 @@ class _TranscriptionProgress extends StatelessWidget {
                 ),
               ),
               Icon(
-                Icons.mic_rounded,
+                LottiIcons.mic,
                 size: IconSizes.s,
                 color: tokens.colors.interactive.enabled,
               ),
@@ -765,9 +765,7 @@ class _CollapsibleAgentMarkdownState extends State<_CollapsibleAgentMarkdown> {
             onPressed: () => setState(() => _expanded = !_expanded),
             variant: DesignSystemButtonVariant.tertiary,
             size: DesignSystemButtonSize.dense,
-            trailingIcon: _expanded
-                ? Icons.expand_less_rounded
-                : Icons.expand_more_rounded,
+            trailingIcon: _expanded ? LottiIcons.collapse : LottiIcons.expand,
             alignsLabelToLeadingEdge: true,
           ),
         ],

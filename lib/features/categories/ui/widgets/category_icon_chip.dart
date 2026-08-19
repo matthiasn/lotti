@@ -100,7 +100,7 @@ class DefinitionIconChip extends StatelessWidget {
 ///
 /// A null or unresolved id falls back to a neutral chip
 /// (`background.level03`): with [letterFrom] it keeps the item letter at
-/// `text.mediumEmphasis`; without it, an [Icons.more_horiz] glyph at
+/// `text.mediumEmphasis`; without it, an [LottiIcons.more] glyph at
 /// `text.lowEmphasis` — deliberately not the shapes glyph used by the
 /// empty-state illustration, which would read as a bug.
 class CategoryIconChip extends StatelessWidget {
@@ -153,7 +153,7 @@ class CategoryIconChip extends StatelessWidget {
       return DefinitionIconChip(
         background: tokens.colors.background.level03,
         foreground: tokens.colors.text.lowEmphasis,
-        icon: Icons.more_horiz,
+        icon: LottiIcons.more,
         size: size,
       );
     }

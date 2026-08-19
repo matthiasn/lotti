@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 class WidgetbookSection extends StatelessWidget {
@@ -45,27 +46,27 @@ List<WidgetbookNavigationDestination> widgetbookNavigationDestinations(
   return [
     WidgetbookNavigationDestination(
       label: context.messages.designSystemNavigationMyDailyLabel,
-      icon: Icons.calendar_today_outlined,
+      icon: LottiIcons.today,
     ),
     WidgetbookNavigationDestination(
       label: context.messages.navTabTitleTasks,
-      icon: Icons.format_list_bulleted_rounded,
+      icon: LottiIcons.checkAll,
     ),
     WidgetbookNavigationDestination(
       label: context.messages.designSystemBreadcrumbProjectsLabel,
-      icon: Icons.folder_rounded,
+      icon: LottiIcons.folder,
     ),
     WidgetbookNavigationDestination(
       label: context.messages.navTabTitleHabits,
-      icon: Icons.checklist_rounded,
+      icon: LottiIcons.checkAll,
     ),
     WidgetbookNavigationDestination(
       label: context.messages.designSystemNavigationInsightsLabel,
-      icon: Icons.bar_chart_rounded,
+      icon: LottiIcons.chart,
     ),
     WidgetbookNavigationDestination(
       label: context.messages.navTabTitleJournal,
-      icon: Icons.book_outlined,
+      icon: LottiIcons.book,
     ),
   ];
 }

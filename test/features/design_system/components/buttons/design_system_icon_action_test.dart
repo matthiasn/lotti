@@ -27,7 +27,7 @@ void main() {
       makeTestableWidgetWithScaffold(
         DesignSystemIconAction(
           key: actionKey,
-          icon: Icons.refresh_rounded,
+          icon: LottiIcons.refresh,
           tooltip: 'Refresh',
           onPressed: onPressed,
           isBusy: isBusy,
@@ -57,7 +57,7 @@ void main() {
       final ink = tester.widget<InkWell>(find.byType(InkWell));
       expect(ink.onTap, isNull);
 
-      final icon = tester.widget<Icon>(find.byIcon(Icons.refresh_rounded));
+      final icon = tester.widget<Icon>(find.byIcon(LottiIcons.refresh));
       expect(icon.color, tokens.colors.text.lowEmphasis);
     });
 
@@ -66,7 +66,7 @@ void main() {
     ) async {
       final tokens = await pump(tester, onPressed: () {});
 
-      final icon = tester.widget<Icon>(find.byIcon(Icons.refresh_rounded));
+      final icon = tester.widget<Icon>(find.byIcon(LottiIcons.refresh));
       expect(icon.color, tokens.colors.text.mediumEmphasis);
       expect(icon.color, isNot(tokens.colors.text.lowEmphasis));
     });
@@ -79,7 +79,7 @@ void main() {
       // had just pressed it.
       await pump(tester, onPressed: () {}, isBusy: true);
 
-      expect(find.byIcon(Icons.refresh_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.refresh), findsNothing);
       final spinner = tester.widget<DesignSystemSpinner>(
         find.byType(DesignSystemSpinner),
       );
@@ -137,7 +137,7 @@ void main() {
       final target = tester.getRect(find.byKey(actionKey));
       expect(target.size, const Size(TapTargets.minimum, TapTargets.minimum));
 
-      final glyph = tester.getRect(find.byIcon(Icons.refresh_rounded));
+      final glyph = tester.getRect(find.byIcon(LottiIcons.refresh));
       expect(glyph.size, const Size(IconSizes.s, IconSizes.s));
       expect(glyph.center, target.center);
 

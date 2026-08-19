@@ -330,9 +330,7 @@ class _SelectionIndicator extends StatelessWidget {
       );
     }
     return Icon(
-      selected
-          ? Icons.radio_button_checked_rounded
-          : Icons.radio_button_unchecked_rounded,
+      selected ? LottiIcons.radioSelected : LottiIcons.radioUnselected,
       size: tokens.spacing.step5,
       color: selected
           ? tokens.colors.interactive.enabled
@@ -559,7 +557,7 @@ class _SavedFilterRow extends StatelessWidget {
                 nameWidget,
                 _EditAction(
                   buttonKey: SavedTaskFiltersSheetKeys.rename(filter.id),
-                  icon: Icons.edit_outlined,
+                  icon: LottiIcons.edit,
                   tooltip: messages.tasksSavedFiltersRenameNamed(filter.name),
                   onTap: onRename!,
                 ),
@@ -569,7 +567,7 @@ class _SavedFilterRow extends StatelessWidget {
                 SizedBox(width: tokens.spacing.step5),
                 _EditAction(
                   buttonKey: SavedTaskFiltersSheetKeys.delete(filter.id),
-                  icon: Icons.delete_outline_rounded,
+                  icon: LottiIcons.delete,
                   tooltip: messages.tasksSavedFiltersDeleteNamed(filter.name),
                   onTap: onDelete!,
                   destructive: true,
@@ -639,7 +637,7 @@ class _EditDragHandle extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
-                  Icons.drag_indicator_rounded,
+                  LottiIcons.drag,
                   size: tokens.spacing.step5,
                   color: tokens.colors.text.mediumEmphasis,
                 ),
@@ -731,7 +729,7 @@ class _CreateRow extends StatelessWidget {
       onTap: onTap,
       children: [
         Icon(
-          Icons.add_rounded,
+          LottiIcons.add,
           size: tokens.spacing.step5,
           color: tokens.colors.interactive.enabled,
         ),

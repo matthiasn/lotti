@@ -158,7 +158,7 @@ class _HealthSummary extends StatelessWidget {
             Padding(
               padding: EdgeInsets.only(top: tokens.spacing.step1),
               child: Icon(
-                Icons.info_outline_rounded,
+                LottiIcons.info,
                 size: tokens.typography.lineHeight.caption,
                 color: ShowcasePalette.infoBlue(context),
               ),
@@ -181,7 +181,7 @@ class _HealthSummary extends StatelessWidget {
             Padding(
               padding: EdgeInsets.only(top: tokens.spacing.step1),
               child: Icon(
-                Icons.warning_amber_rounded,
+                LottiIcons.warning,
                 size: tokens.typography.lineHeight.caption,
                 color: ShowcasePalette.error(context),
               ),

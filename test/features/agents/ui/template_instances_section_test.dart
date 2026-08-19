@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/state/template_query_providers.dart';
 import 'package:lotti/features/agents/ui/instances/instance_view_model.dart';
 import 'package:lotti/features/agents/ui/listing/widgets/agent_list_row.dart';
 import 'package:lotti/features/agents/ui/template_instances_section.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -160,7 +161,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.open_in_new_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.openExternal), findsOneWidget);
     });
 
     testWidgets('builds only the rows on screen', (tester) async {
@@ -206,7 +207,7 @@ void main() {
       await tester.pumpWidget(_buildSubject(instances: [_instance()]));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.open_in_new_rounded));
+      await tester.tap(find.byIcon(LottiIcons.openExternal));
       await tester.pump();
 
       verify(() => nav.beamToNamed('/tasks/task-001')).called(1);

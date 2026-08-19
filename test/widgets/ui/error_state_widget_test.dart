@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/ui/error_state_widget.dart';
 
@@ -16,7 +17,7 @@ void main() {
       );
 
       // Should display error icon
-      expect(find.byIcon(Icons.error_outline), findsOneWidget);
+      expect(find.byIcon(LottiIcons.error), findsOneWidget);
 
       // Should display default title
       expect(
@@ -89,7 +90,7 @@ void main() {
       );
 
       // Should not display error icon in inline mode
-      expect(find.byIcon(Icons.error_outline), findsNothing);
+      expect(find.byIcon(LottiIcons.error), findsNothing);
 
       // Should display error message
       expect(find.text(errorMessage), findsOneWidget);
@@ -162,7 +163,7 @@ void main() {
     testWidgets('icon has correct size in full mode', (tester) async {
       await _pumpErrorState(tester, error: 'Test error');
 
-      final icon = tester.widget<Icon>(find.byIcon(Icons.error_outline));
+      final icon = tester.widget<Icon>(find.byIcon(LottiIcons.error));
       expect(icon.size, 48);
     });
 
@@ -222,7 +223,7 @@ void main() {
       );
 
       // Icon should use error color
-      final icon = tester.widget<Icon>(find.byIcon(Icons.error_outline));
+      final icon = tester.widget<Icon>(find.byIcon(LottiIcons.error));
       expect(icon.color, theme.colorScheme.error);
     });
   });

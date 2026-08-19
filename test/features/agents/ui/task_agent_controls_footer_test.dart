@@ -178,7 +178,7 @@ void main() {
       moreOrLessEquals(edge, epsilon: 0.5),
     );
     expect(
-      tester.getTopLeft(find.byIcon(Icons.psychology_outlined)).dx,
+      tester.getTopLeft(find.byIcon(LottiIcons.reasoning)).dx,
       moreOrLessEquals(edge, epsilon: 0.5),
     );
   });

@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/model/goal_measurable_record_offer.dart';
 import 'package:lotti/features/goals/service/goal_measurable_capture_service.dart';
 import 'package:lotti/features/goals/state/goal_measurable_capture_state.dart';
@@ -129,7 +130,7 @@ void main() {
       );
       expect(record.onPressed, isNull);
 
-      await tester.tap(find.byIcon(Icons.check_circle_rounded).first);
+      await tester.tap(find.byIcon(LottiIcons.confirmCircled).first);
       await tester.pumpAndSettle();
 
       expect(find.textContaining('already logged'), findsNothing);
@@ -350,11 +351,11 @@ void main() {
       expect(fields.map((field) => field.controller.text), ['20.5', '10']);
       expect(find.text('Estimated split — edit if needed'), findsOneWidget);
 
-      await tester.tap(find.byIcon(Icons.check_circle_rounded).first);
+      await tester.tap(find.byIcon(LottiIcons.confirmCircled).first);
       await tester.pumpAndSettle();
-      await tester.tap(find.byIcon(Icons.check_circle_rounded).first);
+      await tester.tap(find.byIcon(LottiIcons.confirmCircled).first);
       await tester.pumpAndSettle();
-      expect(find.byIcon(Icons.cancel_outlined), findsNWidgets(2));
+      expect(find.byIcon(LottiIcons.closeCircled), findsNWidgets(2));
 
       await tester.tap(
         find.widgetWithText(DesignSystemButton, 'Record 0 entries'),
@@ -363,7 +364,7 @@ void main() {
       expect(find.text('Choose at least one row to record.'), findsOneWidget);
       verifyZeroInteractions(service);
 
-      await tester.tap(find.byIcon(Icons.cancel_outlined).first);
+      await tester.tap(find.byIcon(LottiIcons.closeCircled).first);
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(EditableText).first, '0');
       await tester.tap(

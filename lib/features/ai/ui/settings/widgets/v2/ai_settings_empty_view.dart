@@ -46,7 +46,7 @@ class AiSettingsFtueBanner extends StatelessWidget {
               borderRadius: BorderRadius.circular(tokens.radii.s),
             ),
             child: Icon(
-              Icons.auto_awesome_rounded,
+              LottiIcons.aiSpark,
               size: tokens.spacing.step5,
               color: accent,
             ),

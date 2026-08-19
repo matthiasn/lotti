@@ -1722,7 +1722,7 @@ class _Controls extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         _CircleButton(
-          icon: Icons.arrow_back,
+          icon: LottiIcons.back,
           tooltip: context.messages.knowledgeGraphBack,
           enabled: canGoBack,
           onTap: onBack,
@@ -1730,7 +1730,7 @@ class _Controls extends StatelessWidget {
         ),
         SizedBox(width: tokens.spacing.step2),
         _CircleButton(
-          icon: Icons.arrow_forward,
+          icon: LottiIcons.forward,
           tooltip: context.messages.knowledgeGraphForward,
           enabled: canGoForward,
           onTap: onForward,
@@ -1738,7 +1738,7 @@ class _Controls extends StatelessWidget {
         ),
         SizedBox(width: tokens.spacing.step2),
         _CircleButton(
-          icon: Icons.center_focus_strong,
+          icon: LottiIcons.focus,
           tooltip: context.messages.knowledgeGraphRecenter,
           enabled: true,
           onTap: onRecenter,

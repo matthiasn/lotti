@@ -494,19 +494,19 @@ class _OnboardingCategoryStepState
   List<OnboardingCategoryOption> _options(AppLocalizations m) => [
     OnboardingCategoryOption(
       label: m.onboardingCategoryWork,
-      icon: Icons.work_outline_rounded,
+      icon: LottiIcons.work,
     ),
     OnboardingCategoryOption(
       label: m.onboardingCategoryFitness,
-      icon: Icons.fitness_center_rounded,
+      icon: LottiIcons.fitness,
     ),
     OnboardingCategoryOption(
       label: m.onboardingCategoryFamily,
-      icon: Icons.home_rounded,
+      icon: LottiIcons.home,
     ),
     OnboardingCategoryOption(
       label: m.onboardingCategoryFriends,
-      icon: Icons.group_rounded,
+      icon: LottiIcons.people,
     ),
     ..._custom,
   ];
@@ -541,7 +541,7 @@ class _OnboardingCategoryStepState
         _custom.add(
           OnboardingCategoryOption(
             label: name,
-            icon: Icons.label_outline_rounded,
+            icon: LottiIcons.label,
           ),
         );
       }

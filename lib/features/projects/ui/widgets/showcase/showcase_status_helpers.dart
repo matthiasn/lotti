@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/project_data.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
@@ -18,12 +19,12 @@ String showcaseProjectStatusLabel(
 
 /// Glyph for a [ProjectStatus] used by the showcase status pills/labels.
 IconData showcaseProjectStatusIcon(ProjectStatus status) => switch (status) {
-  ProjectActive() => Icons.play_arrow_rounded,
-  ProjectMonitoring() => Icons.visibility_outlined,
-  ProjectCompleted() => Icons.check_circle_outline_rounded,
-  ProjectArchived() => Icons.archive_outlined,
-  ProjectOnHold() => Icons.pause_circle_outline_rounded,
-  ProjectOpen() => Icons.radio_button_unchecked_rounded,
+  ProjectActive() => LottiIcons.play,
+  ProjectMonitoring() => LottiIcons.visible,
+  ProjectCompleted() => LottiIcons.confirmCircled,
+  ProjectArchived() => LottiIcons.archive,
+  ProjectOnHold() => LottiIcons.pauseCircled,
+  ProjectOpen() => LottiIcons.radioUnselected,
 };
 
 /// Accent color for a [ProjectStatus], drawn from [ShowcasePalette].

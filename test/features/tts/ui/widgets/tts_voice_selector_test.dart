@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tts/ui/widgets/tts_voice_selector.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -61,9 +62,9 @@ void main() {
   ) async {
     await pump(tester, voiceId: 'F3', onChanged: (_) {});
 
-    expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
+    expect(find.byIcon(LottiIcons.confirmCircled), findsOneWidget);
     // Only the five female rows render, so four are unselected.
-    expect(find.byIcon(Icons.circle_outlined), findsNWidgets(4));
+    expect(find.byIcon(LottiIcons.radioUnselected), findsNWidgets(4));
   });
 
   testWidgets('reports the tapped voice id after switching gender', (

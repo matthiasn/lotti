@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/settings/settings_switch_row.dart';
 
 import '../../test_helper.dart';
@@ -12,7 +12,7 @@ void main() {
         child: SettingsSwitchRow(
           title: 'Private',
           subtitle: 'Hide from shared views',
-          icon: Icons.lock_outline,
+          icon: LottiIcons.lock,
           value: false,
           onChanged: (_) {},
         ),
@@ -21,7 +21,7 @@ void main() {
 
     expect(find.text('Private'), findsOneWidget);
     expect(find.text('Hide from shared views'), findsOneWidget);
-    expect(find.byIcon(Icons.lock_outline), findsOneWidget);
+    expect(find.byIcon(LottiIcons.lock), findsOneWidget);
     expect(find.byType(DesignSystemToggle), findsOneWidget);
   });
 

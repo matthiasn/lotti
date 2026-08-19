@@ -39,12 +39,12 @@ Map<_TestFilter, SyncFilterOption<_TestItem>> _buildFilters() {
     _TestFilter.pending: SyncFilterOption<_TestItem>(
       labelBuilder: (context) => context.messages.outboxMonitorLabelPending,
       predicate: (_) => true,
-      icon: Icons.schedule_rounded,
+      icon: LottiIcons.schedule,
     ),
     _TestFilter.error: SyncFilterOption<_TestItem>(
       labelBuilder: (context) => context.messages.outboxMonitorLabelError,
       predicate: (item) => item.hasError,
-      icon: Icons.error_outline_rounded,
+      icon: LottiIcons.error,
     ),
   };
 }
@@ -103,7 +103,7 @@ Future<StreamController<List<_TestItem>>> _pumpScaffold(
               itemBuilder: (context, item) => ListTile(
                 title: Text(item.label),
               ),
-              emptyIcon: Icons.hourglass_empty,
+              emptyIcon: LottiIcons.pending,
               emptyTitleBuilder: (ctx) => 'Nothing here',
               emptyDescriptionBuilder: (_) => null,
               countSummaryBuilder: (ctx, label, count) =>
@@ -130,7 +130,7 @@ Future<StreamController<List<_TestItem>>> _pumpScaffold(
                 itemBuilder: (context, item) => ListTile(
                   title: Text(item.label),
                 ),
-                emptyIcon: Icons.hourglass_empty,
+                emptyIcon: LottiIcons.pending,
                 emptyTitleBuilder: (ctx) => 'Nothing here',
                 emptyDescriptionBuilder: (_) => null,
                 countSummaryBuilder: (ctx, label, count) =>
@@ -255,7 +255,7 @@ void main() {
               labelBuilder: (context) =>
                   context.messages.outboxMonitorLabelPending,
               predicate: (_) => true,
-              icon: Icons.schedule_rounded,
+              icon: LottiIcons.schedule,
               hideCountWhenZero: true,
               countAccentColor: Colors.orange,
             ),
@@ -263,7 +263,7 @@ void main() {
               labelBuilder: (context) =>
                   context.messages.outboxMonitorLabelError,
               predicate: (item) => item.hasError,
-              icon: Icons.error_outline_rounded,
+              icon: LottiIcons.error,
               showCount: false,
             ),
           },
@@ -408,7 +408,7 @@ void main() {
                 itemBuilder: (context, item) => ListTile(
                   title: Text(item.label),
                 ),
-                emptyIcon: Icons.hourglass_empty,
+                emptyIcon: LottiIcons.pending,
                 emptyTitleBuilder: (ctx) => 'Nothing here',
                 emptyDescriptionBuilder: (_) => null,
                 countSummaryBuilder: (ctx, label, count) =>
@@ -439,7 +439,7 @@ void main() {
             labelBuilder: (context) =>
                 context.messages.outboxMonitorLabelPending,
             predicate: (_) => true,
-            icon: Icons.schedule_rounded,
+            icon: LottiIcons.schedule,
           ),
         };
 
@@ -460,7 +460,7 @@ void main() {
                 itemBuilder: (context, item) => ListTile(
                   title: Text(item.label),
                 ),
-                emptyIcon: Icons.hourglass_empty,
+                emptyIcon: LottiIcons.pending,
                 emptyTitleBuilder: (ctx) => 'Nothing here',
                 emptyDescriptionBuilder: (_) => null,
                 countSummaryBuilder: (ctx, label, count) =>

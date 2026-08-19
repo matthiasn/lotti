@@ -73,7 +73,7 @@ class _MaintenanceBodyState extends ConsumerState<MaintenanceBody>
             title: context.messages.settingsMaintenanceOnboardingWelcomeTitle,
             subtitle:
                 context.messages.settingsMaintenanceOnboardingWelcomeSubtitle,
-            icon: Icons.auto_awesome_motion_rounded,
+            icon: LottiIcons.aiStack,
             onTap: () => unawaited(
               OnboardingWelcomeModal.show(context, onDismiss: () {}),
             ),
@@ -85,7 +85,7 @@ class _MaintenanceBodyState extends ConsumerState<MaintenanceBody>
             subtitle: context
                 .messages
                 .settingsMaintenanceOnboardingAnimationGallerySubtitle,
-            icon: Icons.animation_rounded,
+            icon: LottiIcons.animation,
             onTap: () =>
                 // Root navigator on mobile so the gallery covers the shell's
                 // floating bottom nav instead of leaving it stacked on top —
@@ -101,7 +101,7 @@ class _MaintenanceBodyState extends ConsumerState<MaintenanceBody>
           (
             title: context.messages.settingsResetHintsTitle,
             subtitle: context.messages.settingsResetHintsSubtitle,
-            icon: Icons.tips_and_updates_outlined,
+            icon: LottiIcons.tip,
             onTap: () async {
               final confirmed = await showConfirmationModal(
                 context: context,
@@ -121,7 +121,7 @@ class _MaintenanceBodyState extends ConsumerState<MaintenanceBody>
           (
             title: context.messages.settingsResetGeminiTitle,
             subtitle: context.messages.settingsResetGeminiSubtitle,
-            icon: Icons.auto_awesome,
+            icon: LottiIcons.aiSpark,
             onTap: () async {
               final confirmed = await showConfirmationModal(
                 context: context,
@@ -137,7 +137,7 @@ class _MaintenanceBodyState extends ConsumerState<MaintenanceBody>
           (
             title: context.messages.maintenanceDeleteEditorDb,
             subtitle: context.messages.maintenanceDeleteEditorDbDescription,
-            icon: Icons.edit_note_rounded,
+            icon: LottiIcons.editNote,
             onTap: () async {
               final confirmed = await showConfirmationModal(
                 context: context,
@@ -154,7 +154,7 @@ class _MaintenanceBodyState extends ConsumerState<MaintenanceBody>
           (
             title: context.messages.maintenanceDeleteAgentDb,
             subtitle: context.messages.maintenanceDeleteAgentDbDescription,
-            icon: Icons.smart_toy_outlined,
+            icon: LottiIcons.aiModel,
             onTap: () async {
               final confirmed = await showConfirmationModal(
                 context: context,
@@ -172,20 +172,20 @@ class _MaintenanceBodyState extends ConsumerState<MaintenanceBody>
           (
             title: context.messages.maintenancePurgeDeleted,
             subtitle: context.messages.maintenancePurgeDeletedDescription,
-            icon: Icons.delete_forever_rounded,
+            icon: LottiIcons.deleteForever,
             onTap: () => PurgeModal.show(context),
           ),
           (
             title: context.messages.maintenanceRecreateFts5,
             subtitle: context.messages.maintenanceRecreateFts5Description,
-            icon: Icons.search_rounded,
+            icon: LottiIcons.search,
             onTap: () => Fts5RecreateModal.show(context),
           ),
           (
             title: context.messages.maintenanceRepairScreenshotPaths,
             subtitle:
                 context.messages.maintenanceRepairScreenshotPathsDescription,
-            icon: Icons.image_search_rounded,
+            icon: LottiIcons.searchImage,
             onTap: () async {
               if (_isRepairingScreenshotPaths) return;
               setState(() => _isRepairingScreenshotPaths = true);
@@ -224,7 +224,7 @@ class _MaintenanceBodyState extends ConsumerState<MaintenanceBody>
               title: context.messages.maintenanceRestoreMissingSleep,
               subtitle:
                   context.messages.maintenanceRestoreMissingSleepDescription,
-              icon: Icons.bedtime_outlined,
+              icon: LottiIcons.night,
               onTap: () async {
                 if (_isRestoringSleep) return;
                 setState(() => _isRestoringSleep = true);
@@ -255,7 +255,7 @@ class _MaintenanceBodyState extends ConsumerState<MaintenanceBody>
               title: context.messages.maintenanceGenerateEmbeddings,
               subtitle:
                   context.messages.maintenanceGenerateEmbeddingsDescription,
-              icon: Icons.hub_outlined,
+              icon: LottiIcons.hub,
               onTap: () => EmbeddingBackfillModal.show(context),
             ),
         ];
@@ -325,7 +325,7 @@ class _RepaintRainbowTile extends StatelessWidget {
           subtitle:
               'Flash a colour cycle over every region that repaints '
               '— diagnoses widgets redrawing every frame at idle.',
-          leading: const SettingsIcon(icon: Icons.bug_report_outlined),
+          leading: const SettingsIcon(icon: LottiIcons.bug),
           trailing: Switch.adaptive(
             value: enabled,
             onChanged: (value) => repaintRainbowEnabled.value = value,

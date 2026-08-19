@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
@@ -98,7 +99,7 @@ class _BannerFallback extends StatelessWidget {
       ),
       child: Center(
         child: Icon(
-          Icons.auto_awesome,
+          LottiIcons.aiSpark,
           size: 48,
           color: colorScheme.primary.withValues(alpha: 0.6),
         ),

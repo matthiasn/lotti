@@ -375,7 +375,7 @@ class _SaveFilterChoicePageState extends State<_SaveFilterChoicePage> {
             child: Row(
               children: [
                 Icon(
-                  Icons.bookmark_rounded,
+                  LottiIcons.bookmark,
                   size: tokens.spacing.step5,
                   color: tokens.colors.interactive.enabled,
                 ),
@@ -413,7 +413,7 @@ class _SaveFilterChoicePageState extends State<_SaveFilterChoicePage> {
         DesignSystemButton(
           key: DesignSystemFilterSavePageKeys.update,
           label: messages.tasksSavedFiltersUpdateButtonLabel,
-          leadingIcon: Icons.update_rounded,
+          leadingIcon: LottiIcons.refresh,
           size: DesignSystemButtonSize.large,
           fullWidth: true,
           isLoading: _updating,
@@ -437,7 +437,7 @@ class _SaveFilterChoicePageState extends State<_SaveFilterChoicePage> {
         DesignSystemButton(
           key: DesignSystemFilterSavePageKeys.saveAsNew,
           label: messages.tasksSavedFiltersSaveAsNewButtonLabel,
-          leadingIcon: Icons.add_rounded,
+          leadingIcon: LottiIcons.add,
           variant: DesignSystemButtonVariant.secondary,
           size: DesignSystemButtonSize.large,
           fullWidth: true,
@@ -554,7 +554,7 @@ class _SaveFilterNamePageState extends State<_SaveFilterNamePage> {
           primary: DesignSystemButton(
             key: DesignSystemFilterSavePageKeys.commit,
             label: messages.tasksSavedFiltersSavePopupSave,
-            leadingIcon: Icons.bookmark_add_rounded,
+            leadingIcon: LottiIcons.bookmark,
             size: DesignSystemButtonSize.large,
             fullWidth: true,
             isLoading: _saving,
@@ -616,7 +616,7 @@ class _SelectionPageActionBar extends StatelessWidget {
       primary: DesignSystemButton(
         key: const ValueKey('design-system-filter-selection-apply'),
         label: context.messages.doneButton,
-        leadingIcon: Icons.check_rounded,
+        leadingIcon: LottiIcons.confirm,
         size: DesignSystemButtonSize.large,
         fullWidth: true,
         onPressed: onDone,

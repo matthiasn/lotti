@@ -42,7 +42,7 @@ class CategoriesListPage extends ConsumerWidget {
       title: messages.settingsCategoriesTitle,
       searchHint: messages.settingsCategoriesSearchHint,
       displayName: (category) => category.name,
-      emptyIcon: Icons.category_outlined,
+      emptyIcon: LottiIcons.category,
       emptyTitle: messages.settingsCategoriesEmptyState,
       emptyHint: messages.settingsCategoriesEmptyStateHint,
       noMatchMessage: messages.settingsCategoriesNoMatchQuery,
@@ -98,7 +98,7 @@ class _CategoryListItem extends ConsumerWidget {
               child: Tooltip(
                 message: context.messages.privateLabel,
                 child: Icon(
-                  Icons.lock_outline,
+                  LottiIcons.lock,
                   size: 18,
                   color: tokens.colors.text.mediumEmphasis,
                   semanticLabel: context.messages.privateLabel,
@@ -111,7 +111,7 @@ class _CategoryListItem extends ConsumerWidget {
               child: Tooltip(
                 message: context.messages.inactiveLabel,
                 child: Icon(
-                  Icons.visibility_off_outlined,
+                  LottiIcons.hidden,
                   size: 18,
                   color: tokens.colors.text.mediumEmphasis,
                   semanticLabel: context.messages.inactiveLabel,
@@ -124,7 +124,7 @@ class _CategoryListItem extends ConsumerWidget {
               child: Tooltip(
                 message: context.messages.favoriteLabel,
                 child: Icon(
-                  Icons.star_rounded,
+                  LottiIcons.star,
                   size: 18,
                   color: tokens.colors.text.mediumEmphasis,
                   semanticLabel: context.messages.favoriteLabel,
@@ -132,7 +132,7 @@ class _CategoryListItem extends ConsumerWidget {
               ),
             ),
           Icon(
-            Icons.chevron_right_rounded,
+            LottiIcons.chevronRight,
             size: tokens.spacing.step6,
             color: tokens.colors.text.lowEmphasis,
           ),

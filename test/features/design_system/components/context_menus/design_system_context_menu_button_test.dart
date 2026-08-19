@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../../widget_test_utils.dart';
 
@@ -16,13 +17,13 @@ void main() {
           const DesignSystemContextMenuButton(
             tooltip: 'More actions',
             items: [
-              DesignSystemContextMenuItem(label: 'Edit', icon: Icons.edit),
+              DesignSystemContextMenuItem(label: 'Edit', icon: LottiIcons.edit),
             ],
           ),
         ),
       );
 
-      expect(find.byIcon(Icons.more_horiz_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.more), findsOneWidget);
       final size = tester.getSize(find.byType(IconButton));
       expect(size.width, greaterThanOrEqualTo(48));
       expect(size.height, greaterThanOrEqualTo(48));
@@ -52,7 +53,7 @@ void main() {
               items: [
                 DesignSystemContextMenuItem(
                   label: 'Edit',
-                  icon: Icons.edit,
+                  icon: LottiIcons.edit,
                   onTap: () => taps++,
                 ),
               ],
@@ -60,18 +61,18 @@ void main() {
           ),
         );
 
-        await tester.tap(find.byIcon(Icons.more_horiz_rounded));
+        await tester.tap(find.byIcon(LottiIcons.more));
         await tester.pumpAndSettle();
 
         expect(find.byType(DesignSystemContextMenu), findsOneWidget);
         expect(find.text('Edit'), findsOneWidget);
 
-        await tester.tap(find.byIcon(Icons.more_horiz_rounded));
+        await tester.tap(find.byIcon(LottiIcons.more));
         await tester.pumpAndSettle();
 
         expect(find.byType(DesignSystemContextMenu), findsNothing);
 
-        await tester.tap(find.byIcon(Icons.more_horiz_rounded));
+        await tester.tap(find.byIcon(LottiIcons.more));
         await tester.pumpAndSettle();
 
         expect(find.byType(DesignSystemContextMenu), findsOneWidget);
@@ -98,7 +99,7 @@ void main() {
               DesignSystemContextMenuItem(
                 key: itemKey,
                 label: 'Current action',
-                icon: Icons.check_rounded,
+                icon: LottiIcons.confirm,
                 iconColor: Colors.green,
                 isSelected: true,
                 onTap: _noop,
@@ -108,12 +109,12 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byIcon(Icons.more_horiz_rounded));
+      await tester.tap(find.byIcon(LottiIcons.more));
       await tester.pumpAndSettle();
 
       expect(find.byKey(itemKey), findsOneWidget);
       expect(
-        tester.widget<Icon>(find.byIcon(Icons.check_rounded)).color,
+        tester.widget<Icon>(find.byIcon(LottiIcons.confirm)).color,
         Colors.green,
       );
       expect(

@@ -24,32 +24,32 @@ import 'package:lotti/utils/file_utils.dart';
     ProjectOpen() => (
       messages.projectStatusOpen,
       isLight ? projectStatusDarkBlue : projectStatusBlue,
-      Icons.radio_button_unchecked,
+      LottiIcons.radioUnselected,
     ),
     ProjectActive() => (
       messages.projectStatusActive,
       isLight ? projectStatusDarkGreen : projectStatusGreen,
-      Icons.play_circle_outline,
+      LottiIcons.playCircled,
     ),
     ProjectMonitoring() => (
       messages.projectStatusMonitoring,
       tokens.colors.interactive.enabled,
-      Icons.visibility_outlined,
+      LottiIcons.visible,
     ),
     ProjectOnHold() => (
       messages.projectStatusOnHold,
       isLight ? projectStatusDarkOrange : projectStatusOrange,
-      Icons.pause_circle_outline,
+      LottiIcons.pauseCircled,
     ),
     ProjectCompleted() => (
       messages.projectStatusCompleted,
       isLight ? projectStatusDarkTeal : projectStatusTeal,
-      Icons.check_circle_outline,
+      LottiIcons.confirmCircled,
     ),
     ProjectArchived() => (
       messages.projectStatusArchived,
       tokens.colors.text.highEmphasis,
-      Icons.archive_outlined,
+      LottiIcons.archive,
     ),
   };
 }

@@ -5,6 +5,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_detail_empty_state.dart';
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
@@ -121,7 +122,7 @@ void main() {
       find.byType(DesktopDetailEmptyState),
     );
     expect(emptyState.message, 'Select a task to view details');
-    expect(emptyState.icon, Icons.touch_app_outlined);
+    expect(emptyState.icon, LottiIcons.touch);
     expect(find.text('Select a task to view details'), findsOneWidget);
     expect(
       find.byWidgetPredicate(

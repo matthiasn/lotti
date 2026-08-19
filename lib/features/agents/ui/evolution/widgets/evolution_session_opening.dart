@@ -51,7 +51,7 @@ class EvolutionSessionOpening extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const ModernIconContainer(icon: Icons.forum_rounded),
+            const ModernIconContainer(icon: LottiIcons.forum),
             SizedBox(height: tokens.spacing.step5),
             // The agent is named in the app bar directly above; repeating it
             // here is the duplication this redesign set out to remove.

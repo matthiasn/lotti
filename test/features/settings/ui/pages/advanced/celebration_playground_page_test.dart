@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_params.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_variant.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/state/celebration_preferences_controller.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/celebration_playground_page.dart';
 import 'package:lotti/features/settings/ui/widgets/celebration_preview_hero.dart';
@@ -232,7 +233,7 @@ void main() {
     tester,
   ) async {
     await pump(tester);
-    await tester.tap(find.widgetWithIcon(TextButton, Icons.replay));
+    await tester.tap(find.widgetWithIcon(TextButton, LottiIcons.replay));
     await tester.pump();
     expect(tester.takeException(), isNull);
   });

@@ -1103,7 +1103,7 @@ void main() {
       const ValueKey('goal-form-category-time-card-deep-work'),
     );
     await tester.tap(
-      find.descendant(of: card, matching: find.byIcon(Icons.close_rounded)),
+      find.descendant(of: card, matching: find.byIcon(LottiIcons.close)),
     );
     await tester.pumpAndSettle();
     expect(card, findsNothing);
@@ -4210,7 +4210,7 @@ void main() {
 
       // The card's remove action deselects the measurable entirely.
       await tester.tap(
-        find.descendant(of: card, matching: find.byIcon(Icons.close_rounded)),
+        find.descendant(of: card, matching: find.byIcon(LottiIcons.close)),
       );
       await tester.pumpAndSettle();
       expect(card, findsNothing);

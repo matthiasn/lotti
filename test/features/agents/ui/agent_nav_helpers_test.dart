@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/ui/agent_nav_helpers.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -190,7 +191,7 @@ void main() {
       expect(iconButton.tooltip, isNotEmpty);
       // chevron icon at size 30.
       final icon = iconButton.icon as Icon;
-      expect(icon.icon, Icons.chevron_left);
+      expect(icon.icon, LottiIcons.chevronLeft);
       expect(icon.size, 30);
     });
 

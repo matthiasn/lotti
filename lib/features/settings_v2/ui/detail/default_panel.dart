@@ -26,7 +26,7 @@ class DefaultPanel extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              Icons.construction_rounded,
+              LottiIcons.build,
               size: SettingsV2Constants.placeholderIconSize,
               color: textMid,
             ),

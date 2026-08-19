@@ -295,7 +295,7 @@ class _ProviderStatusRow extends StatelessWidget {
                       ),
                       SizedBox(width: tokens.spacing.step1),
                       Icon(
-                        Icons.arrow_forward_rounded,
+                        LottiIcons.forward,
                         size: 12,
                         color: tokens.colors.interactive.enabled,
                       ),

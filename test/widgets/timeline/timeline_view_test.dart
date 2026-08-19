@@ -46,7 +46,7 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(Icons.chevron_right), findsNothing);
+      expect(find.byIcon(LottiIcons.chevronRight), findsNothing);
       expect(find.byType(InkWell), findsNothing);
     });
 
@@ -62,7 +62,7 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(Icons.chevron_right), findsNothing);
+      expect(find.byIcon(LottiIcons.chevronRight), findsNothing);
     });
 
     testWidgets('an openable beat reports the entry it was built from', (
@@ -79,7 +79,7 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
       await tester.tap(find.text('Morning walk done.'));
       expect(opened, 'entry-42');
     });
@@ -101,7 +101,7 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
       await tester.tap(find.text('09:14'));
       expect(opened, 1);
 
@@ -508,7 +508,7 @@ void main() {
                 beat(
                   time: '21:40',
                   kindLabel: 'DAILY REFLECTION',
-                  glyph: Icons.check_rounded,
+                  glyph: LottiIcons.confirm,
                   accent: const Color(0xFF00FF00),
                   content: const TimelineBeatContent.custom(
                     Text('Mixed · 3 dimensions rated'),
@@ -525,7 +525,7 @@ void main() {
       expect(find.text('Mixed · 3 dimensions rated'), findsOneWidget);
       expect(find.text('21:40'), findsOneWidget);
       expect(find.text('DAILY REFLECTION'), findsOneWidget);
-      expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
     });
   });
 }

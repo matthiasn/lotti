@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/categories/ui/widgets/category_name_field.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../../test_helper.dart';
 
@@ -44,7 +45,7 @@ void main() {
       // No leading glyph: the name field is the only field that carried
       // one, and the shapes glyph is overloaded with the empty-state
       // illustration.
-      expect(find.byIcon(Icons.category_outlined), findsNothing);
+      expect(find.byIcon(LottiIcons.category), findsNothing);
     });
 
     testWidgets('calls onChanged with the typed value in edit mode', (

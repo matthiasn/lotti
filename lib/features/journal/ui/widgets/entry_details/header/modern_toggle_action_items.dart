@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/action_menu_list_item.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -31,7 +32,7 @@ class ModernToggleStarredItem extends ConsumerWidget {
     final starred = entry?.meta.starred ?? false;
 
     return ActionMenuListItem(
-      icon: starred ? Icons.star_rounded : Icons.star_outline_rounded,
+      icon: starred ? LottiIconsFilled.star : LottiIcons.star,
       title: context.messages.journalToggleStarredTitle,
       iconColor: starred ? starredGold : null,
       onTap: () {
@@ -65,7 +66,7 @@ class ModernTogglePrivateItem extends ConsumerWidget {
     final private = entry?.meta.private ?? false;
 
     return ActionMenuListItem(
-      icon: private ? Icons.lock_rounded : Icons.lock_open_rounded,
+      icon: private ? LottiIcons.lock : LottiIcons.unlocked,
       title: context.messages.journalTogglePrivateTitle,
       iconColor: private ? const Color(0xFFE57373) : null,
       onTap: () {
@@ -99,7 +100,7 @@ class ModernToggleFlaggedItem extends ConsumerWidget {
     final flagged = entry?.meta.flag != null;
 
     return ActionMenuListItem(
-      icon: flagged ? Icons.flag_rounded : Icons.flag_outlined,
+      icon: flagged ? LottiIconsFilled.flag : LottiIcons.flag,
       title: context.messages.journalToggleFlaggedTitle,
       iconColor: flagged ? const Color(0xFFBA68C8) : null,
       onTap: () {
@@ -135,7 +136,7 @@ class ModernToggleMapItem extends ConsumerWidget {
     final showMap = entryState.showMap;
 
     return ActionMenuListItem(
-      icon: showMap ? Icons.map_rounded : Icons.map_outlined,
+      icon: LottiIcons.map,
       title: showMap
           ? context.messages.journalHideMapHint
           : context.messages.journalShowMapHint,
@@ -169,7 +170,7 @@ class ModernDeleteItem extends ConsumerWidget {
         title: context.messages.journalDeleteQuestion,
         actions: [
           ModalSheetAction(
-            icon: Icons.warning_rounded,
+            icon: LottiIcons.warning,
             label: context.messages.journalDeleteConfirm,
             key: deleteKey,
             isDestructiveAction: true,
@@ -183,7 +184,7 @@ class ModernDeleteItem extends ConsumerWidget {
     }
 
     return ActionMenuListItem(
-      icon: Icons.delete_outline_rounded,
+      icon: LottiIcons.delete,
       title: context.messages.journalDeleteHint,
       isDestructive: true,
       onTap: () async {

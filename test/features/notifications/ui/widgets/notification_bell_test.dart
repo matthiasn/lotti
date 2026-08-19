@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:lotti/classes/notification_entity.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/features/notifications/state/notification_inbox_controller.dart';
 import 'package:lotti/features/notifications/ui/widgets/notification_bell.dart';
@@ -109,8 +110,8 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byIcon(Icons.notifications_none_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.notifications_active_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.notification), findsOneWidget);
+      expect(find.byIcon(LottiIcons.notificationActive), findsNothing);
       // Badge ('2', '9+', etc.) should be absent when count == 0.
       expect(find.textContaining(RegExp(r'^\d')), findsNothing);
     },
@@ -130,7 +131,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byIcon(Icons.notifications_active_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.notificationActive), findsOneWidget);
       expect(find.text('3'), findsOneWidget);
     },
   );
@@ -177,7 +178,7 @@ void main() {
       // Flush the FutureProvider so the bell switches to the active icon.
       await tester.pump();
 
-      await tester.tap(find.byIcon(Icons.notifications_active_rounded));
+      await tester.tap(find.byIcon(LottiIcons.notificationActive));
       await tester.pumpAndSettle();
 
       expect(find.text('Two tasks need review'), findsOneWidget);
@@ -206,9 +207,9 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(find.byIcon(Icons.notifications_active_rounded));
+      await tester.tap(find.byIcon(LottiIcons.notificationActive));
       await tester.pumpAndSettle();
-      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.tap(find.byIcon(LottiIcons.close));
       await tester.pump();
 
       verify(
@@ -238,9 +239,9 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(find.byIcon(Icons.notifications_active_rounded));
+      await tester.tap(find.byIcon(LottiIcons.notificationActive));
       await tester.pumpAndSettle();
-      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.tap(find.byIcon(LottiIcons.close));
       await tester.pump();
 
       verify(() => repository.retract('overdue-retract')).called(1);
@@ -261,7 +262,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byIcon(Icons.notifications_none_rounded));
+      await tester.tap(find.byIcon(LottiIcons.notification));
       await tester.pumpAndSettle();
 
       expect(find.text("You're all caught up."), findsOneWidget);
@@ -289,7 +290,7 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(find.byIcon(Icons.notifications_active_rounded));
+      await tester.tap(find.byIcon(LottiIcons.notificationActive));
       await tester.pumpAndSettle();
       await tester.longPress(find.text('Hold to dismiss'));
       await tester.pump();
@@ -313,7 +314,7 @@ void main() {
         ),
       );
       await tester.pump();
-      await tester.tap(find.byIcon(Icons.notifications_none_rounded));
+      await tester.tap(find.byIcon(LottiIcons.notification));
       await tester.pumpAndSettle();
 
       expect(
@@ -354,7 +355,7 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(find.byIcon(Icons.notifications_active_rounded));
+      await tester.tap(find.byIcon(LottiIcons.notificationActive));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Review'));
       await tester.pump();
@@ -400,7 +401,7 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(find.byIcon(Icons.notifications_active_rounded));
+      await tester.tap(find.byIcon(LottiIcons.notificationActive));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Overdue task'));
       await tester.pump();
@@ -453,7 +454,7 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(find.byIcon(Icons.notifications_active_rounded));
+      await tester.tap(find.byIcon(LottiIcons.notificationActive));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Check in with Anna?'));
       await tester.pump();
@@ -489,9 +490,9 @@ void main() {
         ),
       );
       await tester.pump();
-      await tester.tap(find.byIcon(Icons.notifications_active_rounded));
+      await tester.tap(find.byIcon(LottiIcons.notificationActive));
       await tester.pumpAndSettle();
-      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.tap(find.byIcon(LottiIcons.close));
       await tester.pump();
 
       verify(() => repository.retract('anna')).called(1);
@@ -527,7 +528,7 @@ void main() {
         ),
       );
       await tester.pump();
-      await tester.tap(find.byIcon(Icons.notifications_active_rounded));
+      await tester.tap(find.byIcon(LottiIcons.notificationActive));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Will fail'));
       await tester.pump();
@@ -570,9 +571,9 @@ void main() {
         ),
       );
       await tester.pump();
-      await tester.tap(find.byIcon(Icons.notifications_active_rounded));
+      await tester.tap(find.byIcon(LottiIcons.notificationActive));
       await tester.pumpAndSettle();
-      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.tap(find.byIcon(LottiIcons.close));
       await tester.pump();
 
       verify(

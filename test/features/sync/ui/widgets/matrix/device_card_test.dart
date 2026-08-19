@@ -8,7 +8,7 @@ import 'package:lotti/features/design_system/components/badges/design_system_bad
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
-import 'package:lotti/features/design_system/theme/sizing_tokens.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/models/sync_device_info.dart';
 import 'package:lotti/features/sync/state/matrix_verification_modal_lock_provider.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/device_card.dart';
@@ -408,7 +408,7 @@ void main() {
       await tester.tap(find.byKey(const Key('sync_reauth_submit')));
       await tester.pump();
 
-      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.tap(find.byIcon(LottiIcons.close));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('sync_reauth_password')), findsNothing);
       expect(refreshed, isFalse);
@@ -714,7 +714,7 @@ void main() {
       // the roster reads as a grid of machines rather than rows of prose.
       final name = tester.getRect(find.text('Pixel 7'));
       final badge = tester.getRect(find.text('Verified'));
-      final icon = tester.getRect(find.byIcon(Icons.devices_other_rounded));
+      final icon = tester.getRect(find.byIcon(LottiIcons.devices));
       expect(icon.right, lessThan(name.left));
       expect(badge.top, greaterThanOrEqualTo(name.bottom));
     });
@@ -878,7 +878,7 @@ void main() {
       expect(container.read(matrixVerificationModalLockProvider), isTrue);
 
       // Close the modal via the close button.
-      final closeButton = find.byIcon(Icons.close_rounded);
+      final closeButton = find.byIcon(LottiIcons.close);
       await tester.ensureVisible(closeButton);
       await tester.tap(closeButton);
       await tester.pump();
@@ -947,7 +947,7 @@ void main() {
         expect(find.byType(VerificationModal), findsOneWidget);
 
         // Close the ceremony so its start timer is disposed with the tree.
-        await tester.tap(find.byIcon(Icons.close_rounded));
+        await tester.tap(find.byIcon(LottiIcons.close));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
       });
@@ -994,7 +994,7 @@ void main() {
     Size tileSize(WidgetTester tester) => tester.getSize(
       find
           .ancestor(
-            of: find.byIcon(Icons.devices_other_rounded),
+            of: find.byIcon(LottiIcons.devices),
             matching: find.byType(SizedBox),
           )
           .first,
@@ -1015,7 +1015,7 @@ void main() {
       await pumpCard(tester, buildDevice());
 
       final icon = tester.widget<Icon>(
-        find.byIcon(Icons.devices_other_rounded),
+        find.byIcon(LottiIcons.devices),
       );
 
       expect(icon.size, IconSizes.l);
@@ -1035,8 +1035,7 @@ void main() {
       final glyph = find.byWidgetPredicate(
         (w) =>
             w is Icon &&
-            (w.icon == Icons.laptop_mac_rounded ||
-                w.icon == Icons.smartphone_rounded),
+            (w.icon == LottiIcons.laptop || w.icon == LottiIcons.phone),
       );
       expect(glyph, findsOneWidget);
 

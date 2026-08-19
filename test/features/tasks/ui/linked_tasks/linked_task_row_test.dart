@@ -54,7 +54,7 @@ void main() {
 
         expect(find.text('Other Task'), findsOneWidget);
         expect(find.byType(StatusGlyph), findsOneWidget);
-        expect(find.byIcon(Icons.arrow_forward_ios), findsOneWidget);
+        expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
         expect(find.byType(SvgPicture), findsNothing);
       },
     );
@@ -152,8 +152,8 @@ void main() {
           ),
         );
 
-        expect(find.byIcon(Icons.arrow_forward_ios), findsOneWidget);
-        expect(find.byIcon(Icons.link_off), findsNothing);
+        expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
+        expect(find.byIcon(LottiIcons.linkOff), findsNothing);
       },
     );
 
@@ -174,10 +174,10 @@ void main() {
           ),
         );
 
-        expect(find.byIcon(Icons.link_off), findsOneWidget);
-        expect(find.byIcon(Icons.arrow_forward_ios), findsNothing);
+        expect(find.byIcon(LottiIcons.linkOff), findsOneWidget);
+        expect(find.byIcon(LottiIcons.chevronRight), findsNothing);
 
-        await tester.tap(find.byIcon(Icons.link_off));
+        await tester.tap(find.byIcon(LottiIcons.linkOff));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -207,11 +207,11 @@ void main() {
           ),
         );
 
-        expect(find.byIcon(Icons.swap_horiz_rounded), findsOneWidget);
-        expect(find.byIcon(Icons.link_off), findsOneWidget);
-        expect(find.byIcon(Icons.arrow_forward_ios), findsNothing);
+        expect(find.byIcon(LottiIcons.compare), findsOneWidget);
+        expect(find.byIcon(LottiIcons.linkOff), findsOneWidget);
+        expect(find.byIcon(LottiIcons.chevronRight), findsNothing);
 
-        await tester.tap(find.byIcon(Icons.swap_horiz_rounded));
+        await tester.tap(find.byIcon(LottiIcons.compare));
         await tester.pump();
 
         expect(editCalled, isTrue);
@@ -231,9 +231,9 @@ void main() {
           ),
         );
 
-        expect(find.byIcon(Icons.swap_horiz_rounded), findsOneWidget);
-        expect(find.byIcon(Icons.link_off), findsNothing);
-        expect(find.byIcon(Icons.arrow_forward_ios), findsNothing);
+        expect(find.byIcon(LottiIcons.compare), findsOneWidget);
+        expect(find.byIcon(LottiIcons.linkOff), findsNothing);
+        expect(find.byIcon(LottiIcons.chevronRight), findsNothing);
       },
     );
 
@@ -254,7 +254,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byIcon(Icons.link_off));
+      await tester.tap(find.byIcon(LottiIcons.linkOff));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.widgetWithText(DesignSystemButton, 'Cancel'));
@@ -279,7 +279,7 @@ void main() {
           ),
         );
 
-        await tester.tap(find.byIcon(Icons.link_off));
+        await tester.tap(find.byIcon(LottiIcons.linkOff));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
         await tester.tap(find.widgetWithText(DesignSystemButton, 'Unlink'));
@@ -303,7 +303,7 @@ void main() {
           ),
         );
 
-        await tester.tap(find.byIcon(Icons.link_off));
+        await tester.tap(find.byIcon(LottiIcons.linkOff));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
         await tester.tap(find.widgetWithText(DesignSystemButton, 'Unlink'));
@@ -479,7 +479,7 @@ void main() {
           ),
         );
 
-        for (final icon in [Icons.swap_horiz_rounded, Icons.link_off]) {
+        for (final icon in [LottiIcons.compare, LottiIcons.linkOff]) {
           final size = tester.getSize(
             find
                 .ancestor(

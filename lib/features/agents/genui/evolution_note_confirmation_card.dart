@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/agents/ui/agent_palette.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/cards/modern_base_card.dart';
 
@@ -61,8 +62,8 @@ class _EvolutionNoteConfirmationCardState
                         ),
                         Icon(
                           _expanded
-                              ? Icons.keyboard_arrow_down
-                              : Icons.chevron_right,
+                              ? LottiIcons.chevronDown
+                              : LottiIcons.chevronRight,
                           size: 16,
                           color: Colors.white.withValues(alpha: 0.4),
                         ),
@@ -104,10 +105,10 @@ class _EvolutionNoteConfirmationCardState
 
 IconData _noteKindIcon(String kind) {
   return switch (kind) {
-    'reflection' => Icons.psychology,
-    'hypothesis' => Icons.lightbulb_outline,
-    'decision' => Icons.gavel,
-    'pattern' => Icons.pattern,
-    _ => Icons.note,
+    'reflection' => LottiIcons.reasoning,
+    'hypothesis' => LottiIcons.tip,
+    'decision' => LottiIcons.legal,
+    'pattern' => LottiIcons.pattern,
+    _ => LottiIcons.note,
   };
 }

@@ -28,21 +28,21 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidget(
           const DesignSystemInlineCallout(
-            icon: Icons.pause_circle_outline,
+            icon: LottiIcons.pauseCircled,
             text: 'Sync is paused for one device.',
           ),
         ),
       );
 
       expect(find.text('Sync is paused for one device.'), findsOneWidget);
-      expect(find.byIcon(Icons.pause_circle_outline), findsOneWidget);
+      expect(find.byIcon(LottiIcons.pauseCircled), findsOneWidget);
     });
 
     testWidgets('carries the warning tone by default', (tester) async {
       await tester.pumpWidget(
         makeTestableWidget(
           const DesignSystemInlineCallout(
-            icon: Icons.warning_amber_rounded,
+            icon: LottiIcons.warning,
             text: 'Careful',
           ),
         ),
@@ -55,7 +55,7 @@ void main() {
       // read as a warning rather than as a card.
       expect((decorationOf(tester).border! as Border).top.color, warning);
       expect(
-        tester.widget<Icon>(find.byIcon(Icons.warning_amber_rounded)).color,
+        tester.widget<Icon>(find.byIcon(LottiIcons.warning)).color,
         warning,
       );
     });
@@ -64,7 +64,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidget(
           const DesignSystemInlineCallout(
-            icon: Icons.info_outline,
+            icon: LottiIcons.info,
             text: 'Just so you know',
             tone: Colors.teal,
           ),
@@ -73,7 +73,7 @@ void main() {
 
       expect((decorationOf(tester).border! as Border).top.color, Colors.teal);
       expect(
-        tester.widget<Icon>(find.byIcon(Icons.info_outline)).color,
+        tester.widget<Icon>(find.byIcon(LottiIcons.info)).color,
         Colors.teal,
       );
     });
@@ -84,7 +84,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidget(
           const DesignSystemInlineCallout(
-            icon: Icons.info_outline,
+            icon: LottiIcons.info,
             text: 'Message',
           ),
         ),
@@ -113,7 +113,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidget(
           const DesignSystemInlineCallout(
-            icon: Icons.info_outline,
+            icon: LottiIcons.info,
             text: 'Message',
             tone: Colors.teal,
           ),
@@ -124,7 +124,7 @@ void main() {
       final label = tester.widget<Text>(find.text('Message'));
       expect(label.style?.color, tokens.colors.text.highEmphasis);
       expect(
-        tester.widget<Icon>(find.byIcon(Icons.info_outline)).size,
+        tester.widget<Icon>(find.byIcon(LottiIcons.info)).size,
         IconSizes.l,
       );
     });

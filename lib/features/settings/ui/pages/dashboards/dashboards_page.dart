@@ -53,7 +53,7 @@ class DashboardSettingsPage extends ConsumerWidget {
       searchHint: messages.settingsDashboardsSearchHint,
       displayName: (dashboard) => dashboard.name,
       searchText: (dashboard) => '${dashboard.name} ${dashboard.description}',
-      emptyIcon: Icons.dashboard_customize_outlined,
+      emptyIcon: LottiIcons.dashboardEdit,
       emptyTitle: messages.settingsDashboardsEmptyState,
       emptyHint: messages.settingsDashboardsEmptyStateHint,
       noMatchMessage: messages.settingsDashboardsNoMatchQuery,
@@ -96,13 +96,13 @@ class _DashboardListItem extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(right: 4),
               child: Icon(
-                Icons.lock_outline,
+                LottiIcons.lock,
                 size: 18,
                 color: tokens.colors.text.mediumEmphasis,
               ),
             ),
           Icon(
-            Icons.chevron_right_rounded,
+            LottiIcons.chevronRight,
             size: tokens.spacing.step6,
             color: tokens.colors.text.lowEmphasis,
           ),

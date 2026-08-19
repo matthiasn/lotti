@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 extension _AnyGeneratedAiConsts on glados.Any {
   glados.Generator<SkillType> get skillType =>
@@ -41,14 +42,14 @@ void main() {
 
     const expectedIcons = <AiResponseType, IconData>{
       // ignore: deprecated_member_use_from_same_package
-      AiResponseType.taskSummary: Icons.summarize_outlined,
-      AiResponseType.imageAnalysis: Icons.image_outlined,
-      AiResponseType.audioTranscription: Icons.mic_outlined,
+      AiResponseType.taskSummary: LottiIcons.summarize,
+      AiResponseType.imageAnalysis: LottiIcons.image,
+      AiResponseType.audioTranscription: LottiIcons.mic,
       // ignore: deprecated_member_use_from_same_package
-      AiResponseType.checklistUpdates: Icons.checklist_rtl_outlined,
-      AiResponseType.promptGeneration: Icons.auto_fix_high_outlined,
-      AiResponseType.imagePromptGeneration: Icons.palette_outlined,
-      AiResponseType.imageGeneration: Icons.auto_awesome_outlined,
+      AiResponseType.checklistUpdates: LottiIcons.checkAll,
+      AiResponseType.promptGeneration: LottiIcons.magic,
+      AiResponseType.imagePromptGeneration: LottiIcons.palette,
+      AiResponseType.imageGeneration: LottiIcons.aiSpark,
     };
 
     test('expectation table covers every enum value', () {

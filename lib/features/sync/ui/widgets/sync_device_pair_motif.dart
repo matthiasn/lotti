@@ -120,7 +120,7 @@ class _SyncDevicePairMotifState extends State<SyncDevicePairMotif>
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(
-          Icons.smartphone_rounded,
+          LottiIcons.phone,
           size: IconSizes.xxl,
           color: deviceInk,
         ),
@@ -128,7 +128,7 @@ class _SyncDevicePairMotifState extends State<SyncDevicePairMotif>
         between,
         SizedBox(width: tokens.spacing.step4),
         Icon(
-          Icons.laptop_mac_rounded,
+          LottiIcons.laptop,
           size: IconSizes.xxxl,
           color: deviceInk,
         ),

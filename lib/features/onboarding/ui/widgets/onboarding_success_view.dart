@@ -182,7 +182,7 @@ class _CheckMark extends StatelessWidget {
           ),
         ],
       ),
-      child: Icon(Icons.check_rounded, size: size * 0.56, color: iconColor),
+      child: Icon(LottiIcons.confirm, size: size * 0.56, color: iconColor),
     );
   }
 }

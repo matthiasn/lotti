@@ -121,7 +121,7 @@ class _MoreSheetRow extends StatelessWidget {
                     SizedBox(width: tokens.spacing.step3),
                   ],
                   Icon(
-                    Icons.chevron_right_rounded,
+                    LottiIcons.chevronRight,
                     size: DesignSystemFiveSlotNavBar.iconSize,
                     color: tokens.colors.text.lowEmphasis,
                   ),

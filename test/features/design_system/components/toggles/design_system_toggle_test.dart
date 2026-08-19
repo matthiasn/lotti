@@ -43,7 +43,7 @@ void main() {
             key: toggleKey,
             value: false,
             label: 'Small toggle',
-            tooltipIcon: Icons.info_outline_rounded,
+            tooltipIcon: LottiIcons.info,
             tooltipMessage: 'More information',
             onChanged: _noopToggle,
           ),
@@ -81,7 +81,7 @@ void main() {
       final icon = tester.widget<Icon>(
         find.descendant(
           of: find.byKey(toggleKey),
-          matching: find.byIcon(Icons.info_outline_rounded),
+          matching: find.byIcon(LottiIcons.info),
         ),
       );
       final tooltip = tester.widget<Tooltip>(
@@ -127,7 +127,7 @@ void main() {
             size: DesignSystemToggleSize.defaultSize,
             value: true,
             label: 'Default toggle',
-            tooltipIcon: Icons.info_outline_rounded,
+            tooltipIcon: LottiIcons.info,
             onChanged: _noopToggle,
           ),
           theme: DesignSystemTheme.light(),
@@ -375,7 +375,7 @@ void main() {
           const DesignSystemToggle(
             value: false,
             semanticsLabel: 'Accessible toggle',
-            tooltipIcon: Icons.info_outline_rounded,
+            tooltipIcon: LottiIcons.info,
             onChanged: _noopToggle,
           ),
           theme: DesignSystemTheme.light(),
@@ -401,7 +401,7 @@ void main() {
             child: DesignSystemToggle(
               value: false,
               label: label,
-              tooltipIcon: Icons.info_outline_rounded,
+              tooltipIcon: LottiIcons.info,
               onChanged: _noopToggle,
             ),
           ),

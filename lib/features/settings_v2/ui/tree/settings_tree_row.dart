@@ -200,7 +200,7 @@ class SettingsTreeRow extends StatelessWidget {
                     curve: Curves.easeOutCubic,
                     turns: isExpanded ? 0.25 : 0,
                     child: Icon(
-                      Icons.chevron_right_rounded,
+                      LottiIcons.chevronRight,
                       size: SettingsV2Constants.chevronSize,
                       color: textLo,
                     ),

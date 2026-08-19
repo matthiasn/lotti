@@ -13,6 +13,7 @@ import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/ui/app_command_controller.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
@@ -1065,7 +1066,7 @@ void main() {
 
         // The clear icon is only shown when targetDate is not null.
         // Our test project has a targetDate set.
-        final clearIcon = find.byIcon(Icons.clear);
+        final clearIcon = find.byIcon(LottiIcons.close);
         expect(clearIcon, findsOneWidget);
 
         await tester.tap(clearIcon);
@@ -1107,7 +1108,7 @@ void main() {
 
         final clearIcon = find.descendant(
           of: targetDateField,
-          matching: find.byIcon(Icons.clear),
+          matching: find.byIcon(LottiIcons.close),
         );
         expect(clearIcon, findsNothing);
       });

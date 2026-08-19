@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/dashboards/state/survey_data.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:mocktail/mocktail.dart';
@@ -59,7 +60,7 @@ void main() {
       );
     });
 
-    testWidgets('renders add-button (Icons.add_rounded) in header', (
+    testWidgets('renders add-button (LottiIcons.add) in header', (
       tester,
     ) async {
       when(
@@ -72,7 +73,7 @@ void main() {
 
       await hPumpSurveyChart(tester, chartConfig: chartConfig);
 
-      expect(find.byIcon(Icons.add_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.add), findsOneWidget);
     });
 
     testWidgets('empty entity list shows the no-data message, no chart', (

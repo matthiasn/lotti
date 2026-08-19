@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/lock_in_scene.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -24,8 +25,8 @@ void main() {
       final messages = tester.element(find.byType(LockInScene)).messages;
       // Caption schedule: < 0.18 progress → "Locking in…".
       expect(find.text(messages.dailyOsNextCommitLockingIn), findsOneWidget);
-      expect(find.byIcon(Icons.lock_outline_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.check_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.lock), findsOneWidget);
+      expect(find.byIcon(LottiIcons.confirm), findsNothing);
       expect(completed, isFalse);
     });
 
@@ -50,8 +51,8 @@ void main() {
           find.text(messages.dailyOsNextCommitTodayIsYours),
           findsOneWidget,
         );
-        expect(find.byIcon(Icons.check_rounded), findsOneWidget);
-        expect(find.byIcon(Icons.lock_outline_rounded), findsNothing);
+        expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
+        expect(find.byIcon(LottiIcons.lock), findsNothing);
         expect(completed, isFalse);
       },
     );
@@ -115,7 +116,7 @@ void main() {
         // Snapped straight to the resolved end frame instead of the ~3.4s
         // takeover: the check icon and final caption are already showing.
         final messages = tester.element(find.byType(LockInScene)).messages;
-        expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
         expect(
           find.text(messages.dailyOsNextCommitTodayIsYours),
           findsOneWidget,

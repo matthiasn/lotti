@@ -26,9 +26,9 @@ CheckInInteractionType interactionTypeForAction(ContactAction action) =>
     };
 
 IconData _iconForAction(ContactAction action) => switch (action) {
-  ContactAction.call => Icons.call_rounded,
-  ContactAction.message => Icons.sms_rounded,
-  ContactAction.email => Icons.mail_outline_rounded,
+  ContactAction.call => LottiIcons.call,
+  ContactAction.message => LottiIcons.sms,
+  ContactAction.email => LottiIcons.mail,
 };
 
 String _labelForAction(BuildContext context, ContactAction action) =>

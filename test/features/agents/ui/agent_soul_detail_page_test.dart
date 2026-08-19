@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/state/soul_query_providers.dart';
 import 'package:lotti/features/agents/ui/agent_soul_detail_page.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -481,7 +482,7 @@ void main() {
       await tester.pump();
 
       // Archived version should have a restore button.
-      expect(find.byIcon(Icons.restore), findsOneWidget);
+      expect(find.byIcon(LottiIcons.restore), findsOneWidget);
     });
 
     testWidgets('shows not-found when soul does not exist', (tester) async {
@@ -536,7 +537,7 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      expect(find.byIcon(Icons.delete_outline), findsOneWidget);
+      expect(find.byIcon(LottiIcons.delete), findsOneWidget);
       expect(find.text(context.messages.deleteButton), findsOneWidget);
     });
 
@@ -557,7 +558,7 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      await tester.tap(find.byIcon(Icons.delete_outline));
+      await tester.tap(find.byIcon(LottiIcons.delete));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
 
@@ -723,7 +724,7 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      await tester.tap(find.byIcon(Icons.delete_outline));
+      await tester.tap(find.byIcon(LottiIcons.delete));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
 
@@ -759,7 +760,7 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      await tester.tap(find.byIcon(Icons.delete_outline));
+      await tester.tap(find.byIcon(LottiIcons.delete));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
 
@@ -801,7 +802,7 @@ void main() {
         await tester.pump();
         await tester.pump();
 
-        await tester.tap(find.byIcon(Icons.delete_outline));
+        await tester.tap(find.byIcon(LottiIcons.delete));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
 
@@ -864,7 +865,7 @@ void main() {
       await tester.pump();
 
       // Tap the restore icon on the archived version.
-      await tester.tap(find.byIcon(Icons.restore));
+      await tester.tap(find.byIcon(LottiIcons.restore));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
 
@@ -929,7 +930,7 @@ void main() {
       await tester.pump();
 
       // Tap the restore icon on the archived version.
-      await tester.tap(find.byIcon(Icons.restore));
+      await tester.tap(find.byIcon(LottiIcons.restore));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
 
@@ -1298,7 +1299,7 @@ void main() {
         await tester.pump();
         await tester.pump();
 
-        await tester.tap(find.byIcon(Icons.delete_outline));
+        await tester.tap(find.byIcon(LottiIcons.delete));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
 
@@ -1360,7 +1361,7 @@ void main() {
         await tester.pump();
         await tester.pump();
 
-        await tester.tap(find.byIcon(Icons.restore));
+        await tester.tap(find.byIcon(LottiIcons.restore));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
 

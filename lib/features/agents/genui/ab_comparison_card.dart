@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/cards/modern_base_card.dart';
 import 'package:lotti/widgets/cards/modern_icon_container.dart';
@@ -75,7 +76,7 @@ class _ABComparisonCardState extends State<ABComparisonCard> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const ModernIconContainer(
-                  icon: Icons.compare_arrows_rounded,
+                  icon: LottiIcons.compare,
                   isCompact: true,
                 ),
                 const SizedBox(width: 12),
@@ -163,7 +164,7 @@ class _ABComparisonCardState extends State<ABComparisonCard> {
               if (isSelected) ...[
                 const Spacer(),
                 Icon(
-                  Icons.check_circle_rounded,
+                  LottiIcons.confirmCircled,
                   size: 20,
                   color: colorScheme.primary,
                 ),

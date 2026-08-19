@@ -116,7 +116,7 @@ class AiAttributionSummaryGroup extends ConsumerWidget {
                 interactions: interactions,
               ),
         leading: Icon(
-          Icons.auto_awesome_outlined,
+          LottiIcons.aiSpark,
           size: 12,
           color: tokens.colors.text.mediumEmphasis,
         ),
@@ -221,7 +221,7 @@ class _AttributionRow extends StatelessWidget {
                   interactions: details?.interactions ?? const [],
                 ),
           leading: Icon(
-            Icons.auto_awesome_outlined,
+            LottiIcons.aiSpark,
             size: 12,
             color: tokens.colors.text.mediumEmphasis,
           ),
@@ -252,7 +252,7 @@ class _AttributionRow extends StatelessWidget {
             child: Row(
               children: [
                 Icon(
-                  Icons.auto_awesome_outlined,
+                  LottiIcons.aiSpark,
                   size: tokens.spacing.step5,
                   color: tokens.colors.text.mediumEmphasis,
                 ),
@@ -277,7 +277,7 @@ class _AttributionRow extends StatelessWidget {
                 ),
                 SizedBox(width: tokens.spacing.step2),
                 Icon(
-                  Icons.chevron_right,
+                  LottiIcons.chevronRight,
                   size: tokens.spacing.step5,
                   color: tokens.colors.text.mediumEmphasis,
                 ),

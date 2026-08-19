@@ -51,7 +51,7 @@ void main() {
         final icon = tester.widget<Icon>(
           find.descendant(
             of: find.byType(ActiveFilterChip),
-            matching: find.byIcon(Icons.cancel_rounded),
+            matching: find.byIcon(LottiIcons.closeCircled),
           ),
         );
         expect(icon.size, 20);
@@ -95,7 +95,7 @@ void main() {
         ActiveFilterChip(
           label: 'In progress',
           accentColor: accent,
-          leadingIcon: Icons.play_arrow_rounded,
+          leadingIcon: LottiIcons.play,
           onRemove: () {},
         ),
       );
@@ -103,7 +103,7 @@ void main() {
       final leading = tester.widget<Icon>(
         find.descendant(
           of: find.byType(ActiveFilterChip),
-          matching: find.byIcon(Icons.play_arrow_rounded),
+          matching: find.byIcon(LottiIcons.play),
         ),
       );
       expect(leading.color, accent);
@@ -145,7 +145,7 @@ void main() {
         () => ActiveFilterChip(
           label: 'Both',
           accentColor: const Color(0xFF000000),
-          leadingIcon: Icons.abc,
+          leadingIcon: LottiIcons.text,
           avatar: const SizedBox.shrink(),
           onRemove: () {},
         ),

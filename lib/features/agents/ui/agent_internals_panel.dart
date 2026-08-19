@@ -229,7 +229,7 @@ class _Header extends StatelessWidget {
               color: ai.accentSoft,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(Icons.tune_rounded, size: 16, color: ai.accent),
+            child: Icon(LottiIcons.tune, size: 16, color: ai.accent),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -258,7 +258,7 @@ class _Header extends StatelessWidget {
           ),
           IconButton(
             tooltip: MaterialLocalizations.of(context).closeButtonLabel,
-            icon: Icon(Icons.close_rounded, size: 20, color: ai.metaText),
+            icon: Icon(LottiIcons.close, size: 20, color: ai.metaText),
             onPressed: onClose,
           ),
         ],

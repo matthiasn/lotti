@@ -327,14 +327,14 @@ class _CaptureStepBarState extends ConsumerState<_CaptureStepBar> {
         final canContinue = state.transcript.trim().isNotEmpty && !_submitting;
         actions = _layoutBarPills(context, [
           DsGlassPill(
-            icon: Icons.mic_rounded,
+            icon: LottiIcons.mic,
             label: messages.dailyOsNextReconcileReRecord,
             fillColor: tokens.colors.surface.focusPressed,
             enabled: !_submitting,
             onTap: () => ref.read(captureControllerProvider.notifier).reset(),
           ),
           DsGlassPill(
-            icon: Icons.arrow_forward_rounded,
+            icon: LottiIcons.forward,
             label: messages.dailyOsNextCaptureReconcileCta,
             fillColor: tokens.colors.interactive.enabled,
             foregroundColor: tokens.colors.text.onInteractiveAlert,
@@ -346,7 +346,7 @@ class _CaptureStepBarState extends ConsumerState<_CaptureStepBar> {
       case CapturePhase.error:
         actions = _layoutBarPills(context, [
           DsGlassPill(
-            icon: Icons.keyboard_alt_outlined,
+            icon: LottiIcons.keyboard,
             label: messages.dailyOsNextCaptureTypeInstead,
             fillColor: tokens.colors.surface.focusPressed,
             onTap: () =>
@@ -358,7 +358,7 @@ class _CaptureStepBarState extends ConsumerState<_CaptureStepBar> {
         // capture never requires reaching back up to the orb.
         actions = _layoutBarPills(context, [
           DsGlassPill(
-            icon: Icons.check_rounded,
+            icon: LottiIcons.confirm,
             label: messages.dailyOsNextCaptureDoneCta,
             fillColor: tokens.colors.interactive.enabled,
             foregroundColor: tokens.colors.text.onInteractiveAlert,
@@ -499,14 +499,14 @@ class _ReconcileStepBarState extends ConsumerState<_ReconcileStepBar> {
       topSlot: DayPlanningThinkingShader(isThinking: isWorking),
       actions: _layoutBarPills(context, [
         DsGlassPill(
-          icon: Icons.mic_rounded,
+          icon: LottiIcons.mic,
           label: messages.dailyOsNextReconcileReRecord,
           fillColor: tokens.colors.surface.focusPressed,
           enabled: !_pushing,
           onTap: () => WoltModalSheet.of(context).popPage(),
         ),
         DsGlassPill(
-          icon: Icons.arrow_forward_rounded,
+          icon: LottiIcons.forward,
           label: messages.dailyOsNextReconcileBuildDayCta,
           fillColor: tokens.colors.interactive.enabled,
           foregroundColor: tokens.colors.text.onInteractiveAlert,
@@ -714,7 +714,7 @@ class _RefineStepBar extends ConsumerWidget {
       ),
       actions: _layoutBarPills(context, [
         DsGlassPill(
-          icon: Icons.undo_rounded,
+          icon: LottiIcons.undo,
           label: messages.dailyOsNextRefineRevert,
           fillColor: tokens.colors.surface.focusPressed,
           // Disabled during an in-flight accept too — the controller
@@ -723,7 +723,7 @@ class _RefineStepBar extends ConsumerWidget {
           onTap: notifier.revert,
         ),
         DsGlassPill(
-          icon: Icons.check_rounded,
+          icon: LottiIcons.confirm,
           label: messages.dailyOsNextRefineLooksGood,
           fillColor: tokens.colors.interactive.enabled,
           foregroundColor: tokens.colors.text.onInteractiveAlert,

@@ -5,6 +5,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/components/empty_states/design_system_empty_state.dart';
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
@@ -128,7 +129,7 @@ void main() {
     // own glyph — never a "select something" instruction.
     expect(emptyState.hint, 'New entries will open here.');
     expect(emptyState.title, isNull);
-    expect(emptyState.icon, Icons.menu_book_outlined);
+    expect(emptyState.icon, LottiIcons.book);
     expect(find.text('New entries will open here.'), findsOneWidget);
     // The list pane is sized by the journal-specific width, not the
     // tasks/projects one.

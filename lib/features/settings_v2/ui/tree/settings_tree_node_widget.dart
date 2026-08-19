@@ -133,7 +133,7 @@ class _SettingsTreeNodeWidgetState
             isExpanded: isExpanded,
             trailing: node.action == SettingsNodeAction.openManual
                 ? Icon(
-                    Icons.open_in_new_rounded,
+                    LottiIcons.openExternal,
                     color: tokens.colors.text.lowEmphasis,
                   )
                 : settingsNodeIndicatorFor(node.id),

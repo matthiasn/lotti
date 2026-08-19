@@ -35,6 +35,7 @@ import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
 import 'package:lotti/features/ai/ui/image_generation/cover_art_skill_modal.dart';
 import 'package:lotti/features/design_system/components/headers/tab_section_header.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
@@ -871,7 +872,7 @@ void main() {
         await tester.tap(
           find.descendant(
             of: find.byType(TabSectionHeader),
-            matching: find.byIcon(Icons.filter_list_rounded),
+            matching: find.byIcon(LottiIcons.filter),
           ),
         );
         await settleFrames(tester, 6);
@@ -918,7 +919,7 @@ void main() {
           ),
         );
 
-        await tester.tap(find.byIcon(Icons.assistant_outlined));
+        await tester.tap(find.byIcon(LottiIcons.assistant));
         await settleFrames(tester, 6);
         final messages = AppLocalizations.of(
           tester.element(find.byType(EntryDetailsWidget)),

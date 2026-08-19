@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/navigation/sidebar_subsection.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -27,8 +28,7 @@ class InsightsSidebarEntry extends StatelessWidget {
       builder: (context, active, _) {
         return SidebarSubsectionAction(
           label: context.messages.insightsTimeAnalysisTitle,
-          icon: Icons.bar_chart_outlined,
-          activeIcon: Icons.bar_chart_rounded,
+          icon: LottiIcons.chart,
           active: active,
           onTap: () => beamToNamed('/calendar/time'),
         );

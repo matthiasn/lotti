@@ -65,11 +65,11 @@ void main() {
       );
 
       final leadingIconTop = tester
-          .getTopLeft(find.byIcon(Icons.check_circle_rounded))
+          .getTopLeft(find.byIcon(LottiIcons.confirmCircled))
           .dy;
       final titleTop = tester.getTopLeft(find.text('Success')).dy;
       final dismissIconTop = tester
-          .getTopLeft(find.byIcon(Icons.close_rounded))
+          .getTopLeft(find.byIcon(LottiIcons.close))
           .dy;
 
       expect(
@@ -95,7 +95,7 @@ void main() {
         onDismiss: () => dismissed = true,
       );
 
-      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.tap(find.byIcon(LottiIcons.close));
       await tester.pump();
 
       expect(dismissed, isTrue);
@@ -106,23 +106,23 @@ void main() {
     ) async {
       await _pumpToast(tester, tone: DesignSystemToastTone.warning);
 
-      expect(find.byIcon(Icons.close_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.close), findsNothing);
     });
 
     final toneCases = <(DesignSystemToastTone, IconData, Color)>[
       (
         DesignSystemToastTone.success,
-        Icons.check_circle_rounded,
+        LottiIcons.confirmCircled,
         dsTokensLight.colors.alert.success.defaultColor,
       ),
       (
         DesignSystemToastTone.warning,
-        Icons.warning_rounded,
+        LottiIcons.warning,
         dsTokensLight.colors.alert.warning.defaultColor,
       ),
       (
         DesignSystemToastTone.error,
-        Icons.error_rounded,
+        LottiIcons.error,
         dsTokensLight.colors.alert.error.defaultColor,
       ),
     ];
@@ -187,7 +187,7 @@ void main() {
       );
 
       final dismissSemantics = tester.getSemantics(
-        find.byIcon(Icons.close_rounded),
+        find.byIcon(LottiIcons.close),
       );
       expect(dismissSemantics.label, contains('Close error toast'));
 
@@ -237,7 +237,7 @@ void main() {
       final innerPadding = dsTokensLight.spacing.step3;
       final toastLeft = tester.getTopLeft(find.byType(DesignSystemToast)).dx;
       final iconLeft = tester
-          .getTopLeft(find.byIcon(Icons.check_circle_rounded))
+          .getTopLeft(find.byIcon(LottiIcons.confirmCircled))
           .dx;
       expect(
         iconLeft - toastLeft,
@@ -315,11 +315,11 @@ void main() {
               .getCenter(find.byType(DesignSystemToast))
               .dy;
           final iconCenter = tester
-              .getCenter(find.byIcon(Icons.check_circle_rounded))
+              .getCenter(find.byIcon(LottiIcons.confirmCircled))
               .dy;
           final titleCenter = tester.getCenter(find.text('Saved')).dy;
           final dismissCenter = tester
-              .getCenter(find.byIcon(Icons.close_rounded))
+              .getCenter(find.byIcon(LottiIcons.close))
               .dy;
 
           // Allow sub-pixel rounding tolerance; the three elements must sit
@@ -398,7 +398,7 @@ void main() {
         );
 
         expect(find.text('UNDO'), findsOneWidget);
-        expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.close), findsOneWidget);
       });
 
       testWidgets('action label inherits the tone border color', (

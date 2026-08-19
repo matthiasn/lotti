@@ -21,8 +21,8 @@ void main() {
           const DesignSystemButton(
             key: buttonKey,
             label: 'Primary',
-            leadingIcon: Icons.add,
-            trailingIcon: Icons.keyboard_arrow_down,
+            leadingIcon: LottiIcons.add,
+            trailingIcon: LottiIcons.chevronDown,
             onPressed: _noop,
           ),
           theme: DesignSystemTheme.light(),
@@ -184,8 +184,8 @@ void main() {
             label: 'Tertiary',
             variant: DesignSystemButtonVariant.tertiary,
             forcedState: DesignSystemButtonVisualState.hover,
-            leadingIcon: Icons.add,
-            trailingIcon: Icons.keyboard_arrow_down,
+            leadingIcon: LottiIcons.add,
+            trailingIcon: LottiIcons.chevronDown,
             onPressed: _noop,
           ),
           theme: DesignSystemTheme.light(),
@@ -411,8 +411,8 @@ void main() {
             key: buttonKey,
             label: 'Danger',
             variant: DesignSystemButtonVariant.danger,
-            leadingIcon: Icons.add,
-            trailingIcon: Icons.keyboard_arrow_down,
+            leadingIcon: LottiIcons.add,
+            trailingIcon: LottiIcons.chevronDown,
             onPressed: null,
           ),
           theme: DesignSystemTheme.light(),
@@ -480,8 +480,8 @@ void main() {
             key: buttonKey,
             label: 'Large',
             size: DesignSystemButtonSize.large,
-            leadingIcon: Icons.add,
-            trailingIcon: Icons.keyboard_arrow_down,
+            leadingIcon: LottiIcons.add,
+            trailingIcon: LottiIcons.chevronDown,
             onPressed: _noop,
           ),
           theme: DesignSystemTheme.light(),
@@ -556,8 +556,8 @@ void main() {
             key: buttonKey,
             label: '',
             semanticsLabel: 'Icon-only button',
-            leadingIcon: Icons.add,
-            trailingIcon: Icons.keyboard_arrow_down,
+            leadingIcon: LottiIcons.add,
+            trailingIcon: LottiIcons.chevronDown,
             onPressed: _noop,
           ),
           theme: DesignSystemTheme.light(),
@@ -597,8 +597,8 @@ void main() {
             child: DesignSystemButton(
               key: buttonKey,
               label: label,
-              leadingIcon: Icons.add,
-              trailingIcon: Icons.keyboard_arrow_down,
+              leadingIcon: LottiIcons.add,
+              trailingIcon: LottiIcons.chevronDown,
               onPressed: _noop,
             ),
           ),
@@ -777,7 +777,7 @@ void main() {
         makeTestableWidgetWithScaffold(
           DesignSystemButton(
             label: 'Run',
-            leadingIcon: Icons.auto_awesome,
+            leadingIcon: LottiIcons.aiSpark,
             isLoading: true,
             onPressed: () => taps++,
           ),
@@ -788,7 +788,7 @@ void main() {
 
       // The spinner replaces the leading glyph...
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
-      expect(find.byIcon(Icons.auto_awesome), findsNothing);
+      expect(find.byIcon(LottiIcons.aiSpark), findsNothing);
       expect(find.text('Run'), findsOneWidget);
 
       // ...the fill stays the branded (enabled) colour, not the disabled grey...
@@ -808,7 +808,7 @@ void main() {
       Widget build({required bool loading}) => makeTestableWidgetWithScaffold(
         DesignSystemButton(
           label: 'Run',
-          leadingIcon: Icons.auto_awesome,
+          leadingIcon: LottiIcons.aiSpark,
           isLoading: loading,
           onPressed: () => taps++,
         ),
@@ -822,7 +822,7 @@ void main() {
       await tester.pump();
 
       expect(find.byType(CircularProgressIndicator), findsNothing);
-      expect(find.byIcon(Icons.auto_awesome), findsOneWidget);
+      expect(find.byIcon(LottiIcons.aiSpark), findsOneWidget);
 
       await tester.tap(find.byType(DesignSystemButton));
       await tester.pump();

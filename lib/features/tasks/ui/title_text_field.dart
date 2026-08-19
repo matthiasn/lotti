@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
@@ -179,7 +180,7 @@ class _TitleTextFieldState extends State<TitleTextField> {
                   duration: checklistActionIconFadeDuration,
                   child: IconButton(
                     icon: Icon(
-                      Icons.check_circle,
+                      LottiIcons.confirmCircled,
                       size: 30,
                       semanticLabel: context.messages.saveButtonLabel,
                     ),
@@ -193,7 +194,7 @@ class _TitleTextFieldState extends State<TitleTextField> {
                     duration: checklistActionIconFadeDuration,
                     child: IconButton(
                       icon: Icon(
-                        Icons.cancel_outlined,
+                        LottiIcons.closeCircled,
                         color: context.colorScheme.outline,
                         size: 30,
                         semanticLabel: context.messages.editorDiscardChanges,

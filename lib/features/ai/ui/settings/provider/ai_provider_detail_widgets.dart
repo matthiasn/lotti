@@ -307,7 +307,7 @@ class _DangerZoneSection extends StatelessWidget {
             DesignSystemButton(
               label: messages.aiProviderDetailRemoveButton,
               variant: DesignSystemButtonVariant.dangerSecondary,
-              leadingIcon: Icons.delete_outline_rounded,
+              leadingIcon: LottiIcons.delete,
               onPressed: onRemove,
             ),
           ],

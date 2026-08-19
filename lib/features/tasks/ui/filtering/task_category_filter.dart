@@ -53,7 +53,7 @@ class TaskCategoryFilterOverviewRow extends ConsumerWidget {
           title: stripTrailingColon(context.messages.taskCategoryLabel),
           subtitle: summary,
           leading: Icon(
-            Icons.folder_outlined,
+            LottiIcons.folder,
             size: tokens.spacing.step6,
             color: tokens.colors.text.mediumEmphasis,
           ),

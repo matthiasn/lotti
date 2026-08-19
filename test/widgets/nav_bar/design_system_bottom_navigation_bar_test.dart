@@ -12,20 +12,20 @@ void main() {
   const items = [
     DesignSystemFiveSlotNavBarItem(
       label: 'Tasks',
-      icon: Icon(Icons.check_circle_outline),
+      icon: Icon(LottiIcons.confirmCircled),
       active: true,
     ),
     DesignSystemFiveSlotNavBarItem(
       label: 'Journal',
-      icon: Icon(Icons.book_outlined),
+      icon: Icon(LottiIcons.book),
     ),
     DesignSystemFiveSlotNavBarItem(
       label: 'Settings',
-      icon: Icon(Icons.settings_outlined),
+      icon: Icon(LottiIcons.settings),
     ),
     DesignSystemFiveSlotNavBarItem(
       label: 'More',
-      icon: Icon(Icons.more_horiz_rounded),
+      icon: Icon(LottiIcons.more),
     ),
   ];
 

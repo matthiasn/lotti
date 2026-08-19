@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/form_components/ai_text_field.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../../../../widget_test_utils.dart';
 
@@ -46,13 +47,13 @@ void main() {
         buildTestWidget(
           AiTextField(
             label: 'Test',
-            prefixIcon: Icons.search,
+            prefixIcon: LottiIcons.search,
             controller: controller,
           ),
         ),
       );
 
-      expect(find.byIcon(Icons.search), findsOneWidget);
+      expect(find.byIcon(LottiIcons.search), findsOneWidget);
     });
 
     testWidgets('shows suffix icon when provided', (tester) async {
@@ -60,13 +61,13 @@ void main() {
         buildTestWidget(
           AiTextField(
             label: 'Test',
-            suffixIcon: const Icon(Icons.clear),
+            suffixIcon: const Icon(LottiIcons.close),
             controller: controller,
           ),
         ),
       );
 
-      expect(find.byIcon(Icons.clear), findsOneWidget);
+      expect(find.byIcon(LottiIcons.close), findsOneWidget);
     });
 
     testWidgets('updates controller when text is entered', (tester) async {

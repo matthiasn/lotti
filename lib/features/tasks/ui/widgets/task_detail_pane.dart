@@ -184,27 +184,27 @@ class TaskShowcaseDetailContent extends StatelessWidget {
     final items = [
       (
         context.messages.addActionAddTimer,
-        Icons.timer_outlined,
+        LottiIcons.timer,
         true,
       ),
       (
         context.messages.taskShowcaseTodo,
-        Icons.check_box_outlined,
+        LottiIcons.checkboxChecked,
         false,
       ),
       (
         context.messages.taskShowcaseAudio,
-        Icons.mic_none_rounded,
+        LottiIcons.micIdle,
         false,
       ),
       (
         context.messages.images,
-        Icons.photo_outlined,
+        LottiIcons.image,
         false,
       ),
       (
         context.messages.taskShowcaseLinked,
-        Icons.subdirectory_arrow_right_rounded,
+        LottiIcons.returnKey,
         false,
       ),
     ];
@@ -243,12 +243,12 @@ class _TaskDetailHeader extends StatelessWidget {
       children: [
         TaskShowcaseCategoryChip(
           label: category.name,
-          icon: category.icon?.iconData ?? Icons.label_outline,
+          icon: category.icon?.iconData ?? LottiIcons.label,
           colorHex: categoryColor,
         ),
         if (due != null)
           TaskShowcaseMetaChip(
-            icon: Icons.watch_later_outlined,
+            icon: LottiIcons.schedule,
             label: context.messages.taskShowcaseDueDate(
               MaterialLocalizations.of(context).formatShortDate(due),
             ),
@@ -297,7 +297,7 @@ class _TaskDetailHeader extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              Icons.folder_open_rounded,
+              LottiIcons.folderOpen,
               size: 16,
               color: TaskShowcasePalette.mediumText(context),
             ),
@@ -343,7 +343,7 @@ class _TaskDetailHeader extends StatelessWidget {
         Column(
           children: [
             Icon(
-              Icons.more_vert_rounded,
+              LottiIcons.moreVertical,
               color: TaskShowcasePalette.mediumText(context),
             ),
             SizedBox(height: tokens.spacing.step5),

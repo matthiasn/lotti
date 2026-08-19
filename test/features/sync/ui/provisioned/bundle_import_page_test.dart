@@ -585,7 +585,7 @@ void main() {
         find.text(context.messages.provisionedSyncPasteClipboard),
         findsOneWidget,
       );
-      expect(find.byIcon(Icons.content_paste), findsOneWidget);
+      expect(find.byIcon(LottiIcons.copy), findsOneWidget);
     });
 
     testWidgets('paste button imports from clipboard', (tester) async {

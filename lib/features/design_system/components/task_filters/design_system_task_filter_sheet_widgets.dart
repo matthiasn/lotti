@@ -79,19 +79,19 @@ class _TaskFilterPriorityGlyph extends StatelessWidget {
     final tokens = context.designTokens;
     final glyphAppearance = {
       DesignSystemTaskFilterGlyph.priorityP0: (
-        Icons.new_releases_rounded,
+        LottiIcons.verified,
         tokens.colors.alert.error.defaultColor,
       ),
       DesignSystemTaskFilterGlyph.priorityP1: (
-        Icons.signal_cellular_alt_rounded,
+        LottiIcons.signal,
         tokens.colors.alert.warning.defaultColor,
       ),
       DesignSystemTaskFilterGlyph.priorityP2: (
-        Icons.signal_cellular_alt_2_bar_rounded,
+        LottiIcons.signal,
         tokens.colors.alert.info.defaultColor,
       ),
       DesignSystemTaskFilterGlyph.priorityP3: (
-        Icons.signal_cellular_alt_1_bar_rounded,
+        LottiIcons.signal,
         tokens.colors.alert.success.defaultColor,
       ),
     };

@@ -2,6 +2,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/due_date_text.dart';
 
 import '../../../test_helper.dart';
@@ -20,7 +21,7 @@ void main() {
         );
         await tester.pump(const Duration(milliseconds: 100));
 
-        expect(find.byIcon(Icons.event_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.calendar), findsOneWidget);
         expect(find.byType(Text), findsOneWidget);
       });
     });
@@ -211,7 +212,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
 
         // Verify the icon exists and uses non-urgent color (from colorScheme)
-        final icon = tester.widget<Icon>(find.byIcon(Icons.event_rounded));
+        final icon = tester.widget<Icon>(find.byIcon(LottiIcons.calendar));
         // Non-urgent future dates should NOT have red or orange colors
         expect(icon.color, isNotNull);
       });
@@ -252,7 +253,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
 
         expect(find.byType(DueDateText), findsOneWidget);
-        expect(find.byIcon(Icons.event_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.calendar), findsOneWidget);
       });
     });
 

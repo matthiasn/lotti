@@ -5,9 +5,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
 import 'package:lotti/features/habits/ui/widgets/habits_filter.dart';
+import 'package:lotti/features/habits/ui/widgets/habits_tool_button.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -80,22 +82,30 @@ void main() {
   }
 
   group('HabitsFilter', () {
-    testWidgets('renders an outlined filter icon when nothing is selected', (
+    // These two used to assert `filter_alt_outlined` vs `filter_alt`. Lucide's
+    // `listFilter` is stroke-only and has no filled twin, so the glyph is the
+    // same either way; HabitsToolButton signals the state with an active
+    // surface and a brighter ink, which is what these now pin.
+    testWidgets('is unselected when no categories are filtered', (
       tester,
     ) async {
       await pumpFilter(tester, _WithHabitsController.new);
 
-      expect(find.byIcon(Icons.filter_alt_outlined), findsOneWidget);
-      expect(find.byIcon(Icons.filter_alt), findsNothing);
+      expect(find.byIcon(LottiIcons.filter), findsOneWidget);
+      expect(
+        tester.widget<HabitsToolButton>(find.byType(HabitsToolButton)).active,
+        isFalse,
+      );
     });
 
-    testWidgets('renders a filled filter icon when categories are selected', (
-      tester,
-    ) async {
+    testWidgets('is selected when categories are filtered', (tester) async {
       await pumpFilter(tester, _SelectedController.new);
 
-      expect(find.byIcon(Icons.filter_alt), findsOneWidget);
-      expect(find.byIcon(Icons.filter_alt_outlined), findsNothing);
+      expect(find.byIcon(LottiIcons.filter), findsOneWidget);
+      expect(
+        tester.widget<HabitsToolButton>(find.byType(HabitsToolButton)).active,
+        isTrue,
+      );
     });
 
     testWidgets('opens the deferred category picker when tapped', (

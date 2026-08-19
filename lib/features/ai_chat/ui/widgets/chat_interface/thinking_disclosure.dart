@@ -62,7 +62,7 @@ class ThinkingDisclosureState extends State<ThinkingDisclosure> {
                       duration: const Duration(milliseconds: 170),
                       curve: Curves.easeOut,
                       child: Icon(
-                        Icons.expand_more,
+                        LottiIcons.expand,
                         size: 18,
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -112,7 +112,7 @@ class ThinkingDisclosureState extends State<ThinkingDisclosure> {
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         minimumSize: const Size.square(32),
                       ),
-                      icon: const Icon(Icons.copy, size: 16),
+                      icon: const Icon(LottiIcons.copy, size: 16),
                       onPressed: () async {
                         await Clipboard.setData(
                           ClipboardData(text: widget.thinking),

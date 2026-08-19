@@ -362,7 +362,7 @@ class _HeroPhotoViewRouteWrapperState extends State<HeroPhotoViewRouteWrapper> {
                     child: Center(
                       child: _ImageViewerIconButton(
                         tooltip: context.messages.imageViewerPreviousTooltip,
-                        icon: Icons.chevron_left_rounded,
+                        icon: LottiIcons.chevronLeft,
                         onPressed: _canGoPrevious ? _goToPrevious : null,
                       ),
                     ),
@@ -374,7 +374,7 @@ class _HeroPhotoViewRouteWrapperState extends State<HeroPhotoViewRouteWrapper> {
                     child: Center(
                       child: _ImageViewerIconButton(
                         tooltip: context.messages.imageViewerNextTooltip,
-                        icon: Icons.chevron_right_rounded,
+                        icon: LottiIcons.chevronRight,
                         onPressed: _canGoNext ? _goToNext : null,
                       ),
                     ),
@@ -399,8 +399,8 @@ class _HeroPhotoViewRouteWrapperState extends State<HeroPhotoViewRouteWrapper> {
                             ? context.messages.imageViewerDownloadingTooltip
                             : context.messages.imageViewerDownloadTooltip,
                         icon: _isDownloading
-                            ? Icons.hourglass_top_rounded
-                            : Icons.download_rounded,
+                            ? LottiIcons.pending
+                            : LottiIcons.download,
                         onPressed: _isDownloading
                             ? null
                             : () => unawaited(_downloadImage()),
@@ -410,7 +410,7 @@ class _HeroPhotoViewRouteWrapperState extends State<HeroPhotoViewRouteWrapper> {
                         tooltip: MaterialLocalizations.of(
                           context,
                         ).closeButtonTooltip,
-                        icon: Icons.close_rounded,
+                        icon: LottiIcons.close,
                         onPressed: _close,
                       ),
                     ],
@@ -533,7 +533,7 @@ class _ImageViewerZoomControls extends StatelessWidget {
           children: [
             _ImageViewerZoomButton(
               tooltip: context.messages.viewMenuZoomOut,
-              icon: Icons.remove_rounded,
+              icon: LottiIcons.remove,
               onPressed: canZoomOut ? onZoomOut : null,
             ),
             Tooltip(
@@ -558,7 +558,7 @@ class _ImageViewerZoomControls extends StatelessWidget {
             ),
             _ImageViewerZoomButton(
               tooltip: context.messages.viewMenuZoomIn,
-              icon: Icons.add_rounded,
+              icon: LottiIcons.add,
               onPressed: onZoomIn,
             ),
           ],

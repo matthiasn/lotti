@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 
@@ -120,7 +121,7 @@ void main() {
 
     test('includes suffix icon when provided', () {
       final themeData = ThemeData.light();
-      const suffixIcon = Icon(Icons.search);
+      const suffixIcon = Icon(LottiIcons.search);
       final decoration = inputDecoration(
         themeData: themeData,
         suffixIcon: suffixIcon,

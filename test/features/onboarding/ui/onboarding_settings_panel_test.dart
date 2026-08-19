@@ -14,6 +14,7 @@ import 'package:lotti/features/ai/ui/settings/services/connection_verifier_servi
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/demo/ai/demo_ai_gate.dart';
 import 'package:lotti/features/demo/seed/demo_seed_manifest.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/model/onboarding_event.dart';
 import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
 import 'package:lotti/features/onboarding/state/onboarding_trigger_service.dart';
@@ -99,7 +100,7 @@ void main() {
         await pumpUntilLoaded(tester, find.text('Not started yet'));
         expect(find.text('Not started yet'), findsOneWidget);
         expect(find.text('Start onboarding'), findsOneWidget);
-        expect(find.byIcon(Icons.hourglass_empty_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.pending), findsOneWidget);
       },
     );
 
@@ -127,7 +128,7 @@ void main() {
           findsOneWidget,
         );
         expect(find.text('Replay onboarding'), findsOneWidget);
-        expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.confirmCircled), findsOneWidget);
       },
     );
 

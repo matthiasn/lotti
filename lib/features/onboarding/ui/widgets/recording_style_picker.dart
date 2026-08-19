@@ -194,8 +194,8 @@ class _StyleCard extends StatelessWidget {
                     children: [
                       Icon(
                         selected
-                            ? Icons.radio_button_checked_rounded
-                            : Icons.radio_button_unchecked_rounded,
+                            ? LottiIcons.radioSelected
+                            : LottiIcons.radioUnselected,
                         size: tokens.spacing.step5,
                         color: selected
                             ? accent
@@ -324,7 +324,7 @@ class _TryWithVoiceToggle extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Icon(
-          Icons.mic_rounded,
+          LottiIcons.mic,
           size: tokens.spacing.step5,
           color: value ? accent : textHigh.withValues(alpha: 0.6),
         ),

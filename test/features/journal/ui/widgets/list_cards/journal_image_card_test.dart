@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -92,7 +91,7 @@ void main() {
       // The leading thumbnail is a CardImageWidget over a framed-image glyph
       // placeholder, so a missing file degrades gracefully.
       expect(find.byType(CardImageWidget), findsOneWidget);
-      expect(find.byIcon(MdiIcons.imageOutline), findsOneWidget);
+      expect(find.byIcon(LottiIcons.image), findsOneWidget);
     });
 
     testWidgets('renders the caption text as the title', (tester) async {
@@ -310,7 +309,7 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(MdiIcons.star), findsOneWidget);
+      expect(find.byIcon(LottiIcons.star), findsOneWidget);
     });
 
     testWidgets('shows private icon when entry is private', (tester) async {
@@ -324,7 +323,7 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(MdiIcons.security), findsOneWidget);
+      expect(find.byIcon(LottiIcons.shield), findsOneWidget);
     });
 
     testWidgets('shows flag icon for imported entries', (tester) async {
@@ -341,7 +340,7 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(MdiIcons.flag), findsOneWidget);
+      expect(find.byIcon(LottiIcons.flag), findsOneWidget);
     });
 
     testWidgets('hides deleted entries', (tester) async {

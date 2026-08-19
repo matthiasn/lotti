@@ -195,7 +195,7 @@ void main() {
       await tester.pump();
 
       expect(find.byKey(const Key('daily_os_timeline_scroll')), findsOneWidget);
-      expect(find.byIcon(Icons.view_week_outlined), findsNothing);
+      expect(find.byIcon(LottiIcons.viewColumns), findsNothing);
       expect(tester.takeException(), isNull);
     });
 
@@ -436,7 +436,7 @@ void main() {
       await tester.pump();
 
       // Placement reasons stay compact in the duration-sized timeline boxes.
-      expect(find.byIcon(Icons.auto_awesome_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.aiSpark), findsOneWidget);
       expect(find.byTooltip('Your highest-focus window.'), findsOneWidget);
     });
 
@@ -1082,9 +1082,9 @@ void main() {
         expect(fill, expected);
         expect(fill.a, 1.0);
         // Done sessions get the green check.
-        expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
         // Tracked blocks never surface agent reasoning.
-        expect(find.byIcon(Icons.auto_awesome_rounded), findsNothing);
+        expect(find.byIcon(LottiIcons.aiSpark), findsNothing);
         // The mono time range carries the recorded voice (no suffix —
         // the lane header already says Actual).
         final subtitle = tester.widget<Text>(find.text('09:00\u201310:30'));
@@ -1191,8 +1191,19 @@ void main() {
         await tester.pump();
 
         // Task-linked block carries the small info link icon.
-        expect(find.byIcon(Icons.link_rounded), findsOneWidget);
-        expect(find.byIcon(Icons.edit_rounded), findsNWidgets(2));
+        expect(find.byIcon(LottiIcons.link), findsOneWidget);
+        // Three pencils, not two: the two plan blocks plus the standalone
+        // title's inline rename. Material drew them `edit_rounded` and
+        // `edit_outlined`, so counting blocks alone used to work; Lucide has
+        // one pencil, so the two kinds are told apart by where they sit.
+        expect(find.byIcon(LottiIcons.edit), findsNWidgets(3));
+        expect(
+          find.descendant(
+            of: find.byType(EditableTitle),
+            matching: find.byIcon(LottiIcons.edit),
+          ),
+          findsOneWidget,
+        );
 
         await tester.tap(
           find.byKey(const Key('daily_os_edit_block_linked')),

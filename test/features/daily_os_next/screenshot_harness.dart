@@ -20,6 +20,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/ui/animation/ai_state_shader_animation.dart';
 import 'package:path/path.dart' as p;
 
+import '../../test_utils/screenshot_harness.dart';
+
 export '../../helpers/manual_screenshot_locale.dart';
 
 /// Stable key expected on the [RepaintBoundary] that frames the app under
@@ -59,122 +61,39 @@ bool get screenshotCaptureEnabled =>
     Platform.environment['LOTTI_CAPTURE_SCREENSHOTS'] == 'true' ||
     Platform.environment.containsKey('LOTTI_SCREENSHOT_DIR');
 
-/// Loads the real app fonts (Inter, Inconsolata), color emoji, Material icons,
-/// and the Material Design Icons webfont so captures render production glyphs
-/// instead of Ahem boxes/tofu. [captureScreenshot] loads the runtime fragment
-/// programs inside each active test render context. Call this from `setUpAll`.
+/// Loads every font a capture needs so glyphs render as production draws them
+/// instead of Ahem boxes and tofu.
+///
+/// Delegates the bulk to [loadAppFonts], which reads `FontManifest.json` — the
+/// same list `flutter test` ships — and therefore picks up the app's own
+/// families, Material icons, and *every* icon-font package automatically.
+///
+/// This used to hand-register each family, hunting the pub cache for the
+/// Material Design Icons webfont by name. That shape breaks silently every
+/// time an icon-font package is added: the glyphs resolve to codepoints the
+/// loaded fonts do not carry, so captures publish tofu boxes while the running
+/// app is perfectly fine — which is exactly what happened when Lucide arrived.
+/// Reading the manifest cannot fall behind in that way.
+///
+/// [captureScreenshot] loads the runtime fragment programs inside each active
+/// test render context. Call this from `setUpAll`.
 Future<void> loadScreenshotFonts() async {
-  TestWidgetsFlutterBinding.ensureInitialized();
-  Future<ByteData> fontBytes(String path) async {
-    final bytes = await File(path).readAsBytes();
-    return ByteData.view(bytes.buffer);
-  }
+  await loadAppFonts();
 
-  final inter = FontLoader('Inter')
-    ..addFont(
-      fontBytes('assets/fonts/Inter/Inter-VariableFont_opsz,wght.ttf'),
-    );
-  final inconsolata = FontLoader('Inconsolata')
-    ..addFont(fontBytes('assets/fonts/Inconsolata/Inconsolata-Regular.ttf'))
-    ..addFont(fontBytes('assets/fonts/Inconsolata/Inconsolata-Medium.ttf'));
-  // Flutter's headless test engine does not resolve the platform-generic
-  // `monospace` family. Register the same bundled face under that alias so
-  // production widgets that intentionally request a generic mono font render
-  // actual text instead of Ahem bars in manual captures.
-  final genericMonospace = FontLoader('monospace')
-    ..addFont(fontBytes('assets/fonts/Inconsolata/Inconsolata-Regular.ttf'))
-    ..addFont(fontBytes('assets/fonts/Inconsolata/Inconsolata-Medium.ttf'));
-  await inter.load();
-  await inconsolata.load();
-  await genericMonospace.load();
-
-  // Device builds resolve emoji through the platform font fallback. The
-  // headless Linux test engine does not discover that font by itself, so SAS
-  // verification rows otherwise publish literal "NO GLYPH" boxes. Register
-  // the installed Noto face under the same family used by the design-system
-  // fallback list.
-  final emojiFont = findEmojiFont();
-  if (emojiFont != null) {
-    final emoji = FontLoader('Noto Color Emoji')
-      ..addFont(fontBytes(emojiFont.path));
-    await emoji.load();
-  }
-
-  final flutterRoot =
-      Platform.environment['FLUTTER_ROOT'] ?? '.fvm/flutter_sdk';
-  final iconFont = File(
-    p.join(
-      flutterRoot,
-      'bin',
-      'cache',
-      'artifacts',
-      'material_fonts',
-      'MaterialIcons-Regular.otf',
-    ),
-  );
-  if (iconFont.existsSync()) {
-    final icons = FontLoader('MaterialIcons')
-      ..addFont(fontBytes(iconFont.path));
-    await icons.load();
-  }
-
-  // The voice orb's mic glyph comes from the MDI webfont (package font →
-  // prefixed family). Without it the orb renders a tofu box.
-  final mdiFont = findMdiFont(
-    Directory(
-      p.join(
-        Platform.environment['HOME'] ?? '',
-        '.pub-cache',
-        'hosted',
-        'pub.dev',
-      ),
-    ),
-  );
-  if (mdiFont != null) {
-    final mdi = FontLoader(
-      'packages/flutter_material_design_icons/Material Design Icons',
-    )..addFont(fontBytes(mdiFont.path));
-    await mdi.load();
-  }
-}
-
-/// Finds the standard Noto Color Emoji installation used by Linux capture
-/// runners. Other platforms already provide their native emoji fallback.
-@visibleForTesting
-File? findEmojiFont() {
-  const candidates = [
-    '/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf',
-    '/usr/share/fonts/noto-color-emoji/NotoColorEmoji.ttf',
-  ];
-  for (final path in candidates) {
-    final file = File(path);
-    if (file.existsSync()) return file;
-  }
-  return null;
-}
-
-/// Locates the Material Design Icons webfont inside the pub cache without
-/// hard-coding the package version.
-@visibleForTesting
-File? findMdiFont(Directory pubHosted) {
-  if (!pubHosted.existsSync()) return null;
-  final dirs =
-      pubHosted
-          .listSync()
-          .whereType<Directory>()
-          .where(
-            (d) =>
-                p.basename(d.path).startsWith('flutter_material_design_icons-'),
-          )
-          .toList()
-        ..sort((a, b) => b.path.compareTo(a.path));
-  for (final dir in dirs) {
-    final font = File(
-      p.join(dir.path, 'assets', 'materialdesignicons-webfont.ttf'),
-    );
-    if (font.existsSync()) return font;
-  }
-  return null;
+  // Not in the manifest, and cannot be: Flutter's headless test engine does
+  // not resolve the platform-generic `monospace` family, so production widgets
+  // that deliberately ask for a generic mono font render Ahem bars. Registering
+  // a bundled face under that alias is the only way to close it.
+  final bytes = await File(
+    'assets/fonts/Inconsolata/Inconsolata-Regular.ttf',
+  ).readAsBytes();
+  final medium = await File(
+    'assets/fonts/Inconsolata/Inconsolata-Medium.ttf',
+  ).readAsBytes();
+  await (FontLoader('monospace')
+        ..addFont(Future.value(ByteData.view(bytes.buffer)))
+        ..addFont(Future.value(ByteData.view(medium.buffer))))
+      .load();
 }
 
 /// Renders the boundary keyed [screenshotBoundaryKey] to

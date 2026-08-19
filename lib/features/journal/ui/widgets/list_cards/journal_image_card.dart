@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
@@ -153,7 +152,7 @@ class _ImageThumbnail extends StatelessWidget {
                 ),
               ),
               child: Icon(
-                MdiIcons.imageOutline,
+                LottiIcons.image,
                 color: context.colorScheme.onSurfaceVariant.withValues(
                   alpha: 0.5,
                 ),
@@ -182,11 +181,11 @@ class _StatusIndicators extends StatelessWidget {
     final cs = context.colorScheme;
     final indicators = <Widget>[
       if (fromNullableBool(item.meta.private))
-        Icon(MdiIcons.security, color: cs.error, size: 16),
+        Icon(LottiIcons.shield, color: cs.error, size: 16),
       if (fromNullableBool(item.meta.starred))
-        const Icon(MdiIcons.star, color: starredGold, size: 16),
+        const Icon(LottiIcons.star, color: starredGold, size: 16),
       if (item.meta.flag == EntryFlag.import)
-        Icon(MdiIcons.flag, color: cs.error, size: 16),
+        Icon(LottiIcons.flag, color: cs.error, size: 16),
     ];
 
     if (indicators.isEmpty) {

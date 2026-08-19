@@ -22,7 +22,7 @@ class EmptyRoot extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              Icons.settings_outlined,
+              LottiIcons.settings,
               size: SettingsV2Constants.placeholderIconSize,
               color: textMid,
             ),

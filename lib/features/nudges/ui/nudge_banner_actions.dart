@@ -95,7 +95,7 @@ Future<bool> showNudgeBannerSnoozeSheet(
                   ])
                     DesignSystemButton(
                       label: option.$2,
-                      leadingIcon: Icons.snooze_rounded,
+                      leadingIcon: LottiIcons.snooze,
                       variant: DesignSystemButtonVariant.secondary,
                       size: DesignSystemButtonSize.dense,
                       // Compact PILLS, full-size TARGETS: these are the
@@ -192,7 +192,7 @@ Future<void> showNudgeBannerRatingSheet(
                     onPressed: () => Navigator.of(sheetContext).pop(value),
                     tooltip: '$value',
                     icon: Icon(
-                      Icons.star_rate_rounded,
+                      LottiIcons.star,
                       size: tokens.spacing.step7,
                       color: tokens.colors.text.mediumEmphasis,
                     ),

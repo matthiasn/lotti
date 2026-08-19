@@ -104,7 +104,7 @@ class _SidebarAudioRecordingCard extends ConsumerWidget {
     return SidebarLiveCard(
       key: const Key('sidebar_audio_recording_card'),
       accent: errorColor,
-      glyph: Icons.mic_rounded,
+      glyph: LottiIcons.mic,
       statusLabel: messages.sidebarAudioRecordingStatusLabel,
       title: title,
       timeText: durationText,
@@ -172,7 +172,7 @@ class _StopAudioRecordingButton extends StatelessWidget {
               width: 28,
               height: 28,
               child: Icon(
-                Icons.stop_rounded,
+                LottiIcons.stop,
                 size: 16,
                 color: errorColor,
               ),

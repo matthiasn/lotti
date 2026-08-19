@@ -137,7 +137,7 @@ class _BreadcrumbChipState extends State<_BreadcrumbChip> {
             height: spec.height,
             child: Center(
               child: Icon(
-                Icons.chevron_right_rounded,
+                LottiIcons.chevronRight,
                 size: spec.chevronSize,
                 color: style.contentColor,
               ),

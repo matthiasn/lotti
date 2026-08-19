@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings_v2/domain/settings_node.dart';
 import 'package:lotti/features/settings_v2/ui/detail/category_empty.dart';
 
@@ -7,13 +8,13 @@ import '../../../../widget_test_utils.dart';
 
 SettingsNode _syncBranch({String desc = 'Configure sync'}) => SettingsNode(
   id: 'sync',
-  icon: Icons.sync_rounded,
+  icon: LottiIcons.sync,
   title: 'Sync',
   desc: desc,
   children: const [
     SettingsNode(
       id: 'sync/backfill',
-      icon: Icons.cloud_download_outlined,
+      icon: LottiIcons.cloudDownload,
       title: 'Backfill',
       desc: '',
       panel: 'sync-backfill',
@@ -42,7 +43,7 @@ void main() {
   group('CategoryEmpty — content', () {
     testWidgets('renders the branch icon', (tester) async {
       await _pump(tester, _syncBranch());
-      expect(find.byIcon(Icons.sync_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.sync), findsOneWidget);
     });
 
     testWidgets("renders the branch's title as heading", (tester) async {

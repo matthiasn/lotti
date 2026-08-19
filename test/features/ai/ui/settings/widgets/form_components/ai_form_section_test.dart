@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/form_components/ai_form_section.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../../../../widget_test_utils.dart';
 
@@ -21,7 +22,7 @@ void main() {
         buildTestWidget(
           const AiFormSection(
             title: 'Test Section',
-            icon: Icons.settings,
+            icon: LottiIcons.settings,
             children: [
               Text('Child Widget'),
             ],
@@ -30,7 +31,7 @@ void main() {
       );
 
       expect(find.text('Test Section'), findsOneWidget);
-      expect(find.byIcon(Icons.settings), findsOneWidget);
+      expect(find.byIcon(LottiIcons.settings), findsOneWidget);
     });
 
     testWidgets('renders description when provided', (tester) async {
@@ -38,7 +39,7 @@ void main() {
         buildTestWidget(
           const AiFormSection(
             title: 'Test',
-            icon: Icons.info,
+            icon: LottiIcons.info,
             description: 'This is a test description',
             children: [
               Text('Child'),
@@ -55,7 +56,7 @@ void main() {
         buildTestWidget(
           const AiFormSection(
             title: 'Test',
-            icon: Icons.list,
+            icon: LottiIcons.list,
             children: [
               Text('Child 1'),
               Text('Child 2'),
@@ -75,7 +76,7 @@ void main() {
         buildTestWidget(
           const AiFormSection(
             title: 'Test',
-            icon: Icons.palette,
+            icon: LottiIcons.palette,
             children: [
               Text('Content'),
             ],
@@ -100,7 +101,7 @@ void main() {
         buildTestWidget(
           const AiFormSection(
             title: 'Test',
-            icon: Icons.rounded_corner,
+            icon: LottiIcons.settings,
             children: [
               Text('Content'),
             ],
@@ -125,7 +126,7 @@ void main() {
         buildTestWidget(
           const AiFormSection(
             title: 'Layout Test',
-            icon: Icons.view_column,
+            icon: LottiIcons.viewColumns,
             description: 'Testing layout',
             children: [
               SizedBox(height: 50, child: Placeholder()),
@@ -141,7 +142,7 @@ void main() {
 
       // Verify icon is within the header row
       final headerRow = find.ancestor(
-        of: find.byIcon(Icons.view_column),
+        of: find.byIcon(LottiIcons.viewColumns),
         matching: find.byType(Row),
       );
       expect(headerRow, findsOneWidget);

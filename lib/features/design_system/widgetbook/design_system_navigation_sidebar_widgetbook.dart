@@ -137,8 +137,8 @@ class _ExpandedSidebarContent extends StatelessWidget {
           child: DesignSystemButton(
             label: context.messages.designSystemNavigationNewLabel,
             size: DesignSystemButtonSize.medium,
-            leadingIcon: Icons.add_rounded,
-            trailingIcon: Icons.keyboard_arrow_down_rounded,
+            leadingIcon: LottiIcons.add,
+            trailingIcon: LottiIcons.chevronDown,
             onPressed: widgetbookNoop,
           ),
         ),
@@ -212,7 +212,7 @@ class _CollapsedSidebarNewButton extends StatelessWidget {
             onTap: widgetbookNoop,
             child: Center(
               child: Icon(
-                Icons.add_rounded,
+                LottiIcons.add,
                 size: tokens.typography.lineHeight.subtitle2,
                 color: tokens.colors.text.onInteractiveAlert,
               ),
@@ -240,7 +240,7 @@ class _SidebarLogoRow extends StatelessWidget {
       child: Row(
         children: [
           Icon(
-            Icons.menu_rounded,
+            LottiIcons.menu,
             size: 24,
             color: palette.iconColor,
           ),
@@ -421,7 +421,7 @@ class _DailyFilterCard extends StatelessWidget {
                 ),
               ),
               Icon(
-                open ? Icons.expand_less_rounded : Icons.expand_more_rounded,
+                open ? LottiIcons.collapse : LottiIcons.expand,
                 size: 20,
                 color: tokens.colors.text.mediumEmphasis,
               ),

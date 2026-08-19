@@ -122,7 +122,7 @@ class _InferenceModelEditPageState
           elevation: 0,
           scrolledUnderElevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_rounded),
+            icon: const Icon(LottiIcons.back),
             tooltip: messages.modelEditBackTooltip,
             onPressed: () => popAiSettingsDetail(context),
           ),
@@ -153,7 +153,7 @@ class _InferenceModelEditPageState
                   : messages.aiFormFixErrors,
               child: DesignSystemButton(
                 label: messages.modelEditSaveButton,
-                leadingIcon: Icons.save_rounded,
+                leadingIcon: LottiIcons.save,
                 onPressed: isFormValid && !_isSaving ? handleSave : null,
               ),
             ),
@@ -238,7 +238,7 @@ class _InferenceModelEditPageState
                 controller: formController.nameController,
                 onChanged: formController.nameChanged,
                 validator: (_) => formState.name.error?.displayMessage,
-                prefixIcon: Icons.label_outline_rounded,
+                prefixIcon: LottiIcons.label,
               ),
               SizedBox(height: tokens.spacing.step4),
               AiTextField(
@@ -248,7 +248,7 @@ class _InferenceModelEditPageState
                 onChanged: formController.providerModelIdChanged,
                 validator: (_) =>
                     formState.providerModelId.error?.displayMessage,
-                prefixIcon: Icons.fingerprint_rounded,
+                prefixIcon: LottiIcons.fingerprint,
               ),
               SizedBox(height: tokens.spacing.step4),
               AiTextField(
@@ -259,7 +259,7 @@ class _InferenceModelEditPageState
                 validator: (_) => formState.description.error,
                 maxLines: 3,
                 minLines: 2,
-                prefixIcon: Icons.description_rounded,
+                prefixIcon: LottiIcons.description,
               ),
               SizedBox(height: tokens.spacing.step4),
               AiTextField(
@@ -270,7 +270,7 @@ class _InferenceModelEditPageState
                 validator: (_) =>
                     formState.maxCompletionTokens.error?.displayMessage,
                 keyboardType: TextInputType.number,
-                prefixIcon: Icons.numbers_rounded,
+                prefixIcon: LottiIcons.stepNumber,
               ),
               if (ownerProvider?.inferenceProviderType ==
                   InferenceProviderType.gemini) ...[
@@ -326,7 +326,7 @@ class _InferenceModelEditPageState
                 description: messages.modelEditReasoningDescription,
                 value: formState.isReasoningModel,
                 onChanged: formController.isReasoningModelChanged,
-                icon: Icons.psychology_alt_rounded,
+                icon: LottiIcons.reasoning,
               ),
               SizedBox(height: tokens.spacing.step3),
               UnifiedAiToggleField(
@@ -334,7 +334,7 @@ class _InferenceModelEditPageState
                 description: messages.modelEditFunctionCallingDescription,
                 value: formState.supportsFunctionCalling,
                 onChanged: formController.supportsFunctionCallingChanged,
-                icon: Icons.functions_rounded,
+                icon: LottiIcons.formula,
               ),
             ],
           ),
@@ -421,7 +421,7 @@ class _InferenceModelEditPageState
                 borderRadius: BorderRadius.circular(tokens.radii.l),
               ),
               child: Icon(
-                Icons.error_outline_rounded,
+                LottiIcons.error,
                 size: tokens.spacing.step8,
                 color: tokens.colors.alert.error.defaultColor,
               ),

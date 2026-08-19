@@ -65,7 +65,7 @@ class Header extends StatelessWidget {
                 child: GestureDetector(
                   onTap: onToggleExpand,
                   child: Icon(
-                    Icons.expand_more,
+                    LottiIcons.expand,
                     size: 24,
                     color: tokens.colors.text.lowEmphasis,
                   ),
@@ -75,7 +75,7 @@ class Header extends StatelessWidget {
               GestureDetector(
                 onTap: () {},
                 child: Icon(
-                  Icons.more_vert,
+                  LottiIcons.moreVertical,
                   size: 24,
                   color: tokens.colors.text.lowEmphasis,
                 ),
@@ -378,7 +378,7 @@ class _DismissibleRowState extends State<_DismissibleRow> {
           child: Padding(
             padding: const EdgeInsets.only(left: 16),
             child: Icon(
-              item.isArchived ? Icons.unarchive : Icons.archive,
+              item.isArchived ? LottiIcons.unarchive : LottiIcons.archive,
               color: Colors.white,
             ),
           ),
@@ -390,7 +390,7 @@ class _DismissibleRowState extends State<_DismissibleRow> {
           alignment: Alignment.centerRight,
           child: Padding(
             padding: EdgeInsets.only(right: 16),
-            child: Icon(Icons.delete, color: Colors.white),
+            child: Icon(LottiIcons.delete, color: Colors.white),
           ),
         ),
       ),
@@ -407,7 +407,7 @@ class _DismissibleRowState extends State<_DismissibleRow> {
                   ReorderableDragStartListener(
                     index: widget.index,
                     child: Icon(
-                      Icons.drag_indicator,
+                      LottiIcons.drag,
                       size: 24,
                       color: tokens.colors.text.lowEmphasis.withValues(
                         alpha: 0.32,
@@ -467,7 +467,7 @@ class _DismissibleRowState extends State<_DismissibleRow> {
                     GestureDetector(
                       onTap: () => setState(() => _isEditing = true),
                       child: Icon(
-                        Icons.mode_edit_outlined,
+                        LottiIcons.edit,
                         size: 20,
                         color: tokens.colors.text.lowEmphasis,
                       ),

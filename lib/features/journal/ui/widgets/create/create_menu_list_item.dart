@@ -70,7 +70,7 @@ class CreateMenuListItem extends StatelessWidget {
         // Rounded family for both glyphs, at one size and one emphasis, so
         // the plus and the chevron carry equal ink — the behavioural signal
         // must not be faintest exactly where its meaning is rarest.
-        opensSheet ? Icons.chevron_right_rounded : Icons.add_rounded,
+        opensSheet ? LottiIcons.chevronRight : LottiIcons.add,
         size: IconSizes.s,
         color: tokens.colors.text.mediumEmphasis,
       ),

@@ -60,7 +60,7 @@ class LoggingSettingsBody extends ConsumerWidget {
           (
             title: context.messages.settingsLoggingGlobalToggle,
             subtitle: context.messages.settingsLoggingGlobalToggleSubtitle,
-            icon: Icons.article_rounded,
+            icon: LottiIcons.description,
             value: enableLogging,
             onChanged: (status) =>
                 _setConfigFlagStatus(enableLoggingFlag, status),
@@ -69,7 +69,7 @@ class LoggingSettingsBody extends ConsumerWidget {
             (
               title: _domainLabel(context, domain),
               subtitle: null,
-              icon: Icons.tune_rounded,
+              icon: LottiIcons.tune,
               value:
                   ref.watch(configFlagProvider(domain.flagName)).value ?? false,
               onChanged: enableLogging
@@ -79,7 +79,7 @@ class LoggingSettingsBody extends ConsumerWidget {
           (
             title: context.messages.settingsLoggingSlowQueries,
             subtitle: context.messages.settingsLoggingSlowQueriesSubtitle,
-            icon: Icons.speed_rounded,
+            icon: LottiIcons.speed,
             value: logSlowQueries,
             onChanged: enableLogging
                 ? (status) => _setConfigFlagStatus(logSlowQueriesFlag, status)

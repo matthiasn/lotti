@@ -38,7 +38,7 @@ void main() {
           items: [
             DesignSystemContextMenuItem(
               label: 'Copy',
-              icon: Icons.copy,
+              icon: LottiIcons.copy,
             ),
           ],
         ),
@@ -47,7 +47,7 @@ void main() {
       expect(
         find.descendant(
           of: find.byKey(key),
-          matching: find.byIcon(Icons.copy),
+          matching: find.byIcon(LottiIcons.copy),
         ),
         findsOneWidget,
       );
@@ -186,7 +186,7 @@ void main() {
               DesignSystemContextMenuItem(
                 key: lastItemKey,
                 label: 'No entry',
-                icon: Icons.radio_button_unchecked_rounded,
+                icon: LottiIcons.radioUnselected,
                 iconColor: Colors.grey,
                 isSelected: true,
               ),
@@ -212,7 +212,7 @@ void main() {
         final icon = tester.widget<Icon>(
           find.descendant(
             of: find.byKey(lastItemKey),
-            matching: find.byIcon(Icons.radio_button_unchecked_rounded),
+            matching: find.byIcon(LottiIcons.radioUnselected),
           ),
         );
         expect(icon.color, Colors.grey);

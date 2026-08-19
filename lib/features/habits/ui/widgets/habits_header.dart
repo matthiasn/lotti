@@ -36,7 +36,7 @@ class HabitsHeader extends ConsumerWidget {
       onValueChanged: controller.setDisplayFilter,
     );
     final search = HabitsToolButton(
-      icon: Icons.search,
+      icon: LottiIcons.search,
       active: state.showSearch,
       onPressed: controller.toggleShowSearch,
       semanticLabel: messages.searchHint,

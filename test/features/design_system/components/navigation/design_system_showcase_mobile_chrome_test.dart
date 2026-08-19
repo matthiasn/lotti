@@ -141,9 +141,9 @@ void main() {
       expect(clock.style?.color, dsTokensDark.colors.text.highEmphasis);
 
       for (final icon in [
-        Icons.signal_cellular_alt_rounded,
-        Icons.wifi_rounded,
-        Icons.battery_full_rounded,
+        LottiIcons.signal,
+        LottiIcons.wifi,
+        LottiIcons.battery,
       ]) {
         expect(
           tester.widget<Icon>(find.byIcon(icon)).color,
@@ -168,7 +168,7 @@ void main() {
         Colors.amber,
       );
       expect(
-        tester.widget<Icon>(find.byIcon(Icons.wifi_rounded)).color,
+        tester.widget<Icon>(find.byIcon(LottiIcons.wifi)).color,
         Colors.amber,
       );
     });

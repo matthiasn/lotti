@@ -142,7 +142,7 @@ class ProjectStatusPill extends StatelessWidget {
           if (large) ...[
             SizedBox(width: tokens.spacing.step1),
             Icon(
-              Icons.unfold_more_rounded,
+              LottiIcons.expandBoth,
               size: tokens.typography.lineHeight.caption,
               color: ShowcasePalette.mediumText(context),
             ),
@@ -427,7 +427,7 @@ class TaskStatePill extends StatelessWidget {
       TaskRejected() => (
         iconColor: ShowcasePalette.error(context),
         assetName: null,
-        fallbackIcon: Icons.cancel_outlined,
+        fallbackIcon: LottiIcons.closeCircled,
       ),
     };
 

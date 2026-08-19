@@ -126,7 +126,7 @@ class _LogbookEmptyState extends StatelessWidget {
     final messages = context.messages;
 
     return DesignSystemEmptyState(
-      icon: Icons.menu_book_outlined,
+      icon: LottiIcons.book,
       title: narrowedByUserInput
           ? messages.logbookNoMatchesTitle
           : messages.logbookEmptyTitle,
@@ -140,7 +140,7 @@ class _LogbookEmptyState extends StatelessWidget {
           ? null
           : DesignSystemButton(
               label: messages.createEntryLabel,
-              leadingIcon: Icons.add_rounded,
+              leadingIcon: LottiIcons.add,
               onPressed: () => CreateEntryModal.show(
                 context: context,
                 linkedFromId: null,

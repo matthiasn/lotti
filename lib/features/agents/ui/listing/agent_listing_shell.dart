@@ -212,7 +212,7 @@ class _EmptyState extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              Icons.search,
+              LottiIcons.search,
               size: 28,
               color: tokens.colors.text.lowEmphasis,
             ),

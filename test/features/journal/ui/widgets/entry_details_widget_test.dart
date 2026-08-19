@@ -23,6 +23,7 @@ import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/events/ui/widgets/linked_event_card.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -1707,7 +1708,7 @@ void main() {
         // Two chevrons confirm the collapsible code path: the header's collapse
         // chevron (absent on the non-collapsible header) plus the nested
         // section's own. The nested section + audio player render in the body.
-        expect(find.byIcon(Icons.expand_more), findsNWidgets(2));
+        expect(find.byIcon(LottiIcons.expand), findsNWidgets(2));
         expect(find.byType(NestedAiResponsesWidget), findsOneWidget);
         expect(find.byType(AudioPlayerWidget), findsOneWidget);
       },
@@ -2351,7 +2352,7 @@ void main() {
 
         // Grab the production onToggleCollapse closure while the header (and its
         // chevron) is rendered at the top of the viewport (offset 0).
-        expect(find.byIcon(Icons.expand_more), findsOneWidget);
+        expect(find.byIcon(LottiIcons.expand), findsOneWidget);
         final header = tester.widget<EntryDetailHeader>(
           find.byType(EntryDetailHeader),
         );
@@ -2456,7 +2457,7 @@ void main() {
         // Entry is at the very top (offset 0) — nothing is scrolled past it.
         expect(scrollController.position.pixels, 0);
 
-        await tester.tap(find.byIcon(Icons.expand_more));
+        await tester.tap(find.byIcon(LottiIcons.expand));
         await tester.pump();
 
         verify(
@@ -2554,7 +2555,7 @@ void main() {
         // Starts fully folded away.
         expect(sizeFactor(tester), 0.0);
 
-        await tester.tap(find.byIcon(Icons.expand_more));
+        await tester.tap(find.byIcon(LottiIcons.expand));
         await tester.pump();
         await tester.pump(AppTheme.collapseAnimationDuration);
 
@@ -2613,7 +2614,7 @@ void main() {
         // Starts fully expanded.
         expect(sizeFactor(tester), 1.0);
 
-        await tester.tap(find.byIcon(Icons.expand_more));
+        await tester.tap(find.byIcon(LottiIcons.expand));
         await tester.pump();
         await tester.pump(AppTheme.collapseAnimationDuration);
 
@@ -2681,7 +2682,7 @@ void main() {
 
         // Tap to expand → optimistic override flips open while `link` still
         // reads collapsed.
-        await tester.tap(find.byIcon(Icons.expand_more));
+        await tester.tap(find.byIcon(LottiIcons.expand));
         await tester.pump();
         await tester.pump(AppTheme.collapseAnimationDuration);
         expect(sizeFactor(tester), 1.0);
@@ -2750,7 +2751,7 @@ void main() {
         await tester.pump();
 
         // No collapse arrow should be shown for text entries
-        expect(find.byIcon(Icons.expand_more), findsNothing);
+        expect(find.byIcon(LottiIcons.expand), findsNothing);
       });
 
       testWidgets('image entry without linkedFrom is NOT collapsible', (
@@ -2773,7 +2774,7 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.byIcon(Icons.expand_more), findsNothing);
+        expect(find.byIcon(LottiIcons.expand), findsNothing);
       });
     });
 
@@ -2808,7 +2809,7 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.byIcon(Icons.expand_more), findsOneWidget);
+        expect(find.byIcon(LottiIcons.expand), findsOneWidget);
       });
 
       testWidgets('shows SizeTransition for collapsible entry', (tester) async {
@@ -2853,7 +2854,7 @@ void main() {
           await tester.pump();
 
           // Non-collapsible entries don't use AnimatedSize for collapse
-          expect(find.byIcon(Icons.expand_more), findsNothing);
+          expect(find.byIcon(LottiIcons.expand), findsNothing);
         },
       );
 
@@ -2947,7 +2948,7 @@ void main() {
         await tester.pump();
         await tester.pump(AppTheme.chevronRotationDuration);
 
-        expect(find.byIcon(Icons.expand_more), findsOneWidget);
+        expect(find.byIcon(LottiIcons.expand), findsOneWidget);
       });
 
       testWidgets(
@@ -3080,7 +3081,7 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.byIcon(Icons.expand_more), findsOneWidget);
+        expect(find.byIcon(LottiIcons.expand), findsOneWidget);
       });
 
       testWidgets('shows SizeTransition for collapsible text entry', (
@@ -3194,7 +3195,7 @@ void main() {
         );
         await tester.pump();
 
-        await tester.tap(find.byIcon(Icons.expand_more));
+        await tester.tap(find.byIcon(LottiIcons.expand));
         await tester.pump();
 
         final captured = verify(
@@ -3512,7 +3513,7 @@ void main() {
         await tester.pump();
 
         // The collapse arrow should be present (isCollapsible = true)
-        expect(find.byIcon(Icons.expand_more), findsOneWidget);
+        expect(find.byIcon(LottiIcons.expand), findsOneWidget);
 
         // The EntryDetailHeader widget should be rendered with collapse props
         final header = tester.widget<EntryDetailHeader>(
@@ -3564,7 +3565,7 @@ void main() {
         await tester.pump();
 
         // Tap the collapse chevron
-        await tester.tap(find.byIcon(Icons.expand_more));
+        await tester.tap(find.byIcon(LottiIcons.expand));
         await tester.pump();
 
         // Verify updateLink was called with collapsed: true
@@ -3622,7 +3623,7 @@ void main() {
           await tester.pump();
 
           // Tap the collapse chevron (which should expand)
-          await tester.tap(find.byIcon(Icons.expand_more));
+          await tester.tap(find.byIcon(LottiIcons.expand));
           await tester.pump();
 
           // Verify updateLink was called with collapsed: false
@@ -3734,7 +3735,7 @@ void main() {
 
         // Tap the collapse chevron — updateLink will throw synchronously,
         // so a single frame is enough for the catch path to run.
-        await tester.tap(find.byIcon(Icons.expand_more));
+        await tester.tap(find.byIcon(LottiIcons.expand));
         await tester.pump();
 
         // Verify the exception was captured via LoggingService

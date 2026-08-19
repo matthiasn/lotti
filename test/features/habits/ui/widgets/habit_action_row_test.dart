@@ -9,6 +9,7 @@ import 'package:lotti/features/design_system/components/celebration/celebration_
 import 'package:lotti/features/design_system/components/celebration/celebration_variant.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_burst.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_glow.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_action_row.dart';
 import 'package:lotti/features/settings/state/celebration_preferences_controller.dart';
 import 'package:lotti/get_it.dart';
@@ -140,7 +141,7 @@ void main() {
         when(() => mockCacheService.getHabitById(habit.id)).thenReturn(habit);
         await pumpRow(tester, habit: habit);
         expect(
-          find.byIcon(Icons.star_rounded),
+          find.byIcon(LottiIcons.star),
           priority ? findsOneWidget : findsNothing,
         );
       });
@@ -176,7 +177,7 @@ void main() {
       tester,
     ) async {
       await pumpRow(tester, currentStreak: 3);
-      expect(find.byIcon(Icons.local_fire_department_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.streak), findsOneWidget);
       expect(find.text('3'), findsOneWidget);
       expect(greenBoxes(), findsNWidgets(3));
     });
@@ -185,7 +186,7 @@ void main() {
       tester,
     ) async {
       await pumpRow(tester);
-      expect(find.byIcon(Icons.local_fire_department_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.streak), findsNothing);
       expect(greenBoxes(), findsNothing);
     });
 
@@ -302,7 +303,7 @@ void main() {
 
       // Settles to the done state with the glow gone.
       await tester.pump(const Duration(milliseconds: 900));
-      expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.confirmCircled), findsOneWidget);
       expect(flash, findsNothing);
     });
   });
@@ -313,10 +314,10 @@ void main() {
     ) async {
       await pumpRow(tester);
       // Hollow add ring, never the completed check-circle.
-      expect(find.byIcon(Icons.add_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.check_circle_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.add), findsOneWidget);
+      expect(find.byIcon(LottiIcons.confirmCircled), findsNothing);
 
-      await tester.tap(find.byIcon(Icons.add_rounded));
+      await tester.tap(find.byIcon(LottiIcons.add));
       await tester.pump();
       await tester.pump();
 
@@ -340,7 +341,7 @@ void main() {
         await pumpRow(tester); // not done
         expect(find.byType(CompletionBurst), findsNothing);
 
-        await tester.tap(find.byIcon(Icons.add_rounded));
+        await tester.tap(find.byIcon(LottiIcons.add));
         await tester.pump(); // establish the animation start
         // Into the burst window while completedToday is STILL false — the
         // celebration is optimistic (driven by the tap), not gated on the
@@ -365,7 +366,7 @@ void main() {
       );
       expect(find.byType(CompletionBurst), findsNothing);
 
-      await tester.tap(find.byIcon(Icons.add_rounded));
+      await tester.tap(find.byIcon(LottiIcons.add));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 220));
       // The completion still records (haptic + persist run), but neither the
@@ -389,7 +390,7 @@ void main() {
         ],
       );
 
-      await tester.tap(find.byIcon(Icons.add_rounded));
+      await tester.tap(find.byIcon(LottiIcons.add));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 220));
       expect(find.byType(CompletionBurst), findsNothing);
@@ -412,7 +413,7 @@ void main() {
         ],
       );
 
-      await tester.tap(find.byIcon(Icons.add_rounded));
+      await tester.tap(find.byIcon(LottiIcons.add));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 220));
 
@@ -431,7 +432,7 @@ void main() {
         'provider catches up', (tester) async {
       await pumpRow(tester); // not done
       // Tap complete → the optimistic celebration starts immediately.
-      await tester.tap(find.byIcon(Icons.add_rounded));
+      await tester.tap(find.byIcon(LottiIcons.add));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 220));
       expect(find.byType(CompletionBurst), findsOneWidget);
@@ -462,7 +463,7 @@ void main() {
         ],
       );
 
-      await tester.tap(find.byIcon(Icons.add_rounded));
+      await tester.tap(find.byIcon(LottiIcons.add));
       await tester.pump();
       // Combine RE-ROLLS its pair from a process-wide seed, so this test —
       // unlike the FixedSelection ones — cannot know the resolved duration.
@@ -513,7 +514,7 @@ void main() {
         captureHaptics(tester);
         await pumpRow(tester);
 
-        await tester.tap(find.byIcon(Icons.add_rounded));
+        await tester.tap(find.byIcon(LottiIcons.add));
         await tester.pump();
         expect(haptics, contains('HapticFeedbackType.lightImpact'));
 
@@ -535,7 +536,7 @@ void main() {
           ],
         );
 
-        await tester.tap(find.byIcon(Icons.add_rounded));
+        await tester.tap(find.byIcon(LottiIcons.add));
         await tester.pump();
         expect(haptics, isEmpty);
 
@@ -558,7 +559,7 @@ void main() {
       ).thenAnswer((_) async => null);
 
       await pumpRow(tester); // not done
-      await tester.tap(find.byIcon(Icons.add_rounded));
+      await tester.tap(find.byIcon(LottiIcons.add));
       await tester.pump(); // haptic + the (failing) persist resolve
       await tester.pump(const Duration(milliseconds: 1400)); // settle the burst
 
@@ -579,24 +580,24 @@ void main() {
       tester,
     ) async {
       await pumpRow(tester);
-      expect(find.byIcon(Icons.add_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.add), findsOneWidget);
       expect(find.byType(AnimatedSwitcher), findsWidgets);
 
       // Rebuild in place with the habit now done → the check settles in and the
       // "+" is gone once the ~320ms switch completes.
       await pumpRow(tester, completedToday: true);
       await tester.pump(const Duration(milliseconds: 500));
-      expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.add_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.confirmCircled), findsOneWidget);
+      expect(find.byIcon(LottiIcons.add), findsNothing);
     });
 
     testWidgets('done → circle check that opens the dialog, no duplicate', (
       tester,
     ) async {
       await pumpRow(tester, completedToday: true);
-      expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.confirmCircled), findsOneWidget);
 
-      await tester.tap(find.byIcon(Icons.check_circle_rounded));
+      await tester.tap(find.byIcon(LottiIcons.confirmCircled));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -628,7 +629,7 @@ void main() {
       tester,
     ) async {
       await pumpRow(tester);
-      await tester.longPress(find.byIcon(Icons.add_rounded));
+      await tester.longPress(find.byIcon(LottiIcons.add));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 

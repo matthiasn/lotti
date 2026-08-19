@@ -396,7 +396,7 @@ class _ToastDismissAction extends StatelessWidget {
             width: _dismissTapSize,
             height: _dismissTapSize,
             child: Icon(
-              Icons.close_rounded,
+              LottiIcons.close,
               size: _dismissIconSize,
               color: iconColor,
             ),
@@ -445,9 +445,9 @@ class _ToastSpec {
 
     return _ToastSpec(
       leadingIcon: switch (tone) {
-        DesignSystemToastTone.success => Icons.check_circle_rounded,
-        DesignSystemToastTone.warning => Icons.warning_rounded,
-        DesignSystemToastTone.error => Icons.error_rounded,
+        DesignSystemToastTone.success => LottiIcons.confirmCircled,
+        DesignSystemToastTone.warning => LottiIcons.warning,
+        DesignSystemToastTone.error => LottiIcons.error,
       },
       backgroundColor: tokens.colors.background.level02,
       borderColor: borderColor,

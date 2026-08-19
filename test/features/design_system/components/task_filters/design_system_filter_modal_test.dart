@@ -161,7 +161,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 900));
 
     final backButton = find.ancestor(
-      of: find.byIcon(Icons.arrow_back_rounded),
+      of: find.byIcon(LottiIcons.back),
       matching: find.byType(IconButton),
     );
     tester.widget<IconButton>(backButton).onPressed!();

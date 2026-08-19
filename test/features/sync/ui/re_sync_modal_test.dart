@@ -989,7 +989,7 @@ void main() {
     expect(find.byKey(const Key('reSyncProgress')), findsOneWidget);
     expect(find.text('33%'), findsOneWidget);
     expect(find.text('12 / 12'), findsOneWidget);
-    expect(find.byIcon(Icons.check_circle_outline_rounded), findsOneWidget);
+    expect(find.byIcon(LottiIcons.confirmCircled), findsOneWidget);
 
     completer.complete(ReSyncResult.empty);
     await tester.pump();
@@ -1027,8 +1027,8 @@ void main() {
     await tester.pump();
 
     expect(find.text('11 / 12'), findsOneWidget);
-    expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
-    expect(find.byIcon(Icons.check_circle_outline_rounded), findsNothing);
+    expect(find.byIcon(LottiIcons.warning), findsOneWidget);
+    expect(find.byIcon(LottiIcons.confirmCircled), findsNothing);
 
     completer.complete(ReSyncResult.empty);
     await tester.pump();

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/events/ui/widgets/event_cover_image.dart';
 import 'package:lotti/features/events/ui/widgets/event_cover_picker.dart';
 
@@ -27,7 +28,7 @@ void main() {
       );
 
       expect(find.byType(EventCoverImage), findsNWidgets(2));
-      expect(find.byIcon(Icons.add_a_photo_outlined), findsOneWidget);
+      expect(find.byIcon(LottiIcons.addPhoto), findsOneWidget);
     });
 
     testWidgets('selecting a tile reports its id', (tester) async {
@@ -58,7 +59,7 @@ void main() {
         height: 240,
       );
 
-      await tester.tap(find.byIcon(Icons.add_a_photo_outlined));
+      await tester.tap(find.byIcon(LottiIcons.addPhoto));
       expect(added, 1);
     });
 
@@ -69,7 +70,7 @@ void main() {
         height: 240,
       );
 
-      expect(find.byIcon(Icons.add_a_photo_outlined), findsNothing);
+      expect(find.byIcon(LottiIcons.addPhoto), findsNothing);
     });
 
     testWidgets('rings the current cover with a thicker border', (
@@ -154,7 +155,7 @@ void main() {
         var added = 0;
         await open(tester, onSelect: (_) {}, onAddPhoto: () => added++);
 
-        await tester.tap(find.byIcon(Icons.add_a_photo_outlined));
+        await tester.tap(find.byIcon(LottiIcons.addPhoto));
         await tester.pumpAndSettle();
 
         expect(added, 1);

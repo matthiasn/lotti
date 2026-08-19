@@ -157,9 +157,7 @@ class _HoldToConfirmState extends State<HoldToConfirm>
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
-                            _done
-                                ? Icons.check_rounded
-                                : Icons.lock_outline_rounded,
+                            _done ? LottiIcons.confirm : LottiIcons.lock,
                             size: widget.size * 0.18,
                             color: onTeal,
                           ),

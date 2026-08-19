@@ -156,7 +156,7 @@ List<_ProgressBarVariant> _progressBarVariants(
       semanticsLabel: defaultLabel,
       headerLabel: defaultLabel,
       progressText: progressText,
-      trailingIcon: Icons.star_outline_rounded,
+      trailingIcon: LottiIcons.star,
     ),
     _ProgressBarVariant(
       label: context.messages.designSystemProgressBarLabelOnlyLabel,
@@ -169,7 +169,7 @@ List<_ProgressBarVariant> _progressBarVariants(
       value: progressValue,
       semanticsLabel: defaultLabel,
       progressText: progressText,
-      trailingIcon: Icons.star_outline_rounded,
+      trailingIcon: LottiIcons.star,
     ),
     _ProgressBarVariant(
       label: context.messages.designSystemProgressBarOffLabel,
@@ -182,7 +182,7 @@ List<_ProgressBarVariant> _progressBarVariants(
       semanticsLabel: questLabel,
       headerLabel: questLabel,
       progressText: questProgressText,
-      trailingIcon: Icons.star_outline_rounded,
+      trailingIcon: LottiIcons.star,
     ),
   ];
 }

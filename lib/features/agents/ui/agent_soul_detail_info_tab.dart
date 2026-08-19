@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/ui/evolution/widgets/ritual_session_histor
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
@@ -39,7 +40,7 @@ class InfoTabContent extends ConsumerWidget {
           child: TextButton.icon(
             onPressed: onDelete,
             icon: Icon(
-              Icons.delete_outline,
+              LottiIcons.delete,
               color: context.colorScheme.error,
             ),
             label: Text(
@@ -155,7 +156,7 @@ class _VersionTile extends ConsumerWidget {
             if (!isActive) ...[
               const SizedBox(width: AppTheme.spacingSmall),
               IconButton(
-                icon: const Icon(Icons.restore, size: 20),
+                icon: const Icon(LottiIcons.restore, size: 20),
                 tooltip: context.messages.agentSoulRollbackAction,
                 onPressed: () => _handleRollback(context, ref),
               ),
@@ -327,7 +328,7 @@ class _AssignedTemplateTile extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: AppTheme.spacingSmall),
       child: ListTile(
         leading: Icon(
-          Icons.smart_toy_outlined,
+          LottiIcons.aiModel,
           size: 20,
           color: context.colorScheme.onSurfaceVariant,
         ),

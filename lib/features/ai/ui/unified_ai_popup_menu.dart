@@ -7,6 +7,7 @@ import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
 import 'package:lotti/features/ai/ui/unified_ai_skills_modal.dart';
 import 'package:lotti/features/demo/ai/demo_ai_gate.dart';
 import 'package:lotti/features/demo/ui/demo_ai_setup_sheet.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/glass_action_button.dart';
@@ -53,7 +54,7 @@ class UnifiedAiPopUpMenu extends ConsumerWidget {
       // header controls — a filled high-contrast badge made the AI action the
       // heaviest element on the card, out-ranking the timestamp and payload.
       final icon = Icon(
-        Icons.assistant_outlined,
+        LottiIcons.assistant,
         size: iconSize,
         color: iconColor ?? context.colorScheme.outline,
       );

@@ -1,7 +1,7 @@
 name: lotti
 description: Achieve your goals and keep your data private with Lotti.
 publish_to: 'none'
-version: 1.0.11+4336
+version: 1.0.11+4338
 
 msix_config:
   display_name: LottiApp
@@ -59,7 +59,6 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   flutter_map: ^8.0.0
-  flutter_material_design_icons: ^3.1.0+7447
   flutter_onnxruntime: ^1.8.0
   flutter_openssl_crypto: ^0.5.0
   flutter_quill: ^11.5.1
@@ -88,6 +87,7 @@ dependencies:
   just_waveform: ^0.0.7
   latlong2: ^0.10.1
   location: ^9.0.0
+  lucide_icons_flutter: ^3.1.15
   matrix: ^10.0.0
   media_kit: ^1.0.2
   media_kit_libs_audio: ^1.0.7
@@ -223,6 +223,13 @@ flutter:
     - family: Inter
       fonts:
         - asset: assets/fonts/Inter/Inter-VariableFont_opsz,wght.ttf
+    # Filled counterparts for the handful of icons that toggle between an
+    # off and an on state. Lucide is stroke-only by design and ships no
+    # filled set, so these are generated from Lucide's own SVG geometry —
+    # see tool/icons/filled_font/README.md.
+    - family: LottiFilled
+      fonts:
+        - asset: assets/fonts/LottiFilled/LottiFilled.ttf
 
   assets:
     - assets/design_system/

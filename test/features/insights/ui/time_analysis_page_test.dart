@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/categories/state/categories_list_controller.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:lotti/features/insights/state/insights_providers.dart';
 import 'package:lotti/features/insights/ui/time_analysis_page.dart';
@@ -283,7 +284,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 600));
         // Step back into 2025: a new window that stays pending.
-        await tester.tap(find.byIcon(Icons.chevron_left_rounded));
+        await tester.tap(find.byIcon(LottiIcons.chevronLeft));
         await tester.pump();
       });
 
@@ -339,7 +340,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 600));
         // Step back into 2025 — the window load throws.
-        await tester.tap(find.byIcon(Icons.chevron_left_rounded));
+        await tester.tap(find.byIcon(LottiIcons.chevronLeft));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 600));
       });

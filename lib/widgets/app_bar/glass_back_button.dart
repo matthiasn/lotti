@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/app_bar/glass_action_button.dart';
 import 'package:lotti/widgets/app_bar/glass_icon_container.dart';
 
@@ -37,7 +38,7 @@ class GlassBackButton extends StatelessWidget {
       semanticLabel: tooltip,
       tooltip: tooltip,
       child: Icon(
-        Icons.chevron_left,
+        LottiIcons.chevronLeft,
         size: iconSize,
         color: iconColor,
       ),

@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_activity_log.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../widget_test_utils.dart';
 import '../test_utils.dart';
@@ -83,7 +84,7 @@ void main() {
         await tester.pump();
 
         // Expand icon should be visible (thought is expandable)
-        expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+        expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
 
         // Text should not be visible initially
         expect(find.text('Deep thought content'), findsNothing);
@@ -94,7 +95,7 @@ void main() {
         await tester.pump();
 
         expect(find.text('Deep thought content'), findsOneWidget);
-        expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
+        expect(find.byIcon(LottiIcons.chevronDown), findsOneWidget);
       },
     );
 
@@ -128,7 +129,7 @@ void main() {
         await tester.tap(find.byType(InkWell));
         await tester.pump();
         expect(find.text('Observation payload'), findsNothing);
-        expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+        expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
       },
     );
 
@@ -239,7 +240,7 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+        expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
 
         await tester.tap(find.byType(InkWell));
         await tester.pump();
@@ -267,7 +268,7 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.byIcon(Icons.chevron_right), findsNothing);
+        expect(find.byIcon(LottiIcons.chevronRight), findsNothing);
         expect(find.textContaining('Content:'), findsNothing);
       },
     );

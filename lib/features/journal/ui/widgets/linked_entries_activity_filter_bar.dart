@@ -146,7 +146,7 @@ class _FilterTrigger extends StatelessWidget {
         label: label,
         labelColor: tokens.colors.text.mediumEmphasis,
         leading: Icon(
-          Icons.filter_list_rounded,
+          LottiIcons.filter,
           size: tokens.spacing.step4,
           color: tokens.colors.interactive.enabled,
         ),
@@ -244,25 +244,25 @@ class _ActivityPillSpec {
     return switch (kind) {
       LinkedEntryActivityFilter.timer => _ActivityPillSpec(
         label: messages.journalLinkedEntriesActivityFilterTimer,
-        icon: Icons.timer_outlined,
+        icon: LottiIcons.timer,
         accent: tokens.colors.alert.warning.defaultColor,
         borderAlpha: 1,
       ),
       LinkedEntryActivityFilter.audio => _ActivityPillSpec(
         label: messages.journalLinkedEntriesActivityFilterAudio,
-        icon: Icons.mic_none_outlined,
+        icon: LottiIcons.micIdle,
         accent: const Color(0xFF9966E5),
         borderAlpha: 0.7,
       ),
       LinkedEntryActivityFilter.images => _ActivityPillSpec(
         label: messages.journalLinkedEntriesActivityFilterImages,
-        icon: Icons.photo_outlined,
+        icon: LottiIcons.image,
         accent: const Color(0xFF619EFF),
         borderAlpha: 0.7,
       ),
       LinkedEntryActivityFilter.code => _ActivityPillSpec(
         label: messages.journalLinkedEntriesActivityFilterCode,
-        icon: Icons.code,
+        icon: LottiIcons.code,
         accent: const Color(0xFF34C759),
         borderAlpha: 0.7,
       ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_circle_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 /// Cancel and stop button pair used during recording states.
 ///
@@ -25,13 +26,13 @@ class EvolutionCancelStopButtons extends StatelessWidget {
       children: [
         const SizedBox(width: 8),
         EvolutionCircleButton(
-          icon: Icons.close,
+          icon: LottiIcons.close,
           onPressed: onCancel,
           tooltip: cancelTooltip,
         ),
         const SizedBox(width: 4),
         EvolutionCircleButton(
-          icon: Icons.stop,
+          icon: LottiIcons.stop,
           onPressed: onStop,
           tooltip: stopTooltip,
         ),

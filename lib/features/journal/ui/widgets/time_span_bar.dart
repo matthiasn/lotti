@@ -38,7 +38,7 @@ class TimeSpanBar extends StatelessWidget {
 
     return Row(
       children: [
-        Icon(Icons.schedule_rounded, size: 15, color: cs.primary),
+        Icon(LottiIcons.schedule, size: 15, color: cs.primary),
         SizedBox(width: tokens.spacing.step2),
         Text(startLabel, style: endpointStyle),
         Expanded(

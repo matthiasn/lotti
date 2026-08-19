@@ -36,7 +36,7 @@ class ProjectGroupHeader extends StatelessWidget {
       children: [
         CategoryTag(
           label: category?.name ?? context.messages.taskCategoryUnassignedLabel,
-          icon: category?.icon?.iconData ?? Icons.folder_outlined,
+          icon: category?.icon?.iconData ?? LottiIcons.folder,
           color: color,
         ),
         const Spacer(),

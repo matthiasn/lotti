@@ -11,6 +11,7 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/components/calendar_pickers/design_system_date_picker_modal.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/components/time_pickers/design_system_picker_wheels.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/create/create_measurement_dialog.dart';
@@ -344,7 +345,7 @@ void main() {
 
     await openObservedAt(tester);
     await changeDraft();
-    await tester.tap(find.byIcon(Icons.arrow_back_rounded));
+    await tester.tap(find.byIcon(LottiIcons.back));
     await assertDiscarded();
 
     await openObservedAt(tester);
@@ -688,7 +689,7 @@ void main() {
     await openCapture(tester);
     await openObservedAt(tester);
 
-    await tester.tap(find.byIcon(Icons.close_rounded));
+    await tester.tap(find.byIcon(LottiIcons.close));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 450));
 

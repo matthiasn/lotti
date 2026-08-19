@@ -126,7 +126,7 @@ class SettingsPickerField extends StatelessWidget {
                       IconButton(
                         onPressed: onClear,
                         icon: Icon(
-                          Icons.close_rounded,
+                          LottiIcons.close,
                           size: spacing.step5,
                           color: tokens.colors.text.mediumEmphasis,
                         ),
@@ -135,7 +135,7 @@ class SettingsPickerField extends StatelessWidget {
                         ).deleteButtonTooltip,
                       ),
                     Icon(
-                      Icons.keyboard_arrow_down_rounded,
+                      LottiIcons.chevronDown,
                       size: spacing.step6,
                       color: tokens.colors.text.mediumEmphasis,
                     ),

@@ -11,13 +11,13 @@ import '../../../../widget_test_utils.dart';
 
 const _branch = SettingsNode(
   id: 'definitions',
-  icon: Icons.account_tree_outlined,
+  icon: LottiIcons.tree,
   title: 'Definitions',
   desc: 'Habits, categories, labels',
   children: [
     SettingsNode(
       id: 'definitions/categories',
-      icon: Icons.category_rounded,
+      icon: LottiIcons.category,
       title: 'Categories',
       desc: 'Categories with AI settings',
       panel: 'categories',
@@ -27,7 +27,7 @@ const _branch = SettingsNode(
 
 const _leaf = SettingsNode(
   id: 'theming',
-  icon: Icons.palette_outlined,
+  icon: LottiIcons.palette,
   title: 'Theming',
   desc: 'Customize app appearance',
   panel: 'theming',
@@ -35,7 +35,7 @@ const _leaf = SettingsNode(
 
 const _manual = SettingsNode(
   id: 'manual',
-  icon: Icons.menu_book_outlined,
+  icon: LottiIcons.book,
   title: 'Manual',
   desc: 'Opens in your browser',
   action: SettingsNodeAction.openManual,
@@ -89,7 +89,7 @@ void main() {
     // Both the branch and the leaf show a chevron on the drill-down
     // surface (every row pushes a page), unlike the desktop tree where
     // leaves select in place and carry no chevron.
-    expect(find.byIcon(Icons.chevron_right_rounded), findsNWidgets(2));
+    expect(find.byIcon(LottiIcons.chevronRight), findsNWidgets(2));
   });
 
   testWidgets('rows drop the active-path rail (no dead left gutter)', (
@@ -143,8 +143,8 @@ void main() {
     );
 
     expect(gap, context.designTokens.spacing.step6);
-    expect(find.byIcon(Icons.open_in_new_rounded), findsOneWidget);
-    expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
+    expect(find.byIcon(LottiIcons.openExternal), findsOneWidget);
+    expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
   });
 
   testWidgets(

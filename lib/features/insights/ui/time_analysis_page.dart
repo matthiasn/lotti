@@ -214,7 +214,7 @@ class _StaleDataNotice extends StatelessWidget {
       child: Row(
         children: [
           Icon(
-            Icons.sync_problem_rounded,
+            LottiIcons.syncProblem,
             size: tokens.spacing.step5,
             color: tokens.colors.text.lowEmphasis,
           ),
@@ -447,7 +447,7 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           children: [
             Icon(
-              Icons.hourglass_empty_rounded,
+              LottiIcons.pending,
               size: tokens.spacing.step9,
               color: tokens.colors.text.lowEmphasis,
             ),

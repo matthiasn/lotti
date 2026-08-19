@@ -350,7 +350,7 @@ class _CategoryPill extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            Icons.folder_outlined,
+            LottiIcons.folder,
             size: tokens.spacing.step4,
             color: foreground,
           ),
@@ -404,7 +404,7 @@ class _ChecklistRow extends StatelessWidget {
                   borderRadius: BorderRadius.circular(tokens.radii.s),
                 ),
                 child: Icon(
-                  Icons.check_rounded,
+                  LottiIcons.confirm,
                   size: tokens.spacing.step5,
                   color: accent,
                 ),

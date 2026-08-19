@@ -93,7 +93,7 @@ class _ContactImportPageState extends ConsumerState<ContactImportPage> {
         ),
         leading: _reviewing
             ? IconButton(
-                icon: const Icon(Icons.arrow_back_rounded),
+                icon: const Icon(LottiIcons.back),
                 // Back from review returns to the selection with the choices
                 // intact, rather than dropping them.
                 onPressed: () => setState(() => _reviewing = false),
@@ -171,7 +171,7 @@ class _SelectStep extends ConsumerWidget {
             controller: searchController,
             decoration: InputDecoration(
               hintText: context.messages.relationshipImportSearchHint,
-              prefixIcon: const Icon(Icons.search_rounded),
+              prefixIcon: const Icon(LottiIcons.search),
             ),
             onChanged: controller.setQuery,
           ),

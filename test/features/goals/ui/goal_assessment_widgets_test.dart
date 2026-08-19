@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/model/goal_assessment.dart';
 import 'package:lotti/features/goals/model/goal_health_data_types.dart';
 import 'package:lotti/features/goals/service/goal_assessment_service.dart';
@@ -339,9 +340,9 @@ void main() {
       expect(find.text('79.5'), findsOneWidget);
       expect(find.text('Systolic pressure'), findsOneWidget);
       expect(find.text('—'), findsOneWidget);
-      expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.cancel_rounded), findsNWidgets(2));
-      expect(find.byIcon(Icons.circle_outlined), findsOneWidget);
+      expect(find.byIcon(LottiIcons.confirmCircled), findsOneWidget);
+      expect(find.byIcon(LottiIcons.closeCircled), findsNWidgets(2));
+      expect(find.byIcon(LottiIcons.radioUnselected), findsOneWidget);
 
       tester
           .widget<DsSegmentedToggle<GoalAssessmentRating>>(

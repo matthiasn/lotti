@@ -184,7 +184,7 @@ class _DashboardHeader extends StatelessWidget {
       onPressed: onEditDefinition,
       visualDensity: VisualDensity.compact,
       icon: Icon(
-        Icons.tune_rounded,
+        LottiIcons.tune,
         size: tokens.spacing.step6,
         color: tokens.colors.text.mediumEmphasis,
       ),

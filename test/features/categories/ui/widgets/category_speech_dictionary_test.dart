@@ -214,9 +214,18 @@ void main() {
         ),
       );
 
-      // The page section header shows the spellcheck icon; duplicating it
-      // inside the field would be noise.
-      expect(find.byIcon(Icons.spellcheck_outlined), findsNothing);
+      // The section header carries the glyph; duplicating one inside the
+      // field would be noise. This asserts the *absence of any* in-field
+      // icon — the previous version named `Icons.spellcheck_outlined`, which
+      // no production code has ever rendered, so it passed no matter what
+      // this widget drew.
+      expect(
+        find.descendant(
+          of: find.byType(CategorySpeechDictionary),
+          matching: find.byType(Icon),
+        ),
+        findsNothing,
+      );
     });
 
     testWidgets('supports multiline input via the textarea defaults', (

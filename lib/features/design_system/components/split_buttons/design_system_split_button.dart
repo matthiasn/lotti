@@ -117,8 +117,8 @@ class DesignSystemSplitButton extends StatelessWidget {
                         child: Center(
                           child: Icon(
                             isDropdownOpen
-                                ? Icons.keyboard_arrow_up
-                                : Icons.keyboard_arrow_down,
+                                ? LottiIcons.chevronUp
+                                : LottiIcons.chevronDown,
                           ),
                         ),
                       ),

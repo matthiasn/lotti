@@ -411,7 +411,7 @@ void main() {
       groups: [buildWorkGroup(), buildStudyGroup()],
     );
 
-    await tester.tap(find.byIcon(Icons.filter_list_rounded));
+    await tester.tap(find.byIcon(LottiIcons.filter));
     await tester.pumpAndSettle();
 
     expect(find.text('Filter projects'), findsOneWidget);
@@ -442,7 +442,7 @@ void main() {
       // Deliberately open the modal before another page frame is pumped. This
       // proves the callback reads the notifier at invocation time instead of
       // using the filter captured by the previous build.
-      await tester.tap(find.byIcon(Icons.filter_list_rounded));
+      await tester.tap(find.byIcon(LottiIcons.filter));
       await tester.pumpAndSettle();
 
       expect(find.bySemanticsLabel('Status, Active'), findsOneWidget);
@@ -471,7 +471,7 @@ void main() {
       groups: [buildWorkGroup(), buildStudyGroup()],
     );
 
-    await tester.tap(find.byIcon(Icons.filter_list_rounded));
+    await tester.tap(find.byIcon(LottiIcons.filter));
     await tester.pumpAndSettle();
 
     final statusField = find.byKey(
@@ -644,7 +644,7 @@ void main() {
       );
 
       // Open the filter modal
-      await tester.tap(find.byIcon(Icons.filter_list_rounded));
+      await tester.tap(find.byIcon(LottiIcons.filter));
       await tester.pumpAndSettle();
 
       expect(find.text('Filter projects'), findsOneWidget);
@@ -882,7 +882,7 @@ void main() {
 
         // Tap the dedicated clear button — this drives onSearchCleared (not
         // the TextField onChanged path).
-        await tester.tap(find.byIcon(Icons.cancel_rounded));
+        await tester.tap(find.byIcon(LottiIcons.closeCircled));
         await tester.pump();
 
         final state = container.read(projectsFilterControllerProvider);
@@ -917,7 +917,7 @@ void main() {
         );
 
         // Tap the magnifier action button -> onSearchPressed(currentText).
-        await tester.tap(find.byIcon(Icons.search_rounded));
+        await tester.tap(find.byIcon(LottiIcons.search));
         await tester.pump();
 
         final state = container.read(projectsFilterControllerProvider);

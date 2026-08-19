@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_picker.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../../test_helper.dart';
 
@@ -25,7 +26,7 @@ void main() {
       expect(gridView.semanticChildCount, equals(CategoryIcon.values.length));
 
       // Verify that the close button exists separately (not in the GridView)
-      expect(find.byIcon(Icons.close), findsOneWidget);
+      expect(find.byIcon(LottiIcons.close), findsOneWidget);
 
       // Test that we can find at least some of the initially visible icons
       // (This verifies the GridView is actually rendering items)
@@ -86,7 +87,7 @@ void main() {
 
       // Verify we found the close button icon
       expect(
-        foundIcons.contains(Icons.close),
+        foundIcons.contains(LottiIcons.close),
         isTrue,
         reason: 'Should find the close button icon',
       );
@@ -109,7 +110,7 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(Icons.close), findsOneWidget);
+      expect(find.byIcon(LottiIcons.close), findsOneWidget);
     });
 
     testWidgets('should close dialog when close button is tapped', (
@@ -139,7 +140,7 @@ void main() {
       expect(find.byType(CategoryIconPicker), findsOneWidget);
 
       // Tap close button
-      await tester.tap(find.byIcon(Icons.close));
+      await tester.tap(find.byIcon(LottiIcons.close));
       await tester.pumpAndSettle();
 
       // Verify dialog is closed
@@ -156,7 +157,7 @@ void main() {
       );
 
       // Find the fitness icon container
-      final fitnessIconFinder = find.byIcon(Icons.fitness_center);
+      final fitnessIconFinder = find.byIcon(LottiIcons.fitness);
       expect(fitnessIconFinder, findsOneWidget);
 
       // Get the container widget that should be highlighted
@@ -200,7 +201,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Tap on the fitness icon
-      await tester.tap(find.byIcon(Icons.fitness_center));
+      await tester.tap(find.byIcon(LottiIcons.fitness));
       await tester.pumpAndSettle();
 
       expect(result, equals(CategoryIcon.fitness));
@@ -300,7 +301,7 @@ void main() {
       );
 
       // Find an unselected icon (running is not fitness, so it's unselected)
-      final runningIconFinder = find.byIcon(Icons.directions_run);
+      final runningIconFinder = find.byIcon(LottiIcons.running);
       expect(runningIconFinder, findsOneWidget);
 
       // Get the container wrapping the unselected icon
@@ -331,7 +332,7 @@ void main() {
         ),
       );
 
-      final fitnessIconFinder = find.byIcon(Icons.fitness_center);
+      final fitnessIconFinder = find.byIcon(LottiIcons.fitness);
       expect(fitnessIconFinder, findsOneWidget);
 
       final containerWidget = tester.widget<Container>(

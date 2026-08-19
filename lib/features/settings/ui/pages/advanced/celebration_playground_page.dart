@@ -325,7 +325,7 @@ class _CelebrationPlaygroundPageState
                         style: TextButton.styleFrom(
                           foregroundColor: tokens.colors.interactive.enabled,
                         ),
-                        icon: const Icon(Icons.replay),
+                        icon: const Icon(LottiIcons.replay),
                         label: Text(messages.settingsCelebrationsReplay),
                       ),
                       SizedBox(height: tokens.spacing.step5),
@@ -547,7 +547,7 @@ class _KnobSlider extends StatelessWidget {
                           ),
                           SizedBox(width: tokens.spacing.step1),
                           Icon(
-                            Icons.edit_outlined,
+                            LottiIcons.edit,
                             size: tokens.spacing.step4,
                             color: tokens.colors.text.mediumEmphasis,
                           ),

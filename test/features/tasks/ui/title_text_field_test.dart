@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_controller.dart';
@@ -86,7 +87,7 @@ void main() {
         await tester.pump();
 
         // Tap cancel button
-        await tester.tap(find.byIcon(Icons.cancel_outlined));
+        await tester.tap(find.byIcon(LottiIcons.closeCircled));
         await tester.pump();
 
         // Verify text was reset to initialValue
@@ -141,7 +142,7 @@ void main() {
       await tester.pump();
 
       // Tap save button
-      await tester.tap(find.byIcon(Icons.check_circle));
+      await tester.tap(find.byIcon(LottiIcons.confirmCircled));
       await tester.pump();
 
       expect(savedValue, equals(modifiedValue));

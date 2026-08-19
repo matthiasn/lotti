@@ -294,12 +294,12 @@ void main() {
         // A plain mediumEmphasis glyph with NO filled container: the old
         // surface-filled chip was the brightest element on a dark sheet,
         // outshining the content it existed to dismiss.
-        final icon = tester.widget<Icon>(find.byIcon(Icons.arrow_back_rounded));
+        final icon = tester.widget<Icon>(find.byIcon(LottiIcons.back));
         expect(icon.size, dsTokensLight.spacing.step6);
         expect(icon.color, dsTokensLight.colors.text.mediumEmphasis);
         expect(
           find.ancestor(
-            of: find.byIcon(Icons.arrow_back_rounded),
+            of: find.byIcon(LottiIcons.back),
             matching: find.byType(Container),
           ),
           findsNothing,
@@ -498,7 +498,7 @@ void main() {
                     ModalUtils.showSinglePageModal<void>(
                       context: context,
                       title: 'Commit modal',
-                      closeButtonIcon: Icons.check_rounded,
+                      closeButtonIcon: LottiIcons.confirm,
                       closeButtonTooltip: 'Commit changes',
                       onClosePressed: () => closeCalls++,
                       builder: (context) => const Text('Draft content'),

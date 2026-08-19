@@ -977,7 +977,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
               label:
                   activeOverflowDestination?.label ??
                   context.messages.navTabTitleMore,
-              icon: const Icon(Icons.more_horiz_rounded),
+              icon: const Icon(LottiIcons.more),
               active: activeOverflowDestination != null,
               semanticsLabel: activeOverflowDestination != null
                   ? '${activeOverflowDestination.label} — '
@@ -1148,15 +1148,13 @@ class _AppScreenState extends ConsumerState<AppScreen> {
       _AppNavigationDestination(
         kind: _AppNavigationDestinationKind.tasks,
         label: context.messages.navTabTitleTasks,
-        iconBuilder: ({required active}) =>
-            Icon(active ? Icons.list_rounded : Icons.list_outlined),
+        iconBuilder: ({required active}) => const Icon(LottiIcons.list),
         expandedChildBuilder: () => const SidebarSavedTaskFilters(),
       ),
       _AppNavigationDestination(
         kind: _AppNavigationDestinationKind.dailyOs,
         label: context.messages.navTabTitleCalendar,
-        iconBuilder: ({required active}) =>
-            Icon(active ? Icons.today_rounded : Icons.today_outlined),
+        iconBuilder: ({required active}) => const Icon(LottiIcons.today),
         // Month calendar (design handoff sidebar spec) renders beneath
         // the row only while Daily OS is the active tab — same slot the
         // Tasks destination uses for its saved-filters tree. The Time
@@ -1168,53 +1166,51 @@ class _AppScreenState extends ConsumerState<AppScreen> {
         kind: _AppNavigationDestinationKind.projects,
         label: context.messages.navTabTitleProjects,
         iconBuilder: ({required active}) =>
-            Icon(active ? Icons.folder_rounded : Icons.folder_outlined),
+            Icon(active ? LottiIconsFilled.folder : LottiIcons.folder),
       ),
       _AppNavigationDestination(
         kind: _AppNavigationDestinationKind.goals,
         label: context.messages.navTabTitleGoals,
-        iconBuilder: ({required active}) => Icon(
-          active ? Icons.track_changes_rounded : Icons.track_changes_outlined,
+        iconBuilder: ({required active}) => const Icon(
+          LottiIcons.focus,
         ),
       ),
       _AppNavigationDestination(
         kind: _AppNavigationDestinationKind.habits,
         label: context.messages.navTabTitleHabits,
-        iconBuilder: ({required active}) => Icon(
-          active ? Icons.checklist_rounded : Icons.checklist_outlined,
+        iconBuilder: ({required active}) => const Icon(
+          LottiIcons.checkAll,
         ),
       ),
       _AppNavigationDestination(
         kind: _AppNavigationDestinationKind.dashboards,
         label: context.messages.navTabTitleInsights,
-        iconBuilder: ({required active}) => Icon(
-          active ? Icons.insert_chart_rounded : Icons.insert_chart_outlined,
+        iconBuilder: ({required active}) => const Icon(
+          LottiIcons.chart,
         ),
         expandedChildBuilder: () => const ImpactSidebarEntry(),
       ),
       _AppNavigationDestination(
         kind: _AppNavigationDestinationKind.people,
         label: context.messages.navTabTitlePeople,
-        iconBuilder: ({required active}) =>
-            Icon(active ? Icons.people_rounded : Icons.people_outlined),
+        iconBuilder: ({required active}) => const Icon(LottiIcons.people),
       ),
       _AppNavigationDestination(
         kind: _AppNavigationDestinationKind.journal,
         label: context.messages.navTabTitleJournal,
-        iconBuilder: ({required active}) => Icon(
-          active ? Icons.menu_book_rounded : Icons.menu_book_outlined,
+        iconBuilder: ({required active}) => const Icon(
+          LottiIcons.book,
         ),
       ),
       _AppNavigationDestination(
         kind: _AppNavigationDestinationKind.events,
         label: context.messages.navTabTitleEvents,
-        iconBuilder: ({required active}) =>
-            Icon(active ? Icons.event_rounded : Icons.event_outlined),
+        iconBuilder: ({required active}) => const Icon(LottiIcons.calendar),
       ),
       _AppNavigationDestination(
         kind: _AppNavigationDestinationKind.settings,
         label: context.messages.navTabTitleSettings,
-        iconBuilder: ({required active}) => const Icon(Icons.settings_rounded),
+        iconBuilder: ({required active}) => const Icon(LottiIcons.settings),
         mobileIconWrapper: (icon) => OutboxBadgeIcon(icon: icon),
         trailingBuilder: ({required active}) => const SyncQueueCounts(),
       ),

@@ -94,7 +94,7 @@ void main() {
 
         await pumpCategoriesListPage(tester);
 
-        expect(find.byIcon(Icons.error_outline), findsOneWidget);
+        expect(find.byIcon(LottiIcons.error), findsOneWidget);
         expect(find.textContaining('Test error'), findsOneWidget);
       });
     });
@@ -107,7 +107,7 @@ void main() {
 
         await pumpCategoriesListPage(tester);
 
-        expect(find.byIcon(Icons.category_outlined), findsOneWidget);
+        expect(find.byIcon(LottiIcons.category), findsOneWidget);
         expect(find.text('No categories yet'), findsOneWidget);
         expect(
           find.text('Create a category to organize your entries'),
@@ -156,7 +156,7 @@ void main() {
             'Create category',
           );
           expect(
-            find.descendant(of: fab, matching: find.byIcon(Icons.add_rounded)),
+            find.descendant(of: fab, matching: find.byIcon(LottiIcons.add)),
             findsOneWidget,
           );
           expect(find.text('Add Category'), findsNothing);
@@ -260,7 +260,7 @@ void main() {
           await tester.enterText(find.byType(DesignSystemSearch), 'zzzz');
           await tester.pump();
 
-          expect(find.byIcon(Icons.search_off_rounded), findsOneWidget);
+          expect(find.byIcon(LottiIcons.searchOff), findsOneWidget);
           // The empty-state message includes the active query verbatim
           // ("No categories match \"zzzz\""). Don't use `textContaining`
           // here — it would also match the EditableText showing the
@@ -397,7 +397,7 @@ void main() {
 
         await pumpCategoriesListPage(tester);
 
-        expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
       });
 
       testWidgets('shows outlined amber star for favorited categories', (
@@ -418,7 +418,7 @@ void main() {
 
         // One icon weight across the trailing slot — the star is an
         // outline like lock/eye-off; amber carries the favorite signal.
-        final star = find.byIcon(Icons.star_rounded);
+        final star = find.byIcon(LottiIcons.star);
         expect(star, findsOneWidget);
         final tokens = tester.element(star).designTokens;
         expect(
@@ -440,7 +440,7 @@ void main() {
 
         await pumpCategoriesListPage(tester);
 
-        expect(find.byIcon(Icons.star_rounded), findsNothing);
+        expect(find.byIcon(LottiIcons.star), findsNothing);
       });
 
       testWidgets('shows fallback letter when no icon set', (tester) async {
@@ -488,7 +488,7 @@ void main() {
         await pumpCategoriesListPage(tester);
 
         expect(find.text('F'), findsNothing);
-        expect(find.byIcon(Icons.fitness_center), findsOneWidget);
+        expect(find.byIcon(LottiIcons.fitness), findsOneWidget);
       });
 
       testWidgets('uses black foreground on light category color', (
@@ -646,7 +646,7 @@ void main() {
 
         await pumpCategoriesListPage(tester);
 
-        expect(find.byIcon(Icons.lock_outline), findsOneWidget);
+        expect(find.byIcon(LottiIcons.lock), findsOneWidget);
       });
 
       testWidgets('displays inactive icon for inactive categories', (
@@ -665,7 +665,7 @@ void main() {
 
         await pumpCategoriesListPage(tester);
 
-        expect(find.byIcon(Icons.visibility_off_outlined), findsOneWidget);
+        expect(find.byIcon(LottiIcons.hidden), findsOneWidget);
       });
 
       testWidgets('displays all status icons together', (tester) async {
@@ -684,10 +684,10 @@ void main() {
 
         await pumpCategoriesListPage(tester);
 
-        expect(find.byIcon(Icons.lock_outline), findsOneWidget);
-        expect(find.byIcon(Icons.visibility_off_outlined), findsOneWidget);
-        expect(find.byIcon(Icons.star_rounded), findsOneWidget);
-        expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.lock), findsOneWidget);
+        expect(find.byIcon(LottiIcons.hidden), findsOneWidget);
+        expect(find.byIcon(LottiIcons.star), findsOneWidget);
+        expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
       });
 
       testWidgets('hides status icons for normal active categories', (
@@ -703,9 +703,9 @@ void main() {
 
         await pumpCategoriesListPage(tester);
 
-        expect(find.byIcon(Icons.lock_outline), findsNothing);
-        expect(find.byIcon(Icons.visibility_off_outlined), findsNothing);
-        expect(find.byIcon(Icons.star_rounded), findsNothing);
+        expect(find.byIcon(LottiIcons.lock), findsNothing);
+        expect(find.byIcon(LottiIcons.hidden), findsNothing);
+        expect(find.byIcon(LottiIcons.star), findsNothing);
       });
     });
 
@@ -774,7 +774,7 @@ void main() {
         await pumpCategoriesListPage(tester);
 
         expect(find.byType(DesignSystemListItem), findsNWidgets(3));
-        expect(find.byIcon(Icons.chevron_right_rounded), findsNWidgets(3));
+        expect(find.byIcon(LottiIcons.chevronRight), findsNWidgets(3));
       });
 
       testWidgets('shows dividers between items but not after last', (

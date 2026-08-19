@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/ui/widgets/health_panel.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -45,7 +46,7 @@ void main() {
       // the assertion: blocked count appears in the banner and the legend.
       expect(find.text('3 tasks blocked'), findsOneWidget);
       expect(find.text('3 Blocked'), findsOneWidget);
-      expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.warning), findsOneWidget);
     });
 
     testWidgets('renders tasks completion progress', (tester) async {

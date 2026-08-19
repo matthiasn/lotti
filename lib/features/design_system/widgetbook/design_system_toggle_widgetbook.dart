@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:widgetbook/widgetbook.dart';
 
@@ -79,7 +80,7 @@ class _ToggleSizeScale extends StatelessWidget {
             size: DesignSystemToggleSize.small,
             label: context.messages.designSystemSmallLabel,
             value: false,
-            tooltipIcon: Icons.info_outline_rounded,
+            tooltipIcon: LottiIcons.info,
           ),
         ),
         _TogglePreview(
@@ -87,7 +88,7 @@ class _ToggleSizeScale extends StatelessWidget {
             size: DesignSystemToggleSize.defaultSize,
             label: context.messages.designSystemDefaultLabel,
             value: false,
-            tooltipIcon: Icons.info_outline_rounded,
+            tooltipIcon: LottiIcons.info,
           ),
         ),
       ],
@@ -266,12 +267,12 @@ List<_ToggleVariant> _toggleVariants(BuildContext context) {
     _ToggleVariant(
       value: false,
       label: semanticsLabel,
-      tooltipIcon: Icons.info_outline_rounded,
+      tooltipIcon: LottiIcons.info,
     ),
     _ToggleVariant(
       value: true,
       label: semanticsLabel,
-      tooltipIcon: Icons.info_outline_rounded,
+      tooltipIcon: LottiIcons.info,
     ),
   ];
 }

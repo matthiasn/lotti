@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/settings_v2/domain/settings_node.dart';
 import 'package:lotti/features/settings_v2/state/settings_tree_controller.dart';
@@ -17,13 +18,13 @@ import '../../../../widget_test_utils.dart';
 
 SettingsNode _syncBranch() => const SettingsNode(
   id: 'sync',
-  icon: Icons.sync_rounded,
+  icon: LottiIcons.sync,
   title: 'Sync',
   desc: 'Configure sync',
   children: [
     SettingsNode(
       id: 'sync/backfill',
-      icon: Icons.cloud_download_outlined,
+      icon: LottiIcons.cloudDownload,
       title: 'Backfill',
       desc: 'Recover sync gaps',
       panel: 'sync-backfill',
@@ -33,7 +34,7 @@ SettingsNode _syncBranch() => const SettingsNode(
 
 SettingsNode _flagsLeaf() => const SettingsNode(
   id: 'flags',
-  icon: Icons.flag_outlined,
+  icon: LottiIcons.flag,
   title: 'Flags',
   desc: 'Feature flags',
   panel: 'flags',
@@ -41,7 +42,7 @@ SettingsNode _flagsLeaf() => const SettingsNode(
 
 SettingsNode _manualAction() => const SettingsNode(
   id: 'manual',
-  icon: Icons.menu_book_outlined,
+  icon: LottiIcons.book,
   title: 'Manual',
   desc: 'Opens in your browser',
   action: SettingsNodeAction.openManual,
@@ -51,34 +52,34 @@ SettingsNode _manualAction() => const SettingsNode(
 /// neither panel nor action, which both tap handlers treat as inert.
 SettingsNode _syncUnavailableTile() => const SettingsNode(
   id: 'sync-unavailable',
-  icon: Icons.sync_disabled_rounded,
+  icon: LottiIcons.syncProblem,
   title: 'Sync',
   desc: 'Sync is not available in the demo workspace',
 );
 
 SettingsNode _branchWithHiddenChildren() => const SettingsNode(
   id: 'sync',
-  icon: Icons.sync_rounded,
+  icon: LottiIcons.sync,
   title: 'Sync',
   desc: 'Configure sync',
   children: [
     SettingsNode(
       id: 'sync/backfill',
-      icon: Icons.cloud_download_outlined,
+      icon: LottiIcons.cloudDownload,
       title: 'Backfill',
       desc: 'Recover sync gaps',
       panel: 'sync-backfill',
     ),
     SettingsNode(
       id: 'sync/conflicts',
-      icon: Icons.warning_amber_rounded,
+      icon: LottiIcons.warning,
       title: 'Conflicts',
       desc: 'Resolve conflicts',
       panel: 'sync-conflicts',
     ),
     SettingsNode(
       id: 'sync/stats',
-      icon: Icons.query_stats_rounded,
+      icon: LottiIcons.insights,
       title: 'Stats',
       desc: 'Inspect sync statistics',
       panel: 'sync-stats',
@@ -285,7 +286,7 @@ void main() {
                     const SettingsTreeNodeWidget(
                       node: SettingsNode(
                         id: 'about',
-                        icon: Icons.info_outline,
+                        icon: LottiIcons.info,
                         title: 'About',
                         desc: 'About Lotti',
                         panel: 'about',

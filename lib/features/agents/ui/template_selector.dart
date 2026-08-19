@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/selection/selection_modal_base.dart';
@@ -120,7 +121,7 @@ class _TemplatePickerContent extends StatelessWidget {
                   child: Row(
                     children: [
                       Icon(
-                        Icons.smart_toy_outlined,
+                        LottiIcons.aiModel,
                         size: 20,
                         color: isSelected
                             ? context.colorScheme.primary
@@ -142,7 +143,7 @@ class _TemplatePickerContent extends StatelessWidget {
                       ),
                       if (isSelected)
                         Icon(
-                          Icons.check_rounded,
+                          LottiIcons.confirm,
                           color: context.colorScheme.primary,
                           size: 20,
                         ),

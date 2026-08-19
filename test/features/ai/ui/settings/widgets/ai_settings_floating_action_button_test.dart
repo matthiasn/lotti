@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_filter_state.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
@@ -80,7 +81,7 @@ void main() {
 
           final fab = readFab(tester);
           // The glyph is intentionally the same on every tab now.
-          expect(fab.icon, Icons.add_rounded, reason: 'glyph for $tab');
+          expect(fab.icon, LottiIcons.add, reason: 'glyph for $tab');
           expect(fab.semanticLabel, label(l10n()), reason: 'label for $tab');
         }
       },
@@ -111,11 +112,11 @@ void main() {
       tester,
     ) async {
       await pumpFab(tester, activeTab: AiSettingsTab.providers);
-      expect(find.byIcon(Icons.add_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.add), findsOneWidget);
       final providersLabel = readFab(tester).semanticLabel;
 
       await pumpFab(tester, activeTab: AiSettingsTab.models);
-      expect(find.byIcon(Icons.add_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.add), findsOneWidget);
       final modelsLabel = readFab(tester).semanticLabel;
 
       expect(providersLabel, isNot(modelsLabel));

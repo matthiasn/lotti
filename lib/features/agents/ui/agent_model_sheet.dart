@@ -437,7 +437,7 @@ class _AgentSetupOverviewPage extends ConsumerWidget {
                           context.messages.taskAgentNoProfileSelected,
                       type: DesignSystemSelectionRowType.navigation,
                       leading: Icon(
-                        Icons.account_tree_outlined,
+                        LottiIcons.tree,
                         color: tokens.colors.text.mediumEmphasis,
                         size: tokens.spacing.step6,
                       ),
@@ -452,7 +452,7 @@ class _AgentSetupOverviewPage extends ConsumerWidget {
                             : modelDescription,
                         type: DesignSystemSelectionRowType.navigation,
                         leading: Icon(
-                          Icons.psychology_outlined,
+                          LottiIcons.reasoning,
                           color: tokens.colors.text.mediumEmphasis,
                           size: tokens.spacing.step6,
                         ),
@@ -470,7 +470,7 @@ class _AgentSetupOverviewPage extends ConsumerWidget {
                         title: context.messages.taskAgentUseProfileDefault,
                         type: DesignSystemSelectionRowType.action,
                         leading: Icon(
-                          Icons.undo_rounded,
+                          LottiIcons.undo,
                           color: tokens.colors.text.mediumEmphasis,
                           size: tokens.spacing.step6,
                         ),
@@ -492,7 +492,7 @@ class _AgentSetupOverviewPage extends ConsumerWidget {
                             label: context.messages.taskAgentTurnOffSetup,
                             variant: DesignSystemButtonVariant.dangerTertiary,
                             size: DesignSystemButtonSize.medium,
-                            leadingIcon: Icons.pause_circle_outline_rounded,
+                            leadingIcon: LottiIcons.pauseCircled,
                             onPressed: () =>
                                 controller.confirmDisable.value = true,
                           ),
@@ -679,7 +679,7 @@ class _AgentProfilePage extends ConsumerWidget {
                 subtitleMaxLines: null,
                 type: DesignSystemSelectionRowType.action,
                 leading: Icon(
-                  Icons.category_outlined,
+                  LottiIcons.category,
                   color: tokens.colors.text.mediumEmphasis,
                   size: tokens.spacing.step6,
                 ),
@@ -692,7 +692,7 @@ class _AgentProfilePage extends ConsumerWidget {
                 title: context.messages.taskAgentNoProfilesAvailable,
                 type: DesignSystemSelectionRowType.action,
                 leading: Icon(
-                  Icons.account_tree_outlined,
+                  LottiIcons.tree,
                   color: tokens.colors.text.mediumEmphasis,
                   size: tokens.spacing.step6,
                 ),
@@ -708,7 +708,7 @@ class _AgentProfilePage extends ConsumerWidget {
                   type: DesignSystemSelectionRowType.singleSelect,
                   selected: selectedProfileId == profile.id,
                   leading: Icon(
-                    Icons.account_tree_outlined,
+                    LottiIcons.tree,
                     color: tokens.colors.text.mediumEmphasis,
                     size: tokens.spacing.step6,
                   ),

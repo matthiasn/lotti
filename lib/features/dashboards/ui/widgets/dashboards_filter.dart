@@ -24,7 +24,7 @@ class DashboardsFilter extends ConsumerWidget {
       key: const Key('dashboard_category_filter'),
       tooltip: context.messages.dashboardCategoryLabel,
       icon: Icon(
-        hasActiveFilter ? Icons.filter_alt_rounded : Icons.filter_alt_outlined,
+        LottiIcons.filter,
         color: hasActiveFilter
             ? tokens.colors.text.highEmphasis
             : tokens.colors.text.lowEmphasis,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/confirmation_progress_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -83,7 +84,7 @@ void main() {
       );
       expect(find.text('Delete'), findsOneWidget);
       expect(find.text('Cancel'), findsOneWidget);
-      expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.warning), findsOneWidget);
     });
 
     testWidgets('shows non-destructive modal without warning icon', (
@@ -114,7 +115,7 @@ void main() {
       // Verify no warning icon for non-destructive operations
       expect(find.text('Continue with this action?'), findsOneWidget);
       expect(find.text('Continue'), findsOneWidget);
-      expect(find.byIcon(Icons.warning_amber_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.warning), findsNothing);
     });
 
     testWidgets('cancels operation when cancel button is pressed', (

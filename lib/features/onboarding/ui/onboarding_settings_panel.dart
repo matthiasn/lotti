@@ -190,7 +190,7 @@ class _OnboardingSettingsBodyState
             DesignSystemListItem(
               title: m.demoSettingsRealAiTitle,
               subtitle: m.demoSettingsRealAiActiveSubtitle,
-              leading: const SettingsIcon(icon: Icons.check_circle_outline),
+              leading: const SettingsIcon(icon: LottiIcons.confirmCircled),
               showDivider: true,
               dividerIndent: SettingsIcon.dividerIndent(tokens),
             )
@@ -198,7 +198,7 @@ class _OnboardingSettingsBodyState
             DesignSystemListItem(
               title: m.demoSettingsRealAiTitle,
               subtitle: m.demoSettingsRealAiSubtitle,
-              leading: const SettingsIcon(icon: Icons.auto_awesome_outlined),
+              leading: const SettingsIcon(icon: LottiIcons.aiSpark),
               trailing: SettingsIcon.trailingChevron(tokens),
               showDivider: true,
               dividerIndent: SettingsIcon.dividerIndent(tokens),
@@ -206,14 +206,14 @@ class _OnboardingSettingsBodyState
             ),
         DesignSystemListItem(
           title: m.demoSettingsExitTitle,
-          leading: const SettingsIcon(icon: Icons.logout_rounded),
+          leading: const SettingsIcon(icon: LottiIcons.signOut),
           showDivider: true,
           dividerIndent: SettingsIcon.dividerIndent(tokens),
           onTap: () => showDemoExitSheet(context, gateway: gateway),
         ),
         DesignSystemListItem(
           title: m.demoSettingsResetTitle,
-          leading: const SettingsIcon(icon: Icons.restart_alt_rounded),
+          leading: const SettingsIcon(icon: LottiIcons.replay),
           dividerIndent: SettingsIcon.dividerIndent(tokens),
           onTap: () => unawaited(_resetDemo(gateway)),
         ),
@@ -223,7 +223,7 @@ class _OnboardingSettingsBodyState
       DesignSystemListItem(
         title: demoExists ? m.demoSettingsResumeTitle : m.demoSettingsTryTitle,
         subtitle: m.demoSettingsTrySubtitle,
-        leading: const SettingsIcon(icon: Icons.science_outlined),
+        leading: const SettingsIcon(icon: LottiIcons.science),
         showDivider: demoExists,
         dividerIndent: SettingsIcon.dividerIndent(tokens),
         onTap: () => unawaited(launchDemoEnter(context, gateway: gateway)),
@@ -231,14 +231,14 @@ class _OnboardingSettingsBodyState
       if (demoExists) ...[
         DesignSystemListItem(
           title: m.demoSettingsResetTitle,
-          leading: const SettingsIcon(icon: Icons.restart_alt_rounded),
+          leading: const SettingsIcon(icon: LottiIcons.replay),
           showDivider: true,
           dividerIndent: SettingsIcon.dividerIndent(tokens),
           onTap: () => unawaited(_resetDemo(gateway)),
         ),
         DesignSystemListItem(
           title: m.demoSettingsDeleteTitle,
-          leading: const SettingsIcon(icon: Icons.delete_outline_rounded),
+          leading: const SettingsIcon(icon: LottiIcons.delete),
           dividerIndent: SettingsIcon.dividerIndent(tokens),
           onTap: () => unawaited(_deleteDemo(gateway)),
         ),
@@ -290,8 +290,8 @@ class _OnboardingSettingsBodyState
                               : m.settingsOnboardingStatusNotActivated),
                     leading: SettingsIcon(
                       icon: activated
-                          ? Icons.check_circle_rounded
-                          : Icons.hourglass_empty_rounded,
+                          ? LottiIcons.confirmCircled
+                          : LottiIcons.pending,
                     ),
                     showDivider: true,
                     dividerIndent: SettingsIcon.dividerIndent(tokens),
@@ -302,7 +302,7 @@ class _OnboardingSettingsBodyState
                         : m.settingsOnboardingStartTitle,
                     subtitle: m.settingsOnboardingActionSubtitle,
                     leading: const SettingsIcon(
-                      icon: Icons.rocket_launch_rounded,
+                      icon: LottiIcons.rocket,
                     ),
                     trailing: SettingsIcon.trailingChevron(tokens),
                     showDivider: demoRows.isNotEmpty,

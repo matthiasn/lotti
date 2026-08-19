@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
@@ -273,7 +274,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
+      expect(find.byIcon(LottiIcons.edit), findsOneWidget);
       expect(find.byTooltip('Edit labels'), findsOneWidget);
     });
 
@@ -288,7 +289,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.edit_outlined), findsNothing);
+      expect(find.byIcon(LottiIcons.edit), findsNothing);
     });
   });
 
@@ -329,7 +330,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Find edit button
-      final editButton = find.byIcon(Icons.edit_outlined);
+      final editButton = find.byIcon(LottiIcons.edit);
       expect(editButton, findsOneWidget);
 
       // Verify tooltip
@@ -345,7 +346,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Find the Icon widget and verify its properties
-      final iconWidget = tester.widget<Icon>(find.byIcon(Icons.edit_outlined));
+      final iconWidget = tester.widget<Icon>(find.byIcon(LottiIcons.edit));
       expect(iconWidget.size, equals(18));
     });
 
@@ -360,7 +361,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Edit button should still be shown so users can add labels
-      expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
+      expect(find.byIcon(LottiIcons.edit), findsOneWidget);
     });
 
     testWidgets('tapping edit button opens the label selection modal', (
@@ -386,7 +387,7 @@ void main() {
       expect(find.text('Search labels…'), findsNothing);
 
       // Tap the edit button -> _openSelector -> openLabelSelector.
-      await tester.tap(find.byIcon(Icons.edit_outlined));
+      await tester.tap(find.byIcon(LottiIcons.edit));
       await tester.pumpAndSettle();
 
       // The label selection modal is now open: its search bar and the Apply
@@ -418,7 +419,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        await tester.tap(find.byIcon(Icons.edit_outlined));
+        await tester.tap(find.byIcon(LottiIcons.edit));
         await tester.pumpAndSettle();
 
         // Modal opened with the available labels rendered as selectable chips.
@@ -445,7 +446,7 @@ void main() {
       expect(find.text('Labels'), findsOneWidget);
 
       // Edit button is shown (so users can add labels)
-      expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
+      expect(find.byIcon(LottiIcons.edit), findsOneWidget);
 
       // "No labels assigned" message is shown
       expect(find.text('No labels assigned'), findsOneWidget);

@@ -282,7 +282,7 @@ class _HeroSliver extends StatelessWidget {
       expandedHeight: heroHeight,
       pinned: true,
       backgroundColor: dsPageSurface(context),
-      leading: _ScrimIconButton(icon: Icons.arrow_back, onPressed: onBack),
+      leading: _ScrimIconButton(icon: LottiIcons.back, onPressed: onBack),
       actions: [
         if (onDelete != null || onChangeCover != null)
           _HeroMenuButton(onDelete: onDelete, onChangeCover: onChangeCover),
@@ -406,7 +406,7 @@ class _HeroContent extends StatelessWidget {
           onTap: onTapDateTime,
           child: Row(
             children: [
-              Icon(Icons.event_outlined, size: 15, color: fade),
+              Icon(LottiIcons.calendar, size: 15, color: fade),
               SizedBox(width: tokens.spacing.step1),
               Flexible(
                 child: Text(
@@ -419,7 +419,7 @@ class _HeroContent extends StatelessWidget {
               if (onTapDateTime != null) ...[
                 SizedBox(width: tokens.spacing.step2),
                 Icon(
-                  Icons.edit_outlined,
+                  LottiIcons.edit,
                   size: 13,
                   color: Colors.white.withValues(alpha: 0.6),
                 ),
@@ -470,7 +470,7 @@ class _AddCoverButton extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               const Icon(
-                Icons.add_a_photo_outlined,
+                LottiIcons.addPhoto,
                 size: 16,
                 color: Colors.white,
               ),
@@ -516,7 +516,7 @@ class _SetChip extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                Icons.add,
+                LottiIcons.add,
                 size: 13,
                 color: Colors.white.withValues(alpha: 0.8),
               ),
@@ -706,7 +706,7 @@ class _HeroMenuButton extends StatelessWidget {
         shape: const CircleBorder(),
         clipBehavior: Clip.antiAlias,
         child: PopupMenuButton<String>(
-          icon: const Icon(Icons.more_horiz, color: Colors.white),
+          icon: const Icon(LottiIcons.more, color: Colors.white),
           onSelected: (value) {
             if (value == 'change_cover') onChangeCover?.call();
             if (value == 'delete') onDelete?.call();
@@ -718,7 +718,7 @@ class _HeroMenuButton extends StatelessWidget {
                 child: Row(
                   children: [
                     Icon(
-                      Icons.image_outlined,
+                      LottiIcons.image,
                       size: 18,
                       color: cs.onSurfaceVariant,
                     ),
@@ -732,7 +732,7 @@ class _HeroMenuButton extends StatelessWidget {
                 value: 'delete',
                 child: Row(
                   children: [
-                    Icon(Icons.delete_outline, size: 18, color: cs.error),
+                    Icon(LottiIcons.delete, size: 18, color: cs.error),
                     SizedBox(width: spacing),
                     Text(context.messages.eventsDeleteEvent),
                   ],
@@ -765,7 +765,7 @@ class _SummaryCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.auto_awesome, size: 16, color: cs.primary),
+              Icon(LottiIcons.aiSpark, size: 16, color: cs.primary),
               SizedBox(width: tokens.spacing.step2),
               Text(
                 context.messages.eventsSummaryTitle,
@@ -780,7 +780,7 @@ class _SummaryCard extends StatelessWidget {
                 iconSize: 18,
                 color: cs.onSurfaceVariant,
                 tooltip: context.messages.eventsRegenerateSummary,
-                icon: const Icon(Icons.refresh),
+                icon: const Icon(LottiIcons.refresh),
               ),
             ],
           ),
@@ -859,7 +859,7 @@ class _AddButton extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.add, size: 18, color: cs.primary),
+              Icon(LottiIcons.add, size: 18, color: cs.primary),
               SizedBox(width: tokens.spacing.step1),
               Text(
                 context.messages.eventsAddLabel,
@@ -898,7 +898,7 @@ class _EmptyHint extends StatelessWidget {
           padding: EdgeInsets.all(tokens.spacing.step4),
           child: Row(
             children: [
-              Icon(Icons.add, size: 18, color: cs.onSurfaceVariant),
+              Icon(LottiIcons.add, size: 18, color: cs.onSurfaceVariant),
               SizedBox(width: tokens.spacing.step2),
               Expanded(
                 child: Text(
@@ -940,7 +940,7 @@ class _TaskRow extends StatelessWidget {
       child: Row(
         children: [
           Icon(
-            task.done ? Icons.check_circle : Icons.radio_button_unchecked,
+            task.done ? LottiIcons.confirmCircled : LottiIcons.radioUnselected,
             size: 20,
             color: task.done ? cs.primary : cs.outline,
           ),
@@ -976,7 +976,7 @@ class _TaskRow extends StatelessWidget {
           ],
           if (canOpen) ...[
             SizedBox(width: tokens.spacing.step2),
-            Icon(Icons.chevron_right, size: 20, color: cs.outline),
+            Icon(LottiIcons.chevronRight, size: 20, color: cs.outline),
           ],
         ],
       ),

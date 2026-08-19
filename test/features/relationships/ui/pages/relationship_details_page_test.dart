@@ -10,6 +10,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/features/relationships/ui/pages/relationship_details_page.dart';
@@ -161,7 +162,7 @@ void main() {
       expect(find.text('Active'), findsOneWidget);
       expect(find.text('Every two weeks'), findsOneWidget);
       expect(find.text('Sis'), findsOneWidget);
-      expect(find.byIcon(Icons.star_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.star), findsOneWidget);
 
       expect(find.text('Call'), findsOneWidget);
       expect(find.text('Good'), findsOneWidget);
@@ -251,7 +252,7 @@ void main() {
       findsOneWidget,
     );
     // No star in the app bar for an unimportant relationship.
-    expect(find.byIcon(Icons.star_rounded), findsNothing);
+    expect(find.byIcon(LottiIcons.star), findsNothing);
   });
 
   testWidgets('says the person is no longer tracked when the id is gone — '
@@ -298,7 +299,7 @@ void main() {
     await tester.pumpWidget(buildPage());
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byIcon(Icons.edit_rounded));
+    await tester.tap(find.byIcon(LottiIcons.edit));
     await tester.pumpAndSettle();
 
     // Prefilled name and nickname fields, and the edit-only status picker.
@@ -334,7 +335,7 @@ void main() {
       await tester.pumpWidget(buildPage());
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.delete_outline_rounded));
+      await tester.tap(find.byIcon(LottiIcons.delete));
       await tester.pumpAndSettle();
 
       // Confirmation modal names the person; nothing deleted before consent.
@@ -381,7 +382,7 @@ void main() {
 
       await tester.pumpWidget(buildPage());
       await tester.pumpAndSettle();
-      await tester.tap(find.byIcon(Icons.delete_outline_rounded));
+      await tester.tap(find.byIcon(LottiIcons.delete));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Delete'));
       await tester.pumpAndSettle();
@@ -410,7 +411,7 @@ void main() {
       await tester.pumpWidget(buildPage());
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.delete_outline_rounded));
+      await tester.tap(find.byIcon(LottiIcons.delete));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Delete'));
       await tester.pumpAndSettle();
@@ -441,7 +442,7 @@ void main() {
       await tester.pumpWidget(buildPage());
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.delete_outline_rounded));
+      await tester.tap(find.byIcon(LottiIcons.delete));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Delete'));
       await tester.pumpAndSettle();
@@ -508,11 +509,11 @@ void main() {
     // viewport at once for one-pass glyph assertions.
     setTestSurfaceSize(tester, const Size(1000, 1400));
     const glyphs = {
-      CheckInInteractionType.inPerson: Icons.people_rounded,
-      CheckInInteractionType.call: Icons.call_rounded,
-      CheckInInteractionType.videoCall: Icons.videocam_rounded,
-      CheckInInteractionType.message: Icons.chat_rounded,
-      CheckInInteractionType.other: Icons.forum_rounded,
+      CheckInInteractionType.inPerson: LottiIcons.people,
+      CheckInInteractionType.call: LottiIcons.call,
+      CheckInInteractionType.videoCall: LottiIcons.video,
+      CheckInInteractionType.message: LottiIcons.chat,
+      CheckInInteractionType.other: LottiIcons.forum,
     };
 
     when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
@@ -573,7 +574,7 @@ void main() {
     // Exactly two: the page's own app-bar action, which was already there
     // before the sheet opened, plus the sheet's edit-only one. `findsWidgets`
     // here would pass on the app-bar icon alone and prove nothing.
-    expect(find.byIcon(Icons.delete_outline_rounded), findsNWidgets(2));
+    expect(find.byIcon(LottiIcons.delete), findsNWidgets(2));
   });
 
   testWidgets('renders contact channels with value and label', (tester) async {
@@ -687,7 +688,7 @@ void main() {
 
     expect(find.text('(untitled)'), findsOneWidget);
 
-    await tester.tap(find.byIcon(Icons.link_off_rounded));
+    await tester.tap(find.byIcon(LottiIcons.linkOff));
     await tester.pumpAndSettle();
 
     expect(
@@ -718,7 +719,7 @@ void main() {
       await tester.pumpWidget(buildPage());
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.link_off_rounded));
+      await tester.tap(find.byIcon(LottiIcons.linkOff));
       await tester.pumpAndSettle();
 
       // Nothing removed before consent; the modal names the task.
@@ -767,7 +768,7 @@ void main() {
     await tester.pumpWidget(buildPage());
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byIcon(Icons.link_off_rounded));
+    await tester.tap(find.byIcon(LottiIcons.linkOff));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Unlink Task'));
     await tester.pumpAndSettle();
@@ -797,7 +798,7 @@ void main() {
     await tester.pumpWidget(buildPage());
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byIcon(Icons.link_off_rounded));
+    await tester.tap(find.byIcon(LottiIcons.linkOff));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Unlink Task'));
     await tester.pumpAndSettle();

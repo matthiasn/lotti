@@ -203,7 +203,7 @@ class _ProjectsDetailPane extends StatelessWidget {
                 ),
                 child: TabHeaderIconButton(
                   key: const ValueKey('projects-show-list-pane'),
-                  icon: Icons.view_sidebar_rounded,
+                  icon: LottiIcons.sidebar,
                   tooltip: context.messages.listPaneShowTooltip,
                   onPressed: splitController!.showListPane,
                 ),
@@ -281,7 +281,7 @@ class _ProjectsListScaffold extends ConsumerWidget {
                           key: const ValueKey(
                             'projects-hide-list-pane',
                           ),
-                          icon: Icons.view_sidebar_rounded,
+                          icon: LottiIcons.sidebar,
                           tooltip: context.messages.listPaneHideTooltip,
                           onPressed: splitController!.hideListPane,
                         )

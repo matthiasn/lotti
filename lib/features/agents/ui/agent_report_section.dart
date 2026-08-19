@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/agents/ui/report_content_parser.dart';
 import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_detail_section_card.dart';
 import 'package:lotti/themes/theme.dart';
 
@@ -41,7 +42,7 @@ class _AgentReportSectionState extends State<AgentReportSection>
       vsync: this,
     );
     // Standard expand/collapse caret: collapsed → right (-0.25 turns
-    // from the natural downward `Icons.expand_more`), expanded → down
+    // from the natural downward `LottiIcons.expand`), expanded → down
     // (0 turns).
     _rotationAnimation =
         Tween<double>(
@@ -158,7 +159,7 @@ class _AgentReportSectionState extends State<AgentReportSection>
                   child: RotationTransition(
                     turns: _rotationAnimation,
                     child: Icon(
-                      Icons.expand_more,
+                      LottiIcons.expand,
                       size: 20,
                       color: context.colorScheme.onSurfaceVariant,
                     ),

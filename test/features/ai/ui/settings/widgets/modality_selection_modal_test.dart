@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/modality_selection_modal.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../test_utils.dart';
 
@@ -64,7 +65,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         expect(
-          find.byIcon(Icons.check_rounded),
+          find.byIcon(LottiIcons.confirm),
           findsOneWidget,
         ); // Only save button
         expect(find.text('Save'), findsOneWidget);
@@ -96,9 +97,9 @@ void main() {
         expect(find.text('Audio'), findsOneWidget);
 
         // Should have icons for all modalities
-        expect(find.byIcon(Icons.text_format_rounded), findsOneWidget);
-        expect(find.byIcon(Icons.image_rounded), findsOneWidget);
-        expect(find.byIcon(Icons.audio_file_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.text), findsOneWidget);
+        expect(find.byIcon(LottiIcons.image), findsOneWidget);
+        expect(find.byIcon(LottiIcons.audioFile), findsOneWidget);
       });
 
       testWidgets('shows correct initial selection state', (
@@ -114,7 +115,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         // Should show checkmarks for selected modalities (plus one in save button)
-        final checkmarkIcons = find.byIcon(Icons.check_rounded);
+        final checkmarkIcons = find.byIcon(LottiIcons.confirm);
         expect(
           checkmarkIcons,
           findsNWidgets(3),
@@ -132,9 +133,9 @@ void main() {
         expect(find.text('Text'), findsOneWidget);
 
         // Should have modality cards with proper icons
-        expect(find.byIcon(Icons.text_format_rounded), findsOneWidget);
-        expect(find.byIcon(Icons.image_rounded), findsOneWidget);
-        expect(find.byIcon(Icons.audio_file_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.text), findsOneWidget);
+        expect(find.byIcon(LottiIcons.image), findsOneWidget);
+        expect(find.byIcon(LottiIcons.audioFile), findsOneWidget);
       });
 
       testWidgets('highlights selected modalities with different styling', (
@@ -150,7 +151,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         // Should show checkmark for selected modality (plus one in save button)
-        expect(find.byIcon(Icons.check_rounded), findsNWidgets(2));
+        expect(find.byIcon(LottiIcons.confirm), findsNWidgets(2));
 
         // Should have styled containers with decorations
         final containers = tester.widgetList<Container>(find.byType(Container));
@@ -172,7 +173,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         // Initially should have one checkmark (for text) plus save button
-        expect(find.byIcon(Icons.check_rounded), findsNWidgets(2));
+        expect(find.byIcon(LottiIcons.confirm), findsNWidgets(2));
 
         // Find and tap the Text modality card to unselect it
         final textCard = find.ancestor(
@@ -183,7 +184,7 @@ void main() {
         await tester.pump();
 
         // Should now have only save button checkmark (text unselected)
-        expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
       });
 
       testWidgets('can select multiple modalities', (
@@ -199,7 +200,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         // Initially should have one checkmark plus save button
-        expect(find.byIcon(Icons.check_rounded), findsNWidgets(2));
+        expect(find.byIcon(LottiIcons.confirm), findsNWidgets(2));
 
         // Find and tap the Image modality card to select it
         final imageCard = find.ancestor(
@@ -210,7 +211,7 @@ void main() {
         await tester.pump();
 
         // Should now have three checkmarks (text, image selected + save button)
-        expect(find.byIcon(Icons.check_rounded), findsNWidgets(3));
+        expect(find.byIcon(LottiIcons.confirm), findsNWidgets(3));
       });
 
       testWidgets('calls onSave with correct modalities when save tapped', (
@@ -283,7 +284,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         // Initially should have two checkmarks (for text and image) plus save button
-        expect(find.byIcon(Icons.check_rounded), findsNWidgets(3));
+        expect(find.byIcon(LottiIcons.confirm), findsNWidgets(3));
 
         // Tap to deselect text modality
         final textCard = find.ancestor(
@@ -294,7 +295,7 @@ void main() {
         await tester.pump();
 
         // Should now have one checkmark (image) plus save button
-        expect(find.byIcon(Icons.check_rounded), findsNWidgets(2));
+        expect(find.byIcon(LottiIcons.confirm), findsNWidgets(2));
       });
 
       testWidgets('handles empty initial selection', (
@@ -310,7 +311,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         // Should only have save button checkmark, no selected modalities
-        expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
 
         // Should have all modality text labels visible
         expect(find.text('Text'), findsOneWidget);
@@ -332,7 +333,7 @@ void main() {
 
         // Should have checkmarks for all modalities plus save button
         expect(
-          find.byIcon(Icons.check_rounded),
+          find.byIcon(LottiIcons.confirm),
           findsNWidgets(Modality.values.length + 1),
         );
       });
@@ -349,7 +350,7 @@ void main() {
         expect(inkWells, findsAtLeastNWidgets(3)); // One for each modality
 
         // Should have save button (close button is part of Wolt modal wrapper)
-        final saveButton = find.byIcon(Icons.check_rounded);
+        final saveButton = find.byIcon(LottiIcons.confirm);
         expect(
           saveButton,
           findsAtLeastNWidgets(1),
@@ -369,9 +370,9 @@ void main() {
         expect(find.text('Audio'), findsOneWidget);
 
         // Should have icons for all modalities
-        expect(find.byIcon(Icons.text_format_rounded), findsOneWidget);
-        expect(find.byIcon(Icons.image_rounded), findsOneWidget);
-        expect(find.byIcon(Icons.audio_file_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.text), findsOneWidget);
+        expect(find.byIcon(LottiIcons.image), findsOneWidget);
+        expect(find.byIcon(LottiIcons.audioFile), findsOneWidget);
       });
     });
 
@@ -407,7 +408,7 @@ void main() {
         expect(find.byType(Column), findsAtLeastNWidgets(1));
         expect(find.byType(ListView), findsOneWidget);
         // Save button is an ElevatedButton.icon inside the component
-        expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
       });
 
       testWidgets('applies proper theming', (WidgetTester tester) async {
@@ -489,7 +490,7 @@ void main() {
         await tester.pump();
 
         // Should have 3 selected checkmarks plus save button
-        expect(find.byIcon(Icons.check_rounded), findsNWidgets(4));
+        expect(find.byIcon(LottiIcons.confirm), findsNWidgets(4));
       });
 
       testWidgets('handles save with no modalities selected', (

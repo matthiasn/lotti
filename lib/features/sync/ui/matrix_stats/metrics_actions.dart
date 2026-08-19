@@ -31,7 +31,7 @@ class MetricsActions extends StatelessWidget {
           child: DesignSystemButton(
             key: const Key('matrixStats.forceRescan'),
             label: messages.matrixStatsForceRescan,
-            leadingIcon: Icons.sync_rounded,
+            leadingIcon: LottiIcons.sync,
             variant: DesignSystemButtonVariant.secondary,
             onPressed: onForceRescan,
           ),
@@ -41,7 +41,7 @@ class MetricsActions extends StatelessWidget {
           child: DesignSystemButton(
             key: const Key('matrixStats.retryNow'),
             label: messages.matrixStatsRetryNow,
-            leadingIcon: Icons.flash_on_rounded,
+            leadingIcon: LottiIcons.bolt,
             variant: DesignSystemButtonVariant.secondary,
             onPressed: onRetryNow,
           ),
@@ -51,7 +51,7 @@ class MetricsActions extends StatelessWidget {
           child: DesignSystemButton(
             key: const Key('matrixStats.copyDiagnostics'),
             label: messages.matrixStatsCopyDiagnostics,
-            leadingIcon: Icons.copy_all_rounded,
+            leadingIcon: LottiIcons.copy,
             variant: DesignSystemButtonVariant.secondary,
             onPressed: onCopyDiagnostics,
           ),
@@ -59,7 +59,7 @@ class MetricsActions extends StatelessWidget {
         DesignSystemButton(
           key: const Key('matrixStats.refresh.metrics'),
           label: messages.matrixStatsRefresh,
-          leadingIcon: Icons.refresh_rounded,
+          leadingIcon: LottiIcons.refresh,
           variant: DesignSystemButtonVariant.secondary,
           onPressed: onRefresh,
         ),

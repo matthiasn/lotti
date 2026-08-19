@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/branding/design_system_brand_logo.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_navigation_sidebar_widgetbook.dart';
 
 import '../../../widget_test_utils.dart';
@@ -75,7 +76,7 @@ void main() {
       final actionSlotSize = tester.getSize(actionSlot);
       final collapsedPlusIcon = find.descendant(
         of: actionSlot,
-        matching: find.byIcon(Icons.add_rounded),
+        matching: find.byIcon(LottiIcons.add),
       );
       final buttonCenter = tester.getCenter(actionSlot);
       final iconCenter = tester.getCenter(collapsedPlusIcon);

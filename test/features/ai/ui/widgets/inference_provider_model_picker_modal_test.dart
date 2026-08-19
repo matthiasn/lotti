@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/widgets/inference_provider_model_picker_modal.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../../widget_test_utils.dart';
 
@@ -372,7 +373,7 @@ void main() {
       expect(find.text('Llama'), findsOneWidget);
       expect(find.text('Choose a provider'), findsNothing);
 
-      await tester.tap(find.byIcon(Icons.arrow_back_rounded));
+      await tester.tap(find.byIcon(LottiIcons.back));
       await tester.pumpAndSettle();
       expect(find.text('Choose a provider'), findsOneWidget);
     });
@@ -397,7 +398,7 @@ void main() {
         },
       );
 
-      await tester.tap(find.byIcon(Icons.close_rounded).first);
+      await tester.tap(find.byIcon(LottiIcons.close).first);
       await tester.pumpAndSettle();
       expect(called, isTrue);
       expect(result, isNull);

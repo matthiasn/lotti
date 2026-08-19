@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_selection.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_variant.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_burst.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/widgets/celebration_variant_picker.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -191,8 +192,8 @@ void main() {
 
       // The selected surprise row reads active (filled check); the other is
       // hollow, and no fixed variant card is selected.
-      expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.circle_outlined), findsOneWidget);
+      expect(find.byIcon(LottiIcons.confirmCircled), findsOneWidget);
+      expect(find.byIcon(LottiIcons.radioUnselected), findsOneWidget);
       expect(cardFor(tester, 'Sparks').selected, isFalse);
     });
   });
@@ -213,7 +214,7 @@ void main() {
       );
 
       // One corner "tune" button per variant card; the surprise rows have none.
-      expect(find.byIcon(Icons.tune_rounded), findsNWidgets(5));
+      expect(find.byIcon(LottiIcons.tune), findsNWidgets(5));
 
       await tester.tap(
         find.descendant(
@@ -221,7 +222,7 @@ void main() {
             of: find.text('Confetti'),
             matching: find.byType(CelebrationVariantCard),
           ),
-          matching: find.byIcon(Icons.tune_rounded),
+          matching: find.byIcon(LottiIcons.tune),
         ),
       );
       await tester.pump();
@@ -233,7 +234,7 @@ void main() {
       tester,
     ) async {
       await pump(tester, selections: []);
-      expect(find.byIcon(Icons.tune_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.tune), findsNothing);
     });
   });
 }

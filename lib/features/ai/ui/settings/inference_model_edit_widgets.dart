@@ -180,7 +180,7 @@ class SelectorField extends StatelessWidget {
           child: Row(
             children: [
               Icon(
-                Icons.tune_rounded,
+                LottiIcons.tune,
                 size: 18,
                 color: tokens.colors.text.mediumEmphasis,
               ),
@@ -213,7 +213,7 @@ class SelectorField extends StatelessWidget {
               ),
               SizedBox(width: tokens.spacing.step2),
               Icon(
-                Icons.arrow_drop_down_rounded,
+                LottiIcons.chevronDown,
                 color: isEmpty
                     ? tokens.colors.alert.warning.defaultColor
                     : tokens.colors.text.mediumEmphasis,

@@ -9,6 +9,7 @@ import 'package:lotti/features/daily_os_next/state/shutdown_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/shutdown_cards.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/shutdown_page.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
@@ -429,7 +430,7 @@ void main() {
         // Tap the leading back icon (not the footer TextButton).
         final backIcon = find.widgetWithIcon(
           IconButton,
-          Icons.arrow_back_rounded,
+          LottiIcons.back,
         );
         expect(backIcon, findsOneWidget);
         await tester.tap(backIcon);

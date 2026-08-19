@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/ui/image_generation/cover_art_skill_modal.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/action_menu_list_item.dart';
 import 'package:lotti/features/ratings/state/rating_controller.dart';
@@ -54,7 +54,7 @@ class ModernGenerateCoverArtItem extends ConsumerWidget {
     }
 
     return ActionMenuListItem(
-      icon: Icons.auto_awesome_outlined,
+      icon: LottiIcons.aiSpark,
       title: context.messages.generateCoverArt,
       subtitle: context.messages.generateCoverArtSubtitle,
       onTap: () async {
@@ -109,7 +109,7 @@ class ModernSetCoverArtItem extends ConsumerWidget {
     final isCurrentCover = parentEntry.data.coverArtId == entryId;
 
     return ActionMenuListItem(
-      icon: isCurrentCover ? Icons.image : Icons.image_outlined,
+      icon: LottiIcons.image,
       title: isCurrentCover
           ? context.messages.coverArtChipActive
           : context.messages.coverArtChipSet,
@@ -137,7 +137,7 @@ class ModernLinkFromItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ActionMenuListItem(
-      icon: Icons.add_link,
+      icon: LottiIcons.link,
       title: context.messages.journalLinkFromHint,
       onTap: () {
         getIt<LinkService>().linkFrom(entryId);
@@ -159,7 +159,7 @@ class ModernLinkToItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ActionMenuListItem(
-      icon: MdiIcons.target,
+      icon: LottiIcons.focus,
       title: context.messages.journalLinkToHint,
       onTap: () {
         getIt<LinkService>().linkTo(entryId);
@@ -197,7 +197,7 @@ class ModernRateSessionItem extends ConsumerWidget {
     final hasRating = rating != null;
 
     return ActionMenuListItem(
-      icon: hasRating ? Icons.star_rate_rounded : Icons.star_rate_outlined,
+      icon: hasRating ? LottiIconsFilled.star : LottiIcons.star,
       title: hasRating
           ? context.messages.sessionRatingViewAction
           : context.messages.sessionRatingRateAction,

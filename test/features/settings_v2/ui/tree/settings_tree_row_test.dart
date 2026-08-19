@@ -11,13 +11,13 @@ import '../../../../widget_test_utils.dart';
 
 SettingsNode _branch() => const SettingsNode(
   id: 'sync',
-  icon: Icons.sync_rounded,
+  icon: LottiIcons.sync,
   title: 'Sync',
   desc: 'Configure sync and view stats',
   children: [
     SettingsNode(
       id: 'sync/backfill',
-      icon: Icons.cloud_download_outlined,
+      icon: LottiIcons.cloudDownload,
       title: 'Backfill',
       desc: 'Manage sync gap recovery',
       panel: 'sync-backfill',
@@ -27,7 +27,7 @@ SettingsNode _branch() => const SettingsNode(
 
 SettingsNode _leaf({String desc = 'Feature flags'}) => SettingsNode(
   id: 'flags',
-  icon: Icons.flag_outlined,
+  icon: LottiIcons.flag,
   title: 'Flags',
   desc: desc,
   panel: 'flags',
@@ -93,7 +93,7 @@ void main() {
 
     testWidgets('renders the node icon', (tester) async {
       await _pumpRow(tester, node: _leaf());
-      expect(find.byIcon(Icons.flag_outlined), findsOneWidget);
+      expect(find.byIcon(LottiIcons.flag), findsOneWidget);
     });
 
     testWidgets('icon glyph is grey (medium emphasis) when idle', (
@@ -101,7 +101,7 @@ void main() {
     ) async {
       await _pumpRow(tester, node: _leaf());
       final context = tester.element(find.byType(SettingsTreeRow));
-      final icon = tester.widget<Icon>(find.byIcon(Icons.flag_outlined));
+      final icon = tester.widget<Icon>(find.byIcon(LottiIcons.flag));
       expect(icon.color, context.designTokens.colors.text.mediumEmphasis);
     });
 
@@ -110,7 +110,7 @@ void main() {
     ) async {
       await _pumpRow(tester, node: _leaf(), accentIcon: true);
       final context = tester.element(find.byType(SettingsTreeRow));
-      final icon = tester.widget<Icon>(find.byIcon(Icons.flag_outlined));
+      final icon = tester.widget<Icon>(find.byIcon(LottiIcons.flag));
       expect(icon.color, context.designTokens.colors.interactive.enabled);
     });
 
@@ -140,12 +140,12 @@ void main() {
   group('SettingsTreeRow — branch chevron', () {
     testWidgets('renders a chevron for branches', (tester) async {
       await _pumpRow(tester, node: _branch());
-      expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
     });
 
     testWidgets('omits chevron for leaves', (tester) async {
       await _pumpRow(tester, node: _leaf());
-      expect(find.byIcon(Icons.chevron_right_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.chevronRight), findsNothing);
     });
 
     testWidgets('chevron is rotated a quarter-turn when the branch is open', (
@@ -155,7 +155,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
       final rotation = tester.widget<AnimatedRotation>(
         find.ancestor(
-          of: find.byIcon(Icons.chevron_right_rounded),
+          of: find.byIcon(LottiIcons.chevronRight),
           matching: find.byType(AnimatedRotation),
         ),
       );
@@ -168,7 +168,7 @@ void main() {
       await _pumpRow(tester, node: _branch());
       final rotation = tester.widget<AnimatedRotation>(
         find.ancestor(
-          of: find.byIcon(Icons.chevron_right_rounded),
+          of: find.byIcon(LottiIcons.chevronRight),
           matching: find.byType(AnimatedRotation),
         ),
       );
@@ -181,10 +181,10 @@ void main() {
       tester,
     ) async {
       await _pumpRow(tester, node: _leaf(), showLeafChevron: true);
-      expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
       final rotation = tester.widget<AnimatedRotation>(
         find.ancestor(
-          of: find.byIcon(Icons.chevron_right_rounded),
+          of: find.byIcon(LottiIcons.chevronRight),
           matching: find.byType(AnimatedRotation),
         ),
       );
@@ -197,7 +197,7 @@ void main() {
       tester,
     ) async {
       await _pumpRow(tester, node: _leaf());
-      expect(find.byIcon(Icons.chevron_right_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.chevronRight), findsNothing);
     });
   });
 

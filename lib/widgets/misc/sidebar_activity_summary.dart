@@ -67,7 +67,7 @@ class _SidebarActivitySummaryState
           if (audioVisible)
             _ActivityMetric(
               key: SidebarActivitySummaryKeys.audio,
-              icon: Icons.mic_rounded,
+              icon: LottiIcons.mic,
               value: compactSidebarActivityDuration(recorder.progress),
               tooltip: context.messages.taskActionBarAudioRecordingActive,
               color: context.designTokens.colors.alert.error.defaultColor,
@@ -75,7 +75,7 @@ class _SidebarActivitySummaryState
           if (timer != null)
             _ActivityMetric(
               key: SidebarActivitySummaryKeys.timer,
-              icon: Icons.timer_outlined,
+              icon: LottiIcons.timer,
               value: compactSidebarActivityDuration(entryDuration(timer)),
               tooltip: context.messages.sidebarRunningTimerLabel,
               color: context.designTokens.colors.interactive.enabled,
@@ -83,7 +83,7 @@ class _SidebarActivitySummaryState
           if (agentsVisible)
             _ActivityMetric(
               key: SidebarActivitySummaryKeys.agents,
-              icon: Icons.auto_awesome_rounded,
+              icon: LottiIcons.aiSpark,
               value: '${agentCounts.total}',
               tooltip: context.messages.sidebarWakesHeader,
               color: context.designTokens.colors.text.mediumEmphasis,
@@ -226,8 +226,8 @@ class _ActivitySurface extends StatelessWidget {
                             child: ExcludeSemantics(
                               child: Icon(
                                 expanded
-                                    ? Icons.expand_more_rounded
-                                    : Icons.chevron_right_rounded,
+                                    ? LottiIcons.expand
+                                    : LottiIcons.chevronRight,
                                 size: tokens.spacing.step5,
                                 color: tokens.colors.text.mediumEmphasis,
                               ),

@@ -20,6 +20,7 @@ import 'package:lotti/features/daily_os_next/ui/pages/commit_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/daily_os_next_root.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/refine_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/shutdown_page.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/insights/ui/time_analysis_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -320,7 +321,7 @@ void main() {
 
       final messages = tester.element(find.byType(Scaffold)).messages;
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
-      expect(find.byIcon(Icons.arrow_back_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.back), findsOneWidget);
       expect(find.byTooltip(messages.dailyOsNextDayBack), findsOneWidget);
 
       await tester.tap(find.byTooltip(messages.dailyOsNextDayBack));
@@ -345,7 +346,7 @@ void main() {
 
       final messages = tester.element(find.byType(Scaffold)).messages;
       expect(find.textContaining('boom'), findsOneWidget);
-      expect(find.byIcon(Icons.arrow_back_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.back), findsOneWidget);
       expect(find.byTooltip(messages.dailyOsNextDayBack), findsOneWidget);
     });
 

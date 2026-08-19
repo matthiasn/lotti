@@ -51,10 +51,10 @@ String contactChannelTypeLabel(BuildContext context, ContactChannelType type) =>
 
 /// The icon for a contact channel type — shared with the detail page.
 IconData contactChannelTypeIcon(ContactChannelType type) => switch (type) {
-  ContactChannelType.phone => Icons.call_rounded,
-  ContactChannelType.mobile => Icons.smartphone_rounded,
-  ContactChannelType.email => Icons.mail_rounded,
-  ContactChannelType.messaging => Icons.chat_bubble_rounded,
+  ContactChannelType.phone => LottiIcons.call,
+  ContactChannelType.mobile => LottiIcons.phone,
+  ContactChannelType.email => LottiIcons.mail,
+  ContactChannelType.messaging => LottiIcons.chat,
 };
 
 /// The localized label for a relationship status — shared by the form's
@@ -457,7 +457,7 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
           alignment: AlignmentDirectional.centerStart,
           child: TextButton.icon(
             onPressed: () => setState(() => _channels.add(_ChannelDraft())),
-            icon: const Icon(Icons.add_rounded),
+            icon: const Icon(LottiIcons.add),
             label: Text(messages.relationshipAddChannelButton),
           ),
         ),
@@ -571,7 +571,7 @@ class _ChannelEditorRow extends StatelessWidget {
             IconButton(
               tooltip: messages.deleteButton,
               onPressed: onRemoved,
-              icon: const Icon(Icons.remove_circle_outline_rounded),
+              icon: const Icon(LottiIcons.removeCircled),
             ),
           ],
         ),

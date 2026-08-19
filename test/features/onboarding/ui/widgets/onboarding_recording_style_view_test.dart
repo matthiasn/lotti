@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/ui/animation/ai_voice_input_shader.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/live_waveform.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/state/recording_style.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_recording_style_view.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/analog_vu_meter.dart';
@@ -80,8 +81,8 @@ void main() {
   testWidgets('the selected style shows the checked radio cue', (tester) async {
     await pumpView(tester); // default selection is modern
     // Exactly one card is selected at a time.
-    expect(find.byIcon(Icons.radio_button_checked_rounded), findsOneWidget);
-    expect(find.byIcon(Icons.radio_button_unchecked_rounded), findsOneWidget);
+    expect(find.byIcon(LottiIcons.radioSelected), findsOneWidget);
+    expect(find.byIcon(LottiIcons.radioUnselected), findsOneWidget);
   });
 
   testWidgets('tapping a style card reports the selection', (tester) async {

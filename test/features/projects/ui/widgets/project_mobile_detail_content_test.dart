@@ -189,7 +189,7 @@ void main() {
       expect(find.text('Active'), findsOneWidget);
       expect(find.text('Work'), findsOneWidget);
       expect(find.text('At Risk'), findsOneWidget);
-      expect(find.byIcon(Icons.unfold_more_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.expandBoth), findsOneWidget);
 
       final titleTop = tester.getTopLeft(find.text('Design system'));
       final statusTop = tester.getTopLeft(find.text('Active'));
@@ -292,7 +292,7 @@ void main() {
           );
           await tester.pump();
 
-          expect(find.byIcon(Icons.refresh_rounded), findsOneWidget);
+          expect(find.byIcon(LottiIcons.refresh), findsOneWidget);
           expect(find.byType(ShowcaseCountdownPill), findsOneWidget);
           expect(find.textContaining('Updated 1m ago'), findsOneWidget);
           expect(find.textContaining('↻'), findsNothing);
@@ -333,7 +333,7 @@ void main() {
           expect(report.onCancelScheduledWake, isNotNull);
 
           // Then prove the callback is the same one we passed by invoking
-          // it via the inner widget — `find.byIcon(Icons.close_rounded)`
+          // it via the inner widget — `find.byIcon(LottiIcons.close)`
           // would also match the X on individual recommendation tiles, so
           // we drive the report-section callback directly.
           report.onCancelScheduledWake!();

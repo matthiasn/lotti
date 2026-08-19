@@ -53,7 +53,7 @@ class FormBottomBar extends StatelessWidget {
               // Status indicator
               if (!isDirty) ...[
                 Icon(
-                  Icons.check_circle_outline_rounded,
+                  LottiIcons.confirmCircled,
                   size: 20,
                   color: context.colorScheme.onSurfaceVariant,
                 ),
@@ -71,7 +71,7 @@ class FormBottomBar extends StatelessWidget {
                 SizedBox(width: context.designTokens.spacing.step5),
               ] else if (!isFormValid) ...[
                 Icon(
-                  Icons.info_outline_rounded,
+                  LottiIcons.info,
                   size: 20,
                   color: context.colorScheme.error,
                 ),
@@ -111,7 +111,7 @@ class FormBottomBar extends StatelessWidget {
                 child: DesignSystemButton(
                   label: context.messages.saveLabel,
                   onPressed: showSaveButton && !isLoading ? onSave : null,
-                  leadingIcon: Icons.save_rounded,
+                  leadingIcon: LottiIcons.save,
                   size: DesignSystemButtonSize.large,
                 ),
               ),

@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_activity_log.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../widget_test_utils.dart';
 import '../test_utils.dart';
@@ -111,7 +112,7 @@ void main() {
         findsOneWidget,
       );
       // Collapse icons should be shown (not expand).
-      expect(find.byIcon(Icons.keyboard_arrow_down), findsNWidgets(2));
+      expect(find.byIcon(LottiIcons.chevronDown), findsNWidgets(2));
     });
 
     testWidgets('can collapse an initially expanded observation', (
@@ -141,7 +142,7 @@ void main() {
       await tester.pump();
 
       expect(find.text('Insight text'), findsNothing);
-      expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
     });
 
     testWidgets('shows only observation kind badges', (tester) async {
@@ -200,7 +201,7 @@ void main() {
       await tester.pump();
 
       // Should show expand icon (collapsed).
-      expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
       expect(find.text('{"title": "New Title"}'), findsNothing);
     });
 
@@ -228,7 +229,7 @@ void main() {
       await tester.pump();
 
       // Should show collapse icon (expanded).
-      expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronDown), findsOneWidget);
       expect(find.text('{"title": "New Title"}'), findsOneWidget);
     });
 
@@ -254,7 +255,7 @@ void main() {
         await tester.pump();
         await tester.pump();
 
-        expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
+        expect(find.byIcon(LottiIcons.chevronDown), findsOneWidget);
         expect(find.text('Success: title updated'), findsOneWidget);
       },
     );
@@ -280,7 +281,7 @@ void main() {
       await tester.pump();
 
       // Thought is not a tool call, so it should remain collapsed.
-      expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
       expect(find.text('thinking...'), findsNothing);
     });
   });

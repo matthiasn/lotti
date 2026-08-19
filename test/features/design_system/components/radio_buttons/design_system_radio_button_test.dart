@@ -48,7 +48,7 @@ void main() {
         find.ancestor(
           of: find.descendant(
             of: radioFinder,
-            matching: find.byIcon(Icons.info_outline_rounded),
+            matching: find.byIcon(LottiIcons.info),
           ),
           matching: find.byWidgetPredicate(
             (widget) =>

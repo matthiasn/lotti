@@ -83,9 +83,7 @@ class _OutboxMessageCardState extends State<OutboxMessageCard> {
                     ),
                     SizedBox(width: tokens.spacing.step1),
                     Icon(
-                      _expanded
-                          ? Icons.expand_less_rounded
-                          : Icons.expand_more_rounded,
+                      _expanded ? LottiIcons.collapse : LottiIcons.expand,
                       size: IconSizes.xs,
                       color: colors.text.lowEmphasis,
                     ),
@@ -124,14 +122,14 @@ class _OutboxMessageCardState extends State<OutboxMessageCard> {
                       if (widget.onRetry != null)
                         DesignSystemButton(
                           label: messages.outboxActionRetry,
-                          leadingIcon: Icons.refresh_rounded,
+                          leadingIcon: LottiIcons.refresh,
                           variant: DesignSystemButtonVariant.secondary,
                           onPressed: widget.onRetry,
                         ),
                       if (widget.onRemove != null)
                         DesignSystemButton(
                           label: messages.outboxActionRemove,
-                          leadingIcon: Icons.delete_outline_rounded,
+                          leadingIcon: LottiIcons.delete,
                           variant: DesignSystemButtonVariant.dangerTertiary,
                           onPressed: widget.onRemove,
                         ),

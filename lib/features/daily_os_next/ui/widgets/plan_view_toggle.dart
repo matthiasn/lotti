@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Which read-only projection of the day is currently being shown.
@@ -34,20 +35,20 @@ class PlanViewToggle extends StatelessWidget {
             DsSegment(
               PlanView.agenda,
               context.messages.dailyOsNextPlanViewAgenda,
-              icon: useIcons ? Icons.view_agenda_outlined : null,
-              activeIcon: useIcons ? Icons.view_agenda_rounded : null,
+              icon: useIcons ? LottiIcons.list : null,
+              activeIcon: useIcons ? LottiIcons.list : null,
             ),
             DsSegment(
               PlanView.day,
               context.messages.dailyOsNextPlanViewDay,
-              icon: useIcons ? Icons.calendar_view_day_outlined : null,
-              activeIcon: useIcons ? Icons.calendar_view_day_rounded : null,
+              icon: useIcons ? LottiIcons.viewRows : null,
+              activeIcon: useIcons ? LottiIcons.viewRows : null,
             ),
             DsSegment(
               PlanView.activity,
               context.messages.dailyOsNextPlanViewActivity,
-              icon: useIcons ? Icons.timeline_outlined : null,
-              activeIcon: useIcons ? Icons.timeline_rounded : null,
+              icon: useIcons ? LottiIcons.timeline : null,
+              activeIcon: useIcons ? LottiIcons.timeline : null,
             ),
           ],
         );

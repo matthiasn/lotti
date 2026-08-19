@@ -6,6 +6,7 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/state/project_health_metrics.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
@@ -83,7 +84,7 @@ void main() {
         wrap(
           const CategoryTag(
             label: 'Work',
-            icon: Icons.work,
+            icon: LottiIcons.work,
             color: Colors.blue,
           ),
         ),
@@ -91,7 +92,7 @@ void main() {
       await tester.pump();
 
       expect(find.text('Work'), findsOneWidget);
-      expect(find.byIcon(Icons.work), findsOneWidget);
+      expect(find.byIcon(LottiIcons.work), findsOneWidget);
     });
 
     testWidgets('uses white text on a near-black background', (tester) async {
@@ -99,7 +100,7 @@ void main() {
         wrap(
           const CategoryTag(
             label: 'Ollama',
-            icon: Icons.computer,
+            icon: LottiIcons.computer,
             // Seeded "Ollama Charcoal" (#0F172A) — the case that prompted
             // the contrast-aware foreground flip.
             color: Color(0xFF0F172A),
@@ -110,7 +111,7 @@ void main() {
 
       final label = tester.widget<Text>(find.text('Ollama'));
       expect(label.style?.color, equals(Colors.white));
-      final iconWidget = tester.widget<Icon>(find.byIcon(Icons.computer));
+      final iconWidget = tester.widget<Icon>(find.byIcon(LottiIcons.computer));
       expect(iconWidget.color, equals(Colors.white));
     });
 
@@ -119,7 +120,7 @@ void main() {
         wrap(
           const CategoryTag(
             label: 'Pale',
-            icon: Icons.label,
+            icon: LottiIcons.label,
             color: Color(0xFFF8FAFC),
           ),
         ),
@@ -140,7 +141,7 @@ void main() {
           await tester.pumpWidget(
             wrap(
               OutlinedMetaTag(
-                icon: Icons.folder_outlined,
+                icon: LottiIcons.folder,
                 label: 'No category',
                 isPlaceholder: isPlaceholder,
               ),
@@ -158,7 +159,7 @@ void main() {
             expectedColor,
             reason: 'isPlaceholder=$isPlaceholder',
           );
-          final icon = tester.widget<Icon>(find.byIcon(Icons.folder_outlined));
+          final icon = tester.widget<Icon>(find.byIcon(LottiIcons.folder));
           expect(
             icon.color,
             expectedColor,
@@ -172,7 +173,7 @@ void main() {
       await tester.pumpWidget(
         wrap(
           const OutlinedMetaTag(
-            icon: Icons.folder_outlined,
+            icon: LottiIcons.folder,
             label: 'Static tag',
           ),
         ),
@@ -189,7 +190,7 @@ void main() {
       await tester.pumpWidget(
         wrap(
           OutlinedMetaTag(
-            icon: Icons.folder_outlined,
+            icon: LottiIcons.folder,
             label: 'Tappable tag',
             onTap: () => taps++,
           ),
@@ -215,7 +216,7 @@ void main() {
       await tester.pump();
 
       expect(find.text('At Risk'), findsOneWidget);
-      expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.warning), findsOneWidget);
     });
   });
 
@@ -253,7 +254,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byIcon(Icons.unfold_more_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.expandBoth), findsOneWidget);
     });
 
     testWidgets('omits expand chevron when not large', (tester) async {
@@ -270,7 +271,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byIcon(Icons.unfold_more_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.expandBoth), findsNothing);
     });
 
     testWidgets('matches the category tag height in compact mode', (
@@ -282,7 +283,7 @@ void main() {
             children: [
               const CategoryTag(
                 label: 'Work',
-                icon: Icons.work,
+                icon: LottiIcons.work,
                 color: Colors.blue,
               ),
               const SizedBox(width: 12),
@@ -324,7 +325,7 @@ void main() {
 
       expect(find.text('On Hold'), findsOneWidget);
       expect(
-        find.byIcon(Icons.pause_circle_outline_rounded),
+        find.byIcon(LottiIcons.pauseCircled),
         findsOneWidget,
       );
     });
@@ -561,7 +562,7 @@ Longer report content.
         expect(find.text('Recommendations'), findsNothing);
         expect(find.text('Ship the fix'), findsNothing);
 
-        await tester.tap(find.byIcon(Icons.chevron_right_rounded));
+        await tester.tap(find.byIcon(LottiIcons.chevronRight));
         // Drive the 180ms AnimatedSize expand to completion deterministically.
         await tester.pump(const Duration(milliseconds: 200));
 
@@ -584,7 +585,7 @@ Longer report content.
         );
         await tester.pump();
 
-        expect(find.byIcon(Icons.chevron_right_rounded), findsNothing);
+        expect(find.byIcon(LottiIcons.chevronRight), findsNothing);
         expect(find.text('Recommendations'), findsNothing);
         expect(find.text('Ship the fix'), findsNothing);
       },
@@ -614,7 +615,7 @@ Longer report content.
 
         expect(find.textContaining('Short summary'), findsOneWidget);
         expect(find.textContaining('Longer report content'), findsNothing);
-        expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
       },
     );
 
@@ -640,9 +641,9 @@ Longer report content.
           find.textContaining('Full report body with more context'),
           findsNothing,
         );
-        expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
 
-        await tester.tap(find.byIcon(Icons.chevron_right_rounded));
+        await tester.tap(find.byIcon(LottiIcons.chevronRight));
         // Drive the 180ms AnimatedSize expand to completion deterministically.
         await tester.pump(const Duration(milliseconds: 200));
 
@@ -670,7 +671,7 @@ Longer report content.
       );
       await tester.pump();
 
-      await tester.tap(find.byIcon(Icons.refresh_rounded));
+      await tester.tap(find.byIcon(LottiIcons.refresh));
       await tester.pump();
 
       expect(refreshCount, 1);
@@ -695,7 +696,7 @@ Longer report content.
         await tester.pump();
 
         expect(find.byType(ShowcaseCountdownPill), findsOneWidget);
-        expect(find.byIcon(Icons.refresh_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.refresh), findsOneWidget);
       });
     });
 
@@ -1196,7 +1197,7 @@ Longer report content.
         wrap(
           CategoryTag(
             label: 'Tappable',
-            icon: Icons.label,
+            icon: LottiIcons.label,
             color: Colors.green,
             onTap: () => tapped = true,
           ),
@@ -1220,7 +1221,7 @@ Longer report content.
         wrap(
           const CategoryTag(
             label: 'Static',
-            icon: Icons.label,
+            icon: LottiIcons.label,
             color: Colors.green,
           ),
         ),
@@ -1300,7 +1301,7 @@ Longer report content.
 
       expect(find.byType(SvgPicture), findsNothing);
       expect(
-        find.byIcon(Icons.pause_circle_outline_rounded),
+        find.byIcon(LottiIcons.pauseCircled),
         findsOneWidget,
       );
       expect(find.text('On Hold'), findsOneWidget);
@@ -1314,7 +1315,7 @@ Longer report content.
 
       expect(find.byType(SvgPicture), findsNothing);
       expect(
-        find.byIcon(Icons.radio_button_unchecked_rounded),
+        find.byIcon(LottiIcons.radioUnselected),
         findsOneWidget,
       );
       expect(find.text('Open'), findsOneWidget);
@@ -1340,7 +1341,7 @@ Longer report content.
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
       // refresh icon should not be present while refreshing
-      expect(find.byIcon(Icons.refresh_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.refresh), findsNothing);
     });
 
     testWidgets('hides countdown pill when isRefreshing is true', (
@@ -1430,7 +1431,7 @@ Detailed analysis section.
 
       expect(find.textContaining('Only body text here'), findsOneWidget);
       // No expand icon since there's no additional content
-      expect(find.byIcon(Icons.chevron_right_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.chevronRight), findsNothing);
     });
   });
 
@@ -1504,7 +1505,7 @@ Detailed analysis section.
       expect(find.text('On Hold'), findsOneWidget);
       expect(find.byType(SvgPicture), findsNothing);
       expect(
-        find.byIcon(Icons.pause_circle_outline_rounded),
+        find.byIcon(LottiIcons.pauseCircled),
         findsOneWidget,
       );
     });
@@ -1520,7 +1521,7 @@ Detailed analysis section.
       expect(find.text('Open'), findsOneWidget);
       expect(find.byType(SvgPicture), findsNothing);
       expect(
-        find.byIcon(Icons.radio_button_unchecked_rounded),
+        find.byIcon(LottiIcons.radioUnselected),
         findsOneWidget,
       );
     });
@@ -1541,7 +1542,7 @@ Detailed analysis section.
       );
       await tester.pump();
 
-      expect(find.byIcon(Icons.unfold_more_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.expandBoth), findsOneWidget);
       expect(find.byType(InkWell), findsOneWidget);
 
       await tester.tap(find.byType(InkWell));
@@ -1697,7 +1698,7 @@ Detailed analysis section.
       await tester.pump();
 
       expect(find.text('Rejected'), findsOneWidget);
-      expect(find.byIcon(Icons.cancel_outlined), findsOneWidget);
+      expect(find.byIcon(LottiIcons.closeCircled), findsOneWidget);
     });
   });
 
@@ -1723,15 +1724,15 @@ Full details here.
 
       // Initially expanded - full details visible
       expect(find.textContaining('Full details here'), findsOneWidget);
-      expect(find.byIcon(Icons.keyboard_arrow_down_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronDown), findsOneWidget);
 
       // Collapse
-      await tester.tap(find.byIcon(Icons.keyboard_arrow_down_rounded));
+      await tester.tap(find.byIcon(LottiIcons.chevronDown));
       // Drive the 180ms AnimatedSize collapse to completion deterministically.
       await tester.pump(const Duration(milliseconds: 200));
 
       expect(find.textContaining('Full details here'), findsNothing);
-      expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
     });
   });
 
@@ -1762,7 +1763,7 @@ Full details here.
         );
 
         // Has expand icon because fullContent differs from body
-        expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
       },
     );
   });
@@ -1786,9 +1787,9 @@ Full details here.
       await tester.pump();
 
       // Should have expand affordance
-      expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
 
-      await tester.tap(find.byIcon(Icons.chevron_right_rounded));
+      await tester.tap(find.byIcon(LottiIcons.chevronRight));
       // Drive the 180ms AnimatedSize expand to completion deterministically.
       await tester.pump(const Duration(milliseconds: 200));
 
@@ -1823,9 +1824,9 @@ Full details here.
 
         // The expand affordance should be present because after stripping
         // the H1, 'Some real content here.' remains.
-        expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
 
-        await tester.tap(find.byIcon(Icons.chevron_right_rounded));
+        await tester.tap(find.byIcon(LottiIcons.chevronRight));
         // Drive the 180ms AnimatedSize expand to completion deterministically.
         await tester.pump(const Duration(milliseconds: 200));
 

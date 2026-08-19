@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings_v2/domain/settings_node.dart';
 
 void main() {
@@ -7,13 +7,13 @@ void main() {
     test('is true when children is a non-empty list', () {
       const node = SettingsNode(
         id: 'sync',
-        icon: Icons.sync_rounded,
+        icon: LottiIcons.sync,
         title: 'Sync',
         desc: 'desc',
         children: [
           SettingsNode(
             id: 'sync/backfill',
-            icon: Icons.cloud_download_outlined,
+            icon: LottiIcons.cloudDownload,
             title: 'Backfill',
             desc: 'desc',
             panel: 'sync-backfill',
@@ -28,7 +28,7 @@ void main() {
       // are all gated off — spec §3 keeps it addressable as a branch.
       const node = SettingsNode(
         id: 'agents',
-        icon: Icons.smart_toy_outlined,
+        icon: LottiIcons.aiModel,
         title: 'Agents',
         desc: 'desc',
         children: [],
@@ -39,7 +39,7 @@ void main() {
     test('is false for a leaf (null children)', () {
       const node = SettingsNode(
         id: 'labels',
-        icon: Icons.label_rounded,
+        icon: LottiIcons.label,
         title: 'Labels',
         desc: 'desc',
         panel: 'labels',
@@ -51,7 +51,7 @@ void main() {
   group('SettingsNode equality', () {
     SettingsNode base() => const SettingsNode(
       id: 'sync/backfill',
-      icon: Icons.cloud_download_outlined,
+      icon: LottiIcons.cloudDownload,
       title: 'Backfill',
       desc: 'Fill gaps',
       panel: 'sync-backfill',
@@ -76,7 +76,7 @@ void main() {
     test('differing only in icon is not equal', () {
       final other = SettingsNode(
         id: base().id,
-        icon: Icons.bolt,
+        icon: LottiIcons.bolt,
         title: base().title,
         desc: base().desc,
         panel: base().panel,
@@ -122,13 +122,13 @@ void main() {
       () {
         const leaf = SettingsNode(
           id: 'ai',
-          icon: Icons.psychology_rounded,
+          icon: LottiIcons.reasoning,
           title: 'AI',
           desc: 'desc',
         );
         const branch = SettingsNode(
           id: 'ai',
-          icon: Icons.psychology_rounded,
+          icon: LottiIcons.reasoning,
           title: 'AI',
           desc: 'desc',
           children: [],
@@ -140,28 +140,28 @@ void main() {
     test('branches with differing children lists are not equal', () {
       const childA = SettingsNode(
         id: 'ai/profiles',
-        icon: Icons.tune_rounded,
+        icon: LottiIcons.tune,
         title: 'Profiles',
         desc: 'desc',
         panel: 'ai-profiles',
       );
       const childB = SettingsNode(
         id: 'ai/other',
-        icon: Icons.tune_rounded,
+        icon: LottiIcons.tune,
         title: 'Other',
         desc: 'desc',
         panel: 'other',
       );
       const branchA = SettingsNode(
         id: 'ai',
-        icon: Icons.psychology_rounded,
+        icon: LottiIcons.reasoning,
         title: 'AI',
         desc: 'desc',
         children: [childA],
       );
       const branchB = SettingsNode(
         id: 'ai',
-        icon: Icons.psychology_rounded,
+        icon: LottiIcons.reasoning,
         title: 'AI',
         desc: 'desc',
         children: [childB],

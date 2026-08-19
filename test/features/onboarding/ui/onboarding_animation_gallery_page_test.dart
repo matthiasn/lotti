@@ -8,6 +8,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/ui/settings/services/connection_verifier_service.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_animation_gallery_page.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_hero.dart';
 import 'package:mocktail/mocktail.dart';
@@ -244,7 +245,7 @@ void main() {
     expect(find.byType(OnboardingHeroPanel), findsNothing);
 
     // The connect panel's back arrow (onBack) flips the gallery back to welcome.
-    await tester.tap(find.byIcon(Icons.arrow_back_rounded));
+    await tester.tap(find.byIcon(LottiIcons.back));
     await settlePanelSwap(tester);
 
     expect(find.byType(OnboardingHeroPanel), findsOneWidget);
@@ -263,7 +264,7 @@ void main() {
 
     // The API-key panel's back arrow (onBack) flips the gallery to the connect
     // step (the default provider is Gemini).
-    await tester.tap(find.byIcon(Icons.arrow_back_rounded));
+    await tester.tap(find.byIcon(LottiIcons.back));
     await settlePanelSwap(tester);
 
     expect(

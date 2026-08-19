@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/extended_header_modal.dart';
@@ -113,14 +114,14 @@ void main() {
 
         // The audio entry exposes the speech action; tapping it flips the
         // shared pageIndexNotifier to 1.
-        await tester.tap(find.byIcon(Icons.transcribe_rounded));
+        await tester.tap(find.byIcon(LottiIcons.transcribe));
         await tester.pumpAndSettle();
 
         expect(find.byType(SpeechModalContent), findsOneWidget);
         expect(find.byType(InitialModalPageContent), findsNothing);
 
         // The speech page's back button resets the notifier to 0.
-        await tester.tap(find.byIcon(Icons.arrow_back_rounded));
+        await tester.tap(find.byIcon(LottiIcons.back));
         await tester.pumpAndSettle();
 
         expect(find.byType(InitialModalPageContent), findsOneWidget);

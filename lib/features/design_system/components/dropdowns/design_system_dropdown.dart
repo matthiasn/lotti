@@ -282,9 +282,7 @@ class _DropdownTrigger extends StatelessWidget {
                     ),
                     SizedBox(width: sizeSpec.chevronGap),
                     Icon(
-                      expanded
-                          ? Icons.keyboard_arrow_up_rounded
-                          : Icons.keyboard_arrow_down_rounded,
+                      expanded ? LottiIcons.chevronUp : LottiIcons.chevronDown,
                       size: sizeSpec.chevronSize,
                       color: styleSpec.fieldChevronColor,
                     ),

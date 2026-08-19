@@ -129,7 +129,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.byIcon(Icons.chevron_left), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronLeft), findsOneWidget);
     });
 
     testWidgets('renders more_horiz action button', (tester) async {
@@ -139,7 +139,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.byIcon(Icons.more_horiz), findsOneWidget);
+      expect(find.byIcon(LottiIcons.more), findsOneWidget);
     });
 
     testWidgets('nested task context can hide the graph entry point', (
@@ -153,7 +153,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.byIcon(Icons.hub_outlined), findsNothing);
+      expect(find.byIcon(LottiIcons.hub), findsNothing);
     });
 
     testWidgets(
@@ -168,8 +168,8 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        expect(find.byIcon(Icons.hub_outlined), findsNothing);
-        expect(find.byIcon(Icons.more_horiz), findsOneWidget);
+        expect(find.byIcon(LottiIcons.hub), findsNothing);
+        expect(find.byIcon(LottiIcons.more), findsOneWidget);
       },
     );
 
@@ -184,9 +184,9 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        final context = tester.element(find.byIcon(Icons.more_horiz));
+        final context = tester.element(find.byIcon(LottiIcons.more));
         final tokens = context.designTokens;
-        for (final glyph in [Icons.more_horiz, Icons.hub_outlined]) {
+        for (final glyph in [LottiIcons.more, LottiIcons.hub]) {
           expect(
             tester.widget<Icon>(find.byIcon(glyph)).color,
             tokens.colors.text.mediumEmphasis,
@@ -210,7 +210,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.byIcon(Icons.hub_outlined), findsOneWidget);
+      expect(find.byIcon(LottiIcons.hub), findsOneWidget);
     });
 
     testWidgets(
@@ -233,7 +233,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        await tester.tap(find.byIcon(Icons.hub_outlined));
+        await tester.tap(find.byIcon(LottiIcons.hub));
         await tester.pumpAndSettle(const Duration(milliseconds: 500));
 
         expect(find.byType(TaskKnowledgeGraphPage), findsOneWidget);
@@ -375,7 +375,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        expect(find.byIcon(Icons.chevron_left), findsNothing);
+        expect(find.byIcon(LottiIcons.chevronLeft), findsNothing);
       },
     );
 

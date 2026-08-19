@@ -110,7 +110,7 @@ class AgendaCard extends StatelessWidget {
                   ),
                   SizedBox(width: tokens.spacing.step3),
                   Icon(
-                    Icons.check_rounded,
+                    LottiIcons.confirm,
                     size: 14,
                     color: tokens.colors.alert.success.defaultColor,
                   ),
@@ -519,7 +519,7 @@ class _WhyMeta extends StatelessWidget {
       child: Semantics(
         label: context.messages.dailyOsNextDayWhyChipLabel,
         child: Icon(
-          Icons.auto_awesome_rounded,
+          LottiIcons.aiSpark,
           size: tokens.typography.size.caption,
           color: color.withValues(alpha: 0.8),
         ),
@@ -541,7 +541,7 @@ class _EstimateMeta extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(
-          Icons.schedule_rounded,
+          LottiIcons.schedule,
           size: tokens.typography.size.caption,
           color: color,
         ),
@@ -591,7 +591,7 @@ class _StateMeta extends StatelessWidget {
     return switch (state) {
       AgendaItemState.done => Semantics(
         label: label,
-        child: Icon(Icons.check_rounded, size: 14, color: color),
+        child: Icon(LottiIcons.confirm, size: 14, color: color),
       ),
       AgendaItemState.overdue => DsPill(
         variant: DsPillVariant.tinted,

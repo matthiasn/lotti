@@ -30,6 +30,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   verdict pill fully right-aligned — and tapping the row reopens that day's
   reflection. The "Rated by you" / "suggested, you accepted" attribution and
   the retired-banner "Interactions" list are no longer shown.
+- **New icons throughout the app.** Every icon has been redrawn from one
+  consistent outlined set, replacing a mix that had accumulated over the years
+  — four different ticks, three different "close" marks, and the same idea
+  drawn differently depending on which screen you were on. Toggles that show
+  an on state, like starring or flagging an entry, now fill in when they are
+  on. Flagging in particular used to leave no visible mark at all.
 
 ### Fixed
 - **A recording that cannot be transcribed says so.** Asking for a transcript

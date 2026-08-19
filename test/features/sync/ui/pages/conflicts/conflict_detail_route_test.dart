@@ -8,6 +8,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/ui/pages/conflicts/conflict_detail_route.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
@@ -275,7 +276,7 @@ void main() {
       await _showConflict(tester, bench, conflict);
 
       await tester.tap(
-        find.widgetWithIcon(DesignSystemButton, Icons.merge_rounded),
+        find.widgetWithIcon(DesignSystemButton, LottiIcons.merge),
       );
       await tester.pump();
       await _tap(tester, l10n.conflictCombineApply);

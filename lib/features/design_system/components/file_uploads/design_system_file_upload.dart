@@ -123,7 +123,7 @@ class _DesignSystemFileUploadDropZoneState
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
-                    Icons.upload_file,
+                    LottiIcons.upload,
                     size: spec.iconSize,
                     color: iconColor,
                   ),

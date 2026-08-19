@@ -12,6 +12,7 @@ import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/categories/ui/pages/category_details_page.dart';
 import 'package:lotti/features/design_system/components/glass_action_bar.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/settings/settings_picker_field.dart';
@@ -249,7 +250,7 @@ void main() {
         // The clear affordance is the close icon inside the event picker.
         final clearButton = find.descendant(
           of: eventSelectorFinder(),
-          matching: find.byIcon(Icons.close_rounded),
+          matching: find.byIcon(LottiIcons.close),
         );
         expect(clearButton, findsOneWidget);
         await tester.ensureVisible(clearButton);

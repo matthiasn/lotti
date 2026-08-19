@@ -734,7 +734,7 @@ class _LedgerFilterChip extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
-                    Icons.filter_alt_outlined,
+                    LottiIcons.filter,
                     size: tokens.spacing.step4,
                     color: tokens.colors.text.mediumEmphasis,
                   ),
@@ -750,7 +750,7 @@ class _LedgerFilterChip extends StatelessWidget {
                   ),
                   SizedBox(width: tokens.spacing.step3),
                   Icon(
-                    Icons.close_rounded,
+                    LottiIcons.close,
                     size: tokens.spacing.step4,
                     color: tokens.colors.text.mediumEmphasis,
                   ),
@@ -777,7 +777,7 @@ class _StaleDataNotice extends StatelessWidget {
     return Row(
       children: [
         Icon(
-          Icons.sync_problem_rounded,
+          LottiIcons.syncProblem,
           size: tokens.spacing.step5,
           color: tokens.colors.text.lowEmphasis,
         ),
@@ -823,7 +823,7 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           children: [
             Icon(
-              Icons.eco_outlined,
+              LottiIcons.eco,
               size: tokens.spacing.step9,
               color: tokens.colors.text.lowEmphasis,
             ),

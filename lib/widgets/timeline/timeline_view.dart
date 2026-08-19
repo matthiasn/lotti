@@ -296,7 +296,7 @@ class _TimelineTile extends StatelessWidget {
               Padding(
                 padding: EdgeInsets.only(left: tokens.spacing.step2),
                 child: Icon(
-                  Icons.chevron_right,
+                  LottiIcons.chevronRight,
                   size: IconSizes.xs,
                   color: cs.outline,
                 ),

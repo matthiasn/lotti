@@ -48,7 +48,7 @@ class HabitsPage extends ConsumerWidget {
       searchHint: messages.settingsHabitsSearchHint,
       displayName: (habit) => habit.name,
       initialSearchTerm: initialSearchTerm,
-      emptyIcon: Icons.repeat_rounded,
+      emptyIcon: LottiIcons.repeat,
       emptyTitle: messages.settingsHabitsEmptyState,
       emptyHint: messages.settingsHabitsEmptyStateHint,
       noMatchMessage: messages.settingsHabitsNoMatchQuery,
@@ -96,7 +96,7 @@ class _HabitListItem extends StatelessWidget {
               child: Semantics(
                 label: context.messages.privateLabel,
                 child: Icon(
-                  Icons.lock_outline,
+                  LottiIcons.lock,
                   size: 18,
                   color: tokens.colors.text.mediumEmphasis,
                 ),
@@ -108,7 +108,7 @@ class _HabitListItem extends StatelessWidget {
               child: Semantics(
                 label: context.messages.inactiveLabel,
                 child: Icon(
-                  Icons.visibility_off_outlined,
+                  LottiIcons.hidden,
                   size: 18,
                   color: tokens.colors.text.mediumEmphasis,
                 ),
@@ -120,14 +120,14 @@ class _HabitListItem extends StatelessWidget {
               child: Semantics(
                 label: context.messages.favoriteLabel,
                 child: Icon(
-                  Icons.star_rounded,
+                  LottiIcons.star,
                   size: 18,
                   color: tokens.colors.text.mediumEmphasis,
                 ),
               ),
             ),
           Icon(
-            Icons.chevron_right_rounded,
+            LottiIcons.chevronRight,
             size: tokens.spacing.step6,
             color: tokens.colors.text.lowEmphasis,
           ),

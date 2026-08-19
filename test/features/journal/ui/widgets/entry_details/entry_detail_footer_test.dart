@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/duration_widget.dart';
@@ -156,7 +157,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 10));
 
-      final recordIconFinder = find.byIcon(Icons.fiber_manual_record_sharp);
+      final recordIconFinder = find.byIcon(LottiIcons.recordDot);
       expect(recordIconFinder, findsNothing);
     });
 
@@ -193,8 +194,8 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        final recordIconFinder = find.byIcon(Icons.fiber_manual_record_sharp);
-        final stopIconFinder = find.byIcon(Icons.stop);
+        final recordIconFinder = find.byIcon(LottiIcons.recordDot);
+        final stopIconFinder = find.byIcon(LottiIcons.stop);
         expect(recordIconFinder, findsOneWidget);
         expect(stopIconFinder, findsNothing);
 
@@ -242,8 +243,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final recordIconFinder = find.byIcon(Icons.fiber_manual_record_sharp);
-      final stopIconFinder = find.byIcon(Icons.stop);
+      final recordIconFinder = find.byIcon(LottiIcons.recordDot);
+      final stopIconFinder = find.byIcon(LottiIcons.stop);
       expect(recordIconFinder, findsNothing);
       expect(stopIconFinder, findsOneWidget);
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/ui/widgets/project_target_date_field.dart';
 
 import '../../../../helpers/fallbacks.dart';
@@ -58,7 +59,7 @@ void main() {
       );
       await tester.pump();
 
-      final clearButton = find.byIcon(Icons.clear);
+      final clearButton = find.byIcon(LottiIcons.close);
       expect(clearButton, findsOneWidget);
 
       await tester.tap(clearButton);
@@ -79,7 +80,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byIcon(Icons.clear), findsNothing);
+      expect(find.byIcon(LottiIcons.close), findsNothing);
     });
 
     testWidgets('tapping the field calls onDatePicked', (tester) async {

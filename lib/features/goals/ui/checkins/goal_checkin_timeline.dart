@@ -240,7 +240,7 @@ class _GoalCheckInTimelineState extends ConsumerState<GoalCheckInTimeline> {
           entryId: checkIn.id,
           timeLabel: timeLabel,
           kindLabel: context.messages.goalCheckInKindVoice,
-          glyph: Icons.mic_rounded,
+          glyph: LottiIcons.mic,
           accent: tokens.colors.interactive.enabled,
           content: TimelineBeatContent.audio(
             player: AudioPlayerWidget(checkIn.audio),
@@ -263,7 +263,7 @@ class _GoalCheckInTimelineState extends ConsumerState<GoalCheckInTimeline> {
           entryId: checkIn.id,
           timeLabel: timeLabel,
           kindLabel: context.messages.goalCheckInKindNote,
-          glyph: Icons.edit_note_rounded,
+          glyph: LottiIcons.editNote,
           accent: tokens.colors.text.mediumEmphasis,
           content: TimelineBeatContent.text(checkIn.text),
         );
@@ -384,7 +384,7 @@ class _Empty extends StatelessWidget {
       child: Column(
         children: [
           Icon(
-            Icons.mic_none_rounded,
+            LottiIcons.micIdle,
             size: IconSizes.l,
             color: tokens.colors.text.lowEmphasis,
           ),

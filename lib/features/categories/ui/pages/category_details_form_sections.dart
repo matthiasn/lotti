@@ -146,7 +146,7 @@ extension _CategoryDetailsFormSections on _CategoryDetailsPageState {
     return SettingsSwitchRow(
       title: context.messages.categoryAutomaticInferenceLabel,
       subtitle: context.messages.categoryAutomaticInferenceDescription,
-      icon: Icons.auto_awesome_outlined,
+      icon: LottiIcons.aiSpark,
       value: category.automaticInferenceEnabledEffective,
       onChanged: (value) =>
           controller.setAutomaticInferenceEnabled(enabled: value),
@@ -172,7 +172,7 @@ extension _CategoryDetailsFormSections on _CategoryDetailsPageState {
     return SettingsSwitchRow(
       title: context.messages.categoryAutomaticAgentWakesLabel,
       subtitle: context.messages.categoryAutomaticAgentWakesDescription,
-      icon: Icons.autorenew_outlined,
+      icon: LottiIcons.refresh,
       value: category.automaticAgentWakesEnabledEffective,
       onChanged: (value) =>
           controller.setAutomaticAgentWakesEnabled(enabled: value),

@@ -253,7 +253,7 @@ class _TemplateSection extends ConsumerWidget {
           else if (template != null)
             ActionChip(
               avatar: Icon(
-                Icons.smart_toy_outlined,
+                LottiIcons.aiModel,
                 size: 16,
                 color: context.colorScheme.primary,
               ),
@@ -364,11 +364,9 @@ class _ProfileSection extends ConsumerWidget {
                 : context.messages.taskAgentCurrentSetupLabel,
             subtitleMaxLines: null,
             leading: Icon(
-              route == null
-                  ? Icons.error_outline_rounded
-                  : Icons.psychology_outlined,
+              route == null ? LottiIcons.error : LottiIcons.reasoning,
             ),
-            trailing: const Icon(Icons.chevron_right_rounded),
+            trailing: const Icon(LottiIcons.chevronRight),
             onTap: isDailyOs
                 ? (dailyOsSetupLauncher == null
                       ? null

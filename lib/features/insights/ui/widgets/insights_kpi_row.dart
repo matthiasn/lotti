@@ -100,7 +100,7 @@ class InsightsKpiRow extends StatelessWidget {
         alignment: Alignment.centerLeft,
         child: InsightsPillButton(
           label: messages.insightsChooseFocusCategories,
-          icon: Icons.center_focus_strong_outlined,
+          icon: LottiIcons.focus,
           active: false,
           outlined: true,
           onTap: () => _editFocusCategories(context),
@@ -265,7 +265,7 @@ class _KpiTile extends StatelessWidget {
                 ),
                 if (onEdit != null)
                   _InlineIconButton(
-                    icon: Icons.tune_rounded,
+                    icon: LottiIcons.tune,
                     onTap: onEdit!,
                     semanticsLabel:
                         context.messages.insightsChooseFocusCategories,

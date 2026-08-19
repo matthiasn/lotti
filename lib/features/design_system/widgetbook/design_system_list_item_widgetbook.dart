@@ -87,8 +87,8 @@ class _ListItemVariants extends StatelessWidget {
           const SizedBox(height: 8),
           DesignSystemListItem(
             title: title,
-            leading: const Icon(Icons.person, size: 24),
-            trailing: const Icon(Icons.chevron_right),
+            leading: const Icon(LottiIcons.person, size: 24),
+            trailing: const Icon(LottiIcons.chevronRight),
             showDivider: true,
             onTap: () {},
           ),
@@ -104,14 +104,14 @@ class _ListItemVariants extends StatelessWidget {
           DesignSystemListItem(
             title: title,
             subtitle: subtitle,
-            leading: const Icon(Icons.person, size: 24),
+            leading: const Icon(LottiIcons.person, size: 24),
             leadingExtra: Icon(
-              Icons.circle,
+              LottiIcons.radioUnselected,
               size: 8,
               color: tokens.colors.interactive.enabled,
             ),
             trailing: const DesignSystemBadge.number(value: '10'),
-            trailingExtra: const Icon(Icons.chevron_right),
+            trailingExtra: const Icon(LottiIcons.chevronRight),
             showDivider: true,
             onTap: () {},
           ),
@@ -123,7 +123,7 @@ class _ListItemVariants extends StatelessWidget {
           const SizedBox(height: 8),
           DesignSystemListItem(
             title: title,
-            leading: const Icon(Icons.person, size: 24),
+            leading: const Icon(LottiIcons.person, size: 24),
             forcedState: DesignSystemListItemVisualState.hover,
             showDivider: true,
             onTap: () {},
@@ -136,7 +136,7 @@ class _ListItemVariants extends StatelessWidget {
           const SizedBox(height: 8),
           DesignSystemListItem(
             title: title,
-            leading: const Icon(Icons.person, size: 24),
+            leading: const Icon(LottiIcons.person, size: 24),
             forcedState: DesignSystemListItemVisualState.pressed,
             showDivider: true,
             onTap: () {},
@@ -152,7 +152,7 @@ class _ListItemVariants extends StatelessWidget {
           const SizedBox(height: 8),
           DesignSystemListItem(
             title: title,
-            leading: const Icon(Icons.person, size: 24),
+            leading: const Icon(LottiIcons.person, size: 24),
             activated: true,
             showDivider: true,
             onTap: () {},
@@ -165,7 +165,7 @@ class _ListItemVariants extends StatelessWidget {
           const SizedBox(height: 8),
           const DesignSystemListItem(
             title: 'Title',
-            leading: Icon(Icons.person, size: 24),
+            leading: Icon(LottiIcons.person, size: 24),
             showDivider: true,
           ),
 
@@ -178,8 +178,8 @@ class _ListItemVariants extends StatelessWidget {
             title: title,
             subtitle: subtitle,
             size: DesignSystemListItemSize.small,
-            leading: const Icon(Icons.person, size: 20),
-            trailing: const Icon(Icons.chevron_right, size: 16),
+            leading: const Icon(LottiIcons.person, size: 20),
+            trailing: const Icon(LottiIcons.chevronRight, size: 16),
             showDivider: true,
             onTap: () {},
           ),
@@ -196,7 +196,7 @@ class _ListItemVariants extends StatelessWidget {
             3,
             (i) => DesignSystemListItem(
               title: '$title ${i + 1}',
-              leading: const Icon(Icons.person, size: 24),
+              leading: const Icon(LottiIcons.person, size: 24),
               showDivider: i < 2,
               onTap: () {},
             ),

@@ -112,7 +112,7 @@ Widget dateStripLike(String label) {
     mainAxisSize: MainAxisSize.min,
     children: [
       IconButton(
-        icon: const Icon(Icons.chevron_left_rounded),
+        icon: const Icon(LottiIcons.chevronLeft),
         onPressed: () {},
       ),
       Flexible(
@@ -123,7 +123,7 @@ Widget dateStripLike(String label) {
         ),
       ),
       IconButton(
-        icon: const Icon(Icons.chevron_right_rounded),
+        icon: const Icon(LottiIcons.chevronRight),
         onPressed: () {},
       ),
     ],

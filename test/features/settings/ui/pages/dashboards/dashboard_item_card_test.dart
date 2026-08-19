@@ -1,8 +1,7 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/dashboard_item_card.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
@@ -91,8 +90,8 @@ void main() {
         expect(find.byType(ItemCard), findsOneWidget);
 
         // Check the leading icon and the explicit drag handle
-        expect(find.byIcon(Icons.insights), findsOneWidget);
-        expect(find.byIcon(Icons.drag_indicator), findsOneWidget);
+        expect(find.byIcon(LottiIcons.insights), findsOneWidget);
+        expect(find.byIcon(LottiIcons.drag), findsOneWidget);
 
         // The title joins the measurement name and the localized
         // aggregation name — no raw enum identifiers, no brackets.
@@ -195,7 +194,7 @@ void main() {
         );
 
         expect(find.byType(ItemCard), findsOneWidget);
-        expect(find.byIcon(MdiIcons.stethoscope), findsOneWidget);
+        expect(find.byIcon(LottiIcons.stethoscope), findsOneWidget);
         expect(find.text('steps'), findsOneWidget);
       });
     });
@@ -220,7 +219,7 @@ void main() {
         );
 
         expect(find.byType(ItemCard), findsOneWidget);
-        expect(find.byIcon(Icons.sports_gymnastics), findsOneWidget);
+        expect(find.byIcon(LottiIcons.fitness), findsOneWidget);
         expect(find.text('Running (time)'), findsOneWidget);
       });
     });
@@ -244,7 +243,7 @@ void main() {
         );
 
         expect(find.byType(ItemCard), findsOneWidget);
-        expect(find.byIcon(MdiIcons.clipboardOutline), findsOneWidget);
+        expect(find.byIcon(LottiIcons.clipboard), findsOneWidget);
         expect(find.text('Daily Mood Survey'), findsOneWidget);
       });
     });
@@ -289,7 +288,7 @@ void main() {
         await tester.pump();
 
         expect(find.byType(ItemCard), findsOneWidget);
-        expect(find.byIcon(MdiIcons.lightningBolt), findsOneWidget);
+        expect(find.byIcon(LottiIcons.bolt), findsOneWidget);
         expect(find.text('Daily Exercise'), findsOneWidget);
       });
 
@@ -317,7 +316,7 @@ void main() {
         await tester.pump();
 
         expect(find.byType(ItemCard), findsOneWidget);
-        expect(find.byIcon(MdiIcons.lightningBolt), findsOneWidget);
+        expect(find.byIcon(LottiIcons.bolt), findsOneWidget);
         expect(find.text('non-existent-habit'), findsOneWidget);
       });
     });
@@ -331,15 +330,15 @@ void main() {
         const WidgetTestBench(
           child: ItemCard(
             title: 'Test Title',
-            leadingIcon: Icons.star,
+            leadingIcon: LottiIcons.star,
           ),
         ),
       );
 
       expect(find.text('Test Title'), findsOneWidget);
-      expect(find.byIcon(Icons.star), findsOneWidget);
+      expect(find.byIcon(LottiIcons.star), findsOneWidget);
       // Reorderable rows carry a visible drag handle.
-      expect(find.byIcon(Icons.drag_indicator), findsOneWidget);
+      expect(find.byIcon(LottiIcons.drag), findsOneWidget);
     });
 
     testWidgets('should handle tap correctly', (tester) async {
@@ -349,7 +348,7 @@ void main() {
         WidgetTestBench(
           child: ItemCard(
             title: 'Test Title',
-            leadingIcon: Icons.star,
+            leadingIcon: LottiIcons.star,
             onTap: () => tapped = true,
           ),
         ),
@@ -364,13 +363,13 @@ void main() {
         const WidgetTestBench(
           child: ItemCard(
             title: 'Test Title',
-            leadingIcon: Icons.star,
+            leadingIcon: LottiIcons.star,
           ),
         ),
       );
 
       expect(find.text('Test Title'), findsOneWidget);
-      expect(find.byIcon(Icons.star), findsOneWidget);
+      expect(find.byIcon(LottiIcons.star), findsOneWidget);
 
       // Should not crash when tapped without onTap
       await tester.tap(find.byType(ItemCard));
@@ -384,7 +383,7 @@ void main() {
         WidgetTestBench(
           child: ItemCard(
             title: 'Test Title',
-            leadingIcon: Icons.star,
+            leadingIcon: LottiIcons.star,
             onTap: () => edited = true,
             onRemove: () => removed = true,
             editSemanticsLabel: 'Edit aggregation',

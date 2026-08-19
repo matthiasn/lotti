@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/misc/sidebar_live_card.dart';
 
 import '../../widget_test_utils.dart';
@@ -34,13 +35,13 @@ void main() {
     return makeTestableWidgetWithScaffold(
       SidebarLiveCard(
         accent: accent,
-        glyph: Icons.timer_outlined,
+        glyph: LottiIcons.timer,
         statusLabel: 'Running timer',
         title: title,
         timeText: '01:35:32',
         pulse: pulse,
         onTap: actionable ? (onTap ?? () {}) : null,
-        trailing: const Icon(Icons.stop_rounded),
+        trailing: const Icon(LottiIcons.stop),
         semanticsLabel: 'Running timer',
       ),
       mediaQueryData: reduceMotion
@@ -55,9 +56,9 @@ void main() {
     await tester.pumpWidget(build(pulse: false));
     await tester.pump();
 
-    expect(find.byIcon(Icons.timer_outlined), findsOneWidget);
+    expect(find.byIcon(LottiIcons.timer), findsOneWidget);
     expect(find.text(title), findsOneWidget);
-    expect(find.byIcon(Icons.stop_rounded), findsOneWidget);
+    expect(find.byIcon(LottiIcons.stop), findsOneWidget);
 
     // The elapsed time is rendered in the accent colour (the card's single
     // accent: rail + glyph + time all share it).

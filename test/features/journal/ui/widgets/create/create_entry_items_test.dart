@@ -18,6 +18,7 @@ import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/features/agents/state/event_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/image_paste_controller.dart';
@@ -267,7 +268,7 @@ void main() {
           await tester.pump();
 
           expect(find.byType(CreateMenuListItem), findsOneWidget);
-          expect(find.byIcon(Icons.checklist_rounded), findsOneWidget);
+          expect(find.byIcon(LottiIcons.checkAll), findsOneWidget);
 
           final l10n = AppLocalizations.of(
             tester.element(find.byType(CreateMenuListItem)),
@@ -372,7 +373,7 @@ void main() {
         await tester.pump();
 
         expect(find.byType(CreateMenuListItem), findsOneWidget);
-        expect(find.byIcon(Icons.content_paste_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.copy), findsOneWidget);
 
         final l10n = AppLocalizations.of(
           tester.element(find.byType(CreateMenuListItem)),
@@ -456,7 +457,7 @@ void main() {
         await tester.pump();
 
         expect(find.byType(CreateMenuListItem), findsOneWidget);
-        expect(find.byIcon(Icons.photo_library_outlined), findsOneWidget);
+        expect(find.byIcon(LottiIcons.photoLibrary), findsOneWidget);
 
         final l10n = AppLocalizations.of(
           tester.element(find.byType(CreateMenuListItem)),
@@ -488,7 +489,7 @@ void main() {
 
         expect(find.byType(CreateMenuListItem), findsOneWidget);
         expect(
-          find.byIcon(Icons.screenshot_monitor_rounded),
+          find.byIcon(LottiIcons.screenshot),
           findsOneWidget,
         );
 
@@ -684,7 +685,7 @@ void main() {
         await tester.pump();
 
         expect(find.byType(CreateMenuListItem), findsOneWidget);
-        expect(find.byIcon(Icons.timer_outlined), findsOneWidget);
+        expect(find.byIcon(LottiIcons.timer), findsOneWidget);
 
         final l10n = AppLocalizations.of(
           tester.element(find.byType(CreateMenuListItem)),
@@ -1253,7 +1254,7 @@ void main() {
           // Verify the task item is rendered
           expect(find.byType(CreateMenuListItem), findsOneWidget);
           expect(find.text('Link a new task'), findsOneWidget);
-          expect(find.byIcon(Icons.add_task_rounded), findsOneWidget);
+          expect(find.byIcon(LottiIcons.addTask), findsOneWidget);
         });
 
         testWidgets('shows task item in modal', (tester) async {
@@ -1287,7 +1288,7 @@ void main() {
           // Verify the task item is shown
           expect(find.byType(CreateMenuListItem), findsOneWidget);
           expect(find.text('Link a new task'), findsOneWidget);
-          expect(find.byIcon(Icons.add_task_rounded), findsOneWidget);
+          expect(find.byIcon(LottiIcons.addTask), findsOneWidget);
         });
 
         testWidgets('navigates to task after creation when not linked', (
@@ -1701,7 +1702,7 @@ void main() {
         )!;
         expect(find.byType(CreateMenuListItem), findsOneWidget);
         expect(find.text(l10n.addActionAddEvent), findsOneWidget);
-        expect(find.byIcon(Icons.event_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.calendar), findsOneWidget);
       });
     });
 
@@ -1722,7 +1723,7 @@ void main() {
         )!;
         expect(find.byType(CreateMenuListItem), findsOneWidget);
         expect(find.text(l10n.taskFirstRunRecordAudio), findsOneWidget);
-        expect(find.byIcon(Icons.mic_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.mic), findsOneWidget);
       });
     });
 
@@ -1910,7 +1911,7 @@ void main() {
         )!;
         expect(find.byType(CreateMenuListItem), findsOneWidget);
         expect(find.text(l10n.taskFirstRunWriteNote), findsOneWidget);
-        expect(find.byIcon(Icons.notes_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.note), findsOneWidget);
       });
     });
 
@@ -1931,7 +1932,7 @@ void main() {
         )!;
         expect(find.byType(CreateMenuListItem), findsOneWidget);
         expect(find.text(l10n.addActionImportImage), findsOneWidget);
-        expect(find.byIcon(Icons.photo_library_outlined), findsOneWidget);
+        expect(find.byIcon(LottiIcons.photoLibrary), findsOneWidget);
       });
     });
 
@@ -1952,7 +1953,7 @@ void main() {
         )!;
         expect(find.byType(CreateMenuListItem), findsOneWidget);
         expect(find.text(l10n.addActionAddScreenshot), findsOneWidget);
-        expect(find.byIcon(Icons.screenshot_monitor_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.screenshot), findsOneWidget);
       });
     });
 
@@ -2532,7 +2533,7 @@ void main() {
 
         // Verify the item is rendered
         expect(find.byType(CreateMenuListItem), findsOneWidget);
-        expect(find.byIcon(Icons.photo_library_outlined), findsOneWidget);
+        expect(find.byIcon(LottiIcons.photoLibrary), findsOneWidget);
       });
     });
 
@@ -2562,7 +2563,7 @@ void main() {
 
         // Verify the item is rendered
         expect(find.byType(CreateMenuListItem), findsOneWidget);
-        expect(find.byIcon(Icons.screenshot_monitor_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.screenshot), findsOneWidget);
       });
     });
 

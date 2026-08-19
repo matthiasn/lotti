@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/app_bar/glass_action_button.dart';
 import 'package:lotti/widgets/app_bar/glass_icon_container.dart';
 
@@ -19,11 +20,11 @@ void main() {
         tester,
         GlassActionButton(
           onTap: () {},
-          child: const Icon(Icons.more_horiz),
+          child: const Icon(LottiIcons.more),
         ),
       );
 
-      expect(find.byIcon(Icons.more_horiz), findsOneWidget);
+      expect(find.byIcon(LottiIcons.more), findsOneWidget);
     });
 
     testWidgets('calls onTap when pressed', (tester) async {
@@ -33,7 +34,7 @@ void main() {
         tester,
         GlassActionButton(
           onTap: () => tapped = true,
-          child: const Icon(Icons.settings),
+          child: const Icon(LottiIcons.settings),
         ),
       );
 
@@ -51,7 +52,7 @@ void main() {
         GlassActionButton(
           semanticLabel: 'Open menu',
           onTap: () => tapped = true,
-          child: const Icon(Icons.menu),
+          child: const Icon(LottiIcons.menu),
         ),
       );
 
@@ -73,7 +74,7 @@ void main() {
         GlassActionButton(
           semanticLabel: 'Open menu',
           onTap: () {},
-          child: const Icon(Icons.menu),
+          child: const Icon(LottiIcons.menu),
         ),
       );
 
@@ -91,7 +92,7 @@ void main() {
         tester,
         GlassActionButton(
           onTap: () {},
-          child: const Icon(Icons.add),
+          child: const Icon(LottiIcons.add),
         ),
       );
 
@@ -103,7 +104,7 @@ void main() {
         tester,
         GlassActionButton(
           onTap: () {},
-          child: const Icon(Icons.star),
+          child: const Icon(LottiIcons.star),
         ),
       );
 
@@ -120,7 +121,7 @@ void main() {
         GlassActionButton(
           onTap: () {},
           size: 50,
-          child: const Icon(Icons.favorite),
+          child: const Icon(LottiIcons.favorite),
         ),
       );
 
@@ -136,7 +137,7 @@ void main() {
         tester,
         GlassActionButton(
           onTap: () {},
-          child: const Icon(Icons.menu),
+          child: const Icon(LottiIcons.menu),
         ),
       );
 
@@ -155,7 +156,7 @@ void main() {
         tester,
         GlassActionButton(
           onTap: () {},
-          child: const Icon(Icons.edit),
+          child: const Icon(LottiIcons.edit),
         ),
       );
 
@@ -173,7 +174,7 @@ void main() {
         tester,
         GlassActionButton(
           onTap: () {},
-          child: const Icon(Icons.close),
+          child: const Icon(LottiIcons.close),
         ),
       );
 

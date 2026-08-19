@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/settings/settings_delete_row.dart';
 
 import '../../test_helper.dart';
@@ -19,7 +19,7 @@ void main() {
     );
 
     expect(find.text('Delete category'), findsOneWidget);
-    expect(find.byIcon(Icons.delete_outline_rounded), findsOneWidget);
+    expect(find.byIcon(LottiIcons.delete), findsOneWidget);
 
     await tester.tap(find.text('Delete category'));
     expect(deleted, isTrue);

@@ -117,7 +117,7 @@ class GoalBannerCard extends ConsumerWidget {
                                 tooltip:
                                     context.messages.nudgeBannerRateTooltip,
                                 icon: Icon(
-                                  Icons.star_outline_rounded,
+                                  LottiIcons.star,
                                   size: tokens.spacing.step5,
                                   color: tokens.colors.text.lowEmphasis,
                                 ),
@@ -127,7 +127,7 @@ class GoalBannerCard extends ConsumerWidget {
                       DesignSystemButton(
                         key: const ValueKey('goal-banner-snooze'),
                         label: context.messages.nudgeBannerSnoozeLabel,
-                        leadingIcon: Icons.snooze_rounded,
+                        leadingIcon: LottiIcons.snooze,
                         size: DesignSystemButtonSize.dense,
                         tapTargetSize: MaterialTapTargetSize.padded,
                         onPressed: () => showNudgeBannerSnoozeSheet(

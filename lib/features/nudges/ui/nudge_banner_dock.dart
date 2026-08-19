@@ -759,7 +759,7 @@ class _DockTenant extends ConsumerWidget {
                             onPressed: onRate,
                             tooltip: context.messages.nudgeBannerRateTooltip,
                             icon: Icon(
-                              Icons.star_outline_rounded,
+                              LottiIcons.star,
                               size: tokens.spacing.step5,
                               color: tokens.colors.text.lowEmphasis,
                             ),
@@ -770,7 +770,7 @@ class _DockTenant extends ConsumerWidget {
                   key: const ValueKey('nudge-banner-dock-snooze'),
                   label: compact ? '' : context.messages.nudgeBannerSnoozeLabel,
                   semanticsLabel: context.messages.nudgeBannerSnoozeLabel,
-                  leadingIcon: Icons.snooze_rounded,
+                  leadingIcon: LottiIcons.snooze,
                   size: DesignSystemButtonSize.dense,
                   tapTargetSize: MaterialTapTargetSize.padded,
                   onPressed: onSnooze,

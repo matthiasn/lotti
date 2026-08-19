@@ -181,7 +181,7 @@ void main() {
     // the detail surface never displays a percentage.
     expect(find.text('At risk'), findsOneWidget);
     expect(find.text('Trending up'), findsOneWidget);
-    expect(find.byIcon(Icons.trending_up_rounded), findsOneWidget);
+    expect(find.byIcon(LottiIcons.trendingUp), findsOneWidget);
     expect(find.textContaining('% of target'), findsNothing);
     // The metric card (the §4b Signals section) carries the dimension name
     // under its section heading; the old Watching list is gone.
@@ -223,7 +223,7 @@ void main() {
     final refreshButton = tester.widget<DesignSystemButton>(
       find.widgetWithText(DesignSystemButton, 'Update now'),
     );
-    expect(refreshButton.leadingIcon, Icons.refresh_rounded);
+    expect(refreshButton.leadingIcon, LottiIcons.refresh);
     expect(refreshButton.isLoading, isFalse);
     expect(refreshButton.onPressed, isNotNull);
     await tester.tap(find.widgetWithText(DesignSystemButton, 'Update now'));
@@ -231,7 +231,7 @@ void main() {
       () => completionService.requestReportRefresh('goal-1'),
     ).called(1);
 
-    await tester.tap(find.byIcon(Icons.more_vert_rounded));
+    await tester.tap(find.byIcon(LottiIcons.moreVertical));
     await tester.pumpAndSettle();
     expect(find.text('Automatic updates'), findsOneWidget);
     await tester.tap(find.text('Edit goal'));
@@ -1293,7 +1293,7 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(find.byIcon(Icons.more_vert_rounded));
+      await tester.tap(find.byIcon(LottiIcons.moreVertical));
       await tester.pumpAndSettle();
       await tester.tap(
         find.text('Automatic updates').last,
@@ -1313,7 +1313,7 @@ void main() {
           enabled: false,
         ),
       ).thenThrow(StateError('write failed'));
-      await tester.tap(find.byIcon(Icons.more_vert_rounded));
+      await tester.tap(find.byIcon(LottiIcons.moreVertical));
       await tester.pumpAndSettle();
       await tester.tap(
         find.text('Automatic updates').last,
@@ -3020,7 +3020,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byIcon(Icons.more_vert_rounded));
+    await tester.tap(find.byIcon(LottiIcons.moreVertical));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Delete goal'));
     await tester.pumpAndSettle();
@@ -3033,7 +3033,7 @@ void main() {
     expect(find.text('Delete this goal?'), findsNothing);
     verifyNever(() => service.deleteGoalAgent(any()));
 
-    await tester.tap(find.byIcon(Icons.more_vert_rounded));
+    await tester.tap(find.byIcon(LottiIcons.moreVertical));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Delete goal'));
     await tester.pumpAndSettle();
@@ -3046,7 +3046,7 @@ void main() {
     expect(find.text("That didn't save — please try again."), findsOneWidget);
     expect(navigated, isEmpty);
 
-    await tester.tap(find.byIcon(Icons.more_vert_rounded));
+    await tester.tap(find.byIcon(LottiIcons.moreVertical));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Delete goal'));
     await tester.pumpAndSettle();
@@ -3101,7 +3101,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byIcon(Icons.more_vert_rounded));
+    await tester.tap(find.byIcon(LottiIcons.moreVertical));
     await tester.pumpAndSettle();
     expect(find.text('Open agent internals'), findsOneWidget);
 
@@ -3398,7 +3398,7 @@ void main() {
 
     // Update read: the §4b overflow shortcut to the same refresh the
     // automation row offers.
-    await tester.tap(find.byIcon(Icons.more_vert_rounded));
+    await tester.tap(find.byIcon(LottiIcons.moreVertical));
     await tester.pumpAndSettle();
     // `.last`: the automation row on the read card shares the label with
     // the overflow entry; the menu overlay renders last.

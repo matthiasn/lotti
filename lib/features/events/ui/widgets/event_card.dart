@@ -146,7 +146,7 @@ class EventCardMetaLine extends StatelessWidget {
         ),
         if (location != null) ...[
           Text('  ·  ', style: style),
-          Icon(Icons.place_outlined, size: 13, color: cs.onSurfaceVariant),
+          Icon(LottiIcons.location, size: 13, color: cs.onSurfaceVariant),
           SizedBox(width: tokens.spacing.step1),
           Flexible(
             child: Text(
@@ -177,9 +177,9 @@ class EventCardFooter extends StatelessWidget {
 
     final counts = <Widget>[
       if (data.photoCount > 0)
-        _MetaCount(icon: Icons.photo_library_outlined, value: data.photoCount),
+        _MetaCount(icon: LottiIcons.photoLibrary, value: data.photoCount),
       if (data.taskCount > 0)
-        _MetaCount(icon: Icons.check_circle_outline, value: data.taskCount),
+        _MetaCount(icon: LottiIcons.confirmCircled, value: data.taskCount),
     ];
 
     if (counts.isEmpty && !showStatus && !showRating) {

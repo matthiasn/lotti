@@ -240,10 +240,10 @@ class _EventPhotoGalleryViewerState extends State<EventPhotoGalleryViewer> {
                   children: [
                     ImageFiltered(
                       imageFilter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                      child: const Icon(Icons.close_rounded, size: 30),
+                      child: const Icon(LottiIcons.close, size: 30),
                     ),
                     const Icon(
-                      Icons.close_rounded,
+                      LottiIcons.close,
                       size: 30,
                       color: Colors.white,
                     ),

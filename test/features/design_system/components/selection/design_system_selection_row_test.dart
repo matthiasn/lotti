@@ -31,7 +31,7 @@ void main() {
     final decoration = ink.decoration! as BoxDecoration;
     expect(decoration.color, dsTokensLight.colors.surface.selected);
     expect(find.text('Selected'), findsOneWidget);
-    expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+    expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
 
     final semantics = tester.getSemantics(find.byKey(const Key('single-row')));
     expect(semantics.flagsCollection.isSelected, Tristate.isTrue);
@@ -105,8 +105,8 @@ void main() {
       ),
     );
 
-    expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
-    expect(find.byIcon(Icons.check_rounded), findsNothing);
+    expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
+    expect(find.byIcon(LottiIcons.confirm), findsNothing);
 
     await tester.tap(find.text('Choose a provider'));
     await tester.pump();
@@ -259,7 +259,7 @@ void main() {
       tester,
       DesignSystemSelectionRow(
         title: 'Steps',
-        leading: const Icon(Icons.flag_outlined),
+        leading: const Icon(LottiIcons.flag),
         type: DesignSystemSelectionRowType.multiSelect,
         secondaryLine: const SizedBox(
           key: Key('secondary-line'),

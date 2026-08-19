@@ -80,7 +80,7 @@ class _GeneratedPromptCardState extends State<GeneratedPromptCard>
       vsync: this,
     );
     // Standard expand/collapse caret: collapsed → right (-0.25 turns
-    // from the natural downward `Icons.expand_more`), expanded → down.
+    // from the natural downward `LottiIcons.expand`), expanded → down.
     _rotationAnimation =
         Tween<double>(
           begin: -0.25,
@@ -193,7 +193,7 @@ class _GeneratedPromptCardState extends State<GeneratedPromptCard>
             // Copy button (prominent)
             IconButton(
               icon: Icon(
-                Icons.copy_rounded,
+                LottiIcons.copy,
                 color: tokens.colors.interactive.enabled,
                 size: tokens.spacing.step5,
               ),
@@ -208,7 +208,7 @@ class _GeneratedPromptCardState extends State<GeneratedPromptCard>
               turns: _rotationAnimation,
               child: IconButton(
                 icon: Icon(
-                  Icons.expand_more,
+                  LottiIcons.expand,
                   color: tokens.colors.text.mediumEmphasis,
                   size: tokens.spacing.step5,
                 ),
@@ -283,7 +283,7 @@ class _GeneratedPromptCardState extends State<GeneratedPromptCard>
                   ),
                   DesignSystemButton(
                     onPressed: _copyToClipboard,
-                    leadingIcon: Icons.copy_rounded,
+                    leadingIcon: LottiIcons.copy,
                     label: _isImagePrompt
                         ? context.messages.imagePromptGenerationCopyButton
                         : context.messages.promptGenerationCopyButton,

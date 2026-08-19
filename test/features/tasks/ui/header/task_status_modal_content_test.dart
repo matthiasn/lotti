@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/header/task_status_modal_content.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -168,8 +169,8 @@ void main() {
             .map((i) => i.icon)
             .toList();
 
-        expect(iconsInRow, contains(Icons.warning_sharp));
-        expect(iconsInRow, isNot(contains(Icons.block_rounded)));
+        expect(iconsInRow, contains(LottiIcons.warning));
+        expect(iconsInRow, isNot(contains(LottiIcons.block)));
       },
     );
 
@@ -181,7 +182,7 @@ void main() {
       await _pump(tester, currentStatus: 'IN PROGRESS');
 
       // Exactly one check_rounded in the whole list.
-      expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
 
       // That checkmark is inside the IN PROGRESS row.
       final selectedRow = find.ancestor(
@@ -191,7 +192,7 @@ void main() {
       expect(
         find.descendant(
           of: selectedRow.first,
-          matching: find.byIcon(Icons.check_rounded),
+          matching: find.byIcon(LottiIcons.confirm),
         ),
         findsOneWidget,
       );
@@ -208,7 +209,7 @@ void main() {
         expect(
           find.descendant(
             of: rowFinder.first,
-            matching: find.byIcon(Icons.check_rounded),
+            matching: find.byIcon(LottiIcons.confirm),
           ),
           findsNothing,
           reason: 'Unselected row "$status" must not show check_rounded',

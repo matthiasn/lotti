@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_rating/flutter_rating.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
@@ -155,7 +154,7 @@ void main() {
       // text viewer anymore).
       expect(find.text(testEntry.entryText!.plainText), findsOneWidget);
       // Leading glyph for a plain journal entry.
-      expect(find.byIcon(Icons.notes_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.note), findsOneWidget);
     });
 
     testWidgets('entry text uses the 14px list row scale, matching the '
@@ -234,7 +233,7 @@ void main() {
       );
       // Tasks navigate to the Tasks tab, so the row carries the quiet
       // opens-elsewhere marker.
-      expect(find.byIcon(Icons.open_in_new_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.openExternal), findsOneWidget);
     });
 
     testWidgets('task with an empty title shows the untitled placeholder', (
@@ -276,7 +275,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byIcon(Icons.open_in_new_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.openExternal), findsOneWidget);
     });
 
     testWidgets('a private event keeps its shield beside the glyph', (
@@ -297,8 +296,8 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byIcon(MdiIcons.security), findsOneWidget);
-      expect(find.byIcon(Icons.open_in_new_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.shield), findsOneWidget);
+      expect(find.byIcon(LottiIcons.openExternal), findsOneWidget);
     });
 
     testWidgets(
@@ -322,16 +321,16 @@ void main() {
         // Privacy is a property, not an alert: neutral ink keeps semantic
         // hues (status blue, error red) unambiguous; the tooltip carries the
         // meaning.
-        final shield = tester.widget<Icon>(find.byIcon(MdiIcons.security));
+        final shield = tester.widget<Icon>(find.byIcon(LottiIcons.shield));
         expect(shield.color, tokens.colors.text.mediumEmphasis);
         expect(
           find.ancestor(
-            of: find.byIcon(MdiIcons.security),
+            of: find.byIcon(LottiIcons.shield),
             matching: find.byType(Tooltip),
           ),
           findsOneWidget,
         );
-        final flag = tester.widget<Icon>(find.byIcon(MdiIcons.flag));
+        final flag = tester.widget<Icon>(find.byIcon(LottiIcons.flag));
         expect(flag.color, tokens.colors.alert.warning.defaultColor);
         expect(shield.color, isNot(Theme.of(context).colorScheme.error));
       },
@@ -349,7 +348,7 @@ void main() {
       );
 
       expect(find.byType(TimeSpanBar), findsOneWidget);
-      expect(find.byIcon(Icons.timer_outlined), findsOneWidget);
+      expect(find.byIcon(LottiIcons.timer), findsOneWidget);
       expect(find.text('1h'), findsOneWidget);
     });
 
@@ -390,7 +389,7 @@ void main() {
       );
 
       expect(find.byType(TimeSpanBar), findsNothing);
-      expect(find.byIcon(Icons.notes_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.note), findsOneWidget);
     });
 
     testWidgets('renders journal audio entry with mic glyph and duration', (
@@ -404,7 +403,7 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(Icons.mic_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.mic), findsOneWidget);
       // The audio entry spans one hour; a duration chip surfaces it as H:MM:SS.
       expect(find.text('1:00:00'), findsOneWidget);
     });
@@ -421,7 +420,7 @@ void main() {
       );
 
       expect(find.text(imageEntry.entryText!.plainText), findsOneWidget);
-      expect(find.byIcon(Icons.image_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.image), findsOneWidget);
     });
 
     testWidgets('audio mic glyph is tinted with the token accent', (
@@ -442,7 +441,7 @@ void main() {
       final glyph = tester.widget<TintedTypeGlyph>(
         find.byType(TintedTypeGlyph),
       );
-      expect(glyph.icon, Icons.mic_rounded);
+      expect(glyph.icon, LottiIcons.mic);
       expect(glyph.color, context.designTokens.colors.interactive.enabled);
     });
 
@@ -471,7 +470,7 @@ void main() {
       );
 
       expect(find.text('Focused Workday'), findsOneWidget);
-      expect(find.byIcon(Icons.today_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.today), findsOneWidget);
     });
 
     testWidgets('renders day plan entry with fallback label', (tester) async {
@@ -513,7 +512,7 @@ void main() {
       );
 
       // Leading glyph for measurements is now the ruler.
-      expect(find.byIcon(MdiIcons.ruler), findsOneWidget);
+      expect(find.byIcon(LottiIcons.measure), findsOneWidget);
       // Humanized name comes from the resolved data type.
       expect(find.text(measurableChocolate.displayName), findsOneWidget);
       // value 100 + unit 'g' -> '100 g' chip.
@@ -550,7 +549,7 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(MdiIcons.heartPulse), findsOneWidget);
+      expect(find.byIcon(LottiIcons.heartRate), findsOneWidget);
       // Humanized type name from the curated registry.
       expect(find.text('Systolic Blood Pressure'), findsOneWidget);
       // value 122 + humanized unit -> '122 mmHg'.
@@ -570,7 +569,7 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(MdiIcons.ruler), findsOneWidget);
+      expect(find.byIcon(LottiIcons.measure), findsOneWidget);
       expect(find.text(measurableCoverage.displayName), findsOneWidget);
       // value 55 + unit '%' -> '55 %'.
       expect(find.text('55 %'), findsOneWidget);
@@ -587,7 +586,7 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(MdiIcons.star), findsOneWidget);
+      expect(find.byIcon(LottiIcons.star), findsOneWidget);
     });
 
     testWidgets('shows private icon when entry is private', (tester) async {
@@ -601,7 +600,7 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(MdiIcons.security), findsOneWidget);
+      expect(find.byIcon(LottiIcons.shield), findsOneWidget);
     });
 
     testWidgets('shows flag icon for imported entries', (tester) async {
@@ -615,7 +614,7 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(MdiIcons.flag), findsOneWidget);
+      expect(find.byIcon(LottiIcons.flag), findsOneWidget);
     });
 
     testWidgets('limits the text title to a few lines', (tester) async {
@@ -719,7 +718,7 @@ void main() {
       );
 
       // Running workout -> directions-run glyph + humanized title.
-      expect(find.byIcon(Icons.directions_run_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.running), findsOneWidget);
       expect(find.text('Running'), findsOneWidget);
       // 1-hour run -> '60 min' duration chip.
       expect(find.text('60 min'), findsOneWidget);
@@ -752,7 +751,7 @@ void main() {
         find.text(context.messages.habitCompletionStatusCompleted),
         findsOneWidget,
       );
-      expect(find.byIcon(Icons.check_circle_rounded), findsWidgets);
+      expect(find.byIcon(LottiIcons.confirmCircled), findsWidgets);
     });
 
     testWidgets('leads with a category-coloured glyph tile, not a badge', (
@@ -903,7 +902,7 @@ void main() {
         );
 
         expect(find.text(testEvent.data.title), findsOneWidget);
-        expect(find.byIcon(Icons.event_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.calendar), findsOneWidget);
         // Status is humanized into a chip ("Tentative").
         expect(find.text('Tentative'), findsOneWidget);
         // 3.5 stars are rendered through the rating widget.
@@ -927,7 +926,7 @@ void main() {
         await tester.pump();
 
         expect(find.text(testChecklist.data.title), findsOneWidget);
-        expect(find.byIcon(MdiIcons.checkAll), findsOneWidget);
+        expect(find.byIcon(LottiIcons.checkAll), findsOneWidget);
         // 2/3 completed -> chip + a linear progress bar.
         expect(find.text('2/3'), findsOneWidget);
         expect(find.byType(LinearProgressIndicator), findsOneWidget);
@@ -966,7 +965,7 @@ void main() {
         );
 
         expect(find.text(testChecklistItem.data.title), findsOneWidget);
-        expect(find.byIcon(MdiIcons.checkboxMarked), findsOneWidget);
+        expect(find.byIcon(LottiIcons.checkboxChecked), findsOneWidget);
         // Checked items render with a strikethrough title.
         final title = tester.widget<Text>(
           find.text(testChecklistItem.data.title),
@@ -988,7 +987,7 @@ void main() {
           findsOneWidget,
         );
         expect(
-          find.byIcon(MdiIcons.checkboxBlankOutline),
+          find.byIcon(LottiIcons.checkboxUnchecked),
           findsOneWidget,
         );
         // Unchecked items keep a normal (non-struck) title.
@@ -1007,7 +1006,7 @@ void main() {
           ),
         );
 
-        expect(find.byIcon(MdiIcons.clipboardTextOutline), findsOneWidget);
+        expect(find.byIcon(LottiIcons.clipboardText), findsOneWidget);
         // panasSurveyTask -> "PANAS" title.
         expect(find.text('PANAS'), findsOneWidget);
         // Calculated scores become compact chips ("Positive 15").
@@ -1046,7 +1045,7 @@ void main() {
         );
 
         expect(find.text('Device Synchronization'), findsOneWidget);
-        expect(find.byIcon(Icons.folder_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.folder), findsOneWidget);
       });
 
       testWidgets(
@@ -1082,7 +1081,7 @@ void main() {
           // person live in entryText and stay a secondary preview.
           expect(find.text('Anna Example'), findsOneWidget);
           expect(find.text('Met at the conference'), findsOneWidget);
-          expect(find.byIcon(Icons.person_rounded), findsOneWidget);
+          expect(find.byIcon(LottiIcons.person), findsOneWidget);
         },
       );
 
@@ -1119,15 +1118,15 @@ void main() {
           );
 
           expect(find.text('Caught up about the move'), findsOneWidget);
-          expect(find.byIcon(Icons.videocam_rounded), findsOneWidget);
+          expect(find.byIcon(LottiIcons.video), findsOneWidget);
 
           // Every interaction type maps to its own glyph, shared with the
           // relationship detail page's check-in rows.
           const glyphs = {
-            CheckInInteractionType.inPerson: Icons.people_rounded,
-            CheckInInteractionType.call: Icons.call_rounded,
-            CheckInInteractionType.message: Icons.chat_rounded,
-            CheckInInteractionType.other: Icons.forum_rounded,
+            CheckInInteractionType.inPerson: LottiIcons.people,
+            CheckInInteractionType.call: LottiIcons.call,
+            CheckInInteractionType.message: LottiIcons.chat,
+            CheckInInteractionType.other: LottiIcons.forum,
           };
           for (final entry in glyphs.entries) {
             await tester.pumpWidget(
@@ -1180,7 +1179,7 @@ void main() {
         );
 
         expect(find.text('Session Rating'), findsOneWidget);
-        expect(find.byIcon(Icons.insights_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.insights), findsOneWidget);
       });
 
       testWidgets('renders AI response with preview and sparkle glyph', (
@@ -1194,7 +1193,7 @@ void main() {
 
         // AI responses preview their text and carry an "AI" chip + sparkle.
         expect(find.text('This is a test AI response'), findsOneWidget);
-        expect(find.byIcon(Icons.auto_awesome_rounded), findsWidgets);
+        expect(find.byIcon(LottiIcons.aiSpark), findsWidgets);
         expect(find.text('AI'), findsOneWidget);
       });
 
@@ -1297,9 +1296,9 @@ void main() {
           ),
         );
 
-        expect(find.byIcon(MdiIcons.flag), findsOneWidget);
-        expect(find.byIcon(MdiIcons.security), findsOneWidget);
-        expect(find.byIcon(MdiIcons.star), findsOneWidget);
+        expect(find.byIcon(LottiIcons.flag), findsOneWidget);
+        expect(find.byIcon(LottiIcons.shield), findsOneWidget);
+        expect(find.byIcon(LottiIcons.star), findsOneWidget);
       });
     });
 
@@ -1657,9 +1656,9 @@ void main() {
     });
 
     for (final (sport, icon) in [
-      ('walking', Icons.directions_walk_rounded),
-      ('swimming', Icons.pool_rounded),
-      ('cycling', Icons.directions_bike_rounded),
+      ('walking', LottiIcons.walk),
+      ('swimming', LottiIcons.swimming),
+      ('cycling', LottiIcons.cycling),
     ]) {
       testWidgets('workout "$sport" leads with its sport glyph', (
         tester,

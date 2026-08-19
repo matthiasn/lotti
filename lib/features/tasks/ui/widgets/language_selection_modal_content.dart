@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/supported_language.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/widgets/settings_card.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
@@ -90,7 +91,7 @@ class LanguageSelectionModalContent extends ConsumerWidget {
                   ),
                 ),
                 trailing: Icon(
-                  Icons.check_rounded,
+                  LottiIcons.confirm,
                   color: colorScheme.primary,
                 ),
               ),
@@ -117,7 +118,7 @@ class LanguageSelectionModalContent extends ConsumerWidget {
                 title: context.messages.aiSettingsClearFiltersButton,
                 titleColor: context.colorScheme.outline,
                 leading: Icon(
-                  Icons.clear,
+                  LottiIcons.close,
                   color: context.colorScheme.outline,
                 ),
               ),

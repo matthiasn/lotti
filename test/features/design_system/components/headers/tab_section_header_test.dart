@@ -61,9 +61,9 @@ void main() {
       await pump(tester, header: buildHeader());
 
       expect(find.text('Tasks'), findsOneWidget);
-      expect(find.byIcon(Icons.notifications_none_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.notification), findsOneWidget);
       expect(find.byType(TextField), findsOneWidget);
-      expect(find.byIcon(Icons.filter_list_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.filter), findsOneWidget);
     });
 
     testWidgets('fires onSearchChanged as the user types', (tester) async {
@@ -92,7 +92,7 @@ void main() {
       );
 
       // The leading search action button forwards the controller text.
-      await tester.tap(find.byIcon(Icons.search_rounded));
+      await tester.tap(find.byIcon(LottiIcons.search));
       await tester.pump();
 
       expect(pressed, ['agentic']);
@@ -113,7 +113,7 @@ void main() {
       );
 
       // A non-empty query exposes the cancel affordance.
-      await tester.tap(find.byIcon(Icons.cancel_rounded));
+      await tester.tap(find.byIcon(LottiIcons.closeCircled));
       await tester.pump();
 
       expect(cleared, 1);
@@ -131,7 +131,7 @@ void main() {
         header: buildHeader(onFilterPressed: () => filterTaps++),
       );
 
-      await tester.tap(find.byIcon(Icons.filter_list_rounded));
+      await tester.tap(find.byIcon(LottiIcons.filter));
       await tester.pump();
 
       expect(filterTaps, 1);
@@ -146,7 +146,7 @@ void main() {
           tester,
           header: buildHeader(
             titleTrailing: const Icon(
-              Icons.add_alert_rounded,
+              LottiIcons.notificationActive,
               key: ValueKey('custom-trailing'),
             ),
           ),
@@ -154,7 +154,7 @@ void main() {
 
         expect(find.byKey(const ValueKey('custom-trailing')), findsOneWidget);
         // Default bell is replaced, not layered.
-        expect(find.byIcon(Icons.notifications_none_rounded), findsNothing);
+        expect(find.byIcon(LottiIcons.notification), findsNothing);
       },
     );
 
@@ -168,7 +168,7 @@ void main() {
           titleLeading: IconButton(
             key: const ValueKey('title-leading'),
             onPressed: () => taps++,
-            icon: const Icon(Icons.view_sidebar_rounded),
+            icon: const Icon(LottiIcons.sidebar),
           ),
         ),
       );
@@ -204,11 +204,11 @@ void main() {
       'filters are active',
       (tester) async {
         Icon filterIcon() => tester.widget<Icon>(
-          find.byIcon(Icons.filter_list_rounded),
+          find.byIcon(LottiIcons.filter),
         );
         IconButton filterButton() => tester.widget<IconButton>(
           find.ancestor(
-            of: find.byIcon(Icons.filter_list_rounded),
+            of: find.byIcon(LottiIcons.filter),
             matching: find.byType(IconButton),
           ),
         );

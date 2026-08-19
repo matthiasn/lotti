@@ -316,7 +316,7 @@ class _FirstDeviceView extends StatelessWidget {
         _StateFigure(
           background: tokens.colors.surface.selected,
           child: Icon(
-            Icons.check_rounded,
+            LottiIcons.confirm,
             size: IconSizes.xl,
             color: tokens.colors.interactive.enabled,
           ),
@@ -371,7 +371,7 @@ class _PairedView extends ConsumerWidget {
               size: IconSizes.xxxl,
               background: tokens.colors.surface.selected,
               child: Icon(
-                Icons.check_rounded,
+                LottiIcons.confirm,
                 size: IconSizes.l,
                 color: tokens.colors.interactive.enabled,
               ),
@@ -496,7 +496,7 @@ class _GateStep extends StatelessWidget {
     final Widget marker;
     if (done) {
       marker = Icon(
-        Icons.check_circle_rounded,
+        LottiIcons.confirmCircled,
         size: IconSizes.l,
         color: tokens.colors.alert.success.defaultColor,
       );
@@ -565,7 +565,7 @@ class _GateStep extends StatelessWidget {
                       if (locked) ...[
                         SizedBox(width: tokens.spacing.step2),
                         Icon(
-                          Icons.lock_outline_rounded,
+                          LottiIcons.lock,
                           size: IconSizes.xs,
                           color: tokens.colors.text.lowEmphasis,
                         ),
@@ -757,7 +757,7 @@ class _ErrorView extends StatelessWidget {
             alpha: 0.16,
           ),
           child: Icon(
-            Icons.error_outline,
+            LottiIcons.error,
             size: IconSizes.xl,
             color: tokens.colors.alert.error.defaultColor,
           ),

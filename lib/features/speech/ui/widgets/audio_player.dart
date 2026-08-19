@@ -331,7 +331,7 @@ class _PlayButton extends StatelessWidget {
             ),
           )
         : Icon(
-            isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+            isPlaying ? LottiIcons.pause : LottiIcons.play,
             size: isCompact ? 20 : 24,
             color: iconColor,
           );

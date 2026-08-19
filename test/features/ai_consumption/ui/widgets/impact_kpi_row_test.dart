@@ -5,6 +5,7 @@ import 'package:lotti/features/ai_consumption/logic/consumption_formatting.dart'
 import 'package:lotti/features/ai_consumption/model/consumption_aggregation_models.dart';
 import 'package:lotti/features/ai_consumption/model/impact_dashboard_models.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_kpi_row.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../../widget_test_utils.dart';
 
@@ -151,7 +152,7 @@ void main() {
         previousLabel: 'May',
       );
       expect(find.text('+23%'), findsOneWidget);
-      expect(find.byIcon(Icons.arrow_upward_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.arrowUp), findsOneWidget);
       // The baseline is named, and appears exactly once (selected tile only).
       expect(find.text('vs May'), findsOneWidget);
     },
@@ -174,7 +175,7 @@ void main() {
       previousLabel: 'May',
     );
     // Five directional deltas (all metrics rose vs the smaller prior).
-    expect(find.byIcon(Icons.arrow_upward_rounded), findsNWidgets(5));
+    expect(find.byIcon(LottiIcons.arrowUp), findsNWidgets(5));
     // The baseline label appears exactly once — on the selected cost tile.
     expect(find.text('vs May'), findsOneWidget);
   });
@@ -240,8 +241,8 @@ void main() {
   ) async {
     await pumpRow(tester, surface: const Size(1280, 900));
     expect(find.textContaining('vs'), findsNothing);
-    expect(find.byIcon(Icons.arrow_upward_rounded), findsNothing);
-    expect(find.byIcon(Icons.arrow_downward_rounded), findsNothing);
+    expect(find.byIcon(LottiIcons.arrowUp), findsNothing);
+    expect(find.byIcon(LottiIcons.arrowDown), findsNothing);
   });
 
   testWidgets('omits the delta when the selected metric has no prior value', (

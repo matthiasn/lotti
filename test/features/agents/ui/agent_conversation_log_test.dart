@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_conversation_log.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/ai_attribution_summary.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../widget_test_utils.dart';
 import '../../ai_consumption/test_utils.dart';
@@ -440,7 +441,7 @@ void main() {
       await tester.pump();
 
       // Tool call should be expanded (collapse icon visible).
-      expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronDown), findsOneWidget);
       expect(find.text('{"title": "New"}'), findsOneWidget);
     });
   });

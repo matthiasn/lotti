@@ -310,7 +310,7 @@ class _SearchActionButton extends StatelessWidget {
             dimension: size.iconSize,
             child: Center(
               child: Icon(
-                Icons.search_rounded,
+                LottiIcons.search,
                 size: size.iconSize,
                 color: enabled
                     ? tokens.colors.text.mediumEmphasis
@@ -355,7 +355,7 @@ class _SearchClearButton extends StatelessWidget {
             height: size.clearButtonHeight,
             child: Center(
               child: Icon(
-                Icons.cancel_rounded,
+                LottiIcons.closeCircled,
                 size: size.clearIconSize,
                 color: color,
               ),

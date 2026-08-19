@@ -42,7 +42,7 @@ void main() {
 
       expect(find.text('Backlog'), findsOneWidget);
       expect(find.text('12'), findsOneWidget);
-      expect(find.byIcon(Icons.check_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.confirm), findsNothing);
 
       await tester.tap(find.byType(SavedTaskFilterPill));
       await tester.pump();
@@ -68,8 +68,8 @@ void main() {
         // button now, so the active pill carries neither a chevron nor a
         // redundant in-pill check — the active state is encoded by the
         // border/fill/bold name, and the whole pill body is the tap target.
-        expect(find.byIcon(Icons.check_rounded), findsNothing);
-        expect(find.byIcon(Icons.expand_more_rounded), findsNothing);
+        expect(find.byIcon(LottiIcons.confirm), findsNothing);
+        expect(find.byIcon(LottiIcons.expand), findsNothing);
 
         await tester.tap(find.byType(SavedTaskFilterPill));
         await tester.pump();
@@ -201,7 +201,7 @@ void main() {
           ),
         );
         expect(
-          find.byIcon(Icons.expand_more_rounded),
+          find.byIcon(LottiIcons.expand),
           findsNothing,
           reason: 'no chevron when selected=$selected',
         );

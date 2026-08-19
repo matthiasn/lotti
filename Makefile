@@ -47,6 +47,16 @@ analyze:
 
 # Checks the OKF knowledge bundle in knowledge/: frontmatter conformance and,
 # more importantly, that every code path a concept points at still exists.
+# Checks that icons in lib/ come from the design system's semantic token layer
+# (`LottiIcons`) instead of being picked glyph-by-glyph from Material at the call
+# site. Ratcheted rather than absolute: the migration off Material spans many
+# pull requests, and a check that is expected to fail is a check everyone learns
+# to ignore. A file's legacy count may shrink or vanish, never grow. Reaching
+# past the tokens to `LucideIcons` is not ratcheted — that one is always an error.
+.PHONY: icon_check
+icon_check:
+	$(DART_CMD) run tool/icons/validate.dart
+
 .PHONY: okf_check
 okf_check:
 	$(DART_CMD) run tool/okf/validate.dart knowledge

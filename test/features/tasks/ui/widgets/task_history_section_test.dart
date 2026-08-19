@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_history_section.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -47,7 +48,7 @@ void main() {
         await pump(tester, expanded: false, onToggle: () => toggles++);
 
         await tester.tap(find.text('History'));
-        await tester.tap(find.byIcon(Icons.expand_more));
+        await tester.tap(find.byIcon(LottiIcons.expand));
         await tester.pump();
 
         expect(toggles, 2);
@@ -63,13 +64,13 @@ void main() {
     ) async {
       await pump(tester, expanded: false, onToggle: () {});
       final collapsedTitle = tester.getTopLeft(find.text('History'));
-      final collapsedChevron = tester.getCenter(find.byIcon(Icons.expand_more));
+      final collapsedChevron = tester.getCenter(find.byIcon(LottiIcons.expand));
 
       await pump(tester, expanded: true, onToggle: () {});
 
       expect(tester.getTopLeft(find.text('History')), collapsedTitle);
       expect(
-        tester.getCenter(find.byIcon(Icons.expand_more)),
+        tester.getCenter(find.byIcon(LottiIcons.expand)),
         collapsedChevron,
       );
     });

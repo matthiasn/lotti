@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tts/model/tts_model_option.dart';
 import 'package:lotti/features/tts/ui/widgets/tts_model_selector.dart';
 
@@ -70,7 +71,7 @@ void main() {
 
   testWidgets('marks the active model selected', (tester) async {
     await pump(tester, modelId: 'supertonic-3', onChanged: (_) {});
-    expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
+    expect(find.byIcon(LottiIcons.confirmCircled), findsOneWidget);
   });
 
   testWidgets('reports the tapped model id', (tester) async {

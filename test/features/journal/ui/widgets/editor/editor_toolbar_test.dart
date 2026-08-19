@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/save_button_controller.dart';
@@ -201,12 +202,12 @@ void main() {
         await tester.pump();
 
         // The divider now lives behind the "…" overflow, not inline.
-        expect(find.byIcon(Icons.horizontal_rule), findsNothing);
-        await tester.tap(find.byIcon(Icons.more_horiz));
+        expect(find.byIcon(LottiIcons.divider), findsNothing);
+        await tester.tap(find.byIcon(LottiIcons.more));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        await tester.tap(find.byIcon(Icons.horizontal_rule));
+        await tester.tap(find.byIcon(LottiIcons.divider));
         await tester.pump();
 
         // The embed's object replacement character lands in the document.
@@ -241,7 +242,7 @@ void main() {
 
         // Nothing to discard when clean: the discard control is absent (its slot
         // stays reserved, so the formatting controls don't shift).
-        expect(find.byIcon(Icons.close_rounded), findsNothing);
+        expect(find.byIcon(LottiIcons.close), findsNothing);
 
         await tester.pump(const Duration(seconds: 1));
       },
@@ -264,12 +265,12 @@ void main() {
 
         // Full inline: the divider lives in the toolbar (not behind "…"), and
         // the "…" overflow button is gone entirely.
-        expect(find.byIcon(Icons.more_horiz), findsNothing);
-        expect(find.byIcon(Icons.horizontal_rule), findsOneWidget);
+        expect(find.byIcon(LottiIcons.more), findsNothing);
+        expect(find.byIcon(LottiIcons.divider), findsOneWidget);
 
         // The inline divider inserts the embed (exercises the full config's
         // custom button).
-        await tester.tap(find.byIcon(Icons.horizontal_rule));
+        await tester.tap(find.byIcon(LottiIcons.divider));
         await tester.pump();
         expect(quillController.document.toPlainText().codeUnitAt(0), 0xFFFC);
 
@@ -330,7 +331,7 @@ void main() {
 
         // With unsaved changes the discard "X" is shown and the save button is
         // active.
-        expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.close), findsOneWidget);
         final saveButton = tester.widget<DesignSystemButton>(
           find.byType(DesignSystemButton),
         );
@@ -338,7 +339,7 @@ void main() {
 
         // Tapping it routes to the controller's discard().
         expect(spy.discardCalled, isFalse);
-        await tester.tap(find.byIcon(Icons.close_rounded));
+        await tester.tap(find.byIcon(LottiIcons.close));
         await tester.pump();
         expect(spy.discardCalled, isTrue);
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/settings/settings_switch_row.dart';
 
@@ -48,28 +49,28 @@ class CategorySwitchTiles extends StatelessWidget {
         SwitchFieldType.favorite,
         messages.favoriteLabel,
         null,
-        Icons.star_outline_rounded,
+        LottiIcons.star,
         settings.isFavorite,
       ),
       (
         SwitchFieldType.private,
         messages.privateLabel,
         messages.privateSwitchDescription,
-        Icons.lock_outline,
+        LottiIcons.lock,
         settings.isPrivate,
       ),
       (
         SwitchFieldType.active,
         messages.activeLabel,
         messages.categoryActiveSwitchDescription,
-        Icons.visibility_outlined,
+        LottiIcons.visible,
         settings.isActive,
       ),
       (
         SwitchFieldType.availableForDayPlan,
         messages.categoryDayPlanLabel,
         messages.categoryDayPlanDescription,
-        Icons.today_outlined,
+        LottiIcons.today,
         settings.isAvailableForDayPlan,
       ),
     ];

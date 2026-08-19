@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -38,7 +37,7 @@ class EntryDateTimeStatusBar extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Icon(
-                  Icons.warning_rounded,
+                  LottiIcons.warning,
                   size: tokens.spacing.step6,
                   color: context.colorScheme.error,
                 ),
@@ -77,7 +76,7 @@ class EntryDateTimeStatusBar extends StatelessWidget {
                   Row(
                     children: [
                       Icon(
-                        MdiIcons.clockTimeFourOutline,
+                        LottiIcons.schedule,
                         size: tokens.spacing.step6,
                         color: tokens.colors.interactive.enabled,
                       ),
@@ -128,7 +127,7 @@ class EntryDateTimeStatusBar extends StatelessWidget {
                           DateFormat('EEE d MMM', locale).format(range.dateTo),
                         ),
                         leading: Icon(
-                          MdiIcons.weatherNight,
+                          LottiIcons.night,
                           size: tokens.spacing.step5,
                           color: tokens.colors.interactive.enabled,
                         ),

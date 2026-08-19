@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_controls.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -61,7 +62,7 @@ void main() {
       await tester.pump();
 
       expect(find.text('Pause'), findsOneWidget);
-      expect(find.byIcon(Icons.pause_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.pause), findsOneWidget);
     });
 
     testWidgets('shows Resume button when lifecycle is dormant', (
@@ -73,7 +74,7 @@ void main() {
       await tester.pump();
 
       expect(find.text('Resume'), findsOneWidget);
-      expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.play), findsOneWidget);
     });
 
     testWidgets('does not show Pause when dormant', (tester) async {
@@ -101,7 +102,7 @@ void main() {
       await tester.pump();
 
       expect(find.text('Re-analyze'), findsOneWidget);
-      expect(find.byIcon(Icons.refresh_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.refresh), findsOneWidget);
     });
 
     testWidgets('shows Re-analyze button when dormant', (tester) async {
@@ -120,7 +121,7 @@ void main() {
       await tester.pump();
 
       expect(find.text('Destroy'), findsOneWidget);
-      expect(find.byIcon(Icons.delete_forever_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.deleteForever), findsOneWidget);
     });
 
     testWidgets(
@@ -273,7 +274,7 @@ void main() {
         await tester.pump();
 
         expect(find.text('Delete permanently'), findsOneWidget);
-        expect(find.byIcon(Icons.delete_forever_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.deleteForever), findsOneWidget);
       },
     );
 

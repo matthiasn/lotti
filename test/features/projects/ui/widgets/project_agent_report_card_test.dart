@@ -14,6 +14,7 @@ import 'package:lotti/features/ai/model/ai_config.dart' show AiConfig;
 import 'package:lotti/features/ai/state/inference_profile_controller.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/ai_attribution_summary.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/ui/widgets/project_agent_report_card.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:mocktail/mocktail.dart';
@@ -82,7 +83,7 @@ void main() {
 
       // Loading state renders SizedBox.shrink — verify no agent content
       expect(find.text('My Project Agent'), findsNothing);
-      expect(find.byIcon(Icons.smart_toy_outlined), findsNothing);
+      expect(find.byIcon(LottiIcons.aiModel), findsNothing);
     });
 
     testWidgets('renders an empty shell when the project agent errors', (
@@ -114,7 +115,7 @@ void main() {
         findsNothing,
       );
       expect(find.text('My Project Agent'), findsNothing);
-      expect(find.byIcon(Icons.smart_toy_outlined), findsNothing);
+      expect(find.byIcon(LottiIcons.aiModel), findsNothing);
     });
 
     testWidgets('shows explicit empty state when no project agent exists', (
@@ -157,7 +158,7 @@ void main() {
 
       expect(find.text('Agent'), findsOneWidget);
       expect(find.text('My Project Agent'), findsOneWidget);
-      expect(find.byIcon(Icons.smart_toy_outlined), findsWidgets);
+      expect(find.byIcon(LottiIcons.aiModel), findsWidgets);
     });
 
     testWidgets('renders the latest project report', (tester) async {
@@ -243,7 +244,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.refresh_rounded));
+      await tester.tap(find.byIcon(LottiIcons.refresh));
       await tester.pump();
 
       verify(() => mockService.triggerReanalysis('agent-1')).called(1);

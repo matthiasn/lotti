@@ -202,9 +202,7 @@ class TaskRowContent extends ConsumerWidget {
         category?.name ??
         context.messages.tasksQuickFilterUnassignedLabel;
     final categoryIcon =
-        categoryIconOverride ??
-        category?.icon?.iconData ??
-        Icons.label_outline_rounded;
+        categoryIconOverride ?? category?.icon?.iconData ?? LottiIcons.label;
     final coverArtId = showCoverArt ? liveTask.data.coverArtId : null;
     final metadata = <Widget>[
       if (sortOption != TaskSortOption.byPriority)
@@ -299,7 +297,7 @@ class TaskRowContent extends ConsumerWidget {
     if (showCreationDate && sortOption != TaskSortOption.byDate) {
       widgets.add(
         TaskShowcaseMetaChip(
-          icon: Icons.calendar_today_outlined,
+          icon: LottiIcons.today,
           label: localizations.formatMediumDate(liveTask.meta.dateFrom),
         ),
       );
@@ -318,7 +316,7 @@ class TaskRowContent extends ConsumerWidget {
     if (vectorDistance case final distance?) {
       widgets.add(
         TaskShowcaseMetaChip(
-          icon: Icons.hub_outlined,
+          icon: LottiIcons.hub,
           label: distance.toStringAsFixed(2),
         ),
       );
@@ -424,7 +422,7 @@ class _TrackedDurationMetaContent extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(
-          Icons.timelapse_rounded,
+          LottiIcons.timelapse,
           size: 16,
           color: TaskShowcasePalette.lowText(context),
         ),

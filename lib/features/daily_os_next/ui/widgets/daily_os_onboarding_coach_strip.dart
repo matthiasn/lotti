@@ -32,7 +32,7 @@ class DailyOsOnboardingCoachStrip extends StatelessWidget {
         child: Row(
           children: [
             Icon(
-              Icons.tips_and_updates_outlined,
+              LottiIcons.tip,
               size: 16,
               color: tokens.colors.interactive.enabled,
             ),

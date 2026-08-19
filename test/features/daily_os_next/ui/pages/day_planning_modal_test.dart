@@ -17,6 +17,7 @@ import 'package:lotti/features/daily_os_next/ui/pages/refine_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_planning_glass_action_bar.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_planning_thinking_shader.dart';
 import 'package:lotti/features/design_system/components/glass_action_bar.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -274,14 +275,14 @@ Future<void> _tapPill(WidgetTester tester, String label) async {
 }
 
 /// Invokes the Wolt top-bar back affordance — the leading [IconButton]
-/// carrying [Icons.arrow_back_rounded], wired to the page's `onTapBack` →
+/// carrying [LottiIcons.back], wired to the page's `onTapBack` →
 /// `popPage`. Its `onPressed` is invoked directly rather than via a pointer
 /// tap: the Wolt top-bar layer intercepts synthetic hit-tests at that
 /// position, but the callback is the behavior under test and the resulting
 /// navigation is asserted by the caller.
 Future<void> _tapBack(WidgetTester tester) async {
   final backButton = find.ancestor(
-    of: find.byIcon(Icons.arrow_back_rounded),
+    of: find.byIcon(LottiIcons.back),
     matching: find.byType(IconButton),
   );
   tester.widget<IconButton>(backButton.first).onPressed!();
@@ -304,15 +305,21 @@ void main() {
     ) async {
       await _openCreate(tester);
       expect(find.byType(DsGlassPill), findsOneWidget);
-      expect(find.byIcon(Icons.keyboard_alt_outlined), findsOneWidget);
-      expect(find.byIcon(Icons.arrow_forward_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.keyboard), findsOneWidget);
+      expect(find.byIcon(LottiIcons.forward), findsNothing);
     });
 
     testWidgets('captured bar offers re-record + continue', (tester) async {
       await _openCreate(tester, capture: _captured);
       expect(find.byType(DsGlassPill), findsNWidgets(2));
-      expect(find.byIcon(Icons.mic_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.arrow_forward_rounded), findsOneWidget);
+      // Scoped to the pill: the voice button above it is also a microphone.
+      // Material spelled the two `mdi:microphone` and `mic_rounded`, which
+      // never looked different — Lucide just makes that explicit.
+      expect(
+        find.widgetWithIcon(DsGlassPill, LottiIcons.mic),
+        findsOneWidget,
+      );
+      expect(find.byIcon(LottiIcons.forward), findsOneWidget);
     });
 
     testWidgets('listening bar mirrors the orb stop action as a Done pill', (
@@ -391,14 +398,14 @@ void main() {
           error: CaptureError.noAudioRecorded,
         ),
       );
-      expect(find.byIcon(Icons.keyboard_alt_outlined), findsOneWidget);
+      expect(find.byIcon(LottiIcons.keyboard), findsOneWidget);
     });
 
     testWidgets('"type instead" flips capture into the captured editor', (
       tester,
     ) async {
       await _openCreate(tester);
-      await tester.tap(find.byIcon(Icons.keyboard_alt_outlined));
+      await tester.tap(find.byIcon(LottiIcons.keyboard));
       await tester.pump();
       expect(find.byType(DsGlassPill), findsNWidgets(2));
     });
@@ -407,12 +414,12 @@ void main() {
       tester,
     ) async {
       await _openCreate(tester, capture: _captured);
-      expect(find.byIcon(Icons.arrow_forward_rounded), findsOneWidget);
-      await tester.tap(find.widgetWithIcon(DsGlassPill, Icons.mic_rounded));
+      expect(find.byIcon(LottiIcons.forward), findsOneWidget);
+      await tester.tap(find.widgetWithIcon(DsGlassPill, LottiIcons.mic));
       await tester.pump();
       // Reset → the idle bar offers only the type-instead pill.
-      expect(find.byIcon(Icons.keyboard_alt_outlined), findsOneWidget);
-      expect(find.byIcon(Icons.arrow_forward_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.keyboard), findsOneWidget);
+      expect(find.byIcon(LottiIcons.forward), findsNothing);
     });
 
     testWidgets(
@@ -431,7 +438,7 @@ void main() {
         );
         final continuePill = find.widgetWithIcon(
           DsGlassPill,
-          Icons.arrow_forward_rounded,
+          LottiIcons.forward,
         );
         expect(continuePill, findsOneWidget);
         expect(tester.widget<DsGlassPill>(continuePill).enabled, isFalse);

@@ -201,7 +201,7 @@ class _RadioButtonContent extends StatelessWidget {
           ..add(
             Tooltip(
               message: tooltipMessage ?? label!,
-              child: const Icon(Icons.info_outline_rounded),
+              child: const Icon(LottiIcons.info),
             ),
           );
       }

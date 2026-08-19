@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/ui/animation/ai_state_shader_animation.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
@@ -43,7 +42,7 @@ void main() {
     expect(find.byType(AiVoiceInputShader), findsNothing);
     expect(find.byKey(VoiceButton.listeningFrameKey), findsNothing);
     expect(find.byKey(VoiceButton.restingFrameKey), findsOneWidget);
-    expect(find.byIcon(MdiIcons.microphone), findsOneWidget);
+    expect(find.byIcon(LottiIcons.mic), findsOneWidget);
     expect(
       tester.getSize(find.byKey(VoiceButton.restingFrameKey)),
       Size.square(VoiceButton.restingFrameSizeFor(132)),
@@ -146,8 +145,8 @@ void main() {
     (tester) async {
       await pumpVoiceButton(tester, phase: CapturePhase.listening);
 
-      expect(find.byIcon(Icons.stop_rounded), findsOneWidget);
-      expect(find.byIcon(MdiIcons.microphone), findsNothing);
+      expect(find.byIcon(LottiIcons.stop), findsOneWidget);
+      expect(find.byIcon(LottiIcons.mic), findsNothing);
     },
   );
 
@@ -162,7 +161,7 @@ void main() {
       // The stop square is drawn in the orb's own teal (inverted), not the
       // light on-interactive color it used to punch out of the disc, and
       // larger than the mic glyph since there is no disc to sit inside.
-      final stopIcon = tester.widget<Icon>(find.byIcon(Icons.stop_rounded));
+      final stopIcon = tester.widget<Icon>(find.byIcon(LottiIcons.stop));
       expect(stopIcon.color, teal);
       expect(stopIcon.color, isNot(tokens.colors.text.onInteractiveAlert));
       expect(stopIcon.size, 132 * 0.57);
@@ -208,8 +207,8 @@ void main() {
       expect(find.byKey(VoiceButton.listeningFrameKey), findsNothing);
       expect(find.byKey(VoiceButton.restingFrameKey), findsNothing);
       // Tap re-records, so the glyph advertises talking — not "stop".
-      expect(find.byIcon(MdiIcons.microphone), findsOneWidget);
-      expect(find.byIcon(Icons.stop_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.mic), findsOneWidget);
+      expect(find.byIcon(LottiIcons.stop), findsNothing);
       expect(
         tester.getSize(find.byKey(VoiceButton.fieldKey)),
         Size.square(VoiceButton.fieldSizeFor(132)),

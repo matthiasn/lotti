@@ -15,12 +15,12 @@ void main() {
             items: [
               DesignSystemNavigationTabBarItem(
                 label: 'Tasks',
-                icon: Icon(Icons.check_circle_outline),
+                icon: Icon(LottiIcons.confirmCircled),
                 active: true,
               ),
               DesignSystemNavigationTabBarItem(
                 label: 'Projects',
-                icon: Icon(Icons.folder_outlined),
+                icon: Icon(LottiIcons.folder),
               ),
             ],
           ),
@@ -53,13 +53,13 @@ void main() {
             items: [
               DesignSystemNavigationTabBarItem(
                 label: 'Tasks',
-                icon: const Icon(Icons.check_circle_outline),
+                icon: const Icon(LottiIcons.confirmCircled),
                 active: true,
                 onTap: () => taps.add('tasks'),
               ),
               DesignSystemNavigationTabBarItem(
                 label: 'Projects',
-                icon: const Icon(Icons.folder_outlined),
+                icon: const Icon(LottiIcons.folder),
                 onTap: () => taps.add('projects'),
               ),
             ],
@@ -86,7 +86,7 @@ void main() {
             items: [
               DesignSystemNavigationTabBarItem(
                 label: 'Tasks',
-                icon: Icon(Icons.check_circle_outline),
+                icon: Icon(LottiIcons.confirmCircled),
               ),
             ],
           ),
@@ -108,14 +108,14 @@ void main() {
             items: [
               DesignSystemNavigationTabBarItem(
                 label: 'Tasks',
-                icon: Icon(Icons.check_circle_outline),
-                activeIcon: Icon(Icons.check_circle),
+                icon: Icon(LottiIcons.star),
+                activeIcon: Icon(LottiIconsFilled.star),
                 active: true,
               ),
               DesignSystemNavigationTabBarItem(
                 label: 'Projects',
-                icon: Icon(Icons.folder_outlined),
-                activeIcon: Icon(Icons.folder),
+                icon: Icon(LottiIcons.folder),
+                activeIcon: Icon(LottiIconsFilled.folder),
               ),
             ],
           ),
@@ -124,10 +124,10 @@ void main() {
       );
 
       // Active item renders its activeIcon; inactive keeps the base icon.
-      expect(find.byIcon(Icons.check_circle), findsOneWidget);
-      expect(find.byIcon(Icons.check_circle_outline), findsNothing);
-      expect(find.byIcon(Icons.folder_outlined), findsOneWidget);
-      expect(find.byIcon(Icons.folder), findsNothing);
+      expect(find.byIcon(LottiIconsFilled.star), findsOneWidget);
+      expect(find.byIcon(LottiIcons.star), findsNothing);
+      expect(find.byIcon(LottiIcons.folder), findsOneWidget);
+      expect(find.byIcon(LottiIconsFilled.folder), findsNothing);
     });
 
     testWidgets('minimized mode hides visible labels', (tester) async {
@@ -138,7 +138,7 @@ void main() {
             items: [
               DesignSystemNavigationTabBarItem(
                 label: 'Tasks',
-                icon: Icon(Icons.check_circle_outline),
+                icon: Icon(LottiIcons.confirmCircled),
                 active: true,
               ),
             ],
@@ -148,7 +148,7 @@ void main() {
       );
 
       expect(find.text('Tasks'), findsNothing);
-      expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
+      expect(find.byIcon(LottiIcons.confirmCircled), findsOneWidget);
     });
   });
 }

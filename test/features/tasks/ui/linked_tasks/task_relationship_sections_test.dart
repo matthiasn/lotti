@@ -5,6 +5,7 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/dropdowns/design_system_dropdown.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/state/task_link_groups_controller.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_task_row.dart';
@@ -292,7 +293,7 @@ void main() {
         expect(blocks.accent, isNull);
         // The accent brings a leading glyph tying the section to the header
         // chip; it is the only one on the card.
-        expect(find.byIcon(Icons.block), findsOneWidget);
+        expect(find.byIcon(LottiIcons.block), findsOneWidget);
       },
     );
 
@@ -314,7 +315,7 @@ void main() {
         manageMode: true,
       );
 
-      await tester.tap(find.byIcon(Icons.link_off));
+      await tester.tap(find.byIcon(LottiIcons.linkOff));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.widgetWithText(DesignSystemButton, 'Unlink'));
@@ -349,7 +350,7 @@ void main() {
         manageMode: true,
       );
 
-      await tester.tap(find.byIcon(Icons.link_off));
+      await tester.tap(find.byIcon(LottiIcons.linkOff));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.widgetWithText(DesignSystemButton, 'Unlink'));
@@ -385,7 +386,7 @@ void main() {
           manageMode: true,
         );
 
-        await tester.tap(find.byIcon(Icons.swap_horiz_rounded));
+        await tester.tap(find.byIcon(LottiIcons.compare));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -444,7 +445,7 @@ void main() {
           manageMode: true,
         );
 
-        await tester.tap(find.byIcon(Icons.swap_horiz_rounded));
+        await tester.tap(find.byIcon(LottiIcons.compare));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -490,7 +491,7 @@ void main() {
           manageMode: true,
         );
 
-        await tester.tap(find.byIcon(Icons.swap_horiz_rounded));
+        await tester.tap(find.byIcon(LottiIcons.compare));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -598,7 +599,7 @@ void main() {
         );
 
         expect(find.text('Is blocked by'), findsOneWidget);
-        expect(find.byIcon(Icons.block), findsNothing);
+        expect(find.byIcon(LottiIcons.block), findsNothing);
       },
     );
   });

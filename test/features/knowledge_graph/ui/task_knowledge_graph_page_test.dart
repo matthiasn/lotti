@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/knowledge_graph/domain/graph_layout_engine.dart';
@@ -1347,7 +1348,7 @@ void main() {
       expect(find.byType(EntryDetailSidebar), findsNothing);
       // The compact top-left header does not overlap the right-hand inspector,
       // so this tap reaches the Open button instead of being swallowed.
-      await tester.tap(find.byIcon(Icons.open_in_full_rounded));
+      await tester.tap(find.byIcon(LottiIcons.expandFull));
       await tester.pump();
       await tester.pump();
       expect(find.byType(EntryDetailSidebar), findsOneWidget);

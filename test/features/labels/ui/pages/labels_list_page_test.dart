@@ -7,6 +7,7 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/labels/ui/pages/labels_list_page.dart';
@@ -104,7 +105,7 @@ void main() {
 
         await pumpLabelsListPage(tester);
 
-        expect(find.byIcon(Icons.error_outline), findsOneWidget);
+        expect(find.byIcon(LottiIcons.error), findsOneWidget);
         expect(find.textContaining('Test error'), findsOneWidget);
       });
     });
@@ -117,7 +118,7 @@ void main() {
 
         await pumpLabelsListPage(tester);
 
-        expect(find.byIcon(Icons.label_outline), findsOneWidget);
+        expect(find.byIcon(LottiIcons.label), findsOneWidget);
         expect(find.text('No labels yet'), findsOneWidget);
         expect(
           find.text('Tap the + button to create your first label.'),
@@ -246,7 +247,7 @@ void main() {
 
         await pumpLabelsListPage(tester);
 
-        expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
       });
 
       testWidgets('shows lock icon for private labels', (tester) async {
@@ -260,7 +261,7 @@ void main() {
 
         await pumpLabelsListPage(tester);
 
-        expect(find.byIcon(Icons.lock_outline), findsOneWidget);
+        expect(find.byIcon(LottiIcons.lock), findsOneWidget);
       });
 
       testWidgets('hides lock icon for public labels', (tester) async {
@@ -274,7 +275,7 @@ void main() {
 
         await pumpLabelsListPage(tester);
 
-        expect(find.byIcon(Icons.lock_outline), findsNothing);
+        expect(find.byIcon(LottiIcons.lock), findsNothing);
       });
 
       testWidgets('shows dividers between items but not after last', (
@@ -404,7 +405,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(DesignSystemListItem), findsNothing);
-        expect(find.byIcon(Icons.search_off_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.searchOff), findsOneWidget);
         expect(find.text('No labels match "zzz"'), findsOneWidget);
         expect(find.byType(DesignSystemButton), findsOneWidget);
         expect(find.text('Create "zzz" label'), findsOneWidget);
@@ -598,7 +599,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.chevron_right_rounded), findsWidgets);
+      expect(find.byIcon(LottiIcons.chevronRight), findsWidgets);
       expect(find.byType(PopupMenuButton<String>), findsNothing);
     });
 
@@ -670,7 +671,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.lock_outline), findsOneWidget);
+      expect(find.byIcon(LottiIcons.lock), findsOneWidget);
     });
 
     testWidgets('shows create-from-search CTA with typed query', (

@@ -17,20 +17,20 @@ import '../../../../widget_test_utils.dart';
 /// flag-gated tree shape changes).
 const _syncBranch = SettingsNode(
   id: 'sync',
-  icon: Icons.sync_rounded,
+  icon: LottiIcons.sync,
   title: 'Sync Settings',
   desc: '',
   children: [
     SettingsNode(
       id: 'sync/backfill',
-      icon: Icons.cloud_download_outlined,
+      icon: LottiIcons.cloudDownload,
       title: 'Backfill Sync',
       desc: '',
       panel: 'sync-backfill',
     ),
     SettingsNode(
       id: 'sync/stats',
-      icon: Icons.bar_chart_rounded,
+      icon: LottiIcons.chart,
       title: 'Sync Stats',
       desc: '',
       panel: 'sync-stats',
@@ -286,13 +286,13 @@ void main() {
         'Backfill Sync With An Extremely Long Localized Title For Overflow';
     const overflowBranch = SettingsNode(
       id: 'sync',
-      icon: Icons.sync_rounded,
+      icon: LottiIcons.sync,
       title: 'Sync Settings',
       desc: '',
       children: [
         SettingsNode(
           id: 'sync/backfill',
-          icon: Icons.cloud_download_outlined,
+          icon: LottiIcons.cloudDownload,
           title: longLeafTitle,
           desc: '',
           panel: 'sync-backfill',

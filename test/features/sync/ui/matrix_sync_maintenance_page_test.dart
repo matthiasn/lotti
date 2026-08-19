@@ -5,6 +5,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/widgets/settings_icon.dart';
 import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/services/historical_sync_service.dart';
@@ -280,7 +281,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.byIcon(Icons.chevron_right_rounded), findsNWidgets(5));
+      expect(find.byIcon(LottiIcons.chevronRight), findsNWidgets(5));
     });
 
     testWidgets('shows correct settings icons', (tester) async {
@@ -288,11 +289,11 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.byIcon(Icons.sync_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.sync_alt_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.refresh_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.playlist_add_check_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.delete_sweep_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.sync), findsOneWidget);
+      expect(find.byIcon(LottiIcons.compare), findsOneWidget);
+      expect(find.byIcon(LottiIcons.refresh), findsOneWidget);
+      expect(find.byIcon(LottiIcons.checkAll), findsOneWidget);
+      expect(find.byIcon(LottiIcons.clearAll), findsOneWidget);
     });
 
     testWidgets('shows dividers between items but not after last', (

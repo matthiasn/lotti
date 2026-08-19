@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill_localizations;
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,6 +18,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/repository/app_clipboard_service.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
@@ -242,7 +242,7 @@ void main() {
       await tester.pump();
 
       expect(find.byType(ActionMenuListItem), findsOneWidget);
-      expect(find.byIcon(Icons.star_outline_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.star), findsOneWidget);
     });
 
     testWidgets('renders with filled star icon when starred', (tester) async {
@@ -257,7 +257,7 @@ void main() {
 
       await tester.pump();
 
-      expect(find.byIcon(Icons.star_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIconsFilled.star), findsOneWidget);
     });
 
     testWidgets('calls toggleStarred on tap', (tester) async {
@@ -295,7 +295,7 @@ void main() {
       await tester.pump();
 
       expect(find.byType(ActionMenuListItem), findsOneWidget);
-      expect(find.byIcon(Icons.lock_open_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.unlocked), findsOneWidget);
     });
 
     testWidgets('renders with locked icon when private', (tester) async {
@@ -310,7 +310,7 @@ void main() {
 
       await tester.pump();
 
-      expect(find.byIcon(Icons.lock_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.lock), findsOneWidget);
     });
 
     testWidgets('calls togglePrivate on tap', (tester) async {
@@ -350,7 +350,7 @@ void main() {
       await tester.pump();
 
       expect(find.byType(ActionMenuListItem), findsOneWidget);
-      expect(find.byIcon(Icons.flag_outlined), findsOneWidget);
+      expect(find.byIcon(LottiIcons.flag), findsOneWidget);
     });
 
     testWidgets('renders with filled flag icon when flagged', (tester) async {
@@ -365,7 +365,7 @@ void main() {
 
       await tester.pump();
 
-      expect(find.byIcon(Icons.flag_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIconsFilled.flag), findsOneWidget);
     });
 
     testWidgets('calls toggleFlagged on tap', (tester) async {
@@ -409,7 +409,7 @@ void main() {
       );
       expect(item.isDestructive, isTrue);
       expect(item.title, 'Delete entry');
-      expect(find.byIcon(Icons.delete_outline_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.delete), findsOneWidget);
     });
   });
 
@@ -448,7 +448,7 @@ void main() {
       await tester.pump();
 
       expect(find.byType(ActionMenuListItem), findsOneWidget);
-      expect(find.byIcon(Icons.transcribe_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.transcribe), findsOneWidget);
     });
 
     testWidgets('sets pageIndexNotifier to the speech page on tap', (
@@ -524,7 +524,7 @@ void main() {
 
       await tester.pump();
 
-      expect(find.byIcon(Icons.folder_open_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.folderOpen), findsOneWidget);
       expect(find.text('Show in Finder'), findsOneWidget);
     });
 
@@ -706,7 +706,7 @@ void main() {
       await tester.pump();
 
       expect(find.byType(ActionMenuListItem), findsOneWidget);
-      expect(find.byIcon(Icons.share_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.share), findsOneWidget);
     });
 
     testWidgets('shows for audio entries', (tester) async {
@@ -754,7 +754,7 @@ void main() {
       await tester.pump();
 
       expect(find.byType(ActionMenuListItem), findsOneWidget);
-      expect(find.byIcon(MdiIcons.contentCopy), findsOneWidget);
+      expect(find.byIcon(LottiIcons.copy), findsOneWidget);
     });
   });
 
@@ -769,7 +769,7 @@ void main() {
       await tester.pump();
 
       expect(find.byType(ActionMenuListItem), findsOneWidget);
-      expect(find.byIcon(Icons.add_link), findsOneWidget);
+      expect(find.byIcon(LottiIcons.link), findsOneWidget);
     });
   });
 
@@ -784,7 +784,7 @@ void main() {
       await tester.pump();
 
       expect(find.byType(ActionMenuListItem), findsOneWidget);
-      expect(find.byIcon(MdiIcons.target), findsOneWidget);
+      expect(find.byIcon(LottiIcons.focus), findsOneWidget);
     });
   });
 
@@ -811,7 +811,7 @@ void main() {
       // Unlinking is reversible — the row itself is not styled destructive
       // (the confirmation modal carries the destructive action instead).
       expect(item.isDestructive, isFalse);
-      expect(find.byIcon(Icons.link_off_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.linkOff), findsOneWidget);
     });
   });
 
@@ -841,7 +841,7 @@ void main() {
       await tester.pump();
 
       expect(find.byType(ActionMenuListItem), findsOneWidget);
-      expect(find.byIcon(Icons.visibility_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.visible), findsOneWidget);
       expect(find.text('Hide link'), findsOneWidget);
     });
 
@@ -869,7 +869,7 @@ void main() {
 
       await tester.pump();
 
-      expect(find.byIcon(Icons.visibility_off_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.hidden), findsOneWidget);
       expect(find.text('Show link'), findsOneWidget);
     });
 
@@ -967,7 +967,7 @@ void main() {
       await tester.pump();
 
       expect(find.byType(ActionMenuListItem), findsOneWidget);
-      expect(find.byIcon(Icons.image_outlined), findsOneWidget);
+      expect(find.byIcon(LottiIcons.image), findsOneWidget);
       expect(find.text('Set cover'), findsOneWidget);
     });
 
@@ -989,7 +989,7 @@ void main() {
       await tester.pump();
 
       expect(find.byType(ActionMenuListItem), findsOneWidget);
-      expect(find.byIcon(Icons.image), findsOneWidget);
+      expect(find.byIcon(LottiIcons.image), findsOneWidget);
       expect(find.text('Cover'), findsOneWidget);
     });
 
@@ -1084,7 +1084,7 @@ void main() {
       await tester.pump();
 
       expect(find.byType(ActionMenuListItem), findsOneWidget);
-      expect(find.byIcon(Icons.map_outlined), findsOneWidget);
+      expect(find.byIcon(LottiIcons.map), findsOneWidget);
     });
 
     testWidgets('shows map_rounded icon when map shown', (tester) async {
@@ -1104,7 +1104,7 @@ void main() {
       await tester.pump();
 
       expect(find.byType(ActionMenuListItem), findsOneWidget);
-      expect(find.byIcon(Icons.map_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.map), findsOneWidget);
     });
 
     testWidgets('calls toggleMapVisible on tap', (tester) async {
@@ -1157,7 +1157,7 @@ void main() {
         await tester.pump();
 
         expect(find.byType(ActionMenuListItem), findsOneWidget);
-        expect(find.byIcon(Icons.language), findsOneWidget);
+        expect(find.byIcon(LottiIcons.language), findsOneWidget);
       },
     );
 
@@ -1175,7 +1175,7 @@ void main() {
         await tester.pump();
 
         expect(find.byKey(const ValueKey('action-flag-de')), findsOneWidget);
-        expect(find.byIcon(Icons.language), findsNothing);
+        expect(find.byIcon(LottiIcons.language), findsNothing);
       },
     );
 
@@ -1896,7 +1896,7 @@ void main() {
 
       expect(find.byType(ModernGenerateCoverArtItem), findsOneWidget);
       expect(find.byType(ActionMenuListItem), findsOneWidget);
-      expect(find.byIcon(Icons.auto_awesome_outlined), findsOneWidget);
+      expect(find.byIcon(LottiIcons.aiSpark), findsOneWidget);
     });
 
     testWidgets('action item displays correct labels', (tester) async {
@@ -2264,7 +2264,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.close), findsOneWidget);
       });
 
       testWidgets('apply button saves labels and closes modal', (tester) async {
@@ -2503,7 +2503,7 @@ void main() {
 
         final context = tester.element(find.byType(ModernRateSessionItem));
         expect(find.byType(ActionMenuListItem), findsOneWidget);
-        expect(find.byIcon(Icons.star_rate_outlined), findsOneWidget);
+        expect(find.byIcon(LottiIcons.star), findsOneWidget);
         expect(
           find.text(context.messages.sessionRatingRateAction),
           findsOneWidget,
@@ -2552,7 +2552,7 @@ void main() {
 
         final context = tester.element(find.byType(ModernRateSessionItem));
         expect(find.byType(ActionMenuListItem), findsOneWidget);
-        expect(find.byIcon(Icons.star_rate_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIconsFilled.star), findsOneWidget);
         expect(
           find.text(context.messages.sessionRatingViewAction),
           findsOneWidget,
@@ -2724,6 +2724,9 @@ void main() {
       expect(find.byType(QuillSimpleToolbar), findsOneWidget);
       // The toolbar actually populated its formatting controls — the bold
       // and italic toggles are rendered and wired to the live controller.
+      // Material glyphs on purpose: these are QuillSimpleToolbar's own
+      // controls, rendered by flutter_quill. They are not ours to tokenise,
+      // and asserting a LottiIcons value here would only ever find nothing.
       expect(find.byIcon(Icons.format_bold), findsOneWidget);
       expect(find.byIcon(Icons.format_italic), findsOneWidget);
       expect(tester.takeException(), isNull);

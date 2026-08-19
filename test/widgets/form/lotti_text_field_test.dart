@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/form/lotti_text_field.dart';
 
 import '../../test_helper.dart';
@@ -64,12 +65,12 @@ void main() {
         WidgetTestBench(
           child: LottiTextField(
             controller: controller,
-            prefixIcon: Icons.search,
+            prefixIcon: LottiIcons.search,
           ),
         ),
       );
 
-      expect(find.byIcon(Icons.search), findsOneWidget);
+      expect(find.byIcon(LottiIcons.search), findsOneWidget);
     });
 
     testWidgets('displays suffix icon when provided', (tester) async {
@@ -77,12 +78,12 @@ void main() {
         WidgetTestBench(
           child: LottiTextField(
             controller: controller,
-            suffixIcon: Icons.clear,
+            suffixIcon: LottiIcons.close,
           ),
         ),
       );
 
-      expect(find.byIcon(Icons.clear), findsOneWidget);
+      expect(find.byIcon(LottiIcons.close), findsOneWidget);
     });
 
     testWidgets('displays custom prefix widget when provided', (tester) async {
@@ -425,12 +426,12 @@ void main() {
               LottiTextField(
                 controller: controller,
                 // enabled: true, // default value
-                prefixIcon: Icons.search,
+                prefixIcon: LottiIcons.search,
               ),
               LottiTextField(
                 controller: TextEditingController(),
                 enabled: false,
-                prefixIcon: Icons.search,
+                prefixIcon: LottiIcons.search,
               ),
             ],
           ),
@@ -439,7 +440,7 @@ void main() {
 
       // Both text fields should render
       expect(find.byType(LottiTextField), findsNWidgets(2));
-      expect(find.byIcon(Icons.search), findsNWidgets(2));
+      expect(find.byIcon(LottiIcons.search), findsNWidgets(2));
     });
 
     testWidgets('prefix and suffix icons override prefix and suffix widgets', (
@@ -449,17 +450,17 @@ void main() {
         WidgetTestBench(
           child: LottiTextField(
             controller: controller,
-            prefixIcon: Icons.search,
+            prefixIcon: LottiIcons.search,
             prefix: const Text('PREFIX'),
-            suffixIcon: Icons.clear,
+            suffixIcon: LottiIcons.close,
             suffix: const Text('SUFFIX'),
           ),
         ),
       );
 
       // Icons should be shown, not the text widgets
-      expect(find.byIcon(Icons.search), findsOneWidget);
-      expect(find.byIcon(Icons.clear), findsOneWidget);
+      expect(find.byIcon(LottiIcons.search), findsOneWidget);
+      expect(find.byIcon(LottiIcons.close), findsOneWidget);
       expect(find.text('PREFIX'), findsNothing);
       expect(find.text('SUFFIX'), findsNothing);
     });

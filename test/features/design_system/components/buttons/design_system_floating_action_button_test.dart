@@ -40,7 +40,7 @@ void main() {
 
       expect(find.byType(DesignSystemFloatingActionButton), findsOneWidget);
       expect(find.bySemanticsLabel('Create'), findsOneWidget);
-      expect(find.byIcon(Icons.add_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.add), findsOneWidget);
 
       final size = tester.getSize(
         find.byType(DesignSystemFloatingActionButton),
@@ -53,7 +53,7 @@ void main() {
 
       await _pumpFab(tester, onPressed: () => tapped = true);
 
-      await tester.tap(find.byIcon(Icons.add_rounded));
+      await tester.tap(find.byIcon(LottiIcons.add));
       await tester.pump();
 
       expect(tapped, isTrue);
@@ -67,7 +67,7 @@ void main() {
       final buttonCenter = tester.getCenter(
         find.byType(DesignSystemFloatingActionButton),
       );
-      final iconCenter = tester.getCenter(find.byIcon(Icons.add_rounded));
+      final iconCenter = tester.getCenter(find.byIcon(LottiIcons.add));
 
       expect(iconCenter.dx, closeTo(buttonCenter.dx, 0.01));
     });

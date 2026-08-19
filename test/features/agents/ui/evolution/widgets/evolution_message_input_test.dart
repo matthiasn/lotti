@@ -5,6 +5,7 @@ import 'package:lotti/features/agents/ui/evolution/widgets/evolution_message_inp
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_transcription_progress.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_voice_controls.dart';
 import 'package:lotti/features/ai_chat/ui/controllers/chat_recorder_controller.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 import '../../../../../widget_test_utils.dart';
@@ -54,8 +55,8 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.mic), findsOneWidget);
-      expect(find.byIcon(Icons.send_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.mic), findsOneWidget);
+      expect(find.byIcon(LottiIcons.send), findsNothing);
     });
 
     testWidgets('shows send button after entering text', (tester) async {
@@ -65,8 +66,8 @@ void main() {
       await tester.enterText(find.byType(TextField), 'Test message');
       await tester.pump();
 
-      expect(find.byIcon(Icons.send_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.mic), findsNothing);
+      expect(find.byIcon(LottiIcons.send), findsOneWidget);
+      expect(find.byIcon(LottiIcons.mic), findsNothing);
     });
 
     testWidgets('tapping send calls onSend and clears text', (tester) async {
@@ -76,7 +77,7 @@ void main() {
       await tester.enterText(find.byType(TextField), 'Test message');
       await tester.pump();
 
-      await tester.tap(find.byIcon(Icons.send_rounded));
+      await tester.tap(find.byIcon(LottiIcons.send));
       await tester.pump();
 
       expect(lastSent, 'Test message');
@@ -88,7 +89,7 @@ void main() {
       await tester.pumpWidget(buildSubject(isWaiting: true));
       await tester.pump();
 
-      expect(find.byIcon(Icons.hourglass_top_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.pending), findsOneWidget);
     });
 
     testWidgets('text field is disabled when not enabled', (tester) async {
@@ -117,8 +118,8 @@ void main() {
       await tester.enterText(find.byType(TextField), '   ');
       await tester.pump();
 
-      expect(find.byIcon(Icons.mic), findsOneWidget);
-      expect(find.byIcon(Icons.send_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.mic), findsOneWidget);
+      expect(find.byIcon(LottiIcons.send), findsNothing);
     });
   });
 
@@ -138,7 +139,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.mic));
+      await tester.tap(find.byIcon(LottiIcons.mic));
       await tester.pump();
 
       expect(startCalled, isTrue);
@@ -258,7 +259,7 @@ void main() {
 
       expect(find.byType(EvolutionVoiceControls), findsOneWidget);
       // Tap the cancel button (close icon)
-      await tester.tap(find.byIcon(Icons.close));
+      await tester.tap(find.byIcon(LottiIcons.close));
       await tester.pump();
 
       expect(cancelCalled, isTrue);
@@ -281,7 +282,7 @@ void main() {
 
       expect(find.byType(EvolutionVoiceControls), findsOneWidget);
       // Tap the stop button (stop icon)
-      await tester.tap(find.byIcon(Icons.stop));
+      await tester.tap(find.byIcon(LottiIcons.stop));
       await tester.pump();
 
       expect(stopCalled, isTrue);
@@ -327,7 +328,7 @@ void main() {
 
         // Should show idle row (with TextField) and hourglass icon
         expect(find.byType(TextField), findsOneWidget);
-        expect(find.byIcon(Icons.hourglass_top_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.pending), findsOneWidget);
         // TextField should be disabled during processing
         final textField = tester.widget<TextField>(find.byType(TextField));
         expect(textField.enabled, isFalse);
@@ -342,7 +343,7 @@ void main() {
       await tester.pump();
 
       // The hourglass button should be visible (waiting state)
-      expect(find.byIcon(Icons.hourglass_top_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.pending), findsOneWidget);
 
       // Attempt to send via keyboard action — should be blocked
       await tester.testTextInput.receiveAction(TextInputAction.send);

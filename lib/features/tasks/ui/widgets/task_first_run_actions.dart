@@ -120,7 +120,7 @@ class TaskFirstRunActions extends ConsumerWidget {
       // has text (`TaskForm`), so on an empty task the plain-text path existed
       // solely behind the action bar's unlabelled "..." menu.
       _FirstRunRow(
-        icon: Icons.notes_rounded,
+        icon: LottiIcons.note,
         opensPicker: false,
         label: context.messages.taskFirstRunWriteNote,
         subtitle: context.messages.taskFirstRunWriteNoteHint,
@@ -144,7 +144,7 @@ class TaskFirstRunActions extends ConsumerWidget {
         },
       ),
       _FirstRunRow(
-        icon: Icons.checklist_rounded,
+        icon: LottiIcons.checkAll,
         opensPicker: false,
         label: context.messages.taskFirstRunAddChecklist,
         subtitle: context.messages.taskFirstRunAddChecklistHint,
@@ -160,7 +160,7 @@ class TaskFirstRunActions extends ConsumerWidget {
             null,
       ),
       _FirstRunRow(
-        icon: Icons.mic_rounded,
+        icon: LottiIcons.mic,
         label: context.messages.taskFirstRunRecordAudio,
         // This subtitle answers the fear reviewers voiced verbatim — "does
         // tapping start recording?": the tap only opens the recorder sheet,
@@ -181,7 +181,7 @@ class TaskFirstRunActions extends ConsumerWidget {
         },
       ),
       _FirstRunRow(
-        icon: Icons.auto_awesome_rounded,
+        icon: LottiIcons.aiSpark,
         // No colour override: `aiCard.accent` resolves to the same colour as
         // the default `interactive.enabled` in both themes, so the override
         // promised a distinction it never rendered. The sparkle glyph carries
@@ -354,7 +354,7 @@ class _FirstRunRowState extends State<_FirstRunRow> {
             )
           : _spent
           ? Icon(
-              Icons.check_rounded,
+              LottiIcons.confirm,
               size: IconSizes.s,
               color: tokens.colors.text.mediumEmphasis,
             )
@@ -363,7 +363,7 @@ class _FirstRunRowState extends State<_FirstRunRow> {
               // across the card and the Add sheet, with the plus and the
               // chevron at one size so the two behavioural glyphs carry
               // equal ink.
-              opensPicker ? Icons.chevron_right_rounded : Icons.add_rounded,
+              opensPicker ? LottiIcons.chevronRight : LottiIcons.add,
               size: IconSizes.s,
               // Medium, not low: this glyph is the card's only behavioural
               // semantic — creates-in-place versus opens-a-sheet — and at

@@ -194,7 +194,7 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(find.byIcon(Icons.error_outline_rounded), findsOneWidget);
+    expect(find.byIcon(LottiIcons.error), findsOneWidget);
     expect(
       find.bySemanticsLabel(RegExp('No AI setup')),
       findsOneWidget,
@@ -253,7 +253,7 @@ void main() {
     expect(
       ink.right,
       moreOrLessEquals(
-        tester.getRect(find.byIcon(Icons.chevron_right_rounded)).right +
+        tester.getRect(find.byIcon(LottiIcons.chevronRight)).right +
             tokens.spacing.step2,
         epsilon: 0.5,
       ),
@@ -261,7 +261,7 @@ void main() {
     // ...and it is inset from the glyph, so the rounded ink corners do not
     // clip into the icon.
     expect(
-      tester.getRect(find.byIcon(Icons.psychology_outlined)).left - ink.left,
+      tester.getRect(find.byIcon(LottiIcons.reasoning)).left - ink.left,
       moreOrLessEquals(tokens.spacing.step2, epsilon: 0.5),
     );
     expect(ink.height, greaterThanOrEqualTo(tokens.spacing.step8));

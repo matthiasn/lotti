@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/ui/widgets/crystallize_hero.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -79,7 +80,7 @@ void main() {
       expect(outerOpacityOf(tester, find.text(title)).opacity, 1.0);
 
       // Colours reach the rendered widgets.
-      final icon = tester.widget<Icon>(find.byIcon(Icons.check_rounded).first);
+      final icon = tester.widget<Icon>(find.byIcon(LottiIcons.confirm).first);
       expect(icon.color, accent);
       expect(tester.widget<Text>(find.text(title)).style?.color, onCardColor);
       expect(
@@ -105,7 +106,7 @@ void main() {
 
       // Resolved: title, both items, both ticks, and the category pill.
       expect(find.text(title), findsOneWidget);
-      expect(find.byIcon(Icons.check_rounded), findsNWidgets(2));
+      expect(find.byIcon(LottiIcons.confirm), findsNWidgets(2));
       expect(find.text(categoryLabel), findsOneWidget);
       // After the one-shot completes the card layer is fully opaque.
       expect(outerOpacityOf(tester, find.text(title)).opacity, 1.0);
@@ -157,7 +158,7 @@ void main() {
 
       expect(find.text(title), findsOneWidget);
       // No checklist rows means no check icons.
-      expect(find.byIcon(Icons.check_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.confirm), findsNothing);
       expect(tester.takeException(), isNull);
     });
 

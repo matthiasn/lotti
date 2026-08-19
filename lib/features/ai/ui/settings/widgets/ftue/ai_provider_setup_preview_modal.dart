@@ -343,7 +343,7 @@ class _ProfilePreviewCard extends StatelessWidget {
               color: accent.withValues(alpha: 0.18),
               borderRadius: BorderRadius.circular(tokens.radii.s),
             ),
-            child: Icon(Icons.tune_rounded, size: 18, color: accent),
+            child: Icon(LottiIcons.tune, size: 18, color: accent),
           ),
           SizedBox(width: tokens.spacing.step3),
           Expanded(
@@ -389,7 +389,7 @@ class _CategoryFooter extends StatelessWidget {
     return Row(
       children: [
         Icon(
-          Icons.folder_outlined,
+          LottiIcons.folder,
           size: 18,
           color: tokens.colors.text.lowEmphasis,
         ),

@@ -306,7 +306,7 @@ class _AudioRecordingModalContentState
               ),
             ),
             child: Icon(
-              Icons.close,
+              LottiIcons.close,
               size: 22,
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -383,7 +383,7 @@ class _AudioRecordingModalContentState
                   left: isPaused ? tokens.spacing.step1 : 0,
                 ),
                 child: Icon(
-                  isPaused ? Icons.play_arrow : Icons.pause,
+                  isPaused ? LottiIcons.play : LottiIcons.pause,
                   // Matches the sibling cancel (X) glyph size so the two
                   // circular controls read as one family.
                   size: 22,

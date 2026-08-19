@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/scrollbars/design_system_scrollbar.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_state.dart';
 import 'package:lotti/features/projects/ui/widgets/project_list_shared.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
@@ -127,7 +128,7 @@ class _SearchHeader extends StatelessWidget {
                   tooltip: context.messages.projectsFilterTooltip,
                   onPressed: onFilterPressed,
                   icon: Icon(
-                    Icons.filter_list_rounded,
+                    LottiIcons.filter,
                     size: 18,
                     color: ShowcasePalette.teal(context),
                   ),

@@ -282,7 +282,7 @@ class _ChipPreviewTile extends StatelessWidget {
     return DesignSystemChip(
       label: config.label,
       leadingIcon: switch (config.leading) {
-        _ChipLeadingKind.icon => Icons.location_on_rounded,
+        _ChipLeadingKind.icon => LottiIcons.location,
         _ChipLeadingKind.none || _ChipLeadingKind.avatar => null,
       },
       avatar: switch (config.leading) {

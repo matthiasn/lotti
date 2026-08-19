@@ -167,7 +167,7 @@ void main() {
     testWidgets('sizes its chevron on the control-glyph tier', (tester) async {
       await pumpExpanded(tester);
 
-      final chevron = tester.widget<Icon>(find.byIcon(Icons.chevron_right));
+      final chevron = tester.widget<Icon>(find.byIcon(LottiIcons.chevronRight));
       expect(chevron.size, IconSizes.m);
     });
   });

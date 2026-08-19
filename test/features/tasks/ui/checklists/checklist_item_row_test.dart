@@ -13,6 +13,7 @@ import 'package:lotti/features/design_system/components/celebration/celebration_
 import 'package:lotti/features/design_system/components/celebration/celebration_variant.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_burst.dart';
 import 'package:lotti/features/design_system/components/motion/size_fade_collapse.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/state/celebration_preferences_controller.dart';
 import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
@@ -372,7 +373,7 @@ void main() {
 
     testWidgets('drag handle icon is present', (tester) async {
       await _pump(tester);
-      expect(find.byIcon(Icons.drag_indicator), findsOneWidget);
+      expect(find.byIcon(LottiIcons.drag), findsOneWidget);
     });
 
     testWidgets(
@@ -397,7 +398,7 @@ void main() {
         await _pump(tester, item: _makeItem(title: longTitle));
 
         // Enter edit mode.
-        await tester.tap(find.byIcon(Icons.mode_edit_outlined));
+        await tester.tap(find.byIcon(LottiIcons.edit));
         await tester.pump();
 
         final rowBox = tester.renderObject<RenderBox>(
@@ -409,7 +410,7 @@ void main() {
 
     testWidgets('edit icon is present', (tester) async {
       await _pump(tester);
-      expect(find.byIcon(Icons.mode_edit_outlined), findsOneWidget);
+      expect(find.byIcon(LottiIcons.edit), findsOneWidget);
     });
 
     // ── Edit mode ──────────────────────────────────────────────────────────
@@ -417,23 +418,38 @@ void main() {
     testWidgets('tapping edit icon switches to edit mode', (tester) async {
       await _pump(tester, item: _makeItem(title: 'Edit me'));
 
-      await tester.tap(find.byIcon(Icons.mode_edit_outlined));
+      await tester.tap(find.byIcon(LottiIcons.edit));
       await tester.pump();
 
       expect(find.byType(TitleTextField), findsOneWidget);
       // Pencil icon hidden while editing.
-      expect(find.byIcon(Icons.mode_edit_outlined), findsNothing);
+      expect(find.byIcon(LottiIcons.edit), findsNothing);
     });
 
-    testWidgets('tapping title text does NOT enter edit mode', (tester) async {
+    testWidgets('tapping the title text enters edit mode', (tester) async {
+      // The title used to be dead space: check-off belongs to the checkbox's
+      // own 44x44 well, so a tap on the words did nothing at all and the only
+      // way into the editor was a 16pt pencil at the far end of the row.
       await _pump(tester, item: _makeItem(title: 'Just text'));
 
       await tester.tap(find.text('Just text'));
       await tester.pump();
 
-      // Only the pencil icon triggers editing — not a tap on the title.
-      expect(find.byType(TitleTextField), findsNothing);
-      expect(find.byIcon(Icons.mode_edit_outlined), findsOneWidget);
+      expect(find.byType(TitleTextField), findsOneWidget);
+    });
+
+    testWidgets('tapping the title does not toggle the item', (tester) async {
+      // The two gestures live on the same row and must stay separate: opening
+      // the editor must never silently check an item off.
+      final ctrls = await _pumpWithControllers(
+        tester,
+        item: _makeItem(title: 'Just text'),
+      );
+
+      await tester.tap(find.text('Just text'));
+      await tester.pump();
+
+      expect(ctrls.itemController.checkedValue, isNull);
     });
 
     testWidgets('edit mode calls updateTitle on save', (tester) async {
@@ -442,7 +458,7 @@ void main() {
         item: _makeItem(title: 'Old title'),
       );
 
-      await tester.tap(find.byIcon(Icons.mode_edit_outlined));
+      await tester.tap(find.byIcon(LottiIcons.edit));
       await tester.pump();
 
       await tester.enterText(find.byType(TitleTextField), 'New title');
@@ -1277,7 +1293,7 @@ void main() {
           expect(find.text('AI Suggestion'), findsOneWidget);
           expect(find.text('Journal mentions completion'), findsOneWidget);
           expect(find.text('Confidence: high'), findsOneWidget);
-          expect(find.byIcon(Icons.insights), findsOneWidget);
+          expect(find.byIcon(LottiIcons.insights), findsOneWidget);
         },
       );
 
@@ -1363,7 +1379,7 @@ void main() {
       final controller = ctrls.itemController;
 
       // Enter edit mode.
-      await tester.tap(find.byIcon(Icons.mode_edit_outlined));
+      await tester.tap(find.byIcon(LottiIcons.edit));
       await tester.pump();
       expect(find.byType(TitleTextField), findsOneWidget);
 
@@ -1372,14 +1388,14 @@ void main() {
       await tester.pump();
 
       // Tap the cancel icon (cancel_outlined) to discard changes.
-      final cancelIcon = find.byIcon(Icons.cancel_outlined);
+      final cancelIcon = find.byIcon(LottiIcons.closeCircled);
       await tester.ensureVisible(cancelIcon);
       await tester.tap(cancelIcon);
       await tester.pump();
 
       // Edit mode should be exited and no title update should have been called.
       expect(find.byType(TitleTextField), findsNothing);
-      expect(find.byIcon(Icons.mode_edit_outlined), findsOneWidget);
+      expect(find.byIcon(LottiIcons.edit), findsOneWidget);
       expect(controller.updatedTitle, isNull);
     });
 
@@ -1395,13 +1411,13 @@ void main() {
       final controller = ctrls.itemController;
 
       // Enter edit mode.
-      await tester.tap(find.byIcon(Icons.mode_edit_outlined));
+      await tester.tap(find.byIcon(LottiIcons.edit));
       await tester.pump();
       expect(find.byType(TitleTextField), findsOneWidget);
 
       // The cancel icon is present since initialValue is non-null and
       // resetToInitialValue=true → _showClearButton starts true.
-      final cancelIcon = find.byIcon(Icons.cancel_outlined);
+      final cancelIcon = find.byIcon(LottiIcons.closeCircled);
       await tester.ensureVisible(cancelIcon);
       await tester.tap(cancelIcon);
       await tester.pump();

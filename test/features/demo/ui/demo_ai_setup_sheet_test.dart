@@ -9,6 +9,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:lotti/features/demo/seed/demo_world.dart';
 import 'package:lotti/features/demo/ui/demo_ai_setup_sheet.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_api_key_panel.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_connect_panel.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_success_view.dart';
@@ -100,7 +101,7 @@ void main() {
 
     expect(find.byType(OnboardingConnectPanel), findsOneWidget);
 
-    await tester.tap(find.byIcon(Icons.arrow_back_rounded));
+    await tester.tap(find.byIcon(LottiIcons.back));
     await settleStep(tester);
     await tester.pump(const Duration(milliseconds: 400));
 

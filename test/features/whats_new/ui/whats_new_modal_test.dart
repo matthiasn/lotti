@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/whats_new/model/whats_new_content.dart';
 import 'package:lotti/features/whats_new/model/whats_new_release.dart';
 import 'package:lotti/features/whats_new/model/whats_new_state.dart';
@@ -136,7 +137,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Should show navigation arrow to older release
-      expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
 
       // Should show indicator dots for 2 releases
       final animatedContainers = find.byType(AnimatedContainer);
@@ -161,7 +162,7 @@ void main() {
       expect(find.text('v0.9.980'), findsOneWidget);
 
       // Tap right arrow to go to older release
-      await tester.tap(find.byIcon(Icons.chevron_right));
+      await tester.tap(find.byIcon(LottiIcons.chevronRight));
       // Drive the Wolt page transition + 300ms indicator animation with
       // bounded pumps (Wolt's pagination animation is ~350ms; give margin).
       await tester.pump();
@@ -222,7 +223,7 @@ void main() {
       expect(find.text('v0.9.980'), findsOneWidget);
 
       // Should show auto_awesome icon (part of fallback)
-      expect(find.byIcon(Icons.auto_awesome), findsOneWidget);
+      expect(find.byIcon(LottiIcons.aiSpark), findsOneWidget);
     });
 
     testWidgets('view past releases button works', (tester) async {
@@ -266,7 +267,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Go to older release
-      await tester.tap(find.byIcon(Icons.chevron_right));
+      await tester.tap(find.byIcon(LottiIcons.chevronRight));
       // Drive the Wolt page transition + 300ms indicator animation with
       // bounded pumps (Wolt's pagination animation is ~350ms; give margin).
       await tester.pump();
@@ -276,10 +277,10 @@ void main() {
       expect(find.text('v0.9.970'), findsOneWidget);
 
       // Now left arrow should be visible
-      expect(find.byIcon(Icons.chevron_left), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronLeft), findsOneWidget);
 
       // Go back to newer release
-      await tester.tap(find.byIcon(Icons.chevron_left));
+      await tester.tap(find.byIcon(LottiIcons.chevronLeft));
       // Drive the Wolt page transition + 300ms indicator animation with
       // bounded pumps (Wolt's pagination animation is ~350ms; give margin).
       await tester.pump();
@@ -387,7 +388,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Navigate to older release (maxViewedIndex becomes 1)
-      await tester.tap(find.byIcon(Icons.chevron_right));
+      await tester.tap(find.byIcon(LottiIcons.chevronRight));
       // Drive the Wolt page transition + 300ms indicator animation with
       // bounded pumps (Wolt's pagination animation is ~350ms; give margin).
       await tester.pump();
@@ -464,7 +465,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Dark theme fallback still shows auto_awesome icon
-      expect(find.byIcon(Icons.auto_awesome), findsOneWidget);
+      expect(find.byIcon(LottiIcons.aiSpark), findsOneWidget);
       // Version badge is visible
       expect(find.text('v0.9.980'), findsOneWidget);
     });

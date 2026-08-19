@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/form/lotti_form_section.dart';
 
 import '../../widget_test_utils.dart';
@@ -30,13 +31,13 @@ void main() {
         tester,
         const LottiFormSection(
           title: 'Sync',
-          icon: Icons.sync,
+          icon: LottiIcons.sync,
           description: 'Configure synchronization',
           children: [SizedBox.shrink()],
         ),
       );
 
-      expect(find.byIcon(Icons.sync), findsOneWidget);
+      expect(find.byIcon(LottiIcons.sync), findsOneWidget);
       expect(find.text('Configure synchronization'), findsOneWidget);
     });
 

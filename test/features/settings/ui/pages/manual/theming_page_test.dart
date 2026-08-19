@@ -5,6 +5,7 @@ import 'package:get_it/get_it.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/pages/theming_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -123,7 +124,7 @@ void main() {
       expect(segmentedButton, findsOneWidget);
 
       // Tap on the light theme segment
-      final lightThemeSegment = find.byIcon(Icons.wb_sunny_outlined);
+      final lightThemeSegment = find.byIcon(LottiIcons.day);
       expect(lightThemeSegment, findsOneWidget);
       await tester.tap(lightThemeSegment);
       await tester.pumpAndSettle();

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings_v2/domain/settings_node.dart';
 import 'package:lotti/features/settings_v2/ui/mobile/settings_mobile_nav.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -13,7 +14,7 @@ import '../../../../widget_test_utils.dart';
 
 const _theming = SettingsNode(
   id: 'theming',
-  icon: Icons.palette_outlined,
+  icon: LottiIcons.palette,
   title: 'Theming',
   desc: '',
   panel: 'theming',
@@ -24,14 +25,14 @@ const _theming = SettingsNode(
 // path is what guarantees a tap on it never triggers navigation.
 const _unrouted = SettingsNode(
   id: 'no-such-node',
-  icon: Icons.help_outline,
+  icon: LottiIcons.help,
   title: 'Unrouted',
   desc: '',
 );
 
 const _manual = SettingsNode(
   id: 'manual',
-  icon: Icons.menu_book_outlined,
+  icon: LottiIcons.book,
   title: 'Manual',
   desc: 'Opens in your browser',
   action: SettingsNodeAction.openManual,

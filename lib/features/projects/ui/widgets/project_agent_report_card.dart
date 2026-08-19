@@ -15,6 +15,7 @@ import 'package:lotti/features/ai_consumption/ui/widgets/ai_attribution_summary.
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/form/form_widgets.dart';
@@ -103,7 +104,7 @@ class ProjectAgentReportCard extends ConsumerWidget {
         if (agent is! AgentIdentityEntity) {
           return LottiFormSection(
             title: context.messages.projectAgentSectionTitle,
-            icon: Icons.smart_toy_outlined,
+            icon: LottiIcons.aiModel,
             children: [
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
@@ -120,7 +121,7 @@ class ProjectAgentReportCard extends ConsumerWidget {
                   label: context.messages.taskAgentCreateChipLabel,
                   variant: DesignSystemButtonVariant.secondary,
                   size: DesignSystemButtonSize.medium,
-                  leadingIcon: Icons.auto_awesome_rounded,
+                  leadingIcon: LottiIcons.aiSpark,
                   onPressed: () => _createProjectAgent(context, ref),
                 ),
               ),
@@ -145,14 +146,14 @@ class ProjectAgentReportCard extends ConsumerWidget {
 
         return LottiFormSection(
           title: context.messages.projectAgentSectionTitle,
-          icon: Icons.smart_toy_outlined,
+          icon: LottiIcons.aiModel,
           children: [
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
               child: Row(
                 children: [
                   Icon(
-                    Icons.smart_toy_outlined,
+                    LottiIcons.aiModel,
                     size: 20,
                     color: context.colorScheme.primary,
                   ),
@@ -184,7 +185,7 @@ class ProjectAgentReportCard extends ConsumerWidget {
                   else
                     IconButton(
                       icon: Icon(
-                        Icons.refresh_rounded,
+                        LottiIcons.refresh,
                         size: 20,
                         color: context.colorScheme.primary,
                       ),
@@ -346,7 +347,7 @@ class _ProjectRecommendationTile extends ConsumerWidget {
                 ),
               IconButton(
                 icon: Icon(
-                  Icons.check_circle_outline_rounded,
+                  LottiIcons.confirmCircled,
                   color: context.colorScheme.primary,
                 ),
                 tooltip: context.messages.projectRecommendationResolveTooltip,
@@ -355,7 +356,7 @@ class _ProjectRecommendationTile extends ConsumerWidget {
               ),
               IconButton(
                 icon: Icon(
-                  Icons.close_rounded,
+                  LottiIcons.close,
                   color: context.colorScheme.onSurfaceVariant,
                 ),
                 tooltip: context.messages.projectRecommendationDismissTooltip,

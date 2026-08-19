@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/daily_os_next/logic/day_plan_availability.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_preferences_controller.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -16,7 +17,14 @@ class ProcessingCategoryFilterButton extends ConsumerWidget {
     final hasExclusions = prefs.excludedCategoryIds.isNotEmpty;
     return IconButton(
       icon: Icon(
-        hasExclusions ? Icons.filter_alt_rounded : Icons.filter_alt_outlined,
+        LottiIcons.filter,
+        // Lucide is stroke-only, so the filled/outlined swap this used to
+        // rely on has no counterpart. Colour carries the state instead —
+        // without it the button gave no sign that a filter was narrowing
+        // the list at all.
+        color: hasExclusions
+            ? context.designTokens.colors.interactive.enabled
+            : null,
       ),
       tooltip: context.messages.dailyOsNextCategoryFilterTooltip,
       onPressed: () => _showProcessingCategories(context, ref),

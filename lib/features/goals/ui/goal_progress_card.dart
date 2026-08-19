@@ -534,10 +534,10 @@ Color goalAssessmentRatingSurfaceInk(
 /// missed.
 IconData goalAssessmentRatingGlyph(GoalAssessmentRating rating) =>
     switch (rating) {
-      GoalAssessmentRating.met => Icons.check_rounded,
-      GoalAssessmentRating.improving => Icons.trending_up_rounded,
-      GoalAssessmentRating.mixed => Icons.contrast_rounded,
-      GoalAssessmentRating.missed => Icons.close_rounded,
+      GoalAssessmentRating.met => LottiIcons.confirm,
+      GoalAssessmentRating.improving => LottiIcons.trendingUp,
+      GoalAssessmentRating.mixed => LottiIcons.contrast,
+      GoalAssessmentRating.missed => LottiIcons.close,
     };
 
 /// The localized name of a day verdict, shared by the strip's semantics and
@@ -914,7 +914,7 @@ class _ReflectTodayRow extends StatelessWidget {
                 // the USER writing a reflection.
                 Icon(
                   recorded == null
-                      ? Icons.edit_note_rounded
+                      ? LottiIcons.editNote
                       : goalAssessmentRatingGlyph(recorded),
                   // The verdict's own family ink, NOT the on-alert ink: this
                   // glyph sits on the card surface, where the on-alert ink is
@@ -936,7 +936,7 @@ class _ReflectTodayRow extends StatelessWidget {
                   ),
                 ),
                 Icon(
-                  Icons.chevron_right_rounded,
+                  LottiIcons.chevronRight,
                   color: tokens.colors.text.lowEmphasis,
                 ),
               ],
@@ -1545,11 +1545,11 @@ class _DimensionHeader extends StatelessWidget {
       GoalDimensionKind.labelTime => tokens.colors.alert.warning.defaultColor,
     };
     final icon = switch (kind) {
-      GoalDimensionKind.habit => Icons.check_circle_outline_rounded,
-      GoalDimensionKind.health => Icons.favorite_outline_rounded,
-      GoalDimensionKind.measurable => Icons.straighten_rounded,
-      GoalDimensionKind.categoryTime => Icons.schedule_rounded,
-      GoalDimensionKind.labelTime => Icons.label_outline_rounded,
+      GoalDimensionKind.habit => LottiIcons.confirmCircled,
+      GoalDimensionKind.health => LottiIcons.favorite,
+      GoalDimensionKind.measurable => LottiIcons.measure,
+      GoalDimensionKind.categoryTime => LottiIcons.schedule,
+      GoalDimensionKind.labelTime => LottiIcons.label,
     };
     final glyph = DecoratedBox(
       decoration: BoxDecoration(
@@ -2158,7 +2158,7 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
               // between two other caption rows it read as more fine print.
               DesignSystemInlineCallout(
                 key: ValueKey('goal-habit-checkoff-callout-${habit.habitId}'),
-                icon: Icons.auto_awesome_rounded,
+                icon: LottiIcons.aiSpark,
                 tone: tokens.colors.interactive.enabled,
                 text: context.messages.goalHabitCheckOffSuggestion(
                   habit.suggestedFromDimensionName!,
@@ -2173,7 +2173,7 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
                           HabitCompletionType.success,
                         ),
                   size: DesignSystemButtonSize.dense,
-                  leadingIcon: Icons.check_rounded,
+                  leadingIcon: LottiIcons.confirm,
                 ),
               ),
             ],
@@ -2261,7 +2261,7 @@ class _ProgressDayCell extends StatelessWidget {
     final Widget? centerMark = missed
         ? Center(
             child: Icon(
-              Icons.close_rounded,
+              LottiIcons.close,
               size: glyphSize,
               color: tokens.colors.alert.error.ink,
             ),
@@ -2269,7 +2269,7 @@ class _ProgressDayCell extends StatelessWidget {
         : skipped
         ? Center(
             child: Icon(
-              Icons.remove_rounded,
+              LottiIcons.remove,
               size: glyphSize,
               color: tokens.colors.text.mediumEmphasis,
             ),
@@ -2472,7 +2472,7 @@ class _HabitDayOutcomeMenuState extends State<_HabitDayOutcomeMenu> {
             DesignSystemContextMenuItem(
               key: const ValueKey('goal-habit-day-success'),
               label: context.messages.completeHabitSuccessButton,
-              icon: Icons.check_rounded,
+              icon: LottiIcons.confirm,
               iconColor: tokens.colors.alert.success.ink,
               isSelected: _isSelected(HabitCompletionType.success),
               onTap: () => _select(HabitCompletionType.success),
@@ -2480,7 +2480,7 @@ class _HabitDayOutcomeMenuState extends State<_HabitDayOutcomeMenu> {
             DesignSystemContextMenuItem(
               key: const ValueKey('goal-habit-day-skipped'),
               label: context.messages.completeHabitSkipButton,
-              icon: Icons.remove_rounded,
+              icon: LottiIcons.remove,
               iconColor: tokens.colors.text.mediumEmphasis,
               isSelected: _isSelected(HabitCompletionType.skip),
               onTap: () => _select(HabitCompletionType.skip),
@@ -2488,7 +2488,7 @@ class _HabitDayOutcomeMenuState extends State<_HabitDayOutcomeMenu> {
             DesignSystemContextMenuItem(
               key: const ValueKey('goal-habit-day-missed'),
               label: context.messages.completeHabitFailButton,
-              icon: Icons.close_rounded,
+              icon: LottiIcons.close,
               iconColor: tokens.colors.alert.error.ink,
               isSelected: _isSelected(HabitCompletionType.fail),
               onTap: () => _select(HabitCompletionType.fail),
@@ -2496,7 +2496,7 @@ class _HabitDayOutcomeMenuState extends State<_HabitDayOutcomeMenu> {
             DesignSystemContextMenuItem(
               key: const ValueKey('goal-habit-day-none'),
               label: context.messages.goalProgressHabitDayNoEntry,
-              icon: Icons.radio_button_unchecked_rounded,
+              icon: LottiIcons.radioUnselected,
               iconColor: tokens.colors.text.lowEmphasis,
               isSelected: _isSelected(HabitCompletionType.open),
               onTap: () => _select(HabitCompletionType.open),
@@ -3030,7 +3030,7 @@ class _MetricProgressSeries extends StatelessWidget {
                             ),
                           ),
                     child: Icon(
-                      Icons.edit_note_rounded,
+                      LottiIcons.editNote,
                       size: IconSizes.xs,
                       color: GoalAccentHues.aurora(
                         Theme.of(context).brightness,
@@ -3237,7 +3237,7 @@ class _CategoryPatternCard extends StatelessWidget {
           Row(
             children: [
               Icon(
-                Icons.insights_rounded,
+                LottiIcons.insights,
                 color: tokens.colors.alert.warning.defaultColor,
               ),
               SizedBox(width: tokens.spacing.step2),

@@ -238,7 +238,7 @@ class _EvolutionMessageInputState extends ConsumerState<EvolutionMessageInput>
         SizedBox(width: tokens.spacing.step3),
         if (isProcessing)
           const EvolutionCircleButton(
-            icon: Icons.hourglass_top_rounded,
+            icon: LottiIcons.pending,
           )
         else if (_hasText || widget.isWaiting)
           AnimatedBuilder(
@@ -251,9 +251,7 @@ class _EvolutionMessageInputState extends ConsumerState<EvolutionMessageInput>
               );
             },
             child: EvolutionCircleButton(
-              icon: widget.isWaiting
-                  ? Icons.hourglass_top_rounded
-                  : Icons.send_rounded,
+              icon: widget.isWaiting ? LottiIcons.pending : LottiIcons.send,
               onPressed: canSend ? _handleSend : null,
               forceActive: widget.isWaiting,
             ),
@@ -266,7 +264,7 @@ class _EvolutionMessageInputState extends ConsumerState<EvolutionMessageInput>
 
   Widget _buildMicButtons(ChatRecorderState recState) {
     return EvolutionCircleButton(
-      icon: Icons.mic,
+      icon: LottiIcons.mic,
       onPressed: () =>
           ref.read(chatRecorderControllerProvider.notifier).start(),
       tooltip: context.messages.chatInputRecordVoice,

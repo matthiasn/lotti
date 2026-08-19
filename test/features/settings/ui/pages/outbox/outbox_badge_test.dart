@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/pages/outbox/outbox_badge.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
@@ -8,7 +9,7 @@ import 'package:matrix/matrix.dart';
 import '../../../../../widget_test_utils.dart';
 
 void main() {
-  const inner = Icon(Icons.sync, key: Key('inner-icon'));
+  const inner = Icon(LottiIcons.sync, key: Key('inner-icon'));
 
   Future<void> pumpBadge(
     WidgetTester tester, {

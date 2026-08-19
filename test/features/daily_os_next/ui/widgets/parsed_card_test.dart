@@ -80,7 +80,7 @@ void main() {
       );
 
       expect(find.text('Old task'), findsOneWidget);
-      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.tap(find.byIcon(LottiIcons.close));
       await tester.pump();
       expect(broke, 1);
     });
@@ -90,7 +90,7 @@ void main() {
     ) async {
       await pumpCard(tester, item());
 
-      expect(find.byIcon(Icons.close_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.close), findsNothing);
     });
 
     testWidgets('spoken phrase renders italicised when present', (
@@ -157,7 +157,7 @@ void main() {
       final tokens = context.designTokens;
 
       Icon matchedTaskIcon() {
-        return tester.widgetList<Icon>(find.byIcon(Icons.link_rounded)).first;
+        return tester.widgetList<Icon>(find.byIcon(LottiIcons.link)).first;
       }
 
       expect(

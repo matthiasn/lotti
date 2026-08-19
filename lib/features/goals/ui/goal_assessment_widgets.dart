@@ -264,10 +264,10 @@ class _GoalDayAssessmentSheetState
                           children: [
                             Icon(
                               row.met == null
-                                  ? Icons.circle_outlined
+                                  ? LottiIcons.radioUnselected
                                   : row.met!
-                                  ? Icons.check_circle_rounded
-                                  : Icons.cancel_rounded,
+                                  ? LottiIcons.confirmCircled
+                                  : LottiIcons.closeCircled,
                               size: IconSizes.xs,
                               // A cross is the MISSED mark in the verdict
                               // vocabulary, so it must not wear the warning hue

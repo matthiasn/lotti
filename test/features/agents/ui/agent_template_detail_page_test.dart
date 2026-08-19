@@ -21,6 +21,7 @@ import 'package:lotti/features/agents/ui/soul_selector.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/inference_profile_controller.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -636,13 +637,13 @@ void main() {
 
       // Scroll down to make the restore icon visible, then tap it
       await tester.scrollUntilVisible(
-        find.byIcon(Icons.restore),
+        find.byIcon(LottiIcons.restore),
         200,
         scrollable: find.byType(Scrollable).first,
       );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
-      await tester.tap(find.byIcon(Icons.restore));
+      await tester.tap(find.byIcon(LottiIcons.restore));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
 
@@ -699,13 +700,13 @@ void main() {
       await tester.pump(const Duration(milliseconds: 350));
 
       await tester.scrollUntilVisible(
-        find.byIcon(Icons.restore),
+        find.byIcon(LottiIcons.restore),
         200,
         scrollable: find.byType(Scrollable).first,
       );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
-      await tester.tap(find.byIcon(Icons.restore));
+      await tester.tap(find.byIcon(LottiIcons.restore));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
 
@@ -753,7 +754,7 @@ void main() {
 
       // Scroll to find delete button
       await tester.scrollUntilVisible(
-        find.byIcon(Icons.delete_outline),
+        find.byIcon(LottiIcons.delete),
         200,
         scrollable: find.byType(Scrollable).first,
       );
@@ -761,7 +762,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 350));
 
       // Tap delete button
-      await tester.tap(find.byIcon(Icons.delete_outline));
+      await tester.tap(find.byIcon(LottiIcons.delete));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
 
@@ -795,13 +796,13 @@ void main() {
       await tester.pump(const Duration(milliseconds: 350));
 
       await tester.scrollUntilVisible(
-        find.byIcon(Icons.delete_outline),
+        find.byIcon(LottiIcons.delete),
         200,
         scrollable: find.byType(Scrollable).first,
       );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
-      await tester.tap(find.byIcon(Icons.delete_outline));
+      await tester.tap(find.byIcon(LottiIcons.delete));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
 
@@ -849,7 +850,7 @@ void main() {
 
       // Scroll to find delete button
       await tester.scrollUntilVisible(
-        find.byIcon(Icons.delete_outline),
+        find.byIcon(LottiIcons.delete),
         200,
         scrollable: find.byType(Scrollable).first,
       );
@@ -857,7 +858,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 350));
 
       // Tap delete button
-      await tester.tap(find.byIcon(Icons.delete_outline));
+      await tester.tap(find.byIcon(LottiIcons.delete));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
 
@@ -1038,7 +1039,7 @@ void main() {
 
       // Scroll to find delete button
       await tester.scrollUntilVisible(
-        find.byIcon(Icons.delete_outline),
+        find.byIcon(LottiIcons.delete),
         200,
         scrollable: find.byType(Scrollable).first,
       );
@@ -1046,7 +1047,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 350));
 
       // Tap delete button
-      await tester.tap(find.byIcon(Icons.delete_outline));
+      await tester.tap(find.byIcon(LottiIcons.delete));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
 
@@ -1097,13 +1098,13 @@ void main() {
 
       // Scroll to restore icon and tap
       await tester.scrollUntilVisible(
-        find.byIcon(Icons.restore),
+        find.byIcon(LottiIcons.restore),
         200,
         scrollable: find.byType(Scrollable).first,
       );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
-      await tester.tap(find.byIcon(Icons.restore));
+      await tester.tap(find.byIcon(LottiIcons.restore));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
 
@@ -1442,7 +1443,7 @@ void main() {
       expect(
         find.descendant(
           of: bottomBar,
-          matching: find.byIcon(Icons.rate_review),
+          matching: find.byIcon(LottiIcons.editNote),
         ),
         findsOneWidget,
       );
@@ -1504,7 +1505,7 @@ void main() {
       expect(
         find.descendant(
           of: bottomBar,
-          matching: find.byIcon(Icons.delete_outline),
+          matching: find.byIcon(LottiIcons.delete),
         ),
         findsNothing,
       );
@@ -1516,14 +1517,14 @@ void main() {
 
       // Scroll to delete button
       await tester.scrollUntilVisible(
-        find.byIcon(Icons.delete_outline),
+        find.byIcon(LottiIcons.delete),
         200,
         scrollable: find.byType(Scrollable).first,
       );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
 
-      expect(find.byIcon(Icons.delete_outline), findsOneWidget);
+      expect(find.byIcon(LottiIcons.delete), findsOneWidget);
       expect(find.text(context.messages.deleteButton), findsOneWidget);
     });
 
@@ -1965,7 +1966,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
 
-      await tester.tap(find.byIcon(Icons.chevron_left));
+      await tester.tap(find.byIcon(LottiIcons.chevronLeft));
       await tester.pump();
 
       verify(() => _mockNavService.beamBack()).called(1);
@@ -1981,7 +1982,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
 
-      await tester.tap(find.byIcon(Icons.chevron_left));
+      await tester.tap(find.byIcon(LottiIcons.chevronLeft));
       await tester.pump();
 
       verifyNever(() => _mockNavService.beamBack());
@@ -1992,7 +1993,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
 
-      await tester.tap(find.byIcon(Icons.chevron_left));
+      await tester.tap(find.byIcon(LottiIcons.chevronLeft));
       await tester.pump();
 
       verify(() => _mockNavService.beamBack()).called(1);
@@ -2025,7 +2026,7 @@ void main() {
       // retry work between frames); bounded fixed pumps never reach it.
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.chevron_left));
+      await tester.tap(find.byIcon(LottiIcons.chevronLeft));
       await tester.pump();
 
       verify(() => _mockNavService.beamBack()).called(1);
@@ -2056,7 +2057,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
 
-      await tester.tap(find.byIcon(Icons.chevron_left));
+      await tester.tap(find.byIcon(LottiIcons.chevronLeft));
       await tester.pump();
 
       verify(() => _mockNavService.beamBack()).called(1);
@@ -2316,7 +2317,7 @@ void main() {
         final soulSelector = find.byType(SoulSelector);
         final clearIcon = find.descendant(
           of: soulSelector,
-          matching: find.byIcon(Icons.clear),
+          matching: find.byIcon(LottiIcons.close),
         );
         expect(clearIcon, findsOneWidget);
         await tester.tap(clearIcon);

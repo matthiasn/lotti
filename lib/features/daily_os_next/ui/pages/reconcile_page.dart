@@ -65,7 +65,7 @@ class ReconcilePage extends ConsumerWidget {
         backgroundColor: tokens.colors.background.level01,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
+          icon: const Icon(LottiIcons.back),
           tooltip: context.messages.dailyOsNextReconcileReRecord,
           onPressed: () => Navigator.of(context).maybePop(),
         ),
@@ -509,7 +509,7 @@ class _ReconcileFooter extends StatelessWidget {
       vertical: tokens.spacing.step3,
     );
     final retryButton = FilledButton.icon(
-      icon: Icon(Icons.mic_rounded, size: tokens.spacing.step4),
+      icon: Icon(LottiIcons.mic, size: tokens.spacing.step4),
       label: Text(
         messages.dailyOsNextReconcileReRecord,
         maxLines: 1,
@@ -546,7 +546,7 @@ class _ReconcileFooter extends StatelessWidget {
           ),
         );
       },
-      icon: const Icon(Icons.arrow_forward_rounded, size: 16),
+      icon: const Icon(LottiIcons.forward, size: 16),
       label: Text(
         messages.dailyOsNextReconcileBuildDayCta,
         maxLines: 1,

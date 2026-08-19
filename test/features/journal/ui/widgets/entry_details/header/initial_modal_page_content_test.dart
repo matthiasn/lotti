@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/initial_modal_page_content.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
@@ -94,7 +94,7 @@ void main() {
       await tester.pumpWidget(buildWrapper(entry));
       await tester.pump();
 
-      expect(find.byIcon(MdiIcons.labelOutline), findsOneWidget);
+      expect(find.byIcon(LottiIcons.label), findsOneWidget);
       expect(find.text('Labels'), findsOneWidget);
       expect(
         find.text('Assign labels to organize this entry'),
@@ -105,13 +105,13 @@ void main() {
     testWidgets('hides Labels action item for Task entries', (tester) async {
       await tester.pumpWidget(buildWrapper(taskEntry()));
       await tester.pump();
-      expect(find.byIcon(MdiIcons.labelOutline), findsNothing);
+      expect(find.byIcon(LottiIcons.label), findsNothing);
     });
 
     testWidgets('hides Labels action item when entry is null', (tester) async {
       await tester.pumpWidget(buildWrapper(null));
       await tester.pump();
-      expect(find.byIcon(MdiIcons.labelOutline), findsNothing);
+      expect(find.byIcon(LottiIcons.label), findsNothing);
     });
   });
 
@@ -121,7 +121,7 @@ void main() {
       await tester.pump();
 
       expect(find.text('Set language'), findsOneWidget);
-      expect(find.byIcon(Icons.language), findsOneWidget);
+      expect(find.byIcon(LottiIcons.language), findsOneWidget);
     });
 
     testWidgets(
@@ -132,7 +132,7 @@ void main() {
 
         expect(find.text('Set language'), findsOneWidget);
         expect(find.byKey(const ValueKey('action-flag-en')), findsOneWidget);
-        expect(find.byIcon(Icons.language), findsNothing);
+        expect(find.byIcon(LottiIcons.language), findsNothing);
       },
     );
 
@@ -263,9 +263,9 @@ void main() {
       await tester.pumpWidget(buildAudioWrapper(entry));
       await tester.pump();
 
-      expect(find.byIcon(Icons.transcribe_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.folder_open_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.share_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.transcribe), findsOneWidget);
+      expect(find.byIcon(LottiIcons.folderOpen), findsOneWidget);
+      expect(find.byIcon(LottiIcons.share), findsOneWidget);
     });
   });
 
@@ -319,9 +319,9 @@ void main() {
       await tester.pumpWidget(buildImageWrapper(entry));
       await tester.pump();
 
-      expect(find.byIcon(Icons.folder_open_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.share_rounded), findsOneWidget);
-      expect(find.byIcon(MdiIcons.contentCopy), findsOneWidget);
+      expect(find.byIcon(LottiIcons.folderOpen), findsOneWidget);
+      expect(find.byIcon(LottiIcons.share), findsOneWidget);
+      expect(find.byIcon(LottiIcons.copy), findsOneWidget);
     });
   });
 }

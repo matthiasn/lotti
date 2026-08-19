@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -90,7 +91,7 @@ class ConfirmationProgressModal {
                       ),
                     ),
                     child: Icon(
-                      Icons.warning_amber_rounded,
+                      LottiIcons.warning,
                       size: ModalTheme.iconSize,
                       color: colorScheme.error,
                     ),
@@ -204,7 +205,13 @@ class ConfirmationProgressModal {
     return DesignSystemButton(
       onPressed: enabled ? onConfirm : null,
       label: confirmLabel,
-      leadingIcon: Icons.check_circle_rounded,
+      // A plain tick, not the circled one: the circled check is this modal's
+      // *success* mark on the progress page, and Material drew the two with
+      // different glyphs (`check_circle_rounded` here, `check_circle_outline`
+      // there). Lucide has one circled check, so sharing it made the button
+      // that starts the operation look identical to the badge that says it
+      // finished.
+      leadingIcon: LottiIcons.confirm,
       variant: isDestructive
           ? DesignSystemButtonVariant.danger
           : DesignSystemButtonVariant.primary,

@@ -135,8 +135,8 @@ void main() {
     await tester.pump(SidebarAudioRecordingSection.animationDuration);
 
     expect(find.byKey(const Key('sidebar_audio_recording_card')), findsNothing);
-    expect(find.byIcon(Icons.mic_rounded), findsNothing);
-    expect(find.byIcon(Icons.stop_rounded), findsNothing);
+    expect(find.byIcon(LottiIcons.mic), findsNothing);
+    expect(find.byIcon(LottiIcons.stop), findsNothing);
   });
 
   testWidgets('renders linked task title, duration, mic, and stop button', (
@@ -155,8 +155,8 @@ void main() {
 
     expect(find.text('Urgent voice note'), findsOneWidget);
     expect(find.text('01:02:03'), findsOneWidget);
-    expect(find.byIcon(Icons.mic_rounded), findsOneWidget);
-    expect(find.byIcon(Icons.stop_rounded), findsOneWidget);
+    expect(find.byIcon(LottiIcons.mic), findsOneWidget);
+    expect(find.byIcon(LottiIcons.stop), findsOneWidget);
     expect(
       find.byKey(const Key('sidebar_audio_recording_card')),
       findsOneWidget,
@@ -164,7 +164,7 @@ void main() {
 
     // The mic glyph carries the recording (red) accent — the live card's
     // single accent (rail + glyph + elapsed time all read red).
-    final micIcon = tester.widget<Icon>(find.byIcon(Icons.mic_rounded));
+    final micIcon = tester.widget<Icon>(find.byIcon(LottiIcons.mic));
     expect(micIcon.color, dsTokensLight.colors.alert.error.defaultColor);
   });
 
@@ -182,7 +182,7 @@ void main() {
   ) async {
     await pumpSection(tester, recorderState());
 
-    await tester.tap(find.byIcon(Icons.stop_rounded));
+    await tester.tap(find.byIcon(LottiIcons.stop));
     await tester.pump();
 
     expect(controller.stopCalls, 1);

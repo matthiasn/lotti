@@ -35,7 +35,19 @@ Widget linkedRowTrailingRail(BuildContext context, {required Widget child}) {
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
         SizedBox(
-          width: tokens.spacing.step9,
+          // step6, not step9. The outer reserved width is unchanged, so the
+          // row still does not reflow when manage mode opens — but the glyph
+          // now lands on the card header's trailing axis instead of 14pt
+          // inboard of it, which is where the old 48pt slot put it. The cost
+          // is that the chevron no longer shares a centre with manage mode's
+          // unlink button; the two are never on screen together, and the
+          // everyday browse view was carrying 39pt of dead right margin to
+          // preserve that.
+          // step6, less the focus border DesignSystemListItem adds on this
+          // side. That border pushes the rail's right edge 2pt further in than
+          // the card's own padding, which is exactly the residual that kept
+          // this glyph off the checklist card's trailing axis.
+          width: tokens.spacing.step6 - tokens.spacing.step1 * 2,
           child: Center(child: child),
         ),
       ],
@@ -151,11 +163,11 @@ class LinkedTaskRow extends StatelessWidget {
                     _RowAction(
                       tooltip: context.messages.editLinkTypeTooltip,
                       onPressed: () => onEdit?.call(),
-                      // Not Icons.edit_outlined — that glyph is StatusGlyph's
+                      // Not LottiIcons.edit — that glyph is StatusGlyph's
                       // own icon for TaskStatus.groomed, so a Groomed row in
                       // manage mode would show the same pencil twice with two
                       // different meanings right next to each other.
-                      icon: Icons.swap_horiz_rounded,
+                      icon: LottiIcons.compare,
                       // The mode exists to retype relationships, so its
                       // verb outranks its escape hatch.
                       emphasis: tokens.colors.text.mediumEmphasis,
@@ -164,12 +176,12 @@ class LinkedTaskRow extends StatelessWidget {
                     _RowAction(
                       tooltip: context.messages.unlinkButton,
                       onPressed: () => _confirmUnlink(context),
-                      // Not Icons.close_rounded — that glyph is
+                      // Not LottiIcons.close — that glyph is
                       // StatusGlyph's own icon for TaskStatus.rejected, so
                       // a Rejected row in manage mode showed the same mark
                       // twice with two different meanings. Same collision
                       // the edit action already avoids for Groomed.
-                      icon: Icons.link_off,
+                      icon: LottiIcons.linkOff,
                       // Quieter than its neighbour, not louder: the
                       // confirmation modal is what makes unlinking safe,
                       // and painting the destructive action as the
@@ -181,8 +193,13 @@ class LinkedTaskRow extends StatelessWidget {
           : linkedRowTrailingRail(
               context,
               child: Icon(
-                Icons.arrow_forward_ios,
-                size: tokens.spacing.step4,
+                // Not Material's `arrow_forward_ios`, which is a thin, tall iOS
+                // chevron: against the checklist card's pencil it read as a
+                // different weight class entirely, and it was sized off the
+                // *spacing* scale rather than the glyph scale, so it came out at 12
+                // against the pencil's 20.
+                LottiIcons.chevronRight,
+                size: IconSizes.m,
                 color: tokens.colors.text.lowEmphasis,
               ),
             ),

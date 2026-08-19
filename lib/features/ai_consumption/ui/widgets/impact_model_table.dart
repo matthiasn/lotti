@@ -116,7 +116,7 @@ class ImpactModelTable extends StatelessWidget {
         ? SizedBox(
             width: chevronWidth,
             child: Icon(
-              Icons.chevron_right,
+              LottiIcons.chevronRight,
               size: tokens.spacing.step4,
               color: tokens.colors.text.lowEmphasis,
             ),

@@ -101,7 +101,9 @@ class _ReportSnapshotCardState extends State<ReportSnapshotCard> {
                     ),
                   ),
                   Icon(
-                    _expanded ? Icons.keyboard_arrow_down : Icons.chevron_right,
+                    _expanded
+                        ? LottiIcons.chevronDown
+                        : LottiIcons.chevronRight,
                     size: 18,
                     color: context.colorScheme.onSurfaceVariant,
                   ),
@@ -199,8 +201,8 @@ class _MessageCardState extends ConsumerState<MessageCard> {
                   if (isExpandable)
                     Icon(
                       _expanded
-                          ? Icons.keyboard_arrow_down
-                          : Icons.chevron_right,
+                          ? LottiIcons.chevronDown
+                          : LottiIcons.chevronRight,
                       size: 18,
                       color: context.colorScheme.onSurfaceVariant,
                     ),

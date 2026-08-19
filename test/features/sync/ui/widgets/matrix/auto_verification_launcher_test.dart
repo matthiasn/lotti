@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
 import 'package:lotti/features/sync/state/matrix_verification_handled_provider.dart';
 import 'package:lotti/features/sync/state/matrix_verification_modal_lock_provider.dart';
@@ -147,7 +148,7 @@ void main() {
       final container = await pumpLauncher(tester, [stale, fresh]);
 
       Future<void> dismiss() async {
-        await tester.tap(find.byIcon(Icons.close_rounded));
+        await tester.tap(find.byIcon(LottiIcons.close));
         await tester.pumpAndSettle();
       }
 
@@ -193,7 +194,7 @@ void main() {
       expect(find.byType(VerificationModal), findsOneWidget);
       expect(container.read(matrixVerificationHandledProvider), isNotEmpty);
 
-      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.tap(find.byIcon(LottiIcons.close));
       await tester.pumpAndSettle();
 
       // The ceremony succeeded: nothing is unverified any more.

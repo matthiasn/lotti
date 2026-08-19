@@ -130,7 +130,7 @@ class _RecapCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.auto_awesome, size: 16, color: cs.primary),
+              Icon(LottiIcons.aiSpark, size: 16, color: cs.primary),
               SizedBox(width: tokens.spacing.step2),
               Text(
                 context.messages.eventsSummaryTitle,
@@ -146,7 +146,7 @@ class _RecapCard extends StatelessWidget {
                   iconSize: 18,
                   color: cs.onSurfaceVariant,
                   tooltip: context.messages.eventsRegenerateSummary,
-                  icon: const Icon(Icons.refresh),
+                  icon: const Icon(LottiIcons.refresh),
                 ),
             ],
           ),

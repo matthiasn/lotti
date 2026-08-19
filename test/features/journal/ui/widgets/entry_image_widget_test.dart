@@ -7,6 +7,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_image_widget.dart';
 import 'package:lotti/features/journal/util/image_export_service.dart';
 import 'package:lotti/get_it.dart';
@@ -289,7 +290,7 @@ void main() {
         // After navigation, HeroPhotoViewRouteWrapper should be rendered.
         expect(find.byType(HeroPhotoViewRouteWrapper), findsOneWidget);
         // The close icon from the wrapper should be visible.
-        expect(find.byIcon(Icons.close_rounded), findsWidgets);
+        expect(find.byIcon(LottiIcons.close), findsWidgets);
       },
     );
   });
@@ -407,7 +408,7 @@ void main() {
         expect(find.text('100%'), findsOneWidget);
 
         final zoomOutButton = tester.widget<IconButton>(
-          find.widgetWithIcon(IconButton, Icons.remove_rounded),
+          find.widgetWithIcon(IconButton, LottiIcons.remove),
         );
         expect(zoomOutButton.onPressed, isNull);
       },
@@ -552,7 +553,7 @@ void main() {
         // Wrapper is visible.
         expect(find.byType(HeroPhotoViewRouteWrapper), findsOneWidget);
 
-        _pressIconButton(tester, Icons.close_rounded);
+        _pressIconButton(tester, LottiIcons.close);
         await tester.pump();
         await tester.pump();
 
@@ -625,15 +626,15 @@ void main() {
 
         expect(find.text('100%'), findsOneWidget);
 
-        _pressIconButton(tester, Icons.add_rounded);
+        _pressIconButton(tester, LottiIcons.add);
         await tester.pump();
         expect(find.text('125%'), findsOneWidget);
 
-        _pressIconButton(tester, Icons.remove_rounded);
+        _pressIconButton(tester, LottiIcons.remove);
         await tester.pump();
         expect(find.text('100%'), findsOneWidget);
 
-        _pressIconButton(tester, Icons.add_rounded);
+        _pressIconButton(tester, LottiIcons.add);
         await tester.pump();
         expect(find.text('125%'), findsOneWidget);
 
@@ -654,11 +655,11 @@ void main() {
         await tester.pumpWidget(buildWrapper());
         await tester.pump();
 
-        _pressIconButton(tester, Icons.add_rounded);
+        _pressIconButton(tester, LottiIcons.add);
         await tester.pump();
         expect(find.text('125%'), findsOneWidget);
         var zoomOutButton = tester.widget<IconButton>(
-          find.widgetWithIcon(IconButton, Icons.remove_rounded),
+          find.widgetWithIcon(IconButton, LottiIcons.remove),
         );
         expect(zoomOutButton.onPressed, isNotNull);
 
@@ -666,7 +667,7 @@ void main() {
         await tester.pump();
 
         zoomOutButton = tester.widget<IconButton>(
-          find.widgetWithIcon(IconButton, Icons.remove_rounded),
+          find.widgetWithIcon(IconButton, LottiIcons.remove),
         );
         expect(zoomOutButton.onPressed, isNull);
       },
@@ -686,7 +687,7 @@ void main() {
         );
         await tester.pump();
 
-        _pressIconButton(tester, Icons.download_rounded);
+        _pressIconButton(tester, LottiIcons.download);
         await tester.pump();
         await tester.pump();
 
@@ -707,7 +708,7 @@ void main() {
         );
         await tester.pump();
 
-        _pressIconButton(tester, Icons.download_rounded);
+        _pressIconButton(tester, LottiIcons.download);
         await tester.pump();
         await tester.pump();
 
@@ -726,7 +727,7 @@ void main() {
         );
         await tester.pump();
 
-        _pressIconButton(tester, Icons.download_rounded);
+        _pressIconButton(tester, LottiIcons.download);
         await tester.pump();
         await tester.pump();
 
@@ -747,15 +748,15 @@ void main() {
         );
         await tester.pump();
 
-        _pressIconButton(tester, Icons.download_rounded);
+        _pressIconButton(tester, LottiIcons.download);
         await tester.pump();
         await tester.pump();
 
         // A dismissed save panel is not an error: no feedback, button ready.
         expect(find.byType(SnackBar), findsNothing);
-        expect(find.byIcon(Icons.hourglass_top_rounded), findsNothing);
+        expect(find.byIcon(LottiIcons.pending), findsNothing);
         final downloadButton = tester.widget<IconButton>(
-          find.widgetWithIcon(IconButton, Icons.download_rounded),
+          find.widgetWithIcon(IconButton, LottiIcons.download),
         );
         expect(downloadButton.onPressed, isNotNull);
       },
@@ -778,7 +779,7 @@ void main() {
         await tester.pump();
 
         final downloadButton = tester.widget<IconButton>(
-          find.widgetWithIcon(IconButton, Icons.download_rounded),
+          find.widgetWithIcon(IconButton, LottiIcons.download),
         );
         expect(downloadButton.onPressed, isNotNull);
         // Two taps in the same frame: the second must be ignored while saving.
@@ -789,7 +790,7 @@ void main() {
         expect(calls, 1);
         expect(find.byTooltip('Saving image'), findsOneWidget);
         final savingButton = tester.widget<IconButton>(
-          find.widgetWithIcon(IconButton, Icons.hourglass_top_rounded),
+          find.widgetWithIcon(IconButton, LottiIcons.pending),
         );
         expect(savingButton.onPressed, isNull);
 
@@ -813,7 +814,7 @@ void main() {
         );
         await tester.pump();
 
-        _pressIconButton(tester, Icons.download_rounded);
+        _pressIconButton(tester, LottiIcons.download);
         await tester.pump();
         await tester.pump();
 
@@ -868,26 +869,26 @@ void main() {
           expect(shownPath(tester), gallery[0].path);
           // At the first image the previous chevron is disabled.
           final prevAtStart = tester.widget<IconButton>(
-            find.widgetWithIcon(IconButton, Icons.chevron_left_rounded),
+            find.widgetWithIcon(IconButton, LottiIcons.chevronLeft),
           );
           expect(prevAtStart.onPressed, isNull);
 
-          _pressIconButton(tester, Icons.chevron_right_rounded);
+          _pressIconButton(tester, LottiIcons.chevronRight);
           await tester.pump();
           expect(find.text('2 / 3'), findsOneWidget);
           expect(shownPath(tester), gallery[1].path);
 
-          _pressIconButton(tester, Icons.chevron_right_rounded);
+          _pressIconButton(tester, LottiIcons.chevronRight);
           await tester.pump();
           expect(find.text('3 / 3'), findsOneWidget);
           expect(shownPath(tester), gallery[2].path);
           // At the last image the next chevron is disabled.
           final nextAtEnd = tester.widget<IconButton>(
-            find.widgetWithIcon(IconButton, Icons.chevron_right_rounded),
+            find.widgetWithIcon(IconButton, LottiIcons.chevronRight),
           );
           expect(nextAtEnd.onPressed, isNull);
 
-          _pressIconButton(tester, Icons.chevron_left_rounded);
+          _pressIconButton(tester, LottiIcons.chevronLeft);
           await tester.pump();
           expect(find.text('2 / 3'), findsOneWidget);
           expect(shownPath(tester), gallery[1].path);
@@ -944,7 +945,7 @@ void main() {
 
           // Navigating away must drop the hero: a pop would otherwise fly
           // the wrong image back to the tile the viewer was opened from.
-          _pressIconButton(tester, Icons.chevron_right_rounded);
+          _pressIconButton(tester, LottiIcons.chevronRight);
           await tester.pump();
           expect(
             tester.widget<PhotoView>(find.byType(PhotoView)).heroAttributes,
@@ -952,7 +953,7 @@ void main() {
           );
 
           // Returning to the initial image restores it.
-          _pressIconButton(tester, Icons.chevron_left_rounded);
+          _pressIconButton(tester, LottiIcons.chevronLeft);
           await tester.pump();
           expect(
             tester.widget<PhotoView>(find.byType(PhotoView)).heroAttributes,
@@ -977,9 +978,9 @@ void main() {
           );
           await tester.pump();
 
-          _pressIconButton(tester, Icons.chevron_right_rounded);
+          _pressIconButton(tester, LottiIcons.chevronRight);
           await tester.pump();
-          _pressIconButton(tester, Icons.download_rounded);
+          _pressIconButton(tester, LottiIcons.download);
           await tester.pump();
           await tester.pump();
 

@@ -188,7 +188,7 @@ class _ExpandableReportSectionState extends State<ExpandableReportSection> {
                         padding: EdgeInsets.only(right: tokens.spacing.step1),
                         child: IconButton(
                           icon: Icon(
-                            Icons.close_rounded,
+                            LottiIcons.close,
                             size: tokens.typography.lineHeight.subtitle2,
                             color: ShowcasePalette.mediumText(context),
                           ),
@@ -216,7 +216,7 @@ class _ExpandableReportSectionState extends State<ExpandableReportSection> {
                               )
                             : IconButton(
                                 icon: Icon(
-                                  Icons.refresh_rounded,
+                                  LottiIcons.refresh,
                                   size: tokens.typography.lineHeight.subtitle2,
                                   color: ShowcasePalette.mediumText(context),
                                 ),
@@ -236,8 +236,8 @@ class _ExpandableReportSectionState extends State<ExpandableReportSection> {
                         padding: EdgeInsets.only(left: tokens.spacing.step2),
                         child: Icon(
                           _expanded
-                              ? Icons.keyboard_arrow_down_rounded
-                              : Icons.chevron_right_rounded,
+                              ? LottiIcons.chevronDown
+                              : LottiIcons.chevronRight,
                           size: tokens.typography.lineHeight.bodySmall,
                           color: ShowcasePalette.mediumText(context),
                         ),

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -112,7 +113,7 @@ class _AboutBodyState extends State<AboutBody> {
                             ],
                           ),
                           child: const Icon(
-                            Icons.auto_stories_rounded,
+                            LottiIcons.book,
                             size: enhancedIconInnerSize,
                             color: Colors.white,
                           ),
@@ -146,7 +147,7 @@ class _AboutBodyState extends State<AboutBody> {
                       Row(
                         children: [
                           Icon(
-                            Icons.info_outline_rounded,
+                            LottiIcons.info,
                             color: context.colorScheme.primary,
                             size: SpacingConstants.inputSpacerHeight,
                           ),
@@ -192,7 +193,7 @@ class _AboutBodyState extends State<AboutBody> {
                       Row(
                         children: [
                           Icon(
-                            Icons.analytics_rounded,
+                            LottiIcons.insights,
                             color: context.colorScheme.primary,
                             size: SpacingConstants.inputSpacerHeight,
                           ),

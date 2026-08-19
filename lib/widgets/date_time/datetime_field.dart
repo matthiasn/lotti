@@ -1,6 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/date_time/datetime_bottom_sheet.dart';
@@ -47,7 +48,7 @@ class _DateTimeFieldState extends State<DateTimeField> {
             suffixIcon: widget.clear != null
                 ? IconButton(
                     onPressed: widget.clear,
-                    icon: const Icon(Icons.clear),
+                    icon: const Icon(LottiIcons.close),
                   )
                 : null,
           ),

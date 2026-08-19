@@ -262,7 +262,7 @@ class _TaskSearchPickerBodyState extends State<TaskSearchPickerBody> {
           // it is the difference between the two gestures.
           badges: [
             Icon(
-              Icons.add_link,
+              LottiIcons.link,
               size: tokens.spacing.step5,
               // Not below the status text beside it: this glyph is the only
               // thing distinguishing a row that commits from one that

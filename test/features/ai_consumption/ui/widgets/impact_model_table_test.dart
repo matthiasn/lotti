@@ -4,6 +4,7 @@ import 'package:lotti/features/ai_consumption/model/consumption_aggregation_mode
 import 'package:lotti/features/ai_consumption/model/impact_dashboard_models.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_model_table.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/series_resolver.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../../widget_test_utils.dart';
 
@@ -127,7 +128,7 @@ void main() {
     );
 
     // Interactive rows carry a chevron; tapping one isolates that model.
-    expect(find.byIcon(Icons.chevron_right), findsWidgets);
+    expect(find.byIcon(LottiIcons.chevronRight), findsWidgets);
     await tester.tap(find.text('glm-5.2'));
     await tester.pump();
     expect(toggled, 'glm-5.2');

@@ -12,6 +12,7 @@ import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -306,7 +307,7 @@ void main() {
           );
           await tester.pumpAndSettle();
           expect(find.text('Skip once'), findsNothing);
-          expect(find.byIcon(Icons.refresh_rounded), findsOneWidget);
+          expect(find.byIcon(LottiIcons.refresh), findsOneWidget);
 
           // Reschedule: agentStateProvider re-emits a new nextWakeAt.
           // ref.listen's callback runs with a non-null `prev` value,

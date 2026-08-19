@@ -267,13 +267,13 @@ void main() {
       final selectedRadio = tester.widget<Icon>(
         find.descendant(
           of: find.byKey(SavedTaskFiltersSheetKeys.row('f1')),
-          matching: find.byIcon(Icons.radio_button_checked_rounded),
+          matching: find.byIcon(LottiIcons.radioSelected),
         ),
       );
       final restingRadio = tester.widget<Icon>(
         find.descendant(
           of: find.byKey(SavedTaskFiltersSheetKeys.row('f2')),
-          matching: find.byIcon(Icons.radio_button_unchecked_rounded),
+          matching: find.byIcon(LottiIcons.radioUnselected),
         ),
       );
       expect(selectedRadio.color, dsTokensLight.colors.interactive.enabled);
@@ -310,7 +310,7 @@ void main() {
       expect(
         find.descendant(
           of: find.byKey(SavedTaskFiltersSheetKeys.row('f1')),
-          matching: find.byIcon(Icons.radio_button_checked_rounded),
+          matching: find.byIcon(LottiIcons.radioSelected),
         ),
         findsOneWidget,
       );
@@ -320,8 +320,8 @@ void main() {
 
       // In Edit mode selection is disabled, so NO radio remains anywhere (a
       // radio would imply "tap to select" against the Rename/Delete actions)…
-      expect(find.byIcon(Icons.radio_button_checked_rounded), findsNothing);
-      expect(find.byIcon(Icons.radio_button_unchecked_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.radioSelected), findsNothing);
+      expect(find.byIcon(LottiIcons.radioUnselected), findsNothing);
       // …the active row instead shows a plain accent status dot…
       expect(
         accentDots(tester, SavedTaskFiltersSheetKeys.row('f1')),

@@ -8,6 +8,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/embed_builders.dart';
 import 'package:lotti/features/speech/services/speech_dictionary_service.dart';
@@ -148,6 +149,8 @@ void main() {
 
       await tester.pump(const Duration(milliseconds: 450));
 
+      // QuillSimpleToolbar's own control — rendered by flutter_quill, not by
+      // us, so it keeps its Material glyph.
       final boldIconFinder = find.byIcon(Icons.format_bold);
       expect(boldIconFinder, findsNothing);
     });
@@ -217,11 +220,11 @@ void main() {
 
       // At this (narrow) width the divider lives behind the "…" overflow, not
       // inline; open the sheet first.
-      expect(find.byIcon(Icons.horizontal_rule), findsNothing);
-      await tester.tap(find.byIcon(Icons.more_horiz));
+      expect(find.byIcon(LottiIcons.divider), findsNothing);
+      await tester.tap(find.byIcon(LottiIcons.more));
       await tester.pumpAndSettle();
 
-      final dividerButton = find.byIcon(Icons.horizontal_rule);
+      final dividerButton = find.byIcon(LottiIcons.divider);
       expect(dividerButton, findsOneWidget);
 
       await tester.tap(dividerButton);

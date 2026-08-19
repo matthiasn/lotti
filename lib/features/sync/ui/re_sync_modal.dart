@@ -481,9 +481,7 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(
-          hasFailures
-              ? Icons.warning_amber_rounded
-              : Icons.check_circle_outline_rounded,
+          hasFailures ? LottiIcons.warning : LottiIcons.confirmCircled,
           size: IconSizes.xxxl,
           color: hasFailures
               ? tokens.colors.alert.warning.defaultColor
@@ -516,7 +514,7 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
           SizedBox(height: tokens.spacing.step5),
           DesignSystemInlineCallout(
             key: const Key('reSyncFailureDetails'),
-            icon: Icons.error_outline_rounded,
+            icon: LottiIcons.error,
             text: result.failures
                 .map(
                   (failure) =>
@@ -530,7 +528,7 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
             key: const Key('reSyncRetryFailures'),
             label: messages.maintenanceReSyncRetryFailed,
             size: DesignSystemButtonSize.large,
-            leadingIcon: Icons.refresh_rounded,
+            leadingIcon: LottiIcons.refresh,
             fullWidth: true,
             onPressed: () => unawaited(_retryFailures()),
           ),
@@ -542,7 +540,7 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
               ? DesignSystemButtonVariant.secondary
               : DesignSystemButtonVariant.primary,
           size: DesignSystemButtonSize.large,
-          leadingIcon: Icons.check_circle_rounded,
+          leadingIcon: LottiIcons.confirmCircled,
           fullWidth: true,
           onPressed: () => Navigator.of(context).pop(),
         ),
@@ -583,7 +581,7 @@ class _ReSyncDateRow extends StatelessWidget {
       title: label,
       subtitle: DateFormat.yMMMd(locale).format(date),
       trailing: Icon(
-        Icons.calendar_month_outlined,
+        LottiIcons.calendar,
         size: IconSizes.m,
         color: tokens.colors.text.mediumEmphasis,
       ),
@@ -623,13 +621,13 @@ class _ReSyncProgressRow extends StatelessWidget {
       children: [
         if (isComplete && !hasFailures)
           Icon(
-            Icons.check_circle_outline_rounded,
+            LottiIcons.confirmCircled,
             size: IconSizes.s,
             color: tokens.colors.alert.success.defaultColor,
           )
         else if (isComplete)
           Icon(
-            Icons.warning_amber_rounded,
+            LottiIcons.warning,
             size: IconSizes.s,
             color: tokens.colors.alert.warning.defaultColor,
           )
@@ -640,7 +638,7 @@ class _ReSyncProgressRow extends StatelessWidget {
           )
         else
           Icon(
-            Icons.circle_outlined,
+            LottiIcons.radioUnselected,
             size: IconSizes.s,
             color: tokens.colors.text.lowEmphasis,
           ),

@@ -71,7 +71,7 @@ class DesignSystemFileUploadItem extends StatelessWidget {
             Row(
               children: [
                 Icon(
-                  Icons.upload_file,
+                  LottiIcons.upload,
                   size: spec.fileIconSize,
                   color: iconColor,
                 ),
@@ -148,20 +148,20 @@ class DesignSystemFileUploadItem extends StatelessWidget {
       DesignSystemFileUploadItemStatus.uploading => GestureDetector(
         onTap: onCancel,
         child: Icon(
-          Icons.cancel_outlined,
+          LottiIcons.closeCircled,
           size: spec.actionIconSize,
           color: tokens.colors.text.mediumEmphasis,
         ),
       ),
       DesignSystemFileUploadItemStatus.complete => Icon(
-        Icons.check_circle,
+        LottiIcons.confirmCircled,
         size: spec.actionIconSize,
         color: tokens.colors.alert.success.defaultColor,
       ),
       DesignSystemFileUploadItemStatus.error => GestureDetector(
         onTap: onRetry,
         child: Icon(
-          Icons.refresh,
+          LottiIcons.refresh,
           size: spec.actionIconSize,
           color: tokens.colors.alert.error.defaultColor,
         ),

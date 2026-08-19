@@ -249,7 +249,7 @@ class _ImpactChartCardState extends State<ImpactChartCard> {
               Row(
                 children: [
                   Icon(
-                    Icons.touch_app_outlined,
+                    LottiIcons.touch,
                     size: tokens.spacing.step4,
                     color: tokens.colors.text.lowEmphasis,
                   ),

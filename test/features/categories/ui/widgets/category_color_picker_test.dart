@@ -2,6 +2,7 @@ import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/categories/ui/widgets/category_color_picker.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/settings/settings_color_picker_field.dart';
 import 'package:lotti/widgets/settings/settings_picker_field.dart';
@@ -62,7 +63,7 @@ void main() {
       // Delegates to the shared color field (one interaction model for
       // categories and labels).
       expect(find.byType(SettingsColorPickerField), findsOneWidget);
-      expect(find.byIcon(Icons.keyboard_arrow_down_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronDown), findsOneWidget);
 
       // No leading swatch without a selection.
       final field = tester.widget<SettingsPickerField>(

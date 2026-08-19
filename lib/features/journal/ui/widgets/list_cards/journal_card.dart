@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_rating/flutter_rating.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -122,7 +121,7 @@ class _EntryCardContent extends StatelessWidget {
       final JournalEntry e => _journalEntryCard(context, e),
       final JournalAudio a => _scaffold(
         context,
-        icon: Icons.mic_rounded,
+        icon: LottiIcons.mic,
         iconColor: _categoryColor(context, item),
         title: _contentTitle(
           context,
@@ -133,14 +132,14 @@ class _EntryCardContent extends StatelessWidget {
         metaChips: [
           _metricChip(
             context,
-            icon: Icons.graphic_eq_rounded,
+            icon: LottiIcons.waveform,
             label: _shortDuration(a.data.dateTo.difference(a.data.dateFrom)),
           ),
         ],
       ),
       final JournalImage img => _scaffold(
         context,
-        icon: Icons.image_rounded,
+        icon: LottiIcons.image,
         iconColor: _categoryColor(context, item),
         title: _contentTitle(
           context,
@@ -152,7 +151,7 @@ class _EntryCardContent extends StatelessWidget {
       final Task t => _taskScaffold(context, t),
       final JournalEvent ev => _scaffold(
         context,
-        icon: Icons.event_rounded,
+        icon: LottiIcons.calendar,
         iconColor: _categoryColor(context, item),
         title: _titleText(
           context,
@@ -173,7 +172,7 @@ class _EntryCardContent extends StatelessWidget {
       ),
       final QuantitativeEntry qe => _scaffold(
         context,
-        icon: MdiIcons.heartPulse,
+        icon: LottiIcons.heartRate,
         iconColor: _categoryColor(context, item),
         title: _titleText(context, humanHealthTypeName(qe.data.dataType)),
         metaChips: [
@@ -193,7 +192,7 @@ class _EntryCardContent extends StatelessWidget {
       ),
       final SurveyEntry s => _scaffold(
         context,
-        icon: MdiIcons.clipboardTextOutline,
+        icon: LottiIcons.clipboardText,
         iconColor: _categoryColor(context, item),
         title: _titleText(context, _surveyName(context, s)),
         metaChips: s.data.calculatedScores.entries
@@ -214,7 +213,7 @@ class _EntryCardContent extends StatelessWidget {
       ),
       final AiResponseEntry ai => _scaffold(
         context,
-        icon: Icons.auto_awesome_rounded,
+        icon: LottiIcons.aiSpark,
         iconColor: _categoryColor(context, item),
         // Same first-line split as text entries: no entry type may render a
         // multi-line bold block at title tier.
@@ -230,7 +229,7 @@ class _EntryCardContent extends StatelessWidget {
         metaChips: [
           _metricChip(
             context,
-            icon: Icons.auto_awesome_rounded,
+            icon: LottiIcons.aiSpark,
             label: 'AI',
             color: context.designTokens.colors.interactive.enabled,
           ),
@@ -246,8 +245,8 @@ class _EntryCardContent extends StatelessWidget {
       final ChecklistItem ci => _scaffold(
         context,
         icon: ci.data.isChecked
-            ? MdiIcons.checkboxMarked
-            : MdiIcons.checkboxBlankOutline,
+            ? LottiIcons.checkboxChecked
+            : LottiIcons.checkboxUnchecked,
         iconColor: _categoryColor(context, item),
         title: _titleText(
           context,
@@ -258,7 +257,7 @@ class _EntryCardContent extends StatelessWidget {
       ),
       final DayPlanEntry dp => _scaffold(
         context,
-        icon: Icons.today_rounded,
+        icon: LottiIcons.today,
         iconColor: _categoryColor(context, item),
         title: _titleText(
           context,
@@ -267,19 +266,19 @@ class _EntryCardContent extends StatelessWidget {
       ),
       RatingEntry() => _scaffold(
         context,
-        icon: Icons.insights_rounded,
+        icon: LottiIcons.insights,
         iconColor: _categoryColor(context, item),
         title: _titleText(context, context.messages.sessionRatingCardLabel),
       ),
       final ProjectEntry p => _scaffold(
         context,
-        icon: Icons.folder_rounded,
+        icon: LottiIcons.folder,
         iconColor: _categoryColor(context, item),
         title: _titleText(context, p.data.title),
       ),
       final RelationshipEntry r => _scaffold(
         context,
-        icon: Icons.person_rounded,
+        icon: LottiIcons.person,
         iconColor: _categoryColor(context, item),
         title: _titleText(context, r.data.title),
         secondary: _notePreview(context, r.entryText),
@@ -302,7 +301,7 @@ class _EntryCardContent extends StatelessWidget {
       // the journal's entry-type filter.
       final GoalEntry g => _scaffold(
         context,
-        icon: Icons.flag_rounded,
+        icon: LottiIcons.flag,
         iconColor: _categoryColor(context, item),
         title: _titleText(context, g.data.title),
       ),
@@ -352,7 +351,7 @@ class _EntryCardContent extends StatelessWidget {
     final isTimeRecording = showLinkedDuration && isTimeRecordingSpan(span);
     return _scaffold(
       context,
-      icon: isTimeRecording ? Icons.timer_outlined : Icons.notes_rounded,
+      icon: isTimeRecording ? LottiIcons.timer : LottiIcons.note,
       iconColor: _categoryColor(context, item),
       title: _contentTitle(
         context,
@@ -388,7 +387,7 @@ class _EntryCardContent extends StatelessWidget {
     ];
 
     return _EntryCardScaffold(
-      icon: Icons.check_circle_outline_rounded,
+      icon: LottiIcons.confirmCircled,
       iconColor: _categoryColor(context, item),
       title: _taskTitle(context, task.data.title),
       dateLabel: entryDateLabel(context, task.meta.dateFrom),
@@ -447,7 +446,7 @@ class _EntryCardContent extends StatelessWidget {
         child: Semantics(
           label: label,
           child: Icon(
-            Icons.open_in_new_rounded,
+            LottiIcons.openExternal,
             size: tokens.spacing.step4,
             color: tokens.colors.text.mediumEmphasis,
           ),
@@ -466,7 +465,7 @@ class _EntryCardContent extends StatelessWidget {
 
     return _scaffold(
       context,
-      icon: MdiIcons.ruler,
+      icon: LottiIcons.measure,
       iconColor: _categoryColor(context, item),
       title: _titleText(context, name),
       metaChips: [
@@ -488,7 +487,7 @@ class _EntryCardContent extends StatelessWidget {
       chips.add(
         _metricChip(
           context,
-          icon: Icons.schedule_rounded,
+          icon: LottiIcons.schedule,
           label: '${duration.inMinutes} min',
         ),
       );
@@ -498,7 +497,7 @@ class _EntryCardContent extends StatelessWidget {
       chips.add(
         _metricChip(
           context,
-          icon: Icons.local_fire_department_rounded,
+          icon: LottiIcons.streak,
           label: '${nfWhole.format(energy)} kcal',
         ),
       );
@@ -508,7 +507,7 @@ class _EntryCardContent extends StatelessWidget {
       chips.add(
         _metricChip(
           context,
-          icon: Icons.straighten_rounded,
+          icon: LottiIcons.measure,
           label: _distanceLabel(distance),
         ),
       );
@@ -518,13 +517,13 @@ class _EntryCardContent extends StatelessWidget {
 
   IconData _workoutIcon(String workoutType) {
     final type = workoutType.toLowerCase();
-    if (type.contains('run')) return Icons.directions_run_rounded;
-    if (type.contains('walk')) return Icons.directions_walk_rounded;
-    if (type.contains('swim')) return Icons.pool_rounded;
+    if (type.contains('run')) return LottiIcons.running;
+    if (type.contains('walk')) return LottiIcons.walk;
+    if (type.contains('swim')) return LottiIcons.swimming;
     if (type.contains('cycl') || type.contains('bike')) {
-      return Icons.directions_bike_rounded;
+      return LottiIcons.cycling;
     }
-    return Icons.fitness_center_rounded;
+    return LottiIcons.fitness;
   }
 
   String _distanceLabel(num meters) {
@@ -768,7 +767,7 @@ class _EntryCardContent extends StatelessWidget {
         labeled(
           context.messages.journalFilterPrivate,
           Icon(
-            MdiIcons.security,
+            LottiIcons.shield,
             color: tokens.colors.text.mediumEmphasis,
             size: size,
           ),
@@ -776,14 +775,14 @@ class _EntryCardContent extends StatelessWidget {
       if (!isEvent && fromNullableBool(item.meta.starred))
         labeled(
           context.messages.journalFilterStarred,
-          Icon(MdiIcons.star, color: starredGold, size: size),
+          Icon(LottiIcons.star, color: starredGold, size: size),
         ),
       // An import flag means "needs review", which is a warning, not an error.
       if (!isEvent && item.meta.flag == EntryFlag.import)
         labeled(
           context.messages.journalFilterFlagged,
           Icon(
-            MdiIcons.flag,
+            LottiIcons.flag,
             color: tokens.colors.alert.warning.defaultColor,
             size: size,
           ),
@@ -1038,10 +1037,10 @@ class _HabitCompletionContentState extends State<_HabitCompletionContent> {
 
   IconData _completionIcon(HabitCompletionType type) {
     return switch (type) {
-      HabitCompletionType.success => Icons.check_circle_rounded,
-      HabitCompletionType.skip => Icons.remove_circle_outline_rounded,
-      HabitCompletionType.fail => Icons.cancel_rounded,
-      HabitCompletionType.open => Icons.radio_button_unchecked_rounded,
+      HabitCompletionType.success => LottiIcons.confirmCircled,
+      HabitCompletionType.skip => LottiIcons.removeCircled,
+      HabitCompletionType.fail => LottiIcons.closeCircled,
+      HabitCompletionType.open => LottiIcons.radioUnselected,
     };
   }
 
@@ -1101,14 +1100,19 @@ class _ChecklistContent extends ConsumerWidget {
         ModernStatusChip(
           label: '$completed/$total',
           color: context.designTokens.colors.interactive.enabled,
-          icon: Icons.checklist_rounded,
+          // The double tick, not the list: this chip counts what is *done*,
+          // while the card's leading glyph names the entry type. Material drew
+          // them `checklist_rounded` and `mdi:checkAll` — two pictures that
+          // Lucide expresses as one, so without this the card showed the same
+          // mark twice.
+          icon: LottiIcons.confirmAll,
         ),
       );
       secondary = _TypeProgressBar(value: completed / total);
     }
 
     return _EntryCardScaffold(
-      icon: MdiIcons.checkAll,
+      icon: LottiIcons.checkAll,
       iconColor: iconColor,
       title: Text(
         checklist.data.title,

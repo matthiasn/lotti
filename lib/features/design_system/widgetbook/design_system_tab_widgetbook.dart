@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/tabs/design_system_tab.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:widgetbook/widgetbook.dart';
 
@@ -85,14 +86,14 @@ class _TabSizeScale extends StatelessWidget {
           size: DesignSystemTabSize.small,
           label: label,
           counter: '10',
-          trailingIcon: Icons.close_rounded,
+          trailingIcon: LottiIcons.close,
           onPressed: _noop,
         ),
         DesignSystemTab(
           selected: false,
           label: label,
           counter: '10',
-          trailingIcon: Icons.close_rounded,
+          trailingIcon: LottiIcons.close,
           onPressed: _noop,
         ),
       ],
@@ -140,7 +141,7 @@ class _TabStateMatrix extends StatelessWidget {
                             size: size,
                             label: context.messages.designSystemTabPendingLabel,
                             counter: '10',
-                            trailingIcon: Icons.close_rounded,
+                            trailingIcon: LottiIcons.close,
                             forcedState: row.state,
                             onPressed: row.enabled ? _noop : null,
                           ),

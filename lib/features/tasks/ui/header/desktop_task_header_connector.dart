@@ -210,7 +210,7 @@ class _TaskBlockedByChip extends ConsumerWidget {
         color: accent,
         labelColor: context.designTokens.colors.text.highEmphasis,
         leading: Icon(
-          Icons.block,
+          LottiIcons.block,
           size: context.designTokens.spacing.step4,
           color: accent,
         ),
@@ -238,7 +238,7 @@ class _TaskBlockedByChip extends ConsumerWidget {
         // read-out it explains.
         labelColor: tokens.colors.text.highEmphasis,
         leading: Icon(
-          Icons.block,
+          LottiIcons.block,
           size: tokens.spacing.step4,
           color: accent,
         ),
@@ -253,7 +253,7 @@ class _TaskBlockedByChip extends ConsumerWidget {
         // not amber: "go here" is not part of the blocked semantic, and a third
         // amber mark is what made the chip compete with the status pill.
         trailing: Icon(
-          Icons.arrow_forward_ios,
+          LottiIcons.chevronRight,
           size: tokens.spacing.step4,
           color: tokens.colors.text.lowEmphasis,
         ),

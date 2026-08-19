@@ -1661,13 +1661,13 @@ void main() {
       // Phone size so the controls (rendered under the title chip) are present.
       await pumpView(tester, scenario: exploreWorldScenario(), size: phoneSize);
 
-      expect(find.byIcon(Icons.arrow_back), findsOneWidget);
-      expect(find.byIcon(Icons.center_focus_strong), findsOneWidget);
+      expect(find.byIcon(LottiIcons.back), findsOneWidget);
+      expect(find.byIcon(LottiIcons.focus), findsOneWidget);
 
       // With no walk history the back button's InkWell has a null onTap.
       final backInk = tester.widget<InkWell>(
         find.ancestor(
-          of: find.byIcon(Icons.arrow_back),
+          of: find.byIcon(LottiIcons.back),
           matching: find.byType(InkWell),
         ),
       );
@@ -1676,7 +1676,7 @@ void main() {
       // Recenter is always enabled.
       final recenterInk = tester.widget<InkWell>(
         find.ancestor(
-          of: find.byIcon(Icons.center_focus_strong),
+          of: find.byIcon(LottiIcons.focus),
           matching: find.byType(InkWell),
         ),
       );
@@ -1688,7 +1688,7 @@ void main() {
     ) async {
       await pumpView(tester, scenario: exploreWorldScenario(), size: phoneSize);
 
-      await tester.tap(find.byIcon(Icons.center_focus_strong));
+      await tester.tap(find.byIcon(LottiIcons.focus));
       // Advance the bounded camera animation (760ms) in steps; never settle,
       // since the wake controller also ticks.
       for (var i = 0; i < 5; i++) {
@@ -1717,7 +1717,7 @@ void main() {
       final panned = painterOf(tester);
       expect(panned.pan, isNot(initial.pan));
 
-      await tester.tap(find.byIcon(Icons.center_focus_strong));
+      await tester.tap(find.byIcon(LottiIcons.focus));
       await tester.pump();
 
       final jumped = painterOf(tester);
@@ -1764,14 +1764,14 @@ void main() {
         // Back is now enabled (history is non-empty).
         final backInk = tester.widget<InkWell>(
           find.ancestor(
-            of: find.byIcon(Icons.arrow_back),
+            of: find.byIcon(LottiIcons.back),
             matching: find.byType(InkWell),
           ),
         );
         expect(backInk.onTap, isNotNull);
 
         // Tap back → `_back()` pops the seed off history and walks to it.
-        await tester.tap(find.byIcon(Icons.arrow_back));
+        await tester.tap(find.byIcon(LottiIcons.back));
         for (var i = 0; i < 5; i++) {
           await tester.pump(const Duration(milliseconds: 200));
         }
@@ -1780,7 +1780,7 @@ void main() {
         // History was emptied by the pop, so back is disabled again.
         final backInkAfter = tester.widget<InkWell>(
           find.ancestor(
-            of: find.byIcon(Icons.arrow_back),
+            of: find.byIcon(LottiIcons.back),
             matching: find.byType(InkWell),
           ),
         );
@@ -1788,19 +1788,19 @@ void main() {
 
         final forwardInk = tester.widget<InkWell>(
           find.ancestor(
-            of: find.byIcon(Icons.arrow_forward),
+            of: find.byIcon(LottiIcons.forward),
             matching: find.byType(InkWell),
           ),
         );
         expect(forwardInk.onTap, isNotNull);
-        await tester.tap(find.byIcon(Icons.arrow_forward));
+        await tester.tap(find.byIcon(LottiIcons.forward));
         for (var i = 0; i < 5; i++) {
           await tester.pump(const Duration(milliseconds: 200));
         }
         expect(painterFocusId(tester), neighborId);
         final forwardInkAfter = tester.widget<InkWell>(
           find.ancestor(
-            of: find.byIcon(Icons.arrow_forward),
+            of: find.byIcon(LottiIcons.forward),
             matching: find.byType(InkWell),
           ),
         );
@@ -1818,8 +1818,8 @@ void main() {
           size: phoneSize,
         );
 
-        expect(find.byIcon(Icons.arrow_back), findsNothing);
-        expect(find.byIcon(Icons.center_focus_strong), findsNothing);
+        expect(find.byIcon(LottiIcons.back), findsNothing);
+        expect(find.byIcon(LottiIcons.focus), findsNothing);
       },
     );
   });
@@ -1840,7 +1840,7 @@ void main() {
         expect(
           find.descendant(
             of: find.byType(NodeInspectorPanel),
-            matching: find.byIcon(Icons.center_focus_strong_rounded),
+            matching: find.byIcon(LottiIcons.focus),
           ),
           findsOneWidget,
         );
@@ -1848,7 +1848,7 @@ void main() {
         // so `canGoBack` is false → the _NavButton's InkWell has a null onTap).
         final backFinder = find.descendant(
           of: find.byType(NodeInspectorPanel),
-          matching: find.byIcon(Icons.arrow_back_rounded),
+          matching: find.byIcon(LottiIcons.back),
         );
         expect(backFinder, findsOneWidget);
         final backInk = tester.widget<InkWell>(
@@ -1892,7 +1892,7 @@ void main() {
           find.ancestor(
             of: find.descendant(
               of: find.byType(NodeInspectorPanel),
-              matching: find.byIcon(Icons.arrow_back_rounded),
+              matching: find.byIcon(LottiIcons.back),
             ),
             matching: find.byType(InkWell),
           ),
@@ -1903,7 +1903,7 @@ void main() {
         await tester.tap(
           find.descendant(
             of: find.byType(NodeInspectorPanel),
-            matching: find.byIcon(Icons.arrow_back_rounded),
+            matching: find.byIcon(LottiIcons.back),
           ),
         );
         for (var i = 0; i < 5; i++) {
@@ -1918,7 +1918,7 @@ void main() {
           find.ancestor(
             of: find.descendant(
               of: find.byType(NodeInspectorPanel),
-              matching: find.byIcon(Icons.arrow_back_rounded),
+              matching: find.byIcon(LottiIcons.back),
             ),
             matching: find.byType(InkWell),
           ),
@@ -2562,7 +2562,7 @@ void main() {
         expect(find.byType(EntryDetailSidebar), findsNothing);
 
         // Tap the inspector's Open button → `_detailsOpen = true`.
-        await tester.tap(find.byIcon(Icons.open_in_full_rounded));
+        await tester.tap(find.byIcon(LottiIcons.expandFull));
         // The graph itself is built from a LayoutBuilder callback. Mount only a
         // stable slot in that layout frame; activating the nested Navigator
         // there would mutate its overlay subtree during layout.
@@ -2598,7 +2598,7 @@ void main() {
         expect(tester.takeException(), isNull);
 
         // Tap the overlay's close button → `_detailsOpen = false`.
-        await tester.tap(find.byIcon(Icons.close_rounded));
+        await tester.tap(find.byIcon(LottiIcons.close));
         await tester.pump();
 
         // The overlay is gone; the inspector remains.

@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/state/sequence_log_populate_controller.dart';
 import 'package:lotti/features/sync/ui/sequence_log_populate_modal.dart';
@@ -144,8 +145,10 @@ void main() {
 
       // Confirmation page visible
       expect(find.text('Cancel'), findsOneWidget);
-      expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
+      // The confirm button's own tick — plain, not circled. The circled check
+      // is reserved for the success badge on the progress page.
+      expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
+      expect(find.byIcon(LottiIcons.warning), findsOneWidget);
     });
 
     testWidgets('dismisses on cancel', (tester) async {
@@ -253,7 +256,7 @@ void main() {
         expect(progress.state.populatedLinksCount, 3);
 
         // Completion UI: check icon + total (7 + 3 = 10).
-        expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
+        expect(find.byIcon(LottiIcons.confirmCircled), findsOneWidget);
         expect(find.textContaining('10'), findsOneWidget);
 
         // Let the operation finish so the modal closes without leaking timers.

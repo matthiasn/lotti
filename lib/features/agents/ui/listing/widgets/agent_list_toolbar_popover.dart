@@ -184,7 +184,7 @@ class PopRow extends StatelessWidget {
                   ),
                   child: selected
                       ? Icon(
-                          Icons.check,
+                          LottiIcons.confirm,
                           size: 10,
                           color: colors.text.onInteractiveAlert,
                         )

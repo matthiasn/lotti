@@ -353,7 +353,7 @@ class _DeviceCardState extends ConsumerState<DeviceCard> {
                           size: IconSizes.m,
                         )
                       : Icon(
-                          Icons.delete_outline_rounded,
+                          LottiIcons.delete,
                           size: IconSizes.m,
                           color: tokens.colors.text.lowEmphasis,
                         ),
@@ -479,10 +479,8 @@ class _DeviceIconTile extends StatelessWidget {
         child: Center(
           child: Icon(
             device.isCurrentDevice
-                ? (isDesktop
-                      ? Icons.laptop_mac_rounded
-                      : Icons.smartphone_rounded)
-                : Icons.devices_other_rounded,
+                ? (isDesktop ? LottiIcons.laptop : LottiIcons.phone)
+                : LottiIcons.devices,
             size: IconSizes.l,
             color: tokens.colors.text.mediumEmphasis,
           ),

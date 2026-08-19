@@ -323,7 +323,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Gemini'), findsOneWidget);
 
-    await tester.tap(find.byIcon(Icons.arrow_back_rounded));
+    await tester.tap(find.byIcon(LottiIcons.back));
     await tester.pumpAndSettle();
     expect(find.text('Talk. Lotti turns it into a plan.'), findsOneWidget);
   });
@@ -362,7 +362,7 @@ void main() {
     expect(find.text('Paste your API key'), findsOneWidget);
 
     // The key step's back arrow returns to the provider list.
-    await tester.tap(find.byIcon(Icons.arrow_back_rounded));
+    await tester.tap(find.byIcon(LottiIcons.back));
     await tester.pumpAndSettle();
 
     expect(find.text('Paste your API key'), findsNothing);

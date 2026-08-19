@@ -258,7 +258,7 @@ class TaskShowcaseStatusLabel extends StatelessWidget {
           if (expanded) ...[
             SizedBox(width: tokens.spacing.step1),
             Icon(
-              Icons.unfold_more_rounded,
+              LottiIcons.expandBoth,
               size: 16,
               color: TaskShowcasePalette.mediumText(context),
             ),

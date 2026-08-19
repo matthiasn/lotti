@@ -14,6 +14,7 @@ import 'package:lotti/features/ai/ui/widgets/profile_pinning_selector.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:lotti/features/sync/state/synced_audio_inference_providers.dart';
 import 'package:lotti/widgets/settings/settings_picker_field.dart';
@@ -216,7 +217,7 @@ void main() {
         // The form is now mounted; confirm by finding its create title.
         expect(find.text('Create Profile'), findsOneWidget);
 
-        await tester.tap(find.byIcon(Icons.arrow_back_rounded));
+        await tester.tap(find.byIcon(LottiIcons.back));
         await tester.pumpAndSettle();
 
         // After back-tap the route should have popped: outer button
@@ -510,7 +511,7 @@ void main() {
 
         // Clearing the slot drops the dangling id and reveals the
         // placeholder again.
-        await tester.tap(find.byIcon(Icons.close_rounded).first);
+        await tester.tap(find.byIcon(LottiIcons.close).first);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -556,7 +557,7 @@ void main() {
       expect(find.text('Flash'), findsOneWidget);
 
       // Tap the clear button.
-      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.tap(find.byIcon(LottiIcons.close));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -620,7 +621,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         DesignSystemButton saveButton() => tester.widget<DesignSystemButton>(
-          find.widgetWithIcon(DesignSystemButton, Icons.save_rounded),
+          find.widgetWithIcon(DesignSystemButton, LottiIcons.save),
         );
 
         // A blank create form is not dirty -> Save disabled.
@@ -808,7 +809,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       // Selected model should show a check icon.
-      expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
     });
 
     group('shared provider/model picker integration', () {
@@ -975,7 +976,7 @@ void main() {
           final backButton = tester.widget<IconButton>(
             find
                 .ancestor(
-                  of: find.byIcon(Icons.arrow_back_rounded).last,
+                  of: find.byIcon(LottiIcons.back).last,
                   matching: find.byType(IconButton),
                 )
                 .first,

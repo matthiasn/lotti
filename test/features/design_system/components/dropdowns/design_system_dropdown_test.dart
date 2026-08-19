@@ -145,7 +145,7 @@ void main() {
         dsTokensLight.typography.styles.body.bodyMedium,
         dsTokensLight.colors.text.highEmphasis,
       );
-      expect(find.byIcon(Icons.keyboard_arrow_down_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronDown), findsOneWidget);
       expect(find.byType(RawScrollbar), findsNothing);
     });
 
@@ -232,7 +232,7 @@ void main() {
       );
 
       expect(find.text('Chip label'), findsOneWidget);
-      expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
       expect(find.byType(RawScrollbar), findsOneWidget);
       expect(find.byType(DesignSystemDropdown), findsOneWidget);
     });
@@ -263,7 +263,7 @@ void main() {
         );
 
         // Exactly one mark, on the selected row — not a checkbox column.
-        expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
         expect(
           find.descendant(
             of: find
@@ -272,7 +272,7 @@ void main() {
                   matching: find.byType(Row),
                 )
                 .first,
-            matching: find.byIcon(Icons.check_rounded),
+            matching: find.byIcon(LottiIcons.confirm),
           ),
           findsOneWidget,
         );
@@ -417,7 +417,7 @@ void main() {
         // Chip shows chipLabel, not the full label
         expect(find.text('Short'), findsOneWidget);
         // Only the selected row shows a checkmark
-        expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+        expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
         // Both menu rows are visible
         expect(find.text('Full name'), findsOneWidget);
         expect(find.text('Other'), findsOneWidget);
@@ -447,7 +447,7 @@ void main() {
       );
 
       expect(find.text('Alpha'), findsOneWidget);
-      expect(find.byIcon(Icons.cancel_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.closeCircled), findsNothing);
     });
 
     testWidgets('exposes selected semantics on multiselect rows', (

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/progress_bars/design_system_progress_bar.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/state/fts5_controller.dart';
 import 'package:lotti/features/sync/ui/fts5_recreate_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -67,7 +68,7 @@ void main() {
     );
     expect(progressBar.value, 0.5);
     expect(progressBar.progressText, '50%');
-    expect(find.byIcon(Icons.check_circle_outline), findsNothing);
+    expect(find.byIcon(LottiIcons.confirmCircled), findsNothing);
 
     // Update state to error
     testController.state = const Fts5State(
@@ -78,7 +79,7 @@ void main() {
 
     // Should show error message immediately
     expect(find.text('Failed to recreate FTS5'), findsOneWidget);
-    expect(find.byIcon(Icons.error_outline), findsOneWidget);
+    expect(find.byIcon(LottiIcons.error), findsOneWidget);
     expect(find.byType(DesignSystemProgressBar), findsNothing);
 
     // Update state to complete
@@ -89,7 +90,7 @@ void main() {
 
     // Should show checkmark and 100% progress immediately
     expect(find.text('100%'), findsOneWidget);
-    expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
+    expect(find.byIcon(LottiIcons.confirmCircled), findsOneWidget);
     expect(find.byType(DesignSystemProgressBar), findsNothing);
   });
 
@@ -135,6 +136,6 @@ void main() {
     // Should show error state immediately
     expect(find.text('Test error'), findsOneWidget);
     expect(find.byType(DesignSystemProgressBar), findsNothing);
-    expect(find.byIcon(Icons.check_circle_outline), findsNothing);
+    expect(find.byIcon(LottiIcons.confirmCircled), findsNothing);
   });
 }

@@ -123,7 +123,7 @@ class _ConflictsPageState extends State<ConflictsPage> {
         labelBuilder: (ctx) => ctx.messages.conflictsUnresolved,
         predicate: (conflict) =>
             _statusFromIndex(conflict.status) == ConflictStatus.unresolved,
-        icon: Icons.report_problem_outlined,
+        icon: LottiIcons.warning,
         hideCountWhenZero: true,
         countAccentColor: colors.alert.warning.ink,
       ),
@@ -131,7 +131,7 @@ class _ConflictsPageState extends State<ConflictsPage> {
         labelBuilder: (ctx) => ctx.messages.conflictsResolved,
         predicate: (conflict) =>
             _statusFromIndex(conflict.status) == ConflictStatus.resolved,
-        icon: Icons.verified_outlined,
+        icon: LottiIcons.verified,
         showCount: false,
       ),
     };
@@ -142,7 +142,7 @@ class _ConflictsPageState extends State<ConflictsPage> {
       stream: _stream,
       filters: filters,
       initialFilter: _ConflictListFilter.unresolved,
-      emptyIcon: Icons.verified_user_outlined,
+      emptyIcon: LottiIcons.verified,
       emptyTitleBuilder: (ctx) => ctx.messages.conflictsEmptyTitle,
       emptyDescriptionBuilder: (ctx) => ctx.messages.conflictsEmptyDescription,
       countSummaryBuilder: (ctx, label, count) =>

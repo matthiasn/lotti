@@ -1,8 +1,8 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/habits/state/habit_settings_controller.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_category.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_dashboard.dart';
@@ -69,7 +69,7 @@ class HabitDetailsPage extends ConsumerWidget {
         title: messages.habitDeleteQuestion,
         actions: [
           ModalSheetAction(
-            icon: Icons.warning,
+            icon: LottiIcons.warning,
             label: messages.habitDeleteConfirm,
             key: deleteKey,
             isDestructiveAction: true,
@@ -146,14 +146,14 @@ class HabitDetailsPage extends ConsumerWidget {
                     semanticsLabel: messages.favoriteLabel,
                     initialValue: item.priority,
                     title: messages.favoriteLabel,
-                    icon: Icons.star_outline_rounded,
+                    icon: LottiIcons.star,
                   ),
                   FormSwitch(
                     name: 'private',
                     initialValue: item.private,
                     title: messages.privateLabel,
                     subtitle: messages.privateSwitchDescription,
-                    icon: Icons.lock_outline,
+                    icon: LottiIcons.lock,
                   ),
                   FormSwitch(
                     name: 'active',
@@ -161,7 +161,7 @@ class HabitDetailsPage extends ConsumerWidget {
                     initialValue: item.active,
                     title: messages.activeLabel,
                     subtitle: messages.habitActiveSwitchDescription,
-                    icon: Icons.visibility_outlined,
+                    icon: LottiIcons.visible,
                   ),
                 ],
               ),

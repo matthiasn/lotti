@@ -6,6 +6,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -124,7 +125,7 @@ class AiConfigDeleteService {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
-                    Icons.warning_amber_rounded,
+                    LottiIcons.warning,
                     color: context.colorScheme.error,
                     size: 24,
                   ),
@@ -257,7 +258,7 @@ class AiConfigDeleteService {
                           child: Row(
                             children: [
                               Icon(
-                                Icons.info_outline,
+                                LottiIcons.info,
                                 color: context.colorScheme.secondary,
                                 size: 16,
                               ),
@@ -292,7 +293,7 @@ class AiConfigDeleteService {
               DesignSystemButton(
                 onPressed: () => Navigator.of(context).pop(true),
                 label: context.messages.deleteButton,
-                leadingIcon: Icons.delete_forever_outlined,
+                leadingIcon: LottiIcons.deleteForever,
                 variant: DesignSystemButtonVariant.danger,
                 size: DesignSystemButtonSize.large,
               ),
@@ -443,11 +444,11 @@ class AiConfigDeleteService {
 
   IconData _getConfigIcon(AiConfig config) {
     return switch (config) {
-      AiConfigInferenceProvider() => Icons.hub,
-      AiConfigModel() => Icons.smart_toy,
-      AiConfigPrompt() => Icons.psychology,
-      AiConfigInferenceProfile() => Icons.tune,
-      AiConfigSkill() => Icons.auto_fix_high,
+      AiConfigInferenceProvider() => LottiIcons.hub,
+      AiConfigModel() => LottiIcons.aiModel,
+      AiConfigPrompt() => LottiIcons.reasoning,
+      AiConfigInferenceProfile() => LottiIcons.tune,
+      AiConfigSkill() => LottiIcons.magic,
     };
   }
 

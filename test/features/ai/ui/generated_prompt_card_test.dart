@@ -93,7 +93,7 @@ Please provide step-by-step guidance.
       );
 
       // Copy icon should be visible
-      expect(find.byIcon(Icons.copy_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.copy), findsOneWidget);
     });
 
     testWidgets('shows expand/collapse button', (tester) async {
@@ -106,7 +106,7 @@ Please provide step-by-step guidance.
       );
 
       // Expand icon should be visible
-      expect(find.byIcon(Icons.expand_more), findsOneWidget);
+      expect(find.byIcon(LottiIcons.expand), findsOneWidget);
     });
 
     testWidgets('full prompt is hidden by default', (tester) async {
@@ -161,7 +161,7 @@ Please provide step-by-step guidance.
       );
 
       // Tap the expand icon
-      await tester.tap(find.byIcon(Icons.expand_more));
+      await tester.tap(find.byIcon(LottiIcons.expand));
       await tester.pump();
 
       // Pump a few frames to let the animation progress
@@ -189,7 +189,7 @@ Please provide step-by-step guidance.
         ),
       );
 
-      await tester.tap(find.byIcon(Icons.expand_more));
+      await tester.tap(find.byIcon(LottiIcons.expand));
       await tester.pumpAndSettle();
 
       final markdowns = tester.widgetList<AgentMarkdownView>(
@@ -220,14 +220,14 @@ Please provide step-by-step guidance.
       );
 
       // First tap to expand
-      await tester.tap(find.byIcon(Icons.expand_more));
+      await tester.tap(find.byIcon(LottiIcons.expand));
       await tester.pumpAndSettle();
 
       // Full prompt should be visible
       expect(find.text('Full Prompt:'), findsOneWidget);
 
       // Second tap to collapse
-      await tester.tap(find.byIcon(Icons.expand_more));
+      await tester.tap(find.byIcon(LottiIcons.expand));
       await tester.pumpAndSettle();
 
       // Full prompt label should be hidden again
@@ -259,7 +259,7 @@ Please provide step-by-step guidance.
       );
 
       // Tap the copy button
-      await tester.tap(find.byIcon(Icons.copy_rounded));
+      await tester.tap(find.byIcon(LottiIcons.copy));
       await tester.pump();
 
       // Verify clipboard was called with the prompt content
@@ -287,7 +287,7 @@ Please provide step-by-step guidance.
       );
 
       // Tap the copy button
-      await tester.tap(find.byIcon(Icons.copy_rounded));
+      await tester.tap(find.byIcon(LottiIcons.copy));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
@@ -345,7 +345,7 @@ And more content.
       expect(find.textContaining('Brief summary here'), findsOneWidget);
 
       // Expand to see full prompt
-      await tester.tap(find.byIcon(Icons.expand_more));
+      await tester.tap(find.byIcon(LottiIcons.expand));
       await tester.pumpAndSettle();
 
       // Full prompt should now be visible via the second AgentMarkdownView
@@ -657,7 +657,7 @@ Digital illustration of a medieval fortress under construction, 60% complete wit
       );
 
       // Copy icon should be visible
-      expect(find.byIcon(Icons.copy_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.copy), findsOneWidget);
     });
 
     testWidgets('shows expand/collapse button', (tester) async {
@@ -670,7 +670,7 @@ Digital illustration of a medieval fortress under construction, 60% complete wit
       );
 
       // Expand icon should be visible
-      expect(find.byIcon(Icons.expand_more), findsOneWidget);
+      expect(find.byIcon(LottiIcons.expand), findsOneWidget);
     });
 
     testWidgets('full prompt is hidden by default', (tester) async {
@@ -701,7 +701,7 @@ Digital illustration of a medieval fortress under construction, 60% complete wit
       );
 
       // Tap the expand icon
-      await tester.tap(find.byIcon(Icons.expand_more));
+      await tester.tap(find.byIcon(LottiIcons.expand));
       await tester.pump();
 
       // Pump a few frames to let the animation progress
@@ -745,7 +745,7 @@ Digital illustration of a medieval fortress under construction, 60% complete wit
       );
 
       // Tap the copy button
-      await tester.tap(find.byIcon(Icons.copy_rounded));
+      await tester.tap(find.byIcon(LottiIcons.copy));
       await tester.pump();
 
       // Verify clipboard was called with the image prompt content
@@ -774,7 +774,7 @@ Digital illustration of a medieval fortress under construction, 60% complete wit
       );
 
       // Tap the copy button
-      await tester.tap(find.byIcon(Icons.copy_rounded));
+      await tester.tap(find.byIcon(LottiIcons.copy));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
@@ -795,7 +795,7 @@ Digital illustration of a medieval fortress under construction, 60% complete wit
       expect(find.textContaining('vibrant isometric'), findsOneWidget);
 
       // Expand to see full prompt
-      await tester.tap(find.byIcon(Icons.expand_more));
+      await tester.tap(find.byIcon(LottiIcons.expand));
       await tester.pumpAndSettle();
 
       // Full prompt should now be visible via the second AgentMarkdownView
@@ -817,11 +817,11 @@ Digital illustration of a medieval fortress under construction, 60% complete wit
       );
 
       // Expand the card
-      await tester.tap(find.byIcon(Icons.expand_more));
+      await tester.tap(find.byIcon(LottiIcons.expand));
       await tester.pumpAndSettle();
 
       // The expanded section should show both copy icons (header + expanded)
-      expect(find.byIcon(Icons.copy_rounded), findsNWidgets(2));
+      expect(find.byIcon(LottiIcons.copy), findsNWidgets(2));
       // And the "Copy Prompt" text should be visible
       expect(find.text('Copy Prompt'), findsOneWidget);
     });
@@ -838,7 +838,7 @@ Digital illustration of a medieval fortress under construction, 60% complete wit
       );
 
       // Expand the card
-      await tester.tap(find.byIcon(Icons.expand_more));
+      await tester.tap(find.byIcon(LottiIcons.expand));
       await tester.pumpAndSettle();
 
       // The expanded section should show image-specific label
@@ -870,7 +870,7 @@ Implement OAuth 2.0 in Flutter.
       );
 
       // Expand the card
-      await tester.tap(find.byIcon(Icons.expand_more));
+      await tester.tap(find.byIcon(LottiIcons.expand));
       await tester.pumpAndSettle();
 
       // The expanded section should show coding-specific label

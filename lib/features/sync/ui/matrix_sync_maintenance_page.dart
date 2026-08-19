@@ -64,7 +64,7 @@ class _MatrixSyncMaintenanceBodyState extends State<MatrixSyncMaintenanceBody>
           (
             title: context.messages.maintenanceDeleteSyncDb,
             subtitle: context.messages.maintenanceDeleteSyncDbDescription,
-            icon: Icons.sync_rounded,
+            icon: LottiIcons.sync,
             onTap: () async {
               final confirmed = await showConfirmationModal(
                 context: context,
@@ -81,26 +81,26 @@ class _MatrixSyncMaintenanceBodyState extends State<MatrixSyncMaintenanceBody>
           (
             title: context.messages.maintenanceSyncDefinitions,
             subtitle: context.messages.maintenanceSyncDefinitionsDescription,
-            icon: Icons.sync_alt_rounded,
+            icon: LottiIcons.compare,
             onTap: () => SyncModal.show(context),
           ),
           (
             title: context.messages.maintenanceReSync,
             subtitle: context.messages.maintenanceReSyncDescription,
-            icon: Icons.refresh_rounded,
+            icon: LottiIcons.refresh,
             onTap: () => ReSyncModal.show(context),
           ),
           (
             title: context.messages.maintenancePopulateSequenceLog,
             subtitle:
                 context.messages.maintenancePopulateSequenceLogDescription,
-            icon: Icons.playlist_add_check_rounded,
+            icon: LottiIcons.checkAll,
             onTap: () => SequenceLogPopulateModal.show(context),
           ),
           (
             title: context.messages.maintenancePurgeSentOutbox,
             subtitle: context.messages.maintenancePurgeSentOutboxDescription,
-            icon: Icons.delete_sweep_rounded,
+            icon: LottiIcons.clearAll,
             onTap: () async {
               final confirmed = await showConfirmationModal(
                 context: context,
@@ -123,7 +123,7 @@ class _MatrixSyncMaintenanceBodyState extends State<MatrixSyncMaintenanceBody>
             subtitle: item.subtitle,
             leading: SettingsIcon(icon: item.icon),
             trailing: Icon(
-              Icons.chevron_right_rounded,
+              LottiIcons.chevronRight,
               size: IconSizes.l,
               color: tokens.colors.text.lowEmphasis,
             ),

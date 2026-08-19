@@ -145,7 +145,7 @@ class _DailyOsSettingsBodyState extends ConsumerState<DailyOsSettingsBody> {
           ),
           SizedBox(height: tokens.spacing.sectionGap),
           _SectionTitle(
-            icon: Icons.psychology_outlined,
+            icon: LottiIcons.reasoning,
             title: context.messages.dailyOsSettingsInferenceTitle,
           ),
           SizedBox(height: tokens.spacing.step3),
@@ -161,7 +161,7 @@ class _DailyOsSettingsBodyState extends ConsumerState<DailyOsSettingsBody> {
                     route?.label ??
                     context.messages.dailyOsSettingsDefaultProfileDescription,
                 subtitleMaxLines: null,
-                leading: const SettingsIcon(icon: Icons.account_tree_outlined),
+                leading: const SettingsIcon(icon: LottiIcons.tree),
                 trailing: _savingProfile
                     ? SizedBox.square(
                         key: const Key('daily_os_default_profile_progress'),
@@ -182,7 +182,7 @@ class _DailyOsSettingsBodyState extends ConsumerState<DailyOsSettingsBody> {
           _Disclosure(route: route),
           SizedBox(height: tokens.spacing.sectionGap),
           _SectionTitle(
-            icon: Icons.person_outline_rounded,
+            icon: LottiIcons.person,
             title: context.messages.settingsAboutDailyOsPersonalizationTitle,
           ),
           SizedBox(height: tokens.spacing.step3),
@@ -191,7 +191,7 @@ class _DailyOsSettingsBodyState extends ConsumerState<DailyOsSettingsBody> {
             controller: _nameController,
             label: context.messages.settingsAboutDailyOsUserNameLabel,
             helperText: context.messages.settingsAboutDailyOsUserNameHelper,
-            leadingIcon: Icons.badge_outlined,
+            leadingIcon: LottiIcons.idBadge,
             textCapitalization: TextCapitalization.words,
             onChanged: ref
                 .read(dailyOsPreferencesControllerProvider.notifier)
@@ -282,7 +282,7 @@ class _Disclosure extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Icon(
-              Icons.privacy_tip_outlined,
+              LottiIcons.shield,
               color: tokens.colors.text.mediumEmphasis,
             ),
             SizedBox(width: tokens.spacing.step3),

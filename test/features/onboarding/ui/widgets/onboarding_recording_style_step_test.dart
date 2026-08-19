@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/audio_note.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/state/recording_style.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_recording_style_step.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
@@ -114,7 +115,7 @@ void main() {
       expect(
         find.descendant(
           of: row.first,
-          matching: find.byIcon(Icons.radio_button_checked_rounded),
+          matching: find.byIcon(LottiIcons.radioSelected),
         ),
         findsOneWidget,
       );
@@ -156,7 +157,7 @@ void main() {
       expect(
         find.descendant(
           of: row.first,
-          matching: find.byIcon(Icons.radio_button_checked_rounded),
+          matching: find.byIcon(LottiIcons.radioSelected),
         ),
         findsOneWidget,
       );
@@ -231,7 +232,7 @@ void main() {
       expect(
         find.descendant(
           of: row.first,
-          matching: find.byIcon(Icons.radio_button_checked_rounded),
+          matching: find.byIcon(LottiIcons.radioSelected),
         ),
         findsOneWidget,
       );

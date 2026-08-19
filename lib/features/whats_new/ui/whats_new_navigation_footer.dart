@@ -71,7 +71,7 @@ class NavigationFooter extends StatelessWidget {
 
               // Left arrow (newer)
               _NavigationArrow(
-                icon: Icons.chevron_left,
+                icon: LottiIcons.chevronLeft,
                 isVisible: canGoNewer,
                 onTap: () => onNavigate(currentRelease - 1),
                 tooltip: 'Newer release',
@@ -91,7 +91,7 @@ class NavigationFooter extends StatelessWidget {
 
               // Right arrow (older)
               _NavigationArrow(
-                icon: Icons.chevron_right,
+                icon: LottiIcons.chevronRight,
                 isVisible: canGoOlder,
                 onTap: () => onNavigate(currentRelease + 1),
                 tooltip: 'Older release',

@@ -261,14 +261,14 @@ void main() {
                 DsSegment(
                   _Mode.first,
                   'Day',
-                  icon: Icons.wb_sunny_outlined,
-                  activeIcon: Icons.sunny,
+                  icon: LottiIcons.star,
+                  activeIcon: LottiIconsFilled.star,
                 ),
                 DsSegment(
                   _Mode.second,
                   'Night',
-                  icon: Icons.nightlight_outlined,
-                  activeIcon: Icons.nightlight,
+                  icon: LottiIcons.night,
+                  activeIcon: LottiIconsFilled.moon,
                 ),
               ],
             ),
@@ -276,10 +276,10 @@ void main() {
         );
 
         // Selected → active glyph; unselected → the base glyph. No text.
-        expect(find.byIcon(Icons.sunny), findsOneWidget);
-        expect(find.byIcon(Icons.wb_sunny_outlined), findsNothing);
-        expect(find.byIcon(Icons.nightlight_outlined), findsOneWidget);
-        expect(find.byIcon(Icons.nightlight), findsNothing);
+        expect(find.byIcon(LottiIconsFilled.star), findsOneWidget);
+        expect(find.byIcon(LottiIcons.star), findsNothing);
+        expect(find.byIcon(LottiIcons.night), findsOneWidget);
+        expect(find.byIcon(LottiIconsFilled.moon), findsNothing);
         expect(find.text('Day'), findsNothing);
 
         // The label rides a tooltip instead of visible text.
@@ -287,7 +287,7 @@ void main() {
         expect(find.byTooltip('Night'), findsOneWidget);
 
         // Tapping the inactive segment reports its value.
-        await tester.tap(find.byIcon(Icons.nightlight_outlined));
+        await tester.tap(find.byIcon(LottiIcons.night));
         await tester.pump();
         expect(received, _Mode.second);
       },

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/ratings/state/rating_controller.dart';
 import 'package:lotti/features/ratings/state/session_ended_controller.dart';
 import 'package:lotti/features/ratings/ui/session_rating_modal.dart';
@@ -171,7 +172,7 @@ class _AnimatedRateButtonState extends State<_AnimatedRateButton>
 
         return IconButton(
           onPressed: () => RatingModal.show(context, widget.entryId),
-          icon: Icon(Icons.star_rate_rounded, color: borderColor),
+          icon: Icon(LottiIcons.star, color: borderColor),
           iconSize: 20,
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints(minWidth: 48, minHeight: 48),

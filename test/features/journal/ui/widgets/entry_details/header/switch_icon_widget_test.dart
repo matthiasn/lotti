@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/switch_icon_widget.dart';
 
 import '../../../../../../widget_test_utils.dart';
@@ -22,8 +23,8 @@ void main() {
                 iconPressed = true;
               },
               value: false,
-              icon: Icons.star_outline,
-              activeIcon: Icons.star,
+              icon: LottiIcons.star,
+              activeIcon: LottiIconsFilled.star,
               activeColor: Colors.amber,
             ),
           ),
@@ -31,11 +32,11 @@ void main() {
       );
 
       // Verify that the inactive icon is displayed
-      expect(find.byIcon(Icons.star_outline), findsOneWidget);
-      expect(find.byIcon(Icons.star), findsNothing);
+      expect(find.byIcon(LottiIcons.star), findsOneWidget);
+      expect(find.byIcon(LottiIconsFilled.star), findsNothing);
 
       // Check that the icon has the correct color
-      final icon = tester.widget<Icon>(find.byIcon(Icons.star_outline));
+      final icon = tester.widget<Icon>(find.byIcon(LottiIcons.star));
       expect(icon.color, isA<Color>());
     });
 
@@ -54,8 +55,8 @@ void main() {
                 iconPressed = true;
               },
               value: true,
-              icon: Icons.star_outline,
-              activeIcon: Icons.star,
+              icon: LottiIcons.star,
+              activeIcon: LottiIconsFilled.star,
               activeColor: Colors.amber,
             ),
           ),
@@ -63,11 +64,11 @@ void main() {
       );
 
       // Verify that the active icon is displayed
-      expect(find.byIcon(Icons.star), findsOneWidget);
-      expect(find.byIcon(Icons.star_outline), findsNothing);
+      expect(find.byIcon(LottiIconsFilled.star), findsOneWidget);
+      expect(find.byIcon(LottiIcons.star), findsNothing);
 
       // Check that the icon has the correct color
-      final icon = tester.widget<Icon>(find.byIcon(Icons.star));
+      final icon = tester.widget<Icon>(find.byIcon(LottiIconsFilled.star));
       expect(icon.color, Colors.amber);
     });
 
@@ -83,8 +84,8 @@ void main() {
                 iconPressed = true;
               },
               value: false,
-              icon: Icons.star_outline,
-              activeIcon: Icons.star,
+              icon: LottiIcons.star,
+              activeIcon: LottiIconsFilled.star,
               activeColor: Colors.amber,
             ),
           ),
@@ -109,8 +110,8 @@ void main() {
               tooltip: testTooltip,
               onPressed: () {},
               value: false,
-              icon: Icons.star_outline,
-              activeIcon: Icons.star,
+              icon: LottiIcons.star,
+              activeIcon: LottiIconsFilled.star,
               activeColor: Colors.amber,
             ),
           ),
@@ -148,8 +149,8 @@ void main() {
               tooltip: 'Test Icon',
               onPressed: () {},
               value: false,
-              icon: Icons.star_outline,
-              activeIcon: Icons.star,
+              icon: LottiIcons.star,
+              activeIcon: LottiIconsFilled.star,
               activeColor: Colors.amber,
             ),
           ),
@@ -167,8 +168,8 @@ void main() {
               tooltip: 'Test Icon',
               onPressed: () {},
               value: true,
-              icon: Icons.star_outline,
-              activeIcon: Icons.star,
+              icon: LottiIcons.star,
+              activeIcon: LottiIconsFilled.star,
               activeColor: Colors.amber,
             ),
           ),
@@ -193,8 +194,8 @@ void main() {
                 tooltip: 'Test Icon',
                 onPressed: () {},
                 value: false,
-                icon: Icons.star_outline,
-                activeIcon: Icons.star,
+                icon: LottiIcons.star,
+                activeIcon: LottiIconsFilled.star,
                 activeColor: Colors.amber,
               ),
             ),

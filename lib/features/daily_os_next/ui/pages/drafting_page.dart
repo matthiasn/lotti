@@ -345,7 +345,7 @@ class _DraftingProgressChip extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              done ? Icons.check_rounded : Icons.circle_rounded,
+              done ? LottiIcons.confirm : LottiIcons.radioUnselected,
               size: tokens.spacing.step3,
               color: color,
             ),
@@ -387,7 +387,7 @@ class DraftingErrorRecovery extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Icon(
-            Icons.warning_amber_rounded,
+            LottiIcons.warning,
             color: tokens.colors.alert.warning.defaultColor,
             size: tokens.spacing.step9,
           ),
@@ -415,12 +415,12 @@ class DraftingErrorRecovery extends StatelessWidget {
             children: [
               OutlinedButton.icon(
                 onPressed: onBack,
-                icon: const Icon(Icons.arrow_back_rounded),
+                icon: const Icon(LottiIcons.back),
                 label: Text(messages.dailyOsNextDraftingBackToDecisions),
               ),
               FilledButton.icon(
                 onPressed: onRetry,
-                icon: const Icon(Icons.refresh_rounded),
+                icon: const Icon(LottiIcons.refresh),
                 label: Text(messages.dailyOsNextDraftingRetry),
               ),
             ],

@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/ui/agent_instances_list.dart';
 import 'package:lotti/features/agents/ui/instances/instance_view_model.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 
@@ -301,12 +302,12 @@ void main() {
 
         // Three remove icons (type, soul, search) plus their chip
         // labels are visible.
-        expect(find.byIcon(Icons.cancel_rounded), findsNWidgets(3));
+        expect(find.byIcon(LottiIcons.closeCircled), findsNWidgets(3));
 
         // Remove all three by tapping each cancel icon. Re-evaluate the
         // finder between taps since each removal shrinks the chip row.
-        while (find.byIcon(Icons.cancel_rounded).evaluate().isNotEmpty) {
-          await tester.tap(find.byIcon(Icons.cancel_rounded).first);
+        while (find.byIcon(LottiIcons.closeCircled).evaluate().isNotEmpty) {
+          await tester.tap(find.byIcon(LottiIcons.closeCircled).first);
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 300));
         }
@@ -350,13 +351,13 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      // ActiveFilterChip uses Icons.cancel_rounded — find the chip by its
+      // ActiveFilterChip uses LottiIcons.closeCircled — find the chip by its
       // label and tap the chip itself (whole chip is the remove target).
       expect(
-        find.byIcon(Icons.cancel_rounded),
+        find.byIcon(LottiIcons.closeCircled),
         findsOneWidget,
       );
-      await tester.tap(find.byIcon(Icons.cancel_rounded));
+      await tester.tap(find.byIcon(LottiIcons.closeCircled));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 

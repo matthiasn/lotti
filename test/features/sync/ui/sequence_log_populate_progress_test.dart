@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/progress_bars/design_system_progress_bar.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/state/sequence_log_populate_controller.dart';
 import 'package:lotti/features/sync/ui/sequence_log_populate_progress.dart';
 
@@ -35,7 +36,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.byIcon(Icons.error_outline), findsOneWidget);
+      expect(find.byIcon(LottiIcons.error), findsOneWidget);
       expect(find.text('Test error message'), findsOneWidget);
     });
 
@@ -56,7 +57,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
+      expect(find.byIcon(LottiIcons.confirmCircled), findsOneWidget);
       // Should show total (100 + 50 + 30 + 20 = 200)
       expect(find.textContaining('200'), findsOneWidget);
     });
@@ -174,7 +175,7 @@ void main() {
       // Should show progress UI, not completed
       expect(find.byType(DesignSystemProgressBar), findsOneWidget);
       expect(find.text('100%'), findsOneWidget);
-      expect(find.byIcon(Icons.check_circle_outline), findsNothing);
+      expect(find.byIcon(LottiIcons.confirmCircled), findsNothing);
     });
 
     testWidgets('error state takes precedence over progress', (tester) async {
@@ -190,9 +191,9 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       // Error should be shown, not completion
-      expect(find.byIcon(Icons.error_outline), findsOneWidget);
+      expect(find.byIcon(LottiIcons.error), findsOneWidget);
       expect(find.text('Something went wrong'), findsOneWidget);
-      expect(find.byIcon(Icons.check_circle_outline), findsNothing);
+      expect(find.byIcon(LottiIcons.confirmCircled), findsNothing);
     });
 
     testWidgets('shows zero count when null values', (tester) async {
@@ -206,7 +207,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
+      expect(find.byIcon(LottiIcons.confirmCircled), findsOneWidget);
       // Total should be 0 when all counts are null
       expect(find.textContaining('0'), findsOneWidget);
     });
@@ -224,7 +225,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
+      expect(find.byIcon(LottiIcons.confirmCircled), findsOneWidget);
       // Total should be 75 + 25 = 100
       expect(find.textContaining('100'), findsOneWidget);
     });
@@ -256,7 +257,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      final icon = tester.widget<Icon>(find.byIcon(Icons.error_outline));
+      final icon = tester.widget<Icon>(find.byIcon(LottiIcons.error));
       expect(icon.size, 48);
     });
 
@@ -271,7 +272,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      final icon = tester.widget<Icon>(find.byIcon(Icons.check_circle_outline));
+      final icon = tester.widget<Icon>(find.byIcon(LottiIcons.confirmCircled));
       expect(icon.size, 48);
     });
   });

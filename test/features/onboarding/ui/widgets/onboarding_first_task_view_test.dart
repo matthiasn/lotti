@@ -332,7 +332,7 @@ void main() {
         expect(find.text('Tap your task to open it'), findsOneWidget);
         // No checklist preview on the card — those items surface as confirmable
         // proposals once the user opens the task.
-        expect(find.byIcon(Icons.radio_button_unchecked), findsNothing);
+        expect(find.byIcon(LottiIcons.radioUnselected), findsNothing);
         // The composing/thinking furniture is gone — the card owns the panel.
         expect(find.text('Rather type?'), findsNothing);
         expect(find.byType(VoiceOrbZone), findsNothing);

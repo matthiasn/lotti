@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/ui/widgets/project_detail_pane.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 
@@ -187,7 +188,7 @@ void main() {
       await tester.pump();
 
       // Status pill in large mode shows unfold icon
-      expect(find.byIcon(Icons.unfold_more_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.expandBoth), findsOneWidget);
     });
 
     testWidgets('renders description section', (tester) async {
@@ -245,7 +246,7 @@ void main() {
         );
         await tester.pump();
         // Should show the calendar icon from the placeholder tag
-        expect(find.byIcon(Icons.calendar_today_outlined), findsOneWidget);
+        expect(find.byIcon(LottiIcons.today), findsOneWidget);
       },
     );
 
@@ -265,7 +266,7 @@ void main() {
           ),
         );
         await tester.pump();
-        expect(find.byIcon(Icons.calendar_today_outlined), findsNothing);
+        expect(find.byIcon(LottiIcons.today), findsNothing);
       },
     );
   });

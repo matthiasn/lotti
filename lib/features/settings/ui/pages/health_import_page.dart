@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/callouts/design_system_inline_callout.dart';
@@ -64,7 +63,7 @@ class HealthImportBody extends ConsumerWidget {
         padding: EdgeInsets.symmetric(vertical: tokens.spacing.step4),
         child: DetailContentWidth(
           child: DesignSystemInlineCallout(
-            icon: Icons.health_and_safety_rounded,
+            icon: LottiIcons.healthShield,
             text: messages.demoSettingsHealthImportUnavailable,
           ),
         ),
@@ -85,7 +84,7 @@ class HealthImportBody extends ConsumerWidget {
           children: [
             if (isDesktop) ...[
               DesignSystemInlineCallout(
-                icon: Icons.desktop_access_disabled_outlined,
+                icon: LottiIcons.computerOff,
                 text: messages.settingsHealthImportUnavailable,
               ),
               SizedBox(height: tokens.spacing.sectionGap),
@@ -149,13 +148,13 @@ class HealthImportBody extends ConsumerWidget {
             if (state.needsAccessCheck) ...[
               SizedBox(height: tokens.spacing.sectionGap),
               DesignSystemInlineCallout(
-                icon: Icons.privacy_tip_outlined,
+                icon: LottiIcons.shield,
                 text: messages.settingsHealthImportAccessHint,
               ),
               SizedBox(height: tokens.spacing.step3),
               DesignSystemButton(
                 label: messages.settingsHealthImportOpenSettings,
-                leadingIcon: Icons.settings_outlined,
+                leadingIcon: LottiIcons.settings,
                 variant: DesignSystemButtonVariant.secondary,
                 size: DesignSystemButtonSize.large,
                 fullWidth: true,
@@ -165,7 +164,7 @@ class HealthImportBody extends ConsumerWidget {
             SizedBox(height: tokens.spacing.sectionGap),
             DesignSystemButton(
               label: messages.settingsHealthImportAll,
-              leadingIcon: Icons.download_rounded,
+              leadingIcon: LottiIcons.download,
               size: DesignSystemButtonSize.large,
               fullWidth: true,
               isLoading: state.isAnyRunning,
@@ -313,7 +312,7 @@ class _CategoryTrailing extends StatelessWidget {
     final outcome = result;
     if (outcome == null) {
       return Icon(
-        Icons.download_rounded,
+        LottiIcons.download,
         size: tokens.spacing.step6,
         color: tokens.colors.text.lowEmphasis,
       );
@@ -334,23 +333,23 @@ class _CategoryTrailing extends StatelessWidget {
 /// privacy settings — which the glyph should point at rather than alarm about.
 IconData healthImportResultIcon(HealthImportResult result) =>
     switch (result.status) {
-      HealthImportStatus.imported => Icons.check_circle_outline_rounded,
+      HealthImportStatus.imported => LottiIcons.confirmCircled,
       HealthImportStatus.permissionDenied ||
-      HealthImportStatus.noDataOrAccess => Icons.lock_outline_rounded,
+      HealthImportStatus.noDataOrAccess => LottiIcons.lock,
       HealthImportStatus.unsupportedPlatform ||
       HealthImportStatus.noMatchingTypes ||
-      HealthImportStatus.failed => Icons.error_outline_rounded,
+      HealthImportStatus.failed => LottiIcons.error,
     };
 
 /// Row glyph per data family.
 IconData healthImportCategoryIcon(HealthImportCategory category) =>
     switch (category) {
-      HealthImportCategory.activity => Icons.directions_walk_rounded,
-      HealthImportCategory.sleep => Icons.bedtime_outlined,
-      HealthImportCategory.heartRate => Icons.favorite_outline_rounded,
-      HealthImportCategory.bloodPressure => Icons.monitor_heart_outlined,
-      HealthImportCategory.bodyMeasurement => Icons.straighten_rounded,
-      HealthImportCategory.workout => Icons.fitness_center_rounded,
+      HealthImportCategory.activity => LottiIcons.walk,
+      HealthImportCategory.sleep => LottiIcons.night,
+      HealthImportCategory.heartRate => LottiIcons.favorite,
+      HealthImportCategory.bloodPressure => LottiIcons.heartRate,
+      HealthImportCategory.bodyMeasurement => LottiIcons.measure,
+      HealthImportCategory.workout => LottiIcons.fitness,
     };
 
 /// Row title per data family.

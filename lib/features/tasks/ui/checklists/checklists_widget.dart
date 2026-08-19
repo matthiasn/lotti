@@ -259,7 +259,7 @@ class _ChecklistsSectionHeader extends StatelessWidget {
           child: PopupMenuButton<String>(
             key: const Key('checklists-menu'),
             tooltip: context.messages.checklistMoreTooltip,
-            icon: Icon(Icons.more_vert, color: color, size: 20),
+            icon: Icon(LottiIcons.moreVertical, color: color, size: 20),
             position: PopupMenuPosition.under,
             onSelected: (value) {
               if (value == 'sort') {
@@ -271,7 +271,7 @@ class _ChecklistsSectionHeader extends StatelessWidget {
                 value: 'sort',
                 child: Row(
                   children: [
-                    const Icon(Icons.sort, size: 18),
+                    const Icon(LottiIcons.sort, size: 18),
                     const SizedBox(width: 8),
                     Text(context.messages.checklistsReorder),
                   ],

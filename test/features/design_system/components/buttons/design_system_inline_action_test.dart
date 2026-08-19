@@ -80,8 +80,8 @@ void main() {
       const DesignSystemInlineAction(
         label: 'Change AI setup',
         semanticsLabel: 'Change AI setup',
-        leadingIcon: Icons.psychology_outlined,
-        trailingIcon: Icons.chevron_right_rounded,
+        leadingIcon: LottiIcons.reasoning,
+        trailingIcon: LottiIcons.chevronRight,
         onTap: null,
       ),
       width: width,
@@ -94,12 +94,11 @@ void main() {
     // an open-coded row would take all of it.
     expect(ink.width, lessThan(width));
     expect(
-      tester.getRect(find.byIcon(Icons.psychology_outlined)).left - ink.left,
+      tester.getRect(find.byIcon(LottiIcons.reasoning)).left - ink.left,
       moreOrLessEquals(tokens.spacing.step2, epsilon: 0.5),
     );
     expect(
-      ink.right -
-          tester.getRect(find.byIcon(Icons.chevron_right_rounded)).right,
+      ink.right - tester.getRect(find.byIcon(LottiIcons.chevronRight)).right,
       moreOrLessEquals(tokens.spacing.step2, epsilon: 0.5),
     );
     expect(ink.height, greaterThanOrEqualTo(tokens.spacing.step8));
@@ -120,7 +119,7 @@ void main() {
         label: 'Change AI setup',
         semanticsLabel: 'Current setup: Qwen 3.5 Plus. Activate to change.',
         tooltip: 'Change AI setup',
-        leadingIcon: Icons.psychology_outlined,
+        leadingIcon: LottiIcons.reasoning,
         onTap: null,
       ),
       width: width,
@@ -197,7 +196,7 @@ void main() {
       DesignSystemInlineAction(
         label: 'Skip once',
         semanticsLabel: 'Skip once',
-        leadingIcon: Icons.schedule_rounded,
+        leadingIcon: LottiIcons.schedule,
         ink: ink,
         iconInk: iconInk,
         onTap: () {},
@@ -207,7 +206,7 @@ void main() {
     final text = tester.widget<Text>(find.text('Skip once'));
     expect(text.style?.color, ink);
     expect(
-      tester.widget<Icon>(find.byIcon(Icons.schedule_rounded)).color,
+      tester.widget<Icon>(find.byIcon(LottiIcons.schedule)).color,
       iconInk,
     );
   });
@@ -236,7 +235,7 @@ void main() {
       tester,
       const DesignSystemInlineAction(
         semanticsLabel: 'Current setup',
-        leadingIcon: Icons.psychology_outlined,
+        leadingIcon: LottiIcons.reasoning,
         labelWidget: SizedBox(width: 80, height: 12),
         onTap: null,
       ),

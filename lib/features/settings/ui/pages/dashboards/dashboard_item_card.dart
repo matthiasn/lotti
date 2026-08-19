@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
@@ -51,7 +50,7 @@ class DashboardItemCard extends StatelessWidget {
         final type = healthType;
         final itemName = healthTypes[type]?.displayName ?? type;
         return ItemCard(
-          leadingIcon: MdiIcons.stethoscope,
+          leadingIcon: LottiIcons.stethoscope,
           title: itemName,
           reorderIndex: index,
           onRemove: removeItemFn,
@@ -60,14 +59,14 @@ class DashboardItemCard extends StatelessWidget {
         final workoutKey = '$workoutType.${valueType.name}';
         final workout = workoutTypes[workoutKey];
         return ItemCard(
-          leadingIcon: Icons.sports_gymnastics,
+          leadingIcon: LottiIcons.fitness,
           title: workout?.displayName ?? workoutKey,
           reorderIndex: index,
           onRemove: removeItemFn,
         );
       case DashboardSurveyItem(:final surveyName):
         return ItemCard(
-          leadingIcon: MdiIcons.clipboardOutline,
+          leadingIcon: LottiIcons.clipboard,
           title: surveyName,
           reorderIndex: index,
           onRemove: removeItemFn,
@@ -129,7 +128,7 @@ class MeasurableItemCard extends StatelessWidget {
               title = '${matches.first.displayName}$aggregationSuffix';
             }
             return ItemCard(
-              leadingIcon: Icons.insights,
+              leadingIcon: LottiIcons.insights,
               title: title,
               reorderIndex: index,
               onRemove: onRemove,
@@ -188,7 +187,7 @@ class HabitItemCard extends StatelessWidget {
             final habitDefinition = snapshot.data;
 
             return ItemCard(
-              leadingIcon: MdiIcons.lightningBolt,
+              leadingIcon: LottiIcons.bolt,
               title: habitDefinition?.name ?? habitItem.habitId,
               reorderIndex: index,
               onRemove: onRemove,
@@ -261,7 +260,7 @@ class ItemCard extends StatelessWidget {
                 SizedBox(width: spacing.step3),
                 if (onTap != null) ...[
                   _ChartRowIconButton(
-                    icon: Icons.tune_rounded,
+                    icon: LottiIcons.tune,
                     color: tokens.colors.text.mediumEmphasis,
                     tooltip:
                         editSemanticsLabel ??
@@ -272,7 +271,7 @@ class ItemCard extends StatelessWidget {
                 ],
                 if (onRemove != null) ...[
                   _ChartRowIconButton(
-                    icon: Icons.close_rounded,
+                    icon: LottiIcons.close,
                     color: tokens.colors.alert.error.defaultColor,
                     tooltip: context.messages.dashboardRemoveChartLabel,
                     onPressed: onRemove!,
@@ -280,7 +279,7 @@ class ItemCard extends StatelessWidget {
                   SizedBox(width: spacing.step2),
                 ],
                 finalDragHandle(
-                  Icons.drag_indicator,
+                  LottiIcons.drag,
                   index: reorderIndex,
                   size: spacing.step5,
                   targetSize: spacing.step8,

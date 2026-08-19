@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_connect_panel.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 
@@ -87,7 +88,7 @@ void main() {
       var backed = false;
       await pumpPanel(tester, onBack: () => backed = true);
 
-      await tester.tap(find.byIcon(Icons.arrow_back_rounded));
+      await tester.tap(find.byIcon(LottiIcons.back));
       await tester.pump();
 
       expect(backed, isTrue);
@@ -109,7 +110,7 @@ void main() {
       );
 
       Focus.of(
-        tester.element(find.byIcon(Icons.arrow_back_rounded)),
+        tester.element(find.byIcon(LottiIcons.back)),
       ).requestFocus();
       await tester.pump();
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);

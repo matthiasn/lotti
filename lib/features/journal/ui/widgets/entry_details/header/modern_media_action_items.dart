@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/action_menu_list_item.dart';
 import 'package:lotti/get_it.dart';
@@ -35,7 +36,7 @@ class ModernSpeechItem extends ConsumerWidget {
     }
 
     return ActionMenuListItem(
-      icon: Icons.transcribe_rounded,
+      icon: LottiIcons.transcribe,
       title: context.messages.speechModalTitle,
       onTap: () => pageIndexNotifier.value = 1,
     );
@@ -72,7 +73,7 @@ class ModernShowInFileManagerItem extends ConsumerWidget {
     }
 
     return ActionMenuListItem(
-      icon: Icons.folder_open_rounded,
+      icon: LottiIcons.folderOpen,
       title: _showInFileManagerTitle(context, resolvedPlatform),
       onTap: () async {
         Navigator.of(context).pop();
@@ -147,7 +148,7 @@ class ModernShareItem extends ConsumerWidget {
     }
 
     return ActionMenuListItem(
-      icon: Icons.share_rounded,
+      icon: LottiIcons.share,
       title: context.messages.journalShareHint,
       onTap: () async {
         Navigator.of(context).pop();

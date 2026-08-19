@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings_v2/ui/detail/empty_root.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -34,7 +35,7 @@ void main() {
 
     testWidgets('renders the gear empty-state glyph', (tester) async {
       await _pumpEmptyRoot(tester);
-      expect(find.byIcon(Icons.settings_outlined), findsOneWidget);
+      expect(find.byIcon(LottiIcons.settings), findsOneWidget);
     });
   });
 }

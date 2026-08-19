@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 
 import '../../widget_test_utils.dart';
@@ -212,7 +213,7 @@ void main() {
     ) async {
       await pumpAndOpen(tester, confirmLabel: 'Yes, delete');
 
-      expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
+      expect(find.byIcon(LottiIcons.warning), findsOneWidget);
       expect(
         buttonWithLabel(tester, 'Yes, delete').variant,
         DesignSystemButtonVariant.danger,
@@ -228,7 +229,7 @@ void main() {
         isDestructive: false,
       );
 
-      expect(find.byIcon(Icons.warning_amber_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.warning), findsNothing);
       expect(
         buttonWithLabel(tester, 'Run').variant,
         DesignSystemButtonVariant.primary,

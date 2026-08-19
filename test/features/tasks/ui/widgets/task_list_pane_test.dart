@@ -493,7 +493,7 @@ void main() {
           ),
         );
         await tester.pump();
-        expect(find.byIcon(Icons.close_rounded), findsNothing);
+        expect(find.byIcon(LottiIcons.close), findsNothing);
 
         // With onClearAll — chip appears and reports on tap.
         await tester.pumpWidget(
@@ -507,8 +507,8 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.byIcon(Icons.close_rounded), findsOneWidget);
-        await tester.tap(find.byIcon(Icons.close_rounded));
+        expect(find.byIcon(LottiIcons.close), findsOneWidget);
+        await tester.tap(find.byIcon(LottiIcons.close));
         await tester.pump();
         expect(cleared, 1);
       },
@@ -570,8 +570,8 @@ void main() {
     testWidgets('filter icon is the Figma funnel glyph', (tester) async {
       await pumpEmptyPane(tester);
 
-      expect(find.byIcon(Icons.filter_list_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.tune_rounded), findsNothing);
+      expect(find.byIcon(LottiIcons.filter), findsOneWidget);
+      expect(find.byIcon(LottiIcons.tune), findsNothing);
     });
 
     testWidgets(
@@ -583,7 +583,7 @@ void main() {
         expect(emptyState, findsOneWidget);
         expect(
           tester.widget<DesignSystemEmptyState>(emptyState).icon,
-          Icons.list_outlined,
+          LottiIcons.list,
         );
         expect(
           find.descendant(

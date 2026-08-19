@@ -66,7 +66,7 @@ class GoalCheckInsCard extends ConsumerWidget {
                   onPressed: onCreate,
                   tooltip: context.messages.goalCheckInRecordCta,
                   icon: Icon(
-                    Icons.add_circle_outline_rounded,
+                    LottiIcons.addCircled,
                     color: tokens.colors.interactive.enabled,
                   ),
                 ),
@@ -82,7 +82,7 @@ class GoalCheckInsCard extends ConsumerWidget {
                 : DesignSystemButton(
                     key: const ValueKey('goal-checkin-empty-cta'),
                     label: context.messages.goalCheckInRecordCta,
-                    leadingIcon: Icons.mic_rounded,
+                    leadingIcon: LottiIcons.mic,
                     onPressed: onCreate,
                   ),
           ),
@@ -107,7 +107,7 @@ class GoalCheckInsCard extends ConsumerWidget {
                         ),
                       ),
                       Icon(
-                        Icons.chevron_right_rounded,
+                        LottiIcons.chevronRight,
                         size: IconSizes.xs,
                         color: tokens.colors.interactive.enabled,
                       ),

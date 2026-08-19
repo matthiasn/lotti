@@ -12,6 +12,7 @@ import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/ui/settings/services/gemini_setup_prompt_service.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/service/image_path_migration_service.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/maintenance_page.dart';
 import 'package:lotti/features/settings/ui/widgets/settings_icon.dart';
@@ -578,7 +579,7 @@ void main() {
       // repaint-rainbow toggle is the tenth item and uses an adaptive Switch.
       expect(find.byType(DesignSystemListItem), findsNWidgets(10));
       expect(find.byType(SettingsIcon), findsNWidgets(10));
-      expect(find.byIcon(Icons.chevron_right_rounded), findsNWidgets(9));
+      expect(find.byIcon(LottiIcons.chevronRight), findsNWidgets(9));
       expect(find.byType(Switch), findsOneWidget);
     });
 

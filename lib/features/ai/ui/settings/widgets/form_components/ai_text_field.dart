@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/themes/theme.dart';
 
 /// A styled text field component that matches the AI Settings design language.
@@ -270,7 +271,7 @@ class _AiTextFieldState extends State<AiTextField> {
             child: Row(
               children: [
                 Icon(
-                  Icons.error_outline_rounded,
+                  LottiIcons.error,
                   size: 14,
                   color: context.colorScheme.error,
                 ),

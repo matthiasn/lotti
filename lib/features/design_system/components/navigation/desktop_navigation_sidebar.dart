@@ -269,7 +269,7 @@ class DesktopNavigationSidebar extends StatelessWidget {
 /// rendered next to the toggle. While collapsed, the brand text is hidden
 /// — only the toggle tile remains. The tile itself is a 30×30 square with
 /// `background.level03` fill, 8 px rounded corners, and a sidebar-panel
-/// glyph (`Icons.view_sidebar_rounded`) at 18 px drawn in
+/// glyph (`LottiIcons.sidebar`) at 18 px drawn in
 /// `text.highEmphasis`. Matches the Figma spec from the "closed" and "open"
 /// Sidebar variants. When [onToggle] is null the tile renders disabled so
 /// assistive tech announces it as unavailable instead of silently ignoring
@@ -374,7 +374,7 @@ class _SidebarToggleTile extends StatelessWidget {
 
 /// Hand-drawn sidebar-panel glyph that mirrors the Figma "Union" boolean
 /// operation: an outlined 18×14 rounded rectangle with a filled left pane
-/// sitting inside it. Using a painter instead of `Icons.view_sidebar_*`
+/// sitting inside it. Using a painter instead of `LottiIcons.sidebar*`
 /// avoids Material variant drift between Flutter versions — the Figma
 /// mockup dictates stroke width, corner radius, and pane position, so we
 /// honour them exactly.

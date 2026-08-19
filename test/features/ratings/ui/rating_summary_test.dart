@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/rating_data.dart';
 import 'package:lotti/classes/rating_question.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/ratings/ui/rating_summary.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 
@@ -198,7 +199,7 @@ void main() {
 
       // The edit affordance now lives in the entry header's action cluster, so
       // the summary body no longer carries an orphaned, misaligned pencil.
-      expect(find.byIcon(Icons.edit_outlined), findsNothing);
+      expect(find.byIcon(LottiIcons.edit), findsNothing);
       expect(find.byType(IconButton), findsNothing);
     });
   });

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
 import 'package:lotti/features/habits/state/heatmap/habit_heatmap_controller.dart';
@@ -137,9 +138,9 @@ void main() {
 
       // The header carries the search tool button and the category filter; the
       // old calendar/time-span button moved into the chart card and is gone.
-      final searchButtonFinder = find.byIcon(Icons.search);
+      final searchButtonFinder = find.byIcon(LottiIcons.search);
       expect(searchButtonFinder, findsOneWidget);
-      expect(find.byIcon(Icons.calendar_month), findsNothing);
+      expect(find.byIcon(LottiIcons.calendar), findsNothing);
 
       // Tapping search toggles the in-page search affordance via the controller.
       await tester.tap(searchButtonFinder);

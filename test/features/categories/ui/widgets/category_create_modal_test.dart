@@ -7,6 +7,7 @@ import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/categories/ui/widgets/category_create_modal.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_picker.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -584,7 +585,7 @@ void main() {
       // Close the dialog via its close button -> showDialog resolves to
       // null, so _showIconPicker takes the `result == null` path and
       // leaves _selectedIcon untouched (no setState).
-      await tester.tap(find.byIcon(Icons.close));
+      await tester.tap(find.byIcon(LottiIcons.close));
       await tester.pumpAndSettle();
 
       expect(find.byType(CategoryIconPicker), findsNothing);

@@ -213,9 +213,7 @@ class _GoalCheckInComposerState extends ConsumerState<GoalCheckInComposer> {
                       label: _writing
                           ? context.messages.goalCheckInRecordCta
                           : context.messages.goalCheckInWriteInstead,
-                      leadingIcon: _writing
-                          ? Icons.mic_rounded
-                          : Icons.edit_outlined,
+                      leadingIcon: _writing ? LottiIcons.mic : LottiIcons.edit,
                       variant: DesignSystemButtonVariant.secondary,
                       onPressed: () => setState(() => _writing = !_writing),
                     ),
@@ -315,7 +313,7 @@ class _RecordButton extends StatelessWidget {
     return DesignSystemButton(
       key: const ValueKey('goal-checkin-record'),
       label: context.messages.goalCheckInRecordCta,
-      leadingIcon: Icons.mic_rounded,
+      leadingIcon: LottiIcons.mic,
       onPressed: onPressed,
       fullWidth: true,
       size: DesignSystemButtonSize.large,

@@ -280,15 +280,15 @@ Color _glyphInk(Color bg) {
     case HabitCompletionType.success:
       return (
         background: successColor,
-        glyph: Icons.check_rounded,
+        glyph: LottiIcons.confirm,
         ink: inkOn(successColor),
       );
     case HabitCompletionType.skip:
       final fill = tokens.colors.background.level03;
-      return (background: fill, glyph: Icons.remove_rounded, ink: inkOn(fill));
+      return (background: fill, glyph: LottiIcons.remove, ink: inkOn(fill));
     case HabitCompletionType.fail:
       final fill = alarm.withValues(alpha: 0.32);
-      return (background: fill, glyph: Icons.close_rounded, ink: inkOn(fill));
+      return (background: fill, glyph: LottiIcons.close, ink: inkOn(fill));
     case HabitCompletionType.open:
       return (
         background: tokens.colors.decorative.level01,

@@ -201,7 +201,7 @@ class MonthHeader extends StatelessWidget {
         if (showDisclosure) ...[
           SizedBox(width: geometry.labelDisclosureGap),
           Icon(
-            Icons.chevron_right_rounded,
+            LottiIcons.chevronRight,
             size: 18,
             color: palette.accent,
           ),
@@ -242,7 +242,7 @@ class MonthHeader extends StatelessWidget {
             children: [
               _HeaderIconButton(
                 geometry: geometry,
-                icon: Icons.chevron_left_rounded,
+                icon: LottiIcons.chevronLeft,
                 color: palette.accent,
                 tooltip: MaterialLocalizations.of(context).previousMonthTooltip,
                 onPressed: onPreviousPressed,
@@ -250,7 +250,7 @@ class MonthHeader extends StatelessWidget {
               SizedBox(width: context.designTokens.spacing.step1),
               _HeaderIconButton(
                 geometry: geometry,
-                icon: Icons.chevron_right_rounded,
+                icon: LottiIcons.chevronRight,
                 color: palette.accent,
                 tooltip: MaterialLocalizations.of(context).nextMonthTooltip,
                 onPressed: onNextPressed,

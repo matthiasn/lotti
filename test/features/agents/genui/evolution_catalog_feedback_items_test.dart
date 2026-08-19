@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/genui/evolution_catalog.dart';
 import 'package:lotti/features/agents/ui/agent_palette.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../widget_test_utils.dart';
 import 'evolution_catalog_test_helpers.dart';
@@ -20,7 +21,7 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(Icons.analytics_outlined), findsOneWidget);
+      expect(find.byIcon(LottiIcons.insights), findsOneWidget);
       expect(find.textContaining('2'), findsWidgets);
       expect(find.textContaining('3'), findsWidgets);
       expect(find.textContaining('1'), findsWidgets);
@@ -153,7 +154,7 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(Icons.analytics_outlined), findsOneWidget);
+      expect(find.byIcon(LottiIcons.insights), findsOneWidget);
     });
   });
 
@@ -174,7 +175,7 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(Icons.category_outlined), findsOneWidget);
+      expect(find.byIcon(LottiIcons.category), findsOneWidget);
       expect(find.text('accuracy'), findsOneWidget);
       expect(find.text('5'), findsOneWidget);
     });
@@ -208,7 +209,7 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(Icons.category_outlined), findsOneWidget);
+      expect(find.byIcon(LottiIcons.category), findsOneWidget);
     });
 
     testWidgets(
@@ -314,7 +315,7 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(Icons.loop), findsOneWidget);
+      expect(find.byIcon(LottiIcons.repeat), findsOneWidget);
       expect(find.text('Session 3 of 10'), findsOneWidget);
       expect(find.text('7'), findsOneWidget);
     });

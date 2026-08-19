@@ -21,6 +21,7 @@ import 'package:lotti/features/daily_os_next/ui/widgets/day_activity_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/plan_view_toggle.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/processing_category_filter_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart' as nav_service;
 import 'package:lotti/utils/device_region.dart';
@@ -147,7 +148,7 @@ void main() {
 
         expect(find.text('Today'), findsOneWidget);
 
-        await tester.tap(find.byIcon(Icons.chevron_right_rounded));
+        await tester.tap(find.byIcon(LottiIcons.chevronRight));
         await tester.pump();
         await tester.pump();
         // Third frame: the tracked-time projection resolves before the
@@ -438,7 +439,7 @@ void main() {
           await tester.pump();
           await tester.pump();
 
-          await tester.tap(find.byIcon(Icons.chevron_left_rounded));
+          await tester.tap(find.byIcon(LottiIcons.chevronLeft));
           await tester.pump();
           await tester.pump();
           await tester.pump();
@@ -505,7 +506,7 @@ void main() {
           await tester.pump();
 
           // Shift forward one day so we have a non-today selection.
-          await tester.tap(find.byIcon(Icons.chevron_right_rounded));
+          await tester.tap(find.byIcon(LottiIcons.chevronRight));
           await tester.pump();
           await tester.pump();
           await tester.pump();
@@ -545,7 +546,7 @@ void main() {
 
           // Step off today. The phone header carries no Today button — the
           // date is the one thing that must stay readable at this width.
-          await tester.tap(find.byIcon(Icons.chevron_right_rounded));
+          await tester.tap(find.byIcon(LottiIcons.chevronRight));
           await tester.pump();
           await tester.pump();
           await tester.pump();
@@ -602,7 +603,7 @@ void main() {
           await tester.pump();
           await tester.pump();
 
-          await tester.tap(find.byIcon(Icons.chevron_right_rounded));
+          await tester.tap(find.byIcon(LottiIcons.chevronRight));
           await tester.pump();
           await tester.pump();
           await tester.pump();
@@ -643,7 +644,7 @@ void main() {
           await tester.pump();
           await tester.pump();
 
-          await tester.tap(find.byIcon(Icons.chevron_right_rounded));
+          await tester.tap(find.byIcon(LottiIcons.chevronRight));
           await tester.pump();
           await tester.pump();
           await tester.pump();
@@ -729,7 +730,7 @@ void main() {
           await tester.pump();
           await tester.pump();
 
-          await tester.tap(find.byIcon(Icons.chevron_right_rounded));
+          await tester.tap(find.byIcon(LottiIcons.chevronRight));
           await tester.pump();
           await tester.pump();
           await tester.pump();
@@ -744,7 +745,7 @@ void main() {
           // Navigation owns its row: the view toggle and the trailing
           // actions sit strictly below the chevrons.
           final navBottom = tester
-              .getBottomLeft(find.byIcon(Icons.chevron_right_rounded))
+              .getBottomLeft(find.byIcon(LottiIcons.chevronRight))
               .dy;
           expect(
             tester.getTopLeft(find.byType(PlanViewToggle)).dy,
@@ -780,16 +781,16 @@ void main() {
           await tester.pump();
 
           Offset nextChevron() =>
-              tester.getTopLeft(find.byIcon(Icons.chevron_right_rounded));
+              tester.getTopLeft(find.byIcon(LottiIcons.chevronRight));
           Offset prevChevron() =>
-              tester.getTopLeft(find.byIcon(Icons.chevron_left_rounded));
+              tester.getTopLeft(find.byIcon(LottiIcons.chevronLeft));
 
           final anchorNext = nextChevron();
           final anchorPrev = prevChevron();
           final seenLabels = <String>{};
 
           for (var step = 0; step < 5; step++) {
-            await tester.tap(find.byIcon(Icons.chevron_right_rounded));
+            await tester.tap(find.byIcon(LottiIcons.chevronRight));
             await tester.pump();
             await tester.pump();
             await tester.pump();
@@ -856,7 +857,7 @@ void main() {
           await tester.pump();
           await tester.pump();
           // Step off today so a real date string is rendered.
-          await tester.tap(find.byIcon(Icons.chevron_right_rounded));
+          await tester.tap(find.byIcon(LottiIcons.chevronRight));
           await tester.pump();
           await tester.pump();
           await tester.pump();
@@ -916,7 +917,7 @@ void main() {
           // On today the control has nothing to do and is not rendered.
           expect(todayButton, findsNothing);
 
-          await tester.tap(find.byIcon(Icons.chevron_right_rounded));
+          await tester.tap(find.byIcon(LottiIcons.chevronRight));
           await tester.pump();
           await tester.pump();
           await tester.pump();
@@ -971,7 +972,7 @@ void main() {
           expect(find.byType(AgendaView), findsNothing);
 
           // Chevron navigation must not bounce the user back to Activity.
-          await tester.tap(find.byIcon(Icons.chevron_right_rounded));
+          await tester.tap(find.byIcon(LottiIcons.chevronRight));
           await tester.pump();
           await tester.pump();
           await tester.pump();
