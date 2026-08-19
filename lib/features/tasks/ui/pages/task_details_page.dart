@@ -85,9 +85,10 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
   Timer? _suggestionsRetryTimer;
 
   /// Fallback anchor for above-card changes that do not report their own size
-  /// delta to [_scrollController]. Checklist changes use the controller's
-  /// pre-paint correction path; this anchor still covers other proposal-driven
-  /// task mutations.
+  /// delta to [_scrollController]. With the AI card sitting right below the
+  /// header, the header band is the only content above the proposals; this
+  /// anchor covers proposal-driven header mutations (title, tagline,
+  /// metadata) that slip past the pre-paint correction path.
   late final ScrollAnchor _suggestionsAnchor;
 
   /// Holds the content below the AI card fixed while the card grows off-screen
@@ -141,9 +142,10 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
       locate: _suggestionsViewportTop,
       // Cover a checked-off item's *delayed* row collapse: confirming a
       // "check off" proposal leaves the checklist row in place, then collapses
-      // it (hold + cross-fade) ~a second later. That shrink lands above the AI
-      // card; without spanning it the card slides up out from under the user's
-      // next tap. The hold bows out early if the user scrolls in the meantime.
+      // it (hold + cross-fade) ~a second later. The checklist sits below the
+      // card now, so that shrink no longer displaces the proposals — but the
+      // window still has to span header-band mutations from the same batch.
+      // The hold bows out early if the user scrolls in the meantime.
       holdDuration: _suggestionResolveHold,
     );
 
@@ -179,21 +181,25 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
   /// Arms exactly one stabilization geometry before proposal persistence
   /// begins.
   ///
-  /// The bands above the card — header, checklist and linked tasks — always
-  /// report their height deltas to [_scrollController], which corrects during
-  /// viewport layout so no displaced frame is painted. What changes is *which
-  /// point* has to stay still, and that flips when the card leaves the screen:
+  /// The header — the only band above the card — always reports its height
+  /// deltas to [_scrollController], which corrects during viewport layout so
+  /// no displaced frame is painted. The checklist and linked-tasks bands sit
+  /// below the card and report only while the below-card hold is armed. What
+  /// changes is *which point* has to stay still, and that flips when the card
+  /// leaves the screen:
   ///
   /// * **Card visible** — the proposals under the user's pointer must not move,
   ///   so [_suggestionsAnchor] holds. The card's own collapse is the reflow the
   ///   user is watching, so the card band stays silent.
-  /// * **Card fully above the viewport** — the user is reading the linked
-  ///   entries below it, and every resolved proposal — confirmed or dismissed
+  /// * **Card fully above the viewport** — the user is reading the content
+  ///   below it, and every resolved proposal — confirmed or dismissed
   ///   alike — collapses a row and shrinks
   ///   the card, dragging that content up. [_suggestionsAnchor] is structurally
   ///   blind to it, because a row collapsing *inside* the proposals section does
   ///   not move the section's top. So the card band reports its own shrink for a
-  ///   pre-paint correction, and [_belowCardAnchor] pins the seam below it.
+  ///   pre-paint correction — as do the checklist and linked-tasks bands, which
+  ///   sit between the card and the seam — and [_belowCardAnchor] pins the
+  ///   linked-entries seam.
   ///
   /// The two anchors are never armed together. They sit either side of the
   /// change, so the correction that holds one still moves the other by exactly
@@ -288,8 +294,9 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
   /// see it change size, so its own growth or shrink must not move what they
   /// *are* looking at.
   ///
-  /// Measured on the card band rather than the seam below it wherever possible:
-  /// the seam sits a further `step5 + step5` lower, and in that gap the card is
+  /// Measured on the card band rather than the seam below it wherever
+  /// possible: the seam (the linked-entries sliver) sits a whole two sections
+  /// — checklists and linked tasks — lower, and in that span the card is
   /// already out of sight while the seam is not.
   ///
   /// Once the card's sliver has scrolled beyond the viewport's cache extent the
@@ -359,9 +366,11 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
   /// anything — a sync or another background writer can change the link set at
   /// any scroll position. When the band sits entirely below the viewport its
   /// growth moves nothing on screen, and correcting for it would drag the
-  /// header and checklist the user *is* reading upwards. So that case is left
-  /// alone; a band that is visible or above stays worth compensating, because
-  /// everything below it — including the card — would otherwise shift.
+  /// content the user *is* reading upwards. So that case is left alone; a
+  /// band that is visible or above stays worth arming for, because the
+  /// linked entries below it would otherwise shift. (While the card is
+  /// visible the armed hold ignores this band's delta anyway — the band sits
+  /// below the proposals, so its growth is the visible reflow.)
   ///
   /// The baseline falls back to the listener's own [previous] value, because
   /// `taskLinkGroupsControllerProvider` is cached for `entryCacheDuration`: a
@@ -436,7 +445,7 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
         (previous, next) => handleFocus(next, isInitialLoad: previous == null),
       )
       // Hold the AI proposals in place when one is confirmed (which can grow
-      // the checklist above them) so the page doesn't jump under the user.
+      // the header above them) so the page doesn't jump under the user.
       ..listen<AsyncValue<UnifiedSuggestionList>>(
         unifiedSuggestionListProvider(widget.taskId),
         _onSuggestionsChanged,

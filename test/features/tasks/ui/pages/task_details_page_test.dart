@@ -1012,13 +1012,15 @@ void main() {
     });
 
     testWidgets(
-      'a linked task appearing long after the resolve window re-arms the hold '
-      'and keeps the proposals in place',
+      'a linked task appearing long after the resolve window leaves the '
+      'proposals and the offset untouched',
       (tester) async {
         // `create_follow_up_task` links its new task only after awaiting agent
-        // content generation, so the linked-tasks band above the card can grow
-        // seconds after the tap — long past the window the resolve armed. The
-        // page watches the band's own count so it re-arms whenever that lands.
+        // content generation, so the linked-tasks band can grow seconds after
+        // the tap. The band sits BELOW the proposals now: its growth is the
+        // visible reflow underneath them, so the armed hold must ignore the
+        // delta — the proposals stay put because nothing above them moved,
+        // not because the offset was corrected.
         tester.view.physicalSize = const Size(800, 500);
         tester.view.devicePixelRatio = 1;
         addTearDown(tester.view.reset);
@@ -1053,6 +1055,9 @@ void main() {
         await tester.pump(const Duration(seconds: 2));
         final proposalsTop = tester.getTopLeft(proposals).dy;
         final offsetBefore = position.pixels;
+        final bandHeightBefore = tester
+            .getSize(find.byType(LinkedTasksWidget, skipOffstage: false))
+            .height;
 
         container.read(controllableLinkedTaskCountProvider.notifier).set(1);
         for (var frame = 0; frame < 6; frame++) {
@@ -1064,24 +1069,32 @@ void main() {
           );
         }
 
-        // The band really did change height above the card — otherwise the
-        // assertion above would hold trivially.
-        expect(position.pixels, isNot(closeTo(offsetBefore, 1)));
+        // The band really did change height below the proposals — otherwise
+        // the assertion above would hold trivially.
+        expect(
+          tester
+              .getSize(find.byType(LinkedTasksWidget, skipOffstage: false))
+              .height,
+          isNot(closeTo(bandHeightBefore, 1)),
+        );
+        // And the offset was left alone: nothing above the proposals moved.
+        expect(position.pixels, closeTo(offsetBefore, 1));
         expect(tester.takeException(), isNull);
         container.dispose();
       },
     );
 
     testWidgets(
-      'a link changing relationship type re-arms the hold even though the '
-      'count is unchanged',
+      'a link changing relationship type resizes the band without moving the '
+      'proposals or the offset, even though the count is unchanged',
       (tester) async {
         // TaskLinkGroupsController re-emits whenever the resolved entries
         // differ, not only when links are added or removed. totalCount is
         // flat + typed, so a link moving between those buckets — a synced
         // link-type change — resizes the band (typed links render with their
-        // own section headers) while the count stays identical. Keying the
-        // listener on the count alone would leave that unstabilized.
+        // own section headers) while the count stays identical. The band sits
+        // below the proposals, so that resize must reflow underneath them
+        // with no offset correction.
         tester.view.physicalSize = const Size(800, 500);
         tester.view.devicePixelRatio = 1;
         addTearDown(tester.view.reset);
@@ -1115,6 +1128,9 @@ void main() {
 
         final proposalsTop = tester.getTopLeft(proposals).dy;
         final offsetBefore = position.pixels;
+        final bandHeightBefore = tester
+            .getSize(find.byType(LinkedTasksWidget, skipOffstage: false))
+            .height;
 
         container.read(controllableLinkedTaskTypedProvider.notifier).set(true);
         for (var frame = 0; frame < 6; frame++) {
@@ -1126,9 +1142,16 @@ void main() {
           );
         }
 
-        // The retitle really did resize the band — otherwise the assertion
-        // above would hold trivially.
-        expect(position.pixels, isNot(closeTo(offsetBefore, 1)));
+        // The type change really did resize the band — otherwise the
+        // assertion above would hold trivially.
+        expect(
+          tester
+              .getSize(find.byType(LinkedTasksWidget, skipOffstage: false))
+              .height,
+          isNot(closeTo(bandHeightBefore, 1)),
+        );
+        // And the offset was left alone: nothing above the proposals moved.
+        expect(position.pixels, closeTo(offsetBefore, 1));
         expect(tester.takeException(), isNull);
         container.dispose();
       },
@@ -1136,7 +1159,7 @@ void main() {
 
     testWidgets(
       'the first link change after mounting onto an already-resolved provider '
-      'still arms the hold',
+      'still reflows only below the proposals',
       (tester) async {
         // taskLinkGroupsControllerProvider is cached for entryCacheDuration, so
         // a page can mount onto an AsyncData provider and get no emission for
@@ -1186,6 +1209,9 @@ void main() {
 
         final proposalsTop = tester.getTopLeft(proposals).dy;
         final offsetBefore = position.pixels;
+        final bandHeightBefore = tester
+            .getSize(find.byType(LinkedTasksWidget, skipOffstage: false))
+            .height;
 
         // The very first change this page ever sees for the provider, pushed as
         // a single AsyncData the way the real controller's update-stream
@@ -1204,7 +1230,15 @@ void main() {
           );
         }
 
-        expect(position.pixels, isNot(closeTo(offsetBefore, 1)));
+        // The band really did resize below the proposals, and the offset was
+        // left alone: nothing above them moved.
+        expect(
+          tester
+              .getSize(find.byType(LinkedTasksWidget, skipOffstage: false))
+              .height,
+          isNot(closeTo(bandHeightBefore, 1)),
+        );
+        expect(position.pixels, closeTo(offsetBefore, 1));
         expect(tester.takeException(), isNull);
         warmup.close();
         container.dispose();

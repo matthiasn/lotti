@@ -336,26 +336,33 @@ void main() {
     );
 
     testWidgets(
-      'reports the AI card band only while it is off-screen, and the bands '
-      'above it always',
+      'reports the header unconditionally, and every band from the AI card '
+      'down only while the below-card hold is armed',
       (tester) async {
         await tester.pumpWidget(buildSubject(task: testTask));
         await tester.pumpAndSettle();
 
+        // The header is the only band above the proposals: its growth moves
+        // them, so it is compensated unconditionally.
+        expect(
+          reporterFor(
+            tester,
+            find.byType(DesktopTaskHeaderConnector),
+          ).offscreenOnly,
+          isFalse,
+        );
         // The card's own collapse must move the page only when the user
         // cannot see it; a visible collapse is the reflow they are watching.
-        expect(
-          reporterFor(tester, find.byType(AiSummaryCard)).offscreenOnly,
-          isTrue,
-        );
-        // Everything above the card is compensated unconditionally: it moves
-        // the card itself, which is what the hold exists to keep still.
+        // The checklist and linked-tasks bands sit BELOW the card, so while
+        // the card is visible their growth is the visible reflow under the
+        // proposals — compensating it would drag the proposals out from
+        // under the user's pointer.
         for (final band in [
-          find.byType(DesktopTaskHeaderConnector),
+          find.byType(AiSummaryCard),
           find.byType(ChecklistsWidget),
           find.byType(LinkedTasksWidget),
         ]) {
-          expect(reporterFor(tester, band).offscreenOnly, isFalse);
+          expect(reporterFor(tester, band).offscreenOnly, isTrue);
         }
       },
     );
@@ -385,13 +392,20 @@ void main() {
               .map((reporter) => reporter.key)
               .toList();
 
-          // Header, checklist, linked tasks, AI card.
+          // Header, AI card, checklist, linked tasks — the AI card leads the
+          // page right below the identity header so a reader lands on "what
+          // is this task about" before the work sections.
           expect(keys, hasLength(4));
           expect(keys.toSet(), hasLength(keys.length));
-          for (final key in keys) {
-            expect(key, isA<ValueKey<String>>());
-            expect((key! as ValueKey<String>).value, contains(task.meta.id));
-          }
+          expect(
+            keys.map((key) => (key! as ValueKey<String>).value).toList(),
+            [
+              'header-size-reporter-${task.meta.id}',
+              'ai-card-size-reporter-${task.meta.id}',
+              'checklist-size-reporter-${task.meta.id}',
+              'linked-tasks-size-reporter-${task.meta.id}',
+            ],
+          );
         }
       },
     );
