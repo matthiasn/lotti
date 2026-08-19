@@ -6,6 +6,7 @@ import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
+import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -302,9 +303,11 @@ class _LinkedTasksHeader extends ConsumerWidget {
       color: tokens.colors.text.highEmphasis,
     );
 
-    return InkWell(
+    // Quiet target: the header is a card title, not a button, so no hover
+    // fill — the disclosure chevron brightens on hover/focus/press instead.
+    return DsQuietInk(
       onTap: onToggleExpanded,
-      child: Padding(
+      builder: (context, highlighted) => Padding(
         // Asymmetric, because what sits above and below the header is not
         // symmetric. Only this padding separates the title from the card's top
         // edge, while everything below it — an empty-state action, a section
@@ -372,7 +375,9 @@ class _LinkedTasksHeader extends ConsumerWidget {
                   Icon(
                     expanded ? LottiIcons.chevronDown : LottiIcons.chevronRight,
                     size: tokens.spacing.step5,
-                    color: tokens.colors.text.mediumEmphasis,
+                    color: highlighted
+                        ? tokens.colors.text.highEmphasis
+                        : tokens.colors.text.mediumEmphasis,
                   ),
                   SizedBox(width: tokens.spacing.step2),
                 ],

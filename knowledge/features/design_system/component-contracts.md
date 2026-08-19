@@ -229,6 +229,33 @@ accent on both border and label — for a demoted-but-*positive* action beside
 a danger primary, where the neutral outlined treatment reads as Cancel
 ("Verify" next to "Remove" must still look like a good idea).
 
+## Quieter than any tier: `DsQuietInk`
+
+Some targets must not look like buttons at all — breadcrumb crumbs, card-title
+disclosure rows, text links, glyph buttons whose visible form is a small disc
+inside a larger hit area, and enlarged pointer targets around a switch. On
+those, Material's default `InkWell` overlay paints a rectangle around content
+that never advertised a boundary: a **phantom button** that appears on hover
+and vanishes on exit. `DsQuietInk` is the tap wrapper for that class of
+target. It silences every Material overlay (hover, focus, splash, highlight —
+the same silence `DesignSystemButton`'s InkWell applies) and instead hands its
+`builder` a `highlighted` flag, true on hover, keyboard focus, or while
+pressed, so the content answers with a **token-level shift of its own ink** —
+a chevron or label stepping up one emphasis tier, a disc border firming a
+step. Folding focus into the flag is load-bearing: with `focusColor`
+transparent, the builder's ink shift is the only visible cue keyboard users
+get. Folding the press in restores tap feedback on touch, where the removed
+splash used to carry it. With no tap or long-press handler it renders the
+builder's rest state with no `Material`/`InkWell` at all. It adds no
+semantics beyond the ink's tap action — callers keep their own `Semantics`
+wrappers, and the pointer-only enlarged-target flags
+(`excludeFromSemantics`, `canRequestFocus: false`) pass through.
+
+This is a different contract from `DesignSystemInlineAction`, which *is* a
+control that reads as one and keeps the shared hover fill. Reach for
+`DsQuietInk` only when a hover fill would manufacture a button shape the
+resting design deliberately does not have.
+
 ## In a dense row instead: `DesignSystemContactRow`
 
 The support footer both navigation surfaces close with — four equal,

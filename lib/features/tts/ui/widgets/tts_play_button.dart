@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
@@ -75,60 +76,60 @@ class TtsPlayButton extends StatelessWidget {
       label: label,
       child: Tooltip(
         message: label,
-        child: Material(
-          color: Colors.transparent,
-          shape: const CircleBorder(),
-          child: InkWell(
-            customBorder: const CircleBorder(),
-            onTap: onTap,
-            child: SizedBox(
-              width: _hitSize,
-              height: _hitSize,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  if (mode != TtsButtonMode.idle)
-                    SizedBox(
-                      width: _ringSize,
-                      height: _ringSize,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        value: mode == TtsButtonMode.playing
-                            ? (progress ?? 0).clamp(0.0, 1.0)
-                            : (reduceMotion ? 1.0 : null),
-                        color: ai.accent,
-                        backgroundColor: ai.borderSoft,
-                      ),
-                    ),
-                  DecoratedBox(
-                    decoration: BoxDecoration(
-                      // Idle stays a whispered utility so the header keeps a
-                      // single accent (the sparkle badge); the accent pair is
-                      // earned only while actively preparing/playing.
-                      color: mode == TtsButtonMode.idle
-                          ? ai.subtleWash
-                          : ai.accentSoft,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: mode == TtsButtonMode.idle
-                            ? ai.subtleBorder
-                            : ai.border,
-                      ),
-                    ),
-                    child: SizedBox(
-                      width: _circleSize,
-                      height: _circleSize,
-                      child: Icon(
-                        glyph,
-                        size: _glyphSize,
-                        color: mode == TtsButtonMode.idle
-                            ? ai.metaText
-                            : ai.accent,
-                      ),
+        // The visible button is the ~36px disc, not the 44px hit circle — a
+        // hover fill over the hit area haloed the disc with a phantom ring.
+        // The disc answers hover/focus/press itself: its border firms a step
+        // and the idle glyph brightens.
+        child: DsQuietInk(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          builder: (context, highlighted) => SizedBox(
+            width: _hitSize,
+            height: _hitSize,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                if (mode != TtsButtonMode.idle)
+                  SizedBox(
+                    width: _ringSize,
+                    height: _ringSize,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      value: mode == TtsButtonMode.playing
+                          ? (progress ?? 0).clamp(0.0, 1.0)
+                          : (reduceMotion ? 1.0 : null),
+                      color: ai.accent,
+                      backgroundColor: ai.borderSoft,
                     ),
                   ),
-                ],
-              ),
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    // Idle stays a whispered utility so the header keeps a
+                    // single accent (the sparkle badge); the accent pair is
+                    // earned only while actively preparing/playing.
+                    color: mode == TtsButtonMode.idle
+                        ? ai.subtleWash
+                        : ai.accentSoft,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: mode == TtsButtonMode.idle
+                          ? (highlighted ? ai.border : ai.subtleBorder)
+                          : (highlighted ? ai.accent : ai.border),
+                    ),
+                  ),
+                  child: SizedBox(
+                    width: _circleSize,
+                    height: _circleSize,
+                    child: Icon(
+                      glyph,
+                      size: _glyphSize,
+                      color: mode == TtsButtonMode.idle
+                          ? (highlighted ? ai.bodyText : ai.metaText)
+                          : ai.accent,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),

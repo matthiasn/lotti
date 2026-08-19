@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_part.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/components/motion/size_fade_entrance.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -274,12 +275,14 @@ class _HistoryToggle extends StatelessWidget {
       child: Semantics(
         button: true,
         expanded: open,
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: onPressed,
-            borderRadius: BorderRadius.circular(tokens.radii.s),
-            child: ConstrainedBox(
+        // Text-link hover: the link's own ink brightens; no fill behind it,
+        // which read as a phantom button around the quiet words.
+        child: DsQuietInk(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(tokens.radii.s),
+          builder: (context, highlighted) {
+            final ink = highlighted ? ai.bodyText : ai.metaText;
+            return ConstrainedBox(
               constraints: BoxConstraints(minHeight: tokens.spacing.step8),
               // Quiet meta like the footer's model line — the chevron and hit
               // target signal interactivity without spending accent on a
@@ -290,19 +293,19 @@ class _HistoryToggle extends StatelessWidget {
                   Icon(
                     open ? LottiIcons.chevronDown : LottiIcons.chevronRight,
                     size: tokens.spacing.step5,
-                    color: ai.metaText,
+                    color: ink,
                   ),
                   SizedBox(width: tokens.spacing.step2),
                   Text(
                     context.messages.aiCardHistoryToggle(count),
                     style: tokens.typography.styles.others.caption.copyWith(
-                      color: ai.metaText,
+                      color: ink,
                     ),
                   ),
                 ],
               ),
-            ),
-          ),
+            );
+          },
         ),
       ),
     );

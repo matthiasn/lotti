@@ -2,8 +2,8 @@ import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/features/agents/ui/wake_countdown_state.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_inline_action.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
+import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
@@ -626,9 +626,11 @@ TextStyle scheduleLabelStyle(DsTokens tokens) =>
 /// Worded rather than a bare glyph, and never accented: accent in this band
 /// means "this starts work", and Skip is its opposite. It sits at `bodyText`,
 /// the same register as the countdown it acts on — an action quieter than the
-/// static text beside it inverts the two. The shared hover fill carries the
-/// affordance; an underline here made the cancel out-decorate the value it
-/// cancels and gave the band a third dialect for "this is tappable".
+/// static text beside it inverts the two. A quiet link, not a button: no
+/// hover fill (which read as a phantom button in the settings band) and no
+/// underline — the word's own ink lifts a step on hover/focus/press. Its row
+/// box matches the switch row's `step7`, so the scheduled state does not
+/// grow the band beyond the idle state's silhouette.
 class _SkipAction extends StatelessWidget {
   const _SkipAction({
     required this.label,
@@ -642,13 +644,41 @@ class _SkipAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DesignSystemInlineAction(
-      key: const ValueKey('taskAgentSkipScheduledUpdate'),
-      label: label,
-      semanticsLabel: tooltip,
-      tooltip: tooltip,
-      ink: context.designTokens.colors.aiCard.bodyText,
-      onTap: onSkip,
+    final tokens = context.designTokens;
+    final ai = tokens.colors.aiCard;
+    return Semantics(
+      button: true,
+      label: tooltip,
+      child: Tooltip(
+        message: tooltip,
+        excludeFromSemantics: true,
+        child: DsQuietInk(
+          key: const ValueKey('taskAgentSkipScheduledUpdate'),
+          onTap: onSkip,
+          borderRadius: BorderRadius.circular(tokens.radii.s),
+          builder: (context, highlighted) => ExcludeSemantics(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: tokens.spacing.step7),
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: tokens.spacing.step2,
+                ),
+                child: Align(
+                  widthFactor: 1,
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: tokens.typography.styles.others.caption.copyWith(
+                      color: highlighted ? ai.titleText : ai.bodyText,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -758,10 +788,13 @@ class _AutomationSetting extends StatelessWidget {
     // makes the row one node: the switch's toggled state and tap action, over
     // the union of their rects. Same shape as `SwitchListTile`.
     return MergeSemantics(
-      child: Material(
+      child: KeyedSubtree(
         key: const ValueKey('taskAgentAutomationSetting'),
-        color: Colors.transparent,
-        child: InkWell(
+        // Quiet target: the band is a setting row, not a button, so no hover
+        // fill — a full-width wash on hover made the footer sprout a phantom
+        // button. The switch inside carries the visible state; the enlarged
+        // row target stays purely a hit area.
+        child: DsQuietInk(
           onTap: enabled ? () => onChanged(!value) : null,
           borderRadius: BorderRadius.circular(tokens.radii.s),
           // The enlarged target is for pointers and thumbs. The switch inside
@@ -775,17 +808,13 @@ class _AutomationSetting extends StatelessWidget {
           // and both stops toggle it. The switch keeps the keyboard; the row is
           // pointer-only.
           canRequestFocus: false,
-          // ...and it must not add a second *focus* stop either. Excluding
-          // semantics does nothing to focus traversal, so without this Tab lands
-          // twice on one setting — once on this wrapper, once on the switch —
-          // and both stops toggle it. The switch keeps the keyboard; the row is
-          // pointer-only.
-          // One row box, on the same `step8` minimum as every other row in this
-          // band. It is 8px shorter than the slot it replaces and, unlike that
-          // slot, all of it is tappable.
-          child: ConstrainedBox(
+          // One row box, sized to breathe around the 24px toggle track
+          // (step7 leaves 4px air each side) rather than the step8 the band
+          // used to pay — part of shrinking a footer that claimed more of
+          // the card than the summary it annotates. All of it is tappable.
+          builder: (context, _) => ConstrainedBox(
             key: const ValueKey('taskAgentAutomaticUpdatesTarget'),
-            constraints: BoxConstraints(minHeight: tokens.spacing.step8),
+            constraints: BoxConstraints(minHeight: tokens.spacing.step7),
             child: row,
           ),
         ),

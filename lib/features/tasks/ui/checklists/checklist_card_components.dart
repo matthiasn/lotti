@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/checklists/consts.dart';
 import 'package:lotti/features/tasks/ui/title_text_field.dart';
@@ -357,9 +358,14 @@ class _FilterTab extends StatelessWidget {
       label: label,
       child: SizedBox(
         width: 64,
-        child: InkWell(
+        // No hover fill — a rectangle washing over the tab read as a phantom
+        // button. The tab's own ink reacts instead: an unselected label
+        // brightens and gains a quiet underline; the SELECTED tab — whose
+        // label is already high-emphasis — shifts its underline to the
+        // interactive hover tone, so keyboard focus stays visible on it too.
+        child: DsQuietInk(
           onTap: onTap,
-          child: Column(
+          builder: (context, highlighted) => Column(
             children: [
               Expanded(
                 child: Container(
@@ -373,7 +379,7 @@ class _FilterTab extends StatelessWidget {
                     label,
                     textAlign: TextAlign.center,
                     style: tokens.typography.styles.body.bodySmall.copyWith(
-                      color: isSelected
+                      color: isSelected || highlighted
                           ? tokens.colors.text.highEmphasis
                           : tokens.colors.text.lowEmphasis,
                       fontWeight: isSelected
@@ -386,7 +392,13 @@ class _FilterTab extends StatelessWidget {
               Container(
                 width: 64,
                 height: 3,
-                color: isSelected ? accentColor : Colors.transparent,
+                color: isSelected
+                    ? (highlighted
+                          ? tokens.colors.interactive.hover
+                          : accentColor)
+                    : (highlighted
+                          ? tokens.colors.text.lowEmphasis
+                          : Colors.transparent),
               ),
             ],
           ),

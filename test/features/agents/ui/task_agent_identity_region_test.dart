@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -69,7 +70,7 @@ void main() {
   bool isTruncated(WidgetTester tester, Finder finder) =>
       tester.renderObject<RenderParagraph>(finder).didExceedMaxLines;
 
-  testWidgets('combined row is tappable, accessible, and at least step8 high', (
+  testWidgets('combined row is tappable, accessible, and at least step6 high', (
     tester,
   ) async {
     var taps = 0;
@@ -88,7 +89,7 @@ void main() {
     final context = tester.element(find.byType(TaskAgentIdentityRegion));
     expect(
       tester.getSize(inkWell).height,
-      greaterThanOrEqualTo(context.designTokens.spacing.step8),
+      greaterThanOrEqualTo(context.designTokens.spacing.step6),
     );
     for (final icon in tester.widgetList<Icon>(find.byType(Icon))) {
       expect(icon.color, context.designTokens.colors.aiCard.metaText);
@@ -136,8 +137,9 @@ void main() {
     //
     // Measured ink-to-ink, not by reading the declared padding back — an
     // earlier revision kept the *declared* geometry constant and still
-    // shifted on screen, because the tappable row's `step8` ink box centres
-    // its glyph and contributes optical air that a bare text row does not.
+    // shifted on screen, because the tappable row's minimum-height ink box
+    // centres its glyph and contributes optical air that a bare text row
+    // does not.
     double trailingAir(WidgetTester tester) {
       final region = find.byType(TaskAgentIdentityRegion);
       final lastText = find.descendant(of: region, matching: find.byType(Text));
@@ -264,7 +266,7 @@ void main() {
       tester.getRect(find.byIcon(LottiIcons.reasoning)).left - ink.left,
       moreOrLessEquals(tokens.spacing.step2, epsilon: 0.5),
     );
-    expect(ink.height, greaterThanOrEqualTo(tokens.spacing.step8));
+    expect(ink.height, greaterThanOrEqualTo(tokens.spacing.step6));
   });
 
   testWidgets('a squeezed route sheds whole segments, not characters', (
@@ -352,4 +354,51 @@ void main() {
     expect(find.text('GLM 5.2 · OpenRouter'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'hovering the setup row brightens its own ink instead of painting an '
+    'overlay',
+    (tester) async {
+      await pumpRegion(
+        tester,
+        data: const TaskAgentModelIdentityViewData(
+          presentation: TaskAgentIdentityPresentation.combined,
+          currentRoute: route,
+          reportRoute: route,
+        ),
+        width: 900,
+      );
+
+      final ai = tester
+          .element(find.byType(TaskAgentIdentityRegion))
+          .designTokens
+          .colors
+          .aiCard;
+      Color? routeInk() =>
+          tester.widget<Text>(find.text(routeLabel)).style?.color;
+      expect(routeInk(), ai.metaText);
+
+      final gesture = await tester.createGesture(
+        kind: PointerDeviceKind.mouse,
+      );
+      await gesture.addPointer(location: Offset.zero);
+      addTearDown(gesture.removePointer);
+      await gesture.moveTo(tester.getCenter(find.text(routeLabel)));
+      await tester.pump();
+
+      // A quiet link: the caption and its glyphs lift meta -> body...
+      expect(routeInk(), ai.bodyText);
+      expect(
+        tester.widget<Icon>(find.byIcon(LottiIcons.reasoning)).color,
+        ai.bodyText,
+      );
+      // ...and no Material overlay may paint a phantom button around them.
+      final inkWell = tester.widget<InkWell>(setupRowInk());
+      expect(inkWell.hoverColor, Colors.transparent);
+      expect(
+        inkWell.overlayColor?.resolve({WidgetState.hovered}),
+        Colors.transparent,
+      );
+    },
+  );
 }

@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -74,6 +75,36 @@ void main() {
         collapsedChevron,
       );
     });
+
+    testWidgets(
+      'hover paints no overlay rectangle — the chevron brightens instead',
+      (tester) async {
+        await pump(tester, expanded: false, onToggle: () {});
+
+        final tokens = tester.element(find.text('History')).designTokens;
+        Color chevronColor() =>
+            tester.widget<Icon>(find.byIcon(LottiIcons.expand)).color!;
+        expect(chevronColor(), tokens.colors.text.lowEmphasis);
+
+        final gesture = await tester.createGesture(
+          kind: PointerDeviceKind.mouse,
+        );
+        await gesture.addPointer(location: Offset.zero);
+        addTearDown(gesture.removePointer);
+        await gesture.moveTo(tester.getCenter(find.text('History')));
+        await tester.pump();
+
+        expect(chevronColor(), tokens.colors.text.highEmphasis);
+        // The row must not grow a phantom-button fill on hover; the quiet
+        // ink silences every Material overlay.
+        final inkWell = tester.widget<InkWell>(find.byType(InkWell));
+        expect(inkWell.hoverColor, Colors.transparent);
+        expect(
+          inkWell.overlayColor?.resolve({WidgetState.hovered}),
+          Colors.transparent,
+        );
+      },
+    );
 
     testWidgets('the chevron points right collapsed and down expanded', (
       tester,
