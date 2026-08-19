@@ -17,6 +17,7 @@ import 'package:lotti/features/categories/ui/widgets/category_selection_icon_but
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/entry_detail_header.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/header/switch_icon_widget.dart';
 import 'package:lotti/features/ratings/repository/rating_repository.dart';
 import 'package:lotti/features/ratings/ui/session_rating_modal.dart';
 import 'package:lotti/get_it.dart';
@@ -294,15 +295,16 @@ void main() {
         expect(_trailingGapWidths(tester), List.filled(3, spacing.step2));
         // The reclaimed width goes to the timestamp: the rail is
         // 4 × 48 + 3 × step2 = 204px, so the leading cluster keeps
-        // 300 − 204 = 96px for the leading cluster. The AI control is the
-        // first trailing slot, so its left edge marks that width.
+        // 300 − 204 = 96px for the leading cluster. The flag — the first of
+        // the two status glyphs, which lead the rail — is the first trailing
+        // slot, so its left edge marks that width.
         final compactRail = 4 * AppTheme.headerActionWidth + 3 * spacing.step2;
-        final aiButton = find.ancestor(
-          of: find.byIcon(LottiIcons.assistant),
+        final flagButton = find.ancestor(
+          of: find.byIcon(LottiIconsFilled.flag),
           matching: find.byType(IconButton),
         );
         expect(
-          tester.getTopLeft(aiButton).dx,
+          tester.getTopLeft(flagButton).dx,
           moreOrLessEquals(headerWidth - compactRail),
         );
       },
@@ -405,7 +407,7 @@ void main() {
       'collapsible expanded header also uses its five-control compact rail at '
       'phone width',
       (WidgetTester tester) async {
-        // Chevron + AI + flag + star + overflow: the five-control rail from
+        // Flag + star + AI + overflow + chevron: the five-control rail from
         // the linked-entries screenshot that left the date only `20…`.
         final flaggedTextEntry = testTextEntry.copyWith(
           meta: testTextEntry.meta.copyWith(flag: EntryFlag.import),
@@ -456,15 +458,29 @@ void main() {
         final spacing = _headerSpacing(tester);
         expect(_trailingGapWidths(tester), List.filled(4, spacing.step2));
         // Rail: 5 × 48 + 4 × step2 = 256px, leaving the timestamp 104px. The
-        // chevron is the first trailing slot, so its left edge marks it.
+        // flag is the first trailing slot, so its left edge marks it.
         final compactRail = 5 * AppTheme.headerActionWidth + 4 * spacing.step2;
+        final flagButton = find.ancestor(
+          of: find.byIcon(LottiIconsFilled.flag),
+          matching: find.byType(IconButton),
+        );
+        expect(
+          tester.getTopLeft(flagButton).dx,
+          moreOrLessEquals(headerWidth - compactRail),
+        );
+        // ...and the chevron closes the rail on the right, past the overflow:
+        // it discloses the row, so it trails every action on the entry.
         final chevronButton = find.ancestor(
           of: find.byIcon(LottiIcons.expand),
           matching: find.byType(IconButton),
         );
+        final overflowButton = find.ancestor(
+          of: find.byIcon(LottiIcons.more),
+          matching: find.byType(IconButton),
+        );
         expect(
           tester.getTopLeft(chevronButton).dx,
-          moreOrLessEquals(headerWidth - compactRail),
+          greaterThanOrEqualTo(tester.getTopRight(overflowButton).dx),
         );
       },
     );
@@ -1642,6 +1658,13 @@ void main() {
       ),
     );
 
+    // The same text entry the rest of this group uses, minus the star: the
+    // header's star slot is a state readout, so its *absence* is the default
+    // case and needs an entry that is genuinely not starred.
+    final unstarredEntry = testTextEntry.copyWith(
+      meta: testTextEntry.meta.copyWith(id: 'rail-unstarred', starred: false),
+    );
+
     final skill =
         AiConfig.skill(
               id: 'skill-rail',
@@ -1675,6 +1698,9 @@ void main() {
       when(
         () => mockJournalDb.journalEntityById(testTask.meta.id),
       ).thenAnswer((_) async => testTask);
+      when(
+        () => mockJournalDb.journalEntityById(unstarredEntry.meta.id),
+      ).thenAnswer((_) async => unstarredEntry);
       when(
         () => mockJournalDb.journalEntityById(event.meta.id),
       ).thenAnswer((_) async => event);
@@ -1761,6 +1787,98 @@ void main() {
       });
     });
 
+    group('star slot', () {
+      testWidgets('an unstarred entry spends no header slot on the star', (
+        tester,
+      ) async {
+        // The star does not filter anything here, so an outline star on every
+        // entry was a slot that carried no information. The action itself
+        // stays in the overflow menu.
+        await pumpHeader(tester, entryId: unstarredEntry.meta.id);
+
+        expect(find.byIcon(LottiIcons.star), findsNothing);
+        expect(find.byIcon(LottiIconsFilled.star), findsNothing);
+        expect(buttonFor(LottiIcons.more), findsOneWidget);
+      });
+
+      testWidgets('a starred entry shows the filled star as a live toggle', (
+        tester,
+      ) async {
+        await pumpHeader(tester);
+
+        expect(find.byIcon(LottiIconsFilled.star), findsOneWidget);
+        // Shown because it says something — and still tappable to clear it,
+        // not decoration. ('tap star icon' above exercises the toggle path.)
+        final star = tester.widget<SwitchIconWidget>(
+          find.byType(SwitchIconWidget),
+        );
+        expect(star.value, isTrue);
+        expect(star.onPressed, isNotNull);
+      });
+    });
+
+    group('control order', () {
+      testWidgets(
+        'star, then AI, then overflow, then the collapse chevron rightmost',
+        (tester) async {
+          await pumpHeader(tester, inLinkedEntries: true, inColumn: true);
+
+          double left(IconData icon) => tester.getTopLeft(buttonFor(icon)).dx;
+
+          // The star reads as state, the AI menu and the overflow act on the
+          // entry: quiet-to-loud, left to right.
+          expect(
+            left(LottiIconsFilled.star),
+            lessThan(left(LottiIcons.assistant)),
+          );
+          expect(left(LottiIcons.assistant), lessThan(left(LottiIcons.more)));
+        },
+      );
+
+      testWidgets('the chevron trails the overflow menu on a collapsible row', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            Align(
+              alignment: Alignment.topLeft,
+              child: SizedBox(
+                width: 500,
+                child: EntryDetailHeader(
+                  entryId: testTextEntry.meta.id,
+                  inLinkedEntries: true,
+                  isCollapsible: true,
+                  onToggleCollapse: () {},
+                ),
+              ),
+            ),
+            overrides: [
+              skillRegistryProvider.overrideWithValue([skill]),
+            ],
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // The chevron discloses the row rather than acting on the entry, so
+        // it sits past every entry action — including the AI menu and the
+        // star, which used to sit to its right.
+        final chevronLeft = tester.getTopLeft(buttonFor(LottiIcons.expand)).dx;
+        expect(
+          chevronLeft,
+          greaterThan(tester.getTopLeft(buttonFor(LottiIcons.more)).dx),
+        );
+        expect(
+          chevronLeft,
+          greaterThan(tester.getTopLeft(buttonFor(LottiIcons.assistant)).dx),
+        );
+        expect(
+          chevronLeft,
+          greaterThan(tester.getTopLeft(buttonFor(LottiIconsFilled.star)).dx),
+        );
+      });
+    });
+
     group('gaps', () {
       /// The measured distance from the category control's right edge to the
       /// next control's left edge.
@@ -1769,10 +1887,10 @@ void main() {
       /// distributed by the Row, which no assertion about spacer widgets can
       /// see.
       double categoryToNextGap(WidgetTester tester) =>
-          tester.getTopLeft(buttonFor(LottiIcons.assistant)).dx -
+          tester.getTopLeft(buttonFor(LottiIconsFilled.star)).dx -
           tester.getTopRight(find.byType(CategorySelectionIconButton)).dx;
 
-      testWidgets('the category sits one uniform gap from the AI menu', (
+      testWidgets('the category sits one uniform gap from the next control', (
         tester,
       ) async {
         await pumpHeader(tester);

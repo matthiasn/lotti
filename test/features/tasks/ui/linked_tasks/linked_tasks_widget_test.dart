@@ -1000,6 +1000,39 @@ void main() {
     );
 
     testWidgets(
+      'the one-line create row centres its plus, its label and its chevron — '
+      'the row above it wraps to two lines, so a top-aligned single line sat '
+      'visibly above the glyphs flanking it',
+      (tester) async {
+        await pumpWidget(tester, incoming: [], outgoing: []);
+
+        final label = find.text('Create new linked task…');
+        final row = find.ancestor(
+          of: label,
+          matching: find.byType(DesignSystemListItem),
+        );
+        final plus = find.descendant(
+          of: row,
+          matching: find.byIcon(LottiIcons.add),
+        );
+        final chevron = find.descendant(
+          of: row,
+          matching: find.byIcon(LottiIcons.chevronRight),
+        );
+
+        final labelCentre = tester.getCenter(label).dy;
+        expect(
+          tester.getCenter(plus).dy,
+          moreOrLessEquals(labelCentre, epsilon: 0.5),
+        );
+        expect(
+          tester.getCenter(chevron).dy,
+          moreOrLessEquals(labelCentre, epsilon: 0.5),
+        );
+      },
+    );
+
+    testWidgets(
       'the unlink confirmation names the task — the rows it is reached from '
       'carry two faint glyphs each, so "this task" cannot say which link was '
       'hit on the only irreversible action here',

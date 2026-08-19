@@ -37,9 +37,9 @@ import 'package:lotti/widgets/media/media_drop_target.dart';
 ///
 /// Renders a [CustomScrollView] with a sliver app bar, the [TaskForm]
 /// (header, AI summary, checklists, linked tasks), and the task's dated
-/// log-entry history below — collapsed by default behind a
-/// [TaskHistorySection] header, force-expanded when a focus intent targets
-/// an entry inside it. A sticky [TaskActionBar] sits in the `bottomNavigationBar`
+/// log-entry history below — expanded by default inside a
+/// [TaskHistorySection] the reader can fold away, and force-expanded when a
+/// focus intent targets an entry inside it. A sticky [TaskActionBar] sits in the `bottomNavigationBar`
 /// slot; `extendBody` lets its glass blur read the scrolling body and a
 /// trailing [SliverPadding] reserves the bar's height so the last entry can
 /// scroll clear of it. Listens to the task focus controller to auto-scroll
@@ -127,11 +127,12 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
   /// so a stale previous-task count can't falsely trigger the scroll anchor.
   String? _lastTaskId;
 
-  /// Whether the dated log-entry history is expanded. Collapsed by default —
-  /// the history is the page's longest region — and force-expanded when a
-  /// focus intent targets an entry inside it, because a collapsed section has
-  /// no mounted entry keys to scroll to.
-  bool _historyExpanded = false;
+  /// Whether the dated log-entry history is expanded. Expanded by default —
+  /// the log is what a reader opens a task to read, and hiding it behind a
+  /// disclosure cost a click on every visit — and force-expanded when a focus
+  /// intent targets an entry inside it, because a collapsed section has no
+  /// mounted entry keys to scroll to.
+  bool _historyExpanded = true;
 
   @override
   void initState() {
@@ -244,10 +245,10 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
     _lastTaskId = widget.taskId;
     _lastOpenSuggestionCount = null;
     _lastLinkGroups = null;
-    // The next task starts with its history collapsed again; no setState —
-    // this runs from listeners and the taskId change rebuilds the page
-    // anyway.
-    _historyExpanded = false;
+    // The next task starts from the default expanded history again; no
+    // setState — this runs from listeners and the taskId change rebuilds the
+    // page anyway.
+    _historyExpanded = true;
     return true;
   }
 

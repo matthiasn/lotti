@@ -201,6 +201,84 @@ void main() {
       );
     });
 
+    testWidgets(
+      'a one-line wrappable row centres its text against a taller rail',
+      (tester) async {
+        // A row that *may* wrap (titleMaxLines: 2) but currently holds one
+        // line, beside slots taller than that line — the reserved chevron
+        // rail on the "create new linked task" row. The glyph slots centre
+        // against the row, so a top-aligned title sat visibly above the icons
+        // flanking it.
+        const title = 'One line';
+        const railKey = Key('tall-rail');
+        const leadKey = Key('lead-glyph');
+
+        await _pumpListItem(
+          tester,
+          const DesignSystemListItem(
+            title: title,
+            titleMaxLines: 2,
+            leading: Icon(Icons.add, key: leadKey, size: 20),
+            trailingExtra: SizedBox(
+              key: railKey,
+              width: 64,
+              height: 32,
+              child: Icon(Icons.chevron_right, size: 20),
+            ),
+          ),
+        );
+
+        final titleCentre = tester.getCenter(find.text(title)).dy;
+        expect(
+          titleCentre,
+          moreOrLessEquals(
+            tester.getCenter(find.byKey(railKey)).dy,
+            epsilon: 0.5,
+          ),
+        );
+        expect(
+          titleCentre,
+          moreOrLessEquals(
+            tester.getCenter(find.byKey(leadKey)).dy,
+            epsilon: 0.5,
+          ),
+        );
+      },
+    );
+
+    testWidgets(
+      'a two-line row still anchors both rails to the whole text block',
+      (tester) async {
+        const railKey = Key('two-line-rail');
+
+        await _pumpListItem(
+          tester,
+          const DesignSystemListItem(
+            title: 'Link a task…',
+            subtitle: 'Connect this task to another task.',
+            titleMaxLines: 2,
+            subtitleMaxLines: 2,
+            trailingExtra: SizedBox(
+              key: railKey,
+              width: 64,
+              height: 32,
+              child: Icon(Icons.chevron_right, size: 20),
+            ),
+          ),
+        );
+
+        // The text block is the tallest thing here, so centring it is a
+        // no-op: the rail centres on the title+subtitle pair, between them.
+        final titleBottom = tester.getBottomLeft(find.text('Link a task…')).dy;
+        final subtitleTop = tester
+            .getTopLeft(find.text('Connect this task to another task.'))
+            .dy;
+        final railCentre = tester.getCenter(find.byKey(railKey)).dy;
+        expect(railCentre, greaterThan(titleBottom - 6));
+        expect(railCentre, lessThan(subtitleTop + 6));
+      },
+    );
+
     testWidgets('renders leading and trailing widgets', (tester) async {
       const itemKey = Key('slots-item');
 

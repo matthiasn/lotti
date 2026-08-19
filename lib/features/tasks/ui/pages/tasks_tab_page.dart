@@ -207,7 +207,11 @@ class _TasksTabPageState extends ConsumerState<TasksTabPage> {
     final state = ref.watch(journalPageControllerProvider(true));
     final filterContext = TaskCreationFilterContext.fromPageState(state);
     final floatingActionButton = DesignSystemFloatingActionButton(
-      semanticLabel: context.messages.addActionAddTask,
+      semanticLabel: context.messages.addActionCreateTask,
+      // Worded, not a bare `+`: this pane creates tasks while the app's other
+      // panes create entries, habits and goals from the same glyph in the
+      // same corner, so the plus alone did not say what it would make.
+      label: context.messages.addActionCreateTask,
       onPressed: () {
         unawaited(
           (widget.onCreateTaskPressed ?? _defaultCreateTaskPressed)(

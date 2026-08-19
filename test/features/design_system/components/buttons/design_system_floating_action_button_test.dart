@@ -48,6 +48,62 @@ void main() {
       expect(size, const Size(56, 56));
     });
 
+    testWidgets('a label turns it into a worded pill, still one control', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          DesignSystemFloatingActionButton(
+            semanticLabel: 'Add a task',
+            label: 'Add a task',
+            onPressed: () {},
+          ),
+          theme: DesignSystemTheme.light(),
+        ),
+      );
+
+      expect(find.text('Add a task'), findsOneWidget);
+      expect(find.byIcon(LottiIcons.add), findsOneWidget);
+
+      final size = tester.getSize(
+        find.byType(DesignSystemFloatingActionButton),
+      );
+      // Same height as the circular form — the pill only grows sideways, so
+      // it keeps the FAB's vertical rhythm against the bottom bar.
+      expect(size.height, 56);
+      expect(size.width, greaterThan(56));
+
+      // The visible word must not also be announced on its own: the button
+      // already carries the action name, and a duplicate node reads it twice.
+      expect(find.bySemanticsLabel('Add a task'), findsOneWidget);
+    });
+
+    testWidgets('a long label ellipsizes instead of overflowing', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const SizedBox(
+            width: 120,
+            child: Align(
+              child: DesignSystemFloatingActionButton(
+                semanticLabel: 'Add',
+                label: 'Add a task with a very long localized label',
+              ),
+            ),
+          ),
+          theme: DesignSystemTheme.light(),
+        ),
+      );
+
+      expect(tester.takeException(), isNull);
+      final text = tester.widget<Text>(
+        find.text('Add a task with a very long localized label'),
+      );
+      expect(text.maxLines, 1);
+      expect(text.overflow, TextOverflow.ellipsis);
+    });
+
     testWidgets('invokes onPressed when tapped', (tester) async {
       var tapped = false;
 

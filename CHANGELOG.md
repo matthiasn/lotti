@@ -181,10 +181,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **The task page reads top-down again.** The AI summary now sits directly
   under the title, so opening a task starts with what it is about and where it
   stands; the todos and linked tasks follow, and the model attribution lives
-  only inside the summary card's own footer. The dated log-entry history —
-  the page's longest region — is collapsed by default behind a History header
-  and opens with one tap (or on its own when something needs to scroll to an
-  entry inside it).
+  only inside the summary card's own footer. The dated log-entry history sits
+  under a History header that folds it away in one tap when you are done with
+  it, and reopens on its own when something needs to scroll to an entry
+  inside it.
+- **Each log entry's controls read in one order.** An entry's header now runs
+  quiet to loud, left to right: the star (only when the entry is starred),
+  the AI menu, the ⋯ menu, and the expand/collapse chevron last of all, on
+  the far right where it belongs to the row rather than to the entry. An
+  unstarred entry no longer spends a slot on a grey star that said nothing —
+  starring is still one tap away in the ⋯ menu, exactly like flagging.
+- **The Add task button says so.** The task list's round `+` is now a worded
+  button, so the one control that creates a task no longer looks like every
+  other `+` in the app. In Linked Tasks, the single-line "Create new linked
+  task…" row also sits straight: its plus, its label and its chevron now
+  share one line instead of the label riding above the icons beside it.
 - **Task metadata moved off the title and into a Details fly-out.** Status,
   priority, category, project, due date, time estimate, labels and AI spend
   are set once and rarely changed, so they no longer wear rows of
