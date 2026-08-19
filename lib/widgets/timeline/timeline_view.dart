@@ -191,7 +191,14 @@ class _TimelineTile extends StatelessWidget {
     final tokens = context.designTokens;
     final cs = context.colorScheme;
     final entryId = beat.entryId;
-    final canOpen = onOpenBeat != null && entryId != null;
+    // A beat's own tap outranks the entry navigation; either way the row is
+    // "openable" and earns the chevron.
+    final onTap =
+        beat.onTap ??
+        (onOpenBeat != null && entryId != null
+            ? () => onOpenBeat!(entryId)
+            : null);
+    final canOpen = onTap != null;
     final accent = beat.accent ?? cs.primary;
 
     final dotSize = beat.glyph == null
@@ -233,21 +240,36 @@ class _TimelineTile extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Text(
-                          beat.timeLabel,
-                          style: tokens.typography.styles.body.bodySmall
-                              .copyWith(color: cs.onSurfaceVariant),
-                        ),
-                        if (beat.kindLabel != null) ...[
-                          SizedBox(width: tokens.spacing.step2),
-                          Flexible(
-                            child: Text(
-                              beat.kindLabel!,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: calmEyebrowStyle(tokens, color: accent),
-                            ),
+                        Expanded(
+                          child: Row(
+                            children: [
+                              Text(
+                                beat.timeLabel,
+                                style: tokens.typography.styles.body.bodySmall
+                                    .copyWith(color: cs.onSurfaceVariant),
+                              ),
+                              if (beat.kindLabel != null) ...[
+                                SizedBox(width: tokens.spacing.step2),
+                                Flexible(
+                                  child: Text(
+                                    beat.kindLabel!,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: calmEyebrowStyle(
+                                      tokens,
+                                      color: accent,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
+                        ),
+                        // Fully right-aligned, on the SAME row as the time
+                        // and kind — a status-only beat stays one tight line.
+                        if (beat.trailing != null) ...[
+                          SizedBox(width: tokens.spacing.step2),
+                          beat.trailing!,
                         ],
                       ],
                     ),
@@ -278,7 +300,7 @@ class _TimelineTile extends StatelessWidget {
 
     if (!canOpen) return row;
     return InkWell(
-      onTap: () => onOpenBeat!(entryId),
+      onTap: onTap,
       borderRadius: BorderRadius.circular(tokens.radii.s),
       child: row,
     );

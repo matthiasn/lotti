@@ -316,7 +316,8 @@ class _PendingProposalChip extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: info.defaultColor.withValues(alpha: SurfaceAlphas.washChip),
-        borderRadius: BorderRadius.circular(tokens.radii.s),
+        // Informative, not tappable: the small-chip radius, never the pill.
+        borderRadius: BorderRadius.circular(tokens.radii.smallChips),
       ),
       child: Text(
         context.messages.goalPendingProposalBadge,

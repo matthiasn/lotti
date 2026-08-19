@@ -17,6 +17,8 @@ void main() {
     IconData? glyph,
     Color? accent,
     TimelineBeatContent? content,
+    Widget? trailing,
+    VoidCallback? onTap,
   }) => TimelineBeat(
     id: id,
     entryId: entryId,
@@ -24,6 +26,8 @@ void main() {
     kindLabel: kindLabel,
     glyph: glyph,
     accent: accent,
+    trailing: trailing,
+    onTap: onTap,
     content: content ?? const TimelineBeatContent.text('Morning walk done.'),
   );
 
@@ -77,6 +81,58 @@ void main() {
       expect(find.byIcon(Icons.chevron_right), findsOneWidget);
       await tester.tap(find.text('Morning walk done.'));
       expect(opened, 'entry-42');
+    });
+  });
+
+  group('beat-level tap and trailing slot', () {
+    testWidgets('a beat-level onTap opens without an entry id and earns the '
+        'chevron', (tester) async {
+      var opened = 0;
+      await pump(
+        tester,
+        TimelineView(
+          groups: [
+            TimelineGroup(
+              beats: [beat(onTap: () => opened++)],
+            ),
+          ],
+          onOpenBeat: (_) => fail('the beat tap outranks entry navigation'),
+        ),
+      );
+
+      expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+      await tester.tap(find.text('09:14'));
+      expect(opened, 1);
+    });
+
+    testWidgets('a trailing widget rides the header row, fully right-aligned', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        TimelineView(
+          groups: [
+            TimelineGroup(
+              beats: [
+                beat(
+                  kindLabel: 'DAILY REFLECTION',
+                  trailing: const Text('Met'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+
+      final time = tester.getRect(find.text('09:14'));
+      final kind = tester.getRect(find.text('DAILY REFLECTION'));
+      final trailing = tester.getRect(find.text('Met'));
+      final view = tester.getRect(find.byType(TimelineView));
+      // One tight row: the status shares the line with the time and kind…
+      expect(trailing.center.dy, closeTo(time.center.dy, 1));
+      // …and sits at the trailing edge, past the leading labels.
+      expect(trailing.left, greaterThan(kind.right));
+      expect(trailing.right, greaterThan(view.center.dx));
     });
   });
 

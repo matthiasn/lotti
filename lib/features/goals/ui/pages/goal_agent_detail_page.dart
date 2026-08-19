@@ -18,7 +18,6 @@ import 'package:lotti/features/agents/ui/widgets/ai_card_chrome.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart'
     show WakeRunCompletion;
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
-import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
@@ -40,7 +39,6 @@ import 'package:lotti/features/goals/ui/goal_health_direction.dart';
 import 'package:lotti/features/goals/ui/goal_log_today_sheet.dart';
 import 'package:lotti/features/goals/ui/goal_progress_card.dart';
 import 'package:lotti/features/goals/ui/goal_routes.dart';
-import 'package:lotti/features/goals/ui/goal_status_chip.dart';
 import 'package:lotti/features/goals/ui/unified/unified_goal_status.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
@@ -62,12 +60,13 @@ import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 /// One goal — the §4b dashboard: header (name · unified status pill ·
 /// trend), the hero stack (the timestamped Agent's-read card above the
 /// deterministic Goal-days card, each at the full content width), active
-/// banners and pending proposals,
-/// then the Habits and Signals evidence sections, the reflection history,
-/// the About-this-agent expander (cost pills + automation), and the
-/// bounded banner timeline. Desktop hosts the durable conversation as a
-/// non-modal right-overlay drawer; mobile opens the same projection as a
-/// pushed page.
+/// banners and pending proposals, then the Habits and Signals evidence
+/// sections and the About-this-agent expander (cost pills + automation).
+/// Daily reflections live in the check-ins rail rather than the main
+/// column, and the retired-banner timeline is gone — the rail is the one
+/// place "what I've said about this goal" is read. Desktop hosts the
+/// durable conversation as a non-modal right-overlay drawer; mobile opens
+/// the same projection as a pushed page.
 class GoalAgentDetailPage extends ConsumerStatefulWidget {
   const GoalAgentDetailPage({required this.agentId, super.key});
 
@@ -426,9 +425,6 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
             ),
           ),
     ];
-    final history =
-        ref.watch(goalNudgeHistoryProvider(agentId)).value ??
-        const <GoalNudgeEntity>[];
     // The OTHER goals sharing each of this goal's habits, pre-joined for the
     // habit cards' "also in {goal}" suffix (§5: one recording, reflected
     // everywhere).
@@ -719,13 +715,9 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
             showTimeSpanPicker: false,
           ),
         ],
-        if (progress != null && assessments.isNotEmpty) ...[
-          SizedBox(height: tokens.spacing.cardItemSpacing),
-          GoalAssessmentHistoryCard(
-            records: assessments,
-            progress: progress,
-          ),
-        ],
+        // Daily reflections deliberately do NOT get a main-column card:
+        // they live in the check-ins rail (the flyout on desktop, the
+        // check-ins card on phones), where each one is a tight single row.
         if (showChatAction) ...[
           SizedBox(height: tokens.spacing.cardItemSpacing),
           DesignSystemButton(
@@ -739,10 +731,6 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
             size: DesignSystemButtonSize.medium,
             fullWidth: true,
           ),
-        ],
-        if (history.isNotEmpty) ...[
-          SizedBox(height: tokens.spacing.cardItemSpacing),
-          _GoalHistorySection(history: history),
         ],
       ];
       // Eager, not lazy: the section count is small and bounded, and the
@@ -1784,86 +1772,6 @@ class _GoalReportCardState extends State<_GoalReportCard>
           ),
         ],
       ],
-    );
-  }
-}
-
-class _GoalHistorySection extends StatefulWidget {
-  const _GoalHistorySection({required this.history});
-
-  final List<GoalNudgeEntity> history;
-
-  @override
-  State<_GoalHistorySection> createState() => _GoalHistorySectionState();
-}
-
-class _GoalHistorySectionState extends State<_GoalHistorySection> {
-  /// Initial render bound. `goalNudgeHistoryProvider` is deliberately
-  /// unbounded, and this page builds eagerly (no lazy list on this surface),
-  /// so a mature goal must not pay layout for years of retired banners on
-  /// page open. Show more reveals the full list — a user choice, still
-  /// eagerly built once made.
-  static const int _initialRows = 20;
-
-  bool _showAll = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final history = _showAll
-        ? widget.history
-        : widget.history.take(_initialRows).toList(growable: false);
-    return DesignSystemSectionCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            context.messages.goalDetailTimelineTitle,
-            style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-              color: tokens.colors.text.highEmphasis,
-            ),
-          ),
-          SizedBox(height: tokens.spacing.step3),
-          for (var index = 0; index < history.length; index++) ...[
-            if (index > 0)
-              Divider(
-                height: tokens.spacing.step4,
-                color: tokens.colors.decorative.level01,
-              ),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Text(
-                    '“${history[index].brief.headline}”',
-                    style: tokens.typography.styles.body.bodySmall.copyWith(
-                      color: tokens.colors.text.mediumEmphasis,
-                    ),
-                  ),
-                ),
-                SizedBox(width: tokens.spacing.step3),
-                Text(
-                  goalNudgeStatusLabel(context, history[index].status),
-                  style: tokens.typography.styles.others.caption.copyWith(
-                    color: tokens.colors.text.lowEmphasis,
-                  ),
-                ),
-              ],
-            ),
-          ],
-          if (!_showAll && widget.history.length > _initialRows) ...[
-            SizedBox(height: tokens.spacing.step1),
-            DesignSystemButton(
-              label: context.messages.aiResponseShowMore,
-              onPressed: () => setState(() => _showAll = true),
-              variant: DesignSystemButtonVariant.tertiary,
-              size: DesignSystemButtonSize.dense,
-              trailingIcon: Icons.expand_more_rounded,
-              alignsLabelToLeadingEdge: true,
-            ),
-          ],
-        ],
-      ),
     );
   }
 }

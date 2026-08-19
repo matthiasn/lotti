@@ -827,7 +827,24 @@ flowchart TD
   reflected everywhere), a goal-scoped completion-rate chart (`HabitsChartCard(habitIds: …)` — the shared card
   computed on the goal's slice of the habits day maps via
   `scopeHabitsStateToHabits`, same range tabs), and the cost/automation
-  plumbing riding the read card itself. The read card wears the SAME
+  plumbing riding the read card itself. Daily reflections have NO
+  main-column card: they render only in the check-ins rail, each as one
+  tight row whose verdict pill rides the timeline header's trailing slot
+  (`TimelineBeat.trailing`) and whose row tap (`TimelineBeat.onTap`)
+  reopens the same reflection sheet the day strip uses; provenance
+  ("Rated by you" / "suggested, you accepted") stays on the record but is
+  not rendered. The retired-banner list ("Interactions" — past ads with
+  Superseded/Dismissed outcomes) is gone from the dashboard entirely;
+  `goalNudgeHistoryProvider` remains for bookkeeping but no page surface
+  reads it. Each dimension card pins one stacked corner element top-right:
+  the key reading over its status caption (semantic ink), replacing the
+  old inline title-row pair, and the rolling week's cadence line is gone —
+  the corner block carries the count/target, the period line carries
+  "slides at midnight". Legends and one-sentence summaries center under
+  the charts they annotate. Chip shape encodes affordance on every goal
+  surface: clickable elements are fully rounded (`radii.badgesPills`);
+  informative chips — status/trend/verdict/cost — take the fixed
+  `radii.smallChips` corner. The read card wears the SAME
   "intelligence" panel as the task agent section on Task Details — the
   shared `aiCardDecoration` chrome and `TldrHeader`, the shared
   `AgentAutomationRow` reload affordances, and the goal's cumulative
@@ -861,11 +878,17 @@ flowchart TD
   range. The retained snapshot is scoped to the active spec version and only
   promoted from a settled provider value, so a spec reload cannot relabel
   prior-spec evidence. A day track FITS before it scrolls:
-  `goalDayTrackMetrics` narrows the column pitch — and the square and weekday
-  caption inside it, down to a one-letter form — until the whole span fits the
-  width it was given, and only a span that overflows even at the legibility
-  floor becomes a trailing-anchored (`reverse: true`) scroller joined to one
-  `LinkedScrollGroup`, where every track then pans in unison. One policy
+  `goalDayTrackMetrics` narrows the column pitch — and the square inside it —
+  until the whole span fits the width it was given, and only a span that
+  overflows even at the legibility floor becomes a trailing-anchored
+  (`reverse: true`) scroller joined to one `LinkedScrollGroup`, where every
+  track then pans in unison. The habit squares and the whole-goal strip
+  carry their weekday axis INSIDE the cells (`goalDayCellLetter`: the
+  one-letter initial, suppressed below `IconSizes.s` and outranked by the
+  verdict glyph, the partial dot and the missed cross) instead of a label
+  row above the track; only the hand-painted metric bars keep a caption
+  axis (`_WeekdayTrack`), below the bars, since a variable-height bar
+  cannot host a letter. One policy
   (`_fitOrScroll`), by WIDTH, for all three tracks: deciding by day count
   wrapped a span that provably fitted, and a fortnight at the authored pitch
   is wider than a phone card, so the scroller opened with the first days of

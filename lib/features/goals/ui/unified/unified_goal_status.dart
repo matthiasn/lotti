@@ -146,7 +146,9 @@ class UnifiedGoalStatusPill extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: solid ? color : color.withValues(alpha: SurfaceAlphas.washChip),
-        borderRadius: BorderRadius.circular(tokens.radii.s),
+        // Informative, not tappable: the small-chip radius, never the pill —
+        // full rounding is reserved for clickable elements on goal surfaces.
+        borderRadius: BorderRadius.circular(tokens.radii.smallChips),
       ),
       child: Text(
         label,

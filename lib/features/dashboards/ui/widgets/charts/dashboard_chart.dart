@@ -294,14 +294,24 @@ class DashboardLegendEntry {
 /// blood pressure's systolic/diastolic lines, the BMI range bands — are
 /// self-identifying without relying on hover.
 class DashboardChartLegend extends StatelessWidget {
-  const DashboardChartLegend({required this.entries, super.key});
+  const DashboardChartLegend({
+    required this.entries,
+    this.alignment = WrapAlignment.start,
+    super.key,
+  });
 
   final List<DashboardLegendEntry> entries;
+
+  /// How entries distribute along the row. Dashboards keep the default
+  /// leading alignment; the goal cards center their legends as card-level
+  /// annotation.
+  final WrapAlignment alignment;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     return Wrap(
+      alignment: alignment,
       spacing: tokens.spacing.step5,
       runSpacing: tokens.spacing.step2,
       children: [

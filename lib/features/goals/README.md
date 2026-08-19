@@ -290,7 +290,10 @@ opens the journal entry behind it.
 They appear as dated beats on the goal's timeline, which is the shared
 `lib/widgets/timeline/` rail that Events uses, merged with the standing daily
 reflections so both halves of "what I've said about this goal" read as one
-story. A wide window renders the rail as a second column beside the dashboard
+story. The rail is the reflections' only surface — the dashboard renders no
+separate history card — and each reflection is one tight row: the verdict
+pill rides the beat header's trailing slot, the row itself reopens the day's
+reflection sheet, and no provenance text is shown. A wide window renders the rail as a second column beside the dashboard
 (the conversation drawer keeps overlaying both); a phone previews three beats
 in a card after This week, with the full history at
 `/goals/details/<id>/timeline`. The reflection sheet's note gained a voice row,

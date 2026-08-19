@@ -115,6 +115,14 @@ class GoalCompactWindowStrip extends StatelessWidget {
     );
     final resolvedCellSize = metrics.cellSize;
 
+    // One-letter weekday initials, nested inside the cells themselves — the
+    // separate label row above the strip spent a full row on what a letter
+    // per node now carries. Dateless strips render no letters.
+    final letterFormat = DateFormat.EEEEE(locale);
+    String? letterAt(int index) => lastDay == null
+        ? null
+        : letterFormat.format(_dateAt(index, visible.length));
+
     Widget cellAt(int index) {
       if (placeholder) return _PlaceholderDayCell(size: resolvedCellSize);
       final today = index == visible.length - 1;
@@ -125,6 +133,7 @@ class GoalCompactWindowStrip extends StatelessWidget {
           today: today,
           size: resolvedCellSize,
           rating: rating,
+          weekdayLetter: letterAt(index),
         );
       }
       final date = _dateAt(index, visible.length);
@@ -148,6 +157,7 @@ class GoalCompactWindowStrip extends StatelessWidget {
         today: today,
         size: resolvedCellSize,
         rating: rating,
+        weekdayLetter: letterAt(index),
         label: context.messages.goalProgressHabitDaySemantics(
           dayName,
           outcome,
@@ -164,16 +174,7 @@ class GoalCompactWindowStrip extends StatelessWidget {
     // The pitch is narrower than the 48px touch floor — seven of those do not
     // fit a phone card — so, exactly as the habit cells already do, the slot
     // takes the full pitch horizontally and clears the floor vertically.
-    final trackDays = lastDay == null
-        ? null
-        : [
-            for (var index = 0; index < visible.length; index++)
-              GoalProgressDay(
-                day: _dateAt(index, visible.length),
-                value: 0,
-              ),
-          ];
-    final row = trackDays == null
+    final row = lastDay == null
         ? Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -210,39 +211,6 @@ class GoalCompactWindowStrip extends StatelessWidget {
                 ),
           ].join(', ');
 
-    // Hoisted: constructing the format inside the column loop parsed the same
-    // pattern once per day.
-    final weekdayFormat = metrics.narrowLabels
-        ? DateFormat.EEEEE(locale)
-        : DateFormat.E(locale);
-    final labelled = trackDays == null
-        ? row
-        : Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Same track as the cells, so a label always sits over its own
-              // column. This strip used to be seven bare squares that each
-              // opened a specific date's sheet, with no way to tell which.
-              _DayTrack(
-                height: metrics.labelHeight,
-                pitch: metrics.pitch,
-                children: [
-                  for (final day in trackDays)
-                    Text(
-                      weekdayFormat.format(day.day),
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      overflow: TextOverflow.clip,
-                      style: tokens.typography.styles.others.caption.copyWith(
-                        color: tokens.colors.text.lowEmphasis,
-                      ),
-                    ),
-                ],
-              ),
-              row,
-            ],
-          );
-
     return Semantics(
       label: placeholder
           ? context.messages.goalProgressStripLoading
@@ -277,14 +245,14 @@ class GoalCompactWindowStrip extends StatelessWidget {
               contentWidth: metrics.pitch * visible.length,
               availableWidth: availableWidth,
               group: scrollGroup,
-              child: labelled,
+              child: row,
             )
           : onDaySelected == null
           ? ExcludeSemantics(
               child: FittedBox(
                 fit: BoxFit.scaleDown,
                 alignment: AlignmentDirectional.centerStart,
-                child: labelled,
+                child: row,
               ),
             )
           : Align(
@@ -292,7 +260,7 @@ class GoalCompactWindowStrip extends StatelessWidget {
               child: FittedBox(
                 fit: BoxFit.scaleDown,
                 alignment: AlignmentDirectional.centerStart,
-                child: labelled,
+                child: row,
               ),
             ),
     );
@@ -329,12 +297,17 @@ class _CompactDayCell extends StatelessWidget {
     this.onTap,
     this.label,
     this.rating,
+    this.weekdayLetter,
   });
 
   final GoalCompactDayState state;
   final bool today;
   final double size;
   final VoidCallback? onTap;
+
+  /// One-letter weekday initial nested in the cell, replacing the label row
+  /// that used to run above the strip. Null on strips without dates.
+  final String? weekdayLetter;
 
   /// The user's verdict for this day, when they have recorded one. It decides
   /// the fill; [state] is only what the app measured.
@@ -388,7 +361,14 @@ class _CompactDayCell extends StatelessWidget {
                 color: goalAssessmentRatingInk(tokens, rating),
               ),
             )
-          : null,
+          // A plain cell carries its weekday initial — the verdict glyph and
+          // the partial dot always outrank it.
+          : goalDayCellLetter(
+              tokens,
+              letter: weekdayLetter,
+              cellSize: size,
+              filled: state == GoalCompactDayState.full,
+            ),
     );
     // Every cell shares one outer footprint; today only adds the dashed
     // ring inside it, so the strip's rhythm never bulges at the last cell.
@@ -557,6 +537,42 @@ String goalAssessmentRatingLabel(
   GoalAssessmentRating.mixed => context.messages.goalAssessmentMixed,
   GoalAssessmentRating.missed => context.messages.goalAssessmentMissed,
 };
+
+/// The weekday's one-letter initial, nested inside its own day cell.
+///
+/// Replaces the separate label row that used to run above every track: one
+/// letter per node keeps the weekday axis without spending a full row on it.
+/// Null when the cell is too small to hold a legible letter — a squeezed
+/// ninety-day track drops the letters rather than painting mush — or when
+/// the cell carries a stronger mark (a verdict glyph, the partial dot, a
+/// missed cross), which always wins the center.
+///
+/// Ink follows the fill so the letter stays readable on both states: the
+/// on-alert ink over the saturated done fill, medium emphasis over the
+/// neutral no-entry fill.
+Widget? goalDayCellLetter(
+  DsTokens tokens, {
+  required String? letter,
+  required double cellSize,
+  required bool filled,
+}) {
+  if (letter == null || cellSize < IconSizes.s) return null;
+  return Center(
+    child: FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Text(
+        letter,
+        maxLines: 1,
+        style: tokens.typography.styles.others.caption.copyWith(
+          color: filled
+              ? tokens.colors.text.onInteractiveAlert
+              : tokens.colors.text.mediumEmphasis,
+          height: 1,
+        ),
+      ),
+    ),
+  );
+}
 
 /// The non-color cue for a partial day: a full-strength dot inside the
 /// lighter wash, so full/partial/none survive without a legend (the list
@@ -1254,25 +1270,30 @@ class _BloodPressureDimensionCard extends StatelessWidget {
             SizedBox(height: tokens.spacing.step3),
             // Two lines, two entries. Each carries its own threshold as a
             // quiet annotation instead of claiming a second swatch of the
-            // same hue.
-            DashboardChartLegend(
-              entries: [
-                DashboardLegendEntry(
-                  color: systolicColor,
-                  label: context.messages.dashboardHealthSystolic,
-                  annotation: _targetAnnotation(context, metrics.systolic),
-                ),
-                DashboardLegendEntry(
-                  color: diastolicColor,
-                  label: context.messages.dashboardHealthDiastolic,
-                  annotation: _targetAnnotation(context, metrics.diastolic),
-                ),
-              ],
+            // same hue. Centered: the legend annotates the card, it is not a
+            // row in the leading-aligned data stack.
+            SizedBox(
+              width: double.infinity,
+              child: DashboardChartLegend(
+                alignment: WrapAlignment.center,
+                entries: [
+                  DashboardLegendEntry(
+                    color: systolicColor,
+                    label: context.messages.dashboardHealthSystolic,
+                    annotation: _targetAnnotation(context, metrics.systolic),
+                  ),
+                  DashboardLegendEntry(
+                    color: diastolicColor,
+                    label: context.messages.dashboardHealthDiastolic,
+                    annotation: _targetAnnotation(context, metrics.diastolic),
+                  ),
+                ],
+              ),
             ),
           ],
           SizedBox(height: tokens.spacing.step3),
-          Text(
-            !hasData
+          _DimensionSummaryNote(
+            text: !hasData
                 ? context.messages.goalDimensionNoDataNote
                 : onTargetToday
                 ? context.messages.goalDimensionOnTargetTodayNote
@@ -1281,11 +1302,32 @@ class _BloodPressureDimensionCard extends StatelessWidget {
                 : improving
                 ? context.messages.goalDimensionImprovingNote
                 : context.messages.goalDimensionNeedsAttentionNote,
-            style: tokens.typography.styles.body.bodySmall.copyWith(
-              color: tokens.colors.text.mediumEmphasis,
-            ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// The one-sentence reading under a signal card, centered under the legend
+/// it concludes — the balanced closing line of the card rather than another
+/// left-ragged data row.
+class _DimensionSummaryNote extends StatelessWidget {
+  const _DimensionSummaryNote({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return SizedBox(
+      width: double.infinity,
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        style: tokens.typography.styles.body.bodySmall.copyWith(
+          color: tokens.colors.text.mediumEmphasis,
+        ),
       ),
     );
   }
@@ -1442,8 +1484,8 @@ class _MetricDimensionCard extends StatelessWidget {
               _MetricProgressSeries(metric: metric, scrollGroup: scrollGroup),
           ],
           SizedBox(height: tokens.spacing.step3),
-          Text(
-            !summary.hasData
+          _DimensionSummaryNote(
+            text: !summary.hasData
                 ? context.messages.goalDimensionNoDataNote
                 : summary.latestOnTargetToday
                 ? context.messages.goalDimensionOnTargetTodayNote
@@ -1454,9 +1496,6 @@ class _MetricDimensionCard extends StatelessWidget {
                 // one thing the bars above cannot.
                 ? context.messages.goalDimensionImprovingNote
                 : context.messages.goalDimensionNeedsAttentionNote,
-            style: tokens.typography.styles.body.bodySmall.copyWith(
-              color: tokens.colors.text.mediumEmphasis,
-            ),
           ),
         ],
       ),
@@ -1537,30 +1576,27 @@ class _DimensionHeader extends StatelessWidget {
         : met
         ? tokens.colors.alert.success.ink
         : tokens.colors.alert.warning.ink;
-    // The value and its verdict belong on ONE line: "124 / 74 mmHg" with
-    // "On target today" stacked underneath read as two unrelated facts, and
-    // left the status floating with nothing beside it.
-    Widget readingBlock({required bool alignEnd}) => Row(
-      mainAxisSize: alignEnd ? MainAxisSize.min : MainAxisSize.max,
-      crossAxisAlignment: CrossAxisAlignment.baseline,
-      textBaseline: TextBaseline.alphabetic,
+    // One stacked block pinned to the card's corner: the key reading on top,
+    // its verdict as a supporting caption underneath. Inline on the title row
+    // the pair floated mid-row and read as two unrelated facts; stacked and
+    // end-aligned it reads as a single corner element.
+    Widget readingBlock({required bool alignEnd}) => Column(
+      crossAxisAlignment: alignEnd
+          ? CrossAxisAlignment.end
+          : CrossAxisAlignment.start,
       children: [
-        Flexible(
-          child: Text(
-            reading,
-            style: tokens.typography.styles.subtitle.subtitle2,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
+        Text(
+          reading,
+          textAlign: alignEnd ? TextAlign.end : TextAlign.start,
+          style: tokens.typography.styles.subtitle.subtitle2,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
-        SizedBox(width: tokens.spacing.step3),
-        Flexible(
-          child: Text(
-            statusLabel,
-            textAlign: TextAlign.end,
-            style: tokens.typography.styles.others.caption.copyWith(
-              color: statusColor,
-            ),
+        Text(
+          statusLabel,
+          textAlign: alignEnd ? TextAlign.end : TextAlign.start,
+          style: tokens.typography.styles.others.caption.copyWith(
+            color: statusColor,
           ),
         ),
       ],
@@ -1583,9 +1619,8 @@ class _DimensionHeader extends StatelessWidget {
                 ],
               ),
               SizedBox(height: tokens.spacing.step3),
-              // The value takes the leading edge and its verdict the trailing
-              // one, so the pair spans the card instead of hanging off one
-              // side of it.
+              // No corner to pin to on a compact card, so the stacked block
+              // sits under the identity on the same rail.
               readingBlock(alignEnd: false),
             ],
           );
@@ -1965,23 +2000,30 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
     final note = habit.deficit == 0
         ? null
         : context.messages.goalDaysToRecover(habit.deficit);
-    // What the habit asks for, and how its window moves — one caption
-    // instead of a title, a caption and a cadence line all restating the
-    // same seven days.
-    final cadence = [
-      goalHabitTargetLabel(
-        context,
-        targetCount: habit.targetCount,
-        window: habit.window,
-      ),
-      if (habit.window == const GoalWindow.rollingDays(count: 7))
-        context.messages.goalProgressCompactCaption,
-    ].join(' · ');
+    final rollingWeek = habit.window == const GoalWindow.rollingDays(count: 7);
+    // The header's corner block already states "N this window · target M",
+    // so restating "M× per 7 days" here was the same fact twice on one card.
+    // Only a non-weekly window still names its cadence, because "this
+    // window" alone does not say WHICH window that is; the rolling week's
+    // one unique fact — that the window slides — moves onto the period line,
+    // which is the thing that actually slides.
+    final cadence = rollingWeek
+        ? null
+        : goalHabitTargetLabel(
+            context,
+            targetCount: habit.targetCount,
+            window: habit.window,
+          );
     final cadenceStyle = tokens.typography.styles.others.caption.copyWith(
       color: tokens.colors.text.lowEmphasis,
     );
     final noteStyle = tokens.typography.styles.others.caption.copyWith(
       color: tokens.colors.text.mediumEmphasis,
+    );
+    // Weekday initials live INSIDE the squares (see [goalDayCellLetter]);
+    // the separate label row above the track is gone.
+    final letterFormat = DateFormat.EEEEE(
+      Localizations.localeOf(context).toLanguageTag(),
     );
 
     Widget cells(GoalDayTrackMetrics metrics) {
@@ -2000,6 +2042,7 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
               day: activeDays[index],
               habitId: habit.habitId,
               size: metrics.cellSize,
+              weekdayLetter: letterFormat.format(activeDays[index].day),
               today: DateUtils.isSameDay(
                 activeDays[index].day,
                 widget.today,
@@ -2023,28 +2066,20 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
       );
     }
 
-    Widget track(GoalDayTrackMetrics metrics) => Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _WeekdayTrack(
-          days: activeDays,
-          trackId: habit.habitId,
-          metrics: metrics,
-        ),
-        SizedBox(height: tokens.spacing.step1),
-        cells(metrics),
-      ],
-    );
+    // Just the squares: their weekday initials ride inside the cells.
+    Widget track(GoalDayTrackMetrics metrics) => cells(metrics);
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final inlineHeaderWidth =
-            chartTextWidth(context, cadence, cadenceStyle) +
-            (note == null
-                ? 0
-                : tokens.spacing.step3 +
-                      chartTextWidth(context, note, noteStyle));
-        final cadenceFitsInline = inlineHeaderWidth <= constraints.maxWidth;
+        final inlineHeaderWidth = cadence == null
+            ? 0.0
+            : chartTextWidth(context, cadence, cadenceStyle) +
+                  (note == null
+                      ? 0
+                      : tokens.spacing.step3 +
+                            chartTextWidth(context, note, noteStyle));
+        final cadenceFitsInline =
+            cadence != null && inlineHeaderWidth <= constraints.maxWidth;
         // The track is sized to the width it actually has, so a fortnight of
         // days fits the card instead of opening scrolled past its own first
         // day.
@@ -2084,20 +2119,30 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
                   ],
                 ],
               ),
-            if (!cadenceFitsInline) ...[
+            if (cadence != null && !cadenceFitsInline) ...[
               SizedBox(height: tokens.spacing.step1),
               Text(cadence, style: cadenceStyle),
             ],
-            SizedBox(height: tokens.spacing.step3),
+            if (cadence != null || note != null)
+              SizedBox(height: tokens.spacing.step3),
             // The span the squares below cover, on the same rail as the
             // squares themselves — it used to sit a chart's y-axis gutter to
-            // their left, keyed to a plot this card does not draw.
+            // their left, keyed to a plot this card does not draw. A rolling
+            // week appends the sliding note here: the date span is the thing
+            // that slides at midnight.
             KeyedSubtree(
               key: ValueKey('goal-habit-plot-${habit.habitId}'),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(_periodLabel(context, activeDays), style: cadenceStyle),
+                  Text(
+                    [
+                      _periodLabel(context, activeDays),
+                      if (rollingWeek)
+                        context.messages.goalProgressCompactCaption,
+                    ].join(' · '),
+                    style: cadenceStyle,
+                  ),
                   SizedBox(height: tokens.spacing.step2),
                   // Labels and squares pan as one unit, and only where even
                   // the narrowest column overflows.
@@ -2178,10 +2223,16 @@ class _ProgressDayCell extends StatelessWidget {
     required this.enabled,
     required this.onOutcomeSelected,
     this.size = ControlSizes.iconChipCompact,
+    this.weekdayLetter,
   });
 
   final GoalProgressDay day;
   final String habitId;
+
+  /// One-letter weekday initial nested in the square — the day axis, now
+  /// that the label row above the track is gone. Outranked by the stronger
+  /// marks (missed cross, skipped dash, partial dot).
+  final String? weekdayLetter;
 
   /// Edge of the square. Shrinks with the track's column pitch so a long span
   /// fits the card instead of scrolling past its own first day.
@@ -2256,7 +2307,12 @@ class _ProgressDayCell extends StatelessWidget {
             )
           : dayState == GoalCompactDayState.partial
           ? Center(child: goalPartialDayDot(tokens, tokens.spacing.step2))
-          : null,
+          : goalDayCellLetter(
+              tokens,
+              letter: weekdayLetter,
+              cellSize: visualDimension,
+              filled: dayState == GoalCompactDayState.full,
+            ),
     );
     if (dayState == GoalCompactDayState.partial) {
       cell = KeyedSubtree(
@@ -2591,20 +2647,24 @@ class _MetricTrendSeries extends StatelessWidget {
         // coloured green or red — which is a reading of the data, not a key to
         // it: a legend swatch that matched no mark on the chart, in a hue that
         // meant something different from every other hue in the card.
-        DashboardChartLegend(
-          entries: [
-            DashboardLegendEntry(color: actualColor, label: actualLabel),
-            if (averages.isNotEmpty)
+        SizedBox(
+          width: double.infinity,
+          child: DashboardChartLegend(
+            alignment: WrapAlignment.center,
+            entries: [
+              DashboardLegendEntry(color: actualColor, label: actualLabel),
+              if (averages.isNotEmpty)
+                DashboardLegendEntry(
+                  color: averageColor,
+                  label: context.messages.goalChartSevenDayAverage,
+                ),
               DashboardLegendEntry(
-                color: averageColor,
-                label: context.messages.goalChartSevenDayAverage,
+                color: targetColor,
+                label: context.messages.habitsGoalLineLabel,
+                annotation: _targetThreshold(context, metric),
               ),
-            DashboardLegendEntry(
-              color: targetColor,
-              label: context.messages.habitsGoalLineLabel,
-              annotation: _targetThreshold(context, metric),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     );
@@ -2766,7 +2826,13 @@ class _MetricProgressSeries extends StatelessWidget {
               ),
             ),
             SizedBox(height: tokens.spacing.step3),
-            DashboardChartLegend(entries: _legendEntries(context, tokens)),
+            SizedBox(
+              width: double.infinity,
+              child: DashboardChartLegend(
+                alignment: WrapAlignment.center,
+                entries: _legendEntries(context, tokens),
+              ),
+            ),
           ],
         );
       },
@@ -3208,12 +3274,9 @@ class _CategoryPatternCard extends StatelessWidget {
             ),
           ),
           SizedBox(height: tokens.spacing.step3),
-          Text(
-            context.messages.goalPatternBusiestHour(
+          _DimensionSummaryNote(
+            text: context.messages.goalPatternBusiestHour(
               busiestHour.toString().padLeft(2, '0'),
-            ),
-            style: tokens.typography.styles.body.bodySmall.copyWith(
-              color: tokens.colors.text.mediumEmphasis,
             ),
           ),
         ],
@@ -3277,43 +3340,50 @@ class _ProgressLegend extends StatelessWidget {
       );
     }
 
-    return Wrap(
-      spacing: tokens.spacing.step4,
-      runSpacing: tokens.spacing.step2,
-      children: [
-        // The SAME fills the cells draw, through the same helper — spelled out
-        // by hand here, this key could drift from the squares it explains (and
-        // from the metric legend three cards down, which reads the helper).
-        item(
-          goalDayStateFill(tokens, GoalCompactDayState.full),
-          context.messages.goalProgressDone,
-        ),
-        item(
-          goalDayStateFill(tokens, GoalCompactDayState.partial),
-          context.messages.goalProgressPartial,
-          dotted: true,
-        ),
-        // Quiet outline, matching the ring the cells actually draw — an
-        // on-track row must not wear the alarm hue in its key either.
-        // The state most cells are actually IN. The key explained the two
-        // green ones and both edge cases while staying silent about the
-        // majority fill, which is the one a reader most needs named.
-        item(
-          goalDayStateFill(tokens, GoalCompactDayState.none),
-          context.messages.goalProgressHabitDayNoEntry,
-        ),
-        item(
-          tokens.colors.text.lowEmphasis,
-          context.messages.goalProgressAgesOut,
-          outlined: true,
-        ),
-        // Dashed, exactly like the today cell — the key must match the map.
-        item(
-          tokens.colors.text.lowEmphasis,
-          context.messages.goalProgressToday,
-          dashed: true,
-        ),
-      ],
+    // Centered, like every legend and summary line on these cards: the key
+    // is card-level annotation, not a row in the leading-aligned data stack.
+    return SizedBox(
+      width: double.infinity,
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        spacing: tokens.spacing.step4,
+        runSpacing: tokens.spacing.step2,
+        children: [
+          // The SAME fills the cells draw, through the same helper — spelled
+          // out by hand here, this key could drift from the squares it
+          // explains (and from the metric legend three cards down, which
+          // reads the helper).
+          item(
+            goalDayStateFill(tokens, GoalCompactDayState.full),
+            context.messages.goalProgressDone,
+          ),
+          item(
+            goalDayStateFill(tokens, GoalCompactDayState.partial),
+            context.messages.goalProgressPartial,
+            dotted: true,
+          ),
+          // Quiet outline, matching the ring the cells actually draw — an
+          // on-track row must not wear the alarm hue in its key either.
+          // The state most cells are actually IN. The key explained the two
+          // green ones and both edge cases while staying silent about the
+          // majority fill, which is the one a reader most needs named.
+          item(
+            goalDayStateFill(tokens, GoalCompactDayState.none),
+            context.messages.goalProgressHabitDayNoEntry,
+          ),
+          item(
+            tokens.colors.text.lowEmphasis,
+            context.messages.goalProgressAgesOut,
+            outlined: true,
+          ),
+          // Dashed, exactly like the today cell — the key must match the map.
+          item(
+            tokens.colors.text.lowEmphasis,
+            context.messages.goalProgressToday,
+            dashed: true,
+          ),
+        ],
+      ),
     );
   }
 }

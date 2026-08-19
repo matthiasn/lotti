@@ -52,7 +52,8 @@ class GoalHealthDirectionChip extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: color.withValues(alpha: SurfaceAlphas.washChip),
-        borderRadius: BorderRadius.circular(tokens.radii.s),
+        // Informative, not tappable: the small-chip radius, never the pill.
+        borderRadius: BorderRadius.circular(tokens.radii.smallChips),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

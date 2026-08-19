@@ -8,6 +8,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
+import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_bar_line_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_line_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_multiline_chart.dart';
@@ -68,10 +69,12 @@ void main() {
       ),
     );
 
-    // ONE meta line states what the habit asks for and how its window moves —
-    // the card used to carry a title, a caption AND a cadence line, all three
-    // restating the same seven days.
-    expect(find.text('3× per 7 days · slides at midnight'), findsOneWidget);
+    // No cadence line at all for the rolling week: the corner block already
+    // states "N of M this window", so "3× per 7 days" was the same fact
+    // twice on one card. The one unique fact — that the window slides —
+    // rides the period line, which is the thing that actually slides.
+    expect(find.text('3× per 7 days · slides at midnight'), findsNothing);
+    expect(find.text('Aug 5 – Aug 11 · slides at midnight'), findsOneWidget);
     expect(find.text('This rolling week'), findsNothing);
     expect(find.text('Gym'), findsOneWidget);
     expect(
@@ -1672,18 +1675,16 @@ void main() {
     final habitPlot = tester.getRect(
       find.byKey(const ValueKey('goal-habit-plot-weigh-myself')),
     );
-    final cadence = tester.getRect(
-      find.text('7× per 7 days · slides at midnight'),
+    final period = tester.getRect(
+      find.text('Jul 29 – Aug 11 · slides at midnight'),
     );
-    final period = tester.getRect(find.text('Jul 29 – Aug 11'));
     final lineChart = tester.getRect(find.byType(TimeSeriesMultiLineChart));
 
     // The habit card draws no plot, so it owes no y-axis gutter: its span
-    // caption and its squares sit on the card's own rail with the cadence
-    // line above them. Inset by a chart's axis width they started 52px right
-    // of everything else on the card, keyed to a plot that is not there.
-    expect(habitPlot.left, cadence.left);
-    expect(period.left, cadence.left);
+    // caption and its squares sit on the card's own rail. Inset by a chart's
+    // axis width they started 52px right of everything else on the card,
+    // keyed to a plot that is not there.
+    expect(period.left, habitPlot.left);
     expect(habitPlot.left, lessThan(lineChart.left + kChartLeftAxisWidth));
   });
 
@@ -2795,8 +2796,8 @@ void main() {
   });
 
   testWidgets(
-    'the handoff-style weekday header uses full abbreviations and stays '
-    'centered over a compact interactive grid',
+    'weekday initials nest inside the day cells on the compact interactive '
+    'grid — no separate label row',
     (
       tester,
     ) async {
@@ -2824,22 +2825,19 @@ void main() {
         ),
       );
 
-      expect(find.text('Wed'), findsOneWidget);
-      expect(find.text('W'), findsNothing);
+      // The full-word label row above the squares is gone; the axis is the
+      // one-letter initial nested inside each cell.
+      expect(find.text('Wed'), findsNothing);
       final tokens = tester.element(find.byType(GoalProgressCard)).designTokens;
       final expectedPitch = ControlSizes.iconChipCompact + tokens.spacing.step2;
+      final letterFormat = DateFormat.EEEEE('en');
       double? previousCenter;
       for (var offset = 6; offset >= 0; offset--) {
-        final date = today
-            .subtract(Duration(days: offset))
-            .toIso8601String()
-            .substring(0, 10);
-        final marker = find.byKey(
-          ValueKey('goal-habit-weekday-walk-$date'),
-        );
-        final cell = find.byKey(ValueKey('goal-habit-day-walk-$date'));
+        final date = today.subtract(Duration(days: offset));
+        final key = date.toIso8601String().substring(0, 10);
+        final cell = find.byKey(ValueKey('goal-habit-day-walk-$key'));
         final visualCell = find.byKey(
-          ValueKey('goal-habit-day-visual-walk-$date'),
+          ValueKey('goal-habit-day-visual-walk-$key'),
         );
         expect(
           tester.getSize(visualCell),
@@ -2855,9 +2853,12 @@ void main() {
           ),
         );
         expect(
-          tester.getCenter(marker).dx,
-          closeTo(tester.getCenter(cell).dx, 0.01),
-          reason: '$date marker must align with its interactive cell',
+          find.descendant(
+            of: visualCell,
+            matching: find.text(letterFormat.format(date)),
+          ),
+          findsOneWidget,
+          reason: '$key carries its weekday initial inside the cell',
         );
         final center = tester.getCenter(cell).dx;
         if (previousCenter != null) {
@@ -2873,9 +2874,7 @@ void main() {
   );
 
   testWidgets(
-    'weekday labels expand their pitch as soon as scaled text needs it without '
-    'losing '
-    'cell alignment',
+    'the day-track pitch expands as soon as scaled text needs it',
     (tester) async {
       tester.view.physicalSize = const Size(1200, 900);
       tester.view.devicePixelRatio = 1;
@@ -2918,29 +2917,15 @@ void main() {
 
       final tokens = tester.element(find.byType(GoalProgressCard)).designTokens;
       final defaultPitch = ControlSizes.iconChipCompact + tokens.spacing.step2;
-      Rect? previousLabelRect;
       double? previousCellCenter;
       for (var offset = 6; offset >= 0; offset--) {
         final date = today
             .subtract(Duration(days: offset))
             .toIso8601String()
             .substring(0, 10);
-        final marker = find.byKey(
-          ValueKey('goal-habit-weekday-walk-$date'),
-        );
-        final label = find.descendant(of: marker, matching: find.byType(Text));
         final cell = find.byKey(ValueKey('goal-habit-day-walk-$date'));
-        final labelRect = tester.getRect(label);
-        final cellCenter = tester.getCenter(cell).dx;
-        expect(marker, findsOneWidget);
         expect(cell, findsOneWidget);
-        if (previousLabelRect != null) {
-          expect(
-            previousLabelRect.right,
-            lessThanOrEqualTo(labelRect.left),
-            reason: 'scaled weekday labels must not overlap',
-          );
-        }
+        final cellCenter = tester.getCenter(cell).dx;
         if (previousCellCenter != null) {
           expect(
             cellCenter - previousCellCenter,
@@ -2948,7 +2933,6 @@ void main() {
             reason: 'only accessibility scaling should loosen the handoff grid',
           );
         }
-        previousLabelRect = labelRect;
         previousCellCenter = cellCenter;
       }
     },
@@ -2986,23 +2970,19 @@ void main() {
 
     final streak = find.text('2 / 6 weeks');
     final name = find.text('Gym');
-    final cadence = find.text('4× per 7 days · slides at midnight');
-    final period = find.text('Aug 5 – Aug 11');
+    final period = find.text('Aug 5 – Aug 11 · slides at midnight');
     final firstCell = find.byKey(
       const ValueKey('goal-habit-day-visual-gym-2026-08-05'),
     );
 
-    // One meaning per row, top to bottom: what the habit is, what it asks
-    // for, the span on screen, the days themselves, then the six-week tail.
-    // Every one of these figures used to compete for the same band.
-    expect(
-      tester.getTopLeft(cadence).dy,
-      greaterThan(tester.getBottomLeft(name).dy),
-      reason: 'the cadence remains attached to its named dimension',
-    );
+    // One meaning per row, top to bottom: what the habit is, the span on
+    // screen (carrying the sliding note — the cadence line is gone, its
+    // target now lives in the corner block), the days themselves, then the
+    // six-week tail.
+    expect(find.text('4× per 7 days · slides at midnight'), findsNothing);
     expect(
       tester.getTopLeft(period).dy,
-      greaterThan(tester.getBottomLeft(cadence).dy),
+      greaterThan(tester.getBottomLeft(name).dy),
       reason: 'the span labels the squares, so it sits above them',
     );
     expect(
@@ -3021,7 +3001,6 @@ void main() {
       tester.getTopLeft(period).dx,
       lessThanOrEqualTo(tester.getTopLeft(firstCell).dx),
     );
-    expect(tester.getTopLeft(period).dx, tester.getTopLeft(cadence).dx);
   });
 
   testWidgets('the sliding-window caption survives a habit with no streak', (
@@ -3054,10 +3033,10 @@ void main() {
       ),
     );
 
-    // The window's behaviour is part of the habit's cadence line, so nothing
-    // can displace it: it used to compete with the streak for one slot and
-    // vanish whenever a streak existed.
-    expect(find.text('4× per 7 days · slides at midnight'), findsOneWidget);
+    // The window's behaviour rides the period line, so nothing can displace
+    // it: it used to compete with the streak for one slot and vanish
+    // whenever a streak existed.
+    expect(find.text('Aug 5 – Aug 11 · slides at midnight'), findsOneWidget);
     expect(find.textContaining('/ 6 weeks'), findsNothing);
   });
 
@@ -3165,18 +3144,10 @@ void main() {
           TapTargets.minimum,
         ),
       );
-      expect(
-        tester.getCenter(find.text('Walk')).dy,
-        lessThan(
-          tester.getCenter(find.text('1× per 7 days · slides at midnight')).dy,
-        ),
-        reason: 'the complete cadence moves below when the row cannot fit it',
-      );
-      final cadence = tester.widget<Text>(
-        find.text('1× per 7 days · slides at midnight'),
-      );
-      expect(cadence.maxLines, isNull);
-      expect(cadence.overflow, isNot(TextOverflow.ellipsis));
+      // The rolling week renders no cadence line at any width — the sliding
+      // note rides the period line instead.
+      expect(find.text('1× per 7 days · slides at midnight'), findsNothing);
+      expect(find.textContaining('slides at midnight'), findsOneWidget);
 
       await tester.tap(find.byKey(dayKey));
       await tester.pumpAndSettle();
@@ -3689,5 +3660,102 @@ void main() {
     for (final offset in offsets) {
       expect(offset, moreOrLessEquals(offsets.first, epsilon: 0.5));
     }
+  });
+
+  testWidgets('the trailing reading stacks its verdict beneath it, pinned to '
+      'the card corner', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            habits: [
+              GoalHabitProgressView(
+                habitId: 'gym',
+                name: 'Gym',
+                targetCount: 3,
+                days: [
+                  for (var offset = 6; offset >= 0; offset--)
+                    day(offset, offset < 3 ? 1 : 0),
+                ],
+                successfulWeeks: 2,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    final reading = tester.getRect(find.text('3 of 3 this window'));
+    final status = tester.getRect(find.text('On track'));
+    final card = tester.getRect(find.byType(DesignSystemSectionCard).first);
+
+    // Stacked typography: the key reading on top, the verdict as a
+    // supporting line directly beneath it — never inline beside it.
+    expect(status.top, greaterThanOrEqualTo(reading.bottom - 1));
+    // One end-aligned corner element on a wide card: both lines share the
+    // trailing edge, in the card's right half rather than floating mid-row.
+    expect(status.right, closeTo(reading.right, 1));
+    expect(reading.right, greaterThan(card.center.dx));
+  });
+
+  testWidgets('signal legends and summary lines center under their charts', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        SingleChildScrollView(
+          child: GoalProgressCard(
+            progress: GoalProgressView(
+              today: today,
+              habits: [
+                GoalHabitProgressView(
+                  habitId: 'gym',
+                  name: 'Gym',
+                  targetCount: 3,
+                  days: [
+                    for (var offset = 6; offset >= 0; offset--) day(offset, 0),
+                  ],
+                  successfulWeeks: 0,
+                ),
+              ],
+              metric: GoalMetricProgressView(
+                criterionId: 'content',
+                name: 'Content Production',
+                kind: GoalDimensionKind.labelTime,
+                target: 200,
+                unitName: 'min',
+                days: [
+                  day(2, 70),
+                  day(1, 45),
+                  GoalProgressDay(day: today, value: 0, isObserved: false),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // The shared day-cell key centers as card-level annotation.
+    final legendWrap = tester.widget<Wrap>(
+      find
+          .ancestor(
+            of: find.text('done · target met'),
+            matching: find.byType(Wrap),
+          )
+          .first,
+    );
+    expect(legendWrap.alignment, WrapAlignment.center);
+    // So does the chart legend on the signal card…
+    final chartLegend = tester.widget<DashboardChartLegend>(
+      find.byType(DashboardChartLegend),
+    );
+    expect(chartLegend.alignment, WrapAlignment.center);
+    // …and the one-sentence summary that closes it.
+    final note = tester.widget<Text>(
+      find.text('Behind target for this window.'),
+    );
+    expect(note.textAlign, TextAlign.center);
   });
 }
