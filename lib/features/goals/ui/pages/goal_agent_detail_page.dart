@@ -62,7 +62,8 @@ import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 /// trend), the hero stack (the timestamped Agent's-read card above the
 /// deterministic Goal-days card, each at the full content width), active
 /// banners and pending proposals, then the Habits and Signals evidence
-/// sections and the About-this-agent expander (cost pills + automation).
+/// sections — with the cost pills and automation controls riding the read
+/// card itself.
 /// Daily reflections live in the check-ins rail rather than the main
 /// column, and the retired-banner timeline is gone — the rail is the one
 /// place "what I've said about this goal" is read. Desktop hosts the
@@ -100,23 +101,41 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
   /// write per computed value rather than one per rebuild.
   int? _autoSpanRequestedFor;
 
-  /// How many day columns fit the content column at the authored pitch.
+  /// AUTO span: drives the shared range to the number of day columns that
+  /// fit the content column at the authored pitch, from the PANE's measured
+  /// width (the body [LayoutBuilder]'s constraint — the window width lied
+  /// whenever a navigation sidebar or the check-in rail narrowed the pane).
   ///
-  /// The width is an estimate from the window (the pane behind a desktop
-  /// sidebar is narrower), deliberately on the generous side: a span a few
-  /// days too wide goes through the tracks' own fit-before-scroll policy and
-  /// shrinks the columns slightly, which still fills the card edge to edge.
-  int _fitSpanDays(BuildContext context) {
+  /// Called from layout, so the controller write is deferred past the frame;
+  /// idempotent per computed value, and a no-op once the user has picked a
+  /// preset.
+  void _scheduleAutoSpan(
+    BuildContext context, {
+    required double paneWidth,
+    required bool railShown,
+  }) {
+    if (_rangePicked) return;
     final tokens = context.designTokens;
     final pitch = goalDayTrackMetrics(context, dayCount: 1).pitch;
     final contentWidth =
         math.min(
           kUnifiedGoalsContentMaxWidth,
-          MediaQuery.sizeOf(context).width - tokens.spacing.step6 * 2,
+          paneWidth -
+              (railShown ? kGoalTimelineRailWidth : 0) -
+              tokens.spacing.step6 * 2,
         ) -
         tokens.spacing.cardPadding * 2;
-    if (pitch <= 0 || contentWidth <= pitch) return 7;
-    return (contentWidth / pitch).floor().clamp(7, 90);
+    final fit = pitch <= 0 || contentWidth <= pitch
+        ? 7
+        : (contentWidth / pitch).floor().clamp(7, 90);
+    if (_autoSpanRequestedFor == fit) return;
+    _autoSpanRequestedFor = fit;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _rangePicked) return;
+      if (ref.read(habitsControllerProvider).timeSpanDays != fit) {
+        ref.read(habitsControllerProvider.notifier).setTimeSpan(fit);
+      }
+    });
   }
 
   /// Whether the desktop chat drawer is open. The drawer stays MOUNTED
@@ -362,22 +381,12 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
     final timeSpanDays = ref.watch(
       habitsControllerProvider.select((state) => state.timeSpanDays),
     );
-    // AUTO span: until the user picks a range here, drive the shared span to
-    // the day count that fits the content width — the completion chart, the
-    // heatmap data and every day track then follow the same fitted span, so
-    // the page keeps its one-range contract in auto mode too.
-    final fitSpanDays = _fitSpanDays(context);
-    if (!_rangePicked &&
-        timeSpanDays != fitSpanDays &&
-        _autoSpanRequestedFor != fitSpanDays) {
-      _autoSpanRequestedFor = fitSpanDays;
-      // Post-frame: a controller write mid-build would rebuild the page
-      // while it is already building.
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted || _rangePicked) return;
-        ref.read(habitsControllerProvider.notifier).setTimeSpan(fitSpanDays);
-      });
-    }
+    // AUTO span: until the user picks a range here, [_scheduleAutoSpan]
+    // (called from the body's LayoutBuilders, where the PANE width is known)
+    // drives the shared span to the day count that fits the content width —
+    // the completion chart, the heatmap data and every day track then follow
+    // the same fitted span, so the page keeps its one-range contract in auto
+    // mode too.
     final progressAsync = spec == null
         ? null
         : ref.watch(
@@ -908,30 +917,36 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
               // wide desktop still earns the rail, and a narrow pane behind a
               // wide sidebar still must not get one.
               ? LayoutBuilder(
-                  builder: (context, constraints) =>
-                      railFits(constraints.maxWidth)
-                      ? Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: detailList(
-                                showChatAction: false,
-                                contentMaxWidth: kUnifiedGoalsContentMaxWidth,
-                                showRail: true,
+                  builder: (context, constraints) {
+                    _scheduleAutoSpan(
+                      context,
+                      paneWidth: constraints.maxWidth,
+                      railShown: railFits(constraints.maxWidth),
+                    );
+                    return railFits(constraints.maxWidth)
+                        ? Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: detailList(
+                                  showChatAction: false,
+                                  contentMaxWidth: kUnifiedGoalsContentMaxWidth,
+                                  showRail: true,
+                                ),
                               ),
-                            ),
-                            SizedBox(
-                              width: kGoalTimelineRailWidth,
-                              child: _CheckInRail(card: checkInsCard()),
-                            ),
-                          ],
-                        )
-                      : detailList(
-                          showChatAction: !desktop && chatAvailable,
-                          contentMaxWidth: desktop
-                              ? kUnifiedGoalsContentMaxWidth
-                              : null,
-                        ),
+                              SizedBox(
+                                width: kGoalTimelineRailWidth,
+                                child: _CheckInRail(card: checkInsCard()),
+                              ),
+                            ],
+                          )
+                        : detailList(
+                            showChatAction: !desktop && chatAvailable,
+                            contentMaxWidth: desktop
+                                ? kUnifiedGoalsContentMaxWidth
+                                : null,
+                          );
+                  },
                 )
               : CallbackShortcuts(
                   bindings: {
@@ -945,102 +960,116 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
                   // draft survives, and it takes no pointer/focus traffic
                   // off-screen.
                   child: LayoutBuilder(
-                    builder: (context, constraints) => Stack(
-                      children: [
-                        // The drawer overlays without reflowing the cards, but
-                        // the COLUMN glides: closed, it centers in the window
-                        // (a fixed left-aligned measure left the right half of
-                        // wide windows dead); open, it centers in what the
-                        // drawer leaves free. Clamped to the PANE's real
-                        // constraints: with a wide navigation sidebar the pane
-                        // can be barely wider than the drawer, and always
-                        // subtracting the drawer span would squeeze the
-                        // dashboard into an unusable sliver — below the fold
-                        // width the drawer stays a true overlay instead.
-                        AnimatedPadding(
-                          duration: MotionDurations.medium2,
-                          curve: MotionCurves.emphasizedDecelerate,
-                          padding: EdgeInsetsDirectional.only(
-                            end:
-                                _chatOpen &&
-                                    constraints.maxWidth -
-                                            kGoalChatDrawerWidth >=
-                                        kPageHeaderFoldWidth
-                                ? kGoalChatDrawerWidth
-                                : 0,
+                    builder: (context, constraints) {
+                      _scheduleAutoSpan(
+                        context,
+                        paneWidth: constraints.maxWidth,
+                        railShown: railFits(constraints.maxWidth),
+                      );
+                      return Stack(
+                        children: [
+                          // The drawer overlays without reflowing the cards, but
+                          // the COLUMN glides: closed, it centers in the window
+                          // (a fixed left-aligned measure left the right half of
+                          // wide windows dead); open, it centers in what the
+                          // drawer leaves free. Clamped to the PANE's real
+                          // constraints: with a wide navigation sidebar the pane
+                          // can be barely wider than the drawer, and always
+                          // subtracting the drawer span would squeeze the
+                          // dashboard into an unusable sliver — below the fold
+                          // width the drawer stays a true overlay instead.
+                          AnimatedPadding(
+                            duration: MotionDurations.medium2,
+                            curve: MotionCurves.emphasizedDecelerate,
+                            padding: EdgeInsetsDirectional.only(
+                              end:
+                                  _chatOpen &&
+                                      constraints.maxWidth -
+                                              kGoalChatDrawerWidth >=
+                                          kPageHeaderFoldWidth
+                                  ? kGoalChatDrawerWidth
+                                  : 0,
+                            ),
+                            // Two columns, and the drawer still overlays rather
+                            // than becoming a third: a conversation is transient
+                            // and already owns correct focus, escape and
+                            // semantics behaviour as an overlay. The glide moves
+                            // BOTH columns.
+                            child: railFits(constraints.maxWidth)
+                                ? Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(
+                                        child: detailList(
+                                          showChatAction: false,
+                                          contentMaxWidth:
+                                              kUnifiedGoalsContentMaxWidth,
+                                          showRail: true,
+                                        ),
+                                      ),
+                                      SizedBox(
+                                        width: kGoalTimelineRailWidth,
+                                        child: _CheckInRail(
+                                          card: checkInsCard(),
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                : detailList(
+                                    showChatAction: false,
+                                    contentMaxWidth:
+                                        kUnifiedGoalsContentMaxWidth,
+                                  ),
                           ),
-                          // Two columns, and the drawer still overlays rather
-                          // than becoming a third: a conversation is transient
-                          // and already owns correct focus, escape and
-                          // semantics behaviour as an overlay. The glide moves
-                          // BOTH columns.
-                          child: railFits(constraints.maxWidth)
-                              ? Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Expanded(
-                                      child: detailList(
-                                        showChatAction: false,
-                                        contentMaxWidth:
-                                            kUnifiedGoalsContentMaxWidth,
-                                        showRail: true,
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      width: kGoalTimelineRailWidth,
-                                      child: _CheckInRail(
-                                        card: checkInsCard(),
-                                      ),
-                                    ),
-                                  ],
-                                )
-                              : detailList(
-                                  showChatAction: false,
-                                  contentMaxWidth: kUnifiedGoalsContentMaxWidth,
-                                ),
-                        ),
-                        PositionedDirectional(
-                          top: 0,
-                          bottom: 0,
-                          end: 0,
-                          child: TapRegion(
-                            groupId: _chatRegionGroup,
-                            onTapOutside: (_) {
-                              if (_chatOpen) setState(() => _chatOpen = false);
-                            },
-                            child: AnimatedSlide(
-                              offset: _chatOpen
-                                  ? Offset.zero
-                                  : const Offset(1, 0),
-                              duration: MotionDurations.medium2,
-                              curve: MotionCurves.emphasizedDecelerate,
-                              child: IgnorePointer(
-                                ignoring: !_chatOpen,
-                                // Off-screen means out of the semantics tree
-                                // too: without this a screen reader traverses
-                                // the slid-away drawer's composer and close
-                                // button.
-                                child: ExcludeSemantics(
-                                  excluding: !_chatOpen,
-                                  child: ExcludeFocus(
+                          PositionedDirectional(
+                            top: 0,
+                            bottom: 0,
+                            end: 0,
+                            child: TapRegion(
+                              groupId: _chatRegionGroup,
+                              onTapOutside: (_) {
+                                if (_chatOpen) {
+                                  setState(() => _chatOpen = false);
+                                }
+                              },
+                              child: AnimatedSlide(
+                                offset: _chatOpen
+                                    ? Offset.zero
+                                    : const Offset(1, 0),
+                                duration: MotionDurations.medium2,
+                                curve: MotionCurves.emphasizedDecelerate,
+                                child: IgnorePointer(
+                                  ignoring: !_chatOpen,
+                                  // Off-screen means out of the semantics tree
+                                  // too: without this a screen reader traverses
+                                  // the slid-away drawer's composer and close
+                                  // button.
+                                  child: ExcludeSemantics(
                                     excluding: !_chatOpen,
-                                    child: Focus(
-                                      focusNode: _drawerFocusNode,
-                                      child: _GoalChatDrawer(
-                                        agentId: agentId,
-                                        identity: goalIdentity,
-                                        status: unifiedStatus,
-                                        hasStandingAssessment:
-                                            hasStandingAssessment,
-                                        recoveryHint: switch (health?.deficit) {
-                                          final int deficit when deficit > 0 =>
-                                            context.messages.goalDaysToRecover(
-                                              deficit,
-                                            ),
-                                          _ => null,
-                                        },
-                                        onClose: () =>
-                                            setState(() => _chatOpen = false),
+                                    child: ExcludeFocus(
+                                      excluding: !_chatOpen,
+                                      child: Focus(
+                                        focusNode: _drawerFocusNode,
+                                        child: _GoalChatDrawer(
+                                          agentId: agentId,
+                                          identity: goalIdentity,
+                                          status: unifiedStatus,
+                                          hasStandingAssessment:
+                                              hasStandingAssessment,
+                                          recoveryHint:
+                                              switch (health?.deficit) {
+                                                final int deficit
+                                                    when deficit > 0 =>
+                                                  context.messages
+                                                      .goalDaysToRecover(
+                                                        deficit,
+                                                      ),
+                                                _ => null,
+                                              },
+                                          onClose: () =>
+                                              setState(() => _chatOpen = false),
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -1048,9 +1077,9 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
                               ),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
+                        ],
+                      );
+                    },
                   ),
                 ),
         ),

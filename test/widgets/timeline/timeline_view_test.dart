@@ -94,7 +94,9 @@ void main() {
         TimelineView(
           groups: [
             TimelineGroup(
-              beats: [beat(onTap: () => opened++)],
+              // entryId present ON PURPOSE: the fallback path is live, so
+              // this test fails if onTap ever stops outranking it.
+              beats: [beat(entryId: 'entry-9', onTap: () => opened++)],
             ),
           ],
           onOpenBeat: (_) => fail('the beat tap outranks entry navigation'),

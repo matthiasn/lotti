@@ -567,7 +567,8 @@ String goalAssessmentRatingLabel(
 ///
 /// Ink follows the fill so the letter stays readable on both states: the
 /// on-alert ink over a saturated fill, medium emphasis over the neutral and
-/// washed fills. Returns a [Positioned]; the cell hosts it in a [Stack].
+/// washed fills. Returns a [PositionedDirectional]; the cell hosts it in a
+/// [Stack].
 Widget? goalDayCellLetter(
   DsTokens tokens, {
   required String? letter,

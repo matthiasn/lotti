@@ -2342,13 +2342,23 @@ void main() {
   });
 
   testWidgets('the page opens in AUTO span mode: the shared range is driven '
-      'to the day count that fits the content width', (tester) async {
+      'to the day count that fits the PANE width', (tester) async {
+    // The pane is deliberately narrower than the window: a navigation
+    // sidebar or the check-in rail shrinks the pane, and fitting from the
+    // window width would select too many days and defeat the no-scroll
+    // contract.
+    const paneWidth = 520.0;
     final habitsController = FakeHabitsController(
       HabitsState.initial(now: DateTime(2026, 8, 11)),
     );
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
-        const GoalAgentDetailPage(agentId: 'goal-1'),
+        const Center(
+          child: SizedBox(
+            width: paneWidth,
+            child: GoalAgentDetailPage(agentId: 'goal-1'),
+          ),
+        ),
         overrides: [
           habitsControllerProvider.overrideWith(() => habitsController),
           agentIdentityProvider(
@@ -2380,20 +2390,16 @@ void main() {
 
     // The fitted span: as many authored-pitch day columns as the content
     // column holds — computed here from the same tokens the page reads, so
-    // the test tracks the density rather than a magic number.
+    // the test tracks the density rather than a magic number. From the PANE
+    // width, never the (wider) MediaQuery width.
     final tokens = tester
         .element(find.byType(GoalAgentDetailPage))
         .designTokens;
     final pitch = ControlSizes.iconChipCompact + tokens.spacing.step2;
-    // The same width source the page estimates from (the harness's
-    // MediaQuery, not the render box).
-    final surfaceWidth = MediaQuery.sizeOf(
-      tester.element(find.byType(GoalAgentDetailPage)),
-    ).width;
     final contentWidth =
         math.min(
           kUnifiedGoalsContentMaxWidth,
-          surfaceWidth - tokens.spacing.step6 * 2,
+          paneWidth - tokens.spacing.step6 * 2,
         ) -
         tokens.spacing.cardPadding * 2;
     final expectedFit = (contentWidth / pitch).floor().clamp(7, 90);

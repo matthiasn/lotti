@@ -6622,7 +6622,7 @@ class AppLocalizationsFr extends AppLocalizations {
     int targetCount,
     String window,
   ) {
-    return '$currentCount de $targetCount · $window';
+    return '$currentCount sur $targetCount · $window';
   }
 
   @override
