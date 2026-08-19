@@ -413,7 +413,7 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
                     LottiIcons.drag,
                     size: IconSizes.l,
                     color: tokens.colors.text.lowEmphasis.withValues(
-                      alpha: 0.2,
+                      alpha: SecondaryGlyphAlpha.hint,
                     ),
                   ),
                   SizedBox(width: tokens.spacing.step3),
@@ -596,7 +596,7 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
                             // row whose primary action is checking it off.
                             size: IconSizes.xs,
                             color: tokens.colors.text.lowEmphasis.withValues(
-                              alpha: 0.55,
+                              alpha: SecondaryGlyphAlpha.affordance,
                             ),
                           ),
                         ),

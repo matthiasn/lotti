@@ -565,45 +565,40 @@ class _StateMeta extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Only two states ever reach this row. `open` is filtered out by
+    // `_AgendaMetaRow`, and a `done` item never gets here at all — AgendaCard
+    // returns its own compact receipt layout before the meta row is built. The
+    // switch that used to cover all four carried three unreachable arms.
+    assert(
+      state == AgendaItemState.inProgress || state == AgendaItemState.overdue,
+      'AgendaCard renders open and done rows without a _StateMeta; reaching '
+      'here with $state means one of those paths changed.',
+    );
     final tokens = context.designTokens;
-    final (color, label) = switch (state) {
-      AgendaItemState.open => (
-        tokens.colors.text.lowEmphasis,
-        context.messages.dailyOsNextAgendaStateOpen,
-      ),
-      // Neutral: in-progress is the normal mid-day condition, not a
-      // warning — amber is reserved for overdue.
-      AgendaItemState.inProgress => (
-        tokens.colors.text.mediumEmphasis,
-        context.messages.dailyOsNextAgendaStateInProgress,
-      ),
-      AgendaItemState.overdue => (
-        tokens.colors.alert.error.defaultColor,
-        context.messages.dailyOsNextAgendaStateOverdue,
-      ),
-      AgendaItemState.done => (
-        tokens.colors.alert.success.defaultColor,
-        context.messages.dailyOsNextAgendaStateDone,
-      ),
-    };
-    // Done is a glyph, in-progress a quiet colored caption; only the
-    // overdue alarm earns a tinted container.
-    return switch (state) {
-      AgendaItemState.done => Semantics(
-        label: label,
-        child: Icon(LottiIcons.confirm, size: 14, color: color),
-      ),
-      AgendaItemState.overdue => DsPill(
-        variant: DsPillVariant.tinted,
-        color: color,
-        label: label,
-        labelColor: color,
-      ),
-      _ => Text(
-        label,
-        style: tokens.typography.styles.others.caption.copyWith(color: color),
-      ),
-    };
+    final isOverdue = state == AgendaItemState.overdue;
+    // Neutral for in-progress: it is the normal mid-day condition, not a
+    // warning — the alert colour is reserved for overdue.
+    final color = isOverdue
+        ? tokens.colors.alert.error.defaultColor
+        : tokens.colors.text.mediumEmphasis;
+    final label = isOverdue
+        ? context.messages.dailyOsNextAgendaStateOverdue
+        : context.messages.dailyOsNextAgendaStateInProgress;
+    // Only the overdue alarm earns a tinted container; in-progress stays a
+    // quiet coloured caption.
+    return isOverdue
+        ? DsPill(
+            variant: DsPillVariant.tinted,
+            color: color,
+            label: label,
+            labelColor: color,
+          )
+        : Text(
+            label,
+            style: tokens.typography.styles.others.caption.copyWith(
+              color: color,
+            ),
+          );
   }
 }
 

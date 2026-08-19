@@ -7,6 +7,7 @@ import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_card.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/editable_title.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/link_badge.dart';
+import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/cover_art_thumbnail.dart';
 
@@ -555,6 +556,83 @@ void main() {
       expect(find.text('In progress'), findsNothing);
       expect(find.text('Overdue'), findsNothing);
       expect(find.text('Done'), findsNothing);
+    });
+
+    testWidgets('a done row collapses to a quiet receipt with a tick', (
+      tester,
+    ) async {
+      // A finished item does not render the normal card at all: AgendaCard
+      // returns a compact one-line receipt so in-progress and upcoming rows
+      // own the viewport. The tick is that row's only state marker — there is
+      // no "Done" caption anywhere — so it is what has to be right.
+      await tester.pumpWidget(
+        _wrap(
+          const Material(
+            child: AgendaCard(
+              index: 5,
+              item: AgendaItem(
+                id: 'a1',
+                title: 'Finished item',
+                category: _category,
+                linkedBlockIds: ['b1'],
+                state: AgendaItemState.done,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Done'), findsNothing, reason: 'a glyph, not a caption');
+      final tick = find.byIcon(LottiIcons.confirm);
+      expect(tick, findsOneWidget);
+      expect(
+        tester.widget<Icon>(tick).color,
+        dsTokensLight.colors.alert.success.defaultColor,
+      );
+      // It is the receipt layout, not the full card: no meta row, so none of
+      // the pills a normal card carries. If this starts finding one, the
+      // early return has been lost and finished items are competing for the
+      // viewport again.
+      expect(
+        find.byType(DsPill),
+        findsNothing,
+        reason: 'the receipt has no meta row',
+      );
+      expect(find.byType(LinearProgressIndicator), findsNothing);
+    });
+
+    testWidgets('an overdue row keeps its word — only done is a glyph', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          const Material(
+            child: AgendaCard(
+              index: 6,
+              item: AgendaItem(
+                id: 'a1',
+                title: 'Late item',
+                category: _category,
+                linkedBlockIds: ['b1'],
+                state: AgendaItemState.overdue,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Overdue'), findsOneWidget);
+      expect(find.byIcon(LottiIcons.confirm), findsNothing);
+      // Overdue is the one state that earns a tinted container — asserting the
+      // label alone would pass just as happily for a plain caption, which is
+      // what in-progress gets.
+      final pill = tester.widget<DsPill>(
+        find.ancestor(of: find.text('Overdue'), matching: find.byType(DsPill)),
+      );
+      expect(pill.variant, DsPillVariant.tinted);
+      expect(pill.color, dsTokensLight.colors.alert.error.defaultColor);
     });
   });
 }

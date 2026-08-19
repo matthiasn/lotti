@@ -8,11 +8,15 @@
 ///
 /// **This group is deliberately small, and should stay small.** An alpha is
 /// the right answer only when a call site needs *the same hue at reduced
-/// strength* and no colour token expresses it. Text emphasis is not such a
-/// case: `colors.text.{high,medium,low}Emphasis` is already the fade ramp for
-/// type, and fading one of those further just re-derives a step that exists.
-/// An error-toned container fill is not such a case either — the theme's
-/// `colorScheme.errorContainer` is the design system's own error wash.
+/// strength* and no colour token expresses it. An error-toned container fill
+/// is not such a case — the theme's `colorScheme.errorContainer` is the design
+/// system's own error wash.
+///
+/// Text emphasis is *usually* not such a case either:
+/// `colors.text.{high,medium,low}Emphasis` is already the fade ramp for type,
+/// and fading one of those further normally just re-derives a step that
+/// exists. [SecondaryGlyphAlpha] is the one sanctioned exception, and it is
+/// there because the ramp genuinely stops short — see its doc.
 library;
 
 /// Alphas applied to a surface or accent colour that must stay recognisably
@@ -62,4 +66,34 @@ abstract final class SurfaceAlphas {
   /// 0.20 — the resting fill of a pressable accent control (the banner's
   /// CTA pill): visibly a control, never louder than the copy above it.
   static const double washControl = 0.20;
+}
+
+/// The one approved step below `colors.text.lowEmphasis`.
+///
+/// The text ramp bottoms out at `lowEmphasis`, which is the right weight for a
+/// glyph that is *the* thing in its slot — a row's trailing chevron, a meta
+/// caption. It is too loud for a glyph that sits *beside* the row's real
+/// action and must not compete with it.
+///
+/// The checklist row is the case that forced this. Its primary action is
+/// checking the item off; the pencil is a secondary way into the editor,
+/// sitting next to a 44pt checkbox. At `lowEmphasis` the pencil carried ~2.5x
+/// the ink of the chevron it is meant to pair with and read as the loudest
+/// mark on the row. Nothing in `colors.text.*` expresses "quieter than
+/// lowEmphasis", so this is a real gap rather than a re-derivation of an
+/// existing step.
+///
+/// Maintainer-approved (2026-08-19). Reach for it only for a genuinely
+/// secondary affordance; if a glyph is the point of its slot, it belongs at a
+/// `colors.text.*` tier instead.
+abstract final class SecondaryGlyphAlpha {
+  /// 0.55 — a secondary affordance beside a row's primary action: clearly
+  /// present, never competing with it.
+  static const double affordance = 0.55;
+
+  /// 0.2 — a hint that only has to be findable once. The checklist row's drag
+  /// handle: a long-press anywhere on the row starts the drag, so the grip is
+  /// a reminder that the gesture exists, not the way to perform it. At any
+  /// higher alpha its repeating texture pulls the eye off the title.
+  static const double hint = 0.2;
 }
