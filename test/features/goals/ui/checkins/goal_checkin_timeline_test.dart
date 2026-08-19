@@ -193,6 +193,31 @@ void main() {
     expect(find.text('Transcribing…'), findsNothing);
   });
 
+  testWidgets('the rail takes its pending timer with it when it goes', (
+    tester,
+  ) async {
+    // Arms a timer for a recording five minutes short of its deadline.
+    await pump(tester, [
+      GoalAudioCheckIn(
+        audio('waiting', today.add(const Duration(hours: 2, minutes: 55))),
+      ),
+    ]);
+    expect(find.text('Transcribing…'), findsOneWidget);
+
+    // Navigating away mid-window is ordinary — the rail is a card on a page
+    // the user leaves — and the timer has to go with it.
+    await tester.pumpWidget(const SizedBox.shrink());
+    // Deliberately NOT past the deadline: a timer that is allowed to fire is
+    // caught by the `mounted` guard and leaves nothing pending, so advancing
+    // past it would prove the guard rather than the cancel. Stopping short
+    // leaves the timer live unless `dispose` cancelled it, and the binding's
+    // pending-timer check at teardown is then the assertion.
+    await tester.pump(const Duration(minutes: 1));
+
+    expect(find.byType(GoalCheckInTimeline), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('the rail wakes for the soonest beat, not the newest', (
     tester,
   ) async {
