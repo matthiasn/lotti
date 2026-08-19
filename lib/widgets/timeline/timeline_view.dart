@@ -30,9 +30,11 @@ class TimelineView extends StatelessWidget {
 
   final List<TimelineGroup> groups;
 
-  /// Opens a beat's source entry. When null — or when a beat carries no
-  /// `entryId` — the row renders as static and drops its chevron, so the
-  /// affordance always matches the behaviour.
+  /// Opens a beat's source entry. A beat's own [TimelineBeat.onTap] always
+  /// outranks this fallback. When neither applies — this is null or the beat
+  /// carries no `entryId`, and the beat has no `onTap` — the row renders as
+  /// static and drops its chevron, so the affordance always matches the
+  /// behaviour.
   final ValueChanged<String>? onOpenBeat;
 
   /// Renders the paging tail. Null means the caller is showing everything it
