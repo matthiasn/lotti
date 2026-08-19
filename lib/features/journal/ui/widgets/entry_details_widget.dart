@@ -27,6 +27,7 @@ import 'package:lotti/features/journal/ui/widgets/entry_details_borders.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_image_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/journal_card.dart';
 import 'package:lotti/features/journal/ui/widgets/nested_ai_responses_widget.dart';
+import 'package:lotti/features/journal/util/audio_entry_one_liner.dart';
 import 'package:lotti/features/labels/ui/widgets/entry_labels_display.dart';
 import 'package:lotti/features/ratings/ui/rating_summary.dart';
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
@@ -289,8 +290,12 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
   @override
   void didUpdateWidget(EntryDetailsContent oldWidget) {
     super.didUpdateWidget(oldWidget);
+    // Only a persisted non-null value can retire the override: a toggle
+    // always writes an explicit bool, and while the link still reads null the
+    // persist is merely lagging — clearing early would snap an audio entry
+    // back to its collapsed default under the user's expanding tap.
     if (_collapsedOverride != null &&
-        (widget.link?.collapsed ?? false) == _collapsedOverride) {
+        widget.link?.collapsed == _collapsedOverride) {
       _collapsedOverride = null;
     }
   }
@@ -312,8 +317,17 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
     final isCollapsible =
         linkedFrom != null &&
         (item is JournalImage || item is JournalAudio || item is JournalEntry);
+    // Audio log entries default to the compressed view: `collapsed` is
+    // nullable on the link, so null means "no explicit user choice" and only
+    // audio reads that as collapsed — a recording's full transcript is the
+    // stream's most verbose card, and the one-line preview below the header
+    // carries its gist. A user's explicit toggle persists either way. Only
+    // with a real link, though: without one the collapse toggle is disabled,
+    // and defaulting collapsed there would lock the entry shut.
+    final defaultCollapsed = item is JournalAudio && link != null;
     final isCollapsed =
-        isCollapsible && (_collapsedOverride ?? (link?.collapsed ?? false));
+        isCollapsible &&
+        (_collapsedOverride ?? link?.collapsed ?? defaultCollapsed);
 
     final shouldHideEditor = switch (item) {
       JournalEvent() ||
@@ -365,6 +379,55 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
     final showLabels = item is! JournalEvent && item is! Task;
 
     final currentLink = link;
+    final onToggleCollapse = isCollapsible && currentLink != null
+        ? () async {
+            final isExpanding = isCollapsed;
+            // Flip the displayed state immediately so the tap is responsive
+            // even if the persist (below) lags behind a sync backlog.
+            setState(() => _collapsedOverride = !isCollapsed);
+            try {
+              await ref
+                  .read(journalRepositoryProvider)
+                  .updateLink(
+                    currentLink.copyWith(collapsed: !isCollapsed),
+                  );
+            } catch (e, s) {
+              getIt<DomainLogger>().error(
+                LogDomain.persistence,
+                e,
+                stackTrace: s,
+                subDomain: 'onToggleCollapse',
+              );
+            }
+            // Only auto-scroll when expanding and the card top is pushed
+            // above the visible viewport. Collapsing never needs a scroll.
+            if (isExpanding) {
+              Future.delayed(AppTheme.collapseAnimationDuration, () {
+                if (!context.mounted) return;
+                final renderObject = context.findRenderObject();
+                if (renderObject == null) return;
+                final viewport = RenderAbstractViewport.maybeOf(renderObject);
+                if (viewport == null) return;
+                final revealedOffset = viewport.getOffsetToReveal(
+                  renderObject,
+                  0,
+                );
+                final scrollable = Scrollable.maybeOf(context);
+                if (scrollable == null) return;
+                final currentOffset = scrollable.position.pixels;
+                if (revealedOffset.offset < currentOffset) {
+                  Scrollable.ensureVisible(
+                    context,
+                    duration: const Duration(milliseconds: 400),
+                    curve: Curves.easeOutCubic,
+                    alignment: 0.05,
+                  );
+                }
+              });
+            }
+          }
+        : null;
+
     final header = EntryDetailHeader(
       entryId: itemId,
       inLinkedEntries: linkedFrom != null,
@@ -372,54 +435,7 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
       link: link,
       isCollapsible: isCollapsible,
       isCollapsed: isCollapsed,
-      onToggleCollapse: isCollapsible && currentLink != null
-          ? () async {
-              final isExpanding = isCollapsed;
-              // Flip the displayed state immediately so the tap is responsive
-              // even if the persist (below) lags behind a sync backlog.
-              setState(() => _collapsedOverride = !isCollapsed);
-              try {
-                await ref
-                    .read(journalRepositoryProvider)
-                    .updateLink(
-                      currentLink.copyWith(collapsed: !isCollapsed),
-                    );
-              } catch (e, s) {
-                getIt<DomainLogger>().error(
-                  LogDomain.persistence,
-                  e,
-                  stackTrace: s,
-                  subDomain: 'onToggleCollapse',
-                );
-              }
-              // Only auto-scroll when expanding and the card top is pushed
-              // above the visible viewport. Collapsing never needs a scroll.
-              if (isExpanding) {
-                Future.delayed(AppTheme.collapseAnimationDuration, () {
-                  if (!context.mounted) return;
-                  final renderObject = context.findRenderObject();
-                  if (renderObject == null) return;
-                  final viewport = RenderAbstractViewport.maybeOf(renderObject);
-                  if (viewport == null) return;
-                  final revealedOffset = viewport.getOffsetToReveal(
-                    renderObject,
-                    0,
-                  );
-                  final scrollable = Scrollable.maybeOf(context);
-                  if (scrollable == null) return;
-                  final currentOffset = scrollable.position.pixels;
-                  if (revealedOffset.offset < currentOffset) {
-                    Scrollable.ensureVisible(
-                      context,
-                      duration: const Duration(milliseconds: 400),
-                      curve: Curves.easeOutCubic,
-                      alignment: 0.05,
-                    );
-                  }
-                });
-              }
-            }
-          : null,
+      onToggleCollapse: onToggleCollapse,
     );
 
     // Only count labels that will actually render, so the rhythm never inserts
@@ -534,6 +550,18 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
       mainAxisSize: MainAxisSize.min,
       children: [
         header,
+        // The compressed audio view: a one-line preview of the recording's
+        // (AI-transcribed) content, shown exactly while the full card is
+        // collapsed — the inverse of the body below, on the same animation.
+        // Tapping it expands, same as the header chevron.
+        if (item is JournalAudio)
+          _CollapsibleBody(
+            isCollapsed: !isCollapsed,
+            child: _CollapsedAudioOneLiner(
+              audio: item,
+              onTap: onToggleCollapse,
+            ),
+          ),
         _CollapsibleBody(
           isCollapsed: isCollapsed,
           child: expandedContent,
@@ -591,6 +619,45 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
       out.add(sections[i]);
     }
     return out;
+  }
+}
+
+/// The compressed audio-entry view: one line of the recording's
+/// (AI-transcribed) content at medium emphasis, truncated with an ellipsis.
+/// Renders nothing while the entry has no transcribed content to preview.
+/// Tapping it expands the full card, same as the header chevron.
+class _CollapsedAudioOneLiner extends StatelessWidget {
+  const _CollapsedAudioOneLiner({required this.audio, this.onTap});
+
+  final JournalAudio audio;
+  final Future<void> Function()? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final oneLiner = audioEntryOneLiner(audio);
+    if (oneLiner == null) return const SizedBox.shrink();
+    final tokens = context.designTokens;
+    final text = Padding(
+      padding: EdgeInsets.only(top: tokens.spacing.step2),
+      child: Text(
+        oneLiner,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: tokens.typography.styles.body.bodySmall.copyWith(
+          color: tokens.colors.text.mediumEmphasis,
+        ),
+      ),
+    );
+    final onTap = this.onTap;
+    if (onTap == null) return text;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(tokens.radii.s),
+        onTap: () => unawaited(onTap()),
+        child: text,
+      ),
+    );
   }
 }
 
