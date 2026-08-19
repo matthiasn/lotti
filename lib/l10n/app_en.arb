@@ -7155,6 +7155,7 @@
   "taskFirstRunRecordAudioHint": "Opens the recorder without starting to record.",
   "taskFirstRunWriteNote": "Write a note",
   "taskFirstRunWriteNoteHint": "Adds a linked note for details and thoughts.",
+  "taskHistoryTitle": "History",
   "taskLabelsMoreCount": "+{count}",
   "@taskLabelsMoreCount": {
     "placeholders": {
@@ -7212,6 +7213,14 @@
   "taskLanguageUkrainian": "Ukrainian",
   "taskLanguageVietnamese": "Vietnamese",
   "taskLanguageYoruba": "Yoruba",
+  "taskMetaAiSpendLabel": "AI spend",
+  "taskMetaDetailsButton": "Details",
+  "taskMetaDueDateLabel": "Due date",
+  "taskMetaLabelsLabel": "Labels",
+  "taskMetaPriorityLabel": "Priority",
+  "taskMetaSheetTitle": "Task details",
+  "taskMetaTimeLabel": "Time",
+  "taskMetaValueNotSet": "Not set",
   "taskNoDueDateLabel": "No due date",
   "taskNoEstimateLabel": "No estimate",
   "taskOverdueByDays": "Overdue by {days, plural, =1{1 day} other{{days} days}}",

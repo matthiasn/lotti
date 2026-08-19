@@ -96,6 +96,82 @@ void main() {
       expect(find.byKey(_addFieldKey).hitTestable(), findsOneWidget);
     });
 
+    testWidgets(
+      'the header row stays pinned in place across expand/collapse',
+      (tester) async {
+        // The accordion header (title, progress, chevron, menu) must not
+        // shift when the body opens or closes — only the content below it
+        // may move.
+        await _pump(
+          tester,
+          initiallyExpanded: true,
+          totalCount: 10,
+          completedCount: 0,
+          onDelete: () {},
+        );
+        await tester.pump(const Duration(milliseconds: 400));
+
+        final titleBefore = tester.getTopLeft(find.text('My Checklist'));
+        final chevronBefore = tester.getCenter(find.byIcon(Icons.expand_more));
+        final progressBefore = tester.getTopLeft(find.text('0/10 done'));
+
+        // The header row's own box must be state-invariant too: a padding
+        // that differs between the states makes the card height jump by the
+        // difference the instant the toggle starts, while the strip below is
+        // still animating — the visible jerk the accordion had.
+        // `.last`, deliberately: while expanded the title carries its own
+        // inner tap-to-edit GestureDetector, so the row's detector is the
+        // outermost ancestor in both states.
+        Size headerRowSize() => tester.getSize(
+          find
+              .ancestor(
+                of: find.text('My Checklist'),
+                matching: find.byType(GestureDetector),
+              )
+              .last,
+        );
+        final rowSizeBefore = headerRowSize();
+
+        await tester.tap(find.byIcon(Icons.expand_more));
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(
+          headerRowSize(),
+          rowSizeBefore,
+          reason: 'header row box changed size on collapse',
+        );
+        expect(
+          tester.getTopLeft(find.text('My Checklist')),
+          titleBefore,
+          reason: 'title moved on collapse',
+        );
+        expect(
+          tester.getCenter(find.byIcon(Icons.expand_more)),
+          chevronBefore,
+          reason: 'chevron moved on collapse',
+        );
+        expect(
+          tester.getTopLeft(find.text('0/10 done')),
+          progressBefore,
+          reason: 'progress label moved on collapse',
+        );
+
+        await tester.tap(find.byIcon(Icons.expand_more));
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(
+          tester.getTopLeft(find.text('My Checklist')),
+          titleBefore,
+          reason: 'title moved on re-expand',
+        );
+        expect(
+          tester.getCenter(find.byIcon(Icons.expand_more)),
+          chevronBefore,
+          reason: 'chevron moved on re-expand',
+        );
+      },
+    );
+
     testWidgets('shows add-item field when expanded', (tester) async {
       await _pump(tester, initiallyExpanded: true);
       expect(find.byKey(_addFieldKey).hitTestable(), findsOneWidget);

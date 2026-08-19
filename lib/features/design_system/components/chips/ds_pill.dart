@@ -18,6 +18,18 @@ enum DsPillVariant {
   muted,
 }
 
+/// Corner treatment for [DsPill], carrying the corner-radius convention:
+/// fully-rounded shells are the *interactive* grammar (filters, levers,
+/// pickers), while informational read-outs wear a tight `radii.xs` corner so
+/// they never masquerade as buttons.
+enum DsPillShape {
+  /// Fully-rounded (`radii.badgesPills`) — interactive pills.
+  pill,
+
+  /// `radii.xs` (4) corners — informational tags.
+  tag,
+}
+
 /// 28px pill chip used across the task detail header and elsewhere in the
 /// design system. Variants share anatomy (height, radius, padding, gap) and
 /// only differ in fill / border / label color so the same primitive can carry
@@ -25,6 +37,7 @@ enum DsPillVariant {
 class DsPill extends StatelessWidget {
   const DsPill({
     required this.variant,
+    this.shape = DsPillShape.pill,
     this.label,
     this.labelWidget,
     this.leading,
@@ -48,6 +61,12 @@ class DsPill extends StatelessWidget {
        );
 
   final DsPillVariant variant;
+
+  /// Corner treatment. Defaults to the fully-rounded interactive pill;
+  /// informational read-outs pass [DsPillShape.tag] for `radii.xs` corners so
+  /// they are visually distinct from tappable pills. An explicit
+  /// [cornerRadius] takes precedence over the shape's default.
+  final DsPillShape shape;
   final String? label;
 
   /// Optional custom label widget rendered in place of the [label] string.
@@ -97,10 +116,10 @@ class DsPill extends StatelessWidget {
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
 
-  /// Corner radius override. Defaults to the fully-rounded
-  /// `radii.badgesPills`. Surfaces that separate affordances by shape —
-  /// clickable elements fully rounded, informative chips at the small fixed
-  /// radius — pass `tokens.radii.smallChips` for a non-tappable instance.
+  /// Explicit corner-radius override, taking precedence over [shape]'s
+  /// default. Surfaces that separate affordances by shape but need a radius
+  /// the [DsPillShape] enum does not offer (e.g. the goal chips'
+  /// `tokens.radii.smallChips`) pass it here; when null, [shape] decides.
   final double? cornerRadius;
 
   static const double height = 28;
@@ -108,9 +127,15 @@ class DsPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final radius = BorderRadius.circular(
-      cornerRadius ?? tokens.radii.badgesPills,
-    );
+    // [shape] supplies the semantic default; an explicit [cornerRadius]
+    // override (e.g. `radii.smallChips` on the goal chips) wins over it.
+    final resolvedRadius =
+        cornerRadius ??
+        switch (shape) {
+          DsPillShape.pill => tokens.radii.badgesPills,
+          DsPillShape.tag => tokens.radii.xs,
+        };
+    final radius = BorderRadius.circular(resolvedRadius);
     final hPadding = tokens.spacing.step3;
     final gap = tokens.spacing.step2;
 
@@ -216,7 +241,7 @@ class DsPill extends StatelessWidget {
         // keeps the border reading as "unset" next to the solid chips, so the
         // stronger stroke costs nothing semantically.
         color: tokens.colors.decorative.level03,
-        radius: cornerRadius ?? tokens.radii.badgesPills,
+        radius: resolvedRadius,
         child: content,
       ),
     };

@@ -23,6 +23,7 @@ import 'package:lotti/features/tasks/ui/task_app_bar.dart';
 import 'package:lotti/features/tasks/ui/task_form.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_action_bar.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_first_run_actions.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_history_section.dart';
 import 'package:lotti/features/tasks/ui/widgets/viewport_stable_animated_size.dart';
 import 'package:lotti/features/tasks/util/scroll_anchor.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -35,8 +36,10 @@ import 'package:lotti/widgets/media/media_drop_target.dart';
 /// Full-screen detail view for a single task identified by [taskId].
 ///
 /// Renders a [CustomScrollView] with a sliver app bar, the [TaskForm]
-/// (header, AI summary, linked tasks, checklists), and the task's linked
-/// entries below. A sticky [TaskActionBar] sits in the `bottomNavigationBar`
+/// (header, AI summary, checklists, linked tasks), and the task's dated
+/// log-entry history below — collapsed by default behind a
+/// [TaskHistorySection] header, force-expanded when a focus intent targets
+/// an entry inside it. A sticky [TaskActionBar] sits in the `bottomNavigationBar`
 /// slot; `extendBody` lets its glass blur read the scrolling body and a
 /// trailing [SliverPadding] reserves the bar's height so the last entry can
 /// scroll clear of it. Listens to the task focus controller to auto-scroll
@@ -85,9 +88,10 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
   Timer? _suggestionsRetryTimer;
 
   /// Fallback anchor for above-card changes that do not report their own size
-  /// delta to [_scrollController]. Checklist changes use the controller's
-  /// pre-paint correction path; this anchor still covers other proposal-driven
-  /// task mutations.
+  /// delta to [_scrollController]. With the AI card sitting right below the
+  /// header, the header band is the only content above the proposals; this
+  /// anchor covers proposal-driven header mutations (title, tagline,
+  /// metadata) that slip past the pre-paint correction path.
   late final ScrollAnchor _suggestionsAnchor;
 
   /// Holds the content below the AI card fixed while the card grows off-screen
@@ -123,6 +127,12 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
   /// so a stale previous-task count can't falsely trigger the scroll anchor.
   String? _lastTaskId;
 
+  /// Whether the dated log-entry history is expanded. Collapsed by default —
+  /// the history is the page's longest region — and force-expanded when a
+  /// focus intent targets an entry inside it, because a collapsed section has
+  /// no mounted entry keys to scroll to.
+  bool _historyExpanded = false;
+
   @override
   void initState() {
     final provider = taskAppBarControllerProvider(widget.taskId);
@@ -141,9 +151,10 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
       locate: _suggestionsViewportTop,
       // Cover a checked-off item's *delayed* row collapse: confirming a
       // "check off" proposal leaves the checklist row in place, then collapses
-      // it (hold + cross-fade) ~a second later. That shrink lands above the AI
-      // card; without spanning it the card slides up out from under the user's
-      // next tap. The hold bows out early if the user scrolls in the meantime.
+      // it (hold + cross-fade) ~a second later. The checklist sits below the
+      // card now, so that shrink no longer displaces the proposals — but the
+      // window still has to span header-band mutations from the same batch.
+      // The hold bows out early if the user scrolls in the meantime.
       holdDuration: _suggestionResolveHold,
     );
 
@@ -179,21 +190,25 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
   /// Arms exactly one stabilization geometry before proposal persistence
   /// begins.
   ///
-  /// The bands above the card — header, checklist and linked tasks — always
-  /// report their height deltas to [_scrollController], which corrects during
-  /// viewport layout so no displaced frame is painted. What changes is *which
-  /// point* has to stay still, and that flips when the card leaves the screen:
+  /// The header — the only band above the card — always reports its height
+  /// deltas to [_scrollController], which corrects during viewport layout so
+  /// no displaced frame is painted. The checklist and linked-tasks bands sit
+  /// below the card and report only while the below-card hold is armed. What
+  /// changes is *which point* has to stay still, and that flips when the card
+  /// leaves the screen:
   ///
   /// * **Card visible** — the proposals under the user's pointer must not move,
   ///   so [_suggestionsAnchor] holds. The card's own collapse is the reflow the
   ///   user is watching, so the card band stays silent.
-  /// * **Card fully above the viewport** — the user is reading the linked
-  ///   entries below it, and every resolved proposal — confirmed or dismissed
+  /// * **Card fully above the viewport** — the user is reading the content
+  ///   below it, and every resolved proposal — confirmed or dismissed
   ///   alike — collapses a row and shrinks
   ///   the card, dragging that content up. [_suggestionsAnchor] is structurally
   ///   blind to it, because a row collapsing *inside* the proposals section does
   ///   not move the section's top. So the card band reports its own shrink for a
-  ///   pre-paint correction, and [_belowCardAnchor] pins the seam below it.
+  ///   pre-paint correction — as do the checklist and linked-tasks bands, which
+  ///   sit between the card and the seam — and [_belowCardAnchor] pins the
+  ///   linked-entries seam.
   ///
   /// The two anchors are never armed together. They sit either side of the
   /// change, so the correction that holds one still moves the other by exactly
@@ -229,6 +244,10 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
     _lastTaskId = widget.taskId;
     _lastOpenSuggestionCount = null;
     _lastLinkGroups = null;
+    // The next task starts with its history collapsed again; no setState —
+    // this runs from listeners and the taskId change rebuilds the page
+    // anyway.
+    _historyExpanded = false;
     return true;
   }
 
@@ -288,8 +307,9 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
   /// see it change size, so its own growth or shrink must not move what they
   /// *are* looking at.
   ///
-  /// Measured on the card band rather than the seam below it wherever possible:
-  /// the seam sits a further `step5 + step5` lower, and in that gap the card is
+  /// Measured on the card band rather than the seam below it wherever
+  /// possible: the seam (the linked-entries sliver) sits a whole two sections
+  /// — checklists and linked tasks — lower, and in that span the card is
   /// already out of sight while the seam is not.
   ///
   /// Once the card's sliver has scrolled beyond the viewport's cache extent the
@@ -359,9 +379,11 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
   /// anything — a sync or another background writer can change the link set at
   /// any scroll position. When the band sits entirely below the viewport its
   /// growth moves nothing on screen, and correcting for it would drag the
-  /// header and checklist the user *is* reading upwards. So that case is left
-  /// alone; a band that is visible or above stays worth compensating, because
-  /// everything below it — including the card — would otherwise shift.
+  /// content the user *is* reading upwards. So that case is left alone; a
+  /// band that is visible or above stays worth arming for, because the
+  /// linked entries below it would otherwise shift. (While the card is
+  /// visible the armed hold ignores this band's delta anyway — the band sits
+  /// below the proposals, so its growth is the visible reflow.)
   ///
   /// The baseline falls back to the listener's own [previous] value, because
   /// `taskLinkGroupsControllerProvider` is cached for `entryCacheDuration`: a
@@ -401,6 +423,26 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
     );
   }
 
+  /// The dated entry stream: outgoing linked entries plus reverse links.
+  /// Both widgets collapse to nothing on a task without entries.
+  Widget _buildEntryStream(Task task, String? highlightedEntryId) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: <Widget>[
+        LinkedEntriesWithTimer(
+          item: task,
+          entryKeyBuilder: _getEntryKey,
+          highlightedEntryId: highlightedEntryId,
+          hideTaskEntries: true,
+        ),
+        LinkedFromEntriesWidget(
+          task,
+          hideTaskEntries: true,
+        ),
+      ],
+    ).animate().fadeIn(duration: const Duration(milliseconds: 100));
+  }
+
   @override
   Widget build(BuildContext context) {
     final focusProvider = taskFocusControllerProvider(widget.taskId);
@@ -413,6 +455,11 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
           if (entryId == null) {
             ref.read(focusProvider.notifier).clearIntent();
             return;
+          }
+          // The target lives inside the collapsed history — open it first so
+          // the entry mounts and the retrying scroll can find its key.
+          if (!_historyExpanded) {
+            setState(() => _historyExpanded = true);
           }
           scrollToEntry(
             entryId,
@@ -436,7 +483,7 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
         (previous, next) => handleFocus(next, isInitialLoad: previous == null),
       )
       // Hold the AI proposals in place when one is confirmed (which can grow
-      // the checklist above them) so the page doesn't jump under the user.
+      // the header above them) so the page doesn't jump under the user.
       ..listen<AsyncValue<UnifiedSuggestionList>>(
         unifiedSuggestionListProvider(widget.taskId),
         _onSuggestionsChanged,
@@ -581,24 +628,28 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
                         left: context.designTokens.spacing.step5,
                         right: context.designTokens.spacing.step5,
                       ),
-                      child:
-                          Column(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: <Widget>[
-                              LinkedEntriesWithTimer(
-                                item: task,
-                                entryKeyBuilder: _getEntryKey,
-                                highlightedEntryId: highlightedEntryId,
-                                hideTaskEntries: true,
+                      // The dated log history lives behind a collapsed-by-
+                      // default section: it is the page's longest region, and
+                      // the summary / todos / linked tasks above it are what a
+                      // reader needs first. A first-run task drops the
+                      // History header — but NOT the entry widgets: the
+                      // first-run predicate examines only *outgoing* links,
+                      // so a blank task can still carry entries that link TO
+                      // it, and hiding the whole subtree would disappear
+                      // them with no way to expand. The bare column renders
+                      // nothing when there is truly nothing.
+                      child: isFirstRun
+                          ? _buildEntryStream(task, highlightedEntryId)
+                          : TaskHistorySection(
+                              expanded: _historyExpanded,
+                              onToggle: () => setState(
+                                () => _historyExpanded = !_historyExpanded,
                               ),
-                              LinkedFromEntriesWidget(
+                              child: _buildEntryStream(
                                 task,
-                                hideTaskEntries: true,
+                                highlightedEntryId,
                               ),
-                            ],
-                          ).animate().fadeIn(
-                            duration: const Duration(milliseconds: 100),
-                          ),
+                            ),
                     ),
                   ),
                 ),

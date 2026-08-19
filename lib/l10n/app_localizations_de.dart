@@ -13027,6 +13027,9 @@ class AppLocalizationsDe extends AppLocalizations {
       'Fügt eine verknüpfte Notiz für Details und Gedanken hinzu.';
 
   @override
+  String get taskHistoryTitle => 'Verlauf';
+
+  @override
   String taskLabelsMoreCount(int count) {
     return '+$count';
   }
@@ -13168,6 +13171,30 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get taskLanguageYoruba => 'Yoruba';
+
+  @override
+  String get taskMetaAiSpendLabel => 'KI-Ausgaben';
+
+  @override
+  String get taskMetaDetailsButton => 'Details';
+
+  @override
+  String get taskMetaDueDateLabel => 'Fälligkeitsdatum';
+
+  @override
+  String get taskMetaLabelsLabel => 'Labels';
+
+  @override
+  String get taskMetaPriorityLabel => 'Priorität';
+
+  @override
+  String get taskMetaSheetTitle => 'Aufgabendetails';
+
+  @override
+  String get taskMetaTimeLabel => 'Zeit';
+
+  @override
+  String get taskMetaValueNotSet => 'Nicht gesetzt';
 
   @override
   String get taskNoDueDateLabel => 'Kein Fälligkeitsdatum';

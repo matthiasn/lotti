@@ -45,6 +45,13 @@ the column when it sits first on a leading edge. `alignsLabelToLeadingEdge`
 cancels exactly that inset, direction-aware, so a button can start a shared
 column without a call site open-coding a `Transform`.
 
+`DsPill` carries the corner-radius convention through its `shape` parameter:
+the default `DsPillShape.pill` (fully-rounded, `radii.badgesPills`) is the
+*interactive* grammar — filters, levers, pickers — while `DsPillShape.tag`
+(`radii.xs`, 4) marks *informational* read-outs, so a fact can never be
+mistaken for a button. The task-detail metadata summary is the reference
+consumer of the tag shape.
+
 `DesignSystemChip` is the canonical interactive filter token. Its `selected`
 flag owns both the activated surface and selected semantics; feature code does
 not repaint selected chips with local status colours. A count or status that

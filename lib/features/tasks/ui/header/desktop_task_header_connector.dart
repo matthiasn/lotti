@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,27 +5,16 @@ import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
-import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
-import 'package:lotti/features/labels/ui/widgets/label_selection_modal_utils.dart';
-import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
-import 'package:lotti/features/projects/ui/widgets/project_selection_modal_content.dart';
 import 'package:lotti/features/tasks/state/task_blockers_controller.dart';
 import 'package:lotti/features/tasks/state/task_one_liner_provider.dart';
-import 'package:lotti/features/tasks/state/task_progress_controller.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header.dart';
-import 'package:lotti/features/tasks/ui/header/desktop_task_header_meta.dart';
-import 'package:lotti/features/tasks/ui/header/estimated_time_widget.dart';
-import 'package:lotti/features/tasks/ui/header/task_consumption_chip.dart';
-import 'package:lotti/features/tasks/ui/header/task_due_date_widget.dart';
-import 'package:lotti/features/tasks/ui/header/task_priority_modal_content.dart';
-import 'package:lotti/features/tasks/ui/header/task_status_modal_content.dart';
-import 'package:lotti/features/tasks/ui/linked_tasks/blocking_task_picker_modal.dart';
+import 'package:lotti/features/tasks/ui/header/task_meta_flyout.dart';
+import 'package:lotti/features/tasks/ui/header/task_meta_pickers.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_task_row.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/features/tasks/util/due_date_utils.dart';
@@ -38,9 +25,9 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
-/// Connects [DesktopTaskHeader] to the Riverpod task state and opens the
-/// existing modal pickers (status, priority, category, project, due date,
-/// labels, ellipsis actions).
+/// Connects [DesktopTaskHeader] to the Riverpod task state: title saves, the
+/// breadcrumb's category/project pickers ([TaskMetaPickers]), and the
+/// metadata fly-out ([TaskMetaFlyout]) where every other attribute is edited.
 ///
 /// The presentational widget stays framework-free; all repository /
 /// `EntryController` interaction is concentrated here so widgetbook and tests
@@ -84,31 +71,29 @@ class DesktopTaskHeaderConnector extends ConsumerWidget {
       // task id so the decision is re-made per task rather than inherited from
       // whichever task the header last rendered.
       initialEditing: data.title.trim().isEmpty,
-      estimateSlot: _TaskEstimateChip(taskId: task.meta.id),
-      // Which lane the estimate chip joins — the chip itself is opaque to the
-      // header, so the connector answers from the task. Mirrors the chip's
-      // own `hasEstimate` check exactly; if the two drift the chip merely
-      // renders in the wrong lane, but they must not.
-      estimateIsSet:
-          task.data.estimate != null && task.data.estimate != Duration.zero,
-      consumptionSlot: TaskConsumptionChip(taskId: task.meta.id),
       blockedBySlot: _TaskBlockedByChip(taskId: task.meta.id),
       onTitleSaved: (newTitle) {
         controller.save(title: newTitle);
       },
-      onPriorityTap: () => _showPriorityPicker(context, ref, task),
-      onStatusTap: () => _showStatusPicker(context, ref, task),
+      onOpenDetails: () => TaskMetaFlyout.show(context, taskId: taskId),
       // Projects are scoped to a category, so without one there is nothing to
       // pick from. The header drops the project crumb entirely in that state;
       // passing `null` keeps the two in agreement rather than leaving a
       // tappable-looking target that does nothing.
       onProjectTap: categoryId == null
           ? null
-          : () => _showProjectPicker(context, ref, taskId, project, categoryId),
-      onCategoryTap: () => _showCategoryPicker(context, ref, task),
-      onDueDateTap: () => _showDueDatePicker(context, ref, task),
-      onLabelTap: (_) => _openLabelSelector(context, ref, task),
-      onAddLabelTap: () => _openLabelSelector(context, ref, task),
+          : () => TaskMetaPickers.showProjectPicker(
+              context,
+              ref,
+              taskId: taskId,
+              categoryId: categoryId,
+              current: project,
+            ),
+      onCategoryTap: () => TaskMetaPickers.showCategoryPicker(
+        context,
+        ref,
+        task,
+      ),
     );
   }
 
@@ -190,284 +175,9 @@ class DesktopTaskHeaderConnector extends ConsumerWidget {
         return DesktopTaskHeaderDueUrgency.normal;
     }
   }
-
-  Future<void> _showStatusPicker(
-    BuildContext context,
-    WidgetRef ref,
-    Task task,
-  ) async {
-    final controller = ref.read(entryControllerProvider(taskId).notifier);
-    final previousStatus = task.data.status.toDbString;
-    final selected = await ModalUtils.showSinglePageModal<String>(
-      context: context,
-      // Strip the trailing colon so the picker title matches the other
-      // pickers (e.g. "Select priority", "Labels"), which carry no colon.
-      title: stripTrailingColon(context.messages.taskStatusLabel),
-      padding: EdgeInsets.zero,
-      builder: (_) => TaskStatusModalContent(task: task),
-    );
-    if (selected == null) return;
-
-    await controller.updateTaskStatus(selected);
-
-    final becameBlocked = selected == 'BLOCKED' && selected != previousStatus;
-    if (!becameBlocked || !context.mounted) return;
-
-    final blockers = await ref.read(
-      taskBlockersControllerProvider(taskId).future,
-    );
-    // isBlocked (not just openBlockers) so an unresolved-only blocker link
-    // also counts as "already named" — don't re-prompt over it.
-    if (blockers.isBlocked) return;
-    if (!context.mounted) return;
-
-    await BlockingTaskPickerModal.show(context: context, blockedTaskId: taskId);
-  }
-
-  Future<void> _showPriorityPicker(
-    BuildContext context,
-    WidgetRef ref,
-    Task task,
-  ) async {
-    final controller = ref.read(entryControllerProvider(taskId).notifier);
-    final current = task.data.priority;
-    final selected = await ModalUtils.showSinglePageModal<String>(
-      context: context,
-      title: context.messages.tasksPriorityPickerTitle,
-      padding: EdgeInsets.zero,
-      builder: (modalContext) => TaskPriorityModalContent(
-        currentPriority: current,
-        onSelected: (priority) =>
-            Navigator.of(modalContext).pop(priority.short),
-      ),
-    );
-    if (selected != null) {
-      await controller.updateTaskPriority(selected);
-    }
-  }
-
-  Future<void> _showCategoryPicker(
-    BuildContext context,
-    WidgetRef ref,
-    Task task,
-  ) async {
-    final controller = ref.read(entryControllerProvider(taskId).notifier);
-    final result = await showCategoryPicker(
-      context: context,
-      title: context.messages.habitCategoryLabel,
-      currentCategoryId: task.meta.categoryId,
-    );
-    if (result == null) return;
-    await controller.updateCategoryId(result.categoryOrNull?.id);
-  }
-
-  Future<void> _showProjectPicker(
-    BuildContext context,
-    WidgetRef ref,
-    String taskId,
-    ProjectEntry? current,
-    String categoryId,
-  ) async {
-    final repository = ref.read(projectRepositoryProvider);
-    await ModalUtils.showSinglePageModal<void>(
-      context: context,
-      title: context.messages.projectPickerLabel,
-      padding: EdgeInsets.zero,
-      builder: (_) => ProjectSelectionModalContent(
-        categoryId: categoryId,
-        currentProjectId: current?.meta.id,
-        onProjectSelected: (selected) async {
-          if (selected == null) {
-            await repository.unlinkTaskFromProject(taskId);
-          } else {
-            await repository.linkTaskToProject(
-              projectId: selected.meta.id,
-              taskId: taskId,
-            );
-          }
-        },
-      ),
-    );
-  }
-
-  Future<void> _showDueDatePicker(
-    BuildContext context,
-    WidgetRef ref,
-    Task task,
-  ) async {
-    final controller = ref.read(entryControllerProvider(taskId).notifier);
-    await showDueDatePicker(
-      context: context,
-      initialDate: task.data.due,
-      onDueDateChanged: (newDate) async {
-        if (newDate == null) {
-          await controller.save(clearDueDate: true);
-        } else {
-          await controller.save(dueDate: newDate);
-        }
-      },
-    );
-  }
-
-  Future<void> _openLabelSelector(
-    BuildContext context,
-    WidgetRef ref,
-    Task task,
-  ) async {
-    await LabelSelectionModalUtils.openLabelSelector(
-      context: context,
-      entryId: task.meta.id,
-      initialLabelIds: task.meta.labelIds ?? const <String>[],
-      categoryId: task.meta.categoryId,
-    );
-  }
 }
 
-/// Estimate pill surfaced in the meta row. Renders as a `DsPill.muted` ghost
-/// chip when no estimate is set and as a `DsPill.filled` (or `DsPill.tinted`
-/// in the error color when overtime) showing live `tracked / estimated` plus
-/// a small progress bar when an estimate is set. Tapping opens the shared
-/// `showEstimatePicker` and persists via `EntryController.save(estimate: …)`.
-class _TaskEstimateChip extends ConsumerWidget {
-  const _TaskEstimateChip({required this.taskId});
-
-  final String taskId;
-
-  /// Formats a duration as plain units ("1h 30m", "45m", "2h") rather than a
-  /// zero-padded "HH:MM" clock — users read "00:00 / 01:00" as a time-of-day
-  /// range; "0m of 1h" reads unambiguously as tracked-of-estimated duration.
-  String _format(Duration duration) {
-    final hours = duration.inHours;
-    final minutes = duration.inMinutes.remainder(60);
-    if (hours > 0 && minutes > 0) return '${hours}h ${minutes}m';
-    if (hours > 0) return '${hours}h';
-    return '${minutes}m';
-  }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final provider = entryControllerProvider(taskId);
-    final entryState = ref.watch(provider).value;
-    final task = entryState?.entry;
-    if (task is! Task) {
-      return const SizedBox.shrink();
-    }
-    final notifier = ref.read(provider.notifier);
-    final estimate = task.data.estimate;
-    final hasEstimate = estimate != null && estimate != Duration.zero;
-
-    Future<void> onTap() async {
-      await showEstimatePicker(
-        context: context,
-        initialDuration: estimate ?? Duration.zero,
-        onEstimateChanged: (newDuration) async {
-          await notifier.save(estimate: newDuration);
-        },
-      );
-    }
-
-    if (!hasEstimate) {
-      return DsPill(
-        variant: DsPillVariant.muted,
-        // Verb form and mediumText glyph, matching the other unset chips in
-        // the add-lane (see `MetaRow`).
-        label: context.messages.taskSetEstimateLabel,
-        // `av_timer`, not `timer_outlined`: the Track time pill in the bar
-        // wears the stopwatch for ACTUAL time the whole first-run window,
-        // and the same glyph on planned time invited conflating the two.
-        leading: Icon(
-          Icons.av_timer_rounded,
-          size: kTaskChipGlyphSize,
-          color: TaskShowcasePalette.mediumText(context),
-        ),
-        onTap: onTap,
-      );
-    }
-
-    final progressState = ref
-        .watch(taskProgressControllerProvider(taskId))
-        .value;
-    final isOvertime =
-        progressState != null &&
-        progressState.progress > progressState.estimate;
-    final progress = progressState?.progress ?? Duration.zero;
-    final progressValue = estimate.inSeconds > 0
-        ? math.min(progress.inSeconds / estimate.inSeconds, 1)
-        : 0;
-    final iconColor = isOvertime
-        ? TaskShowcasePalette.error(context)
-        : TaskShowcasePalette.mediumText(context);
-    final barTrack = isOvertime
-        ? TaskShowcasePalette.error(context).withValues(alpha: 0.2)
-        : TaskShowcasePalette.lowText(context).withValues(alpha: 0.2);
-    final barFill = isOvertime
-        ? TaskShowcasePalette.error(context)
-        : TaskShowcasePalette.success(context);
-    final progressBar = progressState == null
-        ? null
-        : ClipRRect(
-            borderRadius: BorderRadius.circular(3),
-            child: SizedBox(
-              width: 36,
-              height: 6,
-              child: LinearProgressIndicator(
-                value: progressValue.toDouble(),
-                backgroundColor: barTrack,
-                color: barFill,
-              ),
-            ),
-          );
-
-    final trackedStr = _format(progress);
-    final estimateStr = _format(estimate);
-    // "X of Y" reads as tracked-of-estimated (part of a whole) instead of the
-    // ambiguous "X / Y" where users couldn't tell which number was which.
-    final progressLabel = context.messages.taskEstimateProgressLabel(
-      trackedStr,
-      estimateStr,
-    );
-    // The tooltip spells it out fully on hover and for assistive tech, so the
-    // two numbers are never a guessing game.
-    final tooltip = context.messages.taskEstimateTooltip(
-      trackedStr,
-      estimateStr,
-    );
-    final pill = isOvertime
-        ? DsPill(
-            variant: DsPillVariant.tinted,
-            color: TaskShowcasePalette.error(context),
-            label: progressLabel,
-            leading: Icon(
-              Icons.av_timer_rounded,
-              size: kTaskChipGlyphSize,
-              color: iconColor,
-            ),
-            trailing: progressBar,
-            onTap: onTap,
-          )
-        : DsPill(
-            variant: DsPillVariant.filled,
-            // Quiet border gives low-vision users a clear chip boundary.
-            bordered: true,
-            label: progressLabel,
-            // A set estimate carries real data, so it reads at the same
-            // medium-emphasis contrast as the due-date chip rather than the dim
-            // low-emphasis grey reserved for empty placeholders (which made an
-            // active estimate look disabled).
-            labelColor: TaskShowcasePalette.mediumText(context),
-            leading: Icon(
-              Icons.av_timer_rounded,
-              size: kTaskChipGlyphSize,
-              color: iconColor,
-            ),
-            trailing: progressBar,
-            onTap: onTap,
-          );
-    return Tooltip(message: tooltip, child: pill);
-  }
-}
-
-/// "Blocked by" chip in the header's status cluster — a derived, read-time
+/// "Blocked by" chip in the header's summary lane — a derived, read-time
 /// fact (ADR 0042 §4) independent of the task's own [TaskStatus]: a task can
 /// carry a live `blocks` link while its stored status is still `open`, and
 /// that's exactly the state this chip must surface. Renders nothing when the
@@ -496,6 +206,7 @@ class _TaskBlockedByChip extends ConsumerWidget {
       // navigate to, so render a bare label with no tap affordance.
       return DsPill(
         variant: DsPillVariant.outline,
+        shape: DsPillShape.tag,
         color: accent,
         labelColor: context.designTokens.colors.text.highEmphasis,
         leading: Icon(
@@ -516,14 +227,15 @@ class _TaskBlockedByChip extends ConsumerWidget {
         single ? blockers.first.data.title : '',
       ),
       child: DsPill(
-        // Outline, not tinted: the red status pill is the header's alarm, and
-        // this chip explains it. Two filled alert-coloured pills side by side
-        // stated one fact at two severities and competed for the same glance.
+        // Outline, not tinted: the status read-out is the summary's alarm,
+        // and this chip explains it. Two filled alert-coloured shells side by
+        // side stated one fact at two severities and competed for the same
+        // glance.
         variant: DsPillVariant.outline,
         color: accent,
         // Amber marks the border and the glyph; the label itself reads as
         // ordinary text. An explanatory chip should not out-shout the status
-        // pill it explains.
+        // read-out it explains.
         labelColor: tokens.colors.text.highEmphasis,
         leading: Icon(
           Icons.block,
@@ -532,9 +244,9 @@ class _TaskBlockedByChip extends ConsumerWidget {
         ),
         // Count only, no blocker title. Embedding the title made the chip
         // grow with it — on a long title it spanned the header and out-shouted
-        // the status pill beside it. That the task is waiting is the header's
-        // job; which task it waits on is one glance away in the Linked Tasks
-        // card, and the tooltip still names it.
+        // the status read-out beside it. That the task is waiting is the
+        // header's job; which task it waits on is one glance away in the
+        // Linked Tasks card, and the tooltip still names it.
         label: context.messages.taskBlockedByChipLabel(blockers.length),
         // Matches LinkedTaskRow's own browse-mode chevron so a chip that
         // navigates reads as tappable, not just as a status readout. Neutral,

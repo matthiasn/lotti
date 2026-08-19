@@ -207,7 +207,7 @@ void main() {
     });
 
     testWidgets(
-      'renders title, classification line, metadata line and no ellipsis',
+      'renders title, breadcrumb, compact summary and no ellipsis',
       (tester) async {
         await _pumpDesktop(
           tester,
@@ -219,24 +219,23 @@ void main() {
               labels: _labelFixtures,
             ),
             onTitleSaved: (_) {},
-            estimateSlot: const Text('1h / 2h'),
           ),
         );
 
         expect(find.text('Payment confirmation'), findsOneWidget);
-        // Classification row
+        // Breadcrumb
         expect(find.text('Work'), findsOneWidget);
         expect(
           find.text('Device Sync - Lotti Mobile App Implementation'),
           findsOneWidget,
         );
-        expect(find.text('Bug fix'), findsOneWidget);
-        expect(find.text('Release blocker'), findsOneWidget);
-        // Metadata row
-        expect(find.text('Due: Apr 1, 2026'), findsOneWidget);
-        expect(find.text('1h / 2h'), findsOneWidget);
-        expect(find.text('High'), findsOneWidget);
+        // Compact summary lane: status, priority, due, compressed labels and
+        // the Details trigger — no per-label pills, no estimate chip.
         expect(find.text('Open'), findsOneWidget);
+        expect(find.text('High'), findsOneWidget);
+        expect(find.text('Due: Apr 1, 2026'), findsOneWidget);
+        expect(find.text('Bug fix, Release blocker'), findsOneWidget);
+        expect(find.text('Details'), findsOneWidget);
         // No ellipsis in the header — lives in the app bar.
         expect(find.byIcon(Icons.more_vert_rounded), findsNothing);
         expect(find.byIcon(Icons.more_horiz), findsNothing);
@@ -244,12 +243,12 @@ void main() {
     );
 
     testWidgets(
-      'renders placeholder chips when classification/metadata are empty',
+      'crumb taps fire their pickers and the Details trigger opens the '
+      'fly-out callback',
       (tester) async {
         var category = 0;
         var project = 0;
-        var addLabel = 0;
-        var due = 0;
+        var details = 0;
         await _pumpDesktop(
           tester,
           DesktopTaskHeader(
@@ -258,24 +257,23 @@ void main() {
             onTitleSaved: (_) {},
             onCategoryTap: () => category++,
             onProjectTap: () => project++,
-            onAddLabelTap: () => addLabel++,
-            onDueDateTap: () => due++,
+            onOpenDetails: () => details++,
           ),
         );
         expect(find.text('Work'), findsOneWidget);
         expect(find.text('No project'), findsOneWidget);
-        expect(find.text('Add label'), findsOneWidget);
-        expect(find.text('Set due date'), findsOneWidget);
+        // The old always-visible add-affordances are gone: unset metadata is
+        // edited through the fly-out, not dashed lane chips.
+        expect(find.text('Add label'), findsNothing);
+        expect(find.text('Set due date'), findsNothing);
 
         await tester.tap(find.text('Work'));
         await tester.tap(find.text('No project'));
-        await tester.tap(find.text('Add label'));
-        await tester.tap(find.text('Set due date'));
+        await tester.tap(find.text('Details'));
         await tester.pump();
         expect(category, 1);
         expect(project, 1);
-        expect(addLabel, 1);
-        expect(due, 1);
+        expect(details, 1);
       },
     );
     testWidgets(
@@ -310,60 +308,45 @@ void main() {
   // An unset category no longer reports itself in the crumb at all. The old
   // "No category" segment — a hollow square plus a low-emphasis caption — was
   // the first element in reading order and read as a disabled checkbox from
-  // another design system; every panel reviewer flagged it. The offer now
-  // lives in the metadata lane as a dashed "Set category" chip speaking the
-  // same verb-first grammar as "Set due date", and the crumb renders only
-  // when there is real ancestry to show.
+  // another design system; every panel reviewer flagged it. The offer lives
+  // in the summary lane as a dashed "Set category" chip (and in the fly-out's
+  // Category row), and the crumb renders only when there is real ancestry to
+  // show.
   group('DesktopTaskHeader — breadcrumb without a category', () {
     testWidgets(
-      'offers a dashed "Set category" chip in the lane instead of a '
-      '"No category" crumb',
+      'renders no crumb; the summary lane carries the dashed "Set category" '
+      'offer instead',
       (tester) async {
-        await _pumpDesktop(
-          tester,
-          DesktopTaskHeader(data: _fixture(), onTitleSaved: (_) {}),
-        );
-
-        expect(find.text('No category'), findsNothing);
-        expect(find.text('Set category'), findsOneWidget);
-      },
-    );
-
-    testWidgets(
-      'a four-offer add-lane breaks a deliberate 2+2 below the balance '
-      'breakpoint instead of stranding the widest chip alone',
-      (tester) async {
-        // No category, no due date, no labels, unset estimate: the full
-        // first-run set of four dashed chips, at a phone-ish lane width
-        // below the 460 balance breakpoint.
+        var categoryTaps = 0;
         await _pumpDesktop(
           tester,
           DesktopTaskHeader(
             data: _fixture(),
             onTitleSaved: (_) {},
-            estimateSlot: const Text('Add estimate'),
-            estimateIsSet: false,
+            onCategoryTap: () => categoryTaps++,
           ),
-          size: const Size(400, 800),
         );
 
-        final category = tester.getTopLeft(find.text('Set category'));
-        final due = tester.getTopLeft(find.text('Set due date'));
-        final label = tester.getTopLeft(find.text('Add label'));
-        final estimate = tester.getTopLeft(find.text('Add estimate'));
-
-        // Row one: the two Set chips. Row two: the two Add chips. A greedy
-        // wrap packed three chips onto row one and stranded the widest
-        // alone — the raggedness that undermined the two-run grammar on
-        // every phone.
-        expect((category.dy - due.dy).abs(), lessThan(8));
-        expect((label.dy - estimate.dy).abs(), lessThan(8));
-        expect(label.dy, greaterThan(category.dy));
+        expect(find.text('No category'), findsNothing);
+        // The inline offer opens the category picker directly — it is an
+        // action, so it keeps the fully-rounded interactive shell.
+        expect(find.text('Set category'), findsOneWidget);
         expect(
-          label.dx,
-          category.dx,
-          reason: 'the second run starts back on the lane rail',
+          tester
+              .widget<DsPill>(
+                find.ancestor(
+                  of: find.text('Set category'),
+                  matching: find.byType(DsPill),
+                ),
+              )
+              .shape,
+          DsPillShape.pill,
         );
+        await tester.tap(find.text('Set category'));
+        await tester.pump();
+        expect(categoryTaps, 1);
+        // The summary lane still ends in the fly-out trigger.
+        expect(find.text('Details'), findsOneWidget);
       },
     );
 
@@ -380,25 +363,6 @@ void main() {
 
       expect(find.text('No project'), findsNothing);
       expect(find.text('/'), findsNothing);
-    });
-
-    testWidgets('the "Set category" chip opens the category picker', (
-      tester,
-    ) async {
-      var categoryTaps = 0;
-      await _pumpDesktop(
-        tester,
-        DesktopTaskHeader(
-          data: _fixture(),
-          onTitleSaved: (_) {},
-          onCategoryTap: () => categoryTaps++,
-        ),
-      );
-
-      await tester.tap(find.text('Set category'));
-      await tester.pump();
-
-      expect(categoryTaps, 1);
     });
 
     testWidgets(
@@ -907,9 +871,9 @@ void main() {
     });
   });
 
-  group('DesktopTaskHeader — metadata layout', () {
+  group('DesktopTaskHeader — metadata summary layout', () {
     testWidgets(
-      'status leads a left-aligned attribute lane below the title (no '
+      'status leads a left-aligned summary lane below the title (no '
       'right-anchored dead gutter)',
       (tester) async {
         await _pumpDesktop(
@@ -917,7 +881,6 @@ void main() {
           DesktopTaskHeader(
             data: _fixture(dueDate: _dueFixture, labels: _labelFixtures),
             onTitleSaved: (_) {},
-            estimateSlot: const Text('0h / 1h'),
           ),
         );
         final titleBox = tester.getRect(find.text('Payment confirmation'));
@@ -925,160 +888,77 @@ void main() {
         final priority = tester.getTopLeft(find.text('High'));
         final due = tester.getTopLeft(find.text('Due: Apr 1, 2026'));
 
-        // The metadata lane sits below the title (status is no longer on the
-        // title line — that anchor left a void beside short / wrapping titles).
+        // The summary lane sits below the title (status is not on the title
+        // line — that anchor left a void beside short / wrapping titles).
         expect(
           status.dy,
           greaterThan(titleBox.bottom - 4),
-          reason: 'the attribute lane drops below the title',
+          reason: 'the summary lane drops below the title',
         );
-        // Status leads the attribute lane: it is the left-most chip and the
-        // priority/due chips follow to its right on the same row.
+        // Status leads the lane: it is the left-most tag and the priority /
+        // due read-outs follow to its right on the same row.
         expect(
           status.dx,
           lessThan(priority.dx),
-          reason: 'status is the leading chip',
+          reason: 'status is the leading read-out',
         );
         expect(priority.dx, lessThan(due.dx));
         expect(
           (status.dy - priority.dy).abs(),
           lessThan(8),
-          reason: 'status shares the attribute lane row with priority/due',
+          reason: 'status shares the summary row with priority/due',
         );
         // The lane starts near the content's left edge — the cluster is
-        // left-aligned, never pushed to a far-right anchor that would leave a
-        // dead gutter (a right-pinned status on this 1280px surface would land
-        // ~1000px+ in). The small offset is the status pill's own leading
-        // glyph + padding before its label text.
+        // left-aligned, never pushed to a far-right anchor that would leave
+        // a dead gutter.
         expect(
           status.dx,
           lessThan(titleBox.left + 40),
-          reason: 'attribute lane is left-aligned under the title',
+          reason: 'summary lane is left-aligned under the title',
         );
       },
     );
 
     testWidgets(
-      'labels sit in their own lane below the attribute lane',
+      'every read-out wears the informational tag shape; only the Details '
+      'trigger keeps the fully-rounded interactive pill',
       (tester) async {
         await _pumpDesktop(
           tester,
           DesktopTaskHeader(
             data: _fixture(dueDate: _dueFixture, labels: _labelFixtures),
             onTitleSaved: (_) {},
-            estimateSlot: const Text('0h / 1h'),
+            onOpenDetails: () {},
           ),
         );
-        final statusBottom = tester.getBottomLeft(find.text('Open')).dy;
-        final labelTop = tester.getTopLeft(find.text('Bug fix')).dy;
-        expect(
-          labelTop,
-          greaterThan(statusBottom),
-          reason: 'the free-form label lane drops below the attribute lane',
-        );
-      },
-    );
 
-    testWidgets(
-      'narrow viewport: attribute lane wraps and labels remain a separate '
-      'lane below it',
-      (tester) async {
-        await _pumpDesktop(
-          tester,
-          DesktopTaskHeader(
-            data: _fixture(dueDate: _dueFixture, labels: _labelFixtures),
-            onTitleSaved: (_) {},
-            estimateSlot: const Text('0h / 1h'),
-          ),
-          size: const Size(360, 800),
-        );
-        final status = tester.getTopLeft(find.text('Open'));
-        final labelTop = tester.getTopLeft(find.text('Bug fix')).dy;
-        // Even at mobile width the label lane is below the status that leads
-        // the attribute lane.
-        expect(labelTop, greaterThan(status.dy));
-      },
-    );
-
-    testWidgets(
-      'narrow viewport: status and priority lead; the due date and estimate '
-      'wrap together as a full second row',
-      (tester) async {
-        // A lane one pixel too narrow for the due chip breaks into two
-        // *balanced* rows: the state pair (status + its caret-bearing
-        // priority) up top, the time pair (due + estimate) below. What this
-        // pins is that the break lands on the semantic seam and that the
-        // wrapped row is itself full — not a lone chip stranded under a row
-        // with slack left in it.
-        Widget header() => DesktopTaskHeader(
-          data: _fixture(dueDate: _dueFixture, labels: _labelFixtures),
-          onTitleSaved: (_) {},
-          estimateSlot: const Text('0h / 1h'),
-        );
-        Rect chipRect(String label) => tester.getRect(
+        DsPill pillFor(String label) => tester.widget<DsPill>(
           find.ancestor(of: find.text(label), matching: find.byType(DsPill)),
         );
 
-        // Measure the lane on one line before narrowing it. A hard-coded phone
-        // width cannot express "one pixel too narrow for the due chip": glyph
-        // metrics differ between hosts (a square test font locally, real
-        // proportional fonts on CI), so the same number lands on either side
-        // of the wrap depending on where the suite runs. Deriving the width
-        // from the chips themselves pins the *wrap*, which is the behaviour
-        // under test, rather than one machine's font.
-        await _pumpDesktop(tester, header(), size: const Size(1280, 800));
-        final statusChip = chipRect('Open');
-        final priorityChip = chipRect('High');
-        final dueChip = chipRect('Due: Apr 1, 2026');
-        final estimateWidth = tester.getRect(find.text('0h / 1h')).width;
-        final chipGap = priorityChip.left - statusChip.right;
-
-        // One pixel short of what the due chip needs to stay on row one.
-        final laneWidth = priorityChip.right + chipGap + dueChip.width - 1;
-        // ...and still wide enough for the time pair to share row two, which
-        // is what makes the wrap a two-row break rather than a three-row one.
-        expect(
-          laneWidth,
-          greaterThanOrEqualTo(dueChip.width + chipGap + estimateWidth),
-          reason: 'the calibrated lane must still hold due + estimate together',
-        );
-
-        await _pumpDesktop(tester, header(), size: Size(laneWidth, 800));
-        final status = tester.getTopLeft(find.text('Open')).dy;
-        final priority = tester.getTopLeft(find.text('High')).dy;
-        final due = tester.getTopLeft(find.text('Due: Apr 1, 2026')).dy;
-        final estimate = tester.getTopLeft(find.text('0h / 1h')).dy;
-        final labelTop = tester.getTopLeft(find.text('Bug fix')).dy;
-
-        expect((priority - status).abs(), lessThan(8));
-        expect(
-          due,
-          greaterThan(status),
-          reason:
-              'the state pair holds row one and the time pair wraps below it, '
-              'rather than the due chip splitting off from the estimate',
-        );
-        expect(
-          (due - estimate).abs(),
-          lessThan(8),
-          reason:
-              'due and estimate share the second row — the wrap lands on the '
-              'semantic seam, not mid-pair',
-        );
-        // The label lane still sits below the whole attribute lane.
-        expect(labelTop, greaterThan(due));
+        // Radius-4 informational tags: the corner-radius convention keeps
+        // facts visually distinct from tappable pills.
+        for (final label in [
+          'Open',
+          'High',
+          'Due: Apr 1, 2026',
+          'Bug fix, Release blocker',
+        ]) {
+          expect(pillFor(label).shape, DsPillShape.tag, reason: label);
+        }
+        // The one lever in the lane keeps the interactive pill grammar.
+        expect(pillFor('Details').shape, DsPillShape.pill);
       },
     );
 
     testWidgets(
-      'wrapped rows sit a step further apart than the chips within a row',
+      'wrapped rows sit a step further apart than the tags within a row',
       (tester) async {
         await _pumpDesktop(
           tester,
           DesktopTaskHeader(
             data: _fixture(dueDate: _dueFixture),
             onTitleSaved: (_) {},
-            estimateSlot: const Text('0h / 1h'),
           ),
           size: const Size(420, 800),
         );
@@ -1087,7 +967,7 @@ void main() {
         final lane = tester.widget<Wrap>(find.byType(Wrap).first);
 
         // Two axes, two values. Reusing the horizontally-justified step2 for
-        // runSpacing put the wrapped rows closer together than the chips
+        // runSpacing put the wrapped rows closer together than the tags
         // inside a row, which read as one crowded slab rather than two rows.
         expect(lane.spacing, spacing.step2);
         expect(lane.runSpacing, spacing.step3);
@@ -1096,7 +976,7 @@ void main() {
     );
   });
 
-  group('DesktopTaskHeader — label overflow', () {
+  group('DesktopTaskHeader — label compression', () {
     final manyLabels = <LabelDefinition>[
       _label(id: 'l1', name: 'Design', color: '#1CA3E3'),
       _label(id: 'l2', name: 'UX', color: '#A855F7'),
@@ -1107,7 +987,7 @@ void main() {
     ];
 
     testWidgets(
-      'caps the label lane at 4 chips and collapses the rest behind "+N"',
+      'compresses many labels into two names plus a "+N" suffix in one tag',
       (tester) async {
         await _pumpDesktop(
           tester,
@@ -1116,46 +996,15 @@ void main() {
             onTitleSaved: (_) {},
           ),
         );
-        // First four labels visible; the 5th/6th are collapsed.
-        expect(find.text('Design'), findsOneWidget);
-        expect(find.text('Frontend'), findsOneWidget);
-        expect(find.text('QA'), findsNothing);
+        // One compressed read-out, not a lane of per-label pills.
+        expect(find.text('Design, UX +4'), findsOneWidget);
+        expect(find.text('Backend'), findsNothing);
         expect(find.text('Research'), findsNothing);
-        // The overflow affordance shows the hidden count.
-        expect(find.text('+2'), findsOneWidget);
-        expect(find.text('Show fewer'), findsNothing);
       },
     );
 
     testWidgets(
-      'tapping "+N" reveals all labels and a "Show fewer" control that '
-      're-collapses',
-      (tester) async {
-        await _pumpDesktop(
-          tester,
-          DesktopTaskHeader(
-            data: _fixture(labels: manyLabels),
-            onTitleSaved: (_) {},
-          ),
-        );
-        await tester.tap(find.text('+2'));
-        await tester.pump();
-        // All labels now visible; the "+N" chip becomes "Show fewer".
-        expect(find.text('QA'), findsOneWidget);
-        expect(find.text('Research'), findsOneWidget);
-        expect(find.text('+2'), findsNothing);
-        expect(find.text('Show fewer'), findsOneWidget);
-
-        await tester.tap(find.text('Show fewer'));
-        await tester.pump();
-        // Collapsed again.
-        expect(find.text('Research'), findsNothing);
-        expect(find.text('+2'), findsOneWidget);
-      },
-    );
-
-    testWidgets(
-      'no overflow control when the labels fit under the cap',
+      'labels under the cap spell out fully with no suffix',
       (tester) async {
         await _pumpDesktop(
           tester,
@@ -1164,139 +1013,47 @@ void main() {
             onTitleSaved: (_) {},
           ),
         );
-        expect(find.text('Bug fix'), findsOneWidget);
-        expect(find.text('Release blocker'), findsOneWidget);
-        expect(find.text('Show fewer'), findsNothing);
+        expect(find.text('Bug fix, Release blocker'), findsOneWidget);
         expect(find.textContaining('+'), findsNothing);
       },
     );
 
-    testWidgets(
-      'expanded label overflow re-collapses when the task labels change',
-      (tester) async {
-        await _pumpDesktop(
-          tester,
-          DesktopTaskHeader(
-            data: _fixture(labels: manyLabels),
-            onTitleSaved: (_) {},
-          ),
-        );
-        await tester.tap(find.text('+2'));
-        await tester.pump();
-        expect(find.text('Research'), findsOneWidget); // expanded
-
-        // A different task's labels arrive in the same header instance — the
-        // overflow collapses again (didUpdateWidget resets the expansion).
-        final otherLabels = <LabelDefinition>[
-          _label(id: 'o1', name: 'Alpha', color: '#1CA3E3'),
-          _label(id: 'o2', name: 'Beta', color: '#A855F7'),
-          _label(id: 'o3', name: 'Gamma', color: '#F97316'),
-          _label(id: 'o4', name: 'Delta', color: '#22C55E'),
-          _label(id: 'o5', name: 'Epsilon', color: '#EAB308'),
-        ];
-        await _pumpDesktop(
-          tester,
-          DesktopTaskHeader(
-            data: _fixture(labels: otherLabels),
-            onTitleSaved: (_) {},
-          ),
-        );
-        expect(find.text('Epsilon'), findsNothing);
-        expect(find.text('+1'), findsOneWidget);
-      },
-    );
-  });
-
-  group('DesktopTaskHeader — callbacks', () {
-    testWidgets('tapping priority / status fires callbacks', (tester) async {
-      var priority = 0;
-      var status = 0;
-      await _pumpDesktop(
-        tester,
-        DesktopTaskHeader(
-          data: _fixture(),
-          onTitleSaved: (_) {},
-          onPriorityTap: () => priority++,
-          onStatusTap: () => status++,
-        ),
-      );
-      await tester.tap(find.text('High'));
-      await tester.tap(find.text('Open'));
-      await tester.pump();
-      expect(priority, 1);
-      expect(status, 1);
-    });
-
-    testWidgets(
-      'tapping category / project / due / label fires each callback',
-      (tester) async {
-        String? tappedLabel;
-        var categoryTaps = 0;
-        var projectTaps = 0;
-        var dueTaps = 0;
-        await _pumpDesktop(
-          tester,
-          DesktopTaskHeader(
-            data: _fixture(
-              project: _projectFixture,
-              category: _categoryFixture,
-              dueDate: _dueFixture,
-              labels: _labelFixtures,
-            ),
-            onTitleSaved: (_) {},
-            onCategoryTap: () => categoryTaps++,
-            onProjectTap: () => projectTaps++,
-            onDueDateTap: () => dueTaps++,
-            onLabelTap: (l) => tappedLabel = l.id,
-          ),
-        );
-        await tester.tap(find.text('Work'));
-        await tester.tap(
-          find.text('Device Sync - Lotti Mobile App Implementation'),
-        );
-        await tester.tap(find.text('Due: Apr 1, 2026'));
-        await tester.tap(find.text('Release blocker'));
-        await tester.pump();
-        expect(categoryTaps, 1);
-        expect(projectTaps, 1);
-        expect(dueTaps, 1);
-        expect(tappedLabel, 'release-blocker');
-      },
-    );
-
-    testWidgets('long-press on label with description opens dialog', (
+    testWidgets('no label tag at all when the task has no labels', (
       tester,
     ) async {
       await _pumpDesktop(
         tester,
-        DesktopTaskHeader(
-          data: _fixture(labels: _labelFixtures),
-          onTitleSaved: (_) {},
-        ),
+        DesktopTaskHeader(data: _fixture(), onTitleSaved: (_) {}),
       );
-      await tester.longPress(find.text('Bug fix'));
-      await tester.pumpAndSettle();
-      expect(find.text('Fixes a defect, not new behaviour.'), findsOneWidget);
+      // Status, priority and the Details trigger only.
+      expect(find.text('Open'), findsOneWidget);
+      expect(find.text('High'), findsOneWidget);
+      expect(find.text('Details'), findsOneWidget);
+      expect(find.textContaining(','), findsNothing);
     });
+  });
 
+  group('DesktopTaskHeader — callbacks', () {
     testWidgets(
-      'long-press dialog dismisses when the close button is tapped',
+      'tapping any read-out tag or the Details trigger opens the fly-out',
       (tester) async {
+        var details = 0;
         await _pumpDesktop(
           tester,
           DesktopTaskHeader(
-            data: _fixture(labels: _labelFixtures),
+            data: _fixture(dueDate: _dueFixture, labels: _labelFixtures),
             onTitleSaved: (_) {},
+            onOpenDetails: () => details++,
           ),
         );
-        await tester.longPress(find.text('Bug fix'));
-        await tester.pumpAndSettle();
-        expect(find.byType(AlertDialog), findsOneWidget);
-
-        // The dialog renders a single TextButton — the localized close button.
-        await tester.tap(find.byType(TextButton));
-        await tester.pumpAndSettle();
-        expect(find.byType(AlertDialog), findsNothing);
+        await tester.tap(find.text('Open'));
+        await tester.tap(find.text('High'));
+        await tester.tap(find.text('Due: Apr 1, 2026'));
+        await tester.tap(find.text('Bug fix, Release blocker'));
+        await tester.tap(find.text('Details'));
+        await tester.pump();
+        // Every fact routes to the same fly-out where it is edited.
+        expect(details, 5);
       },
     );
 
@@ -1824,33 +1581,6 @@ void main() {
         expect(pill.variant, DsPillVariant.filled);
         // The due date carries high emphasis (a tier above priority/estimate).
         expect(pill.labelColor, paletteHigh(tester));
-      },
-    );
-  });
-
-  group('DesktopTaskHeader — label pill without description', () {
-    testWidgets(
-      'long-press on label without description shows no dialog',
-      (tester) async {
-        final noDescLabel = _label(
-          id: 'no-desc',
-          name: 'No Description',
-          color: '#FF0000',
-          // description is null
-        );
-
-        await _pumpDesktop(
-          tester,
-          DesktopTaskHeader(
-            data: _fixture(labels: [noDescLabel]),
-            onTitleSaved: (_) {},
-          ),
-        );
-        await tester.longPress(find.text('No Description'));
-        await tester.pumpAndSettle();
-
-        // No dialog should appear for a label without a description.
-        expect(find.byType(AlertDialog), findsNothing);
       },
     );
   });

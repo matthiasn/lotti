@@ -13197,6 +13197,9 @@ class AppLocalizationsRo extends AppLocalizations {
       'Adaugă o notă legată pentru detalii și gânduri.';
 
   @override
+  String get taskHistoryTitle => 'Istoric';
+
+  @override
   String taskLabelsMoreCount(int count) {
     return '+$count';
   }
@@ -13338,6 +13341,30 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get taskLanguageYoruba => 'Yoruba';
+
+  @override
+  String get taskMetaAiSpendLabel => 'Cheltuieli AI';
+
+  @override
+  String get taskMetaDetailsButton => 'Detalii';
+
+  @override
+  String get taskMetaDueDateLabel => 'Data scadenței';
+
+  @override
+  String get taskMetaLabelsLabel => 'Etichete';
+
+  @override
+  String get taskMetaPriorityLabel => 'Prioritate';
+
+  @override
+  String get taskMetaSheetTitle => 'Detaliile sarcinii';
+
+  @override
+  String get taskMetaTimeLabel => 'Timp';
+
+  @override
+  String get taskMetaValueNotSet => 'Nesetat';
 
   @override
   String get taskNoDueDateLabel => 'Fără dată scadentă';

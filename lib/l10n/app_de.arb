@@ -4991,6 +4991,7 @@
   "taskFirstRunRecordAudioHint": "Öffnet die Aufnahme, ohne sie zu starten.",
   "taskFirstRunWriteNote": "Notiz schreiben",
   "taskFirstRunWriteNoteHint": "Fügt eine verknüpfte Notiz für Details und Gedanken hinzu.",
+  "taskHistoryTitle": "Verlauf",
   "taskLabelsMoreCount": "+{count}",
   "@taskLabelsMoreCount": {
     "placeholders": {
@@ -5048,6 +5049,14 @@
   "taskLanguageUkrainian": "Ukrainisch",
   "taskLanguageVietnamese": "Vietnamesisch",
   "taskLanguageYoruba": "Yoruba",
+  "taskMetaAiSpendLabel": "KI-Ausgaben",
+  "taskMetaDetailsButton": "Details",
+  "taskMetaDueDateLabel": "Fälligkeitsdatum",
+  "taskMetaLabelsLabel": "Labels",
+  "taskMetaPriorityLabel": "Priorität",
+  "taskMetaSheetTitle": "Aufgabendetails",
+  "taskMetaTimeLabel": "Zeit",
+  "taskMetaValueNotSet": "Nicht gesetzt",
   "taskNoDueDateLabel": "Kein Fälligkeitsdatum",
   "taskNoEstimateLabel": "Keine Schätzung",
   "taskOverdueByDays": "{days, plural, =1{1 Tag} other{{days} Tage}} überfällig",

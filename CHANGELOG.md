@@ -150,7 +150,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   contact details are entered by hand as before.
 
 ### Changed
-- **Goal chat now remembers and reliably answers.** Recent exchanges reach the
+- **The task page reads top-down again.** The AI summary now sits directly
+  under the title, so opening a task starts with what it is about and where it
+  stands; the todos and linked tasks follow, and the model attribution lives
+  only inside the summary card's own footer. The dated log-entry history —
+  the page's longest region — is collapsed by default behind a History header
+  and opens with one tap (or on its own when something needs to scroll to an
+  entry inside it).
+- **Task metadata moved off the title and into a Details fly-out.** Status,
+  priority, category, project, due date, time estimate, labels and AI spend
+  are set once and rarely changed, so they no longer wear rows of
+  button-styled pills under the title. A compact read-only summary remains —
+  status, priority, due date and labels at a glance — and tapping it (or
+  Details) opens a panel listing every field as a labelled value, each still
+  editable in place. Informational read-outs now wear tight corners while
+  fully-rounded pills are reserved for things you can actually press, so a
+  fact can no longer be mistaken for a filter button.
+- **Audio recordings on a task compress to one line.** A linked recording now
+  shows a single-line preview of its transcribed content instead of the full
+  transcript, player and analysis; tap the line (or the chevron) to expand,
+  and your choice sticks either way.
   agent with each message, and a question saved just before a restart is
   recovered instead of appearing ignored. Invalid banner actions can no longer
   hide behind a success reply. Large tracked-time histories no longer crowd
@@ -235,6 +254,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   screens.
 
 ### Fixed
+- **The todos header stays put when a checklist opens or closes.** The
+  accordion header used to jump a few pixels the instant a toggle started,
+  while the list below was still animating; it is now pinned in the same
+  spot in both states.
 - **Automatic transcription and image analysis now honour the profile you
   chose.** On installs that never received the older seeded skill rows — a
   fresh install, or a new device — every profile's automated skills resolved

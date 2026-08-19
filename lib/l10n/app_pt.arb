@@ -5557,6 +5557,7 @@
   "taskFirstRunRecordAudioHint": "Abre o gravador sem iniciar a gravação.",
   "taskFirstRunWriteNote": "Escrever uma nota",
   "taskFirstRunWriteNoteHint": "Adiciona uma nota vinculada para detalhes e ideias.",
+  "taskHistoryTitle": "Histórico",
   "taskLabelsMoreCount": "+{count}",
   "@taskLabelsMoreCount": {
     "placeholders": {
@@ -5614,6 +5615,14 @@
   "taskLanguageUkrainian": "Ucraniano",
   "taskLanguageVietnamese": "Vietnamita",
   "taskLanguageYoruba": "Iorubá",
+  "taskMetaAiSpendLabel": "Gasto com IA",
+  "taskMetaDetailsButton": "Detalhes",
+  "taskMetaDueDateLabel": "Data de vencimento",
+  "taskMetaLabelsLabel": "Rótulos",
+  "taskMetaPriorityLabel": "Prioridade",
+  "taskMetaSheetTitle": "Detalhes da tarefa",
+  "taskMetaTimeLabel": "Tempo",
+  "taskMetaValueNotSet": "Não definido",
   "taskNoDueDateLabel": "Sem data de vencimento",
   "taskNoEstimateLabel": "Sem estimativa",
   "taskOverdueByDays": "Atrasado há {days, plural, =1{1 dia} other{{days} dias}}",

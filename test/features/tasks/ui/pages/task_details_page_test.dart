@@ -18,6 +18,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_detail_linked_from.dart';
 import 'package:lotti/features/journal/ui/widgets/linked_entries_with_timer.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
 import 'package:lotti/features/tasks/state/task_link_groups_controller.dart';
@@ -281,6 +282,48 @@ void main() {
     );
 
     testWidgets(
+      'a first-run task drops the History header but keeps the entry-stream '
+      'widgets, so reverse-linked entries stay reachable',
+      (tester) async {
+        // `watchTaskIsFirstRun` examines only OUTGOING links, so a blank task
+        // can still carry entries that link TO it. Hiding the whole history
+        // subtree on first-run would disappear those with no way to expand —
+        // the bare stream (which renders nothing when truly empty) must stay.
+        final blank = testTask.copyWith(
+          data: testTask.data.copyWith(title: '', checklistIds: const []),
+          entryText: null,
+        );
+        when(
+          () => mockJournalDb.journalEntityById(testTask.meta.id),
+        ).thenAnswer((_) async => blank);
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            TaskDetailsPage(taskId: testTask.id),
+            overrides: [
+              ...hTaskDetailsPageOverrides(),
+              linkedEntriesControllerProvider(
+                testTask.meta.id,
+              ).overrideWith(FakeLinkedEntriesController.new),
+              taskAgentProvider.overrideWith((ref, id) async => null),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(TaskFirstRunActions), findsOneWidget);
+        expect(find.text('History'), findsNothing);
+        expect(
+          find.byType(LinkedEntriesWithTimer, skipOffstage: false),
+          findsOneWidget,
+        );
+        expect(
+          find.byType(LinkedFromEntriesWidget, skipOffstage: false),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
       'first content releases the composed fill through the animated exit — '
       'the measuring branch unmounts after the transition instead of the '
       'page snapping in one frame',
@@ -531,6 +574,96 @@ void main() {
 
       container.dispose();
     });
+
+    testWidgets(
+      'the history section is collapsed by default and expands from its '
+      'header',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            TaskDetailsPage(taskId: testTask.id),
+            overrides: [
+              ...hTaskDetailsPageOverrides(),
+              ...hLinkedEntriesOverrides(),
+            ],
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Collapsed by default: the header is there, the entry stream is not
+        // in the tree at all.
+        expect(find.text('History'), findsOneWidget);
+        expect(
+          find.byType(LinkedEntriesWithTimer, skipOffstage: false),
+          findsNothing,
+        );
+
+        await tester.tap(find.text('History'), warnIfMissed: false);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(
+          find.byType(LinkedEntriesWithTimer, skipOffstage: false),
+          findsOneWidget,
+        );
+
+        // And it collapses again from the same header.
+        await tester.tap(find.text('History'), warnIfMissed: false);
+        await tester.pump();
+        expect(
+          find.byType(LinkedEntriesWithTimer, skipOffstage: false),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets(
+      'an entry focus intent force-expands the collapsed history',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            TaskDetailsPage(taskId: testTask.id),
+            overrides: [
+              ...hTaskDetailsPageOverrides(),
+              ...hLinkedEntriesOverrides(),
+            ],
+          ),
+        );
+        for (var i = 0; i < 6; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        expect(
+          find.byType(LinkedEntriesWithTimer, skipOffstage: false),
+          findsNothing,
+        );
+
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(TaskDetailsPage)),
+        );
+        container
+            .read(taskFocusControllerProvider(testTask.id).notifier)
+            .publishTaskFocus(entryId: testTextEntry.meta.id);
+
+        await tester.pump();
+        for (
+          var i = 0;
+          i < 20 &&
+              container.read(taskFocusControllerProvider(testTask.id)) != null;
+          i++
+        ) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+
+        // A collapsed section has no mounted entry keys to scroll to, so the
+        // intent must have opened it.
+        expect(
+          find.byType(LinkedEntriesWithTimer, skipOffstage: false),
+          findsOneWidget,
+        );
+      },
+    );
 
     testWidgets('suggestions focus intent scrolls to proposals section', (
       tester,
@@ -812,6 +945,27 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pump(const Duration(milliseconds: 300));
 
+      // These scenarios have the user reading the entries below the card, so
+      // the collapsed-by-default history section must be open — it is also
+      // what gives the page enough scroll extent to put the card past the
+      // viewport top. The header can start below the fold (unbuilt), so
+      // scroll it into view before tapping, then return to the top.
+      await tester.scrollUntilVisible(
+        find.text('History'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      // A further nudge: scrollUntilVisible stops the moment the header is
+      // technically visible, which can leave it under the glass action bar
+      // where a tap never lands.
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, -120));
+      await tester.pump();
+      await tester.tap(find.text('History'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      scrollPositionOf(tester).jumpTo(0);
+      await tester.pump();
+
       final position = scrollPositionOf(tester);
       final viewportTop = tester.getRect(find.byType(CustomScrollView)).top;
       // skipOffstage: false — a sliver scrolled past the viewport is offstage,
@@ -1012,13 +1166,15 @@ void main() {
     });
 
     testWidgets(
-      'a linked task appearing long after the resolve window re-arms the hold '
-      'and keeps the proposals in place',
+      'a linked task appearing long after the resolve window leaves the '
+      'proposals and the offset untouched',
       (tester) async {
         // `create_follow_up_task` links its new task only after awaiting agent
-        // content generation, so the linked-tasks band above the card can grow
-        // seconds after the tap — long past the window the resolve armed. The
-        // page watches the band's own count so it re-arms whenever that lands.
+        // content generation, so the linked-tasks band can grow seconds after
+        // the tap. The band sits BELOW the proposals now: its growth is the
+        // visible reflow underneath them, so the armed hold must ignore the
+        // delta — the proposals stay put because nothing above them moved,
+        // not because the offset was corrected.
         tester.view.physicalSize = const Size(800, 500);
         tester.view.devicePixelRatio = 1;
         addTearDown(tester.view.reset);
@@ -1053,6 +1209,9 @@ void main() {
         await tester.pump(const Duration(seconds: 2));
         final proposalsTop = tester.getTopLeft(proposals).dy;
         final offsetBefore = position.pixels;
+        final bandHeightBefore = tester
+            .getSize(find.byType(LinkedTasksWidget, skipOffstage: false))
+            .height;
 
         container.read(controllableLinkedTaskCountProvider.notifier).set(1);
         for (var frame = 0; frame < 6; frame++) {
@@ -1064,24 +1223,32 @@ void main() {
           );
         }
 
-        // The band really did change height above the card — otherwise the
-        // assertion above would hold trivially.
-        expect(position.pixels, isNot(closeTo(offsetBefore, 1)));
+        // The band really did change height below the proposals — otherwise
+        // the assertion above would hold trivially.
+        expect(
+          tester
+              .getSize(find.byType(LinkedTasksWidget, skipOffstage: false))
+              .height,
+          isNot(closeTo(bandHeightBefore, 1)),
+        );
+        // And the offset was left alone: nothing above the proposals moved.
+        expect(position.pixels, closeTo(offsetBefore, 1));
         expect(tester.takeException(), isNull);
         container.dispose();
       },
     );
 
     testWidgets(
-      'a link changing relationship type re-arms the hold even though the '
-      'count is unchanged',
+      'a link changing relationship type resizes the band without moving the '
+      'proposals or the offset, even though the count is unchanged',
       (tester) async {
         // TaskLinkGroupsController re-emits whenever the resolved entries
         // differ, not only when links are added or removed. totalCount is
         // flat + typed, so a link moving between those buckets — a synced
         // link-type change — resizes the band (typed links render with their
-        // own section headers) while the count stays identical. Keying the
-        // listener on the count alone would leave that unstabilized.
+        // own section headers) while the count stays identical. The band sits
+        // below the proposals, so that resize must reflow underneath them
+        // with no offset correction.
         tester.view.physicalSize = const Size(800, 500);
         tester.view.devicePixelRatio = 1;
         addTearDown(tester.view.reset);
@@ -1115,6 +1282,9 @@ void main() {
 
         final proposalsTop = tester.getTopLeft(proposals).dy;
         final offsetBefore = position.pixels;
+        final bandHeightBefore = tester
+            .getSize(find.byType(LinkedTasksWidget, skipOffstage: false))
+            .height;
 
         container.read(controllableLinkedTaskTypedProvider.notifier).set(true);
         for (var frame = 0; frame < 6; frame++) {
@@ -1126,9 +1296,16 @@ void main() {
           );
         }
 
-        // The retitle really did resize the band — otherwise the assertion
-        // above would hold trivially.
-        expect(position.pixels, isNot(closeTo(offsetBefore, 1)));
+        // The type change really did resize the band — otherwise the
+        // assertion above would hold trivially.
+        expect(
+          tester
+              .getSize(find.byType(LinkedTasksWidget, skipOffstage: false))
+              .height,
+          isNot(closeTo(bandHeightBefore, 1)),
+        );
+        // And the offset was left alone: nothing above the proposals moved.
+        expect(position.pixels, closeTo(offsetBefore, 1));
         expect(tester.takeException(), isNull);
         container.dispose();
       },
@@ -1136,7 +1313,7 @@ void main() {
 
     testWidgets(
       'the first link change after mounting onto an already-resolved provider '
-      'still arms the hold',
+      'still reflows only below the proposals',
       (tester) async {
         // taskLinkGroupsControllerProvider is cached for entryCacheDuration, so
         // a page can mount onto an AsyncData provider and get no emission for
@@ -1186,6 +1363,9 @@ void main() {
 
         final proposalsTop = tester.getTopLeft(proposals).dy;
         final offsetBefore = position.pixels;
+        final bandHeightBefore = tester
+            .getSize(find.byType(LinkedTasksWidget, skipOffstage: false))
+            .height;
 
         // The very first change this page ever sees for the provider, pushed as
         // a single AsyncData the way the real controller's update-stream
@@ -1204,7 +1384,15 @@ void main() {
           );
         }
 
-        expect(position.pixels, isNot(closeTo(offsetBefore, 1)));
+        // The band really did resize below the proposals, and the offset was
+        // left alone: nothing above them moved.
+        expect(
+          tester
+              .getSize(find.byType(LinkedTasksWidget, skipOffstage: false))
+              .height,
+          isNot(closeTo(bandHeightBefore, 1)),
+        );
+        expect(position.pixels, closeTo(offsetBefore, 1));
         expect(tester.takeException(), isNull);
         warmup.close();
         container.dispose();

@@ -13064,6 +13064,9 @@ class AppLocalizationsPt extends AppLocalizations {
       'Adiciona uma nota vinculada para detalhes e ideias.';
 
   @override
+  String get taskHistoryTitle => 'Histórico';
+
+  @override
   String taskLabelsMoreCount(int count) {
     return '+$count';
   }
@@ -13205,6 +13208,30 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get taskLanguageYoruba => 'Iorubá';
+
+  @override
+  String get taskMetaAiSpendLabel => 'Gasto com IA';
+
+  @override
+  String get taskMetaDetailsButton => 'Detalhes';
+
+  @override
+  String get taskMetaDueDateLabel => 'Data de vencimento';
+
+  @override
+  String get taskMetaLabelsLabel => 'Rótulos';
+
+  @override
+  String get taskMetaPriorityLabel => 'Prioridade';
+
+  @override
+  String get taskMetaSheetTitle => 'Detalhes da tarefa';
+
+  @override
+  String get taskMetaTimeLabel => 'Tempo';
+
+  @override
+  String get taskMetaValueNotSet => 'Não definido';
 
   @override
   String get taskNoDueDateLabel => 'Sem data de vencimento';

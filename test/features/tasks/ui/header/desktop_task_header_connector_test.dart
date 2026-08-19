@@ -1,7 +1,5 @@
 import 'package:clock/clock.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -15,7 +13,6 @@ import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
@@ -29,6 +26,7 @@ import 'package:lotti/features/tasks/state/task_one_liner_provider.dart';
 import 'package:lotti/features/tasks/state/task_progress_controller.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header_connector.dart';
+import 'package:lotti/features/tasks/ui/header/task_meta_flyout.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_shared_widgets.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -38,7 +36,6 @@ import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
-import 'package:lotti/widgets/picker/entity_picker_sheet.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fake_entry_controller.dart';
@@ -415,17 +412,10 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // Use document order (tree traversal) instead of `dx`. The new
-        // single-row meta-layout shares a `Wrap` between priority/due/estimate
-        // and the labels, so on narrow surfaces labels can wrap onto a new
-        // line and `dx` no longer reflects sort order.
-        final labelTexts = tester
-            .widgetList<Text>(find.byType(Text))
-            .map((t) => t.data)
-            .where((d) => d == 'Alpha' || d == 'Beta')
-            .toList();
-        expect(labelTexts, ['Alpha', 'Beta']);
-        expect(find.text('lbl-missing'), findsNothing);
+        // The summary compresses the taxonomy into one read-out, names in
+        // alphabetical order; the unresolvable id is dropped.
+        expect(find.text('Alpha, Beta'), findsOneWidget);
+        expect(find.textContaining('lbl-missing'), findsNothing);
       },
     );
 
@@ -481,21 +471,29 @@ void main() {
     );
   });
 
-  group('DesktopTaskHeaderConnector — estimate chip', () {
-    testWidgets('shows the "No estimate" placeholder when estimate is null', (
-      tester,
-    ) async {
-      final task = buildTask();
+  group('DesktopTaskHeaderConnector — fly-out and crumb invocations', () {
+    testWidgets(
+      'tapping a summary read-out opens the metadata fly-out',
+      (tester) async {
+        final task = buildTask();
 
-      await tester.pumpWidget(pumpConnector(task: task));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+        await tester.pumpWidget(pumpConnector(task: task));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.text('Add estimate'), findsOneWidget);
-    });
+        // Every read-out routes to the same fly-out; the priority glyph sits
+        // inside one of them.
+        await tester.tap(find.byType(TaskShowcasePriorityGlyph).first);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.byType(TaskMetaFlyoutContent), findsOneWidget);
+        expect(find.text('Task details'), findsOneWidget);
+      },
+    );
 
     testWidgets(
-      'shows tracked / estimated duration when an estimate is set',
+      'the Details trigger opens the fly-out with label + value rows',
       (tester) async {
         final task = buildTask(estimate: const Duration(hours: 2));
 
@@ -503,166 +501,25 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // When no progress has been computed yet (null progress state), the
-        // chip still formats the pair with a zero tracked component — this
-        // keeps the chip the correct width during first paint. The "of"
-        // connector reads as tracked-of-estimated rather than the ambiguous
-        // "X / Y".
+        await tester.tap(find.text('Details'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.byType(TaskMetaFlyoutContent), findsOneWidget);
+        // Descriptive labels with their values.
+        expect(find.text('Status'), findsOneWidget);
+        expect(find.text('Priority'), findsOneWidget);
+        expect(find.text('Time'), findsOneWidget);
         expect(find.text('0m of 2h'), findsOneWidget);
       },
     );
 
     testWidgets(
-      'formats a sub-hour estimate in plain minutes',
-      (tester) async {
-        final task = buildTask(estimate: const Duration(minutes: 45));
-
-        await tester.pumpWidget(pumpConnector(task: task));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        // A 45-minute estimate reads as "45m", not a clock-like "00:45".
-        expect(find.text('0m of 45m'), findsOneWidget);
-      },
-    );
-
-    testWidgets(
-      'formats a mixed hours+minutes estimate as "Xh Ym"',
-      (tester) async {
-        final task = buildTask(
-          estimate: const Duration(hours: 1, minutes: 30),
-        );
-
-        await tester.pumpWidget(pumpConnector(task: task));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        // Both components present → "1h 30m" (the hours+minutes branch).
-        expect(find.text('0m of 1h 30m'), findsOneWidget);
-      },
-    );
-
-    testWidgets(
-      'estimate chip carries a tracked-vs-estimate tooltip and a low-vision '
-      'border',
-      (tester) async {
-        final task = buildTask(estimate: const Duration(hours: 2));
-
-        await tester.pumpWidget(pumpConnector(task: task));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        // The tooltip spells out which number is which for hover + a11y.
-        final tooltip = tester.widget<Tooltip>(
-          find.ancestor(
-            of: find.text('0m of 2h'),
-            matching: find.byType(Tooltip),
-          ),
-        );
-        expect(tooltip.message, 'Time tracked: 0m of 2h estimated');
-
-        // The neutral filled estimate chip carries the quiet border.
-        final pill = tester.widget<DsPill>(
-          find.ancestor(
-            of: find.text('0m of 2h'),
-            matching: find.byType(DsPill),
-          ),
-        );
-        expect(pill.bordered, isTrue);
-      },
-    );
-  });
-
-  group('DesktopTaskHeaderConnector — modal invocations', () {
-    testWidgets(
-      'tapping the priority badge opens the priority picker',
-      (tester) async {
-        final task = buildTask();
-
-        await tester.pumpWidget(pumpConnector(task: task));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        // The priority glyph is rendered inside the clickable badge in the
-        // metadata row; tap its ancestor InkWell so the modal opens.
-        await tester.tap(find.byType(TaskShowcasePriorityGlyph).first);
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        // Priority picker title "Select priority" is surfaced.
-        expect(find.text('Select priority'), findsOneWidget);
-      },
-    );
-
-    testWidgets(
-      'priority picker lists a description for every TaskPriority',
-      (tester) async {
-        final task = buildTask();
-
-        await tester.pumpWidget(pumpConnector(task: task));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        await tester.tap(find.byType(TaskShowcasePriorityGlyph).first);
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        // Every enum variant is rendered with its short code and description.
-        expect(find.textContaining('P0 ·'), findsOneWidget);
-        expect(find.textContaining('P1 ·'), findsOneWidget);
-        expect(find.textContaining('P2 ·'), findsOneWidget);
-        expect(find.textContaining('P3 ·'), findsOneWidget);
-        // The header badge spells out the default priority instead of "P2".
-        expect(find.text('Medium'), findsOneWidget);
-      },
-    );
-
-    testWidgets(
-      'tapping the status chip opens the status picker',
-      (tester) async {
-        final task = buildTask();
-
-        await tester.pumpWidget(pumpConnector(task: task));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        // Default status is "Open" — the dropdown chip shows that label.
-        // Tap the first "Open" text (the header chip, not the modal option).
-        await tester.tap(find.text('Open').first);
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        // TaskStatusModalContent renders the status list with labels like
-        // "In Progress".
-        expect(find.text('In Progress'), findsOneWidget);
-      },
-    );
-
-    testWidgets(
-      'tapping the "Set category" chip opens the category picker',
-      (tester) async {
-        final task = buildTask();
-
-        await tester.pumpWidget(pumpConnector(task: task));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        await tester.tap(find.text('Set category'));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        // CategoryPickerSheet renders with an empty category
-        // list — verify that the lane's dashed chip has been covered by a
-        // modal on top.
-        expect(find.byType(CategoryPickerSheet), findsOneWidget);
-      },
-    );
-
-    testWidgets(
-      'offers no crumb at all when the task has no category',
+      'offers no crumb but an inline "Set category" chip when the task has '
+      'no category, and the chip opens the picker directly',
       (tester) async {
         // Without a category there is no ancestry to show: no crumb, no
-        // separator — the category offer is the dashed lane chip instead.
+        // separator — the summary lane carries the dashed offer instead.
         final task = buildTask();
 
         await tester.pumpWidget(pumpConnector(task: task));
@@ -670,9 +527,18 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         expect(find.text('No category'), findsNothing);
-        expect(find.text('Set category'), findsOneWidget);
         expect(find.text('No project'), findsNothing);
         expect(find.text('/'), findsNothing);
+        expect(find.text('Set category'), findsOneWidget);
+
+        await tester.tap(find.text('Set category'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Straight to the picker — no fly-out detour for the one attribute
+        // the header actively offers.
+        expect(find.byType(CategoryPickerSheet), findsOneWidget);
+        expect(find.byType(TaskMetaFlyoutContent), findsNothing);
       },
     );
 
@@ -690,93 +556,6 @@ void main() {
         expect(find.text('Work'), findsOneWidget);
         expect(find.text('/'), findsOneWidget);
         expect(find.text('No project'), findsOneWidget);
-      },
-    );
-
-    testWidgets(
-      'tapping the Add Label placeholder opens the label selector modal',
-      (tester) async {
-        // Empty labelIds → meta row renders the muted "Add Label" ghost.
-        final task = buildTask();
-
-        await tester.pumpWidget(pumpConnector(task: task));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        await tester.tap(find.text('Add label'));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        // The label selection sliver mounts inside the modal once the
-        // onAddLabelTap → _openLabelSelector path fires. The labels stream is
-        // empty and no search query is active, so the sliver renders its empty
-        // state — asserting on that content proves the modal actually opened
-        // and populated its (empty) label list, not merely that the type is
-        // present somewhere in the tree.
-        expect(find.byType(EntityPickerSheet), findsOneWidget);
-        expect(find.text('No matches'), findsOneWidget);
-      },
-    );
-
-    testWidgets(
-      'estimate chip switches to the overtime tinted variant when '
-      'tracked > estimate',
-      (tester) async {
-        final task = buildTask(estimate: const Duration(hours: 1));
-
-        await tester.pumpWidget(
-          pumpConnector(
-            task: task,
-            progress: const TaskProgressState(
-              progress: Duration(hours: 2),
-              estimate: Duration(hours: 1),
-            ),
-          ),
-        );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        // The pill renders the "tracked of estimate" pair, with progress
-        // overrunning the estimate; the connector takes the overtime branch
-        // and paints a tinted error-coloured pill plus a progress bar.
-        expect(find.text('2h of 1h'), findsOneWidget);
-        expect(find.byType(LinearProgressIndicator), findsOneWidget);
-      },
-    );
-
-    testWidgets(
-      'tapping the estimate chip (unset) opens the estimate picker',
-      (tester) async {
-        final task = buildTask();
-
-        await tester.pumpWidget(pumpConnector(task: task));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        await tester.tap(find.text('Add estimate'));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        // showEstimatePicker surfaces a Cupertino timer picker and a Done
-        // button.
-        expect(find.text('Done'), findsOneWidget);
-      },
-    );
-
-    testWidgets(
-      'tapping the estimate chip (with value) opens the estimate picker',
-      (tester) async {
-        final task = buildTask(estimate: const Duration(hours: 2));
-
-        await tester.pumpWidget(pumpConnector(task: task));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        await tester.tap(find.text('0m of 2h'));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        expect(find.text('Done'), findsOneWidget);
       },
     );
   });
@@ -830,179 +609,16 @@ void main() {
     }
 
     testWidgets(
-      'selecting a priority in the picker calls updateTaskPriority',
-      (tester) async {
-        final task = buildTask();
-        final tracker = ToggleCallTracker();
-
-        await tester.pumpWidget(
-          pumpConnectorWithTracker(task: task, tracker: tracker),
-        );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        await tester.tap(find.byType(TaskShowcasePriorityGlyph).first);
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        // Pick the P0 row in the picker.
-        await tester.tap(find.byKey(const ValueKey('task-priority-P0')));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        expect(tracker.updateTaskPriorityCalls, equals(['P0']));
-      },
-    );
-
-    testWidgets(
-      'selecting a status in the picker calls updateTaskStatus',
-      (tester) async {
-        final task = buildTask();
-        final tracker = ToggleCallTracker();
-
-        await tester.pumpWidget(
-          pumpConnectorWithTracker(task: task, tracker: tracker),
-        );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        // Tap the status chip (shows "Open" for a new task).
-        await tester.tap(find.text('Open').first);
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        // Tap "In Progress" in the status picker.
-        await tester.tap(find.text('In Progress'));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        expect(tracker.updateTaskStatusCalls, hasLength(1));
-      },
-    );
-
-    testWidgets(
-      'confirming the estimate picker forwards the new duration to save',
-      (tester) async {
-        final task = buildTask();
-        final tracker = ToggleCallTracker();
-
-        await tester.pumpWidget(
-          pumpConnectorWithTracker(task: task, tracker: tracker),
-        );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        await tester.tap(find.text('Add estimate'));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        // The Cupertino timer picker starts at 00:00; tapping Done without
-        // changing the value is still a valid "save 0" path from the
-        // connector's perspective.
-        await tester.tap(find.text('Done'));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        // Either the estimate save happened (0 → 0 with no change calls)
-        // or was skipped by the picker itself; the key coverage is that
-        // the connector's `onTap` ran through showEstimatePicker without
-        // throwing and the chip was rebuilt.
-        expect(find.byType(DesktopTaskHeaderConnector), findsOneWidget);
-      },
-    );
-
-    testWidgets(
-      'due-date picker — Done with no initial date saves the current date',
-      (tester) async {
-        final task = buildTask();
-        final tracker = ToggleCallTracker();
-
-        await tester.pumpWidget(
-          pumpConnectorWithTracker(task: task, tracker: tracker),
-        );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        await tester.tap(find.text('Set due date'));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        await tester.tap(find.text('Done'));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        // When no initial due date is set, tapping Done unconditionally
-        // commits the current picker value via controller.save(dueDate: ...).
-        expect(tracker.saveCalls, hasLength(1));
-        expect(tracker.saveCalls.single['dueDate'], isA<DateTime>());
-        expect(tracker.saveCalls.single['clearDueDate'], isFalse);
-      },
-    );
-
-    testWidgets(
-      'due-date picker — Clear on a task with a due date clears it',
-      (tester) async {
-        final task = buildTask(due: DateTime(2026, 4, 25));
-        final tracker = ToggleCallTracker();
-
-        await tester.pumpWidget(
-          pumpConnectorWithTracker(task: task, tracker: tracker),
-        );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        // Tap the due-date chip — match its rendered label.
-        await tester.tap(find.textContaining('Apr 25, 2026'));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        await tester.tap(find.text('Clear'));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        expect(tracker.saveCalls, hasLength(1));
-        expect(tracker.saveCalls.single['clearDueDate'], isTrue);
-        expect(tracker.saveCalls.single['dueDate'], isNull);
-      },
-    );
-
-    testWidgets(
-      'selecting a category in the picker calls updateCategoryId',
-      (tester) async {
-        final pickable = buildCategory(id: 'cat-pick', name: 'Focus');
-        when(() => mockCache.sortedCategories).thenReturn([pickable]);
-        when(() => mockCache.getCategoryById('cat-pick')).thenReturn(pickable);
-
-        final task = buildTask();
-        final tracker = ToggleCallTracker();
-
-        await tester.pumpWidget(
-          pumpConnectorWithTracker(task: task, tracker: tracker),
-        );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        await tester.tap(find.text('Set category'));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        await tester.tap(find.text('Focus'));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        expect(tracker.updateCategoryIdCalls, equals(['cat-pick']));
-      },
-    );
-
-    testWidgets(
-      'category row tap closes the modal without popping the outer route',
+      'category picked through the fly-out closes its modal without popping '
+      'the outer route',
       (tester) async {
         // Reproduces the bottom-nav topology: the connector lives in a
         // per-tab nested Navigator inside the MaterialApp root Navigator.
         // On phone width the picker opens on the root Navigator
         // (`shouldUseRootNavigatorForBottomSheet`), so popping with the
         // connector's outer context would pop the nested route instead of
-        // the modal. This guards the c6627fe8d-style fix.
+        // the modal. This guards the c6627fe8d-style fix through the new
+        // fly-out path.
         final pickable = buildCategory(id: 'cat-pick', name: 'Focus');
         when(() => mockCache.sortedCategories).thenReturn([pickable]);
         when(() => mockCache.getCategoryById('cat-pick')).thenReturn(pickable);
@@ -1028,7 +644,11 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        await tester.tap(find.text('Set category'));
+        await tester.tap(find.text('Details'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        await tester.tap(find.text('Category'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -1036,11 +656,11 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // Modal closed.
+        // The selection persisted through the shared picker...
+        expect(tracker.updateCategoryIdCalls, equals(['cat-pick']));
+        // ...the category modal closed, and the outer nested route was NOT
+        // popped — the connector is still mounted.
         expect(find.byType(CategoryPickerSheet), findsNothing);
-        // Outer nested route was NOT popped — the connector is still
-        // mounted. A pop targeting the connector's outer context would
-        // have removed the MaterialPageRoute hosting the connector.
         expect(find.byType(DesktopTaskHeaderConnector), findsOneWidget);
       },
     );
@@ -1374,9 +994,9 @@ void main() {
     );
   });
 
-  group('DesktopTaskHeaderConnector — onLabelTap', () {
+  group('DesktopTaskHeaderConnector — labels read-out', () {
     testWidgets(
-      'tapping an existing label chip opens the label selector modal',
+      'tapping the labels read-out opens the metadata fly-out',
       (tester) async {
         // Build a task with a label that the cache resolves.
         final label = buildLabel(id: 'lbl-tap', name: 'Urgent');
@@ -1422,96 +1042,18 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // The label pill is rendered (label name visible).
+        // The compressed labels read-out is rendered (label name visible).
         expect(find.text('Urgent'), findsOneWidget);
 
-        // Tapping the label fires onLabelTap → _openLabelSelector.
+        // Tapping it routes to the fly-out, where the Labels row edits.
         await tester.tap(find.text('Urgent'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        expect(find.byType(EntityPickerSheet), findsOneWidget);
+        expect(find.byType(TaskMetaFlyoutContent), findsOneWidget);
       },
     );
   });
-
-  group(
-    'DesktopTaskHeaderConnector — estimate chip saves changed duration',
-    () {
-      testWidgets(
-        'changing the estimate value and tapping Done calls '
-        'notifier.save(estimate: newDuration)',
-        (tester) async {
-          // Use a task with no estimate so the "No estimate" chip renders.
-          // The test then opens the picker, simulates a duration change via
-          // the CupertinoTimerPicker callback, and taps Done — this
-          // exercises lines 363-364 (the onEstimateChanged closure body).
-          final task = buildTask();
-          final tracker = ToggleCallTracker();
-
-          await tester.pumpWidget(
-            ProviderScope(
-              overrides: [
-                entryControllerProvider(task.id).overrideWith(
-                  () => FakeEntryController(task, tracker: tracker),
-                ),
-                labelsStreamProvider.overrideWith(
-                  (ref) => Stream<List<LabelDefinition>>.value(const []),
-                ),
-                projectForTaskProvider(task.id).overrideWith(
-                  (ref) async => null,
-                ),
-                taskProgressControllerProvider(task.id).overrideWith(
-                  () => _FakeTaskProgressController(null),
-                ),
-              ],
-              child: MaterialApp(
-                theme: DesignSystemTheme.dark(),
-                localizationsDelegates: const [
-                  AppLocalizations.delegate,
-                  FormBuilderLocalizations.delegate,
-                  GlobalMaterialLocalizations.delegate,
-                  GlobalWidgetsLocalizations.delegate,
-                  GlobalCupertinoLocalizations.delegate,
-                ],
-                supportedLocales: AppLocalizations.supportedLocales,
-                home: Scaffold(
-                  body: DesktopTaskHeaderConnector(taskId: task.id),
-                ),
-              ),
-            ),
-          );
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 300));
-
-          // Open the estimate picker (initial duration is zero).
-          await tester.tap(find.text('Add estimate'));
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 300));
-
-          // Directly invoke the picker's duration-changed callback to
-          // simulate the user scrolling to 1 h — this ensures selectedDuration
-          // diverges from initialDuration (zero) so Done will fire the
-          // onEstimateChanged callback.
-          final picker = tester.widget<CupertinoTimerPicker>(
-            find.byType(CupertinoTimerPicker),
-          );
-          picker.onTimerDurationChanged(const Duration(hours: 1));
-
-          await tester.tap(find.text('Done'));
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 300));
-
-          // Verify save was called with the new 1-hour estimate.
-          expect(tracker.saveCalls, hasLength(1));
-          expect(
-            tracker.saveCalls.single['estimate'],
-            equals(const Duration(hours: 1)),
-          );
-        },
-      );
-    },
-  );
 
   group('DesktopTaskHeaderConnector — blocked-by chip', () {
     testWidgets('renders nothing when the task has no blockers', (
@@ -1705,156 +1247,6 @@ void main() {
           ),
         );
         expect(pill.onTap, isNull);
-      },
-    );
-  });
-
-  group('DesktopTaskHeaderConnector — status-enrichment blocker prompt', () {
-    late MockFts5Db mockFts5Db;
-
-    setUp(() {
-      mockFts5Db = MockFts5Db();
-      when(
-        () => mockJournalDb.getTasks(
-          starredStatuses: any(named: 'starredStatuses'),
-          taskStatuses: any(named: 'taskStatuses'),
-          categoryIds: any(named: 'categoryIds'),
-          limit: any(named: 'limit'),
-        ),
-      ).thenAnswer((_) async => <JournalEntity>[]);
-      when(
-        () => mockFts5Db.watchFullTextMatches(any()),
-      ).thenAnswer((_) => Stream.value(<String>[]));
-      getIt.registerSingleton<Fts5Db>(mockFts5Db);
-
-      // BlockingTaskPickerModal's onTaskSelected awaits a HapticFeedback
-      // call before popping — never resolves under the test binding without
-      // a mock handler (see test/README.md's platform-channel section).
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(SystemChannels.platform, (call) async {
-            return null;
-          });
-    });
-
-    tearDown(() {
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(SystemChannels.platform, null);
-    });
-
-    Future<void> selectBlockedStatus(
-      WidgetTester tester,
-      Task task, {
-      required String currentStatusLabel,
-    }) async {
-      await tester.pumpWidget(pumpConnector(task: task));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      await tester.tap(find.text(currentStatusLabel).first);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      await tester.tap(find.byKey(const ValueKey('task-status-BLOCKED')));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
-    }
-
-    testWidgets(
-      'prompts for a blocker when a task becomes Blocked with no existing '
-      'blocker',
-      (tester) async {
-        final task = buildTask();
-        stubBlockers(task.id, []);
-
-        await selectBlockedStatus(tester, task, currentStatusLabel: 'Open');
-
-        expect(
-          find.text("What's blocking this?"),
-          findsOneWidget,
-        );
-      },
-    );
-
-    testWidgets(
-      'does not prompt when the task already has an open blocker',
-      (tester) async {
-        final task = buildTask();
-        final blocker = Task(
-          meta: Metadata(
-            id: 'blocker-1',
-            createdAt: now,
-            updatedAt: now,
-            dateFrom: now,
-            dateTo: now,
-          ),
-          data: TaskData(
-            status: TaskStatus.open(id: 's', createdAt: now, utcOffset: 0),
-            dateFrom: now,
-            dateTo: now,
-            statusHistory: const [],
-            title: 'Existing Blocker',
-          ),
-        );
-        stubBlockers(task.id, [
-          blocksLink(id: 'l1', fromId: 'blocker-1', toId: task.id),
-        ]);
-        when(
-          () => mockJournalDb.entriesForIds([blocker.meta.id]),
-        ).thenReturn(MockSelectable([toDbEntity(blocker)]));
-
-        await selectBlockedStatus(tester, task, currentStatusLabel: 'Open');
-
-        expect(
-          find.text("What's blocking this?"),
-          findsNothing,
-        );
-      },
-    );
-
-    testWidgets(
-      'does not re-prompt when reconfirming an already-Blocked status',
-      (tester) async {
-        final task = buildTask(
-          status: TaskStatus.blocked(
-            id: 's',
-            createdAt: now,
-            utcOffset: 0,
-            reason: 'Blocked by: something',
-          ),
-        );
-        stubBlockers(task.id, []);
-
-        await selectBlockedStatus(
-          tester,
-          task,
-          currentStatusLabel: 'Blocked',
-        );
-
-        expect(
-          find.text("What's blocking this?"),
-          findsNothing,
-        );
-      },
-    );
-
-    testWidgets(
-      'does not prompt when the task is already blocked by an unresolved '
-      'link',
-      (tester) async {
-        final task = buildTask();
-        stubBlockers(task.id, [
-          blocksLink(id: 'l1', fromId: 'missing-blocker', toId: task.id),
-        ]);
-        when(
-          () => mockJournalDb.entriesForIds(['missing-blocker']),
-        ).thenReturn(MockSelectable(const []));
-
-        await selectBlockedStatus(tester, task, currentStatusLabel: 'Open');
-
-        expect(
-          find.text("What's blocking this?"),
-          findsNothing,
-        );
       },
     );
   });

@@ -13094,6 +13094,9 @@ class AppLocalizationsCs extends AppLocalizations {
       'Přidá propojenou poznámku na podrobnosti a myšlenky.';
 
   @override
+  String get taskHistoryTitle => 'Historie';
+
+  @override
   String taskLabelsMoreCount(int count) {
     return '+$count';
   }
@@ -13235,6 +13238,30 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get taskLanguageYoruba => 'Jorubština';
+
+  @override
+  String get taskMetaAiSpendLabel => 'Výdaje na AI';
+
+  @override
+  String get taskMetaDetailsButton => 'Podrobnosti';
+
+  @override
+  String get taskMetaDueDateLabel => 'Datum splnění';
+
+  @override
+  String get taskMetaLabelsLabel => 'Štítky';
+
+  @override
+  String get taskMetaPriorityLabel => 'Priorita';
+
+  @override
+  String get taskMetaSheetTitle => 'Podrobnosti úkolu';
+
+  @override
+  String get taskMetaTimeLabel => 'Čas';
+
+  @override
+  String get taskMetaValueNotSet => 'Nenastaveno';
 
   @override
   String get taskNoDueDateLabel => 'Bez data splnění';

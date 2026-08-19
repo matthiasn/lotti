@@ -66,11 +66,16 @@ class Header extends StatelessWidget {
           onTap: isExpanded ? null : onToggleExpand,
           behavior: HitTestBehavior.opaque,
           child: Padding(
+            // State-invariant padding: a bottom inset that differed between
+            // expanded (step3) and collapsed (step1) made the header row's
+            // box jump by the difference the instant a toggle started, while
+            // the strip below was still animating — the accordion header must
+            // stay pinned in the same spot regardless of state.
             padding: EdgeInsets.only(
               left: tokens.spacing.step5,
               right: tokens.spacing.step3,
               top: tokens.spacing.step1,
-              bottom: isExpanded ? tokens.spacing.step3 : tokens.spacing.step1,
+              bottom: tokens.spacing.step3,
             ),
             child: ConstrainedBox(
               constraints: BoxConstraints(minHeight: tokens.spacing.step8),

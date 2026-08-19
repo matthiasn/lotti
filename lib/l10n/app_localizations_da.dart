@@ -12939,6 +12939,9 @@ class AppLocalizationsDa extends AppLocalizations {
       'Tilføjer en tilknyttet note til detaljer og tanker.';
 
   @override
+  String get taskHistoryTitle => 'Historik';
+
+  @override
   String taskLabelsMoreCount(int count) {
     return '+$count';
   }
@@ -13080,6 +13083,30 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get taskLanguageYoruba => 'Yoruba';
+
+  @override
+  String get taskMetaAiSpendLabel => 'AI-forbrug';
+
+  @override
+  String get taskMetaDetailsButton => 'Detaljer';
+
+  @override
+  String get taskMetaDueDateLabel => 'Forfaldsdato';
+
+  @override
+  String get taskMetaLabelsLabel => 'Labels';
+
+  @override
+  String get taskMetaPriorityLabel => 'Prioritet';
+
+  @override
+  String get taskMetaSheetTitle => 'Opgavedetaljer';
+
+  @override
+  String get taskMetaTimeLabel => 'Tid';
+
+  @override
+  String get taskMetaValueNotSet => 'Ikke sat';
 
   @override
   String get taskNoDueDateLabel => 'Ingen terminsdato';

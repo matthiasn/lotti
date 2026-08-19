@@ -53,16 +53,27 @@ sources:
 # Band order
 
 `TaskForm` stacks the reading bands in a deliberate order: the identity header,
-the optional legacy body (set off by a hairline rule and `sectionGap`), then the
-user's **own work** (`ChecklistsWidget`, `LinkedTasksWidget`), and finally the
-`AiSummaryCard`.
+the optional legacy body (set off by a hairline rule and `sectionGap`), then
+the `AiSummaryCard`, and finally the user's **own work** (`ChecklistsWidget`,
+`LinkedTasksWidget`).
 
-The AI card renders **below** the checklists so the user's work comes first.
+The AI card renders **directly below the header** so a reader lands on "what
+is this task about and where does it stand" before scrolling into the work.
+The model attribution lives only inside the card's own footer — nothing
+renders a standalone attribution strip under the title.
+
+Below the form, the dated log-entry history (linked entries plus reverse
+links) sits behind a **collapsed-by-default** `TaskHistorySection`: it is the
+page's longest region, and the summary / todos / linked tasks are what a
+reader needs first. The page owns the expansion state, resets it per task,
+and force-expands the section when a focus intent targets an entry inside it
+— a collapsed section has no mounted entry keys to scroll to. On a first-run
+task the section (header included) stands down entirely.
 
 ## The first-run band
 
 A task with **no content at all** — no checklists, no body text, no agent, as
-decided by `TaskFirstRunActions.isBlank` — gains one more band below the AI card:
+decided by `TaskFirstRunActions.isBlank` — gains one more band at the bottom:
 `TaskFirstRunActions`, a single card of worded rows a `sectionGap` beneath the
 header.
 
@@ -129,19 +140,20 @@ slivers). The header, its breadcrumb segments and the sliver each used to add a
 little of their own, which put five different left edges in the top hundred
 points of the page. The header now contributes vertical padding only.
 
-`TaskDetailsPage` composes `TaskSliverAppBar`, `TaskConsumptionChip` — the AI
-consumption pill in the header's meta row showing lifetime cost, energy and CO₂e
-for tasks with recorded AI calls, hidden entirely otherwise — and `TaskForm`. An
-`EditorWidget` appears **only** for legacy tasks that already have non-empty entry
-text.
+`TaskDetailsPage` composes `TaskSliverAppBar` and `TaskForm`. Lifetime AI
+cost, energy and CO₂e for tasks with recorded AI calls surface as the
+read-only **AI spend** row in the metadata fly-out (hidden entirely for tasks
+without recorded calls). An `EditorWidget` appears **only** for legacy tasks
+that already have non-empty entry text.
 
 # The header
 
 `DesktopTaskHeaderConnector` concentrates the whole metadata band. It watches
 `entryControllerProvider`, `projectForTaskProvider`, `taskOneLinerProvider` and
-the labels stream, maps the task to an immutable `DesktopTaskHeaderData` plus a
-Riverpod-aware `estimateSlot`, and forwards callbacks to the existing modal
-pickers. When the task agent has published a one-liner, the header renders it as
+the labels stream, maps the task to an immutable `DesktopTaskHeaderData`, and
+wires the crumb's category/project taps to the shared `TaskMetaPickers` while
+every other edit routes through the metadata fly-out (`TaskMetaFlyout.show`).
+When the task agent has published a one-liner, the header renders it as
 complete wrapping text directly between the title and metadata. Its ink is
 `aiCard.accent`, matching the AI summary card instead of neutral task metadata.
 
@@ -224,9 +236,9 @@ Three rules govern getting *out* of edit mode:
   status, and spending it here put two unrelated greens in one small box. Both
   targets are `step9` (48 pt).
 
-## The two-lane meta row
+## The metadata summary and fly-out
 
-The header body is Crumb → Title → AI one-liner → Meta:
+The header body is Crumb → Title → AI one-liner → Summary:
 
 1. **Crumb** — `category / [project | No project]` separated by a literal `/`.
    No label chips here.
@@ -234,81 +246,69 @@ The header body is Crumb → Title → AI one-liner → Meta:
 3. **AI one-liner** — an optional, fully wrapping AI-accent summary. It
    preserves the last value during background refresh and grows vertically
    rather than truncating useful context.
-4. **Meta** — a two-lane column.
+4. **Summary** — one compact lane (`TaskMetaSummaryLine`) of informational
+   read-outs plus the "Details" fly-out trigger.
 
-**Without a category the crumb is one segment: `No category`.** A project is
-scoped to a category — `ProjectRepository.linkTaskToProject` refuses a
-cross-category link — so an uncategorized task cannot acquire one, and the
-connector passes a null `onProjectTap`. Rendering the separator and a
-`No project` placeholder there offered a choice that could not be made; the
-separator and the project segment appear only once a category is set.
+**Without a category the crumb renders nothing at all**, and the summary lane
+carries a dashed "Set category" offer (verb-form, muted shell, fully-rounded
+— it is an action) that opens the category picker directly; the fly-out's
+Category row covers the same edit once a category exists. The crumb segment
+and the dashed offer never coexist. A project is scoped to a category —
+`ProjectRepository.linkTaskToProject` refuses a cross-category link — so an
+uncategorized task cannot acquire one, and the connector passes a null
+`onProjectTap`; the separator and the project segment appear only once a
+category is set.
 
-The **attribute lane** is a left-aligned wrap led by the status pill:
-`[status] → [priority] → [due | No due date] + [estimate]`. The **label lane**
-below is a second wrap of label chips or an *Add Label* placeholder.
+**Metadata is set once and rarely changed, so it no longer wears
+always-visible button-styled chrome.** The summary lane is read-outs only:
+`[status] → [blocked-by?] → [priority] → [due?] → [labels?] →
+[Set category?] → Details`.
+Every read-out wears `DsPillShape.tag` — the tight `radii.xs` (4) corner —
+so a fact can never be mistaken for the fully-rounded filter/action pills
+elsewhere on the page. The one lever in the lane, the **Details** trigger,
+keeps the fully-rounded interactive pill shape. Tapping any read-out opens
+the same fly-out, so a tap on the fact still lands on its editor.
 
-**Status leads the attribute lane** rather than being pinned to a trailing edge,
-so it has one stable home that never opens a horizontal dead zone next to a short
-cluster and never gets marooned when the row wraps. Separating structured
-attributes from the free-form label taxonomy keeps the "what state / when / how
-big" read distinct from the user's tags.
+The **fly-out** (`TaskMetaFlyout` → `ModalUtils.showSinglePageModal`) lists
+every attribute as a descriptive **label + value** row — Status, Priority,
+Category, Project (once a category exists), Due date, Time, Labels, and a
+read-only AI spend row for tasks with recorded AI calls. Each editable row
+opens its existing modal picker through the shared `TaskMetaPickers`
+(also used by the crumb), and the content watches the task so a persisted
+edit updates the open fly-out immediately. The Time row keeps the
+`{tracked} of {estimate}` read (`1h 30m of 2h`, never a clock-like
+`01:30 / 02:00`) plus the small progress bar, escalating to error ink when
+tracked exceeds the estimate.
 
-**Every attribute is its own wrap unit.** The due date and estimate used to be
-bonded into one inner wrap so the estimate could not strand alone — but the pair
-was wide enough on a phone that *both* dropped to a second row while half the
-first row sat empty, burying the due date, which is the lane's second-most
-decision-relevant chip after status. Unbonded, a narrow viewport breaks the lane
-as `status+priority+due` / `estimate…`, and the estimate travels with whatever
-follows it rather than alone.
+Summary-lane treatment carries over the accessibility decisions the old pill
+lanes earned:
 
-Chip treatment carries real accessibility decisions:
+- **The status read-out is the lane's only tinted accent** (active statuses
+  keep their 18% wash; Open and Rejected use the neutral filled + bordered
+  shell, Rejected struck through at medium emphasis); priority carries urgency
+  via a coloured glyph; the due read-out escalates to a tinted accent only
+  when due today or overdue, and reads at high emphasis otherwise.
+- **The status label text stays at the high-emphasis text colour, not the
+  accent** — accent-on-accent-tint fails WCAG. Its colour identity is carried
+  by the translucent tinted fill plus a per-status glyph.
+- **Priority spells the level out** (Urgent / High / Medium / Low) rather than
+  the opaque `P2` code. The compact `P{n}` form is retained only for picker
+  rows and AI-context strings.
+- Neutral filled tags carry the quiet 1 px `decorative.level02` border for a
+  legible boundary against the near-same-tone surface.
+- **Labels compress into one read-out** — two names plus a `+N` suffix, led by
+  their colour dots — instead of a lane of per-label pills; the full list
+  lives in the fly-out's Labels row.
+- The **blocked-by chip** (link-derived readiness, ADR 0042 §4) stays on the
+  page beside the status read-out: it is an alarm, not routine metadata, and
+  navigates to the blocker rather than opening the fly-out.
 
-- The chips share one neutral filled shell at one height. **The status pill is the
-  lane's only tinted accent**; priority carries urgency via a coloured glyph; the
-  due chip escalates to a tinted accent only when due today or overdue.
-- Every neutral filled chip carries a quiet 1 px `decorative.level02` border, so
-  its boundary is legible against the near-same-tone surface for low-vision users.
-  The status pill and an urgent due chip skip it — their fill already reads.
-- **Unset chips are not italicised.** `DsPillVariant.muted`'s dashed border and
-  low-emphasis ink already say "unset" twice; the slant added a third signal that
-  read as *disabled* rather than *empty*, on exactly the chips a user most needs
-  to fill in — and a 12 pt italic caption is a real legibility failure at large
-  accessibility text sizes. The unset breadcrumb dropped its italics for the same
-  reason.
-- **The priority glyph is tinted from the palette**, like the status glyph. The
-  SVG assets bake the *dark* theme's alert hues, so an untinted glyph painted the
-  dark palette onto the light screen — the only un-themed ink on the page, and a
-  hue collision with the Groomed status.
-- **The status pill's label text stays at the high-emphasis text colour, not the
-  accent** — accent-on-accent-tint fails WCAG. Its colour identity is carried by
-  the translucent tinted fill plus a per-status glyph.
-- **Priority spells the level out** (Urgent / High / Medium / Low) rather than the
-  opaque `P2` code, so urgency direction reads at a glance. The compact `P{n}`
-  form is retained only for picker rows and AI-context strings.
-- **Set reads at high emphasis, unset at medium.** A set priority used to ink
-  identically to the unset chips beside it, so the lane's two shells stopped
-  meaning "set" and "unset" at all.
-- **Unset chips speak verbs** — *Set due date*, *Add estimate*, *Add label* —
-  not statements of fact. "No due date" was read as a label describing the task
-  rather than a control offering to fix it, so it was never tapped.
-- **An unset category swatch is a hollow ring**, not a solid fill. A grey square
-  asserted a colour the task did not have, and it was the first and loudest ink
-  on the page standing for an absence.
-- **The estimate reads `{tracked} of {estimate}`** in plain duration units
-  (`1h 30m of 2h`), not a clock-like `01:30 / 02:00`, which users misread as a
-  time-of-day range. A tooltip spells it out.
-- The label lane caps at 4 chips and collapses the remainder behind a tappable
-  `+N`; expanding swaps in "Show fewer", and a label change on a new task resets
-  the expansion.
-
-Spacing encodes grouping: inter-chip gaps (`step2`) are tighter than each pill's
-internal padding (`step3`) so the chips read as one anchored cluster, while a full
-`step4` context break sets the two lanes apart. **Run spacing is a step looser
-than the inter-chip gutter** (`step3` against `step2`): reusing one value for both
-axes put wrapped rows closer together than the chips inside a row, so a two-row
-lane read as one crowded slab. Vertically, `step4` separates the breadcrumb from
-the title and a tighter `step3` bonds the title to its metadata, so title plus
-chips read as one unit; the header's own bottom padding is only `step2`, because
+Spacing encodes grouping: inter-tag gaps (`step2`) are tighter than each tag's
+internal padding (`step3`) so the lane reads as one anchored cluster, and
+**run spacing is a step looser than the inter-tag gutter** (`step3` against
+`step2`) so a wrapped lane still shows its row break. Vertically, `step4`
+separates the breadcrumb from the title and a tighter `step3` bonds the title
+to its metadata; the header's own bottom padding is only `step2`, because
 whatever section follows brings its own leading padding.
 
 **Nothing in the header adds horizontal inset** — not the outer padding, not the
@@ -373,13 +373,13 @@ three region-adapter modes over one `ViewportStableScrollController`:
 | Adapter | Behaviour |
 |---------|-----------|
 | `ViewportStableAnimatedSize` | Animates generated entry text and nested AI-response height, arming only when the region is fully above the viewport |
-| `ViewportStableSizeReporter` | No motion — used by the header, checklist and linked-tasks bands while a suggestion-resolution hold is armed, because their content already owns its own entrance and completion animations |
-| `ViewportStableSizeReporter(offscreenOnly: true)` | Wraps the AI card band, reporting only while the page armed the hold with `includeOffscreenRegions` |
+| `ViewportStableSizeReporter` | No motion — used by the header band (the only band above the proposals) while a suggestion-resolution hold is armed, because its content already owns its own animations |
+| `ViewportStableSizeReporter(offscreenOnly: true)` | Wraps the AI card, checklist and linked-tasks bands, reporting only while the page armed the hold with `includeOffscreenRegions` — i.e. while the card is fully above the viewport and `_belowCardAnchor` pins the linked-entries seam. While the card is visible, a checklist or linked-task growing *below* the proposals is the visible reflow; compensating it would drag the proposals out from under the pointer |
 
-The third **deliberately does not compute the offscreen predicate itself**: the
-page has to pick a matching `ScrollAnchor` from the same answer, and two
-mechanisms deciding independently would disagree over the padding between their
-reference points and then fight each frame.
+The offscreen-only reporters **deliberately do not compute the offscreen
+predicate themselves**: the page has to pick a matching `ScrollAnchor` from the
+same answer, and two mechanisms deciding independently would disagree over the
+padding between their reference points and then fight each frame.
 
 Each band carries a distinct, task-scoped `ValueKey`. `StaggeredEntrance` maps its
 children through `flutter_animate`, **which does not forward their keys**, so the

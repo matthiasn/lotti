@@ -5558,6 +5558,7 @@
   "taskFirstRunRecordAudioHint": "Apre il registratore senza avviare la registrazione.",
   "taskFirstRunWriteNote": "Scrivi una nota",
   "taskFirstRunWriteNoteHint": "Aggiunge una nota collegata per dettagli e pensieri.",
+  "taskHistoryTitle": "Cronologia",
   "taskLabelsMoreCount": "+{count}",
   "@taskLabelsMoreCount": {
     "placeholders": {
@@ -5615,6 +5616,14 @@
   "taskLanguageUkrainian": "Ucraino",
   "taskLanguageVietnamese": "Vietnamita",
   "taskLanguageYoruba": "Yoruba",
+  "taskMetaAiSpendLabel": "Spesa AI",
+  "taskMetaDetailsButton": "Dettagli",
+  "taskMetaDueDateLabel": "Data di scadenza",
+  "taskMetaLabelsLabel": "Etichette",
+  "taskMetaPriorityLabel": "Priorità",
+  "taskMetaSheetTitle": "Dettagli dell'attività",
+  "taskMetaTimeLabel": "Tempo",
+  "taskMetaValueNotSet": "Non impostato",
   "taskNoDueDateLabel": "Nessuna data",
   "taskNoEstimateLabel": "Nessuna stima",
   "taskOverdueByDays": "In ritardo di {days, plural, =1{1 giorno} other{{days} giorni}}",

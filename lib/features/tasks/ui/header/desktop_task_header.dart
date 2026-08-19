@@ -74,65 +74,41 @@ class DesktopTaskHeaderData {
   final List<LabelDefinition> labels;
 }
 
-/// Presentational task header — Option B layout from
-/// `docs/design/design_handoff_task_header/`.
+/// Presentational task header.
 ///
-/// Two-tier hierarchy:
+/// Tiered top-to-bottom:
 /// 1. **Crumb** — `▣ Category / Project name` above the title, getting the
 ///    "where am I?" info out of the chip soup.
-/// 2. **Title** — heading-3 with an always-shown small edit pencil to its
-///    right; tap toggles the inline editor.
+/// 2. **Title** — heading-2; tap toggles the inline editor.
 /// 3. **AI one-liner** — optional accent-colored task-agent context.
-/// 4. **Meta row** — pill chips for the *actionable* metadata (priority, due,
-///    estimate, labels) followed by the status select pinned to the right
-///    edge of the row.
+/// 4. **Metadata summary** — [TaskMetaSummaryLine]: quiet informational
+///    read-outs (status, priority, due, labels) plus the "Details" trigger
+///    that opens the metadata fly-out where everything is edited. The old
+///    always-visible pill lanes are gone — metadata is set once and rarely
+///    changed, so it no longer wears button-styled chrome on the page.
 class DesktopTaskHeader extends StatefulWidget {
   const DesktopTaskHeader({
     required this.data,
     required this.onTitleSaved,
-    this.onPriorityTap,
-    this.onStatusTap,
+    this.onOpenDetails,
     this.onProjectTap,
     this.onCategoryTap,
-    this.onDueDateTap,
-    this.onLabelTap,
-    this.onAddLabelTap,
-    this.estimateSlot,
-    this.consumptionSlot,
     this.blockedBySlot,
     this.initialEditing = false,
-    this.estimateIsSet = true,
     super.key,
   });
 
   final DesktopTaskHeaderData data;
   final ValueChanged<String> onTitleSaved;
-  final VoidCallback? onPriorityTap;
-  final VoidCallback? onStatusTap;
+
+  /// Opens the metadata fly-out — wired to the summary line's Details
+  /// trigger and to each read-out tag.
+  final VoidCallback? onOpenDetails;
   final VoidCallback? onProjectTap;
   final VoidCallback? onCategoryTap;
-  final VoidCallback? onDueDateTap;
-  final ValueChanged<LabelDefinition>? onLabelTap;
-  final VoidCallback? onAddLabelTap;
 
-  /// Slot for the estimate pill. The connector injects a Riverpod-aware chip
-  /// here so the header itself stays framework free. When `null` the meta
-  /// row simply omits the estimate entry.
-  final Widget? estimateSlot;
-
-  /// Optional AI-consumption pill forwarded into [MetaRow].
-  final Widget? consumptionSlot;
-
-  /// Optional "Blocked by" chip forwarded into [MetaRow].
+  /// Optional "Blocked by" chip forwarded into [TaskMetaSummaryLine].
   final Widget? blockedBySlot;
-
-  /// Whether the task has a real estimate, deciding which lane the
-  /// [estimateSlot] joins: the set-attribute lane or the dashed add-lane. The
-  /// slot is an opaque widget by design (it stays Riverpod-aware while this
-  /// header stays framework-free), so the connector — which has the task —
-  /// answers the one question the lane split needs. Defaults to `true` so
-  /// fixtures that inject a populated chip need not say so twice.
-  final bool estimateIsSet;
 
   /// Force the inline editor open on first build.
   ///
@@ -293,22 +269,18 @@ class _DesktopTaskHeaderState extends State<DesktopTaskHeader> {
             ),
           ],
           SizedBox(height: metaGap),
-          MetaRow(
-            priority: widget.data.priority,
+          TaskMetaSummaryLine(
             status: widget.data.status,
+            priority: widget.data.priority,
             dueDate: widget.data.dueDate,
             labels: widget.data.labels,
-            estimateSlot: widget.estimateSlot,
-            estimateIsSet: widget.estimateIsSet,
-            consumptionSlot: widget.consumptionSlot,
             blockedBySlot: widget.blockedBySlot,
+            onOpenDetails: widget.onOpenDetails,
+            // With no category the crumb renders nothing, so the summary
+            // lane carries the inline offer — the two affordances never
+            // coexist.
             showSetCategory: widget.data.category == null,
-            onPriorityTap: widget.onPriorityTap,
-            onStatusTap: widget.onStatusTap,
             onCategoryTap: widget.onCategoryTap,
-            onDueDateTap: widget.onDueDateTap,
-            onLabelTap: widget.onLabelTap,
-            onAddLabelTap: widget.onAddLabelTap,
           ),
         ],
       ),

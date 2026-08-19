@@ -2950,6 +2950,70 @@ void main() {
         expect(find.byIcon(Icons.expand_more), findsOneWidget);
       });
 
+      testWidgets(
+        'audio entry with no explicit collapse choice defaults to the '
+        'compressed one-line view',
+        (tester) async {
+          // `collapsed` is null on the link — no user choice yet. Audio (and
+          // only audio) reads that as collapsed, with a one-line preview of
+          // the transcribed content under the header.
+          when(
+            () => mockJournalDb.journalEntityById(testAudioEntry.meta.id),
+          ).thenAnswer((_) async => testAudioEntry);
+
+          await tester.pumpWidget(
+            makeTestableWidgetWithScaffold(
+              ProviderScope(
+                child: EntryDetailsWidget(
+                  itemId: testAudioEntry.meta.id,
+                  showAiEntry: false,
+                  linkedFrom: testTask,
+                  link: testAudioLink,
+                ),
+              ),
+            ),
+          );
+
+          await tester.pump();
+          await tester.pump(AppTheme.chevronRotationDuration);
+
+          // The full body is shut...
+          final bodyTransition = tester.widget<SizeTransition>(
+            find.ancestor(
+              of: find.byType(AudioPlayerWidget),
+              matching: find.byType(SizeTransition),
+            ),
+          );
+          expect(bodyTransition.sizeFactor.value, 0.0);
+          // ...and the one-line preview of the entry's content is open.
+          final oneLiner = find.text('test image entry text');
+          final previewTransition = tester.widget<SizeTransition>(
+            find.ancestor(
+              of: oneLiner,
+              matching: find.byType(SizeTransition),
+            ),
+          );
+          expect(previewTransition.sizeFactor.value, 1.0);
+
+          // Tapping the preview expands the entry in place.
+          await tester.tap(oneLiner);
+          await tester.pump();
+          await tester.pump(AppTheme.collapseAnimationDuration);
+          expect(
+            tester
+                .widget<SizeTransition>(
+                  find.ancestor(
+                    of: find.byType(AudioPlayerWidget),
+                    matching: find.byType(SizeTransition),
+                  ),
+                )
+                .sizeFactor
+                .value,
+            1.0,
+          );
+        },
+      );
+
       testWidgets('audio entry collapses with collapsed link', (tester) async {
         final collapsedLink = testAudioLink.copyWith(collapsed: true);
 
@@ -2973,8 +3037,13 @@ void main() {
         await tester.pump();
         await tester.pump(AppTheme.chevronRotationDuration);
 
+        // Two SizeTransitions now: the collapsed one-line preview (open) and
+        // the full body (shut). The body is the one holding the player.
         final sizeTransition = tester.widget<SizeTransition>(
-          find.byType(SizeTransition),
+          find.ancestor(
+            of: find.byType(AudioPlayerWidget),
+            matching: find.byType(SizeTransition),
+          ),
         );
         expect(sizeTransition.sizeFactor.value, 0.0);
       });
@@ -3311,8 +3380,13 @@ void main() {
         await tester.pump();
         await tester.pump(AppTheme.chevronRotationDuration);
 
+        // Two SizeTransitions now: the collapsed one-line preview (open) and
+        // the full body (shut). The body is the one holding the player.
         final sizeTransition = tester.widget<SizeTransition>(
-          find.byType(SizeTransition),
+          find.ancestor(
+            of: find.byType(AudioPlayerWidget),
+            matching: find.byType(SizeTransition),
+          ),
         );
         expect(sizeTransition.sizeFactor.value, 0.0);
       });

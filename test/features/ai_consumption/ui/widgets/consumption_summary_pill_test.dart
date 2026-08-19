@@ -101,6 +101,12 @@ void main() {
 
     expect(find.text('12.3K tokens'), findsOneWidget);
     expect(find.byType(DsPill), findsOneWidget);
+    // A read-out, not a control: informational pills wear the tight tag
+    // corners per the corner-radius convention.
+    expect(
+      tester.widget<DsPill>(find.byType(DsPill)).shape,
+      DsPillShape.tag,
+    );
     expect(
       tester.widget<Tooltip>(find.byType(Tooltip)).message,
       isNot(contains('Compute time')),

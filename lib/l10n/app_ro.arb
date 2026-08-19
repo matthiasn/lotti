@@ -4991,6 +4991,7 @@
   "taskFirstRunRecordAudioHint": "Deschide reportofonul fără a porni înregistrarea.",
   "taskFirstRunWriteNote": "Scrieți o notă",
   "taskFirstRunWriteNoteHint": "Adaugă o notă legată pentru detalii și gânduri.",
+  "taskHistoryTitle": "Istoric",
   "taskLabelsMoreCount": "+{count}",
   "@taskLabelsMoreCount": {
     "placeholders": {
@@ -5048,6 +5049,14 @@
   "taskLanguageUkrainian": "Ucraineană",
   "taskLanguageVietnamese": "Vietnameză",
   "taskLanguageYoruba": "Yoruba",
+  "taskMetaAiSpendLabel": "Cheltuieli AI",
+  "taskMetaDetailsButton": "Detalii",
+  "taskMetaDueDateLabel": "Data scadenței",
+  "taskMetaLabelsLabel": "Etichete",
+  "taskMetaPriorityLabel": "Prioritate",
+  "taskMetaSheetTitle": "Detaliile sarcinii",
+  "taskMetaTimeLabel": "Timp",
+  "taskMetaValueNotSet": "Nesetat",
   "taskNoDueDateLabel": "Fără dată scadentă",
   "taskNoEstimateLabel": "Fără estimare",
   "taskOverdueByDays": "{days, plural, =1{Întârziat cu 1 zi} other{Întârziat cu {days} zile}}",

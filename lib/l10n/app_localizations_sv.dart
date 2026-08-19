@@ -12879,7 +12879,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get taskCategoryUnassignedLabel => 'ej tilldelad';
 
   @override
-  String get taskDueDateLabel => 'Beräknat datum';
+  String get taskDueDateLabel => 'Förfallodatum';
 
   @override
   String taskDueDateWithDate(String date) {
@@ -12948,6 +12948,9 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get taskFirstRunWriteNoteHint =>
       'Lägger till en länkad anteckning för detaljer och tankar.';
+
+  @override
+  String get taskHistoryTitle => 'Historik';
 
   @override
   String taskLabelsMoreCount(int count) {
@@ -13091,6 +13094,30 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get taskLanguageYoruba => 'Yoruba';
+
+  @override
+  String get taskMetaAiSpendLabel => 'AI-utgifter';
+
+  @override
+  String get taskMetaDetailsButton => 'Detaljer';
+
+  @override
+  String get taskMetaDueDateLabel => 'Förfallodatum';
+
+  @override
+  String get taskMetaLabelsLabel => 'Etiketter';
+
+  @override
+  String get taskMetaPriorityLabel => 'Prioritet';
+
+  @override
+  String get taskMetaSheetTitle => 'Uppgiftsdetaljer';
+
+  @override
+  String get taskMetaTimeLabel => 'Tid';
+
+  @override
+  String get taskMetaValueNotSet => 'Inte inställt';
 
   @override
   String get taskNoDueDateLabel => 'Ingen beräknad förlossningsdag';

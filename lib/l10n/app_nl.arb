@@ -5557,6 +5557,7 @@
   "taskFirstRunRecordAudioHint": "Opent de recorder zonder de opname te starten.",
   "taskFirstRunWriteNote": "Een notitie schrijven",
   "taskFirstRunWriteNoteHint": "Voegt een gekoppelde notitie toe voor details en gedachten.",
+  "taskHistoryTitle": "Geschiedenis",
   "taskLabelsMoreCount": "+{count}",
   "@taskLabelsMoreCount": {
     "placeholders": {
@@ -5614,6 +5615,14 @@
   "taskLanguageUkrainian": "Oekraïens",
   "taskLanguageVietnamese": "Vietnamees",
   "taskLanguageYoruba": "YorubaCity in Italy",
+  "taskMetaAiSpendLabel": "AI-uitgaven",
+  "taskMetaDetailsButton": "Details",
+  "taskMetaDueDateLabel": "Verloopdatum",
+  "taskMetaLabelsLabel": "Labels",
+  "taskMetaPriorityLabel": "Prioriteit",
+  "taskMetaSheetTitle": "Taakdetails",
+  "taskMetaTimeLabel": "Tijd",
+  "taskMetaValueNotSet": "Niet ingesteld",
   "taskNoDueDateLabel": "Geen vervaldatum",
   "taskNoEstimateLabel": "Geen schatting",
   "taskOverdueByDays": "{days, plural, =1{1 dag te laat} other{{days} dagen te laat}}",

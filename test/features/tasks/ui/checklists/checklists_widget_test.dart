@@ -329,6 +329,46 @@ void main() {
       );
     });
 
+    testWidgets(
+      'a card header stays pinned in place across expand/collapse',
+      (tester) async {
+        await tester.pumpWidget(createTestWidget());
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+        await tester.pump(const Duration(milliseconds: 350));
+
+        final title = find.text('Checklist 1');
+        final chevron = find.byIcon(Icons.expand_more).first;
+        final titleBefore = tester.getTopLeft(title);
+        final chevronBefore = tester.getCenter(chevron);
+
+        await tester.tap(chevron);
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(
+          tester.getTopLeft(title),
+          titleBefore,
+          reason: 'title moved on collapse',
+        );
+        expect(
+          tester.getCenter(chevron),
+          chevronBefore,
+          reason: 'chevron moved on collapse',
+        );
+
+        await tester.tap(chevron);
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(
+          tester.getTopLeft(title),
+          titleBefore,
+          reason: 'title moved on re-expand',
+        );
+      },
+    );
+
     testWidgets('animates a checklist added after the initial task build', (
       tester,
     ) async {

@@ -21775,6 +21775,12 @@ abstract class AppLocalizations {
   /// **'Adds a linked note for details and thoughts.'**
   String get taskFirstRunWriteNoteHint;
 
+  /// No description provided for @taskHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'History'**
+  String get taskHistoryTitle;
+
   /// No description provided for @taskLabelsMoreCount.
   ///
   /// In en, this message translates to:
@@ -22056,6 +22062,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Yoruba'**
   String get taskLanguageYoruba;
+
+  /// No description provided for @taskMetaAiSpendLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'AI spend'**
+  String get taskMetaAiSpendLabel;
+
+  /// No description provided for @taskMetaDetailsButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get taskMetaDetailsButton;
+
+  /// No description provided for @taskMetaDueDateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Due date'**
+  String get taskMetaDueDateLabel;
+
+  /// No description provided for @taskMetaLabelsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Labels'**
+  String get taskMetaLabelsLabel;
+
+  /// No description provided for @taskMetaPriorityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority'**
+  String get taskMetaPriorityLabel;
+
+  /// No description provided for @taskMetaSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Task details'**
+  String get taskMetaSheetTitle;
+
+  /// No description provided for @taskMetaTimeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Time'**
+  String get taskMetaTimeLabel;
+
+  /// No description provided for @taskMetaValueNotSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Not set'**
+  String get taskMetaValueNotSet;
 
   /// No description provided for @taskNoDueDateLabel.
   ///

@@ -5506,7 +5506,7 @@
   "taskCategoryAllLabel": "alla",
   "taskCategoryLabel": "Kategori:",
   "taskCategoryUnassignedLabel": "ej tilldelad",
-  "taskDueDateLabel": "Beräknat datum",
+  "taskDueDateLabel": "Förfallodatum",
   "taskDueDateWithDate": "Förfaller: {date}",
   "@taskDueDateWithDate": {
     "placeholders": {
@@ -5558,6 +5558,7 @@
   "taskFirstRunRecordAudioHint": "Öppnar inspelaren utan att börja spela in.",
   "taskFirstRunWriteNote": "Skriv en anteckning",
   "taskFirstRunWriteNoteHint": "Lägger till en länkad anteckning för detaljer och tankar.",
+  "taskHistoryTitle": "Historik",
   "taskLabelsMoreCount": "+{count}",
   "@taskLabelsMoreCount": {
     "placeholders": {
@@ -5615,6 +5616,14 @@
   "taskLanguageUkrainian": "Ukrainska",
   "taskLanguageVietnamese": "Vietnameser",
   "taskLanguageYoruba": "Yoruba",
+  "taskMetaAiSpendLabel": "AI-utgifter",
+  "taskMetaDetailsButton": "Detaljer",
+  "taskMetaDueDateLabel": "Förfallodatum",
+  "taskMetaLabelsLabel": "Etiketter",
+  "taskMetaPriorityLabel": "Prioritet",
+  "taskMetaSheetTitle": "Uppgiftsdetaljer",
+  "taskMetaTimeLabel": "Tid",
+  "taskMetaValueNotSet": "Inte inställt",
   "taskNoDueDateLabel": "Ingen beräknad förlossningsdag",
   "taskNoEstimateLabel": "Ingen uppskattning",
   "taskOverdueByDays": "försenad med {days, plural, =1{1 dag} other{{days} dagar}}",
