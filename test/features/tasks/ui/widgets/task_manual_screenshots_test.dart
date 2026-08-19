@@ -618,30 +618,34 @@ void main() {
         expect(find.text(_manualTaskAgentName), findsOneWidget);
         // The record itself has to be on screen, not merely in the tree.
         _expectVisible(tester, device, find.text(title).last);
-        _expectVisible(
-          tester,
-          device,
-          find.text(
-            _t('Pre-launch checks', 'Checks vor dem Start'),
-          ),
-        );
-        _expectVisible(
-          tester,
-          device,
-          find
-              .text(
-                _t(
-                  'Pressure stable · 37 penguins accounted for',
-                  'Druck stabil · 37 Pinguine vollzählig',
-                ),
-              )
-              .last,
-        );
-        // The phone capture is intentionally anchored on the page header;
-        // its linked-task rows are below the viewport. The desktop capture
-        // scrolls the whole task form into view and therefore proves both AI
+        // The AI summary leads the page right below the header, so the
+        // agent's card is part of the fold on every viewport.
+        _expectVisible(tester, device, find.text(_manualTaskAgentName));
+        // The phone capture is intentionally anchored on the page header and
+        // AI summary; the checklist and linked-task rows sit below its
+        // viewport. The desktop capture scrolls the whole task form into
+        // view and therefore proves the checklist, its item, and both AI
         // subtitle surfaces in one frame.
         if (!device.isPhone) {
+          _expectVisible(
+            tester,
+            device,
+            find.text(
+              _t('Pre-launch checks', 'Checks vor dem Start'),
+            ),
+          );
+          _expectVisible(
+            tester,
+            device,
+            find
+                .text(
+                  _t(
+                    'Pressure stable · 37 penguins accounted for',
+                    'Druck stabil · 37 Pinguine vollzählig',
+                  ),
+                )
+                .last,
+          );
           _expectVisible(
             tester,
             device,
@@ -653,6 +657,15 @@ void main() {
                   ),
                 )
                 .last,
+          );
+        } else {
+          // Still in the tree on the phone — just below the fold.
+          expect(
+            find.text(
+              _t('Pre-launch checks', 'Checks vor dem Start'),
+              skipOffstage: false,
+            ),
+            findsOneWidget,
           );
         }
         await captureScreenshot(
