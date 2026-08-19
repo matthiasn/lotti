@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:beamer/beamer.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/database/database.dart';
@@ -76,20 +75,6 @@ class NavStateSnapshot {
   /// The active tab's own route — what a caller asking "where is the user?"
   /// wants, falling back to the tab root when that tab has no deeper route.
   String get activeRoute => routes[activeRootPath] ?? activeRootPath;
-
-  @override
-  bool operator ==(Object other) =>
-      other is NavStateSnapshot &&
-      other.activeRootPath == activeRootPath &&
-      mapEquals(other.routes, routes);
-
-  @override
-  int get hashCode => Object.hash(
-    activeRootPath,
-    Object.hashAllUnordered(
-      routes.entries.map((e) => Object.hash(e.key, e.value)),
-    ),
-  );
 }
 
 /// Lightweight snapshot of the current settings route for the desktop
