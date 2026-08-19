@@ -694,9 +694,9 @@ flowchart TD
   nothing when no tenant is speaking on the current surface. Every dock
   tenant NAMES its subject — the
   persona chip and a subject-title caption above the headline, on the desktop
-  and compact (bottom) docks alike, so the voice is never anonymous; the
-  reserved-lane math (`nudgeBannerDockReservedHeight`) covers the chip and
-  caption. The goal detail page shows that goal's
+  and compact (phone) docks alike, so the voice is never anonymous. The dock
+  is mounted at the TOP of the shell, above the sidebar and the content, so it
+  displaces what is below it rather than overlaying it. The goal detail page shows that goal's
   banners uncycled via `GoalBannerCard` directly — and applies NO snooze
   filter: snoozes, day dismissals and the optimistic local echo quiet the
   SHELL dock only (`nudgeBannerShellHiddenUntil`), while the page keeps the

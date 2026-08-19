@@ -19,6 +19,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   step. Keyboard users keep a visible cue where the hover went away: Tab
   landing on a goal card, the banner or a day square draws a clear focus
   outline.
+- **Goal agent banners now sit at the top of the screen.** A banner from a goal
+  or relationship agent used to dock at the bottom, sharing the edge with the
+  navigation bar, a task's own action bar, the recording indicators and the
+  keyboard — where it could crowd them and disappeared entirely while you were
+  typing. Banners now run across the very top of the window instead, above the
+  sidebar, pushing the rest of the app down rather than covering it, the same
+  way the demo-mode strip does. Content below never scrolls underneath one, a
+  banner stays readable while you type, and when there is nothing to say the
+  strip collapses and gives the space back.
 - **Cleaner goal cards.** Each habit and signal card now carries one stacked
   block in its top-right corner — the key reading ("7 this window · target
   5", "121 / 81 mmHg") with its status ("On track", "Needs attention")

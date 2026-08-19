@@ -127,3 +127,4 @@ Each ADR should contain:
 - [`0057-decade-scale-agent-memory.md`](./0057-decade-scale-agent-memory.md)
 - [`0058-procedural-text-banners-no-generative-imagery.md`](./0058-procedural-text-banners-no-generative-imagery.md)
 - [`0059-relationship-agent-runtime-and-nudge-generalization.md`](./0059-relationship-agent-runtime-and-nudge-generalization.md)
+- [`0060-banner-dock-as-app-shell-structural-band.md`](./0060-banner-dock-as-app-shell-structural-band.md)

@@ -24,7 +24,7 @@ what its banners advertise).
   active-banner provider per kind, merged in `app_bootstrap.dart` — the
   `agentWakeRunnersProvider` pattern), the merged `activeNudgeBannersProvider`
   the dock watches, local snooze suppression, and the exposure flush.
-- `ui/` — the shell dock (rotating tenants, reserved-lane height contract,
+- `ui/` — the shell dock (rotating tenants, top-of-shell banner lane,
   per-surface filtering), the banner style/animated-text/persona-chip/CTA
   primitives, and the snooze/rating sheets.
 

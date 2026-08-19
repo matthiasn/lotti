@@ -1503,7 +1503,8 @@ void main() {
     );
 
     testWidgets(
-      'occupiedHeight reserves exactly the visible goal banner lane',
+      'the goal banner tops the shell, displacing content and leaving the '
+      'bottom bar reserve untouched',
       (tester) async {
         final mockNavService = MockNavService();
         await _stubNavService(
@@ -1555,13 +1556,27 @@ void main() {
 
         expect(find.text(nudge.brief.headline), findsOneWidget);
         final pageContext = tester.element(find.byType(IndexedStack));
+
+        // The dock no longer rides in the bottom overlay, so the bar's
+        // reserve is the bar alone — page content and FABs must not be
+        // pushed up by a banner that is nowhere near the bottom edge.
         expect(
           DesignSystemBottomNavigationBar.occupiedHeight(pageContext),
-          DesignSystemFiveSlotNavBar.barHeight(pageContext) +
-              nudgeBannerDockReservedHeight(
-                pageContext,
-                briefs: [nudge.brief],
-              ),
+          DesignSystemFiveSlotNavBar.barHeight(pageContext),
+          reason: 'the top-anchored dock reserves no bottom lane',
+        );
+
+        // Anchored to the very top, and DISPLACING the content rather than
+        // covering it: the content stack starts below the banner's bottom
+        // edge, which is what keeps scrolling content from passing under it.
+        final dockRect = tester.getRect(find.byType(NudgeBannerDock));
+        final contentTop = tester.getRect(find.byType(IndexedStack)).top;
+        expect(dockRect.top, 0);
+        expect(dockRect.height, greaterThan(0));
+        expect(
+          contentTop,
+          greaterThanOrEqualTo(dockRect.bottom),
+          reason: 'content must start below the banner, never under it',
         );
 
         final container = ProviderScope.containerOf(pageContext, listen: false);
@@ -1571,11 +1586,18 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
 
+        // Collapsing gracefully: the lane gives every pixel back to the
+        // content, which returns to the top of the shell.
         expect(find.text(nudge.brief.headline), findsNothing);
+        expect(tester.getRect(find.byType(NudgeBannerDock)).height, 0);
+        expect(
+          tester.getRect(find.byType(IndexedStack)).top,
+          lessThan(contentTop),
+          reason: 'a hidden banner must not leave a blank lane behind',
+        );
         expect(
           DesignSystemBottomNavigationBar.occupiedHeight(pageContext),
           DesignSystemFiveSlotNavBar.barHeight(pageContext),
-          reason: 'a locally hidden banner must not leave a blank lane',
         );
       },
     );
@@ -3309,6 +3331,85 @@ void main() {
         // Habits resolved to its new index 2 (after Tasks and DailyOS),
         // not the index 3 it had when the sheet captured its rows.
         verify(() => mockNavService.tapIndex(2)).called(1);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
+  });
+
+  group('AppScreen desktop banner lane', () {
+    testWidgets(
+      'the goal banner spans the full width above the sidebar and pushes it '
+      'down',
+      (tester) async {
+        final mockNavService = MockNavService();
+        await _stubNavService(
+          mockNavService,
+          indexStream: Stream.value(0),
+          isProjectsEnabled: () => true,
+          isDailyOsEnabled: () => true,
+          isHabitsEnabled: () => true,
+          isDashboardsEnabled: () => true,
+        );
+        await _registerAppScreenGetIt(mockNavService);
+        addTearDown(tearDownTestGetIt);
+
+        final nudge = NudgeEntityView.of(
+          AgentDomainEntity.goalNudge(
+            id: 'goal-banner',
+            agentId: 'goal-walk',
+            status: NudgeStatus.active,
+            brief: const NudgeBrief(
+              headline: 'One more walk keeps the week moving.',
+              tone: NudgeTone.nudge,
+              animation: NudgeBannerAnimation.steady,
+            ),
+            briefDigest: 'goal-banner',
+            createdAt: DateTime.utc(2026, 8, 11),
+            updatedAt: DateTime.utc(2026, 8, 11),
+            vectorClock: null,
+          ),
+        )!;
+        final entry = (
+          nudge: nudge,
+          subjectTitle: 'Walk',
+          kind: NudgeBannerKind.goal,
+          tapRoute: '/goals/details/goal-walk',
+        );
+
+        await _pumpAppScreen(
+          tester,
+          navService: mockNavService,
+          viewportSize: _desktopViewportSize,
+          extraOverrides: [
+            nudgeBannerSourcesProvider.overrideWithValue([
+              activeGoalNudgesProvider,
+            ]),
+            activeGoalNudgesProvider.overrideWith((ref) async => [entry]),
+            nudgeExposureFlushProvider.overrideWithValue((_, _) {}),
+          ],
+        );
+
+        expect(find.text(nudge.brief.headline), findsOneWidget);
+
+        final dockRect = tester.getRect(find.byType(NudgeBannerDock));
+        final sidebarRect = tester.getRect(
+          find.byType(DesktopNavigationSidebar),
+        );
+
+        // Full width, at the very top: the banner is above the sidebar,
+        // not beside it inside the content region.
+        expect(dockRect.top, 0);
+        expect(dockRect.left, 0);
+        expect(dockRect.width, _desktopViewportSize.width);
+
+        // And it DISPLACES the sidebar rather than overlaying it.
+        expect(
+          sidebarRect.top,
+          greaterThanOrEqualTo(dockRect.bottom),
+          reason: 'the sidebar must start below the banner',
+        );
 
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump();

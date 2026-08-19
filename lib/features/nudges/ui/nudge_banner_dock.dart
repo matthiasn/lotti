@@ -1,7 +1,6 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/nudges/logic/nudge_banner_snooze.dart';
@@ -20,19 +19,6 @@ import 'package:lotti/services/nav_service.dart';
 /// enough to read the copy twice and act, short enough that three tenants
 /// cycle fully within a minute (design handover 1b).
 const nudgeBannerDockTenure = Duration(seconds: 15);
-
-/// Height of [lines] lines rendered in [style] at [scaler] — measured from
-/// the actual text metrics so the dock reserve tracks the real typography
-/// rather than a magic constant.
-double _textBlockHeight(TextStyle style, int lines, TextScaler scaler) {
-  final painter = TextPainter(
-    text: TextSpan(text: 'Xg', style: style),
-    textDirection: TextDirection.ltr,
-    textScaler: scaler,
-    maxLines: 1,
-  )..layout();
-  return painter.height * lines;
-}
 
 /// Applies the render-time visibility contract shared by the dock and the
 /// shell lane that reserves space for it, including the per-kind surface
@@ -101,86 +87,6 @@ DateTime? nudgeBannerShellHiddenUntil(
   return latest;
 }
 
-/// Clearance the compact (mobile) dock claims above the bottom bar when a
-/// banner is speaking — the shell reserves it in the overlay-height scope so
-/// page content and FABs never sit underneath (handover 1b's reserved lane).
-///
-/// Derived entirely from the dock's own design-system dimensions and text
-/// styles, and scale-aware. The tenant row is as tall as the taller of the
-/// [TapTargets.minimum] visibility-action target and the tallest active authored
-/// headline, measured at the dock's real compact width and current
-/// [MediaQuery.textScalerOf]. The dock never caps the headline. Around it sits
-/// the chrome — outer padding (`step3` both edges), the tenure-strip slot
-/// (`step1`), the tenant's own vertical padding (`step3` both edges) — and the
-/// multi-tenant dot-row footer
-/// (`step2` dot + `step2` bottom padding), always included so a two-plus-tenant
-/// dock never under-clears. `nudge_banner_dock_test.dart` asserts the reserve
-/// covers the actual rendered dock at 1× and 2×, single- and multi-tenant.
-/// Collapses to zero reserve when no banner speaks (the caller only adds it
-/// while the dock is speaking).
-double nudgeBannerDockReservedHeight(
-  BuildContext context, {
-  required Iterable<NudgeBrief> briefs,
-}) {
-  final tokens = context.designTokens;
-  final spacing = tokens.spacing;
-  final scaler = MediaQuery.textScalerOf(context);
-  final animationsDisabled = MediaQuery.disableAnimationsOf(context);
-  final activeBriefs = briefs.toList(growable: false);
-  final multi = activeBriefs.length > 1;
-  final chrome =
-      spacing.step3 * 4 + // outer + tenant vertical padding, both edges
-      spacing.step1; // tenure-strip slot
-  final footer = multi
-      ? spacing.step2 *
-            2 // dot row + its bottom padding
-      : 0;
-  // The persona chip scales with text size (see [NudgeBannerPersonaChip]).
-  final chipSize = spacing.step6 * scaler.scale(1);
-  final reservedHorizontally =
-      spacing.step3 * 2 + // outer dock padding
-      spacing.cardPadding + // tenant leading padding
-      chipSize + // persona chip
-      spacing.step3 + // chip → copy gap
-      spacing.step2 + // tenant trailing padding
-      TapTargets.minimum; // snooze target
-  final measuredWidth = MediaQuery.sizeOf(context).width - reservedHorizontally;
-  final availableWidth = measuredWidth > 0 ? measuredWidth : 0.0;
-  // The subject-title caption rides above every headline (one ellipsized line).
-  final captionLine = _textBlockHeight(
-    tokens.typography.styles.others.caption,
-    1,
-    scaler,
-  );
-  var textBlock = 0.0;
-  for (final brief in activeBriefs) {
-    final height =
-        captionLine +
-        (brief.animation == NudgeBannerAnimation.marquee && !animationsDisabled
-            ? _textBlockHeight(
-                tokens.typography.styles.subtitle.subtitle2,
-                1,
-                scaler,
-              )
-            : (TextPainter(
-                text: TextSpan(
-                  text: brief.headline,
-                  style: tokens.typography.styles.subtitle.subtitle2,
-                ),
-                textDirection: Directionality.of(context),
-                textScaler: scaler,
-              )..layout(maxWidth: availableWidth)).height);
-    if (height > textBlock) textBlock = height;
-  }
-  // The row is as tall as its tallest occupant: the copy column, the
-  // visibility-action tap target, or the scale-grown persona chip.
-  var row = textBlock > TapTargets.minimum ? textBlock : TapTargets.minimum;
-  if (chipSize > row) row = chipSize;
-  // A `step1` cushion absorbs sub-pixel rounding between TextPainter and the
-  // rendered animation wrapper.
-  return chrome + footer + row + spacing.step1;
-}
-
 /// The dock — one rotating slot for the agents' standing voices, the
 /// "now playing" bar of the banner channel (design handover 1b).
 ///
@@ -196,8 +102,7 @@ double nudgeBannerDockReservedHeight(
 /// - with a single tenant there are no dots, no tenure hairline and no
 ///   auto-advance — it just sits;
 /// - with zero tenants the dock collapses entirely: the disappearance IS
-///   the visibility-action feedback (no toast or confirmation snackbar);
-/// - on phones the dock yields while the keyboard is up.
+///   the visibility-action feedback (no toast or confirmation snackbar).
 ///
 /// Exposure metering rides the existing tracker: a docked tenant is visible
 /// whenever the app is foregrounded, so tenure ≈ real screen time — exactly
@@ -435,8 +340,6 @@ class _NudgeBannerDockState extends ConsumerState<NudgeBannerDock>
     }
     // coverage:ignore-end
 
-    final keyboardUp =
-        widget.compact && MediaQuery.viewInsetsOf(context).bottom > 0;
     final current = entries.isEmpty
         ? null
         : entries.firstWhere(
@@ -452,8 +355,8 @@ class _NudgeBannerDockState extends ConsumerState<NudgeBannerDock>
     // tenant leaves, advances to its successor rather than rewinding.
     _lastOrder = [for (final e in entries) e.nudge.id];
 
-    // Zero tenants (or the keyboard needs the space): collapse entirely.
-    // The quiet IS the visibility-action feedback.
+    // Zero tenants: collapse entirely. The quiet IS the visibility-action
+    // feedback.
     //
     // AnimatedSwitcher, not AnimatedSize: the dock subtree holds the
     // continuously-ticking tenure controller, and an AnimatedSize wrapping
@@ -471,7 +374,7 @@ class _NudgeBannerDockState extends ConsumerState<NudgeBannerDock>
           alignment: Alignment.topCenter,
           child: child,
         ),
-        child: current == null || keyboardUp
+        child: current == null
             ? const SizedBox(
                 key: ValueKey('dock-empty'),
                 width: double.infinity,
