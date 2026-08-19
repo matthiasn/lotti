@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header_meta.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header_title.dart';
@@ -374,7 +375,7 @@ class _HeroCrumb extends StatelessWidget {
           Flexible(
             child: _CrumbSegment(
               onTap: onCategoryTap,
-              child: Row(
+              builder: (context, inkColor) => Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   // The one place the category colour is used as a fill. Only
@@ -397,13 +398,11 @@ class _HeroCrumb extends StatelessWidget {
                       category.label,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: crumbStyle.copyWith(
-                        // The breadcrumb is quiet ancestor context, so even a
-                        // set category sits at medium (not high) emphasis — a
-                        // tier below the metadata chips, and comfortably
-                        // legible (~7:1).
-                        color: TaskShowcasePalette.mediumText(context),
-                      ),
+                      // The breadcrumb is quiet ancestor context, so even a
+                      // set category sits at medium (not high) emphasis — a
+                      // tier below the metadata chips, and comfortably
+                      // legible (~7:1). Hover/focus lifts it to high.
+                      style: crumbStyle.copyWith(color: inkColor),
                     ),
                   ),
                 ],
@@ -426,15 +425,13 @@ class _HeroCrumb extends StatelessWidget {
         Flexible(
           child: _CrumbSegment(
             onTap: onProjectTap,
-            child: Text(
+            builder: (context, inkColor) => Text(
               projectName,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: crumbStyle.copyWith(
-                // Keep an unset project legible (medium emphasis) for
-                // low-vision users rather than fading it to near-invisible.
-                color: TaskShowcasePalette.mediumText(context),
-              ),
+              // Keep an unset project legible (medium emphasis) for
+              // low-vision users rather than fading it to near-invisible.
+              style: crumbStyle.copyWith(color: inkColor),
             ),
           ),
         ),
@@ -443,31 +440,41 @@ class _HeroCrumb extends StatelessWidget {
   }
 }
 
-/// Tappable crumb segment with a subtle hover background. Avoids pill chrome
-/// — it's a flat hit target the size of the text.
+/// Tappable crumb segment. Avoids pill chrome — it's a flat hit target the
+/// size of the text, and it carries no hover fill: a background appearing
+/// around a quiet eyebrow read as a phantom button. Hover/focus lifts the
+/// crumb's own ink from medium to high emphasis instead, which [builder]
+/// receives as the resolved color.
 class _CrumbSegment extends StatelessWidget {
-  const _CrumbSegment({required this.child, this.onTap});
+  const _CrumbSegment({required this.builder, this.onTap});
 
-  final Widget child;
+  final Widget Function(BuildContext context, Color inkColor) builder;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final radius = BorderRadius.circular(tokens.radii.s);
     // Vertical only. A horizontal inset here pushed the category dot — the
     // page's first ink — inside the rail every other element starts on, so
     // the breadcrumb read as indented from the title above nothing.
     final padding = EdgeInsets.symmetric(vertical: tokens.spacing.step1);
     if (onTap == null) {
-      return Padding(padding: padding, child: child);
+      return Padding(
+        padding: padding,
+        child: builder(context, TaskShowcasePalette.mediumText(context)),
+      );
     }
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: radius,
-        onTap: onTap,
-        child: Padding(padding: padding, child: child),
+    return DsQuietInk(
+      borderRadius: BorderRadius.circular(tokens.radii.s),
+      onTap: onTap,
+      builder: (context, highlighted) => Padding(
+        padding: padding,
+        child: builder(
+          context,
+          highlighted
+              ? TaskShowcasePalette.highText(context)
+              : TaskShowcasePalette.mediumText(context),
+        ),
       ),
     );
   }

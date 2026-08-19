@@ -4,6 +4,7 @@ import 'package:lotti/features/agents/ui/wake_countdown_state.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_inline_action.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
+import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
@@ -758,10 +759,13 @@ class _AutomationSetting extends StatelessWidget {
     // makes the row one node: the switch's toggled state and tap action, over
     // the union of their rects. Same shape as `SwitchListTile`.
     return MergeSemantics(
-      child: Material(
+      child: KeyedSubtree(
         key: const ValueKey('taskAgentAutomationSetting'),
-        color: Colors.transparent,
-        child: InkWell(
+        // Quiet target: the band is a setting row, not a button, so no hover
+        // fill — a full-width wash on hover made the footer sprout a phantom
+        // button. The switch inside carries the visible state; the enlarged
+        // row target stays purely a hit area.
+        child: DsQuietInk(
           onTap: enabled ? () => onChanged(!value) : null,
           borderRadius: BorderRadius.circular(tokens.radii.s),
           // The enlarged target is for pointers and thumbs. The switch inside
@@ -775,15 +779,10 @@ class _AutomationSetting extends StatelessWidget {
           // and both stops toggle it. The switch keeps the keyboard; the row is
           // pointer-only.
           canRequestFocus: false,
-          // ...and it must not add a second *focus* stop either. Excluding
-          // semantics does nothing to focus traversal, so without this Tab lands
-          // twice on one setting — once on this wrapper, once on the switch —
-          // and both stops toggle it. The switch keeps the keyboard; the row is
-          // pointer-only.
           // One row box, on the same `step8` minimum as every other row in this
           // band. It is 8px shorter than the slot it replaces and, unlike that
           // slot, all of it is tappable.
-          child: ConstrainedBox(
+          builder: (context, _) => ConstrainedBox(
             key: const ValueKey('taskAgentAutomaticUpdatesTarget'),
             constraints: BoxConstraints(minHeight: tokens.spacing.step8),
             child: row,

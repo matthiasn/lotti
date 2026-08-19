@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
@@ -98,28 +99,34 @@ class _SquareIconButton extends StatelessWidget {
         child: Tooltip(
           message: tooltip,
           excludeFromSemantics: true,
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: onPressed.call,
-              borderRadius: BorderRadius.circular(tokens.radii.s),
-              child: SizedBox(
-                width: 48,
-                height: 48,
-                child: Center(
-                  child: Container(
-                    width: tokens.spacing.step7,
-                    height: tokens.spacing.step7,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: isAccent ? ai.accentSoft : ai.subtleWashStrong,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      icon,
-                      size: tokens.spacing.step5,
-                      color: isAccent ? ai.accent : ai.metaText,
-                    ),
+          // The hit target is 48×48 but the button the eye sees is the 32px
+          // disc — a hover fill over the whole target painted a phantom
+          // square around it. The disc answers hover/focus/press itself with
+          // a border in its own hue family.
+          child: DsQuietInk(
+            onTap: onPressed.call,
+            borderRadius: BorderRadius.circular(tokens.radii.s),
+            builder: (context, highlighted) => SizedBox(
+              width: 48,
+              height: 48,
+              child: Center(
+                child: Container(
+                  width: tokens.spacing.step7,
+                  height: tokens.spacing.step7,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: isAccent ? ai.accentSoft : ai.subtleWashStrong,
+                    shape: BoxShape.circle,
+                    border: highlighted
+                        ? Border.all(
+                            color: isAccent ? ai.accent : ai.border,
+                          )
+                        : null,
+                  ),
+                  child: Icon(
+                    icon,
+                    size: tokens.spacing.step5,
+                    color: isAccent ? ai.accent : ai.metaText,
                   ),
                 ),
               ),

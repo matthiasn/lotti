@@ -176,6 +176,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   shows a single-line preview of its transcribed content instead of the full
   transcript, player and analysis; tap the line (or the chevron) to expand,
   and your choice sticks either way.
+- **Hovering on the task page no longer conjures phantom buttons.** On
+  desktop, moving the pointer over the breadcrumb, the AI summary's header
+  and text links, the confirm/reject circles, the History and Linked Tasks
+  headers, the Details fly-out rows, the checklist filter tabs or the
+  automatic-updates row used to paint a grey rectangle around things that do
+  not look like buttons. Those targets now answer the pointer themselves —
+  a label or chevron brightens, a circle's outline firms — and nothing gains
+  a button shape it does not have at rest.
+- **Goal chat now remembers and reliably answers.** Recent exchanges reach the
   agent with each message, and a question saved just before a restart is
   recovered instead of appearing ignored. Invalid banner actions can no longer
   hide behind a success reply. Large tracked-time histories no longer crowd

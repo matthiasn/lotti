@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
@@ -130,5 +131,60 @@ void main() {
       expect(text.style?.height, bodySmall.height);
       expect(text.style?.fontWeight, bodySmall.fontWeight);
     });
+  });
+
+  group('AiSummaryCard – RowActions hover', () {
+    // The visible button is the 32px disc inside a 48×48 hit target. A hover
+    // fill over the whole target painted a phantom square around the disc,
+    // so the disc answers hover itself: its outline firms in its own hue
+    // family, and no Material overlay may paint.
+    testWidgets(
+      'hovering the confirm target draws the accent outline on the disc, '
+      'not an overlay on the hit area',
+      (tester) async {
+        final bench = AgentTestBench(
+          suggestions: UnifiedSuggestionList(
+            open: [_pending('set_task_status')],
+            activity: const [],
+          ),
+        );
+        await tester.pumpWidget(bench.build());
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        final confirmIcon = find.byIcon(LottiIcons.confirm);
+        BoxDecoration discDecoration() {
+          final container = tester.widget<Container>(
+            find
+                .ancestor(of: confirmIcon, matching: find.byType(Container))
+                .first,
+          );
+          return container.decoration! as BoxDecoration;
+        }
+
+        expect(discDecoration().border, isNull);
+
+        final gesture = await tester.createGesture(
+          kind: PointerDeviceKind.mouse,
+        );
+        await gesture.addPointer(location: Offset.zero);
+        addTearDown(gesture.removePointer);
+        await gesture.moveTo(tester.getCenter(confirmIcon));
+        await tester.pump();
+
+        final ai = tester.element(confirmIcon).designTokens.colors.aiCard;
+        expect(discDecoration().border, Border.all(color: ai.accent));
+
+        // No phantom square: every overlay on the 48×48 ink is silenced.
+        final inkWell = tester.widget<InkWell>(
+          find.ancestor(of: confirmIcon, matching: find.byType(InkWell)).first,
+        );
+        expect(inkWell.hoverColor, Colors.transparent);
+        expect(
+          inkWell.overlayColor?.resolve({WidgetState.hovered}),
+          Colors.transparent,
+        );
+      },
+    );
   });
 }

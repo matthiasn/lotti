@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
+import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
@@ -54,71 +55,75 @@ class TldrHeader extends StatelessWidget {
                     ? '${messages.aiCardTitle}. $displayName'
                     : messages.aiCardTitle,
                 excludeSemantics: true,
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: onAgentTap,
-                    borderRadius: BorderRadius.circular(tokens.radii.m),
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(
-                        minHeight: kMinInteractiveDimension,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: tokens.spacing.step8,
-                            height: tokens.spacing.step8,
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              color: ai.accentSoft,
-                              borderRadius: BorderRadius.circular(
-                                tokens.radii.m,
+                // No hover fill: a rectangle washing over the badge + title
+                // block made the card's identity read as a phantom button.
+                // Hover/focus/press answers on the block's own ink — the
+                // badge border firms to the accent and the agent name
+                // brightens a step.
+                child: DsQuietInk(
+                  onTap: onAgentTap,
+                  borderRadius: BorderRadius.circular(tokens.radii.m),
+                  builder: (context, highlighted) => ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      minHeight: kMinInteractiveDimension,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: tokens.spacing.step8,
+                          height: tokens.spacing.step8,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: ai.accentSoft,
+                            borderRadius: BorderRadius.circular(
+                              tokens.radii.m,
+                            ),
+                            border: Border.all(
+                              color: highlighted ? ai.accent : ai.border,
+                            ),
+                          ),
+                          child: Icon(
+                            LottiIcons.aiSpark,
+                            size: tokens.spacing.step6,
+                            color: ai.accent,
+                          ),
+                        ),
+                        SizedBox(width: tokens.spacing.step3),
+                        // `Flexible` + single-line text is what makes the
+                        // shrink-wrap real: text allowed to wrap would
+                        // report the full available width straight back and
+                        // re-inflate the row.
+                        Flexible(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _HeaderTitle(
+                                text: messages.aiCardTitle,
+                                style: tokens
+                                    .typography
+                                    .styles
+                                    .subtitle
+                                    .subtitle1
+                                    .copyWith(color: ai.titleText),
                               ),
-                              border: Border.all(color: ai.border),
-                            ),
-                            child: Icon(
-                              LottiIcons.aiSpark,
-                              size: tokens.spacing.step6,
-                              color: ai.accent,
-                            ),
-                          ),
-                          SizedBox(width: tokens.spacing.step3),
-                          // `Flexible` + single-line text is what makes the
-                          // shrink-wrap real: text allowed to wrap would
-                          // report the full available width straight back and
-                          // re-inflate the row.
-                          Flexible(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                _HeaderTitle(
-                                  text: messages.aiCardTitle,
-                                  style: tokens
-                                      .typography
-                                      .styles
-                                      .subtitle
-                                      .subtitle1
-                                      .copyWith(color: ai.titleText),
+                              if (hasName)
+                                Text(
+                                  displayName,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: tokens.typography.styles.others.caption
+                                      .copyWith(
+                                        color: highlighted
+                                            ? ai.bodyText
+                                            : ai.metaText,
+                                      ),
                                 ),
-                                if (hasName)
-                                  Text(
-                                    displayName,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: tokens
-                                        .typography
-                                        .styles
-                                        .others
-                                        .caption
-                                        .copyWith(color: ai.metaText),
-                                  ),
-                              ],
-                            ),
+                            ],
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -302,28 +307,30 @@ class _QuietDisclosureLink extends StatelessWidget {
       child: Semantics(
         button: true,
         expanded: expanded,
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: onPressed,
-            borderRadius: BorderRadius.circular(tokens.radii.s),
-            child: ConstrainedBox(
+        // A text link changes its own ink on hover/focus/press — no fill
+        // behind it, which read as a phantom button around the quiet words.
+        child: DsQuietInk(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(tokens.radii.s),
+          builder: (context, highlighted) {
+            final ink = highlighted ? ai.bodyText : ai.metaText;
+            return ConstrainedBox(
               constraints: BoxConstraints(minHeight: tokens.spacing.step8),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(icon, size: tokens.spacing.step5, color: ai.metaText),
+                  Icon(icon, size: tokens.spacing.step5, color: ink),
                   SizedBox(width: tokens.spacing.step2),
                   Text(
                     label,
                     style: tokens.typography.styles.others.caption.copyWith(
-                      color: ai.metaText,
+                      color: ink,
                     ),
                   ),
                 ],
               ),
-            ),
-          ),
+            );
+          },
         ),
       ),
     );

@@ -9,6 +9,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/consumption_summary_pill.dart';
+import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
@@ -152,7 +153,8 @@ class TaskMetaFieldRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final row = Padding(
+
+    Widget row({required bool highlighted}) => Padding(
       padding: EdgeInsets.symmetric(
         vertical: tokens.spacing.step4,
         horizontal: tokens.spacing.step2,
@@ -176,19 +178,22 @@ class TaskMetaFieldRow extends StatelessWidget {
             Icon(
               LottiIcons.chevronRight,
               size: IconSizes.s,
-              color: TaskShowcasePalette.lowText(context),
+              // The chevron already marks the row as tappable; a hover fill
+              // across the whole band made it a phantom button, so the
+              // chevron brightening carries hover/focus/press instead.
+              color: highlighted
+                  ? TaskShowcasePalette.highText(context)
+                  : TaskShowcasePalette.lowText(context),
             ),
         ],
       ),
     );
-    if (onTap == null) return row;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(tokens.radii.s),
-        onTap: onTap,
-        child: row,
-      ),
+
+    if (onTap == null) return row(highlighted: false);
+    return DsQuietInk(
+      borderRadius: BorderRadius.circular(tokens.radii.s),
+      onTap: onTap,
+      builder: (context, highlighted) => row(highlighted: highlighted),
     );
   }
 }
