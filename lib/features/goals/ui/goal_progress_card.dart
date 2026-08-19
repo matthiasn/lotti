@@ -1570,9 +1570,11 @@ class _DimensionHeader extends StatelessWidget {
         : met
         ? context.messages.goalDimensionOnTrackStatus
         : context.messages.goalDimensionNeedsAttentionStatus;
+    // On-target-today is good news whatever the period verdict says — the
+    // positive label must never wear the warning ink.
     final statusColor = !hasData
         ? tokens.colors.text.mediumEmphasis
-        : met
+        : onTargetToday || met
         ? tokens.colors.alert.success.ink
         : tokens.colors.alert.warning.ink;
     // One stacked block pinned to the card's corner: the key reading on top,

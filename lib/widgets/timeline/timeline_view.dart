@@ -239,8 +239,14 @@ class _TimelineTile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
+                      // spaceBetween pins the leading labels to the start and
+                      // the trailing slot to the end while BOTH stay
+                      // shrinkable: a non-flex trailing widget could starve
+                      // the time label on narrow cards (large text scales,
+                      // longer locales) and overflow the row.
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Expanded(
+                        Flexible(
                           child: Row(
                             children: [
                               Text(
@@ -267,9 +273,11 @@ class _TimelineTile extends StatelessWidget {
                         ),
                         // Fully right-aligned, on the SAME row as the time
                         // and kind — a status-only beat stays one tight line.
+                        // Flexible, so an oversized trailing widget shrinks
+                        // instead of pushing the row into overflow.
                         if (beat.trailing != null) ...[
                           SizedBox(width: tokens.spacing.step2),
-                          beat.trailing!,
+                          Flexible(child: beat.trailing!),
                         ],
                       ],
                     ),

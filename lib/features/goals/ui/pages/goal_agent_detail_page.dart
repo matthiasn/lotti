@@ -199,29 +199,14 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
     required GoalProgressView progress,
     required List<GoalAssessmentRecord> assessments,
     required DateTime day,
-  }) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      // Keeps the sheet clear of the status bar: without it the big date
-      // title collided with the system clock.
-      useSafeArea: true,
-      builder: (context) => GoalDayAssessmentSheet(
-        agentId: agentId,
-        specVersionId: spec.id,
-        specVersion: spec.version,
-        day: day,
-        progress: progress,
-        // Reopening a judged day shows what was recorded. Arriving blank
-        // offered Met with an empty note, and saving replaced the real
-        // reflection with that default — note and dimension verdicts included.
-        existing: latestAssessmentsByDay(
-          assessments,
-          specVersionId: spec.id,
-        )[DateTime.utc(day.year, day.month, day.day)],
-      ),
-    );
-  }
+  }) => showGoalDayAssessmentSheet(
+    context,
+    agentId: agentId,
+    spec: spec,
+    progress: progress,
+    assessments: assessments,
+    day: day,
+  );
 
   /// Opens the anytime check-in composer.
   ///

@@ -10,16 +10,17 @@ import 'package:lotti/features/goals/state/goal_assessment_state.dart';
 /// goal's story is read — the opposite of an event's, which runs forward
 /// through a single day.
 ///
-/// Only the reflection standing for each day appears, scoped to
-/// [specVersionId]: a day reflected on three times is one beat, and a verdict
-/// passed under superseded criteria must not be shown as a judgement of the
-/// current ones.
+/// Only the reflection standing for each day appears — a day reflected on
+/// three times is one beat — but the history is NOT scoped to
+/// [specVersionId]: the rail is the goal's only reflection surface, so a
+/// verdict recorded under superseded criteria must survive a spec revision
+/// rather than vanish with its notes. A dated rail row carries its own
+/// temporal context; only the day STRIP's colouring stays spec-scoped,
+/// because there a verdict silently recolours the current criteria's week.
 ///
-/// A **null** [specVersionId] means the current spec is not known yet, and
-/// withholds reflections entirely rather than showing every version's — the
-/// underlying projection reads null as "no filter", which would flash old
-/// verdicts while providers resolve and leave them standing on a health
-/// error.
+/// A **null** [specVersionId] still means the current spec is not known yet,
+/// and withholds reflections entirely — reflections rendered before the
+/// health resolves would keep standing on a health error.
 ///
 /// Entries that are not check-in kinds are dropped rather than rendered as
 /// something they are not — AI responses and tasks are surfaced elsewhere.
@@ -31,10 +32,7 @@ List<GoalTimelineItem> goalTimelineItems({
   final items = <GoalTimelineItem>[
     for (final entity in entries) ?_checkIn(entity),
     if (specVersionId != null)
-      for (final record in latestAssessmentsByDay(
-        assessments,
-        specVersionId: specVersionId,
-      ).values)
+      for (final record in latestAssessmentsByDay(assessments).values)
         GoalReflectionItem(record),
   ];
 

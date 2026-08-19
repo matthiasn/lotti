@@ -1402,9 +1402,11 @@ playable.
 Key pieces:
 
 - `lib/features/goals/logic/goal_timeline_projection.dart` — pure merge of
-  linked journal entries and standing reflections, newest first, spec-scoped
-  so a verdict passed on superseded criteria is not shown as a judgement of
-  the current goal. Full history renders in bounded pages instead of eagerly
+  linked journal entries and standing reflections, newest first. Reflection
+  history deliberately survives spec revisions: the rail is the goal's only
+  reflection surface, so records judged under superseded criteria stay
+  readable there (only the day strip's colouring stays spec-scoped).
+  Reflections are withheld entirely while the active spec is unknown. Full history renders in bounded pages instead of eagerly
   mounting every audio player; the inline card remains a short preview.
 - `lib/features/goals/service/goal_checkin_transcription_trigger.dart` — asks
   the shared skill pipeline to transcribe a recording that has just been

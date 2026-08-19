@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
@@ -27,6 +28,46 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 double _sectionGap(DsTokens tokens) => tokens.spacing.step5;
 double _bindGap(DsTokens tokens) => tokens.spacing.step2;
 double _rowGap(DsTokens tokens) => tokens.spacing.step1;
+
+/// Opens one day's reflection sheet — THE one doorway, shared by the day
+/// strip (via the detail page), the check-ins rail and the full timeline
+/// page. Two call sites building the sheet by hand is how they stop
+/// agreeing on what a reopened day shows.
+///
+/// The existing-record lookup stays scoped to the ACTIVE spec: reopening a day judged
+/// under superseded criteria arrives blank, because saving records a NEW
+/// verdict under the current criteria — the old record remains in the rail's
+/// history.
+void showGoalDayAssessmentSheet(
+  BuildContext context, {
+  required String agentId,
+  required GoalSpecVersionEntity spec,
+  required GoalProgressView progress,
+  required List<GoalAssessmentRecord> assessments,
+  required DateTime day,
+}) {
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    // Keeps the sheet clear of the status bar: without it the big date
+    // title collided with the system clock.
+    useSafeArea: true,
+    builder: (context) => GoalDayAssessmentSheet(
+      agentId: agentId,
+      specVersionId: spec.id,
+      specVersion: spec.version,
+      day: day,
+      progress: progress,
+      // Reopening a judged day shows what was recorded. Arriving blank
+      // offered Met with an empty note, and saving replaced the real
+      // reflection with that default.
+      existing: latestAssessmentsByDay(
+        assessments,
+        specVersionId: spec.id,
+      )[DateTime.utc(day.year, day.month, day.day)],
+    ),
+  );
+}
 
 /// The verdict choices, in order, derived from the enum itself.
 ///

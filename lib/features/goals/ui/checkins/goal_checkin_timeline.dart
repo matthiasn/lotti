@@ -317,10 +317,16 @@ class _ReflectionTrailing extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         if (dimensions > 0) ...[
-          Text(
-            context.messages.goalCheckInDimensionsRated(dimensions),
-            style: tokens.typography.styles.others.caption.copyWith(
-              color: tokens.colors.text.lowEmphasis,
+          // The caption yields first under width pressure — the verdict pill
+          // is the part of this slot that must survive a narrow card.
+          Flexible(
+            child: Text(
+              context.messages.goalCheckInDimensionsRated(dimensions),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: tokens.colors.text.lowEmphasis,
+              ),
             ),
           ),
           SizedBox(width: tokens.spacing.step2),
@@ -352,6 +358,8 @@ class _VerdictPill extends StatelessWidget {
       ),
       child: Text(
         goalAssessmentRatingLabel(context, rating),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: tokens.typography.styles.others.caption.copyWith(
           color: goalAssessmentRatingSurfaceInk(tokens, rating),
           fontWeight: tokens.typography.weight.semiBold,
