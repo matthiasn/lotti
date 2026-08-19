@@ -13,10 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   speech-to-text model you have set up, and when none is set up, the entry
   says why and offers Retry instead of spinning forever. The same applies to a
   goal check-in recorded while the goal's automatic updates are switched off:
-  nothing is spent, and Retry is there when you want that one transcribed. A
-  check-in that was never picked up at all — anything recorded before this
-  worked — now reads "Not transcribed" with a Retry beside it, rather than
-  claiming forever to be in progress.
+  nothing is spent, and Retry is there when you want that one transcribed. And a
+  recording that nothing ever picked up — because it was made before this
+  worked, or because the attempt never started — stops claiming to be in
+  progress after ten minutes: it reads "Not transcribed", with a Retry beside
+  it, and the page updates itself the moment that happens.
 
 ### Added
 - **A faster, cheaper Melious profile.** "Melious.ai (Flash)" joins the

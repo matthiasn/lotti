@@ -167,6 +167,64 @@ void main() {
     expect(find.text('Retry'), findsNothing);
   });
 
+  testWidgets('the rail wakes itself when the grace window closes', (
+    tester,
+  ) async {
+    // Recorded five minutes before "now", so it starts inside the window.
+    final recordedAt = today.add(const Duration(hours: 2, minutes: 55));
+    await pump(tester, [GoalAudioCheckIn(audio('waiting', recordedAt))]);
+
+    expect(find.text('Transcribing…'), findsOneWidget);
+
+    // Nothing else will rebuild this beat: no transcript is coming, no
+    // inference status will change, no database notification will fire. If the
+    // rail does not wake itself, the one case the stalled state exists to
+    // catch is the one case nobody ever sees.
+    await withClock(
+      Clock.fixed(recordedAt.add(kGoalCheckInTranscriptGrace)),
+      () async {
+        await tester.pump(kGoalCheckInTranscriptGrace);
+        await tester.pump();
+      },
+    );
+
+    expect(find.text('Not transcribed'), findsOneWidget);
+    expect(find.text('Retry'), findsOneWidget);
+    expect(find.text('Transcribing…'), findsNothing);
+  });
+
+  testWidgets('the rail wakes for the soonest beat, not the newest', (
+    tester,
+  ) async {
+    // Two recordings waiting, four minutes apart. The rail may only hold one
+    // timer, so it has to be the one that expires first — arming for the later
+    // one would leave the other beat claiming progress past its own window.
+    //
+    // Ordering is the caller's throughout this component, so the soonest
+    // deadline is found by comparing rather than by trusting the list to be
+    // sorted: these are deliberately supplied oldest-first.
+    final older = today.add(const Duration(hours: 2, minutes: 51));
+    final newer = today.add(const Duration(hours: 2, minutes: 55));
+    await pump(tester, [
+      GoalAudioCheckIn(audio('older', older)),
+      GoalAudioCheckIn(audio('newer', newer)),
+    ]);
+
+    expect(find.text('Transcribing…'), findsNWidgets(2));
+
+    await withClock(
+      Clock.fixed(older.add(kGoalCheckInTranscriptGrace)),
+      () async {
+        await tester.pump(const Duration(minutes: 1));
+        await tester.pump();
+      },
+    );
+
+    // The older one has crossed; the newer one has four minutes left.
+    expect(find.text('Not transcribed'), findsOneWidget);
+    expect(find.text('Transcribing…'), findsOneWidget);
+  });
+
   testWidgets('a recording nothing ever picked up becomes retryable', (
     tester,
   ) async {
