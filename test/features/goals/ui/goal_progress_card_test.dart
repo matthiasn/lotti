@@ -3126,6 +3126,16 @@ void main() {
       await tester.pump();
 
       expect(outcomes, [HabitCompletionType.fail]);
+
+      // Re-tapping the cell while its menu is open closes it — the cell is
+      // a toggle, not just an opener.
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(dayKey));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('goal-habit-day-menu')), findsOneWidget);
+      await tester.tap(find.byKey(dayKey), warnIfMissed: false);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('goal-habit-day-menu')), findsNothing);
     },
   );
 
