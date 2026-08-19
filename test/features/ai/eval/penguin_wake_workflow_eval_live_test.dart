@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/ai/constants/provider_config.dart';
@@ -237,6 +238,30 @@ void main() {
             if (message.metadata.toolName case final String name) name,
       ];
 
+      // The arguments as the MODEL sent them, before ChangeSetBatchExploder
+      // dropped anything. The persisted change set cannot answer "what did it
+      // try": a batch carrying one valid and one invented label arrives here
+      // as the valid one alone, so a check reading only proposals would pass a
+      // fabrication it never saw. The action log records jsonEncode(args) at
+      // call time, which is the only place the invented element survives.
+      final actionPayloadIds = <String>[
+        for (final message in actionMessages)
+          if (message.metadata.runKey == runKey)
+            if (message.contentEntryId case final String id) id,
+      ];
+      final actionPayloads = actionPayloadIds.isEmpty
+          ? const <String, AgentDomainEntity>{}
+          : await harness.agentRepository.getEntitiesByIds(actionPayloadIds);
+      final calledToolArgs = <Map<String, dynamic>>[];
+      for (final entity in actionPayloads.values) {
+        if (entity case AgentMessagePayloadEntity(:final content)) {
+          final text = content['text'];
+          if (text is! String) continue;
+          final decoded = jsonDecode(text);
+          if (decoded is Map<String, dynamic>) calledToolArgs.add(decoded);
+        }
+      }
+
       final changeSetRunKeys = [
         for (final changeSet in proposals)
           '${changeSet.runKey}:${changeSet.items.map((i) => i.toolName).join(",")}',
@@ -296,15 +321,29 @@ void main() {
         // one, so an allowed tool still has to carry the right argument —
         // otherwise the allowance would pass any label at all.
         if (scenario.id == PenguinWakeScenarioId.noOp) {
-          for (final args in proposedArgs) {
-            final labelId = args['id'];
-            if (labelId == null) continue;
+          // Read from the action log, not the change set: a label the exploder
+          // rejected never reaches `proposedArgs`, so checking there would
+          // clear exactly the fabrication this asserts against.
+          final attemptedLabelIds = <String>[
+            for (final args in calledToolArgs) ...[
+              if (args['id'] case final String id) id,
+              if (args['labels'] case final List<dynamic> labels)
+                for (final label in labels)
+                  if (label is Map<String, dynamic>)
+                    if (label['id'] case final String id) id,
+            ],
+          ];
+          for (final labelId in attemptedLabelIds) {
+            if (!labelId.startsWith('manual-label-') &&
+                !labelId.startsWith('manual-project-')) {
+              continue;
+            }
             expect(
               labelId,
               demoWaitingLabelId,
               reason:
                   'FABRICATION: the only label the note supports is '
-                  'waiting-on. $where',
+                  'waiting-on. Attempted: $attemptedLabelIds. $where',
             );
           }
         }
@@ -363,6 +402,31 @@ void main() {
             reason:
                 'MISSED: the situation changed and the standing report was '
                 'left untouched. ${scenario.summary} $where',
+          );
+        }
+        if (scenario.id == PenguinWakeScenarioId.materialChange) {
+          // A changed oneLiner alone is not the news reaching the user. The
+          // body is what gets read, and copying the stale tldr and content
+          // under a fresh tagline satisfied every check here: the grounding
+          // terms "Bay C", "leak" and "seam" are all in the PRIOR report,
+          // which describes the leak as neither found nor ruled out.
+          expect(
+            [agentReport?.tldr, agentReport?.content],
+            isNot(contains(penguinWakePriorReportTldr)),
+            reason:
+                'MISSED: the report body was carried over unchanged under a '
+                'new tagline. $where',
+          );
+          // Terms that exist ONLY in the closing note, never in the prior
+          // report, so they cannot be satisfied by restating the old blocker:
+          // the gap is a hairline one on the nursery-side seam.
+          expect(
+            reportText,
+            anyOf(contains('hairline'), contains('nursery')),
+            reason:
+                'MISSED: the report does not say what was actually found. '
+                'The note reports a hairline gap on the nursery-side seam and '
+                'the report repeats the standing blocker instead. $where',
           );
         }
       }
