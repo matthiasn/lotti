@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -6,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/design_system/components/celebration/completion_burst.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_glow.dart';
+import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/state/celebration_preferences_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_card.dart';
@@ -516,6 +518,62 @@ void main() {
         reason: 'All tab should not be bold when not selected',
       );
     });
+
+    testWidgets(
+      'hovering a filter tab shifts its own underline — the selected tab '
+      'included — instead of painting an overlay',
+      (tester) async {
+        await _pump(
+          tester,
+          initiallyExpanded: true,
+          completedCount: 0,
+          totalCount: 3,
+        );
+        await tester.pump(const Duration(milliseconds: 300));
+
+        final tokens = tester
+            .element(find.text('Open').hitTestable())
+            .designTokens;
+
+        Color? underlineColor(String label) {
+          final containers = tester
+              .widgetList<Container>(
+                find.descendant(
+                  of: find.ancestor(
+                    of: find.text(label).hitTestable(),
+                    matching: find.byType(DsQuietInk),
+                  ),
+                  matching: find.byType(Container),
+                ),
+              )
+              .toList();
+          // The tab column's last Container is the 64x3 underline bar.
+          return containers.last.color;
+        }
+
+        // Selected tab at rest: the accent underline.
+        expect(underlineColor('Open'), tokens.colors.interactive.enabled);
+
+        final gesture = await tester.createGesture(
+          kind: PointerDeviceKind.mouse,
+        );
+        await gesture.addPointer(location: Offset.zero);
+        addTearDown(gesture.removePointer);
+        await gesture.moveTo(
+          tester.getCenter(find.text('Open').hitTestable()),
+        );
+        await tester.pump();
+
+        // The selected label is already high-emphasis, so the underline is
+        // the visible hover/keyboard-focus cue on it.
+        expect(underlineColor('Open'), tokens.colors.interactive.hover);
+
+        await gesture.moveTo(tester.getCenter(find.text('All').hitTestable()));
+        await tester.pump();
+        expect(underlineColor('All'), tokens.colors.text.lowEmphasis);
+        expect(underlineColor('Open'), tokens.colors.interactive.enabled);
+      },
+    );
 
     testWidgets('tapping All tab selects it and makes its text bold', (
       tester,

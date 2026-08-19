@@ -359,8 +359,10 @@ class _FilterTab extends StatelessWidget {
       child: SizedBox(
         width: 64,
         // No hover fill — a rectangle washing over the tab read as a phantom
-        // button. An unselected tab's label brightens on hover/focus/press
-        // instead; the selected tab already carries its tint and underline.
+        // button. The tab's own ink reacts instead: an unselected label
+        // brightens and gains a quiet underline; the SELECTED tab — whose
+        // label is already high-emphasis — shifts its underline to the
+        // interactive hover tone, so keyboard focus stays visible on it too.
         child: DsQuietInk(
           onTap: onTap,
           builder: (context, highlighted) => Column(
@@ -390,7 +392,13 @@ class _FilterTab extends StatelessWidget {
               Container(
                 width: 64,
                 height: 3,
-                color: isSelected ? accentColor : Colors.transparent,
+                color: isSelected
+                    ? (highlighted
+                          ? tokens.colors.interactive.hover
+                          : accentColor)
+                    : (highlighted
+                          ? tokens.colors.text.lowEmphasis
+                          : Colors.transparent),
               ),
             ],
           ),
