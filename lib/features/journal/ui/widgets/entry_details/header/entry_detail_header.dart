@@ -166,13 +166,22 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
 
   /// The trailing action controls shared by both header layouts.
   ///
-  /// The two universal controls — favorite, then overflow — are pinned as the
-  /// rightmost two slots so they sit at an identical x on every card type and a
-  /// user can build muscle memory for them. The type-specific affordances
-  /// (category, [collapseChevron], AI when skills are available, flag) grow
-  /// *inward* from that fixed anchor, so the star/overflow pair never shifts
-  /// and the collapse chevron is kept well clear of the overflow `…` (the
-  /// near-identical grey pair was a mis-tap hazard).
+  /// Ordered left to right as: status glyphs that are only shown when they
+  /// carry information (flag, star), then the AI menu, then the overflow `…`,
+  /// and finally the collapse chevron — which is rightmost because it acts on
+  /// the row itself rather than on the entry, so it reads as the row's own
+  /// disclosure rather than as one more entry action.
+  ///
+  /// The overflow menu is the last *action*, so it sits at an identical x on
+  /// every card type that has no chevron and a user can build muscle memory
+  /// for it; the type-specific affordances grow inward from there.
+  ///
+  /// Flag and star are conditional on the same principle: neither is used for
+  /// filtering here, so an inactive one is a grey glyph that costs a slot and
+  /// says nothing. Both toggles stay reachable in the overflow menu
+  /// (`ModernToggleStarredItem`, `ModernToggleFlaggedItem`) at all times; the
+  /// header renders them only while they are *on*, where the glyph is a state
+  /// readout the user can also tap to clear.
   List<Widget> _trailingActions(
     BuildContext context,
     JournalEntity? entry,
@@ -182,7 +191,6 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
     Widget? collapseChevron,
   }) {
     return <Widget>[
-      // --- type-specific slots, grow inward (left) from the fixed anchor ---
       // The category picker is a control like any other, so it belongs in the
       // rail rather than trailing the timestamp: that keeps one uniform gap
       // between every adjacent control and stops the header's leftover width
@@ -194,7 +202,29 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
           entry is! JournalEvent &&
           !widget.inLinkedEntries)
         CategorySelectionIconButton(entry: entry),
-      ?collapseChevron,
+      if (entry?.meta.flag == EntryFlag.import)
+        SwitchIconWidget(
+          tooltip: context.messages.journalToggleFlaggedTitle,
+          onPressed: notifier.toggleFlagged,
+          value: entry?.meta.flag == EntryFlag.import,
+          icon: LottiIcons.flag,
+          activeIcon: LottiIconsFilled.flag,
+          activeColor: context.colorScheme.error,
+          iconSize: AppTheme.headerActionIconSize,
+        ),
+      // Shown only while starred — see the conditional-glyph note above.
+      if (entry != null &&
+          entry is! JournalEvent &&
+          (entry.meta.starred ?? false))
+        SwitchIconWidget(
+          tooltip: context.messages.journalToggleStarredTitle,
+          onPressed: notifier.toggleStarred,
+          value: true,
+          icon: LottiIcons.star,
+          activeIcon: LottiIconsFilled.star,
+          activeColor: starredGold,
+          iconSize: AppTheme.headerActionIconSize,
+        ),
       if (entry != null &&
           (entry is Task ||
               entry is JournalImage ||
@@ -227,29 +257,6 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
             catalogId: entry.data.catalogId,
           ),
         ),
-      if (entry?.meta.flag == EntryFlag.import)
-        SwitchIconWidget(
-          tooltip: context.messages.journalToggleFlaggedTitle,
-          onPressed: notifier.toggleFlagged,
-          value: entry?.meta.flag == EntryFlag.import,
-          icon: LottiIcons.flag,
-          activeIcon: LottiIconsFilled.flag,
-          activeColor: context.colorScheme.error,
-          iconSize: AppTheme.headerActionIconSize,
-        ),
-      // --- fixed trailing anchor: identical x on every card type ---
-      // Favorite is shown on every (non-event) entry — outline when not
-      // starred, gold when starred — so the action set never changes shape.
-      if (entry != null && entry is! JournalEvent)
-        SwitchIconWidget(
-          tooltip: context.messages.journalToggleStarredTitle,
-          onPressed: notifier.toggleStarred,
-          value: entry.meta.starred ?? false,
-          icon: LottiIcons.star,
-          activeIcon: LottiIconsFilled.star,
-          activeColor: starredGold,
-          iconSize: AppTheme.headerActionIconSize,
-        ),
       IconButton(
         tooltip: context.messages.taskActionBarMoreActions,
         iconSize: AppTheme.headerActionIconSize,
@@ -262,6 +269,8 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
           link: widget.link,
         ),
       ),
+      // Rightmost: the row's own disclosure, after every entry action.
+      ?collapseChevron,
     ];
   }
 

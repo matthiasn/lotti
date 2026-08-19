@@ -399,6 +399,14 @@ class _TitleContent extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
+      // Centred, because a wrappable row stretches this block to the row's
+      // full height and the row is only as tall as its *tallest* slot. On a
+      // row whose trailing rail is taller than one line of text — a single
+      // line title beside the reserved chevron rail — the default start
+      // alignment pinned the text to the top while both glyph rails centred,
+      // so the label sat visibly above the icons flanking it. When the text
+      // is the tallest thing in the row (every two-line row) this is a no-op.
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
         titleContent ??
             Text(

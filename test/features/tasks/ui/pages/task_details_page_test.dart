@@ -576,7 +576,7 @@ void main() {
     });
 
     testWidgets(
-      'the history section is collapsed by default and expands from its '
+      'the history section is expanded by default and folds away from its '
       'header',
       (tester) async {
         await tester.pumpWidget(
@@ -592,29 +592,33 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
         await tester.pump(const Duration(milliseconds: 300));
 
-        // Collapsed by default: the header is there, the entry stream is not
-        // in the tree at all.
+        // Expanded by default: the log a reader came for is on screen with
+        // no click, under its header.
         expect(find.text('History'), findsOneWidget);
         expect(
           find.byType(LinkedEntriesWithTimer, skipOffstage: false),
-          findsNothing,
+          findsOneWidget,
         );
 
+        // The header folds it away — the disclosure exists to put a long log
+        // aside, not to hide it in the first place.
         await tester.tap(find.text('History'), warnIfMissed: false);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
         expect(
           find.byType(LinkedEntriesWithTimer, skipOffstage: false),
-          findsOneWidget,
+          findsNothing,
         );
 
-        // And it collapses again from the same header.
+        // And back again from the same header.
         await tester.tap(find.text('History'), warnIfMissed: false);
         await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pump(const Duration(milliseconds: 300));
         expect(
           find.byType(LinkedEntriesWithTimer, skipOffstage: false),
-          findsNothing,
+          findsOneWidget,
         );
       },
     );
@@ -634,6 +638,11 @@ void main() {
         for (var i = 0; i < 6; i++) {
           await tester.pump(const Duration(milliseconds: 100));
         }
+        // Fold the history away first — the default is expanded, so the
+        // force-expand path only exists for a reader who closed it.
+        await tester.tap(find.text('History'), warnIfMissed: false);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         expect(
           find.byType(LinkedEntriesWithTimer, skipOffstage: false),
           findsNothing,
@@ -946,21 +955,15 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       // These scenarios have the user reading the entries below the card, so
-      // the collapsed-by-default history section must be open — it is also
-      // what gives the page enough scroll extent to put the card past the
-      // viewport top. The header can start below the fold (unbuilt), so
-      // scroll it into view before tapping, then return to the top.
+      // the history section must be open — it is also what gives the page
+      // enough scroll extent to put the card past the viewport top. It is
+      // expanded by default; scrolling its header into view builds the
+      // entries below it, then the position returns to the top.
       await tester.scrollUntilVisible(
         find.text('History'),
         200,
         scrollable: find.byType(Scrollable).first,
       );
-      // A further nudge: scrollUntilVisible stops the moment the header is
-      // technically visible, which can leave it under the glass action bar
-      // where a tap never lands.
-      await tester.drag(find.byType(CustomScrollView), const Offset(0, -120));
-      await tester.pump();
-      await tester.tap(find.text('History'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
       scrollPositionOf(tester).jumpTo(0);

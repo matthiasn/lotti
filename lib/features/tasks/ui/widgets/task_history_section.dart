@@ -6,11 +6,11 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 /// The collapsible shell around the task's dated log-entry history (the
 /// linked-entries stream plus reverse links).
 ///
-/// Collapsed by default: the history is the page's longest region and a
-/// reader landing on a task needs the summary, the todos and the linked
-/// tasks before the full log. The header row — title plus rotating chevron —
-/// stays pinned in the same spot in both states; only the content below it
-/// comes and goes.
+/// Expanded by default: the log is what a reader opens a task to read, so it
+/// is shown rather than hidden behind a disclosure, and the section exists to
+/// let a reader fold a long log away once done with it. The header row —
+/// title plus rotating chevron — stays pinned in the same spot in both
+/// states; only the content below it comes and goes.
 ///
 /// Expansion state is owned by the page, which force-expands the section
 /// when a focus intent targets an entry inside it (a collapsed section has

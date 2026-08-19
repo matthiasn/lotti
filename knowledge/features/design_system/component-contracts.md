@@ -109,7 +109,11 @@ value bounded shares of a narrow row; either may ellipsize visually, while the
 bar's semantics retain the complete label and value. `DesignSystemListItem`
 remains an interactive row; rendering a read-only value with no callback puts
 it into its disabled treatment, so static metadata should use token-styled text
-instead.
+instead. Its leading and trailing glyph slots and its text block share **one**
+vertical axis — all three centre on the row — so a single-line row beside a
+taller reserved rail keeps its label level with the glyphs flanking it, and a
+two-line row anchors both rails to the whole text block rather than to the
+title's first line.
 
 **`DesignSystemSectionCard` fixes its own fill** to `background.level02`, which
 is what makes it a *surface* rather than a container. A card whose fill carries
@@ -134,6 +138,13 @@ and selected semantics travel with each row, and `edgeToEdge` removes the
 ordinary outer row padding. The hover ink is painted by an inner Material and
 then clipped by the menu outline, so the final action reaches the rounded bottom
 edge instead of leaving an unhighlighted strip above the border.
+
+`DesignSystemFloatingActionButton` is circular and icon-only by default and
+takes its `semanticLabel` for assistive technology. Passing a `label` extends
+it into a worded pill: same height, same token background and radius, growing
+only sideways, with the visible word excluded from semantics so the action is
+announced once. Word it where the surface creates one specific kind of thing
+and the bare `+` would not say which — the tasks list is the adopter.
 
 ## Beside the button tier: `DesignSystemIconAction`
 
