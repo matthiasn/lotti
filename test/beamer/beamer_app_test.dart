@@ -1645,6 +1645,68 @@ void main() {
     });
   });
 
+  group('AppScreen breakpoint crossing', () {
+    testWidgets(
+      'keeps the tab content mounted and the delegates attached across a '
+      'resize',
+      (tester) async {
+        final mockNavService = MockNavService();
+        await _stubNavService(
+          mockNavService,
+          indexStream: Stream.value(0),
+          isProjectsEnabled: () => true,
+          isDailyOsEnabled: () => true,
+          isHabitsEnabled: () => true,
+          isDashboardsEnabled: () => true,
+        );
+        await _registerAppScreenGetIt(mockNavService);
+        addTearDown(tearDownTestGetIt);
+
+        await _pumpAppScreen(
+          tester,
+          navService: mockNavService,
+          viewportSize: _desktopViewportSize,
+        );
+
+        expect(find.byType(DesktopNavigationSidebar), findsOneWidget);
+        final stackFinder = find.byType(IndexedStack);
+        final elementBefore = tester.element(stackFinder);
+        // A nested delegate reaches the root router through `parent`. It is
+        // the first thing `BeamerState.dispose` tears down, so it is the
+        // sharpest witness that the subtree survived rather than being
+        // re-inflated.
+        expect(mockNavService.tasksDelegate.parent, isNotNull);
+        expect(mockNavService.journalDelegate.parent, isNotNull);
+
+        tester.view.physicalSize = _phoneViewportSize;
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.byType(DesignSystemBottomNavigationBar), findsOneWidget);
+        expect(find.byType(DesktopNavigationSidebar), findsNothing);
+        // Same Element, not merely a same-shaped widget: everything the tabs
+        // hold — page stacks, scroll offsets, in-flight state — is still the
+        // state the user built up before the resize.
+        expect(tester.element(stackFinder), same(elementBefore));
+        expect(mockNavService.tasksDelegate.parent, isNotNull);
+        expect(mockNavService.journalDelegate.parent, isNotNull);
+
+        // ...and back up again.
+        tester.view.physicalSize = _desktopViewportSize;
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.byType(DesktopNavigationSidebar), findsOneWidget);
+        expect(tester.element(stackFinder), same(elementBefore));
+        expect(mockNavService.tasksDelegate.parent, isNotNull);
+        expect(mockNavService.journalDelegate.parent, isNotNull);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
+  });
+
   group('AppScreen desktop layout', () {
     testWidgets('shows sidebar and hides bottom nav at desktop width', (
       tester,

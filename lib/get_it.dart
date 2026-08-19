@@ -428,6 +428,10 @@ Future<void> registerSingletons({
       dispose: (service) => service.dispose(),
     );
 
+  // Awaited here, before `runApp`, so the app's first frame is already on the
+  // screen the previous session was left on rather than flashing Tasks first.
+  await getIt<NavService>().restoreNavigationState();
+
   if (registerLateAndOptional) {
     await _registerLateAndOptionalServices(profile: profile);
   }

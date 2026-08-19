@@ -216,11 +216,19 @@ class _AutoSelectNewestEntryState
         // then derives the selection from `/journal/<id>`, and any later
         // rebuild re-runs `buildPages` with the same route instead of writing
         // null over an off-URL selection and snapping back to the empty state.
-        // Skip when the route already targets this entry (a rebuild before the
-        // notifier caught up) so we don't re-beam an already-current path.
+        //
+        // `beamWithinTab`, NOT the global `beamToNamed`: every tab is mounted
+        // at once, so this runs in the Logbook tab even while the user is on
+        // Tasks — most visibly the first time the desktop split mounts, which
+        // is every crossing of the desktop breakpoint. `beamToNamed` would
+        // switch the ACTIVE tab to Logbook from here.
+        //
+        // Compared against this tab's own route (not `currentPath`, which is
+        // the active tab's) so a rebuild before the notifier catches up does
+        // not re-beam an already-current path.
         final path = '/journal/${item.meta.id}';
-        if (navService.currentPath != path) {
-          beamToNamed(path);
+        if (navService.routeForTab('/journal') != path) {
+          navService.beamWithinTab(path);
         }
         return;
       }

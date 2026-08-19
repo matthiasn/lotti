@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/database.dart';
@@ -171,8 +172,8 @@ extension _AnyGeneratedNavScenario on glados.Any {
 /// stream controllers (one per flag-gated destination) into a fresh
 /// NavService and registers teardown.
 class _NavFlagBench {
-  _NavFlagBench({bool registerTeardown = true}) {
-    final settingsDb = SettingsDb(inMemoryDatabase: true);
+  _NavFlagBench({bool registerTeardown = true, SettingsDb? settingsDb}) {
+    this.settingsDb = settingsDb ?? SettingsDb(inMemoryDatabase: true);
     final journalDb = mockJournalDbWithMeasurableTypes([]);
 
     when(() => journalDb.watchConfigFlag(any())).thenAnswer((invocation) {
@@ -189,11 +190,15 @@ class _NavFlagBench {
       };
     });
 
-    navService = NavService(journalDb: journalDb, settingsDb: settingsDb);
+    navService = NavService(journalDb: journalDb, settingsDb: this.settingsDb);
     if (registerTeardown) {
       addTearDown(dispose);
     }
   }
+
+  /// Shared across benches when a test needs a second service generation to
+  /// read what the first one persisted.
+  late final SettingsDb settingsDb;
 
   final dailyOs = StreamController<bool>.broadcast(sync: true);
   final projects = StreamController<bool>.broadcast(sync: true);
@@ -1030,6 +1035,223 @@ void main() {
       );
     });
 
+    group('restoring a flag-gated tab', () {
+      /// Persists [route] as the active tab's position through one service
+      /// generation, then returns a fresh generation sharing its SettingsDb —
+      /// still before its flag streams have emitted, exactly as at boot.
+      Future<_NavFlagBench> restoredBenchFor(String route) async {
+        final first = _NavFlagBench(registerTeardown: false)
+          ..emitAll(enabled: true);
+        first.navService.beamToNamed(route);
+        await pumpEventQueue();
+        await first.dispose();
+
+        final second = _NavFlagBench(settingsDb: first.settingsDb);
+        await second.navService.restoreNavigationState();
+        return second;
+      }
+
+      test('lands on it once the config flags say it exists', () async {
+        final bench = await restoredBenchFor('/projects/project-3');
+
+        // Before the flags emit, Projects is not even in the enabled tab
+        // list — the tab cannot be selected yet, but its route is already
+        // restored.
+        expect(bench.navService.index, 0);
+        expect(
+          bench.navService.projectsDelegate.configuration.uri.path,
+          '/projects/project-3',
+        );
+
+        bench.emitAll(enabled: true);
+
+        expect(bench.navService.index, bench.navService.projectsIndex);
+        expect(bench.navService.currentPath, '/projects/project-3');
+      });
+
+      test(
+        'falls back to Tasks when that tab is now behind a disabled flag',
+        () async {
+          final bench = await restoredBenchFor('/projects/project-3');
+
+          bench.emitAll(enabled: false);
+
+          expect(bench.navService.index, 0);
+          expect(bench.navService.currentPath, '/tasks');
+        },
+      );
+
+      test('the pending tab is consumed once, not re-applied on later flag '
+          'changes', () async {
+        final bench = await restoredBenchFor('/projects/project-3');
+        bench.emitAll(enabled: true);
+        expect(bench.navService.index, bench.navService.projectsIndex);
+
+        // The user moves on; a later flag change must not yank them back to
+        // where they happened to be at boot.
+        bench.navService.beamToNamed('/journal');
+        expect(bench.navService.index, bench.navService.journalIndex);
+
+        bench.emitAll(enabled: true);
+
+        expect(bench.navService.index, bench.navService.journalIndex);
+        expect(bench.navService.currentPath, '/journal');
+      });
+
+      test(
+        'nothing is written while the restore read is still in flight',
+        () async {
+          // A slow settings read, so the config flags can land in the middle
+          // of one — the window in which a write would target the very row
+          // being read, with the not-yet-restored default.
+          final settingsDb = MockSettingsDb();
+          final readGate = Completer<String?>();
+          when(
+            () => settingsDb.itemByKey(navStateKey),
+          ).thenAnswer((_) => readGate.future);
+          when(
+            () => settingsDb.itemByKey(lastRouteKey),
+          ).thenAnswer((_) async => null);
+          final writes = <String>[];
+          when(() => settingsDb.saveSettingsItem(any(), any())).thenAnswer((
+            invocation,
+          ) async {
+            writes.add(invocation.positionalArguments[1] as String);
+            return 1;
+          });
+
+          final bench = _NavFlagBench(settingsDb: settingsDb);
+          final restoring = bench.navService.restoreNavigationState();
+
+          bench.emitAll(enabled: true);
+          await pumpEventQueue();
+          expect(
+            writes,
+            isEmpty,
+            reason: 'the flag handler must not persist over the pending read',
+          );
+
+          readGate.complete(
+            const NavStateSnapshot(
+              activeRootPath: '/projects',
+              routes: {'/projects': '/projects/project-3'},
+            ).encode(),
+          );
+          await restoring;
+          await pumpEventQueue();
+
+          expect(bench.navService.index, bench.navService.projectsIndex);
+          expect(bench.navService.currentPath, '/projects/project-3');
+          expect(writes, isNotEmpty, reason: 'restore persists once it lands');
+        },
+      );
+
+      test('a corrupt saved state degrades to the Tasks landing', () async {
+        final settingsDb = SettingsDb(inMemoryDatabase: true);
+        await settingsDb.saveSettingsItem(navStateKey, '{not json');
+
+        final bench = _NavFlagBench(settingsDb: settingsDb);
+        await bench.navService.restoreNavigationState();
+        bench.emitAll(enabled: true);
+
+        expect(bench.navService.index, 0);
+        expect(bench.navService.currentPath, '/tasks');
+      });
+
+      test('a pre-JSON NAV_LAST_ROUTE row still restores its tab', () async {
+        final settingsDb = SettingsDb(inMemoryDatabase: true);
+        await settingsDb.saveSettingsItem(lastRouteKey, '/habits/habit-9');
+
+        final bench = _NavFlagBench(settingsDb: settingsDb);
+        await bench.navService.restoreNavigationState();
+        bench.emitAll(enabled: true);
+
+        expect(bench.navService.index, bench.navService.habitsIndex);
+        expect(
+          bench.navService.habitsDelegate.configuration.uri.path,
+          '/habits/habit-9',
+        );
+      });
+    });
+
+    group('background navigation', () {
+      test('beamWithinTab moves the tab without activating it', () async {
+        final bench = _NavFlagBench()..emitAll(enabled: true);
+        final navService = bench.navService;
+
+        expect(navService.index, 0, reason: 'the user is on Tasks');
+        final emitted = <int>[];
+        final sub = navService.getIndexStream().listen(emitted.add);
+        addTearDown(sub.cancel);
+
+        // What the logbook's newest-entry auto-selection does from the
+        // background Logbook tab. Through `beamToNamed` this yanked the user
+        // off Tasks onto Logbook on every crossing of the desktop breakpoint.
+        navService.beamWithinTab('/journal/entry-42');
+        await pumpEventQueue();
+
+        expect(navService.index, 0);
+        expect(navService.currentPath, '/tasks');
+        expect(emitted, isEmpty);
+        expect(
+          navService.journalDelegate.configuration.uri.path,
+          '/journal/entry-42',
+        );
+        expect(navService.routeForTab('/journal'), '/journal/entry-42');
+
+        // It is still where the user will find it on returning to that tab —
+        // and after a restart.
+        navService.tapIndex(navService.journalIndex);
+        expect(navService.currentPath, '/journal/entry-42');
+      });
+
+      test('beamWithinTab ignores a path no tab owns', () async {
+        final bench = _NavFlagBench()..emitAll(enabled: true);
+
+        bench.navService.beamWithinTab('/nowhere/at-all');
+
+        expect(bench.navService.index, 0);
+        expect(bench.navService.currentPath, '/tasks');
+      });
+    });
+
+    group('form-factor changes', () {
+      testWidgets('crossing the breakpoint re-renders every tab for the new '
+          'layout', (tester) async {
+        // A frame has to actually run for the deferred rebuild to land.
+        await tester.pumpWidget(const SizedBox.shrink());
+        final bench = _NavFlagBench()..emitAll(enabled: true);
+        final navService = bench.navService;
+
+        var tasksRebuilds = 0;
+        void countTasks() => tasksRebuilds++;
+        navService.tasksDelegate.addListener(countTasks);
+        addTearDown(() => navService.tasksDelegate.removeListener(countTasks));
+
+        // The shell keeps the nav subtree alive across the breakpoint, so
+        // nothing rebuilds the delegates by accident — but the locations
+        // branch on this flag to decide whether a detail is a pushed page or
+        // a right-hand pane, so the change has to reach them.
+        navService.isDesktopMode = true;
+        expect(
+          tasksRebuilds,
+          0,
+          reason: 'assigned during build — must not notify synchronously',
+        );
+
+        // Production assigns this from `AppScreen.build`, so a frame is
+        // always in flight; drive one here the same way.
+        await tester.pumpWidget(const SizedBox(width: 1));
+
+        expect(tasksRebuilds, 1);
+
+        // An unchanged assignment is not a layout change.
+        navService.isDesktopMode = true;
+        await tester.pumpWidget(const SizedBox(width: 2));
+        expect(tasksRebuilds, 1);
+      });
+    });
+
     group('landing tab per service generation', () {
       // Every tab's BeamerDelegate is a top-level final, so it survives
       // `getIt.reset()` — a profile switch replaces this service, the
@@ -1077,6 +1299,40 @@ void main() {
           expect(nextWorld.tasksDelegate.configuration.uri.path, '/tasks');
         },
       );
+
+      test('cold start returns to the tab and route it was left on', () async {
+        final previousSession = buildGeneration()
+          // Another tab was visited earlier in that session and must come
+          // back where it stood too, not at its root.
+          ..beamToNamed('/settings/advanced')
+          ..beamToNamed('/journal/entry-7');
+        // The writes are fire-and-forget; let them land.
+        await pumpEventQueue();
+        await previousSession.dispose();
+
+        // The delegates are top-level finals, so a fresh generation would
+        // inherit them regardless — reset them the way a cold process would.
+        final restored = buildGeneration();
+        addTearDown(restored.dispose);
+        expect(restored.currentPath, '/tasks', reason: 'before restore');
+
+        await restored.restoreNavigationState();
+
+        expect(restored.currentPath, '/journal/entry-7');
+        expect(
+          restored.journalDelegate.configuration.uri.path,
+          '/journal/entry-7',
+        );
+        expect(
+          restored.settingsDelegate.configuration.uri.path,
+          '/settings/advanced',
+          reason: 'each tab keeps its own place, not just the active one',
+        );
+        // The active tab itself only lands once the flag streams have said
+        // which tabs exist — this harness emits them synchronously at
+        // construction, so it is already applied.
+        expect(restored.index, restored.journalIndex);
+      });
 
       test('every tab root is restored, including disabled ones', () async {
         final previousWorld = buildGeneration();

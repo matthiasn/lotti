@@ -38,6 +38,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   on. Flagging in particular used to leave no visible mark at all.
 
 ### Fixed
+- **The app comes back where you left it.** Quitting and reopening — or hot
+  restarting during development — used to drop you on Tasks no matter what you
+  had been doing. Lotti now remembers the tab you were on and where you were
+  inside it, and every other tab keeps its own place too, so switching back to
+  one lands on the entry you had open rather than at the top of the list.
+- **Resizing the window no longer throws you onto Logbook.** Dragging across
+  the width where the sidebar appears or disappears used to abandon whatever
+  you were doing and land you in the Logbook, losing scroll positions and open
+  detail pages along the way. The resize now keeps you on the same screen: an
+  open task stays open, moving from the side pane into a full page and back as
+  the window narrows and widens.
 - **A recording that cannot be transcribed says so.** Asking for a transcript
   on an entry that belongs to no task and no category used to do nothing at
   all — no transcript, no error, and a note that looked like it was still
