@@ -13093,6 +13093,30 @@ class AppLocalizationsSv extends AppLocalizations {
   String get taskLanguageYoruba => 'Yoruba';
 
   @override
+  String get taskMetaAiSpendLabel => 'AI-utgifter';
+
+  @override
+  String get taskMetaDetailsButton => 'Detaljer';
+
+  @override
+  String get taskMetaDueDateLabel => 'Beräknat datum';
+
+  @override
+  String get taskMetaLabelsLabel => 'Etiketter';
+
+  @override
+  String get taskMetaPriorityLabel => 'Prioritet';
+
+  @override
+  String get taskMetaSheetTitle => 'Uppgiftsdetaljer';
+
+  @override
+  String get taskMetaTimeLabel => 'Tid';
+
+  @override
+  String get taskMetaValueNotSet => 'Inte inställt';
+
+  @override
   String get taskNoDueDateLabel => 'Ingen beräknad förlossningsdag';
 
   @override

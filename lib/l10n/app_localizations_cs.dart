@@ -13237,6 +13237,30 @@ class AppLocalizationsCs extends AppLocalizations {
   String get taskLanguageYoruba => 'Jorubština';
 
   @override
+  String get taskMetaAiSpendLabel => 'Výdaje na AI';
+
+  @override
+  String get taskMetaDetailsButton => 'Podrobnosti';
+
+  @override
+  String get taskMetaDueDateLabel => 'Datum splnění';
+
+  @override
+  String get taskMetaLabelsLabel => 'Štítky';
+
+  @override
+  String get taskMetaPriorityLabel => 'Priorita';
+
+  @override
+  String get taskMetaSheetTitle => 'Podrobnosti úkolu';
+
+  @override
+  String get taskMetaTimeLabel => 'Čas';
+
+  @override
+  String get taskMetaValueNotSet => 'Nenastaveno';
+
+  @override
   String get taskNoDueDateLabel => 'Bez data splnění';
 
   @override

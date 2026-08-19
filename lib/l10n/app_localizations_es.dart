@@ -13271,6 +13271,30 @@ class AppLocalizationsEs extends AppLocalizations {
   String get taskLanguageYoruba => 'Yoruba';
 
   @override
+  String get taskMetaAiSpendLabel => 'Gasto en IA';
+
+  @override
+  String get taskMetaDetailsButton => 'Detalles';
+
+  @override
+  String get taskMetaDueDateLabel => 'Fecha de vencimiento';
+
+  @override
+  String get taskMetaLabelsLabel => 'Etiquetas';
+
+  @override
+  String get taskMetaPriorityLabel => 'Prioridad';
+
+  @override
+  String get taskMetaSheetTitle => 'Detalles de la tarea';
+
+  @override
+  String get taskMetaTimeLabel => 'Tiempo';
+
+  @override
+  String get taskMetaValueNotSet => 'Sin definir';
+
+  @override
   String get taskNoDueDateLabel => 'Sin fecha de vencimiento';
 
   @override

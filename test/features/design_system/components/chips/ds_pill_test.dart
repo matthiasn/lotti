@@ -29,6 +29,84 @@ void main() {
       expect(find.text('Hello'), findsOneWidget);
     });
 
+    testWidgets(
+      'defaults to the fully-rounded pill radius; the tag shape switches '
+      'every corner to radii.xs',
+      (tester) async {
+        // Default: interactive pill grammar (badgesPills radius).
+        await pump(
+          tester,
+          const DsPill(variant: DsPillVariant.filled, label: 'Pill'),
+        );
+        var decoration =
+            tester
+                    .widgetList<DecoratedBox>(
+                      find.descendant(
+                        of: find.byType(DsPill),
+                        matching: find.byType(DecoratedBox),
+                      ),
+                    )
+                    .first
+                    .decoration
+                as BoxDecoration;
+        expect(
+          decoration.borderRadius,
+          BorderRadius.circular(dsTokensDark.radii.badgesPills),
+        );
+
+        // Tag: informational read-outs on the tight radius, so facts cannot
+        // masquerade as buttons.
+        await pump(
+          tester,
+          const DsPill(
+            variant: DsPillVariant.filled,
+            shape: DsPillShape.tag,
+            label: 'Tag',
+          ),
+        );
+        decoration =
+            tester
+                    .widgetList<DecoratedBox>(
+                      find.descendant(
+                        of: find.byType(DsPill),
+                        matching: find.byType(DecoratedBox),
+                      ),
+                    )
+                    .first
+                    .decoration
+                as BoxDecoration;
+        expect(
+          decoration.borderRadius,
+          BorderRadius.circular(dsTokensDark.radii.xs),
+        );
+      },
+    );
+
+    testWidgets(
+      'the muted variant draws its dashed border on the tag radius too',
+      (tester) async {
+        await pump(
+          tester,
+          const DsPill(
+            variant: DsPillVariant.muted,
+            shape: DsPillShape.tag,
+            label: 'Muted tag',
+          ),
+        );
+        final dashedPainter = tester
+            .widgetList<CustomPaint>(
+              find.descendant(
+                of: find.byType(DsPill),
+                matching: find.byType(CustomPaint),
+              ),
+            )
+            .map((paint) => paint.painter)
+            .whereType<DashedBorderPainter>()
+            .single;
+        expect(dashedPainter.radius, dsTokensDark.radii.xs);
+      },
+    );
+
     testWidgets('measures 28px tall', (tester) async {
       await pump(
         tester,

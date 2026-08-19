@@ -13115,6 +13115,30 @@ class AppLocalizationsNl extends AppLocalizations {
   String get taskLanguageYoruba => 'YorubaCity in Italy';
 
   @override
+  String get taskMetaAiSpendLabel => 'AI-uitgaven';
+
+  @override
+  String get taskMetaDetailsButton => 'Details';
+
+  @override
+  String get taskMetaDueDateLabel => 'Verloopdatum';
+
+  @override
+  String get taskMetaLabelsLabel => 'Labels';
+
+  @override
+  String get taskMetaPriorityLabel => 'Prioriteit';
+
+  @override
+  String get taskMetaSheetTitle => 'Taakdetails';
+
+  @override
+  String get taskMetaTimeLabel => 'Tijd';
+
+  @override
+  String get taskMetaValueNotSet => 'Niet ingesteld';
+
+  @override
   String get taskNoDueDateLabel => 'Geen vervaldatum';
 
   @override

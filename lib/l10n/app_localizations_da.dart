@@ -13082,6 +13082,30 @@ class AppLocalizationsDa extends AppLocalizations {
   String get taskLanguageYoruba => 'Yoruba';
 
   @override
+  String get taskMetaAiSpendLabel => 'AI-forbrug';
+
+  @override
+  String get taskMetaDetailsButton => 'Detaljer';
+
+  @override
+  String get taskMetaDueDateLabel => 'Forfaldsdato';
+
+  @override
+  String get taskMetaLabelsLabel => 'Labels';
+
+  @override
+  String get taskMetaPriorityLabel => 'Prioritet';
+
+  @override
+  String get taskMetaSheetTitle => 'Opgavedetaljer';
+
+  @override
+  String get taskMetaTimeLabel => 'Tid';
+
+  @override
+  String get taskMetaValueNotSet => 'Ikke sat';
+
+  @override
   String get taskNoDueDateLabel => 'Ingen terminsdato';
 
   @override
