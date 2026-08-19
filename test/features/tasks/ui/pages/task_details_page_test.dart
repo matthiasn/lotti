@@ -532,6 +532,96 @@ void main() {
       container.dispose();
     });
 
+    testWidgets(
+      'the history section is collapsed by default and expands from its '
+      'header',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            TaskDetailsPage(taskId: testTask.id),
+            overrides: [
+              ...hTaskDetailsPageOverrides(),
+              ...hLinkedEntriesOverrides(),
+            ],
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Collapsed by default: the header is there, the entry stream is not
+        // in the tree at all.
+        expect(find.text('History'), findsOneWidget);
+        expect(
+          find.byType(LinkedEntriesWithTimer, skipOffstage: false),
+          findsNothing,
+        );
+
+        await tester.tap(find.text('History'), warnIfMissed: false);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(
+          find.byType(LinkedEntriesWithTimer, skipOffstage: false),
+          findsOneWidget,
+        );
+
+        // And it collapses again from the same header.
+        await tester.tap(find.text('History'), warnIfMissed: false);
+        await tester.pump();
+        expect(
+          find.byType(LinkedEntriesWithTimer, skipOffstage: false),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets(
+      'an entry focus intent force-expands the collapsed history',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            TaskDetailsPage(taskId: testTask.id),
+            overrides: [
+              ...hTaskDetailsPageOverrides(),
+              ...hLinkedEntriesOverrides(),
+            ],
+          ),
+        );
+        for (var i = 0; i < 6; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        expect(
+          find.byType(LinkedEntriesWithTimer, skipOffstage: false),
+          findsNothing,
+        );
+
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(TaskDetailsPage)),
+        );
+        container
+            .read(taskFocusControllerProvider(testTask.id).notifier)
+            .publishTaskFocus(entryId: testTextEntry.meta.id);
+
+        await tester.pump();
+        for (
+          var i = 0;
+          i < 20 &&
+              container.read(taskFocusControllerProvider(testTask.id)) != null;
+          i++
+        ) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+
+        // A collapsed section has no mounted entry keys to scroll to, so the
+        // intent must have opened it.
+        expect(
+          find.byType(LinkedEntriesWithTimer, skipOffstage: false),
+          findsOneWidget,
+        );
+      },
+    );
+
     testWidgets('suggestions focus intent scrolls to proposals section', (
       tester,
     ) async {
@@ -811,6 +901,27 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pump(const Duration(milliseconds: 300));
+
+      // These scenarios have the user reading the entries below the card, so
+      // the collapsed-by-default history section must be open — it is also
+      // what gives the page enough scroll extent to put the card past the
+      // viewport top. The header can start below the fold (unbuilt), so
+      // scroll it into view before tapping, then return to the top.
+      await tester.scrollUntilVisible(
+        find.text('History'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      // A further nudge: scrollUntilVisible stops the moment the header is
+      // technically visible, which can leave it under the glass action bar
+      // where a tap never lands.
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, -120));
+      await tester.pump();
+      await tester.tap(find.text('History'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      scrollPositionOf(tester).jumpTo(0);
+      await tester.pump();
 
       final position = scrollPositionOf(tester);
       final viewportTop = tester.getRect(find.byType(CustomScrollView)).top;

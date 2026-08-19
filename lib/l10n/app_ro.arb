@@ -4991,6 +4991,7 @@
   "taskFirstRunRecordAudioHint": "Deschide reportofonul fără a porni înregistrarea.",
   "taskFirstRunWriteNote": "Scrieți o notă",
   "taskFirstRunWriteNoteHint": "Adaugă o notă legată pentru detalii și gânduri.",
+  "taskHistoryTitle": "Istoric",
   "taskLabelsMoreCount": "+{count}",
   "@taskLabelsMoreCount": {
     "placeholders": {

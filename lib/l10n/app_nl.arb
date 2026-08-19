@@ -5557,6 +5557,7 @@
   "taskFirstRunRecordAudioHint": "Opent de recorder zonder de opname te starten.",
   "taskFirstRunWriteNote": "Een notitie schrijven",
   "taskFirstRunWriteNoteHint": "Voegt een gekoppelde notitie toe voor details en gedachten.",
+  "taskHistoryTitle": "Geschiedenis",
   "taskLabelsMoreCount": "+{count}",
   "@taskLabelsMoreCount": {
     "placeholders": {

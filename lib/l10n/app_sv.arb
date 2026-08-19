@@ -5558,6 +5558,7 @@
   "taskFirstRunRecordAudioHint": "Öppnar inspelaren utan att börja spela in.",
   "taskFirstRunWriteNote": "Skriv en anteckning",
   "taskFirstRunWriteNoteHint": "Lägger till en länkad anteckning för detaljer och tankar.",
+  "taskHistoryTitle": "Historik",
   "taskLabelsMoreCount": "+{count}",
   "@taskLabelsMoreCount": {
     "placeholders": {

@@ -13094,6 +13094,9 @@ class AppLocalizationsCs extends AppLocalizations {
       'Přidá propojenou poznámku na podrobnosti a myšlenky.';
 
   @override
+  String get taskHistoryTitle => 'Historie';
+
+  @override
   String taskLabelsMoreCount(int count) {
     return '+$count';
   }

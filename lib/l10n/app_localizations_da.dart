@@ -12939,6 +12939,9 @@ class AppLocalizationsDa extends AppLocalizations {
       'Tilføjer en tilknyttet note til detaljer og tanker.';
 
   @override
+  String get taskHistoryTitle => 'Historik';
+
+  @override
   String taskLabelsMoreCount(int count) {
     return '+$count';
   }

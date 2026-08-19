@@ -4998,6 +4998,7 @@
   "taskFirstRunRecordAudioHint": "Otevře rekordér, aniž by spustil nahrávání.",
   "taskFirstRunWriteNote": "Napsat poznámku",
   "taskFirstRunWriteNoteHint": "Přidá propojenou poznámku na podrobnosti a myšlenky.",
+  "taskHistoryTitle": "Historie",
   "taskLabelsMoreCount": "+{count}",
   "@taskLabelsMoreCount": {
     "placeholders": {

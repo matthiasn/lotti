@@ -62,6 +62,14 @@ is this task about and where does it stand" before scrolling into the work.
 The model attribution lives only inside the card's own footer — nothing
 renders a standalone attribution strip under the title.
 
+Below the form, the dated log-entry history (linked entries plus reverse
+links) sits behind a **collapsed-by-default** `TaskHistorySection`: it is the
+page's longest region, and the summary / todos / linked tasks are what a
+reader needs first. The page owns the expansion state, resets it per task,
+and force-expands the section when a focus intent targets an entry inside it
+— a collapsed section has no mounted entry keys to scroll to. On a first-run
+task the section (header included) stands down entirely.
+
 ## The first-run band
 
 A task with **no content at all** — no checklists, no body text, no agent, as

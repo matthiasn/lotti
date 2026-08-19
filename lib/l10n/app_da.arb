@@ -5558,6 +5558,7 @@
   "taskFirstRunRecordAudioHint": "Åbner optageren uden at starte optagelsen.",
   "taskFirstRunWriteNote": "Skriv en note",
   "taskFirstRunWriteNoteHint": "Tilføjer en tilknyttet note til detaljer og tanker.",
+  "taskHistoryTitle": "Historik",
   "taskLabelsMoreCount": "+{count}",
   "@taskLabelsMoreCount": {
     "placeholders": {

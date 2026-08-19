@@ -13197,6 +13197,9 @@ class AppLocalizationsRo extends AppLocalizations {
       'Adaugă o notă legată pentru detalii și gânduri.';
 
   @override
+  String get taskHistoryTitle => 'Istoric';
+
+  @override
   String taskLabelsMoreCount(int count) {
     return '+$count';
   }

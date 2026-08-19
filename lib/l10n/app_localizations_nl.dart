@@ -12972,6 +12972,9 @@ class AppLocalizationsNl extends AppLocalizations {
       'Voegt een gekoppelde notitie toe voor details en gedachten.';
 
   @override
+  String get taskHistoryTitle => 'Geschiedenis';
+
+  @override
   String taskLabelsMoreCount(int count) {
     return '+$count';
   }

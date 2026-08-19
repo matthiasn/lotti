@@ -4991,6 +4991,7 @@
   "taskFirstRunRecordAudioHint": "Ouvre l'enregistreur sans lancer l'enregistrement.",
   "taskFirstRunWriteNote": "Écrire une note",
   "taskFirstRunWriteNoteHint": "Ajoute une note liée pour les détails et les idées.",
+  "taskHistoryTitle": "Historique",
   "taskLabelsMoreCount": "+{count}",
   "@taskLabelsMoreCount": {
     "placeholders": {

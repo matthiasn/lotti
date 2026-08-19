@@ -12950,6 +12950,9 @@ class AppLocalizationsSv extends AppLocalizations {
       'Lägger till en länkad anteckning för detaljer och tankar.';
 
   @override
+  String get taskHistoryTitle => 'Historik';
+
+  @override
   String taskLabelsMoreCount(int count) {
     return '+$count';
   }

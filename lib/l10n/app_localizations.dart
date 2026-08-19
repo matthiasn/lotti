@@ -21775,6 +21775,12 @@ abstract class AppLocalizations {
   /// **'Adds a linked note for details and thoughts.'**
   String get taskFirstRunWriteNoteHint;
 
+  /// No description provided for @taskHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'History'**
+  String get taskHistoryTitle;
+
   /// No description provided for @taskLabelsMoreCount.
   ///
   /// In en, this message translates to:

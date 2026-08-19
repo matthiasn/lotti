@@ -5557,6 +5557,7 @@
   "taskFirstRunRecordAudioHint": "Abre o gravador sem iniciar a gravação.",
   "taskFirstRunWriteNote": "Escrever uma nota",
   "taskFirstRunWriteNoteHint": "Adiciona uma nota vinculada para detalhes e ideias.",
+  "taskHistoryTitle": "Histórico",
   "taskLabelsMoreCount": "+{count}",
   "@taskLabelsMoreCount": {
     "placeholders": {

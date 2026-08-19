@@ -12857,6 +12857,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Adds a linked note for details and thoughts.';
 
   @override
+  String get taskHistoryTitle => 'History';
+
+  @override
   String taskLabelsMoreCount(int count) {
     return '+$count';
   }

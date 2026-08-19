@@ -13128,6 +13128,9 @@ class AppLocalizationsEs extends AppLocalizations {
       'Añade una nota vinculada para detalles e ideas.';
 
   @override
+  String get taskHistoryTitle => 'Historial';
+
+  @override
   String taskLabelsMoreCount(int count) {
     return '+$count';
   }

@@ -13117,6 +13117,9 @@ class AppLocalizationsIt extends AppLocalizations {
       'Aggiunge una nota collegata per dettagli e pensieri.';
 
   @override
+  String get taskHistoryTitle => 'Cronologia';
+
+  @override
   String taskLabelsMoreCount(int count) {
     return '+$count';
   }

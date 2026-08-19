@@ -23,6 +23,7 @@ import 'package:lotti/features/tasks/ui/task_app_bar.dart';
 import 'package:lotti/features/tasks/ui/task_form.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_action_bar.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_first_run_actions.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_history_section.dart';
 import 'package:lotti/features/tasks/ui/widgets/viewport_stable_animated_size.dart';
 import 'package:lotti/features/tasks/util/scroll_anchor.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -35,8 +36,10 @@ import 'package:lotti/widgets/media/media_drop_target.dart';
 /// Full-screen detail view for a single task identified by [taskId].
 ///
 /// Renders a [CustomScrollView] with a sliver app bar, the [TaskForm]
-/// (header, AI summary, linked tasks, checklists), and the task's linked
-/// entries below. A sticky [TaskActionBar] sits in the `bottomNavigationBar`
+/// (header, AI summary, checklists, linked tasks), and the task's dated
+/// log-entry history below — collapsed by default behind a
+/// [TaskHistorySection] header, force-expanded when a focus intent targets
+/// an entry inside it. A sticky [TaskActionBar] sits in the `bottomNavigationBar`
 /// slot; `extendBody` lets its glass blur read the scrolling body and a
 /// trailing [SliverPadding] reserves the bar's height so the last entry can
 /// scroll clear of it. Listens to the task focus controller to auto-scroll
@@ -123,6 +126,12 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
   /// reused for a different task (e.g. a master-detail pane), the count is reset
   /// so a stale previous-task count can't falsely trigger the scroll anchor.
   String? _lastTaskId;
+
+  /// Whether the dated log-entry history is expanded. Collapsed by default —
+  /// the history is the page's longest region — and force-expanded when a
+  /// focus intent targets an entry inside it, because a collapsed section has
+  /// no mounted entry keys to scroll to.
+  bool _historyExpanded = false;
 
   @override
   void initState() {
@@ -235,6 +244,10 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
     _lastTaskId = widget.taskId;
     _lastOpenSuggestionCount = null;
     _lastLinkGroups = null;
+    // The next task starts with its history collapsed again; no setState —
+    // this runs from listeners and the taskId change rebuilds the page
+    // anyway.
+    _historyExpanded = false;
     return true;
   }
 
@@ -423,6 +436,11 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
             ref.read(focusProvider.notifier).clearIntent();
             return;
           }
+          // The target lives inside the collapsed history — open it first so
+          // the entry mounts and the retrying scroll can find its key.
+          if (!_historyExpanded) {
+            setState(() => _historyExpanded = true);
+          }
           scrollToEntry(
             entryId,
             intent.alignment,
@@ -590,24 +608,37 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
                         left: context.designTokens.spacing.step5,
                         right: context.designTokens.spacing.step5,
                       ),
-                      child:
-                          Column(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: <Widget>[
-                              LinkedEntriesWithTimer(
-                                item: task,
-                                entryKeyBuilder: _getEntryKey,
-                                highlightedEntryId: highlightedEntryId,
-                                hideTaskEntries: true,
+                      // The dated log history lives behind a collapsed-by-
+                      // default section: it is the page's longest region, and
+                      // the summary / todos / linked tasks above it are what a
+                      // reader needs first. A first-run task has no history
+                      // yet, so the section (header included) stands down.
+                      child: isFirstRun
+                          ? const SizedBox.shrink()
+                          : TaskHistorySection(
+                              expanded: _historyExpanded,
+                              onToggle: () => setState(
+                                () => _historyExpanded = !_historyExpanded,
                               ),
-                              LinkedFromEntriesWidget(
-                                task,
-                                hideTaskEntries: true,
-                              ),
-                            ],
-                          ).animate().fadeIn(
-                            duration: const Duration(milliseconds: 100),
-                          ),
+                              child:
+                                  Column(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: <Widget>[
+                                      LinkedEntriesWithTimer(
+                                        item: task,
+                                        entryKeyBuilder: _getEntryKey,
+                                        highlightedEntryId: highlightedEntryId,
+                                        hideTaskEntries: true,
+                                      ),
+                                      LinkedFromEntriesWidget(
+                                        task,
+                                        hideTaskEntries: true,
+                                      ),
+                                    ],
+                                  ).animate().fadeIn(
+                                    duration: const Duration(milliseconds: 100),
+                                  ),
+                            ),
                     ),
                   ),
                 ),

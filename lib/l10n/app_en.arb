@@ -7155,6 +7155,7 @@
   "taskFirstRunRecordAudioHint": "Opens the recorder without starting to record.",
   "taskFirstRunWriteNote": "Write a note",
   "taskFirstRunWriteNoteHint": "Adds a linked note for details and thoughts.",
+  "taskHistoryTitle": "History",
   "taskLabelsMoreCount": "+{count}",
   "@taskLabelsMoreCount": {
     "placeholders": {

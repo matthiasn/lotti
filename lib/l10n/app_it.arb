@@ -5558,6 +5558,7 @@
   "taskFirstRunRecordAudioHint": "Apre il registratore senza avviare la registrazione.",
   "taskFirstRunWriteNote": "Scrivi una nota",
   "taskFirstRunWriteNoteHint": "Aggiunge una nota collegata per dettagli e pensieri.",
+  "taskHistoryTitle": "Cronologia",
   "taskLabelsMoreCount": "+{count}",
   "@taskLabelsMoreCount": {
     "placeholders": {

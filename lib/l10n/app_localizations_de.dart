@@ -13027,6 +13027,9 @@ class AppLocalizationsDe extends AppLocalizations {
       'Fügt eine verknüpfte Notiz für Details und Gedanken hinzu.';
 
   @override
+  String get taskHistoryTitle => 'Verlauf';
+
+  @override
   String taskLabelsMoreCount(int count) {
     return '+$count';
   }
