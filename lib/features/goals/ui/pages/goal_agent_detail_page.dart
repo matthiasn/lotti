@@ -109,6 +109,15 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
   /// Called from layout, so the controller write is deferred past the frame;
   /// idempotent per computed value, and a no-op once the user has picked a
   /// preset.
+  ///
+  /// The chat drawer's inset is deliberately NOT subtracted while it is
+  /// open: the drawer is a transient overlay, and refitting on every toggle
+  /// would flap the shared span — reloading the progress projection, the
+  /// completion chart and the heatmap data on each open/close. The span fits
+  /// the RESTING layout; while the drawer is open, the tracks' own
+  /// fit-before-scroll policy absorbs the temporary deficit by narrowing
+  /// columns, which at the drawer's fold widths still fits without a
+  /// scroller.
   void _scheduleAutoSpan(
     BuildContext context, {
     required double paneWidth,
