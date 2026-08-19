@@ -12879,7 +12879,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get taskCategoryUnassignedLabel => 'ej tilldelad';
 
   @override
-  String get taskDueDateLabel => 'Beräknat datum';
+  String get taskDueDateLabel => 'Förfallodatum';
 
   @override
   String taskDueDateWithDate(String date) {
@@ -13102,7 +13102,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get taskMetaDetailsButton => 'Detaljer';
 
   @override
-  String get taskMetaDueDateLabel => 'Beräknat datum';
+  String get taskMetaDueDateLabel => 'Förfallodatum';
 
   @override
   String get taskMetaLabelsLabel => 'Etiketter';

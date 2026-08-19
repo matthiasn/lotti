@@ -5506,7 +5506,7 @@
   "taskCategoryAllLabel": "alla",
   "taskCategoryLabel": "Kategori:",
   "taskCategoryUnassignedLabel": "ej tilldelad",
-  "taskDueDateLabel": "Beräknat datum",
+  "taskDueDateLabel": "Förfallodatum",
   "taskDueDateWithDate": "Förfaller: {date}",
   "@taskDueDateWithDate": {
     "placeholders": {
@@ -5618,7 +5618,7 @@
   "taskLanguageYoruba": "Yoruba",
   "taskMetaAiSpendLabel": "AI-utgifter",
   "taskMetaDetailsButton": "Detaljer",
-  "taskMetaDueDateLabel": "Beräknat datum",
+  "taskMetaDueDateLabel": "Förfallodatum",
   "taskMetaLabelsLabel": "Etiketter",
   "taskMetaPriorityLabel": "Prioritet",
   "taskMetaSheetTitle": "Uppgiftsdetaljer",

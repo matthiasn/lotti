@@ -39,18 +39,24 @@ void main() {
       expect(find.text('entry stream'), findsOneWidget);
     });
 
-    testWidgets('the header row and the chevron both fire onToggle', (
-      tester,
-    ) async {
-      var toggles = 0;
-      await pump(tester, expanded: false, onToggle: () => toggles++);
+    testWidgets(
+      'the whole row is ONE control: taps anywhere fire onToggle and no '
+      'nested button duplicates it for assistive technology',
+      (tester) async {
+        var toggles = 0;
+        await pump(tester, expanded: false, onToggle: () => toggles++);
 
-      await tester.tap(find.text('History'));
-      await tester.tap(find.byIcon(Icons.expand_more));
-      await tester.pump();
+        await tester.tap(find.text('History'));
+        await tester.tap(find.byIcon(Icons.expand_more));
+        await tester.pump();
 
-      expect(toggles, 2);
-    });
+        expect(toggles, 2);
+        // The chevron is a plain glyph inside the row's InkWell — a nested
+        // IconButton exposed a duplicate control to screen readers.
+        expect(find.byType(IconButton), findsNothing);
+        expect(find.byType(InkWell), findsOneWidget);
+      },
+    );
 
     testWidgets('the header stays pinned in place across the states', (
       tester,

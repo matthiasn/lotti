@@ -13315,7 +13315,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get taskMetaAiSpendLabel => 'Dépenses IA';
 
   @override
-  String get taskMetaDetailsButton => 'Détails';
+  String get taskMetaDetailsButton => 'Afficher les détails';
 
   @override
   String get taskMetaDueDateLabel => 'Date d\'échéance';

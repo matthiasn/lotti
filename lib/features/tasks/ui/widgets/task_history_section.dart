@@ -37,40 +37,51 @@ class TaskHistorySection extends StatelessWidget {
       children: [
         Material(
           color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(tokens.radii.s),
-            onTap: onToggle,
-            child: Padding(
-              padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
-              child: Row(
-                children: [
-                  SizedBox(width: tokens.spacing.step2),
-                  Expanded(
-                    child: Text(
-                      context.messages.taskHistoryTitle,
-                      style: tokens.typography.styles.subtitle.subtitle1
-                          .copyWith(
-                            color: tokens.colors.text.highEmphasis,
-                            fontWeight: FontWeight.w600,
-                          ),
-                    ),
+          // ONE semantic control: the whole row is the button and the
+          // chevron is a plain, non-interactive glyph inside it. A nested
+          // IconButton exposed a duplicate control to assistive technology
+          // for the same toggle.
+          child: Semantics(
+            expanded: expanded,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(tokens.radii.s),
+              onTap: onToggle,
+              child: ConstrainedBox(
+                // The chevron's IconButton used to supply the 48pt target;
+                // the bare row keeps that floor itself.
+                constraints: const BoxConstraints(
+                  minHeight: TapTargets.minimum,
+                ),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    vertical: tokens.spacing.step2,
                   ),
-                  AnimatedRotation(
-                    turns: expanded ? 0.0 : -0.25,
-                    duration: const Duration(milliseconds: 200),
-                    child: IconButton(
-                      tooltip: expanded
-                          ? context.messages.checklistCollapseTooltip
-                          : context.messages.checklistExpandTooltip,
-                      onPressed: onToggle,
-                      icon: Icon(
-                        Icons.expand_more,
-                        size: 24,
-                        color: tokens.colors.text.lowEmphasis,
+                  child: Row(
+                    children: [
+                      SizedBox(width: tokens.spacing.step2),
+                      Expanded(
+                        child: Text(
+                          context.messages.taskHistoryTitle,
+                          style: tokens.typography.styles.subtitle.subtitle1
+                              .copyWith(
+                                color: tokens.colors.text.highEmphasis,
+                                fontWeight: FontWeight.w600,
+                              ),
+                        ),
                       ),
-                    ),
+                      AnimatedRotation(
+                        turns: expanded ? 0.0 : -0.25,
+                        duration: const Duration(milliseconds: 200),
+                        child: Icon(
+                          Icons.expand_more,
+                          size: 24,
+                          color: tokens.colors.text.lowEmphasis,
+                        ),
+                      ),
+                      SizedBox(width: tokens.spacing.step3),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
           ),
