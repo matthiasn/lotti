@@ -2,6 +2,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
@@ -75,7 +76,10 @@ class GoalReflectionVoiceNotes extends ConsumerWidget {
         if (canRecord)
           Align(
             alignment: Alignment.centerLeft,
-            child: InkWell(
+            // A text link, not a button: Material's default hover washed a
+            // rectangle over the caption. The link's own ink lifts a step;
+            // the fine print beside it stays quiet.
+            child: DsQuietInk(
               key: const ValueKey('goal-reflection-add-voice-note'),
               onTap: () async {
                 final createdId = await openRecorder(
@@ -91,35 +95,41 @@ class GoalReflectionVoiceNotes extends ConsumerWidget {
                     .transcribe(agentId: agentId, entryId: createdId);
               },
               borderRadius: BorderRadius.circular(tokens.radii.s),
-              child: Padding(
-                padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      LottiIcons.mic,
-                      size: IconSizes.xs,
-                      color: tokens.colors.interactive.enabled,
-                    ),
-                    SizedBox(width: tokens.spacing.step2),
-                    Text(
-                      context.messages.goalCheckInAddVoiceNote,
-                      style: tokens.typography.styles.body.bodySmall.copyWith(
-                        color: tokens.colors.interactive.enabled,
+              builder: (context, highlighted) {
+                final ink = highlighted
+                    ? tokens.colors.interactive.hover
+                    : tokens.colors.interactive.enabled;
+                return Padding(
+                  padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        LottiIcons.mic,
+                        size: IconSizes.xs,
+                        color: ink,
                       ),
-                    ),
-                    SizedBox(width: tokens.spacing.step2),
-                    Flexible(
-                      child: Text(
-                        context.messages.goalCheckInNoteKeptSeparate,
-                        style: tokens.typography.styles.others.caption.copyWith(
-                          color: tokens.colors.text.lowEmphasis,
+                      SizedBox(width: tokens.spacing.step2),
+                      Text(
+                        context.messages.goalCheckInAddVoiceNote,
+                        style: tokens.typography.styles.body.bodySmall.copyWith(
+                          color: ink,
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
+                      SizedBox(width: tokens.spacing.step2),
+                      Flexible(
+                        child: Text(
+                          context.messages.goalCheckInNoteKeptSeparate,
+                          style: tokens.typography.styles.others.caption
+                              .copyWith(
+                                color: tokens.colors.text.lowEmphasis,
+                              ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
           ),
       ],

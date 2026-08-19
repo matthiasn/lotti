@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/nudges/model/nudge_banner_entry.dart';
 import 'package:lotti/features/nudges/service/nudge_interactions.dart';
@@ -58,12 +59,15 @@ class GoalBannerCard extends ConsumerWidget {
         key: ValueKey('goal-banner-${entry.nudge.id}'),
         color: style.fill,
         borderRadius: radius,
-        child: InkWell(
+        // The card body is the doorway to the conversation about this
+        // nudge; rating and visibility actions own separate controls. The
+        // doorway stays quiet: Material's hover overlay washed the whole
+        // banner like one enormous button, while the CTA pill below is the
+        // element that actually advertises pressability.
+        child: DsQuietInk(
           borderRadius: radius,
-          // The card body is the doorway to the conversation about this
-          // nudge; rating and visibility actions own separate controls.
           onTap: () => beamToNamed(entry.tapRoute),
-          child: Ink(
+          builder: (context, highlighted) => DecoratedBox(
             decoration: BoxDecoration(
               borderRadius: radius,
               border: Border.all(color: style.border),

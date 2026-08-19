@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.11]
 ### Changed
+- **Quieter hovers and real tooltips on the goal page.** Pointing at things
+  on a goal no longer conjures phantom buttons: the day squares, the
+  "Reflect on today" row, the check-ins "See all" link, the "Add a voice
+  note" link, the goal banner and the goal cards on the overview all stop
+  washing a grey rectangle over themselves on hover. Text links now shift
+  their own colour a step instead, and hovering a day square answers with a
+  proper tooltip — a small floating card naming the day and what happened on
+  it — in place of the stock grey slab. Habit cards also got tighter: the
+  "N successful days needed to recover" note shares a line with the date
+  span whenever it fits, and the vertical gaps inside the card shrank a
+  step.
 - **Cleaner goal cards.** Each habit and signal card now carries one stacked
   block in its top-right corner — the key reading ("7 this window · target
   5", "121 / 81 mmHg") with its status ("On track", "Needs attention")

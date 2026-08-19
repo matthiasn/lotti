@@ -18,6 +18,8 @@ import 'package:lotti/features/design_system/components/callouts/design_system_i
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
+import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
+import 'package:lotti/features/design_system/components/tooltips/ds_tooltip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/logic/goal_aggregate_rounding.dart';
 import 'package:lotti/features/goals/logic/goal_metric_series.dart';
@@ -162,6 +164,8 @@ class GoalCompactWindowStrip extends StatelessWidget {
           dayName,
           outcome,
         ),
+        tooltipDay: dayName,
+        tooltipOutcome: outcome,
         onTap: () => onDaySelected(date),
       );
     }
@@ -296,6 +300,8 @@ class _CompactDayCell extends StatelessWidget {
     this.size = IconSizes.xs,
     this.onTap,
     this.label,
+    this.tooltipDay,
+    this.tooltipOutcome,
     this.rating,
     this.weekdayLetter,
   });
@@ -313,9 +319,14 @@ class _CompactDayCell extends StatelessWidget {
   /// the fill; [state] is only what the app measured.
   final GoalAssessmentRating? rating;
 
-  /// Spoken and hovered name for a tappable cell. Null on a read-only strip,
-  /// whose semantics are carried by the summary above it.
+  /// Spoken name for a tappable cell. Null on a read-only strip, whose
+  /// semantics are carried by the summary above it.
   final String? label;
+
+  /// The same fact split for the hover tooltip: the day names the subject,
+  /// the outcome describes it. Both null exactly when [label] is.
+  final String? tooltipDay;
+  final String? tooltipOutcome;
 
   @override
   Widget build(BuildContext context) {
@@ -399,27 +410,26 @@ class _CompactDayCell extends StatelessWidget {
     // of the touch floor and whatever width the row can spare. Growing the
     // square itself to 48px would make the strip shout over the habit rows it
     // is meant to summarise.
+    // No hover fill: the hit slot is far larger than the square it serves,
+    // so Material's overlay drew a phantom button bulging around the cell.
+    // The cell is a data readout — hover answers with the styled tooltip
+    // naming the day and its outcome, not with a fill on the data itself.
     return Semantics(
       label: label,
       button: true,
       excludeSemantics: true,
-      child: Tooltip(
-        message: label ?? '',
-        child: Material(
-          type: MaterialType.transparency,
-          child: InkWell(
-            onTap: onTap,
-            // The design system's hover fill, on its own transparent Material
-            // ABOVE the card surface — ink painted on the Scaffold's Material
-            // sits under the opaque card and never shows.
-            hoverColor: tokens.colors.surface.hover,
-            borderRadius: BorderRadius.circular(tokens.radii.s),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                minHeight: TapTargets.minimum,
-              ),
-              child: Center(child: decorated),
+      child: DsTooltip(
+        title: tooltipDay,
+        message: tooltipOutcome ?? '',
+        preferBelow: false,
+        child: DsQuietInk(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(tokens.radii.s),
+          builder: (context, highlighted) => ConstrainedBox(
+            constraints: const BoxConstraints(
+              minHeight: TapTargets.minimum,
             ),
+            child: Center(child: decorated),
           ),
         ),
       ),
@@ -895,53 +905,54 @@ class _ReflectTodayRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final recorded = this.recorded;
-    return Material(
-      type: MaterialType.transparency,
-      child: InkWell(
-        onTap: onReflect,
-        hoverColor: tokens.colors.surface.hover,
-        borderRadius: BorderRadius.circular(tokens.radii.s),
-        child: ConstrainedBox(
-          // Moving this out of a tappable section card into an inner InkWell
-          // left the row's own height as the target: two icons plus `step2`
-          // padding is about 32px, under the floor — on the ONE action the
-          // user is meant to take daily.
-          constraints: const BoxConstraints(minHeight: TapTargets.minimum),
-          child: Padding(
-            padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
-            child: Row(
-              children: [
-                // The sparkle stays exclusive to agent suggestions; this row is
-                // the USER writing a reflection.
-                Icon(
+    // A quiet row, not a button: the full-width hover fill read as a phantom
+    // button across the card. The trailing chevron — the row's own "this
+    // opens something" glyph — lifts a step instead.
+    return DsQuietInk(
+      onTap: onReflect,
+      borderRadius: BorderRadius.circular(tokens.radii.s),
+      builder: (context, highlighted) => ConstrainedBox(
+        // Moving this out of a tappable section card into an inner ink target
+        // left the row's own height as the target: two icons plus `step2`
+        // padding is about 32px, under the floor — on the ONE action the
+        // user is meant to take daily.
+        constraints: const BoxConstraints(minHeight: TapTargets.minimum),
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
+          child: Row(
+            children: [
+              // The sparkle stays exclusive to agent suggestions; this row is
+              // the USER writing a reflection.
+              Icon(
+                recorded == null
+                    ? LottiIcons.editNote
+                    : goalAssessmentRatingGlyph(recorded),
+                // The verdict's own family ink, NOT the on-alert ink: this
+                // glyph sits on the card surface, where the on-alert ink is
+                // near-invisible by design — it is tuned for glyphs drawn on
+                // a saturated fill, which is where the strip uses it.
+                color: recorded == null
+                    ? tokens.colors.interactive.enabled
+                    : goalAssessmentRatingSurfaceInk(tokens, recorded),
+              ),
+              SizedBox(width: tokens.spacing.step3),
+              Expanded(
+                child: Text(
                   recorded == null
-                      ? LottiIcons.editNote
-                      : goalAssessmentRatingGlyph(recorded),
-                  // The verdict's own family ink, NOT the on-alert ink: this
-                  // glyph sits on the card surface, where the on-alert ink is
-                  // near-invisible by design — it is tuned for glyphs drawn on
-                  // a saturated fill, which is where the strip uses it.
-                  color: recorded == null
-                      ? tokens.colors.interactive.enabled
-                      : goalAssessmentRatingSurfaceInk(tokens, recorded),
-                ),
-                SizedBox(width: tokens.spacing.step3),
-                Expanded(
-                  child: Text(
-                    recorded == null
-                        ? context.messages.goalAssessmentReflectToday
-                        : goalAssessmentRatingLabel(context, recorded),
-                    style: tokens.typography.styles.body.bodySmall.copyWith(
-                      color: tokens.colors.text.highEmphasis,
-                    ),
+                      ? context.messages.goalAssessmentReflectToday
+                      : goalAssessmentRatingLabel(context, recorded),
+                  style: tokens.typography.styles.body.bodySmall.copyWith(
+                    color: tokens.colors.text.highEmphasis,
                   ),
                 ),
-                Icon(
-                  LottiIcons.chevronRight,
-                  color: tokens.colors.text.lowEmphasis,
-                ),
-              ],
-            ),
+              ),
+              Icon(
+                LottiIcons.chevronRight,
+                color: highlighted
+                    ? tokens.colors.text.highEmphasis
+                    : tokens.colors.text.lowEmphasis,
+              ),
+            ],
           ),
         ),
       ),
@@ -1004,7 +1015,10 @@ class _HabitDimensionCard extends StatelessWidget {
             met: habit.deficit == 0,
             hasData: true,
           ),
-          SizedBox(height: tokens.spacing.step4),
+          // step3, not step4: with the deficit note riding the period line
+          // the header block sits directly above one caption row, and the
+          // wider gap left the card's top third mostly air.
+          SizedBox(height: tokens.spacing.step3),
           _HabitProgressRow(
             habit: habit,
             today: today,
@@ -1016,7 +1030,7 @@ class _HabitDimensionCard extends StatelessWidget {
           // up, it was one of six figures competing for the same band of the
           // card with nothing saying which qualified which.
           if (successfulWeeks != null) ...[
-            SizedBox(height: tokens.spacing.step4),
+            SizedBox(height: tokens.spacing.step3),
             _Reliability(successfulWeeks: successfulWeeks),
           ],
           // Inside the card, under the squares it keys. On the page background
@@ -1024,12 +1038,12 @@ class _HabitDimensionCard extends StatelessWidget {
           // annotating the chart below — which it does not explain at all.
           // Once per goal, not once per habit: it is the same key.
           if (showLegend) ...[
-            SizedBox(height: tokens.spacing.step4),
+            SizedBox(height: tokens.spacing.step3),
             Divider(
-              height: tokens.spacing.step4,
+              height: tokens.spacing.step3,
               color: tokens.colors.decorative.level01,
             ),
-            SizedBox(height: tokens.spacing.step3),
+            SizedBox(height: tokens.spacing.step2),
             const _ProgressLegend(),
           ],
         ],
@@ -2095,13 +2109,34 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
           availableWidth: constraints.maxWidth,
         );
         final contentWidth = metrics.pitch * activeDays.length;
+        final periodLine = [
+          _periodLabel(context, activeDays),
+          if (rollingWeek) context.messages.goalProgressCompactCaption,
+        ].join(' · ');
+        // The deficit note shares the period line whenever both fit side by
+        // side: two facts about the same window on one caption row, instead
+        // of a dedicated line whose only content is usually one short
+        // sentence. Only a narrow card stacks them.
+        final textScaler = MediaQuery.textScalerOf(context);
+        double lineWidth(String text, TextStyle style) => (TextPainter(
+          text: TextSpan(text: text, style: style),
+          textDirection: Directionality.of(context),
+          textScaler: textScaler,
+          maxLines: 1,
+        )..layout()).width;
+        final noteSharesLine =
+            note != null &&
+            lineWidth(periodLine, cadenceStyle) +
+                    tokens.spacing.step4 +
+                    lineWidth(note, noteStyle) <=
+                constraints.maxWidth;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // The deficit note, flush to the trailing edge under the corner
-            // block it qualifies; bounded so it wraps rather than
+            // The stacked fallback: the note flush to the trailing edge under
+            // the corner block it qualifies; bounded so it wraps rather than
             // overflowing a narrow card.
-            if (note != null) ...[
+            if (note != null && !noteSharesLine) ...[
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -2118,7 +2153,7 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
                   ),
                 ],
               ),
-              SizedBox(height: tokens.spacing.step3),
+              SizedBox(height: tokens.spacing.step2),
             ],
             // The span the squares below cover, on the same rail as the
             // squares themselves — it used to sit a chart's y-axis gutter to
@@ -2130,14 +2165,16 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    [
-                      _periodLabel(context, activeDays),
-                      if (rollingWeek)
-                        context.messages.goalProgressCompactCaption,
-                    ].join(' · '),
-                    style: cadenceStyle,
-                  ),
+                  if (noteSharesLine)
+                    Row(
+                      children: [
+                        Text(periodLine, style: cadenceStyle),
+                        const Spacer(),
+                        Text(note, style: noteStyle),
+                      ],
+                    )
+                  else
+                    Text(periodLine, style: cadenceStyle),
                   SizedBox(height: tokens.spacing.step2),
                   // Labels and squares pan as one unit, and only where even
                   // the narrowest column overflows.
@@ -2357,8 +2394,10 @@ class _ProgressDayCell extends StatelessWidget {
       return Semantics(
         label: semanticLabel,
         excludeSemantics: true,
-        child: Tooltip(
-          message: semanticLabel,
+        child: DsTooltip(
+          title: menuDate,
+          message: outcome,
+          preferBelow: false,
           child: decoratedCell,
         ),
       );
@@ -2384,6 +2423,7 @@ class _ProgressDayCell extends StatelessWidget {
             '${day.day.toIso8601String().substring(0, 10)}',
           ),
           menuDate: menuDate,
+          outcomeLabel: outcome,
           semanticLabel: semanticLabel,
           onSelected: callback,
           child: Center(
@@ -2415,6 +2455,7 @@ class _HabitDayOutcomeMenu extends StatefulWidget {
     required this.currentOutcome,
     required this.headerKey,
     required this.menuDate,
+    required this.outcomeLabel,
     required this.semanticLabel,
     required this.onSelected,
     required this.child,
@@ -2424,6 +2465,9 @@ class _HabitDayOutcomeMenu extends StatefulWidget {
   final HabitCompletionType? currentOutcome;
   final Key headerKey;
   final String menuDate;
+
+  /// The day's recorded outcome, localized — the tooltip's body line.
+  final String outcomeLabel;
   final String semanticLabel;
   final ValueChanged<HabitCompletionType> onSelected;
   final Widget child;
@@ -2505,28 +2549,26 @@ class _HabitDayOutcomeMenuState extends State<_HabitDayOutcomeMenu> {
           ],
         ),
       ],
-      builder: (context, controller, child) => Tooltip(
-        message: widget.semanticLabel,
-        // A local transparent Material with the design system's hover fill:
-        // without it the ink painted on the Scaffold's Material, underneath
-        // the opaque card, so the one grid the user edits daily gave no
-        // hover feedback at all.
-        child: Material(
-          type: MaterialType.transparency,
-          child: InkWell(
-            onTap: widget.enabled
-                ? () {
-                    if (controller.isOpen) {
-                      controller.close();
-                    } else {
-                      controller.open();
-                    }
+      // No hover fill: the pitch-wide hit slot is far larger than the square
+      // it serves, so the overlay drew a phantom button around the cell.
+      // Hover answers with the styled tooltip naming the day and its
+      // recorded outcome instead.
+      builder: (context, controller, child) => DsTooltip(
+        title: widget.menuDate,
+        message: widget.outcomeLabel,
+        preferBelow: false,
+        child: DsQuietInk(
+          onTap: widget.enabled
+              ? () {
+                  if (controller.isOpen) {
+                    controller.close();
+                  } else {
+                    controller.open();
                   }
-                : null,
-            hoverColor: tokens.colors.surface.hover,
-            borderRadius: BorderRadius.circular(tokens.radii.s),
-            child: widget.child,
-          ),
+                }
+              : null,
+          borderRadius: BorderRadius.circular(tokens.radii.s),
+          builder: (context, highlighted) => widget.child,
         ),
       ),
     );

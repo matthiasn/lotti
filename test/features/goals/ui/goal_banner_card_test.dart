@@ -359,4 +359,23 @@ void main() {
     expect(navigated, ['/goals/details/goal-1']);
     expect(find.text('How was this banner?'), findsNothing);
   });
+
+  testWidgets('the banner body paints no hover overlay — the CTA pill is '
+      'the one pressable-looking element', (tester) async {
+    await pumpCard(tester);
+
+    final ink = tester.widget<InkWell>(
+      find
+          .descendant(
+            of: find.byKey(const ValueKey('goal-banner-ad-1')),
+            matching: find.byType(InkWell),
+          )
+          .first,
+    );
+    expect(ink.hoverColor, Colors.transparent);
+    expect(
+      ink.overlayColor?.resolve({WidgetState.hovered}),
+      Colors.transparent,
+    );
+  });
 }

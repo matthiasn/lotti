@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
+import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
 import 'package:lotti/features/goals/ui/checkins/goal_checkin_timeline.dart';
@@ -88,14 +89,17 @@ class GoalCheckInsCard extends ConsumerWidget {
           ),
           if (hasMore && onSeeAll != null) ...[
             SizedBox(height: tokens.spacing.step2),
-            Material(
-              type: MaterialType.transparency,
-              child: InkWell(
-                key: const ValueKey('goal-checkin-see-all'),
-                onTap: onSeeAll,
-                hoverColor: tokens.colors.surface.hover,
-                borderRadius: BorderRadius.circular(tokens.radii.s),
-                child: Padding(
+            // A text link, not a button: the hover fill washed a rectangle
+            // across the card. The link's own ink lifts a step instead.
+            DsQuietInk(
+              key: const ValueKey('goal-checkin-see-all'),
+              onTap: onSeeAll,
+              borderRadius: BorderRadius.circular(tokens.radii.s),
+              builder: (context, highlighted) {
+                final ink = highlighted
+                    ? tokens.colors.interactive.hover
+                    : tokens.colors.interactive.enabled;
+                return Padding(
                   padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -103,18 +107,18 @@ class GoalCheckInsCard extends ConsumerWidget {
                       Text(
                         context.messages.goalCheckInsSeeAll,
                         style: tokens.typography.styles.body.bodySmall.copyWith(
-                          color: tokens.colors.interactive.enabled,
+                          color: ink,
                         ),
                       ),
                       Icon(
                         LottiIcons.chevronRight,
                         size: IconSizes.xs,
-                        color: tokens.colors.interactive.enabled,
+                        color: ink,
                       ),
                     ],
                   ),
-                ),
-              ),
+                );
+              },
             ),
           ],
         ],

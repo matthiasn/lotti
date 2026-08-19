@@ -256,6 +256,27 @@ control that reads as one and keeps the shared hover fill. Reach for
 `DsQuietInk` only when a hover fill would manufacture a button shape the
 resting design deliberately does not have.
 
+## The floating readout: `DsTooltip`
+
+The design system's tooltip surface
+(`components/tooltips/ds_tooltip.dart`), replacing the stock Material grey
+slab wherever a hover needs to *say* something. It wraps Flutter's `Tooltip`
+— positioning, trigger gestures and semantics stay the framework's — and owns
+only the surface and the type: the context menu's floating-surface language
+(`background.level01` fill, `decorative.level01` hairline, the same soft
+shadow, `radii.s` corners) around caption type, plus a ~300 ms wait so a
+cursor crossing a dense strip of targets does not strobe.
+
+Two forms. A plain `message` renders one high-emphasis caption line. With
+`title` set, the title names the subject (a date, an entity) in semibold
+high-emphasis ink and the message describes it a step quieter underneath —
+the shape a data readout wants. The goal page's day squares are the canonical
+pairing with `DsQuietInk`: the cell paints **no** hover fill (its hit slot is
+far larger than the square, so an overlay bulged a phantom button around the
+data), and hover answers with `DsTooltip(title: day, message: outcome)`
+instead — the pointer asks, the surface names the day and what happened on
+it, and the data's own ink never changes.
+
 ## In a dense row instead: `DesignSystemContactRow`
 
 The support footer both navigation surfaces close with — four equal,

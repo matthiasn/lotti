@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/model/goal_assessment.dart';
@@ -144,10 +145,13 @@ class UnifiedGoalCard extends ConsumerWidget {
           ),
     ];
 
-    final header = InkWell(
+    // Quiet ink: the header is a card region, not a button, and Material's
+    // hover overlay painted a phantom one over the title and strip. The
+    // pointer cursor and the card's own affordances carry tappability.
+    final header = DsQuietInk(
       borderRadius: BorderRadius.circular(tokens.radii.l),
       onTap: () => beamToNamed(goalDetailPath(identity.agentId)),
-      child: Padding(
+      builder: (context, highlighted) => Padding(
         padding: EdgeInsets.all(tokens.spacing.cardPadding),
         child: LayoutBuilder(
           builder: (context, constraints) {

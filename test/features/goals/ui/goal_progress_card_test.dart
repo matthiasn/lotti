@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
@@ -3139,8 +3140,10 @@ void main() {
     },
   );
 
-  testWidgets('interactive day cells carry the hover fill on a local '
-      'Material', (tester) async {
+  testWidgets('interactive day cells paint no hover overlay and answer '
+      'hover with the styled tooltip naming the day and outcome', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         GoalProgressCard(
@@ -3165,26 +3168,37 @@ void main() {
       ),
     );
 
-    final tokens = tester.element(find.byType(GoalProgressCard)).designTokens;
     final cell = find.byKey(
       const ValueKey('goal-habit-day-walk-2026-08-11'),
     );
+    // The hit slot is far larger than the square it serves, so Material's
+    // hover fill drew a phantom button bulging around the cell — the quiet
+    // ink keeps the tap and silences every overlay.
     final ink = tester.widget<InkWell>(
       find.descendant(of: cell, matching: find.byType(InkWell)).first,
     );
-    // The design-system hover fill, painted on a LOCAL transparent Material:
-    // ink drawn on the Scaffold's Material sits underneath the opaque card
-    // and never shows, which is exactly the missing-hover bug this guards.
-    expect(ink.hoverColor, tokens.colors.surface.hover);
-    final material = tester.widget<Material>(
-      find
-          .ancestor(
-            of: find.descendant(of: cell, matching: find.byType(InkWell)),
-            matching: find.byType(Material),
-          )
-          .first,
+    expect(ink.hoverColor, Colors.transparent);
+    expect(
+      ink.overlayColor?.resolve({WidgetState.hovered}),
+      Colors.transparent,
     );
-    expect(material.type, MaterialType.transparency);
+
+    // Hover answers with the design-system tooltip instead: the day names
+    // the subject, the outcome describes it, on one floating surface.
+    final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await gesture.addPointer();
+    addTearDown(gesture.removePointer);
+    await gesture.moveTo(tester.getCenter(cell));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 200));
+    // One rich text carrying both lines — matched together because the
+    // legend's own "No entry" label is also on this card.
+    expect(
+      find.textContaining('Tue, Aug 11\nNo entry', findRichText: true),
+      findsOneWidget,
+    );
+    await gesture.moveTo(Offset.zero);
+    await tester.pumpAndSettle();
   });
 
   testWidgets('a recorded miss is visibly distinct from an empty day', (
@@ -3796,5 +3810,162 @@ void main() {
       find.text('Behind target for this window.'),
     );
     expect(note.textAlign, TextAlign.center);
+  });
+
+  testWidgets('a wide card folds the deficit note onto the period line; a '
+      'narrow card stacks it', (tester) async {
+    tester.view
+      ..physicalSize = const Size(1600, 800)
+      ..devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    Widget card() => GoalProgressCard(
+      progress: GoalProgressView(
+        today: today,
+        habits: [
+          GoalHabitProgressView(
+            habitId: 'gym',
+            name: 'Gym',
+            targetCount: 3,
+            days: [
+              for (var offset = 6; offset >= 0; offset--)
+                day(offset, offset == 3 ? 1 : 0),
+            ],
+            successfulWeeks: 4,
+          ),
+        ],
+      ),
+    );
+
+    await tester.pumpWidget(makeTestableWidgetNoScroll(card()));
+    const periodText = 'Aug 5 – Aug 11 · slides at midnight';
+    const noteText = '2 successful days needed to recover';
+    final period = tester.getRect(find.text(periodText));
+    final note = tester.getRect(find.text(noteText));
+    expect(
+      note.top,
+      moreOrLessEquals(period.top, epsilon: 1),
+      reason: 'with room, the note shares the period caption row',
+    );
+    expect(note.left, greaterThan(period.right));
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Center(child: SizedBox(width: 320, child: card())),
+      ),
+    );
+    final stackedPeriod = tester.getRect(find.text(periodText));
+    final stackedNote = tester.getRect(find.text(noteText));
+    expect(
+      stackedNote.bottom,
+      lessThanOrEqualTo(stackedPeriod.top),
+      reason: 'a narrow card keeps the note on its own line above the period',
+    );
+  });
+
+  testWidgets('the reflect row paints no hover overlay; its chevron lifts '
+      'a step instead', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalThisWeekCard(
+          progress: GoalProgressView(
+            today: today,
+            habits: [
+              GoalHabitProgressView(
+                habitId: 'gym',
+                name: 'Gym',
+                targetCount: 3,
+                days: [
+                  for (var offset = 6; offset >= 0; offset--) day(offset, 0),
+                ],
+                successfulWeeks: 0,
+              ),
+            ],
+          ),
+          onReflectDay: (_) {},
+        ),
+      ),
+    );
+
+    final tokens = tester.element(find.byType(GoalThisWeekCard)).designTokens;
+    final row = find
+        .ancestor(
+          of: find.text('Reflect on today'),
+          matching: find.byType(InkWell),
+        )
+        .first;
+    final ink = tester.widget<InkWell>(row);
+    expect(ink.hoverColor, Colors.transparent);
+    expect(
+      ink.overlayColor?.resolve({WidgetState.hovered}),
+      Colors.transparent,
+    );
+
+    Icon chevron() => tester.widget<Icon>(
+      find.descendant(
+        of: row,
+        matching: find.byIcon(LottiIcons.chevronRight),
+      ),
+    );
+    expect(chevron().color, tokens.colors.text.lowEmphasis);
+
+    final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await gesture.addPointer();
+    addTearDown(gesture.removePointer);
+    await gesture.moveTo(tester.getCenter(find.text('Reflect on today')));
+    await tester.pump();
+    expect(chevron().color, tokens.colors.text.highEmphasis);
+    await gesture.moveTo(Offset.zero);
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('strip day cells silence the hover overlay and answer hover '
+      'with the styled day tooltip', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalThisWeekCard(
+          progress: GoalProgressView(
+            today: today,
+            habits: [
+              GoalHabitProgressView(
+                habitId: 'gym',
+                name: 'Gym',
+                targetCount: 3,
+                days: [
+                  for (var offset = 6; offset >= 0; offset--) day(offset, 0),
+                ],
+                successfulWeeks: 0,
+              ),
+            ],
+          ),
+          onReflectDay: (_) {},
+        ),
+      ),
+    );
+
+    final cells = find.descendant(
+      of: find.byType(GoalCompactWindowStrip),
+      matching: find.byType(InkWell),
+    );
+    final ink = tester.widget<InkWell>(cells.last);
+    expect(ink.hoverColor, Colors.transparent);
+    expect(
+      ink.overlayColor?.resolve({WidgetState.hovered}),
+      Colors.transparent,
+    );
+
+    final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await gesture.addPointer();
+    addTearDown(gesture.removePointer);
+    await gesture.moveTo(tester.getCenter(cells.last));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(
+      find.textContaining('Tue, Aug 11\nNo entry', findRichText: true),
+      findsOneWidget,
+    );
+    await gesture.moveTo(Offset.zero);
+    await tester.pumpAndSettle();
   });
 }
