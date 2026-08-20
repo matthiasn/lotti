@@ -38,7 +38,16 @@ project, and relationships to other tasks.
   with live counts, pinned in the desktop sidebar or reachable from the mobile
   rail's Views button.
 - **Shows AI work in context.** The agent's summary, its proposed changes, and
-  what the AI has cost for this task all live on the task itself.
+  what the AI has cost for this task all live on the task itself. The cost is a
+  compact leaf-and-amount indicator that stays on screen the whole time the task
+  is open — beside its status, under its title — rather than only inside the
+  Details panel. It is clickable, so it can grow into a breakdown of where the
+  money went.
+- **Keeps the details in view while you work.** On a wide window, hiding the
+  task list does not just widen the task: the task's metadata — status,
+  priority, category, project, due date, estimate, labels, AI spend — moves
+  into a persistent column on the right, editable in place. Narrower than that,
+  the same rows stay one tap away in their fly-out.
 
 ## What it owns
 

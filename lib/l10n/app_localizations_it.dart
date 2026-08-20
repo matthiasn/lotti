@@ -13253,6 +13253,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get taskMetaDueDateLabel => 'Data di scadenza';
 
   @override
+  String get taskMetaEstimateLabel => 'Stima';
+
+  @override
   String get taskMetaLabelsLabel => 'Etichette';
 
   @override
@@ -13260,9 +13263,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get taskMetaSheetTitle => 'Dettagli dell\'attività';
-
-  @override
-  String get taskMetaTimeLabel => 'Tempo';
 
   @override
   String get taskMetaValueNotSet => 'Non impostato';

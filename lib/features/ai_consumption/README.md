@@ -8,6 +8,9 @@ it, which model answered, what it used, and what it cost.
 - **Shows what AI actually costs.** Per task, per goal agent, per area and per
   model — tokens, money where the provider reports it, and measured energy and
   CO₂e.
+- **Keeps the cost in sight.** The same leaf-and-amount indicator rides along
+  with the work it belongs to — a task shows its cost beside its status — rather
+  than only on a dedicated analysis page.
 - **Attributes work honestly.** A summary, a transcript or a generated image
   carries a record of the calls that produced it, so a cost can always be traced
   to an output.

@@ -26,7 +26,9 @@ const double kTaskChipGlyphSize = 14;
 /// The compact metadata summary under the title: a single lane of quiet,
 /// **informational** read-outs (status, priority, due date, labels) followed
 /// by the one interactive element — the "Details" trigger that opens the
-/// metadata fly-out where every value is edited.
+/// metadata fly-out where every value is edited. A null [onOpenDetails] drops
+/// both the trigger and the tags' hit targets: that is the state where the
+/// details are already on screen as their own column.
 ///
 /// The read-outs wear the tight [DsPillShape.tag] corners (radius 4) so they
 /// cannot be mistaken for the fully-rounded filter/action pills elsewhere on
@@ -41,6 +43,7 @@ class TaskMetaSummaryLine extends StatelessWidget {
     required this.dueDate,
     required this.labels,
     required this.onOpenDetails,
+    this.aiCostSlot,
     this.blockedBySlot,
     this.showSetCategory = false,
     this.onCategoryTap,
@@ -66,6 +69,11 @@ class TaskMetaSummaryLine extends StatelessWidget {
   /// Opens the category picker directly — the same callback the crumb's
   /// category segment uses once a category exists.
   final VoidCallback? onCategoryTap;
+
+  /// The task's lifetime AI cost, as the shared leaf-and-amount indicator.
+  /// Null (or a widget that renders nothing) leaves the lane unchanged, which
+  /// is the state of every task that has never used AI.
+  final Widget? aiCostSlot;
 
   /// Optional "Blocked by" chip (link-derived readiness, ADR 0042 §4 —
   /// independent of [status]). An alarm, not routine metadata, so it stays on
@@ -102,6 +110,11 @@ class TaskMetaSummaryLine extends StatelessWidget {
           _DueSummaryTag(dueDate: dueDate, onTap: onOpenDetails),
         if (labels.isNotEmpty)
           _LabelsSummaryTag(labels: labels, onTap: onOpenDetails),
+        // What the AI has cost on this task, at the same glance as its status
+        // — a fact about the task, sitting with the other facts, rather than
+        // something a reader has to open a panel to learn. Renders nothing
+        // until the task has recorded AI calls.
+        ?aiCostSlot,
         // An offer, not a read-out: dashed muted shell on the fully-rounded
         // interactive radius, opening the category picker directly. Verb
         // form, matching the grammar the old add-lane established.
@@ -116,7 +129,11 @@ class TaskMetaSummaryLine extends StatelessWidget {
             ),
             onTap: onCategoryTap,
           ),
-        _DetailsTrigger(onTap: onOpenDetails),
+        // Only where there is a fly-out to open: with the details column
+        // mounted beside the task, the connector passes null and the lane
+        // ends at its facts rather than offering the same panel twice.
+        if (onOpenDetails case final openDetails?)
+          _DetailsTrigger(onTap: openDetails),
       ],
     );
   }
@@ -345,9 +362,9 @@ class _LabelsSummaryTag extends StatelessWidget {
 /// control it keeps the fully-rounded pill shape — the corner-radius grammar
 /// that separates levers from the square-cornered facts beside it.
 class _DetailsTrigger extends StatelessWidget {
-  const _DetailsTrigger({this.onTap});
+  const _DetailsTrigger({required this.onTap});
 
-  final VoidCallback? onTap;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {

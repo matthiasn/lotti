@@ -13,6 +13,8 @@ import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
+import 'package:lotti/features/ai_consumption/ui/widgets/ai_cost_indicator.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
@@ -27,7 +29,8 @@ import 'package:lotti/features/tasks/state/task_one_liner_provider.dart';
 import 'package:lotti/features/tasks/state/task_progress_controller.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header_connector.dart';
-import 'package:lotti/features/tasks/ui/header/task_meta_flyout.dart';
+import 'package:lotti/features/tasks/ui/header/task_meta_column.dart';
+import 'package:lotti/features/tasks/ui/header/task_meta_section.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_shared_widgets.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -42,6 +45,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../helpers/fake_entry_controller.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
+import '../../../ai_consumption/test_utils.dart';
 
 class _FakeTaskProgressController extends TaskProgressController {
   _FakeTaskProgressController(this._state);
@@ -246,6 +250,8 @@ void main() {
     TaskProgressState? progress,
     String? oneLiner,
     Locale locale = const Locale('en'),
+    bool metaColumnVisible = false,
+    int aiCallCount = 0,
   }) {
     return ProviderScope(
       overrides: [
@@ -262,6 +268,15 @@ void main() {
         taskOneLinerProvider.overrideWith(
           (ref, taskId) async => oneLiner,
         ),
+        taskConsumptionTotalsProvider(task.id).overrideWith(
+          (ref) => Stream.value(
+            makeConsumptionTotals(
+              callCount: aiCallCount,
+              impactCallCount: aiCallCount,
+              credits: aiCallCount > 0 ? 0.42 : 0,
+            ),
+          ),
+        ),
       ],
       child: MaterialApp(
         theme: DesignSystemTheme.dark(),
@@ -275,7 +290,10 @@ void main() {
         supportedLocales: AppLocalizations.supportedLocales,
         locale: locale,
         home: Scaffold(
-          body: DesktopTaskHeaderConnector(taskId: task.id),
+          body: TaskMetaColumnScope(
+            visible: metaColumnVisible,
+            child: DesktopTaskHeaderConnector(taskId: task.id),
+          ),
         ),
       ),
     );
@@ -472,6 +490,70 @@ void main() {
     );
   });
 
+  group('DesktopTaskHeaderConnector — AI cost in the summary lane', () {
+    testWidgets('shows the cost beside the status once AI has run', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        pumpConnector(task: buildTask(), aiCallCount: 7),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // Always visible on the task, not one panel away.
+      expect(find.text('€0.42'), findsOneWidget);
+      expect(find.text('Open'), findsOneWidget);
+    });
+
+    testWidgets('renders nothing for a task that has never used AI', (
+      tester,
+    ) async {
+      await tester.pumpWidget(pumpConnector(task: buildTask()));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.byType(AiCostIndicator), findsNothing);
+    });
+
+    testWidgets('tapping it opens the details that hold the breakdown', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        pumpConnector(task: buildTask(), aiCallCount: 7),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.tap(find.text('€0.42'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.byType(TaskMetaSection), findsOneWidget);
+      expect(find.text('AI spend'), findsOneWidget);
+    });
+
+    testWidgets('reads as a plain fact while the details column is up', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        pumpConnector(
+          task: buildTask(),
+          aiCallCount: 7,
+          metaColumnVisible: true,
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // Still visible — but it does not offer a panel that is already open.
+      expect(find.text('€0.42'), findsOneWidget);
+      expect(
+        tester.widget<AiCostIndicator>(find.byType(AiCostIndicator)).onTap,
+        isNull,
+      );
+    });
+  });
+
   group('DesktopTaskHeaderConnector — fly-out and crumb invocations', () {
     testWidgets(
       'tapping a summary read-out opens the metadata fly-out',
@@ -488,8 +570,30 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        expect(find.byType(TaskMetaFlyoutContent), findsOneWidget);
+        expect(find.byType(TaskMetaSection), findsOneWidget);
         expect(find.text('Task details'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'the Details trigger stands down where the details column is mounted',
+      (tester) async {
+        await tester.pumpWidget(
+          pumpConnector(task: buildTask(), metaColumnVisible: true),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // The read-outs stay; the offer to open a second copy of them does
+        // not, and neither do their hit targets.
+        expect(find.text('Open'), findsOneWidget);
+        expect(find.text('Details'), findsNothing);
+
+        await tester.tap(find.byType(TaskShowcasePriorityGlyph).first);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.byType(TaskMetaSection), findsNothing);
       },
     );
 
@@ -506,11 +610,11 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        expect(find.byType(TaskMetaFlyoutContent), findsOneWidget);
+        expect(find.byType(TaskMetaSection), findsOneWidget);
         // Descriptive labels with their values.
         expect(find.text('Status'), findsOneWidget);
         expect(find.text('Priority'), findsOneWidget);
-        expect(find.text('Time'), findsOneWidget);
+        expect(find.text('Estimate'), findsOneWidget);
         expect(find.text('0m of 2h'), findsOneWidget);
       },
     );
@@ -539,7 +643,7 @@ void main() {
         // Straight to the picker — no fly-out detour for the one attribute
         // the header actively offers.
         expect(find.byType(CategoryPickerSheet), findsOneWidget);
-        expect(find.byType(TaskMetaFlyoutContent), findsNothing);
+        expect(find.byType(TaskMetaSection), findsNothing);
       },
     );
 
@@ -1051,7 +1155,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        expect(find.byType(TaskMetaFlyoutContent), findsOneWidget);
+        expect(find.byType(TaskMetaSection), findsOneWidget);
       },
     );
   });

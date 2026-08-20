@@ -13,9 +13,11 @@ import 'package:lotti/features/projects/state/project_providers.dart';
 import 'package:lotti/features/tasks/state/task_blockers_controller.dart';
 import 'package:lotti/features/tasks/state/task_one_liner_provider.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header.dart';
+import 'package:lotti/features/tasks/ui/header/task_meta_column.dart';
 import 'package:lotti/features/tasks/ui/header/task_meta_flyout.dart';
 import 'package:lotti/features/tasks/ui/header/task_meta_pickers.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_task_row.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_ai_cost_indicator.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/features/tasks/util/due_date_utils.dart';
 import 'package:lotti/features/tasks/util/task_navigation.dart';
@@ -27,7 +29,9 @@ import 'package:lotti/widgets/modal/modal_utils.dart';
 
 /// Connects [DesktopTaskHeader] to the Riverpod task state: title saves, the
 /// breadcrumb's category/project pickers ([TaskMetaPickers]), and the
-/// metadata fly-out ([TaskMetaFlyout]) where every other attribute is edited.
+/// metadata fly-out ([TaskMetaFlyout]) where every other attribute is edited
+/// — unless a [TaskMetaColumn] already carries those rows beside the task, in
+/// which case the header's Details affordance stands down.
 ///
 /// The presentational widget stays framework-free; all repository /
 /// `EntryController` interaction is concentrated here so widgetbook and tests
@@ -57,6 +61,11 @@ class DesktopTaskHeaderConnector extends ConsumerWidget {
     // reloads the provider, avoiding a one-line header reflow.
     final oneLiner = ref.watch(taskOneLinerProvider(taskId)).value;
 
+    // With the details column mounted beside the task, its metadata is
+    // already on screen: the header keeps its read-outs but stops offering a
+    // fly-out over a panel showing the same eight rows.
+    final hasMetaColumn = TaskMetaColumnScope.isVisible(context);
+
     final data = _buildData(context, task, project, oneLiner);
     final controller = ref.read(entryControllerProvider(taskId).notifier);
     final categoryId = task.meta.categoryId;
@@ -72,10 +81,19 @@ class DesktopTaskHeaderConnector extends ConsumerWidget {
       // whichever task the header last rendered.
       initialEditing: data.title.trim().isEmpty,
       blockedBySlot: _TaskBlockedByChip(taskId: task.meta.id),
+      // The cost rides in the summary lane with the other facts, so it is
+      // readable at the same glance as the status rather than one panel away.
+      // Read-only where the details column already shows the full breakdown;
+      // otherwise a tap opens the fly-out that holds it.
+      aiCostSlot: hasMetaColumn
+          ? TaskAiCostIndicator.readOnly(taskId: task.meta.id)
+          : TaskAiCostIndicator(taskId: task.meta.id),
       onTitleSaved: (newTitle) {
         controller.save(title: newTitle);
       },
-      onOpenDetails: () => TaskMetaFlyout.show(context, taskId: taskId),
+      onOpenDetails: hasMetaColumn
+          ? null
+          : () => TaskMetaFlyout.show(context, taskId: taskId),
       // Projects are scoped to a category, so without one there is nothing to
       // pick from. The header drops the project crumb entirely in that state;
       // passing `null` keeps the two in agreement rather than leaving a

@@ -13231,6 +13231,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get taskMetaDueDateLabel => 'Datum splnění';
 
   @override
+  String get taskMetaEstimateLabel => 'Odhad';
+
+  @override
   String get taskMetaLabelsLabel => 'Štítky';
 
   @override
@@ -13238,9 +13241,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get taskMetaSheetTitle => 'Podrobnosti úkolu';
-
-  @override
-  String get taskMetaTimeLabel => 'Čas';
 
   @override
   String get taskMetaValueNotSet => 'Nenastaveno';

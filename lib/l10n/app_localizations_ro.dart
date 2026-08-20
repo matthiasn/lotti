@@ -13333,6 +13333,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get taskMetaDueDateLabel => 'Data scadenței';
 
   @override
+  String get taskMetaEstimateLabel => 'Estimare';
+
+  @override
   String get taskMetaLabelsLabel => 'Etichete';
 
   @override
@@ -13340,9 +13343,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get taskMetaSheetTitle => 'Detaliile sarcinii';
-
-  @override
-  String get taskMetaTimeLabel => 'Timp';
 
   @override
   String get taskMetaValueNotSet => 'Nesetat';
