@@ -1568,10 +1568,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get aiConsumptionTypeAgentTurn => 'Agent Turn';
 
   @override
-  String get aiConsumptionTypeAudioTranscription => 'Omschrijving';
+  String get aiConsumptionTypeAudioSummary => 'Samenvatting';
 
   @override
-  String get aiConsumptionTypeAudioSummary => 'Samenvatting';
+  String get aiConsumptionTypeAudioTranscription => 'Omschrijving';
 
   @override
   String get aiConsumptionTypeEmbeddingIndexing => 'Embedding indexing';

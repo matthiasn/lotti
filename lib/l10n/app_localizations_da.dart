@@ -1560,10 +1560,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get aiConsumptionTypeAgentTurn => 'Agent-turn';
 
   @override
-  String get aiConsumptionTypeAudioTranscription => 'Udskrift';
+  String get aiConsumptionTypeAudioSummary => 'Resumé';
 
   @override
-  String get aiConsumptionTypeAudioSummary => 'Resumé';
+  String get aiConsumptionTypeAudioTranscription => 'Udskrift';
 
   @override
   String get aiConsumptionTypeEmbeddingIndexing => 'Embedding indexing';

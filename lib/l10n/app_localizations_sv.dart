@@ -1568,10 +1568,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get aiConsumptionTypeAgentTurn => 'Agentens omgång';
 
   @override
-  String get aiConsumptionTypeAudioTranscription => 'Transkription';
+  String get aiConsumptionTypeAudioSummary => 'Sammanfattning';
 
   @override
-  String get aiConsumptionTypeAudioSummary => 'Sammanfattning';
+  String get aiConsumptionTypeAudioTranscription => 'Transkription';
 
   @override
   String get aiConsumptionTypeEmbeddingIndexing => 'Embedding indexing';

@@ -1571,10 +1571,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiConsumptionTypeAgentTurn => 'Tah agenta';
 
   @override
-  String get aiConsumptionTypeAudioTranscription => 'Přepis';
+  String get aiConsumptionTypeAudioSummary => 'Shrnutí';
 
   @override
-  String get aiConsumptionTypeAudioSummary => 'Shrnutí';
+  String get aiConsumptionTypeAudioTranscription => 'Přepis';
 
   @override
   String get aiConsumptionTypeEmbeddingIndexing => 'Indexování embeddingů';

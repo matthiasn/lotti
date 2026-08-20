@@ -1576,10 +1576,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get aiConsumptionTypeAgentTurn => 'Turno de agente';
 
   @override
-  String get aiConsumptionTypeAudioTranscription => 'Transcripción';
+  String get aiConsumptionTypeAudioSummary => 'Resumen';
 
   @override
-  String get aiConsumptionTypeAudioSummary => 'Resumen';
+  String get aiConsumptionTypeAudioTranscription => 'Transcripción';
 
   @override
   String get aiConsumptionTypeEmbeddingIndexing => 'Indexación de embeddings';

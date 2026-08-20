@@ -2736,17 +2736,17 @@ abstract class AppLocalizations {
   /// **'Agent turn'**
   String get aiConsumptionTypeAgentTurn;
 
-  /// No description provided for @aiConsumptionTypeAudioTranscription.
-  ///
-  /// In en, this message translates to:
-  /// **'Transcription'**
-  String get aiConsumptionTypeAudioTranscription;
-
   /// No description provided for @aiConsumptionTypeAudioSummary.
   ///
   /// In en, this message translates to:
   /// **'Summary'**
   String get aiConsumptionTypeAudioSummary;
+
+  /// No description provided for @aiConsumptionTypeAudioTranscription.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcription'**
+  String get aiConsumptionTypeAudioTranscription;
 
   /// No description provided for @aiConsumptionTypeEmbeddingIndexing.
   ///

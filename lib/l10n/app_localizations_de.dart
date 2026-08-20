@@ -1574,10 +1574,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiConsumptionTypeAgentTurn => 'Agentendurchlauf';
 
   @override
-  String get aiConsumptionTypeAudioTranscription => 'Transkription';
+  String get aiConsumptionTypeAudioSummary => 'Zusammenfassung';
 
   @override
-  String get aiConsumptionTypeAudioSummary => 'Zusammenfassung';
+  String get aiConsumptionTypeAudioTranscription => 'Transkription';
 
   @override
   String get aiConsumptionTypeEmbeddingIndexing => 'Embedding-Indexierung';
