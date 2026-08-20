@@ -687,6 +687,90 @@ void main() {
     expect(find.text('Improving'), findsOneWidget);
   });
 
+  testWidgets('the today ring is drawn in one ink and one stroke everywhere '
+      'it appears, including the key that explains it', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            habits: [
+              GoalHabitProgressView(
+                habitId: 'gym',
+                name: 'Gym',
+                targetCount: 3,
+                days: [
+                  for (var offset = 6; offset >= 0; offset--) day(offset, 0),
+                ],
+                successfulWeeks: 0,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    final tokens = tester.element(find.byType(GoalProgressCard)).designTokens;
+    final rings = tester
+        .widgetList<DsDashedBorder>(find.byType(DsDashedBorder))
+        .toList();
+    expect(rings, isNotEmpty);
+    // A hairline in the low-emphasis ink is a rumour on a dark screen. Every
+    // ring — the cell's and the legend swatch that keys it — lifts a step
+    // and takes the emphasis stroke, and they must not diverge: a key drawn
+    // differently from the mark is a key to nothing.
+    for (final ring in rings) {
+      expect(ring.color, tokens.colors.text.mediumEmphasis);
+      expect(ring.strokeWidth, BorderWidths.emphasis);
+    }
+  });
+
+  testWidgets('a habit card that ends on its squares gets a shallower foot '
+      'than one closing on the legend', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            habits: [
+              for (final name in ['Gym', 'Read'])
+                GoalHabitProgressView(
+                  habitId: name,
+                  name: name,
+                  targetCount: 3,
+                  days: [
+                    for (var offset = 6; offset >= 0; offset--) day(offset, 0),
+                  ],
+                  successfulWeeks: 0,
+                ),
+            ],
+          ),
+          onHabitOutcomeSelected:
+              ({required day, required habitId, required outcome}) async =>
+                  true,
+        ),
+      ),
+    );
+
+    final tokens = tester.element(find.byType(GoalProgressCard)).designTokens;
+    EdgeInsets footOf(String habit) => tester
+        .widget<DesignSystemSectionCard>(
+          find.ancestor(
+            of: find.text(habit),
+            matching: find.byType(DesignSystemSectionCard),
+          ),
+        )
+        .padding!;
+
+    // An interactive day row is a touch-floor-tall track around a cell half
+    // its height, so the card already carries centering slack under the
+    // squares. On the card that ENDS there, a full card-padding foot on top
+    // of that slack was a dead band taller than the squares.
+    expect(footOf('Gym').bottom, tokens.spacing.step5);
+    expect(footOf('Read').bottom, tokens.spacing.step2);
+    expect(footOf('Read').top, tokens.spacing.step5);
+  });
+
   testWidgets('the day-cell legend rides inside the first habit card', (
     tester,
   ) async {

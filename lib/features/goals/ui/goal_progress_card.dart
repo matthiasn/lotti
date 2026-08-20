@@ -399,7 +399,8 @@ class _CompactDayCell extends StatelessWidget {
     );
     final decorated = today
         ? DsDashedBorder(
-            color: tokens.colors.text.lowEmphasis,
+            color: goalTodayRingInk(tokens),
+            strokeWidth: BorderWidths.emphasis,
             radius: goalDayCellRadius(tokens),
             child: padded,
           )
@@ -572,9 +573,10 @@ String goalAssessmentRatingLabel(
 /// the marks that outrank it — a verdict glyph, the partial dot, the missed
 /// cross — because at the compact cell size a corner letter and a center
 /// glyph collide; the rarer mark wins and neighbouring plain cells keep
-/// carrying the axis. Scaled down with the cell (never up past the caption
-/// size), and null when the cell is too small to hold a legible letter — a
-/// squeezed ninety-day track drops the letters rather than painting mush.
+/// carrying the axis. Scaled down with the cell (never up past the
+/// `bodySmall` size), and null when the cell is too small to hold a legible
+/// letter — a squeezed ninety-day track drops the letters rather than
+/// painting mush.
 ///
 /// Ink follows the fill so the letter stays readable on both states: the
 /// on-alert ink over a saturated fill, medium emphasis over the neutral and
@@ -588,19 +590,29 @@ Widget? goalDayCellLetter(
 }) {
   if (letter == null || cellSize < IconSizes.l) return null;
   return PositionedDirectional(
-    start: cellSize * 0.14,
-    bottom: cellSize * 0.1,
+    // Off the corner, not in it. The letter reads better with a little air
+    // under and behind it than pinned to the rounded rect's inner angle —
+    // but it stays an annotation, so it moves TOWARD the center rather than
+    // to it.
+    start: cellSize * 0.18,
+    bottom: cellSize * 0.14,
     child: SizedBox(
-      // The scale bound: the caption glyph shrinks into this box, so the
-      // letter stays a small corner annotation at every cell size instead
-      // of competing with the mark in the center.
-      height: cellSize * 0.32,
+      // The scale bound: the glyph shrinks into this box, so the letter
+      // stays a small corner annotation at every cell size instead of
+      // competing with the mark in the center. The effective size is
+      // `min(fontSize, this height)` — `scaleDown` never scales UP — so
+      // raising the letter one step means raising BOTH: the box governs the
+      // small cells, the style's own size caps the large ones.
+      height: cellSize * 0.38,
       child: FittedBox(
         fit: BoxFit.scaleDown,
         child: Text(
           letter,
           maxLines: 1,
-          style: tokens.typography.styles.others.caption.copyWith(
+          // One step up the type scale from caption (12 → 14), so a cell
+          // roomy enough to show the letter at full size shows it a step
+          // larger too.
+          style: tokens.typography.styles.body.bodySmall.copyWith(
             color: filled
                 ? tokens.colors.text.onInteractiveAlert
                 : tokens.colors.text.mediumEmphasis,
@@ -611,6 +623,17 @@ Widget? goalDayCellLetter(
     ),
   );
 }
+
+/// The ink the "today" ring is drawn in, on every surface that draws one —
+/// the habit day cells, the whole-goal strip and the legend swatch that keys
+/// them.
+///
+/// Medium emphasis rather than low: at `radii.xs` on a dark surface a
+/// hairline in the low-emphasis ink is a rumour, not a ring. It still has to
+/// stay quieter than a day's own fill, which is the thing the cell is
+/// actually reporting — so it lifts one step and takes the emphasis stroke,
+/// rather than becoming an accent.
+Color goalTodayRingInk(DsTokens tokens) => tokens.colors.text.mediumEmphasis;
 
 /// The non-color cue for a partial day: a full-strength dot inside the
 /// lighter wash, so full/partial/none survive without a legend (the list
@@ -1034,6 +1057,18 @@ class _HabitDimensionCard extends StatelessWidget {
         ? habit.successfulWeeks
         : null;
     return DesignSystemSectionCard(
+      // An interactive day row is already a touch-floor-tall track around a
+      // cell half its height, so the card gets ~10px of centering slack under
+      // the squares for free. On the cards that end there — every habit but
+      // the first, which is the only one carrying the legend — a full
+      // card-padding foot on top of that slack left a band of dead space
+      // taller than the squares themselves.
+      padding: EdgeInsets.fromLTRB(
+        tokens.spacing.step5,
+        tokens.spacing.step5,
+        tokens.spacing.step5,
+        showLegend ? tokens.spacing.step5 : tokens.spacing.step2,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1081,12 +1116,12 @@ class _HabitDimensionCard extends StatelessWidget {
           // annotating the chart below — which it does not explain at all.
           // Once per goal, not once per habit: it is the same key.
           if (showLegend) ...[
+            // No rule above the key. The legend is already set apart by
+            // being centered under a leading-aligned stack, and it closes
+            // the card — so the line had nothing to divide it FROM except
+            // the card's own bottom edge, and read as the card being cut in
+            // two.
             SizedBox(height: tokens.spacing.step3),
-            Divider(
-              height: tokens.spacing.step3,
-              color: tokens.colors.decorative.level01,
-            ),
-            SizedBox(height: tokens.spacing.step2),
             const _ProgressLegend(),
           ],
         ],
@@ -2267,7 +2302,10 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
                       ],
                     ],
                   ),
-                  SizedBox(height: tokens.spacing.step2),
+                  // step1, not step2: the window line LABELS the squares, so
+                  // it has to read as attached to them rather than floating
+                  // midway between them and the header block above.
+                  SizedBox(height: tokens.spacing.step1),
                   // Labels and squares pan as one unit, and only where even
                   // the narrowest column overflows.
                   _fitOrScroll(
@@ -2462,7 +2500,8 @@ class _ProgressDayCell extends StatelessWidget {
     final decoratedCell = !today || hit
         ? cell
         : DsDashedBorder(
-            color: tokens.colors.text.lowEmphasis,
+            color: goalTodayRingInk(tokens),
+            strokeWidth: BorderWidths.emphasis,
             radius: tokens.radii.s,
             child: cell,
           );
@@ -3459,8 +3498,11 @@ class _ProgressLegend extends StatelessWidget {
             : null,
       );
       if (dashed) {
+        // Same stroke as the ring it keys — a hairline swatch beside a
+        // two-pixel ring is a key to a mark that is not on the map.
         swatch = DsDashedBorder(
           color: color,
+          strokeWidth: BorderWidths.emphasis,
           radius: goalDayCellRadius(tokens),
           child: swatch,
         );
@@ -3522,7 +3564,7 @@ class _ProgressLegend extends StatelessWidget {
           ),
           // Dashed, exactly like the today cell — the key must match the map.
           item(
-            tokens.colors.text.lowEmphasis,
+            goalTodayRingInk(tokens),
             context.messages.goalProgressToday,
             dashed: true,
           ),
