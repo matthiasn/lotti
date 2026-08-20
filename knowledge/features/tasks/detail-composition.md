@@ -282,8 +282,11 @@ densities, not two facts.
 Every read-out wears `DsPillShape.tag` — the tight `radii.xs` (4) corner —
 so a fact can never be mistaken for the fully-rounded filter/action pills
 elsewhere on the page. The one lever in the lane, the **Details** trigger,
-keeps the fully-rounded interactive pill shape. Tapping any read-out opens
-the same fly-out, so a tap on the fact still lands on its editor.
+keeps the fully-rounded interactive pill shape. Tapping any **editable**
+read-out — status, priority, due, labels — opens the same fly-out, so a tap on
+the fact lands on its editor. The AI cost is the exception in both directions:
+it has no editor, and its tap opens the details for the fuller reading, which
+is why it stands down to a plain read-out once the column is showing them.
 
 ### One section, two hosts
 

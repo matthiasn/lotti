@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -10,7 +9,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/ai_cost_indicator.dart';
-import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/components/time_pickers/design_system_picker_wheels.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
@@ -20,7 +19,6 @@ import 'package:lotti/features/tasks/state/task_progress_controller.dart';
 import 'package:lotti/features/tasks/ui/header/task_meta_section.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
@@ -584,6 +582,10 @@ void main() {
       await tester.tap(find.text('Estimate'));
       await settle(tester);
 
+      // The duration wheel, not just any sheet with a Done button: several
+      // pickers in this file end in "Done", so that alone would pass for the
+      // wrong modal.
+      expect(find.byType(DesignSystemDurationWheel), findsOneWidget);
       expect(find.text('Done'), findsOneWidget);
     });
 
@@ -649,7 +651,8 @@ void main() {
       );
 
       await tester.pumpWidget(
-        ProviderScope(
+        makeTestableWidget(
+          const Material(child: TaskMetaSection(taskId: 'note-1')),
           overrides: [
             entryControllerProvider('note-1').overrideWith(
               () => FakeEntryController(note),
@@ -658,14 +661,6 @@ void main() {
               (ref) => Stream<List<LabelDefinition>>.value(const []),
             ),
           ],
-          child: MaterialApp(
-            theme: DesignSystemTheme.dark(),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: const Scaffold(
-              body: TaskMetaSection(taskId: 'note-1'),
-            ),
-          ),
         ),
       );
       await settle(tester);

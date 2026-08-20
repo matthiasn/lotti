@@ -49,8 +49,10 @@ be committed if you `git add` it.
 
 # Two destinations, two lifecycles
 
-Both live in the R2 bucket. **No image belongs in a git repository** — not this
-one, and not a docs repository either. Which prefix an image belongs under
+Both live in the R2 bucket. **No *captured* image belongs in a git
+repository** — not this one, and not a docs repository either. (What `assets/`
+ships is a different thing: icons, tutorial media and design-system exports are
+part of the app, not evidence of it.) Which prefix a capture belongs under
 follows from who regenerates it:
 
 | Destination | Contents | Lifecycle |
@@ -142,10 +144,11 @@ overwriting a published review object, or omitting the before state.
 # The pair is the contract
 
 `before/` + `after/` with **matching filenames** is what new work produces.
-Older captures elsewhere in the project's history used other shapes — a single
-`after/`, files loose in a topic directory, one-off `baseline/` or `current/`
-subdirectories. Read those as the convention arriving after the practice, not
-as licence: they are not the R2 contract for new work.
+
+Other shapes exist in the project's history — a single `after/`, files loose in
+a topic directory, one-off `baseline/` or `current/` subdirectories. They are
+historical exceptions, predating this convention. **None of them is valid for a
+new publication.**
 
 # Related
 
