@@ -14,8 +14,8 @@ import 'package:lotti/features/design_system/components/cards/design_system_sect
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/events/ui/widgets/linked_event_card.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
-import 'package:lotti/features/journal/state/audio_summary_provider.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/journal/state/entry_summary_providers.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_detail_footer.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/habit_summary.dart';
@@ -26,6 +26,7 @@ import 'package:lotti/features/journal/ui/widgets/entry_details/survey_summary.d
 import 'package:lotti/features/journal/ui/widgets/entry_details/workout_summary.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details_borders.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_image_widget.dart';
+import 'package:lotti/features/journal/ui/widgets/list_cards/card_image_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/journal_card.dart';
 import 'package:lotti/features/journal/ui/widgets/nested_ai_responses_widget.dart';
 import 'package:lotti/features/journal/util/audio_entry_one_liner.dart';
@@ -563,6 +564,14 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
               onTap: onToggleCollapse,
             ),
           ),
+        if (item is JournalImage)
+          _CollapsibleBody(
+            isCollapsed: !isCollapsed,
+            child: _CollapsedImagePreview(
+              image: item,
+              onTap: onToggleCollapse,
+            ),
+          ),
         _CollapsibleBody(
           isCollapsed: isCollapsed,
           child: expandedContent,
@@ -665,6 +674,89 @@ class _CollapsedAudioOneLiner extends ConsumerWidget {
         child: text,
       ),
     );
+  }
+}
+
+/// The compressed image-entry view: a thumbnail with one line describing what
+/// the image shows. Tapping it expands the full card, same as the header
+/// chevron.
+///
+/// The thumbnail is the point. An image's payload IS the picture, so a
+/// collapsed image that showed only text would be harder to place than the
+/// expanded card it replaced — the reverse of the audio case, where the
+/// verbose transcript is what the user wanted out of the way.
+///
+/// The line prefers the newest analysis's one-liner, which is written to be
+/// exactly this label, and falls back to the image's own entry text — where
+/// the legacy analysis path appends, and where a user's own caption lives.
+/// With neither, the thumbnail stands alone.
+class _CollapsedImagePreview extends ConsumerWidget {
+  const _CollapsedImagePreview({required this.image, this.onTap});
+
+  final JournalImage image;
+  final Future<void> Function()? onTap;
+
+  /// Height of the collapsed thumbnail. Tall enough to recognise a photo or a
+  /// screenshot at a glance, short enough that a run of collapsed images still
+  /// reads as a list rather than a gallery.
+  static const double thumbnailHeight = 64;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tokens = context.designTokens;
+    final oneLiner =
+        imageAnalysisOneLiner(ref, image.meta.id) ?? _entryTextPreview(image);
+
+    final row = Padding(
+      padding: EdgeInsets.only(top: tokens.spacing.step2),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(tokens.radii.s),
+            child: SizedBox(
+              height: thumbnailHeight,
+              width: thumbnailHeight,
+              child: CardImageWidget(
+                journalImage: image,
+                height: thumbnailHeight.round(),
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+          SizedBox(width: tokens.spacing.step3),
+          Expanded(
+            child: oneLiner == null
+                ? const SizedBox.shrink()
+                : Text(
+                    oneLiner,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: tokens.typography.styles.body.bodySmall.copyWith(
+                      color: tokens.colors.text.mediumEmphasis,
+                    ),
+                  ),
+          ),
+        ],
+      ),
+    );
+
+    final onTap = this.onTap;
+    if (onTap == null) return row;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(tokens.radii.s),
+        onTap: () => unawaited(onTap()),
+        child: row,
+      ),
+    );
+  }
+
+  /// First non-empty line of the image's own text, whitespace collapsed.
+  static String? _entryTextPreview(JournalImage image) {
+    final text = image.entryText?.plainText.trim();
+    if (text == null || text.isEmpty) return null;
+    return text.replaceAll(RegExp(r'\s+'), ' ');
   }
 }
 

@@ -412,12 +412,20 @@ class SkillInferenceRunner {
         );
 
         // 3. Build prompts via SkillPromptBuilder.
+        //
+        // Tiers are requested only when the resolved vision model can call
+        // tools. Plenty of capable vision models cannot, and this skill has
+        // shipped on a free-text contract for a long time — so tool support
+        // upgrades the output rather than gating it, and a model without it
+        // keeps producing exactly what it produces today.
+        final useTieredSummary = target.model?.supportsFunctionCalling ?? false;
         const promptBuilder = SkillPromptBuilder();
         final promptResult = promptBuilder.build(
           skill: skill,
           taskContext: taskContext,
           linkedTasks: linkedTasks,
           currentTaskSummary: currentTaskSummary,
+          requestTieredSummary: useTieredSummary,
         );
 
         // 4. Prepare image data.
@@ -450,12 +458,34 @@ class SkillInferenceRunner {
           images: images,
           provider: provider,
           systemMessage: promptResult.systemMessage,
+          tools: useTieredSummary ? [entrySummaryTool] : null,
+          toolChoice: useTieredSummary ? entrySummaryToolChoice : null,
           geminiThinkingMode: effectiveThinkingMode,
           impactCollector: impactCollector,
         );
 
         // 6. Collect streaming response.
         final collected = await _collectStream(responseStream);
+
+        // Decode the tiers when we asked for them. Unlike the audio summary,
+        // a rejected tool call does NOT fail the run and buys no retry: the
+        // analysis is the artifact users have always got, the tiers only make
+        // it easier to scan, and losing an analysis to reclaim a one-liner
+        // would be a bad trade. A model that answered in prose instead simply
+        // lands on the untiered path below.
+        EntrySummary? tiers;
+        if (useTieredSummary) {
+          try {
+            tiers = parseEntrySummaryToolCall(collected.toolCalls);
+          } on EntrySummaryToolException catch (e) {
+            _loggingService.log(
+              LogDomain.ai,
+              'Image analysis tiers unavailable for $imageEntryId '
+              '(${e.reason}) — falling back to the prose analysis',
+              subDomain: 'runImageAnalysis',
+            );
+          }
+        }
 
         final attributionEnvelope = await _recordAttributedConsumption(
           attribution: attribution,
@@ -475,7 +505,9 @@ class SkillInferenceRunner {
           responseText: collected.content,
         );
 
-        final response = collected.content.trim();
+        // The tool's `summary` argument IS the analysis when tiers came back;
+        // otherwise the streamed prose is, exactly as before.
+        final response = tiers?.summary ?? collected.content.trim();
         if (response.isEmpty) {
           throw StateError(
             'Empty image analysis response for $imageEntryId',
@@ -506,6 +538,8 @@ class SkillInferenceRunner {
               prompt: promptResult.userMessage,
               thoughts: '',
               response: response,
+              oneLiner: tiers?.oneLiner,
+              tldr: tiers?.tldr,
               skillId: skill.id,
               type: skill.skillType.toResponseType,
               aiAttribution: attributionEnvelope,

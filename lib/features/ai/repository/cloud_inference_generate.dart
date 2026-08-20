@@ -175,6 +175,7 @@ class CloudInferenceGenerate {
     OpenAIClient? overrideClient,
     AiConfigInferenceProvider? provider,
     List<ChatCompletionTool>? tools,
+    ChatCompletionToolChoiceOption? toolChoice,
     String? systemMessage,
     GeminiThinkingMode? geminiThinkingMode,
     InferenceImpactCollector? impactCollector,
@@ -270,6 +271,7 @@ class CloudInferenceGenerate {
         temperature: temperature,
         maxTokens: maxCompletionTokens,
         tools: tools,
+        toolChoice: toolChoice,
         reasoningEffort: reasoningEffort,
       ),
     );

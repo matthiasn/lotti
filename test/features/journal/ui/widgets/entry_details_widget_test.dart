@@ -37,6 +37,7 @@ import 'package:lotti/features/journal/ui/widgets/entry_details/header/entry_det
 import 'package:lotti/features/journal/ui/widgets/entry_details/measurement_summary.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_image_widget.dart';
+import 'package:lotti/features/journal/ui/widgets/list_cards/card_image_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/nested_ai_responses_widget.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
@@ -2831,7 +2832,9 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.byType(SizeTransition), findsOneWidget);
+        // Two now, mirroring audio: the collapsed thumbnail preview and the
+        // full body, animating as inverses of each other.
+        expect(find.byType(SizeTransition), findsNWidgets(2));
       });
 
       testWidgets(
@@ -2879,8 +2882,13 @@ void main() {
         );
         await tester.pump();
 
+        // The body's transition, not the collapsed preview's — the two run as
+        // inverses, so "the" SizeTransition is now ambiguous.
         final sizeTransition = tester.widget<SizeTransition>(
-          find.byType(SizeTransition),
+          find.ancestor(
+            of: find.byType(EntryImageWidget),
+            matching: find.byType(SizeTransition),
+          ),
         );
         expect(sizeTransition.sizeFactor.value, 1.0);
       });
@@ -2908,8 +2916,12 @@ void main() {
         );
         await tester.pump();
 
+        // The body's transition; the preview's runs at 1.0 as its inverse.
         final sizeTransition = tester.widget<SizeTransition>(
-          find.byType(SizeTransition),
+          find.ancestor(
+            of: find.byType(EntryImageWidget),
+            matching: find.byType(SizeTransition),
+          ),
         );
         expect(sizeTransition.sizeFactor.value, 0.0);
       });
@@ -3290,7 +3302,10 @@ void main() {
         await tester.pump();
 
         final sizeTransition = tester.widget<SizeTransition>(
-          find.byType(SizeTransition),
+          find.ancestor(
+            of: find.byType(EntryImageWidget),
+            matching: find.byType(SizeTransition),
+          ),
         );
         expect(sizeTransition.sizeFactor.value, 0.0);
       });
@@ -3576,6 +3591,198 @@ void main() {
       );
     });
 
+    group('collapsed image preview', () {
+      final collapsedImageLink = EntryLink.basic(
+        id: 'link-image-preview',
+        fromId: testTask.meta.id,
+        toId: testImageEntry.meta.id,
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+        vectorClock: null,
+      ).copyWith(collapsed: true);
+
+      AiResponseEntry analysisEntry({
+        required String id,
+        required DateTime dateFrom,
+        String? oneLiner,
+        AiResponseType type = AiResponseType.imageAnalysis,
+      }) => AiResponseEntry(
+        meta: Metadata(
+          id: id,
+          createdAt: dateFrom,
+          dateFrom: dateFrom,
+          dateTo: dateFrom,
+          updatedAt: dateFrom,
+        ),
+        data: AiResponseData(
+          model: 'test-model',
+          systemMessage: '',
+          prompt: '',
+          thoughts: '',
+          response: 'full analysis body',
+          oneLiner: oneLiner,
+          tldr: 'the short version',
+          type: type,
+        ),
+      );
+
+      Future<void> pumpCollapsedImage(
+        WidgetTester tester,
+        List<AiResponseEntry> responses,
+      ) async {
+        final mockJournalRepository = MockJournalRepository();
+        when(
+          () => mockJournalRepository.getLinksFromId(testImageEntry.meta.id),
+        ).thenAnswer((_) async => <EntryLink>[]);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProviderScope(
+              overrides: [
+                entryControllerProvider(
+                  testImageEntry.meta.id,
+                ).overrideWith(() => _FakeEntryController(testImageEntry)),
+                journalRepositoryProvider.overrideWithValue(
+                  mockJournalRepository,
+                ),
+                linkedAiResponsesControllerProvider(
+                  testImageEntry.meta.id,
+                ).overrideWith(
+                  () => _FakeLinkedAiResponsesController(
+                    testImageEntry.meta.id,
+                    responses,
+                  ),
+                ),
+              ],
+              child: EntryDetailsWidget(
+                itemId: testImageEntry.meta.id,
+                showAiEntry: false,
+                linkedFrom: testTask,
+                link: collapsedImageLink,
+              ),
+            ),
+          ),
+        );
+
+        await tester.pump();
+        await tester.pump(AppTheme.chevronRotationDuration);
+      }
+
+      testWidgets(
+        'shows a thumbnail while collapsed — an image collapsed to text alone '
+        'would be harder to place than the card it replaced',
+        (tester) async {
+          await pumpCollapsedImage(tester, const []);
+
+          expect(find.byType(CardImageWidget), findsOneWidget);
+        },
+      );
+
+      testWidgets("prefers the newest analysis's one-liner as the label", (
+        tester,
+      ) async {
+        await pumpCollapsedImage(tester, [
+          analysisEntry(
+            id: 'analysis-new',
+            dateFrom: DateTime(2024, 6),
+            oneLiner: 'Dashboard shows the error rate flat at 0.2%.',
+          ),
+          analysisEntry(
+            id: 'analysis-old',
+            dateFrom: DateTime(2024, 5),
+            oneLiner: 'An older reading of the same screenshot.',
+          ),
+        ]);
+
+        expect(
+          find.text('Dashboard shows the error rate flat at 0.2%.'),
+          findsOneWidget,
+        );
+        expect(
+          find.text('An older reading of the same screenshot.'),
+          findsNothing,
+        );
+      });
+
+      testWidgets(
+        "falls back to the image's own text when no analysis carries a "
+        'one-liner — the legacy path appends its analysis there',
+        (tester) async {
+          await pumpCollapsedImage(tester, [
+            analysisEntry(id: 'analysis-untiered', dateFrom: DateTime(2024, 6)),
+          ]);
+
+          // testImageEntry's entryText.
+          expect(find.text('test image entry text'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'ignores a non-analysis response — an audio summary or coding prompt '
+        'linked to the same image must not become its label',
+        (tester) async {
+          await pumpCollapsedImage(tester, [
+            analysisEntry(
+              id: 'summary-1',
+              dateFrom: DateTime(2024, 6),
+              oneLiner: 'Not an image analysis one-liner.',
+              type: AiResponseType.audioSummary,
+            ),
+          ]);
+
+          expect(
+            find.text('Not an image analysis one-liner.'),
+            findsNothing,
+          );
+          expect(find.text('test image entry text'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'still shows the thumbnail when there is no text at all to label it',
+        (tester) async {
+          final untitled = testImageEntry.copyWith(entryText: null);
+          final mockJournalRepository = MockJournalRepository();
+          when(
+            () => mockJournalRepository.getLinksFromId(untitled.meta.id),
+          ).thenAnswer((_) async => <EntryLink>[]);
+
+          await tester.pumpWidget(
+            makeTestableWidgetWithScaffold(
+              ProviderScope(
+                overrides: [
+                  entryControllerProvider(
+                    untitled.meta.id,
+                  ).overrideWith(() => _FakeEntryController(untitled)),
+                  journalRepositoryProvider.overrideWithValue(
+                    mockJournalRepository,
+                  ),
+                  linkedAiResponsesControllerProvider(
+                    untitled.meta.id,
+                  ).overrideWith(
+                    () => _FakeLinkedAiResponsesController(
+                      untitled.meta.id,
+                      const [],
+                    ),
+                  ),
+                ],
+                child: EntryDetailsWidget(
+                  itemId: untitled.meta.id,
+                  showAiEntry: false,
+                  linkedFrom: testTask,
+                  link: collapsedImageLink,
+                ),
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump(AppTheme.chevronRotationDuration);
+
+          expect(find.byType(CardImageWidget), findsOneWidget);
+        },
+      );
+    });
+
     group('collapse state from link', () {
       testWidgets('link with collapsed=null renders as expanded', (
         tester,
@@ -3609,7 +3816,10 @@ void main() {
         await tester.pump();
 
         final sizeTransition = tester.widget<SizeTransition>(
-          find.byType(SizeTransition),
+          find.ancestor(
+            of: find.byType(EntryImageWidget),
+            matching: find.byType(SizeTransition),
+          ),
         );
         expect(sizeTransition.sizeFactor.value, 1.0);
       });
@@ -3646,7 +3856,10 @@ void main() {
         await tester.pump();
 
         final sizeTransition = tester.widget<SizeTransition>(
-          find.byType(SizeTransition),
+          find.ancestor(
+            of: find.byType(EntryImageWidget),
+            matching: find.byType(SizeTransition),
+          ),
         );
         expect(sizeTransition.sizeFactor.value, 1.0);
       });
