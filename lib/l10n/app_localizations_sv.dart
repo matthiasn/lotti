@@ -6442,7 +6442,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalDetailAskWhy => 'Varför?';
 
   @override
-  String get goalDetailCompletionRateTitle => 'Slutförandegrad · det här målet';
+  String get goalDetailCompletionRateTitle => 'Målets slutförandegrad';
 
   @override
   String get goalDetailGoalDaysTitle => 'Måldagar';
@@ -6488,7 +6488,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get goalDetailWatchingSignals =>
-      'Signalerna ovan uppdateras inom några sekunder. Din agent ser bara signalerna som anges här.';
+      'Din agent ser bara signalerna som anges här.';
 
   @override
   String get goalDetailWatchingTitle => 'Följer';
@@ -6534,10 +6534,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalDimensionHealthSource => 'Hälsodata';
 
   @override
-  String get goalDimensionImprovingNote =>
-      'Inte framme än, men det senaste värdet rörde sig mot målet.';
-
-  @override
   String get goalDimensionLabelTimeSource => 'Spårad tid per etikett';
 
   @override
@@ -6558,10 +6554,6 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get goalDimensionNeedsAttentionNote =>
-      'Efter målet under den här perioden.';
-
-  @override
   String get goalDimensionNeedsAttentionStatus => 'Behöver uppmärksamhet';
 
   @override
@@ -6569,15 +6561,7 @@ class AppLocalizationsSv extends AppLocalizations {
       'Det finns inte tillräckligt med data för att bedöma denna dimension ännu.';
 
   @override
-  String get goalDimensionOnTargetTodayNote =>
-      'Dagens senaste mätning ligger inom målet; fortsätt så.';
-
-  @override
   String get goalDimensionOnTargetTodayStatus => 'På målet i dag';
-
-  @override
-  String get goalDimensionOnTrackNote =>
-      'Denna dimension är för närvarande på rätt spår.';
 
   @override
   String get goalDimensionOnTrackStatus => 'På rätt spår';
@@ -6989,9 +6973,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get goalProgressAgesOut => 'faller bort i kväll';
-
-  @override
-  String get goalProgressCompactCaption => 'flyttas vid midnatt';
 
   @override
   String goalProgressCompactSemantics(int count) {

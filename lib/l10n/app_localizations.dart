@@ -11016,7 +11016,7 @@ abstract class AppLocalizations {
   /// Title of the goal-scoped completion-rate chart card on goal detail.
   ///
   /// In en, this message translates to:
-  /// **'Completion rate · this goal'**
+  /// **'Goal completion rate'**
   String get goalDetailCompletionRateTitle;
 
   /// Title of the whole-goal day strip card when it renders the page's shared range instead of a single week.
@@ -11094,7 +11094,7 @@ abstract class AppLocalizations {
   /// No description provided for @goalDetailWatchingSignals.
   ///
   /// In en, this message translates to:
-  /// **'Signals listed above update within seconds. Your agent only sees the signals listed here.'**
+  /// **'Your agent only sees the signals listed here.'**
   String get goalDetailWatchingSignals;
 
   /// No description provided for @goalDetailWatchingTitle.
@@ -11153,12 +11153,6 @@ abstract class AppLocalizations {
   /// **'Health data'**
   String get goalDimensionHealthSource;
 
-  /// No description provided for @goalDimensionImprovingNote.
-  ///
-  /// In en, this message translates to:
-  /// **'Not there yet, but the last reading moved toward the target.'**
-  String get goalDimensionImprovingNote;
-
   /// No description provided for @goalDimensionLabelTimeSource.
   ///
   /// In en, this message translates to:
@@ -11187,12 +11181,6 @@ abstract class AppLocalizations {
     String unitName,
   );
 
-  /// No description provided for @goalDimensionNeedsAttentionNote.
-  ///
-  /// In en, this message translates to:
-  /// **'Behind target for this window.'**
-  String get goalDimensionNeedsAttentionNote;
-
   /// No description provided for @goalDimensionNeedsAttentionStatus.
   ///
   /// In en, this message translates to:
@@ -11205,23 +11193,11 @@ abstract class AppLocalizations {
   /// **'There is not enough data to judge this dimension yet.'**
   String get goalDimensionNoDataNote;
 
-  /// Positive health-dimension note when the latest reading recorded today meets its target even if the rolling aggregate does not.
-  ///
-  /// In en, this message translates to:
-  /// **'Today\'s latest reading is on target; keep it going.'**
-  String get goalDimensionOnTargetTodayNote;
-
   /// Positive health-dimension status when the latest reading recorded today meets its target.
   ///
   /// In en, this message translates to:
   /// **'On target today'**
   String get goalDimensionOnTargetTodayStatus;
-
-  /// No description provided for @goalDimensionOnTrackNote.
-  ///
-  /// In en, this message translates to:
-  /// **'This dimension is currently on track.'**
-  String get goalDimensionOnTrackNote;
 
   /// No description provided for @goalDimensionOnTrackStatus.
   ///
@@ -11855,12 +11831,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'ages out tonight'**
   String get goalProgressAgesOut;
-
-  /// No description provided for @goalProgressCompactCaption.
-  ///
-  /// In en, this message translates to:
-  /// **'slides at midnight'**
-  String get goalProgressCompactCaption;
 
   /// Screen-reader summary of the compact seven-day progress strip.
   ///

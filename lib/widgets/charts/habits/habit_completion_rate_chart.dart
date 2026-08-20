@@ -22,7 +22,20 @@ import 'package:lotti/widgets/charts/utils.dart';
 /// headline for that day's success/skip/fail split (tap again to clear).
 class HabitCompletionRateChart extends ConsumerWidget
     implements PreferredSizeWidget {
-  const HabitCompletionRateChart({this.habitIds, super.key});
+  const HabitCompletionRateChart({
+    this.habitIds,
+    this.showsHeadline = true,
+    super.key,
+  });
+
+  /// Whether the plot carries its own headline row.
+  ///
+  /// The goal dashboard hoists the same figures into its card header, where
+  /// every other card on the page states its key reading — so the plot drops
+  /// the row rather than printing the rate twice. The tap-a-day breakdown
+  /// still takes the slot when a day is selected; with nothing selected the
+  /// slot collapses instead of reserving its 44px floor.
+  final bool showsHeadline;
 
   /// When non-null, the chart sees only these habits (the §4b goal-scoped
   /// variant): rates, laggard, tap-a-day breakdown and the dynamic baseline
@@ -84,48 +97,52 @@ class HabitCompletionRateChart extends ConsumerWidget
 
     return Column(
       children: [
-        ConstrainedBox(
-          // A FLOOR, not a box: at the common single-line layout the headline
-          // holds its 44px so selecting/clearing a day doesn't shift the chart
-          // below — but when the Wrap flows the chips onto a second run
-          // (narrow cards, longer locales, large text scales) the header must
-          // grow instead of overflowing into the plot.
-          constraints: const BoxConstraints(minHeight: 44),
-          child: state.selectedInfoYmd.isNotEmpty
-              ? Center(
-                  // A selected day swaps the headline for its split; it
-                  // auto-clears back to the headline after the controller's
-                  // idle debounce. FittedBox scales the row down rather than
-                  // overflowing on a narrow width or a longer-locale label.
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        InfoLabel('${state.selectedInfoYmd}:'),
-                        InfoLabel(
-                          messages.habitsDaySuccessfulPercent(
-                            state.successPercentage,
+        // Headline-less mode has no slot at all: the day breakdown surfaces
+        // in the host card's header instead, so selecting a day cannot shove
+        // the plot down the card.
+        if (showsHeadline)
+          ConstrainedBox(
+            // A FLOOR, not a box: at the common single-line layout the headline
+            // holds its 44px so selecting/clearing a day doesn't shift the chart
+            // below — but when the Wrap flows the chips onto a second run
+            // (narrow cards, longer locales, large text scales) the header must
+            // grow instead of overflowing into the plot.
+            constraints: const BoxConstraints(minHeight: 44),
+            child: state.selectedInfoYmd.isNotEmpty
+                ? Center(
+                    // A selected day swaps the headline for its split; it
+                    // auto-clears back to the headline after the controller's
+                    // idle debounce. FittedBox scales the row down rather than
+                    // overflowing on a narrow width or a longer-locale label.
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          InfoLabel('${state.selectedInfoYmd}:'),
+                          InfoLabel(
+                            messages.habitsDaySuccessfulPercent(
+                              state.successPercentage,
+                            ),
                           ),
-                        ),
-                        InfoLabel(
-                          messages.habitsDaySkippedPercent(
-                            state.skippedPercentage,
+                          InfoLabel(
+                            messages.habitsDaySkippedPercent(
+                              state.skippedPercentage,
+                            ),
                           ),
-                        ),
-                        InfoLabel(
-                          messages.habitsDayFailedPercent(
-                            state.failedPercentage,
+                          InfoLabel(
+                            messages.habitsDayFailedPercent(
+                              state.failedPercentage,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                )
-              : _ChartHeadline(stats: stats),
-        ),
-        SizedBox(height: tokens.spacing.step2),
+                  )
+                : _ChartHeadline(stats: stats),
+          ),
+        if (showsHeadline) SizedBox(height: tokens.spacing.step2),
         SizedBox(
           height: 150,
           width: double.infinity,
@@ -311,6 +328,152 @@ class HabitCompletionRateChart extends ConsumerWidget
           _LaggardFootnote(stats: stats),
         ],
       ],
+    );
+  }
+}
+
+/// The completion-rate figures as the host card's trailing corner block.
+///
+/// The goal dashboard states every card's key reading the same way: the
+/// figure pinned to the header's trailing edge with its verdict as a caption
+/// underneath. The chart's own headline row broke that rhythm — a display-tier
+/// `100%` on the card's leading rail with two tinted pills floating opposite
+/// it, three competing weights in a band the rest of the page gives to a title.
+/// Here the rate is the one figure, the goal verdict and the week-over-week
+/// trend share the caption line, and the title keeps the row it is on.
+///
+/// While a day is selected (hover on desktop, tap on mobile) the block shows
+/// that day's success/skip/fail split instead, so the plot below never moves.
+class HabitCompletionRateSummary extends ConsumerWidget {
+  const HabitCompletionRateSummary({required this.habitIds, super.key});
+
+  /// The habits the figures are computed over; null reads the whole roster.
+  final Set<String>? habitIds;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    final rawState = ref.watch(habitsControllerProvider);
+    final state = habitIds == null
+        ? rawState
+        : scopeHabitsStateToHabits(rawState, habitIds!);
+    final stats = habitChartStats(state);
+    if (stats.windowDays == 0) return const SizedBox.shrink();
+
+    if (state.selectedInfoYmd.isNotEmpty) {
+      return FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: AlignmentDirectional.centerEnd,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            InfoLabel('${state.selectedInfoYmd}:'),
+            InfoLabel(
+              messages.habitsDaySuccessfulPercent(
+                state.successPercentage,
+              ),
+            ),
+            InfoLabel(
+              messages.habitsDaySkippedPercent(
+                state.skippedPercentage,
+              ),
+            ),
+            InfoLabel(messages.habitsDayFailedPercent(state.failedPercentage)),
+          ],
+        ),
+      );
+    }
+
+    final atGoal = stats.isAtGoal;
+    final goalColor = atGoal
+        ? tokens.colors.alert.success.ink
+        : tokens.colors.alert.warning.ink;
+    final caption = tokens.typography.styles.others.caption;
+    // Nothing meaningful to trend against until a full prior week exists.
+    final delta = stats.windowDays >= 14 ? stats.trendDelta.round() : null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text.rich(
+          TextSpan(
+            style: tokens.typography.styles.subtitle.subtitle2,
+            children: [
+              TextSpan(text: '${stats.currentAverage.round()}%'),
+              TextSpan(
+                text: '  ${messages.habitsRollingAverageLabel}',
+                style: caption.copyWith(
+                  color: tokens.colors.text.mediumEmphasis,
+                ),
+              ),
+            ],
+          ),
+          textAlign: TextAlign.end,
+          maxLines: 1,
+        ),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              atGoal
+                  ? messages.habitsAboveGoal
+                  : messages.habitsPointsToGoal(stats.pointsToGoal),
+              style: caption.copyWith(color: goalColor),
+            ),
+            if (delta != null) _SummaryTrend(delta: delta),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// The week-over-week move, as the tail of the summary's caption line rather
+/// than a pill of its own: at caption weight it qualifies the verdict beside
+/// it instead of competing with the rate above.
+class _SummaryTrend extends StatelessWidget {
+  const _SummaryTrend({required this.delta});
+
+  final int delta;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    final up = delta > 0;
+    final flat = delta == 0;
+    final color = up ? successColor : tokens.colors.text.mediumEmphasis;
+    final caption = tokens.typography.styles.others.caption;
+    return Semantics(
+      label:
+          '${up ? '+' : (flat ? '' : '−')}${delta.abs()}% '
+          '${messages.habitsVsPreviousWeek}',
+      excludeSemantics: true,
+      child: Tooltip(
+        message: messages.habitsVsPreviousWeek,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              ' · ',
+              style: caption.copyWith(color: tokens.colors.text.lowEmphasis),
+            ),
+            Icon(
+              flat
+                  ? LottiIcons.forward
+                  : up
+                  ? LottiIcons.arrowUp
+                  : LottiIcons.arrowDown,
+              size: caption.fontSize,
+              color: color,
+            ),
+            SizedBox(width: tokens.spacing.step1),
+            Text('${delta.abs()}%', style: caption.copyWith(color: color)),
+          ],
+        ),
+      ),
     );
   }
 }

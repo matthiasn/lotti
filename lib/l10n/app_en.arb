@@ -3612,7 +3612,7 @@
   "@goalDetailAskWhy": {
     "description": "Link on the agent's-read card that opens chat pre-filled with a why question."
   },
-  "goalDetailCompletionRateTitle": "Completion rate · this goal",
+  "goalDetailCompletionRateTitle": "Goal completion rate",
   "@goalDetailCompletionRateTitle": {
     "description": "Title of the goal-scoped completion-rate chart card on goal detail."
   },
@@ -3667,7 +3667,7 @@
       }
     }
   },
-  "goalDetailWatchingSignals": "Signals listed above update within seconds. Your agent only sees the signals listed here.",
+  "goalDetailWatchingSignals": "Your agent only sees the signals listed here.",
   "goalDetailWatchingTitle": "Watching",
   "goalDimensionCategoryTimeSource": "Tracked category time",
   "goalDimensionHabitReading": "{currentCount} of {targetCount} this window",
@@ -3725,7 +3725,6 @@
   },
   "goalDimensionHabitSource": "Habit completions",
   "goalDimensionHealthSource": "Health data",
-  "goalDimensionImprovingNote": "Not there yet, but the last reading moved toward the target.",
   "goalDimensionLabelTimeSource": "Tracked time by label",
   "goalDimensionMeasurableSource": "Your measurable",
   "goalDimensionMetricReading": "{currentValue} of {targetValue}",
@@ -3753,10 +3752,8 @@
       }
     }
   },
-  "goalDimensionNeedsAttentionNote": "Behind target for this window.",
   "goalDimensionNeedsAttentionStatus": "Needs attention",
   "goalDimensionNoDataNote": "There is not enough data to judge this dimension yet.",
-  "goalDimensionOnTargetTodayNote": "Today's latest reading is on target; keep it going.",
   "@goalDimensionOnTargetTodayNote": {
     "description": "Positive health-dimension note when the latest reading recorded today meets its target even if the rolling aggregate does not."
   },
@@ -3764,7 +3761,6 @@
   "@goalDimensionOnTargetTodayStatus": {
     "description": "Positive health-dimension status when the latest reading recorded today meets its target."
   },
-  "goalDimensionOnTrackNote": "This dimension is currently on track.",
   "goalDimensionOnTrackStatus": "On track",
   "goalDimensionRecordedByAgent": "Said by you and recorded after your approval.",
   "goalDimensionRecordedByAgentDetails": "Said by you, recorded by {agentName}, {recordedAt}",
@@ -4098,7 +4094,6 @@
     "description": "Badge on an agent card when a revision proposal is pending."
   },
   "goalProgressAgesOut": "ages out tonight",
-  "goalProgressCompactCaption": "slides at midnight",
   "goalProgressCompactSemantics": "{count, plural, =0{No successful days in the trailing seven-day window} =1{1 successful day in the trailing seven-day window} other{{count} successful days in the trailing seven-day window}}",
   "@goalProgressCompactSemantics": {
     "description": "Screen-reader summary of the compact seven-day progress strip.",

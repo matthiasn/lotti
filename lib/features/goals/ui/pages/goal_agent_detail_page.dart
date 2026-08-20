@@ -847,7 +847,11 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
             if (isActive)
               IconButton(
                 key: const ValueKey('goal-detail-checkin-action'),
-                icon: const Icon(LottiIcons.micIdle),
+                // The LIVE mic glyph, not `micIdle`: that token resolves to
+                // Lucide's slashed mic-off, which on an enabled action reads
+                // as "recording unavailable". This button starts a check-in
+                // recording; nothing about it is muted.
+                icon: const Icon(LottiIcons.mic),
                 tooltip: context.messages.goalCheckInRecordCta,
                 onPressed: openComposer,
               ),
@@ -1536,9 +1540,17 @@ class _AgentReadCardState extends ConsumerState<_AgentReadCard> {
             TldrHeader(
               agentName: widget.identity.displayName,
               onAgentTap: _openInternals,
-              playbackControl: freshness == null
-                  ? null
-                  : Text(
+              // The card's two meta facts on one trailing rail: what this
+              // goal's agent has cost over its lifetime, and how old the
+              // read below it is. Neither earns a row of the card's body —
+              // the header rail was empty space beside them.
+              playbackControl: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  GoalAgentLifetimePills(agentId: widget.agentId, inline: true),
+                  if (freshness != null) ...[
+                    SizedBox(width: tokens.spacing.step3),
+                    Text(
                       freshness,
                       style: tokens.typography.styles.others.caption.copyWith(
                         color: widget.isStale && hasReadContent
@@ -1546,6 +1558,9 @@ class _AgentReadCardState extends ConsumerState<_AgentReadCard> {
                             : tokens.colors.aiCard.metaText,
                       ),
                     ),
+                  ],
+                ],
+              ),
             ),
             Padding(
               padding: EdgeInsets.fromLTRB(
@@ -1565,23 +1580,12 @@ class _AgentReadCardState extends ConsumerState<_AgentReadCard> {
                             ? messages.goalDetailHealthUnavailable
                             : messages.goalDetailNoReport),
                     fallbackMuted: oneLiner == null,
+                    // Both text actions share ONE line under the summary:
+                    // "read the rest of it" and "argue with it" are the two
+                    // things a reader does next, and a row apiece cost the
+                    // card two rows to say so.
+                    onAskWhy: widget.onAskWhy,
                   ),
-                  if (widget.onAskWhy != null) ...[
-                    SizedBox(height: tokens.spacing.step1),
-                    DesignSystemButton(
-                      key: const ValueKey('goal-detail-ask-why'),
-                      label: messages.goalDetailAskWhy,
-                      onPressed: widget.onAskWhy,
-                      variant: DesignSystemButtonVariant.tertiary,
-                      size: DesignSystemButtonSize.dense,
-                      trailingIcon: LottiIcons.forward,
-                      alignsLabelToLeadingEdge: true,
-                    ),
-                  ],
-                  // The goal's cumulative inference cost, in the panel that
-                  // spends it — the same footer position as the task card's
-                  // consumption pills.
-                  GoalAgentLifetimePills(agentId: widget.agentId),
                   if (updateFailure != null) ...[
                     SizedBox(height: tokens.spacing.step3),
                     Row(
@@ -1622,6 +1626,11 @@ class _AgentReadCardState extends ConsumerState<_AgentReadCard> {
                     // the automatic-updates switch.
                     AgentAutomationRow(
                       compact: !isDesktopLayout(context),
+                      // "Updates on changes" restates the switch beside it:
+                      // automatic updates being ON *is* the promise. The
+                      // countdown, which says something the switch cannot,
+                      // still takes the slot whenever a run is pending.
+                      showsIdleScheduleLabel: false,
                       automaticUpdatesEnabled: automaticUpdatesEnabled,
                       automationBusy: _automationBusy,
                       inferenceAvailable: true,
@@ -1674,11 +1683,16 @@ class _GoalReportCard extends StatefulWidget {
     required this.report,
     required this.fallback,
     required this.fallbackMuted,
+    required this.onAskWhy,
   });
 
   final AgentReportEntity? report;
   final String fallback;
   final bool fallbackMuted;
+
+  /// Opens the chat with the read's verdict pre-quoted. Rides the same row as
+  /// Show more; null while the goal has no conversation to open.
+  final VoidCallback? onAskWhy;
 
   @override
   State<_GoalReportCard> createState() => _GoalReportCardState();
@@ -1769,7 +1783,7 @@ class _GoalReportCardState extends State<_GoalReportCard>
             ),
           ),
         ],
-        if (expandable) ...[
+        if (expandable)
           AnimatedBuilder(
             animation: _revealCurve,
             builder: (context, child) => _revealCurve.value == 0
@@ -1808,16 +1822,43 @@ class _GoalReportCardState extends State<_GoalReportCard>
               ],
             ),
           ),
+        // One caption-tier action row, not one row per action. No hover
+        // fill on either: a pill fading in mid-paragraph reads as a phantom
+        // button — the accent ink already says these are actions, and it
+        // still brightens under the pointer.
+        if (expandable || widget.onAskWhy != null) ...[
           SizedBox(height: tokens.spacing.step1),
-          DesignSystemButton(
-            label: _expanded
-                ? context.messages.aiResponseShowLess
-                : context.messages.aiResponseShowMore,
-            onPressed: _toggle,
-            variant: DesignSystemButtonVariant.tertiary,
-            size: DesignSystemButtonSize.dense,
-            trailingIcon: _expanded ? LottiIcons.collapse : LottiIcons.expand,
-            alignsLabelToLeadingEdge: true,
+          Row(
+            children: [
+              if (expandable)
+                DesignSystemButton(
+                  label: _expanded
+                      ? context.messages.aiResponseShowLess
+                      : context.messages.aiResponseShowMore,
+                  onPressed: _toggle,
+                  variant: DesignSystemButtonVariant.tertiary,
+                  size: DesignSystemButtonSize.dense,
+                  trailingIcon: _expanded
+                      ? LottiIcons.collapse
+                      : LottiIcons.expand,
+                  alignsLabelToLeadingEdge: true,
+                  suppressHoverFill: true,
+                ),
+              if (widget.onAskWhy case final askWhy?)
+                DesignSystemButton(
+                  key: const ValueKey('goal-detail-ask-why'),
+                  label: context.messages.goalDetailAskWhy,
+                  onPressed: askWhy,
+                  variant: DesignSystemButtonVariant.tertiary,
+                  size: DesignSystemButtonSize.dense,
+                  trailingIcon: LottiIcons.forward,
+                  // Only the FIRST action on the row pulls onto the card's
+                  // leading rail; a second pull would drag it back over the
+                  // gap it just left.
+                  alignsLabelToLeadingEdge: !expandable,
+                  suppressHoverFill: true,
+                ),
+            ],
           ),
         ],
       ],

@@ -48,6 +48,7 @@ class HabitsChartCard extends ConsumerWidget {
     final messages = context.messages;
     final state = ref.watch(habitsControllerProvider);
     final controller = ref.read(habitsControllerProvider.notifier);
+    final scoped = habitIds != null;
     // Scoped mode: the habits state only carries ACTIVE definitions and
     // their completions. A goal whose referenced habits are all deactivated
     // would chart a fabricated all-zero line — suppress the card instead.
@@ -114,10 +115,21 @@ class HabitsChartCard extends ConsumerWidget {
                     segments: timeSpans,
                   ),
                 ],
+                // Scoped mode adopts the goal dashboard's card grammar: the
+                // key reading pinned to the header's trailing edge with its
+                // verdict underneath, instead of a display-tier number and a
+                // pair of pills on a row of their own.
+                if (scoped) ...[
+                  SizedBox(width: tokens.spacing.step3),
+                  HabitCompletionRateSummary(habitIds: habitIds),
+                ],
               ],
             ),
             SizedBox(height: tokens.spacing.step4),
-            HabitCompletionRateChart(habitIds: habitIds),
+            HabitCompletionRateChart(
+              habitIds: habitIds,
+              showsHeadline: !scoped,
+            ),
           ],
         ),
       ),

@@ -804,16 +804,36 @@ class GoalThisWeekCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            // Over the page's shared range the card is no longer a week —
-            // it is the goal's day-by-day record over the same span every
-            // other track shows.
-            progress.compactWindow.length > 7
-                ? context.messages.goalDetailGoalDaysTitle
-                : context.messages.goalDetailThisWeekTitle,
-            style: tokens.typography.styles.subtitle.subtitle2,
+          // Title and the day's own action on ONE row. As a full-width row
+          // under the strip the reflection cost the card a touch-target's
+          // height plus two gaps to say what a corner button says in the
+          // header's own line — and it left the header rail empty.
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  // Over the page's shared range the card is no longer a
+                  // week — it is the goal's day-by-day record over the same
+                  // span every other track shows.
+                  progress.compactWindow.length > 7
+                      ? context.messages.goalDetailGoalDaysTitle
+                      : context.messages.goalDetailThisWeekTitle,
+                  style: tokens.typography.styles.subtitle.subtitle2,
+                ),
+              ),
+              if (onReflectDay != null)
+                _ReflectTodayButton(
+                  recorded:
+                      ratingsByDay[DateTime.utc(
+                        progress.today.year,
+                        progress.today.month,
+                        progress.today.day,
+                      )],
+                  onReflect: () => onReflectDay!(progress.today),
+                ),
+            ],
           ),
-          SizedBox(height: tokens.spacing.step3),
+          SizedBox(height: tokens.spacing.step2),
           // The strip counts DAYS; the caption below counts dimensions on
           // one day. Naming the frame keeps the two from reading as one
           // contradictory statistic.
@@ -835,7 +855,7 @@ class GoalThisWeekCard extends StatelessWidget {
               color: tokens.colors.text.lowEmphasis,
             ),
           ),
-          SizedBox(height: tokens.spacing.step2),
+          SizedBox(height: tokens.spacing.step3),
           // On the card's own rail. It used to be inset by a chart's y-axis
           // gutter so it would line up with plots on other cards — but this
           // card draws no plot, so the gutter was 52px of nothing between the
@@ -847,116 +867,67 @@ class GoalThisWeekCard extends StatelessWidget {
             ratingsByDay: ratingsByDay,
             scrollGroup: scrollGroup,
           ),
-          // Directly under the week it closes off, and inside the same card.
-          // Stranded at the very bottom of the page — after every habit card,
-          // the legend and every chart — the one thing the user is meant to do
-          // daily was the quietest row on the surface, and nothing connected
-          // it to the strip whose cells open the very same sheet.
-          if (onReflectDay != null) ...[
-            SizedBox(height: tokens.spacing.step3),
-            _ReflectTodayRow(
-              today: progress.today,
-              recorded:
-                  ratingsByDay[DateTime.utc(
-                    progress.today.year,
-                    progress.today.month,
-                    progress.today.day,
-                  )],
-              onReflect: () => onReflectDay!(progress.today),
-            ),
-          ],
-          if (progress.compositeRule != null)
-            SizedBox(height: tokens.spacing.step3),
           // "3 of 5 dimensions · 4 required" says nothing about a goal with
           // one dimension, so a leaf goal gets the strip without the tally.
-          if (progress.compositeRule != null)
-            Text(
-              context.messages.goalCompositeProgressSummary(
-                metYesterday,
-                progress.dimensionCount,
-                required,
-              ),
-              style: tokens.typography.styles.body.bodySmall.copyWith(
-                color: tokens.colors.text.mediumEmphasis,
+          // Centered under the strip it closes, like every legend and summary
+          // line on the cards below it.
+          if (progress.compositeRule != null) ...[
+            SizedBox(height: tokens.spacing.step3),
+            SizedBox(
+              width: double.infinity,
+              child: Text(
+                context.messages.goalCompositeProgressSummary(
+                  metYesterday,
+                  progress.dimensionCount,
+                  required,
+                ),
+                textAlign: TextAlign.center,
+                style: tokens.typography.styles.body.bodySmall.copyWith(
+                  color: tokens.colors.text.mediumEmphasis,
+                ),
               ),
             ),
+          ],
         ],
       ),
     );
   }
 }
 
-/// The day's own reflection, docked under the week it closes off.
+/// The day's own reflection, as the Goal-days header's trailing action.
 ///
-/// Carries today's state rather than only inviting the action: a row that
-/// says "Reflect on today" whether or not you already did is a row you have
-/// to tap to find out.
-class _ReflectTodayRow extends StatelessWidget {
-  const _ReflectTodayRow({
-    required this.today,
+/// Carries today's state rather than only inviting the action: a control that
+/// says "Reflect on today" whether or not you already did is one you have to
+/// tap to find out. Once a rating exists the button wears that verdict's glyph
+/// and word, so the corner reads as today's answer and stays the way back in.
+class _ReflectTodayButton extends StatelessWidget {
+  const _ReflectTodayButton({
     required this.recorded,
     required this.onReflect,
   });
 
-  final DateTime today;
   final GoalAssessmentRating? recorded;
   final VoidCallback onReflect;
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.designTokens;
     final recorded = this.recorded;
-    // A quiet row, not a button: the full-width hover fill read as a phantom
-    // button across the card. The trailing chevron — the row's own "this
-    // opens something" glyph — lifts a step instead.
-    return DsQuietInk(
-      onTap: onReflect,
-      borderRadius: BorderRadius.circular(tokens.radii.s),
-      builder: (context, highlighted) => ConstrainedBox(
-        // Moving this out of a tappable section card into an inner ink target
-        // left the row's own height as the target: two icons plus `step2`
-        // padding is about 32px, under the floor — on the ONE action the
-        // user is meant to take daily.
-        constraints: const BoxConstraints(minHeight: TapTargets.minimum),
-        child: Padding(
-          padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
-          child: Row(
-            children: [
-              // The sparkle stays exclusive to agent suggestions; this row is
-              // the USER writing a reflection.
-              Icon(
-                recorded == null
-                    ? LottiIcons.editNote
-                    : goalAssessmentRatingGlyph(recorded),
-                // The verdict's own family ink, NOT the on-alert ink: this
-                // glyph sits on the card surface, where the on-alert ink is
-                // near-invisible by design — it is tuned for glyphs drawn on
-                // a saturated fill, which is where the strip uses it.
-                color: recorded == null
-                    ? tokens.colors.interactive.enabled
-                    : goalAssessmentRatingSurfaceInk(tokens, recorded),
-              ),
-              SizedBox(width: tokens.spacing.step3),
-              Expanded(
-                child: Text(
-                  recorded == null
-                      ? context.messages.goalAssessmentReflectToday
-                      : goalAssessmentRatingLabel(context, recorded),
-                  style: tokens.typography.styles.body.bodySmall.copyWith(
-                    color: tokens.colors.text.highEmphasis,
-                  ),
-                ),
-              ),
-              Icon(
-                LottiIcons.chevronRight,
-                color: highlighted
-                    ? tokens.colors.text.highEmphasis
-                    : tokens.colors.text.lowEmphasis,
-              ),
-            ],
-          ),
-        ),
-      ),
+    return DesignSystemButton(
+      key: const ValueKey('goal-reflect-today'),
+      label: recorded == null
+          ? context.messages.goalAssessmentReflectToday
+          : goalAssessmentRatingLabel(context, recorded),
+      onPressed: onReflect,
+      // The sparkle stays exclusive to agent suggestions; this button is the
+      // USER writing a reflection.
+      leadingIcon: recorded == null
+          ? LottiIcons.editNote
+          : goalAssessmentRatingGlyph(recorded),
+      variant: DesignSystemButtonVariant.tertiary,
+      size: DesignSystemButtonSize.dense,
+      // The header rail is the card's trailing edge: the ink may bleed into
+      // the card padding, the label may not sit inside it.
+      tapTargetSize: MaterialTapTargetSize.padded,
     );
   }
 }
@@ -1025,15 +996,11 @@ class _HabitDimensionCard extends StatelessWidget {
             today: today,
             onOutcomeSelected: onHabitOutcomeSelected,
             scrollGroup: scrollGroup,
+            // The six-week tail rides the window line above the squares
+            // rather than taking a row under them: both facts describe the
+            // same window, and stacked they cost the card a row to say so.
+            successfulWeeks: successfulWeeks,
           ),
-          // The six-week tail closes the card, on its own row under the days
-          // it summarises. Riding the trailing edge of a heading three rows
-          // up, it was one of six figures competing for the same band of the
-          // card with nothing saying which qualified which.
-          if (successfulWeeks != null) ...[
-            SizedBox(height: tokens.spacing.step3),
-            _Reliability(successfulWeeks: successfulWeeks),
-          ],
           // Inside the card, under the squares it keys. On the page background
           // between two cards it was equidistant from both and read as
           // annotating the chart below — which it does not explain at all.
@@ -1064,7 +1031,6 @@ typedef _MetricSummary = ({
   bool hasData,
   bool latestOnTargetToday,
   bool met,
-  bool improving,
 });
 
 _BloodPressureMetrics? _bloodPressureMetrics(
@@ -1147,26 +1113,6 @@ _MetricSummary _metricSummary(
       latestDay != null &&
       DateUtils.isSameDay(latestDay.day, today) &&
       _valueMeetsTarget(latestDay.value, metric.target, metric.direction);
-  // Whether the most recent observation moved TOWARD the target relative to
-  // the one before it. Not a trend — two points never are — but it is the
-  // difference between "behind" and "behind and getting worse", and it is the
-  // one thing the seven bars above cannot say on their own.
-  final previousDay = observed.length < 2
-      ? null
-      : observed[observed.length - 2];
-  // For a `count` criterion a day either qualifies or it does not — its
-  // magnitude carries no progress at all — so comparing raw values called a
-  // bigger qualifying day an improvement over a smaller one that moved the
-  // count by exactly as much.
-  final improving =
-      latestDay != null &&
-      previousDay != null &&
-      (metric.aggregation == GoalAggregation.count
-          ? _countsTowardTally(metric, latestDay) &&
-                !_countsTowardTally(metric, previousDay)
-          : metric.direction == GoalDirection.atLeast
-          ? latestDay.value > previousDay.value
-          : latestDay.value < previousDay.value);
   return (
     current: current,
     // The most recent observation. Point-sample vitals display this instead
@@ -1176,7 +1122,6 @@ _MetricSummary _metricSummary(
     latest: observed.isEmpty ? 0 : observed.last.value,
     hasData: observed.isNotEmpty,
     latestOnTargetToday: latestOnTargetToday,
-    improving: improving,
     met:
         observed.isNotEmpty &&
         (meetsPeriodTarget ||
@@ -1224,9 +1169,6 @@ class _BloodPressureDimensionCard extends StatelessWidget {
     final met = hasData && systolic.met && diastolic.met;
     final onTargetToday =
         systolic.latestOnTargetToday && diastolic.latestOnTargetToday;
-    // Both halves have to be moving the right way. One improving while the
-    // other slips is not a reading that improved.
-    final improving = systolic.improving && diastolic.improving;
     final systolicColor = tokens.colors.alert.error.defaultColor;
     final diastolicColor = tokens.colors.alert.info.defaultColor;
     final range = _metricDateRange([metrics.systolic, metrics.diastolic]);
@@ -1315,19 +1257,15 @@ class _BloodPressureDimensionCard extends StatelessWidget {
                 ],
               ),
             ),
+          ]
+          // See [_MetricDimensionCard]: only the no-data case says something
+          // the header's status caption does not.
+          else ...[
+            SizedBox(height: tokens.spacing.step3),
+            _DimensionSummaryNote(
+              text: context.messages.goalDimensionNoDataNote,
+            ),
           ],
-          SizedBox(height: tokens.spacing.step3),
-          _DimensionSummaryNote(
-            text: !hasData
-                ? context.messages.goalDimensionNoDataNote
-                : onTargetToday
-                ? context.messages.goalDimensionOnTargetTodayNote
-                : met
-                ? context.messages.goalDimensionOnTrackNote
-                : improving
-                ? context.messages.goalDimensionImprovingNote
-                : context.messages.goalDimensionNeedsAttentionNote,
-          ),
         ],
       ),
     );
@@ -1467,7 +1405,22 @@ class _MetricDimensionCard extends StatelessWidget {
     final number = NumberFormat.decimalPattern(locale);
     final unit = metric.unitName?.trim();
     final displayValue = _metricDisplayValue(metric, summary);
-    final reading = unit == null || unit.isEmpty
+    // A card that plots a 7-day average also draws the target as a keyed
+    // legend entry ("Goal ≤ 88"), so the corner states the LATEST reading
+    // alone and hands the corner's second figure to the average instead —
+    // repeating the target here would spend the card's most valuable line on
+    // a number already named twice below.
+    final averageSeries =
+        summary.hasData && goalMetricShowsSevenDayAverage(metric);
+    final latestAverage = averageSeries
+        ? goalMetricSevenDayAverage(metric, today: today).lastOrNull
+        : null;
+    final reading = averageSeries
+        ? _valueWithUnit(
+            formatGoalAggregate(number, displayValue, against: metric.target),
+            unit,
+          )
+        : unit == null || unit.isEmpty
         ? context.messages.goalDimensionMetricReading(
             formatGoalAggregate(number, displayValue, against: metric.target),
             formatGoalAggregate(number, metric.target, against: displayValue),
@@ -1489,6 +1442,12 @@ class _MetricDimensionCard extends StatelessWidget {
             met: summary.met,
             hasData: summary.hasData,
             onTargetToday: summary.latestOnTargetToday,
+            averageReading: latestAverage == null
+                ? null
+                : '${context.messages.goalChartSevenDayAverage} '
+                      '${formatGoalAggregate(number, latestAverage.value)}',
+            // The average LINE's hue, from the same token the series reads.
+            averageColor: tokens.colors.alert.info.defaultColor,
           ),
           // Nothing observed, no plot. A dimension with no readings drew a
           // full-height empty frame — a card's worth of white under a header
@@ -1507,26 +1466,28 @@ class _MetricDimensionCard extends StatelessWidget {
               _MetricHealthSeries(metric: metric)
             else
               _MetricProgressSeries(metric: metric, scrollGroup: scrollGroup),
+          ]
+          // Nothing observed: the header reads "Not enough data" but says
+          // nothing about why the card is empty, so the note survives for
+          // exactly that case. Every other verdict it used to carry — on
+          // target, on track, behind — is the header's status caption
+          // restated in a sentence, under a chart that already shows it.
+          else ...[
+            SizedBox(height: tokens.spacing.step3),
+            _DimensionSummaryNote(
+              text: context.messages.goalDimensionNoDataNote,
+            ),
           ],
-          SizedBox(height: tokens.spacing.step3),
-          _DimensionSummaryNote(
-            text: !summary.hasData
-                ? context.messages.goalDimensionNoDataNote
-                : summary.latestOnTargetToday
-                ? context.messages.goalDimensionOnTargetTodayNote
-                : summary.met
-                ? context.messages.goalDimensionOnTrackNote
-                : summary.improving
-                // Behind, but moving the right way — worth saying, and the
-                // one thing the bars above cannot.
-                ? context.messages.goalDimensionImprovingNote
-                : context.messages.goalDimensionNeedsAttentionNote,
-          ),
         ],
       ),
     );
   }
 }
+
+/// "93.4 kg" — a bare reading and its unit, for corners that state the
+/// latest value without comparing it to anything.
+String _valueWithUnit(String value, String? unit) =>
+    unit == null || unit.isEmpty ? value : '$value $unit';
 
 class _DimensionHeader extends StatelessWidget {
   const _DimensionHeader({
@@ -1536,6 +1497,8 @@ class _DimensionHeader extends StatelessWidget {
     required this.reading,
     required this.met,
     required this.hasData,
+    this.averageReading,
+    this.averageColor,
     this.onTargetToday = false,
   });
 
@@ -1545,6 +1508,17 @@ class _DimensionHeader extends StatelessWidget {
   final String reading;
   final bool met;
   final bool hasData;
+
+  /// The rolling 7-day average, set beside the latest reading for signals
+  /// that plot one.
+  ///
+  /// The two figures answer different questions — "where am I right now" and
+  /// "where has the week put me" — and only one of them was ever in the
+  /// corner. It is tinted with [averageColor], the average LINE's own hue, so
+  /// the number and the mark it summarises are keyed to each other without
+  /// spending a word on saying so.
+  final String? averageReading;
+  final Color? averageColor;
   final bool onTargetToday;
 
   @override
@@ -1612,10 +1586,21 @@ class _DimensionHeader extends StatelessWidget {
           ? CrossAxisAlignment.end
           : CrossAxisAlignment.start,
       children: [
-        Text(
-          reading,
+        Text.rich(
+          TextSpan(
+            style: tokens.typography.styles.subtitle.subtitle2,
+            children: [
+              TextSpan(text: reading),
+              if (averageReading case final average?)
+                TextSpan(
+                  text: '  $average',
+                  style: tokens.typography.styles.others.caption.copyWith(
+                    color: averageColor,
+                  ),
+                ),
+            ],
+          ),
           textAlign: alignEnd ? TextAlign.end : TextAlign.start,
-          style: tokens.typography.styles.subtitle.subtitle2,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
@@ -1981,10 +1966,16 @@ class _HabitProgressRow extends StatefulWidget {
     required this.habit,
     required this.today,
     required this.onOutcomeSelected,
+    this.successfulWeeks,
     this.scrollGroup,
   });
 
   final LinkedScrollGroup? scrollGroup;
+
+  /// The rolling-week reliability tail, drawn on the trailing edge of the
+  /// window line. Null for habits whose window is not a rolling week — the
+  /// tail counts weeks, and nothing else here is measured in them.
+  final int? successfulWeeks;
   final GoalHabitProgressView habit;
   final DateTime today;
   final GoalHabitOutcomeSelected? onOutcomeSelected;
@@ -2038,12 +2029,11 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
     final note = habit.deficit == 0
         ? null
         : context.messages.goalDaysToRecover(habit.deficit);
-    final rollingWeek = habit.window == const GoalWindow.rollingDays(count: 7);
     // NO cadence line at all: the corner block now carries count, target AND
     // the concrete window ("1 of 3 · calendar week"), so a "3× · calendar
-    // week" line here would be the same facts twice on one card. The rolling
-    // week's one unique fact — that the window slides — rides the period
-    // line, which is the thing that actually slides.
+    // week" line here would be the same facts twice on one card. The period
+    // line is left with the one thing nothing else states: which dates the
+    // squares below it cover.
     final cadenceStyle = tokens.typography.styles.others.caption.copyWith(
       color: tokens.colors.text.lowEmphasis,
     );
@@ -2110,13 +2100,10 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
           availableWidth: constraints.maxWidth,
         );
         final contentWidth = metrics.pitch * activeDays.length;
-        final periodLine = [
-          _periodLabel(context, activeDays),
-          if (rollingWeek) context.messages.goalProgressCompactCaption,
-        ].join(' · ');
-        // The deficit note shares the period line whenever both fit side by
-        // side: two facts about the same window on one caption row, instead
-        // of a dedicated line whose only content is usually one short
+        final periodLine = _periodLabel(context, activeDays);
+        // The deficit note shares the period line whenever everything on it
+        // fits side by side: facts about the same window on one caption row,
+        // instead of a dedicated line whose only content is usually one short
         // sentence. Only a narrow card stacks them.
         final textScaler = MediaQuery.textScalerOf(context);
         double lineWidth(String text, TextStyle style) => (TextPainter(
@@ -2125,11 +2112,26 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
           textScaler: textScaler,
           maxLines: 1,
         )..layout()).width;
+        final successfulWeeks = widget.successfulWeeks;
+        // The tail measured, not guessed: its bars are token-sized and its
+        // caption is localized, so the only honest width is a laid-out one.
+        final reliabilityWidth = successfulWeeks == null
+            ? 0.0
+            : _Reliability.bars * BorderWidths.emphasis * 2 +
+                  (_Reliability.bars - 1) * tokens.spacing.step1 +
+                  tokens.spacing.step3 +
+                  lineWidth(
+                    context.messages.goalReliabilityWeeks(successfulWeeks),
+                    noteStyle,
+                  );
         final noteSharesLine =
             note != null &&
             lineWidth(periodLine, cadenceStyle) +
                     tokens.spacing.step4 +
-                    lineWidth(note, noteStyle) <=
+                    lineWidth(note, noteStyle) +
+                    (reliabilityWidth == 0
+                        ? 0
+                        : tokens.spacing.step4 + reliabilityWidth) <=
                 constraints.maxWidth;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -2158,24 +2160,38 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
             ],
             // The span the squares below cover, on the same rail as the
             // squares themselves — it used to sit a chart's y-axis gutter to
-            // their left, keyed to a plot this card does not draw. A rolling
-            // week appends the sliding note here: the date span is the thing
-            // that slides at midnight.
+            // their left, keyed to a plot this card does not draw.
             KeyedSubtree(
               key: ValueKey('goal-habit-plot-${habit.habitId}'),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (noteSharesLine)
-                    Row(
-                      children: [
-                        Text(periodLine, style: cadenceStyle),
-                        const Spacer(),
+                  // Window line: which days these squares cover, and — for a
+                  // rolling week — how many of the last six the habit
+                  // actually carried. One row, because both qualify the same
+                  // window; the tail on the trailing rail, so the line reads
+                  // span-then-record rather than as two stacked captions.
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          periodLine,
+                          style: cadenceStyle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (noteSharesLine) ...[
+                        SizedBox(width: tokens.spacing.step4),
                         Text(note, style: noteStyle),
                       ],
-                    )
-                  else
-                    Text(periodLine, style: cadenceStyle),
+                      const Spacer(),
+                      if (successfulWeeks != null) ...[
+                        SizedBox(width: tokens.spacing.step4),
+                        _Reliability(successfulWeeks: successfulWeeks),
+                      ],
+                    ],
+                  ),
                   SizedBox(height: tokens.spacing.step2),
                   // Labels and squares pan as one unit, and only where even
                   // the narrowest column overflows.
@@ -2580,17 +2596,22 @@ class _HabitDayOutcomeMenuState extends State<_HabitDayOutcomeMenu> {
 class _Reliability extends StatelessWidget {
   const _Reliability({required this.successfulWeeks});
 
+  /// Weeks the tail draws. Public so the window line can reserve the tail's
+  /// width from the same number the tail is built from.
+  static const int bars = 6;
+
   final int successfulWeeks;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    // Bars and their caption on ONE line, reading left to right like every
-    // other row on the card. Stacked and right-ragged, the tail and its label
-    // formed a third column that belonged to nothing above it.
+    // Bars and their caption on ONE line, on the trailing rail of the window
+    // line they qualify. Hugging, not stretching: the row that hosts it owns
+    // the slack.
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        for (var index = 0; index < 6; index++) ...[
+        for (var index = 0; index < bars; index++) ...[
           if (index > 0) SizedBox(width: tokens.spacing.step1),
           Container(
             width: BorderWidths.emphasis * 2,
@@ -2606,12 +2627,10 @@ class _Reliability extends StatelessWidget {
           ),
         ],
         SizedBox(width: tokens.spacing.step3),
-        Flexible(
-          child: Text(
-            context.messages.goalReliabilityWeeks(successfulWeeks),
-            style: tokens.typography.styles.others.caption.copyWith(
-              color: tokens.colors.text.mediumEmphasis,
-            ),
+        Text(
+          context.messages.goalReliabilityWeeks(successfulWeeks),
+          style: tokens.typography.styles.others.caption.copyWith(
+            color: tokens.colors.text.mediumEmphasis,
           ),
         ),
       ],

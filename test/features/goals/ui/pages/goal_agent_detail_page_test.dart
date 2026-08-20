@@ -907,8 +907,13 @@ void main() {
     // The shared AI panel chrome: same header widget as the task agent
     // section, with the goal's cumulative inference cost pills on the card.
     expect(find.byType(TldrHeader), findsOneWidget);
+    // On the header's trailing rail beside the freshness caption, not on a
+    // row of its own in the card body: the header rail was empty space, and
+    // a full-width row for one pill was the card's cheapest saving.
+    final pill = find.byKey(const ValueKey('goal-agent-lifetime-pills'));
+    expect(pill, findsOneWidget);
     expect(
-      find.byKey(const ValueKey('goal-agent-lifetime-pills')),
+      find.descendant(of: find.byType(TldrHeader), matching: pill),
       findsOneWidget,
     );
   });
@@ -1557,6 +1562,116 @@ void main() {
     );
     expect(find.text('Shoes miss you.'), findsOneWidget);
     expect(find.text('Third day on the couch.'), findsOneWidget);
+  });
+
+  testWidgets("the read card's two text actions share one row, and no "
+      'caption restates the automatic-updates switch', (
+    tester,
+  ) async {
+    final report =
+        AgentDomainEntity.agentReport(
+              id: 'report-goal-1',
+              agentId: 'goal-1',
+              scope: AgentReportScopes.current,
+              createdAt: DateTime(2026, 8, 10),
+              vectorClock: null,
+              oneLiner: 'Three walks remain before Sunday.',
+              tldr: '**Three walks** remain before Sunday.',
+              content:
+                  '## Full report\n\nThe current routine needs three walks.',
+            )
+            as AgentReportEntity;
+    final spec =
+        AgentDomainEntity.goalSpecVersion(
+              id: 'goal-1:spec-v1',
+              agentId: 'goal-1',
+              version: 1,
+              status: GoalSpecVersionStatus.active,
+              authoredBy: 'user',
+              title: 'Move more',
+              statement: 'Walk this week.',
+              criteria: const GoalCriterion.habit(
+                criterionId: 'walk',
+                habitId: 'walk',
+                window: GoalWindow.rollingDays(count: 7),
+                targetCount: 3,
+              ),
+              createdAt: DateTime(2026, 8),
+              vectorClock: null,
+            )
+            as GoalSpecVersionEntity;
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const GoalAgentDetailPage(agentId: 'goal-1'),
+        overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
+          agentIdentityProvider(
+            'goal-1',
+          ).overrideWith((ref) async => goalIdentity),
+          goalAgentHealthProvider('goal-1').overrideWith(
+            (ref) async => (
+              trackStatus: GoalTrackStatus.offTrack,
+              attainment: 0.4,
+              reportOneLiner: 'Three walks remain before Sunday.',
+              pendingProposals: 0,
+              spec: spec,
+              direction: null,
+              deficit: null,
+              buffer: null,
+            ),
+          ),
+          selfTargetedPendingChangeSetsProvider(
+            'goal-1',
+          ).overrideWith((ref) async => []),
+          agentMessagesByThreadProvider(
+            'goal-1',
+          ).overrideWith((ref) async => {}),
+          agentReportProvider('goal-1').overrideWith((ref) async => report),
+          agentReportHistoryProvider(
+            'goal-1',
+          ).overrideWith((ref) async => [report]),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // ONE caption-tier action row: "read the rest of it" and "argue with it"
+    // are the two things a reader does next, and a row apiece cost the card
+    // two rows to say so.
+    final showMore = find.text('Show more');
+    final askWhy = find.byKey(const ValueKey('goal-detail-ask-why'));
+    expect(showMore, findsOneWidget);
+    expect(askWhy, findsOneWidget);
+    expect(
+      tester.getCenter(showMore).dy,
+      closeTo(tester.getCenter(askWhy).dy, 1),
+    );
+    expect(
+      tester.getTopLeft(askWhy).dx,
+      greaterThan(tester.getTopRight(showMore).dx - 1),
+    );
+
+    // Neither spends a hover fill: a pill fading in mid-paragraph reads as a
+    // phantom button.
+    for (final action in [
+      tester.widget<DesignSystemButton>(
+        find.ancestor(of: showMore, matching: find.byType(DesignSystemButton)),
+      ),
+      tester.widget<DesignSystemButton>(askWhy),
+    ]) {
+      expect(action.suppressHoverFill, isTrue);
+      expect(action.variant, DesignSystemButtonVariant.tertiary);
+    }
+
+    // "Updates on changes" only restates the automatic-updates switch that
+    // governs it, so the schedule slot stays empty until a run is pending.
+    expect(find.text('Updates on changes'), findsNothing);
+    expect(find.text('Up to date'), findsOneWidget);
+    expect(find.text('Update now'), findsOneWidget);
   });
 
   testWidgets("the agent's report and banners sit above the progress "
@@ -3599,7 +3714,7 @@ void main() {
 
     // The goal-scoped chart card: same shell as the habits page, its
     // own title, the chart scoped to this goal's criterion habit ids.
-    expect(find.text('Completion rate · this goal'), findsOneWidget);
+    expect(find.text('Goal completion rate'), findsOneWidget);
     expect(
       tester
           .widget<HabitCompletionRateChart>(

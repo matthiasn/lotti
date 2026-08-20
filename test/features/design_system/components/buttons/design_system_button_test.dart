@@ -210,6 +210,43 @@ void main() {
       );
     });
 
+    testWidgets('suppressHoverFill drops the tertiary hover pill but keeps '
+        'the ink answering', (tester) async {
+      const buttonKey = Key('tertiary-no-fill');
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const DesignSystemButton(
+            key: buttonKey,
+            label: 'Show more',
+            variant: DesignSystemButtonVariant.tertiary,
+            forcedState: DesignSystemButtonVisualState.hover,
+            suppressHoverFill: true,
+            onPressed: _noop,
+          ),
+          theme: DesignSystemTheme.light(),
+        ),
+      );
+
+      // No fill fades in behind a caption-tier text action set in prose…
+      final ink = tester.widget<Ink>(
+        find.descendant(of: find.byKey(buttonKey), matching: find.byType(Ink)),
+      );
+      expect((ink.decoration! as ShapeDecoration).color, Colors.transparent);
+      // …but the label still brightens, so the affordance survives.
+      expect(
+        find.descendant(
+          of: find.byKey(buttonKey),
+          matching: find.byWidgetPredicate(
+            (widget) =>
+                widget is DefaultTextStyle &&
+                widget.style.color == dsTokensLight.colors.interactive.hover,
+          ),
+        ),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('renders the danger hover state from tokens', (tester) async {
       const buttonKey = Key('danger-hover');
 

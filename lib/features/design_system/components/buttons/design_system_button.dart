@@ -65,6 +65,7 @@ class DesignSystemButton extends StatefulWidget {
     this.fullWidth = false,
     this.isLoading = false,
     this.alignsLabelToLeadingEdge = false,
+    this.suppressHoverFill = false,
     this.tapTargetSize = MaterialTapTargetSize.shrinkWrap,
     super.key,
   }) : assert(
@@ -98,6 +99,17 @@ class DesignSystemButton extends StatefulWidget {
   /// button sits in a stack of text rows — which is exactly where the caption
   /// tier gets used. Direction-aware, so it pulls right in RTL.
   final bool alignsLabelToLeadingEdge;
+
+  /// Drops the hover/focus/pressed *fill* on the fill-less variants
+  /// (tertiary and the outlined family), leaving the ink to carry the state.
+  ///
+  /// For caption-tier text actions set inside a body of prose — "Show more",
+  /// "Ask why" under a summary paragraph — the pill that fades in on hover
+  /// reads as a phantom button appearing mid-paragraph. The label already
+  /// wears the interactive accent, and it still brightens on hover, so the
+  /// affordance survives the fill's removal. Filled variants ignore this:
+  /// their fill IS the button.
+  final bool suppressHoverFill;
 
   /// When true, the button expands to fill its parent's width (use inside an
   /// [Expanded]/[SizedBox]) and its content is centered rather than left
@@ -144,6 +156,7 @@ class _DesignSystemButtonState extends State<DesignSystemButton> {
       variant: widget.variant,
       visualState: visualState,
       enabled: hasCallback,
+      suppressHoverFill: widget.suppressHoverFill,
     );
     final buttonShape = RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(sizeSpec.cornerRadius),
@@ -409,6 +422,7 @@ class _ButtonVariantSpec {
     required DesignSystemButtonVariant variant,
     required DesignSystemButtonVisualState visualState,
     required bool enabled,
+    bool suppressHoverFill = false,
   }) {
     // A disabled button must read as inert, not as a dimmer brand button: drop
     // the brand hue entirely and render a flat, low-emphasis neutral. Filled
@@ -474,13 +488,17 @@ class _ButtonVariantSpec {
       ),
       DesignSystemButtonVariant.tertiary => _ButtonVariantSpec(
         foregroundColor: interactiveColor,
-        backgroundColor: visualState == DesignSystemButtonVisualState.idle
+        backgroundColor:
+            suppressHoverFill ||
+                visualState == DesignSystemButtonVisualState.idle
             ? null
             : surfaceColor,
       ),
       DesignSystemButtonVariant.outlined => _ButtonVariantSpec(
         foregroundColor: tokens.colors.text.highEmphasis,
-        backgroundColor: visualState == DesignSystemButtonVisualState.idle
+        backgroundColor:
+            suppressHoverFill ||
+                visualState == DesignSystemButtonVisualState.idle
             ? null
             : surfaceColor,
         borderColor: tokens.colors.text.lowEmphasis,
@@ -490,7 +508,9 @@ class _ButtonVariantSpec {
         // interaction state like the tertiary text button does — the
         // outlined shape demotes it, the hue keeps it a good idea.
         foregroundColor: interactiveColor,
-        backgroundColor: visualState == DesignSystemButtonVisualState.idle
+        backgroundColor:
+            suppressHoverFill ||
+                visualState == DesignSystemButtonVisualState.idle
             ? null
             : surfaceColor,
         borderColor: interactiveColor,
@@ -505,7 +525,9 @@ class _ButtonVariantSpec {
       ),
       DesignSystemButtonVariant.dangerTertiary => _ButtonVariantSpec(
         foregroundColor: dangerContentColor,
-        backgroundColor: visualState == DesignSystemButtonVisualState.idle
+        backgroundColor:
+            suppressHoverFill ||
+                visualState == DesignSystemButtonVisualState.idle
             ? null
             : surfaceColor,
       ),
