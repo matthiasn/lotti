@@ -39,9 +39,10 @@ project, and relationships to other tasks.
   rail's Views button.
 - **Shows AI work in context.** The agent's summary, its proposed changes, and
   what the AI has cost for this task all live on the task itself. The cost is a
-  compact leaf-and-amount indicator that rides along in the task list too, not
-  only inside the details — and it is clickable, so it can grow into a
-  breakdown of where the money went.
+  compact leaf-and-amount indicator that is simply always on screen: beside the
+  task's status in its header, and on every task row in the list — not only
+  inside the details. It is clickable, so it can grow into a breakdown of where
+  the money went.
 - **Keeps the details in view while you work.** On a wide window, hiding the
   task list does not just widen the task: the task's metadata — status,
   priority, category, project, due date, estimate, labels, AI spend — moves

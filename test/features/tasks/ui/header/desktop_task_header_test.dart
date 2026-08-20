@@ -1038,6 +1038,46 @@ void main() {
       expect(find.textContaining(','), findsNothing);
     });
 
+    testWidgets('the AI cost slot sits among the read-outs, after labels', (
+      tester,
+    ) async {
+      await _pumpDesktop(
+        tester,
+        DesktopTaskHeader(
+          data: _fixture(labels: _labelFixtures),
+          onTitleSaved: (_) {},
+          onOpenDetails: () {},
+          aiCostSlot: const Text('€0.42'),
+        ),
+      );
+
+      expect(find.text('€0.42'), findsOneWidget);
+      // Between the last fact and the lane's one lever: a cost is a read-out,
+      // not an action.
+      final labels = tester.getTopLeft(find.text('Bug fix, Release blocker'));
+      final cost = tester.getTopLeft(find.text('€0.42'));
+      final details = tester.getTopLeft(find.text('Details'));
+      expect(cost.dx, greaterThan(labels.dx));
+      expect(details.dx, greaterThan(cost.dx));
+    });
+
+    testWidgets('the lane is unchanged for a task with no AI cost', (
+      tester,
+    ) async {
+      await _pumpDesktop(
+        tester,
+        DesktopTaskHeader(
+          data: _fixture(),
+          onTitleSaved: (_) {},
+          onOpenDetails: () {},
+        ),
+      );
+
+      // No slot, no gap, no placeholder — the lane just ends at its facts.
+      expect(find.text('Open'), findsOneWidget);
+      expect(find.textContaining('€'), findsNothing);
+    });
+
     testWidgets('no Details trigger without a fly-out to open', (
       tester,
     ) async {

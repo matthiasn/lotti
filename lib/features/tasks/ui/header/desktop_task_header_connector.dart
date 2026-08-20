@@ -17,6 +17,7 @@ import 'package:lotti/features/tasks/ui/header/task_meta_column.dart';
 import 'package:lotti/features/tasks/ui/header/task_meta_flyout.dart';
 import 'package:lotti/features/tasks/ui/header/task_meta_pickers.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_task_row.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_ai_cost_indicator.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/features/tasks/util/due_date_utils.dart';
 import 'package:lotti/features/tasks/util/task_navigation.dart';
@@ -80,6 +81,13 @@ class DesktopTaskHeaderConnector extends ConsumerWidget {
       // whichever task the header last rendered.
       initialEditing: data.title.trim().isEmpty,
       blockedBySlot: _TaskBlockedByChip(taskId: task.meta.id),
+      // The cost rides in the summary lane with the other facts, so it is
+      // readable at the same glance as the status rather than one panel away.
+      // Read-only where the details column already shows the full breakdown;
+      // otherwise a tap opens the fly-out that holds it.
+      aiCostSlot: hasMetaColumn
+          ? TaskAiCostIndicator.readOnly(taskId: task.meta.id)
+          : TaskAiCostIndicator(taskId: task.meta.id),
       onTitleSaved: (newTitle) {
         controller.save(title: newTitle);
       },

@@ -13,6 +13,8 @@ import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
+import 'package:lotti/features/ai_consumption/ui/widgets/ai_cost_indicator.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
@@ -43,6 +45,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../helpers/fake_entry_controller.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
+import '../../../ai_consumption/test_utils.dart';
 
 class _FakeTaskProgressController extends TaskProgressController {
   _FakeTaskProgressController(this._state);
@@ -248,6 +251,7 @@ void main() {
     String? oneLiner,
     Locale locale = const Locale('en'),
     bool metaColumnVisible = false,
+    int aiCallCount = 0,
   }) {
     return ProviderScope(
       overrides: [
@@ -263,6 +267,15 @@ void main() {
         ),
         taskOneLinerProvider.overrideWith(
           (ref, taskId) async => oneLiner,
+        ),
+        taskConsumptionTotalsProvider(task.id).overrideWith(
+          (ref) => Stream.value(
+            makeConsumptionTotals(
+              callCount: aiCallCount,
+              impactCallCount: aiCallCount,
+              credits: aiCallCount > 0 ? 0.42 : 0,
+            ),
+          ),
         ),
       ],
       child: MaterialApp(
@@ -475,6 +488,70 @@ void main() {
         expect(find.textContaining('Apr'), findsOneWidget);
       },
     );
+  });
+
+  group('DesktopTaskHeaderConnector — AI cost in the summary lane', () {
+    testWidgets('shows the cost beside the status once AI has run', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        pumpConnector(task: buildTask(), aiCallCount: 7),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // Always visible on the task, not one panel away.
+      expect(find.text('€0.42'), findsOneWidget);
+      expect(find.text('Open'), findsOneWidget);
+    });
+
+    testWidgets('renders nothing for a task that has never used AI', (
+      tester,
+    ) async {
+      await tester.pumpWidget(pumpConnector(task: buildTask()));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.byType(AiCostIndicator), findsNothing);
+    });
+
+    testWidgets('tapping it opens the details that hold the breakdown', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        pumpConnector(task: buildTask(), aiCallCount: 7),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.tap(find.text('€0.42'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.byType(TaskMetaSection), findsOneWidget);
+      expect(find.text('AI spend'), findsOneWidget);
+    });
+
+    testWidgets('reads as a plain fact while the details column is up', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        pumpConnector(
+          task: buildTask(),
+          aiCallCount: 7,
+          metaColumnVisible: true,
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // Still visible — but it does not offer a panel that is already open.
+      expect(find.text('€0.42'), findsOneWidget);
+      expect(
+        tester.widget<AiCostIndicator>(find.byType(AiCostIndicator)).onTap,
+        isNull,
+      );
+    });
   });
 
   group('DesktopTaskHeaderConnector — fly-out and crumb invocations', () {

@@ -83,7 +83,8 @@ class DesktopTaskHeaderData {
 /// 2. **Title** — heading-2; tap toggles the inline editor.
 /// 3. **AI one-liner** — optional accent-colored task-agent context.
 /// 4. **Metadata summary** — [TaskMetaSummaryLine]: quiet informational
-///    read-outs (status, priority, due, labels) plus the "Details" trigger
+///    read-outs (status, priority, due, labels, AI cost) plus the "Details"
+///    trigger
 ///    that opens the metadata fly-out where everything is edited. The old
 ///    always-visible pill lanes are gone — metadata is set once and rarely
 ///    changed, so it no longer wears button-styled chrome on the page.
@@ -95,6 +96,7 @@ class DesktopTaskHeader extends StatefulWidget {
     this.onProjectTap,
     this.onCategoryTap,
     this.blockedBySlot,
+    this.aiCostSlot,
     this.initialEditing = false,
     super.key,
   });
@@ -110,6 +112,10 @@ class DesktopTaskHeader extends StatefulWidget {
 
   /// Optional "Blocked by" chip forwarded into [TaskMetaSummaryLine].
   final Widget? blockedBySlot;
+
+  /// The task's AI cost read-out, forwarded into the summary lane. See
+  /// [TaskMetaSummaryLine.aiCostSlot].
+  final Widget? aiCostSlot;
 
   /// Force the inline editor open on first build.
   ///
@@ -276,6 +282,7 @@ class _DesktopTaskHeaderState extends State<DesktopTaskHeader> {
             dueDate: widget.data.dueDate,
             labels: widget.data.labels,
             blockedBySlot: widget.blockedBySlot,
+            aiCostSlot: widget.aiCostSlot,
             onOpenDetails: widget.onOpenDetails,
             // With no category the crumb renders nothing, so the summary
             // lane carries the inline offer — the two affordances never

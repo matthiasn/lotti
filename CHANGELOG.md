@@ -18,9 +18,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **"Time" is now called "Estimate".** The field always was the estimated
   duration; it now says so, matching the estimate picker it opens.
 - **What AI cost a task is visible at a glance.** The leaf-and-amount read-out
-  is no longer buried in the task details: every task row that has AI work on
-  it carries the same compact indicator, and tapping it opens that task's
-  details. Tasks that have never used AI show nothing at all.
+  is no longer buried in the task details. It now sits next to the task's
+  status in its header, where it is readable the whole time you work on the
+  task, and on every task row in the list. Tapping it opens the details, which
+  still carry the fuller reading with energy and CO₂e. Tasks that have never
+  used AI show nothing at all.
 - **A shorter, calmer goal page.** The goal details page says the same things
   in far less vertical space. The AI summary card puts "Show more" and
   "Ask why" on one line, moves its running cost up beside the "as of …"

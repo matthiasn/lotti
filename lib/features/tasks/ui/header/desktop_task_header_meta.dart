@@ -43,6 +43,7 @@ class TaskMetaSummaryLine extends StatelessWidget {
     required this.dueDate,
     required this.labels,
     required this.onOpenDetails,
+    this.aiCostSlot,
     this.blockedBySlot,
     this.showSetCategory = false,
     this.onCategoryTap,
@@ -68,6 +69,11 @@ class TaskMetaSummaryLine extends StatelessWidget {
   /// Opens the category picker directly — the same callback the crumb's
   /// category segment uses once a category exists.
   final VoidCallback? onCategoryTap;
+
+  /// The task's lifetime AI cost, as the shared leaf-and-amount indicator.
+  /// Null (or a widget that renders nothing) leaves the lane unchanged, which
+  /// is the state of every task that has never used AI.
+  final Widget? aiCostSlot;
 
   /// Optional "Blocked by" chip (link-derived readiness, ADR 0042 §4 —
   /// independent of [status]). An alarm, not routine metadata, so it stays on
@@ -104,6 +110,11 @@ class TaskMetaSummaryLine extends StatelessWidget {
           _DueSummaryTag(dueDate: dueDate, onTap: onOpenDetails),
         if (labels.isNotEmpty)
           _LabelsSummaryTag(labels: labels, onTap: onOpenDetails),
+        // What the AI has cost on this task, at the same glance as its status
+        // — a fact about the task, sitting with the other facts, rather than
+        // something a reader has to open a panel to learn. Renders nothing
+        // until the task has recorded AI calls.
+        ?aiCostSlot,
         // An offer, not a read-out: dashed muted shell on the fully-rounded
         // interactive radius, opening the category picker directly. Verb
         // form, matching the grammar the old add-lane established.

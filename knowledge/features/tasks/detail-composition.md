@@ -264,8 +264,19 @@ category is set.
 
 **Metadata is set once and rarely changed, so it no longer wears
 always-visible button-styled chrome.** The summary lane is read-outs only:
-`[status] → [blocked-by?] → [priority] → [due?] → [labels?] →
+`[status] → [blocked-by?] → [priority] → [due?] → [labels?] → [AI cost?] →
 [Set category?] → Details`.
+
+**The AI cost sits in that lane, not behind a panel.** What the machine has
+cost on this task is readable at the same glance as its status, through the
+shared `AiCostIndicator` — the compact leaf-and-amount form, the same component
+the task list rows carry. It renders nothing until the task has recorded AI
+calls, so the lane is unchanged for a task that never met the machine. Its tap
+opens the fly-out that holds the full breakdown; where the details column is
+already mounted the connector passes the read-only form instead, for the same
+reason the Details trigger stands down there. The section's own **AI spend**
+row keeps the fuller cost / energy / carbon read-out — the same fact at two
+densities, not two facts.
 Every read-out wears `DsPillShape.tag` — the tight `radii.xs` (4) corner —
 so a fact can never be mistaken for the fully-rounded filter/action pills
 elsewhere on the page. The one lever in the lane, the **Details** trigger,
