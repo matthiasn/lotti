@@ -3452,16 +3452,6 @@
   "@goalChatTalkToAgent": {
     "description": "Button/tooltip that opens a goal-agent conversation (static label; the goal name is already the page title)"
   },
-  "goalChatWhyPrefill": "Why is this goal {status} right now?",
-  "@goalChatWhyPrefill": {
-    "description": "Chat draft pre-filled by Ask why; {status} is the localized status pill label.",
-    "placeholders": {
-      "status": {
-        "type": "String",
-        "example": "Behind"
-      }
-    }
-  },
   "goalChatYou": "You",
   "goalCheckInAddVoiceNote": "Add a voice note",
   "goalCheckInClose": "Close",
@@ -3608,10 +3598,6 @@
         "example": "Heart Health"
       }
     }
-  },
-  "goalDetailAskWhy": "Ask why",
-  "@goalDetailAskWhy": {
-    "description": "Link on the agent's-read card that opens chat pre-filled with a why question."
   },
   "goalDetailCompletionRateTitle": "Goal completion rate",
   "@goalDetailCompletionRateTitle": {

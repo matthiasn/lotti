@@ -273,10 +273,21 @@ class DashboardLegendEntry {
     required this.color,
     required this.label,
     this.annotation,
+    this.labelWearsSeriesColor = false,
   });
 
   final Color color;
   final String label;
+
+  /// Sets the entry's LABEL in [color] rather than the neutral legend ink.
+  ///
+  /// For a series whose figure is also quoted elsewhere on the card — a
+  /// trailing average printed beside the current reading — colour is what
+  /// ties the two together, and a neutral label breaks that link at the one
+  /// place the reader looks to resolve it. Off by default: a legend where
+  /// every label is tinted stops reading as a legend and starts competing
+  /// with the plot.
+  final bool labelWearsSeriesColor;
 
   /// A qualifier for the series named by [label] — typically the threshold its
   /// dashed rule marks ("Target ≤ 125").
@@ -330,7 +341,9 @@ class DashboardChartLegend extends StatelessWidget {
               Text(
                 entry.label,
                 style: tokens.typography.styles.body.bodySmall.copyWith(
-                  color: tokens.colors.text.mediumEmphasis,
+                  color: entry.labelWearsSeriesColor
+                      ? entry.color
+                      : tokens.colors.text.mediumEmphasis,
                 ),
               ),
               if (entry.annotation case final annotation?) ...[

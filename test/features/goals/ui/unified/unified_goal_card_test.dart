@@ -169,9 +169,8 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('renders the pill with the folded recovery hint, the '
-      'templated summary and one action row per habit with its window '
-      'reading', (tester) async {
+  testWidgets('renders the pill with the folded recovery hint and the '
+      'templated summary — and no habit rows', (tester) async {
     await pump(
       tester,
       agentHealth: health(
@@ -195,14 +194,14 @@ void main() {
     expect(find.text('1 of 2 habits on track'), findsOneWidget);
     expect(find.text('The gym has been quiet.'), findsNothing);
 
-    // Both habit rows render with their window readings; only the lagging
-    // one carries the off-track word.
-    expect(find.byType(HabitActionRow), findsNWidgets(2));
-    expect(find.text(habitFlossing.name), findsOneWidget);
-    expect(find.text(habitFlossingDueLater.name), findsOneWidget);
-    expect(find.text('4 of 4 this window'), findsOneWidget);
-    expect(find.text('2 of 4 this window'), findsOneWidget);
-    expect(find.text('Needs attention'), findsOneWidget);
+    // The card is its header. Embedding every linked habit as a full row —
+    // glyph, streak chain, flame count, window fraction, check circle — cost
+    // several rows of a LIST card to restate what the pill above already
+    // says in two words. A habit's own record is read on the detail page.
+    expect(find.byType(HabitActionRow), findsNothing);
+    expect(find.text(habitFlossing.name), findsNothing);
+    expect(find.text(habitFlossingDueLater.name), findsNothing);
+    expect(find.textContaining('this window'), findsNothing);
   });
 
   testWidgets('a filter that hides every habit collapses the card to its '
@@ -370,8 +369,8 @@ void main() {
     expect(stripRect.top, greaterThan(titleRect.bottom - 1));
   });
 
-  testWidgets('a FAILED first progress read falls back to plain action rows '
-      'from the spec claims — linked habits never vanish', (tester) async {
+  testWidgets('a FAILED first progress read still renders the goal, header '
+      'and all — there is nothing left for it to lose', (tester) async {
     await pump(
       tester,
       agentHealth: health(
@@ -381,18 +380,16 @@ void main() {
       progressFails: true,
     );
 
-    // Both claimed habits keep their one-tap rows (fallback keys, no window
-    // readings), instead of disappearing from every group on the page.
+    // The card used to carry a spec-derived fallback so a failed progress
+    // read could not make every linked habit vanish from the page. With the
+    // habit rows gone there is no fallback to keep: the header is sourced
+    // from health, not progress, so it survives the failure on its own.
+    expect(find.text('Fitness'), findsOneWidget);
+    expect(find.text('On track'), findsOneWidget);
+    expect(find.byType(HabitActionRow), findsNothing);
     expect(
       find.byKey(Key('unified-goal-goal-1-fallback-${habitFlossing.id}')),
-      findsOneWidget,
+      findsNothing,
     );
-    expect(
-      find.byKey(
-        Key('unified-goal-goal-1-fallback-${habitFlossingDueLater.id}'),
-      ),
-      findsOneWidget,
-    );
-    expect(find.textContaining('this window'), findsNothing);
   });
 }

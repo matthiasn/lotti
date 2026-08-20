@@ -6,6 +6,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.11]
 ### Changed
+- **Leaner goal cards and clearer signal readings.** Goal cards on the overview
+  no longer repeat every linked habit as a full row — the status pill already
+  says how the goal is doing, and a habit's own record lives on its goal's
+  page. On a goal page, the AI summary card drops "Ask why" (the header already
+  offers a microphone and a chat button) and stops printing "Out of date"
+  twice — it now appears once, next to the Update now button that fixes it.
+  The Goal days and habit cards lost a lot of dead vertical space, and the
+  habits legend sits directly under the day squares.
+- **Signal cards now show today's reading and the 7-day average as two
+  different numbers.** They previously showed the same figure twice on cards
+  like Steps per day: the "current value" was quietly reading the same
+  period average as the trend line, so both read e.g. 10,100. The top-right
+  corner now leads with the latest reading and puts the average beneath it as
+  "Ø 10,777", tinted to match the dashed average line on the chart — and the
+  chart's own "7-day average" legend wears that colour too. A steps target
+  reads as "Goal 10K" rather than "Goal ≥ 10,000".
+- **The 7-day average line now covers the whole chart.** It used to appear only
+  once the visible date range itself was seven days old, so it started a week
+  into the chart and the earliest part of the range looked like it had no
+  trend. It now reaches back into the days before the range — which were
+  already being loaded — and is drawn from the first day shown.
 - **Task details ride along on the right instead of covering the task.** On a
   wide window, hiding the task list no longer just widens the task: the
   metadata — status, priority, category, project, due date, estimate, labels
