@@ -124,6 +124,45 @@ void main() {
       );
     });
 
+    testWidgets('a text-bearing trailing slot is bounded to half the header '
+        'instead of overflowing it', (tester) async {
+      // Regression: the slot was an unbounded, non-flex child of the header
+      // Row. A fixed-size playback button never noticed, but the goal read
+      // card puts TEXT there — an impact pill plus an "as of …" caption —
+      // which grows with the locale and the text scale, and an unbounded
+      // trailing child of a Row clips rather than shrinks.
+      tester.view
+        ..physicalSize = const Size(320, 400)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          TldrHeader(
+            agentName: 'Task Laura',
+            onAgentTap: () {},
+            playbackControl: const Text(
+              'EUR 0.33 - 179 Wh - 35 g - as of 1 hour ago',
+              key: ValueKey('rail'),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ),
+      );
+
+      expect(tester.takeException(), isNull);
+      final header = tester.getRect(find.byType(TldrHeader));
+      final rail = tester.getRect(find.byKey(const ValueKey('rail')));
+      expect(rail.right, lessThanOrEqualTo(header.right));
+      expect(
+        rail.width,
+        lessThanOrEqualTo(header.width / 2 + 1),
+        reason: 'the identity block keeps at least half the header',
+      );
+    });
+
     testWidgets('a long agent name truncates instead of wrapping', (
       tester,
     ) async {

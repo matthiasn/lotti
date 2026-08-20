@@ -808,30 +808,31 @@ class GoalThisWeekCard extends StatelessWidget {
           // under the strip the reflection cost the card a touch-target's
           // height plus two gaps to say what a corner button says in the
           // header's own line — and it left the header rail empty.
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  // Over the page's shared range the card is no longer a
-                  // week — it is the goal's day-by-day record over the same
-                  // span every other track shows.
-                  progress.compactWindow.length > 7
-                      ? context.messages.goalDetailGoalDaysTitle
-                      : context.messages.goalDetailThisWeekTitle,
-                  style: tokens.typography.styles.subtitle.subtitle2,
-                ),
-              ),
-              if (onReflectDay != null)
-                _ReflectTodayButton(
-                  recorded:
-                      ratingsByDay[DateTime.utc(
-                        progress.today.year,
-                        progress.today.month,
-                        progress.today.day,
-                      )],
-                  onReflect: () => onReflectDay!(progress.today),
-                ),
-            ],
+          //
+          // The pairing is CONDITIONAL on the action fitting. Its label is
+          // localized and user-scaled — German renders it "Über den heutigen
+          // Tag nachdenken" — so at phone width and a raised text scale the
+          // button alone can outgrow the card, and an inflexible trailing
+          // child in a Row does not shrink, it overflows. Measured rather
+          // than guessed at a breakpoint, for exactly that reason.
+          _GoalDaysHeader(
+            title: progress.compactWindow.length > 7
+                // Over the page's shared range the card is no longer a
+                // week — it is the goal's day-by-day record over the same
+                // span every other track shows.
+                ? context.messages.goalDetailGoalDaysTitle
+                : context.messages.goalDetailThisWeekTitle,
+            action: onReflectDay == null
+                ? null
+                : _ReflectTodayButton(
+                    recorded:
+                        ratingsByDay[DateTime.utc(
+                          progress.today.year,
+                          progress.today.month,
+                          progress.today.day,
+                        )],
+                    onReflect: () => onReflectDay!(progress.today),
+                  ),
           ),
           SizedBox(height: tokens.spacing.step2),
           // The strip counts DAYS; the caption below counts dimensions on
@@ -890,6 +891,76 @@ class GoalThisWeekCard extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+/// The Goal-days card header: the title with the day's action on its
+/// trailing edge, or — when the two cannot share the width — the title with
+/// the action on its own line beneath, still end-aligned.
+///
+/// The action is a button, so it has no ellipsis to fall back on: it either
+/// fits or it overflows its row. The decision is taken against the label's
+/// MEASURED width at the current locale and text scale, because no fixed
+/// breakpoint can tell whether "Über den heutigen Tag nachdenken" fits
+/// beside a title at 1.6x.
+class _GoalDaysHeader extends StatelessWidget {
+  const _GoalDaysHeader({required this.title, required this.action});
+
+  final String title;
+
+  /// The trailing action; null while the goal cannot be reflected on.
+  final Widget? action;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final titleStyle = tokens.typography.styles.subtitle.subtitle2;
+    final action = this.action;
+    if (action == null) return Text(title, style: titleStyle);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final textScaler = MediaQuery.textScalerOf(context);
+        double width(String text, TextStyle style) => (TextPainter(
+          text: TextSpan(text: text, style: style),
+          textDirection: Directionality.of(context),
+          textScaler: textScaler,
+          maxLines: 1,
+        )..layout()).width;
+        // The button's own ink: its dense label, plus the glyph and the
+        // gaps and insets the size spec puts around it.
+        final actionWidth =
+            width(
+              context.messages.goalAssessmentReflectToday,
+              tokens.typography.styles.others.caption,
+            ) +
+            IconSizes.s +
+            tokens.spacing.step6;
+        // The title keeps a readable measure of its own rather than being
+        // squeezed to a sliver beside a long action.
+        final fitsBeside =
+            actionWidth + width(title, titleStyle) + tokens.spacing.step4 <=
+            constraints.maxWidth;
+        if (fitsBeside) {
+          return Row(
+            children: [
+              Expanded(child: Text(title, style: titleStyle)),
+              SizedBox(width: tokens.spacing.step4),
+              action,
+            ],
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(title, style: titleStyle),
+            SizedBox(height: tokens.spacing.step2),
+            // Still the card's trailing rail, one line down: the action does
+            // not become a leading-aligned row again just because it moved.
+            Align(alignment: AlignmentDirectional.centerEnd, child: action),
+          ],
+        );
+      },
     );
   }
 }

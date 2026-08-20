@@ -40,101 +40,116 @@ class TldrHeader extends StatelessWidget {
         tokens.spacing.cardPadding,
         tokens.spacing.step4,
       ),
-      child: Row(
-        children: [
-          // `Expanded` keeps the slot so the playback control stays pinned to
-          // the card's trailing edge, while `Align` hands the button loose
-          // constraints — without it the ink target stretches across the whole
-          // header instead of hugging the badge and the title.
-          Expanded(
-            child: Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: Semantics(
-                button: true,
-                label: hasName
-                    ? '${messages.aiCardTitle}. $displayName'
-                    : messages.aiCardTitle,
-                excludeSemantics: true,
-                // No hover fill: a rectangle washing over the badge + title
-                // block made the card's identity read as a phantom button.
-                // Hover/focus/press answers on the block's own ink — the
-                // badge border firms to the accent and the agent name
-                // brightens a step.
-                child: DsQuietInk(
-                  onTap: onAgentTap,
-                  borderRadius: BorderRadius.circular(tokens.radii.m),
-                  builder: (context, highlighted) => ConstrainedBox(
-                    constraints: const BoxConstraints(
-                      minHeight: kMinInteractiveDimension,
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: tokens.spacing.step8,
-                          height: tokens.spacing.step8,
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            color: ai.accentSoft,
-                            borderRadius: BorderRadius.circular(
-                              tokens.radii.m,
-                            ),
-                            border: Border.all(
-                              color: highlighted ? ai.accent : ai.border,
-                            ),
-                          ),
-                          child: Icon(
-                            LottiIcons.aiSpark,
-                            size: tokens.spacing.step6,
-                            color: ai.accent,
-                          ),
-                        ),
-                        SizedBox(width: tokens.spacing.step3),
-                        // `Flexible` + single-line text is what makes the
-                        // shrink-wrap real: text allowed to wrap would
-                        // report the full available width straight back and
-                        // re-inflate the row.
-                        Flexible(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              _HeaderTitle(
-                                text: messages.aiCardTitle,
-                                style: tokens
-                                    .typography
-                                    .styles
-                                    .subtitle
-                                    .subtitle1
-                                    .copyWith(color: ai.titleText),
+      child: LayoutBuilder(
+        builder: (context, constraints) => Row(
+          children: [
+            // `Expanded` keeps the slot so the playback control stays pinned to
+            // the card's trailing edge, while `Align` hands the button loose
+            // constraints — without it the ink target stretches across the whole
+            // header instead of hugging the badge and the title.
+            Expanded(
+              child: Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: Semantics(
+                  button: true,
+                  label: hasName
+                      ? '${messages.aiCardTitle}. $displayName'
+                      : messages.aiCardTitle,
+                  excludeSemantics: true,
+                  // No hover fill: a rectangle washing over the badge + title
+                  // block made the card's identity read as a phantom button.
+                  // Hover/focus/press answers on the block's own ink — the
+                  // badge border firms to the accent and the agent name
+                  // brightens a step.
+                  child: DsQuietInk(
+                    onTap: onAgentTap,
+                    borderRadius: BorderRadius.circular(tokens.radii.m),
+                    builder: (context, highlighted) => ConstrainedBox(
+                      constraints: const BoxConstraints(
+                        minHeight: kMinInteractiveDimension,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: tokens.spacing.step8,
+                            height: tokens.spacing.step8,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: ai.accentSoft,
+                              borderRadius: BorderRadius.circular(
+                                tokens.radii.m,
                               ),
-                              if (hasName)
-                                Text(
-                                  displayName,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: tokens.typography.styles.others.caption
-                                      .copyWith(
-                                        color: highlighted
-                                            ? ai.bodyText
-                                            : ai.metaText,
-                                      ),
-                                ),
-                            ],
+                              border: Border.all(
+                                color: highlighted ? ai.accent : ai.border,
+                              ),
+                            ),
+                            child: Icon(
+                              LottiIcons.aiSpark,
+                              size: tokens.spacing.step6,
+                              color: ai.accent,
+                            ),
                           ),
-                        ),
-                      ],
+                          SizedBox(width: tokens.spacing.step3),
+                          // `Flexible` + single-line text is what makes the
+                          // shrink-wrap real: text allowed to wrap would
+                          // report the full available width straight back and
+                          // re-inflate the row.
+                          Flexible(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                _HeaderTitle(
+                                  text: messages.aiCardTitle,
+                                  style: tokens
+                                      .typography
+                                      .styles
+                                      .subtitle
+                                      .subtitle1
+                                      .copyWith(color: ai.titleText),
+                                ),
+                                if (hasName)
+                                  Text(
+                                    displayName,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: tokens
+                                        .typography
+                                        .styles
+                                        .others
+                                        .caption
+                                        .copyWith(
+                                          color: highlighted
+                                              ? ai.bodyText
+                                              : ai.metaText,
+                                        ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
-          if (playbackControl != null) ...[
-            SizedBox(width: tokens.spacing.step3),
-            playbackControl!,
+            if (playbackControl case final control?) ...[
+              SizedBox(width: tokens.spacing.step3),
+              // Non-flex, so the identity block absorbs the slack and the
+              // control stays flush to the trailing edge — but BOUNDED, because
+              // a slot that carries text rather than a fixed-size button (a
+              // freshness caption, an impact pill) grows with the locale and
+              // the text scale, and an unbounded trailing child of a Row
+              // overflows instead of shrinking.
+              ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: constraints.maxWidth / 2),
+                child: control,
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
