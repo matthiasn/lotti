@@ -351,6 +351,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     double? temperature,
     int? maxCompletionTokens,
     List<ChatCompletionTool>? tools,
+    ChatCompletionToolChoiceOption? toolChoice,
     InferenceImpactCollector? impactCollector,
   }) {
     final messages = [
@@ -390,6 +391,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
         temperature: temperature,
         maxCompletionTokens: maxCompletionTokens,
         tools: tools,
+        toolChoice: toolChoice,
       ),
     ).asBroadcastStream();
   }

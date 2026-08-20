@@ -4,6 +4,8 @@ import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/repository/mistral_ocr_repository.dart';
 
 /// Maximum dimension for reference images sent to Gemini.
 /// Images larger than this are resized to fit within this boundary.
@@ -96,4 +98,33 @@ Future<ProcessedReferenceImage?> processReferenceImage({
     image?.dispose();
     codec?.dispose();
   }
+}
+
+/// Whether the image inference path actually forwards `tools` / `toolChoice`
+/// for [provider] and [model].
+///
+/// `generateWithImages` fans out to provider-specific backends before it
+/// reaches the generic OpenAI-compatible request builder, and not all of them
+/// carry tool parameters:
+///
+/// - **Ollama** routes to a client with no tool parameters at all.
+/// - **Mistral OCR models** route to the `/v1/ocr` endpoint, which is text
+///   extraction rather than chat completion.
+/// - Everything else — including Melious — reaches a request that carries both.
+///
+/// Callers use this to decide whether to *ask* for a tool call. Asking without
+/// it is worse than not asking: the prompt instructs the model to call a tool
+/// it was never given, so instead of a clean prose answer the model is being
+/// told to do something impossible.
+bool imagePathSupportsTools({
+  required AiConfigInferenceProvider? provider,
+  required String model,
+}) {
+  final type = provider?.inferenceProviderType;
+  if (type == InferenceProviderType.ollama) return false;
+  if (type == InferenceProviderType.mistral &&
+      MistralOcrRepository.isMistralOcrModel(model)) {
+    return false;
+  }
+  return true;
 }

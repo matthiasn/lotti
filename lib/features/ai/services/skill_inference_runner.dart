@@ -414,11 +414,20 @@ class SkillInferenceRunner {
         // 3. Build prompts via SkillPromptBuilder.
         //
         // Tiers are requested only when the resolved vision model can call
-        // tools. Plenty of capable vision models cannot, and this skill has
-        // shipped on a free-text contract for a long time — so tool support
-        // upgrades the output rather than gating it, and a model without it
-        // keeps producing exactly what it produces today.
-        final useTieredSummary = target.model?.supportsFunctionCalling ?? false;
+        // tools AND the provider's image path actually forwards them. Plenty
+        // of capable vision models cannot, and this skill has shipped on a
+        // free-text contract for a long time — so tool support upgrades the
+        // output rather than gating it, and anything without it keeps
+        // producing exactly what it produces today.
+        //
+        // The second half matters as much as the first: `generateWithImages`
+        // fans out to provider-specific backends, and Ollama's carries no
+        // tool parameters at all. Asking there would put "call
+        // publish_entry_summary and respond with nothing else" in front of a
+        // model that was handed no such tool.
+        final useTieredSummary =
+            (target.model?.supportsFunctionCalling ?? false) &&
+            imagePathSupportsTools(provider: provider, model: modelId);
         const promptBuilder = SkillPromptBuilder();
         final promptResult = promptBuilder.build(
           skill: skill,
@@ -487,6 +496,19 @@ class SkillInferenceRunner {
           }
         }
 
+        // The tool's `summary` argument IS the analysis when tiers came back;
+        // otherwise the streamed prose is, exactly as before. Resolved BEFORE
+        // the consumption record, because that record hashes the response for
+        // provenance: a tool call leaves `collected.content` empty, so hashing
+        // it would stamp every tiered analysis with the digest of an empty
+        // string and break the link to the `AiResponseEntry` it describes.
+        final response = tiers?.summary ?? collected.content.trim();
+        if (response.isEmpty) {
+          throw StateError(
+            'Empty image analysis response for $imageEntryId',
+          );
+        }
+
         final attributionEnvelope = await _recordAttributedConsumption(
           attribution: attribution,
           entryId: imageEntryId,
@@ -502,17 +524,8 @@ class SkillInferenceRunner {
           interactionKind: AiInteractionKind.imageAnalysis,
           requestText:
               '${promptResult.systemMessage}\n${promptResult.userMessage}',
-          responseText: collected.content,
+          responseText: response,
         );
-
-        // The tool's `summary` argument IS the analysis when tiers came back;
-        // otherwise the streamed prose is, exactly as before.
-        final response = tiers?.summary ?? collected.content.trim();
-        if (response.isEmpty) {
-          throw StateError(
-            'Empty image analysis response for $imageEntryId',
-          );
-        }
 
         // 7. Re-read before persisting either projection so a source deleted
         // mid-run cannot leave a detached analysis behind.

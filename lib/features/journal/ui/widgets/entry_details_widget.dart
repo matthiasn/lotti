@@ -677,9 +677,9 @@ class _CollapsedAudioOneLiner extends ConsumerWidget {
   }
 }
 
-/// The compressed image-entry view: a thumbnail with one line describing what
-/// the image shows. Tapping it expands the full card, same as the header
-/// chevron.
+/// The compressed image-entry view: a thumbnail with a short description of
+/// what the image shows beside it, wrapping to at most two lines. Tapping it
+/// expands the full card, same as the header chevron.
 ///
 /// The thumbnail is the point. An image's payload IS the picture, so a
 /// collapsed image that showed only text would be harder to place than the
@@ -696,11 +696,6 @@ class _CollapsedImagePreview extends ConsumerWidget {
   final JournalImage image;
   final Future<void> Function()? onTap;
 
-  /// Height of the collapsed thumbnail. Tall enough to recognise a photo or a
-  /// screenshot at a glance, short enough that a run of collapsed images still
-  /// reads as a list rather than a gallery.
-  static const double thumbnailHeight = 64;
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
@@ -714,11 +709,11 @@ class _CollapsedImagePreview extends ConsumerWidget {
           ClipRRect(
             borderRadius: BorderRadius.circular(tokens.radii.s),
             child: SizedBox(
-              height: thumbnailHeight,
-              width: thumbnailHeight,
+              height: ControlSizes.mediaThumbnail,
+              width: ControlSizes.mediaThumbnail,
               child: CardImageWidget(
                 journalImage: image,
-                height: thumbnailHeight.round(),
+                height: ControlSizes.mediaThumbnail.round(),
                 fit: BoxFit.cover,
               ),
             ),

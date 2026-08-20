@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:crypto/crypto.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
@@ -1950,6 +1951,130 @@ void main() {
             expect(data.response, 'A photo of a sunset');
             expect(data.oneLiner, isNull);
             expect(data.tldr, isNull);
+          },
+        );
+
+        test(
+          'does NOT ask for tiers on a provider whose image path drops tools, '
+          'however capable the model claims to be — the prompt would tell it '
+          'to call a tool it was never handed',
+          () async {
+            _registerInteractionCapture();
+            await stubImageOnDisk();
+            stubImageInference([makeStreamChunk('A photo of a sunset')]);
+            when(
+              () => mockAiInputRepo.createAiResponseEntry(
+                id: any(named: 'id'),
+                data: any(named: 'data'),
+                start: any(named: 'start'),
+                linkedId: any(named: 'linkedId'),
+                categoryId: any(named: 'categoryId'),
+              ),
+            ).thenAnswer(
+              (invocation) async => makePersistedResponse(invocation),
+            );
+            stubLoggingEvent();
+
+            await runner.runImageAnalysis(
+              imageEntryId: 'img-1',
+              automationResult: AutomationResult(
+                handled: true,
+                resolvedProfile: ResolvedProfile(
+                  thinkingModelId: 'models/gemini-3-flash-preview',
+                  thinkingProvider: testInferenceProvider(),
+                  imageRecognitionModelId: 'vision-model',
+                  // Ollama's image client has no tool parameters at all.
+                  imageRecognitionProvider: testInferenceProvider(
+                    id: 'p-ollama',
+                    inferenceProviderType: InferenceProviderType.ollama,
+                  ),
+                  imageRecognitionModel: toolCapableVisionModel(),
+                ),
+                skill: testImageSkill,
+                skillAssignment: const SkillAssignment(
+                  skillId: 'skill-vision',
+                  automate: true,
+                ),
+              ),
+            );
+
+            final captured = verify(
+              () => mockCloudRepo.generateWithImages(
+                captureAny(),
+                baseUrl: any(named: 'baseUrl'),
+                apiKey: any(named: 'apiKey'),
+                model: any(named: 'model'),
+                temperature: any(named: 'temperature'),
+                images: any(named: 'images'),
+                provider: any(named: 'provider'),
+                systemMessage: any(named: 'systemMessage'),
+                tools: captureAny(named: 'tools'),
+                toolChoice: captureAny(named: 'toolChoice'),
+                geminiThinkingMode: any(named: 'geminiThinkingMode'),
+                impactCollector: any(named: 'impactCollector'),
+              ),
+            ).captured;
+
+            expect(captured[1], isNull);
+            expect(captured[2], isNull);
+            expect(
+              captured[0] as String,
+              isNot(contains(entrySummaryToolName)),
+            );
+          },
+        );
+
+        test(
+          'records the persisted analysis for provenance, not the empty '
+          'stream body a tool call leaves behind',
+          () async {
+            final attribution = _registerInteractionCapture();
+            await stubImageOnDisk();
+            stubImageInference([tierChunk()]);
+            when(
+              () => mockAiInputRepo.createAiResponseEntry(
+                id: any(named: 'id'),
+                data: any(named: 'data'),
+                start: any(named: 'start'),
+                linkedId: any(named: 'linkedId'),
+                categoryId: any(named: 'categoryId'),
+              ),
+            ).thenAnswer(
+              (invocation) async => makePersistedResponse(invocation),
+            );
+            stubLoggingEvent();
+
+            await runner.runImageAnalysis(
+              imageEntryId: 'img-1',
+              automationResult: resultWithVisionModel(
+                model: toolCapableVisionModel(),
+              ),
+            );
+
+            final event = _capturedEvents(attribution).single;
+            final data =
+                verify(
+                      () => mockAiInputRepo.createAiResponseEntry(
+                        id: any(named: 'id'),
+                        data: captureAny(named: 'data'),
+                        start: any(named: 'start'),
+                        linkedId: any(named: 'linkedId'),
+                        categoryId: any(named: 'categoryId'),
+                      ),
+                    ).captured.single
+                    as AiResponseData;
+
+            // The digest must be of the analysis actually stored, or it can
+            // never verify the entry it is supposed to describe — and every
+            // tiered analysis would share the digest of an empty string.
+            expect(
+              event.responseDigest,
+              sha256.convert(utf8.encode(data.response)).toString(),
+            );
+            expect(
+              event.responseDigest,
+              isNot(sha256.convert(utf8.encode('')).toString()),
+            );
           },
         );
 
