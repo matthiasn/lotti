@@ -471,6 +471,30 @@ String formatGoalAggregate(NumberFormat number, num value, {num? against}) {
 /// `radii.s`. Same instrument, same week, two shapes.
 double goalDayCellRadius(DsTokens tokens) => tokens.radii.s;
 
+/// Where the weekday initial sits inside a day cell, and how big it gets.
+///
+/// Proportions of the cell rather than absolute lengths: the cell itself is
+/// sized by [goalDayTrackMetrics] from the available width, so a fixed inset
+/// that looked right on a fortnight track would crowd the corner on a
+/// ninety-day one. They are geometry, not spacing — there is no
+/// design-system token for "a fraction of a cell" — so they live here, named
+/// and in ONE place, rather than as bare numbers inside the widget.
+///
+/// [letterScaleBox] is a ceiling, not a size: the rendered letter is
+/// `min(fontSize, cellSize * letterScaleBox)`, because the glyph is fitted
+/// with [BoxFit.scaleDown] and that never scales UP. The box therefore
+/// governs small cells while the style's own size caps large ones.
+extension GoalDayCellLetterMetrics on DsTokens {
+  /// Inset from the cell's leading edge.
+  double get letterInsetStart => 0.18;
+
+  /// Inset from the cell's bottom edge.
+  double get letterInsetBottom => 0.14;
+
+  /// Ceiling on the letter's height, as a fraction of the cell.
+  double get letterScaleBox => 0.38;
+}
+
 /// Shared fill for a day cell: the full-strength success hue when the goal
 /// requirement held as of that day, a lighter wash of the same hue for a
 /// partial success (routine kept, target still building), neutral otherwise.
@@ -594,8 +618,8 @@ Widget? goalDayCellLetter(
     // under and behind it than pinned to the rounded rect's inner angle —
     // but it stays an annotation, so it moves TOWARD the center rather than
     // to it.
-    start: cellSize * 0.18,
-    bottom: cellSize * 0.14,
+    start: cellSize * tokens.letterInsetStart,
+    bottom: cellSize * tokens.letterInsetBottom,
     child: SizedBox(
       // The scale bound: the glyph shrinks into this box, so the letter
       // stays a small corner annotation at every cell size instead of
@@ -603,7 +627,7 @@ Widget? goalDayCellLetter(
       // `min(fontSize, this height)` — `scaleDown` never scales UP — so
       // raising the letter one step means raising BOTH: the box governs the
       // small cells, the style's own size caps the large ones.
-      height: cellSize * 0.38,
+      height: cellSize * tokens.letterScaleBox,
       child: FittedBox(
         fit: BoxFit.scaleDown,
         child: Text(
@@ -1056,6 +1080,15 @@ class _HabitDimensionCard extends StatelessWidget {
         habit.window == const GoalWindow.rollingDays(count: 7)
         ? habit.successfulWeeks
         : null;
+    // The shallow foot pays for the centering slack an interactive day track
+    // leaves under its squares — so it is only right on a card that actually
+    // ENDS on that track. The legend closes some cards; a check-off callout
+    // closes others, and it is a bordered surface that would sit crowded
+    // against the card edge with the slack stranded above it instead.
+    final endsOnDayTrack =
+        !showLegend &&
+        !(onHabitOutcomeSelected != null &&
+            habit.suggestedFromDimensionName != null);
     return DesignSystemSectionCard(
       // An interactive day row is already a touch-floor-tall track around a
       // cell half its height, so the card gets ~10px of centering slack under
@@ -1067,7 +1100,7 @@ class _HabitDimensionCard extends StatelessWidget {
         tokens.spacing.step5,
         tokens.spacing.step5,
         tokens.spacing.step5,
-        showLegend ? tokens.spacing.step5 : tokens.spacing.step2,
+        endsOnDayTrack ? tokens.spacing.step2 : tokens.spacing.step5,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

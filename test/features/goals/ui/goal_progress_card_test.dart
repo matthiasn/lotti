@@ -687,22 +687,36 @@ void main() {
     expect(find.text('Improving'), findsOneWidget);
   });
 
-  testWidgets('the today ring is drawn in one ink and one stroke everywhere '
-      'it appears, including the key that explains it', (tester) async {
+  testWidgets('the today ring is drawn in one ink and one stroke on every '
+      'surface that draws one, including the key that explains it', (
+    tester,
+  ) async {
+    // Each ring-producing surface has to be MOUNTED, or the test grades an
+    // empty set: the whole-goal strip lives on GoalThisWeekCard, not on
+    // GoalProgressCard, and the strip's cell only draws its ring on a day
+    // with no recorded verdict of its own.
+    final habit = GoalHabitProgressView(
+      habitId: 'gym',
+      name: 'Gym',
+      targetCount: 3,
+      days: [for (var offset = 6; offset >= 0; offset--) day(offset, 0)],
+      successfulWeeks: 0,
+    );
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
-        GoalProgressCard(
-          progress: GoalProgressView(
-            today: today,
-            habits: [
-              GoalHabitProgressView(
-                habitId: 'gym',
-                name: 'Gym',
-                targetCount: 3,
-                days: [
-                  for (var offset = 6; offset >= 0; offset--) day(offset, 0),
-                ],
-                successfulWeeks: 0,
+        SingleChildScrollView(
+          child: Column(
+            children: [
+              GoalThisWeekCard(
+                progress: GoalProgressView(
+                  today: today,
+                  compositeRule: GoalCompositeRuleKind.all,
+                  habits: [habit],
+                ),
+                onReflectDay: (_) {},
+              ),
+              GoalProgressCard(
+                progress: GoalProgressView(today: today, habits: [habit]),
               ),
             ],
           ),
@@ -711,18 +725,31 @@ void main() {
     );
 
     final tokens = tester.element(find.byType(GoalProgressCard)).designTokens;
-    final rings = tester
-        .widgetList<DsDashedBorder>(find.byType(DsDashedBorder))
-        .toList();
-    expect(rings, isNotEmpty);
-    // A hairline in the low-emphasis ink is a rumour on a dark screen. Every
-    // ring — the cell's and the legend swatch that keys it — lifts a step
-    // and takes the emphasis stroke, and they must not diverge: a key drawn
-    // differently from the mark is a key to nothing.
-    for (final ring in rings) {
-      expect(ring.color, tokens.colors.text.mediumEmphasis);
+    Iterable<DsDashedBorder> ringsIn(Finder host) =>
+        tester.widgetList<DsDashedBorder>(
+          find.descendant(of: host, matching: find.byType(DsDashedBorder)),
+        );
+
+    // Named per surface rather than swept as one bag: a bare
+    // `byType(DsDashedBorder)` passed while the strip was never mounted at
+    // all, and would keep passing if it stopped being mounted again.
+    final stripRings = ringsIn(find.byType(GoalCompactWindowStrip));
+    final cardRings = ringsIn(find.byType(GoalProgressCard));
+    expect(stripRings, hasLength(1), reason: 'the strip marks today once');
+    expect(
+      cardRings.length,
+      greaterThanOrEqualTo(2),
+      reason: "the habit card's today cell plus the legend swatch keying it",
+    );
+
+    // A hairline in the low-emphasis ink is a rumour on a dark screen. Mark
+    // and key must not diverge either: a key drawn differently from the mark
+    // is a key to nothing.
+    for (final ring in [...stripRings, ...cardRings]) {
+      expect(ring.color, goalTodayRingInk(tokens));
       expect(ring.strokeWidth, BorderWidths.emphasis);
     }
+    expect(goalTodayRingInk(tokens), tokens.colors.text.mediumEmphasis);
   });
 
   testWidgets('a habit card that ends on its squares gets a shallower foot '
@@ -769,6 +796,63 @@ void main() {
     expect(footOf('Gym').bottom, tokens.spacing.step5);
     expect(footOf('Read').bottom, tokens.spacing.step2);
     expect(footOf('Read').top, tokens.spacing.step5);
+  });
+
+  testWidgets('a card closing on a check-off callout keeps its full foot, '
+      'legend or not', (tester) async {
+    // The shallow foot pays for the centering slack an interactive day track
+    // leaves UNDER its squares. A callout after the track strands that slack
+    // above itself, so the callout — a bordered surface — would sit crowded
+    // against the card edge.
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        SingleChildScrollView(
+          child: GoalProgressCard(
+            progress: GoalProgressView(
+              today: today,
+              habits: [
+                for (final name in ['Gym', 'Read'])
+                  GoalHabitProgressView(
+                    habitId: name,
+                    name: name,
+                    targetCount: 3,
+                    days: [
+                      for (var offset = 6; offset >= 0; offset--)
+                        day(offset, 0),
+                    ],
+                    successfulWeeks: 0,
+                    suggestedFromDimensionName: name == 'Read'
+                        ? 'Weight'
+                        : null,
+                  ),
+              ],
+            ),
+            onHabitOutcomeSelected:
+                ({required day, required habitId, required outcome}) async =>
+                    true,
+          ),
+        ),
+      ),
+    );
+
+    final tokens = tester.element(find.byType(GoalProgressCard)).designTokens;
+    expect(
+      find.byKey(const ValueKey('goal-habit-checkoff-callout-Read')),
+      findsOneWidget,
+    );
+    expect(
+      tester
+          .widget<DesignSystemSectionCard>(
+            find.ancestor(
+              of: find.text('Read'),
+              matching: find.byType(DesignSystemSectionCard),
+            ),
+          )
+          .padding!
+          .bottom,
+      tokens.spacing.step5,
+      reason: 'the callout closes this card, so it keeps the full foot',
+    );
   });
 
   testWidgets('the day-cell legend rides inside the first habit card', (
