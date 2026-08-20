@@ -1118,9 +1118,10 @@ class _GoalChatDrawer extends StatelessWidget {
     final color = status == null
         ? tokens.colors.text.lowEmphasis
         : unifiedGoalStatusColor(status, tokens.colors);
-    // A bordered card surface rather than a shadow: the design system has no
-    // elevation-shadow token, and the calm card-on-canvas language separates
-    // surfaces with the decorative hairline instead.
+    // A bordered card surface rather than a shadow: `DsShadows` is reserved
+    // for floating surfaces (menus, tooltips), and the calm card-on-canvas
+    // language separates in-flow surfaces with the decorative hairline
+    // instead.
     return Material(
       color: dsCardSurface(context),
       child: DecoratedBox(

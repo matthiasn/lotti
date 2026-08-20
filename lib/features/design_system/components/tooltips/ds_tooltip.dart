@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:lotti/features/design_system/components/ds_floating_surface.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 /// How long a resting pointer waits before the tooltip appears. The stock
@@ -77,7 +76,7 @@ class DsTooltip extends StatelessWidget {
         color: tokens.colors.background.level01,
         borderRadius: BorderRadius.circular(tokens.radii.s),
         border: Border.all(color: tokens.colors.decorative.level01),
-        boxShadow: dsFloatingSurfaceShadow,
+        boxShadow: DsShadows.floatingSurface,
       ),
       padding: EdgeInsets.symmetric(
         horizontal: tokens.spacing.step3,

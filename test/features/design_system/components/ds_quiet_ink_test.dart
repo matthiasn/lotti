@@ -204,5 +204,51 @@ void main() {
       expect(border.top.color, tokens.colors.interactive.enabled);
       expect(border.top.width, BorderWidths.emphasis);
     });
+
+    testWidgets('the ring follows PRIMARY focus — a control nested inside '
+        'the doorway takes it with it', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: DesignSystemTheme.dark(),
+          home: Scaffold(
+            body: Center(
+              child: DsQuietInk(
+                onTap: () {},
+                focusRing: true,
+                builder: (context, highlighted) => Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('cell'),
+                    TextButton(onPressed: () {}, child: const Text('nested')),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      Finder ring() => find.ancestor(
+        of: find.text('cell'),
+        matching: find.byWidgetPredicate(
+          (widget) =>
+              widget is DecoratedBox &&
+              widget.position == DecorationPosition.foreground &&
+              (widget.decoration as BoxDecoration).border != null,
+        ),
+      );
+
+      // First Tab lands on the doorway itself: ring on.
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      expect(ring(), findsOneWidget);
+
+      // Second Tab moves primary focus INTO the nested button. The doorway
+      // is still in the focus chain, but the keystroke now belongs to the
+      // child — the doorway's ring must go out rather than claim it.
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      expect(ring(), findsNothing);
+    });
   });
 }

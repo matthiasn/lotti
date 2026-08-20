@@ -7,6 +7,7 @@ export 'generated/design_tokens.g.dart';
 export 'icon_tokens.dart';
 export 'icon_tokens_filled.dart';
 export 'motion_tokens.dart';
+export 'shadow_tokens.dart';
 export 'sizing_tokens.dart';
 
 /// Convenience access to the design-system tokens from any [BuildContext].
