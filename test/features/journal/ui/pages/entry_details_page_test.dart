@@ -208,7 +208,7 @@ void main() {
       expect(find.byIcon(LottiIconsFilled.star), findsOneWidget);
 
       // Decoder bars are mounted at the bottom of the page Stack and retain
-      // the three entry-processing routes plus tap-to-progress behavior.
+      // the entry-processing routes plus tap-to-progress behavior.
       final decoderBars = tester.widget<AiRunningDecoderBars>(
         find.byType(AiRunningDecoderBars),
       );
@@ -217,6 +217,7 @@ void main() {
       expect(decoderBars.responseTypes, {
         AiResponseType.imageAnalysis,
         AiResponseType.audioTranscription,
+        AiResponseType.audioSummary,
         AiResponseType.promptGeneration,
       });
     });
