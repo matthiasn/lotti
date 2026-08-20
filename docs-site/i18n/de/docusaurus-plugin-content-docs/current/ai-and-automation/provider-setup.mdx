@@ -30,6 +30,29 @@ Anbieter und prüfe danach Modelle und Profile.
   kompatiblen Proxy oder Gateway richten. Der Anbietertyp steuert weiterhin
   protokollspezifisches Verhalten.
 
+## Bevor du verbindest
+
+Was ein Anbieter von dir braucht, hängt davon ab, wo er läuft.
+
+**Ein Cloud-Anbieter braucht einen API-Schlüssel**, den du in dessen eigener
+Konsole erstellst, bevor du das Formular öffnest. Die Beschriftung des
+Schlüsselfelds nennt den passenden Host — `aistudio.google.com` für Gemini,
+`dashscope.console.aliyun.com` für Alibaba Cloud, und ebenso für OpenAI,
+Anthropic, Mistral, OpenRouter, Nebius und Melious. Lotti speichert den
+Schlüssel maskiert und zeigt ihn nie wieder vollständig an.
+
+**Ein lokaler Anbieter braucht seinen bereits laufenden Dienst**, erreichbar
+vom aufrufenden Gerät; Lotti startet ihn nicht für dich. Der Endpunkt ist
+vorausgefüllt, im Normalfall bestätigst du ihn also nur:
+
+| Anbieter | Braucht | Standard-Endpunkt |
+|---|---|---|
+| Ollama | einen Rechner, der das geladene Modell fassen kann | `http://localhost:11434` |
+| Voxtral | einen Voxtral-Server, den du selbst startest | `http://localhost:11344` |
+| Whisper | einen lokalen Whisper-Server | `http://localhost:8084` |
+| oMLX | macOS auf Apple Silicon | `http://127.0.0.1:8003/v1` |
+| MLX Audio | macOS auf Apple Silicon | eingebettet — kein Endpunkt nötig |
+
 ## Einen Anbieter verbinden
 
 1. Öffne **Einstellungen → KI-Einstellungen → Anbieter**.

@@ -28,6 +28,28 @@ provider, then review the models and profiles created around it.
 - A custom base URL can point a supported provider type at a compatible proxy
   or gateway. The provider type still controls protocol-specific behavior.
 
+## Before you connect
+
+What a provider asks of you depends on where it runs.
+
+**A cloud provider needs an API key**, created in that provider's own console
+before you open the form. The key field's caption names the host to go to —
+`aistudio.google.com` for Gemini, `dashscope.console.aliyun.com` for Alibaba
+Cloud, and likewise for OpenAI, Anthropic, Mistral, OpenRouter, Nebius and
+Melious. Lotti stores the key masked and never displays it again in full.
+
+**A local provider needs its service already running** and reachable from the
+device that calls it; Lotti does not start it for you. The endpoint is
+pre-filled, so in the ordinary case you only confirm it:
+
+| Provider | Needs | Default endpoint |
+|---|---|---|
+| Ollama | a desktop that can hold the model you pull | `http://localhost:11434` |
+| Voxtral | a Voxtral server you start yourself | `http://localhost:11344` |
+| Whisper | a local Whisper server | `http://localhost:8084` |
+| oMLX | macOS on Apple Silicon | `http://127.0.0.1:8003/v1` |
+| MLX Audio | macOS on Apple Silicon | embedded — no endpoint to enter |
+
 ## Connect a provider
 
 1. Open **Settings → AI Settings → Providers**.

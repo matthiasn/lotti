@@ -31,6 +31,28 @@ omkring den.
   kompatibel proxy eller gateway. Udbydertypen styrer stadig
   protokolspecifik adfærd.
 
+## Før du forbinder
+
+Hvad en udbyder kræver af dig, afhænger af, hvor den kører.
+
+**En cloududbyder kræver en API-nøgle**, som du opretter i dens egen konsol,
+før du åbner formularen. Teksten under nøglefeltet nævner den rigtige vært —
+`aistudio.google.com` til Gemini, `dashscope.console.aliyun.com` til Alibaba
+Cloud, og tilsvarende for OpenAI, Anthropic, Mistral, OpenRouter, Nebius og
+Melious. Lotti gemmer nøglen maskeret og viser den aldrig fuldt ud igen.
+
+**En lokal udbyder kræver, at dens tjeneste allerede kører** og kan nås fra
+den enhed, der kalder den; Lotti starter den ikke for dig. Endpointet er
+udfyldt på forhånd, så du bekræfter det som regel bare:
+
+| Udbyder | Kræver | Standardendpoint |
+|---|---|---|
+| Ollama | en computer, der kan rumme den model, du henter | `http://localhost:11434` |
+| Voxtral | en Voxtral-server, du selv starter | `http://localhost:11344` |
+| Whisper | en lokal Whisper-server | `http://localhost:8084` |
+| oMLX | macOS på Apple Silicon | `http://127.0.0.1:8003/v1` |
+| MLX Audio | macOS på Apple Silicon | indbygget — intet endpoint at indtaste |
+
 ## Forbind en udbyder
 
 1. Åbn **Indstillinger → AI-indstillinger → Udbydere**.

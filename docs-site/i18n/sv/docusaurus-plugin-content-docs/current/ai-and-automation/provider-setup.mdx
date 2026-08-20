@@ -30,6 +30,28 @@ skapats kring den.
   proxy eller gateway. Leverantörstypen styr fortfarande protokollspecifikt
   beteende.
 
+## Innan du ansluter
+
+Vad en leverantör kräver av dig beror på var den körs.
+
+**En molnleverantör kräver en API-nyckel** som du skapar i dess egen konsol
+innan du öppnar formuläret. Texten under nyckelfältet anger rätt värd —
+`aistudio.google.com` för Gemini, `dashscope.console.aliyun.com` för Alibaba
+Cloud, och likaså för OpenAI, Anthropic, Mistral, OpenRouter, Nebius och
+Melious. Lotti sparar nyckeln maskerad och visar den aldrig i sin helhet igen.
+
+**En lokal leverantör kräver att dess tjänst redan körs** och går att nå från
+enheten som anropar den; Lotti startar den inte åt dig. Slutpunkten är
+förifylld, så oftast bekräftar du den bara:
+
+| Leverantör | Kräver | Standardslutpunkt |
+|---|---|---|
+| Ollama | en dator som rymmer modellen du hämtar | `http://localhost:11434` |
+| Voxtral | en Voxtral-server som du startar själv | `http://localhost:11344` |
+| Whisper | en lokal Whisper-server | `http://localhost:8084` |
+| oMLX | macOS på Apple Silicon | `http://127.0.0.1:8003/v1` |
+| MLX Audio | macOS på Apple Silicon | inbyggt — ingen slutpunkt att ange |
+
 ## Koppla en leverantör
 
 1. Öppna **Inställningar → AI-inställningar → Leverantörer**.

@@ -32,6 +32,29 @@ esso.
   verso un proxy o gateway compatibile. Il tipo di provider controlla comunque
   il comportamento specifico del protocollo.
 
+## Prima di collegare
+
+Quello che un provider ti chiede dipende da dove viene eseguito.
+
+**Un provider cloud richiede una chiave API**, creata nella sua console prima
+che tu apra il modulo. La didascalia del campo della chiave indica l'host da
+usare — `aistudio.google.com` per Gemini, `dashscope.console.aliyun.com` per
+Alibaba Cloud, e lo stesso vale per OpenAI, Anthropic, Mistral, OpenRouter,
+Nebius e Melious. Lotti conserva la chiave mascherata e non la mostra mai più
+per intero.
+
+**Un provider locale richiede che il suo servizio sia già in esecuzione** e
+raggiungibile dal dispositivo che lo chiama; Lotti non lo avvia al posto tuo.
+L'endpoint è precompilato, quindi di norma ti limiti a confermarlo:
+
+| Provider | Richiede | Endpoint predefinito |
+|---|---|---|
+| Ollama | un computer capace di ospitare il modello scaricato | `http://localhost:11434` |
+| Voxtral | un server Voxtral che avvii tu | `http://localhost:11344` |
+| Whisper | un server Whisper locale | `http://localhost:8084` |
+| oMLX | macOS su Apple Silicon | `http://127.0.0.1:8003/v1` |
+| MLX Audio | macOS su Apple Silicon | integrato — nessun endpoint da inserire |
+
 ## Collega un provider
 
 1. Apri **Impostazioni → Impostazioni dell'intelligenza → Fornitori**.

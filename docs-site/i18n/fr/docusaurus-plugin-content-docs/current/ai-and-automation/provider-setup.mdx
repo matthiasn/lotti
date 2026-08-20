@@ -32,6 +32,29 @@ autour de lui.
   charge vers un proxy ou une passerelle compatible. Le type de fournisseur
   contrôle toujours le comportement propre au protocole.
 
+## Avant de connecter
+
+Ce qu'un fournisseur attend de toi dépend de l'endroit où il tourne.
+
+**Un fournisseur cloud a besoin d'une clé API**, créée dans sa propre console
+avant que tu ouvres le formulaire. La légende du champ de clé indique l'hôte à
+utiliser — `aistudio.google.com` pour Gemini,
+`dashscope.console.aliyun.com` pour Alibaba Cloud, et de même pour OpenAI,
+Anthropic, Mistral, OpenRouter, Nebius et Melious. Lotti conserve la clé
+masquée et ne la réaffiche jamais en entier.
+
+**Un fournisseur local a besoin que son service tourne déjà** et soit joignable
+depuis l'appareil qui l'appelle ; Lotti ne le démarre pas à ta place. Le point
+de terminaison est prérempli : le plus souvent, tu ne fais que le confirmer.
+
+| Fournisseur | Nécessite | Point de terminaison par défaut |
+|---|---|---|
+| Ollama | une machine capable de charger le modèle récupéré | `http://localhost:11434` |
+| Voxtral | un serveur Voxtral que tu démarres toi-même | `http://localhost:11344` |
+| Whisper | un serveur Whisper local | `http://localhost:8084` |
+| oMLX | macOS sur Apple Silicon | `http://127.0.0.1:8003/v1` |
+| MLX Audio | macOS sur Apple Silicon | intégré — aucun point à saisir |
+
 ## Connecter un fournisseur
 
 1. Ouvre **Paramètres → Paramètres IA → Fournisseurs**.

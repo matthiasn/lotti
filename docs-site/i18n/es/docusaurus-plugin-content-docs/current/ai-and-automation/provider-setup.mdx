@@ -31,6 +31,29 @@ por el proveedor y revisa después los modelos y perfiles creados a su alrededor
   proxy o gateway compatible. El tipo de proveedor sigue controlando el
   comportamiento específico del protocolo.
 
+## Antes de conectar
+
+Lo que un proveedor te pide depende de dónde se ejecute.
+
+**Un proveedor en la nube necesita una clave de API**, creada en su propia
+consola antes de que abras el formulario. El pie del campo de la clave indica
+el host al que ir — `aistudio.google.com` para Gemini,
+`dashscope.console.aliyun.com` para Alibaba Cloud, y lo mismo para OpenAI,
+Anthropic, Mistral, OpenRouter, Nebius y Melious. Lotti guarda la clave
+enmascarada y nunca vuelve a mostrarla completa.
+
+**Un proveedor local necesita que su servicio ya esté funcionando** y sea
+accesible desde el dispositivo que lo llama; Lotti no lo inicia por ti. El
+endpoint viene rellenado, así que normalmente solo lo confirmas:
+
+| Proveedor | Necesita | Endpoint predeterminado |
+|---|---|---|
+| Ollama | un equipo capaz de alojar el modelo que descargues | `http://localhost:11434` |
+| Voxtral | un servidor Voxtral que inicies tú | `http://localhost:11344` |
+| Whisper | un servidor Whisper local | `http://localhost:8084` |
+| oMLX | macOS en Apple Silicon | `http://127.0.0.1:8003/v1` |
+| MLX Audio | macOS en Apple Silicon | integrado — sin endpoint que introducir |
+
 ## Conecta un proveedor
 
 1. Abre **Ajustes → Ajustes de IA → Proveedores**.

@@ -15,6 +15,30 @@ Lotti separă configurarea AI în trei straturi: un **furnizor** este serviciul 
 - Un furnizor local poate păstra inferența pe propriul calculator sau pe un punct final local pe care îl controlați, însă serviciul trebuie să ruleze și să fie accesibil de pe dispozitivul unde Lotti îl invocă. O adresă LAN poate totuși muta un prompt între dispozitive; „local” înseamnă că nu este trimis unui furnizor găzduit de modele, nu că nu există niciun salt prin rețea.
 - Un URL de bază personalizat poate direcționa un tip de furnizor acceptat către un proxy sau gateway compatibil. Tipul furnizorului controlează în continuare comportamentul specific protocolului.
 
+## Înainte de conectare
+
+Ce vă cere un furnizor depinde de locul în care rulează.
+
+**Un furnizor din cloud are nevoie de o cheie API**, creată în consola
+proprie a acestuia înainte de a deschide formularul. Textul de sub câmpul
+cheii indică gazda potrivită — `aistudio.google.com` pentru Gemini,
+`dashscope.console.aliyun.com` pentru Alibaba Cloud și, la fel, pentru OpenAI,
+Anthropic, Mistral, OpenRouter, Nebius și Melious. Lotti păstrează cheia
+mascată și nu o mai afișează niciodată integral.
+
+**Un furnizor local are nevoie ca serviciul său să ruleze deja** și să fie
+accesibil de pe dispozitivul care îl apelează; Lotti nu îl pornește în locul
+dumneavoastră. Punctul final este precompletat, așa că de obicei doar îl
+confirmați:
+
+| Furnizor | Necesită | Punct final implicit |
+|---|---|---|
+| Ollama | un computer capabil să găzduiască modelul descărcat | `http://localhost:11434` |
+| Voxtral | un server Voxtral pornit de dumneavoastră | `http://localhost:11344` |
+| Whisper | un server Whisper local | `http://localhost:8084` |
+| oMLX | macOS pe Apple Silicon | `http://127.0.0.1:8003/v1` |
+| MLX Audio | macOS pe Apple Silicon | încorporat — fără punct final de introdus |
+
 ## Conectați un furnizor
 
 1. Deschideți **Setări → Setări AI → Furnizori**.

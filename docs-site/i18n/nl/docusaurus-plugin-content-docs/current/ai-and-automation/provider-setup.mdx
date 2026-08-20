@@ -28,6 +28,29 @@ provider en bekijk vervolgens de modellen en profielen die eromheen zijn gemaakt
 - Een aangepaste basis-URL kan een ondersteund providertype naar een compatibele proxy
   of gateway laten wijzen. Het providertype bepaalt nog steeds het protocolspecifieke gedrag.
 
+## Voordat je verbindt
+
+Wat een aanbieder van je vraagt, hangt af van waar hij draait.
+
+**Een cloudaanbieder heeft een API-sleutel nodig**, die je in zijn eigen
+console aanmaakt voordat je het formulier opent. Het bijschrift bij het
+sleutelveld noemt de juiste host — `aistudio.google.com` voor Gemini,
+`dashscope.console.aliyun.com` voor Alibaba Cloud, en net zo voor OpenAI,
+Anthropic, Mistral, OpenRouter, Nebius en Melious. Lotti bewaart de sleutel
+gemaskeerd en toont hem nooit meer volledig.
+
+**Een lokale aanbieder heeft een al draaiende dienst nodig**, bereikbaar vanaf
+het apparaat dat hem aanroept; Lotti start hem niet voor je. Het eindpunt is
+vooringevuld, dus meestal bevestig je het alleen:
+
+| Aanbieder | Nodig | Standaardeindpunt |
+|---|---|---|
+| Ollama | een computer die het opgehaalde model aankan | `http://localhost:11434` |
+| Voxtral | een Voxtral-server die je zelf start | `http://localhost:11344` |
+| Whisper | een lokale Whisper-server | `http://localhost:8084` |
+| oMLX | macOS op Apple Silicon | `http://127.0.0.1:8003/v1` |
+| MLX Audio | macOS op Apple Silicon | ingebouwd — geen eindpunt in te vullen |
+
 ## Sluit een provider aan
 
 1. Open **Instellingen → AI-instellingen → Aanbieders**.

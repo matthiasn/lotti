@@ -32,6 +32,29 @@ criados em torno dele.
   um proxy ou gateway compatível. O tipo de provedor ainda controla o
   comportamento específico do protocolo.
 
+## Antes de ligar
+
+O que um provedor te pede depende de onde é executado.
+
+**Um provedor na nuvem precisa de uma chave de API**, criada no console dele
+antes de você abrir o formulário. A legenda do campo da chave indica o host
+a ser usado — `aistudio.google.com` para o Gemini,
+`dashscope.console.aliyun.com` para a Alibaba Cloud, e o mesmo vale para OpenAI,
+Anthropic, Mistral, OpenRouter, Nebius e Melious. O Lotti guarda a chave
+mascarada e nunca mais a mostra por inteiro.
+
+**Um provedor local precisa que o serviço já esteja rodando** e acessível a
+partir do dispositivo que o chama; o Lotti não o inicia para você. O endpoint
+já vem preenchido, então normalmente você só confirma:
+
+| Provedor | Precisa de | Endpoint padrão |
+|---|---|---|
+| Ollama | um computador que aguente o modelo baixado | `http://localhost:11434` |
+| Voxtral | um servidor Voxtral iniciado por você | `http://localhost:11344` |
+| Whisper | um servidor Whisper local | `http://localhost:8084` |
+| oMLX | macOS em Apple Silicon | `http://127.0.0.1:8003/v1` |
+| MLX Audio | macOS em Apple Silicon | embutido — sem endpoint a informar |
+
 ## Conecte um provedor
 
 1. Abra **Configurações → Configurações de IA → Provedores**.

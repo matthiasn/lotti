@@ -29,6 +29,28 @@ potom zkontroluj modely a profily vytvořené kolem něj.
   kompatibilní proxy nebo bránu. Typ poskytovatele stále řídí chování
   specifické pro protokol.
 
+## Než se připojíš
+
+Co po tobě poskytovatel chce, závisí na tom, kde běží.
+
+**Cloudový poskytovatel potřebuje API klíč**, který si vytvoříš v jeho konzoli
+dřív, než otevřeš formulář. Popisek pole s klíčem uvádí správného hostitele —
+`aistudio.google.com` pro Gemini, `dashscope.console.aliyun.com` pro Alibaba
+Cloud a obdobně pro OpenAI, Anthropic, Mistral, OpenRouter, Nebius a Melious.
+Lotti klíč uloží maskovaný a nikdy ho znovu nezobrazí celý.
+
+**Lokální poskytovatel potřebuje už běžící službu**, dostupnou ze zařízení,
+které ji volá; Lotti ji za tebe nespustí. Endpoint je předvyplněný, takže ho
+obvykle jen potvrdíš:
+
+| Poskytovatel | Potřebuje | Výchozí endpoint |
+|---|---|---|
+| Ollama | počítač, který stažený model unese | `http://localhost:11434` |
+| Voxtral | server Voxtral, který si spustíš sám | `http://localhost:11344` |
+| Whisper | lokální server Whisper | `http://localhost:8084` |
+| oMLX | macOS na Apple Silicon | `http://127.0.0.1:8003/v1` |
+| MLX Audio | macOS na Apple Silicon | vestavěné — žádný endpoint nezadáváš |
+
 ## Připoj poskytovatele
 
 1. Otevři **Nastavení → Nastavení AI → Poskytovatelé**.
