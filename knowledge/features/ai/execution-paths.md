@@ -271,9 +271,21 @@ Three gates, all deliberate:
 - **A task must resolve.** The skill's `fullTask` context policy has nothing to
   read otherwise, and the summary is framed by the task. Goal and person
   check-ins and standalone voice notes transcribe as before and get no summary.
-- **The profile must assign the skill with `automate: true`.** The
-  already-resolved profile is reused, so the category's automatic-inference
-  consent is checked once, before transcription, and never re-derived here.
+- **The transcription itself must have been automated**, which a non-null
+  `AutomationResult.skillAssignment` records. Only the automated paths set it,
+  and only those passed the category's automatic-inference consent check — the
+  manual picker and `requestTranscription` skip that check because a gesture is
+  its own consent, and that consent covers the transcription asked for, not a
+  second call.
+- **The profile must assign the summary skill with `automate: true`.** The
+  already-resolved profile is reused rather than walked again.
+
+This gate is only on the *automatic* follow-up. `SkillType.audioSummary` is
+also manually selectable from the AI popup on any task-linked recording, which
+is both the backfill path for recordings that predate the feature and the way
+to refresh a stale snapshot. That path runs the same `runAudioSummary` through
+`triggerSkillProvider` and is subject to none of the gates above beyond needing
+task context.
 - **Failures never propagate.** The transcript is already persisted and is the
   valuable artifact; letting a summary failure reach `_withStatusTracking`
   would mark the transcription run as `error` and invite a retry that

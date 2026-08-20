@@ -2603,6 +2603,7 @@ void main() {
       AutomationResult makeTranscriptionResultWithSummary({
         bool automate = true,
         bool assignSummarySkill = true,
+        bool transcriptionWasAutomated = true,
       }) => AutomationResult(
         handled: true,
         resolvedProfile: ResolvedProfile(
@@ -2623,6 +2624,14 @@ void main() {
           ],
         ),
         skill: testSkill,
+        // Only the automated paths set an assignment. Its absence is how the
+        // summary hook tells a manual transcription from an automatic one.
+        skillAssignment: transcriptionWasAutomated
+            ? const SkillAssignment(
+                skillId: skillTranscribeContextId,
+                automate: true,
+              )
+            : null,
       );
 
       Future<void> stubTranscriptionThrough(JournalAudio audioEntity) async {
@@ -2826,6 +2835,25 @@ void main() {
             audioEntryId: 'audio-1',
             automationResult: makeTranscriptionResultWithSummary(
               assignSummarySkill: false,
+            ),
+            linkedTaskId: 'task-1',
+          );
+
+          verifyNotSummarized();
+        },
+      );
+
+      test(
+        'does NOT summarize when the transcription was manual — a button press '
+        'consents to the transcript asked for, not to a second model call',
+        () async {
+          final audio = makeAudioEntity();
+          await stubTranscriptionThrough(audio);
+
+          await runner.runTranscription(
+            audioEntryId: 'audio-1',
+            automationResult: makeTranscriptionResultWithSummary(
+              transcriptionWasAutomated: false,
             ),
             linkedTaskId: 'task-1',
           );
@@ -3365,6 +3393,212 @@ void main() {
               subDomain: 'runAudioSummary',
             ),
           ).called(1);
+        },
+      );
+
+      test(
+        'rejects a non-audio source rather than summarizing whatever it finds',
+        () async {
+          when(
+            () => mockAiInputRepo.getEntity('not-audio'),
+          ).thenAnswer((_) async => makeTaskEntity('not-audio'));
+          stubLoggingException();
+
+          await runner.runAudioSummary(
+            audioEntryId: 'not-audio',
+            automationResult: makeAudioSummaryResult(),
+            linkedTaskId: 'task-1',
+          );
+
+          verifyZeroInteractions(mockCloudRepo);
+          verify(
+            () => mockLoggingService.error(
+              LogDomain.ai,
+              any<Object>(),
+              stackTrace: any<StackTrace?>(named: 'stackTrace'),
+              subDomain: 'runAudioSummary',
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'persists nothing when the recording is deleted mid-run — a summary '
+        'linked to a gone entry would be detached',
+        () async {
+          final audio = makeAudioEntity(
+            id: 'audio-vanished',
+            plainText: longTranscript,
+          );
+          stubPersistence(audio);
+          // First read (step 1) finds it; the pre-persist re-read does not.
+          var reads = 0;
+          when(() => mockAiInputRepo.getEntity('audio-vanished')).thenAnswer((
+            _,
+          ) async {
+            reads++;
+            return reads == 1 ? audio : null;
+          });
+          stubGenerate(() => [makeToolCallChunk()]);
+          stubLoggingEvent();
+          stubLoggingException();
+
+          await runner.runAudioSummary(
+            audioEntryId: 'audio-vanished',
+            automationResult: makeAudioSummaryResult(),
+            linkedTaskId: 'task-1',
+          );
+
+          verifyNever(
+            () => mockAiInputRepo.createAiResponseEntry(
+              id: any(named: 'id'),
+              data: any(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'sums cost and environmental impact across both attempts, and keeps '
+        'the cached-token and reasoning details a retry would otherwise drop',
+        () async {
+          final attribution = _registerInteractionCapture();
+          final audio = makeAudioEntity(
+            id: 'audio-impact',
+            plainText: longTranscript,
+          );
+          stubPersistence(audio);
+
+          var call = 0;
+          when(
+            () => mockCloudRepo.generate(
+              any(),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              tools: any(named: 'tools'),
+              toolChoice: any(named: 'toolChoice'),
+              geminiThinkingMode: any(named: 'geminiThinkingMode'),
+              impactCollector: any(named: 'impactCollector'),
+            ),
+          ).thenAnswer((invocation) {
+            call++;
+            // Each attempt reports impact into ITS OWN collector, the way a
+            // Melious response does.
+            final collector =
+                invocation.namedArguments[#impactCollector]
+                    as InferenceImpactCollector?;
+            collector?.impact = call == 1
+                ? const MeliousCallImpact(
+                    energyKwh: 1,
+                    carbonGCo2: 10,
+                    waterLiters: 0.5,
+                    costCredits: 3,
+                    dataCenter: 'eu-west',
+                    providerId: 'melious',
+                  )
+                : const MeliousCallImpact(
+                    energyKwh: 2,
+                    carbonGCo2: 20,
+                    waterLiters: 1.5,
+                    costCredits: 7,
+                  );
+            final usage = call == 1
+                ? const CompletionUsage(
+                    promptTokens: 100,
+                    completionTokens: 10,
+                    totalTokens: 110,
+                    promptTokensDetails: PromptTokensDetails(cachedTokens: 40),
+                    completionTokensDetails: CompletionTokensDetails(
+                      reasoningTokens: 5,
+                    ),
+                  )
+                : const CompletionUsage(
+                    promptTokens: 120,
+                    completionTokens: 30,
+                    totalTokens: 150,
+                    promptTokensDetails: PromptTokensDetails(cachedTokens: 20),
+                    completionTokensDetails: CompletionTokensDetails(
+                      reasoningTokens: 7,
+                    ),
+                  );
+            return Stream.fromIterable([
+              if (call == 1)
+                makeStreamChunk('Prose, not a tool call.', usage: usage)
+              else
+                makeToolCallChunk(usage: usage),
+            ]);
+          });
+          stubLoggingEvent();
+
+          await runner.runAudioSummary(
+            audioEntryId: 'audio-impact',
+            automationResult: makeAudioSummaryResult(),
+            linkedTaskId: 'task-1',
+          );
+
+          final event = _capturedEvents(attribution).single;
+          // Additive quantities are summed across attempts.
+          expect(event.inputTokens, 220);
+          expect(event.outputTokens, 40);
+          // Cached input and reasoning tokens survive the merge — the
+          // non-retry path reports them, so the retry path must too.
+          expect(event.cachedInputTokens, 60);
+          expect(event.thoughtsTokens, 12);
+          // Both provider charges are billed, not just the retry's.
+          expect(event.credits, 10);
+        },
+      );
+
+      test(
+        'bills both attempts even when the retry also fails — a model that '
+        'never produces a summary must not look free',
+        () async {
+          final attribution = _registerInteractionCapture();
+          final audio = makeAudioEntity(
+            id: 'audio-billed-failure',
+            plainText: longTranscript,
+          );
+          stubPersistence(audio);
+          stubGenerate(
+            () => [
+              makeStreamChunk(
+                'Still prose.',
+                usage: const CompletionUsage(
+                  promptTokens: 50,
+                  completionTokens: 5,
+                  totalTokens: 55,
+                ),
+              ),
+            ],
+          );
+          stubLoggingEvent();
+          stubLoggingException();
+
+          await runner.runAudioSummary(
+            audioEntryId: 'audio-billed-failure',
+            automationResult: makeAudioSummaryResult(),
+            linkedTaskId: 'task-1',
+          );
+
+          final event = _capturedEvents(attribution).single;
+          expect(event.inputTokens, 100);
+          expect(event.outputTokens, 10);
+          verifyNever(
+            () => mockAiInputRepo.createAiResponseEntry(
+              id: any(named: 'id'),
+              data: any(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          );
         },
       );
 

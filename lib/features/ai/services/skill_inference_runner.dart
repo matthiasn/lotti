@@ -322,13 +322,19 @@ class SkillInferenceRunner {
           '(${response.length} chars)',
           subDomain: 'runTranscription',
         );
-
-        await _maybeRunAudioSummary(
-          audioEntryId: audioEntryId,
-          profile: profile,
-          linkedTaskId: linkedTaskId,
-        );
       },
+    );
+
+    // Outside the status-tracking body on purpose. Inside it, the
+    // transcription's own Siri-waveform bar kept animating through the summary
+    // call — reporting "transcribing" for a run that had already written its
+    // transcript. The summary tracks its own status, and awaiting here still
+    // orders it before the caller's agent nudge so the agent's first read sees
+    // the summary.
+    await _maybeRunAudioSummary(
+      audioEntryId: audioEntryId,
+      automationResult: automationResult,
+      linkedTaskId: linkedTaskId,
     );
   }
 
@@ -567,25 +573,36 @@ class SkillInferenceRunner {
   /// picker, relationship and goal check-ins, Daily OS capture) so every route
   /// that produces a transcript gets the same follow-up exactly once.
   ///
-  /// Three gates, all deliberate:
+  /// Four gates, all deliberate:
   /// - **A task must be resolved.** The summary is framed by the task it
   ///   belongs to, and the skill's `fullTask` context policy has nothing to
   ///   read without one. Goal and person check-ins and standalone voice notes
   ///   transcribe as before and get no summary.
-  /// - **The profile must assign the skill with `automate: true`.** Reuses the
-  ///   already-resolved profile rather than walking resolution again, so the
-  ///   category's automatic-inference consent — checked once before
-  ///   transcription started — is not silently re-derived here.
+  /// - **The transcription itself must have been automated**, which is what a
+  ///   non-null `skillAssignment` means: only `ProfileAutomationService`'s
+  ///   automated paths set it, and only those passed the category's
+  ///   automatic-inference consent check. The manual picker and
+  ///   `requestTranscription` both build an assignment-less result, and both
+  ///   deliberately skip that check because a button press is its own consent.
+  ///   That consent covers the transcription the user asked for — not a second
+  ///   model call they did not. Manual users reach the summary through the
+  ///   "Summarize Recording" skill in the same menu.
+  /// - **The profile must assign the summary skill with `automate: true`.**
+  ///   Reuses the already-resolved profile rather than walking resolution
+  ///   again.
   /// - **Failures never propagate.** The transcript is persisted and is the
-  ///   valuable artifact; letting a summary failure reach
-  ///   `_withStatusTracking` would mark the whole transcription run as `error`
-  ///   and invite a retry that re-transcribes audio that transcribed fine.
+  ///   valuable artifact; letting a summary failure surface here would mark
+  ///   the whole transcription run as failed and invite a retry that
+  ///   re-transcribes audio that transcribed fine.
   Future<void> _maybeRunAudioSummary({
     required String audioEntryId,
-    required ResolvedProfile profile,
+    required AutomationResult automationResult,
     required String? linkedTaskId,
   }) async {
     if (linkedTaskId == null) return;
+    if (automationResult.skillAssignment == null) return;
+    final profile = automationResult.resolvedProfile;
+    if (profile == null) return;
 
     try {
       final assignment = profile.skillAssignments
@@ -608,6 +625,13 @@ class SkillInferenceRunner {
         linkedTaskId: linkedTaskId,
       );
     } catch (e, stackTrace) {
+      // Belt and braces, and unreachable today: `runAudioSummary` routes every
+      // operational failure through `_withStatusTracking`, which swallows and
+      // reports rather than rethrows, and its two programmer-error throws are
+      // both guarded above. Kept because this is the seam that protects a
+      // *persisted transcript* from a future change to that contract — the
+      // cost of being wrong here is losing the transcription's result to a
+      // summary bug, which is exactly the trade this method exists to prevent.
       _loggingService.error(
         LogDomain.ai,
         e,
@@ -658,19 +682,16 @@ class SkillInferenceRunner {
       profile: profile,
       overrideModelId: overrideModelId,
     );
-    final provider = target.provider;
-    final modelId = target.modelId;
+    // Like prompt generation, the fallback here is the profile's *required*
+    // thinking slot, so the resolved target always carries a provider and a
+    // model id — unlike the optional transcription / image slots, which is
+    // why those paths null-check and this one does not.
+    final provider = target.provider!;
+    final modelId = target.modelId!;
     final effectiveThinkingMode = _geminiThinkingModeForTarget(
       target,
       geminiThinkingMode,
     );
-    if (provider == null || modelId == null) {
-      developer.log(
-        'Profile missing thinking provider/model for $audioEntryId',
-        name: _logTag,
-      );
-      return;
-    }
 
     // The thinking slot is constrained to tool-capable models by the profile
     // form, so this is an assertion rather than a fallback: it only fires for
@@ -746,42 +767,61 @@ class SkillInferenceRunner {
           automationResult: automationResult,
           taskId: linkedTaskId,
         );
-        final impactCollector = InferenceImpactCollector();
-
+        // Each attempt gets its OWN collector. `InferenceImpactCollector` is a
+        // single mutable slot, so sharing one across the retry would let the
+        // second call's impact overwrite the first's and silently drop a real
+        // provider charge from the ledger.
         Future<
           ({
             String content,
             List<ChatCompletionMessageToolCall> toolCalls,
             CompletionUsage? usage,
+            MeliousCallImpact? impact,
           })
         >
-        callModel(String userMessage) => _collectStream(
-          _cloudRepository.generate(
-            userMessage,
-            model: modelId,
-            temperature: null,
-            baseUrl: provider.baseUrl,
-            apiKey: provider.apiKey,
-            provider: provider,
-            systemMessage: promptResult.systemMessage,
-            tools: [entrySummaryTool],
-            toolChoice: entrySummaryToolChoice,
-            geminiThinkingMode: effectiveThinkingMode,
-            impactCollector: impactCollector,
-          ),
-        );
-
-        var collected = await callModel(promptResult.userMessage);
+        callModel(String userMessage) async {
+          final collector = InferenceImpactCollector();
+          final result = await _collectStream(
+            _cloudRepository.generate(
+              userMessage,
+              model: modelId,
+              temperature: null,
+              baseUrl: provider.baseUrl,
+              apiKey: provider.apiKey,
+              provider: provider,
+              systemMessage: promptResult.systemMessage,
+              tools: [entrySummaryTool],
+              toolChoice: entrySummaryToolChoice,
+              geminiThinkingMode: effectiveThinkingMode,
+              impactCollector: collector,
+            ),
+          );
+          return (
+            content: result.content,
+            toolCalls: result.toolCalls,
+            usage: result.usage,
+            impact: collector.impact,
+          );
+        }
 
         // 6. Decode the tool call. One forced retry covers the common
         // failure — a model that narrates instead of calling, or emits a
         // one-liner over the length cap — without turning a persistently
-        // misbehaving model into an unbounded retry loop. Usage from BOTH
-        // attempts is billed: the first call happened whether or not it
-        // produced anything usable, and hiding it would understate spend.
+        // misbehaving model into an unbounded retry loop.
+        //
+        // Spend from BOTH attempts is billed, and it is billed even when the
+        // retry also fails: the provider ran the calls either way, so throwing
+        // before the ledger write would make a model that never produces a
+        // usable summary look free — exactly the model whose cost the user
+        // most needs to see.
+        var attempt = await callModel(promptResult.userMessage);
+        var usage = attempt.usage;
+        var impact = attempt.impact;
         EntrySummary? summary;
+        EntrySummaryToolException? failure;
+
         try {
-          summary = parseEntrySummaryToolCall(collected.toolCalls);
+          summary = parseEntrySummaryToolCall(attempt.toolCalls);
         } on EntrySummaryToolException catch (first) {
           _loggingService.log(
             LogDomain.ai,
@@ -789,19 +829,19 @@ class SkillInferenceRunner {
             '(${first.reason}) — retrying once',
             subDomain: 'runAudioSummary',
           );
-          final firstUsage = collected.usage;
-          collected = await callModel(
+          attempt = await callModel(
             '${promptResult.userMessage}\n\n'
             'Your previous response was rejected: ${first.reason}. '
             'Call the $entrySummaryToolName tool with all three arguments '
             'and respond with nothing else.',
           );
-          collected = (
-            content: collected.content,
-            toolCalls: collected.toolCalls,
-            usage: _mergeUsage(firstUsage, collected.usage),
-          );
-          summary = parseEntrySummaryToolCall(collected.toolCalls);
+          usage = _mergeUsage(usage, attempt.usage);
+          impact = _mergeImpact(impact, attempt.impact);
+          try {
+            summary = parseEntrySummaryToolCall(attempt.toolCalls);
+          } on EntrySummaryToolException catch (second) {
+            failure = second;
+          }
         }
 
         final attributionEnvelope = await _recordAttributedConsumption(
@@ -813,14 +853,18 @@ class SkillInferenceRunner {
           provider: provider,
           modelId: modelId,
           responseType: skill.skillType.toResponseType,
-          usage: collected.usage,
-          impact: impactCollector.impact,
+          usage: usage,
+          impact: impact,
           start: start,
           interactionKind: AiInteractionKind.textGeneration,
           requestText:
               '${promptResult.systemMessage}\n${promptResult.userMessage}',
-          responseText: summary.summary,
+          responseText: summary?.summary ?? '',
         );
+
+        if (summary == null) {
+          throw failure!;
+        }
 
         // 7. Re-read the source before persisting so a recording deleted
         // mid-run cannot leave a detached summary behind.
@@ -1381,6 +1425,41 @@ class SkillInferenceRunner {
     );
   }
 
+  /// Sums the billable and environmental impact of two attempts at the same
+  /// logical call.
+  ///
+  /// The counterpart to [_mergeUsage], and needed for the same reason: both
+  /// provider calls really happened, so reporting only the retry's cost would
+  /// understate spend. Only the additive quantities are summed. The
+  /// descriptive fields (data centre, provider id, PUE, renewable share) are
+  /// taken from whichever attempt reported them — both attempts hit the same
+  /// provider and model, so they describe one place, not two.
+  ///
+  /// `costCreditsDecimal` is a provider-formatted string rather than a number.
+  /// It is deliberately dropped once two attempts are merged: guessing at
+  /// decimal arithmetic on someone else's formatting would report a precise
+  /// figure that is not the provider's, and `costCredits` already carries the
+  /// summed value.
+  static MeliousCallImpact? _mergeImpact(
+    MeliousCallImpact? a,
+    MeliousCallImpact? b,
+  ) {
+    if (a == null) return b;
+    if (b == null) return a;
+    double? sum(double? x, double? y) =>
+        x == null && y == null ? null : (x ?? 0) + (y ?? 0);
+    return MeliousCallImpact(
+      energyKwh: sum(a.energyKwh, b.energyKwh),
+      carbonGCo2: sum(a.carbonGCo2, b.carbonGCo2),
+      waterLiters: sum(a.waterLiters, b.waterLiters),
+      costCredits: sum(a.costCredits, b.costCredits),
+      renewablePercent: a.renewablePercent ?? b.renewablePercent,
+      pue: a.pue ?? b.pue,
+      dataCenter: a.dataCenter ?? b.dataCenter,
+      providerId: a.providerId ?? b.providerId,
+    );
+  }
+
   /// Sums the token usage of two attempts at the same logical call.
   ///
   /// The audio-summary retry issues a second request, and both are real spend.
@@ -1395,6 +1474,8 @@ class SkillInferenceRunner {
         x == null && y == null ? null : (x ?? 0) + (y ?? 0);
     final aDetails = a.completionTokensDetails;
     final bDetails = b.completionTokensDetails;
+    final aPrompt = a.promptTokensDetails;
+    final bPrompt = b.promptTokensDetails;
     return CompletionUsage(
       promptTokens: sum(a.promptTokens, b.promptTokens),
       completionTokens: sum(a.completionTokens, b.completionTokens),
@@ -1407,6 +1488,15 @@ class SkillInferenceRunner {
                 bDetails?.reasoningTokens,
               ),
               audioTokens: sum(aDetails?.audioTokens, bDetails?.audioTokens),
+            ),
+      // Carried for the same reason as the completion details: the
+      // consumption event reads `cachedTokens` off this, so dropping it would
+      // report null cached input on exactly the runs that retried.
+      promptTokensDetails: aPrompt == null && bPrompt == null
+          ? null
+          : PromptTokensDetails(
+              cachedTokens: sum(aPrompt?.cachedTokens, bPrompt?.cachedTokens),
+              audioTokens: sum(aPrompt?.audioTokens, bPrompt?.audioTokens),
             ),
     );
   }

@@ -266,9 +266,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   The summary is written with the task in view, so it says what the recording
   means for that task rather than just restating it, and it is a snapshot of
   that moment: summarise the same recording again later and you get a fresh
-  one, with the earlier one kept. Recordings shorter than a couple of
-  sentences are left alone. You can also summarise any task recording on
-  demand from its AI menu, including ones recorded before this existed.
+  one, with the earlier one kept. Recordings whose transcript is under 200
+  characters are left alone. You can also summarise any task recording on
+  demand from its AI menu, including ones recorded before this existed — and
+  that is also how to summarise one you transcribed by hand.
 - **Hovering on the task page no longer conjures phantom buttons.** On
   desktop, moving the pointer over the breadcrumb, the AI summary's header
   and text links, the confirm/reject circles, the History and Linked Tasks

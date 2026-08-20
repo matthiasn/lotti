@@ -249,6 +249,10 @@ void main() {
         LottiIcons.mic,
         'Transcription',
       ),
+      AiConsumptionResponseType.audioSummary: (
+        LottiIcons.summarize,
+        'Summary',
+      ),
       AiConsumptionResponseType.imageAnalysis: (
         LottiIcons.searchImage,
         'Image analysis',
@@ -266,6 +270,11 @@ void main() {
         'Embedding indexing',
       ),
     };
+    // The table is hand-maintained, so pin it to the enum: a new response
+    // type added without a row here would otherwise render an untested icon
+    // and label, which is exactly how `audioSummary` first slipped through.
+    expect(cases.keys, unorderedEquals(AiConsumptionResponseType.values));
+
     stubEvents([
       for (final type in cases.keys)
         makeConsumptionEvent(
