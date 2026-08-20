@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -158,7 +156,10 @@ void main() {
     int aiCallCount = 0,
     List<Override> extraOverrides = const [],
   }) {
-    return ProviderScope(
+    return makeTestableWidget(
+      Material(
+        child: TaskMetaSection(taskId: task.id, density: density),
+      ),
       overrides: [
         entryControllerProvider(task.id).overrideWith(
           () => FakeEntryController(task, tracker: tracker),
@@ -183,22 +184,6 @@ void main() {
         ),
         ...extraOverrides,
       ],
-      child: MaterialApp(
-        theme: DesignSystemTheme.dark(),
-        localizationsDelegates: const [
-          AppLocalizations.delegate,
-          FormBuilderLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-          body: SingleChildScrollView(
-            child: TaskMetaSection(taskId: task.id, density: density),
-          ),
-        ),
-      ),
     );
   }
 
