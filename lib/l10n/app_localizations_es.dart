@@ -6525,7 +6525,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get goalDetailCompletionRateTitle =>
-      'Tasa de cumplimiento · este objetivo';
+      'Tasa de cumplimiento del objetivo';
 
   @override
   String get goalDetailGoalDaysTitle => 'Días del objetivo';
@@ -6571,7 +6571,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get goalDetailWatchingSignals =>
-      'Las señales anteriores se actualizan en segundos. Tu agente solo ve las señales indicadas aquí.';
+      'Tu agente solo ve las señales indicadas aquí.';
 
   @override
   String get goalDetailWatchingTitle => 'Observa';
@@ -6617,10 +6617,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get goalDimensionHealthSource => 'Datos de salud';
 
   @override
-  String get goalDimensionImprovingNote =>
-      'Aún no, pero la última medición se acercó al objetivo.';
-
-  @override
   String get goalDimensionLabelTimeSource => 'Tiempo registrado por etiqueta';
 
   @override
@@ -6641,10 +6637,6 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get goalDimensionNeedsAttentionNote =>
-      'Por debajo del objetivo en este periodo.';
-
-  @override
   String get goalDimensionNeedsAttentionStatus => 'necesita atencion';
 
   @override
@@ -6652,15 +6644,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'Aún no hay datos suficientes para juzgar esta dimensión.';
 
   @override
-  String get goalDimensionOnTargetTodayNote =>
-      'La lectura más reciente de hoy está dentro del objetivo; sigue así.';
-
-  @override
   String get goalDimensionOnTargetTodayStatus => 'Dentro del objetivo hoy';
-
-  @override
-  String get goalDimensionOnTrackNote =>
-      'Esta dimensión está actualmente en camino.';
 
   @override
   String get goalDimensionOnTrackStatus => 'En camino';
@@ -7076,9 +7060,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get goalProgressAgesOut => 'sale esta noche';
-
-  @override
-  String get goalProgressCompactCaption => 'avanza a medianoche';
 
   @override
   String goalProgressCompactSemantics(int count) {

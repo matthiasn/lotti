@@ -820,12 +820,16 @@ flowchart TD
   the Habits dashboard's effective ~900 after design review of the goal
   cards; shared by the goals list) whose hero stack leads with the
   timestamped Agent's-read card, the deterministic This-week card
-  (`GoalThisWeekCard` — whole-goal strip, Reflect-on-today, yesterday
-  tally) beneath it, both at the full content width on every viewport,
+  (`GoalThisWeekCard` — whole-goal strip under a title row whose trailing
+  button IS Reflect-on-today, with the yesterday tally centered beneath)
+  beneath it, both at the full content width on every viewport,
   with the Habits and Signals sections beneath, a goal-scoped completion-rate chart (`HabitsChartCard(habitIds: …)` — the shared card
   computed on the goal's slice of the habits day maps via
-  `scopeHabitsStateToHabits`, same range tabs), and the cost/automation
-  plumbing riding the read card itself. Daily reflections have NO
+  `scopeHabitsStateToHabits`, same range tabs — in scoped mode the chart
+  drops its own headline row and the card header carries the rate, its goal
+  verdict and the week-over-week move as one stacked corner block, the same
+  grammar every other card on the page uses), and the automation plumbing
+  riding the read card itself. Daily reflections have NO
   main-column card: they render only in the check-ins rail, each as one
   tight row whose verdict pill rides the timeline header's trailing slot
   (`TimelineBeat.trailing`) and whose row tap (`TimelineBeat.onTap`)
@@ -839,15 +843,23 @@ flowchart TD
   old inline title-row pair. The reading names its window CONCRETELY
   ("1 of 3 · calendar week") because the track below can show several
   windows' worth of days; the cadence line is gone for every window type,
-  and the rolling week's period line carries "slides at midnight". Legends and one-sentence summaries center under
-  the charts they annotate. Chip shape encodes affordance on every goal
+  and the window line carries only the date span it covers, with the
+  rolling-week reliability tail on its trailing edge. Signal cards carry NO
+  one-sentence summary: the corner's status caption is the card's only
+  verdict, and the sentence restated it — the no-data case is the one
+  exception, because "Not enough data" alone says nothing about why. Where
+  a card plots a trailing seven-day average, the corner states the LATEST
+  reading with that average beside it in the average line's own hue, and
+  leaves the target to the keyed legend entry ("Goal ≤ 88") rather than
+  naming it twice. Legends center under the charts they annotate. Chip shape encodes affordance on every goal
   surface: clickable elements are fully rounded (`radii.badgesPills`);
   informative chips — status/trend/verdict/cost — take the fixed
   `radii.smallChips` corner. The read card wears the SAME
   "intelligence" panel as the task agent section on Task Details — the
   shared `aiCardDecoration` chrome and `TldrHeader`, the shared
   `AgentAutomationRow` reload affordances, and the goal's cumulative
-  inference-impact pill (`GoalAgentLifetimePills`) in its footer — one
+  inference-impact pill (`GoalAgentLifetimePills`) on its header rail
+  beside the freshness caption — one
   panel language, changed in one place for both. A refresh that DIES
   (provider out of credits, network down, the executor timeout) says so on
   the card: it watches `goalReportWakeOutcomeProvider` — report-refresh and
@@ -1001,10 +1013,11 @@ flowchart TD
   `TapTargets.minimum` vertically. Weekday labels render directly above
   their squares inside ONE shared horizontal scroller, so labels and cells
   cannot drift apart; the reliability tail is captioned in weeks ("N / 6
-  weeks") and closes the card on its own row under the days it summarises.
-  A habit card states one thing per row: identity and reading, then what the
-  habit asks for (`7× per 7 days · slides at midnight`) against how far off it
-  is, then the span, the days, and the tail. A quota already passed reads as a
+  weeks") and rides the trailing edge of the window line, sharing that row
+  with the date span it qualifies.
+  A habit card states one thing per row: identity and reading, then the
+  window (its span leading, its reliability tail trailing, the recovery
+  deficit folded in where it fits), then the days. A quota already passed reads as a
   count with its target named beside it ("6 this window · target 3"), because
   "6 of 3" parses as a broken fraction; a habit AT its rate says nothing here
   at all, since the header's own status already says "On track". Where a
@@ -1064,6 +1077,13 @@ flowchart TD
   below them, and, only while active, the revision-approval card
   (`ChangeSetSummaryCard.selfTargeted`).
 
+  The read card's two caption-tier text actions — Show more and Ask why —
+  share ONE row under the summary, both with the hover fill suppressed
+  (`DesignSystemButton.suppressHoverFill`): a pill fading in mid-paragraph
+  reads as a phantom button, and the accent ink already says they are
+  actions. The automation band drops the settled "Updates on changes"
+  caption (`AgentAutomationRow.showsIdleScheduleLabel: false`) — the switch
+  beside it IS that promise; a pending run's countdown still takes the slot.
   The report card hides its Show more toggle when the full text is identical
   to the TLDR **and** the report carries no renderable structured sections.
   Sections live in provenance rather than in `content`, so a report whose

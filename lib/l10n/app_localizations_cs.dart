@@ -6503,7 +6503,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalDetailAskWhy => 'Proč?';
 
   @override
-  String get goalDetailCompletionRateTitle => 'Míra plnění · tento cíl';
+  String get goalDetailCompletionRateTitle => 'Míra plnění cíle';
 
   @override
   String get goalDetailGoalDaysTitle => 'Dny cíle';
@@ -6549,7 +6549,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get goalDetailWatchingSignals =>
-      'Výše uvedené signály se aktualizují během několika sekund. Agent vidí jen signály uvedené tady.';
+      'Agent vidí jen signály uvedené tady.';
 
   @override
   String get goalDetailWatchingTitle => 'Sleduje';
@@ -6595,10 +6595,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalDimensionHealthSource => 'Zdravotní údaje';
 
   @override
-  String get goalDimensionImprovingNote =>
-      'Ještě ne u cíle, ale poslední hodnota se k němu posunula.';
-
-  @override
   String get goalDimensionLabelTimeSource => 'Čas sledovaný podle štítku';
 
   @override
@@ -6619,9 +6615,6 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get goalDimensionNeedsAttentionNote => 'Za cílem pro toto období.';
-
-  @override
   String get goalDimensionNeedsAttentionStatus => 'Vyžaduje pozornost';
 
   @override
@@ -6629,15 +6622,7 @@ class AppLocalizationsCs extends AppLocalizations {
       'K posouzení této dimenze zatím není dostatek údajů.';
 
   @override
-  String get goalDimensionOnTargetTodayNote =>
-      'Dnešní poslední měření splňuje cílové hodnoty; pokračuj v tom.';
-
-  @override
   String get goalDimensionOnTargetTodayStatus => 'Cíl dnes splněn';
-
-  @override
-  String get goalDimensionOnTrackNote =>
-      'Tato dimenze je momentálně na dobré cestě.';
 
   @override
   String get goalDimensionOnTrackStatus => 'Na cestě';
@@ -7057,9 +7042,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get goalProgressAgesOut => 'dnes vypadne';
-
-  @override
-  String get goalProgressCompactCaption => 'posouvá se o půlnoci';
 
   @override
   String goalProgressCompactSemantics(int count) {

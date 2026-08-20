@@ -1,6 +1,8 @@
+import 'package:easy_debounce/easy_debounce.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -107,6 +109,106 @@ void main() {
     await tester.pump();
     await tester.pump();
   }
+
+  group('goal-scoped summary', () {
+    /// Pumps the headline-less chart above the corner summary the goal
+    /// dashboard hoists into its card header, over the shared 14-day state.
+    Future<void> pumpScoped(WidgetTester tester) => tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const Scaffold(
+          body: Column(
+            children: [
+              HabitCompletionRateSummary(habitIds: null),
+              HabitCompletionRateChart(showsHeadline: false),
+            ],
+          ),
+        ),
+        overrides: [
+          habitsControllerProvider.overrideWith(
+            () => _FixedStateController(_fourteenDayState()),
+          ),
+        ],
+      ),
+    );
+
+    testWidgets('states the rate once, with the goal verdict and the '
+        'week-over-week move as its caption', (tester) async {
+      await pumpScoped(tester);
+      await tester.pump();
+
+      // ONE rate, in the corner block — the display-tier headline the plot
+      // used to carry would make it two.
+      final rate = find.textContaining('7-day avg');
+      expect(rate, findsOneWidget);
+      final rateText = tester.widget<Text>(rate).textSpan! as TextSpan;
+      expect(rateText.toPlainText(), startsWith('50%'));
+
+      // The verdict, at caption weight rather than in a tinted pill.
+      final verdict = find.textContaining('to goal');
+      expect(verdict, findsOneWidget);
+      final tokens = tester
+          .element(find.byType(HabitCompletionRateSummary))
+          .designTokens;
+      expect(
+        tester.widget<Text>(verdict).style?.color,
+        tokens.colors.alert.warning.ink,
+      );
+      expect(
+        tester.getTopLeft(verdict).dy,
+        greaterThan(tester.getTopLeft(rate).dy),
+        reason: 'the verdict is the caption UNDER the key figure',
+      );
+    });
+
+    testWidgets('the headline-less plot reserves no slot of its own', (
+      tester,
+    ) async {
+      await pumpScoped(tester);
+      await tester.pump();
+
+      // The chart draws no second copy of the rate, and nothing sits between
+      // the summary and the plot: the 44px headline floor is gone with it.
+      expect(find.textContaining('7-day avg'), findsOneWidget);
+      final chart = tester.getRect(find.byType(HabitCompletionRateChart));
+      final plot = tester.getRect(find.byType(LineChart));
+      expect(
+        plot.top - chart.top,
+        lessThan(8),
+        reason: 'a reserved headline slot would push the plot down 44px',
+      );
+    });
+
+    testWidgets("a selected day swaps the corner block for that day's "
+        'split, so the plot never moves', (tester) async {
+      await pumpScoped(tester);
+      await tester.pump();
+
+      // Measured against the CHART's own box: the guarantee is that the plot
+      // keeps its position inside the chart, because the chart no longer
+      // owns a headline slot for the breakdown to expand.
+      double plotOffset() =>
+          tester.getRect(find.byType(LineChart)).top -
+          tester.getRect(find.byType(HabitCompletionRateChart)).top;
+      final before = plotOffset();
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(HabitCompletionRateSummary)),
+        listen: false,
+      );
+      container
+          .read(habitsControllerProvider.notifier)
+          .setInfoYmd(
+            '2024-03-07',
+          );
+      await tester.pump();
+
+      expect(find.textContaining('2024-03-07'), findsOneWidget);
+      expect(find.textContaining('7-day avg'), findsNothing);
+      expect(plotOffset(), before);
+      // The controller arms a 15s debounce that clears the selection; let it
+      // run out rather than leaving a pending timer behind the test.
+      EasyDebounce.cancel('clearInfoYmd');
+    });
+  });
 
   group('HabitCompletionRateChart headline', () {
     testWidgets('shows the rolling-average label when no day is selected', (

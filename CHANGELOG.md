@@ -6,6 +6,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.11]
 ### Changed
+- **A shorter, calmer goal page.** The goal details page says the same things
+  in far less vertical space. The AI summary card puts "Show more" and
+  "Ask why" on one line, moves its running cost up beside the "as of …"
+  timestamp, and drops the "Updates on changes" caption — the Automatic
+  updates switch beside it already said that. "Reflect on today" is now a
+  button in the Goal days header instead of a full-width row of its own, and
+  the day tally beneath the strip is centred. On habit cards the six-week
+  reliability tail moved up onto the date-span line, and the puzzling
+  "slides at midnight" note is gone. Signal cards drop the sentence under
+  each chart that only repeated the status already shown top right; instead
+  the corner now shows the latest reading with its 7-day average beside it,
+  tinted to match the average line on the chart, and leaves the target to the
+  chart legend. The completion-rate card is now titled "Goal completion rate", and its
+  header follows the same pattern as every other card: title on the left, the 7-day average with its status and
+  trend stacked on the right.
+- **The goal header's microphone no longer looks switched off.** The button
+  that starts a voice check-in was drawing the crossed-out "mic muted" glyph,
+  which read as though recording were unavailable.
 - **Quieter hovers and real tooltips on the goal page.** Pointing at things
   on a goal no longer conjures phantom buttons: the day squares, the
   "Reflect on today" row, the check-ins "See all" link, the "Add a voice

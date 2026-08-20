@@ -6408,7 +6408,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get goalDetailAskWhy => 'Ask why';
 
   @override
-  String get goalDetailCompletionRateTitle => 'Completion rate · this goal';
+  String get goalDetailCompletionRateTitle => 'Goal completion rate';
 
   @override
   String get goalDetailGoalDaysTitle => 'Goal days';
@@ -6454,7 +6454,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get goalDetailWatchingSignals =>
-      'Signals listed above update within seconds. Your agent only sees the signals listed here.';
+      'Your agent only sees the signals listed here.';
 
   @override
   String get goalDetailWatchingTitle => 'Watching';
@@ -6500,10 +6500,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get goalDimensionHealthSource => 'Health data';
 
   @override
-  String get goalDimensionImprovingNote =>
-      'Not there yet, but the last reading moved toward the target.';
-
-  @override
   String get goalDimensionLabelTimeSource => 'Tracked time by label';
 
   @override
@@ -6524,10 +6520,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get goalDimensionNeedsAttentionNote =>
-      'Behind target for this window.';
-
-  @override
   String get goalDimensionNeedsAttentionStatus => 'Needs attention';
 
   @override
@@ -6535,15 +6527,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'There is not enough data to judge this dimension yet.';
 
   @override
-  String get goalDimensionOnTargetTodayNote =>
-      'Today\'s latest reading is on target; keep it going.';
-
-  @override
   String get goalDimensionOnTargetTodayStatus => 'On target today';
-
-  @override
-  String get goalDimensionOnTrackNote =>
-      'This dimension is currently on track.';
 
   @override
   String get goalDimensionOnTrackStatus => 'On track';
@@ -6956,9 +6940,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get goalProgressAgesOut => 'ages out tonight';
-
-  @override
-  String get goalProgressCompactCaption => 'slides at midnight';
 
   @override
   String goalProgressCompactSemantics(int count) {

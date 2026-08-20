@@ -6457,7 +6457,8 @@ class AppLocalizationsNl extends AppLocalizations {
   String get goalDetailAskWhy => 'Waarom?';
 
   @override
-  String get goalDetailCompletionRateTitle => 'Afrondingspercentage · dit doel';
+  String get goalDetailCompletionRateTitle =>
+      'Afrondingspercentage van het doel';
 
   @override
   String get goalDetailGoalDaysTitle => 'Doeldagen';
@@ -6503,7 +6504,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get goalDetailWatchingSignals =>
-      'De bovenstaande signalen worden binnen enkele seconden bijgewerkt. Je agent ziet alleen de signalen die hier staan.';
+      'Je agent ziet alleen de signalen die hier staan.';
 
   @override
   String get goalDetailWatchingTitle => 'Volgt';
@@ -6549,10 +6550,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get goalDimensionHealthSource => 'Gezondheidsgegevens';
 
   @override
-  String get goalDimensionImprovingNote =>
-      'Nog niet, maar de laatste meting ging richting het doel.';
-
-  @override
   String get goalDimensionLabelTimeSource => 'Tijd bijgehouden per label';
 
   @override
@@ -6573,10 +6570,6 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get goalDimensionNeedsAttentionNote =>
-      'Achter op het doel in deze periode.';
-
-  @override
   String get goalDimensionNeedsAttentionStatus => 'Heeft aandacht nodig';
 
   @override
@@ -6584,15 +6577,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Er zijn nog niet voldoende gegevens om deze dimensie te beoordelen.';
 
   @override
-  String get goalDimensionOnTargetTodayNote =>
-      'De nieuwste meting van vandaag ligt binnen het doel; ga zo door.';
-
-  @override
   String get goalDimensionOnTargetTodayStatus => 'Vandaag op doel';
-
-  @override
-  String get goalDimensionOnTrackNote =>
-      'Deze dimensie ligt momenteel op koers.';
 
   @override
   String get goalDimensionOnTrackStatus => 'Op koers';
@@ -6993,9 +6978,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get goalProgressAgesOut => 'valt vanavond weg';
-
-  @override
-  String get goalProgressCompactCaption => 'schuift om middernacht';
 
   @override
   String goalProgressCompactSemantics(int count) {

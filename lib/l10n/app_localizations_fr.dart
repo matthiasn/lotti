@@ -6540,7 +6540,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get goalDetailAskWhy => 'Pourquoi ?';
 
   @override
-  String get goalDetailCompletionRateTitle => 'Taux de réussite · cet objectif';
+  String get goalDetailCompletionRateTitle => 'Taux de réussite de l’objectif';
 
   @override
   String get goalDetailGoalDaysTitle => 'Jours de l\'objectif';
@@ -6586,7 +6586,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get goalDetailWatchingSignals =>
-      'Les signaux ci-dessus sont actualisés en quelques secondes. Ton agent ne voit que les signaux indiqués ici.';
+      'Ton agent ne voit que les signaux indiqués ici.';
 
   @override
   String get goalDetailWatchingTitle => 'Suit';
@@ -6632,10 +6632,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get goalDimensionHealthSource => 'Données de santé';
 
   @override
-  String get goalDimensionImprovingNote =>
-      'Pas encore, mais la dernière mesure s\'est rapprochée de la cible.';
-
-  @override
   String get goalDimensionLabelTimeSource => 'Temps suivi par libellé';
 
   @override
@@ -6656,10 +6652,6 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get goalDimensionNeedsAttentionNote =>
-      'En retard sur la cible pour cette période.';
-
-  @override
   String get goalDimensionNeedsAttentionStatus => 'A besoin d\'attention';
 
   @override
@@ -6667,15 +6659,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'Il n\'y a pas encore suffisamment de données pour juger cette dimension.';
 
   @override
-  String get goalDimensionOnTargetTodayNote =>
-      'La dernière mesure d’aujourd’hui est dans la cible ; continue comme ça.';
-
-  @override
   String get goalDimensionOnTargetTodayStatus => 'Dans la cible aujourd’hui';
-
-  @override
-  String get goalDimensionOnTrackNote =>
-      'Cette dimension est actuellement en bonne voie.';
 
   @override
   String get goalDimensionOnTrackStatus => 'En bonne voie';
@@ -7091,9 +7075,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get goalProgressAgesOut => 'sort ce soir';
-
-  @override
-  String get goalProgressCompactCaption => 'glisse à minuit';
 
   @override
   String goalProgressCompactSemantics(int count) {

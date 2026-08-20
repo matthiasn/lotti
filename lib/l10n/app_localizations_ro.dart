@@ -6556,7 +6556,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get goalDetailCompletionRateTitle =>
-      'Rata de finalizare · acest obiectiv';
+      'Rata de finalizare a obiectivului';
 
   @override
   String get goalDetailGoalDaysTitle => 'Zilele obiectivului';
@@ -6602,7 +6602,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get goalDetailWatchingSignals =>
-      'Semnalele de mai sus se actualizează în câteva secunde. Agentul dvs. vede doar semnalele enumerate aici.';
+      'Agentul dvs. vede doar semnalele enumerate aici.';
 
   @override
   String get goalDetailWatchingTitle => 'Urmărește';
@@ -6648,10 +6648,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalDimensionHealthSource => 'Date de sănătate';
 
   @override
-  String get goalDimensionImprovingNote =>
-      'Încă nu, dar ultima măsurătoare s-a apropiat de țintă.';
-
-  @override
   String get goalDimensionLabelTimeSource => 'Timp urmărit după etichetă';
 
   @override
@@ -6672,10 +6668,6 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get goalDimensionNeedsAttentionNote =>
-      'Sub țintă în această perioadă.';
-
-  @override
   String get goalDimensionNeedsAttentionStatus => 'Necesită atenție';
 
   @override
@@ -6683,15 +6675,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Nu există încă suficiente date pentru a judeca această dimensiune.';
 
   @override
-  String get goalDimensionOnTargetTodayNote =>
-      'Cea mai recentă măsurătoare de astăzi respectă ținta; continuați tot așa.';
-
-  @override
   String get goalDimensionOnTargetTodayStatus => 'Țintă atinsă astăzi';
-
-  @override
-  String get goalDimensionOnTrackNote =>
-      'Această dimensiune este în prezent pe drumul cel bun.';
 
   @override
   String get goalDimensionOnTrackStatus => 'Pe drumul cel bun';
@@ -7107,9 +7091,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get goalProgressAgesOut => 'iese în această seară';
-
-  @override
-  String get goalProgressCompactCaption => 'glisează la miezul nopții';
 
   @override
   String goalProgressCompactSemantics(int count) {

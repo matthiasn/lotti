@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -72,10 +73,10 @@ void main() {
 
     // No cadence line at all for the rolling week: the corner block already
     // states "N of M this window", so "3× per 7 days" was the same fact
-    // twice on one card. The one unique fact — that the window slides —
-    // rides the period line, which is the thing that actually slides.
-    expect(find.text('3× per 7 days · slides at midnight'), findsNothing);
-    expect(find.text('Aug 5 – Aug 11 · slides at midnight'), findsOneWidget);
+    // twice on one card. The period line is left with the one thing nothing
+    // else states — which dates the squares cover.
+    expect(find.textContaining('slides at midnight'), findsNothing);
+    expect(find.text('Aug 5 – Aug 11'), findsOneWidget);
     expect(find.text('This rolling week'), findsNothing);
     expect(find.text('Gym'), findsOneWidget);
     expect(
@@ -441,7 +442,7 @@ void main() {
     });
   });
 
-  testWidgets('the habit streak closes the card under the days it '
+  testWidgets('the habit streak rides the window line above the days it '
       'summarises', (tester) async {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
@@ -464,25 +465,30 @@ void main() {
       ),
     );
 
-    // The six-week tail closes the card, under the days it summarises —
-    // crammed onto the trailing edge of a heading three rows up it was one of
-    // six figures competing for the same band, with nothing saying which
-    // qualified which.
+    // The six-week tail shares the window line with the date span: both
+    // qualify the same window, and stacked under the squares the tail cost
+    // the card a row of its own to say so.
     final streak = find.text('4 / 6 weeks');
     expect(streak, findsOneWidget);
+    final period = find.text('Aug 5 – Aug 11');
+    expect(period, findsOneWidget);
     final squares = find.byKey(
       ValueKey('goal-habit-day-visual-gym-${dayKey(0)}'),
     );
     expect(
-      tester.getTopLeft(streak).dy,
-      greaterThan(tester.getBottomLeft(squares).dy),
-      reason: 'the streak must close the card, not ride a heading',
+      tester.getBottomLeft(streak).dy,
+      lessThanOrEqualTo(tester.getTopLeft(squares).dy),
+      reason: 'the tail must ride the window line, not take a row below',
     );
-    // ...and it reads left to right on the card's own rail, like every other
-    // row, rather than right-ragged in a column of its own.
+    expect(
+      tester.getCenter(streak).dy,
+      closeTo(tester.getCenter(period).dy, 1),
+      reason: 'the tail and the date span share one caption row',
+    );
+    // ...pinned to the trailing rail, so the line reads span-then-record.
     expect(
       tester.getTopLeft(streak).dx,
-      lessThan(tester.getCenter(find.byType(GoalProgressCard)).dx),
+      greaterThan(tester.getCenter(find.byType(GoalProgressCard)).dx),
     );
   });
 
@@ -619,7 +625,7 @@ void main() {
     );
   });
 
-  testWidgets('the reflect row sits with the week it closes off, and names '
+  testWidgets('the reflect action rides the Goal-days header, and names '
       'the verdict once recorded', (tester) async {
     final tapped = <DateTime>[];
     Future<void> pump({GoalAssessmentRating? recorded}) => tester.pumpWidget(
@@ -647,23 +653,35 @@ void main() {
     );
 
     await pump();
-    // Inside the whole-goal card, under the strip. Stranded at the bottom of
-    // the page it was the quietest row on the surface, and nothing connected
-    // it to the cells that open the same sheet.
+    // The day's action is the card header's trailing button, on the title's
+    // own line: as a full-width row under the strip it cost a touch target's
+    // height plus two gaps to say what a corner button says for free.
     final strip = tester.getRect(find.byType(GoalCompactWindowStrip));
     final reflect = tester.getRect(find.text('Reflect on today'));
-    expect(reflect.top, greaterThan(strip.top));
+    final title = tester.getRect(
+      find.textContaining(RegExp('Goal days|This week')),
+    );
     expect(
-      reflect.top - strip.bottom,
-      lessThan(tester.getSize(find.byType(GoalThisWeekCard)).height / 4),
-      reason: 'the reflect row drifted away from its strip',
+      reflect.bottom,
+      lessThanOrEqualTo(strip.top),
+      reason: 'the reflect action must sit above the strip, in the header',
+    );
+    expect(
+      reflect.center.dy,
+      closeTo(title.center.dy, 1),
+      reason: 'the reflect action shares the title row',
+    );
+    expect(
+      reflect.left,
+      greaterThan(title.right),
+      reason: 'the reflect action is pinned to the trailing edge',
     );
 
     await tester.tap(find.text('Reflect on today'));
     expect(tapped, [today]);
 
-    // Once the day is judged the row states the verdict instead of inviting
-    // an action the user already took.
+    // Once the day is judged the button states the verdict instead of
+    // inviting an action the user already took.
     await pump(recorded: GoalAssessmentRating.improving);
     expect(find.text('Reflect on today'), findsNothing);
     expect(find.text('Improving'), findsOneWidget);
@@ -1008,8 +1026,10 @@ void main() {
     );
 
     // Latest observation (95) — the three-day average would render as
-    // "94.333 of 88 kg".
-    expect(find.text('95 of 88 kg'), findsOneWidget);
+    // "94.333 kg". The target is NOT repeated in the corner: a card that
+    // plots a seven-day average draws "Goal ≤ 88" as a keyed legend entry.
+    expect(find.text('95 kg'), findsOneWidget);
+    expect(find.textContaining('of 88'), findsNothing);
   });
 
   testWidgets('the blood-pressure header quotes the latest paired reading', (
@@ -1088,9 +1108,11 @@ void main() {
         expect(find.text('125 / 84 mmHg'), findsOneWidget);
         expect(find.text('On target today'), findsOneWidget);
         expect(find.text('Needs attention'), findsNothing);
+        // No summary sentence under the chart: the corner's status caption
+        // already states the verdict, and the sentence restated it.
         expect(
-          find.text("Today's latest reading is on target; keep it going."),
-          findsOneWidget,
+          find.textContaining("Today's latest reading is on target"),
+          findsNothing,
         );
       },
     );
@@ -1117,7 +1139,7 @@ void main() {
           ),
         );
 
-        expect(find.text('88 of 88 kg'), findsOneWidget);
+        expect(find.text('88 kg'), findsOneWidget);
         expect(find.text('On target today'), findsOneWidget);
         expect(find.text('Needs attention'), findsNothing);
       },
@@ -1154,7 +1176,7 @@ void main() {
           ),
         );
 
-        expect(find.text('89 of 88 kg'), findsOneWidget);
+        expect(find.text('89 kg'), findsOneWidget);
         expect(find.text('Needs attention'), findsOneWidget);
         expect(find.text('On track'), findsNothing);
       },
@@ -1421,9 +1443,11 @@ void main() {
       expect(find.text('On target today'), findsOneWidget);
       expect(find.text('Goal ≤ 125'), findsOneWidget);
       expect(find.text('Goal ≤ 85'), findsOneWidget);
+      // The verdict lives in the corner's status caption; the sentence that
+      // restated it under the chart is gone.
       expect(
-        find.text("Today's latest reading is on target; keep it going."),
-        findsOneWidget,
+        find.textContaining("Today's latest reading is on target"),
+        findsNothing,
       );
       final chart = tester.widget<LineChart>(find.byType(LineChart));
       expect(
@@ -1682,9 +1706,7 @@ void main() {
     final habitPlot = tester.getRect(
       find.byKey(const ValueKey('goal-habit-plot-weigh-myself')),
     );
-    final period = tester.getRect(
-      find.text('Jul 29 – Aug 11 · slides at midnight'),
-    );
+    final period = tester.getRect(find.text('Jul 29 – Aug 11'));
     final lineChart = tester.getRect(find.byType(TimeSeriesMultiLineChart));
 
     // The habit card draws no plot, so it owes no y-axis gutter: its span
@@ -2097,7 +2119,10 @@ void main() {
     );
 
     expect(find.text('12 of 10'), findsOneWidget);
-    expect(find.text('This dimension is currently on track.'), findsOneWidget);
+    // The header's status caption is the card's only verdict; the sentence
+    // that restated it under the plot is gone.
+    expect(find.text('This dimension is currently on track.'), findsNothing);
+    expect(find.text('On track'), findsOneWidget);
   });
 
   testWidgets('daily label time flips from in progress to fulfilled green', (
@@ -2133,7 +2158,7 @@ void main() {
     final status = tester.widget<Text>(find.text('On track'));
     final tokens = tester.element(find.text('On track')).designTokens;
     expect(status.style?.color, tokens.colors.alert.success.ink);
-    expect(find.text('This dimension is currently on track.'), findsOneWidget);
+    expect(find.text('This dimension is currently on track.'), findsNothing);
   });
 
   testWidgets('renders an observed-pattern card for every category dimension', (
@@ -2978,30 +3003,30 @@ void main() {
 
     final streak = find.text('2 / 6 weeks');
     final name = find.text('Gym');
-    final period = find.text('Aug 5 – Aug 11 · slides at midnight');
+    final period = find.text('Aug 5 – Aug 11');
     final firstCell = find.byKey(
       const ValueKey('goal-habit-day-visual-gym-2026-08-05'),
     );
 
-    // One meaning per row, top to bottom: what the habit is, the span on
-    // screen (carrying the sliding note — the cadence line is gone, its
-    // target now lives in the corner block), the days themselves, then the
-    // six-week tail.
-    expect(find.text('4× per 7 days · slides at midnight'), findsNothing);
+    // One meaning per row, top to bottom: what the habit is, the window —
+    // its span leading, its six-week tail trailing — then the days
+    // themselves. The cadence line is gone; its target lives in the corner
+    // block.
+    expect(find.textContaining('4× per 7 days'), findsNothing);
     expect(
       tester.getTopLeft(period).dy,
       greaterThan(tester.getBottomLeft(name).dy),
       reason: 'the span labels the squares, so it sits above them',
     );
     expect(
+      tester.getCenter(streak).dy,
+      closeTo(tester.getCenter(period).dy, 1),
+      reason: 'span and tail share the window line',
+    );
+    expect(
       tester.getTopLeft(firstCell).dy,
       greaterThan(tester.getBottomLeft(period).dy),
       reason: 'the mobile grid follows the dimension metadata',
-    );
-    expect(
-      tester.getTopLeft(streak).dy,
-      greaterThan(tester.getBottomLeft(firstCell).dy),
-      reason: 'the six-week tail closes the card',
     );
     // The span and the squares share one rail — the caption used to start a
     // chart gutter to their left, on a card that draws no chart.
@@ -3011,7 +3036,7 @@ void main() {
     );
   });
 
-  testWidgets('the sliding-window caption survives a habit with no streak', (
+  testWidgets('the window line survives a habit with no reliability tail', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -3041,10 +3066,9 @@ void main() {
       ),
     );
 
-    // The window's behaviour rides the period line, so nothing can displace
-    // it: it used to compete with the streak for one slot and vanish
-    // whenever a streak existed.
-    expect(find.text('Aug 5 – Aug 11 · slides at midnight'), findsOneWidget);
+    // The window line survives without a tail beside it: the two share a
+    // row, and a habit with no streak still names the days it covers.
+    expect(find.text('Aug 5 – Aug 11'), findsOneWidget);
     expect(find.textContaining('/ 6 weeks'), findsNothing);
   });
 
@@ -3108,10 +3132,11 @@ void main() {
           TapTargets.minimum,
         ),
       );
-      // The rolling week renders no cadence line at any width — the sliding
-      // note rides the period line instead.
-      expect(find.text('1× per 7 days · slides at midnight'), findsNothing);
-      expect(find.textContaining('slides at midnight'), findsOneWidget);
+      // The rolling week renders no cadence line at any width, and the
+      // window line names only the days it covers.
+      expect(find.textContaining('1× per 7 days'), findsNothing);
+      expect(find.textContaining('slides at midnight'), findsNothing);
+      expect(find.textContaining(' – '), findsOneWidget);
 
       await tester.tap(find.byKey(dayKey));
       await tester.pumpAndSettle();
@@ -3495,11 +3520,8 @@ void main() {
         findsOneWidget,
       );
       expect(
-        find.descendant(
-          of: measurableCard,
-          matching: find.text('This dimension is currently on track.'),
-        ),
-        findsOneWidget,
+        find.text('This dimension is currently on track.'),
+        findsNothing,
       );
       expect(find.text('Not enough data'), findsOneWidget);
       expect(find.text('Timing pattern · Late focus'), findsOneWidget);
@@ -3805,11 +3827,10 @@ void main() {
       find.byType(DashboardChartLegend),
     );
     expect(chartLegend.alignment, WrapAlignment.center);
-    // …and the one-sentence summary that closes it.
-    final note = tester.widget<Text>(
-      find.text('Behind target for this window.'),
-    );
-    expect(note.textAlign, TextAlign.center);
+    // The centered legend is now the card's last row: the one-sentence
+    // summary that used to close it only restated the header's status.
+    expect(find.text('Behind target for this window.'), findsNothing);
+    expect(find.text('Needs attention'), findsWidgets);
   });
 
   testWidgets('a wide card folds the deficit note onto the period line; a '
@@ -3839,7 +3860,7 @@ void main() {
     );
 
     await tester.pumpWidget(makeTestableWidgetNoScroll(card()));
-    const periodText = 'Aug 5 – Aug 11 · slides at midnight';
+    const periodText = 'Aug 5 – Aug 11';
     const noteText = '2 successful days needed to recover';
     final period = tester.getRect(find.text(periodText));
     final note = tester.getRect(find.text(noteText));
@@ -3864,8 +3885,8 @@ void main() {
     );
   });
 
-  testWidgets('the reflect row paints no hover overlay; its chevron lifts '
-      'a step instead', (tester) async {
+  testWidgets('the reflect action is a quiet accent button that answers '
+      'hover on its own ink', (tester) async {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         GoalThisWeekCard(
@@ -3889,33 +3910,37 @@ void main() {
     );
 
     final tokens = tester.element(find.byType(GoalThisWeekCard)).designTokens;
-    final row = find
-        .ancestor(
-          of: find.text('Reflect on today'),
-          matching: find.byType(InkWell),
-        )
-        .first;
-    final ink = tester.widget<InkWell>(row);
-    expect(ink.hoverColor, Colors.transparent);
-    expect(
-      ink.overlayColor?.resolve({WidgetState.hovered}),
-      Colors.transparent,
+    final button = tester.widget<DesignSystemButton>(
+      find.byKey(const ValueKey('goal-reflect-today')),
     );
+    // A caption-tier accent action, not a filled control: the card header is
+    // a title row, and a solid button there would out-weigh the title.
+    expect(button.variant, DesignSystemButtonVariant.tertiary);
+    expect(button.size, DesignSystemButtonSize.dense);
+    expect(button.leadingIcon, LottiIcons.editNote);
+    // The chevron the full-width row wore is gone with the row.
+    expect(find.byIcon(LottiIcons.chevronRight), findsNothing);
 
-    Icon chevron() => tester.widget<Icon>(
-      find.descendant(
-        of: row,
-        matching: find.byIcon(LottiIcons.chevronRight),
-      ),
-    );
-    expect(chevron().color, tokens.colors.text.lowEmphasis);
+    // The label inherits its ink from the button's DefaultTextStyle, so the
+    // resolved paint is the only honest read of the variant's state colour.
+    Color labelColor() => tester
+        .renderObject<RenderParagraph>(
+          find.descendant(
+            of: find.byKey(const ValueKey('goal-reflect-today')),
+            matching: find.text('Reflect on today'),
+          ),
+        )
+        .text
+        .style!
+        .color!;
+    expect(labelColor(), tokens.colors.interactive.enabled);
 
     final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
     await gesture.addPointer();
     addTearDown(gesture.removePointer);
     await gesture.moveTo(tester.getCenter(find.text('Reflect on today')));
     await tester.pump();
-    expect(chevron().color, tokens.colors.text.highEmphasis);
+    expect(labelColor(), tokens.colors.interactive.hover);
     await gesture.moveTo(Offset.zero);
     await tester.pumpAndSettle();
   });

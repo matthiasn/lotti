@@ -70,6 +70,7 @@ class AgentAutomationRow extends StatefulWidget {
     required this.onSkipScheduledUpdate,
     required this.onCountdownExpired,
     this.compact = false,
+    this.showsIdleScheduleLabel = true,
     super.key,
   });
 
@@ -78,6 +79,14 @@ class AgentAutomationRow extends StatefulWidget {
   /// full band. The automatic-updates switch moves to that surface's overflow
   /// menu; the next scheduled update remains available on wider layouts.
   final bool compact;
+
+  /// Whether the settled state ("Updates on changes") takes the schedule slot
+  /// while automation is on with nothing pending.
+  ///
+  /// On a surface whose switch is visible in the same band the sentence only
+  /// restates it, so a denser card turns it off. A pending run's countdown is
+  /// unaffected: it says something the switch cannot.
+  final bool showsIdleScheduleLabel;
 
   final bool automaticUpdatesEnabled;
   final bool automationBusy;
@@ -177,7 +186,9 @@ class _AgentAutomationRowState extends State<AgentAutomationRow> {
     if (widget.isRunning) return const [];
     // Automation is on but nothing is pending — say so, rather than leaving a
     // hole that appears and disappears as the user flips the switch.
-    if (widget.automaticUpdatesEnabled && widget.inferenceAvailable) {
+    if (widget.showsIdleScheduleLabel &&
+        widget.automaticUpdatesEnabled &&
+        widget.inferenceAvailable) {
       return [messages.taskAgentUpdatesOnChange];
     }
     return const [];
