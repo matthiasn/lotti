@@ -22,11 +22,22 @@ class HabitsChartCard extends ConsumerWidget {
     this.title,
     this.showTimeSpanPicker = true,
     super.key,
-  });
+  }) : assert(
+         habitIds == null || !showTimeSpanPicker,
+         'A scoped card puts its rate summary on the header rail, where the '
+         'range picker would also sit. The two do not fit a phone-width '
+         'header together, and the hosting page that scopes the card is '
+         'exactly the one that owns the page-wide range control — so pass '
+         'showTimeSpanPicker: false alongside habitIds.',
+       );
 
   /// Hidden when a hosting page provides its own page-wide range control
   /// (the goal detail dashboard) — two pickers for one shared span would
   /// fight over the same state.
+  ///
+  /// Asserted mutually exclusive with [habitIds]: the scoped card spends its
+  /// header rail on the rate summary, and a picker beside it clips the
+  /// header at phone width.
   final bool showTimeSpanPicker;
 
   /// When non-null, the card renders the §4b goal-scoped chart variant for
@@ -69,68 +80,81 @@ class HabitsChartCard extends ConsumerWidget {
       ),
       child: Padding(
         padding: EdgeInsets.all(tokens.spacing.cardPadding),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    title ?? messages.habitsCompletionRateTitle,
-                    style: tokens.typography.styles.subtitle.subtitle1.copyWith(
-                      color: tokens.colors.text.highEmphasis,
+        child: LayoutBuilder(
+          builder: (context, constraints) => Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      title ?? messages.habitsCompletionRateTitle,
+                      style: tokens.typography.styles.subtitle.subtitle1
+                          .copyWith(
+                            color: tokens.colors.text.highEmphasis,
+                          ),
                     ),
                   ),
-                ),
-                if (habitIds == null && state.minY > 20)
-                  Semantics(
-                    label: state.zeroBased
-                        ? messages.habitsChartUseDynamicBaseline
-                        : messages.habitsChartUseZeroBaseline,
-                    button: true,
-                    toggled: state.zeroBased,
-                    excludeSemantics: true,
-                    onTap: controller.toggleZeroBased,
-                    child: IconButton(
-                      visualDensity: VisualDensity.compact,
-                      onPressed: controller.toggleZeroBased,
-                      tooltip: state.zeroBased
+                  if (habitIds == null && state.minY > 20)
+                    Semantics(
+                      label: state.zeroBased
                           ? messages.habitsChartUseDynamicBaseline
                           : messages.habitsChartUseZeroBaseline,
-                      isSelected: state.zeroBased,
-                      icon: Icon(
-                        state.zeroBased
-                            ? LottiIcons.expandBoth
-                            : LottiIcons.collapseBoth,
-                        size: tokens.spacing.step5,
-                        color: tokens.colors.text.mediumEmphasis,
+                      button: true,
+                      toggled: state.zeroBased,
+                      excludeSemantics: true,
+                      onTap: controller.toggleZeroBased,
+                      child: IconButton(
+                        visualDensity: VisualDensity.compact,
+                        onPressed: controller.toggleZeroBased,
+                        tooltip: state.zeroBased
+                            ? messages.habitsChartUseDynamicBaseline
+                            : messages.habitsChartUseZeroBaseline,
+                        isSelected: state.zeroBased,
+                        icon: Icon(
+                          state.zeroBased
+                              ? LottiIcons.expandBoth
+                              : LottiIcons.collapseBoth,
+                          size: tokens.spacing.step5,
+                          color: tokens.colors.text.mediumEmphasis,
+                        ),
                       ),
                     ),
-                  ),
-                if (showTimeSpanPicker) ...[
-                  SizedBox(width: tokens.spacing.step2),
-                  TimeSpanSegmentedControl(
-                    timeSpanDays: state.timeSpanDays,
-                    onValueChanged: controller.setTimeSpan,
-                    segments: timeSpans,
-                  ),
+                  if (showTimeSpanPicker) ...[
+                    SizedBox(width: tokens.spacing.step2),
+                    TimeSpanSegmentedControl(
+                      timeSpanDays: state.timeSpanDays,
+                      onValueChanged: controller.setTimeSpan,
+                      segments: timeSpans,
+                    ),
+                  ],
+                  // Scoped mode adopts the goal dashboard's card grammar: the
+                  // key reading pinned to the header's trailing edge with its
+                  // verdict underneath, instead of a display-tier number and a
+                  // pair of pills on a row of their own.
+                  if (scoped) ...[
+                    SizedBox(width: tokens.spacing.step3),
+                    // Bounded, not free-standing: the summary's figures are
+                    // localized and user-scaled, and an inflexible trailing
+                    // child of a Row does not shrink — it overflows. Half the
+                    // card is the same ceiling the signal cards' corner blocks
+                    // take, and the summary ellipsizes inside it.
+                    ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: constraints.maxWidth / 2,
+                      ),
+                      child: HabitCompletionRateSummary(habitIds: habitIds),
+                    ),
+                  ],
                 ],
-                // Scoped mode adopts the goal dashboard's card grammar: the
-                // key reading pinned to the header's trailing edge with its
-                // verdict underneath, instead of a display-tier number and a
-                // pair of pills on a row of their own.
-                if (scoped) ...[
-                  SizedBox(width: tokens.spacing.step3),
-                  HabitCompletionRateSummary(habitIds: habitIds),
-                ],
-              ],
-            ),
-            SizedBox(height: tokens.spacing.step4),
-            HabitCompletionRateChart(
-              habitIds: habitIds,
-              showsHeadline: !scoped,
-            ),
-          ],
+              ),
+              SizedBox(height: tokens.spacing.step4),
+              HabitCompletionRateChart(
+                habitIds: habitIds,
+                showsHeadline: !scoped,
+              ),
+            ],
+          ),
         ),
       ),
     );

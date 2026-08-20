@@ -362,6 +362,8 @@ class HabitCompletionRateSummary extends ConsumerWidget {
     if (stats.windowDays == 0) return const SizedBox.shrink();
 
     if (state.selectedInfoYmd.isNotEmpty) {
+      // Scaled down rather than clipped: the split is four labels wide and
+      // the corner it now lives in is half a card.
       return FittedBox(
         fit: BoxFit.scaleDown,
         alignment: AlignmentDirectional.centerEnd,
@@ -412,15 +414,24 @@ class HabitCompletionRateSummary extends ConsumerWidget {
           ),
           textAlign: TextAlign.end,
           maxLines: 1,
+          // The host bounds this block to half the card, so a long locale or
+          // a raised text scale has to shorten the line rather than push it
+          // past the card's edge.
+          overflow: TextOverflow.ellipsis,
         ),
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              atGoal
-                  ? messages.habitsAboveGoal
-                  : messages.habitsPointsToGoal(stats.pointsToGoal),
-              style: caption.copyWith(color: goalColor),
+            Flexible(
+              child: Text(
+                atGoal
+                    ? messages.habitsAboveGoal
+                    : messages.habitsPointsToGoal(stats.pointsToGoal),
+                style: caption.copyWith(color: goalColor),
+                textAlign: TextAlign.end,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
             if (delta != null) _SummaryTrend(delta: delta),
           ],

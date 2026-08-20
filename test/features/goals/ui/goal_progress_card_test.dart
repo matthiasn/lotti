@@ -3885,6 +3885,74 @@ void main() {
     );
   });
 
+  testWidgets('a reflect label too long to share the title row drops to its '
+      'own line rather than overflowing it', (tester) async {
+    addTearDown(tester.view.reset);
+
+    Future<void> pump(double scale, double width) async {
+      tester.view
+        ..physicalSize = Size(width, 900)
+        ..devicePixelRatio = 1.0;
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          MediaQuery(
+            data: MediaQueryData(textScaler: TextScaler.linear(scale)),
+            child: GoalThisWeekCard(
+              progress: GoalProgressView(
+                today: today,
+                compositeRule: GoalCompositeRuleKind.all,
+                habits: [
+                  GoalHabitProgressView(
+                    habitId: 'gym',
+                    name: 'Gym',
+                    targetCount: 3,
+                    days: [
+                      for (var offset = 6; offset >= 0; offset--)
+                        day(offset, 0),
+                    ],
+                    successfulWeeks: 0,
+                  ),
+                ],
+              ),
+              onReflectDay: (_) {},
+            ),
+          ),
+          locale: const Locale('de'),
+        ),
+      );
+    }
+
+    // German renders the action as "Über den heutigen Tag nachdenken"; at a
+    // raised text scale it is wider than a phone card on its own, and an
+    // inflexible trailing child of a Row does not shrink — it overflows.
+    await pump(1.6, 358);
+    expect(tester.takeException(), isNull);
+    final action = find.byKey(const ValueKey('goal-reflect-today'));
+    final title = find.text('Zieltage').evaluate().isEmpty
+        ? find.textContaining('Woche')
+        : find.text('Zieltage');
+    expect(
+      tester.getTopLeft(action).dy,
+      greaterThanOrEqualTo(tester.getBottomLeft(title).dy),
+      reason: 'the action moved below the title it could not sit beside',
+    );
+    // ...and it stays inside the card rather than being clipped by it, which
+    // is what the overflow actually did.
+    final card = tester.getRect(find.byType(GoalThisWeekCard));
+    expect(tester.getTopRight(action).dx, lessThanOrEqualTo(card.right));
+    expect(tester.getTopLeft(action).dx, greaterThanOrEqualTo(card.left));
+
+    // Given the width for it, the pair still shares one row: the stack is a
+    // fallback, not the new layout. (Same locale, same scale — only the
+    // measurement changed, which is the point of measuring.)
+    await pump(1.6, 1200);
+    expect(tester.takeException(), isNull);
+    expect(
+      tester.getCenter(action).dy,
+      closeTo(tester.getCenter(title).dy, 1),
+    );
+  });
+
   testWidgets('the reflect action is a quiet accent button that answers '
       'hover on its own ink', (tester) async {
     await tester.pumpWidget(

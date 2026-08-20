@@ -8,6 +8,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
+import 'package:lotti/features/habits/ui/widgets/habits_chart_card.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/colors.dart';
@@ -157,6 +158,51 @@ void main() {
         tester.getTopLeft(verdict).dy,
         greaterThan(tester.getTopLeft(rate).dy),
         reason: 'the verdict is the caption UNDER the key figure',
+      );
+    });
+
+    testWidgets('the summary shrinks inside a bounded corner instead of '
+        'overflowing a phone-width header', (tester) async {
+      // Regression: as an inflexible trailing child of the card's header
+      // Row, the summary took its intrinsic width — so a long locale or a
+      // raised text scale pushed it straight past the card's edge.
+      tester.view
+        ..physicalSize = const Size(358, 1200)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          MediaQuery(
+            data: const MediaQueryData(textScaler: TextScaler.linear(1.8)),
+            child: HabitsChartCard(
+              habitIds: {habitFlossing.id},
+              showTimeSpanPicker: false,
+            ),
+          ),
+          overrides: [
+            habitsControllerProvider.overrideWith(
+              () => _FixedStateController(_fourteenDayState()),
+            ),
+          ],
+          locale: const Locale('de'),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+      final card = tester.getRect(find.byType(HabitsChartCard));
+      final summary = tester.getRect(
+        find.byType(HabitCompletionRateSummary),
+      );
+      expect(summary.right, lessThanOrEqualTo(card.right));
+      expect(
+        summary.width,
+        lessThanOrEqualTo(card.width / 2 + 1),
+        reason:
+            'the corner is capped at half the card, like the signal '
+            'cards it sits beneath',
       );
     });
 
