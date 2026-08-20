@@ -1667,11 +1667,11 @@ See [sync](./sync.md), [root](/index.md) and [spec](https://example.com).
     });
 
     test('a sibling directory sharing a name prefix is not stripped', () {
-      // `/home/me/lotti-docs` starts with `/home/me/lotti` as a string but is
+      // `/home/me/lotti-sibling` starts with `/home/me/lotti` as a string but is
       // not inside it.
       expect(
         repoRelativeBundleRoot(
-          '/home/me/lotti-docs/knowledge',
+          '/home/me/lotti-sibling/knowledge',
           workingDirectory: '/home/me/lotti',
         ),
         isNull,

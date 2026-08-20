@@ -1,5 +1,19 @@
 # Knowledge Bundle Update Log
 
+## 2026-08-20
+* **Correction**: [Screenshots](conventions/screenshots.md) — R2 is the **only**
+  destination for captured images, for the manual catalog and for pull-request
+  review evidence alike. The concept still carried a sibling docs repository as a
+  third destination ("legacy archive"), and `AGENTS.md` still instructed agents to
+  commit PR pairs there; both now say R2 and `make pr_screenshots_publish`. The
+  stale instruction was load-bearing — it was followed. The Makefile's legacy
+  `manual_screenshots_macos` / `manual_screenshots_linux` targets wrote into that
+  sibling repo too and now stage under the gitignored `build/manual_capture/`.
+* **Addition**: [Task detail composition](features/tasks/detail-composition.md) —
+  the metadata section's two hosts (fly-out and the persistent details column),
+  the density that separates them, the pane-constraint gate the column mounts on,
+  and the one-tree-shape rule that keeps the task page's state across a collapse.
+
 ## 2026-08-16
 * **Addition**: New feature concept [Nudges](features/nudges.md) — the banner
   channel generalized out of the goal feature by ADR 0059: the `NudgeEntityView`

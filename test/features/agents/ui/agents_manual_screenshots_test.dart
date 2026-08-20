@@ -7,7 +7,7 @@
 /// settings page. Editors, ritual reviews, and instance details are the real
 /// routed pages at both sizes.
 ///
-/// Generated PNGs are staging inputs for `lotti-docs` and are never committed
+/// Generated PNGs are staging inputs for the R2 manual catalog and are never committed
 /// to this repository.
 ///
 /// Opt in with:
