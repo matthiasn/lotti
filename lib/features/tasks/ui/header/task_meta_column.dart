@@ -38,49 +38,55 @@ class TaskMetaColumn extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: TaskShowcasePalette.page(context),
-        border: Border(
-          left: BorderSide(color: TaskShowcasePalette.border(context)),
+    // The column is a sibling of the task page's Scaffold, not a child of
+    // it, so it has to bring its own Material: without one the rows have no
+    // default text style to inherit (Flutter flags it with yellow underlines)
+    // and the row ink has no surface to paint on.
+    return Material(
+      color: TaskShowcasePalette.page(context),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border(
+            left: BorderSide(color: TaskShowcasePalette.border(context)),
+          ),
         ),
-      ),
-      child: SizedBox(
-        width: kTaskMetaColumnWidth,
-        child: SafeArea(
-          left: false,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: EdgeInsets.fromLTRB(
-                  tokens.spacing.step5,
-                  tokens.spacing.step5,
-                  tokens.spacing.step5,
-                  tokens.spacing.step3,
-                ),
-                child: Text(
-                  context.messages.taskMetaSheetTitle,
-                  style: tokens.typography.styles.others.overline.copyWith(
-                    color: TaskShowcasePalette.mediumText(context),
-                  ),
-                ),
-              ),
-              Expanded(
-                child: SingleChildScrollView(
+        child: SizedBox(
+          width: kTaskMetaColumnWidth,
+          child: SafeArea(
+            left: false,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
                   padding: EdgeInsets.fromLTRB(
-                    tokens.spacing.step4,
-                    0,
-                    tokens.spacing.step4,
                     tokens.spacing.step5,
+                    tokens.spacing.step5,
+                    tokens.spacing.step5,
+                    tokens.spacing.step3,
                   ),
-                  child: TaskMetaSection(
-                    taskId: taskId,
-                    density: TaskMetaDensity.narrow,
+                  child: Text(
+                    context.messages.taskMetaSheetTitle,
+                    style: tokens.typography.styles.others.overline.copyWith(
+                      color: TaskShowcasePalette.mediumText(context),
+                    ),
                   ),
                 ),
-              ),
-            ],
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.fromLTRB(
+                      tokens.spacing.step4,
+                      0,
+                      tokens.spacing.step4,
+                      tokens.spacing.step5,
+                    ),
+                    child: TaskMetaSection(
+                      taskId: taskId,
+                      density: TaskMetaDensity.narrow,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

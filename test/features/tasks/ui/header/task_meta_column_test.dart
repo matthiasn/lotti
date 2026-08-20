@@ -75,7 +75,13 @@ void main() {
 
   tearDown(tearDownTestGetIt);
 
-  Widget pumpColumn() {
+  Widget pumpColumn({bool scaffold = true}) {
+    const column = Row(
+      children: [
+        Expanded(child: SizedBox.expand()),
+        TaskMetaColumn(taskId: taskId),
+      ],
+    );
     return ProviderScope(
       overrides: [
         entryControllerProvider(taskId).overrideWith(
@@ -93,14 +99,7 @@ void main() {
         ),
       ],
       child: makeTestableWidgetNoScroll(
-        const Scaffold(
-          body: Row(
-            children: [
-              Expanded(child: SizedBox.expand()),
-              TaskMetaColumn(taskId: taskId),
-            ],
-          ),
-        ),
+        scaffold ? const Scaffold(body: column) : column,
       ),
     );
   }
@@ -140,6 +139,25 @@ void main() {
     expect(
       tester.getSize(find.byType(TaskMetaColumn)).width,
       kTaskMetaColumnWidth,
+    );
+  });
+
+  testWidgets('brings its own Material so the rows inherit a text style', (
+    tester,
+  ) async {
+    // Pumped with NO Scaffold above it — the column is a sibling of the task
+    // page's Scaffold, not a child of it. Without a Material of its own the
+    // rows have no default text style to inherit (Flutter flags that with
+    // yellow underlines) and the row ink has nothing to paint on.
+    await tester.pumpWidget(pumpColumn(scaffold: false));
+    await settle(tester);
+
+    expect(
+      find.ancestor(
+        of: find.text('Task details'),
+        matching: find.byType(Material),
+      ),
+      findsWidgets,
     );
   });
 
