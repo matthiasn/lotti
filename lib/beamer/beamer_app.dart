@@ -1285,23 +1285,20 @@ class _AppScreenState extends ConsumerState<AppScreen> {
 /// lane nests INSIDE that one, the two stack vertically on their own — demo
 /// strip first, agent banner beneath it — with no coordination between them.
 ///
-/// Like the demo strip, the lane absorbs the top safe-area inset itself (the
-/// dock is wrapped in a [SafeArea]) and hands the child a zero top padding
-/// via [MediaQuery.removePadding], so the shell below does not pad a second
-/// time for a status bar the banner already covers.
+/// While a banner speaks the lane absorbs the top safe-area inset itself and
+/// hands the shell a zero top padding via [MediaQuery.removePadding], so the
+/// shell does not pad a second time for a status bar the banner already
+/// covers — the same mechanism, for the same reason, as the demo strip. With
+/// nothing speaking the inset stays with the shell where it belongs.
 ///
-/// The dock stays MOUNTED on every eligible surface, speaking or not, so it
-/// can play its own collapse (an `AnimatedSwitcher` sized to zero) when the
-/// last tenant is snoozed or dismissed — that disappearance is the
-/// visibility-action feedback (ADR 0058), and unmounting the dock on the
-/// same frame would snap it away instead. Only the inset handling is gated
-/// on whether a banner speaks: a collapsed dock wraps in no [SafeArea] and
-/// removes no padding, so it costs exactly nothing and leaves the status-bar
-/// inset with the shell where it belongs.
+/// Only that inset handling is gated on whether a banner speaks; the wrapper
+/// hierarchy itself is not. See the note in [build] for why, and for what the
+/// dock's own slot does differently.
 ///
-/// That gate uses the dock's own [visibleNudgeBannerEntries] contract rather
+/// The gate uses the dock's own [visibleNudgeBannerEntries] contract rather
 /// than a second rule, so the lane and the dock can never disagree about
-/// whether a banner speaks.
+/// whether a banner speaks — if they did, the lane would strip the shell's top
+/// padding for a banner that never rendered.
 class _NudgeBannerTopLane extends ConsumerWidget {
   const _NudgeBannerTopLane({
     required this.surface,
@@ -1331,13 +1328,17 @@ class _NudgeBannerTopLane extends ConsumerWidget {
           surface: dockSurface,
         ).isNotEmpty;
 
-    // Both wrappers are mounted unconditionally and only their CONFIGURATION
-    // varies with `speaking`. Swapping the hierarchy instead — a bare child
-    // versus a wrapped one — changes the widget type in the slot, so Flutter
-    // deactivates the subtree and inflates a fresh one: the shell's Beamers,
-    // scroll offsets and half-typed fields would reset every time a synced
-    // banner arrived or left, and the dock would be rebuilt from scratch on
-    // the very frame it is supposed to animate its collapse.
+    // The shell's slot keeps the SAME hierarchy in every case — Expanded,
+    // MediaQuery.removePadding, child — and only `removeTop` varies. Wrapping
+    // the child only while a banner speaks would change the widget type in
+    // that slot, so Flutter would deactivate the subtree and inflate a fresh
+    // one: the shell's Beamers, scroll offsets and half-typed fields would
+    // reset every time a synced banner arrived or left.
+    //
+    // The dock's slot is stable within an eligible surface (SafeArea stays
+    // mounted, only `top` varies), which is what preserves the dock's rotation
+    // and tenure state. An ineligible surface mounts no dock at all, as
+    // before; Column reconciles positionally, so that cannot reach the shell.
     return Column(
       children: [
         if (dockSurface == null)

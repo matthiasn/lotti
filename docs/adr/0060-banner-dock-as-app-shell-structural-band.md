@@ -65,14 +65,23 @@ for the bottom edge with everything else that wants it.
    keyboard appears. At the top of the shell the keyboard never covers it, so
    a banner now stays readable while the user types.
 
-7. **The lane's wrappers are mounted unconditionally; only their
-   configuration varies.** `SafeArea.top` and `MediaQuery.removePadding`'s
-   `removeTop` are driven by whether a banner speaks, rather than the wrappers
-   being inserted and removed around the shell. Swapping the hierarchy instead
-   changes the widget type in the slot, so Flutter deactivates the subtree and
-   inflates a fresh one — a synced banner arriving mid-edit would reset the
-   shell's Beamers, scroll offsets and in-progress input, and would rebuild the
-   dock from scratch, losing its rotation and tenure state.
+7. **The shell's slot never changes shape; only configuration varies.**
+   `Column` → `Expanded` → `MediaQuery.removePadding` → shell is the hierarchy
+   in *every* case, including a surface no banner speaks on, and `removeTop`
+   alone follows whether a banner speaks. Swapping the hierarchy instead —
+   wrapping the shell only while a banner is up — changes the widget type in
+   that slot, so Flutter deactivates the subtree and inflates a fresh one: a
+   synced banner arriving mid-edit would reset the shell's Beamers, scroll
+   offsets and in-progress input.
+
+   The **dock's** slot is stable within an eligible surface, where `SafeArea`
+   stays mounted and only its `top` varies, which is what preserves the dock's
+   rotation and tenure state across a tenant arriving or leaving. Across
+   surfaces it is not: an ineligible surface renders a `SizedBox.shrink()`
+   there instead, mounting no dock at all. That mirrors the mount rule the
+   bottom dock already had, and it is safe precisely because the shell sits in
+   the *other* slot — a `Column` reconciles its children positionally, so the
+   dock slot changing type cannot disturb the shell.
 
 ## Consequences
 

@@ -189,14 +189,20 @@ The lane absorbs the top safe-area inset itself (a `SafeArea` around the dock)
 and hands the shell a zero top padding via `MediaQuery.removePadding` — the
 same mechanism, for the same reason, as the demo strip one level up.
 
-**Both wrappers are mounted unconditionally, and only their configuration
-varies** with whether a banner speaks: `SafeArea.top` and `removeTop`. Swapping
-the hierarchy instead — a bare shell versus a wrapped one — changes the widget
-type in that slot, so Flutter deactivates the subtree and inflates a fresh one.
-A banner arriving from sync mid-edit would then reset the shell's Beamers,
-scroll offsets and in-progress input. The dock stays mounted for the same
-reason: its rotation and tenure state must survive a tenant arriving or
-leaving.
+**The shell's slot never changes shape.** `Column` → `Expanded` →
+`MediaQuery.removePadding` → shell is the hierarchy in every case, including a
+surface no banner speaks on; only `removeTop` follows whether a banner speaks.
+Wrapping the shell only while a banner is up would change the widget type in
+that slot, so Flutter would deactivate the subtree and inflate a fresh one —
+and a banner arriving from sync mid-edit would reset the shell's Beamers,
+scroll offsets and in-progress input.
+
+The dock's slot is stable *within* an eligible surface — `SafeArea` stays
+mounted, only its `top` varies — which is what carries the dock's rotation and
+tenure state across a tenant arriving or leaving. On an ineligible surface the
+slot holds a `SizedBox.shrink()` and no dock at all, exactly as the bottom dock
+behaved. A `Column` reconciles positionally, so that slot changing type cannot
+disturb the shell beside it.
 
 # Interactions: serialized, transactional, durably committed
 
