@@ -297,6 +297,20 @@ abstract class AiResponseData with _$AiResponseData {
     String? skillId,
     List<AiActionItem>? suggestedActionItems,
     AiResponseType? type,
+
+    /// Single-sentence summary of [response], for surfaces that have room for
+    /// one line — the collapsed audio card is the first.
+    ///
+    /// Written from a pinned tool call's typed arguments, never parsed out of
+    /// [response]. Null for every response type that does not publish tiers
+    /// and for entries synced from a client that predates them, so readers
+    /// need their own fallback rather than treating it as guaranteed.
+    String? oneLiner,
+
+    /// One-to-three-sentence summary of [response], shown where a card is
+    /// collapsed but not reduced to a single line. Same provenance and same
+    /// nullability caveat as [oneLiner].
+    String? tldr,
     double? temperature,
     // Usage statistics (nullable for backward compatibility)
     int? inputTokens,

@@ -30,6 +30,12 @@ disk, and **there is no streaming or realtime transcription path** — transcrip
 is always a batch pass over the finished file, with dictionary and context
 biasing.
 
+Nor does it own what happens next. A task-linked recording is **summarised**
+after transcription, into a one-liner / TLDR / full-markdown AI entry linked to
+the `JournalAudio`; the collapsed audio card shows that one-liner in place of
+the transcript's opening line. That path lives entirely on the AI side — see
+[execution paths](../ai/execution-paths.md#audio-summaries).
+
 ```mermaid
 flowchart LR
   User["User"] --> RecordingUI["AudioRecordingModal / sidebar + mobile indicators"]

@@ -783,6 +783,7 @@
     }
   },
   "aiConsumptionTypeAgentTurn": "Agentens omgång",
+  "aiConsumptionTypeAudioSummary": "Sammanfattning",
   "aiConsumptionTypeAudioTranscription": "Transkription",
   "aiConsumptionTypeImageAnalysis": "Bildanalys",
   "aiConsumptionTypeImageGeneration": "Bildgenerering",

@@ -547,6 +547,7 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
           responseTypes: const {
             AiResponseType.imageAnalysis,
             AiResponseType.audioTranscription,
+            AiResponseType.audioSummary,
             AiResponseType.promptGeneration,
             AiResponseType.imageGeneration,
           },

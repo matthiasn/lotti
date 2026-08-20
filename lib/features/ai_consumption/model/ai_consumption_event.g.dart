@@ -142,6 +142,7 @@ const _$AiConsumptionResponseTypeEnumMap = {
   AiConsumptionResponseType.agentTurn: 'agentTurn',
   AiConsumptionResponseType.textGeneration: 'textGeneration',
   AiConsumptionResponseType.audioTranscription: 'audioTranscription',
+  AiConsumptionResponseType.audioSummary: 'audioSummary',
   AiConsumptionResponseType.imageAnalysis: 'imageAnalysis',
   AiConsumptionResponseType.imageGeneration: 'imageGeneration',
   AiConsumptionResponseType.promptGeneration: 'promptGeneration',

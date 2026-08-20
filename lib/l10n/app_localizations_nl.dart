@@ -1571,6 +1571,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get aiConsumptionTypeAudioTranscription => 'Omschrijving';
 
   @override
+  String get aiConsumptionTypeAudioSummary => 'Samenvatting';
+
+  @override
   String get aiConsumptionTypeEmbeddingIndexing => 'Embedding indexing';
 
   @override

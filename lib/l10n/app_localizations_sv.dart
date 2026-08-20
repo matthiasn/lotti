@@ -1571,6 +1571,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get aiConsumptionTypeAudioTranscription => 'Transkription';
 
   @override
+  String get aiConsumptionTypeAudioSummary => 'Sammanfattning';
+
+  @override
   String get aiConsumptionTypeEmbeddingIndexing => 'Embedding indexing';
 
   @override

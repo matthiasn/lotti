@@ -17,6 +17,7 @@ enum AiWorkType {
   imageGeneration,
   imageAnalysis,
   audioTranscription,
+  audioSummary,
   agentReport,
   embeddingIndexing,
   internalInference,

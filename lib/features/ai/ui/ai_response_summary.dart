@@ -73,8 +73,23 @@ class _AiResponseSummaryState extends State<AiResponseSummary> {
       text.length > _collapseCharThreshold ||
       '\n'.allMatches(text).length > _collapseNewlineThreshold;
 
+  /// The TLDR tier, when this response published one and it is non-empty.
+  ///
+  /// Only summaries carry it. Its presence is what turns a collapsed card
+  /// from "no body at all" into "the short version", so it is read once here
+  /// rather than re-trimmed at each use.
+  String? get _tldr {
+    final tldr = widget.aiResponse.data.tldr?.trim();
+    return (tldr == null || tldr.isEmpty) ? null : tldr;
+  }
+
+  /// A response with a TLDR is always collapsible, however short its body:
+  /// the tiers exist precisely so the reader can choose the short version,
+  /// and hiding the toggle on a brief summary would take that away for no
+  /// gain. Everything else falls back to the length heuristic.
   bool get _canCollapse =>
-      widget.collapsible && _isLongContent(widget.aiResponse.data.response);
+      widget.collapsible &&
+      (_tldr != null || _isLongContent(widget.aiResponse.data.response));
 
   @override
   void initState() {
@@ -187,9 +202,23 @@ class _AiResponseSummaryState extends State<AiResponseSummary> {
       child: widget.fadeOut ? _fadedPreview(content) : content,
     );
 
-    // Binary collapse: a collapsed card carries no body at all — only the
+    // Collapsed rendering depends on whether the response published tiers.
+    // A summary collapses to its TLDR — the tier written for exactly this
+    // slot. Everything else collapses to no body at all, leaving just the
     // toggle and the attribution pill that identifies the analysis.
-    final showBody = !(_canCollapse && _collapsed);
+    final isCollapsed = _canCollapse && _collapsed;
+    final tldr = _tldr;
+    final Widget? body;
+    if (!isCollapsed) {
+      body = responseContent;
+    } else if (tldr != null) {
+      body = DefaultTextStyle.merge(
+        style: TextStyle(color: ai.bodyText),
+        child: SelectionArea(child: Text(tldr)),
+      );
+    } else {
+      body = null;
+    }
 
     return Container(
       decoration: BoxDecoration(
@@ -204,7 +233,7 @@ class _AiResponseSummaryState extends State<AiResponseSummary> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (showBody) responseContent,
+          ?body,
           if (_canCollapse) _collapseToggle(context, ai),
           AiAttributionSummary(
             artifact: AiArtifactReference(

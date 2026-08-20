@@ -389,6 +389,11 @@ void main() {
         'Generate an image prompt from audio.',
         'Audio attached.',
       ),
+      SkillType.audioSummary => (
+        const [Modality.audio],
+        'Summarize the recording.',
+        'Transcript attached.',
+      ),
     };
 
     return AiConfig.skill(

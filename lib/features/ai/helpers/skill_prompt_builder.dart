@@ -154,7 +154,8 @@ class SkillPromptBuilder {
     if (!compactCoverArtPrompt &&
         (skill.skillType == SkillType.promptGeneration ||
             skill.skillType == SkillType.imagePromptGeneration ||
-            skill.skillType == SkillType.imageGeneration)) {
+            skill.skillType == SkillType.imageGeneration ||
+            skill.skillType == SkillType.audioSummary)) {
       if (entryContent != null && entryContent.isNotEmpty) {
         buffer
           ..writeln()

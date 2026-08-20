@@ -648,6 +648,7 @@
   "aiConsumptionTokensLabel": "{tokens} tokenů",
   "aiConsumptionTokensLine": "Tokeny: {input} vstup · {output} výstup",
   "aiConsumptionTypeAgentTurn": "Tah agenta",
+  "aiConsumptionTypeAudioSummary": "Shrnutí",
   "aiConsumptionTypeAudioTranscription": "Přepis",
   "aiConsumptionTypeEmbeddingIndexing": "Indexování embeddingů",
   "aiConsumptionTypeImageAnalysis": "Analýza obrázku",

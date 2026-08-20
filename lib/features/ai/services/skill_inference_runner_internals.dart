@@ -214,6 +214,31 @@ extension _SkillInferenceRunnerInternals on SkillInferenceRunner {
     );
   }
 
+  /// Resolves the `(provider, modelId, model)` target used by audio
+  /// summarization.
+  ///
+  /// The fallback is the profile's regular thinking slot — the same model the
+  /// task agent runs on. That slot is chosen for a hard reason, not for cost:
+  /// the summary is published through a pinned tool call, and the inference
+  /// profile form is the only place a thinking model can be set, where the
+  /// picker is filtered to `supportsFunctionCalling` models and the slot is
+  /// required. Any other slot could hold a model that cannot call tools at
+  /// all.
+  Future<_InferenceTarget> _resolveAudioSummaryTarget({
+    required ResolvedProfile profile,
+    required String? overrideModelId,
+  }) {
+    return _resolveOverrideTarget(
+      overrideModelId: overrideModelId,
+      slotKind: _OverrideSlotKind.audioSummary,
+      fallback: () => (
+        provider: profile.thinkingProvider,
+        modelId: profile.thinkingModelId,
+        model: profile.thinkingModel,
+      ),
+    );
+  }
+
   /// Resolves the `(provider, modelId, model)` target used by cover-art image
   /// generation. The profile fallback is the image-generation slot. Override
   /// resolution is identical to the other slots: the override must point at a

@@ -783,6 +783,7 @@
     }
   },
   "aiConsumptionTypeAgentTurn": "Agent-turn",
+  "aiConsumptionTypeAudioSummary": "Resumé",
   "aiConsumptionTypeAudioTranscription": "Udskrift",
   "aiConsumptionTypeImageAnalysis": "Billedanalyse",
   "aiConsumptionTypeImageGeneration": "Billedgenerering",

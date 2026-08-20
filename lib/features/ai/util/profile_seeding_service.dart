@@ -54,6 +54,7 @@ const _legacyMeliousFlux2DevModelId = 'black-forest-labs/flux-2-dev';
 const _defaultSkillAssignments = [
   SkillAssignment(skillId: skillTranscribeContextId, automate: true),
   SkillAssignment(skillId: skillImageAnalysisContextId, automate: true),
+  SkillAssignment(skillId: skillAudioSummaryId, automate: true),
 ];
 
 /// Skill assignments for Mistral (EU) — uses the basic transcription skill
@@ -62,6 +63,7 @@ const _defaultSkillAssignments = [
 const _mistralSkillAssignments = [
   SkillAssignment(skillId: skillTranscribeId, automate: true),
   SkillAssignment(skillId: skillImageAnalysisContextId, automate: true),
+  SkillAssignment(skillId: skillAudioSummaryId, automate: true),
 ];
 
 /// Seeds default inference profiles into the AI config database.
@@ -1040,8 +1042,15 @@ class ProfileSeedingService {
         models,
       ),
       // Prompt-generation skills run on the thinking slot (the high-end
-      // slot falls back to it at resolution time).
+      // slot falls back to it at resolution time). Audio summarization runs
+      // on the same slot, deliberately: it publishes through a pinned tool
+      // call, and the thinking slot is the one the profile form constrains
+      // to tool-capable models.
       SkillType.promptGeneration => _slotResolvesToModelRow(
+        profile.thinkingModelId,
+        models,
+      ),
+      SkillType.audioSummary => _slotResolvesToModelRow(
         profile.thinkingModelId,
         models,
       ),

@@ -139,6 +139,7 @@ const _$AiWorkTypeEnumMap = {
   AiWorkType.imageGeneration: 'imageGeneration',
   AiWorkType.imageAnalysis: 'imageAnalysis',
   AiWorkType.audioTranscription: 'audioTranscription',
+  AiWorkType.audioSummary: 'audioSummary',
   AiWorkType.agentReport: 'agentReport',
   AiWorkType.embeddingIndexing: 'embeddingIndexing',
   AiWorkType.internalInference: 'internalInference',

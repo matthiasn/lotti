@@ -13,6 +13,7 @@ const skillPromptGenId = 'skill-prompt-gen-001';
 const skillImagePromptGenId = 'skill-image-prompt-gen-001';
 const skillDesignPromptId = 'skill-design-prompt-001';
 const skillResearchPromptId = 'skill-research-prompt-001';
+const skillAudioSummaryId = 'skill-audio-summary-001';
 
 /// The set of skills that ship with the app.
 ///
@@ -143,6 +144,51 @@ If the image IS relevant:
 - Only mention what you actually see in the image
 - Do NOT mention what is absent or missing from the image
 - If a browser window is visible, include the URL from its address bar''',
+    ),
+
+    // -- Audio summary skill --
+    AiConfigSkill(
+      id: skillAudioSummaryId,
+      name: 'Summarize Recording',
+      skillType: SkillType.audioSummary,
+      // Gates the skill to `JournalAudio` sources. The text it actually reads
+      // is the transcript, but `requiredInputModalities` selects the *entry
+      // type*, and `Modality.text` would offer this on notes, tasks and
+      // images too.
+      requiredInputModalities: [Modality.audio],
+      contextPolicy: ContextPolicy.fullTask,
+      isPreconfigured: true,
+      createdAt: DateTime(2026),
+      description:
+          'Summarize an audio recording in the context of its task, as a '
+          'one-liner, a TLDR, and a full markdown summary',
+      systemInstructions: '''
+You are summarizing one audio recording that belongs to a task. The recording may be a quick voice note or a full meeting transcript.
+
+Your summary is read in the context of the task, not on its own. The task context below is what the task looked like at the moment this recording was summarized — treat it as the frame, and say what this recording means *for this task*.
+
+RESPONSE LANGUAGE:
+Generate your ENTIRE response in the language given by the task's "languageCode" field in the task context JSON. If languageCode is null, empty, or "en", respond in English.
+
+GROUNDING:
+- Summarize only what is actually in the recording. Never invent decisions, owners, dates, or numbers.
+- Where the recording is ambiguous or inaudible, say so rather than smoothing it over.
+- Do not comment on the recording's audio quality, its length, or the fact that it is a transcript.
+
+OUTPUT:
+You MUST publish your result by calling the `publish_entry_summary` tool exactly once, with all three tiers. Do not answer with prose. Do not call any other tool.''',
+      userInstructions: '''
+Summarize the recording below in the context of the task above.
+
+Prioritize, in this order:
+1. Decisions made, and by whom if the recording makes that clear.
+2. Concrete action items, commitments, and deadlines.
+3. Open questions and blockers that the task does not already record.
+4. Reasoning and context worth keeping — why a direction was chosen, what was ruled out.
+
+For the full summary, use headings and bullets so a long recording stays scannable. Skip any of the above that the recording does not contain rather than writing "none".
+
+Publish the result with `publish_entry_summary`.''',
     ),
 
     // -- Image generation skill --

@@ -9,6 +9,7 @@ const checklistUpdatesConst = 'ChecklistUpdates';
 const promptGenerationConst = 'PromptGeneration';
 const imagePromptGenerationConst = 'ImagePromptGeneration';
 const imageGenerationConst = 'ImageGeneration';
+const audioSummaryConst = 'AudioSummary';
 
 // Ollama API constants
 const ollamaChatEndpoint = '/api/chat';
@@ -59,6 +60,12 @@ enum AiResponseType {
   imagePromptGeneration,
   @JsonValue(imageGenerationConst)
   imageGeneration,
+
+  /// A three-tier summary of an audio recording, produced after
+  /// transcription and linked to the audio entry. Carries a one-liner and a
+  /// TLDR on `AiResponseData` alongside the full markdown body.
+  @JsonValue(audioSummaryConst)
+  audioSummary,
 }
 
 extension AiResponseTypeDisplay on AiResponseType {
@@ -81,6 +88,8 @@ extension AiResponseTypeDisplay on AiResponseType {
         return LottiIcons.palette;
       case AiResponseType.imageGeneration:
         return LottiIcons.aiSpark;
+      case AiResponseType.audioSummary:
+        return LottiIcons.summarize;
     }
   }
 
@@ -117,6 +126,7 @@ enum SkillType {
   imageGeneration,
   promptGeneration,
   imagePromptGeneration,
+  audioSummary,
 }
 
 /// Maps each [SkillType] to its corresponding [AiResponseType] so the
@@ -128,6 +138,7 @@ extension SkillTypeToResponseType on SkillType {
     SkillType.imageGeneration => AiResponseType.imageGeneration,
     SkillType.promptGeneration => AiResponseType.promptGeneration,
     SkillType.imagePromptGeneration => AiResponseType.imagePromptGeneration,
+    SkillType.audioSummary => AiResponseType.audioSummary,
   };
 }
 

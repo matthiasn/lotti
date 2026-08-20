@@ -320,6 +320,112 @@ Style: isometric digital art. --ar 16:9
       expect(linkCallbackFound, isTrue);
     });
 
+    group('summary tiers: collapsed shows the TLDR', () {
+      const tldrText =
+          'The team chose a flagged rollout so the export flow can ship '
+          'without blocking the release.';
+      const bodyText = '## Decisions\n- Ship the export flow behind a flag';
+
+      AiResponseEntry buildSummary({
+        String? tldr = tldrText,
+        String response = bodyText,
+      }) => testAiResponseEntry.copyWith(
+        data: testAiResponseEntry.data.copyWith(
+          response: response,
+          tldr: tldr,
+          oneLiner: 'Agreed to ship the export flow behind a flag.',
+          type: AiResponseType.audioSummary,
+        ),
+      );
+
+      Future<void> pumpTiered(
+        WidgetTester tester, {
+        String? tldr = tldrText,
+        String response = bodyText,
+        bool collapsible = true,
+      }) => tester.pumpWidget(
+        WidgetTestBench(
+          child: SingleChildScrollView(
+            child: AiResponseSummary(
+              buildSummary(tldr: tldr, response: response),
+              fadeOut: false,
+              collapsible: collapsible,
+            ),
+          ),
+        ),
+      );
+
+      testWidgets(
+        'a collapsed summary shows its TLDR instead of the empty body other '
+        'response types collapse to',
+        (tester) async {
+          await pumpTiered(tester);
+
+          expect(find.text(tldrText), findsOneWidget);
+          expect(find.byType(GptMarkdown), findsNothing);
+          expect(find.text('Show more'), findsOneWidget);
+        },
+      );
+
+      testWidgets('expanding swaps the TLDR for the full markdown body', (
+        tester,
+      ) async {
+        await pumpTiered(tester);
+
+        await tester.tap(find.byKey(AiResponseSummary.collapseToggleKey));
+        await tester.pump();
+
+        expect(find.byType(GptMarkdown), findsOneWidget);
+        expect(find.text(tldrText), findsNothing);
+        expect(find.text('Show less'), findsOneWidget);
+      });
+
+      testWidgets(
+        'a short summary is still collapsible — the tiers exist so the reader '
+        'can choose the short version, however brief the body is',
+        (tester) async {
+          await pumpTiered(tester, response: 'Tiny body.');
+
+          expect(
+            find.byKey(AiResponseSummary.collapseToggleKey),
+            findsOneWidget,
+          );
+          expect(find.text(tldrText), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'a summary with no TLDR falls back to the length heuristic, so one '
+        'synced from a client that predates the tiers behaves as before',
+        (tester) async {
+          await pumpTiered(tester, tldr: null, response: 'Tiny body.');
+
+          expect(find.byKey(AiResponseSummary.collapseToggleKey), findsNothing);
+          expect(find.byType(GptMarkdown), findsOneWidget);
+        },
+      );
+
+      testWidgets('a whitespace-only TLDR counts as absent, not as a body', (
+        tester,
+      ) async {
+        await pumpTiered(tester, tldr: '   \n  ', response: 'Tiny body.');
+
+        expect(find.byKey(AiResponseSummary.collapseToggleKey), findsNothing);
+        expect(find.byType(GptMarkdown), findsOneWidget);
+      });
+
+      testWidgets(
+        'the TLDR is not rendered as markdown — it is prose, and a stray '
+        'hash or asterisk in it must not become a heading',
+        (tester) async {
+          await pumpTiered(tester, tldr: '# Not a heading *not italic*');
+
+          expect(find.text('# Not a heading *not italic*'), findsOneWidget);
+          expect(find.byType(GptMarkdown), findsNothing);
+        },
+      );
+    });
+
     group('tinted aiCard surface and binary per-card collapse', () {
       // Comfortably above both thresholds (500 chars / 6 newlines).
       final longOcrText = List.generate(

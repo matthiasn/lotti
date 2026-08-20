@@ -70,6 +70,10 @@ void main() {
         ),
         skillDesignPromptId: (SkillType.promptGeneration, [Modality.text]),
         skillResearchPromptId: (SkillType.promptGeneration, [Modality.text]),
+        // Audio, not text: the modality selects the source ENTRY type, and
+        // the summary reads a recording's transcript. Text would also match
+        // notes, tasks and images.
+        skillAudioSummaryId: (SkillType.audioSummary, [Modality.audio]),
       };
 
       expect(

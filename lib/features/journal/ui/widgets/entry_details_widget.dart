@@ -14,6 +14,7 @@ import 'package:lotti/features/design_system/components/cards/design_system_sect
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/events/ui/widgets/linked_event_card.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/journal/state/audio_summary_provider.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_detail_footer.dart';
@@ -622,19 +623,25 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
   }
 }
 
-/// The compressed audio-entry view: one line of the recording's
-/// (AI-transcribed) content at medium emphasis, truncated with an ellipsis.
-/// Renders nothing while the entry has no transcribed content to preview.
-/// Tapping it expands the full card, same as the header chevron.
-class _CollapsedAudioOneLiner extends StatelessWidget {
+/// The compressed audio-entry view: one line describing the recording at
+/// medium emphasis, truncated with an ellipsis. Renders nothing while the
+/// entry has nothing to preview. Tapping it expands the full card, same as
+/// the header chevron.
+///
+/// Prefers the newest AI summary's one-liner, which is written to *be* this
+/// label. Falls back to the transcript's opening line for recordings that
+/// have not been summarized — not yet, or never, because they are too short,
+/// belong to no task, or were transcribed before summaries existed.
+class _CollapsedAudioOneLiner extends ConsumerWidget {
   const _CollapsedAudioOneLiner({required this.audio, this.onTap});
 
   final JournalAudio audio;
   final Future<void> Function()? onTap;
 
   @override
-  Widget build(BuildContext context) {
-    final oneLiner = audioEntryOneLiner(audio);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final oneLiner =
+        audioSummaryOneLiner(ref, audio.meta.id) ?? audioEntryOneLiner(audio);
     if (oneLiner == null) return const SizedBox.shrink();
     final tokens = context.designTokens;
     final text = Padding(

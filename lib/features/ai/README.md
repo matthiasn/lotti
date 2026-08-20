@@ -16,6 +16,9 @@ one.
   ready-made setup, so nobody has to assemble one model slot at a time.
 - **Transcribes voice notes**, using a cloud service or a model running entirely
   on the user's own machine.
+- **Summarises a recording in three depths** — a one-line label, a short TLDR,
+  and a full organised summary — written in the context of the task the
+  recording belongs to, at the moment it was summarised.
 - **Describes and reads images** — a short summary, or full text extraction from
   a screenshot or document.
 - **Generates prompts** for coding, design and research work, and cover art for
@@ -24,9 +27,9 @@ one.
   something baked into the code.
 - **Finds things by meaning**, not just by keyword, through local semantic
   search.
-- **Keeps automation opt-in.** Automatic transcription and image analysis are off
-  until switched on per area, because choosing a model is not the same as
-  agreeing to spend tokens on every recording.
+- **Keeps automation opt-in.** Automatic transcription, image analysis and
+  recording summaries are off until switched on per area, because choosing a
+  model is not the same as agreeing to spend tokens on every recording.
 - **Shows what was used.** Every AI result records which model produced it and
   what it cost.
 

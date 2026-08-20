@@ -1574,6 +1574,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiConsumptionTypeAudioTranscription => 'Přepis';
 
   @override
+  String get aiConsumptionTypeAudioSummary => 'Shrnutí';
+
+  @override
   String get aiConsumptionTypeEmbeddingIndexing => 'Indexování embeddingů';
 
   @override

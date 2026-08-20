@@ -210,6 +210,7 @@ const _$AiResponseTypeEnumMap = {
   AiResponseType.promptGeneration: 'PromptGeneration',
   AiResponseType.imagePromptGeneration: 'ImagePromptGeneration',
   AiResponseType.imageGeneration: 'ImageGeneration',
+  AiResponseType.audioSummary: 'AudioSummary',
 };
 
 AiConfigInferenceProfile _$AiConfigInferenceProfileFromJson(
@@ -317,6 +318,7 @@ const _$SkillTypeEnumMap = {
   SkillType.imageGeneration: 'imageGeneration',
   SkillType.promptGeneration: 'promptGeneration',
   SkillType.imagePromptGeneration: 'imagePromptGeneration',
+  SkillType.audioSummary: 'audioSummary',
 };
 
 const _$ContextPolicyEnumMap = {

@@ -2742,6 +2742,12 @@ abstract class AppLocalizations {
   /// **'Transcription'**
   String get aiConsumptionTypeAudioTranscription;
 
+  /// No description provided for @aiConsumptionTypeAudioSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary'**
+  String get aiConsumptionTypeAudioSummary;
+
   /// No description provided for @aiConsumptionTypeEmbeddingIndexing.
   ///
   /// In en, this message translates to:

@@ -17,6 +17,7 @@ void main() {
     AiResponseType.imagePromptGeneration:
         AiConsumptionResponseType.promptGeneration,
     AiResponseType.imageGeneration: AiConsumptionResponseType.imageGeneration,
+    AiResponseType.audioSummary: AiConsumptionResponseType.audioSummary,
     // Legacy pre-agent types map onto plain text generation.
     AiResponseType.taskSummary: AiConsumptionResponseType.textGeneration,
     AiResponseType.checklistUpdates: AiConsumptionResponseType.textGeneration,
