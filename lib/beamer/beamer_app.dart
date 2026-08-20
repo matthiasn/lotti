@@ -718,19 +718,23 @@ class _AppScreenState extends ConsumerState<AppScreen> {
         // [goalsRouteHidesBottomNav] and [peopleRouteHidesBottomNav].
         return ListenableBuilder(
           listenable: _routeChangeListenable,
-          builder: (context, _) => isWide
-              ? _buildDesktopLayout(
-                  context: context,
-                  index: index,
-                  destinations: destinations,
-                  beamerChildren: beamerChildren,
-                )
-              : _buildMobileLayout(
-                  context: context,
-                  index: index,
-                  destinations: destinations,
-                  beamerChildren: beamerChildren,
-                ),
+          builder: (context, _) => _NudgeBannerTopLane(
+            surface: _nudgeBannerSurfaceFor(destinations[index].kind),
+            compact: !isWide,
+            child: isWide
+                ? _buildDesktopLayout(
+                    context: context,
+                    index: index,
+                    destinations: destinations,
+                    beamerChildren: beamerChildren,
+                  )
+                : _buildMobileLayout(
+                    context: context,
+                    index: index,
+                    destinations: destinations,
+                    beamerChildren: beamerChildren,
+                  ),
+          ),
         );
       },
     );
@@ -857,27 +861,13 @@ class _AppScreenState extends ConsumerState<AppScreen> {
           Expanded(
             child: KeyboardFocusRegion(
               debugLabel: 'app-content',
-              // The goal-agent dock is docked at the bottom of the content
-              // region, beside (never under) the sidebar — one shared
-              // rotating slot for the agents' standing voices. It collapses
-              // to nothing when no goal is speaking, so it only occupies
-              // space when it has something to say (ADR 0058 / handover 1b).
-              child: Column(
+              child: Stack(
                 children: [
-                  Expanded(
-                    child: Stack(
-                      children: [
-                        const IncomingVerificationWrapper(),
-                        _buildContentStack(
-                          index: index,
-                          beamerChildren: beamerChildren,
-                        ),
-                      ],
-                    ),
+                  const IncomingVerificationWrapper(),
+                  _buildContentStack(
+                    index: index,
+                    beamerChildren: beamerChildren,
                   ),
-                  if (_nudgeBannerSurfaceFor(destinations[index].kind)
-                      case final NudgeBannerSurface surface)
-                    NudgeBannerDock(compact: false, surface: surface),
                 ],
               ),
             ),
@@ -1071,12 +1061,6 @@ class _AppScreenState extends ConsumerState<AppScreen> {
             // details and settings details dock their own pinned surfaces at
             // the bottom edge and must not pad around a bar that is gone.
             barDocked: showBottomNav && !slideNavAway,
-            // The banner dock rides in the same bottom overlay on the
-            // main working tabs; reserve its lane so page content and FABs
-            // clear it when a banner is speaking.
-            dockSurface: showBottomNav
-                ? _nudgeBannerSurfaceFor(destinations[index].kind)
-                : null,
             child: _buildContentStack(
               index: index,
               beamerChildren: beamerChildren,
@@ -1097,15 +1081,6 @@ class _AppScreenState extends ConsumerState<AppScreen> {
             // running timer or recording must stay visible inside settings
             // definition surfaces. When the bar slides away they animate
             // down to the bottom safe-area edge in the same motion.
-            //
-            // The goal-agent dock (mini-player, handover 1b) shares this
-            // overlay column so the two never collide: the dock rides ABOVE
-            // the indicator row, which is zero-height when nothing is
-            // recording — so an idle dock sits directly above the bar, and
-            // a live recording pushes the dock up instead of vanishing
-            // under it. The dock only mounts on the main working tabs, and
-            // only when the bar is not sliding away (settings/project
-            // detail routes carry neither).
             AnimatedPositioned(
               duration: reduceMotion
                   ? Duration.zero
@@ -1119,10 +1094,6 @@ class _AppScreenState extends ConsumerState<AppScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (!slideNavAway)
-                    if (_nudgeBannerSurfaceFor(destinations[index].kind)
-                        case final NudgeBannerSurface surface)
-                      NudgeBannerDock(compact: true, surface: surface),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -1299,11 +1270,101 @@ class _AppScreenState extends ConsumerState<AppScreen> {
 /// task-detail routes — the overlay is hidden with it, so no height
 /// applies. [child] is a prebuilt subtree; only widgets depending on the
 /// inherited height rebuild when an indicator appears or disappears.
+/// Reserves the top strip of the shell for the goal/relationship agents'
+/// banner dock, above the sidebar and every page.
+///
+/// Structural, never an overlay: the dock is the first child of a [Column]
+/// whose second child is the whole app shell, so a speaking banner pushes
+/// the sidebar and the content down instead of covering them. Scrolling
+/// content therefore cannot pass underneath it, and the dock cannot collide
+/// with the bottom bar or a page-owned action bar the way the old
+/// bottom-docked mini-player could.
+///
+/// This mirrors [DemoModeScaffold], which anchors the demo strip the same
+/// way one level higher (in `MaterialApp.router`'s builder). Because this
+/// lane nests INSIDE that one, the two stack vertically on their own — demo
+/// strip first, agent banner beneath it — with no coordination between them.
+///
+/// While a banner speaks the lane absorbs the top safe-area inset itself and
+/// hands the shell a zero top padding via [MediaQuery.removePadding], so the
+/// shell does not pad a second time for a status bar the banner already
+/// covers — the same mechanism, for the same reason, as the demo strip. With
+/// nothing speaking the inset stays with the shell where it belongs.
+///
+/// Only that inset handling is gated on whether a banner speaks; the wrapper
+/// hierarchy itself is not. See the note in [build] for why, and for what the
+/// dock's own slot does differently.
+///
+/// The gate uses the dock's own [visibleNudgeBannerEntries] contract rather
+/// than a second rule, so the lane and the dock can never disagree about
+/// whether a banner speaks — if they did, the lane would strip the shell's top
+/// padding for a banner that never rendered.
+class _NudgeBannerTopLane extends ConsumerWidget {
+  const _NudgeBannerTopLane({
+    required this.surface,
+    required this.compact,
+    required this.child,
+  });
+
+  /// The banner surface of the active tab, or null on a tab no banner kind
+  /// speaks on (settings, dashboards, …).
+  final NudgeBannerSurface? surface;
+
+  /// Phone layout for the dock; see [NudgeBannerDock.compact].
+  final bool compact;
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final dockSurface = surface;
+    final speaking =
+        dockSurface != null &&
+        visibleNudgeBannerEntries(
+          entries: ref.watch(activeNudgeBannersProvider),
+          locallySnoozedDeadlines: ref.watch(
+            locallySnoozedNudgeDeadlinesProvider,
+          ),
+          surface: dockSurface,
+        ).isNotEmpty;
+
+    // The shell's slot keeps the SAME hierarchy in every case — Expanded,
+    // MediaQuery.removePadding, child — and only `removeTop` varies. Wrapping
+    // the child only while a banner speaks would change the widget type in
+    // that slot, so Flutter would deactivate the subtree and inflate a fresh
+    // one: the shell's Beamers, scroll offsets and half-typed fields would
+    // reset every time a synced banner arrived or left.
+    //
+    // The dock's slot is stable within an eligible surface (SafeArea stays
+    // mounted, only `top` varies), which is what preserves the dock's rotation
+    // and tenure state. An ineligible surface mounts no dock at all, as
+    // before; Column reconciles positionally, so that cannot reach the shell.
+    return Column(
+      children: [
+        if (dockSurface == null)
+          const SizedBox.shrink()
+        else
+          SafeArea(
+            top: speaking,
+            bottom: false,
+            child: NudgeBannerDock(compact: compact, surface: dockSurface),
+          ),
+        Expanded(
+          child: MediaQuery.removePadding(
+            context: context,
+            removeTop: speaking,
+            child: child,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _MobileNavOverlayHeightScope extends ConsumerWidget {
   const _MobileNavOverlayHeightScope({
     required this.navBarVisible,
     required this.barDocked,
-    required this.dockSurface,
     required this.child,
   });
 
@@ -1312,12 +1373,6 @@ class _MobileNavOverlayHeightScope extends ConsumerWidget {
   /// Whether the bar is docked at the bottom edge rather than slid away;
   /// see [DesignSystemBottomNavigationOverlayHeight.barDocked].
   final bool barDocked;
-
-  /// The banner surface of this tab when the dock may mount here (a main
-  /// working tab with the bar visible), or null. The lane is reserved only
-  /// when the dock is ALSO speaking (there is an active nudge on this
-  /// surface), so a collapsed dock reserves nothing.
-  final NudgeBannerSurface? dockSurface;
 
   final Widget child;
 
@@ -1341,25 +1396,6 @@ class _MobileNavOverlayHeightScope extends ConsumerWidget {
       audioIndicatorVisible = false;
     }
 
-    // The dock speaks only when at least one renderable nudge remains; the
-    // shell uses the dock's own stale/dismissed/snoozed/surface filter so a
-    // hidden banner never leaves a blank reserved lane behind.
-    // The compact dock renders its empty child while the keyboard is up
-    // (`NudgeBannerDock` yields to it), so the reserve must drop to zero then —
-    // otherwise it would push scroll clearance and FABs an extra lane above
-    // the keyboard for the whole editing session. Mirror that collapse here.
-    final keyboardUp = MediaQuery.viewInsetsOf(context).bottom > 0;
-    final dockEntries = dockSurface == null
-        ? const <NudgeBannerEntry>[]
-        : visibleNudgeBannerEntries(
-            entries: ref.watch(activeNudgeBannersProvider),
-            locallySnoozedDeadlines: ref.watch(
-              locallySnoozedNudgeDeadlinesProvider,
-            ),
-            surface: dockSurface,
-          );
-    final dockSpeaking = !keyboardUp && dockEntries.isNotEmpty;
-
     return StreamBuilder<JournalEntity?>(
       stream: getIt<TimeService>().getStream(),
       builder: (context, snapshot) {
@@ -1375,17 +1411,6 @@ class _MobileNavOverlayHeightScope extends ConsumerWidget {
                 ? AudioRecordingIndicatorConstants.indicatorHeight
                 : 0,
             audioIndicatorVisible ? context.designTokens.spacing.step6 : 0,
-          );
-        }
-        // The dock rides ABOVE the indicator row in the same overlay
-        // column, so its lane adds to the row's height.
-        // The reserved lane is derived from the dock's own DS dimensions and
-        // is scale-aware (the tenant's copy grows with accessibility text),
-        // so content and FABs clear the dock at every text scale.
-        if (dockSpeaking) {
-          height += nudgeBannerDockReservedHeight(
-            context,
-            briefs: dockEntries.map((entry) => entry.nudge.brief),
           );
         }
         return DesignSystemBottomNavigationOverlayHeight(

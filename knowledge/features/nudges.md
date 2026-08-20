@@ -1,7 +1,7 @@
 ---
 type: Feature Module
 title: Nudges
-description: The kind-agnostic banner channel — one view over two entity variants, one visibility contract shared with the shell's reserved lane, one rotating dock, and interaction writes that converge losslessly.
+description: The kind-agnostic banner channel — one view over two entity variants, one visibility contract shared with the shell's top banner lane, one rotating dock, and interaction writes that converge losslessly.
 resource: ../../lib/features/nudges
 tags: [nudges, banners, agents, sync, crdt, attention]
 status: stable
@@ -26,7 +26,7 @@ sources:
     last_modified: 2026-08-16
   - id: shell
     resource: ../../lib/beamer/beamer_app.dart
-    title: Dock mounting and the reserved bottom lane
+    title: Dock mounting in the shell's top banner lane
     last_modified: 2026-08-16
   - id: adr-0059
     resource: ../../docs/adr/0059-relationship-agent-runtime-and-nudge-generalization.md
@@ -36,6 +36,10 @@ sources:
     resource: ../../docs/adr/0055-banner-nudge-attention-channel.md
     title: ADR 0055 — The banner nudge attention channel
     last_modified: 2026-08-08
+  - id: adr-0060
+    resource: ../../docs/adr/0060-banner-dock-as-app-shell-structural-band.md
+    title: ADR 0060 — The banner dock as an app-shell structural band
+    last_modified: 2026-08-20
 ---
 
 A **nudge** is one banner an agent puts in front of the user: model-authored
@@ -87,7 +91,7 @@ flowchart LR
   MERGE["activeNudgeBannersProvider<br/>merged, newest-first"] --> VIS
   VIS{"visibleNudgeBannerEntries<br/>surface · stale · snoozed ·<br/>dismissed-for-day · local suppression"}
   VIS --> DOCK["NudgeBannerDock<br/>(one instance, shell-mounted)"]
-  VIS --> LANE["_MobileNavOverlayHeightScope<br/>reserved bottom lane"]
+  VIS --> LANE["_NudgeBannerTopLane<br/>top-of-shell inset handling"]
 ```
 
 Each source is a `FutureProvider<List<NudgeBannerEntry>>` producing that kind's
@@ -109,9 +113,10 @@ never flashes empty on sync.
 # Visibility is one function, used twice
 
 `visibleNudgeBannerEntries` is the render-time contract, and the shell's
-reserved-lane calculation calls the *same* function. That is deliberate: if the
-lane reserved space by a different rule than the dock renders by, a hidden
-banner would leave a blank strip above the bottom navigation.
+`_NudgeBannerTopLane` calls the *same* function. That is deliberate: if the lane
+decided a banner was speaking by a different rule than the dock renders by, it
+would strip the child's top padding for a banner that never appeared — leaving
+the shell tucked under the status bar with nothing covering it.
 
 An entry is visible when **all** of these hold:
 
@@ -162,9 +167,42 @@ The reconcile pass (`_reconcile`) is what keeps that machine honest:
   would elapse there, the advance would bail on the empty list, and the
   rotation would never restart on the way back.
 
-The reserved-lane height is derived from the dock's own design-system
-dimensions and measured text metrics at the current text scaler — never a magic
-constant — so content and FABs clear it at every accessibility size.
+# The lane is structural, not an overlay
+
+The dock is mounted **once**, at the top of the shell, by `_NudgeBannerTopLane`
+— above the desktop sidebar and above the mobile content, immediately beneath
+the demo-mode strip when both are up (the lane nests inside `DemoModeScaffold`,
+so the two stack with no coordination between them).
+
+It is the first child of a `Column` whose second child is the whole shell, so a
+speaking banner **displaces** everything below it. Three properties follow from
+that, none of which needed code of their own:
+
+- scrolling content cannot pass underneath the banner — there is no space under
+  it to scroll into;
+- the banner cannot collide with the bottom navigation bar or a page-owned
+  action bar, because it is nowhere near the bottom edge;
+- rotation and window resizes re-lay-out normally; the lane holds no cached
+  geometry.
+
+The lane absorbs the top safe-area inset itself (a `SafeArea` around the dock)
+and hands the shell a zero top padding via `MediaQuery.removePadding` — the
+same mechanism, for the same reason, as the demo strip one level up.
+
+**The shell's slot never changes shape.** `Column` → `Expanded` →
+`MediaQuery.removePadding` → shell is the hierarchy in every case, including a
+surface no banner speaks on; only `removeTop` follows whether a banner speaks.
+Wrapping the shell only while a banner is up would change the widget type in
+that slot, so Flutter would deactivate the subtree and inflate a fresh one —
+and a banner arriving from sync mid-edit would reset the shell's Beamers,
+scroll offsets and in-progress input.
+
+The dock's slot is stable *within* an eligible surface — `SafeArea` stays
+mounted, only its `top` varies — which is what carries the dock's rotation and
+tenure state across a tenant arriving or leaving. On an ineligible surface the
+slot holds a `SizedBox.shrink()` and no dock at all, exactly as the bottom dock
+behaved. A `Column` reconciles positionally, so that slot changing type cannot
+disturb the shell beside it.
 
 # Interactions: serialized, transactional, durably committed
 
@@ -255,3 +293,5 @@ diverge permanently under equal-clock sync.
   `activeRelationshipNudgesProvider`.
 - [Agents](agents/) — the runtime that writes these rows and the sync layer
   that replicates them.
+- [ADR 0060](../../docs/adr/0060-banner-dock-as-app-shell-structural-band.md) —
+  why the dock moved from a bottom mini-player to the top structural band.
