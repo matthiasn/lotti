@@ -1544,12 +1544,21 @@ class _AgentReadCardState extends ConsumerState<_AgentReadCard> {
               // goal's agent has cost over its lifetime, and how old the
               // read below it is. Neither earns a row of the card's body —
               // the header rail was empty space beside them.
-              playbackControl: Row(
-                mainAxisSize: MainAxisSize.min,
+              // A Wrap, not a Row: the slot's cap bounds the RAIL, and a Row
+              // would still lay these two out at their intrinsic widths and
+              // clip past it. Both facts are money-and-time figures that a
+              // longer locale or a raised text scale lengthens, so when they
+              // stop fitting side by side the caption drops UNDER the pill —
+              // end-aligned, still the header's trailing rail — rather than
+              // either of them being truncated into a wrong number.
+              playbackControl: Wrap(
+                alignment: WrapAlignment.end,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: tokens.spacing.step3,
+                runSpacing: tokens.spacing.step1,
                 children: [
                   GoalAgentLifetimePills(agentId: widget.agentId, inline: true),
-                  if (freshness != null) ...[
-                    SizedBox(width: tokens.spacing.step3),
+                  if (freshness != null)
                     Text(
                       freshness,
                       style: tokens.typography.styles.others.caption.copyWith(
@@ -1558,7 +1567,6 @@ class _AgentReadCardState extends ConsumerState<_AgentReadCard> {
                             : tokens.colors.aiCard.metaText,
                       ),
                     ),
-                  ],
                 ],
               ),
             ),

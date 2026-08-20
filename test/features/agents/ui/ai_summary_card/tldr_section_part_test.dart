@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -75,6 +76,63 @@ void main() {
       expect(agentTaps, 1);
     });
 
+    testWidgets('a nameless agent gets the card title alone, in both the '
+        'header and its semantics', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          TldrHeader(agentName: '   ', onAgentTap: () {}),
+        ),
+      );
+
+      // A blank name is no name: the caption row is omitted rather than
+      // rendered empty, and the tap target announces only what it opens.
+      expect(find.text('AI summary'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(TldrHeader),
+          matching: find.byType(Text),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsLabel('AI summary'),
+        findsOneWidget,
+        reason: 'the nameless header announces the card, nothing more',
+      );
+    });
+
+    testWidgets('the agent name rests in the meta ink and lifts to body ink '
+        'under the pointer', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          TldrHeader(agentName: 'Task Laura', onAgentTap: () {}),
+        ),
+      );
+
+      final ai = tester
+          .element(find.byType(TldrHeader))
+          .designTokens
+          .colors
+          .aiCard;
+      Color nameColor() => tester
+          .renderObject<RenderParagraph>(find.text('Task Laura'))
+          .text
+          .style!
+          .color!;
+      expect(nameColor(), ai.metaText);
+
+      final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await gesture.addPointer();
+      addTearDown(gesture.removePointer);
+      await gesture.moveTo(tester.getCenter(find.text('Task Laura')));
+      await tester.pump();
+      // The block answers on its own ink — there is no hover fill to answer
+      // with, by design.
+      expect(nameColor(), ai.bodyText);
+      await gesture.moveTo(Offset.zero);
+      await tester.pumpAndSettle();
+    });
+
     testWidgets('the tap target hugs the badge and title, not the whole row', (
       tester,
     ) async {
@@ -142,11 +200,23 @@ void main() {
           TldrHeader(
             agentName: 'Task Laura',
             onAgentTap: () {},
-            playbackControl: const Text(
-              'EUR 0.33 - 179 Wh - 35 g - as of 1 hour ago',
+            // The PRODUCTION shape, not a single ellipsizing Text: the goal
+            // read card hands this slot a min-size Row of two facts. Capping
+            // the slot bounds the rail, not the children inside it — a Row
+            // still lays its non-flex children out at their intrinsic
+            // widths — so the fact that yields has to be flexible.
+            // The PRODUCTION shape, not a single ellipsizing Text: the goal
+            // read card hands this slot TWO facts. Each fits the cap alone;
+            // together they do not. A Row would lay both out at their
+            // intrinsic widths and clip past the cap — a Wrap drops the
+            // second onto its own line instead.
+            playbackControl: const Wrap(
               key: ValueKey('rail'),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+              alignment: WrapAlignment.end,
+              children: [
+                SizedBox(key: ValueKey('rail-pill'), width: 90, height: 16),
+                SizedBox(key: ValueKey('rail-age'), width: 90, height: 16),
+              ],
             ),
           ),
         ),
@@ -161,6 +231,12 @@ void main() {
         lessThanOrEqualTo(header.width / 2 + 1),
         reason: 'the identity block keeps at least half the header',
       );
+      // 90 + 90 cannot fit a 160px cap, so the second fact took its own
+      // line rather than the pair clipping past the header's edge.
+      final pill = tester.getRect(find.byKey(const ValueKey('rail-pill')));
+      final age = tester.getRect(find.byKey(const ValueKey('rail-age')));
+      expect(age.top, greaterThanOrEqualTo(pill.bottom));
+      expect(age.right, lessThanOrEqualTo(header.right));
     });
 
     testWidgets('a long agent name truncates instead of wrapping', (

@@ -927,15 +927,19 @@ class _GoalDaysHeader extends StatelessWidget {
           textScaler: textScaler,
           maxLines: 1,
         )..layout()).width;
-        // The button's own ink: its dense label, plus the glyph and the
-        // gaps and insets the size spec puts around it.
+        // The button's own ink, from the SAME tokens its dense size spec
+        // reads: the caption label, a glyph at the caption's line height,
+        // and the gap plus the two horizontal insets around them. Reserving
+        // a hand-picked icon constant here would drift from the button the
+        // moment the spec changed, and a measurement that under-reserves
+        // puts the row back in the overflow it exists to prevent.
         final actionWidth =
             width(
               context.messages.goalAssessmentReflectToday,
               tokens.typography.styles.others.caption,
             ) +
-            IconSizes.s +
-            tokens.spacing.step6;
+            tokens.typography.lineHeight.caption +
+            tokens.spacing.step2 * 3;
         // The title keeps a readable measure of its own rather than being
         // squeezed to a sliver beside a long action.
         final fitsBeside =
