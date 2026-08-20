@@ -189,11 +189,14 @@ The lane absorbs the top safe-area inset itself (a `SafeArea` around the dock)
 and hands the shell a zero top padding via `MediaQuery.removePadding` — the
 same mechanism, for the same reason, as the demo strip one level up.
 
-**The dock stays mounted while collapsed**, so it can play its own zero-height
-collapse when the last tenant leaves; that disappearance is the
-visibility-action feedback (ADR 0058). Only the inset handling is gated on
-whether a banner speaks, so a collapsed dock costs no layout and leaves the
-status-bar inset with the shell.
+**Both wrappers are mounted unconditionally, and only their configuration
+varies** with whether a banner speaks: `SafeArea.top` and `removeTop`. Swapping
+the hierarchy instead — a bare shell versus a wrapped one — changes the widget
+type in that slot, so Flutter deactivates the subtree and inflates a fresh one.
+A banner arriving from sync mid-edit would then reset the shell's Beamers,
+scroll offsets and in-progress input. The dock stays mounted for the same
+reason: its rotation and tenure state must survive a tenant arriving or
+leaving.
 
 # Interactions: serialized, transactional, durably committed
 

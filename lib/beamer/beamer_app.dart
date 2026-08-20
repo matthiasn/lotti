@@ -1321,27 +1321,39 @@ class _NudgeBannerTopLane extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final dockSurface = surface;
-    if (dockSurface == null) return child;
+    final speaking =
+        dockSurface != null &&
+        visibleNudgeBannerEntries(
+          entries: ref.watch(activeNudgeBannersProvider),
+          locallySnoozedDeadlines: ref.watch(
+            locallySnoozedNudgeDeadlinesProvider,
+          ),
+          surface: dockSurface,
+        ).isNotEmpty;
 
-    final speaking = visibleNudgeBannerEntries(
-      entries: ref.watch(activeNudgeBannersProvider),
-      locallySnoozedDeadlines: ref.watch(locallySnoozedNudgeDeadlinesProvider),
-      surface: dockSurface,
-    ).isNotEmpty;
-
-    final dock = NudgeBannerDock(compact: compact, surface: dockSurface);
-
+    // Both wrappers are mounted unconditionally and only their CONFIGURATION
+    // varies with `speaking`. Swapping the hierarchy instead — a bare child
+    // versus a wrapped one — changes the widget type in the slot, so Flutter
+    // deactivates the subtree and inflates a fresh one: the shell's Beamers,
+    // scroll offsets and half-typed fields would reset every time a synced
+    // banner arrived or left, and the dock would be rebuilt from scratch on
+    // the very frame it is supposed to animate its collapse.
     return Column(
       children: [
-        if (speaking) SafeArea(bottom: false, child: dock) else dock,
+        if (dockSurface == null)
+          const SizedBox.shrink()
+        else
+          SafeArea(
+            top: speaking,
+            bottom: false,
+            child: NudgeBannerDock(compact: compact, surface: dockSurface),
+          ),
         Expanded(
-          child: speaking
-              ? MediaQuery.removePadding(
-                  context: context,
-                  removeTop: true,
-                  child: child,
-                )
-              : child,
+          child: MediaQuery.removePadding(
+            context: context,
+            removeTop: speaking,
+            child: child,
+          ),
         ),
       ],
     );
