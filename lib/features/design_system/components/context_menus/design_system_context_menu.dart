@@ -3,9 +3,6 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 const _kMenuWidth = 320.0;
 const _kMaxVisibleItems = 6;
-const _kShadowColor = Color.fromRGBO(70, 70, 70, 0.25);
-const _kShadowBlurRadius = 4.0;
-const _kShadowOffsetY = 2.0;
 
 @visibleForTesting
 const kSmallItemHeight = 36.0;
@@ -116,13 +113,7 @@ class DesignSystemContextMenu extends StatelessWidget {
           decoration: BoxDecoration(
             color: tokens.colors.background.level01,
             borderRadius: BorderRadius.circular(spec.borderRadius),
-            boxShadow: const [
-              BoxShadow(
-                color: _kShadowColor,
-                offset: Offset(0, _kShadowOffsetY),
-                blurRadius: _kShadowBlurRadius,
-              ),
-            ],
+            boxShadow: DsShadows.floatingSurface,
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(spec.borderRadius),

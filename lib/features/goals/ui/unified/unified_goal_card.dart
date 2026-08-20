@@ -150,6 +150,7 @@ class UnifiedGoalCard extends ConsumerWidget {
     // pointer cursor and the card's own affordances carry tappability.
     final header = DsQuietInk(
       borderRadius: BorderRadius.circular(tokens.radii.l),
+      focusRing: true,
       onTap: () => beamToNamed(goalDetailPath(identity.agentId)),
       builder: (context, highlighted) => Padding(
         padding: EdgeInsets.all(tokens.spacing.cardPadding),

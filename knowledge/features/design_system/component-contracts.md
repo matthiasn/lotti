@@ -256,7 +256,12 @@ a chevron or label stepping up one emphasis tier, a disc border firming a
 step. Folding focus into the flag is load-bearing: with `focusColor`
 transparent, the builder's ink shift is the only visible cue keyboard users
 get. Folding the press in restores tap feedback on touch, where the removed
-splash used to carry it. With no tap or long-press handler it renders the
+splash used to carry it. A builder that deliberately shows *nothing* on hover
+— a whole-card doorway, a data cell whose hover answer is a tooltip — opts
+into `focusRing: true` instead: an interactive-ink outline drawn only while
+the target holds keyboard focus, never on hover or press, so Tab still lands
+somewhere visible while the pointer experience stays exactly as quiet as the
+builder made it. With no tap or long-press handler it renders the
 builder's rest state with no `Material`/`InkWell` at all. It adds no
 semantics beyond the ink's tap action — callers keep their own `Semantics`
 wrappers, and the pointer-only enlarged-target flags
@@ -274,8 +279,8 @@ The design system's tooltip surface
 slab wherever a hover needs to *say* something. It wraps Flutter's `Tooltip`
 — positioning, trigger gestures and semantics stay the framework's — and owns
 only the surface and the type: the context menu's floating-surface language
-(`background.level01` fill, `decorative.level01` hairline, the same soft
-shadow, `radii.s` corners) around caption type, plus a ~300 ms wait so a
+(`background.level01` fill, `decorative.level01` hairline, the shared
+`DsShadows.floatingSurface` elevation, `radii.s` corners) around caption type, plus a ~300 ms wait so a
 cursor crossing a dense strip of targets does not strobe.
 
 Two forms. A plain `message` renders one high-emphasis caption line. With

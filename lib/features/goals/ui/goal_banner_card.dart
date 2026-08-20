@@ -66,6 +66,7 @@ class GoalBannerCard extends ConsumerWidget {
         // element that actually advertises pressability.
         child: DsQuietInk(
           borderRadius: radius,
+          focusRing: true,
           onTap: () => beamToNamed(entry.tapRoute),
           builder: (context, highlighted) => DecoratedBox(
             decoration: BoxDecoration(
