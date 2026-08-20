@@ -624,6 +624,39 @@ void main() {
     },
   );
 
+  testWidgets(
+    'rebuilding the page does not restart the FAB move transition',
+    (tester) async {
+      await tester.pumpWidget(
+        buildSubject(
+          state: state(),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(
+        tester.hasRunningAnimations,
+        isFalse,
+        reason: 'baseline: the page must be settled before the rebuild',
+      );
+
+      // Rebuild the page with an equivalent tree — the Scaffold element is
+      // reused, so `didUpdateWidget` compares the old and new FAB locations.
+      await tester.pumpWidget(
+        buildSubject(
+          state: state(),
+        ),
+      );
+      await tester.pump();
+
+      // The FAB location is rebuilt from tokens on every build. Without value
+      // equality Scaffold reads each fresh instance as a move to a new spot
+      // and restarts the transition — a setState and an animation per journal
+      // query result, for a FAB that never actually moves.
+      expect(tester.hasRunningAnimations, isFalse);
+    },
+  );
+
   testWidgets('desktop mode listens to desktopSelectedTaskId', (
     tester,
   ) async {

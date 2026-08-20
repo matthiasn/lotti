@@ -1061,11 +1061,29 @@ Future<void> _defaultCreateTaskPressed(
 /// Never closer to the edge than the system's own bottom inset allows — a
 /// tighter margin is a visual alignment, not a licence to sit under the home
 /// indicator.
+@immutable
 class _ActionBarAlignedFabLocation extends StandardFabLocation
     with FabEndOffsetX, FabFloatOffsetY {
   const _ActionBarAlignedFabLocation({required this.bottomMargin});
 
   final double bottomMargin;
+
+  // Value equality, not identity: `build` constructs a fresh instance every
+  // time, and `Scaffold.didUpdateWidget` reads a changed location as a move —
+  // restarting the FAB transition (and its setState) on every rebuild of a
+  // page that rebuilds on every journal query result.
+  // Value equality, not identity: `build` constructs a fresh instance every
+  // time, and `Scaffold.didUpdateWidget` reads a changed location as a move —
+  // restarting the FAB transition (and its setState) on every rebuild of a
+  // page that rebuilds on every journal query result.
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is _ActionBarAlignedFabLocation &&
+          other.bottomMargin == bottomMargin;
+
+  @override
+  int get hashCode => bottomMargin.hashCode;
 
   @override
   double getOffsetY(
