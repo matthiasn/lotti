@@ -236,7 +236,11 @@ and a blank page when the task had since been deleted.
 
 `NavService.beamBack` is the second half of that guarantee: when the delegate
 reports it cannot beam back, it beams to the active tab's root rather than
-doing nothing, so no route reached by any means is a dead end.
+doing nothing, so no route reached by any means is a dead end. That fallback
+**replaces** the dead route (`beamToReplacementNamed`) instead of stacking the
+root above it — a push would leave the detail underneath, and the next back
+would drop the user straight back into the page they just escaped. The tab root
+is therefore terminal: `canBeamBack` stays false and further backs are no-ops.
 
 ## Background tabs must not steal the foreground
 

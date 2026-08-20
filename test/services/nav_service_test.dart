@@ -870,6 +870,12 @@ void main() {
         navService.beamBack();
 
         expect(navService.routeForTab('/tasks'), '/tasks');
+        // The fallback REPLACES the dead route instead of stacking the root on
+        // top of it: leaving the detail underneath would make the very next
+        // back drop the user straight back into the page they just escaped.
+        expect(navService.tasksDelegate.canBeamBack, isFalse);
+        navService.beamBack();
+        expect(navService.routeForTab('/tasks'), '/tasks');
       });
     });
 

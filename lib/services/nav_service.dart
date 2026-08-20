@@ -886,9 +886,15 @@ class NavService {
     // can hide the mobile bottom bar (task details) and render nothing at all
     // (a deleted entity), so a dead back button is a full lockout. Fall back
     // to the tab's own root, which is always a real screen.
+    //
+    // REPLACING the dead route rather than stacking on top of it: a push would
+    // leave the detail underneath, and the next back would drop the user right
+    // back into the page they just escaped. The root is the terminal state of
+    // this tab's history, so `canBeamBack` stays false and further backs are
+    // no-ops.
     final rootPath = _activeRootPath;
     if (routeForTab(rootPath) == rootPath) return;
-    delegate.beamToNamed(rootPath);
+    delegate.beamToReplacementNamed(rootPath);
   }
 
   Future<void> dispose() async {
