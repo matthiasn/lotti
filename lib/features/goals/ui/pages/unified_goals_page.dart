@@ -168,31 +168,6 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage>
     final todayYmd = gatingNow.ymd;
     final successToday = state.successfulByDay[todayYmd] ?? const <String>{};
 
-    // The legacy buckets treat ANY completion record (skip and fail
-    // included) as handled, but goal rows live in success-only terms — so
-    // for THEM, a habit skipped or failed today is still DUE (correctable to
-    // a success without hunting under Done), and only a real success counts
-    // as done. The orphan group below deliberately keeps the legacy buckets:
-    // it is the old habits list, just grouped.
-    final handledButNotSucceededToday = {
-      for (final h in state.completedAll)
-        if (!successToday.contains(h.id)) h.id,
-    };
-    final visibleHabitIds = switch (state.displayFilter) {
-      HabitDisplayFilter.openNow => {
-        for (final h in state.openNowAll) h.id,
-        ...handledButNotSucceededToday,
-      }.intersection(recordableIds),
-      HabitDisplayFilter.pendingLater => {
-        for (final h in state.pendingLaterAll) h.id,
-      }.intersection(recordableIds),
-      HabitDisplayFilter.completed => {
-        for (final h in state.completedAll)
-          if (successToday.contains(h.id)) h.id,
-      }.intersection(recordableIds),
-      HabitDisplayFilter.all => recordableIds,
-    };
-
     // Which habits any goal claims, from the resolved specs' criteria trees.
     // Orphan membership must not flicker while per-goal health is still on
     // its FIRST load, so the group renders only once every health has a
@@ -352,9 +327,6 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage>
                         UnifiedGoalCard(
                           key: Key('unified-goal-card-${identity.agentId}'),
                           identity: identity,
-                          successToday: successToday,
-                          streaksByHabit: streaks,
-                          visibleHabitIds: visibleHabitIds,
                         ),
                         SizedBox(height: tokens.spacing.cardItemSpacing),
                       ],
@@ -362,8 +334,6 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage>
                         SizedBox(height: tokens.spacing.step3),
                         _ArchivedGoalsSection(
                           identities: archivedIdentities,
-                          successToday: successToday,
-                          streaksByHabit: streaks,
                         ),
                       ],
                       if (orphanHabits.isNotEmpty) ...[
@@ -432,15 +402,9 @@ class _NoGoalsYet extends StatelessWidget {
 }
 
 class _ArchivedGoalsSection extends StatelessWidget {
-  const _ArchivedGoalsSection({
-    required this.identities,
-    required this.successToday,
-    required this.streaksByHabit,
-  });
+  const _ArchivedGoalsSection({required this.identities});
 
   final List<AgentIdentityEntity> identities;
-  final Set<String> successToday;
-  final Map<String, int> streaksByHabit;
 
   @override
   Widget build(BuildContext context) {
@@ -468,11 +432,6 @@ class _ArchivedGoalsSection extends StatelessWidget {
             UnifiedGoalCard(
               key: Key('unified-archived-goal-card-${identity.agentId}'),
               identity: identity,
-              successToday: successToday,
-              streaksByHabit: streaksByHabit,
-              // Dormant goals are history, not a second place to record a
-              // habit. Their detail pages remain readable from the card.
-              visibleHabitIds: const {},
             ),
             if (identity != identities.last)
               SizedBox(height: tokens.spacing.cardItemSpacing),

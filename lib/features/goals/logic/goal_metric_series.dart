@@ -117,6 +117,21 @@ num? goalMetricSevenDayAverageOn(
   var seenTarget = false;
   num sum = 0;
   var count = 0;
+  // The SAME run-up the series consumes. Without it this helper answered
+  // "no average" for exactly the days the chart had just started drawing
+  // one — the reflection sheet would omit the row for the first six visible
+  // days, then quote a different figure once the span grew long enough to
+  // reach back on its own.
+  var hasRunUp = false;
+  for (final entry in metric.warmupValues.entries) {
+    final key = GoalWindow.dayUtc(entry.key);
+    if (key.isAfter(target)) continue;
+    hasRunUp = true;
+    if (!key.isBefore(windowStart)) {
+      sum += entry.value;
+      count++;
+    }
+  }
   for (final entry in metric.days) {
     final key = GoalWindow.dayUtc(entry.day);
     if (key.isAfter(target)) continue;
@@ -127,10 +142,13 @@ num? goalMetricSevenDayAverageOn(
       count++;
     }
   }
-  // The same three conditions the series itself applies: the day has to be one
-  // of the rendered days, it needs a full week of history behind it, and the
-  // window has to hold at least one real observation.
+  // The same conditions the series itself applies: the day has to be one of
+  // the rendered days, the window has to hold at least one real observation,
+  // and — only where no run-up is available — it needs a full week of
+  // rendered history behind it.
   if (!seenTarget || count == 0) return null;
-  if (first == null || target.difference(first).inDays < 6) return null;
+  if (!hasRunUp && (first == null || target.difference(first).inDays < 6)) {
+    return null;
+  }
   return sum / count;
 }

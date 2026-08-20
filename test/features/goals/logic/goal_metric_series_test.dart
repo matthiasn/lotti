@@ -244,4 +244,67 @@ void main() {
       }
     });
   });
+
+  group('the single-day helper agrees with the series', () {
+    final today = DateTime.utc(2026, 8, 20);
+
+    GoalMetricProgressView metric({Map<DateTime, num> warmup = const {}}) =>
+        GoalMetricProgressView(
+          name: 'Steps',
+          target: 10000,
+          warmupValues: warmup,
+          days: [
+            for (var offset = 6; offset >= 0; offset--)
+              GoalProgressDay(
+                day: today.subtract(Duration(days: offset)),
+                value: 1000,
+                // ignore: avoid_redundant_argument_values
+                isObserved: true,
+              ),
+          ],
+        );
+
+    test('every day the series draws, the per-day helper can also answer', () {
+      // Regression: the reflection sheet reads the per-day helper while the
+      // card reads the series. The helper gated on a full week of RENDERED
+      // history, so for the first six visible days it returned null for
+      // exactly the dates the chart had just started plotting — and quoted a
+      // different figure once the span grew long enough to reach back.
+      final warmup = {
+        for (var offset = 12; offset >= 7; offset--)
+          today.subtract(Duration(days: offset)): 4000,
+      };
+      final series = goalMetricSevenDayAverage(
+        metric(warmup: warmup),
+        today: today,
+      );
+      expect(series, isNotEmpty);
+
+      for (final point in series) {
+        final onDay = goalMetricSevenDayAverageOn(
+          metric(warmup: warmup),
+          day: point.dateTime,
+        );
+        expect(
+          onDay,
+          isNotNull,
+          reason: 'the series plots ${point.dateTime}, so the sheet must too',
+        );
+        expect(onDay, closeTo(point.value, 0.001));
+      }
+    });
+
+    test('with no run-up both still decline the same days', () {
+      final series = goalMetricSevenDayAverage(metric(), today: today);
+      expect(series, hasLength(1));
+      expect(
+        goalMetricSevenDayAverageOn(
+          metric(),
+          day: today.subtract(const Duration(days: 3)),
+        ),
+        isNull,
+      );
+      expect(goalMetricSevenDayAverageOn(metric(), day: today), isNotNull);
+    });
+  });
 }
