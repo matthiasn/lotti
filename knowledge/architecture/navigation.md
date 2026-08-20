@@ -225,6 +225,23 @@ stateDiagram-v2
 A corrupt or unknown-version row degrades to "nothing saved" — the Tasks
 landing — rather than throwing during bootstrap.
 
+**A restored route is stacked on its tab root, never substituted for it.**
+Restore beams each tab with `beamToNamed` on top of the root the constructor's
+`resetTabsToRoots` just set, so the tab's beaming history is two entries long
+and `canBeamBack` is true. Replacing the root instead (`beamToReplacementNamed`)
+left a one-entry history: `BeamerDelegate.beamBack` then does nothing, and since
+the mobile shell *removes* the bottom bar on `/tasks/<id>`, a cold start
+restored onto a task detail had no exit at all — no bar, a dead back chevron,
+and a blank page when the task had since been deleted.
+
+`NavService.beamBack` is the second half of that guarantee: when the delegate
+reports it cannot beam back, it beams to the active tab's root rather than
+doing nothing, so no route reached by any means is a dead end. That fallback
+**replaces** the dead route (`beamToReplacementNamed`) instead of stacking the
+root above it — a push would leave the detail underneath, and the next back
+would drop the user straight back into the page they just escaped. The tab root
+is therefore terminal: `canBeamBack` stays false and further backs are no-ops.
+
 ## Background tabs must not steal the foreground
 
 Every tab is mounted at once, so a tab the user is not looking at still builds
