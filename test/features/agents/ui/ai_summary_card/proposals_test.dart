@@ -35,16 +35,18 @@ void main() {
     registerFallbackValue(<String>{});
   });
   group('AiSummaryCard – Proposals', () {
-    testWidgets('collapses to the header pill when nothing is pending', (
+    testWidgets('omits the whole section when nothing is pending', (
       tester,
     ) async {
       await tester.pumpWidget(AgentTestBench().build());
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.text('Proposed changes'), findsOneWidget);
-      // At zero the pill disappears too — the header plus History disclosure
-      // alone carry the empty state.
+      // Not just the rows: the header, its divider and its padding go too.
+      // An empty "Proposed changes" band said nothing the missing rows did
+      // not already say, and cost a screenful of card height to say it.
+      expect(find.byType(ProposalsSection), findsNothing);
+      expect(find.text('Proposed changes'), findsNothing);
       expect(find.text('0 pending'), findsNothing);
       expect(find.byType(ProposalRow), findsNothing);
     });
@@ -68,9 +70,6 @@ void main() {
           ProposalsSection(
             open: [p1, p2],
             newlyArrived: const {'fp-p2'},
-            resolved: const [],
-            historyOpen: false,
-            onToggleHistory: () {},
             confirmAllBusy: false,
             confirmAllPulse: 0,
             onConfirmAll: null,
@@ -868,7 +867,8 @@ void main() {
   });
   group('AiSummaryCard – History', () {
     testWidgets(
-      'bottom rail distributes History left and Confirm all right',
+      'History sits on its own band below the proposals, Confirm all on '
+      'the proposals rail',
       (tester) async {
         final semantics = tester.ensureSemantics();
         final bench = AgentTestBench(
@@ -911,12 +911,22 @@ void main() {
           of: find.text('Confirm all'),
           matching: find.byType(DesignSystemButton),
         );
-        expect(tester.getRect(history).left, closeTo(rail.left, 0.01));
+        // Confirm all owns the proposals rail alone, trailing-aligned.
+        expect(tester.getRect(confirmAll).right, closeTo(rail.right, 0.01));
+        // History has moved out of that rail and onto its own band under the
+        // proposals section, still leading-aligned and still a full target.
+        expect(
+          tester.getRect(history).top,
+          greaterThan(tester.getRect(find.byType(ProposalsSection)).bottom),
+        );
+        expect(
+          tester.getRect(history).left,
+          lessThanOrEqualTo(rail.left),
+        );
         expect(
           tester.getSize(history).height,
           greaterThanOrEqualTo(context.designTokens.spacing.step8),
         );
-        expect(tester.getRect(confirmAll).right, closeTo(rail.right, 0.01));
         expect(
           tester.getSemantics(history),
           matchesSemantics(
@@ -945,6 +955,84 @@ void main() {
           ),
         );
         semantics.dispose();
+      },
+    );
+
+    testWidgets(
+      'History stays out of the collapsed report and arrives with Read more',
+      (tester) async {
+        final bench = AgentTestBench(
+          report: makeTestReport(
+            tldr: 'Short version.',
+            content: '## Goal\nThe long version.\n',
+          ),
+          suggestions: UnifiedSuggestionList(
+            open: const [],
+            activity: [
+              makeLedgerEntry(
+                id: 'h1',
+                status: ChangeItemStatus.confirmed,
+                args: const {'status': 'OPEN → GROOMED'},
+                humanSummary: 'Status: OPEN → GROOMED',
+              ),
+            ],
+          ),
+        );
+
+        await tester.pumpWidget(bench.build());
+        await tester.pumpAndSettle();
+
+        // Collapsed, the card is the summary and nothing else: no history
+        // disclosure competing with the two words the reader came for.
+        expect(find.text('Read more'), findsOneWidget);
+        expect(find.byType(ProposalHistorySection), findsNothing);
+        expect(find.textContaining('History · 1'), findsNothing);
+
+        await tester.tap(find.text('Read more'));
+        await tester.pumpAndSettle();
+
+        // Expanding is the move that says "show me the rest" — the record
+        // arrives with it, still collapsed until asked for.
+        expect(find.byType(ProposalHistorySection), findsOneWidget);
+        expect(find.textContaining('History · 1'), findsOneWidget);
+        expect(find.textContaining('OPEN → GROOMED'), findsNothing);
+
+        await tester.tap(find.textContaining('History · 1'));
+        await tester.pumpAndSettle();
+        expect(find.textContaining('OPEN → GROOMED'), findsOneWidget);
+
+        await tester.tap(find.text('Show less'));
+        await tester.pumpAndSettle();
+        expect(find.byType(ProposalHistorySection), findsNothing);
+        expect(find.textContaining('OPEN → GROOMED'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'History stays visible when the report has nothing more to expand',
+      (tester) async {
+        // No tldr/report split means no "Read more", so there is no expanded
+        // state to gate on — gating anyway would strand the record behind a
+        // control that never renders.
+        final bench = AgentTestBench(
+          suggestions: UnifiedSuggestionList(
+            open: const [],
+            activity: [
+              makeLedgerEntry(
+                id: 'h1',
+                status: ChangeItemStatus.confirmed,
+                args: const {'status': 'OPEN → GROOMED'},
+                humanSummary: 'Status: OPEN → GROOMED',
+              ),
+            ],
+          ),
+        );
+
+        await tester.pumpWidget(bench.build());
+        await tester.pumpAndSettle();
+
+        expect(find.text('Read more'), findsNothing);
+        expect(find.textContaining('History · 1'), findsOneWidget);
       },
     );
 

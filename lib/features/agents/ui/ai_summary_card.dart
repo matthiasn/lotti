@@ -43,8 +43,9 @@ export 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_widgets_pa
 /// header, the TLDR with an expandable inline report, a constant-height
 /// freshness strip with the manual wake CTA (while automatic updates
 /// are off — out-of-date warning or up-to-date confirmation, no layout
-/// jump between the two), the actionable proposals list with
-/// resolved history, and a quiet controls footer (wake / countdown /
+/// jump between the two), the actionable proposals list (only while
+/// something is proposed), the resolved history (only while the report
+/// is expanded), and a quiet controls footer (wake / countdown /
 /// automatic-updates toggle / model identity). Uses the same data
 /// sources as the prior `AgentSuggestionsPanel` (proposal ledger, agent
 /// report, wake state).
@@ -53,8 +54,8 @@ export 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_widgets_pa
 /// `ai_summary_card/` directory:
 /// * `tldr_section_part.dart` — header, badge, pills, countdown,
 ///   TLDR body
-/// * `proposals_section_part.dart` — section, row, kind chip, row
-///   actions, history toggle, resolved tag
+/// * `proposals_section_part.dart` — proposals section, history
+///   section, pending pill, history toggle
 /// * `proposal_kind_part.dart` — kind enum + tool-name mapping +
 ///   token lookup
 /// * `assign_agent_cta_part.dart` — fallback CTA + create flow
@@ -604,7 +605,11 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
       onToggle: () => setState(() => _expanded = !_expanded),
       onOpenInternals: () => _openInternals(agentName: subtitle),
     );
-    final proposalsSection = list == null
+    // Nothing to propose, no section: an empty "Proposed changes" band cost a
+    // divider and two paddings to say what the missing rows already said. A
+    // row committed by the user stays in `open` until its collapse finishes,
+    // so the section fades out with the last row rather than snapping.
+    final proposalsSection = list == null || list.open.isEmpty
         ? null
         : ProposalsSection(
             key: widget.proposalsFocusKey,
@@ -618,9 +623,6 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
                   (s) => !_exitingFingerprints.contains(s.fingerprint),
                 )
                 .length,
-            resolved: list.activity,
-            historyOpen: _historyOpen,
-            onToggleHistory: () => setState(() => _historyOpen = !_historyOpen),
             confirmAllBusy: _confirmAllBusy,
             confirmAllPulse: _confirmAllPulse,
             onConfirmAll: list.open.length > 1
@@ -633,6 +635,27 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
             // that just moved under the pointer.
             settling: _exitingFingerprints.isNotEmpty,
           );
+    // History rides with the full report, not with the summary: while the
+    // card is collapsed the reader wants the TL;DR and the decisions still
+    // open, and a permanent "History · n" row competed with both. Expanding
+    // the report is the move that says "show me the rest", so that is where
+    // the record appears.
+    //
+    // A report with nothing further to read has no expanded state to gate on
+    // — there the card is already showing everything it has, and hiding the
+    // record behind a control that does not exist would strand it.
+    final reportIsExpandable = additionalReport?.trim().isNotEmpty ?? false;
+    final showHistory =
+        list != null &&
+        list.activity.isNotEmpty &&
+        (_expanded || !reportIsExpandable);
+    final historySection = showHistory
+        ? ProposalHistorySection(
+            resolved: list.activity,
+            open: _historyOpen,
+            onToggle: () => setState(() => _historyOpen = !_historyOpen),
+          )
+        : null;
 
     final cardRadius = aiCardRadius(context);
     return DecoratedBox(
@@ -653,16 +676,17 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
             // their compact row height, so the section needs only step3 below.
             if (hasReportContent)
               Padding(
-                padding: EdgeInsets.fromLTRB(
-                  tokens.spacing.cardPadding,
-                  0,
-                  tokens.spacing.cardPadding,
-                  tokens.spacing.step3,
+                // No bottom inset here: the body's own disclosure row carries
+                // the trailing optical gap inside its tap target, and supplies
+                // an explicit one when it renders no row at all.
+                padding: EdgeInsets.symmetric(
+                  horizontal: tokens.spacing.cardPadding,
                 ),
                 child: reportBody,
               ),
-            // Hidden until the first value to avoid flashing the empty state.
+            // Both hidden until the first value to avoid flashing empty state.
             ?proposalsSection,
+            ?historySection,
             controlsFooter,
           ],
         ),

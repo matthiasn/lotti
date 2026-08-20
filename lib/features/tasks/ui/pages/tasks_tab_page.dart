@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
@@ -249,7 +250,14 @@ class _TasksTabPageState extends ConsumerState<TasksTabPage> {
           // surface — Figma pairs it against the lighter sidebar (level02,
           // #222222) for contrast.
           backgroundColor: context.designTokens.colors.background.level01,
-          floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+          // Not plain `endFloat`: the detail pane beside this list ends in the
+          // task action bar, and its Track time pill centres one step4 above
+          // the pane's bottom edge. The FAB's stock 16 px margin put the two
+          // labelled pills on visibly different lines; matching the bar's own
+          // padding puts them on one.
+          floatingActionButtonLocation: _ActionBarAlignedFabLocation(
+            bottomMargin: context.designTokens.spacing.step4,
+          ),
           floatingActionButton: DesignSystemBottomNavigationFabPadding(
             child: floatingActionButton,
           ),
@@ -1044,5 +1052,34 @@ Future<void> _defaultCreateTaskPressed(
   if (task != null) {
     unawaited(autoAssignCategoryAgentWith(agentService, task));
     getIt<NavService>().beamToNamed('/tasks/${task.meta.id}');
+  }
+}
+
+/// End-aligned floating location that sits [bottomMargin] above the content
+/// edge instead of the framework's fixed [kFloatingActionButtonMargin].
+///
+/// Never closer to the edge than the system's own bottom inset allows — a
+/// tighter margin is a visual alignment, not a licence to sit under the home
+/// indicator.
+class _ActionBarAlignedFabLocation extends StandardFabLocation
+    with FabEndOffsetX, FabFloatOffsetY {
+  const _ActionBarAlignedFabLocation({required this.bottomMargin});
+
+  final double bottomMargin;
+
+  @override
+  double getOffsetY(
+    ScaffoldPrelayoutGeometry scaffoldGeometry,
+    double adjustment,
+  ) {
+    final standard = super.getOffsetY(scaffoldGeometry, adjustment);
+    final lowest =
+        scaffoldGeometry.contentBottom -
+        scaffoldGeometry.floatingActionButtonSize.height -
+        scaffoldGeometry.minViewPadding.bottom;
+    return math.min(
+      standard + (kFloatingActionButtonMargin - bottomMargin),
+      lowest,
+    );
   }
 }
