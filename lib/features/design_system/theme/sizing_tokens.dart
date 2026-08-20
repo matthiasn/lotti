@@ -34,6 +34,19 @@ abstract final class ControlSizes {
   /// 28 — the compact chip riding inside a card row, where the full
   /// [iconChip] would out-weigh the title it leads.
   static const double iconChipCompact = 28;
+
+  /// 64 — the square thumbnail standing in for a media entry that has been
+  /// collapsed (the collapsed image card's preview).
+  ///
+  /// Larger than [iconChip] because this carries a real photograph rather than
+  /// a glyph, and a 40-square reduces a screenshot to an unreadable smear.
+  /// Bounded well below a card's full width because a run of collapsed images
+  /// must still read as a list rather than a gallery — the point of collapsing
+  /// is that the entry stops competing for the column.
+  ///
+  /// A container dimension, deliberately not borrowed from the spacing scale:
+  /// it is the picture's size, and must not resize when gaps are retuned.
+  static const double mediaThumbnail = 64;
 }
 
 /// Pointer interaction targets.

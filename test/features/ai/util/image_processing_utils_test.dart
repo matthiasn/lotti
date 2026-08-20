@@ -10,6 +10,7 @@ import 'package:flutter_image_compress/flutter_image_compress.dart'
         FlutterImageCompressValidator,
         XFile;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
@@ -426,6 +427,87 @@ void main() {
         expect(result, isNotNull);
         expect(result!.mimeType, 'image/jpeg');
         expect(result.base64Data, isNotEmpty);
+      },
+    );
+  });
+
+  group('imagePathSupportsTools', () {
+    AiConfigInferenceProvider provider(InferenceProviderType type) =>
+        AiConfig.inferenceProvider(
+              id: 'p',
+              baseUrl: 'https://example.test',
+              name: 'p',
+              apiKey: 'k',
+              createdAt: DateTime(2026),
+              inferenceProviderType: type,
+            )
+            as AiConfigInferenceProvider;
+
+    test(
+      'false for Ollama — its image client has no tool parameters, so a '
+      'prompt asking for a tool call could never be satisfied',
+      () {
+        expect(
+          imagePathSupportsTools(
+            provider: provider(InferenceProviderType.ollama),
+            model: 'llava',
+          ),
+          isFalse,
+        );
+      },
+    );
+
+    test(
+      'false for a Mistral OCR model — that routes to /v1/ocr, which is text '
+      'extraction rather than chat completion',
+      () {
+        expect(
+          imagePathSupportsTools(
+            provider: provider(InferenceProviderType.mistral),
+            model: 'mistral-ocr-latest',
+          ),
+          isFalse,
+        );
+      },
+    );
+
+    test('true for a non-OCR Mistral model, which takes the chat path', () {
+      expect(
+        imagePathSupportsTools(
+          provider: provider(InferenceProviderType.mistral),
+          model: 'pixtral-12b',
+        ),
+        isTrue,
+      );
+    });
+
+    test(
+      'true for Melious, whose image path forwards tools and toolChoice',
+      () {
+        expect(
+          imagePathSupportsTools(
+            provider: provider(InferenceProviderType.melious),
+            model: 'some-vision-model',
+          ),
+          isTrue,
+        );
+      },
+    );
+
+    test(
+      'true for the generic OpenAI-compatible path, and for no provider',
+      () {
+        expect(
+          imagePathSupportsTools(
+            provider: provider(InferenceProviderType.openAi),
+            model: 'gpt-4o',
+          ),
+          isTrue,
+        );
+        expect(
+          imagePathSupportsTools(provider: null, model: 'gpt-4o'),
+          isTrue,
+        );
       },
     );
   });

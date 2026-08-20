@@ -66,6 +66,7 @@ class _FakeMeliousInferenceRepository extends MeliousInferenceRepository {
     double? temperature,
     int? maxCompletionTokens,
     List<ChatCompletionTool>? tools,
+    ChatCompletionToolChoiceOption? toolChoice,
     InferenceImpactCollector? impactCollector,
   }) {
     imageCalls.add((

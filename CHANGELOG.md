@@ -258,6 +258,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   shows a single-line preview of its transcribed content instead of the full
   transcript, player and analysis; tap the line (or the chevron) to expand,
   and your choice sticks either way.
+- **Images get the same summary treatment, and collapse to a thumbnail.** An
+  image's AI analysis now also comes in three depths — a one-line description,
+  a short TLDR, and the full analysis behind "Show more" — so a screenshot of a
+  dashboard or a photo of a whiteboard tells you what it shows without opening
+  it. Collapsing an image now leaves a thumbnail with that line beside it,
+  instead of hiding the picture entirely. The extra depths need a vision model
+  that supports tool calling; with any other model the analysis reads exactly
+  as it did before.
 - **Recordings get summarised, in the context of their task.** After a
   recording linked to a task is transcribed, Lotti writes a summary of it in
   three depths: the one line you see when the recording is collapsed, a short

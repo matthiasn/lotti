@@ -252,7 +252,7 @@ default profile, whose `task.data.profileId` is null.
 |------------|--------|
 | Transcription | Updates `JournalAudio.transcripts` and `entryText`, then runs the audio-summary skill when the profile automates it (see below) |
 | Audio summary | Creates an `AiResponseEntry` linked from the `JournalAudio`, carrying `oneLiner` / `tldr` on `AiResponseData` plus the full markdown in `response` — **one per run**, newest wins |
-| Image analysis | Creates an `AiResponseEntry` linked from the `JournalImage` — **one per run**, so an image accumulates multiple analyses (a brief summary, a full OCR extraction), distinguished by model |
+| Image analysis | Creates an `AiResponseEntry` linked from the `JournalImage` — **one per run**, so an image accumulates multiple analyses (a brief summary, a full OCR extraction), distinguished by model. Carries `oneLiner` / `tldr` when the vision model can call tools (see below) |
 | Prompt generation (coding/design/research) | Creates an `AiResponseEntry` linked to the parent task when one resolves, **and** back to the source audio/text entry so the prompt appears in both linked-entries lists (falling back to a single link on the source entry when no task resolves) |
 | Image-prompt generation | Keeps the entry link |
 | Image generation | Imports the generated image, sets it as task cover art, then triggers automatic image analysis on it |
@@ -323,8 +323,38 @@ carries a `tldr` collapsed-to-TLDR rather than collapsed-to-nothing, and is
 always collapsible regardless of body length, since the tiers exist precisely so
 the reader can choose the short version.
 
-Image analyses keep their free-text contract for now; extending the tiers to
-them is deliberate follow-up work, not an oversight.
+## Tiered image analysis
+
+Image analysis publishes the same three tiers through the same
+`entrySummaryTool`, with two differences from the audio path that both follow
+from analysis being the older, load-bearing artifact:
+
+- **Tiers are conditional on the model.** They are requested only when the
+  resolved vision model's `supportsFunctionCalling` is true. Many capable
+  vision models cannot call tools, and this skill shipped on a free-text
+  contract long before the tiers existed — so tool support *upgrades* the
+  output rather than gating it. Without it, no tool is attached, no tier
+  instruction is appended (`SkillPromptBuilder`'s `requestTieredSummary`), and
+  the result is byte-for-byte what it is today.
+- **A rejected tool call is not a failure and buys no retry.** A model that
+  answers in prose despite the pin simply lands on the untiered path with its
+  analysis intact. Losing an analysis to reclaim a one-liner would be a bad
+  trade — the inverse of the audio summary, where the tiers *are* the artifact
+  and a failed run costs nothing already persisted.
+
+When tiers do come back, the tool's `summary` argument becomes the analysis
+body; `response` is never the raw streamed prose in that case.
+
+The collapsed image card leads with a **thumbnail**, not a text line: an
+image's payload is the picture, so collapsing it to text alone would be harder
+to place than the card it replaced — the reverse of audio, where the verbose
+transcript is what the user wanted out of the way. The label prefers
+`imageAnalysisOneLiner` and falls back to the image's own `entryText`, which is
+both where the legacy analysis path appends and where a user's caption lives.
+With neither, the thumbnail stands alone.
+
+Images still default to **expanded**; only audio reads a null `collapsed` as
+collapsed. The row renders whenever a user collapses an image themselves.
 
 Image analyses render through `AiResponseSummary` as a tinted, non-elevated AI
 surface — the report-card colour family without its accent-blended fill and

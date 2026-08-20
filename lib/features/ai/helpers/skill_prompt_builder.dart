@@ -21,6 +21,11 @@ class SkillPromptBuilder {
   /// [entryContent] is the user-supplied input text for the skill — either
   /// the latest audio transcript (for `JournalAudio` sources) or the typed
   /// note body (for `JournalEntry` sources). Source-agnostic by design.
+  /// [requestTieredSummary] appends the instruction to publish through the
+  /// `publish_entry_summary` tool instead of answering in prose. Only the
+  /// caller knows whether the resolved model can call tools at all, so this
+  /// is a parameter rather than a property of the skill: the same image
+  /// analysis skill runs both ways depending on the model behind it.
   SkillPromptResult build({
     required AiConfigSkill skill,
     String? speechDictionary,
@@ -30,6 +35,7 @@ class SkillPromptBuilder {
     String? entryContent,
     String? languageCode,
     String? correctionExamples,
+    bool requestTieredSummary = false,
   }) {
     final systemMessage = _buildSystemMessage(
       skill: skill,
@@ -46,6 +52,7 @@ class SkillPromptBuilder {
       entryContent: entryContent,
       languageCode: languageCode,
       correctionExamples: correctionExamples,
+      requestTieredSummary: requestTieredSummary,
     );
 
     return SkillPromptResult(
@@ -92,6 +99,7 @@ class SkillPromptBuilder {
     String? entryContent,
     String? languageCode,
     String? correctionExamples,
+    bool requestTieredSummary = false,
   }) {
     final buffer = StringBuffer();
     final compactCoverArtPrompt = _usesCompactCoverArtPrompt(skill);
@@ -171,6 +179,17 @@ class SkillPromptBuilder {
         ..writeln()
         ..writeln()
         ..writeln(_urlFormattingRules);
+    }
+
+    // Ask for the three tiers through the tool. Appended last so it is the
+    // final instruction the model reads, and only when the caller has
+    // actually attached the tool — otherwise it would tell a model with no
+    // tools to call one.
+    if (requestTieredSummary) {
+      buffer
+        ..writeln()
+        ..writeln()
+        ..writeln(_tieredSummaryRules);
     }
 
     // Inject correction examples for transcription skills.
@@ -345,6 +364,17 @@ SPEAKER IDENTIFICATION RULES (CRITICAL):
 - NEVER use names from the dictionary or context to identify speakers.
 - You do NOT know who is speaking - only that different voices exist.
 - Use ONLY generic numbered labels (e.g., "Speaker 1:", "Speaker 2:", etc.) for speaker changes.''';
+
+/// Instruction appended when the caller attaches `publish_entry_summary` and
+/// pins the model to it, so the analysis comes back as typed tiers rather
+/// than prose the reader has to skim.
+const _tieredSummaryRules = '''
+OUTPUT — PUBLISH THROUGH THE TOOL:
+Do NOT answer in prose. Call the `publish_entry_summary` tool exactly once, with all three arguments:
+- `oneLiner`: ONE plain sentence naming what this is, specific enough to identify it in a list. This becomes the entry's collapsed label, so it must be neutral and descriptive — no jokes, no editorialising, no leading label.
+- `tldr`: one to three sentences covering what matters here and why it matters for the task.
+- `summary`: the full analysis, as markdown, following every instruction above.
+Any tone or humour the instructions above call for belongs in `summary`, never in `oneLiner`.''';
 
 /// URL formatting rules injected into image analysis skill prompts.
 const _urlFormattingRules = '''

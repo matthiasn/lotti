@@ -175,6 +175,7 @@ class CloudInferenceGenerate {
     OpenAIClient? overrideClient,
     AiConfigInferenceProvider? provider,
     List<ChatCompletionTool>? tools,
+    ChatCompletionToolChoiceOption? toolChoice,
     String? systemMessage,
     GeminiThinkingMode? geminiThinkingMode,
     InferenceImpactCollector? impactCollector,
@@ -186,7 +187,12 @@ class CloudInferenceGenerate {
           apiKey: apiKey,
         );
 
-    // For Ollama, use the dedicated repository
+    // For Ollama, use the dedicated repository.
+    //
+    // NOTE: this path carries no `tools` / `toolChoice` — the Ollama image
+    // client has no parameter for them. Callers that need a tool call back
+    // must not request one here; `imagePathSupportsTools` is the predicate
+    // that keeps a prompt from asking for a tool this branch cannot offer.
     if (provider?.inferenceProviderType == InferenceProviderType.ollama) {
       return _ollamaRepository.generateWithImages(
         prompt: prompt,
@@ -210,6 +216,7 @@ class CloudInferenceGenerate {
         temperature: temperature,
         maxCompletionTokens: maxCompletionTokens,
         tools: tools,
+        toolChoice: toolChoice,
         impactCollector: impactCollector,
       );
     }
@@ -270,6 +277,7 @@ class CloudInferenceGenerate {
         temperature: temperature,
         maxTokens: maxCompletionTokens,
         tools: tools,
+        toolChoice: toolChoice,
         reasoningEffort: reasoningEffort,
       ),
     );
