@@ -473,6 +473,12 @@ double goalDayCellRadius(DsTokens tokens) => tokens.radii.s;
 
 /// Where the weekday initial sits inside a day cell, and how big it gets.
 ///
+/// Deliberately NOT an extension on `DsTokens`. Hanging these off the token
+/// object put feature-specific geometry into the canonical token API, where
+/// every caller in the app would see `tokens.letterInsetStart` offered
+/// alongside real exported tokens — which is a bigger claim than "these
+/// three numbers live in one place" was ever meant to make.
+///
 /// Proportions of the cell rather than absolute lengths: the cell itself is
 /// sized by [goalDayTrackMetrics] from the available width, so a fixed inset
 /// that looked right on a fortnight track would crowd the corner on a
@@ -480,19 +486,19 @@ double goalDayCellRadius(DsTokens tokens) => tokens.radii.s;
 /// design-system token for "a fraction of a cell" — so they live here, named
 /// and in ONE place, rather than as bare numbers inside the widget.
 ///
-/// [letterScaleBox] is a ceiling, not a size: the rendered letter is
-/// `min(fontSize, cellSize * letterScaleBox)`, because the glyph is fitted
+/// [GoalDayCellLetter.scaleBox] is a ceiling, not a size: the rendered letter
+/// is `min(fontSize, cellSize * scaleBox)`, because the glyph is fitted
 /// with [BoxFit.scaleDown] and that never scales UP. The box therefore
 /// governs small cells while the style's own size caps large ones.
-extension GoalDayCellLetterMetrics on DsTokens {
+abstract final class GoalDayCellLetter {
   /// Inset from the cell's leading edge.
-  double get letterInsetStart => 0.18;
+  static const double insetStart = 0.18;
 
   /// Inset from the cell's bottom edge.
-  double get letterInsetBottom => 0.14;
+  static const double insetBottom = 0.14;
 
   /// Ceiling on the letter's height, as a fraction of the cell.
-  double get letterScaleBox => 0.38;
+  static const double scaleBox = 0.38;
 }
 
 /// Shared fill for a day cell: the full-strength success hue when the goal
@@ -618,8 +624,8 @@ Widget? goalDayCellLetter(
     // under and behind it than pinned to the rounded rect's inner angle —
     // but it stays an annotation, so it moves TOWARD the center rather than
     // to it.
-    start: cellSize * tokens.letterInsetStart,
-    bottom: cellSize * tokens.letterInsetBottom,
+    start: cellSize * GoalDayCellLetter.insetStart,
+    bottom: cellSize * GoalDayCellLetter.insetBottom,
     child: SizedBox(
       // The scale bound: the glyph shrinks into this box, so the letter
       // stays a small corner annotation at every cell size instead of
@@ -627,7 +633,7 @@ Widget? goalDayCellLetter(
       // `min(fontSize, this height)` — `scaleDown` never scales UP — so
       // raising the letter one step means raising BOTH: the box governs the
       // small cells, the style's own size caps the large ones.
-      height: cellSize * tokens.letterScaleBox,
+      height: cellSize * GoalDayCellLetter.scaleBox,
       child: FittedBox(
         fit: BoxFit.scaleDown,
         child: Text(
