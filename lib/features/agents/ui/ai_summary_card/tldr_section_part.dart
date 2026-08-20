@@ -232,6 +232,7 @@ class TldrBody extends StatelessWidget {
       color: ai.bodyText,
     );
     final hasMore = additionalReport?.trim().isNotEmpty ?? false;
+    final hasDisclosure = hasMore || expanded;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -252,8 +253,11 @@ class TldrBody extends StatelessWidget {
             ),
           ),
         ],
-        if (hasMore || expanded) ...[
-          SizedBox(height: tokens.spacing.step1),
+        // No spacer above the disclosure row: its 40-high tap target already
+        // carries ~12 px of optical padding on each side, so an explicit gap
+        // stacked a second one on top and left a dead band under the prose.
+        // The target instead reaches up into the last line's descender area.
+        if (hasDisclosure)
           Wrap(
             spacing: tokens.spacing.step4,
             runSpacing: tokens.spacing.step2,
@@ -276,7 +280,10 @@ class TldrBody extends StatelessWidget {
                 ),
             ],
           ),
-        ],
+        // Without a disclosure row there is no tap target to supply the
+        // trailing optical gap, so the body pays for it itself. The card gives
+        // this block no bottom padding of its own.
+        if (!hasDisclosure) SizedBox(height: tokens.spacing.step3),
       ],
     );
   }

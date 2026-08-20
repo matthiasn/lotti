@@ -12,18 +12,17 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Proposals section sandwiched between the TLDR body and the controls
-/// footer. Always shows the section title + pending count badge +
-/// optional "Confirm all" button. With open proposals the body is a
-/// vertical list of [ProposalRow]s; with none, the "0 pending" pill
-/// already carries the state, so no placeholder band is rendered.
-/// Resolved entries are rendered through [_HistoryToggle] + a
-/// hidden-by-default list.
+/// footer: section title + pending count badge, the vertical list of
+/// [ProposalRow]s, and an optional "Confirm all" rail.
+///
+/// The card renders this only while [open] is non-empty. A header over an
+/// empty band said nothing the absence of rows did not already say, and cost
+/// a divider plus two paddings to say it — so with nothing to propose there
+/// is no section at all. Resolved entries live in [ProposalHistorySection],
+/// which the card shows only with the report expanded.
 class ProposalsSection extends StatelessWidget {
   const ProposalsSection({
     required this.open,
-    required this.resolved,
-    required this.historyOpen,
-    required this.onToggleHistory,
     required this.confirmAllBusy,
     required this.onConfirmAll,
     required this.confirmAllPulse,
@@ -41,9 +40,6 @@ class ProposalsSection extends StatelessWidget {
   /// and collapsing out, so the count ticks down in sync with the action.
   /// Falls back to `open.length` when not supplied.
   final int? pendingCount;
-  final List<LedgerEntry> resolved;
-  final bool historyOpen;
-  final VoidCallback onToggleHistory;
   final bool confirmAllBusy;
   final Future<void> Function()? onConfirmAll;
 
@@ -118,87 +114,127 @@ class ProposalsSection extends StatelessWidget {
                   ],
                 ],
               ),
-              if (open.isNotEmpty) ...[
-                SizedBox(height: tokens.spacing.step3),
-                // No inter-row Padding here: each open row owns a trailing gap
-                // (step4) *inside* its collapse subtree, so the gap closes with the
-                // row when it leaves — no leftover spacing to snap on prune.
-                for (var i = 0; i < open.length; i++)
-                  // A newly arrived proposal eases its own height open; the initial
-                  // batch (and a row re-appearing mid-collapse) appears instantly.
-                  // SizeFadeEntrance is a SizeTransition, so it composes with the
-                  // row's own collapse on exit without fighting it.
-                  SizeFadeEntrance(
-                    key: ValueKey(
-                      'enter-${open[i].changeSet.id}-${open[i].itemIndex}',
-                    ),
-                    animate: newlyArrived.contains(open[i].fingerprint),
-                    child: ProposalRow(
-                      // Stable identity (set id + item index) so the row's
-                      // timer/animation/busy state stays bound to its suggestion
-                      // when the open list mutates (e.g. confirm-all), instead of
-                      // index-based element reuse transferring it to a sibling.
-                      key: ValueKey(
-                        'open-${open[i].changeSet.id}-${open[i].itemIndex}',
-                      ),
-                      suggestion: open[i],
-                      // Only the first pending row gets the swipe-affordance
-                      // wiggle hint so the page doesn't pulse with every
-                      // visible row.
-                      isFirst: i == 0,
-                      confirmAllPulse: confirmAllPulse,
-                      cascadeIndex: i,
-                      onResolveStart: onResolveStart,
-                      onResolveEnd: onResolveEnd,
-                      settling: settling,
-                      pendingCount: pendingCount ?? open.length,
-                    ),
+              SizedBox(height: tokens.spacing.step3),
+              // No inter-row Padding here: each open row owns a trailing gap
+              // (step4) *inside* its collapse subtree, so the gap closes with the
+              // row when it leaves — no leftover spacing to snap on prune.
+              for (var i = 0; i < open.length; i++)
+                // A newly arrived proposal eases its own height open; the initial
+                // batch (and a row re-appearing mid-collapse) appears instantly.
+                // SizeFadeEntrance is a SizeTransition, so it composes with the
+                // row's own collapse on exit without fighting it.
+                SizeFadeEntrance(
+                  key: ValueKey(
+                    'enter-${open[i].changeSet.id}-${open[i].itemIndex}',
                   ),
-              ],
-              // Bottom rail: the list-level operations share one line —
-              // History disclosure left, batch confirm right. Open rows
-              // already end with their own trailing gap, so only the empty
-              // list needs one here.
-              if (resolved.isNotEmpty || onConfirmAll != null) ...[
-                if (open.isEmpty) SizedBox(height: tokens.spacing.step1),
-                // Wrap, not Row: long translations or large text scales
-                // drop the batch action to its own line instead of
-                // overflowing the constrained card.
-                SizedBox(
-                  key: const ValueKey('proposalBottomRail'),
-                  width: double.infinity,
-                  child: Wrap(
-                    alignment: WrapAlignment.spaceBetween,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    spacing: tokens.spacing.step3,
-                    runSpacing: tokens.spacing.step2,
-                    children: [
-                      if (resolved.isNotEmpty)
-                        _HistoryToggle(
-                          open: historyOpen,
-                          count: resolved.length,
-                          onPressed: onToggleHistory,
-                        )
-                      else
-                        const SizedBox.shrink(),
-                      if (onConfirmAll != null)
-                        DesignSystemButton(
-                          label: messages.changeSetConfirmAll,
-                          leadingIcon: LottiIcons.confirmAll,
-                          variant: DesignSystemButtonVariant.outlined,
-                          isLoading: confirmAllBusy,
-                          onPressed: () => unawaited(onConfirmAll!()),
-                        ),
-                    ],
+                  animate: newlyArrived.contains(open[i].fingerprint),
+                  child: ProposalRow(
+                    // Stable identity (set id + item index) so the row's
+                    // timer/animation/busy state stays bound to its suggestion
+                    // when the open list mutates (e.g. confirm-all), instead of
+                    // index-based element reuse transferring it to a sibling.
+                    key: ValueKey(
+                      'open-${open[i].changeSet.id}-${open[i].itemIndex}',
+                    ),
+                    suggestion: open[i],
+                    // Only the first pending row gets the swipe-affordance
+                    // wiggle hint so the page doesn't pulse with every
+                    // visible row.
+                    isFirst: i == 0,
+                    confirmAllPulse: confirmAllPulse,
+                    cascadeIndex: i,
+                    onResolveStart: onResolveStart,
+                    onResolveEnd: onResolveEnd,
+                    settling: settling,
+                    pendingCount: pendingCount ?? open.length,
                   ),
                 ),
-              ],
-              if (resolved.isNotEmpty && historyOpen) ...[
+              // Bottom rail: the one list-level operation, trailing-aligned.
+              // Open rows already end with their own trailing gap, so the
+              // rail needs none of its own.
+              if (onConfirmAll != null)
+                Align(
+                  key: const ValueKey('proposalBottomRail'),
+                  alignment: Alignment.centerRight,
+                  child: DesignSystemButton(
+                    label: messages.changeSetConfirmAll,
+                    leadingIcon: LottiIcons.confirmAll,
+                    variant: DesignSystemButtonVariant.outlined,
+                    isLoading: confirmAllBusy,
+                    onPressed: () => unawaited(onConfirmAll!()),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Resolved proposals, disclosed on their own section band.
+///
+/// Split out of [ProposalsSection] because the two answer different
+/// questions: what still needs a decision, and what was already decided. The
+/// card shows this only with the report expanded — in the collapsed reading
+/// state a permanently visible "History · n" row was the third disclosure
+/// competing for the same glance, and none of it was the summary the user
+/// came for.
+class ProposalHistorySection extends StatelessWidget {
+  const ProposalHistorySection({
+    required this.resolved,
+    required this.open,
+    required this.onToggle,
+    super.key,
+  });
+
+  /// Resolved ledger entries, newest first. Never empty — the card omits the
+  /// whole section rather than render an empty disclosure.
+  final List<LedgerEntry> resolved;
+
+  /// Whether the resolved list is disclosed.
+  final bool open;
+  final VoidCallback onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final ai = tokens.colors.aiCard;
+
+    return Container(
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: ai.borderSoft)),
+      ),
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.cardPadding,
+        // The toggle's own 40-high tap target carries the vertical rhythm
+        // while collapsed; the band adds only the hairline's breathing room.
+        vertical: tokens.spacing.step1,
+      ),
+      // Same reading measure as the summary and the proposals above it.
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxWidth: TldrBody.maxReadingWidth,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _HistoryToggle(
+                open: open,
+                count: resolved.length,
+                onPressed: onToggle,
+              ),
+              if (open) ...[
                 SizedBox(height: tokens.spacing.step2),
                 for (var i = 0; i < resolved.length; i++)
                   Padding(
                     padding: EdgeInsets.only(
                       top: i == 0 ? 0 : tokens.spacing.step2,
+                      bottom: i == resolved.length - 1
+                          ? tokens.spacing.step3
+                          : 0,
                     ),
                     child: ProposalRow.fromLedger(
                       key: ValueKey(

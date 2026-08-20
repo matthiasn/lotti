@@ -67,7 +67,12 @@ Contents:
   through `ChangeSetConfirmationService`. *Confirm all* batches `confirmAll` over
   distinct change sets.
 - **`History · N`** — lazily expands resolved ledger entries with
-  `Confirmed` / `Dismissed` tags and a strikethrough.
+  `Confirmed` / `Dismissed` tags and a strikethrough. It is a section of its
+  own (`ProposalHistorySection`), not a rail inside *Proposed changes*, and it
+  rides with the expanded report: collapsed, the card shows the summary and the
+  decisions still open and nothing else. A report with no *Read more* — no
+  tldr/content split, so no expanded state to gate on — shows history
+  unconditionally rather than stranding it behind a control that never renders.
 - **The controls footer** — a composition root over `AgentAutomationRow` and
   `TaskAgentIdentityRegion`.
 
@@ -83,8 +88,11 @@ Report reading and agent controls sit in separate information groups. The report
 is the hero: header, TLDR (reading measure capped at ~75 characters even when the
 card is wider, rendered with the editor-aligned `body.bodySmall` token),
 disclosure and proposals form one linear reading column at every width. With no
-open proposals the `0 pending` pill carries the empty state — no placeholder
-band. Proposal prose uses the same unmodified `body.bodySmall` metrics as the
+open proposals there is no *Proposed changes* section at all — the header, its
+divider and its padding go with the rows, because an empty band said nothing the
+missing rows had not already said. The disclosure row carries the summary's
+trailing gap inside its own 40-high tap target, so the card adds no bottom inset
+under the report body. Proposal prose uses the same unmodified `body.bodySmall` metrics as the
 report rather than a separate line height.
 
 Each proposal is a neutral hairline row leading with its content: the change kind

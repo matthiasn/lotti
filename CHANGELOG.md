@@ -195,7 +195,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   only inside the summary card's own footer. The dated log-entry history sits
   under a History header that folds it away in one tap when you are done with
   it, and reopens on its own when something needs to scroll to an entry
-  inside it.
+  inside it. The summary card itself only shows what it has: "Proposed
+  changes" appears when the agent actually proposes something, the record of
+  past decisions comes with "Read more" rather than sitting on the collapsed
+  card, and the dead band under the summary text is gone.
 - **Each log entry's controls read in one order.** An entry's header now runs
   quiet to loud, left to right: the star (only when the entry is starred),
   the AI menu, the ⋯ menu, and the expand/collapse chevron last of all, on

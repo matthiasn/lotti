@@ -53,8 +53,13 @@ class _DesignSystemFloatingActionButtonState
     final tokens = context.designTokens;
     final enabled = widget.onPressed != null;
     final label = widget.label;
-    final dimension =
-        tokens.typography.lineHeight.subtitle1 + (tokens.spacing.step5 * 2);
+    // The circular form keeps the 56 the FAB convention expects; the extended
+    // pill drops to the standard tap target so it reads as a peer of the
+    // labelled controls it sits beside (the task bar's Track time pill) rather
+    // than towering over them.
+    final dimension = label == null
+        ? tokens.typography.lineHeight.subtitle1 + (tokens.spacing.step5 * 2)
+        : TapTargets.minimum;
     final backgroundColor = switch ((_pressed, _hovered)) {
       (_, _) when !enabled => tokens.colors.interactive.enabled,
       (true, _) => tokens.colors.interactive.pressed,

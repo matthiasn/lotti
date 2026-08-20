@@ -588,6 +588,42 @@ void main() {
     expect(find.byType(DesignSystemFloatingActionButton), findsOneWidget);
   });
 
+  testWidgets(
+    'the worded FAB matches the task action bar: 48 high, one step4 above '
+    'the content edge',
+    (tester) async {
+      await tester.pumpWidget(
+        buildSubject(
+          state: state(),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final tokens = tester
+          .element(find.byType(DesignSystemFloatingActionButton))
+          .designTokens;
+      final fab = tester.getRect(
+        find.byType(DesignSystemFloatingActionButton),
+      );
+      // Same height as the Track time pill in the detail pane's action bar,
+      // which is the control it sits beside on a desktop split.
+      expect(fab.height, TapTargets.minimum);
+
+      // ...and the same distance off the bottom edge as that bar's own
+      // padding, so the two pills share a centreline rather than the FAB
+      // riding four pixels high on the framework's fixed 16.
+      final scaffold = tester.getRect(find.byType(Scaffold).first);
+      final padded = tester.getRect(
+        find.byType(DesignSystemBottomNavigationFabPadding),
+      );
+      expect(
+        scaffold.bottom - padded.bottom,
+        closeTo(tokens.spacing.step4, 0.01),
+      );
+    },
+  );
+
   testWidgets('desktop mode listens to desktopSelectedTaskId', (
     tester,
   ) async {

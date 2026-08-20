@@ -68,10 +68,11 @@ void main() {
       final size = tester.getSize(
         find.byType(DesignSystemFloatingActionButton),
       );
-      // Same height as the circular form — the pill only grows sideways, so
-      // it keeps the FAB's vertical rhythm against the bottom bar.
-      expect(size.height, 56);
-      expect(size.width, greaterThan(56));
+      // Shorter than the circular form's 56: a worded pill sits beside other
+      // labelled controls (the task bar's Track time pill) and has to read as
+      // their peer, so it takes the standard 48 tap target instead.
+      expect(size.height, TapTargets.minimum);
+      expect(size.width, greaterThan(TapTargets.minimum));
 
       // The visible word must not also be announced on its own: the button
       // already carries the action name, and a duplicate node reads it twice.
