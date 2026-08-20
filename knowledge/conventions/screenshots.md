@@ -39,8 +39,8 @@ use commit-addressed public URLs:
 ```
 
 That split keeps a Flutter checkout from carrying megabytes of PNGs that change
-every time a surface is redesigned, and it is why `README.md` and
-`GETTING_STARTED.md` embed remote images rather than local ones.
+every time a surface is redesigned, and it is why `README.md` embeds remote
+images rather than local ones.
 
 The enforcement is thin, so know it: `.gitignore` ignores any directory named
 `screenshots`, which is exactly the harness's default output directory. Capture
