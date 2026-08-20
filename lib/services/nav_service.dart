@@ -380,7 +380,14 @@ class NavService {
       final route = snapshot.routes[spec.rootPath];
       if (route == null || route == spec.rootPath) continue;
       if (!_matchesRootPath(route, spec.rootPath)) continue;
-      spec.delegate.beamToReplacementNamed(route);
+      // Stacked on top of the root [resetTabsToRoots] just beamed to, NOT
+      // replacing it: a replacement leaves the tab's beaming history one
+      // entry long, `canBeamBack` false, and the restored detail page's back
+      // button dead. On mobile the shell also hides the bottom bar on a task
+      // detail route, so a replaced history restored the user straight into a
+      // screen with no way out at all — worse still when the entity had since
+      // been deleted and the page rendered empty.
+      spec.delegate.beamToNamed(route);
     }
 
     _pendingActiveRootPath = snapshot.activeRootPath;
@@ -867,8 +874,21 @@ class NavService {
     return snapshot?.activeRoute;
   }
 
+  /// Pops the active tab one step back, guaranteeing an escape.
+  ///
+  /// When the tab has no beaming history to pop (a cold start restored
+  /// straight onto a detail route), it falls back to that tab's root instead
+  /// of doing nothing.
   void beamBack({Object? data}) {
-    delegateByIndex(index).beamBack(data: data);
+    final delegate = delegateByIndex(index);
+    if (delegate.beamBack(data: data)) return;
+    // Nothing to go back to. That must never mean "stay here": a detail route
+    // can hide the mobile bottom bar (task details) and render nothing at all
+    // (a deleted entity), so a dead back button is a full lockout. Fall back
+    // to the tab's own root, which is always a real screen.
+    final rootPath = _activeRootPath;
+    if (routeForTab(rootPath) == rootPath) return;
+    delegate.beamToNamed(rootPath);
   }
 
   Future<void> dispose() async {

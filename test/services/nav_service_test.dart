@@ -855,6 +855,22 @@ void main() {
         // Should not throw even if there is no history to go back to.
         expect(navService.beamBack, returnsNormally);
       });
+
+      test('falls back to the tab root when there is no history to pop', () {
+        final bench = _NavFlagBench()..emitAll(enabled: true);
+        final navService = bench.navService;
+
+        // A caller outside this service can replace the tab's only history
+        // entry with a detail route — restore used to do exactly that. The
+        // delegate then cannot beam back, and on mobile the detail route
+        // hides the bottom bar: without a fallback the user is locked in.
+        navService.tasksDelegate.beamToReplacementNamed('/tasks/task-3');
+        expect(navService.tasksDelegate.canBeamBack, isFalse);
+
+        navService.beamBack();
+
+        expect(navService.routeForTab('/tasks'), '/tasks');
+      });
     });
 
     group('resetDesktopTaskDetail selectedTaskId sync', () {
@@ -1158,6 +1174,36 @@ void main() {
         expect(bench.navService.index, 0);
         expect(bench.navService.currentPath, '/tasks');
       });
+
+      test(
+        'a restored detail route can be backed out of',
+        () async {
+          final settingsDb = SettingsDb(inMemoryDatabase: true);
+          await settingsDb.saveSettingsItem(
+            navStateKey,
+            const NavStateSnapshot(
+              activeRootPath: '/tasks',
+              routes: {'/tasks': '/tasks/task-7'},
+            ).encode(),
+          );
+
+          final bench = _NavFlagBench(settingsDb: settingsDb);
+          await bench.navService.restoreNavigationState();
+          bench.emitAll(enabled: true);
+          expect(bench.navService.routeForTab('/tasks'), '/tasks/task-7');
+
+          // Restoring must leave the tab root UNDER the detail route. The
+          // mobile shell hides the bottom bar on `/tasks/<id>`, so if the
+          // restored history were one entry long the back button would be
+          // dead and the user locked into the detail page — with nothing on
+          // it at all when the task has since been deleted.
+          expect(bench.navService.tasksDelegate.canBeamBack, isTrue);
+          bench.navService.beamBack();
+          await pumpEventQueue();
+
+          expect(bench.navService.routeForTab('/tasks'), '/tasks');
+        },
+      );
 
       test('a pre-JSON NAV_LAST_ROUTE row still restores its tab', () async {
         final settingsDb = SettingsDb(inMemoryDatabase: true);
