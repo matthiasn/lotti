@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 /// An [InkWell] with every Material overlay silenced — no hover fill, no
 /// focus fill, no splash, no highlight — that instead reports its interaction
@@ -20,6 +21,13 @@ import 'package:flutter/material.dart';
 /// only visible cue keyboard users get. Folding the press in restores tap
 /// feedback on touch, where the removed splash used to carry it.
 ///
+/// A builder that deliberately shows nothing on hover — a whole-card doorway,
+/// a data cell whose hover answer is a tooltip — must still be findable by
+/// keyboard. [focusRing] is the cue for that class: an interactive-ink
+/// outline drawn only while the target holds keyboard focus, never on hover
+/// or press, so the pointer experience stays exactly as quiet as the builder
+/// made it.
+///
 /// The widget adds no semantics of its own beyond [InkWell]'s tap action —
 /// callers keep their existing [Semantics] wrappers. It supplies the click
 /// cursor through [InkWell]'s built-in [MouseRegion].
@@ -32,6 +40,7 @@ class DsQuietInk extends StatefulWidget {
     this.customBorder,
     this.excludeFromSemantics = false,
     this.canRequestFocus = true,
+    this.focusRing = false,
     super.key,
   });
 
@@ -60,6 +69,12 @@ class DsQuietInk extends StatefulWidget {
   /// Forwarded to [InkWell.canRequestFocus]; set false when the target must
   /// not add a second Tab stop beside the control it enlarges.
   final bool canRequestFocus;
+
+  /// Draws an interactive-ink outline (shaped by [borderRadius]) while the
+  /// target holds keyboard focus — and only then. Opt in on targets whose
+  /// builder deliberately shows no hover state, so Tab still lands somewhere
+  /// visible.
+  final bool focusRing;
 
   @override
   State<DsQuietInk> createState() => _DsQuietInkState();
@@ -97,7 +112,19 @@ class _DsQuietInkState extends State<DsQuietInk> {
         onHover: (value) => setState(() => _hovered = value),
         onFocusChange: (value) => setState(() => _focused = value),
         onHighlightChanged: (value) => setState(() => _pressed = value),
-        child: widget.builder(context, _highlighted),
+        child: widget.focusRing && _focused
+            ? DecoratedBox(
+                position: DecorationPosition.foreground,
+                decoration: BoxDecoration(
+                  borderRadius: widget.borderRadius,
+                  border: Border.all(
+                    color: context.designTokens.colors.interactive.enabled,
+                    width: BorderWidths.emphasis,
+                  ),
+                ),
+                child: widget.builder(context, _highlighted),
+              )
+            : widget.builder(context, _highlighted),
       ),
     );
   }

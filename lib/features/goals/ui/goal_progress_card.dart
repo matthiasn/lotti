@@ -425,6 +425,7 @@ class _CompactDayCell extends StatelessWidget {
         child: DsQuietInk(
           onTap: onTap,
           borderRadius: BorderRadius.circular(tokens.radii.s),
+          focusRing: true,
           builder: (context, highlighted) => ConstrainedBox(
             constraints: const BoxConstraints(
               minHeight: TapTargets.minimum,
@@ -2568,6 +2569,7 @@ class _HabitDayOutcomeMenuState extends State<_HabitDayOutcomeMenu> {
                 }
               : null,
           borderRadius: BorderRadius.circular(tokens.radii.s),
+          focusRing: true,
           builder: (context, highlighted) => widget.child,
         ),
       ),

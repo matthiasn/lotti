@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
@@ -282,6 +283,22 @@ void main() {
       ink.overlayColor?.resolve({WidgetState.hovered}),
       Colors.transparent,
     );
+
+    // No hover state does not mean invisible to keyboards: Tab landing on
+    // the header draws the quiet-ink focus ring.
+    Finder ring() => find.ancestor(
+      of: find.text('Fitness'),
+      matching: find.byWidgetPredicate(
+        (widget) =>
+            widget is DecoratedBox &&
+            widget.position == DecorationPosition.foreground &&
+            (widget.decoration as BoxDecoration).border != null,
+      ),
+    );
+    expect(ring(), findsNothing);
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+    expect(ring(), findsOneWidget);
   });
 
   testWidgets('a significant trend renders the shared direction chip', (

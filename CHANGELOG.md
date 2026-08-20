@@ -16,7 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   it — in place of the stock grey slab. Habit cards also got tighter: the
   "N successful days needed to recover" note shares a line with the date
   span whenever it fits, and the vertical gaps inside the card shrank a
-  step.
+  step. Keyboard users keep a visible cue where the hover went away: Tab
+  landing on a goal card, the banner or a day square draws a clear focus
+  outline.
 - **Cleaner goal cards.** Each habit and signal card now carries one stacked
   block in its top-right corner — the key reading ("7 this window · target
   5", "121 / 81 mmHg") with its status ("On track", "Needs attention")

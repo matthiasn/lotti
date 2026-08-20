@@ -1,11 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/components/ds_floating_surface.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-
-// The context menu's soft shadow, shared verbatim: the design system has no
-// elevation-shadow token yet, and the two floating surfaces must match.
-const _kShadowColor = Color.fromRGBO(70, 70, 70, 0.25);
-const _kShadowBlurRadius = 4.0;
-const _kShadowOffsetY = 2.0;
 
 /// How long a resting pointer waits before the tooltip appears. The stock
 /// zero-wait tooltip fires the moment a cursor crosses the target, which on a
@@ -82,13 +77,7 @@ class DsTooltip extends StatelessWidget {
         color: tokens.colors.background.level01,
         borderRadius: BorderRadius.circular(tokens.radii.s),
         border: Border.all(color: tokens.colors.decorative.level01),
-        boxShadow: const [
-          BoxShadow(
-            color: _kShadowColor,
-            offset: Offset(0, _kShadowOffsetY),
-            blurRadius: _kShadowBlurRadius,
-          ),
-        ],
+        boxShadow: dsFloatingSurfaceShadow,
       ),
       padding: EdgeInsets.symmetric(
         horizontal: tokens.spacing.step3,

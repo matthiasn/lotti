@@ -1,7 +1,10 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
+import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 void main() {
   Widget host(Widget child) => MaterialApp(
@@ -143,6 +146,63 @@ void main() {
       await tester.pumpAndSettle();
       expect(longPresses, 1);
       expect(find.text('rest'), findsOneWidget);
+    });
+
+    testWidgets('focusRing outlines keyboard focus only — hover stays as '
+        'quiet as the builder made it', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: DesignSystemTheme.dark(),
+          home: Scaffold(
+            body: Center(
+              child: DsQuietInk(
+                onTap: () {},
+                focusRing: true,
+                borderRadius: BorderRadius.circular(8),
+                builder: (context, highlighted) => const Text('cell'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      Finder ring() => find.ancestor(
+        of: find.text('cell'),
+        matching: find.byWidgetPredicate(
+          (widget) =>
+              widget is DecoratedBox &&
+              widget.position == DecorationPosition.foreground &&
+              (widget.decoration as BoxDecoration).border != null,
+        ),
+      );
+
+      expect(ring(), findsNothing);
+
+      // Hover draws nothing: the pointer path is the builder's business.
+      final gesture = await tester.createGesture(
+        kind: PointerDeviceKind.mouse,
+      );
+      await gesture.addPointer(location: Offset.zero);
+      addTearDown(gesture.removePointer);
+      await gesture.moveTo(tester.getCenter(find.byType(DsQuietInk)));
+      await tester.pump();
+      expect(ring(), findsNothing);
+      await gesture.moveTo(Offset.zero);
+      await tester.pump();
+
+      // Keyboard focus draws the interactive-ink outline. Real Tab
+      // traversal, not requestFocus: after a mouse interaction in the same
+      // test a programmatic requestFocus never reaches the InkWell's node.
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      expect(ring(), findsOneWidget);
+      final tokens = tester.element(find.text('cell')).designTokens;
+      final border =
+          (tester.widget<DecoratedBox>(ring()).decoration as BoxDecoration)
+                  .border!
+              as Border;
+      expect(border.top.color, tokens.colors.interactive.enabled);
+      expect(border.top.width, BorderWidths.emphasis);
     });
   });
 }

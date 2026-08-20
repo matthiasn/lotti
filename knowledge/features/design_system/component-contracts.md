@@ -256,7 +256,12 @@ a chevron or label stepping up one emphasis tier, a disc border firming a
 step. Folding focus into the flag is load-bearing: with `focusColor`
 transparent, the builder's ink shift is the only visible cue keyboard users
 get. Folding the press in restores tap feedback on touch, where the removed
-splash used to carry it. With no tap or long-press handler it renders the
+splash used to carry it. A builder that deliberately shows *nothing* on hover
+— a whole-card doorway, a data cell whose hover answer is a tooltip — opts
+into `focusRing: true` instead: an interactive-ink outline drawn only while
+the target holds keyboard focus, never on hover or press, so Tab still lands
+somewhere visible while the pointer experience stays exactly as quiet as the
+builder made it. With no tap or long-press handler it renders the
 builder's rest state with no `Material`/`InkWell` at all. It adds no
 semantics beyond the ink's tap action — callers keep their own `Semantics`
 wrappers, and the pointer-only enlarged-target flags
