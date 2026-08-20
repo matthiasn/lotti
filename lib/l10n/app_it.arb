@@ -783,6 +783,7 @@
     }
   },
   "aiConsumptionTypeAgentTurn": "Agente turno",
+  "aiConsumptionTypeAudioSummary": "Riepilogo",
   "aiConsumptionTypeAudioTranscription": "Trascrizione",
   "aiConsumptionTypeImageAnalysis": "Analisi immagine",
   "aiConsumptionTypeImageGeneration": "Generazione di immagini",

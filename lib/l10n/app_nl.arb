@@ -782,6 +782,7 @@
     }
   },
   "aiConsumptionTypeAgentTurn": "Agent Turn",
+  "aiConsumptionTypeAudioSummary": "Samenvatting",
   "aiConsumptionTypeAudioTranscription": "Omschrijving",
   "aiConsumptionTypeImageAnalysis": "Afbeeldingsanalyse",
   "aiConsumptionTypeImageGeneration": "Beeldgeneratie",

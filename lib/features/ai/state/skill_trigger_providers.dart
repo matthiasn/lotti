@@ -68,6 +68,7 @@ final availableSkillsForEntityProvider = FutureProvider.autoDispose
           SkillType.promptGeneration,
           SkillType.imagePromptGeneration,
           SkillType.imageGeneration,
+          SkillType.audioSummary,
         };
 
         final hasKnownTaskContext =
@@ -310,6 +311,14 @@ final triggerSkillProvider = FutureProvider.autoDispose
                 automationResult: automationResult,
                 linkedTaskId: linkedTaskId,
                 referenceImages: params.referenceImages,
+                overrideModelId: params.overrideModelId,
+                geminiThinkingMode: params.geminiThinkingMode,
+              );
+            case SkillType.audioSummary:
+              await runner.runAudioSummary(
+                audioEntryId: params.entityId,
+                automationResult: automationResult,
+                linkedTaskId: linkedTaskId,
                 overrideModelId: params.overrideModelId,
                 geminiThinkingMode: params.geminiThinkingMode,
               );

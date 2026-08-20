@@ -490,6 +490,8 @@ _AiResponseData _$AiResponseDataFromJson(Map<String, dynamic> json) =>
           ?.map((e) => AiActionItem.fromJson(e as Map<String, dynamic>))
           .toList(),
       type: $enumDecodeNullable(_$AiResponseTypeEnumMap, json['type']),
+      oneLiner: json['oneLiner'] as String?,
+      tldr: json['tldr'] as String?,
       temperature: (json['temperature'] as num?)?.toDouble(),
       inputTokens: (json['inputTokens'] as num?)?.toInt(),
       outputTokens: (json['outputTokens'] as num?)?.toInt(),
@@ -514,6 +516,8 @@ Map<String, dynamic> _$AiResponseDataToJson(_AiResponseData instance) =>
       'skillId': instance.skillId,
       'suggestedActionItems': instance.suggestedActionItems,
       'type': _$AiResponseTypeEnumMap[instance.type],
+      'oneLiner': instance.oneLiner,
+      'tldr': instance.tldr,
       'temperature': instance.temperature,
       'inputTokens': instance.inputTokens,
       'outputTokens': instance.outputTokens,
@@ -531,6 +535,7 @@ const _$AiResponseTypeEnumMap = {
   AiResponseType.promptGeneration: 'PromptGeneration',
   AiResponseType.imagePromptGeneration: 'ImagePromptGeneration',
   AiResponseType.imageGeneration: 'ImageGeneration',
+  AiResponseType.audioSummary: 'AudioSummary',
 };
 
 _WorkoutData _$WorkoutDataFromJson(Map<String, dynamic> json) => _WorkoutData(

@@ -231,6 +231,7 @@ class _LedgerRow extends StatelessWidget {
     AiConsumptionResponseType.agentTurn => LottiIcons.aiModel,
     AiConsumptionResponseType.textGeneration => LottiIcons.note,
     AiConsumptionResponseType.audioTranscription => LottiIcons.mic,
+    AiConsumptionResponseType.audioSummary => LottiIcons.summarize,
     AiConsumptionResponseType.imageAnalysis => LottiIcons.searchImage,
     AiConsumptionResponseType.imageGeneration => LottiIcons.brush,
     AiConsumptionResponseType.promptGeneration => LottiIcons.editNote,
@@ -246,6 +247,8 @@ class _LedgerRow extends StatelessWidget {
         messages.aiConsumptionTypeTextGeneration,
       AiConsumptionResponseType.audioTranscription =>
         messages.aiConsumptionTypeAudioTranscription,
+      AiConsumptionResponseType.audioSummary =>
+        messages.aiConsumptionTypeAudioSummary,
       AiConsumptionResponseType.imageAnalysis =>
         messages.aiConsumptionTypeImageAnalysis,
       AiConsumptionResponseType.imageGeneration =>

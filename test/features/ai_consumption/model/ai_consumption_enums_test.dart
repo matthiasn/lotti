@@ -14,6 +14,7 @@ void main() {
           'agentTurn',
           'textGeneration',
           'audioTranscription',
+          'audioSummary',
           'imageAnalysis',
           'imageGeneration',
           'promptGeneration',

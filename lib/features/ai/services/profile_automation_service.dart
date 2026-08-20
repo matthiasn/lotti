@@ -657,6 +657,7 @@ class ProfileAutomationService {
       SkillType.imageGeneration => profile.imageGenerationProvider != null,
       SkillType.promptGeneration => true, // uses thinking model
       SkillType.imagePromptGeneration => true, // uses thinking model
+      SkillType.audioSummary => true, // uses thinking model
     };
   }
 }

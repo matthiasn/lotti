@@ -1583,6 +1583,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get aiConsumptionTypeAudioTranscription => 'Trascrizione';
 
   @override
+  String get aiConsumptionTypeAudioSummary => 'Riepilogo';
+
+  @override
   String get aiConsumptionTypeEmbeddingIndexing => 'Embedding indexing';
 
   @override

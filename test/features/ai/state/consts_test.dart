@@ -16,13 +16,14 @@ AiResponseType _expectedResponseTypeForSkill(SkillType skillType) {
     SkillType.imageGeneration => AiResponseType.imageGeneration,
     SkillType.promptGeneration => AiResponseType.promptGeneration,
     SkillType.imagePromptGeneration => AiResponseType.imagePromptGeneration,
+    SkillType.audioSummary => AiResponseType.audioSummary,
   };
 }
 
 void main() {
   group('AiResponseType', () {
     test('should have all expected enum values', () {
-      expect(AiResponseType.values.length, equals(7));
+      expect(AiResponseType.values.length, equals(8));
       // ignore: deprecated_member_use_from_same_package
       expect(AiResponseType.values, contains(AiResponseType.taskSummary));
       expect(AiResponseType.values, contains(AiResponseType.imageAnalysis));
@@ -38,6 +39,7 @@ void main() {
         contains(AiResponseType.imagePromptGeneration),
       );
       expect(AiResponseType.values, contains(AiResponseType.imageGeneration));
+      expect(AiResponseType.values, contains(AiResponseType.audioSummary));
     });
 
     const expectedIcons = <AiResponseType, IconData>{
@@ -50,6 +52,7 @@ void main() {
       AiResponseType.promptGeneration: LottiIcons.magic,
       AiResponseType.imagePromptGeneration: LottiIcons.palette,
       AiResponseType.imageGeneration: LottiIcons.aiSpark,
+      AiResponseType.audioSummary: LottiIcons.summarize,
     };
 
     test('expectation table covers every enum value', () {

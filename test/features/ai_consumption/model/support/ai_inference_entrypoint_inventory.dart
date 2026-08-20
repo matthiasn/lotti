@@ -42,6 +42,7 @@ const aiInferenceEntrypoints = <AiInferenceEntrypoint>[
       AiWorkType.imageGeneration,
       AiWorkType.imageAnalysis,
       AiWorkType.audioTranscription,
+      AiWorkType.audioSummary,
     },
     coverage: AiAttributionCoverage.outputCarrier,
     outputCarrier: 'AiResponseData, ImageData, or AudioTranscript',

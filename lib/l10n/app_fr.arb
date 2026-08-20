@@ -641,6 +641,7 @@
   "aiConsumptionTokensLabel": "{tokens} jetons",
   "aiConsumptionTokensLine": "Jetons : {input} entrée · {output} sortie",
   "aiConsumptionTypeAgentTurn": "Tour d'agent",
+  "aiConsumptionTypeAudioSummary": "Résumé",
   "aiConsumptionTypeAudioTranscription": "Transcription",
   "aiConsumptionTypeEmbeddingIndexing": "Indexation des embeddings",
   "aiConsumptionTypeImageAnalysis": "Analyse d'image",

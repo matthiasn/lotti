@@ -258,6 +258,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   shows a single-line preview of its transcribed content instead of the full
   transcript, player and analysis; tap the line (or the chevron) to expand,
   and your choice sticks either way.
+- **Recordings get summarised, in the context of their task.** After a
+  recording linked to a task is transcribed, Lotti writes a summary of it in
+  three depths: the one line you see when the recording is collapsed, a short
+  TLDR when you open it, and a full organised summary behind "Show more" —
+  useful when the recording is a whole meeting rather than a quick thought.
+  The summary is written with the task in view, so it says what the recording
+  means for that task rather than just restating it, and it is a snapshot of
+  that moment: summarise the same recording again later and you get a fresh
+  one, with the earlier one kept. Recordings whose transcript is under 200
+  characters are left alone. You can also summarise any task recording on
+  demand from its AI menu, including ones recorded before this existed — and
+  that is also how to summarise one you transcribed by hand.
 - **Hovering on the task page no longer conjures phantom buttons.** On
   desktop, moving the pointer over the breadcrumb, the AI summary's header
   and text links, the confirm/reject circles, the History and Linked Tasks

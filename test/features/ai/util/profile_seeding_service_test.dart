@@ -967,6 +967,7 @@ void main() {
         // Thinking-model-backed skills are always available.
         SkillType.promptGeneration: true,
         SkillType.imagePromptGeneration: true,
+        SkillType.audioSummary: true,
       };
       for (final skillType in SkillType.values) {
         expect(

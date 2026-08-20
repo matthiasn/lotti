@@ -10,6 +10,7 @@
 /// - [textGeneration]: a task/prompt text response on the legacy unified
 ///   inference path.
 /// - [audioTranscription]: speech-to-text for a `JournalAudio` entry.
+/// - [audioSummary]: the three-tier summary generated from a transcript.
 /// - [imageAnalysis]: vision/OCR over a `JournalImage` entry.
 /// - [imageGeneration]: text-to-image cover-art generation.
 /// - [promptGeneration]: a skill-driven prompt/text generation call.
@@ -18,6 +19,7 @@ enum AiConsumptionResponseType {
   agentTurn,
   textGeneration,
   audioTranscription,
+  audioSummary,
   imageAnalysis,
   imageGeneration,
   promptGeneration,

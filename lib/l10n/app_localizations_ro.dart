@@ -1586,6 +1586,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiConsumptionTypeAudioTranscription => 'Transcriere';
 
   @override
+  String get aiConsumptionTypeAudioSummary => 'Rezumat';
+
+  @override
   String get aiConsumptionTypeEmbeddingIndexing => 'Indexare embedding';
 
   @override

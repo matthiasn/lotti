@@ -641,6 +641,7 @@
   "aiConsumptionTokensLabel": "{tokens} tokenuri",
   "aiConsumptionTokensLine": "Tokenuri: {input} intrare · {output} ieșire",
   "aiConsumptionTypeAgentTurn": "Tur de agent",
+  "aiConsumptionTypeAudioSummary": "Rezumat",
   "aiConsumptionTypeAudioTranscription": "Transcriere",
   "aiConsumptionTypeEmbeddingIndexing": "Indexare embedding",
   "aiConsumptionTypeImageAnalysis": "Analiză de imagine",

@@ -250,11 +250,81 @@ default profile, whose `task.data.profileId` is null.
 
 | Skill type | Result |
 |------------|--------|
-| Transcription | Updates `JournalAudio.transcripts` and `entryText` |
+| Transcription | Updates `JournalAudio.transcripts` and `entryText`, then runs the audio-summary skill when the profile automates it (see below) |
+| Audio summary | Creates an `AiResponseEntry` linked from the `JournalAudio`, carrying `oneLiner` / `tldr` on `AiResponseData` plus the full markdown in `response` — **one per run**, newest wins |
 | Image analysis | Creates an `AiResponseEntry` linked from the `JournalImage` — **one per run**, so an image accumulates multiple analyses (a brief summary, a full OCR extraction), distinguished by model |
 | Prompt generation (coding/design/research) | Creates an `AiResponseEntry` linked to the parent task when one resolves, **and** back to the source audio/text entry so the prompt appears in both linked-entries lists (falling back to a single link on the source entry when no task resolves) |
 | Image-prompt generation | Keeps the entry link |
 | Image generation | Imports the generated image, sets it as task cover art, then triggers automatic image analysis on it |
+
+## Audio summaries
+
+`SkillInferenceRunner.runAudioSummary` summarizes a recording's transcript in
+three tiers. It hangs off the **end of `runTranscription`**
+(`_maybeRunAudioSummary`) rather than off each of that method's six callers, so
+every route that produces a transcript — automatic recording trigger, synced-audio
+dispatcher, manual picker, relationship and goal check-ins, Daily OS capture —
+gets the same follow-up exactly once.
+
+Three gates, all deliberate:
+
+- **A task must resolve.** The skill's `fullTask` context policy has nothing to
+  read otherwise, and the summary is framed by the task. Goal and person
+  check-ins and standalone voice notes transcribe as before and get no summary.
+- **The transcription itself must have been automated**, which a non-null
+  `AutomationResult.skillAssignment` records. Only the automated paths set it,
+  and only those passed the category's automatic-inference consent check — the
+  manual picker and `requestTranscription` skip that check because a gesture is
+  its own consent, and that consent covers the transcription asked for, not a
+  second call.
+- **The profile must assign the summary skill with `automate: true`.** The
+  already-resolved profile is reused rather than walked again.
+
+This gate is only on the *automatic* follow-up. `SkillType.audioSummary` is
+also manually selectable from the AI popup on any task-linked recording, which
+is both the backfill path for recordings that predate the feature and the way
+to refresh a stale snapshot. That path runs the same `runAudioSummary` through
+`triggerSkillProvider` and is subject to none of the gates above beyond needing
+task context.
+- **Failures never propagate.** The transcript is already persisted and is the
+  valuable artifact; letting a summary failure reach `_withStatusTracking`
+  would mark the transcription run as `error` and invite a retry that
+  re-transcribes audio that transcribed fine.
+
+Two properties are contract rather than detail:
+
+- **The tiers come back through a pinned tool call, never a parser.** The skill
+  sends `entrySummaryTool` with `toolChoice` fixed to it, and
+  `parseEntrySummaryToolCall` decodes typed arguments — the same shape the
+  agents' `update_report` uses. A rejected call (no tool call, wrong tool,
+  missing field, one-liner over `entrySummaryOneLinerMaxChars`) buys exactly
+  one forced retry, whose tokens are merged with the first attempt's so a model
+  that needed prompting twice is not billed as if it needed one.
+- **It runs on the profile's thinking slot**, the same model as the task agent.
+  Not for cost: the inference-profile form is the only place that slot can be
+  set, its picker is filtered to `supportsFunctionCalling` models, and the slot
+  is required — so it is the one slot guaranteed to be able to call a tool. Any
+  other slot could hold a model that cannot. The resolve-time
+  `supportsFunctionCalling` check in `runAudioSummary` is an assertion for
+  programmatically-seeded profiles and wrong capability flags, not a fallback
+  path.
+
+Transcripts are sent **whole**. There is no input ceiling and no truncation: a
+transcript too large for the model's context fails the call, and the failure
+path above already covers it. Transcripts under `_audioSummaryMinChars` are
+skipped instead — a summary of a one-sentence note would spend a call to restate
+the collapsed card's existing fallback.
+
+The collapsed audio card reads the newest summary's `oneLiner`
+(`audioSummaryOneLiner`), falling back to `audioEntryOneLiner`'s transcript
+preview when there is none — not yet summarized, too short, no task, or synced
+from a client predating the tiers. `AiResponseSummary` renders a response that
+carries a `tldr` collapsed-to-TLDR rather than collapsed-to-nothing, and is
+always collapsible regardless of body length, since the tiers exist precisely so
+the reader can choose the short version.
+
+Image analyses keep their free-text contract for now; extending the tiers to
+them is deliberate follow-up work, not an oversight.
 
 Image analyses render through `AiResponseSummary` as a tinted, non-elevated AI
 surface — the report-card colour family without its accent-blended fill and
@@ -321,6 +391,10 @@ per entity; the popup uses it via `hasAvailableSkillsProvider`.
   entity is a `Task`, when the caller passes `linkedFromId`, or when the link
   graph resolves a parent task in either direction. Full-task skills are hidden
   only when **all three** checks fail.
+- **Audio-summary modality** — `SkillType.audioSummary` declares
+  `Modality.audio` even though its input is the transcript's *text*. The field
+  selects the source **entry** type, and `Modality.text` would also match
+  notes, tasks and images.
 - **Cover-art source filter** — `SkillType.imageGeneration` is narrower still:
   shown only for `JournalEntry` or `JournalAudio` sources that also have task
   context. The runner imports the generated image back onto the linked task, so a

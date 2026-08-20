@@ -389,6 +389,11 @@ void main() {
         'Generate an image prompt from audio.',
         'Audio attached.',
       ),
+      SkillType.audioSummary => (
+        const [Modality.audio],
+        'Summarize the recording.',
+        'Transcript attached.',
+      ),
     };
 
     return AiConfig.skill(
@@ -2430,6 +2435,40 @@ void main() {
 
           expect(missingResult, isFalse);
           expect(presentResult, isTrue);
+        },
+      );
+
+      test(
+        'audio-summary skills need no dedicated slot — they run on the '
+        "profile's required thinking model, like prompt generation",
+        () async {
+          const assignment = SkillAssignment(
+            skillId: 'skill-audio-summary',
+            automate: true,
+          );
+          final skill = makeSkill(
+            id: 'skill-audio-summary',
+            skillType: SkillType.audioSummary,
+          );
+
+          when(
+            () => mockResolver.resolveForSubject('task-audio-summary'),
+          ).thenAnswer(
+            (_) async => makeProfile(skillAssignments: [assignment]),
+          );
+          when(
+            () => mockAiConfig.getConfigById('skill-audio-summary'),
+          ).thenAnswer((_) async => skill);
+
+          // A profile with NO transcription/image/image-generation slots
+          // still reports the summary skill as available.
+          expect(
+            await service.hasAutomatedSkillType(
+              subjectId: 'task-audio-summary',
+              skillType: SkillType.audioSummary,
+            ),
+            isTrue,
+          );
         },
       );
     });

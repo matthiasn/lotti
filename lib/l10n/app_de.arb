@@ -641,6 +641,7 @@
   "aiConsumptionTokensLabel": "{tokens} Tokens",
   "aiConsumptionTokensLine": "Tokens: {input} rein · {output} raus",
   "aiConsumptionTypeAgentTurn": "Agentendurchlauf",
+  "aiConsumptionTypeAudioSummary": "Zusammenfassung",
   "aiConsumptionTypeAudioTranscription": "Transkription",
   "aiConsumptionTypeEmbeddingIndexing": "Embedding-Indexierung",
   "aiConsumptionTypeImageAnalysis": "Bildanalyse",

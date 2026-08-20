@@ -24,8 +24,11 @@ import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
+import 'package:lotti/features/ai/repository/tool_call_accumulator.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/services/profile_automation_service.dart';
+import 'package:lotti/features/ai/skills/built_in_skills.dart';
+import 'package:lotti/features/ai/skills/entry_summary_tool.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/image_generation_error_controller.dart';
 import 'package:lotti/features/ai/state/inference_error_controller.dart';
@@ -51,6 +54,15 @@ import 'package:openai_dart/openai_dart.dart';
 part 'skill_inference_runner_internals.dart';
 
 const _logTag = 'SkillInferenceRunner';
+
+/// Shortest transcript worth summarizing, in characters.
+///
+/// Below this the collapsed card's existing transcript-prefix fallback is
+/// already the whole content, so a summary would spend a model call to
+/// restate it. Measured on the resolved entry content (an edit if there is
+/// one, otherwise the latest transcript), not on the audio duration — a long
+/// recording of silence is not worth summarizing either.
+const _audioSummaryMinChars = 200;
 
 /// Service that invokes inference using skill-built prompts and
 /// profile-resolved models, bypassing the legacy prompt system entirely.
@@ -312,6 +324,18 @@ class SkillInferenceRunner {
         );
       },
     );
+
+    // Outside the status-tracking body on purpose. Inside it, the
+    // transcription's own Siri-waveform bar kept animating through the summary
+    // call — reporting "transcribing" for a run that had already written its
+    // transcript. The summary tracks its own status, and awaiting here still
+    // orders it before the caller's agent nudge so the agent's first read sees
+    // the summary.
+    await _maybeRunAudioSummary(
+      audioEntryId: audioEntryId,
+      automationResult: automationResult,
+      linkedTaskId: linkedTaskId,
+    );
   }
 
   /// Run skill-based image analysis on an image entry.
@@ -512,28 +536,11 @@ class SkillInferenceRunner {
           // image→task link the incoming-parents query does not cover. The
           // legacy branch below needs no equivalent: its image update
           // propagates on its own.
-          final staleIds = <String>{?linkedTaskId};
-          try {
-            final parents = await _journalRepository.getLinkedToEntities(
-              linkedTo: imageEntryId,
-            );
-            staleIds.addAll(
-              parents.whereType<Task>().map((parent) => parent.meta.id),
-            );
-          } catch (e) {
-            // Degraded, not fatal: the analysis is already persisted, so
-            // fall back to notifying just the resolved task.
-            _loggingService.log(
-              LogDomain.ai,
-              'parent lookup for stale notification failed: $e',
-              subDomain: 'runImageAnalysis',
-            );
-          }
-          if (staleIds.isNotEmpty) {
-            getIt<UpdateNotifications>().notify({
-              for (final id in staleIds) ...{id, propagatedNotification(id)},
-            });
-          }
+          await _notifyParentTasksOfNestedResponse(
+            sourceEntryId: imageEntryId,
+            linkedTaskId: linkedTaskId,
+            subDomain: 'runImageAnalysis',
+          );
         } else {
           final originalText = currentImage.entryText?.markdown ?? '';
           final amendedText = originalText.isEmpty
@@ -554,6 +561,360 @@ class SkillInferenceRunner {
           'Skill-based image analysis completed for $imageEntryId '
           '(${response.length} chars)',
           subDomain: 'runImageAnalysis',
+        );
+      },
+    );
+  }
+
+  /// Runs the profile's automated audio-summary skill, if it has one.
+  ///
+  /// Hangs off the end of [runTranscription] rather than off each of its six
+  /// callers (automatic recording trigger, synced-audio dispatcher, manual
+  /// picker, relationship and goal check-ins, Daily OS capture) so every route
+  /// that produces a transcript gets the same follow-up exactly once.
+  ///
+  /// Four gates, all deliberate:
+  /// - **A task must be resolved.** The summary is framed by the task it
+  ///   belongs to, and the skill's `fullTask` context policy has nothing to
+  ///   read without one. Goal and person check-ins and standalone voice notes
+  ///   transcribe as before and get no summary.
+  /// - **The transcription itself must have been automated**, which is what a
+  ///   non-null `skillAssignment` means: only `ProfileAutomationService`'s
+  ///   automated paths set it, and only those passed the category's
+  ///   automatic-inference consent check. The manual picker and
+  ///   `requestTranscription` both build an assignment-less result, and both
+  ///   deliberately skip that check because a button press is its own consent.
+  ///   That consent covers the transcription the user asked for — not a second
+  ///   model call they did not. Manual users reach the summary through the
+  ///   "Summarize Recording" skill in the same menu.
+  /// - **The profile must assign the summary skill with `automate: true`.**
+  ///   Reuses the already-resolved profile rather than walking resolution
+  ///   again.
+  /// - **Failures never propagate.** The transcript is persisted and is the
+  ///   valuable artifact; letting a summary failure surface here would mark
+  ///   the whole transcription run as failed and invite a retry that
+  ///   re-transcribes audio that transcribed fine.
+  Future<void> _maybeRunAudioSummary({
+    required String audioEntryId,
+    required AutomationResult automationResult,
+    required String? linkedTaskId,
+  }) async {
+    if (linkedTaskId == null) return;
+    if (automationResult.skillAssignment == null) return;
+    final profile = automationResult.resolvedProfile;
+    if (profile == null) return;
+
+    try {
+      final assignment = profile.skillAssignments
+          .where((a) => a.automate)
+          .map(
+            (a) => (assignment: a, skill: findBuiltInSkill(a.skillId)),
+          )
+          .where((pair) => pair.skill?.skillType == SkillType.audioSummary)
+          .firstOrNull;
+      if (assignment == null) return;
+
+      await runAudioSummary(
+        audioEntryId: audioEntryId,
+        automationResult: AutomationResult(
+          handled: true,
+          skill: assignment.skill,
+          skillAssignment: assignment.assignment,
+          resolvedProfile: profile,
+        ),
+        linkedTaskId: linkedTaskId,
+      );
+    } catch (e, stackTrace) {
+      // Belt and braces, and unreachable today: `runAudioSummary` routes every
+      // operational failure through `_withStatusTracking`, which swallows and
+      // reports rather than rethrows, and its two programmer-error throws are
+      // both guarded above. Kept because this is the seam that protects a
+      // *persisted transcript* from a future change to that contract — the
+      // cost of being wrong here is losing the transcription's result to a
+      // summary bug, which is exactly the trade this method exists to prevent.
+      _loggingService.error(
+        LogDomain.ai,
+        e,
+        stackTrace: stackTrace,
+        subDomain: 'maybeRunAudioSummary',
+      );
+    }
+  }
+
+  /// Run skill-based summarization of an audio recording's transcript.
+  ///
+  /// Produces a three-tier summary — one-liner, TLDR, full markdown — as an
+  /// [AiResponseEntry] linked to the audio entry, mirroring how an image
+  /// analysis hangs off its image. The one-liner is what the collapsed audio
+  /// card shows in place of the raw transcript's first line.
+  ///
+  /// The summary is a **point-in-time snapshot**: the task context is built
+  /// here, at run time, and frozen into the prompt. Re-running later against a
+  /// changed task produces a different summary, and both are kept — readers
+  /// take the newest.
+  ///
+  /// Runs on the profile's thinking slot (see [_resolveAudioSummaryTarget])
+  /// and publishes through a pinned tool call, so the tiers arrive as typed
+  /// arguments rather than prose anyone has to parse. A model that ends its
+  /// turn without calling the tool gets exactly one forced retry before the
+  /// run gives up.
+  ///
+  /// Returns silently without persisting anything when the transcript is
+  /// shorter than [_audioSummaryMinChars] — a one-liner of a one-sentence note
+  /// is pure cost, and the collapsed card's transcript-prefix fallback already
+  /// reads fine at that length.
+  Future<void> runAudioSummary({
+    required String audioEntryId,
+    required AutomationResult automationResult,
+    String? linkedTaskId,
+    String? overrideModelId,
+    GeminiThinkingMode? geminiThinkingMode,
+  }) async {
+    final skill = automationResult.skill;
+    final profile = automationResult.resolvedProfile;
+    if (skill == null || profile == null) {
+      throw StateError(
+        'AutomationResult missing skill or profile for $audioEntryId: '
+        'skill=${skill != null}, profile=${profile != null}',
+      );
+    }
+    final target = await _resolveAudioSummaryTarget(
+      profile: profile,
+      overrideModelId: overrideModelId,
+    );
+    // Like prompt generation, the fallback here is the profile's *required*
+    // thinking slot, so the resolved target always carries a provider and a
+    // model id — unlike the optional transcription / image slots, which is
+    // why those paths null-check and this one does not.
+    final provider = target.provider!;
+    final modelId = target.modelId!;
+    final effectiveThinkingMode = _geminiThinkingModeForTarget(
+      target,
+      geminiThinkingMode,
+    );
+
+    // The thinking slot is constrained to tool-capable models by the profile
+    // form, so this is an assertion rather than a fallback: it only fires for
+    // a profile seeded programmatically (bypassing the picker) or a model row
+    // whose user-editable capability flag is wrong. Skipping is the honest
+    // outcome — firing a pinned tool call at a model that cannot call tools
+    // burns the call and returns nothing usable.
+    if (target.model != null && !target.model!.supportsFunctionCalling) {
+      _loggingService.log(
+        LogDomain.ai,
+        'Skipping audio summary for $audioEntryId: resolved model $modelId '
+        'is not marked as supporting function calling',
+        subDomain: 'runAudioSummary',
+      );
+      return;
+    }
+
+    await _withStatusTracking(
+      entityId: audioEntryId,
+      responseType: skill.skillType.toResponseType,
+      subDomain: 'runAudioSummary',
+      linkedTaskId: linkedTaskId,
+      body: () async {
+        // 1. Fetch the audio entity.
+        final entity = await _aiInputRepository.getEntity(audioEntryId);
+        if (entity is! JournalAudio) {
+          throw StateError('Entity $audioEntryId is not a JournalAudio');
+        }
+
+        // 2. Resolve the text to summarize — an edit wins over the raw
+        // transcript, same precedence every other consumer uses.
+        final entryContent = _resolveEntryContent(entity);
+        if (entryContent.length < _audioSummaryMinChars) {
+          _loggingService.log(
+            LogDomain.ai,
+            'Skipping audio summary for $audioEntryId: transcript is '
+            '${entryContent.length} chars, under the '
+            '$_audioSummaryMinChars minimum',
+            subDomain: 'runAudioSummary',
+          );
+          return;
+        }
+
+        // 3. Build task context. This is the snapshot the summary is framed
+        // by; it is deliberately read now rather than referenced later.
+        final (String? taskContext, String? linkedTasks) = linkedTaskId != null
+            ? await (
+                _aiInputRepository.buildTaskDetailsJson(id: linkedTaskId),
+                _aiInputRepository.buildLinkedTasksJson(linkedTaskId),
+              ).wait
+            : (null, null);
+
+        // 4. Build prompts via SkillPromptBuilder.
+        const promptBuilder = SkillPromptBuilder();
+        final promptResult = promptBuilder.build(
+          skill: skill,
+          entryContent: entryContent,
+          taskContext: taskContext,
+          linkedTasks: linkedTasks,
+        );
+
+        // 5. Call inference with the summary tool pinned.
+        final start = DateTime.now();
+        final responseId = uuid.v4();
+        final attribution = await _beginAttribution(
+          workType: AiWorkType.audioSummary,
+          source: entity,
+          output: AiArtifactReference(
+            type: AiArtifactType.journalAiResponse,
+            id: responseId,
+          ),
+          skill: skill,
+          automationResult: automationResult,
+          taskId: linkedTaskId,
+        );
+        // Each attempt gets its OWN collector. `InferenceImpactCollector` is a
+        // single mutable slot, so sharing one across the retry would let the
+        // second call's impact overwrite the first's and silently drop a real
+        // provider charge from the ledger.
+        Future<
+          ({
+            String content,
+            List<ChatCompletionMessageToolCall> toolCalls,
+            CompletionUsage? usage,
+            MeliousCallImpact? impact,
+          })
+        >
+        callModel(String userMessage) async {
+          final collector = InferenceImpactCollector();
+          final result = await _collectStream(
+            _cloudRepository.generate(
+              userMessage,
+              model: modelId,
+              temperature: null,
+              baseUrl: provider.baseUrl,
+              apiKey: provider.apiKey,
+              provider: provider,
+              systemMessage: promptResult.systemMessage,
+              tools: [entrySummaryTool],
+              toolChoice: entrySummaryToolChoice,
+              geminiThinkingMode: effectiveThinkingMode,
+              impactCollector: collector,
+            ),
+          );
+          return (
+            content: result.content,
+            toolCalls: result.toolCalls,
+            usage: result.usage,
+            impact: collector.impact,
+          );
+        }
+
+        // 6. Decode the tool call. One forced retry covers the common
+        // failure — a model that narrates instead of calling, or emits a
+        // one-liner over the length cap — without turning a persistently
+        // misbehaving model into an unbounded retry loop.
+        //
+        // Spend from BOTH attempts is billed, and it is billed even when the
+        // retry also fails: the provider ran the calls either way, so throwing
+        // before the ledger write would make a model that never produces a
+        // usable summary look free — exactly the model whose cost the user
+        // most needs to see.
+        var attempt = await callModel(promptResult.userMessage);
+        var usage = attempt.usage;
+        var impact = attempt.impact;
+        EntrySummary? summary;
+        EntrySummaryToolException? failure;
+
+        try {
+          summary = parseEntrySummaryToolCall(attempt.toolCalls);
+        } on EntrySummaryToolException catch (first) {
+          _loggingService.log(
+            LogDomain.ai,
+            'Audio summary tool call rejected for $audioEntryId '
+            '(${first.reason}) — retrying once',
+            subDomain: 'runAudioSummary',
+          );
+          attempt = await callModel(
+            '${promptResult.userMessage}\n\n'
+            'Your previous response was rejected: ${first.reason}. '
+            'Call the $entrySummaryToolName tool with all three arguments '
+            'and respond with nothing else.',
+          );
+          usage = _mergeUsage(usage, attempt.usage);
+          impact = _mergeImpact(impact, attempt.impact);
+          try {
+            summary = parseEntrySummaryToolCall(attempt.toolCalls);
+          } on EntrySummaryToolException catch (second) {
+            failure = second;
+          }
+        }
+
+        final attributionEnvelope = await _recordAttributedConsumption(
+          attribution: attribution,
+          entryId: audioEntryId,
+          taskId: linkedTaskId,
+          categoryId: entity.meta.categoryId,
+          skillId: skill.id,
+          provider: provider,
+          modelId: modelId,
+          responseType: skill.skillType.toResponseType,
+          usage: usage,
+          impact: impact,
+          start: start,
+          interactionKind: AiInteractionKind.textGeneration,
+          requestText:
+              '${promptResult.systemMessage}\n${promptResult.userMessage}',
+          responseText: summary?.summary ?? '',
+        );
+
+        if (summary == null) {
+          throw failure!;
+        }
+
+        // 7. Re-read the source before persisting so a recording deleted
+        // mid-run cannot leave a detached summary behind.
+        final currentAudio =
+            await EntityStateHelper.getCurrentEntityState<JournalAudio>(
+              entityId: audioEntryId,
+              aiInputRepo: _aiInputRepository,
+              entityTypeName: 'audio summary',
+            );
+        if (currentAudio == null) {
+          throw StateError('Audio entity $audioEntryId disappeared mid-run');
+        }
+
+        // 8. Persist as an AiResponseEntry linked to the AUDIO entry, never
+        // to the task: the summary is about this recording, and the collapsed
+        // card resolves it by walking the recording's linked responses.
+        final aiResponse = await _aiInputRepository.createAiResponseEntry(
+          id: responseId,
+          data: AiResponseData(
+            model: modelId,
+            systemMessage: promptResult.systemMessage,
+            prompt: promptResult.userMessage,
+            thoughts: '',
+            response: summary.summary,
+            oneLiner: summary.oneLiner,
+            tldr: summary.tldr,
+            skillId: skill.id,
+            type: skill.skillType.toResponseType,
+            aiAttribution: attributionEnvelope,
+          ),
+          start: start,
+          linkedId: audioEntryId,
+          categoryId: entity.meta.categoryId,
+        );
+        if (aiResponse == null) {
+          throw StateError('Failed to persist audio summary for $audioEntryId');
+        }
+        await _finalizeAttribution(attributionEnvelope);
+
+        await _notifyParentTasksOfNestedResponse(
+          sourceEntryId: audioEntryId,
+          linkedTaskId: linkedTaskId,
+          subDomain: 'runAudioSummary',
+        );
+
+        _loggingService.log(
+          LogDomain.ai,
+          'Skill-based audio summary completed for $audioEntryId '
+          '(${summary.summary.length} chars)',
+          subDomain: 'runAudioSummary',
         );
       },
     );
@@ -1064,23 +1425,169 @@ class SkillInferenceRunner {
     );
   }
 
-  /// Drains a chat-completion stream, concatenating content deltas and
-  /// capturing the last reported [CompletionUsage] (providers emit usage on
-  /// the final chunk). Shared by the transcription, image-analysis, and
-  /// prompt-generation paths so the accumulation logic lives in one place.
-  Future<({String content, CompletionUsage? usage})> _collectStream(
+  /// Sums the billable and environmental impact of two attempts at the same
+  /// logical call.
+  ///
+  /// The counterpart to [_mergeUsage], and needed for the same reason: both
+  /// provider calls really happened, so reporting only the retry's cost would
+  /// understate spend. Only the additive quantities are summed. The
+  /// descriptive fields (data centre, provider id, PUE, renewable share) are
+  /// taken from whichever attempt reported them — both attempts hit the same
+  /// provider and model, so they describe one place, not two.
+  ///
+  /// `costCreditsDecimal` is a provider-formatted string rather than a number.
+  /// It is deliberately dropped once two attempts are merged: guessing at
+  /// decimal arithmetic on someone else's formatting would report a precise
+  /// figure that is not the provider's, and `costCredits` already carries the
+  /// summed value.
+  static MeliousCallImpact? _mergeImpact(
+    MeliousCallImpact? a,
+    MeliousCallImpact? b,
+  ) {
+    if (a == null) return b;
+    if (b == null) return a;
+    double? sum(double? x, double? y) =>
+        x == null && y == null ? null : (x ?? 0) + (y ?? 0);
+    return MeliousCallImpact(
+      energyKwh: sum(a.energyKwh, b.energyKwh),
+      carbonGCo2: sum(a.carbonGCo2, b.carbonGCo2),
+      waterLiters: sum(a.waterLiters, b.waterLiters),
+      costCredits: sum(a.costCredits, b.costCredits),
+      renewablePercent: a.renewablePercent ?? b.renewablePercent,
+      pue: a.pue ?? b.pue,
+      dataCenter: a.dataCenter ?? b.dataCenter,
+      providerId: a.providerId ?? b.providerId,
+    );
+  }
+
+  /// Sums the token usage of two attempts at the same logical call.
+  ///
+  /// The audio-summary retry issues a second request, and both are real spend.
+  /// Reporting only the second would understate the cost of a model that
+  /// needed prompting twice — exactly the model whose cost the user most needs
+  /// to see. Null operands pass through so a provider that reports usage on
+  /// only one attempt still contributes what it did report.
+  static CompletionUsage? _mergeUsage(CompletionUsage? a, CompletionUsage? b) {
+    if (a == null) return b;
+    if (b == null) return a;
+    int? sum(int? x, int? y) =>
+        x == null && y == null ? null : (x ?? 0) + (y ?? 0);
+    final aDetails = a.completionTokensDetails;
+    final bDetails = b.completionTokensDetails;
+    final aPrompt = a.promptTokensDetails;
+    final bPrompt = b.promptTokensDetails;
+    return CompletionUsage(
+      promptTokens: sum(a.promptTokens, b.promptTokens),
+      completionTokens: sum(a.completionTokens, b.completionTokens),
+      totalTokens: sum(a.totalTokens, b.totalTokens),
+      completionTokensDetails: aDetails == null && bDetails == null
+          ? null
+          : CompletionTokensDetails(
+              reasoningTokens: sum(
+                aDetails?.reasoningTokens,
+                bDetails?.reasoningTokens,
+              ),
+              audioTokens: sum(aDetails?.audioTokens, bDetails?.audioTokens),
+            ),
+      // Carried for the same reason as the completion details: the
+      // consumption event reads `cachedTokens` off this, so dropping it would
+      // report null cached input on exactly the runs that retried.
+      promptTokensDetails: aPrompt == null && bPrompt == null
+          ? null
+          : PromptTokensDetails(
+              cachedTokens: sum(aPrompt?.cachedTokens, bPrompt?.cachedTokens),
+              audioTokens: sum(aPrompt?.audioTokens, bPrompt?.audioTokens),
+            ),
+    );
+  }
+
+  /// Marks every parent task of [sourceEntryId] stale after an
+  /// [AiResponseEntry] was linked beneath it.
+  ///
+  /// A response entry linked FROM its source only notifies the source and
+  /// response ids — notification propagation is one hop, so the parent tasks
+  /// never hear about it. This emits the same child-changed pairs
+  /// `updateDbEntity` produces when the source entry itself is edited, for
+  /// EVERY parent task rather than just the resolved [linkedTaskId]: one
+  /// recording or image can be linked from several tasks, and each parent's
+  /// agent needs its normal subscription wake (120 s coalescing,
+  /// automatic-updates opt-in / stale-marking) to pick the new content up.
+  ///
+  /// Non-task parents are skipped — only task contexts render nested AI
+  /// responses, so waking their agents would burn inference on content the
+  /// user cannot see. [linkedTaskId] is unioned in because task resolution
+  /// may have matched an outgoing entry→task link that the incoming-parents
+  /// query does not cover.
+  ///
+  /// Never throws: the response is already persisted by the time this runs,
+  /// so a failed parent lookup degrades to notifying the resolved task alone
+  /// rather than failing the whole run.
+  Future<void> _notifyParentTasksOfNestedResponse({
+    required String sourceEntryId,
+    required String subDomain,
+    String? linkedTaskId,
+  }) async {
+    final staleIds = <String>{?linkedTaskId};
+    try {
+      final parents = await _journalRepository.getLinkedToEntities(
+        linkedTo: sourceEntryId,
+      );
+      staleIds.addAll(
+        parents.whereType<Task>().map((parent) => parent.meta.id),
+      );
+    } catch (e) {
+      _loggingService.log(
+        LogDomain.ai,
+        'parent lookup for stale notification failed: $e',
+        subDomain: subDomain,
+      );
+    }
+    if (staleIds.isNotEmpty) {
+      getIt<UpdateNotifications>().notify({
+        for (final id in staleIds) ...{id, propagatedNotification(id)},
+      });
+    }
+  }
+
+  /// Drains a chat-completion stream, concatenating content deltas, capturing
+  /// the last reported [CompletionUsage] (providers emit usage on the final
+  /// chunk), and reassembling any streamed tool calls. Shared by the
+  /// transcription, image-analysis, prompt-generation and audio-summary paths
+  /// so the accumulation logic lives in one place.
+  ///
+  /// Tool-call deltas arrive fragmented — a name in one chunk, its JSON
+  /// arguments spread across many more, sometimes without ids — so they go
+  /// through [ToolCallAccumulator] rather than being read off a single chunk.
+  /// Paths that send no `tools` simply get an empty `toolCalls` list; the
+  /// collector stays one method because a skill either reads structured
+  /// output or does not, and both need identical content/usage handling.
+  Future<
+    ({
+      String content,
+      CompletionUsage? usage,
+      List<ChatCompletionMessageToolCall> toolCalls,
+    })
+  >
+  _collectStream(
     Stream<CreateChatCompletionStreamResponse> stream,
   ) async {
     final buffer = StringBuffer();
+    final toolCallAccumulator = ToolCallAccumulator();
     CompletionUsage? usage;
     await for (final chunk in stream) {
       if (chunk.usage != null) usage = chunk.usage;
-      final content = chunk.choices?.firstOrNull?.delta?.content;
+      final delta = chunk.choices?.firstOrNull?.delta;
+      final content = delta?.content;
       if (content != null) {
         buffer.write(content);
       }
+      toolCallAccumulator.processChunk(delta);
     }
-    return (content: buffer.toString(), usage: usage);
+    return (
+      content: buffer.toString(),
+      usage: usage,
+      toolCalls: toolCallAccumulator.toToolCalls(),
+    );
   }
 
   Future<AiAttributionSession?> _beginAttribution({
@@ -1254,7 +1761,8 @@ enum _OverrideSlotKind {
   transcription('transcription'),
   imageAnalysis('image analysis'),
   promptGeneration('prompt generation'),
-  imageGeneration('image generation');
+  imageGeneration('image generation'),
+  audioSummary('audio summary');
 
   const _OverrideSlotKind(this.label);
 

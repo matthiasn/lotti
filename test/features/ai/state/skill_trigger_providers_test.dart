@@ -2383,6 +2383,86 @@ void main() {
     });
 
     test(
+      'routes the audio-summary skill to the runner — this is the manual '
+      'backfill path for recordings that predate the feature, and the way '
+      'to refresh a stale snapshot',
+      () async {
+        final skill =
+            AiConfig.skill(
+                  id: 'skill-audio-summary',
+                  name: 'Summarize Recording',
+                  createdAt: DateTime(2024, 3, 15),
+                  skillType: SkillType.audioSummary,
+                  requiredInputModalities: [Modality.audio],
+                  contextPolicy: ContextPolicy.fullTask,
+                  systemInstructions: 'System',
+                  userInstructions: 'User',
+                )
+                as AiConfigSkill;
+
+        final thinkingProvider =
+            AiConfig.inferenceProvider(
+                  id: 'anthropic-prov',
+                  name: 'Anthropic',
+                  inferenceProviderType: InferenceProviderType.anthropic,
+                  apiKey: 'key',
+                  baseUrl: 'https://api.anthropic.com',
+                  createdAt: DateTime(2024, 3, 15),
+                )
+                as AiConfigInferenceProvider;
+
+        when(() => mockResolver.resolveForSubject('task-sum')).thenAnswer(
+          (_) async => ResolvedProfile(
+            thinkingModelId: 'thinking-model',
+            thinkingProvider: thinkingProvider,
+          ),
+        );
+        when(
+          () => mockRunner.runAudioSummary(
+            audioEntryId: any(named: 'audioEntryId'),
+            automationResult: any(named: 'automationResult'),
+            linkedTaskId: any(named: 'linkedTaskId'),
+            overrideModelId: any(named: 'overrideModelId'),
+            geminiThinkingMode: any(named: 'geminiThinkingMode'),
+          ),
+        ).thenAnswer((_) async {});
+
+        final testContainer = ProviderContainer(
+          overrides: [
+            skillRegistryProvider.overrideWithValue([skill]),
+            profileAutomationResolverProvider.overrideWithValue(mockResolver),
+            profileAutomationServiceProvider.overrideWithValue(
+              mockAutomationService,
+            ),
+            skillInferenceRunnerProvider.overrideWithValue(mockRunner),
+          ],
+        );
+        containersToDispose.add(testContainer);
+
+        await testContainer.read(
+          triggerSkillProvider((
+            entityId: 'audio-entry-1',
+            skillId: 'skill-audio-summary',
+            linkedTaskId: 'task-sum',
+            referenceImages: null,
+            overrideModelId: null,
+            geminiThinkingMode: null,
+          )).future,
+        );
+
+        verify(
+          () => mockRunner.runAudioSummary(
+            audioEntryId: 'audio-entry-1',
+            automationResult: any(named: 'automationResult'),
+            linkedTaskId: 'task-sum',
+            overrideModelId: any(named: 'overrideModelId'),
+            geminiThinkingMode: any(named: 'geminiThinkingMode'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
       'threads overrideModelId from TriggerSkillParams to '
       'SkillInferenceRunner.runImageAnalysis when the skill type is '
       'imageAnalysis — the popup picker sets this field when the user '

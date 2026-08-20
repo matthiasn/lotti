@@ -973,6 +973,14 @@ class UnifiedAiInferenceRepository {
           'Image generation type received in response processing - no-op',
           name: 'UnifiedAiInferenceRepository',
         );
+      case AiResponseType.audioSummary:
+        // Audio summaries only exist on the skill path, which persists the
+        // response itself. The legacy prompt path can never produce one —
+        // there is no prompt config carrying this response type.
+        developer.log(
+          'Audio summary type received in response processing - no-op',
+          name: 'UnifiedAiInferenceRepository',
+        );
     }
   }
 

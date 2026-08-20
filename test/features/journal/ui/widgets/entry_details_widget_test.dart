@@ -3393,6 +3393,189 @@ void main() {
       });
     });
 
+    group('collapsed audio one-liner source', () {
+      final collapsedAudioLink = EntryLink.basic(
+        id: 'link-audio-oneliner',
+        fromId: testTask.meta.id,
+        toId: testAudioEntry.meta.id,
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+        vectorClock: null,
+      ).copyWith(collapsed: true);
+
+      AiResponseEntry summaryEntry({
+        required String id,
+        required String oneLiner,
+        required DateTime dateFrom,
+        AiResponseType type = AiResponseType.audioSummary,
+      }) => AiResponseEntry(
+        meta: Metadata(
+          id: id,
+          createdAt: dateFrom,
+          dateFrom: dateFrom,
+          dateTo: dateFrom,
+          updatedAt: dateFrom,
+        ),
+        data: AiResponseData(
+          model: 'test-model',
+          systemMessage: '',
+          prompt: '',
+          thoughts: '',
+          response: 'full markdown body',
+          oneLiner: oneLiner,
+          tldr: 'the short version',
+          type: type,
+        ),
+      );
+
+      Future<void> pumpCollapsedAudio(
+        WidgetTester tester,
+        List<AiResponseEntry> responses,
+      ) async {
+        final mockJournalRepository = MockJournalRepository();
+        when(
+          () => mockJournalRepository.getLinksFromId(testAudioEntry.meta.id),
+        ).thenAnswer((_) async => <EntryLink>[]);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProviderScope(
+              overrides: [
+                entryControllerProvider(
+                  testAudioEntry.meta.id,
+                ).overrideWith(() => _FakeEntryController(testAudioEntry)),
+                journalRepositoryProvider.overrideWithValue(
+                  mockJournalRepository,
+                ),
+                linkedAiResponsesControllerProvider(
+                  testAudioEntry.meta.id,
+                ).overrideWith(
+                  () => _FakeLinkedAiResponsesController(
+                    testAudioEntry.meta.id,
+                    responses,
+                  ),
+                ),
+              ],
+              child: EntryDetailsWidget(
+                itemId: testAudioEntry.meta.id,
+                showAiEntry: false,
+                linkedFrom: testTask,
+                link: collapsedAudioLink,
+              ),
+            ),
+          ),
+        );
+
+        await tester.pump();
+        await tester.pump(AppTheme.chevronRotationDuration);
+      }
+
+      testWidgets(
+        'falls back to the transcript preview when no summary exists — a '
+        'recording that was never summarized still needs a label',
+        (tester) async {
+          await pumpCollapsedAudio(tester, const []);
+
+          expect(find.text('test image entry text'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        "prefers the summary's one-liner over the transcript preview",
+        (tester) async {
+          await pumpCollapsedAudio(tester, [
+            summaryEntry(
+              id: 'summary-1',
+              oneLiner: 'Agreed to ship the export flow behind a flag.',
+              dateFrom: DateTime(2024, 5),
+            ),
+          ]);
+
+          expect(
+            find.text('Agreed to ship the export flow behind a flag.'),
+            findsOneWidget,
+          );
+          expect(find.text('test image entry text'), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'shows the newest summary when several exist, so a re-run supersedes '
+        'the earlier snapshot without deleting it',
+        (tester) async {
+          // The controller sorts newest-first; mirror that here rather than
+          // relying on list order matching chronology.
+          await pumpCollapsedAudio(tester, [
+            summaryEntry(
+              id: 'summary-new',
+              oneLiner: 'Rollout was pushed to next sprint.',
+              dateFrom: DateTime(2024, 6),
+            ),
+            summaryEntry(
+              id: 'summary-old',
+              oneLiner: 'Agreed to ship the export flow behind a flag.',
+              dateFrom: DateTime(2024, 5),
+            ),
+          ]);
+
+          expect(
+            find.text('Rollout was pushed to next sprint.'),
+            findsOneWidget,
+          );
+          expect(
+            find.text('Agreed to ship the export flow behind a flag.'),
+            findsNothing,
+          );
+        },
+      );
+
+      testWidgets(
+        'ignores a non-summary linked response — an image analysis or coding '
+        'prompt on the same recording must not become its label',
+        (tester) async {
+          await pumpCollapsedAudio(tester, [
+            summaryEntry(
+              id: 'prompt-1',
+              oneLiner: 'Not a summary one-liner.',
+              dateFrom: DateTime(2024, 6),
+              type: AiResponseType.promptGeneration,
+            ),
+          ]);
+
+          expect(find.text('Not a summary one-liner.'), findsNothing);
+          expect(find.text('test image entry text'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'falls back when a summary carries no one-liner, as one synced from a '
+        'client that predates the tiers would not',
+        (tester) async {
+          await pumpCollapsedAudio(tester, [
+            AiResponseEntry(
+              meta: Metadata(
+                id: 'summary-untiered',
+                createdAt: DateTime(2024, 6),
+                dateFrom: DateTime(2024, 6),
+                dateTo: DateTime(2024, 6),
+                updatedAt: DateTime(2024, 6),
+              ),
+              data: const AiResponseData(
+                model: 'test-model',
+                systemMessage: '',
+                prompt: '',
+                thoughts: '',
+                response: 'full markdown body',
+                type: AiResponseType.audioSummary,
+              ),
+            ),
+          ]);
+
+          expect(find.text('test image entry text'), findsOneWidget);
+        },
+      );
+    });
+
     group('collapse state from link', () {
       testWidgets('link with collapsed=null renders as expanded', (
         tester,
