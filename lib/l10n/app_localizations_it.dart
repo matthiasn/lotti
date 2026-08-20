@@ -6345,11 +6345,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get goalChatTalkToAgent => 'Parla con l\'agente';
 
   @override
-  String goalChatWhyPrefill(String status) {
-    return 'Perché questo obiettivo è $status in questo momento?';
-  }
-
-  @override
   String get goalChatYou => 'Tu';
 
   @override
@@ -6515,9 +6510,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String goalDetailAlsoInGoal(String goals) {
     return 'Anche in $goals';
   }
-
-  @override
-  String get goalDetailAskWhy => 'Perché?';
 
   @override
   String get goalDetailCompletionRateTitle =>

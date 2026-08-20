@@ -10751,12 +10751,6 @@ abstract class AppLocalizations {
   /// **'Talk to agent'**
   String get goalChatTalkToAgent;
 
-  /// Chat draft pre-filled by Ask why; {status} is the localized status pill label.
-  ///
-  /// In en, this message translates to:
-  /// **'Why is this goal {status} right now?'**
-  String goalChatWhyPrefill(String status);
-
   /// No description provided for @goalChatYou.
   ///
   /// In en, this message translates to:
@@ -11012,12 +11006,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Also in {goals}'**
   String goalDetailAlsoInGoal(String goals);
-
-  /// Link on the agent's-read card that opens chat pre-filled with a why question.
-  ///
-  /// In en, this message translates to:
-  /// **'Ask why'**
-  String get goalDetailAskWhy;
 
   /// Title of the goal-scoped completion-rate chart card on goal detail.
   ///

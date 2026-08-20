@@ -1200,6 +1200,95 @@ void main() {
     expect(find.textContaining('of 88'), findsNothing);
   });
 
+  testWidgets('a steps card quotes TODAY over its trailing mean, never the '
+      'mean twice', (tester) async {
+    // Regression: `_metricDisplayValue` falls through to the evaluator's
+    // actual for anything outside the point-sample set, and for an "average
+    // steps per day" criterion that actual IS the trailing mean — so the
+    // corner printed the average as the current value and the card showed
+    // one number twice (10,100 over 10,100).
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        SingleChildScrollView(
+          child: GoalProgressCard(
+            progress: GoalProgressView(
+              today: today,
+              metric: GoalMetricProgressView(
+                criterionId: 'steps',
+                sourceId: GoalHealthDataTypes.steps,
+                name: 'Steps',
+                target: 10000,
+                unitName: '',
+                days: [
+                  for (var offset = 9; offset >= 1; offset--) day(offset, 6000),
+                  day(0, 12000),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // Today stands alone as the headline figure...
+    expect(find.text('12,000'), findsOneWidget);
+    // ...and the mean is a DIFFERENT number, marked as a mean.
+    final average = find.textContaining('Ø');
+    expect(average, findsOneWidget);
+    final averageText = tester.widget<Text>(average).data!;
+    expect(averageText, isNot(contains('12,000')));
+    expect(averageText, startsWith('Ø'));
+    // The old spelled-out label is gone from the corner; the legend still
+    // names the series in words.
+    expect(
+      find.descendant(
+        of: find.byType(DashboardChartLegend),
+        matching: find.text('7-day average'),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('the trailing-average legend wears the series colour, so the '
+      "corner's Ø resolves to a line on the chart", (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        SingleChildScrollView(
+          child: GoalProgressCard(
+            progress: GoalProgressView(
+              today: today,
+              metric: GoalMetricProgressView(
+                criterionId: 'steps',
+                sourceId: GoalHealthDataTypes.steps,
+                name: 'Steps',
+                target: 10000,
+                unitName: '',
+                days: [
+                  for (var offset = 9; offset >= 0; offset--)
+                    day(offset, 6000 + offset * 100),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final tokens = tester.element(find.byType(GoalProgressCard)).designTokens;
+    final entry = tester
+        .widget<DashboardChartLegend>(find.byType(DashboardChartLegend))
+        .entries
+        .firstWhere((e) => e.label == '7-day average');
+    expect(entry.labelWearsSeriesColor, isTrue);
+    expect(entry.color, tokens.colors.alert.info.defaultColor);
+    // The corner's Ø is set in that same hue — colour is the only thing
+    // tying the symbol to the mark it stands for.
+    expect(
+      tester.widget<Text>(find.textContaining('Ø')).style?.color,
+      entry.color,
+    );
+  });
+
   testWidgets('the blood-pressure header quotes the latest paired reading', (
     tester,
   ) async {
@@ -1833,7 +1922,18 @@ void main() {
       ]);
       expect(find.text('7-day average'), findsOneWidget);
       expect(find.text('Goal'), findsOneWidget);
-      expect(find.text('≥ 10,000'), findsOneWidget);
+      // A step target is a round number in the thousands and its direction
+      // is never in doubt — nobody caps their steps — so the legend states
+      // the figure compactly instead of "≥ 10,000".
+      expect(
+        find.descendant(
+          of: find.byType(DashboardChartLegend),
+          matching: find.text('10K'),
+        ),
+        findsOneWidget,
+        reason: 'the chart axis also reads 10K, so scope to the legend',
+      );
+      expect(find.textContaining('≥'), findsNothing);
       expect(find.textContaining('7-day average · '), findsNothing);
     },
   );

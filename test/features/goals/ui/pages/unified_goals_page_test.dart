@@ -349,25 +349,27 @@ void main() {
     );
   });
 
-  testWidgets('renders the summary card, the goal card with its habit row, '
-      'the orphan group, and the aggregate dashboard cards', (tester) async {
+  testWidgets('renders the summary card, the goal card, the orphan group '
+      'and the aggregate dashboard cards', (tester) async {
     await pump(tester, baseState());
 
     // Page header + reused Done-today summary card.
     expect(find.text('Goals'), findsOneWidget);
     expect(find.byType(HabitsSummaryCard), findsOneWidget);
 
-    // The goal card renders EXPANDED by default: its claimed habit row is
-    // directly visible (grouping never means hiding).
+    // The goal card is its header: a claimed habit's own record is read on
+    // the detail page, not restated as a row under the pill that already
+    // summarises it.
     expect(find.byType(UnifiedGoalCard), findsOneWidget);
     expect(find.text('Fitness'), findsOneWidget);
-    expect(find.text(habitFlossing.name), findsOneWidget);
+    expect(find.text(habitFlossing.name), findsNothing);
 
-    // The unclaimed habit lands in the "not in a goal" group, with the same
-    // one-tap action row (the header shows label and count).
+    // The unclaimed habit still lands in the "not in a goal" group with its
+    // one-tap action row — that group IS the Habits-tab daily loop, and it
+    // is the only place a row remains.
     expect(find.text('Not in a goal'), findsOneWidget);
     expect(find.text(habitFlossingDueLater.name), findsOneWidget);
-    expect(find.byType(HabitActionRow), findsNWidgets(2));
+    expect(find.byType(HabitActionRow), findsOneWidget);
 
     // Aggregate dashboard band at the foot, reused as-is.
     expect(find.byType(HabitHeatmapCard), findsOneWidget);
@@ -415,33 +417,6 @@ void main() {
     await tester.tap(find.byType(DesignSystemFloatingActionButton));
     await tester.pump();
     expect(navigated, ['/goals/create']);
-  });
-
-  testWidgets('a skipped habit stays actionable on the goal card while the '
-      'orphan group keeps the Habits-tab semantics', (tester) async {
-    // Both habits were "handled" today, but only the orphan's handling is a
-    // real success — the goal-linked habit was SKIPPED. Goal criteria credit
-    // only successes, so its goal-card row must keep the one-tap + button
-    // (not completed), while the orphan row reads as handled.
-    await pump(
-      tester,
-      baseState(
-        successfulToday: {habitFlossing.id, habitFlossingDueLater.id},
-        successOnlyToday: {habitFlossingDueLater.id},
-      ),
-    );
-
-    final goalRow = tester.widget<HabitActionRow>(
-      find.byKey(
-        Key('unified-goal-goal-1-c1-${habitFlossing.id}'),
-      ),
-    );
-    expect(goalRow.completedToday, isFalse);
-
-    final orphanRow = tester.widget<HabitActionRow>(
-      find.byKey(Key('unified-orphan-${habitFlossingDueLater.id}')),
-    );
-    expect(orphanRow.completedToday, isTrue);
   });
 
   testWidgets('the later filter arm selects the pending-later bucket', (
@@ -740,27 +715,6 @@ void main() {
     expect(progressReads, 2);
   });
 
-  testWidgets('a habit skipped today stays DUE on its goal card while the '
-      'done filter shows only real successes', (tester) async {
-    // habitFlossing was skipped today: the legacy buckets file it under
-    // completed, but goal rows live in success-only terms.
-    final state =
-        baseState(
-          successfulToday: {habitFlossing.id},
-        ).copyWith(
-          displayFilter: HabitDisplayFilter.openNow,
-          openNowAll: [habitFlossingDueLater],
-          completedAll: [habitFlossing],
-        );
-    await pump(tester, state);
-
-    // Due filter: the skipped goal habit keeps its correctable row.
-    final row = tester.widget<HabitActionRow>(
-      find.byKey(Key('unified-goal-goal-1-c1-${habitFlossing.id}')),
-    );
-    expect(row.completedToday, isFalse);
-  });
-
   testWidgets('the done filter shows a goal habit only for a REAL success, '
       'not a skip', (tester) async {
     final state =
@@ -783,20 +737,24 @@ void main() {
   testWidgets('crossing midnight retires rows whose active window ended, '
       'without any new data event', (tester) async {
     var currentNow = DateTime(2026, 8, 15, 23);
-    final endsTonight = habitFlossing.copyWith(
+    // The ORPHAN habit is the one retiring: goal cards no longer render
+    // habit rows, so the "not in a goal" group is where a row's retirement
+    // is observable. The behaviour under test — the midnight rebuild, the
+    // controller rebucket and the preserved heatmap — is unchanged.
+    final endsTonight = habitFlossingDueLater.copyWith(
       activeUntil: DateTime(2026, 8, 16),
     );
     when(
       () => mockEntitiesCacheService.getHabitById(endsTonight.id),
     ).thenAnswer((_) => endsTonight);
     final state = baseState().copyWith(
-      habitDefinitions: [endsTonight, habitFlossingDueLater],
-      openNowAll: [endsTonight, habitFlossingDueLater],
+      habitDefinitions: [habitFlossing, endsTonight],
+      openNowAll: [habitFlossing, endsTonight],
     );
     final controller = await pump(tester, state, now: () => currentNow);
 
     expect(
-      find.byKey(Key('unified-goal-goal-1-c1-${endsTonight.id}')),
+      find.byKey(Key('unified-orphan-${endsTonight.id}')),
       findsOneWidget,
     );
 
@@ -806,10 +764,10 @@ void main() {
     await tester.pump(const Duration(hours: 1, minutes: 2));
 
     expect(
-      find.byKey(Key('unified-goal-goal-1-c1-${endsTonight.id}')),
+      find.byKey(Key('unified-orphan-${endsTonight.id}')),
       findsNothing,
     );
-    expect(find.text(habitFlossingDueLater.name), findsOneWidget);
+    expect(find.text('Fitness'), findsOneWidget);
 
     // And the CONTROLLER was asked to rebucket: `showFrom` bucketing and the
     // per-day maps are time-derived, so a bare rebuild would keep serving

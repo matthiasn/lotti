@@ -6372,11 +6372,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalChatTalkToAgent => 'Vorbiți cu agentul';
 
   @override
-  String goalChatWhyPrefill(String status) {
-    return 'De ce este acest obiectiv $status în acest moment?';
-  }
-
-  @override
   String get goalChatYou => 'Dvs.';
 
   @override
@@ -6553,9 +6548,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String goalDetailAlsoInGoal(String goals) {
     return 'Și în $goals';
   }
-
-  @override
-  String get goalDetailAskWhy => 'De ce?';
 
   @override
   String get goalDetailCompletionRateTitle =>

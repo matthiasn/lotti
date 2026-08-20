@@ -28,7 +28,6 @@ import 'package:lotti/features/goals/service/goal_habit_completion_service.dart'
 import 'package:lotti/features/goals/service/goal_health_refresh_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_assessment_state.dart';
-import 'package:lotti/features/goals/state/goal_chat_controller.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/checkins/goal_checkin_composer.dart';
 import 'package:lotti/features/goals/ui/checkins/goal_checkins_card.dart';
@@ -283,24 +282,6 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
   /// computed state, so the agent is asked about the exact verdict on
   /// screen. An existing draft is never clobbered — the prefill only fills
   /// an empty composer.
-  void _askWhy(UnifiedGoalStatus status) {
-    final draft = ref.read(goalChatControllerProvider(agentId)).draft;
-    if (draft.trim().isEmpty) {
-      ref
-          .read(goalChatControllerProvider(agentId).notifier)
-          .updateDraft(
-            context.messages.goalChatWhyPrefill(
-              unifiedGoalStatusLabel(context.messages, status),
-            ),
-          );
-    }
-    if (isDesktopLayout(context)) {
-      _setChatOpen(open: true);
-    } else {
-      beamToNamed(goalChatPath(agentId));
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -575,18 +556,6 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
             (agentState is AgentStateEntity ? agentState : null)
                 ?.isReportStale ??
             false,
-        // Ask-why needs a DISPLAYED verdict to ask about AND a read to
-        // question (§4b ties it to the narrative card). "No data" never
-        // qualifies: beside a standing assessment the page suppresses that
-        // pill as self-contradictory, and a prefill quoting the suppressed
-        // verdict would resurrect the contradiction in the composer.
-        onAskWhy:
-            unifiedStatus != null &&
-                unifiedStatus != UnifiedGoalStatus.noData &&
-                hasStandingAssessment &&
-                isActive
-            ? () => _askWhy(unifiedStatus)
-            : null,
       );
       final sections = <Widget>[
         _GoalHeader(
@@ -1344,7 +1313,6 @@ class _AgentReadCard extends ConsumerStatefulWidget {
     required this.healthAsync,
     required this.report,
     required this.isStale,
-    required this.onAskWhy,
   });
 
   final String agentId;
@@ -1354,7 +1322,6 @@ class _AgentReadCard extends ConsumerStatefulWidget {
   final AsyncValue<GoalAgentHealth> healthAsync;
   final AgentReportEntity? report;
   final bool isStale;
-  final VoidCallback? onAskWhy;
 
   @override
   ConsumerState<_AgentReadCard> createState() => _AgentReadCardState();
@@ -1461,11 +1428,12 @@ class _AgentReadCardState extends ConsumerState<_AgentReadCard> {
     // "Out of date" directly above "No report yet" reads as a contradiction.
     final hasReadContent =
         report != null || (oneLiner?.trim().isNotEmpty ?? false);
+    // Staleness belongs to the automation band, where it sits beside the
+    // action that resolves it ("Out of date · Update now"). The header rail
+    // says only how old the read is — printing the same warning in both
+    // places made one state look like two problems.
     final String? freshness;
-    if (widget.isStale && hasReadContent) {
-      freshness = messages.taskAgentStatusOutOfDate;
-      _ageTick?.cancel();
-    } else if (generatedAt == null) {
+    if (generatedAt == null) {
       freshness = null;
       _ageTick?.cancel();
     } else {
@@ -1562,9 +1530,7 @@ class _AgentReadCardState extends ConsumerState<_AgentReadCard> {
                     Text(
                       freshness,
                       style: tokens.typography.styles.others.caption.copyWith(
-                        color: widget.isStale && hasReadContent
-                            ? tokens.colors.alert.warning.ink
-                            : tokens.colors.aiCard.metaText,
+                        color: tokens.colors.aiCard.metaText,
                       ),
                     ),
                 ],
@@ -1588,11 +1554,6 @@ class _AgentReadCardState extends ConsumerState<_AgentReadCard> {
                             ? messages.goalDetailHealthUnavailable
                             : messages.goalDetailNoReport),
                     fallbackMuted: oneLiner == null,
-                    // Both text actions share ONE line under the summary:
-                    // "read the rest of it" and "argue with it" are the two
-                    // things a reader does next, and a row apiece cost the
-                    // card two rows to say so.
-                    onAskWhy: widget.onAskWhy,
                   ),
                   if (updateFailure != null) ...[
                     SizedBox(height: tokens.spacing.step3),
@@ -1691,16 +1652,11 @@ class _GoalReportCard extends StatefulWidget {
     required this.report,
     required this.fallback,
     required this.fallbackMuted,
-    required this.onAskWhy,
   });
 
   final AgentReportEntity? report;
   final String fallback;
   final bool fallbackMuted;
-
-  /// Opens the chat with the read's verdict pre-quoted. Rides the same row as
-  /// Show more; null while the goal has no conversation to open.
-  final VoidCallback? onAskWhy;
 
   @override
   State<_GoalReportCard> createState() => _GoalReportCardState();
@@ -1830,43 +1786,23 @@ class _GoalReportCardState extends State<_GoalReportCard>
               ],
             ),
           ),
-        // One caption-tier action row, not one row per action. No hover
-        // fill on either: a pill fading in mid-paragraph reads as a phantom
-        // button — the accent ink already says these are actions, and it
-        // still brightens under the pointer.
-        if (expandable || widget.onAskWhy != null) ...[
+        // The one action the summary offers. "Ask why" used to ride this
+        // row too, but the header already carries a mic for a check-in and a
+        // chat doorway — a third way into the same conversation, set in the
+        // middle of a paragraph, was the least discoverable of the three and
+        // the easiest to lose.
+        if (expandable) ...[
           SizedBox(height: tokens.spacing.step1),
-          Row(
-            children: [
-              if (expandable)
-                DesignSystemButton(
-                  label: _expanded
-                      ? context.messages.aiResponseShowLess
-                      : context.messages.aiResponseShowMore,
-                  onPressed: _toggle,
-                  variant: DesignSystemButtonVariant.tertiary,
-                  size: DesignSystemButtonSize.dense,
-                  trailingIcon: _expanded
-                      ? LottiIcons.collapse
-                      : LottiIcons.expand,
-                  alignsLabelToLeadingEdge: true,
-                  suppressHoverFill: true,
-                ),
-              if (widget.onAskWhy case final askWhy?)
-                DesignSystemButton(
-                  key: const ValueKey('goal-detail-ask-why'),
-                  label: context.messages.goalDetailAskWhy,
-                  onPressed: askWhy,
-                  variant: DesignSystemButtonVariant.tertiary,
-                  size: DesignSystemButtonSize.dense,
-                  trailingIcon: LottiIcons.forward,
-                  // Only the FIRST action on the row pulls onto the card's
-                  // leading rail; a second pull would drag it back over the
-                  // gap it just left.
-                  alignsLabelToLeadingEdge: !expandable,
-                  suppressHoverFill: true,
-                ),
-            ],
+          DesignSystemButton(
+            label: _expanded
+                ? context.messages.aiResponseShowLess
+                : context.messages.aiResponseShowMore,
+            onPressed: _toggle,
+            variant: DesignSystemButtonVariant.tertiary,
+            size: DesignSystemButtonSize.dense,
+            trailingIcon: _expanded ? LottiIcons.collapse : LottiIcons.expand,
+            alignsLabelToLeadingEdge: true,
+            suppressHoverFill: true,
           ),
         ],
       ],

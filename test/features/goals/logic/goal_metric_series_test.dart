@@ -173,4 +173,75 @@ void main() {
       );
     });
   });
+
+  group('warm-up run-up', () {
+    final today = DateTime.utc(2026, 8, 20);
+
+    GoalMetricProgressView metric({Map<DateTime, num> warmup = const {}}) =>
+        GoalMetricProgressView(
+          name: 'Steps',
+          target: 10000,
+          warmupValues: warmup,
+          days: [
+            for (var offset = 6; offset >= 0; offset--)
+              GoalProgressDay(
+                day: today.subtract(Duration(days: offset)),
+                value: 1000,
+                // ignore: avoid_redundant_argument_values
+                isObserved: true,
+              ),
+          ],
+        );
+
+    test('a run-up lets the mean start on the first VISIBLE day', () {
+      // Regression: the series gated on the first day of `metric.days`,
+      // which is the visible span — so the line could not produce a point
+      // until six days into the chart and began a week late, leaving the
+      // earliest part of the range looking trend-less rather than undrawn.
+      final averages = goalMetricSevenDayAverage(
+        metric(
+          warmup: {
+            for (var offset = 12; offset >= 7; offset--)
+              today.subtract(Duration(days: offset)): 4000,
+          },
+        ),
+        today: today,
+      );
+
+      expect(averages, hasLength(7));
+      expect(averages.first.dateTime, today.subtract(const Duration(days: 6)));
+      // Six run-up days at 4000 plus the first visible day at 1000.
+      expect(averages.first.value, closeTo((4000 * 6 + 1000) / 7, 0.001));
+      // By the last day the run-up has aged out of the window entirely.
+      expect(averages.last.value, closeTo(1000, 0.001));
+    });
+
+    test('without a run-up it still waits for a full window rather than '
+        'averaging two days and calling it a week', () {
+      final averages = goalMetricSevenDayAverage(metric(), today: today);
+
+      expect(averages, hasLength(1));
+      expect(averages.single.dateTime, today);
+      expect(averages.single.value, closeTo(1000, 0.001));
+    });
+
+    test('run-up days at or after the visible start are ignored, so a day '
+        'cannot be counted twice', () {
+      final averages = goalMetricSevenDayAverage(
+        metric(
+          warmup: {
+            // Overlaps the visible span: already present in `days`.
+            today.subtract(const Duration(days: 3)): 99999,
+            today.subtract(const Duration(days: 8)): 4000,
+          },
+        ),
+        today: today,
+      );
+
+      expect(averages, isNotEmpty);
+      for (final point in averages) {
+        expect(point.value, lessThan(9999));
+      }
+    });
+  });
 }

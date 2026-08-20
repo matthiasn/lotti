@@ -54,7 +54,17 @@ List<Observation> goalMetricSevenDayAverage(
         ..sort((a, b) => a.day.compareTo(b.day));
   if (days.isEmpty) return const [];
   final firstDay = GoalWindow.dayUtc(days.first.day);
+  // The run-up, so the first VISIBLE day can already carry a full window.
+  // Without it the mean could not be computed until six days into the
+  // chart, and the line began a week late — the earliest part of the range
+  // read as having no trend rather than one nobody had drawn.
+  final warmup = [
+    for (final entry in metric.warmupValues.entries)
+      if (entry.key.isBefore(firstDay))
+        (day: GoalWindow.dayUtc(entry.key), value: entry.value),
+  ]..sort((a, b) => a.day.compareTo(b.day));
   final observed = [
+    ...warmup,
     for (final day in days)
       if (day.isObserved) (day: GoalWindow.dayUtc(day.day), value: day.value),
   ];
@@ -64,9 +74,14 @@ List<Observation> goalMetricSevenDayAverage(
   var left = 0;
   num sum = 0;
   var count = 0;
+  // With a run-up present the series starts on the first visible day; with
+  // none (a metric whose history genuinely does not reach back) it still
+  // waits for a full window rather than averaging two days and calling it a
+  // week.
+  final needsRunIn = warmup.isEmpty;
   for (final day in days) {
     final currentDay = GoalWindow.dayUtc(day.day);
-    if (currentDay.difference(firstDay).inDays < 6) continue;
+    if (needsRunIn && currentDay.difference(firstDay).inDays < 6) continue;
     final windowStart = currentDay.subtract(const Duration(days: 6));
     while (entered < observed.length &&
         !observed[entered].day.isAfter(currentDay)) {

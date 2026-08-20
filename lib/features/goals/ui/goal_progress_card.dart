@@ -881,7 +881,7 @@ class GoalThisWeekCard extends StatelessWidget {
                     onReflect: () => onReflectDay!(progress.today),
                   ),
           ),
-          SizedBox(height: tokens.spacing.step2),
+          SizedBox(height: tokens.spacing.step1),
           // The strip counts DAYS; the caption below counts dimensions on
           // one day. Naming the frame keeps the two from reading as one
           // contradictory statistic.
@@ -903,7 +903,10 @@ class GoalThisWeekCard extends StatelessWidget {
               color: tokens.colors.text.lowEmphasis,
             ),
           ),
-          SizedBox(height: tokens.spacing.step3),
+          // step1: the date line labels the strip directly beneath it, the
+          // same pairing the habit cards use. A step3 gap made it read as
+          // floating between the strip and the title row above.
+          SizedBox(height: tokens.spacing.step1),
           // On the card's own rail. It used to be inset by a chart's y-axis
           // gutter so it would line up with plots on other cards — but this
           // card draws no plot, so the gutter was 52px of nothing between the
@@ -920,7 +923,7 @@ class GoalThisWeekCard extends StatelessWidget {
           // Centered under the strip it closes, like every legend and summary
           // line on the cards below it.
           if (progress.compositeRule != null) ...[
-            SizedBox(height: tokens.spacing.step3),
+            SizedBox(height: tokens.spacing.step2),
             SizedBox(
               width: double.infinity,
               child: Text(
@@ -1130,10 +1133,10 @@ class _HabitDimensionCard extends StatelessWidget {
             met: habit.deficit == 0,
             hasData: true,
           ),
-          // step3, not step4: with the deficit note riding the period line
-          // the header block sits directly above one caption row, and the
-          // wider gap left the card's top third mostly air.
-          SizedBox(height: tokens.spacing.step3),
+          // step2: with the deficit note and the reliability tail both riding
+          // the window line, the header sits directly above ONE caption row —
+          // and that row belongs to the squares under it, not to the header.
+          SizedBox(height: tokens.spacing.step2),
           _HabitProgressRow(
             habit: habit,
             today: today,
@@ -1154,7 +1157,7 @@ class _HabitDimensionCard extends StatelessWidget {
             // the card — so the line had nothing to divide it FROM except
             // the card's own bottom edge, and read as the card being cut in
             // two.
-            SizedBox(height: tokens.spacing.step3),
+            SizedBox(height: tokens.spacing.step2),
             const _ProgressLegend(),
           ],
         ],
@@ -1489,6 +1492,12 @@ String _targetAnnotation(
 /// already the word "Target".
 String _targetThreshold(BuildContext context, GoalMetricProgressView metric) {
   final locale = Localizations.localeOf(context).toLanguageTag();
+  // A step target is a round number in the thousands and the direction is
+  // never in doubt — nobody sets a ceiling on their steps — so it reads as
+  // the figure alone, compactly: "Goal 10k", not "Goal ≥ 10,000".
+  if (metric.sourceId == GoalHealthDataTypes.steps) {
+    return NumberFormat.compact(locale: locale).format(metric.target);
+  }
   final direction = switch (metric.direction) {
     GoalDirection.atLeast => '≥',
     GoalDirection.atMost => '≤',
@@ -1558,9 +1567,16 @@ class _MetricDimensionCard extends StatelessWidget {
     final latestAverage = averageSeries
         ? goalMetricSevenDayAverage(metric, today: today).lastOrNull
         : null;
+    // The LATEST day, not the period aggregate. `_metricDisplayValue` falls
+    // through to the evaluator's actual for anything outside the
+    // point-sample set, and for an "average steps per day" criterion that
+    // actual IS the trailing mean — so the corner printed the average as the
+    // current value and the card showed one number twice (10,100 over
+    // 10,100). A card that draws the mean has to quote something else.
+    final latestReading = summary.hasData ? summary.latest : displayValue;
     final reading = averageSeries
         ? _valueWithUnit(
-            formatGoalAggregate(number, displayValue, against: metric.target),
+            formatGoalAggregate(number, latestReading, against: metric.target),
             unit,
           )
         : unit == null || unit.isEmpty
@@ -1587,7 +1603,7 @@ class _MetricDimensionCard extends StatelessWidget {
             onTargetToday: summary.latestOnTargetToday,
             averageReading: latestAverage == null
                 ? null
-                : '${context.messages.goalChartSevenDayAverage} '
+                : '$goalAverageSymbol '
                       '${formatGoalAggregate(number, latestAverage.value)}',
             // The average LINE's hue, from the same token the series reads.
             averageColor: tokens.colors.alert.info.defaultColor,
@@ -1626,6 +1642,15 @@ class _MetricDimensionCard extends StatelessWidget {
     );
   }
 }
+
+/// The mean, as a mark rather than a phrase.
+///
+/// Not localized on purpose: it is a mathematical symbol, read the same in
+/// every language the app ships, and it replaces a label ("7-day average")
+/// that was three times wider than the figure it introduced. The chart's own
+/// legend still names the series in words, which is where a reader who does
+/// not know the symbol will look.
+const String goalAverageSymbol = 'Ø';
 
 /// "93.4 kg" — a bare reading and its unit, for corners that state the
 /// latest value without comparing it to anything.
@@ -1729,24 +1754,28 @@ class _DimensionHeader extends StatelessWidget {
           ? CrossAxisAlignment.end
           : CrossAxisAlignment.start,
       children: [
-        Text.rich(
-          TextSpan(
-            style: tokens.typography.styles.subtitle.subtitle2,
-            children: [
-              TextSpan(text: reading),
-              if (averageReading case final average?)
-                TextSpan(
-                  text: '  $average',
-                  style: tokens.typography.styles.others.caption.copyWith(
-                    color: averageColor,
-                  ),
-                ),
-            ],
-          ),
+        Text(
+          reading,
           textAlign: alignEnd ? TextAlign.end : TextAlign.start,
+          style: tokens.typography.styles.subtitle.subtitle2,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
+        // The trailing average on its own line, in the average LINE's hue and
+        // one tier down: two figures of equal weight on one row read as a
+        // range, and spelling out "7-day average" beside a number spent more
+        // of the corner on the label than on the value. The symbol carries
+        // it, the colour says which mark on the chart it belongs to.
+        if (averageReading case final average?)
+          Text(
+            average,
+            textAlign: alignEnd ? TextAlign.end : TextAlign.start,
+            style: tokens.typography.styles.others.caption.copyWith(
+              color: averageColor,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
         Text(
           statusLabel,
           textAlign: alignEnd ? TextAlign.end : TextAlign.start,
@@ -2873,6 +2902,10 @@ class _MetricTrendSeries extends StatelessWidget {
                 DashboardLegendEntry(
                   color: averageColor,
                   label: context.messages.goalChartSevenDayAverage,
+                  // The corner quotes this same figure as "Ø …" in this same
+                  // hue; colour is the only thing tying the two together, so
+                  // the legend that resolves the symbol has to wear it.
+                  labelWearsSeriesColor: true,
                 ),
               DashboardLegendEntry(
                 color: targetColor,

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
@@ -13,7 +12,6 @@ import 'package:lotti/features/goals/ui/goal_health_direction.dart';
 import 'package:lotti/features/goals/ui/goal_progress_card.dart';
 import 'package:lotti/features/goals/ui/goal_routes.dart';
 import 'package:lotti/features/goals/ui/unified/unified_goal_status.dart';
-import 'package:lotti/features/habits/ui/widgets/habit_action_row.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_widgets.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -66,13 +64,6 @@ class UnifiedGoalCard extends ConsumerWidget {
         ? null
         : ref.watch(goalAgentProgressViewProvider(identity.agentId));
     final progress = progressAsync?.value;
-    // A spec claims this goal's habits for the page's grouping even while
-    // the progress projection is unavailable — so a FAILED first progress
-    // read must not make every linked habit vanish (not here, not in the
-    // orphan group). Fall back to plain action rows built from the spec's
-    // own criteria tree: no window readings, but the daily loop survives.
-    final progressFailedFirstLoad =
-        progressAsync != null && progress == null && progressAsync.hasError;
     final status = healthAsync.hasValue
         ? unifiedGoalStatusOf(health?.trackStatus)
         : null;
@@ -115,35 +106,6 @@ class UnifiedGoalCard extends ConsumerWidget {
                 const [],
             specVersionId: health!.spec!.id,
           );
-
-    final fallbackHabitIds = progressFailedFirstLoad
-        ? goalCriterionHabitIds(health!.spec!.criteria)
-        : const <String>{};
-    final habitRows = [
-      for (final habit in progress?.habits ?? const <GoalHabitProgressView>[])
-        if (visibleHabitIds?.contains(habit.habitId) ?? true)
-          HabitActionRow(
-            // Criterion id included: a composite tree may reference the
-            // same habit in several leaves (different windows/targets), and
-            // each leaf keeps its own row.
-            key: Key(
-              'unified-goal-${identity.agentId}'
-              '-${habit.criterionId}-${habit.habitId}',
-            ),
-            habitId: habit.habitId,
-            completedToday: successToday.contains(habit.habitId),
-            currentStreak: streaksByHabit[habit.habitId] ?? 0,
-            history: _HabitWindowReading(habit: habit),
-          ),
-      for (final habitId in fallbackHabitIds)
-        if (visibleHabitIds?.contains(habitId) ?? true)
-          HabitActionRow(
-            key: Key('unified-goal-${identity.agentId}-fallback-$habitId'),
-            habitId: habitId,
-            completedToday: successToday.contains(habitId),
-            currentStreak: streaksByHabit[habitId] ?? 0,
-          ),
-    ];
 
     // Quiet ink: the header is a card region, not a button, and Material's
     // hover overlay painted a phantom one over the title and strip. The
@@ -247,58 +209,15 @@ class UnifiedGoalCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Header only. The card used to embed every linked habit as a full
+          // row — glyph, streak chain, flame count, window fraction, check
+          // circle — which cost several rows of a LIST card to restate what
+          // the status pill above it already says in two words. The detail
+          // page is where a habit's own record is read; the overview answers
+          // "is this goal all right", and the pill answers that.
           header,
-          if (habitRows.isNotEmpty)
-            Padding(
-              padding: EdgeInsets.fromLTRB(
-                tokens.spacing.cardPadding,
-                0,
-                tokens.spacing.cardPadding,
-                tokens.spacing.step2,
-              ),
-              child: Column(children: habitRows),
-            ),
         ],
       ),
-    );
-  }
-}
-
-/// The unified habit row's window reading, rendered in the row's `history`
-/// slot: the deterministic "N of M this window" fraction plus the amber
-/// off-track word when the habit is behind. Per-habit day strips stay a
-/// detail-page privilege (§P5 — one glance element per row beyond the streak
-/// chain the row already carries).
-class _HabitWindowReading extends StatelessWidget {
-  const _HabitWindowReading({required this.habit});
-
-  final GoalHabitProgressView habit;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final messages = context.messages;
-    return Wrap(
-      spacing: tokens.spacing.step3,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: [
-        Text(
-          messages.goalDimensionHabitReading(
-            habit.successesInWindow,
-            habit.targetCount,
-          ),
-          style: tokens.typography.styles.others.caption.copyWith(
-            color: tokens.colors.text.mediumEmphasis,
-          ),
-        ),
-        if (habit.deficit > 0)
-          Text(
-            messages.goalDimensionNeedsAttentionStatus,
-            style: tokens.typography.styles.others.caption.copyWith(
-              color: tokens.colors.alert.warning.ink,
-            ),
-          ),
-      ],
     );
   }
 }

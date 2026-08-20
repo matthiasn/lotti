@@ -135,6 +135,7 @@ class GoalMetricProgressView {
     this.categoryTimeSessions = const [],
     this.projectedOnTrack = false,
     this.evaluatedActual,
+    this.warmupValues = const {},
   });
 
   final String name;
@@ -162,6 +163,19 @@ class GoalMetricProgressView {
   final num? evaluatedActual;
   final GoalWindow window;
   final GoalDirection direction;
+
+  /// Observed values for the days immediately BEFORE [days] — the run-up a
+  /// trailing average needs to have a full window on the first visible day.
+  ///
+  /// [days] is the visible span, so a rolling mean computed from it alone
+  /// cannot produce a point until six days into the chart: the line began
+  /// a week late and the earliest part of the range looked like it had no
+  /// trend rather than one nobody had drawn. The signal reader already
+  /// fetches `historyDays + 7`, so this run-up costs no extra query — it was
+  /// simply being thrown away between the reader and the series.
+  ///
+  /// Keyed by UTC day, observed days only; absent days are gaps, not zeroes.
+  final Map<DateTime, num> warmupValues;
 
   /// Whether the goal's requirement held AS OF [day] — the evaluator's own
   /// verdict where it has one, which for a rolling criterion is a statement
@@ -799,6 +813,18 @@ GoalMetricProgressView _numericProgressView({
     agentRecordedProvenanceByDay: agentRecordedProvenanceByDay,
     categoryTimeSessions: categoryTimeSessions,
     projectedOnTrack: projectedOnTrack,
+    // The six days before the first visible one, so a trailing seven-day
+    // mean has a full window on day one of the chart instead of starting a
+    // week in. The reader's range already covers them.
+    warmupValues: {
+      if (dailyValues != null)
+        for (
+          var day = start.subtract(const Duration(days: 6));
+          day.isBefore(start);
+          day = day.add(const Duration(days: 1))
+        )
+          day: ?dailyValues[day],
+    },
     days: [
       for (
         var day = start;

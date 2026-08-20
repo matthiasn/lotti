@@ -6330,11 +6330,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get goalChatTalkToAgent => 'Falar com o agente de meta';
 
   @override
-  String goalChatWhyPrefill(String status) {
-    return 'Porque é que esta meta está $status neste momento?';
-  }
-
-  @override
   String get goalChatYou => 'Tu';
 
   @override
@@ -6500,9 +6495,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String goalDetailAlsoInGoal(String goals) {
     return 'Também em $goals';
   }
-
-  @override
-  String get goalDetailAskWhy => 'Porquê?';
 
   @override
   String get goalDetailCompletionRateTitle => 'Taxa de conclusão da meta';
