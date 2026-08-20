@@ -7,8 +7,8 @@
 /// settings page. Editors, ritual reviews, and instance details are the real
 /// routed pages at both sizes.
 ///
-/// Generated PNGs are staging inputs for `lotti-docs` and are never committed
-/// to this repository.
+/// Generated PNGs are staging inputs for the manual catalog published to R2
+/// and are never committed to this repository.
 ///
 /// Opt in with:
 /// `LOTTI_SCREENSHOT_DIR=/tmp/lotti_agents_manual fvm flutter test \

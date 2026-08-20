@@ -5,8 +5,8 @@
 /// data follows the Project Waddle world used by the task and Daily OS manual
 /// so operational states remain recognizable across chapters.
 ///
-/// Generated PNGs are staging inputs for `lotti-docs` and are never committed
-/// to this repository.
+/// Generated PNGs are staging inputs for the manual catalog published to R2
+/// and are never committed to this repository.
 ///
 /// Opt in with:
 /// `LOTTI_SCREENSHOT_DIR=/tmp/lotti_sync_manual fvm flutter test \

@@ -6,7 +6,8 @@
 ///
 /// Desktop captures render the production Settings V2 tree/detail shell.
 /// Mobile captures render the production full-screen pages. Generated PNGs
-/// are staging inputs for `lotti-docs` and are never committed to this repo.
+/// are staging inputs for the manual catalog published to R2 and are never
+/// committed to this repo.
 ///
 /// Opt in with:
 /// `LOTTI_SCREENSHOT_DIR=/tmp/lotti_ai_manual fvm flutter test \

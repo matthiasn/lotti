@@ -36,7 +36,7 @@
 ## Commit & Pull Request Guidelines
 - Use Conventional Commits (e.g., `feat:`, `fix:`, `chore:`, `ci:`). Keep subjects concise and imperative.
 - PRs must pass `make analyze` and `make test`; include a clear description and linked issues.
-- **UI changes need a before/after screenshot pair per surface**, captured with the harness (see the `app-screenshots` skill). Capture `before/` from the base commit *first* — it cannot be reconstructed once the change is in. **Never commit images to this repo**; they go to the sibling `lotti-docs` repo under `pr-screenshots/<topic-slug>/{before,after}/` and are linked by raw URL. The layout, the three destinations in `lotti-docs`, and the naming rules are in [knowledge/conventions/screenshots.md](knowledge/conventions/screenshots.md).
+- **UI changes need a before/after screenshot pair per surface**, captured with the harness (see the `app-screenshots` skill). Capture `before/` from the base commit *first* — it cannot be reconstructed once the change is in. **Never commit images to this repo**; publish the pair to Cloudflare R2 with `make pr_screenshots_publish` and link the printed URLs from the PR body. The key layout, the naming rules and the credentials the target needs are in [knowledge/conventions/screenshots.md](knowledge/conventions/screenshots.md).
 - Update docs and localization as needed (run `make l10n`).
 
 ## Security & Configuration Tips
