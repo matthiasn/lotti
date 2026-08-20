@@ -13109,6 +13109,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get taskMetaDueDateLabel => 'Verloopdatum';
 
   @override
+  String get taskMetaEstimateLabel => 'Schatting';
+
+  @override
   String get taskMetaLabelsLabel => 'Labels';
 
   @override
@@ -13116,9 +13119,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get taskMetaSheetTitle => 'Taakdetails';
-
-  @override
-  String get taskMetaTimeLabel => 'Tijd';
 
   @override
   String get taskMetaValueNotSet => 'Niet ingesteld';

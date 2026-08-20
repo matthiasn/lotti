@@ -10,16 +10,16 @@ stale_after: 2027-02-02
 sources:
   - id: header
     resource: ../../../lib/features/tasks/ui/header
-    title: Desktop task header
-    last_modified: 2026-08-10
+    title: Desktop task header, metadata section, fly-out and details column
+    last_modified: 2026-08-20
   - id: linked-task-row
     resource: ../../../lib/features/tasks/ui/linked_tasks/linked_task_row.dart
     title: Linked task row
     last_modified: 2026-08-10
   - id: pages
     resource: ../../../lib/features/tasks/ui/pages
-    title: TaskDetailsPage and TaskForm
-    last_modified: 2026-08-05
+    title: TaskDetailsPage, TasksRootPage and TaskForm
+    last_modified: 2026-08-20
   - id: first-run
     resource: ../../../lib/features/tasks/ui/widgets/task_first_run_actions.dart
     title: First-run actions block
@@ -236,7 +236,7 @@ Three rules govern getting *out* of edit mode:
   status, and spending it here put two unrelated greens in one small box. Both
   targets are `step9` (48 pt).
 
-## The metadata summary and fly-out
+## The metadata summary, the fly-out and the column
 
 The header body is Crumb → Title → AI one-liner → Summary:
 
@@ -247,7 +247,10 @@ The header body is Crumb → Title → AI one-liner → Summary:
    preserves the last value during background refresh and grows vertically
    rather than truncating useful context.
 4. **Summary** — one compact lane (`TaskMetaSummaryLine`) of informational
-   read-outs plus the "Details" fly-out trigger.
+   read-outs plus the "Details" fly-out trigger. The trigger renders **only
+   when a fly-out is on offer**: `DesktopTaskHeaderConnector` passes a null
+   `onOpenDetails` where a details column already carries those rows, and the
+   lane then ends at its facts.
 
 **Without a category the crumb renders nothing at all**, and the summary lane
 carries a dashed "Set category" offer (verb-form, muted shell, fully-rounded
@@ -269,16 +272,54 @@ elsewhere on the page. The one lever in the lane, the **Details** trigger,
 keeps the fully-rounded interactive pill shape. Tapping any read-out opens
 the same fly-out, so a tap on the fact still lands on its editor.
 
-The **fly-out** (`TaskMetaFlyout` → `ModalUtils.showSinglePageModal`) lists
-every attribute as a descriptive **label + value** row — Status, Priority,
-Category, Project (once a category exists), Due date, Time, Labels, and a
-read-only AI spend row for tasks with recorded AI calls. Each editable row
-opens its existing modal picker through the shared `TaskMetaPickers`
-(also used by the crumb), and the content watches the task so a persisted
-edit updates the open fly-out immediately. The Time row keeps the
-`{tracked} of {estimate}` read (`1h 30m of 2h`, never a clock-like
+### One section, two hosts
+
+`TaskMetaSection` lists every attribute as a descriptive **label + value**
+row — Status, Priority, Category, Project (once a category exists), Due date,
+**Estimate**, Labels, and a read-only AI spend row for tasks with recorded AI
+calls. Each editable row opens its existing modal picker through the shared
+`TaskMetaPickers` (also used by the crumb), and the section watches the task
+so a persisted edit updates the open host immediately. The Estimate row keeps
+the `{tracked} of {estimate}` read (`1h 30m of 2h`, never a clock-like
 `01:30 / 02:00`) plus the small progress bar, escalating to error ink when
 tracked exceeds the estimate.
+
+The section has two hosts, and `TaskMetaDensity` is the only difference
+between them:
+
+| Host | Density | When |
+| --- | --- | --- |
+| `TaskMetaFlyout` (`ModalUtils.showSinglePageModal`) | `wide` — label column (`step12` = 96) beside a value column | Everywhere the column does not fit: phone, narrow pane, list pane visible |
+| `TaskMetaColumn` | `narrow` — label stacked above its value | Focused task, pane ≥ `kTaskMetaColumnMinHostWidth` |
+
+The narrow density stacks rather than narrowing the label column: at
+`kTaskMetaColumnWidth` (320) a fixed 96 pt label column either starves the
+values or clips a long localized label — German "Fälligkeitsdatum" does not
+fit beside its own date.
+
+### The details column
+
+`TaskMetaColumn` is the Linear-shaped layout for a **focused** task: once the
+list pane is collapsed, the freed width buys a third column rather than a
+wider task. `TasksRootPage` mounts it as a peer to the task page — its own
+title, a hairline left rule, and its own scroll, so glanced-at metadata does
+not move when the task beside it scrolls.
+
+Two conditions, both required:
+
+- the list pane is collapsed **and** a task is selected — the column is the
+  focus-mode layout, not a permanent fourth column; and
+- the detail pane measures at least `kTaskMetaColumnMinHostWidth` (960).
+
+The gate reads the **pane's own constraints**, not `MediaQuery`. The
+navigation sidebar can be collapsed, so a window width answers the wrong
+question by up to 256 points. Below the floor the metadata falls back to the
+fly-out rather than squeezing the work it describes.
+
+The pane keeps **one tree shape in every state** — always a `Row`, with the
+column as an optional trailing child. Swapping between "task" and "Row(task,
+column)" would rebuild `TaskDetailsPage` from scratch on every collapse,
+losing its scroll position and its state.
 
 Summary-lane treatment carries over the accessibility decisions the old pill
 lanes earned:

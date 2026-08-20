@@ -27,7 +27,8 @@ import 'package:lotti/features/tasks/state/task_one_liner_provider.dart';
 import 'package:lotti/features/tasks/state/task_progress_controller.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header_connector.dart';
-import 'package:lotti/features/tasks/ui/header/task_meta_flyout.dart';
+import 'package:lotti/features/tasks/ui/header/task_meta_column.dart';
+import 'package:lotti/features/tasks/ui/header/task_meta_section.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_shared_widgets.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -246,6 +247,7 @@ void main() {
     TaskProgressState? progress,
     String? oneLiner,
     Locale locale = const Locale('en'),
+    bool metaColumnVisible = false,
   }) {
     return ProviderScope(
       overrides: [
@@ -275,7 +277,10 @@ void main() {
         supportedLocales: AppLocalizations.supportedLocales,
         locale: locale,
         home: Scaffold(
-          body: DesktopTaskHeaderConnector(taskId: task.id),
+          body: TaskMetaColumnScope(
+            visible: metaColumnVisible,
+            child: DesktopTaskHeaderConnector(taskId: task.id),
+          ),
         ),
       ),
     );
@@ -488,8 +493,30 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        expect(find.byType(TaskMetaFlyoutContent), findsOneWidget);
+        expect(find.byType(TaskMetaSection), findsOneWidget);
         expect(find.text('Task details'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'the Details trigger stands down where the details column is mounted',
+      (tester) async {
+        await tester.pumpWidget(
+          pumpConnector(task: buildTask(), metaColumnVisible: true),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // The read-outs stay; the offer to open a second copy of them does
+        // not, and neither do their hit targets.
+        expect(find.text('Open'), findsOneWidget);
+        expect(find.text('Details'), findsNothing);
+
+        await tester.tap(find.byType(TaskShowcasePriorityGlyph).first);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.byType(TaskMetaSection), findsNothing);
       },
     );
 
@@ -506,11 +533,11 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        expect(find.byType(TaskMetaFlyoutContent), findsOneWidget);
+        expect(find.byType(TaskMetaSection), findsOneWidget);
         // Descriptive labels with their values.
         expect(find.text('Status'), findsOneWidget);
         expect(find.text('Priority'), findsOneWidget);
-        expect(find.text('Time'), findsOneWidget);
+        expect(find.text('Estimate'), findsOneWidget);
         expect(find.text('0m of 2h'), findsOneWidget);
       },
     );
@@ -539,7 +566,7 @@ void main() {
         // Straight to the picker — no fly-out detour for the one attribute
         // the header actively offers.
         expect(find.byType(CategoryPickerSheet), findsOneWidget);
-        expect(find.byType(TaskMetaFlyoutContent), findsNothing);
+        expect(find.byType(TaskMetaSection), findsNothing);
       },
     );
 
@@ -1051,7 +1078,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        expect(find.byType(TaskMetaFlyoutContent), findsOneWidget);
+        expect(find.byType(TaskMetaSection), findsOneWidget);
       },
     );
   });

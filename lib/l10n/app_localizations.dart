@@ -22051,6 +22051,12 @@ abstract class AppLocalizations {
   /// **'Due date'**
   String get taskMetaDueDateLabel;
 
+  /// No description provided for @taskMetaEstimateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimate'**
+  String get taskMetaEstimateLabel;
+
   /// No description provided for @taskMetaLabelsLabel.
   ///
   /// In en, this message translates to:
@@ -22068,12 +22074,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Task details'**
   String get taskMetaSheetTitle;
-
-  /// No description provided for @taskMetaTimeLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Time'**
-  String get taskMetaTimeLabel;
 
   /// No description provided for @taskMetaValueNotSet.
   ///

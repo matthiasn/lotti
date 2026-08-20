@@ -3,6 +3,9 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
+import 'package:lotti/features/ai_consumption/ui/widgets/ai_cost_indicator.dart';
 import 'package:lotti/features/categories/ui/widgets/category_color_icon.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
@@ -22,6 +25,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../helpers/entity_factories.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
+import '../../../ai_consumption/test_utils.dart';
 import 'task_browse_list_item_test_helpers.dart';
 
 void main() {
@@ -465,6 +469,65 @@ void main() {
         ),
         findsNothing,
       );
+    });
+  });
+
+  group('AI cost indicator', () {
+    Task costTask() => TestTaskFactory.create(
+      id: 'task-ai-cost',
+      title: 'Task With AI',
+      dateFrom: DateTime(2026, 4, 8),
+    );
+
+    testWidgets('rides in the metadata lane once the task has AI calls', (
+      tester,
+    ) async {
+      final task = costTask();
+
+      await pumpTaskBrowseItem(
+        tester,
+        task,
+        overrides: [
+          taskConsumptionTotalsProvider(task.meta.id).overrideWith(
+            (ref) => Stream.value(
+              makeConsumptionTotals(
+                callCount: 5,
+                impactCallCount: 5,
+                credits: 1.25,
+              ),
+            ),
+          ),
+        ],
+      );
+      await tester.pump();
+
+      expect(find.byType(AiCostIndicator), findsOneWidget);
+      expect(find.text('€1.25'), findsOneWidget);
+      // Clickable, so a breakdown can take the tap later.
+      expect(
+        tester.widget<AiCostIndicator>(find.byType(AiCostIndicator)).onTap,
+        isNotNull,
+      );
+    });
+
+    testWidgets('leaves the lane untouched for a task with no AI calls', (
+      tester,
+    ) async {
+      final task = costTask();
+
+      await pumpTaskBrowseItem(
+        tester,
+        task,
+        overrides: [
+          taskConsumptionTotalsProvider(
+            task.meta.id,
+          ).overrideWith((ref) => Stream.value(makeConsumptionTotals())),
+        ],
+      );
+      await tester.pump();
+
+      expect(find.byType(AiCostIndicator), findsNothing);
+      expect(find.byIcon(LottiIcons.eco), findsNothing);
     });
   });
 }

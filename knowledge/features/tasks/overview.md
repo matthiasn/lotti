@@ -11,7 +11,7 @@ sources:
   - id: src
     resource: ../../../lib/features/tasks
     title: Tasks feature source
-    last_modified: 2026-08-15
+    last_modified: 2026-08-20
   - id: nav
     resource: ../../../lib/services/nav_service.dart
     title: desktopTaskDetailStack
@@ -115,6 +115,11 @@ while task data is loading. Its collapse preference and expanded width are
 shared with Projects and persisted by `PaneWidthController`. Focus mode uses the
 released canvas without turning media into wall-sized chrome: cover art remains
 16:9 but is capped at the shared 960 pt detail measure.
+
+Focus mode is also what mounts the **details column**: with the list gone and
+a pane at least 960 pt wide, `TaskMetaColumn` carries the task's metadata
+beside it instead of behind a fly-out, and the header drops its Details
+trigger. See [detail composition](detail-composition.md).
 
 This does not change the detail stack: Show list only changes layout, while Back
 still appears only when `desktopTaskDetailStack` is deeper than the base task.

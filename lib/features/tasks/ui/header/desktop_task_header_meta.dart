@@ -26,7 +26,9 @@ const double kTaskChipGlyphSize = 14;
 /// The compact metadata summary under the title: a single lane of quiet,
 /// **informational** read-outs (status, priority, due date, labels) followed
 /// by the one interactive element — the "Details" trigger that opens the
-/// metadata fly-out where every value is edited.
+/// metadata fly-out where every value is edited. A null [onOpenDetails] drops
+/// both the trigger and the tags' hit targets: that is the state where the
+/// details are already on screen as their own column.
 ///
 /// The read-outs wear the tight [DsPillShape.tag] corners (radius 4) so they
 /// cannot be mistaken for the fully-rounded filter/action pills elsewhere on
@@ -116,7 +118,11 @@ class TaskMetaSummaryLine extends StatelessWidget {
             ),
             onTap: onCategoryTap,
           ),
-        _DetailsTrigger(onTap: onOpenDetails),
+        // Only where there is a fly-out to open: with the details column
+        // mounted beside the task, the connector passes null and the lane
+        // ends at its facts rather than offering the same panel twice.
+        if (onOpenDetails case final openDetails?)
+          _DetailsTrigger(onTap: openDetails),
       ],
     );
   }
@@ -345,9 +351,9 @@ class _LabelsSummaryTag extends StatelessWidget {
 /// control it keeps the fully-rounded pill shape — the corner-radius grammar
 /// that separates levers from the square-cornered facts beside it.
 class _DetailsTrigger extends StatelessWidget {
-  const _DetailsTrigger({this.onTap});
+  const _DetailsTrigger({required this.onTap});
 
-  final VoidCallback? onTap;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {

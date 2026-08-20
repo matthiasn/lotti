@@ -13086,6 +13086,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get taskMetaDueDateLabel => 'Förfallodatum';
 
   @override
+  String get taskMetaEstimateLabel => 'Uppskattning';
+
+  @override
   String get taskMetaLabelsLabel => 'Etiketter';
 
   @override
@@ -13093,9 +13096,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get taskMetaSheetTitle => 'Uppgiftsdetaljer';
-
-  @override
-  String get taskMetaTimeLabel => 'Tid';
 
   @override
   String get taskMetaValueNotSet => 'Inte inställt';

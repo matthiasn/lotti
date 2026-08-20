@@ -14,6 +14,7 @@ import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/ui/app_command_controller.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
+import 'package:lotti/features/tasks/ui/header/task_meta_column.dart';
 import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
 import 'package:lotti/features/tasks/ui/pages/tasks_root_page.dart';
 import 'package:lotti/features/tasks/ui/pages/tasks_tab_page.dart';
@@ -169,6 +170,118 @@ void main() {
     // flutter_animate inside the detail page.
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pumpAndSettle();
+  });
+
+  group('the persistent details column', () {
+    Future<void> pumpFocused(
+      WidgetTester tester, {
+      required double paneWidth,
+    }) async {
+      fakeController = FakeJournalPageController(state());
+
+      final navService = getIt<NavService>() as MockNavService;
+      final stackNotifier = ValueNotifier<List<String>>(<String>['task-42']);
+      addTearDown(stackNotifier.dispose);
+      when(
+        () => navService.desktopTaskDetailStack,
+      ).thenReturn(stackNotifier);
+
+      // The real surface, not just a MediaQuery value: the column is gated
+      // on the pane's layout constraints.
+      await tester.binding.setSurfaceSize(Size(paneWidth, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const TasksRootPage(),
+          // Window stays wide (desktop layout); the *pane* is what
+          // narrows — exactly the shape a collapsed navigation sidebar or a
+          // small window puts the task page in.
+          mediaQueryData: const MediaQueryData(size: Size(1600, 800)),
+          overrides: [
+            journalPageScopeProvider.overrideWithValue(true),
+            journalPageControllerProvider(
+              true,
+            ).overrideWith(() => fakeController),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      // Collapse the list — the column is the focus-mode layout.
+      await tester.tap(
+        find.byKey(const ValueKey('tasks-hide-list-pane-expanded')),
+      );
+      await tester.pump();
+      await tester.pump();
+    }
+
+    Future<void> disposeTree(WidgetTester tester) async {
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('mounts beside a focused task on a wide enough pane', (
+      tester,
+    ) async {
+      await pumpFocused(tester, paneWidth: 1400);
+
+      expect(find.byType(TaskMetaColumn), findsOneWidget);
+      // The task column pays for it: it keeps the rest of the pane, exactly.
+      expect(
+        tester.getSize(find.byType(TaskMetaColumn)).width,
+        kTaskMetaColumnWidth,
+      );
+      expect(
+        tester.getSize(find.byType(TaskDetailsPage)).width,
+        1400 - kTaskMetaColumnWidth,
+      );
+      await disposeTree(tester);
+    });
+
+    testWidgets('falls back to the fly-out below the breakpoint', (
+      tester,
+    ) async {
+      await pumpFocused(tester, paneWidth: kTaskMetaColumnMinHostWidth - 1);
+
+      expect(find.byType(TaskMetaColumn), findsNothing);
+      // Nothing else changes: the task still owns the whole pane.
+      expect(
+        tester.getSize(find.byType(TaskDetailsPage)).width,
+        kTaskMetaColumnMinHostWidth - 1,
+      );
+      await disposeTree(tester);
+    });
+
+    testWidgets('stays away while the task list is visible', (tester) async {
+      fakeController = FakeJournalPageController(state());
+
+      final navService = getIt<NavService>() as MockNavService;
+      final stackNotifier = ValueNotifier<List<String>>(<String>['task-42']);
+      addTearDown(stackNotifier.dispose);
+      when(
+        () => navService.desktopTaskDetailStack,
+      ).thenReturn(stackNotifier);
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const TasksRootPage(),
+          mediaQueryData: const MediaQueryData(size: Size(1600, 800)),
+          overrides: [
+            journalPageScopeProvider.overrideWithValue(true),
+            journalPageControllerProvider(
+              true,
+            ).overrideWith(() => fakeController),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      // Browsing: list, divider and task. Three columns, not four.
+      expect(find.byType(TasksTabPage), findsOneWidget);
+      expect(find.byType(TaskMetaColumn), findsNothing);
+      await disposeTree(tester);
+    });
   });
 
   testWidgets(

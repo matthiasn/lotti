@@ -6,6 +6,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.11]
 ### Changed
+- **Task details ride along on the right instead of covering the task.** On a
+  wide window, hiding the task list no longer just widens the task: the
+  metadata — status, priority, category, project, due date, estimate, labels
+  and AI spend — moves into a slim column pinned to the right, each field
+  still editable in place, and the task column narrows to make room. It has
+  its own scroll, so the details stay put while you read the task. Below a
+  window (or a pane) wide enough for both, nothing changes: the same fields
+  stay one tap away behind Details, and while the column is showing that
+  Details button steps aside rather than offering the same panel twice.
+- **"Time" is now called "Estimate".** The field always was the estimated
+  duration; it now says so, matching the estimate picker it opens.
+- **What AI cost a task is visible at a glance.** The leaf-and-amount read-out
+  is no longer buried in the task details: every task row that has AI work on
+  it carries the same compact indicator, and tapping it opens that task's
+  details. Tasks that have never used AI show nothing at all.
 - **A shorter, calmer goal page.** The goal details page says the same things
   in far less vertical space. The AI summary card puts "Show more" and
   "Ask why" on one line, moves its running cost up beside the "as of …"

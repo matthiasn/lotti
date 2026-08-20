@@ -219,6 +219,7 @@ void main() {
               labels: _labelFixtures,
             ),
             onTitleSaved: (_) {},
+            onOpenDetails: () {},
           ),
         );
 
@@ -323,6 +324,7 @@ void main() {
           DesktopTaskHeader(
             data: _fixture(),
             onTitleSaved: (_) {},
+            onOpenDetails: () {},
             onCategoryTap: () => categoryTaps++,
           ),
         );
@@ -1023,13 +1025,32 @@ void main() {
     ) async {
       await _pumpDesktop(
         tester,
-        DesktopTaskHeader(data: _fixture(), onTitleSaved: (_) {}),
+        DesktopTaskHeader(
+          data: _fixture(),
+          onTitleSaved: (_) {},
+          onOpenDetails: () {},
+        ),
       );
       // Status, priority and the Details trigger only.
       expect(find.text('Open'), findsOneWidget);
       expect(find.text('High'), findsOneWidget);
       expect(find.text('Details'), findsOneWidget);
       expect(find.textContaining(','), findsNothing);
+    });
+
+    testWidgets('no Details trigger without a fly-out to open', (
+      tester,
+    ) async {
+      await _pumpDesktop(
+        tester,
+        DesktopTaskHeader(data: _fixture(), onTitleSaved: (_) {}),
+      );
+
+      // The state where the details column carries these rows already: the
+      // facts stay, the offer to open a second copy of them goes.
+      expect(find.text('Open'), findsOneWidget);
+      expect(find.text('High'), findsOneWidget);
+      expect(find.text('Details'), findsNothing);
     });
   });
 
