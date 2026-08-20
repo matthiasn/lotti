@@ -26,6 +26,32 @@
                     }
                 ]
             }
+        },
+        "3.5.2": {
+            "manifest": {
+                "sources": [
+                    {
+                        "type": "file",
+                        "only-arches": [
+                            "x86_64"
+                        ],
+                        "url": "https://github.com/simolus3/sqlite3.dart/releases/download/sqlite3-3.5.2/libsqlite3.x64.linux.so",
+                        "sha256": "b17729184e5a2818055ecbddd5ed6642521bfe6e56aafa472330e483c0e2e0d2",
+                        "dest": "$APP/.dart_tool/hooks_runner/shared/sqlite3/build/download-b1772918",
+                        "dest-filename": "libsqlite3.so"
+                    },
+                    {
+                        "type": "file",
+                        "only-arches": [
+                            "aarch64"
+                        ],
+                        "url": "https://github.com/simolus3/sqlite3.dart/releases/download/sqlite3-3.5.2/libsqlite3.arm64.linux.so",
+                        "sha256": "7f0db19fdb987298ab8def51431aba5cec28a81685e8b62cebbc7402df090a16",
+                        "dest": "$APP/.dart_tool/hooks_runner/shared/sqlite3/build/download-7f0db19f",
+                        "dest-filename": "libsqlite3.so"
+                    }
+                ]
+            }
         }
     },
     "sqlite3_flutter_libs": {
