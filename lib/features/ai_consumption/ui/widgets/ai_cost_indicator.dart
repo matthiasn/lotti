@@ -9,8 +9,8 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 /// How much of the consumption read-out an [AiCostIndicator] spells out.
 enum AiCostDensity {
   /// Cost alone — the leaf glyph plus one amount. For places where the
-  /// indicator rides along with other metadata (a task row's meta lane) and
-  /// has to survive at a few dozen points of width.
+  /// indicator rides along with other metadata (the task header's summary
+  /// lane) and has to survive at a few dozen points of width.
   compact,
 
   /// Cost, energy and carbon, as the metadata surfaces show them. For a
@@ -20,10 +20,10 @@ enum AiCostDensity {
 
 /// The canonical **AI cost** read-out: the leaf glyph and an amount.
 ///
-/// One component for every surface that shows what AI has cost — task rows,
-/// the task metadata section, and whatever comes next — so the aesthetic
-/// (leaf + amount) is defined once. [density] chooses how much of the
-/// consumption story is spelled out; the tooltip always carries the full
+/// One component for every surface that shows what AI has cost — the task
+/// header's summary lane, the task metadata section, and whatever comes next —
+/// so the aesthetic (leaf + amount) is defined once. [density] chooses how much
+/// of the consumption story is spelled out; the tooltip always carries the full
 /// breakdown.
 ///
 /// Renders nothing at all when the subject has no recorded AI calls: an

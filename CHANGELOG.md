@@ -17,10 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Details button steps aside rather than offering the same panel twice.
 - **"Time" is now called "Estimate".** The field always was the estimated
   duration; it now says so, matching the estimate picker it opens.
-- **What AI cost a task is visible at a glance.** The leaf-and-amount read-out
-  is no longer buried in the task details. It now sits next to the task's
-  status in its header, where it is readable the whole time you work on the
-  task, and on every task row in the list. Tapping it opens the details, which
+- **What AI cost a task is visible the whole time you work on it.** The
+  leaf-and-amount read-out no longer hides behind the Details panel: it sits
+  next to the task's status, under its title, so it is readable at the same
+  glance as everything else about the task. Tapping it opens the details, which
   still carry the fuller reading with energy and CO₂e. Tasks that have never
   used AI show nothing at all.
 - **A shorter, calmer goal page.** The goal details page says the same things

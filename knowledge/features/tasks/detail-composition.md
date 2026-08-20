@@ -269,8 +269,10 @@ always-visible button-styled chrome.** The summary lane is read-outs only:
 
 **The AI cost sits in that lane, not behind a panel.** What the machine has
 cost on this task is readable at the same glance as its status, through the
-shared `AiCostIndicator` — the compact leaf-and-amount form, the same component
-the task list rows carry. It renders nothing until the task has recorded AI
+shared `AiCostIndicator` in its compact leaf-and-amount form. It is a fact
+about the *open* task, so it lives on the detail surfaces only — the browse
+list stays a list of tasks, not of invoices. It renders nothing until the task
+has recorded AI
 calls, so the lane is unchanged for a task that never met the machine. Its tap
 opens the fly-out that holds the full breakdown; where the details column is
 already mounted the connector passes the read-only form instead, for the same

@@ -5,12 +5,12 @@ import 'package:lotti/features/ai_consumption/ui/widgets/ai_cost_indicator.dart'
 import 'package:lotti/features/tasks/ui/header/task_meta_flyout.dart';
 
 /// The task-bound [AiCostIndicator]: watches one task's lifetime consumption
-/// and renders the leaf-and-amount read-out wherever a task is shown.
+/// and renders the leaf-and-amount read-out on the task's own surfaces — its
+/// header lane and its metadata section.
 ///
 /// Nothing renders until the task has recorded AI calls, so a task that has
 /// never been near the machine carries no chrome for it. The totals provider
-/// is throttled and auto-disposing, so a row that scrolls out of the list
-/// stops watching.
+/// is throttled and auto-disposing, so the watch ends with the surface.
 ///
 /// The default constructor is interactive: a tap opens the task's metadata
 /// details, which is where the AI spend is shown in full. See

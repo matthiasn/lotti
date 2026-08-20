@@ -18,7 +18,6 @@ import 'package:lotti/features/tasks/ui/due_date_text.dart';
 import 'package:lotti/features/tasks/ui/model/task_browse_models.dart';
 import 'package:lotti/features/tasks/ui/model/task_browse_row_interactions.dart';
 import 'package:lotti/features/tasks/ui/time_recording_icon.dart';
-import 'package:lotti/features/tasks/ui/widgets/task_ai_cost_indicator.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_shared_widgets.dart';
 import 'package:lotti/get_it.dart';
@@ -138,9 +137,9 @@ class TaskBrowseRowShell extends StatelessWidget {
 }
 
 /// The inner layout of a task row: optional cover art, title, AI one-liner
-/// subtitle, a metadata wrap (priority, tracked duration, category chip, AI
-/// cost), the trailing status pill, and a footer of created-date / due-date /
-/// vector-distance chips. Watches `taskLiveDataProvider` and `taskOneLinerProvider` (using
+/// subtitle, a metadata wrap (priority, tracked duration, category chip), the
+/// trailing status pill, and a footer of created-date/due-date/vector-distance
+/// chips. Watches `taskLiveDataProvider` and `taskOneLinerProvider` (using
 /// `.value` to keep stale data during reloads) so the row updates in place.
 class TaskRowContent extends ConsumerWidget {
   const TaskRowContent({
@@ -220,10 +219,6 @@ class TaskRowContent extends ConsumerWidget {
             category?.color ??
             defaultCategoryColorHex,
       ),
-      // What the AI has cost on this task, always visible rather than one
-      // fly-out away. Renders nothing for a task with no recorded AI calls,
-      // so the lane is unchanged for tasks that never met the machine.
-      TaskAiCostIndicator(taskId: liveTask.meta.id),
     ];
 
     return Row(
