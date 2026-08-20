@@ -419,7 +419,8 @@ commitment monitors. The exact split is not set yet.
   full guide, available in 11 languages. Start with
   [the mental model](https://matthiasn.github.io/lotti/manual/development/getting-started/mental-model)
   if you want to understand the shape of the thing before installing it.
-- [Getting started with AI](GETTING_STARTED.md) — local Ollama or cloud Gemini
+- [Connect an AI provider](https://matthiasn.github.io/lotti/manual/development/ai-and-automation/provider-setup/)
+  — local Ollama or cloud Gemini, and the models and profiles around them
 - [Task management and voice capture](https://matthiasn.github.io/lotti/manual/development/getting-started/first-task/)
   — the everyday voice-to-checklist workflow
 - [Architecture](docs/ARCHITECTURE.md) — the two databases, vector clock sync,

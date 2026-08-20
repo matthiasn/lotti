@@ -60,5 +60,6 @@ Please do not open a public issue for a vulnerability. See
 ## Building it locally
 
 Setup and day-to-day commands are in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md),
-and [GETTING_STARTED.md](GETTING_STARTED.md) covers configuring AI. Both exist so
-you can run and modify your own copy — not as an on-ramp to a pull request.
+and the manual's [Connect an AI provider](https://matthiasn.github.io/lotti/manual/development/ai-and-automation/provider-setup/)
+covers configuring AI. Both exist so you can run and modify your own copy — not
+as an on-ramp to a pull request.
