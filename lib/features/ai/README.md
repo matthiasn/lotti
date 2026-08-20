@@ -20,7 +20,8 @@ one.
   and a full organised summary — written in the context of the task the
   recording belongs to, at the moment it was summarised.
 - **Describes and reads images** — a short summary, or full text extraction from
-  a screenshot or document.
+  a screenshot or document, in the same three depths as a recording when the
+  vision model supports it.
 - **Generates prompts** for coding, design and research work, and cover art for
   tasks.
 - **Powers agent thinking.** Which model an agent uses is a setting, not

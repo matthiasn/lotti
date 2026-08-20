@@ -3739,6 +3739,63 @@ void main() {
       );
 
       testWidgets(
+        'tapping the collapsed row expands the card, same as the chevron — '
+        'the whole row is the target, not just the chevron in the header',
+        (tester) async {
+          final mockJournalRepository = MockJournalRepository();
+          when(
+            () => mockJournalRepository.getLinksFromId(testImageEntry.meta.id),
+          ).thenAnswer((_) async => <EntryLink>[]);
+          when(
+            () => mockJournalRepository.updateLink(any()),
+          ).thenAnswer((_) async => true);
+
+          await tester.pumpWidget(
+            makeTestableWidgetWithScaffold(
+              ProviderScope(
+                overrides: [
+                  entryControllerProvider(
+                    testImageEntry.meta.id,
+                  ).overrideWith(() => _FakeEntryController(testImageEntry)),
+                  journalRepositoryProvider.overrideWithValue(
+                    mockJournalRepository,
+                  ),
+                  linkedAiResponsesControllerProvider(
+                    testImageEntry.meta.id,
+                  ).overrideWith(
+                    () => _FakeLinkedAiResponsesController(
+                      testImageEntry.meta.id,
+                      const [],
+                    ),
+                  ),
+                ],
+                child: EntryDetailsContent(
+                  testImageEntry.meta.id,
+                  linkedFrom: testTask,
+                  link: collapsedImageLink,
+                ),
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump(AppTheme.chevronRotationDuration);
+
+          await tester.tap(find.byType(CardImageWidget));
+          await tester.pump();
+          // Expanding schedules a delayed reveal-into-viewport check; pump
+          // past it so no timer outlives the tree.
+          await tester.pump(AppTheme.collapseAnimationDuration);
+
+          final persisted =
+              verify(
+                    () => mockJournalRepository.updateLink(captureAny()),
+                  ).captured.single
+                  as EntryLink;
+          expect(persisted.collapsed, isFalse);
+        },
+      );
+
+      testWidgets(
         'still shows the thumbnail when there is no text at all to label it',
         (tester) async {
           final untitled = testImageEntry.copyWith(entryText: null);
