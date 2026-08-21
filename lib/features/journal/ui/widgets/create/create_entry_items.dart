@@ -1,15 +1,14 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
+import 'package:lotti/features/design_system/components/action_modal/ds_action_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/image_paste_controller.dart';
 import 'package:lotti/features/journal/state/journal_focus_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
-import 'package:lotti/features/journal/ui/widgets/create/create_menu_list_item.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/create/create_entry.dart';
@@ -33,26 +32,21 @@ class CreateEventItem extends ConsumerWidget {
   const CreateEventItem(
     this.linkedFromId, {
     this.categoryId,
-    this.onHoverChanged,
     super.key,
   });
 
   final String? linkedFromId;
   final String? categoryId;
 
-  /// Forwarded to [CreateMenuListItem] so the sheet can fade the hairlines
-  /// bracketing the hovered row. See `_CreateEntryMenuList`.
-  final ValueChanged<bool>? onHoverChanged;
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return CreateMenuListItem(
-      onHoverChanged: onHoverChanged,
+    return DsActionRow(
+      tone: DsActionRowTone.accent,
       icon: LottiIcons.calendar,
       title: context.messages.addActionAddEvent,
       subtitle: context.messages.addActionAddEventHint,
       // Chevron for the same reason as the task row: creates, then opens.
-      opensSheet: true,
+      trailing: DsActionRowTrailing.chevron,
       onTap: () async {
         final event = await createEvent(
           linkedId: linkedFromId,
@@ -77,22 +71,17 @@ class CreateTaskItem extends ConsumerWidget {
   const CreateTaskItem(
     this.linkedFromId, {
     this.categoryId,
-    this.onHoverChanged,
     super.key,
   });
 
   final String? linkedFromId;
   final String? categoryId;
 
-  /// Forwarded to [CreateMenuListItem] so the sheet can fade the hairlines
-  /// bracketing the hovered row. See `_CreateEntryMenuList`.
-  final ValueChanged<bool>? onHoverChanged;
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final linked = linkedFromId != null;
-    return CreateMenuListItem(
-      onHoverChanged: onHoverChanged,
+    return DsActionRow(
+      tone: DsActionRowTone.accent,
       // `add_task`, not `task_alt`: the row creates a task, and the ticked
       // circle of `task_alt` painted "done" in the accent that elsewhere
       // means "create" — glyph and colour disagreeing about the verb.
@@ -111,7 +100,7 @@ class CreateTaskItem extends ConsumerWidget {
       // Chevron, not plus: this row navigates to the task it creates, and by
       // the page's own glyph rule an action that takes you somewhere else is
       // chevron-class — the "+" claimed create-in-place for a teleport.
-      opensSheet: true,
+      trailing: DsActionRowTrailing.chevron,
       onTap: () async {
         final task = await createTask(
           linkedId: linkedFromId,
@@ -138,15 +127,10 @@ class CreateTaskItem extends ConsumerWidget {
 class CreateChecklistItem extends ConsumerWidget {
   const CreateChecklistItem(
     this.linkedFromId, {
-    this.onHoverChanged,
     super.key,
   });
 
   final String? linkedFromId;
-
-  /// Forwarded to [CreateMenuListItem] so the sheet can fade the hairlines
-  /// bracketing the hovered row. See `_CreateEntryMenuList`.
-  final ValueChanged<bool>? onHoverChanged;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -155,14 +139,15 @@ class CreateChecklistItem extends ConsumerWidget {
     final entry = ref.watch(entryControllerProvider(id)).value?.entry;
     if (entry is! Task) return const SizedBox.shrink();
 
-    return CreateMenuListItem(
-      onHoverChanged: onHoverChanged,
+    return DsActionRow(
+      tone: DsActionRowTone.accent,
       icon: LottiIcons.checkAll,
       // The same strings the first-run card uses for the same action — one
       // action, one name AND one explanation, on every surface that offers
       // it.
       title: context.messages.taskFirstRunAddChecklist,
       subtitle: context.messages.taskFirstRunAddChecklistHint,
+      trailing: DsActionRowTrailing.add,
       onTap: () async {
         await createChecklist(task: entry, ref: ref);
         if (!context.mounted) return;
@@ -178,30 +163,25 @@ class CreateAudioItem extends ConsumerWidget {
   const CreateAudioItem(
     this.linkedFromId, {
     this.categoryId,
-    this.onHoverChanged,
     super.key,
   });
 
   final String? linkedFromId;
   final String? categoryId;
 
-  /// Forwarded to [CreateMenuListItem] so the sheet can fade the hairlines
-  /// bracketing the hovered row. See `_CreateEntryMenuList`.
-  final ValueChanged<bool>? onHoverChanged;
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final entryCreationService = ref.read(entryCreationServiceProvider);
 
-    return CreateMenuListItem(
-      onHoverChanged: onHoverChanged,
+    return DsActionRow(
+      tone: DsActionRowTone.accent,
       icon: LottiIcons.mic,
       // The card's string, its chevron AND its subtitle: the
       // does-tapping-start-recording ambiguity belongs to the action, not to
       // the surface it appears on.
       title: context.messages.taskFirstRunRecordAudio,
       subtitle: context.messages.taskFirstRunRecordAudioHint,
-      opensSheet: true,
+      trailing: DsActionRowTrailing.chevron,
       onTap: () {
         Navigator.of(context).pop();
         entryCreationService.showAudioRecordingModal(
@@ -222,15 +202,10 @@ class CreateAudioItem extends ConsumerWidget {
 class CreateTimerItem extends ConsumerWidget {
   const CreateTimerItem(
     this.linkedFromId, {
-    this.onHoverChanged,
     super.key,
   });
 
   final String linkedFromId;
-
-  /// Forwarded to [CreateMenuListItem] so the sheet can fade the hairlines
-  /// bracketing the hovered row. See `_CreateEntryMenuList`.
-  final ValueChanged<bool>? onHoverChanged;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -240,13 +215,14 @@ class CreateTimerItem extends ConsumerWidget {
         ?.entry;
     final entryCreationService = ref.read(entryCreationServiceProvider);
 
-    return CreateMenuListItem(
-      onHoverChanged: onHoverChanged,
+    return DsActionRow(
+      tone: DsActionRowTone.accent,
       icon: LottiIcons.timer,
       // Verb + subtitle, because "Timer" alone never said the clock starts
       // the moment the row is tapped.
       title: context.messages.addActionStartTimer,
       subtitle: context.messages.addActionStartTimerHint,
+      trailing: DsActionRowTrailing.add,
       onTap: () async {
         final timerEntry = await entryCreationService.createTimerEntry(
           linked: linked,
@@ -280,16 +256,11 @@ class CreateTextItem extends ConsumerWidget {
   const CreateTextItem(
     this.linkedFromId, {
     this.categoryId,
-    this.onHoverChanged,
     super.key,
   });
 
   final String? linkedFromId;
   final String? categoryId;
-
-  /// Forwarded to [CreateMenuListItem] so the sheet can fade the hairlines
-  /// bracketing the hovered row. See `_CreateEntryMenuList`.
-  final ValueChanged<bool>? onHoverChanged;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -299,13 +270,14 @@ class CreateTextItem extends ConsumerWidget {
         ? null
         : ref.watch(entryControllerProvider(id)).value?.entry;
 
-    return CreateMenuListItem(
-      onHoverChanged: onHoverChanged,
+    return DsActionRow(
+      tone: DsActionRowTone.accent,
       icon: LottiIcons.note,
       // The first-run card's string — "Text Entry" and "Write a note" were
       // the same action wearing two names one tap apart.
       title: context.messages.taskFirstRunWriteNote,
       subtitle: context.messages.taskFirstRunWriteNoteHint,
+      trailing: DsActionRowTrailing.add,
       onTap: () async {
         final entry = await entryCreationService.createTextEntry(
           linkedId: linkedFromId,
@@ -338,21 +310,16 @@ class ImportImageItem extends ConsumerWidget {
   const ImportImageItem(
     this.linkedFromId, {
     this.categoryId,
-    this.onHoverChanged,
     super.key,
   });
 
   final String? linkedFromId;
   final String? categoryId;
 
-  /// Forwarded to [CreateMenuListItem] so the sheet can fade the hairlines
-  /// bracketing the hovered row. See `_CreateEntryMenuList`.
-  final ValueChanged<bool>? onHoverChanged;
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return CreateMenuListItem(
-      onHoverChanged: onHoverChanged,
+    return DsActionRow(
+      tone: DsActionRowTone.accent,
       // Outlined, matching the stroke weight of every other leading glyph in
       // the sheet — the filled library icon was the one row shouting in
       // solid teal.
@@ -360,7 +327,7 @@ class ImportImageItem extends ConsumerWidget {
       title: context.messages.addActionImportImage,
       subtitle: context.messages.addActionImportImageHint,
       // Chevron: the tap opens a gallery / file picker, not a direct create.
-      opensSheet: true,
+      trailing: DsActionRowTrailing.chevron,
       onTap: () async {
         final trigger = ref.read(automaticImageAnalysisTriggerProvider);
         // Desktop Linux/Windows have no gallery picker — use a file dialog.
@@ -397,26 +364,22 @@ class CreateScreenshotItem extends ConsumerWidget {
   const CreateScreenshotItem(
     this.linkedFromId, {
     this.categoryId,
-    this.onHoverChanged,
     super.key,
   });
 
   final String? linkedFromId;
   final String? categoryId;
 
-  /// Forwarded to [CreateMenuListItem] so the sheet can fade the hairlines
-  /// bracketing the hovered row. See `_CreateEntryMenuList`.
-  final ValueChanged<bool>? onHoverChanged;
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return CreateMenuListItem(
-      onHoverChanged: onHoverChanged,
+    return DsActionRow(
+      tone: DsActionRowTone.accent,
       icon: LottiIcons.screenshot,
       title: context.messages.addActionAddScreenshot,
       // Says what is captured (the screen) and where it goes — the row's
       // one-word ancestor scared cautious users off entirely.
       subtitle: context.messages.addActionAddScreenshotHint,
+      trailing: DsActionRowTrailing.add,
       onTap: () {
         // Pop FIRST, then capture: the subtitle promises exactly this order,
         // and capturing with the sheet still up would put the sheet itself
@@ -443,16 +406,11 @@ class PasteImageItem extends ConsumerWidget {
   const PasteImageItem(
     this.linkedFromId, {
     this.categoryId,
-    this.onHoverChanged,
     super.key,
   });
 
   final String? linkedFromId;
   final String? categoryId;
-
-  /// Forwarded to [CreateMenuListItem] so the sheet can fade the hairlines
-  /// bracketing the hovered row. See `_CreateEntryMenuList`.
-  final ValueChanged<bool>? onHoverChanged;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -461,11 +419,12 @@ class PasteImageItem extends ConsumerWidget {
       categoryId: categoryId,
     ));
 
-    return CreateMenuListItem(
-      onHoverChanged: onHoverChanged,
+    return DsActionRow(
+      tone: DsActionRowTone.accent,
       icon: LottiIcons.copy,
       title: context.messages.addActionAddImageFromClipboard,
       subtitle: context.messages.addActionAddImageFromClipboardHint,
+      trailing: DsActionRowTrailing.add,
       onTap: () {
         Navigator.of(context).pop();
         ref.read(provider.notifier).paste();

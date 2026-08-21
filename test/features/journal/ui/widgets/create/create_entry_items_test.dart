@@ -18,6 +18,7 @@ import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/features/agents/state/event_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
+import 'package:lotti/features/design_system/components/action_modal/ds_action_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
@@ -25,7 +26,6 @@ import 'package:lotti/features/journal/state/image_paste_controller.dart';
 import 'package:lotti/features/journal/state/journal_focus_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/create/create_entry_items.dart';
-import 'package:lotti/features/journal/ui/widgets/create/create_menu_list_item.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
 import 'package:lotti/get_it.dart';
@@ -184,7 +184,7 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.byType(CreateMenuListItem), findsNothing);
+        expect(find.byType(DsActionRow), findsNothing);
       },
     );
 
@@ -229,12 +229,12 @@ void main() {
           await tester.pump();
           await tester.pump();
 
-          expect(find.byType(CreateMenuListItem), findsNothing);
+          expect(find.byType(DsActionRow), findsNothing);
         },
       );
 
       testWidgets(
-        'renders CreateMenuListItem with checklist icon when linked entry is a Task',
+        'renders DsActionRow with checklist icon when linked entry is a Task',
         (tester) async {
           const parentId = 'task-parent-id';
           final task = _makeTask(parentId);
@@ -267,11 +267,11 @@ void main() {
           await tester.pump();
           await tester.pump();
 
-          expect(find.byType(CreateMenuListItem), findsOneWidget);
+          expect(find.byType(DsActionRow), findsOneWidget);
           expect(find.byIcon(LottiIcons.checkAll), findsOneWidget);
 
           final l10n = AppLocalizations.of(
-            tester.element(find.byType(CreateMenuListItem)),
+            tester.element(find.byType(DsActionRow)),
           )!;
           expect(find.text(l10n.taskFirstRunAddChecklist), findsOneWidget);
         },
@@ -332,16 +332,16 @@ void main() {
           await tester.pump();
           await tester.pump();
 
-          expect(find.byType(CreateMenuListItem), findsOneWidget);
+          expect(find.byType(DsActionRow), findsOneWidget);
 
-          await tester.tap(find.byType(CreateMenuListItem));
+          await tester.tap(find.byType(DsActionRow));
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 100));
           await tester.pumpAndSettle();
 
           expect(createChecklistCalled, isTrue);
           // Modal should be gone after pop.
-          expect(find.byType(CreateMenuListItem), findsNothing);
+          expect(find.byType(DsActionRow), findsNothing);
         },
       );
     });
@@ -352,7 +352,7 @@ void main() {
   // -------------------------------------------------------------------------
   group('PasteImageItem – canPasteImage true', () {
     testWidgets(
-      'shows CreateMenuListItem with clipboard icon when paste is available',
+      'shows DsActionRow with clipboard icon when paste is available',
       (tester) async {
         const linkedId = 'linked-id';
         const categoryId = 'cat-id';
@@ -372,11 +372,11 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.byType(CreateMenuListItem), findsOneWidget);
+        expect(find.byType(DsActionRow), findsOneWidget);
         expect(find.byIcon(LottiIcons.copy), findsOneWidget);
 
         final l10n = AppLocalizations.of(
-          tester.element(find.byType(CreateMenuListItem)),
+          tester.element(find.byType(DsActionRow)),
         )!;
         expect(find.text(l10n.addActionAddImageFromClipboard), findsOneWidget);
       },
@@ -427,9 +427,9 @@ void main() {
         await tester.tap(find.text('Open'));
         await tester.pumpAndSettle();
 
-        expect(find.byType(CreateMenuListItem), findsOneWidget);
+        expect(find.byType(DsActionRow), findsOneWidget);
 
-        await tester.tap(find.byType(CreateMenuListItem));
+        await tester.tap(find.byType(DsActionRow));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 100));
         await tester.pumpAndSettle();
@@ -437,7 +437,7 @@ void main() {
         // After tap, paste() should have been called.
         expect(pasteCalled, isTrue);
         // The sheet should be dismissed after pop.
-        expect(find.byType(CreateMenuListItem), findsNothing);
+        expect(find.byType(DsActionRow), findsNothing);
       },
     );
   });
@@ -456,17 +456,17 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.byType(CreateMenuListItem), findsOneWidget);
+        expect(find.byType(DsActionRow), findsOneWidget);
         expect(find.byIcon(LottiIcons.photoLibrary), findsOneWidget);
 
         final l10n = AppLocalizations.of(
-          tester.element(find.byType(CreateMenuListItem)),
+          tester.element(find.byType(DsActionRow)),
         )!;
         expect(find.text(l10n.addActionImportImage), findsOneWidget);
 
         // Verify onTap is wired up.
-        final item = tester.widget<CreateMenuListItem>(
-          find.byType(CreateMenuListItem),
+        final item = tester.widget<DsActionRow>(
+          find.byType(DsActionRow),
         );
         expect(item.onTap, isNotNull);
       },
@@ -487,20 +487,20 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.byType(CreateMenuListItem), findsOneWidget);
+        expect(find.byType(DsActionRow), findsOneWidget);
         expect(
           find.byIcon(LottiIcons.screenshot),
           findsOneWidget,
         );
 
         final l10n = AppLocalizations.of(
-          tester.element(find.byType(CreateMenuListItem)),
+          tester.element(find.byType(DsActionRow)),
         )!;
         expect(find.text(l10n.addActionAddScreenshot), findsOneWidget);
 
         // Verify onTap is wired up.
-        final item = tester.widget<CreateMenuListItem>(
-          find.byType(CreateMenuListItem),
+        final item = tester.widget<DsActionRow>(
+          find.byType(DsActionRow),
         );
         expect(item.onTap, isNotNull);
       },
@@ -536,9 +536,9 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.byType(CreateMenuListItem), findsOneWidget);
+        expect(find.byType(DsActionRow), findsOneWidget);
 
-        await tester.tap(find.byType(CreateMenuListItem));
+        await tester.tap(find.byType(DsActionRow));
         await tester.pump();
 
         verify(
@@ -684,11 +684,11 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.byType(CreateMenuListItem), findsOneWidget);
+        expect(find.byType(DsActionRow), findsOneWidget);
         expect(find.byIcon(LottiIcons.timer), findsOneWidget);
 
         final l10n = AppLocalizations.of(
-          tester.element(find.byType(CreateMenuListItem)),
+          tester.element(find.byType(DsActionRow)),
         )!;
         expect(find.text(l10n.addActionStartTimer), findsOneWidget);
       },
@@ -816,9 +816,9 @@ void main() {
         await tester.tap(find.text('Open'));
         await tester.pumpAndSettle();
 
-        expect(find.byType(CreateMenuListItem), findsOneWidget);
+        expect(find.byType(DsActionRow), findsOneWidget);
 
-        await tester.tap(find.byType(CreateMenuListItem));
+        await tester.tap(find.byType(DsActionRow));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 100));
         await tester.pumpAndSettle();
@@ -826,7 +826,7 @@ void main() {
         // After tap, the bottom sheet should be dismissed (the importer
         // returned early — cancelled dialog / denied permissions — then
         // context.mounted was true so Navigator.pop() ran).
-        expect(find.byType(CreateMenuListItem), findsNothing);
+        expect(find.byType(DsActionRow), findsNothing);
       },
     );
   });
@@ -899,9 +899,9 @@ void main() {
           );
           await tester.pump();
 
-          expect(find.byType(CreateMenuListItem), findsOneWidget);
+          expect(find.byType(DsActionRow), findsOneWidget);
 
-          await tester.tap(find.byType(CreateMenuListItem));
+          await tester.tap(find.byType(DsActionRow));
           // Run microtasks so the async onTap begins executing.
           await tester.pump();
           // Advance past windowManager.minimize() and the 1-second screenshot
@@ -1018,9 +1018,9 @@ void main() {
         await tester.pump();
         await tester.pump();
 
-        expect(find.byType(CreateMenuListItem), findsOneWidget);
+        expect(find.byType(DsActionRow), findsOneWidget);
 
-        await tester.tap(find.byType(CreateMenuListItem));
+        await tester.tap(find.byType(DsActionRow));
         // Let createTimerEntry future resolve.
         await tester.pump();
         await tester.pump();
@@ -1147,9 +1147,9 @@ void main() {
         await tester.pump();
         await tester.pump();
 
-        expect(find.byType(CreateMenuListItem), findsOneWidget);
+        expect(find.byType(DsActionRow), findsOneWidget);
 
-        await tester.tap(find.byType(CreateMenuListItem));
+        await tester.tap(find.byType(DsActionRow));
         // Let createTimerEntry future resolve.
         await tester.pump();
         await tester.pump();
@@ -1252,7 +1252,7 @@ void main() {
           );
 
           // Verify the task item is rendered
-          expect(find.byType(CreateMenuListItem), findsOneWidget);
+          expect(find.byType(DsActionRow), findsOneWidget);
           expect(find.text('Link a new task'), findsOneWidget);
           expect(find.byIcon(LottiIcons.addTask), findsOneWidget);
         });
@@ -1286,7 +1286,7 @@ void main() {
           await tester.pumpAndSettle();
 
           // Verify the task item is shown
-          expect(find.byType(CreateMenuListItem), findsOneWidget);
+          expect(find.byType(DsActionRow), findsOneWidget);
           expect(find.text('Link a new task'), findsOneWidget);
           expect(find.byIcon(LottiIcons.addTask), findsOneWidget);
         });
@@ -1354,7 +1354,7 @@ void main() {
           await tester.pump();
 
           // Tap the task creation item
-          await tester.tap(find.byType(CreateMenuListItem));
+          await tester.tap(find.byType(DsActionRow));
           await tester.pump();
 
           // Verify navigation was called with the correct path
@@ -1426,7 +1426,7 @@ void main() {
           await tester.pump();
 
           // Tap the task creation item
-          await tester.tap(find.byType(CreateMenuListItem));
+          await tester.tap(find.byType(DsActionRow));
           await tester.pump();
 
           // Verify navigation was called even with linked ID
@@ -1470,7 +1470,7 @@ void main() {
           await tester.pump();
 
           // Tap the task creation item
-          await tester.tap(find.byType(CreateMenuListItem));
+          await tester.tap(find.byType(DsActionRow));
           await tester.pump();
 
           // Verify navigation was not called
@@ -1536,7 +1536,7 @@ void main() {
           await tester.pump();
 
           // Tap the event creation item
-          await tester.tap(find.byType(CreateMenuListItem));
+          await tester.tap(find.byType(DsActionRow));
           await tester.pump();
 
           // Verify navigation was called with the correct path
@@ -1602,7 +1602,7 @@ void main() {
           await tester.pump();
 
           // Tap the event creation item
-          await tester.tap(find.byType(CreateMenuListItem));
+          await tester.tap(find.byType(DsActionRow));
           await tester.pump();
 
           // Verify navigation was called even with linked ID
@@ -1646,7 +1646,7 @@ void main() {
           await tester.pump();
 
           // Tap the event creation item
-          await tester.tap(find.byType(CreateMenuListItem));
+          await tester.tap(find.byType(DsActionRow));
           await tester.pump();
 
           // Verify navigation was not called
@@ -1698,9 +1698,9 @@ void main() {
 
         // Verify the event item is rendered (localized)
         final l10n = AppLocalizations.of(
-          tester.element(find.byType(CreateMenuListItem)),
+          tester.element(find.byType(DsActionRow)),
         )!;
-        expect(find.byType(CreateMenuListItem), findsOneWidget);
+        expect(find.byType(DsActionRow), findsOneWidget);
         expect(find.text(l10n.addActionAddEvent), findsOneWidget);
         expect(find.byIcon(LottiIcons.calendar), findsOneWidget);
       });
@@ -1719,9 +1719,9 @@ void main() {
 
         // Verify the audio item is rendered (localized)
         final l10n = AppLocalizations.of(
-          tester.element(find.byType(CreateMenuListItem)),
+          tester.element(find.byType(DsActionRow)),
         )!;
-        expect(find.byType(CreateMenuListItem), findsOneWidget);
+        expect(find.byType(DsActionRow), findsOneWidget);
         expect(find.text(l10n.taskFirstRunRecordAudio), findsOneWidget);
         expect(find.byIcon(LottiIcons.mic), findsOneWidget);
       });
@@ -1907,9 +1907,9 @@ void main() {
 
         // Verify the text item is rendered (localized)
         final l10n = AppLocalizations.of(
-          tester.element(find.byType(CreateMenuListItem)),
+          tester.element(find.byType(DsActionRow)),
         )!;
-        expect(find.byType(CreateMenuListItem), findsOneWidget);
+        expect(find.byType(DsActionRow), findsOneWidget);
         expect(find.text(l10n.taskFirstRunWriteNote), findsOneWidget);
         expect(find.byIcon(LottiIcons.note), findsOneWidget);
       });
@@ -1928,9 +1928,9 @@ void main() {
 
         // Verify the import image item is rendered (localized)
         final l10n = AppLocalizations.of(
-          tester.element(find.byType(CreateMenuListItem)),
+          tester.element(find.byType(DsActionRow)),
         )!;
-        expect(find.byType(CreateMenuListItem), findsOneWidget);
+        expect(find.byType(DsActionRow), findsOneWidget);
         expect(find.text(l10n.addActionImportImage), findsOneWidget);
         expect(find.byIcon(LottiIcons.photoLibrary), findsOneWidget);
       });
@@ -1949,9 +1949,9 @@ void main() {
 
         // Verify the screenshot item is rendered (localized)
         final l10n = AppLocalizations.of(
-          tester.element(find.byType(CreateMenuListItem)),
+          tester.element(find.byType(DsActionRow)),
         )!;
-        expect(find.byType(CreateMenuListItem), findsOneWidget);
+        expect(find.byType(DsActionRow), findsOneWidget);
         expect(find.text(l10n.addActionAddScreenshot), findsOneWidget);
         expect(find.byIcon(LottiIcons.screenshot), findsOneWidget);
       });
@@ -2029,7 +2029,7 @@ void main() {
         await tester.pump();
 
         // Tap the item to trigger onTap
-        await tester.tap(find.byType(CreateMenuListItem));
+        await tester.tap(find.byType(DsActionRow));
         await tester.pump();
 
         // Verify task creation was called
@@ -2112,7 +2112,7 @@ void main() {
         await tester.pump();
 
         // Tap the item to trigger onTap
-        await tester.tap(find.byType(CreateMenuListItem));
+        await tester.tap(find.byType(DsActionRow));
         await tester.pump();
 
         // Verify event creation was called
@@ -2212,10 +2212,10 @@ void main() {
         await tester.pump();
 
         // Verify timer item is rendered
-        expect(find.byType(CreateMenuListItem), findsOneWidget);
+        expect(find.byType(DsActionRow), findsOneWidget);
 
         // Tap the timer item
-        await tester.tap(find.byType(CreateMenuListItem));
+        await tester.tap(find.byType(DsActionRow));
         await tester.pump();
 
         // Wait for async operation to complete
@@ -2284,7 +2284,7 @@ void main() {
         await tester.pump();
 
         // Tap the timer item
-        await tester.tap(find.byType(CreateMenuListItem));
+        await tester.tap(find.byType(DsActionRow));
         await tester.pump();
 
         // Wait for async operation
@@ -2343,9 +2343,9 @@ void main() {
 
         await tester.pump();
 
-        expect(find.byType(CreateMenuListItem), findsOneWidget);
+        expect(find.byType(DsActionRow), findsOneWidget);
 
-        await tester.tap(find.byType(CreateMenuListItem));
+        await tester.tap(find.byType(DsActionRow));
         await tester.pump();
 
         verify(
@@ -2417,9 +2417,9 @@ void main() {
 
         await tester.pump();
 
-        expect(find.byType(CreateMenuListItem), findsOneWidget);
+        expect(find.byType(DsActionRow), findsOneWidget);
 
-        await tester.tap(find.byType(CreateMenuListItem));
+        await tester.tap(find.byType(DsActionRow));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 100));
 
@@ -2495,7 +2495,7 @@ void main() {
           );
           await tester.pump();
 
-          await tester.tap(find.byType(CreateMenuListItem));
+          await tester.tap(find.byType(DsActionRow));
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 100));
 
@@ -2532,7 +2532,7 @@ void main() {
         await tester.pump();
 
         // Verify the item is rendered
-        expect(find.byType(CreateMenuListItem), findsOneWidget);
+        expect(find.byType(DsActionRow), findsOneWidget);
         expect(find.byIcon(LottiIcons.photoLibrary), findsOneWidget);
       });
     });
@@ -2562,7 +2562,7 @@ void main() {
         await tester.pump();
 
         // Verify the item is rendered
-        expect(find.byType(CreateMenuListItem), findsOneWidget);
+        expect(find.byType(DsActionRow), findsOneWidget);
         expect(find.byIcon(LottiIcons.screenshot), findsOneWidget);
       });
     });
@@ -2593,22 +2593,22 @@ void main() {
           // The item itself no longer self-hides: were it to collapse after
           // being listed, the sheet would close on an orphan divider — the
           // exact defect the list-level gate exists to prevent.
-          expect(find.byType(CreateMenuListItem), findsOneWidget);
+          expect(find.byType(DsActionRow), findsOneWidget);
         },
       );
     });
   });
   // -------------------------------------------------------------------------
-  // onHoverChanged forwarding
+  // Trailing-glyph contract
   // -------------------------------------------------------------------------
 
-  /// Every row in the "Add" sheet has to report its own hover, because the
-  /// hairlines bracketing it are its SIBLINGS in `_CreateEntryMenuList`, not
-  /// its children — the list is the only thing that can fade them. A row that
-  /// silently drops the callback leaves exactly one stripe of the sheet still
-  /// bisecting its highlight, which is the defect this table guards against
-  /// per item rather than trusting a single representative row.
-  group('onHoverChanged forwarding', () {
+  /// The sheet's trailing glyph is a promise about where the tap leaves you:
+  /// `+` creates the thing in place and the sheet closes onto the page you
+  /// were already on, `\u203a` hands off to a recorder, a picker or a page the
+  /// row navigates to. Asserted per row rather than on one representative,
+  /// because the promise is per row and a single wrong glyph is exactly the
+  /// kind of thing a spot check misses.
+  group('trailing glyph', () {
     late EditorDb editorDb;
 
     setUp(() async {
@@ -2627,106 +2627,93 @@ void main() {
       await editorDb.close();
     });
 
-    const taskHostId = 'hover-task-host';
+    const taskHostId = 'trailing-task-host';
 
-    /// One row under test: how to build it with a hover callback, plus the
-    /// overrides it needs to render at all.
     final rows =
         <
           String,
           ({
-            Widget Function(ValueChanged<bool>) build,
+            Widget widget,
+            DsActionRowTrailing trailing,
             List<Override> overrides,
           })
         >{
           'CreateTextItem': (
-            // A null host id keeps the row from watching an entry it does not
-            // need for this contract.
-            build: (h) => CreateTextItem(null, onHoverChanged: h),
+            widget: const CreateTextItem(null),
+            trailing: DsActionRowTrailing.add,
             overrides: const [],
           ),
           'CreateChecklistItem': (
-            build: (h) => CreateChecklistItem(taskHostId, onHoverChanged: h),
+            widget: const CreateChecklistItem(taskHostId),
+            trailing: DsActionRowTrailing.add,
             overrides: [
               entryControllerProvider(taskHostId).overrideWith(
                 () => _TestEntryController(_makeTask(taskHostId)),
               ),
             ],
           ),
+          // Opens the recorder sheet rather than recording on the spot.
           'CreateAudioItem': (
-            build: (h) => CreateAudioItem('linked-id', onHoverChanged: h),
+            widget: const CreateAudioItem('linked-id'),
+            trailing: DsActionRowTrailing.chevron,
             overrides: const [],
           ),
+          // Creates, then navigates to what it created.
           'CreateTaskItem': (
-            build: (h) => CreateTaskItem('linked-id', onHoverChanged: h),
+            widget: const CreateTaskItem('linked-id'),
+            trailing: DsActionRowTrailing.chevron,
             overrides: const [],
           ),
           'CreateEventItem': (
-            build: (h) => CreateEventItem('linked-id', onHoverChanged: h),
+            widget: const CreateEventItem('linked-id'),
+            trailing: DsActionRowTrailing.chevron,
             overrides: const [],
           ),
           'CreateTimerItem': (
-            build: (h) => CreateTimerItem(taskHostId, onHoverChanged: h),
+            widget: const CreateTimerItem(taskHostId),
+            trailing: DsActionRowTrailing.add,
             overrides: [
               entryControllerProvider(taskHostId).overrideWith(
                 () => _TestEntryController(_makeJournalEntry(taskHostId)),
               ),
             ],
           ),
+          // Opens the gallery / file picker.
           'ImportImageItem': (
-            build: (h) => ImportImageItem('linked-id', onHoverChanged: h),
+            widget: const ImportImageItem('linked-id'),
+            trailing: DsActionRowTrailing.chevron,
             overrides: const [],
           ),
           'CreateScreenshotItem': (
-            build: (h) => CreateScreenshotItem('linked-id', onHoverChanged: h),
+            widget: const CreateScreenshotItem('linked-id'),
+            trailing: DsActionRowTrailing.add,
             overrides: const [],
           ),
           'PasteImageItem': (
-            build: (h) => PasteImageItem('linked-id', onHoverChanged: h),
+            widget: const PasteImageItem('linked-id'),
+            trailing: DsActionRowTrailing.add,
             overrides: const [],
           ),
         };
 
     for (final MapEntry(key: name, value: row) in rows.entries) {
-      testWidgets('$name hands its hover straight to CreateMenuListItem', (
-        tester,
-      ) async {
-        // ignore: avoid_positional_boolean_parameters
-        void callback(bool hovered) {}
-
+      testWidgets('$name reports ${row.trailing.name}', (tester) async {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
-            row.build(callback),
+            row.widget,
             overrides: row.overrides,
           ),
         );
         await tester.pump();
 
-        final item = tester.widget<CreateMenuListItem>(
-          find.byType(CreateMenuListItem),
+        final item = tester.widget<DsActionRow>(find.byType(DsActionRow));
+        expect(item.trailing, row.trailing);
+        expect(
+          item.tone,
+          DsActionRowTone.accent,
+          reason: "every create row shares the sheet's accent tile",
         );
-        // Identity, not just non-null: a row that invented its own closure
-        // would pass a `isNotNull` check while reporting to nobody.
-        expect(identical(item.onHoverChanged, callback), isTrue);
       });
     }
-
-    testWidgets(
-      'a row built without one passes null through — the sheet is the only '
-      'caller that needs the hook',
-      (tester) async {
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(const CreateTaskItem('linked-id')),
-        );
-        await tester.pump();
-
-        expect(
-          tester
-              .widget<CreateMenuListItem>(find.byType(CreateMenuListItem))
-              .onHoverChanged,
-          isNull,
-        );
-      },
-    );
   });
 }

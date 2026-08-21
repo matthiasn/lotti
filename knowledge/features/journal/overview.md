@@ -167,6 +167,11 @@ and `ImagePasteController` — covering text entries, tasks, events, audio
 recordings, timer entries inside a parent, image import, screenshots, clipboard
 paste, and drag-and-drop onto the detail page.
 
+The sheet itself is the design system's action modal — the same
+`DsActionModal` shell, `DsActionRow` rows and row-owned spacing as the entry
+`•••` menu, in the accent tone. See
+[component contracts](../design_system/component-contracts.md#one-action-modal-two-sheets).
+
 Three integration details are easy to miss:
 
 - **Image import and paste can trigger automatic image-analysis callbacks**

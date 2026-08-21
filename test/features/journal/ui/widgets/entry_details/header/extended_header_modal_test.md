@@ -1,54 +1,41 @@
-# Testing the ExtendedHeaderModal Component
+# Testing the ExtendedHeaderModal
 
-The `ExtendedHeaderModal` component is a complex component with many dependencies. When writing tests for this component, there are several considerations to be aware of:
+The entry `•••` menu is a two-page Wolt modal on the design system's action
+modal shell (`DsActionModal`): the action list, and the speech-recognition page
+an audio entry can push. It pulls in most of the entry stack, so tests need a
+fair amount of scaffolding.
 
-## Required Mocks
+## Required test doubles
 
-To properly test this component, you need to mock the following services and providers:
+Register through `setUpTestGetIt()` rather than hand-rolling a container:
 
-1. `TagsService` - For handling tag operations
-2. `LinkService` - For handling link operations
-3. `JournalDb` - For database operations
-4. `PersistenceLogic` - Critical for many operations in the modal
-5. `EditorStateService` - For editor state management
-6. `UpdateNotifications` - For handling update notifications
-7. Riverpod Providers - Several providers need to be mocked, particularly:
-   - `entryControllerProvider` - For entry state management
-   - `linkedEntriesControllerProvider` - For linked entries state management
+- `JournalDb`, `PersistenceLogic`, `UpdateNotifications` — entry reads/writes.
+- `EditorStateService` — `EntryController`'s field initializers resolve it from
+  `getIt`, so a missing registration fails the *build*, not an assertion.
+- `LinkService` — the Link from / Link to rows.
+- Riverpod: override `entryControllerProvider` (see
+  `test/helpers/fake_entry_controller.dart`, which also tracks toggle calls)
+  and `linkedEntriesControllerProvider`.
 
-## Test Strategy
+## What to test where
 
-Due to the complexity of this component, it's recommended to:
+- **Rows in isolation** — `modern_action_items_test.dart`. Each `Modern*Item`
+  is a thin `DsActionRow` wrapper; assert the glyph, title, tone and trailing
+  contract plus the service call its tap makes.
+- **Which rows appear** — `initial_modal_page_content_test.dart`. Visibility is
+  resolved in the list, before the rows exist, so it is testable without
+  opening a modal at all.
+- **The chips** — `entry_toggle_chips_test.dart`. Starred / private / flagged
+  are `DsActionToggleChip`s that write through and leave the sheet standing.
+- **Page navigation** — `extended_header_modal_test.dart`, which really opens
+  the modal.
 
-1. **Test individual components separately** - Test the small widgets inside the modal (DeleteIconListTile, TogglePrivateListTile, etc.) in isolation.
+## Gotchas
 
-2. **Manual Testing for Navigation** - For testing navigation between modal pages, manual testing is more practical as it's challenging to properly mock all the dependencies needed for automated testing.
-
-3. **Integration Tests** - Consider using Flutter integration tests instead of widget tests for this component to ensure all dependencies are properly available.
-
-## How The Modal Works
-
-The modal uses the `WoltModalSheet` to show different pages:
-
-1. Initial page with action items (delete, link, tag, etc.)
-2. Tags modal page for managing tags
-3. Speech recognition modal page
-4. Transcription progress modal page
-
-Navigation between these pages is managed by a `ValueNotifier<int>` that is passed to the modal components.
-
-## Example Test Cases
-
-For individual components, test cases should include:
-
-- Tapping on each action item and verifying the correct service method is called
-- Verifying conditional rendering (e.g., showing/hiding options based on props)
-- Testing specific functionality like toggling private status
-
-## Common Issues
-
-- **GetIt Service Dependencies**: Many components rely on GetIt for service location, which can be challenging to mock in tests.
-- **Riverpod Providers**: The components use Riverpod providers which need to be properly overridden in tests.
-- **Nested Navigation**: The multi-page modal structure makes navigation testing complex.
-
-For any substantial changes to this component, consider manually testing the full flow to ensure all pages and navigation work correctly. 
+- **Tap the header's affordances with `.hitTestable()`.** The header rides
+  Wolt's nav-bar slot and Wolt keeps the other page's copy in the tree behind
+  an `IgnorePointer`, so a plain finder can match the inert one.
+- **A bare `MaterialApp` has no `DsTokens`.** `DsActionRow` reads
+  `context.designTokens` and throws without the app theme — use
+  `resolveTestTheme()` or the shared `makeTestableWidget*` helpers.
+- **`pumpAndSettle` after opening**: the modal has a real entrance animation.

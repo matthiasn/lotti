@@ -4,15 +4,14 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/ui/image_generation/cover_art_skill_modal.dart';
+import 'package:lotti/features/design_system/components/action_modal/ds_action_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
-import 'package:lotti/features/journal/ui/widgets/entry_details/header/action_menu_list_item.dart';
 import 'package:lotti/features/ratings/state/rating_controller.dart';
 import 'package:lotti/features/ratings/ui/session_rating_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/link_service.dart';
-import 'package:lotti/themes/colors.dart';
 import 'package:lotti/utils/consts.dart';
 
 /// Modern styled generate cover art action item.
@@ -53,7 +52,7 @@ class ModernGenerateCoverArtItem extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    return ActionMenuListItem(
+    return DsActionRow(
       icon: LottiIcons.aiSpark,
       title: context.messages.generateCoverArt,
       subtitle: context.messages.generateCoverArtSubtitle,
@@ -108,12 +107,11 @@ class ModernSetCoverArtItem extends ConsumerWidget {
 
     final isCurrentCover = parentEntry.data.coverArtId == entryId;
 
-    return ActionMenuListItem(
+    return DsActionRow(
       icon: LottiIcons.image,
       title: isCurrentCover
           ? context.messages.coverArtChipActive
           : context.messages.coverArtChipSet,
-      iconColor: isCurrentCover ? starredGold : null,
       onTap: () async {
         final notifier = ref.read(parentProvider.notifier);
         await notifier.setCoverArt(isCurrentCover ? null : entryId);
@@ -136,9 +134,10 @@ class ModernLinkFromItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ActionMenuListItem(
+    return DsActionRow(
       icon: LottiIcons.link,
       title: context.messages.journalLinkFromHint,
+      trailing: DsActionRowTrailing.chevron,
       onTap: () {
         getIt<LinkService>().linkFrom(entryId);
         Navigator.of(context).pop();
@@ -158,9 +157,10 @@ class ModernLinkToItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ActionMenuListItem(
+    return DsActionRow(
       icon: LottiIcons.focus,
       title: context.messages.journalLinkToHint,
+      trailing: DsActionRowTrailing.chevron,
       onTap: () {
         getIt<LinkService>().linkTo(entryId);
         Navigator.of(context).pop();
@@ -196,12 +196,12 @@ class ModernRateSessionItem extends ConsumerWidget {
     final rating = ref.watch(ratingControllerProvider(targetId: entryId)).value;
     final hasRating = rating != null;
 
-    return ActionMenuListItem(
+    return DsActionRow(
       icon: hasRating ? LottiIconsFilled.star : LottiIcons.star,
       title: hasRating
           ? context.messages.sessionRatingViewAction
           : context.messages.sessionRatingRateAction,
-      iconColor: hasRating ? starredGold : null,
+      trailing: DsActionRowTrailing.chevron,
       onTap: () {
         Navigator.of(context).pop();
         RatingModal.show(context, entryId);
