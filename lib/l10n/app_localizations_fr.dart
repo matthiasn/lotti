@@ -7421,7 +7421,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get habitsRecordButton => 'Enregistrer';
 
   @override
-  String get habitsRollingAverageLabel => 'moyenne sur 7 jours';
+  String get habitsRollingAverageLabel => 'Ø sur 7 j';
 
   @override
   String get habitsStartStreakToday => 'Commence une série aujourd\'hui';

@@ -2884,7 +2884,7 @@
   "habitsPendingLaterHeader": "Más tarde hoy",
   "habitsPointsToGoal": "{points, plural, one{1 pt para la meta} other{{points} pts para la meta}}",
   "habitsRecordButton": "Registrar",
-  "habitsRollingAverageLabel": "promedio de 7 días",
+  "habitsRollingAverageLabel": "Ø de 7 días",
   "habitsStartStreakToday": "Empieza una racha hoy",
   "habitsStreakLongCount": "{count} con racha de 7 días",
   "habitsStreakShortCount": "{count} con racha de 3 días",

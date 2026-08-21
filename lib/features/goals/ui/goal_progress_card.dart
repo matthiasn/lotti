@@ -957,6 +957,21 @@ class GoalThisWeekCard extends StatelessWidget {
 ///
 /// The action is a button, so it has no ellipsis to fall back on: it either
 /// fits or it overflows its row. The decision is taken against the label's
+/// MEASURED width of one line of text, at the current locale and text scale.
+///
+/// Every responsive header on this card decides whether a line fits by
+/// laying its text out rather than by consulting a breakpoint: no fixed
+/// width can tell whether "Über den heutigen Tag nachdenken" clears a title
+/// at 1.6x, and the same question is asked of a reflect action, a period
+/// line and a signal's corner block. One measurement, three callers.
+double goalTextWidth(BuildContext context, String text, TextStyle style) =>
+    (TextPainter(
+      text: TextSpan(text: text, style: style),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+      maxLines: 1,
+    )..layout()).width;
+
 /// MEASURED width at the current locale and text scale, because no fixed
 /// breakpoint can tell whether "Über den heutigen Tag nachdenken" fits
 /// beside a title at 1.6x.
@@ -976,13 +991,6 @@ class _GoalDaysHeader extends StatelessWidget {
     if (action == null) return Text(title, style: titleStyle);
     return LayoutBuilder(
       builder: (context, constraints) {
-        final textScaler = MediaQuery.textScalerOf(context);
-        double width(String text, TextStyle style) => (TextPainter(
-          text: TextSpan(text: text, style: style),
-          textDirection: Directionality.of(context),
-          textScaler: textScaler,
-          maxLines: 1,
-        )..layout()).width;
         // The button's own ink, from the SAME tokens its dense size spec
         // reads: the caption label, a glyph at the caption's line height,
         // and the gap plus the two horizontal insets around them. Reserving
@@ -990,7 +998,8 @@ class _GoalDaysHeader extends StatelessWidget {
         // moment the spec changed, and a measurement that under-reserves
         // puts the row back in the overflow it exists to prevent.
         final actionWidth =
-            width(
+            goalTextWidth(
+              context,
               context.messages.goalAssessmentReflectToday,
               tokens.typography.styles.others.caption,
             ) +
@@ -999,7 +1008,9 @@ class _GoalDaysHeader extends StatelessWidget {
         // The title keeps a readable measure of its own rather than being
         // squeezed to a sliver beside a long action.
         final fitsBeside =
-            actionWidth + width(title, titleStyle) + tokens.spacing.step4 <=
+            actionWidth +
+                goalTextWidth(context, title, titleStyle) +
+                tokens.spacing.step4 <=
             constraints.maxWidth;
         if (fitsBeside) {
           return Row(
@@ -1751,86 +1762,155 @@ class _DimensionHeader extends StatelessWidget {
         : onTargetToday || met
         ? tokens.colors.alert.success.ink
         : tokens.colors.alert.warning.ink;
-    // One stacked block pinned to the card's corner: the key reading on top,
-    // its verdict as a supporting caption underneath. Inline on the title row
-    // the pair floated mid-row and read as two unrelated facts; stacked and
+    // One block pinned to the card's corner: the key reading on top, its
+    // verdict as a supporting caption underneath. Inline on the title row the
+    // pair floated mid-row and read as two unrelated facts; stacked and
     // end-aligned it reads as a single corner element.
-    Widget readingBlock({required bool alignEnd}) => Column(
+    final readingStyle = tokens.typography.styles.subtitle.subtitle2;
+    final captionStyle = tokens.typography.styles.others.caption;
+    final average = averageReading;
+    // The reading LINE carries both figures side by side: the latest value,
+    // and one tier down in the average line's own hue, the rolling mean.
+    // That is the shape every other corner on this page already uses — a
+    // habit states "7 · target 5 · rolling 7 days" on one line and drops only
+    // the verdict below — and a third line here made the signal card the one
+    // card whose corner was a paragraph. Size and hue tell the two apart, so
+    // no separator is spent on saying they are different things, and the Ø
+    // stays against the figure it summarises.
+    Widget readingLine({required bool alignEnd, required bool inline}) {
+      final align = alignEnd ? TextAlign.end : TextAlign.start;
+      final value = Text(
+        reading,
+        textAlign: align,
+        style: readingStyle,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      );
+      if (average == null) return value;
+      final mean = Text(
+        average,
+        textAlign: align,
+        style: captionStyle.copyWith(color: averageColor),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      );
+      if (!inline) {
+        return Column(
+          crossAxisAlignment: alignEnd
+              ? CrossAxisAlignment.end
+              : CrossAxisAlignment.start,
+          children: [value, mean],
+        );
+      }
+      // Baselines, not box bottoms. The two figures are set at different
+      // sizes, so bottom-aligning them would sit the smaller one low by the
+      // difference in descent. A Wrap cannot align baselines, which is why
+      // the fall back to two lines is decided by the measurement below
+      // rather than left to one.
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.baseline,
+        textBaseline: TextBaseline.alphabetic,
+        children: [
+          Flexible(child: value),
+          SizedBox(width: tokens.spacing.step2),
+          mean,
+        ],
+      );
+    }
+
+    Widget block({required bool alignEnd, required bool inline}) => Column(
       crossAxisAlignment: alignEnd
           ? CrossAxisAlignment.end
           : CrossAxisAlignment.start,
       children: [
-        Text(
-          reading,
-          textAlign: alignEnd ? TextAlign.end : TextAlign.start,
-          style: tokens.typography.styles.subtitle.subtitle2,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        // The trailing average on its own line, in the average LINE's hue and
-        // one tier down: two figures of equal weight on one row read as a
-        // range, and spelling out "7-day average" beside a number spent more
-        // of the corner on the label than on the value. The symbol carries
-        // it, the colour says which mark on the chart it belongs to.
-        if (averageReading case final average?)
-          Text(
-            average,
-            textAlign: alignEnd ? TextAlign.end : TextAlign.start,
-            style: tokens.typography.styles.others.caption.copyWith(
-              color: averageColor,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
+        readingLine(alignEnd: alignEnd, inline: inline),
         Text(
           statusLabel,
           textAlign: alignEnd ? TextAlign.end : TextAlign.start,
-          style: tokens.typography.styles.others.caption.copyWith(
-            color: statusColor,
-          ),
+          style: captionStyle.copyWith(color: statusColor),
         ),
       ],
     );
+
     return LayoutBuilder(
       builder: (context, constraints) {
-        final compact =
-            constraints.maxWidth <
-            tokens.spacing.step13 * 2 + tokens.spacing.step5;
-        if (compact) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+        // MEASURED, not guessed. The old rule dropped the corner under the
+        // title below a fixed width, so a card with room to spare still broke
+        // its own layout: "92.7 kg  Ø 92.9" needs a fraction of the width
+        // that breakpoint reserved for it, and the block it displaced is the
+        // one thing on the card a reader looks for first.
+        final valueWidth = goalTextWidth(context, reading, readingStyle);
+        final meanWidth = average == null
+            ? 0.0
+            : goalTextWidth(context, average, captionStyle);
+        final inlineWidth =
+            valueWidth +
+            (average == null ? 0 : tokens.spacing.step2 + meanWidth);
+        final leading =
+            IconSizes.s + tokens.spacing.step2 * 2 + tokens.spacing.step3;
+        // The identity keeps a readable measure of its own, but never demands
+        // more than one: a long signal name ellipsizes beside the corner
+        // rather than pushing it onto a line of its own.
+        final identityDemand = math.min(
+          math.max(
+            goalTextWidth(context, title, readingStyle),
+            goalTextWidth(context, source, captionStyle),
+          ),
+          tokens.spacing.step13,
+        );
+        final available = math.max<double>(
+          constraints.maxWidth -
+              leading -
+              identityDemand -
+              tokens.spacing.step3,
+          0,
+        );
+        // Three layouts, tried widest-first: both figures on one corner line,
+        // the mean under the value, and only then the block off the title row
+        // altogether. The status caption is left out of the test on purpose —
+        // it may wrap inside the corner, which is cheaper than surrendering
+        // the corner.
+        final inlineFits = inlineWidth <= available;
+        final stackedFits = math.max(valueWidth, meanWidth) <= available;
+        if (inlineFits || stackedFits) {
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  glyph,
-                  SizedBox(width: tokens.spacing.step3),
-                  Expanded(child: identity),
-                ],
+              glyph,
+              SizedBox(width: tokens.spacing.step3),
+              Expanded(child: identity),
+              SizedBox(width: tokens.spacing.step3),
+              // Non-flex, so the Expanded identity absorbs every spare pixel
+              // and the block sits flush against the card's trailing edge — a
+              // loose Flexible parked its own unused allocation AFTER the
+              // block, which is what left it floating mid-row.
+              ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: available),
+                child: block(alignEnd: true, inline: inlineFits),
               ),
-              SizedBox(height: tokens.spacing.step3),
-              // No corner to pin to on a compact card, so the stacked block
-              // sits under the identity on the same rail.
-              readingBlock(alignEnd: false),
             ],
           );
         }
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            glyph,
-            SizedBox(width: tokens.spacing.step3),
-            Expanded(child: identity),
-            SizedBox(width: tokens.spacing.step3),
-            // Non-flex, so the Expanded identity absorbs every spare pixel
-            // and the block sits flush against the card's trailing edge — a
-            // loose Flexible parked its own unused allocation AFTER the
-            // block, which is what left it floating mid-row. Bounded to half
-            // the card so a long reading still ellipsizes instead of
-            // overflowing the row.
-            ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: constraints.maxWidth / 2),
-              child: readingBlock(alignEnd: true),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                glyph,
+                SizedBox(width: tokens.spacing.step3),
+                Expanded(child: identity),
+              ],
+            ),
+            SizedBox(height: tokens.spacing.step3),
+            // No corner left to pin to, so the block drops below and starts
+            // on the card's own rail, left of the glyph-indented identity —
+            // and takes the full card width back, which is usually room
+            // enough to keep both figures on one line after all.
+            block(
+              alignEnd: false,
+              inline: inlineWidth <= constraints.maxWidth,
             ),
           ],
         );
@@ -2283,13 +2363,6 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
         // fits side by side: facts about the same window on one caption row,
         // instead of a dedicated line whose only content is usually one short
         // sentence. Only a narrow card stacks them.
-        final textScaler = MediaQuery.textScalerOf(context);
-        double lineWidth(String text, TextStyle style) => (TextPainter(
-          text: TextSpan(text: text, style: style),
-          textDirection: Directionality.of(context),
-          textScaler: textScaler,
-          maxLines: 1,
-        )..layout()).width;
         final successfulWeeks = widget.successfulWeeks;
         // The tail measured, not guessed: its bars are token-sized and its
         // caption is localized, so the only honest width is a laid-out one.
@@ -2298,15 +2371,16 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
             : _Reliability.bars * BorderWidths.emphasis * 2 +
                   (_Reliability.bars - 1) * tokens.spacing.step1 +
                   tokens.spacing.step3 +
-                  lineWidth(
+                  goalTextWidth(
+                    context,
                     context.messages.goalReliabilityWeeks(successfulWeeks),
                     noteStyle,
                   );
         final noteSharesLine =
             note != null &&
-            lineWidth(periodLine, cadenceStyle) +
+            goalTextWidth(context, periodLine, cadenceStyle) +
                     tokens.spacing.step4 +
-                    lineWidth(note, noteStyle) +
+                    goalTextWidth(context, note, noteStyle) +
                     (reliabilityWidth == 0
                         ? 0
                         : tokens.spacing.step4 + reliabilityWidth) <=

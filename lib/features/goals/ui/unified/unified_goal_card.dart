@@ -19,37 +19,26 @@ import 'package:lotti/services/nav_service.dart';
 /// One goal on the unified Goals list (design handover "Goals, Unified"
 /// §4.2): header (persona chip · name · status pill with folded recovery
 /// hint · trend chip · 7-day strip), a deterministic templated summary line,
-/// then the goal's habit rows — **expanded by default**, because grouping
-/// never means hiding the one-tap complete (§P3). A card whose rows are all
-/// filtered out collapses to its header.
+/// and nothing else.
 ///
-/// The card watches the same per-agent providers the agents list row does;
-/// habits-side state ([successToday], [streaksByHabit]) is supplied by the
-/// page so every card shares one read of the habits controller.
+/// It used to embed the goal's habit rows as well — glyph, streak chain,
+/// flame count, window fraction, check circle apiece — which spent several
+/// rows of a LIST card restating what the status pill says in two words. A
+/// habit's own record is read on the goal's page; the one-tap complete lives
+/// in the "not in a goal" group, which is the Habits-tab daily loop.
+///
+/// The card watches the same per-agent providers the agents list row does.
+/// It takes no habits-side state: with no rows to render there is nothing
+/// for `successToday`, `streaksByHabit` or a visibility filter to act on,
+/// and keeping them would have made every caller compute and thread state
+/// the widget silently discards.
 class UnifiedGoalCard extends ConsumerWidget {
   const UnifiedGoalCard({
     required this.identity,
-    required this.successToday,
-    required this.streaksByHabit,
-    this.visibleHabitIds,
     super.key,
   });
 
   final AgentIdentityEntity identity;
-
-  /// Habit ids with a REAL success recorded today (success-only — skips
-  /// excluded). Goal criteria credit only `HabitCompletionType.success`, so a
-  /// skipped habit keeps its one-tap success button here instead of reading
-  /// green while the window reading still reports a deficit.
-  final Set<String> successToday;
-
-  /// Per-habit current streaks (the heatmap controller's deep history).
-  final Map<String, int> streaksByHabit;
-
-  /// Habit ids the page's due/later/done filter currently shows, or null for
-  /// the unfiltered `all` view. Rows outside the set are omitted; the goal
-  /// header always renders so the goal itself never vanishes under a filter.
-  final Set<String>? visibleHabitIds;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

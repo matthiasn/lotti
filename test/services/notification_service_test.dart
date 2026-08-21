@@ -383,7 +383,13 @@ void main() {
       await service.scheduleNotificationAt(
         title: 'title',
         body: 'body',
-        notifyAt: DateTime(2026, 8, 21, 9),
+        // Fixed, and far out. The instant is irrelevant to what this test
+        // asserts, but the plugin validates it against the real wall clock
+        // through `tz.TZDateTime.now` — nothing a test can inject or fake
+        // reaches that call — so the date has to be genuinely future. A
+        // nearby literal is a time bomb: this was written as
+        // DateTime(2026, 8, 21, 9) and went red the morning that arrived.
+        notifyAt: DateTime(2100),
         notificationId: 9,
         showOnMobile: true,
         showOnDesktop: false,

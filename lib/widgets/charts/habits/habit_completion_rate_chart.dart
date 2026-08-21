@@ -521,7 +521,7 @@ class _ChartHeadline extends StatelessWidget {
         runSpacing: tokens.spacing.step2,
         children: [
           // Group A: the rate and its unit read as one block — the big number
-          // with a small "7-day avg" set just to its right on the same baseline.
+          // with the small rolling-average mark set just to its right on the same baseline.
           Text.rich(
             TextSpan(
               style: tokens.typography.styles.heading.heading2.copyWith(

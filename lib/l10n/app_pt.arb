@@ -3218,7 +3218,7 @@
     }
   },
   "habitsRecordButton": "Gravar",
-  "habitsRollingAverageLabel": "Média de 7 dias",
+  "habitsRollingAverageLabel": "Ø de 7 dias",
   "habitsStartStreakToday": "Comece uma sequência hoje",
   "habitsStreakLongCount": "{count} em uma sequência de 7 dias",
   "@habitsStreakLongCount": {

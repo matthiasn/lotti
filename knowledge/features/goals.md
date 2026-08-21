@@ -849,9 +849,19 @@ flowchart TD
   verdict, and the sentence restated it — the no-data case is the one
   exception, because "Not enough data" alone says nothing about why. Where
   a card plots a trailing seven-day average, the corner states the LATEST
-  reading with that average beside it in the average line's own hue, and
-  leaves the target to the keyed legend entry ("Goal ≤ 88") rather than
-  naming it twice. Legends center under the charts they annotate. Chip shape encodes affordance on every goal
+  reading — never the period aggregate, which for an "average steps per day"
+  criterion IS that same mean, so the card printed one number twice — with
+  the mean set BESIDE it on the same baseline as "Ø 10,777", a type tier down
+  and in the average line's own hue. One reading line and one verdict line,
+  the same two-line corner every other card on the page uses; the mean folds
+  onto a second line, and the block leaves the title row altogether, only
+  when the reading is MEASURED not to fit (`goalTextWidth`) — a fixed
+  breakpoint stacked the corner away on every phone while the figures
+  occupied a third of the row. The legend entry naming that series wears the hue too
+  (`DashboardLegendEntry.labelWearsSeriesColor`), since colour is the only
+  thing resolving the symbol to a mark on the chart. The target stays in the
+  keyed legend entry ("Goal ≤ 88", or a compact "Goal 10K" for steps) rather
+  than being named twice. Legends center under the charts they annotate. Chip shape encodes affordance on every goal
   surface: clickable elements are fully rounded (`radii.badgesPills`);
   informative chips — status/trend/verdict/cost — take the fixed
   `radii.smallChips` corner. The read card wears the SAME
@@ -939,9 +949,17 @@ flowchart TD
   a two-series time-series treatment: the observed values plus a trailing
   seven-calendar-day average. Daily steps render as discrete bars, while weight
   keeps the shared actual-value area treatment; both overlay the average as a
-  dashed blue line. The average begins only after the rendered range has
-  accumulated a full seven-day span and folds only observed samples inside each
-  window, so a missing day does not become a false zero. It stops at the goal
+  dashed blue line. The average is drawn from the FIRST rendered day, not from
+  the seventh: metrics carry a run-up (`GoalMetricProgressView.warmupValues`)
+  of the six days before the visible span, which the signal reader already
+  fetches (`historyDays + 7`) and used to discard. Where no run-up exists the
+  series still waits for a full seven rendered days rather than averaging two
+  and calling it a week. Both the series
+  (`goalMetricSevenDayAverage`) and the single-day helper the reflection sheet
+  reads (`goalMetricSevenDayAverageOn`) consume that run-up, so the sheet can
+  never omit — or disagree about — a day the chart plots. It folds only
+  observed samples inside each window, so a missing day does not become a
+  false zero. It stops at the goal
   view's deterministic `today` and is available only for
   `dailySumThenAverage` criteria; future calendar days and period-level
   aggregations therefore cannot produce a fabricated per-day trend or target.
@@ -1077,13 +1095,18 @@ flowchart TD
   below them, and, only while active, the revision-approval card
   (`ChangeSetSummaryCard.selfTargeted`).
 
-  The read card's two caption-tier text actions — Show more and Ask why —
-  share ONE row under the summary, both with the hover fill suppressed
+  The read card carries ONE caption-tier text action under the summary —
+  Show more — with the hover fill suppressed
   (`DesignSystemButton.suppressHoverFill`): a pill fading in mid-paragraph
-  reads as a phantom button, and the accent ink already says they are
-  actions. The automation band drops the settled "Updates on changes"
-  caption (`AgentAutomationRow.showsIdleScheduleLabel: false`) — the switch
-  beside it IS that promise; a pending run's countdown still takes the slot.
+  reads as a phantom button, and the accent ink already says it is an action.
+  "Ask why" is gone: the header already offers a mic for a check-in and a
+  chat doorway, so a third entrance set mid-paragraph was the least
+  discoverable of the three. The automation band drops the settled
+  "Updates on changes" caption
+  (`AgentAutomationRow.showsIdleScheduleLabel: false`) — the switch beside it
+  IS that promise; a pending run's countdown still takes the slot. Staleness
+  is stated ONCE, in that band beside the action that resolves it; the header
+  rail says only how old the read is.
   The report card hides its Show more toggle when the full text is identical
   to the TLDR **and** the report carries no renderable structured sections.
   Sections live in provenance rather than in `content`, so a report whose
@@ -1313,24 +1336,32 @@ flowchart TD
   tabs into one goal-centric list at `/goals`, in the Habits nav slot —
   the Habits page's visual language (Done-today card, due/later/done/all
   filter tabs, consistency heatmap, completion-rate chart) with one
-  expanded card per goal (`ui/unified/unified_goal_card.dart`). Cards
+  header-only card per goal (`ui/unified/unified_goal_card.dart`). Cards
   carry a four-pill status vocabulary
   (`ui/unified/unified_goal_status.dart`: On track / At risk / Behind /
   No data, collapsed from `GoalTrackStatus`; `recovering` reads as At
   risk with the deterministic recovery hint folded into the pill), a
   templated summary computed locally (never generated prose — it cannot
-  go stale), and the shared `HabitActionRow` per habit dimension. The summary
+  go stale). It carries NO habit rows: embedding one per dimension — glyph,
+  streak chain, flame count, window fraction, check circle — spent several
+  rows of a list card restating what the pill says in two words, and a
+  habit's own record is read on the goal's page. The card therefore takes no
+  habits-side state at all, and the "not in a goal" group below is the only
+  place a `HabitActionRow` remains — which is exactly the Habits-tab daily
+  loop. The summary
   names the counted unit (for example, habits done today), the first-run state
   explains Goals and offers the sole creation CTA, and completed/dormant goals
   remain reachable through a collapsed archive section. Row
   done-state uses **success-only** completions (`successfulByDay[today]`,
   not `successfulToday`, which also counts skips) because goal criteria
-  credit only real successes; the page reads the category-UNFILTERED
+  credit only real successes — a rule now enforced where it is computed
+  rather than shown, since the goal cards no longer render rows; the page
+  reads the category-UNFILTERED
   buckets (`openNowAll` etc.) so it cannot inherit the Habits tab's
   hidden category filter, and every filter branch intersects with
   `GoalHabitCompletionService.isRecordableDay` — the recording path's own
   lifecycle gate (active flag plus the activeFrom/activeUntil window) — so
-  no row offers a quick-complete the service would reject. Habits that no goal's criteria tree claims
+  no orphan row offers a quick-complete the service would reject. Habits that no goal's criteria tree claims
   (`goalCriterionHabitIds`) render in a "not in a goal" group — gated on
   every per-goal health having resolved, so cached habits never flash in
   as ungrouped. `GoalsLocation` is the sole host of the detail/chat/wizard

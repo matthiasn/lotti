@@ -7376,7 +7376,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get habitsRecordButton => 'Zaznamenat';
 
   @override
-  String get habitsRollingAverageLabel => '7denní průměr';
+  String get habitsRollingAverageLabel => '7denní Ø';
 
   @override
   String get habitsStartStreakToday => 'Začni sérii ještě dnes';

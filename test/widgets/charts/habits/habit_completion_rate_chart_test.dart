@@ -139,7 +139,7 @@ void main() {
 
       // ONE rate, in the corner block — the display-tier headline the plot
       // used to carry would make it two.
-      final rate = find.textContaining('7-day avg');
+      final rate = find.textContaining('7-day Ø');
       expect(rate, findsOneWidget);
       final rateText = tester.widget<Text>(rate).textSpan! as TextSpan;
       expect(rateText.toPlainText(), startsWith('50%'));
@@ -214,7 +214,7 @@ void main() {
 
       // The chart draws no second copy of the rate, and nothing sits between
       // the summary and the plot: the 44px headline floor is gone with it.
-      expect(find.textContaining('7-day avg'), findsOneWidget);
+      expect(find.textContaining('7-day Ø'), findsOneWidget);
       final chart = tester.getRect(find.byType(HabitCompletionRateChart));
       final plot = tester.getRect(find.byType(LineChart));
       expect(
@@ -248,7 +248,7 @@ void main() {
       await tester.pump();
 
       expect(find.textContaining('2024-03-07'), findsOneWidget);
-      expect(find.textContaining('7-day avg'), findsNothing);
+      expect(find.textContaining('7-day Ø'), findsNothing);
       expect(plotOffset(), before);
       // The controller arms a 15s debounce that clears the selection; let it
       // run out rather than leaving a pending timer behind the test.
@@ -263,7 +263,7 @@ void main() {
       await pumpChart(tester);
 
       expect(find.byType(LineChart), findsOneWidget);
-      expect(find.textContaining('7-day avg'), findsOneWidget);
+      expect(find.textContaining('7-day Ø'), findsOneWidget);
       // Empty data → the forward-looking goal line, not a pass/fail count.
       expect(find.textContaining('goal'), findsOneWidget);
     });
@@ -295,7 +295,7 @@ void main() {
       expect(tester.takeException(), isNull);
 
       // Second run: the goal chip sits BELOW the rate block…
-      final rateRect = tester.getRect(find.textContaining('7-day avg'));
+      final rateRect = tester.getRect(find.textContaining('7-day Ø'));
       final chipRect = tester.getRect(find.textContaining('to goal'));
       expect(chipRect.top, greaterThanOrEqualTo(rateRect.bottom - 1));
       // …and the plot starts below the grown header instead of underneath it.
@@ -318,9 +318,9 @@ void main() {
     ) async {
       await pumpChart(tester, state: _fourteenDayState());
 
-      // The rate and its unit read as one inline group "50%  7-day avg".
+      // The rate and its unit read as one inline group "50%  7-day Ø".
       expect(find.textContaining('50%'), findsOneWidget);
-      expect(find.textContaining('7-day avg'), findsOneWidget);
+      expect(find.textContaining('7-day Ø'), findsOneWidget);
       // 50% average → 30 pts to the 80% goal (gain-framed, not pass/fail).
       expect(find.textContaining('30 pts to goal'), findsOneWidget);
       // A full prior week exists and is identical → flat trend.

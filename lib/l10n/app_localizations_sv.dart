@@ -7311,7 +7311,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get habitsRecordButton => 'Rekord';
 
   @override
-  String get habitsRollingAverageLabel => '7-dagars snitt';
+  String get habitsRollingAverageLabel => '7-dagars Ø';
 
   @override
   String get habitsStartStreakToday => 'Starta en svit idag';

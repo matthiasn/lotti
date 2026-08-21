@@ -136,18 +136,10 @@ void main() {
     required GoalAgentHealth agentHealth,
     GoalProgressView? progressView,
     bool progressFails = false,
-    Set<String>? visibleHabitIds,
-    Set<String> successToday = const {},
-    Map<String, int> streaks = const {},
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
-        UnifiedGoalCard(
-          identity: identity('goal-1', 'Fitness'),
-          successToday: successToday,
-          streaksByHabit: streaks,
-          visibleHabitIds: visibleHabitIds,
-        ),
+        UnifiedGoalCard(identity: identity('goal-1', 'Fitness')),
         overrides: [
           goalAgentHealthProvider(
             'goal-1',
@@ -180,7 +172,6 @@ void main() {
         deficit: 2,
       ),
       progressView: progress(),
-      streaks: {habitFlossing.id: 3},
     );
 
     expect(find.text('Fitness'), findsOneWidget);
@@ -202,25 +193,6 @@ void main() {
     expect(find.text(habitFlossing.name), findsNothing);
     expect(find.text(habitFlossingDueLater.name), findsNothing);
     expect(find.textContaining('this window'), findsNothing);
-  });
-
-  testWidgets('a filter that hides every habit collapses the card to its '
-      'header — the goal itself never vanishes', (tester) async {
-    await pump(
-      tester,
-      agentHealth: health(
-        agentId: 'goal-1',
-        trackStatus: GoalTrackStatus.onTrack,
-      ),
-      progressView: progress(),
-      visibleHabitIds: const {},
-    );
-
-    expect(find.text('Fitness'), findsOneWidget);
-    expect(find.byType(HabitActionRow), findsNothing);
-    // The pill still reflects FULL state — filters act on rows, never on
-    // verdicts.
-    expect(find.text('On track'), findsOneWidget);
   });
 
   testWidgets('no-data with a standing one-liner shows the one-liner and '

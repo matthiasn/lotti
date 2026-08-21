@@ -4364,7 +4364,7 @@
     }
   },
   "habitsRecordButton": "Record",
-  "habitsRollingAverageLabel": "7-day avg",
+  "habitsRollingAverageLabel": "7-day Ø",
   "habitsStartStreakToday": "Start a streak today",
   "habitsStreakLongCount": "{count} on a 7-day streak",
   "@habitsStreakLongCount": {

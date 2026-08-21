@@ -3219,7 +3219,7 @@
     }
   },
   "habitsRecordButton": "Registrazione",
-  "habitsRollingAverageLabel": "7 giorni avg",
+  "habitsRollingAverageLabel": "Ø 7 giorni",
   "habitsStartStreakToday": "Inizia una striscia oggi",
   "habitsStreakLongCount": "{count} su una striscia di 7 giorni",
   "@habitsStreakLongCount": {

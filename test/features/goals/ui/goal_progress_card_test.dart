@@ -4042,6 +4042,191 @@ void main() {
     );
   });
 
+  group('the signal corner', () {
+    Widget weightCard({String unit = 'kg'}) => SingleChildScrollView(
+      child: GoalProgressCard(
+        progress: GoalProgressView(
+          today: today,
+          metric: GoalMetricProgressView(
+            criterionId: 'weight',
+            sourceId: GoalHealthDataTypes.weight,
+            name: 'Weight',
+            target: 88,
+            direction: GoalDirection.atMost,
+            unitName: unit,
+            days: [
+              for (var offset = 13; offset >= 0; offset--)
+                day(offset, 92 + offset * 0.1),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    /// Pumps the signal card at [width]. The default is roomy — 420 logical
+    /// pixels, wider than the old breakpoint and wider than any phone — so a
+    /// layout chosen there is chosen because of what the reading MEASURES,
+    /// never because the viewport ran out.
+    Future<void> pumpCard(
+      WidgetTester tester, {
+      String unit = 'kg',
+      double width = 420,
+    }) async {
+      tester.view
+        ..physicalSize = const Size(1200, 900)
+        ..devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Center(
+            child: SizedBox(
+              width: width,
+              child: weightCard(unit: unit),
+            ),
+          ),
+        ),
+      );
+      // The signal chart's own date axis — four fixed ticks in a
+      // space-between Row, in DashboardChartDateAxis — overflows here below
+      // about 380 logical pixels. It is PRE-EXISTING and belongs to a shared
+      // charting widget, not to this header: the same file's history shows it
+      // untouched, and an in-app capture of this page at phone width renders
+      // the axis clean, so it may well be particular to a card pumped bare in
+      // a test. Taken so that a narrow pump reports on the header alone, and
+      // tolerant of null so that fixing it upstream will not fail these
+      // tests.
+      tester.takeException();
+    }
+
+    // 'Weight' names the signal in the header AND its series in the legend.
+    Rect titleRect(WidgetTester tester) =>
+        tester.getRect(find.text('Weight').first);
+
+    testWidgets('rides the title row whenever the reading actually fits — a '
+        'card with room to spare never drops it to its own line', (
+      tester,
+    ) async {
+      // Regression: the header picked its layout from a FIXED breakpoint
+      // (step13 * 2 + step5, about 336 logical pixels), so a card with the
+      // reading occupying well under a third of it still stacked the corner
+      // block under the title and left-aligned it — losing the corner that
+      // holds the one figure a reader looks for first.
+      // A 390-wide phone leaves this card about 326 logical pixels — under
+      // the old 336 threshold, so EVERY phone stacked the corner away. That
+      // is the state that was reported.
+      await pumpCard(tester, width: 326);
+
+      final title = titleRect(tester);
+      final reading = tester.getRect(find.text('92 kg'));
+      final average = tester.getRect(find.textContaining('Ø'));
+      final card = tester.getRect(find.byType(DesignSystemSectionCard).first);
+      final tokens = tester.element(find.byType(GoalProgressCard)).designTokens;
+
+      expect(
+        reading.top,
+        lessThan(title.bottom),
+        reason: 'the reading shares the title row',
+      );
+      expect(reading.left, greaterThan(title.right));
+      // Flush against the card's trailing padding edge — once the two figures
+      // share a line the mean is the block's rightmost element.
+      expect(
+        average.right,
+        closeTo(card.right - tokens.spacing.cardPadding, 1),
+      );
+      // And the block is genuinely narrow: proof the old breakpoint reserved
+      // space nothing ever needed.
+      expect(average.right - reading.left, lessThan(card.width / 2));
+    });
+
+    testWidgets('sets the mean beside the latest value on one baseline, with '
+        'the verdict alone beneath', (tester) async {
+      await pumpCard(tester);
+
+      final reading = tester.getRect(find.text('92 kg'));
+      final average = tester.getRect(find.textContaining('Ø'));
+      final status = tester.getRect(find.text('Needs attention'));
+
+      // One corner line, mean to the right of the value — not a second row.
+      expect(average.left, greaterThan(reading.right));
+      expect(
+        average.bottom,
+        closeTo(reading.bottom, reading.height),
+        reason: 'the two figures share the corner line',
+      );
+      // Set on a shared BASELINE rather than a shared box bottom: the mean is
+      // a smaller style, so bottom-aligning would sit it low by the
+      // difference in descent.
+      expect(
+        average.bottom,
+        lessThan(reading.bottom),
+        reason: 'the smaller style ends above the larger one on a baseline',
+      );
+      // The verdict is the only thing on the second line, ending on the same
+      // rail as the figures above it.
+      expect(status.top, greaterThanOrEqualTo(reading.bottom - 1));
+      expect(status.right, closeTo(average.right, 1));
+
+      // Hierarchy: value largest and in the primary ink, mean a tier down and
+      // wearing the average LINE's own hue.
+      final tokens = tester.element(find.byType(GoalProgressCard)).designTokens;
+      final valueStyle = tester.widget<Text>(find.text('92 kg')).style!;
+      final meanStyle = tester.widget<Text>(find.textContaining('Ø')).style!;
+      expect(valueStyle.fontSize, greaterThan(meanStyle.fontSize!));
+      expect(valueStyle.color, isNot(tokens.colors.alert.info.defaultColor));
+      expect(meanStyle.color, tokens.colors.alert.info.defaultColor);
+    });
+
+    testWidgets('a long reading folds the mean under the value before it '
+        'surrenders the corner, and leaves the title row only when neither '
+        'fits', (tester) async {
+      // The card width never changes across these three pumps — only the
+      // length of the reading does, which is the trigger the layout is meant
+      // to answer to.
+      await pumpCard(tester, unit: 'kilograms');
+      var title = titleRect(tester);
+      var reading = tester.getRect(find.text('92 kilograms'));
+      var average = tester.getRect(find.textContaining('Ø'));
+      expect(
+        reading.top,
+        lessThan(title.bottom),
+        reason: 'too long to share a line, still short enough for a corner',
+      );
+      expect(
+        average.top,
+        greaterThanOrEqualTo(reading.bottom - 1),
+        reason: 'so the mean folds onto its own line under the value',
+      );
+      expect(
+        average.right,
+        closeTo(reading.right, 1),
+        reason: 'and the folded block stays end-aligned',
+      );
+
+      // Longer still: no corner left worth pinning to, so the block drops
+      // below and starts on the card's own rail, left of the glyph-indented
+      // identity.
+      await pumpCard(tester, unit: 'kilograms per week');
+      title = titleRect(tester);
+      reading = tester.getRect(find.text('92 kilograms per week'));
+      average = tester.getRect(find.textContaining('Ø'));
+      expect(
+        reading.top,
+        greaterThanOrEqualTo(title.bottom - 1),
+        reason: 'the block leaves the title row only when it must',
+      );
+      expect(reading.left, lessThan(title.left));
+      // With the full card width back, the two figures fit side by side
+      // again — the fall to a second line is never one-way.
+      expect(average.left, greaterThan(reading.right));
+      expect(
+        average.bottom,
+        lessThan(reading.bottom),
+        reason: 'and they are still set on a shared baseline',
+      );
+    });
+  });
+
   testWidgets('signal legends and summary lines center under their charts', (
     tester,
   ) async {

@@ -2884,7 +2884,7 @@
   "habitsPendingLaterHeader": "Später heute",
   "habitsPointsToGoal": "{points} Pkt. bis zum Ziel",
   "habitsRecordButton": "Eintragen",
-  "habitsRollingAverageLabel": "7-Tage-Schnitt",
+  "habitsRollingAverageLabel": "7-Tage-Ø",
   "habitsStartStreakToday": "Starte heute eine Serie",
   "habitsStreakLongCount": "{count} mit 7-Tage-Serie",
   "habitsStreakShortCount": "{count} mit 3-Tage-Serie",

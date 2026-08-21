@@ -3218,7 +3218,7 @@
     }
   },
   "habitsRecordButton": "Opname",
-  "habitsRollingAverageLabel": "7 dagen",
+  "habitsRollingAverageLabel": "7-daags Ø",
   "habitsStartStreakToday": "Begin vandaag met een streak",
   "habitsStreakLongCount": "{count} op een 7-daagse streep",
   "@habitsStreakLongCount": {

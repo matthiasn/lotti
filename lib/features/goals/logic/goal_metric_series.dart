@@ -127,10 +127,31 @@ num? goalMetricSevenDayAverageOn(
       count++;
     }
   }
-  // The same three conditions the series itself applies: the day has to be one
-  // of the rendered days, it needs a full week of history behind it, and the
-  // window has to hold at least one real observation.
+  // The SAME run-up the series consumes, under the SAME filter — entries
+  // strictly BEFORE the first rendered day, which is why this pass has to
+  // follow the one above rather than lead it. Without any run-up the helper
+  // answered "no average" for exactly the days the chart had just started
+  // drawing one. Without the filter it went wrong the other way: an entry
+  // that also appears among the rendered days was counted TWICE, once as
+  // run-up and once as an observation, and one falling inside the rendered
+  // range stood in for the full week of history the series still insists on.
+  var hasRunUp = false;
+  for (final entry in metric.warmupValues.entries) {
+    final key = GoalWindow.dayUtc(entry.key);
+    if (first == null || !key.isBefore(first)) continue;
+    hasRunUp = true;
+    if (!key.isBefore(windowStart)) {
+      sum += entry.value;
+      count++;
+    }
+  }
+  // The same conditions the series itself applies: the day has to be one of
+  // the rendered days, the window has to hold at least one real observation,
+  // and — only where no run-up is available — it needs a full week of
+  // rendered history behind it.
   if (!seenTarget || count == 0) return null;
-  if (first == null || target.difference(first).inDays < 6) return null;
+  if (!hasRunUp && (first == null || target.difference(first).inDays < 6)) {
+    return null;
+  }
   return sum / count;
 }
