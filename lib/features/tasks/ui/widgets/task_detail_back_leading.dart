@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -60,6 +61,53 @@ class TaskDetailShowListButton extends StatelessWidget {
         LottiIcons.sidebar,
         size: IconSizes.m,
         color: dsTokensDark.colors.text.highEmphasis,
+      ),
+    );
+  }
+}
+
+/// The desktop task split's "hide list" control, rendered at the top of the
+/// task detail header rather than beside the task list's own title.
+///
+/// It lives here so the two halves of the same toggle sit in the same corner:
+/// [TaskDetailShowListButton] already restores the list from the detail pane,
+/// and the hide affordance used to sit a pane away, next to the list title —
+/// where it also shifted that title sideways the moment a task was selected.
+///
+/// Renders nothing outside the desktop split, and nothing while the list is
+/// already hidden (the show button occupies that corner then).
+///
+/// Deliberately glyph-aligned rather than box-aligned: zero padding with a
+/// left alignment inside a full-size tap target puts the icon's own left edge
+/// on the header's content rail, so it stacks cleanly above the category dot
+/// of the breadcrumb below it.
+class TaskDetailHideListButton extends StatelessWidget {
+  const TaskDetailHideListButton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final splitController = ListDetailFocusTraversal.maybeOf(context);
+    if (splitController == null ||
+        !splitController.listPaneVisible ||
+        !splitController.canHideListPane) {
+      return const SizedBox.shrink();
+    }
+
+    final tokens = context.designTokens;
+    return IconButton(
+      key: const ValueKey('tasks-hide-list-pane'),
+      onPressed: splitController.hideListPane,
+      tooltip: context.messages.listPaneHideTooltip,
+      padding: EdgeInsets.zero,
+      alignment: Alignment.centerLeft,
+      constraints: const BoxConstraints(
+        minWidth: TapTargets.minimum,
+        minHeight: TapTargets.minimum,
+      ),
+      icon: Icon(
+        LottiIcons.sidebar,
+        size: IconSizes.m,
+        color: tokens.colors.text.mediumEmphasis,
       ),
     );
   }

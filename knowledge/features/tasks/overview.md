@@ -107,11 +107,17 @@ renders**, skipping the independently keyboard-resizable divider. During the
 detail crossfade, outgoing pages are wrapped in `ExcludeFocus`, so the bridge
 cannot restore focus into a task that is only still present for animation.
 
-With a base task selected, the list header can enter focus mode. The list and
+With a base task selected, the split can enter focus mode. The list and
 divider become offstage while the detail takes the full split width; the list
 subtree stays mounted, preserving its filter, search, paging and scroll state.
-The Show list action is owned by `TasksRootPage`, so it remains reachable even
-while task data is loading. Its collapse preference and expanded width are
+
+**Both halves of the toggle live in the detail pane.** `TaskDetailHideListButton`
+opens the task detail header — above the breadcrumb, on the same content rail as
+its category dot, so the two glyphs read as one column — and
+`TaskDetailShowListButton` occupies that same corner once the list is gone. The
+Hide action used to sit next to the *task list's* own title, where selecting a
+task made it appear and shoved that title sideways. The Show action is owned by
+`TasksRootPage`, so it remains reachable even while task data is loading. Its collapse preference and expanded width are
 shared with Projects and persisted by `PaneWidthController`. Focus mode uses the
 released canvas without turning media into wall-sized chrome: cover art remains
 16:9 but is capped at the shared 960 pt detail measure.
