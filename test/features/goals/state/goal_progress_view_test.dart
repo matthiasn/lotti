@@ -119,6 +119,52 @@ void main() {
     expect(view.compositeCompactWindow, hasLength(30));
   });
 
+  test('a calendar-window habit track stops at today, so it renders exactly '
+      'the days the goal-days strip does', () {
+    final view = buildGoalProgressView(
+      criteria: const GoalCriterion.allOf(
+        criterionId: 'root',
+        criteria: [
+          GoalCriterion.habit(
+            criterionId: 'walk',
+            habitId: 'walk-id',
+            window: GoalWindow.calendarWeek(),
+            targetCount: 3,
+          ),
+          GoalCriterion.metric(
+            criterionId: 'steps',
+            dataType: 'cumulative_step_count',
+            window: GoalWindow.calendarWeek(),
+            aggregation: GoalAggregation.dailySumThenAverage,
+            target: 10000,
+          ),
+        ],
+      ),
+      signals: const GoalSignalWindow(),
+      reference: today,
+      habitNames: const {'walk-id': 'Evening walk'},
+      historyDays: 30,
+    );
+
+    // Today is a Tuesday, so the calendar week runs on to Sunday — five days
+    // that have not happened yet. Neither track may draw them: the whole-goal
+    // strip counts back from today, and a day track that ran past it made the
+    // two disagree on their period label AND on their column pitch, which is
+    // what rendered the habit squares smaller than the goal-days squares.
+    expect(today.weekday, DateTime.tuesday);
+    for (final days in [view.habits.single.days, view.metrics.single.days]) {
+      expect(days, hasLength(30));
+      expect(days.first.day, day(29));
+      expect(days.last.day, today);
+      expect(days.every((entry) => !entry.day.isAfter(today)), isTrue);
+    }
+    // The same span the goal-days strip renders, day for day.
+    expect(
+      view.compositeCompactWindow,
+      hasLength(view.habits.single.days.length),
+    );
+  });
+
   test('habit projection separates the slipped day, active window, deficit and '
       'six-week reliability on the evaluator signal source', () {
     final successes = <DateTime, int>{
@@ -497,8 +543,11 @@ void main() {
 
       expect(daily.days, hasLength(1));
       expect(daily.slippedDay, isNull);
-      expect(month.days, hasLength(31));
+      // The month window's period range runs to Aug 31, but the track stops
+      // at today — it must never draw days that have not happened yet.
+      expect(month.days, hasLength(11));
       expect(month.days.first.day, DateTime.utc(2026, 8));
+      expect(month.days.last.day, today);
       expect(month.slippedDay, isNull);
       expect(month.successfulWeeks, isNull);
       expect(rolling.days, hasLength(10));
@@ -539,9 +588,9 @@ void main() {
     expect(dayView.metric?.days, hasLength(1));
     expect(dayView.metric?.window, const GoalWindow.day());
     expect(dayView.compactWindow, [GoalCompactDayState.full]);
-    expect(monthView.metric?.days, hasLength(31));
+    expect(monthView.metric?.days, hasLength(11));
     expect(monthView.metric?.days.first.day, DateTime.utc(2026, 8));
-    expect(monthView.metric?.days.last.day, DateTime.utc(2026, 8, 31));
+    expect(monthView.metric?.days.last.day, today);
     expect(monthView.metric?.window, const GoalWindow.calendarMonth());
     expect(
       monthView.compactWindow,

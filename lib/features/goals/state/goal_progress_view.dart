@@ -763,6 +763,18 @@ DateTime _historyStart({
   return spanStart.isBefore(rangeStart) ? spanStart : rangeStart;
 }
 
+/// The last rendered day: the authored range end, clamped to [today].
+///
+/// A calendar window's [GoalWindow.periodRange] covers its WHOLE week or
+/// month, so rendering it unclipped drew cells for dates that have not
+/// happened yet — a Friday habit track ran two grey "No entry" days past
+/// today and labelled itself "Jul 31 – Aug 23". The goal-days strip above it
+/// counts back from today and stops there, so the two tracks disagreed on
+/// both the period line and, because the column pitch is the available width
+/// divided by the day count, on the size of the squares themselves.
+DateTime _historyEnd({required DateTime rangeEnd, required DateTime today}) =>
+    rangeEnd.isAfter(today) ? today : rangeEnd;
+
 GoalMetricProgressView _numericProgressView({
   required GoalCriterion criterion,
   required String criterionId,
@@ -794,6 +806,7 @@ GoalMetricProgressView _numericProgressView({
     today: today,
     historyDays: historyDays,
   );
+  final end = _historyEnd(rangeEnd: range.end, today: today);
   return GoalMetricProgressView(
     evaluatedActual: const GoalProgressEvaluator()
         .evaluate(criterion, signals, reference)
@@ -828,7 +841,7 @@ GoalMetricProgressView _numericProgressView({
     days: [
       for (
         var day = start;
-        !day.isAfter(range.end);
+        !day.isAfter(end);
         day = day.add(const Duration(days: 1))
       )
         GoalProgressDay(
@@ -906,6 +919,7 @@ GoalHabitProgressView _habitProgressView({
     today: today,
     historyDays: historyDays,
   );
+  final end = _historyEnd(rangeEnd: range.end, today: today);
   // Per-day verdict of the habit's own window ending that day: a completed
   // day whose window quota was not yet met renders as a partial success.
   GoalProgressDay projection(DateTime day) => GoalProgressDay(
@@ -935,7 +949,7 @@ GoalHabitProgressView _habitProgressView({
     days: [
       for (
         var day = start;
-        !day.isAfter(range.end);
+        !day.isAfter(end);
         day = day.add(const Duration(days: 1))
       )
         projection(day),
