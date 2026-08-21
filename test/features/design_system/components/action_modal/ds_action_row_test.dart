@@ -273,6 +273,70 @@ void main() {
       expect(_rowFill(tester), _tokens(tester).colors.surface.hover);
     });
 
+    testWidgets('pressing paints the pressed wash, a step past hover', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          DsActionRow(
+            icon: LottiIcons.link,
+            title: 'Link from',
+            onTap: () {},
+          ),
+        ),
+      );
+
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byType(DsActionRow)),
+      );
+      await tester.pumpAndSettle();
+
+      expect(_rowFill(tester), _tokens(tester).colors.surface.focusPressed);
+      expect(_rowFill(tester), isNot(_tokens(tester).colors.surface.hover));
+
+      await gesture.up();
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('a row that loses its callback drops the state it was in', (
+      tester,
+    ) async {
+      Widget build({required bool enabled}) => makeTestableWidgetWithScaffold(
+        DsActionRow(
+          icon: LottiIcons.link,
+          title: 'Link from',
+          onTap: enabled ? () {} : null,
+        ),
+      );
+
+      await tester.pumpWidget(build(enabled: true));
+      await _hover(tester, find.byType(DsActionRow));
+      expect(_rowFill(tester), _tokens(tester).colors.surface.hover);
+
+      // The pointer never leaves, so no `onHover(false)` arrives — without the
+      // reset in didUpdateWidget the row would stay washed while disabled,
+      // and stay washed again the moment it came back.
+      await tester.pumpWidget(build(enabled: false));
+      await tester.pumpAndSettle();
+      expect(_rowFill(tester), Colors.transparent);
+
+      // Coming back, the row is interactive again and re-reads the pointer
+      // for itself rather than resuming a stale flag.
+      await tester.pumpWidget(build(enabled: true));
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<InkWell>(
+              find.descendant(
+                of: find.byType(DsActionRow),
+                matching: find.byType(InkWell),
+              ),
+            )
+            .onTap,
+        isNotNull,
+      );
+    });
+
     testWidgets('a disabled row never washes', (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -434,6 +498,102 @@ void main() {
             .first,
       );
       expect(second.top - firstInk.bottom, _tokens(tester).spacing.step2);
+    });
+
+    testWidgets('a trailing value never pushes the glyph off the rail', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          SizedBox(
+            width: 400,
+            child: Column(
+              children: [
+                DsActionRow(
+                  icon: LottiIcons.language,
+                  title: 'Set language',
+                  trailingValue: 'German',
+                  trailing: DsActionRowTrailing.chevron,
+                  onTap: () {},
+                ),
+                DsActionRow(
+                  icon: LottiIcons.link,
+                  title: 'Link from',
+                  trailing: DsActionRowTrailing.chevron,
+                  onTap: () {},
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      // A flex child that asks for less than its share leaves the remainder
+      // as dead space at the row's end — which is exactly what dragged the
+      // valued row's chevron inboard of every other row's.
+      final withValue = tester.getRect(
+        find.byIcon(LottiIcons.chevronRight).first,
+      );
+      final withoutValue = tester.getRect(
+        find.byIcon(LottiIcons.chevronRight).at(1),
+      );
+      expect(withValue.right, withoutValue.right);
+    });
+
+    testWidgets('the trailing value can carry a small leading adornment', (
+      tester,
+    ) async {
+      const flagKey = ValueKey<String>('flag');
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          DsActionRow(
+            icon: LottiIcons.language,
+            title: 'Set language',
+            trailingValue: 'German',
+            trailingValueLeading: const SizedBox.square(
+              dimension: 16,
+              key: flagKey,
+            ),
+            trailing: DsActionRowTrailing.chevron,
+            onTap: () {},
+          ),
+        ),
+      );
+
+      // It decorates the reading, so it sits between the title and the value
+      // rather than anywhere else on the row.
+      expect(
+        tester.getRect(find.byKey(flagKey)).right,
+        lessThanOrEqualTo(tester.getRect(find.text('German')).left),
+      );
+      expect(
+        tester.getRect(find.text('Set language')).right,
+        lessThanOrEqualTo(tester.getRect(find.byKey(flagKey)).left),
+      );
+    });
+
+    testWidgets('the adornment is dropped when there is no value to decorate', (
+      tester,
+    ) async {
+      const flagKey = ValueKey<String>('flag');
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          DsActionRow(
+            icon: LottiIcons.language,
+            title: 'Set language',
+            trailingValueLeading: const SizedBox.square(
+              dimension: 16,
+              key: flagKey,
+            ),
+            trailing: DsActionRowTrailing.chevron,
+            onTap: () {},
+          ),
+        ),
+      );
+
+      expect(find.byKey(flagKey), findsNothing);
     });
 
     testWidgets('a long trailing value truncates instead of overflowing', (

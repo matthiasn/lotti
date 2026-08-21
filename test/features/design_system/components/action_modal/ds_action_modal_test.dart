@@ -101,6 +101,64 @@ void main() {
     });
   });
 
+  group('DsActionModal metrics', () {
+    testWidgets('falls back to the brightness-matched token set when the '
+        'theme carries none', (tester) async {
+      // The shell is reached from `ModalUtils`, which builds pages against a
+      // modal context whose theme may not carry the DsTokens extension. It
+      // must not throw there — it has to fall back the same way ModalUtils
+      // itself does.
+      late EdgeInsets darkPadding;
+      late double darkHeader;
+      late EdgeInsets lightPadding;
+      late double lightHeader;
+
+      for (final (brightness, theme) in [
+        (Brightness.dark, ThemeData.dark()),
+        (Brightness.light, ThemeData.light()),
+      ]) {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: theme,
+            home: Builder(
+              builder: (context) {
+                if (brightness == Brightness.dark) {
+                  darkPadding = DsActionModal.bodyPadding(context);
+                  darkHeader = DsActionModal.headerHeight(context);
+                } else {
+                  lightPadding = DsActionModal.bodyPadding(context);
+                  lightHeader = DsActionModal.headerHeight(context);
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        );
+      }
+
+      // Spacing and type are brightness-invariant, so both fallbacks must
+      // land on the same geometry — the point of the fallback is that a
+      // missing extension changes nothing but colour.
+      expect(darkPadding, lightPadding);
+      expect(darkHeader, lightHeader);
+      expect(
+        darkPadding,
+        EdgeInsets.fromLTRB(
+          dsTokensDark.spacing.step5,
+          dsTokensDark.spacing.step2,
+          dsTokensDark.spacing.step5,
+          dsTokensDark.spacing.step4,
+        ),
+      );
+      expect(
+        darkHeader,
+        dsTokensDark.spacing.step5 +
+            dsTokensDark.typography.lineHeight.heading3 +
+            dsTokensDark.spacing.step4,
+      );
+    });
+  });
+
   group('DsActionModalList', () {
     testWidgets('adds no spacing of its own between rows', (tester) async {
       await tester.pumpWidget(

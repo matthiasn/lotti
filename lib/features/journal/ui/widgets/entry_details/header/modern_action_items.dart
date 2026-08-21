@@ -10,6 +10,7 @@ import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/labels/ui/widgets/label_selection_modal_utils.dart';
 import 'package:lotti/features/tasks/ui/widgets/language_selection_modal_content.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/widgets/flags/language_flag.dart';
 import 'package:lotti/widgets/modal/index.dart';
 import 'package:lotti/widgets/modal/modal_action_sheet.dart';
 import 'package:lotti/widgets/modal/modal_sheet_action.dart';
@@ -221,6 +222,11 @@ class ModernLabelsItem extends ConsumerWidget {
   }
 }
 
+/// The 4:3 proportion every flag in `country_flags` is drawn at. Named so the
+/// width beside a language name follows the caption's line height instead of
+/// being a second hand-tuned number.
+const double _flagAspectRatio = 4 / 3;
+
 /// Modern styled set-language action item for tasks.
 ///
 /// Names the task's current language on the row's trailing edge and opens
@@ -249,6 +255,8 @@ class ModernSetTaskLanguageItem extends ConsumerWidget {
         ? SupportedLanguage.fromCode(languageCode)
         : null;
 
+    final tokens = context.designTokens;
+
     // Bind the update callback to the notifier while `ref` is still valid —
     // the Actions modal will be popped (unmounting this item) before the
     // language modal callback fires.
@@ -258,10 +266,20 @@ class ModernSetTaskLanguageItem extends ConsumerWidget {
       icon: LottiIcons.language,
       title: context.messages.taskLanguageSetAction,
       // The setting itself rides the trailing edge, where every other row's
-      // current value would. It used to be a flag in the leading slot, which
+      // current value would. The flag used to sit in the leading slot, which
       // put the *answer* where the rest of the sheet puts the *subject* and
-      // left a row whose glyph changed meaning with the entry.
+      // left a row whose glyph changed meaning with the entry. It now rides
+      // beside the name it belongs to, at the caption's own line height so it
+      // reads as a mark on the value rather than a second icon on the row.
       trailingValue: language?.localizedName(context),
+      trailingValueLeading: language == null
+          ? null
+          : buildLanguageFlag(
+              languageCode: language.code,
+              height: tokens.typography.lineHeight.caption,
+              width: tokens.typography.lineHeight.caption * _flagAspectRatio,
+              key: ValueKey('action-flag-${language.code}'),
+            ),
       trailing: DsActionRowTrailing.chevron,
       onTap: () async {
         Navigator.of(context).pop();

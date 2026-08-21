@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:country_flags/country_flags.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill_localizations;
@@ -1020,6 +1021,13 @@ void main() {
         expect(row.trailing, DsActionRowTrailing.chevron);
         expect(find.text(context.messages.taskLanguageGerman), findsOneWidget);
         expect(find.byIcon(LottiIcons.language), findsOneWidget);
+        // The flag decorates the name it belongs to rather than replacing the
+        // tile's glyph, so the row's subject does not change with its value.
+        expect(find.byKey(const ValueKey('action-flag-de')), findsOneWidget);
+        expect(
+          tester.getSize(find.byKey(const ValueKey('action-flag-de'))).height,
+          context.designTokens.typography.lineHeight.caption,
+        );
       },
     );
 
@@ -1036,10 +1044,10 @@ void main() {
         );
         await tester.pump();
 
-        expect(
-          tester.widget<DsActionRow>(find.byType(DsActionRow)).trailingValue,
-          isNull,
-        );
+        final row = tester.widget<DsActionRow>(find.byType(DsActionRow));
+        expect(row.trailingValue, isNull);
+        expect(row.trailingValueLeading, isNull);
+        expect(find.byType(CountryFlag), findsNothing);
       },
     );
 

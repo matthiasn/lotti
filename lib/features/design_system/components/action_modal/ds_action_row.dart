@@ -58,11 +58,21 @@ class DsActionRow extends StatefulWidget {
     required this.onTap,
     this.subtitle,
     this.trailingValue,
+    this.trailingValueLeading,
     this.trailing = DsActionRowTrailing.none,
     this.tone = DsActionRowTone.neutral,
     this.semanticsLabel,
     super.key,
   });
+
+  /// Share of the row a [trailingValue] may claim before it ellipsizes.
+  ///
+  /// The value cannot be a flex child — a flex child that asks for less than
+  /// its share leaves the remainder as dead space at the row's end, which
+  /// dragged the trailing glyph off the rail its neighbours sit on. It is
+  /// therefore laid out at its natural width against this cap, so a long
+  /// value truncates instead of overflowing and a short one costs nothing.
+  static const double trailingValueMaxWidthFraction = 0.45;
 
   final IconData icon;
   final String title;
@@ -76,6 +86,11 @@ class DsActionRow extends StatefulWidget {
   /// glyph — the language on "Set language". Not a description: it is the
   /// state the row would change.
   final String? trailingValue;
+
+  /// A small adornment set immediately before [trailingValue] — the flag
+  /// beside a language's name. Ignored when there is no value: it decorates
+  /// the reading, it is not a reading of its own.
+  final Widget? trailingValueLeading;
 
   final DsActionRowTrailing trailing;
   final DsActionRowTone tone;
@@ -166,66 +181,85 @@ class _DsActionRowState extends State<DsActionRow> {
             horizontal: tokens.spacing.step4 - BorderWidths.emphasis,
             vertical: tokens.spacing.step3 - BorderWidths.emphasis,
           ),
-          child: Row(
-            children: [
-              _DsActionIconTile(icon: widget.icon, palette: palette),
-              SizedBox(width: tokens.spacing.step4),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      widget.title,
-                      style: tokens.typography.styles.subtitle.subtitle2
-                          .copyWith(color: palette.titleColor),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    if (widget.subtitle case final subtitle?
-                        when subtitle.isNotEmpty) ...[
-                      SizedBox(height: tokens.spacing.step1),
+          child: LayoutBuilder(
+            builder: (context, constraints) => Row(
+              children: [
+                _DsActionIconTile(icon: widget.icon, palette: palette),
+                SizedBox(width: tokens.spacing.step4),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
                       Text(
-                        subtitle,
-                        style: tokens.typography.styles.others.caption.copyWith(
-                          color: tokens.colors.text.mediumEmphasis,
-                        ),
+                        widget.title,
+                        style: tokens.typography.styles.subtitle.subtitle2
+                            .copyWith(color: palette.titleColor),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
+                      if (widget.subtitle case final subtitle?
+                          when subtitle.isNotEmpty) ...[
+                        SizedBox(height: tokens.spacing.step1),
+                        Text(
+                          subtitle,
+                          style: tokens.typography.styles.others.caption
+                              .copyWith(
+                                color: tokens.colors.text.mediumEmphasis,
+                              ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
-              ),
-              if (widget.trailingValue case final value? when value.isNotEmpty)
-                // Flexible, because a `Padding` is not a flex child: the Row
-                // would hand the Text an unbounded width, ellipsis would have
-                // nothing to measure against, and a long value (a long
-                // language name in a long locale) would overflow the row
-                // rather than truncate inside it.
-                Flexible(
-                  child: Padding(
-                    padding: EdgeInsets.only(left: tokens.spacing.step3),
-                    child: Text(
-                      value,
-                      style: tokens.typography.styles.others.caption.copyWith(
-                        color: tokens.colors.text.lowEmphasis,
+                if (widget.trailingValue case final value?
+                    when value.isNotEmpty)
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth:
+                          constraints.maxWidth *
+                          DsActionRow.trailingValueMaxWidthFraction,
+                    ),
+                    child: Padding(
+                      padding: EdgeInsets.only(left: tokens.spacing.step3),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (widget.trailingValueLeading case final leading?)
+                            Padding(
+                              padding: EdgeInsets.only(
+                                right: tokens.spacing.step2,
+                              ),
+                              child: leading,
+                            ),
+                          Flexible(
+                            child: Text(
+                              value,
+                              style: tokens.typography.styles.others.caption
+                                  .copyWith(
+                                    color: tokens.colors.text.lowEmphasis,
+                                  ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                ),
-              if (_trailingGlyph(widget.trailing) case final glyph?)
-                Padding(
-                  padding: EdgeInsets.only(left: tokens.spacing.step3),
-                  child: Icon(
-                    glyph,
-                    size: IconSizes.s,
-                    color: tokens.colors.text.lowEmphasis,
+                if (_trailingGlyph(widget.trailing) case final glyph?)
+                  Padding(
+                    padding: EdgeInsets.only(left: tokens.spacing.step3),
+                    child: Icon(
+                      glyph,
+                      size: IconSizes.s,
+                      color: tokens.colors.text.lowEmphasis,
+                    ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
