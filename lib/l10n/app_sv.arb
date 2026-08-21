@@ -3219,7 +3219,7 @@
     }
   },
   "habitsRecordButton": "Rekord",
-  "habitsRollingAverageLabel": "7-dagars snitt",
+  "habitsRollingAverageLabel": "7-dagars Ø",
   "habitsStartStreakToday": "Starta en svit idag",
   "habitsStreakLongCount": "{count} på en sju dagar lång svit",
   "@habitsStreakLongCount": {

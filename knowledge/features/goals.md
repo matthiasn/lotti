@@ -851,8 +851,13 @@ flowchart TD
   a card plots a trailing seven-day average, the corner states the LATEST
   reading — never the period aggregate, which for an "average steps per day"
   criterion IS that same mean, so the card printed one number twice — with
-  the mean on its own line beneath as "Ø 10,777" in the average line's own
-  hue. The legend entry naming that series wears the hue too
+  the mean set BESIDE it on the same baseline as "Ø 10,777", a type tier down
+  and in the average line's own hue. One reading line and one verdict line,
+  the same two-line corner every other card on the page uses; the mean folds
+  onto a second line, and the block leaves the title row altogether, only
+  when the reading is MEASURED not to fit (`goalTextWidth`) — a fixed
+  breakpoint stacked the corner away on every phone while the figures
+  occupied a third of the row. The legend entry naming that series wears the hue too
   (`DashboardLegendEntry.labelWearsSeriesColor`), since colour is the only
   thing resolving the symbol to a mark on the chart. The target stays in the
   keyed legend entry ("Goal ≤ 88", or a compact "Goal 10K" for steps) rather

@@ -12357,7 +12357,7 @@ abstract class AppLocalizations {
   /// No description provided for @habitsRollingAverageLabel.
   ///
   /// In en, this message translates to:
-  /// **'7-day avg'**
+  /// **'7-day Ø'**
   String get habitsRollingAverageLabel;
 
   /// No description provided for @habitsStartStreakToday.

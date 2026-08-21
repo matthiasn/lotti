@@ -3219,7 +3219,7 @@
     }
   },
   "habitsRecordButton": "Rekord",
-  "habitsRollingAverageLabel": "7-dages gennemsnit",
+  "habitsRollingAverageLabel": "7-dages Ø",
   "habitsStartStreakToday": "Start en stime i dag",
   "habitsStreakLongCount": "{count} på en 7-dages stime",
   "@habitsStreakLongCount": {

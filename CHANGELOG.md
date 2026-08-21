@@ -18,10 +18,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   different numbers.** They previously showed the same figure twice on cards
   like Steps per day: the "current value" was quietly reading the same
   period average as the trend line, so both read e.g. 10,100. The top-right
-  corner now leads with the latest reading and puts the average beneath it as
-  "Ø 10,777", tinted to match the dashed average line on the chart — and the
-  chart's own "7-day average" legend wears that colour too. A steps target
+  corner now leads with the latest reading and sets the average right next to
+  it as "Ø 10,777", tinted to match the dashed average line on the chart — and
+  the chart's own "7-day average" legend wears that colour too. A steps target
   reads as "Goal 10K" rather than "Goal ≥ 10,000".
+- **A signal's reading keeps its top-right corner on a phone.** The latest
+  value and its 7-day average were dropping to a left-aligned stack under the
+  signal's name on any card narrower than about 336 pixels — which is every
+  phone, and plenty of desktop windows — even though the two figures use a
+  third of the row. They now sit where the rest of the page puts its key
+  figures: pinned to the card's top-right corner, the average alongside the
+  value on the same baseline, with the status line alone beneath. The average
+  drops below the value, and the whole block below the title, only when the
+  reading is genuinely too long to fit. On the habit completion-rate card the
+  "7-day avg" label beside the big percentage is now written "7-day Ø", the
+  same mark the signal cards use.
 - **The 7-day average line now covers the whole chart.** It used to appear only
   once the visible date range itself was seven days old, so it started a week
   into the chart and the earliest part of the range looked like it had no
@@ -45,9 +56,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   still carry the fuller reading with energy and CO₂e. Tasks that have never
   used AI show nothing at all.
 - **A shorter, calmer goal page.** The goal details page says the same things
-  in far less vertical space. The AI summary card puts "Show more" and
-  "Ask why" on one line, moves its running cost up beside the "as of …"
-  timestamp, and drops the "Updates on changes" caption — the Automatic
+  in far less vertical space. The AI summary card moves its running cost up
+  beside the "as of …" timestamp and drops the "Updates on changes" caption — the Automatic
   updates switch beside it already said that. "Reflect on today" is now a
   button in the Goal days header instead of a full-width row of its own, and
   the day tally beneath the strip is centred. On habit cards the six-week

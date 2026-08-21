@@ -7277,7 +7277,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get habitsRecordButton => 'Record';
 
   @override
-  String get habitsRollingAverageLabel => '7-day avg';
+  String get habitsRollingAverageLabel => '7-day Ø';
 
   @override
   String get habitsStartStreakToday => 'Start a streak today';

@@ -7433,7 +7433,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get habitsRecordButton => 'Înregistrați';
 
   @override
-  String get habitsRollingAverageLabel => 'media pe 7 zile';
+  String get habitsRollingAverageLabel => 'Ø pe 7 zile';
 
   @override
   String get habitsStartStreakToday => 'Începeți o serie astăzi';

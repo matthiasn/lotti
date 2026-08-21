@@ -2884,7 +2884,7 @@
   "habitsPendingLaterHeader": "Plus tard dans la journée",
   "habitsPointsToGoal": "{points, plural, one{1 pt avant l''objectif} other{{points} pts avant l''objectif}}",
   "habitsRecordButton": "Enregistrer",
-  "habitsRollingAverageLabel": "moyenne sur 7 jours",
+  "habitsRollingAverageLabel": "Ø sur 7 j",
   "habitsStartStreakToday": "Commence une série aujourd'hui",
   "habitsStreakLongCount": "{count} sur une série de 7 jours",
   "habitsStreakShortCount": "{count} sur une série de 3 jours",

@@ -7316,7 +7316,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get habitsRecordButton => 'Opname';
 
   @override
-  String get habitsRollingAverageLabel => '7 dagen';
+  String get habitsRollingAverageLabel => '7-daags Ø';
 
   @override
   String get habitsStartStreakToday => 'Begin vandaag met een streak';
