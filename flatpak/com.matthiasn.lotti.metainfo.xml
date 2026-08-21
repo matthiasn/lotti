@@ -40,7 +40,7 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
-    <release version="1.0.12" date="2026-08-21">
+    <release version="1.0.12" date="2026-08-22">
       <description>
         <p>Changed: the task page's two menus are now one design. The "..." menu and the action bar's Add sheet were built separately and had drifted apart: one centred its title over a hairline bar and stacked full-width rules between plain rows, the other ran teal glyphs and two-line rows with no rules at all. Both now read the same way - the title on the sheet's own left edge with a quiet close beside it, and rows that lead with a washed icon tile, highlight as a rounded block under the pointer, and separate by space instead of hairlines. The Add sheet's rows keep their teal tiles; the entry actions wear neutral ones, so which menu you are in is still obvious at a glance.</p>
         <p>Changed: Favorite, Private and Flagged are chips, not menu rows. They are states, not actions, and as rows they never changed their wording and closed the menu after each one - setting two of them meant two trips. They now sit as three pills at the top of the menu, filled and tinted when on, and toggle in place with the menu still open.</p>
