@@ -2,8 +2,11 @@
 # Linux dev with fvm ran `make` against the ambient SDK while running
 # `fvm flutter` by hand, and the two SDKs alternately rewrote the same
 # .dart_tool/hooks_runner cache — every switch failed the next build hook with
-# "Can't load Kernel binary: Invalid SDK hash". CI installs Flutter without
-# fvm, so it still takes the bare-command branch.
+# "Can't load Kernel binary: Invalid SDK hash". Jobs that install Flutter
+# without fvm still take the bare-command branch; the ones that do install it
+# (manual.yml, manual-capture-check.yml) already run `fvm flutter` themselves
+# before calling make, so make now agrees with them instead of quietly using
+# a second SDK alongside.
 HAS_FVM := $(shell command -v fvm 2>/dev/null)
 FLUTTER_CMD :=
 DART_CMD :=
