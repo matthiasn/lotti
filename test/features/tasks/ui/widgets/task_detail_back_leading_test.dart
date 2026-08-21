@@ -37,10 +37,10 @@ void main() {
   });
 
   Future<void> pumpLeading(WidgetTester tester) => tester.pumpWidget(
-    makeTestableWidgetWithScaffold(const TaskDetailDesktopBackLeading()),
+    makeTestableWidgetWithScaffold(const TaskDetailDesktopLeading()),
   );
 
-  group('TaskDetailDesktopBackLeading', () {
+  group('TaskDetailDesktopLeading — back arrow', () {
     testWidgets('hides the button while at most one task is stacked', (
       tester,
     ) async {
@@ -120,14 +120,16 @@ void main() {
     );
   });
 
-  group('TaskDetailHideListButton', () {
-    /// Mounts the button inside a split whose panes are stand-ins: only the
-    /// scope's two flags and its visibility callback matter here.
+  group('TaskDetailDesktopLeading — hide-list toggle', () {
+    /// Mounts the leading cluster inside a split whose panes are stand-ins:
+    /// only the scope's two flags and its visibility callback matter here.
     Future<List<bool>> pumpSplit(
       WidgetTester tester, {
       required bool listPaneVisible,
       required bool canHideListPane,
+      List<String> detailStack = const ['base-task'],
     }) async {
+      stack.value = detailStack;
       final visibilityChanges = <bool>[];
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -140,7 +142,7 @@ void main() {
             divider: const SizedBox(width: 4),
             detailPane: const Align(
               alignment: Alignment.topLeft,
-              child: TaskDetailHideListButton(),
+              child: TaskDetailDesktopLeading(),
             ),
           ),
         ),
@@ -184,17 +186,48 @@ void main() {
     testWidgets('renders nothing outside a split layout, as on mobile', (
       tester,
     ) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(const TaskDetailHideListButton()),
-      );
-      await tester.pump();
+      await pumpLeading(tester);
 
       expect(find.byKey(const ValueKey('tasks-hide-list-pane')), findsNothing);
     });
 
     testWidgets(
-      'the glyph sits on the leading edge of its tap target, so it stacks on '
-      'the header rail rather than a padding-width inboard of it',
+      'sits beside the back arrow when a linked task is stacked, rather than '
+      'displacing it',
+      (tester) async {
+        await pumpSplit(
+          tester,
+          listPaneVisible: true,
+          canHideListPane: true,
+          detailStack: const ['base-task', 'linked-task'],
+        );
+
+        final back = find.byType(GlassBackButton);
+        final hide = find.byKey(const ValueKey('tasks-hide-list-pane'));
+        expect(back, findsOneWidget);
+        expect(hide, findsOneWidget);
+        // One row: same vertical centre, toggle trailing the arrow.
+        expect(
+          tester.getCenter(hide).dy,
+          closeTo(tester.getCenter(back).dy, 0.5),
+        );
+        expect(
+          tester.getTopLeft(hide).dx,
+          greaterThan(tester.getBottomRight(back).dx),
+        );
+        // And the bar reserves room for both, so neither is clipped out of
+        // the leading slot.
+        final cluster = find.byType(TaskDetailDesktopLeading);
+        expect(
+          TaskDetailDesktopLeading.widthFor(tester.element(cluster)),
+          greaterThanOrEqualTo(tester.getSize(cluster).width),
+        );
+      },
+    );
+
+    testWidgets(
+      'wears the same glass shape as the show-list button, so the toggle is '
+      'one control in one corner — and the hover ring is centred on its glyph',
       (tester) async {
         await pumpSplit(
           tester,
@@ -202,16 +235,19 @@ void main() {
           canHideListPane: true,
         );
 
-        final button = find.byKey(const ValueKey('tasks-hide-list-pane'));
-        final glyph = find.descendant(of: button, matching: find.byType(Icon));
+        final hide = find.byKey(const ValueKey('tasks-hide-list-pane'));
         expect(
-          tester.getTopLeft(glyph).dx,
-          closeTo(tester.getTopLeft(button).dx, 0.5),
+          tester.widget<GlassActionButton>(hide).size,
+          40,
+          reason: 'the same container the show-list button uses',
         );
-        // Still a full tap target, not a shrink-wrapped glyph.
+        // The ink surface is the whole button and the glyph sits at its
+        // centre: a left-aligned glyph inside a full-size target drew its
+        // hover ring off to one side of the icon.
+        final glyph = find.descendant(of: hide, matching: find.byType(Icon));
         expect(
-          tester.getSize(button),
-          const Size.square(TapTargets.minimum),
+          tester.getCenter(glyph),
+          within(distance: 0.5, from: tester.getCenter(hide)),
         );
       },
     );

@@ -97,7 +97,6 @@ class DesktopTaskHeader extends StatefulWidget {
     this.onCategoryTap,
     this.blockedBySlot,
     this.aiCostSlot,
-    this.leadingSlot,
     this.initialEditing = false,
     super.key,
   });
@@ -117,13 +116,6 @@ class DesktopTaskHeader extends StatefulWidget {
   /// The task's AI cost read-out, forwarded into the summary lane. See
   /// [TaskMetaSummaryLine.aiCostSlot].
   final Widget? aiCostSlot;
-
-  /// Optional control rendered as the header's first tier, above the
-  /// breadcrumb — the desktop split's "hide list" toggle. It sits on the same
-  /// content rail as the crumb's category dot, so the two glyphs stack in one
-  /// clean column instead of the toggle living a pane away next to the list
-  /// title. Renders nothing (and costs no height) where it does not apply.
-  final Widget? leadingSlot;
 
   /// Force the inline editor open on first build.
   ///
@@ -262,7 +254,6 @@ class _DesktopTaskHeaderState extends State<DesktopTaskHeader> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ?widget.leadingSlot,
           if (hasCrumb) ...[
             _HeroCrumb(
               category: widget.data.category,

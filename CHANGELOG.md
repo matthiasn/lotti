@@ -19,10 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   transcript preview, shown for recordings that have no summary yet, stays on
   one line.
 - **The Hide list control moved into the task.** On desktop, the toggle that
-  hides the task list now sits at the top of the task detail — above the
-  category breadcrumb and lined up with it — in the same corner the Show list
-  button appears once the list is hidden, instead of beside the task list's own
-  title where it shifted that title sideways whenever a task was selected.
+  hides the task list now sits in the task's own toolbar, top left beside the
+  back arrow — the same corner, and the same button, that Show list occupies
+  once the list is hidden. It used to sit beside the task list's own title,
+  where it shifted that title sideways whenever a task was selected.
 - **Leaner goal cards and clearer signal readings.** Goal cards on the overview
   no longer repeat every linked habit as a full row — the status pill already
   says how the goal is doing, and a habit's own record lives on its goal's

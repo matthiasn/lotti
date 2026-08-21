@@ -111,16 +111,21 @@ With a base task selected, the split can enter focus mode. The list and
 divider become offstage while the detail takes the full split width; the list
 subtree stays mounted, preserving its filter, search, paging and scroll state.
 
-**Both halves of the toggle live in the detail pane.** `TaskDetailHideListButton`
-opens the task detail header — above the breadcrumb, on the same content rail as
-its category dot, so the two glyphs read as one column — and
-`TaskDetailShowListButton` occupies that same corner once the list is gone. The
-Hide action used to sit next to the *task list's* own title, where selecting a
-task made it appear and shoved that title sideways. The Show action is owned by
-`TasksRootPage`, so it remains reachable even while task data is loading. Its collapse preference and expanded width are
-shared with Projects and persisted by `PaneWidthController`. Focus mode uses the
-released canvas without turning media into wall-sized chrome: cover art remains
-16:9 but is capped at the shared 960 pt detail measure.
+**Both halves of the toggle live in the detail pane's top-left corner.**
+`TaskDetailDesktopLeading` fills the task app bar's leading slot with up to two
+glass actions — the back arrow (only while a linked task is stacked) and
+`TaskDetailHideListButton` — and sizes the bar's `leadingWidth` through
+`TaskDetailDesktopLeading.widthFor`. Once the list is hidden,
+`TaskDetailShowListButton` takes the same corner in the same glass shape, so the
+toggle is one control in one place rather than two affordances a pane apart.
+
+The Hide action used to sit next to the *task list's* own title, where selecting
+a task made it appear and shoved that title sideways. The Show action is owned
+by `TasksRootPage`, so it remains reachable even while task data is loading. Its
+collapse preference and expanded width are shared with Projects and persisted by
+`PaneWidthController`. Focus mode uses the released canvas without turning media
+into wall-sized chrome: cover art remains 16:9 but is capped at the shared
+960 pt detail measure.
 
 Focus mode is also what mounts the **details column**: with the list gone and
 a pane at least 960 pt wide, `TaskMetaColumn` carries the task's metadata

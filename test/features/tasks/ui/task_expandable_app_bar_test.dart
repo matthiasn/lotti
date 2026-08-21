@@ -155,7 +155,7 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    // Desktop swaps the leading widget for `TaskDetailDesktopBackLeading`,
+    // Desktop swaps the leading widget for `TaskDetailDesktopLeading`,
     // which resolves NavService from getIt.
     final nav = MockNavService();
     when(

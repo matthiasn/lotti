@@ -18,7 +18,6 @@ import 'package:lotti/features/tasks/ui/header/task_meta_flyout.dart';
 import 'package:lotti/features/tasks/ui/header/task_meta_pickers.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_task_row.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_ai_cost_indicator.dart';
-import 'package:lotti/features/tasks/ui/widgets/task_detail_back_leading.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/features/tasks/util/due_date_utils.dart';
 import 'package:lotti/features/tasks/util/task_navigation.dart';
@@ -81,11 +80,6 @@ class DesktopTaskHeaderConnector extends ConsumerWidget {
       // task id so the decision is re-made per task rather than inherited from
       // whichever task the header last rendered.
       initialEditing: data.title.trim().isEmpty,
-      // The desktop split's list-pane toggle, above the breadcrumb and on the
-      // same rail as its category dot. It used to sit next to the task list's
-      // own title, where selecting a task made the control appear and shoved
-      // that title sideways.
-      leadingSlot: const TaskDetailHideListButton(),
       blockedBySlot: _TaskBlockedByChip(taskId: task.meta.id),
       // The cost rides in the summary lane with the other facts, so it is
       // readable at the same glance as the status rather than one panel away.

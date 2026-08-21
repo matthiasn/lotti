@@ -145,16 +145,6 @@ BoxDecoration _categorySwatchDecoration(WidgetTester tester) {
   return swatch.decoration! as BoxDecoration;
 }
 
-/// Finder for the 10×10 breadcrumb swatch itself, for tests that measure
-/// where it sits rather than how it is filled.
-Finder _categorySwatchFinder() => find.byWidgetPredicate(
-  (widget) =>
-      widget is Container &&
-      widget.constraints?.maxWidth == 10 &&
-      widget.constraints?.maxHeight == 10 &&
-      widget.decoration is BoxDecoration,
-);
-
 const _dueFixture = DesktopTaskHeaderDueDate(label: 'Due: Apr 1, 2026');
 
 final _labelFixtures = <LabelDefinition>[
@@ -178,38 +168,6 @@ String _priorityLabel(TaskPriority priority) => switch (priority) {
 
 void main() {
   group('DesktopTaskHeader — content + layout', () {
-    testWidgets(
-      'the leading slot opens the header above the breadcrumb and on the same '
-      'rail as the category dot, so the two glyphs read as one column',
-      (tester) async {
-        await _pumpDesktop(
-          tester,
-          DesktopTaskHeader(
-            data: _fixture(category: _categoryFixture),
-            onTitleSaved: (_) {},
-            leadingSlot: const SizedBox.square(
-              key: ValueKey('leading-probe'),
-              dimension: 48,
-            ),
-          ),
-        );
-
-        final probe = find.byKey(const ValueKey('leading-probe'));
-        final swatch = _categorySwatchFinder();
-        expect(swatch, findsOneWidget);
-        expect(
-          tester.getBottomLeft(probe).dy,
-          lessThanOrEqualTo(tester.getTopLeft(swatch).dy),
-          reason: 'the control belongs above the category section',
-        );
-        expect(
-          tester.getTopLeft(probe).dx,
-          closeTo(tester.getTopLeft(swatch).dx, 0.5),
-          reason: 'one left rail for the whole column of glyphs',
-        );
-      },
-    );
-
     testWidgets('shows the complete AI one-liner between title and metadata', (
       tester,
     ) async {

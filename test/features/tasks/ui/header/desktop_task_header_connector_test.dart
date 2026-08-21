@@ -31,7 +31,6 @@ import 'package:lotti/features/tasks/ui/header/desktop_task_header.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header_connector.dart';
 import 'package:lotti/features/tasks/ui/header/task_meta_column.dart';
 import 'package:lotti/features/tasks/ui/header/task_meta_section.dart';
-import 'package:lotti/features/tasks/ui/widgets/task_detail_back_leading.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_shared_widgets.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -311,23 +310,6 @@ void main() {
       expect(find.byType(DesktopTaskHeader), findsOneWidget);
       expect(find.text('Test Task'), findsOneWidget);
     });
-
-    testWidgets(
-      "hands the header the split view's list-pane toggle, which the task "
-      'list header no longer carries',
-      (tester) async {
-        await tester.pumpWidget(pumpConnector(task: buildTask()));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        expect(
-          tester
-              .widget<DesktopTaskHeader>(find.byType(DesktopTaskHeader))
-              .leadingSlot,
-          isA<TaskDetailHideListButton>(),
-        );
-      },
-    );
 
     testWidgets('passes the task AI one-liner into the header', (tester) async {
       const oneLiner = 'Final review is waiting on the payment provider';
