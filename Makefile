@@ -1,9 +1,15 @@
-OS := $(shell uname -s)
+# Keyed on whether fvm is installed, not on the OS. Selecting by OS meant a
+# Linux dev with fvm ran `make` against the ambient SDK while running
+# `fvm flutter` by hand, and the two SDKs alternately rewrote the same
+# .dart_tool/hooks_runner cache — every switch failed the next build hook with
+# "Can't load Kernel binary: Invalid SDK hash". CI installs Flutter without
+# fvm, so it still takes the bare-command branch.
+HAS_FVM := $(shell command -v fvm 2>/dev/null)
 FLUTTER_CMD :=
 DART_CMD :=
 VERY_GOOD_CMD :=
 
-ifeq ($(OS), Darwin)
+ifneq ($(HAS_FVM),)
 	FLUTTER_CMD := fvm flutter
 	DART_CMD := fvm dart
 	VERY_GOOD_CMD := fvm dart pub global run very_good_cli:very_good
