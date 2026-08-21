@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.11]
 ### Fixed
+- **Habit day squares on a goal page stop at today.** A habit measured over a
+  calendar week or month drew the whole period, so on a Tuesday its track ran
+  on through Sunday: five empty "No entry" squares for days that have not
+  happened yet, a date span reading two days into the future, and — because the
+  squares share the card's width between however many days there are — squares
+  visibly smaller than the Goal days strip above them. Every day track now ends
+  on today, on the same grid, and the signal charts follow the same rule.
 - **Creating a task on desktop no longer flashes and reloads the page.** A new
   task opened on the layout of an established one — wide column, AI card — and
   then collapsed into the blank-task layout a moment later, sometimes twice

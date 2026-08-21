@@ -625,6 +625,76 @@ void main() {
     );
   });
 
+  testWidgets('a calendar-window habit track ends on today, on the same '
+      'geometry as the Goal-days strip above it', (tester) async {
+    // Tuesday: the habit's calendar week runs on to Sunday, five days that
+    // have not happened yet. Rendered, they lengthened the track past the
+    // whole-goal strip — a period line two days into the future, and squares
+    // visibly smaller than the strip's, because the column pitch is the
+    // card's width divided by the day count.
+    final progress = buildGoalProgressView(
+      criteria: const GoalCriterion.habit(
+        criterionId: 'walk',
+        habitId: 'walk',
+        window: GoalWindow.calendarWeek(),
+        targetCount: 3,
+      ),
+      signals: const GoalSignalWindow(),
+      reference: today,
+      habitNames: const {'walk': 'Evening walk'},
+      historyDays: 14,
+    );
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Column(
+          children: [
+            GoalThisWeekCard(progress: progress, onReflectDay: (_) {}),
+            GoalProgressCard(progress: progress),
+          ],
+        ),
+      ),
+    );
+
+    // The last square is today's, and tomorrow has none at all.
+    expect(
+      find.byKey(ValueKey('goal-habit-day-visual-walk-${dayKey(0)}')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(ValueKey('goal-habit-day-visual-walk-${dayKey(-1)}')),
+      findsNothing,
+    );
+
+    // One period line, stated twice: the strip and the squares cover exactly
+    // the same dates, so they must print the same range.
+    expect(find.text('Jul 29 – Aug 11'), findsNWidgets(2));
+
+    // Identical squares — same edge, and the same corner radius from the one
+    // shared constant.
+    final stripCell = tester
+        .widgetList<Container>(
+          find.descendant(
+            of: find.byType(GoalCompactWindowStrip),
+            matching: find.byType(Container),
+          ),
+        )
+        .firstWhere((container) => container.decoration is BoxDecoration);
+    final habitCell = tester.widget<Container>(
+      find.byKey(ValueKey('goal-habit-day-visual-walk-${dayKey(0)}')),
+    );
+    final stripRect = tester.getRect(
+      find.byWidget(stripCell),
+    );
+    final habitRect = tester.getRect(
+      find.byKey(ValueKey('goal-habit-day-visual-walk-${dayKey(0)}')),
+    );
+    expect(stripRect.size, habitRect.size);
+    expect(
+      (habitCell.decoration! as BoxDecoration).borderRadius,
+      (stripCell.decoration! as BoxDecoration).borderRadius,
+    );
+  });
+
   testWidgets('the reflect action rides the Goal-days header, and names '
       'the verdict once recorded', (tester) async {
     final tapped = <DateTime>[];

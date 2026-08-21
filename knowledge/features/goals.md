@@ -945,7 +945,13 @@ flowchart TD
   lazy section could unmount the `ensureVisible` anchor the banner CTA
   scrolls to. The detail page expands the
   same source into a habit grid or metric series using each leaf criterion's
-  actual day/rolling/week/month range. Canonical weight and daily-step data use
+  actual day/rolling/week/month range, CLAMPED to today (`_historyEnd`): a
+  calendar window's `periodRange` covers its WHOLE week or month, and rendered
+  unclipped a Tuesday's habit track ran on through Sunday — empty cells for
+  days that have not happened, a period caption dated into the future, and,
+  because the column pitch is the available width divided by the day count,
+  squares smaller than the whole-goal strip drawn from the same span one card
+  above. Canonical weight and daily-step data use
   a two-series time-series treatment: the observed values plus a trailing
   seven-calendar-day average. Daily steps render as discrete bars, while weight
   keeps the shared actual-value area treatment; both overlay the average as a

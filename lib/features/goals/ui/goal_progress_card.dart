@@ -2612,7 +2612,7 @@ class _ProgressDayCell extends StatelessWidget {
             : skipped
             ? tokens.colors.background.level03
             : goalDayStateFill(tokens, dayState),
-        borderRadius: BorderRadius.circular(tokens.radii.s),
+        borderRadius: BorderRadius.circular(goalDayCellRadius(tokens)),
         border: border,
       ),
       child: centerMark == null && letterTag == null
@@ -2644,7 +2644,7 @@ class _ProgressDayCell extends StatelessWidget {
         : DsDashedBorder(
             color: goalTodayRingInk(tokens),
             strokeWidth: BorderWidths.emphasis,
-            radius: tokens.radii.s,
+            radius: goalDayCellRadius(tokens),
             child: cell,
           );
     final locale = Localizations.localeOf(context).toLanguageTag();
