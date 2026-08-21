@@ -1,5 +1,6 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/action_modal/ds_action_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -287,6 +288,95 @@ void main() {
       expect(_rowFill(tester), Colors.transparent);
     });
 
+    testWidgets('keyboard focus washes the row and draws a ring', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          DsActionRow(
+            icon: LottiIcons.link,
+            title: 'Link from',
+            onTap: () {},
+          ),
+        ),
+      );
+
+      BoxDecoration decoration() =>
+          tester
+                  .widget<AnimatedContainer>(
+                    find.descendant(
+                      of: find.byType(DsActionRow),
+                      matching: find.byType(AnimatedContainer),
+                    ),
+                  )
+                  .decoration!
+              as BoxDecoration;
+
+      expect(decoration().color, Colors.transparent);
+      expect((decoration().border! as Border).top.color, Colors.transparent);
+
+      // Tab, not a synthetic focus request: the transparent overlayColor means
+      // Ink draws nothing for focus, so what a keyboard user actually sees is
+      // the wash and ring below.
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pumpAndSettle();
+
+      expect(decoration().color, _tokens(tester).colors.surface.focusPressed);
+      expect(
+        (decoration().border! as Border).top.color,
+        _tokens(tester).colors.interactive.enabled,
+      );
+    });
+
+    testWidgets('focus outranks a pointer resting on another row', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          Column(
+            children: [
+              DsActionRow(
+                icon: LottiIcons.link,
+                title: 'Link from',
+                onTap: () {},
+              ),
+              DsActionRow(
+                icon: LottiIcons.focus,
+                title: 'Link to',
+                onTap: () {},
+              ),
+            ],
+          ),
+        ),
+      );
+
+      Color? fillAt(int index) =>
+          ((tester
+                      .widget<AnimatedContainer>(
+                        find
+                            .descendant(
+                              of: find.byType(DsActionRow).at(index),
+                              matching: find.byType(AnimatedContainer),
+                            )
+                            .first,
+                      )
+                      .decoration!)
+                  as BoxDecoration)
+              .color;
+
+      await _hover(tester, find.byType(DsActionRow).first);
+      expect(fillAt(0), _tokens(tester).colors.surface.hover);
+
+      // Two tabs lands on the second row while the pointer stays on the first.
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pumpAndSettle();
+
+      // The keyboard would activate row 1, so row 1 is the one that has to
+      // look activatable.
+      expect(fillAt(1), _tokens(tester).colors.surface.focusPressed);
+    });
+
     testWidgets('the destructive row hovers in its own hue, not grey', (
       tester,
     ) async {
@@ -344,6 +434,40 @@ void main() {
             .first,
       );
       expect(second.top - firstInk.bottom, _tokens(tester).spacing.step2);
+    });
+
+    testWidgets('a long trailing value truncates instead of overflowing', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          SizedBox(
+            width: 200,
+            child: DsActionRow(
+              icon: LottiIcons.language,
+              title: 'Set language',
+              trailingValue:
+                  'Nigerian Pidgin as spoken across the whole federation',
+              trailing: DsActionRowTrailing.chevron,
+              onTap: () {},
+            ),
+          ),
+        ),
+      );
+
+      // A `Padding` is not a flex child: without the Flexible the Row hands
+      // the value unbounded width, ellipsis has nothing to measure against,
+      // and the row overflows rather than truncating.
+      expect(tester.takeException(), isNull);
+      expect(
+        tester.getSize(find.byType(DsActionRow)).width,
+        lessThanOrEqualTo(200),
+      );
+      final value = tester.widget<Text>(
+        find.textContaining('Nigerian Pidgin'),
+      );
+      expect(value.maxLines, 1);
+      expect(value.overflow, TextOverflow.ellipsis);
     });
 
     testWidgets('the icon tile is a square of the design-system chip size', (

@@ -49,6 +49,11 @@ class DsActionToggleChip extends StatelessWidget {
       button: true,
       toggled: selected,
       label: label,
+      // The tap action has to be republished here: `excludeSemantics` drops
+      // the InkWell's node, and with it the activation a screen reader needs.
+      // Without this the chip announces as a toggled button that cannot be
+      // toggled.
+      onTap: onToggle,
       excludeSemantics: true,
       child: Material(
         color: Colors.transparent,

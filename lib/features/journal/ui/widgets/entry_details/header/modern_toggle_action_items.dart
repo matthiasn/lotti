@@ -10,8 +10,9 @@ import 'package:lotti/widgets/modal/modal_sheet_action.dart';
 
 /// Shows or hides the map on an entry that carries a geolocation.
 ///
-/// Acts in place — the map appears behind the sheet — so the row carries no
-/// trailing glyph.
+/// Flips the entry's own map visibility and dismisses the sheet, so the change
+/// is visible on the entry underneath. No trailing glyph: the tap does not
+/// hand off to another surface, it acts on the entry you came from.
 class ModernToggleMapItem extends ConsumerWidget {
   const ModernToggleMapItem({
     required this.entryId,

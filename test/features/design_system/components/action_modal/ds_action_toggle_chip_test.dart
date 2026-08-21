@@ -1,4 +1,4 @@
-import 'dart:ui' show Tristate;
+import 'dart:ui' show SemanticsAction, Tristate;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -126,6 +126,33 @@ void main() {
       expect(semantics.label, 'Favorite');
       expect(semantics.flagsCollection.isToggled, Tristate.isTrue);
       expect(semantics.flagsCollection.isButton, isTrue);
+      // The node must carry the tap itself: `excludeSemantics` drops the
+      // InkWell's, so without this a screen reader announces a toggle it
+      // cannot activate.
+      expect(
+        semantics.getSemanticsData().hasAction(SemanticsAction.tap),
+        isTrue,
+      );
+    });
+
+    testWidgets('assistive activation reaches onToggle', (tester) async {
+      var toggles = 0;
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          _chip(selected: false, onToggle: () => toggles++),
+        ),
+      );
+
+      final handle = tester.ensureSemantics();
+      // ignore: deprecated_member_use
+      tester.binding.pipelineOwner.semanticsOwner!.performAction(
+        tester.getSemantics(find.byType(DsActionToggleChip)).id,
+        SemanticsAction.tap,
+      );
+      await tester.pump();
+      handle.dispose();
+
+      expect(toggles, 1);
     });
   });
 }

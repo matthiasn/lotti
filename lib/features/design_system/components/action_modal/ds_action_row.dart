@@ -95,6 +95,7 @@ class DsActionRow extends StatefulWidget {
 class _DsActionRowState extends State<DsActionRow> {
   bool _hovered = false;
   bool _pressed = false;
+  bool _focused = false;
 
   @override
   void didUpdateWidget(covariant DsActionRow oldWidget) {
@@ -102,6 +103,7 @@ class _DsActionRowState extends State<DsActionRow> {
     if ((oldWidget.onTap == null) != (widget.onTap == null)) {
       _hovered = false;
       _pressed = false;
+      _focused = false;
     }
   }
 
@@ -112,10 +114,18 @@ class _DsActionRowState extends State<DsActionRow> {
     final palette = _DsActionRowPalette.of(tokens, widget.tone);
     final radius = BorderRadius.circular(tokens.radii.m);
 
+    // Keyboard focus outranks hover: the pointer can rest on one row while
+    // the focus traversal sits on another, and the row the keyboard would
+    // activate is the one that has to look activatable. The transparent
+    // `overlayColor` below removes Ink's own focus highlight, so the wash and
+    // the ring are this widget's to draw — the same pairing
+    // `DesignSystemListItem` uses.
     final background = !enabled
         ? Colors.transparent
         : _pressed
         ? palette.pressedWash
+        : _focused
+        ? palette.focusWash
         : _hovered
         ? palette.hoverWash
         : Colors.transparent;
@@ -136,16 +146,25 @@ class _DsActionRowState extends State<DsActionRow> {
         onHighlightChanged: enabled
             ? (value) => setState(() => _pressed = value)
             : null,
+        onFocusChange: enabled
+            ? (value) => setState(() => _focused = value)
+            : null,
         child: AnimatedContainer(
           duration: MotionDurations.short2,
           curve: MotionCurves.standard,
           decoration: BoxDecoration(
             color: background,
             borderRadius: radius,
+            border: Border.all(
+              color: _focused && enabled
+                  ? tokens.colors.interactive.enabled
+                  : Colors.transparent,
+              width: BorderWidths.emphasis,
+            ),
           ),
           padding: EdgeInsets.symmetric(
-            horizontal: tokens.spacing.step4,
-            vertical: tokens.spacing.step3,
+            horizontal: tokens.spacing.step4 - BorderWidths.emphasis,
+            vertical: tokens.spacing.step3 - BorderWidths.emphasis,
           ),
           child: Row(
             children: [
@@ -179,15 +198,22 @@ class _DsActionRowState extends State<DsActionRow> {
                 ),
               ),
               if (widget.trailingValue case final value? when value.isNotEmpty)
-                Padding(
-                  padding: EdgeInsets.only(left: tokens.spacing.step3),
-                  child: Text(
-                    value,
-                    style: tokens.typography.styles.others.caption.copyWith(
-                      color: tokens.colors.text.lowEmphasis,
+                // Flexible, because a `Padding` is not a flex child: the Row
+                // would hand the Text an unbounded width, ellipsis would have
+                // nothing to measure against, and a long value (a long
+                // language name in a long locale) would overflow the row
+                // rather than truncate inside it.
+                Flexible(
+                  child: Padding(
+                    padding: EdgeInsets.only(left: tokens.spacing.step3),
+                    child: Text(
+                      value,
+                      style: tokens.typography.styles.others.caption.copyWith(
+                        color: tokens.colors.text.lowEmphasis,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               if (_trailingGlyph(widget.trailing) case final glyph?)
@@ -264,6 +290,7 @@ class _DsActionRowPalette {
     required this.tileInk,
     required this.titleColor,
     required this.hoverWash,
+    required this.focusWash,
     required this.pressedWash,
   });
 
@@ -274,6 +301,7 @@ class _DsActionRowPalette {
         tileInk: tokens.colors.text.mediumEmphasis,
         titleColor: tokens.colors.text.highEmphasis,
         hoverWash: tokens.colors.surface.hover,
+        focusWash: tokens.colors.surface.focusPressed,
         pressedWash: tokens.colors.surface.focusPressed,
       ),
       DsActionRowTone.accent => _DsActionRowPalette(
@@ -281,6 +309,7 @@ class _DsActionRowPalette {
         tileInk: tokens.colors.interactive.enabled,
         titleColor: tokens.colors.text.highEmphasis,
         hoverWash: tokens.colors.surface.hover,
+        focusWash: tokens.colors.surface.focusPressed,
         pressedWash: tokens.colors.surface.focusPressed,
       ),
       // The destructive row washes in its own hue rather than the neutral
@@ -291,6 +320,7 @@ class _DsActionRowPalette {
         tileInk: tokens.colors.alert.error.defaultColor,
         titleColor: tokens.colors.alert.error.defaultColor,
         hoverWash: DsActionRowPalette.errorWash(tokens),
+        focusWash: DsActionRowPalette.errorPressedWash(tokens),
         pressedWash: DsActionRowPalette.errorPressedWash(tokens),
       ),
     };
@@ -300,6 +330,7 @@ class _DsActionRowPalette {
   final Color tileInk;
   final Color titleColor;
   final Color hoverWash;
+  final Color focusWash;
   final Color pressedWash;
 }
 

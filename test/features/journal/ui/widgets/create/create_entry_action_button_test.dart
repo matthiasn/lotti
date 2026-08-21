@@ -84,7 +84,16 @@ void main() {
       // The modal body renders its menu items; the Timer item proves the
       // linkedFromId made it through (it only shows with a linked id).
       expect(find.byType(DsActionRow), findsWidgets);
-      expect(find.byIcon(LottiIcons.timer), findsOneWidget);
+      // Descendant, not a bare icon anywhere on screen: the timer glyph also
+      // rides the action bar, so a loose finder would pass even if the row
+      // never rendered.
+      expect(
+        find.descendant(
+          of: find.byType(DsActionRow),
+          matching: find.byIcon(LottiIcons.timer),
+        ),
+        findsOneWidget,
+      );
     },
   );
 }
