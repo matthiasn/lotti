@@ -114,6 +114,23 @@ void main() {
     messages: messages ?? AppLocalizationsEn.new,
   );
 
+  /// A `test` that states its own "now".
+  ///
+  /// Every case here reasons about a due day of 2026-08-21, and `arm` only
+  /// schedules a day still ahead of the clock — so a suite that borrows the
+  /// wall clock passes until the wall clock reaches that day, then fails as a
+  /// block. It did, on 2026-08-21. Cases that need a different instant pass
+  /// [now]; the three that pin an inner clock of their own still override
+  /// this one.
+  void clockedTest(
+    String description,
+    Future<void> Function() body, {
+    DateTime? now,
+  }) => test(
+    description,
+    () => withClock(Clock.fixed(now ?? DateTime(2026, 8, 19, 12)), body),
+  );
+
   setUp(() {
     notifications = MockNotificationRepository();
     logger = MockDomainLogger();
@@ -122,37 +139,40 @@ void main() {
   });
 
   group('RelationshipReminderService.arm', () {
-    test('writes the episode with content-minimal localized copy', () async {
-      await service.arm(
-        relationship: relationship(),
-        derivation: derivation(),
-      );
+    clockedTest(
+      'writes the episode with content-minimal localized copy',
+      () async {
+        await service.arm(
+          relationship: relationship(),
+          derivation: derivation(),
+        );
 
-      final captured = verify(
-        () => notifications.createRelationshipCheckIn(
-          linkedRelationshipId: captureAny(named: 'linkedRelationshipId'),
-          dueDayKey: captureAny(named: 'dueDayKey'),
-          title: captureAny(named: 'title'),
-          body: captureAny(named: 'body'),
-          scheduledFor: captureAny(named: 'scheduledFor'),
-          category: captureAny(named: 'category'),
-        ),
-      ).captured;
+        final captured = verify(
+          () => notifications.createRelationshipCheckIn(
+            linkedRelationshipId: captureAny(named: 'linkedRelationshipId'),
+            dueDayKey: captureAny(named: 'dueDayKey'),
+            title: captureAny(named: 'title'),
+            body: captureAny(named: 'body'),
+            scheduledFor: captureAny(named: 'scheduledFor'),
+            category: captureAny(named: 'category'),
+          ),
+        ).captured;
 
-      expect(captured[0], 'person-1');
-      expect(captured[1], '2026-08-21');
-      expect(captured[2], 'Check in with Anna?');
-      expect(captured[3], 'A good moment to reach out.');
-      expect(captured[5], 'cat-1');
+        expect(captured[0], 'person-1');
+        expect(captured[1], '2026-08-21');
+        expect(captured[2], 'Check in with Anna?');
+        expect(captured[3], 'A good moment to reach out.');
+        expect(captured[5], 'cat-1');
 
-      // ADR 0039 Decision 6: this copy lands on a lock screen, so it carries
-      // the person's name and nothing else about them.
-      final body = captured[3] as String;
-      expect(body, isNot(contains('7')));
-      expect(body, isNot(contains('Anna')));
-    });
+        // ADR 0039 Decision 6: this copy lands on a lock screen, so it carries
+        // the person's name and nothing else about them.
+        final body = captured[3] as String;
+        expect(body, isNot(contains('7')));
+        expect(body, isNot(contains('Anna')));
+      },
+    );
 
-    test('renders copy in the device locale', () async {
+    clockedTest('renders copy in the device locale', () async {
       await build(messages: AppLocalizationsDe.new).arm(
         relationship: relationship(),
         derivation: derivation(),
@@ -172,7 +192,7 @@ void main() {
       expect(captured.single, 'Bei Anna melden?');
     });
 
-    test('fires at the local reminder hour on the due day', () async {
+    clockedTest('fires at the local reminder hour on the due day', () async {
       await service.arm(
         relationship: relationship(),
         derivation: derivation(dueDayUtc: DateTime.utc(2026, 8, 21)),
@@ -202,53 +222,59 @@ void main() {
       expect(scheduledFor.minute, 0);
     });
 
-    test('retracts superseded episodes but spares the one armed', () async {
-      when(
-        () => notifications.notificationIdForRelationshipCheckIn(
-          linkedRelationshipId: 'person-1',
-          dueDayKey: '2026-08-21',
-        ),
-      ).thenReturn('current-episode');
+    clockedTest(
+      'retracts superseded episodes but spares the one armed',
+      () async {
+        when(
+          () => notifications.notificationIdForRelationshipCheckIn(
+            linkedRelationshipId: 'person-1',
+            dueDayKey: '2026-08-21',
+          ),
+        ).thenReturn('current-episode');
 
-      await service.arm(
-        relationship: relationship(),
-        derivation: derivation(),
-      );
+        await service.arm(
+          relationship: relationship(),
+          derivation: derivation(),
+        );
 
-      verify(
-        () => notifications.retractRelationshipCheckIns(
-          'person-1',
-          exceptId: 'current-episode',
-        ),
-      ).called(1);
-    });
+        verify(
+          () => notifications.retractRelationshipCheckIns(
+            'person-1',
+            exceptId: 'current-episode',
+          ),
+        ).called(1);
+      },
+    );
 
-    test('arms for a lapsed cadence too, not only a healthy one', () async {
-      // A `due` verdict still arms, as long as the due day itself is ahead:
-      // the verdict describes the cadence, the due day decides whether an
-      // alarm is worth setting. See the past-due-day cases below.
-      await service.arm(
-        relationship: relationship(),
-        derivation: derivation(status: RelationshipCadenceStatus.due),
-      );
+    clockedTest(
+      'arms for a lapsed cadence too, not only a healthy one',
+      () async {
+        // A `due` verdict still arms, as long as the due day itself is ahead:
+        // the verdict describes the cadence, the due day decides whether an
+        // alarm is worth setting. See the past-due-day cases below.
+        await service.arm(
+          relationship: relationship(),
+          derivation: derivation(status: RelationshipCadenceStatus.due),
+        );
 
-      verify(
-        () => notifications.createRelationshipCheckIn(
-          linkedRelationshipId: any(named: 'linkedRelationshipId'),
-          dueDayKey: any(named: 'dueDayKey'),
-          title: any(named: 'title'),
-          body: any(named: 'body'),
-          scheduledFor: any(named: 'scheduledFor'),
-          category: any(named: 'category'),
-        ),
-      ).called(1);
-    });
+        verify(
+          () => notifications.createRelationshipCheckIn(
+            linkedRelationshipId: any(named: 'linkedRelationshipId'),
+            dueDayKey: any(named: 'dueDayKey'),
+            title: any(named: 'title'),
+            body: any(named: 'body'),
+            scheduledFor: any(named: 'scheduledFor'),
+            category: any(named: 'category'),
+          ),
+        ).called(1);
+      },
+    );
 
     // `NotificationScheduler.schedule` routes a past instant to
     // `showNotificationNow`, so arming a due day already behind us fired an
     // OS banner on the spot — one per person on the tick that first
     // evaluates a set of overdue people, duplicating their in-app nudges.
-    test('a due day already behind us arms no alarm', () async {
+    clockedTest('a due day already behind us arms no alarm', () async {
       await withClock(Clock.fixed(DateTime(2026, 8, 25, 12)), () async {
         await service.arm(
           relationship: relationship(),
@@ -270,7 +296,7 @@ void main() {
 
     // Skipping the alarm must not skip the housekeeping: an episode this one
     // superseded has to stop being armed either way.
-    test('a skipped alarm still retracts superseded episodes', () async {
+    clockedTest('a skipped alarm still retracts superseded episodes', () async {
       await withClock(Clock.fixed(DateTime(2026, 8, 25, 12)), () async {
         await service.arm(
           relationship: relationship(),
@@ -286,7 +312,7 @@ void main() {
       ).called(1);
     });
 
-    test('a due day still ahead arms normally', () async {
+    clockedTest('a due day still ahead arms normally', () async {
       await withClock(Clock.fixed(DateTime(2026, 8, 19, 12)), () async {
         await service.arm(
           relationship: relationship(),
@@ -306,7 +332,7 @@ void main() {
       ).called(1);
     });
 
-    test('passes a null category straight through', () async {
+    clockedTest('passes a null category straight through', () async {
       await service.arm(
         relationship: relationship(categoryId: null),
         derivation: derivation(),
@@ -329,7 +355,7 @@ void main() {
   });
 
   group('RelationshipReminderService.clearFor', () {
-    test('retracts every open reminder for the person', () async {
+    clockedTest('retracts every open reminder for the person', () async {
       await service.clearFor('person-1');
 
       verify(
@@ -353,7 +379,7 @@ void main() {
   // committed by the time this runs, so letting a notification-store failure
   // escape would fail a wake that succeeded and schedule a retry of it.
   group('RelationshipReminderService best-effort contract', () {
-    test('a failing create is logged, not thrown', () async {
+    clockedTest('a failing create is logged, not thrown', () async {
       final failure = Exception('notifications.sqlite is locked');
       when(
         () => notifications.createRelationshipCheckIn(
@@ -384,7 +410,7 @@ void main() {
       ).called(1);
     });
 
-    test('a failing retract inside arm is contained too', () async {
+    clockedTest('a failing retract inside arm is contained too', () async {
       when(
         () => notifications.retractRelationshipCheckIns(
           any(),
@@ -410,42 +436,48 @@ void main() {
       ).called(1);
     });
 
-    test('a failing clearFor is logged under its own subdomain', () async {
-      when(
-        () => notifications.retractRelationshipCheckIns(any()),
-      ).thenThrow(Exception('boom'));
+    clockedTest(
+      'a failing clearFor is logged under its own subdomain',
+      () async {
+        when(
+          () => notifications.retractRelationshipCheckIns(any()),
+        ).thenThrow(Exception('boom'));
 
-      await expectLater(service.clearFor('person-1'), completes);
+        await expectLater(service.clearFor('person-1'), completes);
 
-      verify(
-        () => logger.error(
-          LogDomain.notifications,
-          any<Object>(),
-          stackTrace: any(named: 'stackTrace'),
-          subDomain: 'relationshipReminder.clearFor',
-        ),
-      ).called(1);
-    });
+        verify(
+          () => logger.error(
+            LogDomain.notifications,
+            any<Object>(),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: 'relationshipReminder.clearFor',
+          ),
+        ).called(1);
+      },
+    );
 
-    test('a failing locale lookup cannot break the wake either', () async {
-      // deviceMessages() reads the widgets binding; a producer running before
-      // the binding exists must degrade rather than take the wake down.
-      await expectLater(
-        build(messages: () => throw StateError('no binding')).arm(
-          relationship: relationship(),
-          derivation: derivation(),
-        ),
-        completes,
-      );
+    clockedTest(
+      'a failing locale lookup cannot break the wake either',
+      () async {
+        // deviceMessages() reads the widgets binding; a producer running before
+        // the binding exists must degrade rather than take the wake down.
+        await expectLater(
+          build(messages: () => throw StateError('no binding')).arm(
+            relationship: relationship(),
+            derivation: derivation(),
+          ),
+          completes,
+        );
 
-      verify(
-        () => logger.error(
-          LogDomain.notifications,
-          any<Object>(),
-          stackTrace: any(named: 'stackTrace'),
-          subDomain: 'relationshipReminder.arm',
-        ),
-      ).called(1);
-    });
+        verify(
+          () => logger.error(
+            LogDomain.notifications,
+            any<Object>(),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: 'relationshipReminder.arm',
+          ),
+        ).called(1);
+      },
+    );
   });
 }

@@ -383,7 +383,12 @@ void main() {
       await service.scheduleNotificationAt(
         title: 'title',
         body: 'body',
-        notifyAt: DateTime(2026, 8, 21, 9),
+        // Relative to now, not a literal. The plugin validates the instant
+        // against the real wall clock — no `withClock` reaches it — so a
+        // hard-coded "future" date is a time bomb: this test was written
+        // with DateTime(2026, 8, 21, 9) and went red the morning that
+        // arrived.
+        notifyAt: DateTime.now().add(const Duration(days: 1)),
         notificationId: 9,
         showOnMobile: true,
         showOnDesktop: false,
