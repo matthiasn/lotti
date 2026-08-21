@@ -128,6 +128,7 @@ class _TasksRootPageState extends ConsumerState<TasksRootPage> {
               ),
               detailPane: _TasksDetailPane(
                 stackDepth: stack.length,
+                selectedTaskId: selectedTaskId,
                 // The details column is the collapsed-list layout: once the
                 // reader has hidden the list to focus one task, the pane is
                 // wide enough to carry the task's metadata beside it instead
@@ -170,10 +171,16 @@ class _TasksDetailPane extends StatelessWidget {
     required this.stackDepth,
     required this.detail,
     required this.metaColumnTaskId,
+    required this.selectedTaskId,
   });
 
   final int stackDepth;
   final Widget detail;
+
+  /// The task on show, whatever the layout — unlike [metaColumnTaskId], which
+  /// is null in every state that has no metadata column. The "show list"
+  /// affordance reads it to tell whether cover art sits behind it.
+  final String? selectedTaskId;
 
   /// The task whose metadata the column shows, or null when this layout has
   /// no column (list pane visible, or no task selected).
@@ -201,7 +208,11 @@ class _TasksDetailPane extends StatelessWidget {
             Expanded(
               child: TaskMetaColumnScope(
                 visible: showColumn,
-                child: _TaskPaneBody(stackDepth: stackDepth, detail: detail),
+                child: _TaskPaneBody(
+                  stackDepth: stackDepth,
+                  detail: detail,
+                  selectedTaskId: selectedTaskId,
+                ),
               ),
             ),
             if (showColumn)
@@ -217,10 +228,15 @@ class _TasksDetailPane extends StatelessWidget {
 }
 
 class _TaskPaneBody extends StatelessWidget {
-  const _TaskPaneBody({required this.stackDepth, required this.detail});
+  const _TaskPaneBody({
+    required this.stackDepth,
+    required this.detail,
+    required this.selectedTaskId,
+  });
 
   final int stackDepth;
   final Widget detail;
+  final String? selectedTaskId;
 
   @override
   Widget build(BuildContext context) {
@@ -244,6 +260,7 @@ class _TaskPaneBody extends StatelessWidget {
                 ),
                 child: TaskDetailShowListButton(
                   key: const ValueKey('tasks-show-list-pane'),
+                  taskId: selectedTaskId,
                   onPressed: splitController!.showListPane,
                 ),
               ),

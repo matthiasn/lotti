@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -100,39 +103,111 @@ class TaskDetailDesktopLeading extends StatelessWidget {
   }
 }
 
-/// Glass action used by the desktop task split to restore its hidden list.
-class TaskDetailShowListButton extends StatelessWidget {
-  const TaskDetailShowListButton({required this.onPressed, super.key});
+/// The list-pane toggle's glyph, in whichever treatment the surface behind it
+/// calls for.
+///
+/// Glass is for a photograph behind the glyph — nothing else. Over cover art
+/// it is a tinted circle with a white glyph, matching the cover-art bar's own
+/// actions; everywhere else it is the plain toolbar action treatment, so the
+/// toggle reads as a sibling of the icons at the other end of the row rather
+/// than as a different species of control.
+class _ListPaneToggleGlyph extends StatelessWidget {
+  const _ListPaneToggleGlyph({
+    required this.onPressed,
+    required this.tooltip,
+    required this.glass,
+    required this.buttonKey,
+  });
 
   final VoidCallback onPressed;
+  final String tooltip;
+  final bool glass;
+  final Key buttonKey;
 
   @override
   Widget build(BuildContext context) {
-    final label = context.messages.listPaneShowTooltip;
+    if (glass) {
+      return GlassActionButton(
+        key: buttonKey,
+        onTap: onPressed,
+        semanticLabel: tooltip,
+        tooltip: tooltip,
+        child: const Icon(
+          LottiIcons.sidebar,
+          // White over a photograph regardless of theme, like every other
+          // glass action on the cover-art bar.
+          size: IconSizes.l,
+          color: Colors.white,
+        ),
+      );
+    }
 
-    return GlassActionButton(
-      onTap: onPressed,
-      semanticLabel: label,
-      tooltip: label,
-      child: Icon(
+    return IconButton(
+      key: buttonKey,
+      onPressed: onPressed,
+      tooltip: tooltip,
+      // The glyph carries the name, not just the hover tooltip: this is an
+      // icon-only control, and the glass variant announces itself through
+      // `GlassActionButton`'s own semantics label. Both directions of the
+      // toggle should read the same to assistive tech.
+      icon: Icon(
         LottiIcons.sidebar,
-        size: IconSizes.m,
-        color: dsTokensDark.colors.text.highEmphasis,
+        semanticLabel: tooltip,
+        color: context.designTokens.colors.text.mediumEmphasis,
       ),
     );
   }
 }
 
+/// Restores the desktop task split's hidden list.
+///
+/// Sits in the same corner as [TaskDetailHideListButton] and wears the same
+/// treatment, so the toggle is one control that happens to point both ways.
+/// It floats over the task rather than living in the app bar, because
+/// `TasksRootPage` owns it: with the list hidden it has to stay reachable even
+/// when the task itself never loads and the bar has no actions of its own.
+///
+/// [taskId] decides the treatment: a task with cover art puts an image
+/// directly behind this corner, which is the one place glass belongs.
+class TaskDetailShowListButton extends ConsumerWidget {
+  const TaskDetailShowListButton({
+    required this.onPressed,
+    this.taskId,
+    super.key,
+  });
+
+  final VoidCallback onPressed;
+
+  /// The task under this button, or null while none is resolved — in which
+  /// case there is no cover art behind it either.
+  final String? taskId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return _ListPaneToggleGlyph(
+      buttonKey: const ValueKey('tasks-show-list-pane-button'),
+      onPressed: onPressed,
+      tooltip: context.messages.listPaneShowTooltip,
+      glass: taskHasCoverArt(ref, taskId),
+    );
+  }
+}
+
+/// Whether [taskId] resolves to a task carrying cover art, i.e. whether an
+/// image sits behind the detail pane's top-left corner.
+bool taskHasCoverArt(WidgetRef ref, String? taskId) {
+  if (taskId == null) return false;
+  final entry = ref.watch(entryControllerProvider(taskId)).value?.entry;
+  return entry is Task && entry.data.coverArtId != null;
+}
+
 /// Hides the desktop task split's list pane.
 ///
-/// The counterpart of [TaskDetailShowListButton], in the same corner, so one
-/// glyph in one place moves the split both ways. Rendered by
-/// [TaskDetailDesktopLeading], which owns the "is this offered at all"
-/// decision and the width the bar reserves for it.
-///
-/// Takes the shape of the row it joins: a bare glyph beside the compact bar's
-/// bare trailing actions, and the glass treatment only where there is cover
-/// art behind it. Either way the ink is centred on the glyph.
+/// The counterpart of [TaskDetailShowListButton], in the same corner and the
+/// same treatment, so one glyph in one place moves the split both ways.
+/// Rendered by [TaskDetailDesktopLeading], which owns the "is this offered at
+/// all" decision, the width the bar reserves for it, and — since it is the app
+/// bar that knows whether the task has cover art behind it — [glass].
 class TaskDetailHideListButton extends StatelessWidget {
   const TaskDetailHideListButton({this.glass = false, super.key});
 
@@ -144,35 +219,12 @@ class TaskDetailHideListButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final splitController = ListDetailFocusTraversal.maybeOf(context);
     if (splitController == null) return const SizedBox.shrink();
-    final label = context.messages.listPaneHideTooltip;
 
-    if (glass) {
-      return GlassActionButton(
-        key: const ValueKey('tasks-hide-list-pane'),
-        onTap: splitController.hideListPane,
-        semanticLabel: label,
-        tooltip: label,
-        child: const Icon(
-          LottiIcons.sidebar,
-          // Matches the glass actions at the other end of the same bar: the
-          // glyph is white over a photograph regardless of theme.
-          size: IconSizes.l,
-          color: Colors.white,
-        ),
-      );
-    }
-
-    // The compact bar's own action treatment, verbatim — same glyph size,
-    // same medium emphasis, same stock ripple — so the row reads as one set
-    // of controls from end to end.
-    return IconButton(
-      key: const ValueKey('tasks-hide-list-pane'),
+    return _ListPaneToggleGlyph(
+      buttonKey: const ValueKey('tasks-hide-list-pane'),
       onPressed: splitController.hideListPane,
-      tooltip: label,
-      icon: Icon(
-        LottiIcons.sidebar,
-        color: context.designTokens.colors.text.mediumEmphasis,
-      ),
+      tooltip: context.messages.listPaneHideTooltip,
+      glass: glass,
     );
   }
 }

@@ -119,12 +119,19 @@ controls — the back arrow (only while a linked task is stacked) and
 `TaskDetailShowListButton` takes the same corner, so the toggle is one control
 in one place rather than two affordances a pane apart.
 
-The toggle takes the shape of the row it joins, because **glass is for a
-photograph behind the glyph, not for app bars in general**: a bare glyph at
-medium emphasis on the compact bar, matching its trailing actions, and the
-glass treatment only on the cover-art bar, where those actions are glass too.
-A tinted circle beside two bare icons in the same row read as a different
-species of control.
+Both directions share one rule, because **glass is for a photograph behind the
+glyph, not for app bars in general**: a bare glyph at medium emphasis by
+default — matching the compact bar's trailing actions — and the glass
+treatment only where cover art actually sits behind that corner. A tinted
+circle beside two bare icons in the same row read as a different species of
+control.
+
+The two halves learn that from different places, since they render in
+different layers. `TaskDetailHideListButton` is told by the app bar that hosts
+it (the cover-art bar passes `glass: true`); `TaskDetailShowListButton` floats
+over the task instead, so it resolves the question itself from the task under
+it — `taskHasCoverArt(ref, taskId)`, with no task and no answer meaning no
+glass.
 
 The Hide action used to sit next to the *task list's* own title, where selecting
 a task made it appear and shoved that title sideways. The Show action is owned

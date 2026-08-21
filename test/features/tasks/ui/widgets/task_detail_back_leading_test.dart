@@ -1,19 +1,41 @@
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/journal/model/entry_state.dart';
+import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_detail_back_leading.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/app_bar/glass_action_button.dart';
 import 'package:lotti/widgets/app_bar/glass_back_button.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
+import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
+
+/// Serves a fixed task so the cover-art question has an answer without a
+/// database behind it.
+class _FixedEntryController extends EntryController {
+  _FixedEntryController(this._entry);
+
+  final JournalEntity _entry;
+
+  @override
+  Future<EntryState?> build() async => EntryState.saved(
+    entryId: id,
+    entry: _entry,
+    showMap: false,
+    isFocused: false,
+    shouldShowEditorToolBar: false,
+  );
+}
 
 void main() {
   late MockNavService mockNavService;
@@ -26,7 +48,12 @@ void main() {
 
     await setUpTestGetIt(
       additionalSetup: () {
-        getIt.registerSingleton<NavService>(mockNavService);
+        // `EntryController`'s own field initializers resolve this from getIt
+        // even when the controller is overridden, and the show button reads
+        // that provider to find out whether cover art sits behind it.
+        getIt
+          ..registerSingleton<NavService>(mockNavService)
+          ..registerSingleton<EditorStateService>(MockEditorStateService());
       },
     );
   });
@@ -81,42 +108,92 @@ void main() {
     });
   });
 
-  testWidgets('TaskDetailShowListButton exposes its action and label', (
-    tester,
-  ) async {
-    var presses = 0;
-    await tester.pumpWidget(
-      makeTestableWidgetWithScaffold(
-        TaskDetailShowListButton(onPressed: () => presses++),
+  group('TaskDetailShowListButton', () {
+    /// A task whose cover art puts an image behind the pane's top-left
+    /// corner, wired through the entry controller the button reads.
+    List<Override> withCoverArt({required bool coverArt}) => [
+      entryControllerProvider(testTask.meta.id).overrideWith(
+        () => _FixedEntryController(
+          coverArt
+              ? testTask.copyWith(
+                  data: testTask.data.copyWith(coverArtId: 'cover-1'),
+                )
+              : testTask,
+        ),
       ),
+    ];
+
+    testWidgets('exposes its action and label', (tester) async {
+      var presses = 0;
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          TaskDetailShowListButton(onPressed: () => presses++),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byTooltip('Show list'), findsOneWidget);
+      final semanticsFinder = find.bySemanticsLabel('Show list');
+      expect(semanticsFinder, findsOneWidget);
+      final semantics = tester.getSemantics(semanticsFinder);
+      expect(
+        semantics.getSemanticsData().hasAction(ui.SemanticsAction.tap),
+        isTrue,
+      );
+
+      await tester.tap(find.byIcon(LottiIcons.sidebar));
+      expect(presses, 1);
+    });
+
+    testWidgets(
+      'takes the plain toolbar treatment over an ordinary task — the corner '
+      'it restores from is the same corner the hide toggle sat in',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            TaskDetailShowListButton(
+              onPressed: () {},
+              taskId: testTask.meta.id,
+            ),
+            overrides: withCoverArt(coverArt: false),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.byType(GlassActionButton), findsNothing);
+        expect(
+          tester.widget<Icon>(find.byIcon(LottiIcons.sidebar)).color,
+          tester
+              .element(find.byIcon(LottiIcons.sidebar))
+              .designTokens
+              .colors
+              .text
+              .mediumEmphasis,
+        );
+      },
     );
 
-    expect(find.byTooltip('Show list'), findsOneWidget);
-    final semanticsFinder = find.bySemanticsLabel('Show list');
-    expect(semanticsFinder, findsOneWidget);
-    final semantics = tester.getSemantics(semanticsFinder);
-    expect(semantics.label, 'Show list');
-    expect(
-      semantics.getSemanticsData().hasAction(ui.SemanticsAction.tap),
-      isTrue,
-    );
-    await tester.tap(find.byType(GlassActionButton));
-    expect(presses, 1);
-  });
-
-  testWidgets('TaskDetailShowListButton keeps light ink in the dark theme', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      makeTestableWidgetWithScaffold(
-        TaskDetailShowListButton(onPressed: () {}),
-        theme: DesignSystemTheme.dark(),
-      ),
-    );
-
-    expect(
-      tester.widget<Icon>(find.byIcon(LottiIcons.sidebar)).color,
-      dsTokensDark.colors.text.highEmphasis,
+    testWidgets(
+      'wears glass only where cover art is actually behind it, in white so it '
+      'survives whatever the photograph is',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            TaskDetailShowListButton(
+              onPressed: () {},
+              taskId: testTask.meta.id,
+            ),
+            overrides: withCoverArt(coverArt: true),
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+        expect(find.byType(GlassActionButton), findsOneWidget);
+        expect(
+          tester.widget<Icon>(find.byIcon(LottiIcons.sidebar)).color,
+          Colors.white,
+        );
+      },
     );
   });
 
