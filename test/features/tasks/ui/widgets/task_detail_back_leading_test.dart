@@ -128,6 +128,7 @@ void main() {
       required bool listPaneVisible,
       required bool canHideListPane,
       List<String> detailStack = const ['base-task'],
+      bool glass = false,
     }) async {
       stack.value = detailStack;
       final visibilityChanges = <bool>[];
@@ -140,9 +141,9 @@ void main() {
             onListPaneVisibilityChanged: visibilityChanges.add,
             listPane: const SizedBox(width: 100),
             divider: const SizedBox(width: 4),
-            detailPane: const Align(
+            detailPane: Align(
               alignment: Alignment.topLeft,
-              child: TaskDetailDesktopLeading(),
+              child: TaskDetailDesktopLeading(glass: glass),
             ),
           ),
         ),
@@ -226,8 +227,8 @@ void main() {
     );
 
     testWidgets(
-      'wears the same glass shape as the show-list button, so the toggle is '
-      'one control in one corner — and the hover ring is centred on its glyph',
+      "takes the compact bar's own action treatment — a bare glyph, like the "
+      'two icons at the other end of the same row, not a tinted chip',
       (tester) async {
         await pumpSplit(
           tester,
@@ -236,18 +237,51 @@ void main() {
         );
 
         final hide = find.byKey(const ValueKey('tasks-hide-list-pane'));
+        expect(find.byType(GlassActionButton), findsNothing);
+        expect(
+          tester
+              .widget<Icon>(
+                find.descendant(of: hide, matching: find.byType(Icon)),
+              )
+              .color,
+          tester.element(hide).designTokens.colors.text.mediumEmphasis,
+          reason: "the bar's action colour, so the row reads as one set",
+        );
+        // Stock IconButton: the ink is centred on the glyph. A left-aligned
+        // glyph inside a full-size target drew its hover ring off to one side.
+        final glyph = find.descendant(of: hide, matching: find.byType(Icon));
+        expect(
+          tester.getCenter(glyph),
+          within(distance: 0.5, from: tester.getCenter(hide)),
+        );
+      },
+    );
+
+    testWidgets(
+      'wears the glass treatment only over cover art, where the trailing '
+      'actions are glass too',
+      (tester) async {
+        await pumpSplit(
+          tester,
+          listPaneVisible: true,
+          canHideListPane: true,
+          glass: true,
+        );
+
+        final hide = find.byKey(const ValueKey('tasks-hide-list-pane'));
         expect(
           tester.widget<GlassActionButton>(hide).size,
           40,
           reason: 'the same container the show-list button uses',
         );
-        // The ink surface is the whole button and the glyph sits at its
-        // centre: a left-aligned glyph inside a full-size target drew its
-        // hover ring off to one side of the icon.
-        final glyph = find.descendant(of: hide, matching: find.byType(Icon));
         expect(
-          tester.getCenter(glyph),
-          within(distance: 0.5, from: tester.getCenter(hide)),
+          tester
+              .widget<Icon>(
+                find.descendant(of: hide, matching: find.byType(Icon)),
+              )
+              .color,
+          Colors.white,
+          reason: 'white over a photograph, regardless of theme',
         );
       },
     );

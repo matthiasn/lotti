@@ -113,11 +113,18 @@ subtree stays mounted, preserving its filter, search, paging and scroll state.
 
 **Both halves of the toggle live in the detail pane's top-left corner.**
 `TaskDetailDesktopLeading` fills the task app bar's leading slot with up to two
-glass actions — the back arrow (only while a linked task is stacked) and
+controls — the back arrow (only while a linked task is stacked) and
 `TaskDetailHideListButton` — and sizes the bar's `leadingWidth` through
 `TaskDetailDesktopLeading.widthFor`. Once the list is hidden,
-`TaskDetailShowListButton` takes the same corner in the same glass shape, so the
-toggle is one control in one place rather than two affordances a pane apart.
+`TaskDetailShowListButton` takes the same corner, so the toggle is one control
+in one place rather than two affordances a pane apart.
+
+The toggle takes the shape of the row it joins, because **glass is for a
+photograph behind the glyph, not for app bars in general**: a bare glyph at
+medium emphasis on the compact bar, matching its trailing actions, and the
+glass treatment only on the cover-art bar, where those actions are glass too.
+A tinted circle beside two bare icons in the same row read as a different
+species of control.
 
 The Hide action used to sit next to the *task list's* own title, where selecting
 a task made it appear and shoved that title sideways. The Show action is owned

@@ -59,7 +59,7 @@ class TaskExpandableAppBar extends ConsumerWidget {
           backgroundColor: context.designTokens.colors.background.level01,
           expandedHeight: expandedHeight,
           leadingWidth: isDesktopLayout(context)
-              ? TaskDetailDesktopLeading.widthFor(context)
+              ? TaskDetailDesktopLeading.widthFor(context, glass: true)
               : 48,
           titleSpacing: 0,
           toolbarHeight: 40,
@@ -166,7 +166,7 @@ class _GlassTaskBackLeading extends StatelessWidget {
         child: GlassBackButton(),
       );
     }
-    return const TaskDetailDesktopLeading();
+    return const TaskDetailDesktopLeading(glass: true);
   }
 }
 
