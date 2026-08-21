@@ -64,6 +64,20 @@ void main() {
 
   tearDown(tearDownTestGetIt);
 
+  /// Enters focus mode the way the relocated control does: the hide toggle now
+  /// lives in the task detail header (see [TaskDetailHideListButton]), which
+  /// these tests do not render because their task never resolves. The split
+  /// controller's `hideListPane` is what that button calls, and the pane
+  /// controller is where it lands.
+  Future<void> hideListPane(WidgetTester tester) async {
+    final splitController = ListDetailFocusTraversal.maybeOf(
+      tester.element(find.byType(TaskDetailsPage)),
+    );
+    splitController!.hideListPane();
+    await tester.pump();
+    await tester.pump();
+  }
+
   JournalPageState state() => const JournalPageState(
     showTasks: true,
     taskStatuses: ['OPEN'],
@@ -209,11 +223,7 @@ void main() {
       await tester.pump();
 
       // Collapse the list — the column is the focus-mode layout.
-      await tester.tap(
-        find.byKey(const ValueKey('tasks-hide-list-pane-expanded')),
-      );
-      await tester.pump();
-      await tester.pump();
+      await hideListPane(tester);
     }
 
     Future<void> disposeTree(WidgetTester tester) async {
@@ -310,16 +320,18 @@ void main() {
       );
       await tester.pump();
 
+      // The list header no longer carries the toggle: it moved to the task
+      // detail header, so selecting a task can never shift the list title
+      // sideways to make room for it.
       expect(
-        find.byKey(const ValueKey('tasks-hide-list-pane-expanded')),
-        findsOneWidget,
+        find.descendant(
+          of: find.byType(TasksTabPage),
+          matching: find.byKey(const ValueKey('tasks-hide-list-pane')),
+        ),
+        findsNothing,
       );
       final detailElement = tester.element(find.byType(TaskDetailsPage));
-      await tester.tap(
-        find.byKey(const ValueKey('tasks-hide-list-pane-expanded')),
-      );
-      await tester.pump();
-      await tester.pump();
+      await hideListPane(tester);
 
       expect(find.byType(TasksTabPage), findsNothing);
       expect(
@@ -389,11 +401,7 @@ void main() {
     );
     await tester.pump();
 
-    await tester.tap(
-      find.byKey(const ValueKey('tasks-hide-list-pane-expanded')),
-    );
-    await tester.pump();
-    await tester.pump();
+    await hideListPane(tester);
 
     final taskSearch = find.byWidgetPredicate(
       (widget) =>

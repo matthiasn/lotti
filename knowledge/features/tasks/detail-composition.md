@@ -92,10 +92,29 @@ picker itself reports, not this band.
 
 The band as a whole is conditional, by the rule **a section must not offer what
 cannot happen**: it disappears the moment the task has any content, so a
-returning user never meets it twice on the same task. `watchTaskIsFirstRun`
-decides that, and treats an unresolved provider as *unknown*, not as "no
-content" — otherwise a task with an agent flashes the offer before the database
-answers.
+returning user never meets it twice on the same task.
+
+`watchTaskFirstRunState` decides that, and it answers in **three** states —
+`unresolved`, `firstRun`, `established` — because every consequence below is
+layout-bearing and both boolean guesses reflow the page a frame after it
+paints. Reading unresolved as "no content" flashed the first-run offer onto a
+task that has an agent; reading it as established flashed the *established*
+layout onto every newly created task, which then collapsed into the first-run
+one — the create-a-task flash. `TaskDetailsPage` therefore holds its loading
+shell while the answer is `unresolved`, so the first content paint is the
+final one.
+
+Three answers are given without waiting, all for the same reason — a hold that
+might never end is worse than a stale guess:
+
+| Input | Answer | Why |
+| --- | --- | --- |
+| The task carries its own content (checklist or body text) | `established` | An agent or a linked note can only ever *add* content, so the lookups cannot change this |
+| A lookup failed | `established` | An error never resolves |
+| A link whose target never resolves | `established` | A dangling edge leaves the resolved count permanently short |
+
+`watchTaskIsFirstRun` is the boolean view of the same state, for callers that
+already render inside a page which held.
 
 While this band renders, `TaskForm` passes `showAssignCta: false` to
 `AiSummaryCard`: the band carries the same offer, and two "assign agent"

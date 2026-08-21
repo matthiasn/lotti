@@ -50,14 +50,16 @@ class TaskCompactAppBar extends ConsumerWidget {
     // is the quietest, least self-explanatory glyph in the bar.
     final showGraph =
         isDesktop && ref.watch(knowledgeGraphEntryPointEnabledProvider);
-    // On desktop the back arrow is only rendered while a linked task
-    // sits on top of the detail stack — at that point we use the same
-    // glass-styled button (and matching 48px leading width) as the
-    // expandable bar so the affordance stays visually identical
-    // whether the task has cover art or not.
+    // On desktop the leading slot carries the glass back arrow (only while a
+    // linked task sits on top of the detail stack) and the split's hide-list
+    // toggle, sized by the cluster itself — the same treatment the expandable
+    // bar uses, so the row stays visually identical whether the task has
+    // cover art or not.
     return SliverAppBar(
       backgroundColor: context.designTokens.colors.background.level01,
-      leadingWidth: isDesktop ? 48 : 100,
+      leadingWidth: isDesktop
+          ? TaskDetailDesktopLeading.widthFor(context)
+          : 100,
       titleSpacing: 0,
       toolbarHeight: 45,
       scrolledUnderElevation: 0,
@@ -125,9 +127,9 @@ class TaskCompactAppBar extends ConsumerWidget {
 /// Leading widget for the compact task app bar.
 ///
 /// Mobile: always renders [BackWidget] which beams back to the task list.
-/// Desktop: delegates to [TaskDetailDesktopBackLeading], shared with the
-/// expandable bar so the back affordance is visually identical whether
-/// the task has cover art or not.
+/// Desktop: delegates to [TaskDetailDesktopLeading], shared with the
+/// expandable bar so the back arrow and the list-pane toggle are visually
+/// identical whether the task has cover art or not.
 class _TaskBackLeading extends StatelessWidget {
   const _TaskBackLeading({required this.isDesktop});
 
@@ -138,7 +140,7 @@ class _TaskBackLeading extends StatelessWidget {
     if (!isDesktop) {
       return const BackWidget();
     }
-    return const TaskDetailDesktopBackLeading();
+    return const TaskDetailDesktopLeading();
   }
 }
 

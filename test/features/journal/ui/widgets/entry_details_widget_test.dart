@@ -3515,6 +3515,55 @@ void main() {
       );
 
       testWidgets(
+        'a summary gets several lines while collapsed — clamping it to one '
+        'left a phone showing the first clause and an ellipsis, which is the '
+        'opposite of what summarizing an hour of notes is for',
+        (tester) async {
+          // Narrow, so a real summary genuinely needs to wrap. Not phone
+          // width to the pixel: this harness's header row overflows below
+          // ~450 for reasons that have nothing to do with the summary.
+          await tester.binding.setSurfaceSize(const Size(460, 844));
+          addTearDown(() => tester.binding.setSurfaceSize(null));
+
+          const summary =
+              'The team agreed to ship the export flow behind a flag, '
+              'moved the migration to next sprint, and asked design for a '
+              'second pass on the empty state before the review on Friday.';
+          await pumpCollapsedAudio(tester, [
+            summaryEntry(
+              id: 'summary-multiline',
+              oneLiner: summary,
+              dateFrom: DateTime(2024, 5),
+            ),
+          ]);
+
+          final rendered = tester.widget<Text>(find.text(summary));
+          expect(rendered.maxLines, 5);
+          expect(rendered.overflow, TextOverflow.ellipsis);
+          // Not just the property: the collapsed card actually gives the
+          // summary the height to use those lines.
+          final style = rendered.style!;
+          expect(
+            tester.getSize(find.text(summary)).height,
+            greaterThan(style.fontSize! * 2),
+          );
+        },
+      );
+
+      testWidgets(
+        'the raw-transcript fallback stays on one line — it is a preview of '
+        'what expanding shows in full, not a condensation of it',
+        (tester) async {
+          await pumpCollapsedAudio(tester, const []);
+
+          expect(
+            tester.widget<Text>(find.text('test image entry text')).maxLines,
+            1,
+          );
+        },
+      );
+
+      testWidgets(
         'shows the newest summary when several exist, so a re-run supersedes '
         'the earlier snapshot without deleting it',
         (tester) async {

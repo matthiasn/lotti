@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' show Glados2, IntAnys, any;
-import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/widgets/collapsing_task_list_header.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -375,12 +374,10 @@ void main() {
       bool filtersActive = false,
       bool searchActive = false,
       String? contextLabel,
-      Widget? leading,
     }) {
       return makeTestableWidgetNoScroll(
         Scaffold(
           body: TaskListCompactHeaderBar(
-            leading: leading,
             title: 'Tasks',
             searchTooltip: 'Search tasks…',
             filterTooltip: 'Filter tasks',
@@ -409,50 +406,6 @@ void main() {
       await tester.tap(find.byKey(CollapsingTaskListHeaderKeys.compactTitle));
       expect(expandRequests, 1);
       expect(searchRequests, 0);
-    });
-
-    testWidgets('renders a leading focus-mode control before the title', (
-      tester,
-    ) async {
-      var taps = 0;
-      await tester.pumpWidget(
-        subject(
-          leading: IconButton(
-            key: const ValueKey('compact-leading'),
-            onPressed: () => taps++,
-            icon: const Icon(LottiIcons.sidebar),
-          ),
-        ),
-      );
-
-      final leading = find.byKey(const ValueKey('compact-leading'));
-      expect(leading, findsOneWidget);
-      expect(
-        tester.getSize(
-          find.ancestor(
-            of: leading,
-            matching: find.byWidgetPredicate(
-              (widget) =>
-                  widget is SizedBox &&
-                  widget.width == TapTargets.minimum &&
-                  widget.height == TapTargets.minimum,
-            ),
-          ),
-        ),
-        const Size.square(TapTargets.minimum),
-      );
-      expect(
-        tester.getCenter(leading).dx,
-        lessThan(
-          tester
-              .getCenter(
-                find.byKey(CollapsingTaskListHeaderKeys.compactTitle),
-              )
-              .dx,
-        ),
-      );
-      await tester.tap(leading);
-      expect(taps, 1);
     });
 
     testWidgets('search button requests expand-and-focus', (tester) async {

@@ -89,7 +89,7 @@ void main() {
   /// phone-width window cannot render usefully — so any test that expects the
   /// hub glyph has to say which window it is in.
   ///
-  /// Desktop also swaps the leading widget for `TaskDetailDesktopBackLeading`,
+  /// Desktop also swaps the leading widget for `TaskDetailDesktopLeading`,
   /// which resolves `NavService` from getIt, so the stub goes in here too.
   void useDesktopSurface(WidgetTester tester) {
     tester.view

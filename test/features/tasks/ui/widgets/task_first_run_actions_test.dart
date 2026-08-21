@@ -7,10 +7,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_first_run_actions.dart';
 import 'package:lotti/get_it.dart';
@@ -18,6 +21,7 @@ import 'package:lotti/logic/create/entry_creation_service.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/fake_linked_entries_controller.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
 import '../../../../widget_test_utils.dart';
@@ -180,6 +184,137 @@ void main() {
         ),
         isTrue,
       );
+    });
+  });
+
+  group('watchTaskFirstRunState', () {
+    /// Renders a probe that records the state on every build, so a test can
+    /// assert on what the surfaces branching on it would have seen — including
+    /// the frames before the database answered.
+    Future<List<TaskFirstRunState>> pumpProbe(
+      WidgetTester tester, {
+      required Task task,
+      required Future<AgentDomainEntity?> agent,
+    }) async {
+      final seen = <TaskFirstRunState>[];
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            entryCreationServiceProvider.overrideWithValue(creation),
+            linkedEntriesControllerProvider(
+              task.meta.id,
+            ).overrideWith(FakeLinkedEntriesController.new),
+            taskAgentProvider.overrideWith((ref, id) => agent),
+          ],
+          child: WidgetTestBench(
+            child: Consumer(
+              builder: (context, ref, _) {
+                seen.add(watchTaskFirstRunState(ref, task));
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      return seen;
+    }
+
+    testWidgets(
+      'an outstanding agent lookup reads as unresolved, not as established — '
+      'guessing either way is what reflowed a new task after it painted',
+      (tester) async {
+        final pending = Completer<AgentDomainEntity?>();
+        addTearDown(() => pending.complete(null));
+
+        final seen = await pumpProbe(
+          tester,
+          task: buildTask(),
+          agent: pending.future,
+        );
+
+        expect(seen, everyElement(TaskFirstRunState.unresolved));
+      },
+    );
+
+    testWidgets('a blank task with nothing attached settles on first-run', (
+      tester,
+    ) async {
+      final seen = await pumpProbe(
+        tester,
+        task: buildTask(),
+        agent: Future<AgentDomainEntity?>.value(),
+      );
+
+      await tester.pumpAndSettle();
+      expect(seen.last, TaskFirstRunState.firstRun);
+    });
+
+    testWidgets(
+      'a task carrying its own content answers established immediately, '
+      'without waiting on a lookup that can only ever add content',
+      (tester) async {
+        final pending = Completer<AgentDomainEntity?>();
+        addTearDown(() => pending.complete(null));
+
+        final seen = await pumpProbe(
+          tester,
+          task: buildTask(checklistIds: const ['c1']),
+          agent: pending.future,
+        );
+
+        expect(seen, everyElement(TaskFirstRunState.established));
+      },
+    );
+
+    testWidgets(
+      'a failed lookup resolves as established rather than holding the page '
+      'on its shell forever',
+      (tester) async {
+        // Completed after the provider is listening, so the failure lands on
+        // Riverpod rather than on the test's zone.
+        final failing = Completer<AgentDomainEntity?>();
+        final seen = await pumpProbe(
+          tester,
+          task: buildTask(),
+          agent: failing.future,
+        );
+        failing.completeError(Exception('no agents'));
+        await tester.pumpAndSettle();
+
+        expect(seen.last, TaskFirstRunState.established);
+      },
+    );
+
+    testWidgets('watchTaskIsFirstRun reads unresolved as not-first-run', (
+      tester,
+    ) async {
+      final pending = Completer<AgentDomainEntity?>();
+      addTearDown(() => pending.complete(null));
+      var isFirstRun = true;
+      final task = buildTask();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            linkedEntriesControllerProvider(
+              task.meta.id,
+            ).overrideWith(FakeLinkedEntriesController.new),
+            taskAgentProvider.overrideWith((ref, id) => pending.future),
+          ],
+          child: WidgetTestBench(
+            child: Consumer(
+              builder: (context, ref, _) {
+                isFirstRun = watchTaskIsFirstRun(ref, task);
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(isFirstRun, isFalse);
     });
   });
 

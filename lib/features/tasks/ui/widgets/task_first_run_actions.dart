@@ -12,44 +12,88 @@ import 'package:lotti/features/tasks/state/task_focus_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/create/entry_creation_service.dart';
 
+/// How far the first-run question has been answered for a task.
+///
+/// Three states, not two: "we do not know yet" is a real answer, and the two
+/// surfaces that branch on it (`TaskForm` and `TaskDetailsPage`) have to be
+/// able to tell it apart from "established". Collapsing it into either
+/// boolean reflows the page a frame or two after it paints — which is what
+/// creating a task looked like: the established layout (wide measure, AI card
+/// with its assign CTA) rendered first, then the answer arrived and the whole
+/// view narrowed, re-centred and swapped the card for the block.
+enum TaskFirstRunState {
+  /// The database has not answered yet. Callers must hold, not guess.
+  unresolved,
+
+  /// The task has nothing on it: no agent, no content, no linked notes.
+  firstRun,
+
+  /// The task has content of some kind.
+  established,
+}
+
 /// Whether [task] should be treated as first-run, watching the two providers
 /// that answer "does this task have anything on it".
 ///
-/// **Unresolved is not blank.** Both providers start without a value, so
-/// reading them as `?? false` claimed "no agent, no linked entries" for the
-/// frames before the database answered — and a task that has both flashed the
-/// first-run offer, with the page narrowed to its measure and the action bar
-/// compacted, before the established UI replaced it. On a slow database that
-/// wrong state is long enough to tap.
+/// **Unresolved is not blank — and it is not established either.** Both
+/// providers start without a value, so reading them as `?? false` claimed "no
+/// agent, no linked entries" for the frames before the database answered, and
+/// a task that has both flashed the first-run offer. Reading them as
+/// established instead just moves the flash onto every *new* task. Hence the
+/// third state: the caller holds until the answer is real.
+///
+/// Two conditions deliberately resolve as [TaskFirstRunState.established]
+/// rather than holding, because neither is guaranteed to ever settle: a
+/// provider that failed, and a link whose target never resolves (a dangling
+/// edge leaves `resolved.length` permanently short). Holding on those would
+/// leave the page on its loading shell forever.
 ///
 /// Shared by `TaskForm` and `TaskDetailsPage`, which have to agree: they
 /// separately decide the block, the column measure, the compact action bar and
 /// whether the AI card shows its own assign CTA.
-bool watchTaskIsFirstRun(WidgetRef ref, Task task) {
+TaskFirstRunState watchTaskFirstRunState(WidgetRef ref, Task task) {
   final id = task.meta.id;
+  // A task carrying its own content is established whatever the providers
+  // say, so answer before waiting on them: an agent or a linked note can only
+  // ever *add* content, never take the checklist or the body text away. This
+  // keeps the hold below off the path an ordinary task open takes.
+  if (!TaskFirstRunActions.isBlank(task, hasAgent: false)) {
+    return TaskFirstRunState.established;
+  }
+
   final agent = ref.watch(taskAgentProvider(id));
   final links = ref.watch(linkedEntriesControllerProvider(id));
-  if (!agent.hasValue || !links.hasValue) return false;
+  if (agent.hasError || links.hasError) return TaskFirstRunState.established;
+  if (!agent.hasValue || !links.hasValue) return TaskFirstRunState.unresolved;
 
   // A link is only evidence of content once its target has resolved. Until
   // then "no linked note" is a not-yet, not a fact — the same wrong-for-a-frame
   // state one level down.
   final resolved = ref.watch(resolvedOutgoingLinkedEntriesProvider(id));
-  if (resolved.length < links.value!.length) return false;
+  if (resolved.length < links.value!.length) {
+    return TaskFirstRunState.established;
+  }
 
   return TaskFirstRunActions.isBlank(
-    task,
-    hasAgent: agent.value != null,
-    // Linked *tasks* are not this task's content. The page hides them from the
-    // linked-entries list (`hideTaskEntries: true`) and gives them their own
-    // card, and counting them made the block depend on link *direction*: this
-    // controller reports outgoing links only, while the Linked Tasks card
-    // resolves relationships both ways, so one relationship read as content
-    // from the `fromId` end and as nothing from the `toId` end — flipping the
-    // block, the page measure and the compact action bar with it.
-    hasLinkedEntries: ref.watch(hasNonTaskLinkedEntriesProvider(id)),
-  );
+        task,
+        hasAgent: agent.value != null,
+        // Linked *tasks* are not this task's content. The page hides them from the
+        // linked-entries list (`hideTaskEntries: true`) and gives them their own
+        // card, and counting them made the block depend on link *direction*: this
+        // controller reports outgoing links only, while the Linked Tasks card
+        // resolves relationships both ways, so one relationship read as content
+        // from the `fromId` end and as nothing from the `toId` end — flipping the
+        // block, the page measure and the compact action bar with it.
+        hasLinkedEntries: ref.watch(hasNonTaskLinkedEntriesProvider(id)),
+      )
+      ? TaskFirstRunState.firstRun
+      : TaskFirstRunState.established;
 }
+
+/// Whether [task] is first-run *right now*, for callers that render inside a
+/// page which already held until [watchTaskFirstRunState] resolved.
+bool watchTaskIsFirstRun(WidgetRef ref, Task task) =>
+    watchTaskFirstRunState(ref, task) == TaskFirstRunState.firstRun;
 
 /// The "what now?" block on a task that has nothing on it yet.
 ///

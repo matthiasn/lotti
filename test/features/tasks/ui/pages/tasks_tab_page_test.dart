@@ -1,5 +1,7 @@
 // ignore_for_file: avoid_redundant_argument_values
 
+import 'dart:async';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -8,6 +10,7 @@ import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/chips/active_filter_chip.dart';
@@ -572,6 +575,102 @@ void main() {
     ).captured.single;
     expect(capturedLabelIds, ['label-1']);
   });
+
+  testWidgets(
+    "the default FAB waits for the category's agent assignment before it "
+    'navigates, so the new task opens on the layout it will keep',
+    (tester) async {
+      final createdTask = TestTaskFactory.create(
+        id: 'agent-task',
+        title: '',
+        categoryId: 'cat-1',
+        dateFrom: DateTime(2026, 4, 8, 9),
+        dateTo: DateTime(2026, 4, 8, 10),
+      );
+      when(
+        () => mockPersistenceLogic.createTaskEntry(
+          data: any(named: 'data'),
+          entryText: any(named: 'entryText'),
+          categoryId: any(named: 'categoryId'),
+          labelIds: any(named: 'labelIds'),
+        ),
+      ).thenAnswer((_) async => createdTask);
+
+      // A category that auto-assigns an agent — the case where navigating
+      // first meant the page painted first-run and then reflowed into the
+      // established layout as the agent landed.
+      when(() => mockEntitiesCacheService.getCategoryById('cat-1')).thenReturn(
+        CategoryDefinition(
+          id: 'cat-1',
+          createdAt: DateTime(2024, 1, 1),
+          updatedAt: DateTime(2024, 1, 1),
+          name: 'Work',
+          vectorClock: null,
+          private: false,
+          active: true,
+          favorite: false,
+          color: '#3355FF',
+          defaultTemplateId: 'template-1',
+        ),
+      );
+
+      final assignment = Completer<AgentIdentityEntity>();
+      addTearDown(() {
+        if (!assignment.isCompleted) assignment.completeError(Exception('x'));
+      });
+      final agentService = MockTaskAgentService();
+      when(
+        () => agentService.createTaskAgent(
+          taskId: any(named: 'taskId'),
+          allowedCategoryIds: any(named: 'allowedCategoryIds'),
+          templateId: any(named: 'templateId'),
+          profileId: any(named: 'profileId'),
+          setupOrigin: any(named: 'setupOrigin'),
+          setupOriginEntityId: any(named: 'setupOriginEntityId'),
+          awaitContent: any(named: 'awaitContent'),
+          automaticUpdatesEnabled: any(named: 'automaticUpdatesEnabled'),
+        ),
+      ).thenAnswer((_) => assignment.future);
+
+      fakeController = FakeJournalPageController(state());
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const AppCommandHost(
+            handlers: {},
+            platform: TargetPlatform.windows,
+            child: TasksTabPage(),
+          ),
+          overrides: [
+            journalPageScopeProvider.overrideWithValue(true),
+            journalPageControllerProvider(
+              true,
+            ).overrideWith(() => fakeController),
+            taskAgentServiceProvider.overrideWithValue(agentService),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.tap(find.byIcon(LottiIcons.add));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      verifyNever(
+        () => mockNavService.beamToNamed('/tasks/agent-task', data: null),
+      );
+
+      assignment.completeError(Exception('assignment finished'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // Even a failed assignment releases the navigation — the task exists,
+      // and stranding the user on the list would be the worse outcome.
+      verify(
+        () => mockNavService.beamToNamed('/tasks/agent-task', data: null),
+      ).called(1);
+    },
+  );
 
   testWidgets('uses the design-system FAB with bottom-nav padding', (
     tester,

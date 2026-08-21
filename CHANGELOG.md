@@ -5,7 +5,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [1.0.11]
+### Fixed
+- **Creating a task on desktop no longer flashes and reloads the page.** A new
+  task opened on the layout of an established one — wide column, AI card — and
+  then collapsed into the blank-task layout a moment later, sometimes twice
+  over as the category's agent was attached. The page now waits for those two
+  answers before it paints, so a new task arrives in the layout it keeps.
+
 ### Changed
+- **Audio summaries stay readable when the entry is collapsed.** A summarised
+  recording showed its summary clamped to a single line, which on a phone meant
+  a first clause and an ellipsis. It now runs up to five lines. The plain
+  transcript preview, shown for recordings that have no summary yet, stays on
+  one line.
+- **The Hide list control moved into the task.** On desktop, the toggle that
+  hides the task list now sits in the task's own toolbar, top left beside the
+  back arrow — the same corner, and the same button, that Show list occupies
+  once the list is hidden. It used to sit beside the task list's own title,
+  where it shifted that title sideways whenever a task was selected.
 - **Leaner goal cards and clearer signal readings.** Goal cards on the overview
   no longer repeat every linked habit as a full row — the status pill already
   says how the goal is doing, and a habit's own record lives on its goal's

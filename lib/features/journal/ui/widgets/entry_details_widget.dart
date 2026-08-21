@@ -641,6 +641,18 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
 /// label. Falls back to the transcript's opening line for recordings that
 /// have not been summarized — not yet, or never, because they are too short,
 /// belong to no task, or were transcribed before summaries existed.
+/// Lines of AI summary a collapsed audio card shows before it ellipsizes.
+///
+/// Enough for a real two-to-five-sentence summary to land, still far shorter
+/// than the transcript the collapsed state exists to fold away.
+const int _collapsedAudioSummaryMaxLines = 5;
+
+/// Lines of raw transcript a collapsed audio card shows when it has no
+/// summary yet. Stays at one: that text is a *preview* of what expanding
+/// reveals in full, not a condensation of it, so giving it five lines would
+/// just paste five lines of meeting notes into the list.
+const int _collapsedAudioTranscriptMaxLines = 1;
+
 class _CollapsedAudioOneLiner extends ConsumerWidget {
   const _CollapsedAudioOneLiner({required this.audio, this.onTap});
 
@@ -649,15 +661,22 @@ class _CollapsedAudioOneLiner extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final oneLiner =
-        audioSummaryOneLiner(ref, audio.meta.id) ?? audioEntryOneLiner(audio);
+    final summary = audioSummaryOneLiner(ref, audio.meta.id);
+    final oneLiner = summary ?? audioEntryOneLiner(audio);
     if (oneLiner == null) return const SizedBox.shrink();
     final tokens = context.designTokens;
     final text = Padding(
       padding: EdgeInsets.only(top: tokens.spacing.step2),
       child: Text(
         oneLiner,
-        maxLines: 1,
+        // A summary clamped to one line is not a summary — at phone width the
+        // first clause plus an ellipsis was all that survived, which is the
+        // one thing summarizing an hour of meeting notes was meant to avoid.
+        // Several lines still collapse the entry to a fraction of the full
+        // transcript, so the collapsed card can afford them.
+        maxLines: summary != null
+            ? _collapsedAudioSummaryMaxLines
+            : _collapsedAudioTranscriptMaxLines,
         overflow: TextOverflow.ellipsis,
         style: tokens.typography.styles.body.bodySmall.copyWith(
           color: tokens.colors.text.mediumEmphasis,

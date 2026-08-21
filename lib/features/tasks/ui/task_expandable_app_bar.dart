@@ -58,7 +58,9 @@ class TaskExpandableAppBar extends ConsumerWidget {
         return SliverAppBar(
           backgroundColor: context.designTokens.colors.background.level01,
           expandedHeight: expandedHeight,
-          leadingWidth: 48,
+          leadingWidth: isDesktopLayout(context)
+              ? TaskDetailDesktopLeading.widthFor(context, glass: true)
+              : 48,
           titleSpacing: 0,
           toolbarHeight: 40,
           scrolledUnderElevation: 0,
@@ -145,12 +147,12 @@ class TaskExpandableAppBar extends ConsumerWidget {
   }
 }
 
-/// Glass-styled back button leading for the expandable task app bar.
+/// Glass-styled leading for the expandable task app bar.
 ///
 /// Mobile: always renders [GlassBackButton] which pops the navigator.
-/// Desktop: delegates to [TaskDetailDesktopBackLeading], shared with the
-/// compact bar so the back affordance is visually identical whether the
-/// task has cover art or not.
+/// Desktop: delegates to [TaskDetailDesktopLeading], shared with the compact
+/// bar so the back arrow and the list-pane toggle are visually identical
+/// whether the task has cover art or not.
 class _GlassTaskBackLeading extends StatelessWidget {
   const _GlassTaskBackLeading({required this.isDesktop});
 
@@ -164,7 +166,7 @@ class _GlassTaskBackLeading extends StatelessWidget {
         child: GlassBackButton(),
       );
     }
-    return const TaskDetailDesktopBackLeading();
+    return const TaskDetailDesktopLeading(glass: true);
   }
 }
 
