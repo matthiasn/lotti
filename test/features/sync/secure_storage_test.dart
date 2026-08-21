@@ -1,41 +1,18 @@
-import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 
+import '../../helpers/package_info.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  // Mock the PackageInfo platform channel so `PackageInfo.fromPlatform()` works
-  // in tests without a real platform.
-  setUpAll(() {
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(
-          const MethodChannel('dev.fluttercommunity.plus/package_info'),
-          (MethodCall methodCall) async {
-            if (methodCall.method == 'getAll') {
-              return <String, dynamic>{
-                'appName': 'Lotti',
-                'packageName': 'com.example.lotti.test',
-                'version': '1.0.0',
-                'buildNumber': '1',
-              };
-            }
-            return null;
-          },
-        );
-  });
-
-  tearDownAll(() {
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(
-          const MethodChannel('dev.fluttercommunity.plus/package_info'),
-          null,
-        );
-  });
-
-  // Each test starts with a fresh in-memory secure storage backend.
+  // Each test starts with a fresh in-memory secure storage backend, and with
+  // app metadata `PackageInfo.fromPlatform()` can answer from. Seeding it per
+  // test rather than per file matters: the value is cached in an isolate-wide
+  // static, and the release lane runs the whole suite in one isolate.
   setUp(() {
+    mockPackageInfo(packageName: 'com.example.lotti.test');
     FlutterSecureStorage.setMockInitialValues({});
   });
 

@@ -1,4 +1,3 @@
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/whats_new/model/whats_new_content.dart';
@@ -9,6 +8,7 @@ import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../helpers/package_info.dart';
 import '../../../mocks/mocks.dart';
 
 void main() {
@@ -16,33 +16,6 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(FakeWhatsNewRelease());
-
-    // Mock PackageInfo platform channel
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(
-          const MethodChannel('dev.fluttercommunity.plus/package_info'),
-          (MethodCall methodCall) async {
-            if (methodCall.method == 'getAll') {
-              return <String, dynamic>{
-                'appName': 'Lotti',
-                'packageName': 'app.lotti',
-                'version':
-                    '99.99.99', // High version to include all test releases
-                'buildNumber': '1',
-              };
-            }
-            return null;
-          },
-        );
-  });
-
-  tearDownAll(() {
-    // Clear the PackageInfo mock to prevent leaking to other tests
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(
-          const MethodChannel('dev.fluttercommunity.plus/package_info'),
-          null,
-        );
   });
 
   late MockWhatsNewService mockService;
@@ -77,6 +50,10 @@ void main() {
   );
 
   setUp(() {
+    // Per test, not per file: `PackageInfo` caches the first value it sees for
+    // the whole isolate, and the release lane runs every test file in one.
+    // A high version keeps all test releases in range.
+    mockPackageInfo(packageName: 'app.lotti', version: '99.99.99');
     mockService = MockWhatsNewService();
     SharedPreferences.setMockInitialValues({});
 

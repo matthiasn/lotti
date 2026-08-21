@@ -170,6 +170,12 @@ class DesignSystemCalendarPicker extends ConsumerWidget {
   }
 }
 
+/// The picker header's jump-to-today action.
+///
+/// Keyed because callers that also carry their own Today control — the Daily
+/// OS date strip, for one — otherwise cannot tell the two apart by label.
+const designSystemDatePickerTodayKey = Key('ds_date_picker_today');
+
 class _SelectedDateHeader extends StatelessWidget {
   const _SelectedDateHeader({required this.date, this.onTodayPressed});
 
@@ -192,6 +198,7 @@ class _SelectedDateHeader extends StatelessWidget {
         ),
         SizedBox(width: tokens.spacing.step2),
         DesignSystemButton(
+          key: designSystemDatePickerTodayKey,
           label: context.messages.journalTodayButton,
           variant: DesignSystemButtonVariant.tertiary,
           size: DesignSystemButtonSize.medium,

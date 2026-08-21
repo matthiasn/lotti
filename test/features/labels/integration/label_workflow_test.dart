@@ -76,7 +76,13 @@ void main() {
 
   tearDown(() async {
     await db.close();
-    getIt.unregister<Directory>();
+    // Hand back everything this file registered. Leaving JournalDb behind used
+    // to break the next file that registers its own — GetIt throws on a
+    // duplicate registration, and under the whole-suite bundle "the next file"
+    // is whatever the run happens to order after this one.
+    getIt
+      ..unregister<JournalDb>()
+      ..unregister<Directory>();
     if (previousDirectory != null) {
       getIt.registerSingleton<Directory>(previousDirectory!);
     }
