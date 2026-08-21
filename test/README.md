@@ -729,6 +729,17 @@ unload, and under very_good's single-isolate optimizer that silently
 changes text metrics — and therefore intrinsic widths — for every test
 that runs afterwards. The three ingredients:
 
+A handful of non-capture tests load the real fonts too, and legitimately:
+`modal_title_fit_test.dart`, `linked_tasks_widget_test.dart` and the
+`AddDeviceModal viewport fit` group all assert geometry, and the test font is
+far wider than Inter — measured against it they describe a layout that does not
+ship. Because that loading is process-wide and permanent, the rule for everyone
+else follows: **a test that asserts width-driven layout pins the fonts itself**
+(`setUpAll(loadAppFonts)`), so it reads the same whether or not one of those
+files ran first. Tuning a break point against whichever font the bundle order
+happened to leave behind is how `daily_os_next`'s header tests came to pass
+locally and fail in the release lane.
+
 1. **Real fonts.** Tests render the blocky FlutterTest font by default.
    Load the bundled families with `FontLoader` in `setUpAll`, reading the
    bytes straight from the repo files (`assets/fonts/...`) — `rootBundle`

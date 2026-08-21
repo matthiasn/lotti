@@ -48,6 +48,15 @@ Two consequences:
 - **Passing a file alone proves less than it looks.** CI and optimized local runs
   add shared process state across files.
 
+Three process-wide singletons have already broken a bundled run, none of them
+obvious from the file that failed:
+
+| Resource | Trap | What to do instead |
+|----------|------|--------------------|
+| `PackageInfo` | `PackageInfo._fromPlatform` caches the first answer for the isolate, so mocking the platform channel in `setUpAll` only wins if your file runs first | `mockPackageInfo()` from `test/helpers/package_info.dart`, called in `setUp` |
+| Loaded fonts | `loadAppFonts()` is irreversible and process-wide: after any file calls it, every later file lays text out with Inter rather than the wide test font | A test that asserts width-driven layout pins the fonts itself, so it reads the same either way — and describes what ships |
+| GetIt | A file that registers a singleton and does not unregister it makes the *next* file's `registerSingleton` throw | `setUpTestGetIt()` / `tearDownTestGetIt()`, which reset before registering |
+
 `test/flutter_test_config.dart` registers global teardown for exactly this
 reason. It resets Mocktail's matcher state and restores the process-wide test
 baseline for DevLogger, Google Fonts, Drift warnings, and GetIt's reassignment

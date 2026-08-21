@@ -5,6 +5,7 @@ import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/plan_view_toggle.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/processing_category_filter_button.dart';
 
+import '../../../../test_utils/screenshot_harness.dart';
 import '../../../../widget_test_utils.dart';
 import 'day_page_test_helpers.dart';
 
@@ -13,11 +14,20 @@ import 'day_page_test_helpers.dart';
 /// navigation takes a row of its own, and when the actions drop below the
 /// toggle. Driven through [DayPage], which is what builds that header.
 void main() {
+  // The header's break points are text-width driven, so pin the production
+  // fonts rather than inheriting whatever the run happened to load: font
+  // loading is process-wide and irreversible, so the ambient default is not a
+  // stable baseline in a bundled run.
+  setUpAll(loadAppFonts);
+
   group('DayHeader layout', () {
     testWidgets('header stacks the three-view toggle when it needs room', (
       tester,
     ) async {
-      setTestSurfaceSize(tester, const Size(640, 844));
+      // Just under the width at which the toggle joins the title row, so the
+      // assertion sits on the stacking side of a real break point rather than
+      // somewhere comfortably wide.
+      setTestSurfaceSize(tester, const Size(600, 844));
       const label = 'May 31, 2026';
       await tester.pumpWidget(
         wrapDayPage(
@@ -26,7 +36,7 @@ void main() {
             dateStrip: dateStripLike(label),
           ),
           mediaQueryData: phoneMediaQueryData.copyWith(
-            size: const Size(640, 844),
+            size: const Size(600, 844),
           ),
         ),
       );

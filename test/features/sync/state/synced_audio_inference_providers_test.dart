@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -235,10 +237,20 @@ void main() {
           ..registerSingleton<DomainLogger>(MockDomainLogger());
         addTearDown(getIt.reset);
 
+        // `UpdateNotifications` batches sync emissions behind a one-second
+        // real Timer, so the forwarded call cannot be awaited on a fixed
+        // sleep: on a loaded runner — the whole suite in one isolate — the
+        // event loop is not free when the guess expires, and the verify runs
+        // before the dispatch. Wait for the dispatch itself instead.
+        final dispatched = Completer<String>();
         final mockDispatcher = MockSyncedAudioInferenceDispatcher();
-        when(
-          () => mockDispatcher.maybeDispatch(any()),
-        ).thenAnswer((_) async {});
+        when(() => mockDispatcher.maybeDispatch(any())).thenAnswer((
+          invocation,
+        ) async {
+          if (!dispatched.isCompleted) {
+            dispatched.complete(invocation.positionalArguments.first as String);
+          }
+        });
 
         final wiringContainer = ProviderContainer(
           overrides: [
@@ -258,10 +270,7 @@ void main() {
         // Push a sync notification; the listener's started subscription
         // must forward it to the dispatcher.
         notifications.notify({'audio-via-provider'}, fromSync: true);
-        await Future<void>.delayed(
-          const Duration(seconds: 1, milliseconds: 50),
-        );
-
+        expect(await dispatched.future, 'audio-via-provider');
         verify(
           () => mockDispatcher.maybeDispatch('audio-via-provider'),
         ).called(1);
@@ -271,18 +280,23 @@ void main() {
         wiringContainer.dispose();
         await pumpEventQueue();
 
+        // Subscribing here proves the batch actually fired rather than
+        // trusting a second sleep: once the id reaches the stream the
+        // listener has had its chance, and it must not have taken it.
+        final delivered = notifications.updateStream.first;
         notifications.notify({'audio-after-dispose'}, fromSync: true);
-        await Future<void>.delayed(
-          const Duration(seconds: 1, milliseconds: 50),
-        );
+        expect(await delivered, contains('audio-after-dispose'));
+        await pumpEventQueue();
 
         verifyNever(
           () => mockDispatcher.maybeDispatch('audio-after-dispose'),
         );
       },
       // Uses real time because UpdateNotifications batches sync emissions
-      // on a 1s real-clock Timer; fakeAsync can't intercept it here.
-      timeout: const Timeout(Duration(seconds: 10)),
+      // on a 1s real-clock Timer; fakeAsync can't intercept it here. Every
+      // wait below is on an actual signal, so the budget only has to cover a
+      // loaded runner, not a guessed delay.
+      timeout: const Timeout(Duration(seconds: 30)),
     );
   });
 }

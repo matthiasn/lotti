@@ -4,7 +4,6 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/features/dashboards/state/dashboards_page_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -13,28 +12,27 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
-
-class _MockUpdateNotifications extends Mock implements UpdateNotifications {}
+import '../../../widget_test_utils.dart';
 
 void main() {
   group('DashboardsPageController', () {
     late MockJournalDb mockDb;
-    late _MockUpdateNotifications mockNotifications;
+    late MockUpdateNotifications mockNotifications;
     late StreamController<Set<String>> notificationController;
     late ProviderContainer container;
 
-    setUp(() {
-      mockDb = MockJournalDb();
-      mockNotifications = _MockUpdateNotifications();
+    setUp(() async {
       notificationController = StreamController<Set<String>>.broadcast();
+
+      // The shared harness resets GetIt before registering, so a file that
+      // leaked a singleton earlier in a bundled run cannot break this one.
+      final mocks = await setUpTestGetIt();
+      mockDb = mocks.journalDb;
+      mockNotifications = mocks.updateNotifications;
 
       when(
         () => mockNotifications.updateStream,
       ).thenAnswer((_) => notificationController.stream);
-
-      getIt
-        ..registerSingleton<JournalDb>(mockDb)
-        ..registerSingleton<UpdateNotifications>(mockNotifications);
 
       container = ProviderContainer();
     });
@@ -42,7 +40,7 @@ void main() {
     tearDown(() async {
       container.dispose();
       await notificationController.close();
-      await getIt.reset();
+      await tearDownTestGetIt();
     });
 
     group('dashboardsProvider', () {

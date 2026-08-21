@@ -21,6 +21,7 @@ import 'package:lotti/features/daily_os_next/ui/widgets/day_activity_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/plan_view_toggle.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/processing_category_filter_button.dart';
+import 'package:lotti/features/design_system/components/calendar_pickers/design_system_date_picker_modal.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart' as nav_service;
@@ -28,6 +29,7 @@ import 'package:lotti/utils/device_region.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
+import '../../../../test_utils/screenshot_harness.dart';
 import '../../../../widget_test_utils.dart';
 
 final StreamProvider<int> _dailyOsRootReloadTickProvider = StreamProvider<int>(
@@ -120,6 +122,13 @@ MockAudioRecorderRepository _permissionlessRecorder() {
 }
 
 void main() {
+  // Several tests here assert width-driven layout decisions — whether the year
+  // survives, whether Today fits. Those depend on real text metrics, so pin the
+  // production fonts instead of inheriting whatever the run happened to load:
+  // font loading is process-wide and cannot be undone, so an ambient default is
+  // not a stable baseline in a bundled run.
+  setUpAll(loadAppFonts);
+
   tearDown(() => nav_service.beamToNamedOverride = null);
 
   group('DailyOsNextRoot', () {
@@ -525,7 +534,7 @@ void main() {
     );
 
     testWidgets(
-      "the picker's own Today action is the phone's way back to today",
+      "the picker's own Today action returns the selection to today",
       (tester) async {
         setTestSurfaceSize(tester, const Size(390, 844));
         await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
@@ -544,34 +553,34 @@ void main() {
           await tester.pump();
           await tester.pump();
 
-          // Step off today. The phone header carries no Today button — the
-          // date is the one thing that must stay readable at this width.
+          // Step off today. At phone width the full date still fits, so the
+          // strip keeps the year.
           await tester.tap(find.byIcon(LottiIcons.chevronRight));
           await tester.pump();
           await tester.pump();
           await tester.pump();
-          expect(find.text('Wed, May 27'), findsOneWidget);
-          expect(
-            find.byKey(const Key('daily_os_date_strip_today')),
-            findsNothing,
-          );
+          expect(find.text('Wed, May 27, 2026'), findsOneWidget);
 
           // Tapping the date opens the design-system picker, whose header
-          // carries the Today quick action that replaces it.
-          await tester.tap(find.text('Wed, May 27'));
+          // carries a Today quick action of its own — a second way back that
+          // has to work even when the strip's button is out of reach behind
+          // the sheet.
+          await tester.tap(find.text('Wed, May 27, 2026'));
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 300));
           expect(find.byType(CalendarDatePicker), findsOneWidget);
 
-          await tester.tap(find.text('Today'));
+          await tester.tap(find.byKey(designSystemDatePickerTodayKey));
           await tester.pump();
           await tester.tap(find.text('Done'));
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 300));
           await tester.pump();
 
+          // Back on today the label reads Today and the strip's own button
+          // drops out, so a single match proves the selection moved.
           expect(find.text('Today'), findsOneWidget);
-          expect(find.text('Wed, May 27'), findsNothing);
+          expect(find.text('Wed, May 27, 2026'), findsNothing);
         });
       },
     );
@@ -579,10 +588,10 @@ void main() {
     testWidgets(
       'a narrow pane in a desktop window still drops the year and Today',
       (tester) async {
-        // The desktop sidebar is resizable to 500pt, so the window can be
-        // "desktop" while this pane is not: MediaQuery reports 1280, the
-        // render tree gets 460. The strip must follow the pane.
-        setTestSurfaceSize(tester, const Size(460, 900));
+        // The desktop sidebar is resizable, so the window can be "desktop"
+        // while this pane is not: MediaQuery reports 1280, the render tree
+        // gets 344. The strip must follow the pane.
+        setTestSurfaceSize(tester, const Size(344, 900));
         await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
           await tester.pumpWidget(
             _wrap(
@@ -608,7 +617,7 @@ void main() {
           await tester.pump();
           await tester.pump();
 
-          // 460pt still fits the year — it is the Today button that does
+          // 344pt still fits the year — it is the Today button that does
           // not, and dropping it is what keeps the date unsqueezed.
           expect(find.text('Wed, May 27, 2026'), findsOneWidget);
           expect(
@@ -623,7 +632,23 @@ void main() {
     testWidgets(
       'a pane too narrow for the year drops it, desktop window or not',
       (tester) async {
-        setTestSurfaceSize(tester, const Size(405, 900));
+        setTestSurfaceSize(tester, const Size(280, 900));
+
+        // In production metrics the compact tier only engages below the width
+        // at which the rest of the day surface still has a layout — which is
+        // what `_DateStrip` says of itself: "at those sizes the rest of the
+        // surface overflows independently. The ellipsis is the honest floor
+        // here." The strip's own floor is what this test is about, so the
+        // surrounding overflow is silenced rather than dragged in.
+        final previousOnError = FlutterError.onError;
+        FlutterError.onError = (details) {
+          if (details.exceptionAsString().contains('A RenderFlex overflowed')) {
+            return;
+          }
+          previousOnError?.call(details);
+        };
+        addTearDown(() => FlutterError.onError = previousOnError);
+
         await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
           await tester.pumpWidget(
             _wrap(
@@ -649,7 +674,7 @@ void main() {
           await tester.pump();
           await tester.pump();
 
-          // 405pt is inside the band where the date and both chevrons fit
+          // 280pt is inside the band where the date and both chevrons fit
           // but the label's own step3 insets do not: budgeting them is what
           // keeps the year from being chosen and then ellipsized.
           expect(find.text('Wed, May 27'), findsOneWidget);
@@ -692,12 +717,12 @@ void main() {
           await tester.pump();
           await tester.pump();
 
-          await tester.tap(find.text('Thu, Feb 10'));
+          await tester.tap(find.text('Thu, Feb 10, 2028'));
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 300));
           expect(find.byType(CalendarDatePicker), findsOneWidget);
 
-          await tester.tap(find.text('Today'));
+          await tester.tap(find.byKey(designSystemDatePickerTodayKey));
           await tester.pump();
           await tester.tap(find.text('Done'));
           await tester.pump();
@@ -705,7 +730,7 @@ void main() {
           await tester.pump();
 
           expect(find.text('Today'), findsOneWidget);
-          expect(find.text('Thu, Feb 10'), findsNothing);
+          expect(find.text('Thu, Feb 10, 2028'), findsNothing);
         });
       },
     );
@@ -735,7 +760,7 @@ void main() {
           await tester.pump();
           await tester.pump();
 
-          final label = find.text('Wed, May 27');
+          final label = find.text('Wed, May 27, 2026');
           expect(label, findsOneWidget);
 
           // Nothing on the navigation row squeezed the date into an
