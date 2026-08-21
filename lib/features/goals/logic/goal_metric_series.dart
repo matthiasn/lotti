@@ -117,27 +117,30 @@ num? goalMetricSevenDayAverageOn(
   var seenTarget = false;
   num sum = 0;
   var count = 0;
-  // The SAME run-up the series consumes. Without it this helper answered
-  // "no average" for exactly the days the chart had just started drawing
-  // one — the reflection sheet would omit the row for the first six visible
-  // days, then quote a different figure once the span grew long enough to
-  // reach back on its own.
-  var hasRunUp = false;
-  for (final entry in metric.warmupValues.entries) {
-    final key = GoalWindow.dayUtc(entry.key);
-    if (key.isAfter(target)) continue;
-    hasRunUp = true;
-    if (!key.isBefore(windowStart)) {
-      sum += entry.value;
-      count++;
-    }
-  }
   for (final entry in metric.days) {
     final key = GoalWindow.dayUtc(entry.day);
     if (key.isAfter(target)) continue;
     if (first == null || key.isBefore(first)) first = key;
     if (key == target) seenTarget = true;
     if (entry.isObserved && !key.isBefore(windowStart)) {
+      sum += entry.value;
+      count++;
+    }
+  }
+  // The SAME run-up the series consumes, under the SAME filter — entries
+  // strictly BEFORE the first rendered day, which is why this pass has to
+  // follow the one above rather than lead it. Without any run-up the helper
+  // answered "no average" for exactly the days the chart had just started
+  // drawing one. Without the filter it went wrong the other way: an entry
+  // that also appears among the rendered days was counted TWICE, once as
+  // run-up and once as an observation, and one falling inside the rendered
+  // range stood in for the full week of history the series still insists on.
+  var hasRunUp = false;
+  for (final entry in metric.warmupValues.entries) {
+    final key = GoalWindow.dayUtc(entry.key);
+    if (first == null || !key.isBefore(first)) continue;
+    hasRunUp = true;
+    if (!key.isBefore(windowStart)) {
       sum += entry.value;
       count++;
     }

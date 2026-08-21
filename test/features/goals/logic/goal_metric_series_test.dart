@@ -294,6 +294,43 @@ void main() {
       }
     });
 
+    test('a run-up entry overlapping a rendered day is counted once, not '
+        'twice, and does not stand in for the missing week', () {
+      // The series admits only warm-up entries strictly BEFORE the first
+      // rendered day. The helper admitted any entry up to the day asked
+      // about, so a provider that ever emitted an overlapping entry would
+      // have it added twice — once as run-up, once as an observation — and
+      // an entry inside the rendered range would satisfy the run-up test
+      // that the series still fails, skipping the full-week guard.
+      final overlapping = {
+        for (var offset = 6; offset >= 0; offset--)
+          today.subtract(Duration(days: offset)): 9000,
+      };
+
+      final series = goalMetricSevenDayAverage(
+        metric(warmup: overlapping),
+        today: today,
+      );
+      // Every rendered day is 1000, and the overlapping entries are all
+      // discarded, so the mean is the rendered value alone.
+      expect(series, hasLength(1));
+      expect(series.single.value, closeTo(1000, 0.001));
+
+      // The helper agrees — it neither double-counts nor waives the guard.
+      expect(
+        goalMetricSevenDayAverageOn(metric(warmup: overlapping), day: today),
+        closeTo(1000, 0.001),
+      );
+      expect(
+        goalMetricSevenDayAverageOn(
+          metric(warmup: overlapping),
+          day: today.subtract(const Duration(days: 3)),
+        ),
+        isNull,
+        reason: 'an overlapping entry is not a week of history',
+      );
+    });
+
     test('with no run-up both still decline the same days', () {
       final series = goalMetricSevenDayAverage(metric(), today: today);
       expect(series, hasLength(1));

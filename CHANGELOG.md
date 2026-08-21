@@ -24,15 +24,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reads as "Goal 10K" rather than "Goal ≥ 10,000".
 - **A signal's reading keeps its top-right corner on a phone.** The latest
   value and its 7-day average were dropping to a left-aligned stack under the
-  signal's name on any card narrower than about 336 pixels — which is every
-  phone, and plenty of desktop windows — even though the two figures use a
-  third of the row. They now sit where the rest of the page puts its key
-  figures: pinned to the card's top-right corner, the average alongside the
+  signal's name on any card narrower than about 336 pixels — which covers
+  most phones and plenty of narrow desktop windows — even though the two
+  figures use a third of the row. They now sit where the rest of the page
+  puts its key figures: pinned to the card's top-right corner, the average alongside the
   value on the same baseline, with the status line alone beneath. The average
   drops below the value, and the whole block below the title, only when the
   reading is genuinely too long to fit. On the habit completion-rate card the
-  "7-day avg" label beside the big percentage is now written "7-day Ø", the
-  same mark the signal cards use.
+  "7-day avg" label beside the big percentage now uses the same average mark
+  the signal cards do, written the way each language reads it.
 - **The 7-day average line now covers the whole chart.** It used to appear only
   once the visible date range itself was seven days old, so it started a week
   into the chart and the earliest part of the range looked like it had no
@@ -67,7 +67,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the corner now shows the latest reading with its 7-day average beside it,
   tinted to match the average line on the chart, and leaves the target to the
   chart legend. The completion-rate card is now titled "Goal completion rate", and its
-  header follows the same pattern as every other card: title on the left, the 7-day average with its status and
+  header follows the same pattern as every other card: title on the left, the rolling average with its status and
   trend stacked on the right.
 - **The goal header's microphone no longer looks switched off.** The button
   that starts a voice check-in was drawing the crossed-out "mic muted" glyph,
