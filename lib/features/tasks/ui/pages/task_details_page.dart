@@ -521,7 +521,19 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
     // At the full reading width the three disagreed by hundreds of points and
     // the only card on the page floated far left of the window's centre — the
     // "nothing lines up with anything" read every reviewer described.
-    final isFirstRun = watchTaskIsFirstRun(ref, task);
+    // Hold the page on its loading shell until the first-run question has a
+    // real answer. Every branch below it is layout-bearing — the column
+    // measure, whether the first sliver fills the viewport, the AI card
+    // against the first-run block, the compact action bar — so painting a
+    // guess and correcting it a frame later is the "created a task and the
+    // whole view collapsed" flash. The shell is the same one the entry load
+    // already shows, so this adds a state transition to nothing: it only
+    // defers the first *content* paint until that paint is final.
+    final firstRunState = watchTaskFirstRunState(ref, task);
+    if (firstRunState == TaskFirstRunState.unresolved) {
+      return const EmptyScaffoldWithTitle('');
+    }
+    final isFirstRun = firstRunState == TaskFirstRunState.firstRun;
     final contentMaxWidth = isFirstRun
         ? TaskFirstRunActions.maxWidth
         : kDetailContentMaxWidth;

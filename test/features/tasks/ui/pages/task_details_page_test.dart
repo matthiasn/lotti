@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -7,6 +8,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
@@ -278,6 +280,66 @@ void main() {
               'the column adopts the block measure so the field, the chip '
               'lane and the card share one right edge',
         );
+      },
+    );
+
+    testWidgets(
+      'a brand-new task holds its loading shell until the first-run question '
+      'is answered, instead of painting the established layout and collapsing '
+      'into the first-run one a frame later',
+      (tester) async {
+        final blank = testTask.copyWith(
+          data: testTask.data.copyWith(title: '', checklistIds: const []),
+          entryText: null,
+        );
+        when(
+          () => mockJournalDb.journalEntityById(testTask.meta.id),
+        ).thenAnswer((_) async => blank);
+
+        // The agent lookup a freshly created task waits on. Held open so the
+        // page is observed in exactly the state that used to flash.
+        final agent = Completer<AgentDomainEntity?>();
+        addTearDown(() {
+          if (!agent.isCompleted) agent.complete(null);
+        });
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            TaskDetailsPage(taskId: testTask.id),
+            overrides: [
+              ...hTaskDetailsPageOverrides(),
+              linkedEntriesControllerProvider(
+                testTask.meta.id,
+              ).overrideWith(FakeLinkedEntriesController.new),
+              taskAgentProvider.overrideWith((ref, id) => agent.future),
+            ],
+          ),
+        );
+        // Enough frames for the entry itself to load — the task is on hand,
+        // only the first-run question is outstanding.
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+
+        expect(
+          find.byType(DesktopTaskHeaderConnector),
+          findsNothing,
+          reason: 'no content may paint before its layout is decided',
+        );
+        expect(
+          find.byType(AiSummaryCard),
+          findsNothing,
+          reason:
+              'the established layout painting first is the flash: the card '
+              'appeared, then the page narrowed and swapped it for the block',
+        );
+        expect(find.byType(TaskFirstRunActions), findsNothing);
+
+        agent.complete(null);
+        await tester.pumpAndSettle();
+
+        // …and the answer lands directly on the final layout.
+        expect(find.byType(TaskFirstRunActions), findsOneWidget);
+        expect(find.byType(AiSummaryCard), findsOneWidget);
       },
     );
 

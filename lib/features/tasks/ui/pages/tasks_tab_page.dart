@@ -26,7 +26,6 @@ import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
-import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_activator.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
@@ -417,11 +416,6 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
   Widget build(BuildContext context) {
     final state = ref.watch(journalPageControllerProvider(true));
     final controller = ref.read(journalPageControllerProvider(true).notifier);
-    final splitController = ListDetailFocusTraversal.maybeOf(context);
-    final canHideListPane =
-        splitController?.listPaneVisible == true &&
-        splitController?.canHideListPane == true;
-
     // One narrowing predicate for the whole page — the funnel tint, the
     // clause badge, the collapsed caption and the chip row all read the same
     // count, so they cannot claim different things about the same list.
@@ -439,14 +433,6 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
           searchHint: context.messages.searchTasksHint,
           filterTooltip: context.messages.tasksFilterTitle,
           filtersActive: filtersActive,
-          titleLeading: canHideListPane
-              ? TabHeaderIconButton(
-                  key: const ValueKey('tasks-hide-list-pane-expanded'),
-                  icon: LottiIcons.sidebar,
-                  tooltip: context.messages.listPaneHideTooltip,
-                  onPressed: splitController!.hideListPane,
-                )
-              : null,
           onSearchChanged: (value) {
             unawaited(controller.setSearchString(value));
           },
@@ -501,14 +487,6 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
       expandSemanticHint: context.messages.tasksCompactHeaderExpandHint,
       filtersActive: filtersActive,
       searchActive: state.match.isNotEmpty,
-      leading: canHideListPane
-          ? TabHeaderIconButton(
-              key: const ValueKey('tasks-hide-list-pane-compact'),
-              icon: LottiIcons.sidebar,
-              tooltip: context.messages.listPaneHideTooltip,
-              onPressed: splitController!.hideListPane,
-            )
-          : null,
       contextLabel: contextParts.isEmpty ? null : contextParts.join(' · '),
       onExpandRequested: widget.collapseController.expand,
       onSearchRequested: _expandAndFocusSearch,
@@ -1050,7 +1028,13 @@ Future<void> _defaultCreateTaskPressed(
     status: filterContext.status,
   );
   if (task != null) {
-    unawaited(autoAssignCategoryAgentWith(agentService, task));
+    // Awaited, not fire-and-forget: the assignment decides what the task page
+    // paints. Navigating first meant a category with a default agent opened
+    // its new task as first-run (block, narrow measure), then flipped to the
+    // established layout the moment the agent landed — a full reflow one beat
+    // after the page appeared. It is a local write, and it is a no-op for a
+    // category with no default template.
+    await autoAssignCategoryAgentWith(agentService, task);
     getIt<NavService>().beamToNamed('/tasks/${task.meta.id}');
   }
 }
