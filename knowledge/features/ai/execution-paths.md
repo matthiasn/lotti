@@ -318,7 +318,14 @@ the collapsed card's existing fallback.
 The collapsed audio card reads the newest summary's `oneLiner`
 (`audioSummaryOneLiner`), falling back to `audioEntryOneLiner`'s transcript
 preview when there is none — not yet summarized, too short, no task, or synced
-from a client predating the tiers. `AiResponseSummary` renders a response that
+from a client predating the tiers.
+
+The two sources are clamped differently, because they are different things. A
+**summary** gets up to five lines: at phone width one line left the reader with
+a first clause and an ellipsis, which is the opposite of what condensing an
+hour of notes is for, and five lines are still a fraction of the transcript the
+collapsed state folds away. The **transcript fallback** stays at one line — it
+previews what expanding shows in full rather than condensing it. `AiResponseSummary` renders a response that
 carries a `tldr` collapsed-to-TLDR rather than collapsed-to-nothing, and is
 always collapsible regardless of body length, since the tiers exist precisely so
 the reader can choose the short version.
