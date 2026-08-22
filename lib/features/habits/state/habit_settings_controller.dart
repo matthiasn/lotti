@@ -10,6 +10,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/notification_service.dart';
 
 part 'habit_settings_controller.freezed.dart';
@@ -246,7 +247,24 @@ class HabitSettingsController extends Notifier<HabitSettingsState> {
     await getIt<PersistenceLogic>().upsertEntityDefinition(dataType);
     state = state.copyWith(dirty: false);
 
-    await getIt<NotificationService>().scheduleHabitNotification(dataType);
+    // Scheduling the reminder is a side effect of a definition that has
+    // already been written. Letting it throw here would report a failed save
+    // for a habit that IS in the database — the editor would stay open behind
+    // an error toast with Save greyed out, and the user would have no way to
+    // tell the change had landed. This is a live failure mode, not a
+    // hypothetical: on macOS `getLocation` rejects the "CEST" abbreviation.
+    // `createHabitCompletionEntryImpl` guards the same call for the same
+    // reason.
+    try {
+      await getIt<NotificationService>().scheduleHabitNotification(dataType);
+    } catch (exception, stackTrace) {
+      getIt<DomainLogger>().error(
+        LogDomain.habits,
+        exception,
+        stackTrace: stackTrace,
+        subDomain: 'onSavePressed.scheduleHabitNotification',
+      );
+    }
 
     return true;
   }

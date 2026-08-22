@@ -435,6 +435,45 @@ void main() {
     );
 
     testWidgets(
+      'a failing reminder does not make a saved habit look unsaved',
+      (tester) async {
+        // Regression: the definition commits, then scheduleHabitNotification
+        // throws (on macOS getLocation rejects the "CEST" abbreviation). The
+        // exception used to escape onSavePressed into the page's catch, which
+        // showed "Couldn't save your changes" and stayed put — for a habit
+        // that IS in the database, with Save now greyed out because the form
+        // is no longer dirty.
+        when(
+          () => mockNotificationService.scheduleHabitNotification(any()),
+        ).thenThrow(
+          ArgumentError('Location with the name "CEST" doesn\'t exist'),
+        );
+
+        await pumpPage(tester, EditHabitPage(habitId: habitFlossing.id));
+
+        await tester.enterText(
+          find.byKey(const Key('habit_name_field')),
+          'Flossing updated',
+        );
+        await tester.pump();
+
+        await tester.tap(find.widgetWithText(DsGlassPill, 'Save'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(capturedUpsert().name, 'Flossing updated');
+        // Without this the test would pass vacuously if the controller ever
+        // stopped scheduling reminders: nothing would throw, so the absent
+        // toast would prove nothing about the guard.
+        verify(
+          () => mockNotificationService.scheduleHabitNotification(any()),
+        ).called(1);
+        expect(find.text("Couldn't save your changes"), findsNothing);
+        expect(beamedTo, '/settings/habits');
+      },
+    );
+
+    testWidgets(
       'a failing write shows an error toast and keeps the editor open',
       (tester) async {
         when(
