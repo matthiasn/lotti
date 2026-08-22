@@ -3,11 +3,24 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/design_system/components/action_modal/ds_action_modal.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/header/entry_toggle_chips.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/modern_action_items.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/consts.dart';
 
+/// The body of the entry `•••` menu.
+///
+/// Ordered by what the reader is looking for rather than by which widget was
+/// written first: the entry's own state as chips, then the rows that change
+/// what the entry *is* (labels, language, its text), then the media it
+/// carries, then the links it sits in — and finally, alone below the list's
+/// one divider, the row that destroys it.
+///
+/// Every visibility decision is taken here, before the rows exist. The row
+/// widgets keep their own guards as a safety net, but the list must be the
+/// one that decides: a row that hides itself after being listed still costs
+/// its slot in the sheet's rhythm.
 class InitialModalPageContent extends ConsumerWidget {
   const InitialModalPageContent({
     required this.entryId,
@@ -63,112 +76,77 @@ class InitialModalPageContent extends ConsumerWidget {
             .value ??
         false;
 
-    final items = <Widget>[
-      // Always shown for all entries
-      ModernToggleStarredItem(entryId: entryId),
-      ModernTogglePrivateItem(entryId: entryId),
-      ModernToggleFlaggedItem(entryId: entryId),
-
-      // Labels - only for non-task entries
-      if (!isTask && entry != null) ModernLabelsItem(entryId: entryId),
-
-      // Language selection - only for tasks (tasks carry a per-entity
-      // language code that drives AI / transcription behavior)
-      if (isTask) ModernSetTaskLanguageItem(entryId: entryId),
-
-      // Copy text - only if entry has text
-      if (hasText) ModernCopyEntryTextItem(entryId: entryId, markdown: false),
-      if (hasText) ModernCopyEntryTextItem(entryId: entryId, markdown: true),
-
-      // Map toggle - only for entries with geolocation (not tasks)
-      if (hasGeolocation) ModernToggleMapItem(entryId: entryId),
-
-      // Delete - always shown
-      ModernDeleteItem(
+    return DsActionModalList(
+      header: EntryToggleChips(entryId: entryId),
+      // Destructive last and alone, on every entry type. It is the only row
+      // in the sheet the user cannot undo, and the only one the divider
+      // above it exists for.
+      destructive: ModernDeleteItem(
         entryId: entryId,
         beamBack: !inLinkedEntries,
       ),
-
-      // Speech recognition - only for audio entries
-      if (isAudio)
-        ModernSpeechItem(
-          entryId: entryId,
-          pageIndexNotifier: pageIndexNotifier,
-        ),
-
-      // Cover art generation - only for audio linked to a task
-      if (isAudio && linkedFromId != null && linkedIsTask)
-        ModernGenerateCoverArtItem(
-          entryId: entryId,
-          linkedFromId: linkedFromId,
-        ),
-
-      // Set cover art - only for images linked to a task
-      if (isImage && linkedFromId != null && linkedIsTask)
-        ModernSetCoverArtItem(
-          entryId: entryId,
-          linkedFromId: linkedFromId,
-        ),
-
-      // Reveal media files in the platform file manager
-      if (isImage || isAudio) ModernShowInFileManagerItem(entryId: entryId),
-
-      // Share - only for image/audio entries
-      if (isImage || isAudio) ModernShareItem(entryId: entryId),
-
-      // Link actions - always shown
-      ModernLinkFromItem(entryId: entryId),
-      ModernLinkToItem(entryId: entryId),
-
-      // Rate session - only for time entries in linked context with flag on
-      if (isJournalEntry && inLinkedEntries && enableRatings)
-        ModernRateSessionItem(entryId: entryId),
-
-      // Unlink - only when viewing from a linked context
-      if (linkedFromId != null)
-        ModernUnlinkItem(
-          entryId: entryId,
-          linkedFromId: linkedFromId,
-        ),
-
-      // Toggle hidden - only when there's a link
-      if (link != null)
-        ModernToggleHiddenItem(
-          link: link,
-        ),
-
-      // Copy image - only for image entries
-      if (isImage) ModernCopyImageItem(entryId: entryId),
-    ];
-
-    return _ActionMenuList(items: items);
-  }
-}
-
-/// Builds the list of action items with dividers between them.
-class _ActionMenuList extends StatelessWidget {
-  const _ActionMenuList({required this.items});
-
-  final List<Widget> items;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
       children: [
-        for (var i = 0; i < items.length; i++) ...[
-          items[i],
-          if (i < items.length - 1)
-            Divider(
-              height: 1,
-              thickness: 0.5,
-              indent: AppTheme.cardPadding,
-              endIndent: AppTheme.cardPadding,
-              color: context.colorScheme.outline.withValues(
-                alpha: AppTheme.alphaDivider,
-              ),
-            ),
-        ],
+        // What the entry is ────────────────────────────────────────────────
+        // Labels - only for non-task entries (tasks have their own labels UI)
+        if (!isTask && entry != null) ModernLabelsItem(entryId: entryId),
+
+        // Language selection - only for tasks (tasks carry a per-entity
+        // language code that drives AI / transcription behavior)
+        if (isTask) ModernSetTaskLanguageItem(entryId: entryId),
+
+        // Copy text - only if entry has text
+        if (hasText) ModernCopyEntryTextItem(entryId: entryId, markdown: false),
+        if (hasText) ModernCopyEntryTextItem(entryId: entryId, markdown: true),
+
+        // Map toggle - only for entries with geolocation (not tasks)
+        if (hasGeolocation) ModernToggleMapItem(entryId: entryId),
+
+        // The media it carries ─────────────────────────────────────────────
+        // Speech recognition - only for audio entries
+        if (isAudio)
+          ModernSpeechItem(
+            entryId: entryId,
+            pageIndexNotifier: pageIndexNotifier,
+          ),
+
+        // Cover art generation - only for audio linked to a task
+        if (isAudio && linkedFromId != null && linkedIsTask)
+          ModernGenerateCoverArtItem(
+            entryId: entryId,
+            linkedFromId: linkedFromId,
+          ),
+
+        // Set cover art - only for images linked to a task
+        if (isImage && linkedFromId != null && linkedIsTask)
+          ModernSetCoverArtItem(
+            entryId: entryId,
+            linkedFromId: linkedFromId,
+          ),
+
+        // Copy image - only for image entries
+        if (isImage) ModernCopyImageItem(entryId: entryId),
+
+        // Reveal media files in the platform file manager
+        if (isImage || isAudio) ModernShowInFileManagerItem(entryId: entryId),
+
+        // Share - only for image/audio entries
+        if (isImage || isAudio) ModernShareItem(entryId: entryId),
+
+        // Rate session - only for time entries in linked context with flag on
+        if (isJournalEntry && inLinkedEntries && enableRatings)
+          ModernRateSessionItem(entryId: entryId),
+
+        // Where it sits ────────────────────────────────────────────────────
+        // Link actions - always shown
+        ModernLinkFromItem(entryId: entryId),
+        ModernLinkToItem(entryId: entryId),
+
+        // Toggle hidden - only when there's a link
+        if (link != null) ModernToggleHiddenItem(link: link),
+
+        // Unlink - only when viewing from a linked context
+        if (linkedFromId != null)
+          ModernUnlinkItem(entryId: entryId, linkedFromId: linkedFromId),
       ],
     );
   }

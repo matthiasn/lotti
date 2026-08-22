@@ -1,117 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/design_system/components/action_modal/ds_action_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
-import 'package:lotti/features/journal/ui/widgets/entry_details/header/action_menu_list_item.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/colors.dart';
 import 'package:lotti/widgets/modal/modal_action_sheet.dart';
 import 'package:lotti/widgets/modal/modal_sheet_action.dart';
 
-/// Modern styled toggle starred action item
-class ModernToggleStarredItem extends ConsumerWidget {
-  const ModernToggleStarredItem({
-    required this.entryId,
-    super.key,
-  });
-
-  final String entryId;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final provider = entryControllerProvider(entryId);
-    final notifier = ref.read(provider.notifier);
-    final entryState = ref.watch(provider).value;
-
-    if (entryState == null) {
-      return const SizedBox.shrink();
-    }
-
-    final entry = entryState.entry;
-    final starred = entry?.meta.starred ?? false;
-
-    return ActionMenuListItem(
-      icon: starred ? LottiIconsFilled.star : LottiIcons.star,
-      title: context.messages.journalToggleStarredTitle,
-      iconColor: starred ? starredGold : null,
-      onTap: () {
-        notifier.toggleStarred();
-        Navigator.of(context).pop();
-      },
-    );
-  }
-}
-
-/// Modern styled toggle private action item
-class ModernTogglePrivateItem extends ConsumerWidget {
-  const ModernTogglePrivateItem({
-    required this.entryId,
-    super.key,
-  });
-
-  final String entryId;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final provider = entryControllerProvider(entryId);
-    final notifier = ref.read(provider.notifier);
-    final entryState = ref.watch(provider).value;
-
-    if (entryState == null) {
-      return const SizedBox.shrink();
-    }
-
-    final entry = entryState.entry;
-    final private = entry?.meta.private ?? false;
-
-    return ActionMenuListItem(
-      icon: private ? LottiIcons.lock : LottiIcons.unlocked,
-      title: context.messages.journalTogglePrivateTitle,
-      iconColor: private ? const Color(0xFFE57373) : null,
-      onTap: () {
-        notifier.togglePrivate();
-        Navigator.of(context).pop();
-      },
-    );
-  }
-}
-
-/// Modern styled toggle flagged action item
-class ModernToggleFlaggedItem extends ConsumerWidget {
-  const ModernToggleFlaggedItem({
-    required this.entryId,
-    super.key,
-  });
-
-  final String entryId;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final provider = entryControllerProvider(entryId);
-    final notifier = ref.read(provider.notifier);
-    final entryState = ref.watch(provider).value;
-
-    if (entryState == null) {
-      return const SizedBox.shrink();
-    }
-
-    final entry = entryState.entry;
-    final flagged = entry?.meta.flag != null;
-
-    return ActionMenuListItem(
-      icon: flagged ? LottiIconsFilled.flag : LottiIcons.flag,
-      title: context.messages.journalToggleFlaggedTitle,
-      iconColor: flagged ? const Color(0xFFBA68C8) : null,
-      onTap: () {
-        notifier.toggleFlagged();
-        Navigator.of(context).pop();
-      },
-    );
-  }
-}
-
-/// Modern styled toggle map action item
+/// Shows or hides the map on an entry that carries a geolocation.
+///
+/// Flips the entry's own map visibility and dismisses the sheet, so the change
+/// is visible on the entry underneath. No trailing glyph: the tap does not
+/// hand off to another surface, it acts on the entry you came from.
 class ModernToggleMapItem extends ConsumerWidget {
   const ModernToggleMapItem({
     required this.entryId,
@@ -135,7 +36,7 @@ class ModernToggleMapItem extends ConsumerWidget {
 
     final showMap = entryState.showMap;
 
-    return ActionMenuListItem(
+    return DsActionRow(
       icon: LottiIcons.map,
       title: showMap
           ? context.messages.journalHideMapHint
@@ -148,7 +49,11 @@ class ModernToggleMapItem extends ConsumerWidget {
   }
 }
 
-/// Modern styled delete action item
+/// Deletes the entry, behind the shared confirmation sheet.
+///
+/// The sheet's only [DsActionRowTone.destructive] row, and the only one below
+/// the list's divider. It carries no trailing glyph for the same reason the
+/// copy rows do not: the confirmation is a question, not a destination.
 class ModernDeleteItem extends ConsumerWidget {
   const ModernDeleteItem({
     required this.entryId,
@@ -183,10 +88,10 @@ class ModernDeleteItem extends ConsumerWidget {
       }
     }
 
-    return ActionMenuListItem(
+    return DsActionRow(
       icon: LottiIcons.delete,
       title: context.messages.journalDeleteHint,
-      isDestructive: true,
+      tone: DsActionRowTone.destructive,
       onTap: () async {
         await onPressed();
         if (context.mounted) {

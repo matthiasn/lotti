@@ -4,6 +4,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.12]
+### Changed
+- **The task page's two menus are now one design.** The `•••` menu and the
+  action bar's Add sheet were built separately and had drifted apart: one
+  centred its title over a hairline bar and stacked full-width rules between
+  plain rows, the other ran teal glyphs and two-line rows with no rules at all.
+  Both now read the same way — the title on the sheet's own left edge with a
+  quiet close beside it, and rows that lead with a washed icon tile, highlight
+  as a rounded block under the pointer, and separate by space instead of
+  hairlines. The Add sheet's rows keep their teal tiles; the entry actions wear
+  neutral ones, so which menu you are in is still obvious at a glance.
+- **Favorite, Private and Flagged are chips, not menu rows.** They are states,
+  not actions, and as rows they never changed their wording and closed the menu
+  after each one — setting two of them meant two trips. They now sit as three
+  pills at the top of the menu, filled and tinted when on, and toggle in place
+  with the menu still open.
+- **Delete stands alone at the foot of the menu.** It is the one thing you
+  cannot undo, so it is now last, below the menu's only dividing line, in the
+  error colour, and it highlights in its own hue rather than the same grey as
+  the row that copies some text.
+- **A row's trailing mark now tells you where the tap leads.** A "+" creates
+  the thing there and then, a "›" hands off to a picker, a recorder or a page
+  you continue on, and a row with no mark acts where it stands. The task's
+  language is shown by name on the "Set language" row instead of a flag in the
+  row's leading corner.
+
 ## [1.0.11]
 ### Fixed
 - **Habit day squares on a goal page stop at today.** A habit measured over a

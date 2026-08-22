@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:country_flags/country_flags.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill_localizations;
@@ -17,6 +18,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/design_system/components/action_modal/ds_action_row.dart';
 import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
@@ -24,7 +26,6 @@ import 'package:lotti/features/journal/repository/app_clipboard_service.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_widget.dart';
-import 'package:lotti/features/journal/ui/widgets/entry_details/header/action_menu_list_item.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/initial_modal_page_content.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/modern_action_items.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
@@ -45,11 +46,12 @@ import 'package:lotti/widgets/picker/entity_picker_sheet.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:share_plus/share_plus.dart';
-// SharePlatform is only re-exported from share_plus with a `show` clause that
-// omits it, so the directly declared platform-interface dev dependency exposes
-// the fake-instance seam used here.
 import 'package:share_plus_platform_interface/share_plus_platform_interface.dart'
-    show SharePlatform;
+        // SharePlatform is only re-exported from share_plus with a `show` clause that
+        // omits it, so the directly declared platform-interface dev dependency exposes
+        // the fake-instance seam used here.
+        show
+        SharePlatform;
 
 import '../../../../../../helpers/fake_entry_controller.dart';
 import '../../../../../../helpers/fake_linked_entries_controller.dart';
@@ -226,169 +228,6 @@ void main() {
     );
   }
 
-  group('ModernToggleStarredItem', () {
-    testWidgets('renders with star outline icon when not starred', (
-      tester,
-    ) async {
-      final entry = buildTextEntry();
-
-      await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          overrides: [createEntryControllerOverride(entry)],
-          child: const ModernToggleStarredItem(entryId: 'entry-1'),
-        ),
-      );
-
-      await tester.pump();
-
-      expect(find.byType(ActionMenuListItem), findsOneWidget);
-      expect(find.byIcon(LottiIcons.star), findsOneWidget);
-    });
-
-    testWidgets('renders with filled star icon when starred', (tester) async {
-      final entry = buildTextEntry(starred: true);
-
-      await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          overrides: [createEntryControllerOverride(entry)],
-          child: const ModernToggleStarredItem(entryId: 'entry-1'),
-        ),
-      );
-
-      await tester.pump();
-
-      expect(find.byIcon(LottiIconsFilled.star), findsOneWidget);
-    });
-
-    testWidgets('calls toggleStarred on tap', (tester) async {
-      final entry = buildTextEntry();
-      final (override, tracker) = createEntryControllerOverrideWithTracker(
-        entry,
-      );
-
-      await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          overrides: [override],
-          child: const ModernToggleStarredItem(entryId: 'entry-1'),
-        ),
-      );
-
-      await tester.pump();
-      await tester.tap(find.byType(ActionMenuListItem));
-      await tester.pump();
-
-      expect(tracker.toggleStarredCalls, contains('entry-1'));
-    });
-  });
-
-  group('ModernTogglePrivateItem', () {
-    testWidgets('renders with lock open icon when not private', (tester) async {
-      final entry = buildTextEntry();
-
-      await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          overrides: [createEntryControllerOverride(entry)],
-          child: const ModernTogglePrivateItem(entryId: 'entry-1'),
-        ),
-      );
-
-      await tester.pump();
-
-      expect(find.byType(ActionMenuListItem), findsOneWidget);
-      expect(find.byIcon(LottiIcons.unlocked), findsOneWidget);
-    });
-
-    testWidgets('renders with locked icon when private', (tester) async {
-      final entry = buildTextEntry(private: true);
-
-      await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          overrides: [createEntryControllerOverride(entry)],
-          child: const ModernTogglePrivateItem(entryId: 'entry-1'),
-        ),
-      );
-
-      await tester.pump();
-
-      expect(find.byIcon(LottiIcons.lock), findsOneWidget);
-    });
-
-    testWidgets('calls togglePrivate on tap', (tester) async {
-      final entry = buildTextEntry();
-      final (override, tracker) = createEntryControllerOverrideWithTracker(
-        entry,
-      );
-
-      await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          overrides: [override],
-          child: const ModernTogglePrivateItem(entryId: 'entry-1'),
-        ),
-      );
-
-      await tester.pump();
-      await tester.tap(find.byType(ActionMenuListItem));
-      await tester.pump();
-
-      expect(tracker.togglePrivateCalls, contains('entry-1'));
-    });
-  });
-
-  group('ModernToggleFlaggedItem', () {
-    testWidgets('renders with flag outline icon when not flagged', (
-      tester,
-    ) async {
-      final entry = buildTextEntry();
-
-      await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          overrides: [createEntryControllerOverride(entry)],
-          child: const ModernToggleFlaggedItem(entryId: 'entry-1'),
-        ),
-      );
-
-      await tester.pump();
-
-      expect(find.byType(ActionMenuListItem), findsOneWidget);
-      expect(find.byIcon(LottiIcons.flag), findsOneWidget);
-    });
-
-    testWidgets('renders with filled flag icon when flagged', (tester) async {
-      final entry = buildTextEntry(flag: EntryFlag.import);
-
-      await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          overrides: [createEntryControllerOverride(entry)],
-          child: const ModernToggleFlaggedItem(entryId: 'entry-1'),
-        ),
-      );
-
-      await tester.pump();
-
-      expect(find.byIcon(LottiIconsFilled.flag), findsOneWidget);
-    });
-
-    testWidgets('calls toggleFlagged on tap', (tester) async {
-      final entry = buildTextEntry();
-      final (override, tracker) = createEntryControllerOverrideWithTracker(
-        entry,
-      );
-
-      await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          overrides: [override],
-          child: const ModernToggleFlaggedItem(entryId: 'entry-1'),
-        ),
-      );
-
-      await tester.pump();
-      await tester.tap(find.byType(ActionMenuListItem));
-      await tester.pump();
-
-      expect(tracker.toggleFlaggedCalls, contains('entry-1'));
-    });
-  });
-
   group('ModernDeleteItem', () {
     testWidgets('renders with delete icon and destructive styling', (
       tester,
@@ -404,10 +243,10 @@ void main() {
 
       await tester.pump();
 
-      final item = tester.widget<ActionMenuListItem>(
-        find.byType(ActionMenuListItem),
+      final item = tester.widget<DsActionRow>(
+        find.byType(DsActionRow),
       );
-      expect(item.isDestructive, isTrue);
+      expect(item.tone, DsActionRowTone.destructive);
       expect(item.title, 'Delete entry');
       expect(find.byIcon(LottiIcons.delete), findsOneWidget);
     });
@@ -429,7 +268,7 @@ void main() {
 
       await tester.pump();
 
-      expect(find.byType(ActionMenuListItem), findsNothing);
+      expect(find.byType(DsActionRow), findsNothing);
     });
 
     testWidgets('shows for audio entries', (tester) async {
@@ -447,7 +286,7 @@ void main() {
 
       await tester.pump();
 
-      expect(find.byType(ActionMenuListItem), findsOneWidget);
+      expect(find.byType(DsActionRow), findsOneWidget);
       expect(find.byIcon(LottiIcons.transcribe), findsOneWidget);
     });
 
@@ -468,7 +307,7 @@ void main() {
       );
 
       await tester.pump();
-      await tester.tap(find.byType(ActionMenuListItem));
+      await tester.tap(find.byType(DsActionRow));
       await tester.pump();
 
       expect(pageIndexNotifier.value, equals(1));
@@ -488,7 +327,7 @@ void main() {
 
       await tester.pump();
 
-      expect(find.byType(ActionMenuListItem), findsNothing);
+      expect(find.byType(DsActionRow), findsNothing);
     });
 
     testWidgets('hidden on unsupported platforms', (tester) async {
@@ -506,7 +345,7 @@ void main() {
 
       await tester.pump();
 
-      expect(find.byType(ActionMenuListItem), findsNothing);
+      expect(find.byType(DsActionRow), findsNothing);
     });
 
     testWidgets('uses Finder wording on macOS', (tester) async {
@@ -585,7 +424,7 @@ void main() {
       // past the MaterialPageRoute transition (bounded, no settle).
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
-      await tester.tap(find.byType(ActionMenuListItem));
+      await tester.tap(find.byType(DsActionRow));
       await tester.pump();
 
       expect(runner.calls, [
@@ -617,7 +456,7 @@ void main() {
       // past the MaterialPageRoute transition (bounded, no settle).
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
-      await tester.tap(find.byType(ActionMenuListItem));
+      await tester.tap(find.byType(DsActionRow));
       await tester.pump();
 
       expect(revealedPath, '${documentsDirectory.path}/images/test.jpg');
@@ -644,7 +483,7 @@ void main() {
       // past the MaterialPageRoute transition (bounded, no settle).
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
-      await tester.tap(find.byType(ActionMenuListItem));
+      await tester.tap(find.byType(DsActionRow));
       await tester.pump();
 
       expect(revealedPath, '${documentsDirectory.path}/audio/test.m4a');
@@ -670,7 +509,7 @@ void main() {
       // past the MaterialPageRoute transition (bounded, no settle).
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
-      await tester.tap(find.byType(ActionMenuListItem));
+      await tester.tap(find.byType(DsActionRow));
       await tester.pump();
 
       expect(tester.takeException(), isNull);
@@ -690,7 +529,7 @@ void main() {
 
       await tester.pump();
 
-      expect(find.byType(ActionMenuListItem), findsNothing);
+      expect(find.byType(DsActionRow), findsNothing);
     });
 
     testWidgets('shows for image entries', (tester) async {
@@ -705,7 +544,7 @@ void main() {
 
       await tester.pump();
 
-      expect(find.byType(ActionMenuListItem), findsOneWidget);
+      expect(find.byType(DsActionRow), findsOneWidget);
       expect(find.byIcon(LottiIcons.share), findsOneWidget);
     });
 
@@ -721,7 +560,7 @@ void main() {
 
       await tester.pump();
 
-      expect(find.byType(ActionMenuListItem), findsOneWidget);
+      expect(find.byType(DsActionRow), findsOneWidget);
     });
   });
 
@@ -738,7 +577,7 @@ void main() {
 
       await tester.pump();
 
-      expect(find.byType(ActionMenuListItem), findsNothing);
+      expect(find.byType(DsActionRow), findsNothing);
     });
 
     testWidgets('shows for image entries', (tester) async {
@@ -753,7 +592,7 @@ void main() {
 
       await tester.pump();
 
-      expect(find.byType(ActionMenuListItem), findsOneWidget);
+      expect(find.byType(DsActionRow), findsOneWidget);
       expect(find.byIcon(LottiIcons.copy), findsOneWidget);
     });
   });
@@ -768,7 +607,7 @@ void main() {
 
       await tester.pump();
 
-      expect(find.byType(ActionMenuListItem), findsOneWidget);
+      expect(find.byType(DsActionRow), findsOneWidget);
       expect(find.byIcon(LottiIcons.link), findsOneWidget);
     });
   });
@@ -783,7 +622,7 @@ void main() {
 
       await tester.pump();
 
-      expect(find.byType(ActionMenuListItem), findsOneWidget);
+      expect(find.byType(DsActionRow), findsOneWidget);
       expect(find.byIcon(LottiIcons.focus), findsOneWidget);
     });
   });
@@ -804,13 +643,13 @@ void main() {
 
       await tester.pump();
 
-      final item = tester.widget<ActionMenuListItem>(
-        find.byType(ActionMenuListItem),
+      final item = tester.widget<DsActionRow>(
+        find.byType(DsActionRow),
       );
       expect(item.title, 'Unlink');
       // Unlinking is reversible — the row itself is not styled destructive
       // (the confirmation modal carries the destructive action instead).
-      expect(item.isDestructive, isFalse);
+      expect(item.tone, DsActionRowTone.neutral);
       expect(find.byIcon(LottiIcons.linkOff), findsOneWidget);
     });
   });
@@ -840,7 +679,7 @@ void main() {
 
       await tester.pump();
 
-      expect(find.byType(ActionMenuListItem), findsOneWidget);
+      expect(find.byType(DsActionRow), findsOneWidget);
       expect(find.byIcon(LottiIcons.visible), findsOneWidget);
       expect(find.text('Hide link'), findsOneWidget);
     });
@@ -898,7 +737,7 @@ void main() {
       );
 
       await tester.pump();
-      await tester.tap(find.byType(ActionMenuListItem));
+      await tester.tap(find.byType(DsActionRow));
       await tester.pump();
 
       expect(controller.updateLinkCalls, hasLength(1));
@@ -946,7 +785,7 @@ void main() {
 
       await tester.pump();
 
-      expect(find.byType(ActionMenuListItem), findsNothing);
+      expect(find.byType(DsActionRow), findsNothing);
     });
 
     testWidgets('shows outlined image icon when not current cover', (
@@ -966,7 +805,7 @@ void main() {
 
       await tester.pump();
 
-      expect(find.byType(ActionMenuListItem), findsOneWidget);
+      expect(find.byType(DsActionRow), findsOneWidget);
       expect(find.byIcon(LottiIcons.image), findsOneWidget);
       expect(find.text('Set cover'), findsOneWidget);
     });
@@ -988,7 +827,7 @@ void main() {
 
       await tester.pump();
 
-      expect(find.byType(ActionMenuListItem), findsOneWidget);
+      expect(find.byType(DsActionRow), findsOneWidget);
       expect(find.byIcon(LottiIcons.image), findsOneWidget);
       expect(find.text('Cover'), findsOneWidget);
     });
@@ -1014,14 +853,14 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
       // Verify we're on the pushed route
-      expect(find.byType(ActionMenuListItem), findsOneWidget);
+      expect(find.byType(DsActionRow), findsOneWidget);
 
-      await tester.tap(find.byType(ActionMenuListItem));
+      await tester.tap(find.byType(DsActionRow));
       await tester.pumpAndSettle();
 
       expect(tracker.calls, contains('image-1'));
       // Navigator.pop should have dismissed the route
-      expect(find.byType(ActionMenuListItem), findsNothing);
+      expect(find.byType(DsActionRow), findsNothing);
     });
 
     testWidgets('calls setCoverArt with null and pops navigator', (
@@ -1045,12 +884,12 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
 
-      await tester.tap(find.byType(ActionMenuListItem));
+      await tester.tap(find.byType(DsActionRow));
       await tester.pumpAndSettle();
 
       expect(tracker.calls, contains(null));
       // Navigator.pop should have dismissed the route
-      expect(find.byType(ActionMenuListItem), findsNothing);
+      expect(find.byType(DsActionRow), findsNothing);
     });
   });
 
@@ -1067,7 +906,7 @@ void main() {
 
       await tester.pump();
 
-      expect(find.byType(ActionMenuListItem), findsNothing);
+      expect(find.byType(DsActionRow), findsNothing);
     });
 
     testWidgets('shows map_outlined icon when map not shown', (tester) async {
@@ -1083,7 +922,7 @@ void main() {
 
       await tester.pump();
 
-      expect(find.byType(ActionMenuListItem), findsOneWidget);
+      expect(find.byType(DsActionRow), findsOneWidget);
       expect(find.byIcon(LottiIcons.map), findsOneWidget);
     });
 
@@ -1103,7 +942,7 @@ void main() {
 
       await tester.pump();
 
-      expect(find.byType(ActionMenuListItem), findsOneWidget);
+      expect(find.byType(DsActionRow), findsOneWidget);
       expect(find.byIcon(LottiIcons.map), findsOneWidget);
     });
 
@@ -1121,7 +960,7 @@ void main() {
       );
 
       await tester.pump();
-      await tester.tap(find.byType(ActionMenuListItem));
+      await tester.tap(find.byType(DsActionRow));
       await tester.pump();
 
       expect(tracker.toggleMapVisibleCalls, contains('geo-entry-1'));
@@ -1140,7 +979,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byType(ActionMenuListItem), findsNothing);
+      expect(find.byType(DsActionRow), findsNothing);
     });
 
     testWidgets(
@@ -1156,13 +995,13 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.byType(ActionMenuListItem), findsOneWidget);
+        expect(find.byType(DsActionRow), findsOneWidget);
         expect(find.byIcon(LottiIcons.language), findsOneWidget);
       },
     );
 
     testWidgets(
-      'renders a country flag when a language code is set',
+      "names the current language on the row's trailing edge",
       (tester) async {
         final task = buildTaskEntry(languageCode: 'de');
 
@@ -1174,8 +1013,41 @@ void main() {
         );
         await tester.pump();
 
+        final context = tester.element(find.byType(DsActionRow));
+        final row = tester.widget<DsActionRow>(find.byType(DsActionRow));
+        // The setting rides the trailing edge; the leading tile stays the
+        // language glyph so the row's subject does not change with the value.
+        expect(row.trailingValue, context.messages.taskLanguageGerman);
+        expect(row.trailing, DsActionRowTrailing.chevron);
+        expect(find.text(context.messages.taskLanguageGerman), findsOneWidget);
+        expect(find.byIcon(LottiIcons.language), findsOneWidget);
+        // The flag decorates the name it belongs to rather than replacing the
+        // tile's glyph, so the row's subject does not change with its value.
         expect(find.byKey(const ValueKey('action-flag-de')), findsOneWidget);
-        expect(find.byIcon(LottiIcons.language), findsNothing);
+        expect(
+          tester.getSize(find.byKey(const ValueKey('action-flag-de'))).height,
+          context.designTokens.typography.lineHeight.caption,
+        );
+      },
+    );
+
+    testWidgets(
+      'leaves the trailing edge empty when no language is set',
+      (tester) async {
+        final task = buildTaskEntry();
+
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: [createEntryControllerOverride(task)],
+            child: const ModernSetTaskLanguageItem(entryId: 'task-1'),
+          ),
+        );
+        await tester.pump();
+
+        final row = tester.widget<DsActionRow>(find.byType(DsActionRow));
+        expect(row.trailingValue, isNull);
+        expect(row.trailingValueLeading, isNull);
+        expect(find.byType(CountryFlag), findsNothing);
       },
     );
 
@@ -1198,7 +1070,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
 
-        await tester.tap(find.byType(ActionMenuListItem));
+        await tester.tap(find.byType(DsActionRow));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -1239,7 +1111,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
 
-        await tester.tap(find.byType(ActionMenuListItem));
+        await tester.tap(find.byType(DsActionRow));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -1273,8 +1145,8 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
 
-        expect(find.byType(ActionMenuListItem), findsOneWidget);
-        await tester.tap(find.byType(ActionMenuListItem));
+        expect(find.byType(DsActionRow), findsOneWidget);
+        await tester.tap(find.byType(DsActionRow));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -1307,7 +1179,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
 
-        await tester.tap(find.byType(ActionMenuListItem));
+        await tester.tap(find.byType(DsActionRow));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -1345,8 +1217,8 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
 
-        expect(find.byType(ActionMenuListItem), findsOneWidget);
-        await tester.tap(find.byType(ActionMenuListItem));
+        expect(find.byType(DsActionRow), findsOneWidget);
+        await tester.tap(find.byType(DsActionRow));
         await tester.pumpAndSettle();
 
         // Confirmation modal is shown.
@@ -1356,7 +1228,7 @@ void main() {
 
         expect(controller.removeLinkCalls, contains('entry-1'));
         // After confirming, the route is dismissed.
-        expect(find.byType(ActionMenuListItem), findsNothing);
+        expect(find.byType(DsActionRow), findsNothing);
       },
     );
 
@@ -1383,7 +1255,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
 
-        await tester.tap(find.byType(ActionMenuListItem));
+        await tester.tap(find.byType(DsActionRow));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -1417,13 +1289,13 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
 
-        expect(find.byType(ActionMenuListItem), findsOneWidget);
-        await tester.tap(find.byType(ActionMenuListItem));
+        expect(find.byType(DsActionRow), findsOneWidget);
+        await tester.tap(find.byType(DsActionRow));
         await tester.pumpAndSettle();
 
         expect(controller.copyImageCalls, equals(1));
         // Navigator.pop should have dismissed the route.
-        expect(find.byType(ActionMenuListItem), findsNothing);
+        expect(find.byType(DsActionRow), findsNothing);
       },
     );
   });
@@ -1446,13 +1318,13 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
 
-      expect(find.byType(ActionMenuListItem), findsOneWidget);
-      await tester.tap(find.byType(ActionMenuListItem));
+      expect(find.byType(DsActionRow), findsOneWidget);
+      await tester.tap(find.byType(DsActionRow));
       await tester.pumpAndSettle();
 
       verify(() => mockLinkService.linkFrom('entry-42')).called(1);
       // Route is dismissed after tap.
-      expect(find.byType(ActionMenuListItem), findsNothing);
+      expect(find.byType(DsActionRow), findsNothing);
     });
   });
 
@@ -1474,12 +1346,12 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
 
-      expect(find.byType(ActionMenuListItem), findsOneWidget);
-      await tester.tap(find.byType(ActionMenuListItem));
+      expect(find.byType(DsActionRow), findsOneWidget);
+      await tester.tap(find.byType(DsActionRow));
       await tester.pumpAndSettle();
 
       verify(() => mockLinkService.linkTo('entry-99')).called(1);
-      expect(find.byType(ActionMenuListItem), findsNothing);
+      expect(find.byType(DsActionRow), findsNothing);
     });
   });
 
@@ -1505,12 +1377,12 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
 
-        expect(find.byType(ActionMenuListItem), findsOneWidget);
-        await tester.tap(find.byType(ActionMenuListItem));
+        expect(find.byType(DsActionRow), findsOneWidget);
+        await tester.tap(find.byType(DsActionRow));
         await tester.pumpAndSettle();
 
         // The rating modal shows up — route is dismissed and modal appears.
-        expect(find.byType(ActionMenuListItem), findsNothing);
+        expect(find.byType(DsActionRow), findsNothing);
       },
     );
 
@@ -1535,12 +1407,12 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
 
-        expect(find.byType(ActionMenuListItem), findsOneWidget);
-        await tester.tap(find.byType(ActionMenuListItem));
+        expect(find.byType(DsActionRow), findsOneWidget);
+        await tester.tap(find.byType(DsActionRow));
         await tester.pumpAndSettle();
 
         // After tap, the action item route is dismissed.
-        expect(find.byType(ActionMenuListItem), findsNothing);
+        expect(find.byType(DsActionRow), findsNothing);
       },
     );
   });
@@ -1562,12 +1434,12 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
 
-        expect(find.byType(ActionMenuListItem), findsOneWidget);
-        await tester.tap(find.byType(ActionMenuListItem));
+        expect(find.byType(DsActionRow), findsOneWidget);
+        await tester.tap(find.byType(DsActionRow));
         await tester.pumpAndSettle();
 
         // Navigator.pop was called, route is dismissed.
-        expect(find.byType(ActionMenuListItem), findsNothing);
+        expect(find.byType(DsActionRow), findsNothing);
       },
     );
 
@@ -1587,11 +1459,11 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
 
-        expect(find.byType(ActionMenuListItem), findsOneWidget);
-        await tester.tap(find.byType(ActionMenuListItem));
+        expect(find.byType(DsActionRow), findsOneWidget);
+        await tester.tap(find.byType(DsActionRow));
         await tester.pumpAndSettle();
 
-        expect(find.byType(ActionMenuListItem), findsNothing);
+        expect(find.byType(DsActionRow), findsNothing);
       },
     );
   });
@@ -1620,15 +1492,15 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
 
-        expect(find.byType(ActionMenuListItem), findsOneWidget);
-        await tester.tap(find.byType(ActionMenuListItem));
+        expect(find.byType(DsActionRow), findsOneWidget);
+        await tester.tap(find.byType(DsActionRow));
         // Allow the pop animation to complete; stop before the
         // CoverArtSkillModal needs a full AI-config setup.
         await tester.pump(const Duration(milliseconds: 500));
         await tester.pump(const Duration(milliseconds: 500));
 
         // The original route is gone (Navigator.pop() ran).
-        expect(find.byType(ActionMenuListItem), findsNothing);
+        expect(find.byType(DsActionRow), findsNothing);
       },
     );
   });
@@ -1663,7 +1535,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
 
-      await tester.tap(find.byType(ActionMenuListItem));
+      await tester.tap(find.byType(DsActionRow));
       await tester.pumpAndSettle();
 
       final expectedPath = '${getDocumentsDirectory().path}/images/test.jpg';
@@ -1672,7 +1544,7 @@ void main() {
       expect(params!.files, isNotNull);
       expect(params.files!.map((f) => f.path), [expectedPath]);
       // The route is also dismissed (Navigator.pop ran first).
-      expect(find.byType(ActionMenuListItem), findsNothing);
+      expect(find.byType(DsActionRow), findsNothing);
     });
 
     testWidgets('shares the full audio path for audio entries', (tester) async {
@@ -1689,7 +1561,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
 
-      await tester.tap(find.byType(ActionMenuListItem));
+      await tester.tap(find.byType(DsActionRow));
       await tester.pumpAndSettle();
 
       final expectedPath = '${getDocumentsDirectory().path}/audio/test.m4a';
@@ -1697,7 +1569,7 @@ void main() {
       expect(params, isNotNull);
       expect(params!.files, isNotNull);
       expect(params.files!.map((f) => f.path), [expectedPath]);
-      expect(find.byType(ActionMenuListItem), findsNothing);
+      expect(find.byType(DsActionRow), findsNothing);
     });
   });
 
@@ -1813,7 +1685,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byType(ActionMenuListItem), findsNothing);
+      expect(find.byType(DsActionRow), findsNothing);
       expect(find.byType(SizedBox), findsWidgets);
     });
 
@@ -1837,7 +1709,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byType(ActionMenuListItem), findsNothing);
+      expect(find.byType(DsActionRow), findsNothing);
     });
 
     testWidgets('shows SizedBox.shrink when linked entry is not a Task', (
@@ -1862,7 +1734,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byType(ActionMenuListItem), findsNothing);
+      expect(find.byType(DsActionRow), findsNothing);
     });
 
     testWidgets('renders action item when audio linked to task', (
@@ -1877,10 +1749,11 @@ void main() {
             createEntryControllerOverride(audioEntry),
             createEntryControllerOverride(task),
           ],
-          child: const MaterialApp(
+          child: MaterialApp(
+            theme: resolveTestTheme(),
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
+            home: const Scaffold(
               body: ModernGenerateCoverArtItem(
                 entryId: 'audio-1',
                 linkedFromId: 'task-1',
@@ -1895,7 +1768,7 @@ void main() {
       await tester.pump();
 
       expect(find.byType(ModernGenerateCoverArtItem), findsOneWidget);
-      expect(find.byType(ActionMenuListItem), findsOneWidget);
+      expect(find.byType(DsActionRow), findsOneWidget);
       expect(find.byIcon(LottiIcons.aiSpark), findsOneWidget);
     });
 
@@ -1909,10 +1782,11 @@ void main() {
             createEntryControllerOverride(audioEntry),
             createEntryControllerOverride(task),
           ],
-          child: const MaterialApp(
+          child: MaterialApp(
+            theme: resolveTestTheme(),
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
+            home: const Scaffold(
               body: ModernGenerateCoverArtItem(
                 entryId: 'audio-1',
                 linkedFromId: 'task-1',
@@ -2502,7 +2376,7 @@ void main() {
         await tester.pump();
 
         final context = tester.element(find.byType(ModernRateSessionItem));
-        expect(find.byType(ActionMenuListItem), findsOneWidget);
+        expect(find.byType(DsActionRow), findsOneWidget);
         expect(find.byIcon(LottiIcons.star), findsOneWidget);
         expect(
           find.text(context.messages.sessionRatingRateAction),
@@ -2528,7 +2402,7 @@ void main() {
 
       await tester.pump();
 
-      expect(find.byType(ActionMenuListItem), findsNothing);
+      expect(find.byType(DsActionRow), findsNothing);
     });
 
     testWidgets(
@@ -2551,7 +2425,7 @@ void main() {
         await tester.pump();
 
         final context = tester.element(find.byType(ModernRateSessionItem));
-        expect(find.byType(ActionMenuListItem), findsOneWidget);
+        expect(find.byType(DsActionRow), findsOneWidget);
         expect(find.byIcon(LottiIconsFilled.star), findsOneWidget);
         expect(
           find.text(context.messages.sessionRatingViewAction),

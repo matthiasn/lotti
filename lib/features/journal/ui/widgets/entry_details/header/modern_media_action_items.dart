@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/design_system/components/action_modal/ds_action_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
-import 'package:lotti/features/journal/ui/widgets/entry_details/header/action_menu_list_item.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -35,9 +35,10 @@ class ModernSpeechItem extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    return ActionMenuListItem(
+    return DsActionRow(
       icon: LottiIcons.transcribe,
       title: context.messages.speechModalTitle,
+      trailing: DsActionRowTrailing.chevron,
       onTap: () => pageIndexNotifier.value = 1,
     );
   }
@@ -72,7 +73,7 @@ class ModernShowInFileManagerItem extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    return ActionMenuListItem(
+    return DsActionRow(
       icon: LottiIcons.folderOpen,
       title: _showInFileManagerTitle(context, resolvedPlatform),
       onTap: () async {
@@ -147,9 +148,10 @@ class ModernShareItem extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    return ActionMenuListItem(
+    return DsActionRow(
       icon: LottiIcons.share,
       title: context.messages.journalShareHint,
+      trailing: DsActionRowTrailing.chevron,
       onTap: () async {
         Navigator.of(context).pop();
 

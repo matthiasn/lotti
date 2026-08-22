@@ -231,6 +231,7 @@ class ModalUtils {
     String? closeButtonTooltip,
     VoidCallback? onClosePressed,
     bool? useRootNavigator,
+    Widget? leadingNavBarWidget,
     WoltModalType Function(BuildContext)? modalTypeBuilderOverride,
   }) async {
     final theme = Theme.of(context);
@@ -257,6 +258,7 @@ class ModalUtils {
             closeButtonTooltip: closeButtonTooltip,
             onClosePressed: onClosePressed,
             padding: padding,
+            leadingNavBarWidget: leadingNavBarWidget,
             child: builder(modalSheetContext),
             context: modalSheetContext,
           ),

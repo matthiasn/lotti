@@ -3,14 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/supported_language.dart';
+import 'package:lotti/features/design_system/components/action_modal/ds_action_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
-import 'package:lotti/features/journal/ui/widgets/entry_details/header/action_menu_list_item.dart';
 import 'package:lotti/features/labels/ui/widgets/label_selection_modal_utils.dart';
 import 'package:lotti/features/tasks/ui/widgets/language_selection_modal_content.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/flags/language_flag.dart';
 import 'package:lotti/widgets/modal/index.dart';
 import 'package:lotti/widgets/modal/modal_action_sheet.dart';
@@ -32,7 +31,7 @@ class ModernUnlinkItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return ActionMenuListItem(
+    return DsActionRow(
       icon: LottiIcons.linkOff,
       title: context.messages.journalUnlinkHint,
       onTap: () async {
@@ -79,7 +78,7 @@ class ModernToggleHiddenItem extends ConsumerWidget {
     final provider = linkedEntriesControllerProvider(link.fromId);
     final notifier = ref.read(provider.notifier);
 
-    return ActionMenuListItem(
+    return DsActionRow(
       icon: hidden ? LottiIcons.hidden : LottiIcons.visible,
       title: hidden
           ? context.messages.journalShowLinkHint
@@ -113,7 +112,7 @@ class ModernCopyImageItem extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    return ActionMenuListItem(
+    return DsActionRow(
       icon: LottiIcons.copy,
       title: context.messages.journalCopyImageLabel,
       onTap: () async {
@@ -157,7 +156,7 @@ class ModernCopyEntryTextItem extends ConsumerWidget {
         : context.messages.copyAsText;
     final icon = markdown ? LottiIcons.code : LottiIcons.copy;
 
-    return ActionMenuListItem(
+    return DsActionRow(
       icon: icon,
       title: title,
       onTap: () async {
@@ -195,10 +194,11 @@ class ModernLabelsItem extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    return ActionMenuListItem(
+    return DsActionRow(
       icon: LottiIcons.label,
       title: context.messages.entryLabelsActionTitle,
       subtitle: context.messages.entryLabelsActionSubtitle,
+      trailing: DsActionRowTrailing.chevron,
       onTap: () async {
         // Close the multi-page modal first
         Navigator.of(context).pop();
@@ -222,12 +222,16 @@ class ModernLabelsItem extends ConsumerWidget {
   }
 }
 
+/// The 4:3 proportion every flag in `country_flags` is drawn at. Named so the
+/// width beside a language name follows the caption's line height instead of
+/// being a second hand-tuned number.
+const double _flagAspectRatio = 4 / 3;
+
 /// Modern styled set-language action item for tasks.
 ///
-/// Renders the currently selected language's flag (or a generic language
-/// glyph when none is set) next to the action text, and opens the same
-/// language selection modal used elsewhere in the app. On selection, the
-/// task's `languageCode` is updated via the journal repository.
+/// Names the task's current language on the row's trailing edge and opens
+/// the same language selection modal used elsewhere in the app. On selection,
+/// the task's `languageCode` is updated via the journal repository.
 class ModernSetTaskLanguageItem extends ConsumerWidget {
   const ModernSetTaskLanguageItem({
     required this.entryId,
@@ -251,31 +255,32 @@ class ModernSetTaskLanguageItem extends ConsumerWidget {
         ? SupportedLanguage.fromCode(languageCode)
         : null;
 
-    final leading = language != null
-        ? SizedBox(
-            width: 32,
-            height: 24,
-            child: buildLanguageFlag(
-              languageCode: language.code,
-              height: 24,
-              width: 32,
-              key: ValueKey('action-flag-${language.code}'),
-            ),
-          )
-        : Icon(
-            LottiIcons.language,
-            size: AppTheme.listItemIconSize,
-            color: context.colorScheme.onSurface,
-          );
+    final tokens = context.designTokens;
 
     // Bind the update callback to the notifier while `ref` is still valid —
     // the Actions modal will be popped (unmounting this item) before the
     // language modal callback fires.
     final notifier = ref.read(entryControllerProvider(entryId).notifier);
 
-    return ActionMenuListItem(
-      leading: leading,
+    return DsActionRow(
+      icon: LottiIcons.language,
       title: context.messages.taskLanguageSetAction,
+      // The setting itself rides the trailing edge, where every other row's
+      // current value would. The flag used to sit in the leading slot, which
+      // put the *answer* where the rest of the sheet puts the *subject* and
+      // left a row whose glyph changed meaning with the entry. It now rides
+      // beside the name it belongs to, at the caption's own line height so it
+      // reads as a mark on the value rather than a second icon on the row.
+      trailingValue: language?.localizedName(context),
+      trailingValueLeading: language == null
+          ? null
+          : buildLanguageFlag(
+              languageCode: language.code,
+              height: tokens.typography.lineHeight.caption,
+              width: tokens.typography.lineHeight.caption * _flagAspectRatio,
+              key: ValueKey('action-flag-${language.code}'),
+            ),
+      trailing: DsActionRowTrailing.chevron,
       onTap: () async {
         Navigator.of(context).pop();
         if (!context.mounted) return;

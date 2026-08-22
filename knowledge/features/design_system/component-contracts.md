@@ -16,6 +16,10 @@ sources:
     resource: ../../../lib/features/design_system/components/navigation/design_system_contact_row.dart
     title: DesignSystemContactRow — the support footer both navigation surfaces close with
     last_modified: 2026-08-05
+  - id: action-modal
+    resource: ../../../lib/features/design_system/components/action_modal
+    title: Action modal — the shell, row and toggle chip behind both task-detail menus
+    last_modified: 2026-08-21
   - id: navbar
     resource: ../../../lib/widgets/nav_bar/design_system_bottom_navigation_bar.dart
     title: Bottom navigation shell
@@ -490,6 +494,35 @@ because the rule stays close to the widget that can violate it.
 `utils/disabled_overlay.dart` provides `withDisabledOpacity()`, a narrow utility
 that keeps disabled treatment consistent without each widget re-implementing the
 same opacity wrapper.
+
+# One action modal, two sheets
+
+The task detail page opens two menus: the `•••` header modal (entry actions)
+and the sticky bar's "Add" sheet (create actions). They were built separately
+and drifted — a centred title over a hairline bar and full-width dividers on
+one, teal glyphs and two-line rows with no dividers on the other. Both now
+compose the same three parts from
+`components/action_modal/`:
+
+| Part | What it fixes |
+| --- | --- |
+| `DsActionModal` | Presentation, header and body inset. Wolt's top-bar *layer* is off; the header rides the toolbar's **leading** slot, full width, carrying its own close (and an optional back). A centred toolbar title can never reach the sheet gutter — its leading width mirrors the trailing button — and a header placed in the page content instead would sit under the bottom sheet's opaque 48pt drag strip and never receive a tap. |
+| `DsActionRow` | The row: a washed `ControlSizes.iconChip` tile, title, optional description, optional trailing value, and a trailing glyph. `DsActionRowTone` picks the tile's wash — `neutral` for acting on what exists, `accent` for bringing something new into being, `destructive` for the one irreversible row. |
+| `DsActionToggleChip` | A boolean the sheet owns — starred, private, flagged — as a two-state pill instead of a menu row that promises an action, never changes its title, and dismisses the sheet after each toggle. |
+
+Two rules carry the pattern:
+
+- **No dividers between rows.** The rounded hover wash *is* the separator, so
+  each row rounds to `radii.m` and carries its own 4pt bottom gap. The gap
+  rides the row rather than the list because half these rows decide at build
+  time that they do not apply to this entry and render nothing; a gap owned by
+  the list would still be spent on them. The single surviving divider sits
+  above the destructive row.
+- **The trailing glyph is a promise.** `+` creates the thing in place, `›`
+  hands off to a surface the user continues in, and nothing at all means the
+  row acts where it stands — a copy, a toggle, a confirm-then-act. Delete and
+  unlink take no glyph for that reason: a confirmation is a question, not a
+  destination.
 
 # Boundaries
 

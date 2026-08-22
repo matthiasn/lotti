@@ -7,13 +7,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/design_system/components/action_modal/ds_action_row.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/image_paste_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/create/create_entry_action_modal.dart';
-import 'package:lotti/features/journal/ui/widgets/create/create_menu_list_item.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -25,7 +25,6 @@ import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../mocks/mocks.dart';
-import '../../../../../test_utils/hover_divider_harness.dart';
 import '../../../../../widget_test_utils.dart';
 
 /// Resolves the host id to a Task so the sheet's task-host rows render.
@@ -123,7 +122,7 @@ void main() {
       // core items must each be present exactly once (screenshot items are
       // platform-conditional and intentionally not pinned here).
       final context = tester.element(
-        find.byType(CreateMenuListItem).first,
+        find.byType(DsActionRow).first,
       );
       final messages = AppLocalizations.of(context)!;
       for (final label in [
@@ -138,24 +137,48 @@ void main() {
     });
 
     testWidgets(
-      'exactly one divider between adjacent rows — never a stranded rule '
-      'above or below the list',
+      'the sheet draws no rules at all — the rows separate themselves',
       (tester) async {
         await pumpAndOpenModal(tester);
 
-        // Visibility is resolved before the list is assembled, so "listed"
-        // and "rendered" are the same thing and the divider count is exactly
-        // rows - 1. The old sheet let items collapse themselves after being
-        // listed, which closed the sheet on an orphan rule under a row that
-        // was not there.
-        final rows = find.byType(CreateMenuListItem).evaluate().length;
-        expect(rows, greaterThan(1));
+        final rows = find.byType(DsActionRow);
+        expect(rows.evaluate().length, greaterThan(1));
+        // Rounded hover targets replaced the hairlines: a rule through a
+        // rounded highlight is the reason the sheet used to need a whole
+        // hover-index mechanism to fade the pair bracketing the pointer.
+        expect(find.byType(DesignSystemDivider), findsNothing);
         expect(
-          find.byType(DesignSystemDivider).evaluate().length,
-          rows - 1,
+          find.descendant(of: rows.first, matching: find.byType(Divider)),
+          findsNothing,
         );
       },
     );
+
+    testWidgets('every row is an accent-tone create row with a description', (
+      tester,
+    ) async {
+      await pumpAndOpenModal(tester);
+
+      final rows = tester.widgetList<DsActionRow>(find.byType(DsActionRow));
+      expect(rows, isNotEmpty);
+      for (final row in rows) {
+        expect(
+          row.tone,
+          DsActionRowTone.accent,
+          reason: '${row.title} must read as a create, not an entry action',
+        );
+        expect(
+          row.subtitle,
+          isNotNull,
+          reason: '${row.title} must say what the tap does',
+        );
+        expect(
+          row.trailing,
+          isNot(DsActionRowTrailing.none),
+          reason: '${row.title} must report whether it creates or opens',
+        );
+      }
+    });
 
     testWidgets('shows Timer item when linkedFromId is provided', (
       tester,
@@ -207,7 +230,7 @@ void main() {
         );
 
         final context = tester.element(
-          find.byType(CreateMenuListItem).first,
+          find.byType(DsActionRow).first,
         );
         final messages = AppLocalizations.of(context)!;
         expect(
@@ -317,175 +340,6 @@ void main() {
       expect(find.byIcon(LottiIcons.mic), findsOneWidget);
       expect(find.byIcon(LottiIcons.timer), findsOneWidget);
       expect(find.byIcon(LottiIcons.note), findsOneWidget);
-    });
-
-    // -----------------------------------------------------------------------
-    // Hover-divider treatment
-    // -----------------------------------------------------------------------
-
-    /// A hovered row must not be bisected by the hairlines bracketing it: the
-    /// highlight IS the separator while the pointer is on the row, and a rule
-    /// cutting across it reads as two half-rows. The sheet was the last list
-    /// still drawing them, because its hairlines are siblings of the rows
-    /// rather than drawn by each row.
-    ///
-    /// The row count varies with platform (the image/screenshot rows are
-    /// gated), so every expectation is expressed against the rows actually
-    /// rendered rather than a hardcoded length.
-    group('hover fades the hairlines bracketing the hovered row', () {
-      int rowCount(WidgetTester tester) =>
-          find.byType(CreateMenuListItem).evaluate().length;
-
-      /// Opens the sheet in a view tall enough for the whole row run.
-      ///
-      /// The default 600 px test view cuts the list off, and a row below the
-      /// fold never receives the pointer — the last-row edge case would pass
-      /// vacuously by hovering nothing at all.
-      Future<void> openSheet(WidgetTester tester) async {
-        tester.view
-          ..physicalSize = const Size(800, 1600)
-          ..devicePixelRatio = 1.0;
-        addTearDown(tester.view.resetPhysicalSize);
-        addTearDown(tester.view.resetDevicePixelRatio);
-        await pumpAndOpenModal(tester);
-      }
-
-      /// The colours a run of [rowCount] rows should show when exactly the
-      /// dividers in [faded] are suppressed. `null` is an un-faded rule —
-      /// the divider took no override and kept its decorative token.
-      List<Color?> pattern(int rowCount, Set<int> faded) => [
-        for (var i = 0; i < rowCount - 1; i++)
-          if (faded.contains(i)) Colors.transparent else null,
-      ];
-
-      testWidgets('idle: every hairline is drawn', (tester) async {
-        await openSheet(tester);
-
-        final rows = rowCount(tester);
-        expect(rows, greaterThan(2), reason: 'need a middle row to hover');
-        expect(designSystemDividerColors(tester), pattern(rows, const {}));
-      });
-
-      testWidgets(
-        'a middle row fades BOTH of its hairlines and no others — the one '
-        'below it and the one belonging to the row above',
-        (tester) async {
-          await openSheet(tester);
-          final rows = rowCount(tester);
-
-          await hoverRowAt(tester, 2);
-
-          // Row 2 is bracketed by divider 1 (above) and divider 2 (below).
-          expect(
-            designSystemDividerColors(tester),
-            pattern(rows, const {1, 2}),
-          );
-        },
-      );
-
-      testWidgets(
-        'the FIRST row fades only the hairline below it — there is no rule '
-        'above it to fade',
-        (tester) async {
-          await openSheet(tester);
-          final rows = rowCount(tester);
-
-          await hoverRowAt(tester, 0);
-
-          expect(designSystemDividerColors(tester), pattern(rows, const {0}));
-        },
-      );
-
-      testWidgets(
-        'the LAST row fades only the hairline above it — it draws no rule of '
-        'its own',
-        (tester) async {
-          await openSheet(tester);
-          final rows = rowCount(tester);
-
-          await hoverRowAt(tester, rows - 1);
-
-          expect(
-            designSystemDividerColors(tester),
-            pattern(rows, {rows - 2}),
-          );
-        },
-      );
-
-      testWidgets(
-        'moving the pointer off the sheet restores every hairline',
-        (tester) async {
-          await openSheet(tester);
-          final rows = rowCount(tester);
-
-          final gesture = await hoverRowAt(tester, 2);
-          expect(
-            designSystemDividerColors(tester),
-            pattern(rows, const {1, 2}),
-          );
-
-          await unhoverRows(tester, gesture);
-
-          expect(designSystemDividerColors(tester), pattern(rows, const {}));
-        },
-      );
-
-      testWidgets(
-        'sliding from one row to the next retargets rather than accumulates '
-        '— the fade follows the pointer instead of smearing down the sheet',
-        (tester) async {
-          await openSheet(tester);
-          final rows = rowCount(tester);
-
-          final gesture = await hoverRowAt(tester, 1);
-          expect(
-            designSystemDividerColors(tester),
-            pattern(rows, const {0, 1}),
-          );
-
-          // Same pointer, continued onto the next row: the leave for row 1
-          // and the enter for row 2 can arrive in either order.
-          await gesture.moveTo(
-            tester.getCenter(find.byType(CreateMenuListItem).at(2)),
-          );
-          await tester.pump();
-
-          expect(
-            designSystemDividerColors(tester),
-            pattern(rows, const {1, 2}),
-          );
-        },
-      );
-
-      testWidgets(
-        'the hairline count never changes on hover — fading by colour is '
-        'what keeps the rows below the pointer from jumping by 1 px',
-        (tester) async {
-          await openSheet(tester);
-
-          final idleDividers = find.byType(DesignSystemDivider).evaluate();
-          final idleGeometry = tester
-              .widgetList<CreateMenuListItem>(find.byType(CreateMenuListItem))
-              .map((row) => tester.getRect(find.byWidget(row)))
-              .toList();
-
-          await hoverRowAt(tester, 2);
-
-          expect(
-            find.byType(DesignSystemDivider).evaluate().length,
-            idleDividers.length,
-            reason: 'a divider was removed rather than faded',
-          );
-          expect(
-            tester
-                .widgetList<CreateMenuListItem>(find.byType(CreateMenuListItem))
-                .map((row) => tester.getRect(find.byWidget(row)))
-                .toList(),
-            idleGeometry,
-            reason: 'hovering must not move any row',
-          );
-        },
-      );
     });
   });
 }

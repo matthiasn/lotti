@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/widgetbook/design_system_action_modal_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_avatar_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_badge_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_branding_widgetbook.dart';
@@ -50,6 +51,7 @@ WidgetbookFolder buildDesignSystemWidgetbookFolder() {
             ),
           ],
         ),
+        buildDesignSystemActionModalWidgetbookComponent(),
         buildDesignSystemAvatarWidgetbookComponent(),
         buildDesignSystemBrandingWidgetbookComponent(),
         buildDesignSystemBadgeWidgetbookComponent(),

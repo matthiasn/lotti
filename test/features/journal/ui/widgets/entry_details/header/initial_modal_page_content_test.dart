@@ -125,14 +125,14 @@ void main() {
     });
 
     testWidgets(
-      'renders a country flag when task has a language code set',
+      "names the task's language beside the row rather than in its tile",
       (tester) async {
         await tester.pumpWidget(buildWrapper(taskEntry(languageCode: 'en')));
         await tester.pump();
 
         expect(find.text('Set language'), findsOneWidget);
-        expect(find.byKey(const ValueKey('action-flag-en')), findsOneWidget);
-        expect(find.byIcon(LottiIcons.language), findsNothing);
+        expect(find.text('English'), findsOneWidget);
+        expect(find.byIcon(LottiIcons.language), findsOneWidget);
       },
     );
 

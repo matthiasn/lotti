@@ -120,8 +120,10 @@ void main() {
         expect(find.byType(SpeechModalContent), findsOneWidget);
         expect(find.byType(InitialModalPageContent), findsNothing);
 
-        // The speech page's back button resets the notifier to 0.
-        await tester.tap(find.byIcon(LottiIcons.back));
+        // The speech page's back button resets the notifier to 0. Hit-tested:
+        // the header now rides inside the page content, and Wolt keeps the
+        // other page's copy in the tree behind an IgnorePointer.
+        await tester.tap(find.byIcon(LottiIcons.back).hitTestable());
         await tester.pumpAndSettle();
 
         expect(find.byType(InitialModalPageContent), findsOneWidget);
