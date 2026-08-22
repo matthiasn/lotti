@@ -11967,6 +11967,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Réinitialiser les astuces de l\'application';
 
   @override
+  String get settingsSaveFailedToast =>
+      'Impossible d\'enregistrer tes modifications';
+
+  @override
   String get settingsSpeechSubtitle => 'Voix et lecture à voix haute';
 
   @override

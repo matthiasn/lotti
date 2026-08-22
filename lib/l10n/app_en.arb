@@ -6538,6 +6538,7 @@
   },
   "settingsResetHintsSubtitle": "Clear one‑time tips and onboarding hints",
   "settingsResetHintsTitle": "Reset In‑App Hints",
+  "settingsSaveFailedToast": "Couldn't save your changes",
   "settingsSpeechSubtitle": "Voice and reading aloud",
   "settingsSpeechTitle": "Speech",
   "settingsSyncConflictsSubtitle": "Resolve sync conflicts",

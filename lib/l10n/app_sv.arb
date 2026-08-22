@@ -5059,6 +5059,7 @@
   },
   "settingsResetHintsSubtitle": "Tydliga engångstips och introduktionstips",
   "settingsResetHintsTitle": "Återställ tips i appen",
+  "settingsSaveFailedToast": "Dina ändringar kunde inte sparas",
   "settingsSpeechSubtitle": "Röst och högläsning",
   "settingsSpeechTitle": "Tal",
   "settingsSyncConflictsSubtitle": "Lös synkkonflikter",

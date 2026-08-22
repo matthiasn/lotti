@@ -11916,6 +11916,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get settingsResetHintsTitle => 'Reimposta suggerimenti nell\'app';
 
   @override
+  String get settingsSaveFailedToast =>
+      'Non è stato possibile salvare le tue modifiche';
+
+  @override
   String get settingsSpeechSubtitle => 'Voce e lettura aloud';
 
   @override

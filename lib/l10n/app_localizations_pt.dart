@@ -11865,6 +11865,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get settingsResetHintsTitle => 'Redefinir dicas no aplicativo';
 
   @override
+  String get settingsSaveFailedToast =>
+      'Não foi possível guardar as tuas alterações';
+
+  @override
   String get settingsSpeechSubtitle => 'Voz e leitura em voz alta';
 
   @override

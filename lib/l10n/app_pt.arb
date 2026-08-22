@@ -5058,6 +5058,7 @@
   },
   "settingsResetHintsSubtitle": "Dicas claras e de integração únicas",
   "settingsResetHintsTitle": "Redefinir dicas no aplicativo",
+  "settingsSaveFailedToast": "Não foi possível guardar as tuas alterações",
   "settingsSpeechSubtitle": "Voz e leitura em voz alta",
   "settingsSpeechTitle": "Discurso",
   "settingsSyncConflictsSubtitle": "Resolve conflitos de sincronização",

@@ -11768,6 +11768,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get settingsResetHintsTitle => 'Återställ tips i appen';
 
   @override
+  String get settingsSaveFailedToast => 'Dina ändringar kunde inte sparas';
+
+  @override
   String get settingsSpeechSubtitle => 'Röst och högläsning';
 
   @override

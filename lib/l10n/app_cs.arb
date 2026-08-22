@@ -4520,6 +4520,7 @@
   },
   "settingsResetHintsSubtitle": "Vymazat jednorázové tipy a tipy pro onboarding",
   "settingsResetHintsTitle": "Resetovat nápovědy v aplikaci",
+  "settingsSaveFailedToast": "Změny se nepodařilo uložit",
   "settingsSpeechSubtitle": "Hlas a předčítání",
   "settingsSpeechTitle": "Řeč",
   "settingsSyncConflictsSubtitle": "Vyřeš konflikty synchronizace",

@@ -11757,6 +11757,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get settingsResetHintsTitle => 'Nulstil tips i appen';
 
   @override
+  String get settingsSaveFailedToast => 'Dine ændringer kunne ikke gemmes';
+
+  @override
   String get settingsSpeechSubtitle => 'Stemme og højtlæsning';
 
   @override

@@ -11923,6 +11923,9 @@ class AppLocalizationsEs extends AppLocalizations {
       'Restablecer sugerencias de la aplicación';
 
   @override
+  String get settingsSaveFailedToast => 'No se pudieron guardar tus cambios';
+
+  @override
   String get settingsSpeechSubtitle => 'Voz y lectura en voz alta';
 
   @override

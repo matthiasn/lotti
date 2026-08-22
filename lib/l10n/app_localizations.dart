@@ -19831,6 +19831,12 @@ abstract class AppLocalizations {
   /// **'Reset In‑App Hints'**
   String get settingsResetHintsTitle;
 
+  /// No description provided for @settingsSaveFailedToast.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save your changes'**
+  String get settingsSaveFailedToast;
+
   /// No description provided for @settingsSpeechSubtitle.
   ///
   /// In en, this message translates to:

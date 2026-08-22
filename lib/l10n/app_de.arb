@@ -4513,6 +4513,7 @@
   },
   "settingsResetHintsSubtitle": "Einmalige Tipps und Einführungshinweise löschen",
   "settingsResetHintsTitle": "In-App-Hinweise zurücksetzen",
+  "settingsSaveFailedToast": "Deine Änderungen konnten nicht gespeichert werden",
   "settingsSpeechSubtitle": "Stimme und Vorlesen",
   "settingsSpeechTitle": "Sprache",
   "settingsSyncConflictsSubtitle": "Sync-Konflikte auflösen",

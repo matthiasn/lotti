@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -13,8 +14,10 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_service.dart';
+import 'package:lotti/widgets/date_time/datetime_bottom_sheet.dart';
 import 'package:lotti/widgets/settings/settings_delete_row.dart';
 import 'package:lotti/widgets/settings/settings_form_section.dart';
+import 'package:lotti/widgets/settings/settings_picker_field.dart';
 import 'package:lotti/widgets/settings/settings_switch_row.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -105,6 +108,44 @@ void main() {
   DsGlassPill saveAction(WidgetTester tester) => tester.widget<DsGlassPill>(
     find.widgetWithText(DsGlassPill, 'Save'),
   );
+
+  /// Pumps [child] with the **mobile** navigator topology: a nested
+  /// `Navigator` holding a page stack (habits list, then the editor on top),
+  /// exactly like the settings tab's `Beamer` in the mobile shell.
+  ///
+  /// The MediaQuery width is a phone's while the view stays large: the width
+  /// is what `ModalUtils.shouldUseRootNavigatorForBottomSheet` reads, so this
+  /// puts the date picker on the *root* navigator the way a phone does, while
+  /// leaving the whole form hittable without scrolling.
+  Future<void> pumpPageOnNestedStack(WidgetTester tester, Widget child) async {
+    tester.view.physicalSize = const Size(1200, 1600);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Navigator(
+          onGenerateInitialRoutes: (navigator, initialRoute) => [
+            MaterialPageRoute<void>(
+              builder: (_) =>
+                  const Scaffold(body: Center(child: Text('habits list'))),
+            ),
+            MaterialPageRoute<void>(
+              builder: (_) => AppCommandHost(
+                handlers: const <AppCommandId, AppCommandHandler>{},
+                platform: TargetPlatform.windows,
+                child: child,
+              ),
+            ),
+          ],
+        ),
+        mediaQueryData: const MediaQueryData(size: Size(390, 1600)),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+  }
 
   HabitDefinition capturedUpsert() {
     final captured = verify(
@@ -341,6 +382,82 @@ void main() {
 
         expect(find.byKey(const Key('habit_name_field')), findsNothing);
         expect(find.byType(DsGlassPill), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'picking an Active from date on the mobile navigator stack keeps the '
+      'editor mounted and persists the new date',
+      (tester) async {
+        // Midnight so the date-mode wheel has no time component to round.
+        final pickedDay = DateTime(2024, 5, 20);
+
+        await withClock(Clock.fixed(pickedDay), () async {
+          await pumpPageOnNestedStack(
+            tester,
+            EditHabitPage(habitId: habitFlossing.id),
+          );
+
+          final startDateField = find.ancestor(
+            of: find.text('Start date'),
+            matching: find.byType(SettingsPickerField),
+          );
+          expect(startDateField, findsOneWidget);
+          await tester.ensureVisible(startDateField);
+          await tester.pump();
+          await tester.tap(startDateField);
+          await tester.pumpAndSettle();
+          expect(find.byType(DateTimeBottomSheet), findsOneWidget);
+
+          await tester.tap(find.text('Done'));
+          await tester.pumpAndSettle();
+
+          // The sheet closed and the editor — not the habits list — is still
+          // on screen. Before the fix the sheet's Done popped this nested
+          // navigator, dropping the editor and every unsaved edit with it.
+          expect(find.byType(DateTimeBottomSheet), findsNothing);
+          expect(find.byKey(const Key('habit_name_field')), findsOneWidget);
+          expect(find.text('habits list'), findsNothing);
+
+          // The pick alone dirties the form, so Save is now reachable.
+          expect(saveAction(tester).enabled, isTrue);
+
+          await tester.tap(find.widgetWithText(DsGlassPill, 'Save'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+
+          final saved = capturedUpsert();
+          expect(saved.id, habitFlossing.id);
+          expect(saved.activeFrom, pickedDay);
+          expect(beamedTo, '/settings/habits');
+        });
+      },
+    );
+
+    testWidgets(
+      'a failing write shows an error toast and keeps the editor open',
+      (tester) async {
+        when(
+          () => mockPersistenceLogic.upsertEntityDefinition(any()),
+        ).thenThrow(Exception('db unavailable'));
+
+        await pumpPage(tester, EditHabitPage(habitId: habitFlossing.id));
+
+        await tester.enterText(
+          find.byKey(const Key('habit_name_field')),
+          'Flossing updated',
+        );
+        await tester.pump();
+
+        await tester.tap(find.widgetWithText(DsGlassPill, 'Save'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.text("Couldn't save your changes"), findsOneWidget);
+        // The user keeps their edit and stays on the page.
+        expect(beamedTo, isNull);
+        expect(find.byKey(const Key('habit_name_field')), findsOneWidget);
+        expect(saveAction(tester).enabled, isTrue);
       },
     );
   });
