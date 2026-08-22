@@ -4513,6 +4513,7 @@
   },
   "settingsResetHintsSubtitle": "Borrar consejos únicos y sugerencias de introducción",
   "settingsResetHintsTitle": "Restablecer sugerencias de la aplicación",
+  "settingsSaveFailedToast": "No se pudieron guardar tus cambios",
   "settingsSpeechSubtitle": "Voz y lectura en voz alta",
   "settingsSpeechTitle": "Habla",
   "settingsSyncConflictsSubtitle": "Resuelve conflictos de sincronización",

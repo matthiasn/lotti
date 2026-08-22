@@ -2,6 +2,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/habits/state/habit_settings_controller.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_category.dart';
@@ -56,7 +58,22 @@ class HabitDetailsPage extends ConsumerWidget {
     );
 
     Future<void> handleSave() async {
-      final success = await controller.onSavePressed();
+      // A failed write must never look like a successful one: the page only
+      // leaves once persistence has actually completed. Validation failures
+      // return false and are already surfaced by the form's own inline
+      // errors, so only a thrown write gets a toast.
+      bool success;
+      try {
+        success = await controller.onSavePressed();
+      } catch (_) {
+        if (context.mounted) {
+          context.showToast(
+            tone: DesignSystemToastTone.error,
+            title: messages.settingsSaveFailedToast,
+          );
+        }
+        return;
+      }
       if (success) {
         beamToNamed('/settings/habits');
       }

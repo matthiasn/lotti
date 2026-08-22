@@ -272,7 +272,10 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                           description: '${formData['description']}'.trim(),
                           private: private,
                           active: active,
-                          reviewAt: formData['review_at'] as DateTime?,
+                          // `reviewAt` is deliberately not touched here: the
+                          // form has no `review_at` field, so reading one back
+                          // out only ever yielded null and silently cleared
+                          // the stored value on every save.
                           categoryId: categoryId,
                           updatedAt: DateTime.now(),
                           items: dashboardItems,

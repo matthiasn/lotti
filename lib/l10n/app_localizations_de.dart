@@ -11830,6 +11830,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsResetHintsTitle => 'In-App-Hinweise zurücksetzen';
 
   @override
+  String get settingsSaveFailedToast =>
+      'Deine Änderungen konnten nicht gespeichert werden';
+
+  @override
   String get settingsSpeechSubtitle => 'Stimme und Vorlesen';
 
   @override

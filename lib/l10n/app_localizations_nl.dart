@@ -11777,6 +11777,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get settingsResetHintsTitle => 'In-app hints resetten';
 
   @override
+  String get settingsSaveFailedToast =>
+      'Je wijzigingen konden niet worden opgeslagen';
+
+  @override
   String get settingsSpeechSubtitle => 'Stem en hardop lezen';
 
   @override

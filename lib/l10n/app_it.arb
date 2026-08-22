@@ -5059,6 +5059,7 @@
   },
   "settingsResetHintsSubtitle": "Punte chiare una tantum e suggerimenti di bordo",
   "settingsResetHintsTitle": "Reimposta suggerimenti nell'app",
+  "settingsSaveFailedToast": "Non è stato possibile salvare le tue modifiche",
   "settingsSpeechSubtitle": "Voce e lettura aloud",
   "settingsSpeechTitle": "Discorso",
   "settingsSyncConflictsSubtitle": "Risolvi i conflitti di sincronizzazione",

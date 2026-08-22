@@ -11688,6 +11688,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsResetHintsTitle => 'Reset In‑App Hints';
 
   @override
+  String get settingsSaveFailedToast => 'Couldn\'t save your changes';
+
+  @override
   String get settingsSpeechSubtitle => 'Voice and reading aloud';
 
   @override

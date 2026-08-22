@@ -5058,6 +5058,7 @@
   },
   "settingsResetHintsSubtitle": "Eenmalige tips en hints aan boord wissen",
   "settingsResetHintsTitle": "In-app hints resetten",
+  "settingsSaveFailedToast": "Je wijzigingen konden niet worden opgeslagen",
   "settingsSpeechSubtitle": "Stem en hardop lezen",
   "settingsSpeechTitle": "Toespraak",
   "settingsSyncConflictsSubtitle": "Synchronisatieconflicten oplossen",

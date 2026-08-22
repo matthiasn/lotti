@@ -11902,6 +11902,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsResetHintsTitle => 'Resetovat nápovědy v aplikaci';
 
   @override
+  String get settingsSaveFailedToast => 'Změny se nepodařilo uložit';
+
+  @override
   String get settingsSpeechSubtitle => 'Hlas a předčítání';
 
   @override

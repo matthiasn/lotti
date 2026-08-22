@@ -11984,6 +11984,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsResetHintsTitle => 'Resetați indiciile din aplicație';
 
   @override
+  String get settingsSaveFailedToast =>
+      'Modificările dvs. nu au putut fi salvate';
+
+  @override
   String get settingsSpeechSubtitle => 'Voce și citire cu voce tare';
 
   @override

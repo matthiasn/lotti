@@ -20,6 +20,14 @@ sources:
     resource: ../../../lib/features/design_system/components/action_modal
     title: Action modal — the shell, row and toggle chip behind both task-detail menus
     last_modified: 2026-08-21
+  - id: modal-utils
+    resource: ../../../lib/widgets/modal/modal_utils.dart
+    title: ModalUtils — sheet presentation and the width-driven navigator choice
+    last_modified: 2026-08-22
+  - id: datetime-picker
+    resource: ../../../lib/widgets/date_time/datetime_field.dart
+    title: pickDateTimeModal — the shared date/time sheet and its self-dismissal
+    last_modified: 2026-08-22
   - id: navbar
     resource: ../../../lib/widgets/nav_bar/design_system_bottom_navigation_bar.dart
     title: Bottom navigation shell
@@ -523,6 +531,36 @@ Two rules carry the pattern:
   row acts where it stands — a copy, a toggle, a confirm-then-act. Delete and
   unlink take no glyph for that reason: a confirmation is a question, not a
   destination.
+
+# A modal dismisses itself, never its caller
+
+`ModalUtils.showSinglePageModal` chooses the hosting navigator by width:
+`shouldUseRootNavigatorForBottomSheet` is true below
+`WoltModalConfig.pageBreakpoint` (560), so a phone puts the sheet on the
+**root** navigator while a desktop pane keeps it on the nearest one.
+
+The mobile shell mounts each tab as its own `Beamer` — a nested `Navigator` —
+and the settings tab builds a real page stack (`SettingsLocation.buildPages`).
+So on a phone the sheet and the widget that opened it live on **different
+navigators**, and `Navigator.of(callerContext).pop()` resolves to the page
+stack behind the sheet, not the sheet. It pops the editor the user is standing
+on, `autoDispose` tears its controller down, and every unsaved edit goes with
+it — while the sheet stays on screen. Desktop hides the defect completely:
+there the two navigators are the same object.
+
+The contract, therefore:
+
+- **Build a dismissing action bar from the modal's own context.** Pass
+  `stickyActionBarBuilder`, not a pre-built `stickyActionBar` whose closures
+  captured the caller's `context`. A bar written as its own widget is already
+  safe — its `build` context is inside the modal subtree.
+- **Return the result through the route.** `Navigator.of(modalContext).pop(value)`
+  and let the caller apply it after the sheet closes, rather than mutating
+  caller state from inside a closure that is about to pop something. See
+  `pickDateTimeModal` in `widgets/date_time/datetime_field.dart` for the shape.
+
+This is the pop-time companion to `bottomNavSafeNavigatorOf`, which solves the
+same split at push time.
 
 # Boundaries
 

@@ -32,6 +32,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.11]
 ### Fixed
+- **Picking a date in a settings editor on a phone no longer throws the edit
+  away.** In the habit editor, tapping Start date (or Show from, or the alert
+  time) and then Done closed the page underneath the picker instead of the
+  picker itself: the editor dropped back to the habits list, and the new date
+  along with anything else typed in the form went with it. The Health import
+  page's date fields did the same. The picker now dismisses itself and hands
+  the chosen date back to the form, which keeps it until you save.
+- **A habit that fails to save now says so.** If writing the definition failed,
+  the editor simply did nothing — no message, no clue whether the change had
+  landed. It now shows an error and keeps you on the page with your edit
+  intact.
 - **Habit day squares on a goal page stop at today.** A habit measured over a
   calendar week or month drew the whole period, so on a Friday its track ran on
   through Sunday: two empty "No entry" squares for days that have not happened

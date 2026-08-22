@@ -4513,6 +4513,7 @@
   },
   "settingsResetHintsSubtitle": "Ștergeți sfaturile unice și indiciile de introducere",
   "settingsResetHintsTitle": "Resetați indiciile din aplicație",
+  "settingsSaveFailedToast": "Modificările dvs. nu au putut fi salvate",
   "settingsSpeechSubtitle": "Voce și citire cu voce tare",
   "settingsSpeechTitle": "Vorbire",
   "settingsSyncConflictsSubtitle": "Rezolvați conflictele de sincronizare",

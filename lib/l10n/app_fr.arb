@@ -4513,6 +4513,7 @@
   },
   "settingsResetHintsSubtitle": "Effacer les conseils ponctuels et les astuces d'introduction",
   "settingsResetHintsTitle": "Réinitialiser les astuces de l'application",
+  "settingsSaveFailedToast": "Impossible d'enregistrer tes modifications",
   "settingsSpeechSubtitle": "Voix et lecture à voix haute",
   "settingsSpeechTitle": "Parole",
   "settingsSyncConflictsSubtitle": "Résoudre les conflits de synchro",

@@ -5059,6 +5059,7 @@
   },
   "settingsResetHintsSubtitle": "Klare engangstips og onboarding-tips",
   "settingsResetHintsTitle": "Nulstil tips i appen",
+  "settingsSaveFailedToast": "Dine ændringer kunne ikke gemmes",
   "settingsSpeechSubtitle": "Stemme og højtlæsning",
   "settingsSpeechTitle": "Tale",
   "settingsSyncConflictsSubtitle": "Løs synkroniseringskonflikter",
