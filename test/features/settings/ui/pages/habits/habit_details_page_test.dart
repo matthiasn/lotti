@@ -462,6 +462,12 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         expect(capturedUpsert().name, 'Flossing updated');
+        // Without this the test would pass vacuously if the controller ever
+        // stopped scheduling reminders: nothing would throw, so the absent
+        // toast would prove nothing about the guard.
+        verify(
+          () => mockNotificationService.scheduleHabitNotification(any()),
+        ).called(1);
         expect(find.text("Couldn't save your changes"), findsNothing);
         expect(beamedTo, '/settings/habits');
       },
