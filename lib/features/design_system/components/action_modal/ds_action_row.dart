@@ -229,8 +229,11 @@ class _DsActionRowState extends State<DsActionRow> {
                         children: [
                           if (widget.trailingValueLeading case final leading?)
                             Padding(
+                              // step3, not step2: at 4pt the flag crowded the
+                              // name it marks and the pair read as one smudge
+                              // rather than a mark and a word.
                               padding: EdgeInsets.only(
-                                right: tokens.spacing.step2,
+                                right: tokens.spacing.step3,
                               ),
                               child: leading,
                             ),

@@ -562,10 +562,11 @@ void main() {
       );
 
       // It decorates the reading, so it sits between the title and the value
-      // rather than anywhere else on the row.
+      // rather than anywhere else on the row, one step off the word it marks.
       expect(
-        tester.getRect(find.byKey(flagKey)).right,
-        lessThanOrEqualTo(tester.getRect(find.text('German')).left),
+        tester.getRect(find.text('German')).left -
+            tester.getRect(find.byKey(flagKey)).right,
+        _tokens(tester).spacing.step3,
       );
       expect(
         tester.getRect(find.text('Set language')).right,
