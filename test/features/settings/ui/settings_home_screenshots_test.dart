@@ -194,7 +194,7 @@ void main() {
     );
     // Top-level tree leaves prove the V2 tree rendered.
     final messages = _messages(tester);
-    expect(find.text(messages.settingsThemingTitle), findsOneWidget);
+    expect(find.text(messages.settingsPreferencesTitle), findsOneWidget);
     expect(
       find.text(messages.settingsAdvancedTitle),
       findsOneWidget,
@@ -215,7 +215,7 @@ void main() {
       home: const SettingsRootPage(),
     );
     final messages = _messages(tester);
-    expect(find.text(messages.settingsThemingTitle), findsOneWidget);
+    expect(find.text(messages.settingsPreferencesTitle), findsOneWidget);
     expect(
       find.text(messages.settingsAdvancedTitle),
       findsOneWidget,
@@ -240,7 +240,7 @@ void main() {
     );
     // Legacy single-page list rows.
     final messages = _messages(tester);
-    expect(find.text(messages.settingsThemingTitle), findsOneWidget);
+    expect(find.text(messages.settingsPreferencesTitle), findsOneWidget);
     expect(
       find.text(messages.settingsAdvancedTitle),
       findsOneWidget,
@@ -261,7 +261,7 @@ void main() {
       home: const SettingsRootPage(),
     );
     final messages = _messages(tester);
-    expect(find.text(messages.settingsThemingTitle), findsOneWidget);
+    expect(find.text(messages.settingsPreferencesTitle), findsOneWidget);
     expect(
       find.text(messages.settingsAdvancedTitle),
       findsOneWidget,

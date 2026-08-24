@@ -12023,6 +12023,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsOptionsTitle => 'Opțiuni';
 
   @override
+  String get settingsPreferencesSubtitle =>
+      'Tematică, animații, stil de înregistrare, voce și scurtături';
+
+  @override
+  String get settingsPreferencesTitle => 'Preferințe';
+
+  @override
   String get settingsRecordingStyleExplanation =>
       'Alegeți cum arată microfonul în timp ce înregistrați.';
 

@@ -4605,6 +4605,8 @@
   "settingsOnboardingTestResetTitle": "Onboarding-Teststatus zurücksetzen",
   "settingsOnboardingTitle": "Onboarding",
   "settingsOptionsTitle": "Optionen",
+  "settingsPreferencesSubtitle": "Farbschema, Animationen, Aufnahmestil, Sprachausgabe und Tastenkürzel",
+  "settingsPreferencesTitle": "Persönliche Einstellungen",
   "settingsRecordingStyleExplanation": "Wähle, wie das Mikro beim Aufnehmen aussehen soll.",
   "settingsRecordingStyleSubtitle": "VU-Meter oder Energie-Orb bei der Aufnahme",
   "settingsRecordingStyleTitle": "Aufnahmestil",

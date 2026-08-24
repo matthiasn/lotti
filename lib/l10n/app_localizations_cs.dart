@@ -11943,6 +11943,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsOptionsTitle => 'Možnosti';
 
   @override
+  String get settingsPreferencesSubtitle =>
+      'Vzhled, animace, styl nahrávání, řeč a klávesové zkratky';
+
+  @override
+  String get settingsPreferencesTitle => 'Předvolby';
+
+  @override
   String get settingsRecordingStyleExplanation =>
       'Vyber, jak má mikrofon vypadat při nahrávání.';
 

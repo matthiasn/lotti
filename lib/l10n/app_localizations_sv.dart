@@ -11807,6 +11807,13 @@ class AppLocalizationsSv extends AppLocalizations {
   String get settingsOptionsTitle => 'Alternativ';
 
   @override
+  String get settingsPreferencesSubtitle =>
+      'Tematisering, animationer, inspelningsstil, tal och genvägar';
+
+  @override
+  String get settingsPreferencesTitle => 'Preferenser';
+
+  @override
   String get settingsRecordingStyleExplanation =>
       'Välj hur mikrofonen ser ut medan du spelar in.';
 

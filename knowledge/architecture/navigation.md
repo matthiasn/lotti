@@ -326,8 +326,10 @@ The AI rows all use `aiSettingsParentRoute`, the same constant the detail pages'
 own back affordance beams to (`popAiSettingsDetail`), so the gesture and the
 chevron cannot drift apart.
 
-A one-segment leaf like `/settings/theming` needs no `popToNamed`: the default
-pop already lands on its parent.
+A one-segment leaf like `/settings/daily-os` needs no `popToNamed`: the default
+pop already lands on its parent. (One-segment URLs that hang off a branch in the
+tree — `/settings/theming` under `preferences`, `/settings/habits` under
+`definitions` — are the case the next paragraph covers, not this one.)
 
 But landing on the right URL is only half of it. The page the leaf pops *onto*
 must already be in the stack beneath it, on a stable key, or Navigator swaps

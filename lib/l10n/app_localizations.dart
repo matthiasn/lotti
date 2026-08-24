@@ -19903,6 +19903,18 @@ abstract class AppLocalizations {
   /// **'Options'**
   String get settingsOptionsTitle;
 
+  /// No description provided for @settingsPreferencesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Theming, animations, recording style, speech, and shortcuts'**
+  String get settingsPreferencesSubtitle;
+
+  /// No description provided for @settingsPreferencesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Preferences'**
+  String get settingsPreferencesTitle;
+
   /// No description provided for @settingsRecordingStyleExplanation.
   ///
   /// In en, this message translates to:

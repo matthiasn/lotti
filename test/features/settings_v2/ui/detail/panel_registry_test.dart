@@ -25,6 +25,7 @@ import 'package:lotti/features/labels/ui/pages/labels_list_page.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_metrics_page.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_settings_panel.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/about_page.dart';
+import 'package:lotti/features/settings/ui/pages/advanced/celebration_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/logging_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/maintenance_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/manual_language_settings_page.dart';
@@ -83,7 +84,7 @@ void main() {
       'advanced-about',
       'advanced-maintenance',
       'advanced-logging',
-      'advanced-animations',
+      'preferences-animations',
       'advanced-manual-language',
       'advanced-onboarding-metrics',
       'sync-provisioned',
@@ -247,6 +248,12 @@ void main() {
         );
         expect(build('theming'), isA<ThemingBody>());
         expect(build('keyboard-shortcuts'), isA<KeyboardShortcutsBody>());
+        // Renamed from `advanced-animations` when the leaf moved into the
+        // Preferences branch; the body it resolves to is unchanged.
+        expect(
+          build('preferences-animations'),
+          isA<CelebrationSettingsBody>(),
+        );
         expect(build('advanced-about'), isA<AboutBody>());
         expect(build('advanced-maintenance'), isA<MaintenanceBody>());
         expect(

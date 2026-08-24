@@ -813,24 +813,24 @@
       "status": "verified"
     },
     {
-      "id": "settings-recording-style",
-      "title": "Recording Style",
+      "id": "settings-preferences-hub",
+      "title": "Preferences hub",
       "kind": "settings-page",
       "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
-      "sourcePattern": "'recording-style'",
-      "locator": "/settings/recording-style",
+      "sourcePattern": "'preferences'",
+      "locator": "/settings/preferences",
       "routes": [
-        "/settings/recording-style"
+        "/settings/preferences"
       ],
-      "page": "reference/recording-style",
-      "status": "verified"
+      "page": "reference/settings",
+      "status": "documented"
     },
     {
       "id": "settings-theming",
       "title": "Theming",
       "kind": "settings-page",
       "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
-      "sourcePattern": "'theming'",
+      "sourcePattern": "'preferences/theming'",
       "locator": "/settings/theming",
       "routes": [
         "/settings/theming"
@@ -839,16 +839,39 @@
       "status": "verified"
     },
     {
-      "id": "settings-keyboard-shortcuts",
-      "title": "Keyboard shortcuts",
+      "id": "settings-animations",
+      "title": "Completion animations",
       "kind": "settings-page",
       "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
-      "sourcePattern": "'keyboard-shortcuts'",
-      "locator": "/settings/keyboard-shortcuts",
+      "sourcePattern": "'preferences/animations'",
+      "locator": "/settings/advanced/animations",
       "routes": [
-        "/settings/keyboard-shortcuts"
+        "/settings/advanced/animations"
       ],
-      "page": "reference/keyboard-shortcuts",
+      "page": "reference/completion-celebrations",
+      "status": "verified"
+    },
+    {
+      "id": "settings-celebration-playground",
+      "title": "Celebration style playground",
+      "kind": "settings-page",
+      "source": "lib/features/settings/ui/pages/advanced/celebration_playground_page.dart",
+      "sourcePattern": "class CelebrationPlaygroundPage",
+      "locator": "Animations → Customize style",
+      "page": "reference/completion-celebrations",
+      "status": "verified"
+    },
+    {
+      "id": "settings-recording-style",
+      "title": "Recording Style",
+      "kind": "settings-page",
+      "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
+      "sourcePattern": "'preferences/recording-style'",
+      "locator": "/settings/recording-style",
+      "routes": [
+        "/settings/recording-style"
+      ],
+      "page": "reference/recording-style",
       "status": "verified"
     },
     {
@@ -856,12 +879,25 @@
       "title": "Speech and text-to-speech",
       "kind": "settings-page",
       "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
-      "sourcePattern": "'speech'",
+      "sourcePattern": "'preferences/speech'",
       "locator": "/settings/speech",
       "routes": [
         "/settings/speech"
       ],
       "page": "reference/speech",
+      "status": "verified"
+    },
+    {
+      "id": "settings-keyboard-shortcuts",
+      "title": "Keyboard shortcuts",
+      "kind": "settings-page",
+      "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
+      "sourcePattern": "'preferences/keyboard-shortcuts'",
+      "locator": "/settings/keyboard-shortcuts",
+      "routes": [
+        "/settings/keyboard-shortcuts"
+      ],
+      "page": "reference/keyboard-shortcuts",
       "status": "verified"
     },
     {
@@ -891,19 +927,6 @@
       "status": "verified"
     },
     {
-      "id": "settings-animations",
-      "title": "Completion animations",
-      "kind": "settings-page",
-      "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
-      "sourcePattern": "'advanced/animations'",
-      "locator": "/settings/advanced/animations",
-      "routes": [
-        "/settings/advanced/animations"
-      ],
-      "page": "reference/completion-celebrations",
-      "status": "verified"
-    },
-    {
       "id": "settings-manual-language",
       "title": "Language",
       "kind": "settings-page",
@@ -914,16 +937,6 @@
         "/settings/advanced/manual-language"
       ],
       "page": "reference/advanced-settings",
-      "status": "verified"
-    },
-    {
-      "id": "settings-celebration-playground",
-      "title": "Celebration style playground",
-      "kind": "settings-page",
-      "source": "lib/features/settings/ui/pages/advanced/celebration_playground_page.dart",
-      "sourcePattern": "class CelebrationPlaygroundPage",
-      "locator": "Animations → Customize style",
-      "page": "reference/completion-celebrations",
       "status": "verified"
     },
     {

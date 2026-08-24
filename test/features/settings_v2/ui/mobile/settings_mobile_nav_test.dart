@@ -13,7 +13,7 @@ import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
 const _theming = SettingsNode(
-  id: 'theming',
+  id: 'preferences/theming',
   icon: LottiIcons.palette,
   title: 'Theming',
   desc: '',

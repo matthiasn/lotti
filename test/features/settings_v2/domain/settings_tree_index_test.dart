@@ -214,6 +214,42 @@ void main() {
         '/settings/advanced/maintenance',
       );
     });
+
+    test('preference leaves keep their flat, pre-branch URLs', () {
+      // The tree reparented them under `preferences`, but every URL that
+      // shipped before the branch existed still has to be the one the app
+      // navigates to — otherwise old deep links and what's-new releases
+      // would point at routes that no longer exist.
+      expect(
+        pathToBeamUrl(['preferences', 'preferences/theming']),
+        '/settings/theming',
+      );
+      expect(
+        pathToBeamUrl(['preferences', 'preferences/keyboard-shortcuts']),
+        '/settings/keyboard-shortcuts',
+      );
+      expect(
+        pathToBeamUrl(['preferences', 'preferences/recording-style']),
+        '/settings/recording-style',
+      );
+      expect(
+        pathToBeamUrl(['preferences', 'preferences/speech']),
+        '/settings/speech',
+      );
+    });
+
+    test('animations keeps its legacy advanced/* URL under Preferences', () {
+      // The node moved branches; the URL did not. Same treatment as
+      // `sync/conflicts`, and for the same reason.
+      expect(
+        pathToBeamUrl(['preferences', 'preferences/animations']),
+        '/settings/advanced/animations',
+      );
+    });
+
+    test('the preferences branch itself maps to /settings/preferences', () {
+      expect(pathToBeamUrl(['preferences']), '/settings/preferences');
+    });
   });
 
   group('beamUrlToPath — base cases', () {
@@ -306,6 +342,59 @@ void main() {
     );
   });
 
+  group('beamUrlToPath — the preferences branch', () {
+    test('/settings/preferences → [preferences]', () {
+      expect(beamUrlToPath('/settings/preferences'), ['preferences']);
+    });
+
+    test('the animations URL resolves under Preferences, not Advanced', () {
+      // `/settings/advanced/animations` is longer than `/settings/advanced`,
+      // so the greedy longest-prefix walk must pick the Preferences leaf.
+      // Getting this wrong would open the wrong branch on desktop and push
+      // the wrong hub on mobile.
+      expect(beamUrlToPath('/settings/advanced/animations'), [
+        'preferences',
+        'preferences/animations',
+      ]);
+      expect(beamUrlToPath('/settings/advanced'), ['advanced']);
+    });
+
+    test('each flat preference URL resolves under the branch', () {
+      // The greedy resolver has to reach a two-segment tree path from a
+      // one-segment URL: this is what opens the Preferences branch in the
+      // desktop sidebar when a legacy `/settings/theming` link is followed.
+      expect(beamUrlToPath('/settings/theming'), [
+        'preferences',
+        'preferences/theming',
+      ]);
+      expect(beamUrlToPath('/settings/keyboard-shortcuts'), [
+        'preferences',
+        'preferences/keyboard-shortcuts',
+      ]);
+      expect(beamUrlToPath('/settings/recording-style'), [
+        'preferences',
+        'preferences/recording-style',
+      ]);
+      expect(beamUrlToPath('/settings/speech'), [
+        'preferences',
+        'preferences/speech',
+      ]);
+    });
+
+    test('/settings/preferences does not swallow the flat leaf URLs', () {
+      // The branch URL shares no prefix with its children, so the greedy
+      // longest-first walk must never resolve a leaf to the bare branch.
+      for (final url in const [
+        '/settings/theming',
+        '/settings/keyboard-shortcuts',
+        '/settings/recording-style',
+        '/settings/speech',
+      ]) {
+        expect(beamUrlToPath(url), hasLength(2), reason: url);
+      }
+    });
+  });
+
   group('beamUrlToPath — panel-local trailing segments', () {
     test('category detail UUID is treated as panel-local', () {
       expect(
@@ -381,6 +470,8 @@ void main() {
   group('SettingsTreeIndex.build', () {
     test('indexes every node at every depth', () {
       final index = SettingsTreeIndex.build(_tree());
+      expect(index.findById('preferences'), isNotNull);
+      expect(index.findById('preferences/theming'), isNotNull);
       expect(index.findById('ai'), isNotNull);
       expect(index.findById('ai/profiles'), isNotNull);
       expect(index.findById('sync'), isNotNull);
@@ -456,6 +547,17 @@ void main() {
     test('nested node returns parent → self inclusive', () {
       final index = SettingsTreeIndex.build(_tree());
       expect(index.ancestors('sync/backfill'), ['sync', 'sync/backfill']);
+    });
+
+    test('a preference leaf reports the preferences branch as its parent', () {
+      // The breadcrumb and the desktop tree seed both read this chain, so
+      // it is what makes a `/settings/theming` deep link land with the
+      // Preferences branch expanded rather than on a stray root row.
+      final index = SettingsTreeIndex.build(_tree());
+      expect(index.ancestors('preferences/theming'), [
+        'preferences',
+        'preferences/theming',
+      ]);
     });
 
     test('deep nested chain returns full root → self list', () {

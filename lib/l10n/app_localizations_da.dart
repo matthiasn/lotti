@@ -11797,6 +11797,13 @@ class AppLocalizationsDa extends AppLocalizations {
   String get settingsOptionsTitle => 'Muligheder';
 
   @override
+  String get settingsPreferencesSubtitle =>
+      'Tematisering, animationer, indspilningsstil, tale og genveje';
+
+  @override
+  String get settingsPreferencesTitle => 'Præferencer';
+
+  @override
   String get settingsRecordingStyleExplanation =>
       'Vælg hvordan mikrofonen ser ud, mens du optager.';
 

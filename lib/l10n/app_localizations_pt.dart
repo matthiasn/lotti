@@ -11904,6 +11904,13 @@ class AppLocalizationsPt extends AppLocalizations {
   String get settingsOptionsTitle => 'Opções';
 
   @override
+  String get settingsPreferencesSubtitle =>
+      'Tema, animações, estilo de gravação, fala e atalhos';
+
+  @override
+  String get settingsPreferencesTitle => 'Preferências';
+
+  @override
   String get settingsRecordingStyleExplanation =>
       'Escolha a aparência do microfone enquanto você grava.';
 

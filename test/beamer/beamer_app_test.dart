@@ -2477,6 +2477,7 @@ void main() {
           '/settings/advanced',
           '/settings/sync',
           '/settings/definitions',
+          '/settings/preferences',
         ], hides: false);
       });
     });

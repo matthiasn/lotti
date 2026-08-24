@@ -5151,6 +5151,8 @@
   "settingsOnboardingTestResetTitle": "Ripristino dello stato del test di bordo",
   "settingsOnboardingTitle": "A bordo",
   "settingsOptionsTitle": "Opzioni",
+  "settingsPreferencesSubtitle": "Tema, animazioni, stile di registrazione, voce e scorciatoie",
+  "settingsPreferencesTitle": "Preferenze",
   "settingsRecordingStyleExplanation": "Scegli come appare il microfono mentre stai registrando.",
   "settingsRecordingStyleSubtitle": "Misuratore VU o orb di energia durante la registrazione",
   "settingsRecordingStyleTitle": "Stile di registrazione",

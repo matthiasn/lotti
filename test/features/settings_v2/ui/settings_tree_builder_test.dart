@@ -37,7 +37,11 @@ List<Override> _flags({
   bool habits = true,
   bool dashboards = true,
   bool whatsNew = false,
+  bool speechTts = false,
 }) => [
+  configFlagProvider(
+    enableAiSummaryTtsFlag,
+  ).overrideWith((ref) => Stream.value(speechTts)),
   configFlagProvider(
     enableMatrixFlag,
   ).overrideWith((ref) => Stream.value(matrix)),
@@ -100,13 +104,47 @@ void main() {
         'daily-os',
         'sync',
         'definitions',
-        'recording-style',
-        'theming',
-        'keyboard-shortcuts',
+        'preferences',
         'advanced',
         'manual',
       ],
     );
+  });
+
+  testWidgets('the preferences branch reaches the mobile drill-down too', (
+    tester,
+  ) async {
+    // `watchSettingsTree` is the single source both surfaces build from,
+    // so this is what guarantees the mobile root shows Preferences rather
+    // than the four loose leaves the desktop sidebar stopped showing.
+    final tree = await _buildTree(tester, overrides: _flags());
+    final preferences = tree.firstWhere((n) => n.id == 'preferences');
+    expect(preferences.children!.map((n) => n.id).toList(), [
+      'preferences/theming',
+      'preferences/animations',
+      'preferences/recording-style',
+      'preferences/keyboard-shortcuts',
+    ]);
+  });
+
+  testWidgets('the TTS flag adds the speech leaf inside preferences', (
+    tester,
+  ) async {
+    // The flag is read by `watchSettingsTree`, not by `buildSettingsTree`
+    // directly, so the wiring needs its own coverage: a leaf that lands
+    // at the root instead of inside the branch would pass the pure
+    // tree-data tests and still regress the menu.
+    final ids = _ids(
+      await _buildTree(tester, overrides: _flags(speechTts: true)),
+    );
+    expect(ids.contains('preferences/speech'), isTrue);
+  });
+
+  testWidgets('the speech leaf is absent while the TTS flag is off', (
+    tester,
+  ) async {
+    final ids = _ids(await _buildTree(tester, overrides: _flags()));
+    expect(ids.contains('preferences/speech'), isFalse);
   });
 
   // NOTE: one pumpWidget per scenario — ProviderScope overrides are read

@@ -124,6 +124,7 @@ class SettingsLocation extends BeamLocation<BeamState> {
     '/settings/keyboard-shortcuts',
     '/settings/speech',
     '/settings/definitions',
+    '/settings/preferences',
     '/settings/advanced',
     '/settings/advanced/animations',
     '/settings/advanced/manual-language',
@@ -196,6 +197,12 @@ class SettingsLocation extends BeamLocation<BeamState> {
           key: ValueKey('settings-definitions'),
           title: 'Definitions',
           child: SettingsMobileBranchPage(branchId: 'definitions'),
+        ),
+      if (_inPreferencesBranch(path))
+        const BeamPage(
+          key: ValueKey('settings-preferences'),
+          title: 'Preferences',
+          child: SettingsMobileBranchPage(branchId: 'preferences'),
         ),
       if (_inAdvancedBranch(path))
         const BeamPage(
@@ -724,10 +731,35 @@ bool _inDefinitionsBranch(String path) =>
     path == '/settings/definitions' ||
     _definitionsLeafPaths.any((p) => path == p || path.startsWith('$p/'));
 
+/// Animations moved into the `preferences` branch but kept the URL it
+/// shipped with, under `/settings/advanced/` (see `settingsNodeUrls`). That
+/// makes it the one path [_inAdvancedBranch]'s `/settings/advanced/` prefix
+/// would otherwise claim, which is why that predicate defers to
+/// [_inPreferencesBranch] instead of reading the branch off the URL shape.
+const String _animationsPath = '/settings/advanced/animations';
+
+/// Public Beamer URLs of the preference leaves. Their tree ids live under
+/// the `preferences/` branch while their URLs stay where they were, so the
+/// Preferences hub is matched on those URLs here — exactly as the
+/// Definitions hub is matched on the flat definition URLs.
+const List<String> _preferencesLeafPaths = [
+  '/settings/theming',
+  _animationsPath,
+  '/settings/recording-style',
+  '/settings/speech',
+  '/settings/keyboard-shortcuts',
+];
+
+bool _inPreferencesBranch(String path) =>
+    path == '/settings/preferences' ||
+    _preferencesLeafPaths.any((p) => path == p || path.startsWith('$p/'));
+
 bool _inAdvancedBranch(String path) =>
-    path == '/settings/advanced' ||
-    path.startsWith('/settings/advanced/') ||
-    path == '/settings/flags' ||
-    // Health import's tree node lives under Advanced but keeps its flat
-    // legacy URL, so match it here to keep the hub in the back stack.
-    path == '/settings/health_import';
+    !_inPreferencesBranch(path) &&
+    (path == '/settings/advanced' ||
+        path.startsWith('/settings/advanced/') ||
+        path == '/settings/flags' ||
+        // Health import's tree node lives under Advanced but keeps its
+        // flat legacy URL, so match it here to keep the hub in the back
+        // stack.
+        path == '/settings/health_import');

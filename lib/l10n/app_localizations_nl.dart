@@ -11816,6 +11816,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get settingsOptionsTitle => 'Opties';
 
   @override
+  String get settingsPreferencesSubtitle =>
+      'Thema, animaties, opnamestijl, spraak en sneltoetsen';
+
+  @override
+  String get settingsPreferencesTitle => 'Voorkeuren';
+
+  @override
   String get settingsRecordingStyleExplanation =>
       'Kies hoe de microfoon eruit ziet terwijl je aan het opnemen bent.';
 

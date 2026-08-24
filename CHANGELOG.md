@@ -5,6 +5,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [1.0.13]
+### Changed
+- **Settings groups your preferences.** Theming, Keyboard shortcuts, Recording
+  style and Speech used to sit loose in the Settings list, four unrelated-looking
+  rows wedged between Definitions and Advanced Settings. Animations sat in the
+  wrong place too — buried in Advanced beside the log domains, though how a
+  finished task celebrates is taste, not maintenance. All five now live together
+  under **Preferences**, directly above Advanced Settings, so the top level lists
+  menus rather than a menu and a pile of leftovers. Nothing moved out of reach:
+  every link that used to open one of those pages still opens it, and a back tap
+  from one of them returns to Preferences rather than all the way to the top of
+  Settings.
+
 ### Fixed
 - **Daily habit reminders arrived hours late on iPhone, iPad and Android.** The
   app could not work out which timezone the device was in, quietly settled for

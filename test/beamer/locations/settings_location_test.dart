@@ -169,6 +169,7 @@ void main() {
         '/settings/keyboard-shortcuts',
         '/settings/speech',
         '/settings/definitions',
+        '/settings/preferences',
         '/settings/advanced',
         '/settings/advanced/animations',
         '/settings/advanced/manual-language',
@@ -1217,64 +1218,51 @@ void main() {
       expect(pages[2].child, isA<FlagsPage>());
     });
 
-    test('buildPages builds RecordingStyleSettingsPage', () {
-      final routeInformation = RouteInformation(
-        uri: Uri.parse('/settings/recording-style'),
-      );
-      final location = SettingsLocation(routeInformation);
-      final beamState = BeamState.fromRouteInformation(routeInformation);
-      final pages = location.buildPages(
-        mockBuildContext,
-        beamState,
-      );
-      expect(pages.length, 2);
-      expect(pages[0].child, isA<SettingsMobileRootPage>());
-      expect(pages[1].child, isA<RecordingStyleSettingsPage>());
-    });
-
-    test('buildPages builds ThemingPage', () {
-      final routeInformation = RouteInformation(
-        uri: Uri.parse('/settings/theming'),
-      );
-      final location = SettingsLocation(routeInformation);
-      final beamState = BeamState.fromRouteInformation(routeInformation);
-      final pages = location.buildPages(
-        mockBuildContext,
-        beamState,
-      );
-      expect(pages.length, 2);
-      expect(pages[0].child, isA<SettingsMobileRootPage>());
-      expect(pages[1].child, isA<ThemingPage>());
-    });
-
-    test('buildPages builds KeyboardShortcutsPage', () {
-      final routeInformation = RouteInformation(
-        uri: Uri.parse('/settings/keyboard-shortcuts'),
-      );
+    /// Asserts the mobile stack for a preference leaf: root, the
+    /// Preferences hub, then the page itself. The hub in the middle is
+    /// what makes a back tap return to Preferences instead of dropping
+    /// the user at the top of Settings.
+    void expectPreferenceLeafStack(String url, Matcher pageMatcher) {
+      final routeInformation = RouteInformation(uri: Uri.parse(url));
       final location = SettingsLocation(routeInformation);
       final beamState = BeamState.fromRouteInformation(routeInformation);
       final pages = location.buildPages(mockBuildContext, beamState);
 
-      expect(pages.length, 2);
-      expect(pages[0].child, isA<SettingsMobileRootPage>());
-      expect(pages[1].child, isA<KeyboardShortcutsPage>());
+      expect(pages.length, 3, reason: url);
+      expect(pages[0].child, isA<SettingsMobileRootPage>(), reason: url);
+      expect(pages[1].child, isA<SettingsMobileBranchPage>(), reason: url);
+      expect(
+        (pages[1].child as SettingsMobileBranchPage).branchId,
+        'preferences',
+        reason: url,
+      );
+      expect(pages[2].child, pageMatcher, reason: url);
+    }
+
+    test('buildPages builds RecordingStyleSettingsPage under the hub', () {
+      expectPreferenceLeafStack(
+        '/settings/recording-style',
+        isA<RecordingStyleSettingsPage>(),
+      );
     });
 
-    test('buildPages builds SpeechSettingsPage', () {
-      final routeInformation = RouteInformation(
-        uri: Uri.parse('/settings/speech'),
+    test('buildPages builds ThemingPage under the hub', () {
+      expectPreferenceLeafStack('/settings/theming', isA<ThemingPage>());
+    });
+
+    test('buildPages builds KeyboardShortcutsPage under the hub', () {
+      expectPreferenceLeafStack(
+        '/settings/keyboard-shortcuts',
+        isA<KeyboardShortcutsPage>(),
       );
-      final location = SettingsLocation(routeInformation);
-      final beamState = BeamState.fromRouteInformation(routeInformation);
-      final pages = location.buildPages(mockBuildContext, beamState);
-      // Top-level leaf — opens directly beneath the root, no branch hub.
-      expect(pages.length, 2);
-      expect(pages[0].child, isA<SettingsMobileRootPage>());
-      expect(pages[1].child, isA<SpeechSettingsPage>());
+    });
+
+    test('buildPages builds SpeechSettingsPage under the hub', () {
+      expectPreferenceLeafStack('/settings/speech', isA<SpeechSettingsPage>());
     });
 
     test(
-      'buildPages builds CelebrationSettingsPage for advanced/animations',
+      'buildPages builds CelebrationSettingsPage under the Preferences hub',
       () {
         final routeInformation = RouteInformation(
           uri: Uri.parse('/settings/advanced/animations'),
@@ -1282,14 +1270,15 @@ void main() {
         final location = SettingsLocation(routeInformation);
         final beamState = BeamState.fromRouteInformation(routeInformation);
         final pages = location.buildPages(mockBuildContext, beamState);
-        // Lives under the Advanced branch, so the hub stays in the stack
-        // beneath it (a back tap returns to Advanced).
+        // The URL still says `advanced`, but the node moved to the
+        // Preferences branch — so the hub beneath it is Preferences, and
+        // a back tap returns there rather than to Advanced.
         expect(pages.length, 3);
         expect(pages[0].child, isA<SettingsMobileRootPage>());
         expect(pages[1].child, isA<SettingsMobileBranchPage>());
         expect(
           (pages[1].child as SettingsMobileBranchPage).branchId,
-          'advanced',
+          'preferences',
         );
         expect(pages[2].child, isA<CelebrationSettingsPage>());
       },
@@ -1363,6 +1352,70 @@ void main() {
         'advanced',
       );
     });
+
+    test('buildPages builds the preferences branch hub', () {
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/settings/preferences'),
+      );
+      final location = SettingsLocation(routeInformation);
+      final beamState = BeamState.fromRouteInformation(routeInformation);
+      final pages = location.buildPages(mockBuildContext, beamState);
+      expect(pages.length, 2);
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
+      expect(pages[1].child, isA<SettingsMobileBranchPage>());
+      expect(
+        (pages[1].child as SettingsMobileBranchPage).branchId,
+        'preferences',
+      );
+    });
+
+    test(
+      'the preferences hub does not leak into unrelated settings stacks',
+      () {
+        // `_inPreferencesBranch` matches on explicit leaf URLs, so a
+        // route that merely *contains* one of those words — or that
+        // shares the `/settings/advanced/` prefix animations kept — must
+        // not push the hub.
+        for (final url in const [
+          '/settings/advanced',
+          '/settings/advanced/maintenance',
+          '/settings/categories',
+          '/settings/daily-os',
+          '/settings/flags',
+        ]) {
+          final routeInformation = RouteInformation(uri: Uri.parse(url));
+          final location = SettingsLocation(routeInformation);
+          final beamState = BeamState.fromRouteInformation(routeInformation);
+          final branchIds = location
+              .buildPages(mockBuildContext, beamState)
+              .map((page) => page.child)
+              .whereType<SettingsMobileBranchPage>()
+              .map((page) => page.branchId);
+          expect(branchIds, isNot(contains('preferences')), reason: url);
+        }
+      },
+    );
+
+    test(
+      'a preference URL with a trailing segment still stacks under the hub',
+      () {
+        // `_inPreferencesBranch` matches `path.startsWith('<leaf>/')` as
+        // well as an exact hit, so a deep link that carries a
+        // panel-local suffix keeps the hub beneath it rather than
+        // dropping the user back at the Settings root on the way out.
+        final routeInformation = RouteInformation(
+          uri: Uri.parse('/settings/theming/anything'),
+        );
+        final location = SettingsLocation(routeInformation);
+        final beamState = BeamState.fromRouteInformation(routeInformation);
+        final pages = location.buildPages(mockBuildContext, beamState);
+        expect(pages[1].child, isA<SettingsMobileBranchPage>());
+        expect(
+          (pages[1].child as SettingsMobileBranchPage).branchId,
+          'preferences',
+        );
+      },
+    );
 
     test('buildPages builds the definitions branch hub', () {
       final routeInformation = RouteInformation(

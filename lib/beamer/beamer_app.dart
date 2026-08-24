@@ -118,7 +118,8 @@ bool isTaskDetailRoute(BeamLocation<dynamic>? location, int activeTabIndex) {
 /// Keeps the bar (menus + browse lists that drill into their own editors):
 ///   * the settings root `/settings`
 ///   * the menu hubs `/settings/advanced`, `/settings/sync`,
-///     `/settings/definitions` — branch nodes with no page of their own
+///     `/settings/definitions`, `/settings/preferences` — branch nodes with
+///     no page of their own
 ///   * the entity **list** pages `/settings/{categories,labels,dashboards,
 ///     measurables,habits}` (incl. the habits `search`/bare-`by_id` list
 ///     variants)
@@ -132,11 +133,14 @@ bool isTaskDetailRoute(BeamLocation<dynamic>? location, int activeTabIndex) {
 ///   * every **Sync** leaf (`provisioned`, `node-profile`, `backfill`,
 ///     `stats`, `outbox`, `matrix/maintenance`)
 ///   * every **Advanced** leaf (`flags` via its own top-level route,
-///     `animations`, `logging_domains`, `maintenance`, `onboarding_metrics`,
-///     `about`, `health_import`) and the conflict **detail**
+///     `logging_domains`, `maintenance`, `onboarding_metrics`, `about`,
+///     `health_import`) and the conflict **detail**
 ///     `/settings/advanced/conflicts/<id>`
-///   * the top-level leaves `theming`, `recording-style`, `daily-os`,
-///     `speech`, `onboarding`, `keyboard-shortcuts`
+///   * every **Preferences** leaf: `theming`, `recording-style`, `speech`
+///     and `keyboard-shortcuts` on their own flat top-level routes, plus
+///     `animations` on its legacy `/settings/advanced/animations` path —
+///     which is why the `advanced` arm below still hides it
+///   * the top-level leaves `daily-os` and `onboarding`
 ///   * the entity **editors** (`.../<id>` or `.../create`) for categories,
 ///     labels, dashboards, measurables, habits, and projects
 ///
@@ -191,8 +195,8 @@ bool settingsRouteHidesBottomNav(BeamLocation<dynamic>? location) {
     'health_import' ||
     'keyboard-shortcuts' ||
     'maintenance' => true,
-    // Everything else — notably the `/settings/definitions` menu hub — keeps
-    // the bar.
+    // Everything else — notably the `/settings/definitions` and
+    // `/settings/preferences` menu hubs — keeps the bar.
     _ => false,
   };
 }

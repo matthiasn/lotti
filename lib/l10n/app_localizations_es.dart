@@ -11961,6 +11961,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsOptionsTitle => 'Opciones';
 
   @override
+  String get settingsPreferencesSubtitle =>
+      'Temas, animaciones, estilo de grabación, voz y atajos';
+
+  @override
+  String get settingsPreferencesTitle => 'Preferencias';
+
+  @override
   String get settingsRecordingStyleExplanation =>
       'Elige cómo se ve el micrófono mientras grabas.';
 

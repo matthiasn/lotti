@@ -11869,6 +11869,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsOptionsTitle => 'Optionen';
 
   @override
+  String get settingsPreferencesSubtitle =>
+      'Farbschema, Animationen, Aufnahmestil, Sprachausgabe und Tastenkürzel';
+
+  @override
+  String get settingsPreferencesTitle => 'Persönliche Einstellungen';
+
+  @override
   String get settingsRecordingStyleExplanation =>
       'Wähle, wie das Mikro beim Aufnehmen aussehen soll.';
 

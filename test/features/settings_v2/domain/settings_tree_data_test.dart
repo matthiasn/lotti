@@ -55,11 +55,24 @@ Set<String> _ids(List<SettingsNode> nodes) {
 void main() {
   group('buildSettingsTree — enableSpeechTts', () {
     test('adds the speech leaf (panel: speech) only when enabled', () {
-      expect(_ids(_tree()), isNot(contains('speech')));
+      expect(_ids(_tree()), isNot(contains('preferences/speech')));
 
       final enabled = _tree(enableSpeechTts: true);
-      expect(_ids(enabled), contains('speech'));
-      expect(_find(enabled, 'speech')?.panel, 'speech');
+      expect(_ids(enabled), contains('preferences/speech'));
+      expect(_find(enabled, 'preferences/speech')?.panel, 'speech');
+    });
+
+    test('the speech leaf hangs off the preferences branch, not the root', () {
+      // Gating must not promote it back to a root entry: the whole point
+      // of the branch is that the root stays five menus wide whether or
+      // not the TTS flag is on.
+      final tree = _tree(enableSpeechTts: true);
+      expect(tree.map((n) => n.id), isNot(contains('preferences/speech')));
+      final preferences = tree.firstWhere((n) => n.id == 'preferences');
+      expect(
+        preferences.children!.map((n) => n.id),
+        contains('preferences/speech'),
+      );
     });
   });
 
@@ -97,9 +110,7 @@ void main() {
         'daily-os',
         'sync',
         'definitions',
-        'recording-style',
-        'theming',
-        'keyboard-shortcuts',
+        'preferences',
         'advanced',
         'manual',
       ]);
@@ -128,10 +139,12 @@ void main() {
   group('buildSettingsTree — always-on nodes', () {
     test('root order is stable with every flag on', () {
       // Entity definitions (habits / categories / labels / dashboards
-      // / measurables) collapse into the single `definitions` branch;
-      // config flags reparent under `advanced`. Root reads as
-      // Onboarding · AI · Agents · Daily OS · Sync · Definitions · Theming ·
-      // Keyboard shortcuts · Advanced · Manual.
+      // / measurables) collapse into the single `definitions` branch; the
+      // personal-preference leaves (theming / keyboard shortcuts /
+      // recording style / speech) collapse into `preferences`; config
+      // flags reparent under `advanced`. Root reads as
+      // Onboarding · AI · Agents · Daily OS · Sync · Definitions ·
+      // Preferences · Advanced · Manual.
       final rootIds = _tree().map((n) => n.id).toList();
       expect(rootIds, [
         'whats-new',
@@ -141,17 +154,15 @@ void main() {
         'daily-os',
         'sync',
         'definitions',
-        'recording-style',
-        'theming',
-        'keyboard-shortcuts',
+        'preferences',
         'advanced',
         'manual',
       ]);
     });
 
     test(
-      'categories, labels, measurables, recording-style, theming, '
-      'advanced/flags always present',
+      'categories, labels, measurables, preferences/recording-style, '
+      'preferences/theming, advanced/flags always present',
       () {
         final ids = _ids(
           _tree(
@@ -168,8 +179,10 @@ void main() {
             'definitions/categories',
             'definitions/labels',
             'definitions/measurables',
-            'recording-style',
-            'theming',
+            'preferences',
+            'preferences/recording-style',
+            'preferences/theming',
+            'preferences/keyboard-shortcuts',
             'advanced/flags',
           ]),
         );
@@ -374,12 +387,108 @@ void main() {
     );
   });
 
+  group('buildSettingsTree — preferences branch', () {
+    test('is a pure branch (no panel) with a stable child order', () {
+      final preferences = _tree(
+        enableSpeechTts: true,
+      ).firstWhere((n) => n.id == 'preferences');
+      expect(preferences.panel, isNull);
+      expect(preferences.hasChildren, isTrue);
+      expect(preferences.children!.map((n) => n.id).toList(), [
+        'preferences/theming',
+        'preferences/animations',
+        'preferences/recording-style',
+        'preferences/speech',
+        'preferences/keyboard-shortcuts',
+      ]);
+    });
+
+    test('animations moved in from Advanced, and left no copy behind', () {
+      // Completion celebrations are taste, not tooling. Leaving the old
+      // id in place as well would put the same page in two menus.
+      final tree = _tree();
+      expect(_ids(tree), contains('preferences/animations'));
+      expect(_ids(tree), isNot(contains('advanced/animations')));
+      final advanced = tree.firstWhere((n) => n.id == 'advanced');
+      expect(
+        advanced.children!.map((n) => n.id),
+        isNot(contains('advanced/animations')),
+      );
+    });
+
+    test('animations declares the renamed preferences-animations panel', () {
+      // Panel ids carry no deep-link value, so unlike the URL this one was
+      // renamed with the node rather than left saying "advanced" about a
+      // page that is no longer in Advanced. `kSettingsPanels` has the
+      // matching key (asserted in panel_registry_test).
+      final node = _find(_tree(), 'preferences/animations');
+      expect(node, isNotNull);
+      expect(node!.panel, 'preferences-animations');
+    });
+
+    test('sits immediately above advanced at the root', () {
+      // "Above Advanced" is the whole point of the grouping — a later
+      // insertion between the two would put an unrelated entry in the
+      // gap this change closed.
+      final rootIds = _tree().map((n) => n.id).toList();
+      expect(
+        rootIds.indexOf('preferences'),
+        rootIds.indexOf('advanced') - 1,
+      );
+    });
+
+    test('sits below definitions, so the two menus read as a pair', () {
+      final rootIds = _tree().map((n) => n.id).toList();
+      expect(
+        rootIds.indexOf('preferences'),
+        rootIds.indexOf('definitions') + 1,
+      );
+    });
+
+    test('no preference leaf survives at the root level', () {
+      // The old flat ids are gone entirely: a stale id left behind would
+      // render a duplicate row (and `SettingsTreeIndex.build` asserts on
+      // duplicates only for identical ids, not for near-misses).
+      final rootIds = _tree(enableSpeechTts: true).map((n) => n.id).toSet();
+      for (final legacyId in const [
+        'theming',
+        'keyboard-shortcuts',
+        'recording-style',
+        'speech',
+      ]) {
+        expect(rootIds, isNot(contains(legacyId)), reason: legacyId);
+      }
+    });
+
+    test('keeps its four unconditional leaves with every flag off', () {
+      final preferences = _tree(
+        enableHabits: false,
+        enableDashboards: false,
+        enableMatrix: false,
+        enableWhatsNew: false,
+      ).firstWhere((n) => n.id == 'preferences');
+      expect(preferences.children!.map((n) => n.id).toList(), [
+        'preferences/theming',
+        'preferences/animations',
+        'preferences/recording-style',
+        'preferences/keyboard-shortcuts',
+      ]);
+    });
+
+    test('survives in guest worlds, where the sync branch does not', () {
+      // Preferences are local-only settings — nothing in the branch
+      // touches the Matrix stack, so a demo world must keep it.
+      final ids = _ids(_tree(syncFeatureAvailable: false));
+      expect(ids, contains('preferences'));
+      expect(ids, contains('preferences/theming'));
+    });
+  });
+
   group('buildSettingsTree — advanced/flags reparenting', () {
     test('advanced branch carries flags as its first child', () {
       final advanced = _tree().firstWhere((n) => n.id == 'advanced');
       expect(advanced.children!.map((n) => n.id).toList(), [
         'advanced/flags',
-        'advanced/animations',
         'advanced/manual-language',
         'advanced/logging',
         'advanced/maintenance',
@@ -483,11 +592,16 @@ void main() {
         'sync/matrix-maintenance': 'sync-matrix-maintenance',
         'definitions/dashboards': 'dashboards',
         'definitions/measurables': 'measurables',
-        'recording-style': 'recording-style',
-        'theming': 'theming',
-        'keyboard-shortcuts': 'keyboard-shortcuts',
+        // Reparenting under `preferences` left the four already-root
+        // panel keys alone — `kSettingsPanels` still dispatches on
+        // `theming`, `keyboard-shortcuts` and `recording-style`. Only
+        // animations was re-keyed, because its old name named the branch
+        // it left.
+        'preferences/theming': 'theming',
+        'preferences/animations': 'preferences-animations',
+        'preferences/recording-style': 'recording-style',
+        'preferences/keyboard-shortcuts': 'keyboard-shortcuts',
         'advanced/flags': 'flags',
-        'advanced/animations': 'advanced-animations',
         'advanced/manual-language': 'advanced-manual-language',
         'advanced/logging': 'advanced-logging',
         'advanced/maintenance': 'advanced-maintenance',
@@ -497,12 +611,12 @@ void main() {
     });
 
     test('pure branch nodes have no panel', () {
-      // `advanced`, `definitions`, and `sync` are pure
+      // `advanced`, `definitions`, `preferences`, and `sync` are pure
       // (landing-page-less) branches — selecting them leaves the detail
       // pane empty. `ai` and `agents` carry their own landing panel
       // (asserted separately below). Sync's provisioned-sync entry is a
       // leaf (`sync/provisioned`) rather than a branch panel.
-      for (final id in ['advanced', 'definitions', 'sync']) {
+      for (final id in ['advanced', 'definitions', 'preferences', 'sync']) {
         final tree = _tree();
         final node = SettingsTreeIndexTestHelper.findInTree(tree, id);
         expect(node, isNotNull, reason: 'expected $id to be present');
@@ -541,15 +655,14 @@ void main() {
     });
 
     test(
-      'Advanced has flags / animations / manual language / logging / maintenance / about in order',
+      'Advanced has flags / manual language / logging / maintenance / about in order',
       () {
-        // Conflicts moved out of Advanced and into Sync; flags moved
-        // in from the root list; animations (the celebration toggles) sits
-        // right after flags. The order locks visual stability across the menu.
+        // Conflicts moved out of Advanced and into Sync, animations out
+        // and into Preferences; flags moved in from the root list. The
+        // order locks visual stability across the menu.
         final advanced = _tree().firstWhere((n) => n.id == 'advanced');
         expect(advanced.children!.map((n) => n.id).toList(), [
           'advanced/flags',
-          'advanced/animations',
           'advanced/manual-language',
           'advanced/logging',
           'advanced/maintenance',
@@ -595,9 +708,7 @@ void main() {
         // Sync branch is gated by enableMatrix — flag off drops the
         // entire Sync surface, matching the mobile root list.
         'definitions',
-        'recording-style',
-        'theming',
-        'keyboard-shortcuts',
+        'preferences',
         'advanced',
         'manual',
       ]);

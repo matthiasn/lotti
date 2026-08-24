@@ -119,13 +119,13 @@ void main() {
 
   testWidgets('mobile root — dark', (tester) async {
     await _pump(tester, builder: _root);
-    expect(find.text('Theming'), findsOneWidget);
+    expect(find.text('Preferences'), findsOneWidget);
     await captureScreenshot(tester, 'mobile_root_dark', subdir: _subdir);
   });
 
   testWidgets('mobile root — light', (tester) async {
     await _pump(tester, brightness: Brightness.light, builder: _root);
-    expect(find.text('Theming'), findsOneWidget);
+    expect(find.text('Preferences'), findsOneWidget);
     await captureScreenshot(tester, 'mobile_root_light', subdir: _subdir);
   });
 
@@ -139,7 +139,7 @@ void main() {
   // 2-line description instead of clipping (the a11y must-fix).
   testWidgets('mobile root — dark, 1.6x text', (tester) async {
     await _pump(tester, textScale: 1.6, builder: _root);
-    expect(find.text('Theming'), findsOneWidget);
+    expect(find.text('Preferences'), findsOneWidget);
     await captureScreenshot(tester, 'mobile_root_dark_1_6x', subdir: _subdir);
   });
 }
