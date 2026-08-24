@@ -40,6 +40,13 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="1.0.13" date="2026-08-24">
+      <description>
+        <p>Fixed: daily habit reminders arrived hours late on iPhone, iPad and Android. The app could not work out which timezone the device was in, quietly settled for UTC, and then built the reminder's time of day in UTC - so an 08:00 habit reminder rang at 10:00 in Central European Summer Time, and further off the further you live from Greenwich. Reminders now use the zone the device is actually in. Notifications scheduled for a specific moment - task suggestions, overdue alerts and relationship check-ins - were unaffected and kept their timing.</p>
+        <p>Fixed: a "Location with the name CEST doesn't exist" error no longer fills the log. macOS stores its timezone data in a folder named after the current tzdata release, and looking through it for a zone name failed on every Mac that had taken a data update, leaving the app with the seasonal abbreviation it could not use.</p>
+        <p>Fixed: new entries record the timezone they were made in. Entries written on a Mac stored a seasonal abbreviation such as CEST instead of the zone's real name, which is ambiguous - CST alone belongs to three different zones - and changes twice a year. They now store the full name, e.g. Europe/Berlin.</p>
+      </description>
+    </release>
     <release version="1.0.12" date="2026-08-22">
       <description>
         <p>Changed: the task page's two menus are now one design. The "..." menu and the action bar's Add sheet were built separately and had drifted apart: one centred its title over a hairline bar and stacked full-width rules between plain rows, the other ran teal glyphs and two-line rows with no rules at all. Both now read the same way - the title on the sheet's own left edge with a quiet close beside it, and rows that lead with a washed icon tile, highlight as a rounded block under the pointer, and separate by space instead of hairlines. The Add sheet's rows keep their teal tiles; the entry actions wear neutral ones, so which menu you are in is still obvious at a glance.</p>
