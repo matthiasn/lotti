@@ -252,8 +252,6 @@
   "@relationshipStayInTouch": {
     "description": "Relationships redesign label."
   },
-  "relationshipTimestampToday": "Today",
-  "relationshipTimestampYesterday": "Yesterday",
   "saveLabel": "Save",
   "searchHint": "Search…",
   "selectColor": "Select a colour",

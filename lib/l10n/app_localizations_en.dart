@@ -14218,12 +14218,6 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   String get relationshipStayInTouch => 'Stay in touch';
 
   @override
-  String get relationshipTimestampToday => 'Today';
-
-  @override
-  String get relationshipTimestampYesterday => 'Yesterday';
-
-  @override
   String get saveLabel => 'Save';
 
   @override
