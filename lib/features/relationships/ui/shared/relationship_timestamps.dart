@@ -1,7 +1,9 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// 24h, mono date-time formatting for the relationships surface (design
 /// plan §0.5 — "All date/time strings render in `--ff-mono` (Inconsolata)
@@ -23,27 +25,14 @@ String _hhMm(DateTime t) =>
     '${t.minute.toString().padLeft(2, '0')}';
 
 /// The short weekday + day + month used when the timestamp is not today
-/// (e.g. `Fri 15 Aug`). English abbreviations are intentional: the mono
-/// timestamp is a system-level affordance, not localized prose, matching
-/// the existing `monoMetaStyle` usage across the app.
-String _shortDayMonth(DateTime t) {
-  const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  const months = [
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'May',
-    'Jun',
-    'Jul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Nov',
-    'Dec',
-  ];
-  return '${weekdays[t.weekday - 1]} ${t.day} ${months[t.month - 1]}';
-}
+/// (e.g. `Fri 15 Aug`, `Fr. 15 Aug.` in German).
+///
+/// The abbreviations come from the locale's own date symbols rather than a
+/// hard-coded English table: a German reader gets `Fr.`, not `Fri`. The
+/// order stays weekday-day-month in every locale, because the design's mono
+/// column has to line up.
+String _shortDayMonth(DateTime t, String? locale) =>
+    DateFormat('E d MMM', locale).format(t);
 
 /// A mono timestamp label for a single point in time, anchored to [now].
 ///
@@ -54,12 +43,39 @@ String _shortDayMonth(DateTime t) {
 /// non-today value on this surface — a check-in logged the previous evening
 /// reads as `Yesterday 18:00` rather than making the reader decode
 /// `Wed 12 Aug 18:00` against today's date.
-String relationshipTimestampLabel(DateTime at, {DateTime? now}) {
+///
+/// The two relative words arrive as [todayLabel] and [yesterdayLabel] and
+/// the date symbols follow [locale], so the function stays a pure function
+/// of its inputs — [relationshipTimestampLabelOf] is the widget-side
+/// convenience that reads both off a [BuildContext].
+String relationshipTimestampLabel(
+  DateTime at, {
+  required String todayLabel,
+  required String yesterdayLabel,
+  String? locale,
+  DateTime? now,
+}) {
   final anchor = now ?? clock.now();
-  if (_isSameDay(at, anchor)) return 'Today ${_hhMm(at)}';
-  if (_isSameDay(at, _dayBefore(anchor))) return 'Yesterday ${_hhMm(at)}';
-  return '${_shortDayMonth(at)} ${_hhMm(at)}';
+  if (_isSameDay(at, anchor)) return '$todayLabel ${_hhMm(at)}';
+  if (_isSameDay(at, _dayBefore(anchor))) {
+    return '$yesterdayLabel ${_hhMm(at)}';
+  }
+  return '${_shortDayMonth(at, locale)} ${_hhMm(at)}';
 }
+
+/// [relationshipTimestampLabel] with the relative words and the date symbols
+/// resolved against the widget tree's locale.
+String relationshipTimestampLabelOf(
+  BuildContext context,
+  DateTime at, {
+  DateTime? now,
+}) => relationshipTimestampLabel(
+  at,
+  todayLabel: context.messages.relationshipTimestampToday,
+  yesterdayLabel: context.messages.relationshipTimestampYesterday,
+  locale: Localizations.localeOf(context).toString(),
+  now: now,
+);
 
 /// The calendar day before [anchor]. Built from components rather than by
 /// subtracting a `Duration`, so the 23- and 25-hour days either side of a DST
@@ -71,11 +87,17 @@ DateTime _dayBefore(DateTime anchor) =>
 /// the date is already implied by the beat's position.
 String relationshipTimeLabel(DateTime at) => _hhMm(at);
 
-/// A mono weekday-only label (`Thu`), used by the cadence due pill.
-String relationshipWeekdayLabel(DateTime at) {
-  const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  return weekdays[at.weekday - 1];
-}
+/// A mono weekday-only label (`Thu`), used by the cadence due pill, in the
+/// locale's own abbreviation.
+String relationshipWeekdayLabel(DateTime at, {String? locale}) =>
+    DateFormat.E(locale).format(at);
+
+/// [relationshipWeekdayLabel] resolved against the widget tree's locale.
+String relationshipWeekdayLabelOf(BuildContext context, DateTime at) =>
+    relationshipWeekdayLabel(
+      at,
+      locale: Localizations.localeOf(context).toString(),
+    );
 
 bool _isSameDay(DateTime a, DateTime b) =>
     a.year == b.year && a.month == b.month && a.day == b.day;

@@ -4728,6 +4728,8 @@
   "@relationshipStayInTouch": {
     "description": "Relationships redesign label."
   },
+  "relationshipTimestampToday": "I dag",
+  "relationshipTimestampYesterday": "I går",
   "relationshipTrackingSinceLabel": "Fulgt siden {date}",
   "relationshipUpdateFromContact": "Opdater fra kontakt",
   "saveButton": "Gem",

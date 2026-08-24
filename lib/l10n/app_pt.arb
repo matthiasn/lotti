@@ -4727,6 +4727,8 @@
   "@relationshipStayInTouch": {
     "description": "Relationships redesign label."
   },
+  "relationshipTimestampToday": "Hoje",
+  "relationshipTimestampYesterday": "Ontem",
   "relationshipTrackingSinceLabel": "Acompanhando desde {date}",
   "relationshipUpdateFromContact": "Atualizar a partir do contacto",
   "saveButton": "Salvar",

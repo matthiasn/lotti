@@ -10812,6 +10812,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipStayInTouch => 'Udržovat kontakt';
 
   @override
+  String get relationshipTimestampToday => 'Dnes';
+
+  @override
+  String get relationshipTimestampYesterday => 'Včera';
+
+  @override
   String relationshipTrackingSinceLabel(String date) {
     return 'Sledováno od $date';
   }

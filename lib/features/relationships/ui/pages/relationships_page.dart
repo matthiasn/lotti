@@ -162,20 +162,33 @@ class _AddPersonButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    return Material(
-      color: tokens.colors.interactive.enabled,
-      shape: const CircleBorder(),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        customBorder: const CircleBorder(),
-        child: SizedBox(
-          width: 34,
-          height: 34,
-          child: Icon(
-            LottiIcons.add,
-            size: 20,
-            color: tokens.colors.background.level01,
+    // The control is a bare glyph, so the name has to come from somewhere:
+    // `Semantics` states it for a screen reader, the tooltip shows the same
+    // words to a pointer, and `excludeFromSemantics` keeps the tooltip from
+    // announcing it a second time.
+    final label = context.messages.relationshipCreateTitle;
+    return Semantics(
+      button: true,
+      label: label,
+      child: Tooltip(
+        message: label,
+        excludeFromSemantics: true,
+        child: Material(
+          color: tokens.colors.interactive.enabled,
+          shape: const CircleBorder(),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onTap,
+            customBorder: const CircleBorder(),
+            child: SizedBox(
+              width: 34,
+              height: 34,
+              child: Icon(
+                LottiIcons.add,
+                size: 20,
+                color: tokens.colors.background.level01,
+              ),
+            ),
           ),
         ),
       ),
@@ -352,7 +365,7 @@ class _RelationshipRow extends StatelessWidget {
     final last = item.lastCheckInAt;
     if (last != null) {
       return messages.relationshipCheckedInLabel(
-        relationshipTimestampLabel(last),
+        relationshipTimestampLabelOf(context, last),
       );
     }
     final streak = quietStreakDays(
@@ -431,7 +444,7 @@ class _CadencePill extends StatelessWidget {
 
     final dueOverdue = (overdue ?? 0) > 0;
     final label = dueOverdue
-        ? messages.relationshipDueDay(relationshipWeekdayLabel(due!))
+        ? messages.relationshipDueDay(relationshipWeekdayLabelOf(context, due!))
         : messages.relationshipCadenceOnTrack;
     final fg = dueOverdue
         ? tokens.colors.alert.warning.defaultColor

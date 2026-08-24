@@ -10680,6 +10680,12 @@ class AppLocalizationsNl extends AppLocalizations {
   String get relationshipStayInTouch => 'Contact houden';
 
   @override
+  String get relationshipTimestampToday => 'Vandaag';
+
+  @override
+  String get relationshipTimestampYesterday => 'Gisteren';
+
+  @override
   String relationshipTrackingSinceLabel(String date) {
     return 'Gevolgd sinds $date';
   }

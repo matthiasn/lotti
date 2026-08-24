@@ -10880,6 +10880,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get relationshipStayInTouch => 'Menține contactul';
 
   @override
+  String get relationshipTimestampToday => 'Azi';
+
+  @override
+  String get relationshipTimestampYesterday => 'Ieri';
+
+  @override
   String relationshipTrackingSinceLabel(String date) {
     return 'Urmărire din $date';
   }

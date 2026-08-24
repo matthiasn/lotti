@@ -10672,6 +10672,12 @@ class AppLocalizationsSv extends AppLocalizations {
   String get relationshipStayInTouch => 'Håll kontakten';
 
   @override
+  String get relationshipTimestampToday => 'Idag';
+
+  @override
+  String get relationshipTimestampYesterday => 'Igår';
+
+  @override
   String relationshipTrackingSinceLabel(String date) {
     return 'Följs sedan $date';
   }

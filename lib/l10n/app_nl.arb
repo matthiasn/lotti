@@ -4727,6 +4727,8 @@
   "@relationshipStayInTouch": {
     "description": "Relationships redesign label."
   },
+  "relationshipTimestampToday": "Vandaag",
+  "relationshipTimestampYesterday": "Gisteren",
   "relationshipTrackingSinceLabel": "Gevolgd sinds {date}",
   "relationshipUpdateFromContact": "Bijwerken vanuit contact",
   "saveButton": "Opslaan",

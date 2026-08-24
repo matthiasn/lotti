@@ -10853,6 +10853,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get relationshipStayInTouch => 'Rester en contact';
 
   @override
+  String get relationshipTimestampToday => 'Aujourd\'hui';
+
+  @override
+  String get relationshipTimestampYesterday => 'Hier';
+
+  @override
   String relationshipTrackingSinceLabel(String date) {
     return 'Suivi depuis $date';
   }

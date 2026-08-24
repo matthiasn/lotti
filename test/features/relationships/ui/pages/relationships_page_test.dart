@@ -235,6 +235,39 @@ void main() {
     expect(find.text('Status'), findsNothing);
   });
 
+  testWidgets('the add circle names itself for a screen reader and a pointer', (
+    tester,
+  ) async {
+    when(
+      () => mockRepository.getRelationshipsByRecency(),
+    ).thenAnswer((_) async => []);
+
+    await tester.pumpWidget(buildPage());
+    await tester.pumpAndSettle();
+
+    final context = tester.element(find.byType(RelationshipsPage));
+    final label = context.messages.relationshipCreateTitle;
+
+    // Both add circles — the header one and the empty state's inline CTA —
+    // are the same bare glyph, which tells assistive tech nothing on its
+    // own. Each carries the localized name in both channels, and states it
+    // once rather than twice.
+    final labelled = find.byTooltip(label);
+    expect(labelled, findsNWidgets(2));
+    for (var i = 0; i < 2; i++) {
+      expect(
+        tester.getSemantics(labelled.at(i)),
+        matchesSemantics(
+          label: label,
+          isButton: true,
+          isFocusable: true,
+          hasTapAction: true,
+          hasFocusAction: true,
+        ),
+      );
+    }
+  });
+
   testWidgets(
     'renders one row per relationship, with persona avatars and inline stars '
     'only for important people',

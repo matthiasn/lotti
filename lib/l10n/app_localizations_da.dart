@@ -10662,6 +10662,12 @@ class AppLocalizationsDa extends AppLocalizations {
   String get relationshipStayInTouch => 'Hold kontakten';
 
   @override
+  String get relationshipTimestampToday => 'I dag';
+
+  @override
+  String get relationshipTimestampYesterday => 'I går';
+
+  @override
   String relationshipTrackingSinceLabel(String date) {
     return 'Fulgt siden $date';
   }

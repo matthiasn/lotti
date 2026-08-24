@@ -10606,6 +10606,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get relationshipStayInTouch => 'Stay in touch';
 
   @override
+  String get relationshipTimestampToday => 'Today';
+
+  @override
+  String get relationshipTimestampYesterday => 'Yesterday';
+
+  @override
   String relationshipTrackingSinceLabel(String date) {
     return 'Tracking since $date';
   }
@@ -14210,6 +14216,12 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String get relationshipStayInTouch => 'Stay in touch';
+
+  @override
+  String get relationshipTimestampToday => 'Today';
+
+  @override
+  String get relationshipTimestampYesterday => 'Yesterday';
 
   @override
   String get saveLabel => 'Save';

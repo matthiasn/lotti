@@ -10803,6 +10803,12 @@ class AppLocalizationsIt extends AppLocalizations {
   String get relationshipStayInTouch => 'Restare in contatto';
 
   @override
+  String get relationshipTimestampToday => 'Oggi';
+
+  @override
+  String get relationshipTimestampYesterday => 'Ieri';
+
+  @override
   String relationshipTrackingSinceLabel(String date) {
     return 'Monitoraggio dal $date';
   }
