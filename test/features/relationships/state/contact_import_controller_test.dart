@@ -6,6 +6,8 @@ import 'package:lotti/features/relationships/model/imported_contact.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/contacts_service.dart';
 import 'package:lotti/features/relationships/state/contact_import_controller.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -80,11 +82,14 @@ void main() {
     repository = MockRelationshipRepository();
   });
 
-  ({ProviderContainer container, ContactImportController controller}) build() {
+  ({ProviderContainer container, ContactImportController controller}) build({
+    String? refKey = 'android:host-a',
+  }) {
     final container = ProviderContainer(
       overrides: [
         contactsServiceProvider.overrideWithValue(service),
         relationshipRepositoryProvider.overrideWithValue(repository),
+        contactRefKeyProvider.overrideWith((ref) async => refKey),
       ],
     );
     addTearDown(container.dispose);
@@ -489,25 +494,52 @@ void main() {
       },
     );
 
-    test('records the OS id under a platform key so a ref written on one '
-        'device is not trusted on another', () async {
-      final controller = build().controller
-        ..toggleSelection(contact('os-99', 'Anna'));
+    test(
+      "records the OS id under this device's key so a ref written on one "
+      'device is never trusted on another — not even a same-platform one',
+      () async {
+        final controller = build().controller
+          ..toggleSelection(contact('os-99', 'Anna'));
 
-      await controller.importSelected();
+        await controller.importSelected();
 
-      final data =
-          verify(
-                () => repository.createRelationship(
-                  data: captureAny(named: 'data'),
-                  entryText: any(named: 'entryText'),
-                  categoryId: any(named: 'categoryId'),
-                ),
-              ).captured.single
-              as RelationshipData;
+        final data =
+            verify(
+                  () => repository.createRelationship(
+                    data: captureAny(named: 'data'),
+                    entryText: any(named: 'entryText'),
+                    categoryId: any(named: 'categoryId'),
+                  ),
+                ).captured.single
+                as RelationshipData;
 
-      expect(data.contactRefs, {contactRefPlatformKey(): 'os-99'});
-    });
+        expect(data.contactRefs, {'android:host-a': 'os-99'});
+      },
+    );
+
+    test(
+      'imports without a ref while the host id is unknown, rather than '
+      'parking the id under a key another device could collide with',
+      () async {
+        final controller = build(refKey: null).controller
+          ..toggleSelection(contact('os-99', 'Anna'));
+
+        final ids = await controller.importSelected();
+
+        final data =
+            verify(
+                  () => repository.createRelationship(
+                    data: captureAny(named: 'data'),
+                    entryText: any(named: 'entryText'),
+                    categoryId: any(named: 'categoryId'),
+                  ),
+                ).captured.single
+                as RelationshipData;
+
+        expect(ids, isNotEmpty);
+        expect(data.contactRefs, isEmpty);
+      },
+    );
 
     test('imports in the order the user selected', () async {
       final controller = build().controller
@@ -597,6 +629,45 @@ void main() {
           categoryId: any(named: 'categoryId'),
         ),
       );
+    });
+  });
+
+  group('contactRefKeyProvider', () {
+    late MockVectorClockService vectorClockService;
+
+    setUp(() {
+      vectorClockService = MockVectorClockService();
+      when(
+        () => vectorClockService.initialized,
+      ).thenAnswer((_) => Future.value());
+      getIt.registerSingleton<VectorClockService>(vectorClockService);
+    });
+
+    tearDown(() => getIt.unregister<VectorClockService>());
+
+    test('scopes the key to this device via the sync host id', () async {
+      when(vectorClockService.getHost).thenAnswer((_) async => 'host-a');
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final key = await container.read(contactRefKeyProvider.future);
+
+      expect(key, contactRefKeyForHost('host-a'));
+      expect(
+        key,
+        endsWith(':host-a'),
+        reason:
+            'two devices on the same platform must land on different keys, '
+            'so the host id has to be part of the key',
+      );
+    });
+
+    test('yields no key while the host id is unprovisioned', () async {
+      when(vectorClockService.getHost).thenAnswer((_) async => null);
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      expect(await container.read(contactRefKeyProvider.future), isNull);
     });
   });
 }

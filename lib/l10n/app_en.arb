@@ -1907,9 +1907,21 @@
   "checkInAvoidLabel": "Better to avoid",
   "checkInDateLabel": "When?",
   "checkInDeleteConfirmMessage": "Delete this check-in? This cannot be undone.",
+  "checkInDone": "Done",
+  "@checkInDone": {
+    "description": "Relationships redesign label."
+  },
   "checkInEditTitle": "Edit check-in",
   "checkInErrorCreateFailed": "Could not save the check-in. Please try again.",
   "checkInErrorDeleteFailed": "Could not delete the check-in. Please try again.",
+  "checkInHowDidItFeel": "How did it feel?",
+  "@checkInHowDidItFeel": {
+    "description": "Relationships redesign label."
+  },
+  "checkInHowDidYouConnect": "How did you connect?",
+  "@checkInHowDidYouConnect": {
+    "description": "Relationships redesign label."
+  },
   "checkInInteractionCall": "Call",
   "checkInInteractionInPerson": "In person",
   "checkInInteractionLabel": "How did you connect?",
@@ -1918,6 +1930,7 @@
   "checkInInteractionVideoCall": "Video call",
   "checkInNarrativeLabel": "What did you talk about?",
   "checkInPayAttentionLabel": "Next time, pay attention to",
+  "checkInPreparedOverline": "✦ LOTTI · PREPARED THIS MORNING",
   "checkInSentimentDelightful": "Delightful",
   "checkInSentimentDifficult": "Difficult",
   "checkInSentimentGood": "Good",
@@ -1941,6 +1954,10 @@
   "checkInTranscriptUnavailable": "Transcription is not set up for this person. Add an audio model and turn on automatic inference for their category, or type the check-in.",
   "@checkInTranscriptUnavailable": {
     "description": "Shown when a spoken check-in cannot run at all because no transcription is configured for the person or their category."
+  },
+  "checkInWriteInstead": "Write instead",
+  "@checkInWriteInstead": {
+    "description": "Relationships redesign label."
   },
   "checklistAddItem": "Add a new item",
   "checklistAiConfidenceLabel": "Confidence: {level}",
@@ -3741,9 +3758,6 @@
   },
   "goalDimensionNeedsAttentionStatus": "Needs attention",
   "goalDimensionNoDataNote": "There is not enough data to judge this dimension yet.",
-  "@goalDimensionOnTargetTodayNote": {
-    "description": "Positive health-dimension note when the latest reading recorded today meets its target even if the rolling aggregate does not."
-  },
   "goalDimensionOnTargetTodayStatus": "On target today",
   "@goalDimensionOnTargetTodayStatus": {
     "description": "Positive health-dimension status when the latest reading recorded today meets its target."
@@ -5859,6 +5873,10 @@
     "description": "Tooltip on the button that opens a message composer"
   },
   "relationshipAddChannelButton": "Add channel",
+  "relationshipAsk": "Ask",
+  "@relationshipAsk": {
+    "description": "Relationships redesign label."
+  },
   "relationshipBannerSemanticLabel": "Relationship banner for {personName}",
   "@relationshipBannerSemanticLabel": {
     "description": "Accessibility label of one relationship nudge banner; personName is the person's name.",
@@ -5891,6 +5909,10 @@
   "relationshipBriefingRequested": "Briefing requested — it will appear here shortly.",
   "relationshipBriefingRequestFailed": "Could not request the briefing.",
   "relationshipBriefingTitle": "Briefing",
+  "relationshipBriefMeAgain": "Brief me again",
+  "@relationshipBriefMeAgain": {
+    "description": "Relationships redesign label."
+  },
   "relationshipBriefMeButton": "Brief me",
   "relationshipCadenceEveryNDays": "{days, plural, =1{Every day} other{Every {days} days}}",
   "@relationshipCadenceEveryNDays": {
@@ -5904,10 +5926,26 @@
   "relationshipCadenceLabel": "Check-in cadence",
   "relationshipCadenceMonthly": "Monthly",
   "relationshipCadenceNone": "No cadence",
+  "relationshipCadenceNudgeNote": "Choosing a cadence turns on check-in nudges.",
+  "@relationshipCadenceNudgeNote": {
+    "description": "Relationships redesign label."
+  },
+  "relationshipCadenceOnTrack": "On track",
+  "@relationshipCadenceOnTrack": {
+    "description": "Relationships redesign label."
+  },
   "relationshipCadenceQuarterly": "Quarterly",
   "relationshipCadenceWeekly": "Weekly",
   "relationshipChatTooltip": "Chat about this person",
   "relationshipChatUnavailable": "No agent yet — mark this person as important first.",
+  "relationshipCheckedInLabel": "Checked in {date}",
+  "@relationshipCheckedInLabel": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipCheckInReminderBody": "A good moment to reach out.",
   "relationshipCheckInReminderTitle": "Check in with {name}?",
   "@relationshipCheckInReminderTitle": {
@@ -5918,6 +5956,18 @@
     }
   },
   "relationshipCheckInsLabel": "Check-ins",
+  "relationshipCheckInTitle": "Check in · {name}",
+  "@relationshipCheckInTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipContactCardAction": "Contact card",
+  "@relationshipContactCardAction": {
+    "description": "Relationships redesign label."
+  },
   "relationshipContactChannelsLabel": "Contact channels",
   "relationshipContactLinked": "Contact details copied",
   "@relationshipContactLinked": {
@@ -5941,6 +5991,14 @@
   "@relationshipDeleteConfirmTitle": {
     "placeholders": {
       "name": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipDueDay": "Due {day}",
+  "@relationshipDueDay": {
+    "placeholders": {
+      "day": {
         "type": "String"
       }
     }
@@ -6035,6 +6093,10 @@
   "@relationshipImportUnsupported": {
     "description": "Shown on desktop, where there is no address book to import from"
   },
+  "relationshipJustAdded": "Just added",
+  "@relationshipJustAdded": {
+    "description": "Relationships redesign label."
+  },
   "relationshipLastCheckInLabel": "Last check-in {date}",
   "@relationshipLastCheckInLabel": {
     "placeholders": {
@@ -6050,12 +6112,36 @@
   "relationshipLinkedTasksLabel": "Tasks",
   "relationshipLinkTaskButton": "Link task",
   "relationshipLogCheckIn": "Log check-in",
+  "relationshipLottisRead": "Lotti's read",
+  "@relationshipLottisRead": {
+    "description": "Relationships redesign label."
+  },
+  "relationshipLottisReadAsOf": "as of {time}",
+  "@relationshipLottisReadAsOf": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipNameLabel": "Name",
   "relationshipNameRequired": "A name is required",
+  "relationshipNextByDay": "next by {day}",
+  "@relationshipNextByDay": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipNicknameLabel": "Nickname",
   "relationshipNoCheckIns": "No check-ins yet — log one after you next talk.",
   "relationshipNoLinkedTasks": "No tasks linked yet.",
   "relationshipNotFound": "This person is no longer tracked.",
+  "relationshipNudgesOn": "nudges on",
+  "@relationshipNudgesOn": {
+    "description": "Relationships redesign label."
+  },
   "relationshipPostCallBody": "You reached out a moment ago. Log a check-in while it is fresh?",
   "@relationshipPostCallBody": {
     "description": "Body of the prompt offered after returning from a call or message"
@@ -6078,9 +6164,21 @@
       }
     }
   },
+  "relationshipQuietForDays": "Quiet for {count, plural, =1{1 day} other{{count} days}}",
+  "@relationshipQuietForDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "relationshipRelinkContact": "Link a different contact",
   "@relationshipRelinkContact": {
     "description": "Menu action that replaces the OS contact a person is linked to"
+  },
+  "relationshipSeeAllCheckIns": "See all check-ins",
+  "@relationshipSeeAllCheckIns": {
+    "description": "Relationships redesign label."
   },
   "relationshipsEmptyState": "Add the people you want to stay close to.",
   "relationshipsPageTitle": "People",
@@ -6088,6 +6186,14 @@
   "relationshipStatusArchived": "Archived",
   "relationshipStatusDormant": "Dormant",
   "relationshipStatusFieldLabel": "Status",
+  "relationshipStayingInTouch": "Staying in touch",
+  "@relationshipStayingInTouch": {
+    "description": "Relationships redesign label."
+  },
+  "relationshipStayInTouch": "Stay in touch",
+  "@relationshipStayInTouch": {
+    "description": "Relationships redesign label."
+  },
   "relationshipTrackingSinceLabel": "Tracking since {date}",
   "@relationshipTrackingSinceLabel": {
     "placeholders": {

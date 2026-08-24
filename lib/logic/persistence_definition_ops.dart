@@ -1,5 +1,7 @@
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/notifications/scheduler/notification_scheduler.dart';
+import 'package:lotti/features/notifications/scheduler/notification_startup_reconcile.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_collaborator_base.dart';
@@ -76,6 +78,18 @@ class PersistenceDefinitionOps extends PersistenceCollaboratorBase {
     if (configFlag.name == enableNotificationsFlag &&
         previous?.status != configFlag.status) {
       await _refreshBadgeForNotificationsFlag();
+      if (configFlag.status) {
+        // Rows written while the flag was off carry no OS alarm — the
+        // scheduler's platform calls are gated on the flag, and the
+        // repository's idempotent creates never re-schedule an existing row.
+        // Without this, only the next app start would arm them, so a user
+        // who turns notifications on and keeps the app running would miss
+        // every reminder already sitting in the database.
+        await reconcileScheduledNotifications(
+          scheduler: getIt<NotificationScheduler>(),
+          logger: getIt<DomainLogger>(),
+        );
+      }
     }
   }
 

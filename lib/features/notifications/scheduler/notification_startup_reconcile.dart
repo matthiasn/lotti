@@ -1,7 +1,12 @@
 import 'package:lotti/features/notifications/scheduler/notification_scheduler.dart';
 import 'package:lotti/services/domain_logging.dart';
 
-/// Re-arms OS alerts for still-schedulable notification rows during startup.
+/// Re-arms OS alerts for still-schedulable notification rows.
+///
+/// Called at startup (alarms the OS lost across an update, reinstall or
+/// reboot) and when the `enable_notifications` flag is switched on (rows
+/// written while the flag was off were never armed, and the repository's
+/// idempotent creates do not re-schedule an existing row).
 ///
 /// Extracted from the composition root rather than inlined there so the
 /// swallow-and-log contract below is testable: `registerSingletons` cannot be

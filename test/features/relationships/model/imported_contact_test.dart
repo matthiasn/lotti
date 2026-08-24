@@ -190,7 +190,7 @@ void main() {
         _contact(
           channels: [_channel(ContactChannelType.mobile, '+15550109999')],
         ),
-        platformKey: 'ios',
+        refKey: 'ios:host-a',
         status: _activeStatus(),
       );
 
@@ -198,19 +198,35 @@ void main() {
       expect(data.contactChannels.single.value, '+15550109999');
     });
 
-    test('records the OS id under the platform that owns it', () {
+    test('records the OS id under the device key that owns it', () {
       final data = relationshipDataFromContact(
         _contact(id: 'ABC-123'),
-        platformKey: 'android',
+        refKey: 'android:host-a',
         status: _activeStatus(),
       );
 
       expect(
         data.contactRefs,
-        {'android': 'ABC-123'},
+        {'android:host-a': 'ABC-123'},
         reason:
-            'the same person has different ids on different devices, so '
+            'the same person has different ids in every address book, so '
             'a ref is only meaningful on the device that wrote it',
+      );
+    });
+
+    test('stores no ref at all when the device key is unknown', () {
+      final data = relationshipDataFromContact(
+        _contact(id: 'ABC-123'),
+        refKey: null,
+        status: _activeStatus(),
+      );
+
+      expect(
+        data.contactRefs,
+        isEmpty,
+        reason:
+            'an id parked under a made-up key could collide with a key '
+            'another device legitimately owns',
       );
     });
 
@@ -218,7 +234,7 @@ void main() {
         'without being asked for', () {
       final data = relationshipDataFromContact(
         _contact(),
-        platformKey: 'ios',
+        refKey: 'ios:host-a',
         status: _activeStatus(),
       );
 
@@ -229,7 +245,7 @@ void main() {
     test('honors the importance and cadence chosen on the review screen', () {
       final data = relationshipDataFromContact(
         _contact(),
-        platformKey: 'ios',
+        refKey: 'ios:host-a',
         status: _activeStatus(),
         important: true,
         checkInCadenceDays: 14,
@@ -242,7 +258,7 @@ void main() {
     test('starts a person with no channels rather than refusing them', () {
       final data = relationshipDataFromContact(
         _contact(),
-        platformKey: 'ios',
+        refKey: 'ios:host-a',
         status: _activeStatus(),
       );
 

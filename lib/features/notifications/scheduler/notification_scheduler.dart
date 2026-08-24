@@ -73,9 +73,11 @@ class NotificationScheduler {
   ///
   /// An alarm set before an app update, a reinstall, or (on Android) a reboot
   /// is gone, while the durable row describing it still sits in
-  /// `notifications.sqlite`. Nothing else re-arms it, because [schedule] is
-  /// only ever called on a write — so without this a reminder armed weeks
-  /// ahead silently stops existing at the OS level.
+  /// `notifications.sqlite`. [schedule] is only ever called on a write — so
+  /// without this a reminder armed weeks ahead silently stops existing at the
+  /// OS level. The same gap exists for rows written while the
+  /// `enable_notifications` flag was off (the platform calls are gated on it),
+  /// which is why flipping that flag on also runs this.
   ///
   /// **Only future rows.** A row that is already due needs no alarm: it is by
   /// definition sitting in the inbox, on the device the user is holding.

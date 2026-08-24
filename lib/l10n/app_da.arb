@@ -1569,9 +1569,21 @@
   "checkInAvoidLabel": "Bedst at undgå",
   "checkInDateLabel": "Hvornår?",
   "checkInDeleteConfirmMessage": "Slet dette check-in? Det kan ikke fortrydes.",
+  "checkInDone": "Færdig",
+  "@checkInDone": {
+    "description": "Relationships redesign label."
+  },
   "checkInEditTitle": "Redigér check-in",
   "checkInErrorCreateFailed": "Check-in kunne ikke gemmes. Prøv igen.",
   "checkInErrorDeleteFailed": "Check-in kunne ikke slettes. Prøv igen.",
+  "checkInHowDidItFeel": "Hvordan føltes det?",
+  "@checkInHowDidItFeel": {
+    "description": "Relationships redesign label."
+  },
+  "checkInHowDidYouConnect": "Hvordan havde I kontakt?",
+  "@checkInHowDidYouConnect": {
+    "description": "Relationships redesign label."
+  },
   "checkInInteractionCall": "Opkald",
   "checkInInteractionInPerson": "Personligt",
   "checkInInteractionLabel": "Hvordan talte I sammen?",
@@ -1580,6 +1592,7 @@
   "checkInInteractionVideoCall": "Videoopkald",
   "checkInNarrativeLabel": "Hvad talte I om?",
   "checkInPayAttentionLabel": "Næste gang: vær opmærksom på",
+  "checkInPreparedOverline": "✦ LOTTI · FORBEREDT I MORGES",
   "checkInSentimentDelightful": "Skønt",
   "checkInSentimentDifficult": "Svært",
   "checkInSentimentGood": "Godt",
@@ -1592,6 +1605,10 @@
   "checkInTranscribingLabel": "Transskriberer…",
   "checkInTranscriptFailed": "Der kom ingen udskrift. Du kan skrive den selv.",
   "checkInTranscriptUnavailable": "Transskription er ikke sat op for denne person. Tilføj en lydmodel og slå automatisk inferens til for deres kategori, eller skriv check-in selv.",
+  "checkInWriteInstead": "Skriv i stedet",
+  "@checkInWriteInstead": {
+    "description": "Relationships redesign label."
+  },
   "checklistAddItem": "Tilføj en ny genstand",
   "checklistAiConfidenceLabel": "Selvtillid: {level}",
   "@checklistAiConfidenceLabel": {
@@ -4526,6 +4543,10 @@
   "relationshipActionFailed": "Intet på denne enhed kan åbne det",
   "relationshipActionMessage": "Besked",
   "relationshipAddChannelButton": "Tilføj kontaktoplysning",
+  "relationshipAsk": "Spørg",
+  "@relationshipAsk": {
+    "description": "Relationships redesign label."
+  },
   "relationshipBannerSemanticLabel": "Relationsbanner for {personName}",
   "relationshipBriefingDisclosureBody": "Briefingen kører på {provider}. Noter om denne person sendes dertil til behandling.",
   "relationshipBriefingDisclosureConfirm": "Fortsæt",
@@ -4534,16 +4555,36 @@
   "relationshipBriefingRequested": "Briefing bestilt — den vises her om lidt.",
   "relationshipBriefingRequestFailed": "Kunne ikke bestille briefingen.",
   "relationshipBriefingTitle": "Briefing",
+  "relationshipBriefMeAgain": "Brief igen",
+  "@relationshipBriefMeAgain": {
+    "description": "Relationships redesign label."
+  },
   "relationshipBriefMeButton": "Opdater mig",
   "relationshipCadenceEveryNDays": "{days, plural, =1{Hver dag} other{Hver {days}. dag}}",
   "relationshipCadenceFortnightly": "Hver anden uge",
   "relationshipCadenceLabel": "Kontaktrytme",
   "relationshipCadenceMonthly": "Månedligt",
   "relationshipCadenceNone": "Ingen rytme",
+  "relationshipCadenceNudgeNote": "At vælge et tempo slår check-in-påmindelser til.",
+  "@relationshipCadenceNudgeNote": {
+    "description": "Relationships redesign label."
+  },
+  "relationshipCadenceOnTrack": "på sporet",
+  "@relationshipCadenceOnTrack": {
+    "description": "Relationships redesign label."
+  },
   "relationshipCadenceQuarterly": "Hvert kvartal",
   "relationshipCadenceWeekly": "Ugentligt",
   "relationshipChatTooltip": "Chat om denne person",
   "relationshipChatUnavailable": "Ingen agent endnu — markér først personen som vigtig.",
+  "relationshipCheckedInLabel": "Check-in {date}",
+  "@relationshipCheckedInLabel": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipCheckInReminderBody": "Et godt tidspunkt at tage kontakt.",
   "relationshipCheckInReminderTitle": "Tag kontakt til {name}?",
   "@relationshipCheckInReminderTitle": {
@@ -4554,6 +4595,18 @@
     }
   },
   "relationshipCheckInsLabel": "Check-ins",
+  "relationshipCheckInTitle": "Check-in · {name}",
+  "@relationshipCheckInTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipContactCardAction": "Kontaktkort",
+  "@relationshipContactCardAction": {
+    "description": "Relationships redesign label."
+  },
   "relationshipContactChannelsLabel": "Kontaktoplysninger",
   "relationshipContactLinked": "Kontaktoplysninger kopieret",
   "relationshipContactLinkFailed": "Kunne ikke gemme kontaktoplysningerne",
@@ -4562,6 +4615,14 @@
   "relationshipCreateTitle": "Tilføj person",
   "relationshipDeleteConfirmMessage": "Deres check-ins slettes også. Det kan ikke fortrydes.",
   "relationshipDeleteConfirmTitle": "Slet {name}?",
+  "relationshipDueDay": "Senest {day}",
+  "@relationshipDueDay": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipEditTitle": "Redigér person",
   "relationshipErrorCreateFailed": "Personen kunne ikke gemmes. Prøv igen.",
   "relationshipErrorDeleteFailed": "Personen kunne ikke slettes. Prøv igen.",
@@ -4589,17 +4650,45 @@
   "relationshipImportSettingsBody": "Adgang til kontakter er slået fra. Slå den til i systemindstillingerne for at importere personer.",
   "relationshipImportTitle": "Tilføj personer",
   "relationshipImportUnsupported": "Kontaktimport findes på telefoner og tablets. Tilføj kontaktoplysninger i hånden her.",
+  "relationshipJustAdded": "Netop tilføjet",
+  "@relationshipJustAdded": {
+    "description": "Relationships redesign label."
+  },
   "relationshipLastCheckInLabel": "Seneste check-in {date}",
   "relationshipLinkContact": "Tilknyt kontakt",
   "relationshipLinkedTasksLabel": "Opgaver",
   "relationshipLinkTaskButton": "Link opgave",
   "relationshipLogCheckIn": "Registrér check-in",
+  "relationshipLottisRead": "Lottis vurdering",
+  "@relationshipLottisRead": {
+    "description": "Relationships redesign label."
+  },
+  "relationshipLottisReadAsOf": "kl. {time}",
+  "@relationshipLottisReadAsOf": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipNameLabel": "Navn",
   "relationshipNameRequired": "Navn er påkrævet",
+  "relationshipNextByDay": "næste senest {day}",
+  "@relationshipNextByDay": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipNicknameLabel": "Kaldenavn",
   "relationshipNoCheckIns": "Ingen check-ins endnu — registrér et efter jeres næste snak.",
   "relationshipNoLinkedTasks": "Ingen opgaver linket endnu.",
   "relationshipNotFound": "Denne person følges ikke længere.",
+  "relationshipNudgesOn": "påmindelser til",
+  "@relationshipNudgesOn": {
+    "description": "Relationships redesign label."
+  },
   "relationshipPostCallBody": "Du tog lige kontakt. Vil du logge et tjek-ind, mens det er friskt?",
   "relationshipPostCallConfirm": "Log tjek-ind",
   "relationshipPostCallDismiss": "Ikke nu",
@@ -4612,13 +4701,33 @@
       }
     }
   },
+  "relationshipQuietForDays": "Ingen kontakt {count, plural, =1{i 1 dag} other{i {count} dage}}",
+  "@relationshipQuietForDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "relationshipRelinkContact": "Tilknyt en anden kontakt",
+  "relationshipSeeAllCheckIns": "Se alle check-ins",
+  "@relationshipSeeAllCheckIns": {
+    "description": "Relationships redesign label."
+  },
   "relationshipsEmptyState": "Tilføj de mennesker, du vil holde kontakten med.",
   "relationshipsPageTitle": "Personer",
   "relationshipStatusActive": "Aktiv",
   "relationshipStatusArchived": "Arkiveret",
   "relationshipStatusDormant": "Hvilende",
   "relationshipStatusFieldLabel": "Status",
+  "relationshipStayingInTouch": "Holde kontakten",
+  "@relationshipStayingInTouch": {
+    "description": "Relationships redesign label."
+  },
+  "relationshipStayInTouch": "Hold kontakten",
+  "@relationshipStayInTouch": {
+    "description": "Relationships redesign label."
+  },
   "relationshipTrackingSinceLabel": "Fulgt siden {date}",
   "relationshipUpdateFromContact": "Opdater fra kontakt",
   "saveButton": "Gem",

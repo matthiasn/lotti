@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/notifications/scheduler/notification_scheduler.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
@@ -23,6 +24,7 @@ import '../widget_test_utils.dart';
 void main() {
   late MockPersistenceLogic logic;
   late MockNotificationService notificationService;
+  late MockNotificationScheduler notificationScheduler;
   late MockOutboxService outboxService;
   late PersistenceDefinitionOps ops;
   late TestGetItMocks mocks;
@@ -46,14 +48,19 @@ void main() {
   setUp(() async {
     registerAllFallbackValues();
     notificationService = MockNotificationService();
+    notificationScheduler = MockNotificationScheduler();
     outboxService = MockOutboxService();
     mocks = await setUpTestGetIt(
       additionalSetup: () {
         getIt
           ..registerSingleton<OutboxService>(outboxService)
-          ..registerSingleton<NotificationService>(notificationService);
+          ..registerSingleton<NotificationService>(notificationService)
+          ..registerSingleton<NotificationScheduler>(notificationScheduler);
       },
     );
+    when(
+      () => notificationScheduler.reconcile(now: any(named: 'now')),
+    ).thenAnswer((_) async {});
     logic = MockPersistenceLogic();
     ops = PersistenceDefinitionOps(logic);
 
@@ -217,6 +224,56 @@ void main() {
       // the setting as unsaved.
       await expectLater(
         ops.setConfigFlagImpl(notificationsFlag(status: false)),
+        completes,
+      );
+    });
+
+    test(
+      'switching on re-arms reminders written while the flag was off',
+      () async {
+        withStoredStatus(status: false);
+
+        await ops.setConfigFlagImpl(notificationsFlag(status: true));
+
+        // Rows created while the flag was off never armed an OS alarm, and the
+        // repository's idempotent creates skip existing rows — without this
+        // reconcile, only the next app start would arm them.
+        verify(
+          () => notificationScheduler.reconcile(now: any(named: 'now')),
+        ).called(1);
+      },
+    );
+
+    test('switching off does not touch the armed alarms', () async {
+      withStoredStatus(status: true);
+
+      await ops.setConfigFlagImpl(notificationsFlag(status: false));
+
+      verifyNever(
+        () => notificationScheduler.reconcile(now: any(named: 'now')),
+      );
+    });
+
+    test('re-writing an already-on flag does not reconcile', () async {
+      withStoredStatus(status: true);
+
+      await ops.setConfigFlagImpl(notificationsFlag(status: true));
+
+      verifyNever(
+        () => notificationScheduler.reconcile(now: any(named: 'now')),
+      );
+    });
+
+    test('a reconcile failure does not fail the settings write', () async {
+      withStoredStatus(status: false);
+      when(
+        () => notificationScheduler.reconcile(now: any(named: 'now')),
+      ).thenThrow(StateError('db gone'));
+
+      // Same contract as the badge: the setting is saved, re-arming alarms is
+      // best-effort and logged.
+      await expectLater(
+        ops.setConfigFlagImpl(notificationsFlag(status: true)),
         completes,
       );
     });

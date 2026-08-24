@@ -7,6 +7,8 @@ import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/features/relationships/model/imported_contact.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/contacts_service.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 
 /// Where the import flow currently stands.
@@ -210,12 +212,13 @@ class ContactImportController extends Notifier<ContactImportState> {
   /// five are missing, and the ones that did land are real.
   Future<List<String>> importSelected() async {
     final repository = ref.read(relationshipRepositoryProvider);
+    final refKey = await ref.read(contactRefKeyProvider.future);
     final created = <String>[];
 
     for (final draft in state.drafts.values) {
       final data = relationshipDataFromContact(
         draft.contact,
-        platformKey: contactRefPlatformKey(),
+        refKey: refKey,
         status: RelationshipStatus.active(
           id: uuid.v1(),
           createdAt: clock.now(),
@@ -243,12 +246,31 @@ class ContactImportController extends Notifier<ContactImportState> {
   }
 }
 
-/// The key a contact ref is stored under.
+/// The key [host]'s contact ref is stored under in
+/// `RelationshipData.contactRefs`.
 ///
-/// Refs are per-platform because the same person carries a different
-/// identifier in each device's address book, so a ref written on Android is
-/// meaningless on iOS (ADR 0041 §2).
-String contactRefPlatformKey() => Platform.isIOS ? 'ios' : 'android';
+/// Refs are per-device, not merely per-platform: every address book assigns
+/// its own identifiers, so two phones on the same OS still hold unrelated
+/// ids for the same person. Scoping the key by the sync host id gives each
+/// device its own slot — a link written on one device can never overwrite,
+/// or be resolved against, another device's address book (ADR 0041 §2). The
+/// platform prefix adds no uniqueness beyond the host; it makes the stored
+/// map read as "which kind of device wrote this".
+String contactRefKeyForHost(String host) =>
+    '${Platform.isIOS ? 'ios' : 'android'}:$host';
+
+/// This device's contact-ref key, or `null` while the sync host id is still
+/// unknown (it is provisioned during startup, before any contact UI runs).
+///
+/// Callers treat `null` as "this device has no ref and cannot store one":
+/// linking still copies channels, refreshing reports the contact missing,
+/// and nothing is written under a key another device could collide with.
+final contactRefKeyProvider = FutureProvider<String?>((ref) async {
+  final vectorClockService = getIt<VectorClockService>();
+  await vectorClockService.initialized;
+  final host = await vectorClockService.getHost();
+  return host == null ? null : contactRefKeyForHost(host);
+}, name: 'contactRefKeyProvider');
 
 final contactImportControllerProvider =
     NotifierProvider<ContactImportController, ContactImportState>(

@@ -1398,9 +1398,21 @@
   "checkInAvoidLabel": "Raději se vyhnout",
   "checkInDateLabel": "Kdy?",
   "checkInDeleteConfirmMessage": "Smazat tento záznam? Tohle nelze vrátit zpět.",
+  "checkInDone": "Hotovo",
+  "@checkInDone": {
+    "description": "Relationships redesign label."
+  },
   "checkInEditTitle": "Upravit záznam",
   "checkInErrorCreateFailed": "Záznam se nepodařilo uložit. Zkus to prosím znovu.",
   "checkInErrorDeleteFailed": "Záznam se nepodařilo smazat. Zkus to prosím znovu.",
+  "checkInHowDidItFeel": "Jaké to bylo?",
+  "@checkInHowDidItFeel": {
+    "description": "Relationships redesign label."
+  },
+  "checkInHowDidYouConnect": "Jak proběhl kontakt?",
+  "@checkInHowDidYouConnect": {
+    "description": "Relationships redesign label."
+  },
   "checkInInteractionCall": "Hovor",
   "checkInInteractionInPerson": "Osobně",
   "checkInInteractionLabel": "Jak jste se spojili?",
@@ -1409,6 +1421,7 @@
   "checkInInteractionVideoCall": "Videohovor",
   "checkInNarrativeLabel": "O čem jste mluvili?",
   "checkInPayAttentionLabel": "Příště se zaměřit na",
+  "checkInPreparedOverline": "✦ LOTTI · PŘIPRAVENO DNES RÁNO",
   "checkInSentimentDelightful": "Skvělé",
   "checkInSentimentDifficult": "Těžké",
   "checkInSentimentGood": "Dobré",
@@ -1421,6 +1434,10 @@
   "checkInTranscribingLabel": "Přepisuje se…",
   "checkInTranscriptFailed": "Přepis nedorazil. Můžeš text napsat sám.",
   "checkInTranscriptUnavailable": "Přepis pro tuto osobu není nastavený. Přidej zvukový model a zapni automatické odvozování pro její kategorii, nebo napiš záznam ručně.",
+  "checkInWriteInstead": "Spíše psát",
+  "@checkInWriteInstead": {
+    "description": "Relationships redesign label."
+  },
   "checklistAddItem": "Přidat novou položku",
   "checklistAiConfidenceLabel": "Jistota: {level}",
   "@checklistAiConfidenceLabel": {
@@ -4020,6 +4037,10 @@
   "relationshipActionFailed": "Nic v tomto zařízení to nedokáže otevřít",
   "relationshipActionMessage": "Zpráva",
   "relationshipAddChannelButton": "Přidat kontakt",
+  "relationshipAsk": "Zeptat",
+  "@relationshipAsk": {
+    "description": "Relationships redesign label."
+  },
   "relationshipBannerSemanticLabel": "Banner vztahu s {personName}",
   "relationshipBriefingDisclosureBody": "Briefing běží na {provider}. Poznámky o této osobě tam budou odeslány ke zpracování.",
   "relationshipBriefingDisclosureConfirm": "Pokračovat",
@@ -4028,16 +4049,36 @@
   "relationshipBriefingRequested": "Briefing vyžádán — za chvíli se tu objeví.",
   "relationshipBriefingRequestFailed": "Briefing se nepodařilo vyžádat.",
   "relationshipBriefingTitle": "Briefing",
+  "relationshipBriefMeAgain": "Shrnout znovu",
+  "@relationshipBriefMeAgain": {
+    "description": "Relationships redesign label."
+  },
   "relationshipBriefMeButton": "Shrň mi to",
   "relationshipCadenceEveryNDays": "{days, plural, =1{Každý den} few{Každé {days} dny} other{Každých {days} dní}}",
   "relationshipCadenceFortnightly": "Každé dva týdny",
   "relationshipCadenceLabel": "Frekvence kontaktu",
   "relationshipCadenceMonthly": "Každý měsíc",
   "relationshipCadenceNone": "Bez frekvence",
+  "relationshipCadenceNudgeNote": "Nastavení rytmu zapne připomínky záznamů.",
+  "@relationshipCadenceNudgeNote": {
+    "description": "Relationships redesign label."
+  },
+  "relationshipCadenceOnTrack": "v rytmu",
+  "@relationshipCadenceOnTrack": {
+    "description": "Relationships redesign label."
+  },
   "relationshipCadenceQuarterly": "Každé čtvrtletí",
   "relationshipCadenceWeekly": "Každý týden",
   "relationshipChatTooltip": "Chatovat o této osobě",
   "relationshipChatUnavailable": "Zatím žádný agent — nejprve označ tuto osobu jako důležitou.",
+  "relationshipCheckedInLabel": "Záznam {date}",
+  "@relationshipCheckedInLabel": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipCheckInReminderBody": "Dobrá chvíle se ozvat.",
   "relationshipCheckInReminderTitle": "Ozvat se: {name}?",
   "@relationshipCheckInReminderTitle": {
@@ -4048,6 +4089,18 @@
     }
   },
   "relationshipCheckInsLabel": "Záznamy kontaktů",
+  "relationshipCheckInTitle": "Záznam · {name}",
+  "@relationshipCheckInTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipContactCardAction": "Vizitka",
+  "@relationshipContactCardAction": {
+    "description": "Relationships redesign label."
+  },
   "relationshipContactChannelsLabel": "Kontaktní údaje",
   "relationshipContactLinked": "Kontaktní údaje zkopírovány",
   "relationshipContactLinkFailed": "Kontaktní údaje se nepodařilo uložit",
@@ -4056,6 +4109,14 @@
   "relationshipCreateTitle": "Přidat osobu",
   "relationshipDeleteConfirmMessage": "Smažou se i všechny záznamy kontaktů. Tohle nelze vrátit zpět.",
   "relationshipDeleteConfirmTitle": "Smazat {name}?",
+  "relationshipDueDay": "Do {day}",
+  "@relationshipDueDay": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipEditTitle": "Upravit osobu",
   "relationshipErrorCreateFailed": "Osobu se nepodařilo uložit. Zkus to prosím znovu.",
   "relationshipErrorDeleteFailed": "Osobu se nepodařilo smazat. Zkus to prosím znovu.",
@@ -4083,17 +4144,45 @@
   "relationshipImportSettingsBody": "Přístup ke kontaktům je vypnutý. Zapni ho v nastavení systému, abys mohl lidi importovat.",
   "relationshipImportTitle": "Přidat lidi",
   "relationshipImportUnsupported": "Import kontaktů je dostupný na telefonech a tabletech. Kontaktní údaje sem zadej ručně.",
+  "relationshipJustAdded": "Právě přidáno",
+  "@relationshipJustAdded": {
+    "description": "Relationships redesign label."
+  },
   "relationshipLastCheckInLabel": "Poslední záznam {date}",
   "relationshipLinkContact": "Propojit kontakt",
   "relationshipLinkedTasksLabel": "Úkoly",
   "relationshipLinkTaskButton": "Propojit úkol",
   "relationshipLogCheckIn": "Zaznamenat kontakt",
+  "relationshipLottisRead": "Lottiho odhad",
+  "@relationshipLottisRead": {
+    "description": "Relationships redesign label."
+  },
+  "relationshipLottisReadAsOf": "k {time}",
+  "@relationshipLottisReadAsOf": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipNameLabel": "Jméno",
   "relationshipNameRequired": "Jméno je povinné",
+  "relationshipNextByDay": "příští do {day}",
+  "@relationshipNextByDay": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipNicknameLabel": "Přezdívka",
   "relationshipNoCheckIns": "Zatím žádné záznamy — přidej první po dalším rozhovoru.",
   "relationshipNoLinkedTasks": "Zatím žádné propojené úkoly.",
   "relationshipNotFound": "Tahle osoba už není sledovaná.",
+  "relationshipNudgesOn": "připomínky zapnuty",
+  "@relationshipNudgesOn": {
+    "description": "Relationships redesign label."
+  },
   "relationshipPostCallBody": "Právě jsi se ozval. Chceš si zapsat check-in, dokud je to čerstvé?",
   "relationshipPostCallConfirm": "Zapsat check-in",
   "relationshipPostCallDismiss": "Teď ne",
@@ -4106,13 +4195,33 @@
       }
     }
   },
+  "relationshipQuietForDays": "{count, plural, =1{1 den} few{{count} dny} other{{count} dní}} bez kontaktu",
+  "@relationshipQuietForDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "relationshipRelinkContact": "Propojit jiný kontakt",
+  "relationshipSeeAllCheckIns": "Zobrazit všechny záznamy",
+  "@relationshipSeeAllCheckIns": {
+    "description": "Relationships redesign label."
+  },
   "relationshipsEmptyState": "Přidej lidi, se kterými chceš zůstat v kontaktu.",
   "relationshipsPageTitle": "Lidé",
   "relationshipStatusActive": "Aktivní",
   "relationshipStatusArchived": "Archivované",
   "relationshipStatusDormant": "Spící",
   "relationshipStatusFieldLabel": "Stav",
+  "relationshipStayingInTouch": "Udržovat kontakt",
+  "@relationshipStayingInTouch": {
+    "description": "Relationships redesign label."
+  },
+  "relationshipStayInTouch": "Udržovat kontakt",
+  "@relationshipStayInTouch": {
+    "description": "Relationships redesign label."
+  },
   "relationshipTrackingSinceLabel": "Sledováno od {date}",
   "relationshipUpdateFromContact": "Aktualizovat z kontaktu",
   "saveButton": "Uložit",

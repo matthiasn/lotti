@@ -6,6 +6,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/model/imported_contact.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/contacts_service.dart';
+import 'package:lotti/features/relationships/state/contact_import_controller.dart';
 import 'package:lotti/features/relationships/ui/pages/contact_import_page.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -93,6 +94,9 @@ void main() {
         overrides: [
           contactsServiceProvider.overrideWithValue(service),
           relationshipRepositoryProvider.overrideWithValue(repository),
+          // The import writes the OS id into this device's own ref slot, so
+          // the key has to resolve without a live sync host id behind it.
+          contactRefKeyProvider.overrideWith((ref) async => 'android:host-a'),
         ],
       ),
     );
@@ -328,6 +332,9 @@ void main() {
           overrides: [
             contactsServiceProvider.overrideWithValue(service),
             relationshipRepositoryProvider.overrideWithValue(repository),
+            contactRefKeyProvider.overrideWith(
+              (ref) async => 'android:host-a',
+            ),
           ],
         ),
       );
