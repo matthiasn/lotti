@@ -412,6 +412,117 @@ void main() {
     expect(setupRow.onTap, isNull);
   });
 
+  testWidgets(
+    'an agent kind with no resolvable setup shows no setup row at all — a '
+    'relationship agent owns neither a task nor a template, and the row used '
+    'to call that "No AI setup" under an error glyph',
+    (tester) async {
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          mediaQueryData: const MediaQueryData(size: Size(900, 800)),
+          overrides: [
+            agentIdentityProvider.overrideWith(
+              (ref, agentId) async => makeTestIdentity(
+                kind: AgentKinds.relationshipAgent,
+                displayName: 'Anna',
+              ),
+            ),
+            agentStateProvider.overrideWith((ref, agentId) async => null),
+            templateForAgentProvider.overrideWith((ref, agentId) async => null),
+            taskAgentResolvedSetupProvider.overrideWith(
+              (ref, agentId) async => null,
+            ),
+          ],
+          child: const SingleChildScrollView(
+            child: AgentInternalsBody(
+              agentId: 'agent-001',
+              lifecycle: AgentLifecycle.active,
+              stateAsync: AsyncValue.data(null),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('No AI setup'), findsNothing);
+      expect(find.text('AI setup'), findsNothing);
+      expect(find.byType(DesignSystemListItem), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'an untappable setup row drops its chevron — the glyph promised a '
+    'destination the row does not have',
+    (tester) async {
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          mediaQueryData: const MediaQueryData(size: Size(900, 800)),
+          overrides: [
+            agentIdentityProvider.overrideWith(
+              (ref, agentId) async => makeTestIdentity(),
+            ),
+            agentStateProvider.overrideWith((ref, agentId) async => null),
+            templateForAgentProvider.overrideWith((ref, agentId) async => null),
+            taskAgentResolvedSetupProvider.overrideWith(
+              (ref, agentId) async => const ResolvedAgentSetup(
+                status: AgentSetupResolutionStatus.disabled,
+              ),
+            ),
+          ],
+          child: const SingleChildScrollView(
+            child: AgentInternalsBody(
+              agentId: 'agent-001',
+              lifecycle: AgentLifecycle.active,
+              stateAsync: AsyncValue.data(null),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final setupRow = tester.widget<DesignSystemListItem>(
+        find.ancestor(
+          of: find.text('No AI setup').first,
+          matching: find.byType(DesignSystemListItem),
+        ),
+      );
+      expect(setupRow.onTap, isNull);
+      expect(setupRow.trailing, isNull);
+    },
+  );
+
+  testWidgets(
+    'a TASK agent with the same null resolution still shows the row — there '
+    'the silence is a misconfiguration, not a kind without a setup path',
+    (tester) async {
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          mediaQueryData: const MediaQueryData(size: Size(900, 800)),
+          overrides: [
+            agentIdentityProvider.overrideWith(
+              (ref, agentId) async => makeTestIdentity(),
+            ),
+            agentStateProvider.overrideWith((ref, agentId) async => null),
+            templateForAgentProvider.overrideWith((ref, agentId) async => null),
+            taskAgentResolvedSetupProvider.overrideWith(
+              (ref, agentId) async => null,
+            ),
+          ],
+          child: const SingleChildScrollView(
+            child: AgentInternalsBody(
+              agentId: 'agent-001',
+              lifecycle: AgentLifecycle.active,
+              stateAsync: AsyncValue.data(null),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('No AI setup'), findsOneWidget);
+    },
+  );
+
   testWidgets('setup row distinguishes a broken setup from no selection', (
     tester,
   ) async {

@@ -2,6 +2,8 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
 import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -9,13 +11,15 @@ import 'package:lotti/features/tts/ui/widgets/tts_play_button.dart';
 
 import '../../../../widget_test_utils.dart';
 import '../../../tts/test_utils.dart';
+import '../../test_data/constants.dart';
 import '../../test_data/entity_factories.dart';
 import 'test_bench.dart';
 
 class _DisclosureHarness extends StatefulWidget {
-  const _DisclosureHarness({this.onOpenInternals});
+  const _DisclosureHarness({this.onOpenInternals, this.disclosureKey});
 
   final VoidCallback? onOpenInternals;
+  final Key? disclosureKey;
 
   @override
   State<_DisclosureHarness> createState() => _DisclosureHarnessState();
@@ -26,18 +30,72 @@ class _DisclosureHarnessState extends State<_DisclosureHarness> {
 
   @override
   Widget build(BuildContext context) {
+    final key = widget.disclosureKey;
     return TldrBody(
       tldr: 'Summary first.',
       expanded: expanded,
       additionalReport: 'Full report details.',
       onToggle: () => setState(() => expanded = !expanded),
       onOpenInternals: widget.onOpenInternals ?? () {},
+      disclosureKey: key ?? const ValueKey('taskAgentReportDisclosure'),
     );
   }
 }
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  AgentReportEntity report({String? tldr, String content = 'Full report.'}) =>
+      AgentDomainEntity.agentReport(
+            id: 'report-1',
+            agentId: 'agent-1',
+            scope: AgentReportScopes.current,
+            createdAt: kAgentTestDate,
+            vectorClock: null,
+            content: content,
+            tldr: tldr,
+          )
+          as AgentReportEntity;
+
+  group('report text resolution', () {
+    test('the summary is the report tldr when it has one', () {
+      expect(resolveReportTldr(report(tldr: 'Short.')), 'Short.');
+    });
+
+    test('a blank tldr falls back to the full content', () {
+      expect(resolveReportTldr(report(tldr: '   ')), 'Full report.');
+      expect(resolveReportTldr(report()), 'Full report.');
+    });
+
+    test('no report at all resolves to the empty string, not null', () {
+      expect(resolveReportTldr(null), '');
+    });
+
+    test('the full text sits behind Read more when it differs', () {
+      expect(
+        resolveReportAdditional(report(tldr: 'Short.')),
+        'Full report.',
+      );
+    });
+
+    test('a full text equal to the tldr is not disclosed again — the same '
+        'paragraph twice is what a no-op Read more looks like', () {
+      expect(
+        resolveReportAdditional(report(tldr: 'Same.', content: 'Same.')),
+        isNull,
+      );
+    });
+
+    test('nothing is disclosed without a separate tldr, without content, or '
+        'without a report', () {
+      expect(resolveReportAdditional(report()), isNull);
+      expect(
+        resolveReportAdditional(report(tldr: 'Short.', content: ' ')),
+        isNull,
+      );
+      expect(resolveReportAdditional(null), isNull);
+    });
+  });
 
   group('TldrHeader', () {
     testWidgets('keeps identity primary and exposes optional playback', (
@@ -49,7 +107,7 @@ void main() {
           TldrHeader(
             agentName: 'Task Laura',
             onAgentTap: () => agentTaps++,
-            playbackControl: const SizedBox(
+            trailing: const SizedBox(
               key: ValueKey('playback'),
               width: 48,
               height: 48,
@@ -148,7 +206,7 @@ void main() {
           TldrHeader(
             agentName: 'Task Laura',
             onAgentTap: () {},
-            playbackControl: const SizedBox(
+            trailing: const SizedBox(
               key: ValueKey('playback'),
               width: 48,
               height: 48,
@@ -210,7 +268,7 @@ void main() {
             // together they do not. A Row would lay both out at their
             // intrinsic widths and clip past the cap — a Wrap drops the
             // second onto its own line instead.
-            playbackControl: const Wrap(
+            trailing: const Wrap(
               key: ValueKey('rail'),
               alignment: WrapAlignment.end,
               children: [
@@ -307,6 +365,54 @@ void main() {
       await pumpAt(730);
       expect(tester.widget<Text>(title).maxLines, 2);
       expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('TldrHeader title', () {
+    testWidgets('defaults to the shared AI card title', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          TldrHeader(agentName: 'Task Laura', onAgentTap: () {}),
+        ),
+      );
+
+      expect(find.text('AI summary'), findsOneWidget);
+    });
+
+    testWidgets('a host that is not an AI summary names itself instead, and '
+        'the semantics label follows the visible title', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await tester.pumpWidget(
+        makeTestableWidget(
+          TldrHeader(
+            title: 'Briefing',
+            agentName: "Anna's companion",
+            onAgentTap: () {},
+          ),
+        ),
+      );
+
+      expect(find.text('Briefing'), findsOneWidget);
+      expect(find.text('AI summary'), findsNothing);
+      expect(
+        find.bySemanticsLabel("Briefing. Anna's companion"),
+        findsOneWidget,
+      );
+      semantics.dispose();
+    });
+
+    testWidgets('with no agent name the semantics label is the title alone', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      await tester.pumpWidget(
+        makeTestableWidget(
+          TldrHeader(title: 'Briefing', agentName: null, onAgentTap: () {}),
+        ),
+      );
+
+      expect(find.bySemanticsLabel('Briefing'), findsOneWidget);
+      semantics.dispose();
     });
   });
 
@@ -411,6 +517,26 @@ void main() {
         greaterThan(
           tester.getBottomLeft(find.text('Full report details.')).dy,
         ),
+      );
+    });
+
+    testWidgets('the disclosure carries the host-supplied key, so a failure '
+        'names the surface it happened on', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          const _DisclosureHarness(
+            disclosureKey: ValueKey('relationship-briefing-expand'),
+          ),
+        ),
+      );
+
+      expect(
+        find.byKey(const ValueKey('relationship-briefing-expand')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('taskAgentReportDisclosure')),
+        findsNothing,
       );
     });
 

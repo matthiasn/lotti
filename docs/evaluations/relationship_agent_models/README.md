@@ -8,10 +8,14 @@ the production contract itself:
 `test/features/agents/eval/relationship/support/relationship_agent_spec.dart`
 re-exports it and keeps the policy matrix the scenarios are derived from.
 
-**The target model is `deepseek-v4-flash`.** It is the viable option on
-cost for an agent that may run for many tracked people every day, so the
-contract is tuned until it works well there — stronger models are the
-control group, not the goal.
+**The target model is `deepseek-v4-flash-0731`.** It is the viable option
+on cost for an agent that may run for many tracked people every day, so
+the contract is tuned until it works well there — stronger models are the
+control group, not the goal. Use the **dated snapshot**, never the
+floating `deepseek-v4-flash` alias: the goal matrix caught that alias
+returning five consecutive `HTTP 503`, and a run against a dead alias is
+indistinguishable from a model that fails every case. Pinning carries a
+staleness cost, and that is the cheaper of the two.
 
 ## What is measured
 
@@ -95,16 +99,37 @@ Live (costs money; everything is manual, no CI runs these):
 ```bash
 LOTTI_RELATIONSHIP_AGENT_EVAL_LIVE=1 \
 RELATIONSHIP_AGENT_EVAL_API_KEY=$RELATIONSHIP_EVALS_MELIOUS_KEY \
-RELATIONSHIP_AGENT_EVAL_MODELS=deepseek-v4-flash \
+RELATIONSHIP_AGENT_EVAL_MODELS=deepseek-v4-flash-0731 \
 fvm flutter test test/features/agents/eval/relationship/ \
   --tags eval-live --plain-name 'relationship-agent inference report'
 ```
+
+One sample is not a measurement. The goal suite measured its own noise
+floor over five identical runs — total range 10, sd 3.7 per 250 cases — so a
+single pass over this suite's 24 cases cannot separate a real regression
+from a redraw. Use the matrix runner, which drives N samples per model as
+separate processes (GetIt is a global, so two runs cannot share a Dart VM)
+and merges the artifacts into one report:
+
+```bash
+RELATIONSHIP_AGENT_EVAL_API_KEY=$RELATIONSHIP_EVALS_MELIOUS_KEY \
+scripts/relationship_agent_eval_matrix.sh 5 4    # 5 samples, 4 at a time
+```
+
+It defaults to `deepseek-v4-flash-0731` (the target) plus `glm-5.2` (the
+control group), and writes
+`eval_artifacts/relationship_agent_<stamp>/relationship_agent_merged_report.md`
+with the leaderboard, the scenario x model matrix, every failure and the
+cost table. The merge is `tool/agent_eval_report.dart`, shared with the goal
+suite: it derives the subject noun and the wakes-per-day default from the
+artifact `kind`, and refuses to merge two suites into one table.
 
 `RELATIONSHIP_AGENT_EVAL_API_KEY` takes precedence over `MELIOUS_API_KEY`
 deliberately: relationship-eval spend runs on its own key so it bills
 separately from other eval work. Optional knobs:
 `RELATIONSHIP_AGENT_EVAL_MODELS` (comma-separated; defaults to
-`deepseek-v4-flash`), `RELATIONSHIP_AGENT_EVAL_SCENARIOS` (id filter),
+`deepseek-v4-flash-0731`), `RELATIONSHIP_AGENT_EVAL_SCENARIOS` (id
+filter),
 `RELATIONSHIP_AGENT_EVAL_TEMPERATURE` (default 0, the workflow's own
 setting), `RELATIONSHIP_AGENT_EVAL_WAKES_PER_DAY` (default 1),
 `RELATIONSHIP_AGENT_EVAL_JSON` / `RELATIONSHIP_AGENT_EVAL_MARKDOWN`
@@ -143,6 +168,6 @@ real monthly figure is bounded above by the extrapolation.
 - **Multi-language scenarios** — the contract requires visible text in
   the user's language; the matchers already carry German and Spanish
   negation cues, but every scenario here speaks English.
-- **No model results yet.** The first `deepseek-v4-flash` matrix run is
-  pending a dedicated API key; record results here the way the goal
+- **No model results yet.** The first `deepseek-v4-flash-0731` matrix run
+  is pending a dedicated API key; record results here the way the goal
   README does, with pass matrices and the cost table per run.

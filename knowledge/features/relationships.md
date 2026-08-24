@@ -40,6 +40,14 @@ sources:
     resource: ../../lib/features/agents/service/subject_agent_lookup.dart
     title: SubjectAgentResolver — the kind-agnostic agent lookup
     last_modified: 2026-08-17
+  - id: briefing-card
+    resource: ../../lib/features/relationships/ui/widgets/relationship_briefing_card.dart
+    title: RelationshipBriefingCard — the briefing on the shared AI panel
+    last_modified: 2026-08-24
+  - id: ai-card-chrome
+    resource: ../../lib/features/agents/ui/widgets/ai_card_chrome.dart
+    title: aiCardDecoration — the chrome every agent report card shares
+    last_modified: 2026-08-24
   - id: transcript-wait
     resource: ../../lib/features/relationships/service/check_in_transcription_service.dart
     title: CheckInTranscriptionService — waiting for a spoken check-in's transcript
@@ -419,6 +427,60 @@ removed:
   the dialog must see the same row — and a route that resolves to nothing
   at all throws (the card surfaces the failure) rather than reading as
   "local, proceed silently".
+
+## The briefing wears the shared AI panel
+
+`RelationshipBriefingCard` is not a relationship-shaped card; it is the
+**same "intelligence" panel** as the task agent's section on Task Details and
+the goal agent's read — `aiCardDecoration` chrome, `TldrHeader` identity
+(sparkle badge, title, agent display name, tap → `AgentInternalsPanel`), and
+`TldrBody` for the report prose. Three consequences follow from that reuse
+rather than from any relationship-specific code:
+
+* The briefing renders as **Markdown** (`AgentMarkdownView` → `GptMarkdown`).
+  Phase B writes headings, bold and lists; before the panel was shared, the
+  card printed them as literal `##` and `**`.
+* *Read more* / *Show less* and *Open agent internals* are the same control,
+  in the same place, with the same behaviour as on a task. `TldrBody` takes a
+  `disclosureKey` so a failing expectation still names the surface it fired
+  on; everything else is shared verbatim.
+* Retuning the wash, border or radius happens once in `ai_card_chrome.dart`
+  and lands on all three surfaces together.
+
+What the briefing does NOT borrow is the task footer's settings zone. Its
+band carries only the two things this panel can do — the per-person chat and
+"Brief me".
+
+The health band pill (`DsPill`, tinted with the band colour) sits in the card
+**body**, above the prose it qualifies — deliberately not in the header's
+trailing rail where the goal card keeps freshness and cost. That rail is
+capped at half the header width and its child ellipsizes: measured against
+real font metrics, "Braucht Aufmerksamkeit" already truncates on a 320 px
+phone at 1.0x text scale, and English "Needs attention" truncates at 1.6x.
+Truncating the card's headline judgement to make room for its own title is
+the wrong trade, so the pill takes the full content width instead. A widget
+test pins both halves: the label is whole at 320 px / German / 1.3x, *and*
+the pill is wider than the rail cap would have allowed — so the assertion
+cannot pass by the label happening to be short.
+
+Two small seams made the reuse possible rather than a fork:
+
+* `TldrHeader` grew an optional `title` — the briefing is the same panel
+  wearing a different noun, not a second header widget — and its trailing
+  slot is named `trailing`, since two of its three hosts put meta there
+  rather than a TTS control.
+* `resolveReportTldr` / `resolveReportAdditional` live beside `TldrBody` and
+  answer "what is the summary" and "what goes behind Read more" once, for
+  every report card. They were duplicated per card before, and the copies had
+  already drifted: only one of them suppressed a Read more whose full text
+  merely repeated the TLDR.
+
+The briefing agent is **named after the person it watches**
+(`RelationshipAgentService` sets `displayName` to the relationship title and
+keeps it in sync on rename), and the card sits under an app bar already
+carrying that name — so the header suppresses the subtitle when the two are
+equal. A name that has diverged is still shown: there it carries information
+the app bar does not.
 
 # Voice check-ins (plan v2 phase 6)
 

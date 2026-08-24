@@ -16,6 +16,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   every link that used to open one of those pages still opens it, and a back tap
   from one of them returns to Preferences rather than all the way to the top of
   Settings.
+- **A person's briefing is now the same AI card as everywhere else.** It used
+  to print the agent's own formatting on screen — `##` in front of headings,
+  asterisks around the words meant to be bold — on a plain grey panel of its
+  own design. The briefing now renders as proper text with real headings, bold
+  and lists, on the same washed AI card the task and goal agents already wear:
+  the same sparkle badge and title, the same "Read more" in the same place on
+  the left, and the same way into the agent's internals — from the card's name
+  at the top, or from the link that appears once the briefing is expanded. The
+  chat and "Brief me" buttons moved down into the card's own footer strip.
+- **"Log check-in" is painted as the primary action it is.** The button was
+  wearing a neutral fill while "Link task" a few rows above it used the app's
+  accent; both now use the accent.
+- **Check-in topics look like labels do elsewhere in the app.** They were
+  rounded Material chips; they are now the same square-cornered tag pills the
+  rest of the app uses for labels and read-outs.
 
 ### Fixed
 - **Daily habit reminders arrived hours late on iPhone, iPad and Android.** The

@@ -481,8 +481,8 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
     final automaticUpdatesEnabled =
         effectiveIdentity.config.automaticUpdatesEnabledEffective;
 
-    final tldr = _resolveTldr(report);
-    final additionalReport = _resolveAdditionalReport(report);
+    final tldr = resolveReportTldr(report);
+    final additionalReport = resolveReportAdditional(report);
 
     final isRunning = ref.watch(agentIsRunningProvider(agentId)).value ?? false;
     final list = _lastVisibleSuggestions;
@@ -599,6 +599,7 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
       ),
     );
     final reportBody = TldrBody(
+      disclosureKey: const ValueKey('taskAgentReportDisclosure'),
       tldr: tldr,
       expanded: _expanded,
       additionalReport: additionalReport,
@@ -669,7 +670,7 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
             TldrHeader(
               agentName: subtitle,
               onAgentTap: () => _openInternals(agentName: subtitle),
-              playbackControl: playbackControl,
+              trailing: playbackControl,
             ),
             // Reading order: the summary first, then the update CTA for the
             // summary just read, then the proposals. Quiet links already own
@@ -692,22 +693,6 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
         ),
       ),
     );
-  }
-
-  String _resolveTldr(AgentReportEntity? report) {
-    if (report == null) return '';
-    final explicit = report.tldr?.trim();
-    if (explicit != null && explicit.isNotEmpty) return explicit;
-    return report.content.trim();
-  }
-
-  String? _resolveAdditionalReport(AgentReportEntity? report) {
-    if (report == null) return null;
-    final content = report.content.trim();
-    if (content.isEmpty) return null;
-    final explicitTldr = report.tldr?.trim();
-    if (explicitTldr == null || explicitTldr.isEmpty) return null;
-    return content;
   }
 
   UnifiedSuggestionList? _resolveVisibleSuggestionList(

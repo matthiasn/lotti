@@ -83,7 +83,7 @@ if (( ${#artifacts[@]} == 0 )); then
   echo "No artifacts in $OUT_DIR — every run failed; see $LOG_DIR." >&2
   exit 1
 fi
-if ! fvm dart run tool/goal_agent_eval_report.dart \
+if ! fvm dart run tool/agent_eval_report.dart \
   "${artifacts[@]}" > "$OUT_DIR/goal_agent_merged_report.md"; then
   echo "Merge failed." >&2
   exit 1

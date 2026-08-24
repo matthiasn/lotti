@@ -18,9 +18,9 @@ import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 import '../../../../ai/eval/support/eval_text_matchers.dart';
+import '../../support/eval_cost_table.dart';
 import 'goal_agent_eval_scenarios.dart';
 import 'goal_agent_spec.dart';
-import 'goal_eval_cost_table.dart';
 
 const goalAgentEvalKind = 'lotti.goalAgentInferenceEvalReport';
 
@@ -76,7 +76,7 @@ enum GoalAgentEvalFailureCategory {
 }
 
 /// One (model, scenario) outcome.
-class GoalAgentEvalCaseResult implements GoalEvalCostCase {
+class GoalAgentEvalCaseResult implements AgentEvalCostCase {
   const GoalAgentEvalCaseResult({
     required this.modelId,
     required this.scenario,
@@ -254,10 +254,14 @@ class GoalAgentEvalReport {
     }
 
     buffer.write(
-      renderGoalEvalCostTable(
+      renderAgentEvalCostTable(
         modelIds: modelIds,
         cases: results,
         wakesPerDayAssumption: wakesPerDayAssumption,
+        subject: 'goal',
+        closingNote:
+            'Banner creation itself (ADR 0058) adds no image inference on '
+            'top of the Phase B text turn.',
       ),
     );
     return buffer.toString();

@@ -1,10 +1,41 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
 import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
-/// Calm identity header for the task-agent report.
+/// The summary line a report card shows collapsed: the report's own TLDR,
+/// or its full text when the run produced no separate one.
+///
+/// Shared with [resolveReportAdditional] by every agent report card so the
+/// task section, the goal read and the relationship briefing cannot drift
+/// into answering "what goes behind Read more" differently.
+String resolveReportTldr(AgentReportEntity? report) {
+  if (report == null) return '';
+  final explicit = report.tldr?.trim();
+  if (explicit != null && explicit.isNotEmpty) return explicit;
+  return report.content.trim();
+}
+
+/// What sits behind Read more, or null when there is nothing further to
+/// read: no content, no separate TLDR, or a full text that merely repeats
+/// the TLDR — all three would make the disclosure reveal the same paragraph
+/// the reader has already read.
+String? resolveReportAdditional(AgentReportEntity? report) {
+  if (report == null) return null;
+  final content = report.content.trim();
+  if (content.isEmpty) return null;
+  final explicit = report.tldr?.trim();
+  if (explicit == null || explicit.isEmpty) return null;
+  if (content == explicit) return null;
+  return content;
+}
+
+/// Calm identity header for an agent report card — the task agent's section
+/// on Task Details, the goal agent's read, and the relationship briefing all
+/// wear it, so the sparkle badge, the title tier and the tap-to-internals
+/// target are defined once.
 ///
 /// Report freshness and wake controls live in the stale strip and the card
 /// footer; the header keeps only the report identity and optional playback
@@ -15,21 +46,31 @@ class TldrHeader extends StatelessWidget {
   const TldrHeader({
     required this.agentName,
     required this.onAgentTap,
-    this.playbackControl,
+    this.title,
+    this.trailing,
     super.key,
   });
 
   final String? agentName;
   final VoidCallback onAgentTap;
 
-  /// Riverpod-aware playback control injected by the parent card.
-  final Widget? playbackControl;
+  /// The card's own name, when it is not the task/goal agent's
+  /// `aiCardTitle`. The relationship briefing is the same panel wearing a
+  /// different noun ("Briefing"), so it passes its own title rather than
+  /// growing a second header widget beside this one.
+  final String? title;
+
+  /// The header's trailing rail: whatever meta the host card wants beside
+  /// its identity — a TTS playback control on a task, cost and freshness on
+  /// a goal. Bounded to half the header, so pass something that can shrink.
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final ai = tokens.colors.aiCard;
     final messages = context.messages;
+    final cardTitle = title ?? messages.aiCardTitle;
     final displayName = agentName?.trim();
     final hasName = displayName != null && displayName.isNotEmpty;
 
@@ -52,9 +93,7 @@ class TldrHeader extends StatelessWidget {
                 alignment: AlignmentDirectional.centerStart,
                 child: Semantics(
                   button: true,
-                  label: hasName
-                      ? '${messages.aiCardTitle}. $displayName'
-                      : messages.aiCardTitle,
+                  label: hasName ? '$cardTitle. $displayName' : cardTitle,
                   excludeSemantics: true,
                   // No hover fill: a rectangle washing over the badge + title
                   // block made the card's identity read as a phantom button.
@@ -101,7 +140,7 @@ class TldrHeader extends StatelessWidget {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 _HeaderTitle(
-                                  text: messages.aiCardTitle,
+                                  text: cardTitle,
                                   style: tokens
                                       .typography
                                       .styles
@@ -135,7 +174,7 @@ class TldrHeader extends StatelessWidget {
                 ),
               ),
             ),
-            if (playbackControl case final control?) ...[
+            if (trailing case final control?) ...[
               SizedBox(width: tokens.spacing.step3),
               // Non-flex, so the identity block absorbs the slack and the
               // control stays flush to the trailing edge — but BOUNDED, because
@@ -206,6 +245,11 @@ class _HeaderTitle extends StatelessWidget {
 }
 
 /// Report body with its disclosure control placed after the content it owns.
+///
+/// Shared by every agent report surface that shows a summary with more
+/// behind it — the task agent's card and the relationship briefing — so the
+/// Markdown rendering, the reading-measure cap and the Read more / agent
+/// internals pair stay one implementation rather than three lookalikes.
 class TldrBody extends StatelessWidget {
   const TldrBody({
     required this.tldr,
@@ -213,6 +257,7 @@ class TldrBody extends StatelessWidget {
     required this.additionalReport,
     required this.onToggle,
     required this.onOpenInternals,
+    required this.disclosureKey,
     super.key,
   });
 
@@ -221,6 +266,11 @@ class TldrBody extends StatelessWidget {
   final String? additionalReport;
   final VoidCallback onToggle;
   final VoidCallback onOpenInternals;
+
+  /// Key on the Read more / Show less control. Required rather than
+  /// defaulted: a default would hand a fourth surface the task card's key
+  /// and make its failures name the wrong screen.
+  final Key disclosureKey;
 
   /// Reading-measure cap for the report prose. The card itself stays
   /// full-width, but body lines must not — unbounded desktop widths produce
@@ -279,7 +329,7 @@ class TldrBody extends StatelessWidget {
             children: [
               if (hasMore)
                 _QuietDisclosureLink(
-                  key: const ValueKey('taskAgentReportDisclosure'),
+                  key: disclosureKey,
                   label: expanded
                       ? messages.aiCardShowLess
                       : messages.aiCardReadMore,

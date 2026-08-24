@@ -1,13 +1,21 @@
-// Merges goal-agent eval JSON artifacts (one per model×sample process, as
-// written by goal_agent_eval_live_test.dart) into a single markdown report:
-// leaderboard, scenario×model matrix, failures, and observed cost with the
-// cost-per-goal-month extrapolation.
+// Merges agent-eval JSON artifacts (one per model×sample process, as written
+// by the goal- and relationship-agent live eval drivers) into a single
+// markdown report: leaderboard, scenario×model matrix, failures, and observed
+// cost with the cost-per-subject-month extrapolation.
+//
+// One merger rather than one per agent: the artifacts already share a shape
+// (kind / results / modelId / scenarioId / wakesPerDayAssumption), and the
+// only things that legitimately differ are the subject noun a wake is billed
+// against and its wakes-per-day default. Both are derived from the artifact
+// `kind`, so a new suite registers a row in [_subjects] instead of forking
+// this file.
 //
 // Usage:
-//   fvm dart run tool/goal_agent_eval_report.dart eval_artifacts/goal_agent_*.json
+//   fvm dart run tool/agent_eval_report.dart eval_artifacts/goal_agent_*.json
+//   fvm dart run tool/agent_eval_report.dart eval_artifacts/relationship_agent_*.json
 //
 // Pure Dart on purpose: runnable without a Flutter context, testable from
-// test/tool/goal_agent_eval_report_test.dart.
+// test/tool/agent_eval_report_test.dart.
 
 import 'dart:convert';
 import 'dart:io';
@@ -16,7 +24,7 @@ void main(List<String> args) {
   final paths = args.where((arg) => !arg.startsWith('--')).toList();
   if (paths.isEmpty) {
     stderr.writeln(
-      'Usage: dart run tool/goal_agent_eval_report.dart <artifact.json>...',
+      'Usage: dart run tool/agent_eval_report.dart <artifact.json>...',
     );
     exitCode = 2;
     return;
@@ -36,11 +44,79 @@ void main(List<String> args) {
     for (final path in paths)
       jsonDecode(File(path).readAsStringSync()) as Map<String, dynamic>,
   ];
-  stdout.write(buildGoalAgentEvalMergedReport(artifacts));
+  stdout.write(buildAgentEvalMergedReport(artifacts));
+}
+
+/// What a suite is billed against, derived from the artifact `kind`.
+///
+/// The noun drives every per-month column and the printed assumption; the
+/// wakes-per-day default only applies to artifacts written before the field
+/// existed, and matches each live driver's own default.
+class _EvalSubject {
+  const _EvalSubject({
+    required this.title,
+    required this.noun,
+    required this.defaultWakesPerDay,
+  });
+
+  final String title;
+  final String noun;
+  final int defaultWakesPerDay;
+}
+
+const _subjects = <String, _EvalSubject>{
+  'lotti.goalAgentInferenceEvalReport': _EvalSubject(
+    title: 'Goal-agent eval',
+    noun: 'goal',
+    defaultWakesPerDay: 3,
+  ),
+  'lotti.goalAgentOutcomeEvalReport': _EvalSubject(
+    title: 'Goal-agent outcome eval',
+    noun: 'goal',
+    defaultWakesPerDay: 3,
+  ),
+  'lotti.relationshipAgentInferenceEvalReport': _EvalSubject(
+    title: 'Relationship-agent eval',
+    noun: 'relationship',
+    defaultWakesPerDay: 1,
+  ),
+};
+
+/// Thrown when the artifact list cannot be merged into one honest report.
+class AgentEvalMergeException implements Exception {
+  const AgentEvalMergeException(this.message);
+  final String message;
+  @override
+  String toString() => message;
 }
 
 /// Builds the merged markdown report from parsed artifact JSON maps.
-String buildGoalAgentEvalMergedReport(List<Map<String, dynamic>> artifacts) {
+///
+/// Throws [AgentEvalMergeException] when the artifacts do not all come from
+/// the same suite: merging a goal run into a relationship run would average
+/// two different subjects into one per-month column and one leaderboard, and
+/// the resulting table would read as a measurement rather than a mistake.
+/// Same-suite artifacts that disagree about `wakesPerDayAssumption` are
+/// refused for the same reason — the assumption multiplies every per-month
+/// figure, so mixing two of them produces a column true of neither run.
+String buildAgentEvalMergedReport(List<Map<String, dynamic>> artifacts) {
+  final kinds = {
+    for (final artifact in artifacts) artifact['kind'] as String? ?? 'unknown',
+  };
+  if (kinds.length > 1) {
+    throw AgentEvalMergeException(
+      'Refusing to merge artifacts of different kinds: '
+      '${(kinds.toList()..sort()).join(', ')}. Merge each suite separately.',
+    );
+  }
+  final kind = kinds.isEmpty ? 'unknown' : kinds.first;
+  final subject = _subjects[kind];
+  if (subject == null) {
+    throw AgentEvalMergeException(
+      'Unknown eval artifact kind "$kind". Known kinds: '
+      '${(_subjects.keys.toList()..sort()).join(', ')}.',
+    );
+  }
   final results = <Map<String, dynamic>>[
     for (final artifact in artifacts)
       ...(artifact['results']! as List).cast<Map<String, dynamic>>(),
@@ -53,9 +129,25 @@ String buildGoalAgentEvalMergedReport(List<Map<String, dynamic>> artifacts) {
     final id = result['scenarioId']! as String;
     if (!scenarioIds.contains(id)) scenarioIds.add(id);
   }
-  final wakesPerDay = artifacts.isEmpty
-      ? 3
-      : artifacts.first['wakesPerDayAssumption'] as int? ?? 3;
+  // Every per-month column is this number times a per-wake figure, so two
+  // artifacts that disagree about it cannot be averaged into one honest
+  // column — and taking the first artifact's value would make the report
+  // depend on the order the files happened to be listed in. Refuse, the way
+  // a mixed-kind merge is refused.
+  final assumptions = {
+    for (final artifact in artifacts)
+      artifact['wakesPerDayAssumption'] as int? ?? subject.defaultWakesPerDay,
+  };
+  if (assumptions.length > 1) {
+    throw AgentEvalMergeException(
+      'Refusing to merge artifacts with different wakes/day assumptions: '
+      '${(assumptions.toList()..sort()).join(', ')}. '
+      'Report each assumption separately.',
+    );
+  }
+  final wakesPerDay = assumptions.isEmpty
+      ? subject.defaultWakesPerDay
+      : assumptions.first;
 
   Iterable<Map<String, dynamic>> casesFor(
     String modelId, [
@@ -80,7 +172,7 @@ String buildGoalAgentEvalMergedReport(List<Map<String, dynamic>> artifacts) {
   }
 
   final buffer = StringBuffer()
-    ..writeln('# Goal-agent eval — merged report')
+    ..writeln('# ${subject.title} — merged report')
     ..writeln()
     ..writeln(
       '${artifacts.length} artifact(s), ${results.length} cases, '
@@ -91,7 +183,8 @@ String buildGoalAgentEvalMergedReport(List<Map<String, dynamic>> artifacts) {
     ..writeln()
     ..writeln(
       '| Model | Cases | Pass | Pass rate | Mean in | Mean out | Credits | '
-      'Credits/goal-month* | Wh | Wh/goal-month* | Mean latency | '
+      'Credits/${subject.noun}-month* | Wh | Wh/${subject.noun}-month* | '
+      'Mean latency | '
       'P95 latency |',
     )
     ..writeln(
@@ -121,12 +214,12 @@ String buildGoalAgentEvalMergedReport(List<Map<String, dynamic>> artifacts) {
         .whereType<num>()
         .map((value) => value.toDouble())
         .toList();
-    final perGoalMonth = creditsSum == null
+    final perSubjectMonth = creditsSum == null
         ? null
         : creditsSum.$1 / creditsSum.$2 * wakesPerDay * 30;
     final energySum = sumOf(cases, 'energyWh');
     final energyWh = energySum?.$1;
-    final energyPerGoalMonth = energySum == null
+    final energyPerSubjectMonth = energySum == null
         ? null
         : energySum.$1 / energySum.$2 * wakesPerDay * 30;
     final rate = cases.isEmpty
@@ -136,9 +229,9 @@ String buildGoalAgentEvalMergedReport(List<Map<String, dynamic>> artifacts) {
       '| `$modelId` | ${cases.length} | $passedCount | $rate | '
       '${_meanCount(inputTokens)} | ${_meanCount(outputTokens)} | '
       '${credits?.toStringAsFixed(4) ?? 'not reported'} | '
-      '${perGoalMonth?.toStringAsFixed(4) ?? 'not reported'} | '
+      '${perSubjectMonth?.toStringAsFixed(4) ?? 'not reported'} | '
       '${energyWh?.toStringAsFixed(2) ?? 'not reported'} | '
-      '${energyPerGoalMonth?.toStringAsFixed(1) ?? 'not reported'} | '
+      '${energyPerSubjectMonth?.toStringAsFixed(1) ?? 'not reported'} | '
       '${_meanDuration(latencyValues)} | ${_p95Duration(latencyValues)} |',
     );
   }
@@ -183,7 +276,7 @@ String buildGoalAgentEvalMergedReport(List<Map<String, dynamic>> artifacts) {
   buffer
     ..writeln()
     ..writeln(
-      '*Per-goal-month figures extrapolate the per-case mean × '
+      '*Per-${subject.noun}-month figures extrapolate the per-case mean × '
       '$wakesPerDay LLM wakes/day × 30 days. The wakes/day figure is a '
       'printed assumption, not a measurement; deterministic Phase A ticks '
       'and procedural banner rendering (ADR 0058) cost nothing. All '

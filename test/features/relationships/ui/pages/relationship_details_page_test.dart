@@ -10,6 +10,8 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
+import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
@@ -450,6 +452,85 @@ void main() {
       expect(
         find.text('Could not delete this person. Please try again.'),
         findsOne,
+      );
+    },
+  );
+
+  testWidgets(
+    'the log-check-in FAB is the design-system primary action, labelled and '
+    'painted in the interactive accent — not a neutral Material pill',
+    (tester) async {
+      when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
+        (_) async => relationship(),
+      );
+      when(
+        () => mockRepository.getCheckInsForRelationship('rel-1'),
+      ).thenAnswer((_) async => []);
+
+      await tester.pumpWidget(buildPage());
+      await tester.pumpAndSettle();
+
+      final fab = find.byKey(
+        const ValueKey('relationship-log-check-in-fab'),
+      );
+      expect(fab, findsOneWidget);
+      expect(
+        find.byType(FloatingActionButton),
+        findsNothing,
+        reason: 'the Material default carried the wrong colour',
+      );
+
+      final button = tester.widget<DesignSystemFloatingActionButton>(fab);
+      expect(button.label, 'Log check-in');
+      expect(button.icon, LottiIcons.greeting);
+
+      final tokens = tester.element(fab).designTokens;
+      final ink = tester.widget<Ink>(
+        find.descendant(of: fab, matching: find.byType(Ink)),
+      );
+      expect(
+        (ink.decoration! as BoxDecoration).color,
+        tokens.colors.interactive.enabled,
+        reason: 'same accent as Link task and every other primary action',
+      );
+    },
+  );
+
+  testWidgets(
+    'check-in topics render as the design-system tag pill, the same read-out '
+    'shell labels wear elsewhere',
+    (tester) async {
+      when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
+        (_) async => relationship(),
+      );
+      when(
+        () => mockRepository.getCheckInsForRelationship('rel-1'),
+      ).thenAnswer(
+        (_) async => [
+          checkIn('check-1', topics: ['design tokens', 'Figma']),
+        ],
+      );
+
+      await tester.pumpWidget(buildPage());
+      await tester.pumpAndSettle();
+
+      final pills = tester
+          .widgetList<DsPill>(find.byType(DsPill))
+          .where((pill) => pill.shape == DsPillShape.tag)
+          .toList();
+      expect(pills.map((pill) => pill.label), ['design tokens', 'Figma']);
+      for (final pill in pills) {
+        expect(pill.variant, DsPillVariant.filled);
+        expect(
+          pill.bordered,
+          isTrue,
+          reason: 'the hairline is what separates a tag from bare text',
+        );
+      }
+      expect(
+        find.descendant(of: find.byType(Card), matching: find.byType(Chip)),
+        findsNothing,
+        reason: 'topics were the last Material Chip on the check-in row',
       );
     },
   );

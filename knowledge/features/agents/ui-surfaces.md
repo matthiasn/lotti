@@ -432,7 +432,10 @@ future planner creation.
 
 The panel is a dismissable right-side overlay (clamped 600–800 px) reachable from
 two affordances inside the AI card: the agent name link in the header, and the
-*Open agent internals* pill under the expanded report. It is a thin shell —
+*Open agent internals* pill under the expanded report. Both affordances come
+from the shared `TldrHeader` / `TldrBody` pair, so every surface wearing the AI
+card — the task agent section, the goal agent's read, and the relationship
+briefing — reaches the panel the same two ways. It is a thin shell —
 header, close button, scrim — hosting `AgentInternalsBody` once
 `agentIdentityProvider` resolves. A `barrierDismissible: true` route plus an
 explicit full-screen `GestureDetector` cover both pop paths.
@@ -444,7 +447,16 @@ component plus a Stats card wrapping the agent's template, profile, controls and
 current `AgentStateEntity`. There is no panel-specific logic; both consumers see
 the same tabs and behaviour. The Stats setup row opens the shared inference
 setup sheet for agent kinds that can persist instance profiles even when they do
-not own a task, such as goal agents. Task-only category defaults and direct
+not own a task, such as goal agents. Kinds on none of those paths omit the row
+entirely rather than reporting a route they cannot resolve: a relationship agent
+owns neither a task nor a template, so `agentResolvedSetupProvider` returns null
+*by construction*, and the row used to render that silence as "No AI setup" under
+an error glyph — about an agent that resolves its model through the person's own
+profile and briefs with it daily. The rule is keyed on the kind, not on a null
+resolution, because a null resolution for a kind that *should* have one is a real
+misconfiguration this row is the only place to see. A row that cannot be opened
+also drops its chevron, which otherwise promised a destination that does not
+exist. Task-only category defaults and direct
 thinking-model overrides remain hidden on that profile-only path. Because goal
 agents have no template assignment, their Stats row resolves the persisted
 identity profile directly through `goalAgentResolvedSetupProvider`; saving a
