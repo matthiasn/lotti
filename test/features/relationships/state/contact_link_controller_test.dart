@@ -42,7 +42,10 @@ class _FakeContactsService implements ContactsService {
 
 void main() {
   final testDate = DateTime(2026, 8, 17, 12);
-  final platformKey = contactRefPlatformKey();
+  // Refs are per-device: the key carries this device's sync host id, and a
+  // same-platform key with a different host belongs to another device.
+  const deviceKey = 'android:host-a';
+  const otherDeviceKey = 'android:host-b';
 
   late _FakeContactsService service;
   late MockRelationshipRepository repository;
@@ -93,11 +96,12 @@ void main() {
     ),
   );
 
-  ContactLinkController build() {
+  ContactLinkController build({String? refKey = deviceKey}) {
     final container = ProviderContainer(
       overrides: [
         contactsServiceProvider.overrideWithValue(service),
         relationshipRepositoryProvider.overrideWithValue(repository),
+        contactRefKeyProvider.overrideWith((ref) async => refKey),
       ],
     );
     addTearDown(container.dispose);
@@ -133,7 +137,7 @@ void main() {
 
         await build().linkContact(person());
 
-        expect(savedData().contactRefs, {platformKey: 'os-42'});
+        expect(savedData().contactRefs, {deviceKey: 'os-42'});
       },
     );
 
@@ -189,7 +193,7 @@ void main() {
       final outcome = await build().linkContact(
         person(
           channels: [channel(ContactChannelType.mobile, '+15550109999')],
-          refs: {platformKey: 'os-1'},
+          refs: {deviceKey: 'os-1'},
         ),
       );
 
@@ -207,12 +211,12 @@ void main() {
       final outcome = await build().linkContact(
         person(
           channels: [channel(ContactChannelType.mobile, '+15550109999')],
-          refs: {platformKey: 'os-1'},
+          refs: {deviceKey: 'os-1'},
         ),
       );
 
       expect(outcome, ContactLinkOutcome.linked);
-      expect(savedData().contactRefs[platformKey], 'os-99');
+      expect(savedData().contactRefs[deviceKey], 'os-99');
     });
 
     test('reports a cancelled picker without writing anything', () async {
@@ -253,8 +257,45 @@ void main() {
       final outcome = await build().linkContact(person());
 
       expect(outcome, ContactLinkOutcome.linked);
-      expect(savedData().contactRefs, {platformKey: 'os-7'});
+      expect(savedData().contactRefs, {deviceKey: 'os-7'});
     });
+
+    test(
+      "writes only into this device's slot, leaving a ref another device "
+      'wrote untouched',
+      () async {
+        service.picked = contact(
+          id: 'os-42',
+          channels: [channel(ContactChannelType.mobile, '+15550109999')],
+        );
+
+        await build().linkContact(
+          person(refs: {otherDeviceKey: 'their-os-id'}),
+        );
+
+        expect(savedData().contactRefs, {
+          otherDeviceKey: 'their-os-id',
+          deviceKey: 'os-42',
+        });
+      },
+    );
+
+    test(
+      'copies channels without storing a ref while the host id is unknown, '
+      'rather than parking the id under a key another device could collide '
+      'with',
+      () async {
+        service.picked = contact(
+          id: 'os-42',
+          channels: [channel(ContactChannelType.mobile, '+15550109999')],
+        );
+
+        final outcome = await build(refKey: null).linkContact(person());
+
+        expect(outcome, ContactLinkOutcome.linked);
+        expect(savedData().contactRefs, isEmpty);
+      },
+    );
   });
 
   group('refreshFromContact', () {
@@ -269,7 +310,7 @@ void main() {
       final outcome = await build().refreshFromContact(
         person(
           channels: [channel(ContactChannelType.mobile, '+15550109999')],
-          refs: {platformKey: 'os-1'},
+          refs: {deviceKey: 'os-1'},
         ),
       );
 
@@ -280,7 +321,7 @@ void main() {
     test('reads the contact the stored ref names', () async {
       service.byId = contact(id: 'os-5');
 
-      await build().refreshFromContact(person(refs: {platformKey: 'os-5'}));
+      await build().refreshFromContact(person(refs: {deviceKey: 'os-5'}));
 
       expect(service.readByIdArg, 'os-5');
     });
@@ -298,17 +339,51 @@ void main() {
 
     test('treats an empty ref as no ref', () async {
       final outcome = await build().refreshFromContact(
-        person(refs: {platformKey: ''}),
+        person(refs: {deviceKey: ''}),
       );
 
       expect(outcome, ContactLinkOutcome.contactMissing);
     });
 
     test(
+      "never resolves a ref another device wrote — a same-platform peer's "
+      'contact id would name an unrelated person in this address book',
+      () async {
+        service.byId = contact(
+          name: 'Wrong Person',
+          channels: [channel(ContactChannelType.mobile, '+15550100000')],
+        );
+
+        final outcome = await build().refreshFromContact(
+          person(refs: {otherDeviceKey: 'os-1'}),
+        );
+
+        expect(outcome, ContactLinkOutcome.contactMissing);
+        expect(
+          service.readByIdArg,
+          isNull,
+          reason:
+              "the other device's id must not even be looked up — ids are "
+              'only meaningful in the address book that assigned them',
+        );
+        verifyNever(() => repository.updateRelationship(any()));
+      },
+    );
+
+    test('reports the contact missing while the host id is unknown', () async {
+      final outcome = await build(refKey: null).refreshFromContact(
+        person(refs: {deviceKey: 'os-1'}),
+      );
+
+      expect(outcome, ContactLinkOutcome.contactMissing);
+      expect(service.readByIdArg, isNull);
+    });
+
+    test(
       'reports the contact missing when it was deleted from the device',
       () async {
         final outcome = await build().refreshFromContact(
-          person(refs: {platformKey: 'os-gone'}),
+          person(refs: {deviceKey: 'os-gone'}),
         );
 
         expect(outcome, ContactLinkOutcome.contactMissing);
@@ -324,7 +399,7 @@ void main() {
       final outcome = await build().refreshFromContact(
         person(
           channels: [channel(ContactChannelType.mobile, '+15550109999')],
-          refs: {platformKey: 'os-1'},
+          refs: {deviceKey: 'os-1'},
         ),
       );
 
@@ -335,7 +410,7 @@ void main() {
       service.supported = false;
 
       expect(
-        await build().refreshFromContact(person(refs: {platformKey: 'os-1'})),
+        await build().refreshFromContact(person(refs: {deviceKey: 'os-1'})),
         ContactLinkOutcome.unsupported,
       );
     });
@@ -349,7 +424,7 @@ void main() {
       );
 
       expect(
-        await build().refreshFromContact(person(refs: {platformKey: 'os-1'})),
+        await build().refreshFromContact(person(refs: {deviceKey: 'os-1'})),
         ContactLinkOutcome.saveFailed,
       );
     });

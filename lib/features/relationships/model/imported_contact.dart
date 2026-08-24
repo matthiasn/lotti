@@ -28,13 +28,15 @@ typedef ImportedContact = ({
 /// marked important by default and no agent is created behind the user's back
 /// (ADR 0041: dormant entities destroy the nudge signal).
 ///
-/// The OS id is recorded under [platformKey] ('ios' / 'android'), matching the
-/// per-platform shape of `contactRefs`: the same person's contact has
-/// different identifiers on different devices, so a ref is only meaningful on
-/// the device that wrote it.
+/// The OS id is recorded under [refKey] — this device's slot in the
+/// per-device `contactRefs` map (see `contactRefKeyForHost`): the same
+/// person's contact has different identifiers in every address book, so a
+/// ref is only meaningful on the device that wrote it. A `null` key (host id
+/// not yet provisioned) imports the person without a ref rather than parking
+/// the id under a key another device could collide with.
 RelationshipData relationshipDataFromContact(
   ImportedContact contact, {
-  required String platformKey,
+  required String? refKey,
   required RelationshipStatus status,
   bool important = false,
   int? checkInCadenceDays,
@@ -45,7 +47,7 @@ RelationshipData relationshipDataFromContact(
     important: important,
     checkInCadenceDays: checkInCadenceDays,
     contactChannels: contact.channels,
-    contactRefs: {platformKey: contact.id},
+    contactRefs: {?refKey: contact.id},
   );
 }
 

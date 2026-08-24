@@ -56,15 +56,17 @@ class ContactLinkController {
   /// Re-reads the contact this person is already linked to and copies over
   /// anything new. Returns [ContactLinkOutcome.contactMissing] when the ref
   /// resolves to nothing, which is the normal case on a second device: refs
-  /// are per-platform and per-device, so a person linked on a phone carries
-  /// a ref that means nothing on a tablet.
+  /// are per-device, so a person linked on one phone carries a ref that
+  /// means nothing anywhere else — including on a second phone running the
+  /// same OS.
   Future<ContactLinkOutcome> refreshFromContact(
     RelationshipEntry relationship,
   ) async {
     final service = _ref.read(contactsServiceProvider);
     if (!service.isSupported) return ContactLinkOutcome.unsupported;
 
-    final ref = relationship.data.contactRefs[contactRefPlatformKey()];
+    final refKey = await _ref.read(contactRefKeyProvider.future);
+    final ref = refKey == null ? null : relationship.data.contactRefs[refKey];
     if (ref == null || ref.isEmpty) return ContactLinkOutcome.contactMissing;
 
     final contact = await service.readById(ref);
@@ -78,7 +80,8 @@ class ContactLinkController {
   /// The person's own title is deliberately left alone: they may have been
   /// renamed here on purpose ("Mum" rather than "Margaret Schmidt"), and a
   /// contact refresh silently overwriting that would be a bad surprise.
-  /// Only channels and the ref are copied.
+  /// Only channels and the ref are copied — and the ref only into this
+  /// device's slot, leaving every other device's entry untouched.
   Future<ContactLinkOutcome> _applyContact(
     RelationshipEntry relationship,
     ImportedContact contact,
@@ -89,9 +92,9 @@ class ContactLinkController {
     );
 
     final refs = Map<String, String>.from(relationship.data.contactRefs);
-    final refKey = contactRefPlatformKey();
-    final refUnchanged = refs[refKey] == contact.id;
-    refs[refKey] = contact.id;
+    final refKey = await _ref.read(contactRefKeyProvider.future);
+    final refUnchanged = refKey == null || refs[refKey] == contact.id;
+    if (refKey != null) refs[refKey] = contact.id;
 
     final channelsUnchanged =
         merged.length == relationship.data.contactChannels.length;

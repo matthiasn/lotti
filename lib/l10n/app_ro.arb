@@ -1391,9 +1391,21 @@
   "checkInAvoidLabel": "De evitat",
   "checkInDateLabel": "Când?",
   "checkInDeleteConfirmMessage": "Ștergeți această înregistrare? Acțiunea nu poate fi anulată.",
+  "checkInDone": "Gata",
+  "@checkInDone": {
+    "description": "Relationships redesign label."
+  },
   "checkInEditTitle": "Editați înregistrarea",
   "checkInErrorCreateFailed": "Înregistrarea nu a putut fi salvată. Încercați din nou.",
   "checkInErrorDeleteFailed": "Înregistrarea nu a putut fi ștearsă. Încercați din nou.",
+  "checkInHowDidItFeel": "Cum a fost?",
+  "@checkInHowDidItFeel": {
+    "description": "Relationships redesign label."
+  },
+  "checkInHowDidYouConnect": "Cum a fost contactul?",
+  "@checkInHowDidYouConnect": {
+    "description": "Relationships redesign label."
+  },
   "checkInInteractionCall": "Apel",
   "checkInInteractionInPerson": "În persoană",
   "checkInInteractionLabel": "Cum ați vorbit?",
@@ -1402,6 +1414,7 @@
   "checkInInteractionVideoCall": "Apel video",
   "checkInNarrativeLabel": "Despre ce ați vorbit?",
   "checkInPayAttentionLabel": "Data viitoare, acordați atenție la",
+  "checkInPreparedOverline": "✦ LOTTI · PREGĂTIT AZI-DIMINEAȚĂ",
   "checkInSentimentDelightful": "Minunat",
   "checkInSentimentDifficult": "Dificil",
   "checkInSentimentGood": "Bine",
@@ -1414,6 +1427,10 @@
   "checkInTranscribingLabel": "Se transcrie…",
   "checkInTranscriptFailed": "Nu a venit nicio transcriere. O puteți scrie dvs.",
   "checkInTranscriptUnavailable": "Transcrierea nu este configurată pentru această persoană. Adăugați un model audio și activați inferența automată pentru categoria sa, sau scrieți contactul.",
+  "checkInWriteInstead": "Scrie în schimb",
+  "@checkInWriteInstead": {
+    "description": "Relationships redesign label."
+  },
   "checklistAddItem": "Adăugați un element nou",
   "checklistAiConfidenceLabel": "Încredere: {level}",
   "@checklistAiConfidenceLabel": {
@@ -4013,6 +4030,10 @@
   "relationshipActionFailed": "Nimic de pe acest dispozitiv nu poate deschide acest lucru",
   "relationshipActionMessage": "Mesaj",
   "relationshipAddChannelButton": "Adăugați o modalitate de contact",
+  "relationshipAsk": "Întreabă",
+  "@relationshipAsk": {
+    "description": "Relationships redesign label."
+  },
   "relationshipBannerSemanticLabel": "Banner de relație pentru {personName}",
   "relationshipBriefingDisclosureBody": "Rezumatul rulează pe {provider}. Notițele despre această persoană vor fi trimise acolo pentru procesare.",
   "relationshipBriefingDisclosureConfirm": "Continuați",
@@ -4021,16 +4042,36 @@
   "relationshipBriefingRequested": "Rezumat solicitat — va apărea aici în curând.",
   "relationshipBriefingRequestFailed": "Rezumatul nu a putut fi solicitat.",
   "relationshipBriefingTitle": "Rezumat",
+  "relationshipBriefMeAgain": "Pune-mă la curent din nou",
+  "@relationshipBriefMeAgain": {
+    "description": "Relationships redesign label."
+  },
   "relationshipBriefMeButton": "Pune-mă la curent",
   "relationshipCadenceEveryNDays": "{days, plural, =1{În fiecare zi} few{La fiecare {days} zile} other{La fiecare {days} de zile}}",
   "relationshipCadenceFortnightly": "La două săptămâni",
   "relationshipCadenceLabel": "Ritmul contactului",
   "relationshipCadenceMonthly": "Lunar",
   "relationshipCadenceNone": "Fără ritm",
+  "relationshipCadenceNudgeNote": "Alegerea unui ritm activează memento-urile de înregistrare.",
+  "@relationshipCadenceNudgeNote": {
+    "description": "Relationships redesign label."
+  },
+  "relationshipCadenceOnTrack": "la zi",
+  "@relationshipCadenceOnTrack": {
+    "description": "Relationships redesign label."
+  },
   "relationshipCadenceQuarterly": "Trimestrial",
   "relationshipCadenceWeekly": "Săptămânal",
   "relationshipChatTooltip": "Discutați despre această persoană",
   "relationshipChatUnavailable": "Niciun agent încă — marcați mai întâi această persoană ca importantă.",
+  "relationshipCheckedInLabel": "Înregistrare {date}",
+  "@relationshipCheckedInLabel": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipCheckInReminderBody": "Un moment bun pentru a lua legătura.",
   "relationshipCheckInReminderTitle": "Luați legătura cu {name}?",
   "@relationshipCheckInReminderTitle": {
@@ -4041,6 +4082,18 @@
     }
   },
   "relationshipCheckInsLabel": "Înregistrări",
+  "relationshipCheckInTitle": "Înregistrare · {name}",
+  "@relationshipCheckInTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipContactCardAction": "Card de contact",
+  "@relationshipContactCardAction": {
+    "description": "Relationships redesign label."
+  },
   "relationshipContactChannelsLabel": "Date de contact",
   "relationshipContactLinked": "Datele de contact au fost copiate",
   "relationshipContactLinkFailed": "Datele de contact nu au putut fi salvate",
@@ -4049,6 +4102,14 @@
   "relationshipCreateTitle": "Adăugați o persoană",
   "relationshipDeleteConfirmMessage": "Se vor șterge și toate înregistrările asociate. Acțiunea nu poate fi anulată.",
   "relationshipDeleteConfirmTitle": "Ștergeți {name}?",
+  "relationshipDueDay": "Până {day}",
+  "@relationshipDueDay": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipEditTitle": "Editați persoana",
   "relationshipErrorCreateFailed": "Persoana nu a putut fi salvată. Încercați din nou.",
   "relationshipErrorDeleteFailed": "Persoana nu a putut fi ștearsă. Încercați din nou.",
@@ -4076,17 +4137,45 @@
   "relationshipImportSettingsBody": "Accesul la contacte este dezactivat. Activați-l din setările sistemului pentru a importa persoane.",
   "relationshipImportTitle": "Adăugați persoane",
   "relationshipImportUnsupported": "Importul de contacte este disponibil pe telefoane și tablete. Adăugați aici datele de contact manual.",
+  "relationshipJustAdded": "Adăugat recent",
+  "@relationshipJustAdded": {
+    "description": "Relationships redesign label."
+  },
   "relationshipLastCheckInLabel": "Ultima înregistrare {date}",
   "relationshipLinkContact": "Asociați un contact",
   "relationshipLinkedTasksLabel": "Sarcini",
   "relationshipLinkTaskButton": "Asociați o sarcină",
   "relationshipLogCheckIn": "Înregistrați un contact",
+  "relationshipLottisRead": "Părerea Lotti",
+  "@relationshipLottisRead": {
+    "description": "Relationships redesign label."
+  },
+  "relationshipLottisReadAsOf": "la {time}",
+  "@relationshipLottisReadAsOf": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipNameLabel": "Nume",
   "relationshipNameRequired": "Numele este obligatoriu",
+  "relationshipNextByDay": "următorul până {day}",
+  "@relationshipNextByDay": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipNicknameLabel": "Poreclă",
   "relationshipNoCheckIns": "Nicio înregistrare încă — adăugați una după următoarea conversație.",
   "relationshipNoLinkedTasks": "Nicio sarcină asociată încă.",
   "relationshipNotFound": "Această persoană nu mai este urmărită.",
+  "relationshipNudgesOn": "memento-uri active",
+  "@relationshipNudgesOn": {
+    "description": "Relationships redesign label."
+  },
   "relationshipPostCallBody": "Tocmai ați luat legătura. Doriți să notați un check-in cât este proaspăt?",
   "relationshipPostCallConfirm": "Notați check-in",
   "relationshipPostCallDismiss": "Nu acum",
@@ -4099,13 +4188,33 @@
       }
     }
   },
+  "relationshipQuietForDays": "Fără contact {count, plural, =1{de 1 zi} other{de {count} zile}}",
+  "@relationshipQuietForDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "relationshipRelinkContact": "Asociați alt contact",
+  "relationshipSeeAllCheckIns": "Vezi toate înregistrările",
+  "@relationshipSeeAllCheckIns": {
+    "description": "Relationships redesign label."
+  },
   "relationshipsEmptyState": "Adăugați persoanele de care doriți să rămâneți aproape.",
   "relationshipsPageTitle": "Persoane",
   "relationshipStatusActive": "Activă",
   "relationshipStatusArchived": "Arhivată",
   "relationshipStatusDormant": "Inactivă",
   "relationshipStatusFieldLabel": "Stare",
+  "relationshipStayingInTouch": "Menținerea contactului",
+  "@relationshipStayingInTouch": {
+    "description": "Relationships redesign label."
+  },
+  "relationshipStayInTouch": "Menține contactul",
+  "@relationshipStayInTouch": {
+    "description": "Relationships redesign label."
+  },
   "relationshipTrackingSinceLabel": "Urmărire din {date}",
   "relationshipUpdateFromContact": "Actualizați din contact",
   "saveButton": "Salvați",

@@ -62,7 +62,8 @@ class _FakeContactLinkController implements ContactLinkController {
 
 void main() {
   final testDate = DateTime(2026, 8, 17, 12);
-  final platformKey = contactRefPlatformKey();
+  // Refs are per-device: the key carries this device's sync host id.
+  const deviceKey = 'android:host-a';
 
   RelationshipEntry person({Map<String, String> refs = const {}}) =>
       RelationshipEntry(
@@ -99,6 +100,7 @@ void main() {
             _FakeContactsService(supported: supported),
           ),
           contactLinkControllerProvider.overrideWithValue(controller),
+          contactRefKeyProvider.overrideWith((ref) async => deviceKey),
         ],
       ),
     );
@@ -115,25 +117,34 @@ void main() {
     });
 
     testWidgets('a linked person gets the menu instead', (tester) async {
-      await pump(tester, relationship: person(refs: {platformKey: 'os-1'}));
+      await pump(tester, relationship: person(refs: {deviceKey: 'os-1'}));
 
       expect(find.byIcon(LottiIcons.contactCard), findsOneWidget);
       expect(find.byIcon(LottiIcons.findPerson), findsNothing);
     });
 
     testWidgets('an empty ref counts as unlinked', (tester) async {
-      await pump(tester, relationship: person(refs: {platformKey: ''}));
+      await pump(tester, relationship: person(refs: {deviceKey: ''}));
 
       expect(find.byIcon(LottiIcons.findPerson), findsOneWidget);
     });
 
-    testWidgets('a ref belonging to another platform counts as unlinked — '
-        'refs do not travel between devices', (tester) async {
-      final otherPlatform = platformKey == 'ios' ? 'android' : 'ios';
+    testWidgets('a ref another device wrote counts as unlinked — even one '
+        'from a device on the same platform', (tester) async {
+      await pump(
+        tester,
+        relationship: person(
+          refs: {'android:host-b': 'os-1', 'ios:host-c': 'os-2'},
+        ),
+      );
 
-      await pump(tester, relationship: person(refs: {otherPlatform: 'os-1'}));
-
-      expect(find.byIcon(LottiIcons.findPerson), findsOneWidget);
+      expect(
+        find.byIcon(LottiIcons.findPerson),
+        findsOneWidget,
+        reason:
+            'offering "update from contact" here would resolve another '
+            "device's contact id against this device's address book",
+      );
     });
 
     testWidgets('renders nothing where there is no address book', (
@@ -150,7 +161,7 @@ void main() {
     testWidgets('offers refreshing and re-linking as separate intents', (
       tester,
     ) async {
-      await pump(tester, relationship: person(refs: {platformKey: 'os-1'}));
+      await pump(tester, relationship: person(refs: {deviceKey: 'os-1'}));
 
       await tester.tap(find.byIcon(LottiIcons.contactCard));
       await tester.pumpAndSettle();
@@ -162,7 +173,7 @@ void main() {
     testWidgets('refreshing re-reads the linked contact', (tester) async {
       final controller = await pump(
         tester,
-        relationship: person(refs: {platformKey: 'os-1'}),
+        relationship: person(refs: {deviceKey: 'os-1'}),
       );
 
       await tester.tap(find.byIcon(LottiIcons.contactCard));
@@ -176,7 +187,7 @@ void main() {
     testWidgets('re-linking opens the picker instead', (tester) async {
       final controller = await pump(
         tester,
-        relationship: person(refs: {platformKey: 'os-1'}),
+        relationship: person(refs: {deviceKey: 'os-1'}),
       );
 
       await tester.tap(find.byIcon(LottiIcons.contactCard));

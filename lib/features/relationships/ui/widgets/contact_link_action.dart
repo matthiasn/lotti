@@ -28,8 +28,13 @@ class ContactLinkAction extends ConsumerWidget {
 
   final RelationshipEntry relationship;
 
-  bool get _isLinked {
-    final ref = relationship.data.contactRefs[contactRefPlatformKey()];
+  /// Whether *this device* holds a ref for the person. Refs written by other
+  /// devices live under their own keys and deliberately do not count: a
+  /// menu offering "update from contact" for an address book this device
+  /// does not have would resolve to nothing — or to the wrong person.
+  bool _isLinked(String? refKey) {
+    if (refKey == null) return false;
+    final ref = relationship.data.contactRefs[refKey];
     return ref != null && ref.isNotEmpty;
   }
 
@@ -82,7 +87,11 @@ class ContactLinkAction extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    if (!_isLinked) {
+    // While the key is still resolving (one frame at most — the host id is
+    // read from memory) the person renders as unlinked, which offers the
+    // link action; both of that frame's states are safe to act on.
+    final refKey = ref.watch(contactRefKeyProvider).value;
+    if (!_isLinked(refKey)) {
       return IconButton(
         tooltip: context.messages.relationshipLinkContact,
         icon: const Icon(LottiIcons.findPerson),

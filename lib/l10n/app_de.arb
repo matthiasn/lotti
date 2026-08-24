@@ -1391,9 +1391,21 @@
   "checkInAvoidLabel": "Besser vermeiden",
   "checkInDateLabel": "Wann?",
   "checkInDeleteConfirmMessage": "Diesen Check-in löschen? Das lässt sich nicht rückgängig machen.",
+  "checkInDone": "Fertig",
+  "@checkInDone": {
+    "description": "Relationships redesign label."
+  },
   "checkInEditTitle": "Check-in bearbeiten",
   "checkInErrorCreateFailed": "Check-in konnte nicht gespeichert werden. Bitte versuch es erneut.",
   "checkInErrorDeleteFailed": "Check-in konnte nicht gelöscht werden. Bitte versuch es erneut.",
+  "checkInHowDidItFeel": "Wie hat es sich angefühlt?",
+  "@checkInHowDidItFeel": {
+    "description": "Relationships redesign label."
+  },
+  "checkInHowDidYouConnect": "Wie habt ihr Kontakt gehabt?",
+  "@checkInHowDidYouConnect": {
+    "description": "Relationships redesign label."
+  },
   "checkInInteractionCall": "Anruf",
   "checkInInteractionInPerson": "Persönlich",
   "checkInInteractionLabel": "Wie habt ihr gesprochen?",
@@ -1402,6 +1414,7 @@
   "checkInInteractionVideoCall": "Videoanruf",
   "checkInNarrativeLabel": "Worüber habt ihr gesprochen?",
   "checkInPayAttentionLabel": "Nächstes Mal achten auf",
+  "checkInPreparedOverline": "✦ LOTTI · HEUTE MORGEN VORBEREITET",
   "checkInSentimentDelightful": "Wunderbar",
   "checkInSentimentDifficult": "Schwierig",
   "checkInSentimentGood": "Gut",
@@ -1414,6 +1427,10 @@
   "checkInTranscribingLabel": "Wird transkribiert…",
   "checkInTranscriptFailed": "Es kam keine Transkription zurück. Du kannst es auch tippen.",
   "checkInTranscriptUnavailable": "Transkription ist für diese Person nicht eingerichtet. Füge ein Audiomodell hinzu und aktiviere die automatische Inferenz für ihre Kategorie, oder tippe das Check-in.",
+  "checkInWriteInstead": "Lieber schreiben",
+  "@checkInWriteInstead": {
+    "description": "Relationships redesign label."
+  },
   "checklistAddItem": "Neues Element hinzufügen",
   "checklistAiConfidenceLabel": "Konfidenz: {level}",
   "@checklistAiConfidenceLabel": {
@@ -4013,6 +4030,10 @@
   "relationshipActionFailed": "Auf diesem Gerät kann das nichts öffnen",
   "relationshipActionMessage": "Nachricht",
   "relationshipAddChannelButton": "Kontaktweg hinzufügen",
+  "relationshipAsk": "Fragen",
+  "@relationshipAsk": {
+    "description": "Relationships redesign label."
+  },
   "relationshipBannerSemanticLabel": "Beziehungs-Banner für {personName}",
   "relationshipBriefingDisclosureBody": "Das Briefing läuft über {provider}. Notizen zu dieser Person werden dorthin zur Verarbeitung gesendet.",
   "relationshipBriefingDisclosureConfirm": "Weiter",
@@ -4021,16 +4042,36 @@
   "relationshipBriefingRequested": "Briefing angefragt — es erscheint gleich hier.",
   "relationshipBriefingRequestFailed": "Briefing konnte nicht angefragt werden.",
   "relationshipBriefingTitle": "Briefing",
+  "relationshipBriefMeAgain": "Erneut briefen",
+  "@relationshipBriefMeAgain": {
+    "description": "Relationships redesign label."
+  },
   "relationshipBriefMeButton": "Brief mich",
   "relationshipCadenceEveryNDays": "{days, plural, =1{Jeden Tag} other{Alle {days} Tage}}",
   "relationshipCadenceFortnightly": "Alle zwei Wochen",
   "relationshipCadenceLabel": "Check-in-Rhythmus",
   "relationshipCadenceMonthly": "Monatlich",
   "relationshipCadenceNone": "Kein Rhythmus",
+  "relationshipCadenceNudgeNote": "Ein Rhythmus aktiviert Check-in-Erinnerungen.",
+  "@relationshipCadenceNudgeNote": {
+    "description": "Relationships redesign label."
+  },
+  "relationshipCadenceOnTrack": "im Rhythmus",
+  "@relationshipCadenceOnTrack": {
+    "description": "Relationships redesign label."
+  },
   "relationshipCadenceQuarterly": "Vierteljährlich",
   "relationshipCadenceWeekly": "Wöchentlich",
   "relationshipChatTooltip": "Über diese Person chatten",
   "relationshipChatUnavailable": "Noch kein Agent — markiere diese Person zuerst als wichtig.",
+  "relationshipCheckedInLabel": "Check-in {date}",
+  "@relationshipCheckedInLabel": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipCheckInReminderBody": "Ein guter Moment, dich zu melden.",
   "relationshipCheckInReminderTitle": "Bei {name} melden?",
   "@relationshipCheckInReminderTitle": {
@@ -4041,6 +4082,18 @@
     }
   },
   "relationshipCheckInsLabel": "Check-ins",
+  "relationshipCheckInTitle": "Check-in · {name}",
+  "@relationshipCheckInTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipContactCardAction": "Visitenkarte",
+  "@relationshipContactCardAction": {
+    "description": "Relationships redesign label."
+  },
   "relationshipContactChannelsLabel": "Kontaktdaten",
   "relationshipContactLinked": "Kontaktdaten übernommen",
   "relationshipContactLinkFailed": "Kontaktdaten konnten nicht gespeichert werden",
@@ -4049,6 +4102,14 @@
   "relationshipCreateTitle": "Person hinzufügen",
   "relationshipDeleteConfirmMessage": "Auch alle Check-ins werden gelöscht. Das lässt sich nicht rückgängig machen.",
   "relationshipDeleteConfirmTitle": "{name} löschen?",
+  "relationshipDueDay": "Fällig {day}",
+  "@relationshipDueDay": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipEditTitle": "Person bearbeiten",
   "relationshipErrorCreateFailed": "Person konnte nicht gespeichert werden. Bitte versuch es erneut.",
   "relationshipErrorDeleteFailed": "Person konnte nicht gelöscht werden. Bitte versuch es erneut.",
@@ -4076,17 +4137,45 @@
   "relationshipImportSettingsBody": "Der Kontaktzugriff ist deaktiviert. Aktiviere ihn in den Systemeinstellungen, um Personen zu importieren.",
   "relationshipImportTitle": "Personen hinzufügen",
   "relationshipImportUnsupported": "Der Kontaktimport ist auf Smartphones und Tablets verfügbar. Trag die Kontaktdaten hier von Hand ein.",
+  "relationshipJustAdded": "Gerade hinzugefügt",
+  "@relationshipJustAdded": {
+    "description": "Relationships redesign label."
+  },
   "relationshipLastCheckInLabel": "Letzter Check-in {date}",
   "relationshipLinkContact": "Kontakt verknüpfen",
   "relationshipLinkedTasksLabel": "Aufgaben",
   "relationshipLinkTaskButton": "Aufgabe verknüpfen",
   "relationshipLogCheckIn": "Check-in erfassen",
+  "relationshipLottisRead": "Lottis Einschätzung",
+  "@relationshipLottisRead": {
+    "description": "Relationships redesign label."
+  },
+  "relationshipLottisReadAsOf": "Stand {time}",
+  "@relationshipLottisReadAsOf": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipNameLabel": "Name",
   "relationshipNameRequired": "Ein Name ist erforderlich",
+  "relationshipNextByDay": "nächstens bis {day}",
+  "@relationshipNextByDay": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipNicknameLabel": "Spitzname",
   "relationshipNoCheckIns": "Noch keine Check-ins — erfasse einen nach eurem nächsten Gespräch.",
   "relationshipNoLinkedTasks": "Noch keine Aufgaben verknüpft.",
   "relationshipNotFound": "Diese Person ist nicht mehr in deiner Liste.",
+  "relationshipNudgesOn": "Erinnerungen an",
+  "@relationshipNudgesOn": {
+    "description": "Relationships redesign label."
+  },
   "relationshipPostCallBody": "Du hast dich gerade gemeldet. Willst du gleich einen Check-in festhalten?",
   "relationshipPostCallConfirm": "Check-in festhalten",
   "relationshipPostCallDismiss": "Jetzt nicht",
@@ -4099,13 +4188,33 @@
       }
     }
   },
+  "relationshipQuietForDays": "Seit {count, plural, =1{einem Tag} other{{count} Tagen}} keine Nachricht",
+  "@relationshipQuietForDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "relationshipRelinkContact": "Anderen Kontakt verknüpfen",
+  "relationshipSeeAllCheckIns": "Alle Check-ins ansehen",
+  "@relationshipSeeAllCheckIns": {
+    "description": "Relationships redesign label."
+  },
   "relationshipsEmptyState": "Füge die Menschen hinzu, denen du nah bleiben willst.",
   "relationshipsPageTitle": "Menschen",
   "relationshipStatusActive": "Aktiv",
   "relationshipStatusArchived": "Archiviert",
   "relationshipStatusDormant": "Ruhend",
   "relationshipStatusFieldLabel": "Status",
+  "relationshipStayingInTouch": "Kontakt halten",
+  "@relationshipStayingInTouch": {
+    "description": "Relationships redesign label."
+  },
+  "relationshipStayInTouch": "Kontakt halten",
+  "@relationshipStayInTouch": {
+    "description": "Relationships redesign label."
+  },
   "relationshipTrackingSinceLabel": "Erfasst seit {date}",
   "relationshipUpdateFromContact": "Aus Kontakt aktualisieren",
   "saveButton": "Speichern",

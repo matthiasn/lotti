@@ -11,7 +11,7 @@ sources:
   - id: src
     resource: ../../lib/features/relationships
     title: Relationships feature source
-    last_modified: 2026-08-14
+    last_modified: 2026-08-18
   - id: queries
     resource: ../../lib/database/database_relationship_queries.dart
     title: Relationship and check-in queries
@@ -75,7 +75,7 @@ sources:
   - id: adr-0041
     resource: ../../docs/adr/0041-relationship-contact-linking.md
     title: ADR 0041 — Relationship contact linking
-    last_modified: 2026-08-13
+    last_modified: 2026-08-18
 ---
 
 A person the user deliberately tracks is a `JournalEntity.relationship`; each
@@ -692,10 +692,13 @@ Phase 7 (ADR 0041), Android and iOS only. Three invariants carry it:
   permission and neither reads in the background, but user-facing copy must
   say "reads your address book while the import screen is open" rather than
   "reads only the contacts you choose", which is true of the picker alone.
-- **`contactRefs` are per-platform and per-device.** The same person carries a
-  different id in each address book, so a ref written on a phone reads as
-  *unlinked* on a tablet rather than resolving to a stranger. Both the link
-  action and `refreshFromContact` key on `contactRefPlatformKey()`.
+- **`contactRefs` are per-device.** The same person carries a different id in
+  each address book — even on two phones running the same OS — so a ref
+  written on one device reads as *unlinked* everywhere else rather than
+  resolving to a stranger. The key is the platform plus this device's sync
+  host id (`contactRefKeyForHost`), resolved via `contactRefKeyProvider`;
+  the link action, the import and `refreshFromContact` all go through it,
+  and a device whose host id is not yet provisioned stores no ref at all.
 
 **The import screen is pushed above the shell, not into the tab.** It docks
 its Import action in a `bottomNavigationBar`, and the mobile shell paints the
