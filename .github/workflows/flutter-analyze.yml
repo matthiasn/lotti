@@ -36,3 +36,10 @@ jobs:
       # Ratcheted — a file's legacy-icon count may fall, never rise.
       - name: Check icon-token discipline
         run: dart run tool/icons/validate.dart
+      # Release notes live in changelog.d/ as one file per pull request, so the
+      # three files every change used to edit at the top — CHANGELOG.md, the
+      # Flathub metainfo, pubspec.yaml — are written only by a release. This
+      # catches a malformed fragment while its author is still in context, and
+      # a released version that landed in some of those files but not all.
+      - name: Check release-note fragments
+        run: dart run tool/changelog/validate.dart

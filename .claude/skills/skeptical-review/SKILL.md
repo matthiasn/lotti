@@ -97,9 +97,10 @@ nitpick. Verify against `AGENTS.md` (authoritative) — highlights:
 - **UI stability**: async providers must not flash loading/empty shells on
   background refresh (`skipLoadingOnReload` or equivalent).
 - **Docs & release hygiene**: feature READMEs updated when behavior
-  changed; CHANGELOG entry under the current `pubspec.yaml` version (only
-  for user-visible changes, and paired with
-  `flatpak/com.matthiasn.lotti.metainfo.xml`).
+  changed; a release note as a new `changelog.d/YYYY-MM-DD-slug.md` fragment
+  (only for user-visible changes). A PR that edits `CHANGELOG.md`, the flatpak
+  metainfo, or the `version:` line in `pubspec.yaml` is a finding, not a
+  courtesy — those three belong to the release alone.
 - **Conventions**: Conventional Commits; no dependencies from new code onto
   old code being replaced; no hoarded/unused code.
 

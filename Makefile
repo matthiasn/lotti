@@ -65,6 +65,16 @@ analyze:
 icon_check:
 	$(DART_CMD) run tool/icons/validate.dart
 
+# Checks the unreleased release notes in changelog.d/ — one new file per pull
+# request instead of an edit to the top of CHANGELOG.md, which is what used to
+# leave every open PR conflicted the moment one of them merged. Also fails when
+# pubspec.yaml, CHANGELOG.md and the Flathub metainfo disagree about the
+# released version: a metainfo left a version behind is invisible here and very
+# visible to everyone on Flathub.
+.PHONY: changelog_check
+changelog_check:
+	$(DART_CMD) run tool/changelog/validate.dart
+
 .PHONY: okf_check
 okf_check:
 	$(DART_CMD) run tool/okf/validate.dart knowledge

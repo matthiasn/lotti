@@ -26,7 +26,7 @@ stateDiagram-v2
     Rescreenshot --> Rerate: regenerate the SAME shots
     Rerate --> Implement: either panel average < target
     Rerate --> Harden: both panel averages ≥ target
-    Harden --> [*]: tests, l10n, README, CHANGELOG+flatpak, analyzer clean, PR
+    Harden --> [*]: tests, l10n, README, changelog.d fragment, analyzer clean, PR
 ```
 
 1. **Baseline screenshot first.** Use the `app-screenshots` skill / the
@@ -45,9 +45,10 @@ stateDiagram-v2
 4. **Adjudicate genuine tradeoffs with the user** (`AskUserQuestion`) instead
    of silently picking a side — before declaring a conflict irreducible, hunt
    for a both-sides fix (one change that serves two opposed reviewers).
-5. **Harden to PR-ready** once converged: tests, l10n, feature README,
-   CHANGELOG + flatpak metainfo, analyzer zero-warning, formatter, PR on latest
-   main.
+5. **Harden to PR-ready** once converged: tests, l10n, feature README, a
+   `changelog.d/` fragment (never `CHANGELOG.md` or the flatpak metainfo
+   directly — those belong to the release), analyzer zero-warning, formatter,
+   PR on latest main.
 
 ## The two panels
 
