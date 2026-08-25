@@ -42,6 +42,7 @@ import 'package:lotti/features/settings/ui/pages/measurables/measurables_page.da
 import 'package:lotti/features/settings/ui/pages/recording_style_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/settings_root_page.dart';
 import 'package:lotti/features/settings/ui/pages/theming_page.dart';
+import 'package:lotti/features/settings_v2/domain/settings_tree_index.dart';
 import 'package:lotti/features/settings_v2/ui/mobile/settings_mobile_branch_page.dart';
 import 'package:lotti/features/settings_v2/ui/mobile/settings_mobile_root_page.dart';
 import 'package:lotti/features/sync/ui/backfill_settings_page.dart';
@@ -60,6 +61,13 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../mocks/mocks.dart';
+
+/// Page keys of the three settings branch hubs. The production location
+/// spells these inline; they are named here so the branch-navigation tables
+/// below can pair a leaf with the hub page it must uncover.
+const ValueKey<String> definitionsHubKey = ValueKey('settings-definitions');
+const ValueKey<String> preferencesHubKey = ValueKey('settings-preferences');
+const ValueKey<String> advancedHubKey = ValueKey('settings-advanced');
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -688,6 +696,334 @@ void main() {
           await tapBack(tester);
 
           expect(delegate.configuration.uri.toString(), '/settings/ai');
+        },
+      );
+    });
+
+    /// Back navigation out of a settings *branch* leaf.
+    ///
+    /// A branch hub (Definitions / Preferences / Advanced) is a pure
+    /// navigation page that `buildPages` keeps beneath its leaves so a back
+    /// tap returns to the hub rather than to the Settings root. Whether it
+    /// stays there is decided by the hub's own path predicate, evaluated
+    /// against whatever URL the pop produces.
+    ///
+    /// Beamer's default pop strips one URI segment, and most branch leaves
+    /// keep flat URLs that do not nest under their hub's — `/settings/
+    /// categories` under a hub at `/settings/definitions`. Stripping a
+    /// segment there lands on `/settings`, the hub predicate stops matching,
+    /// and the hub is dropped from the stack along with the leaf: one back
+    /// tap left the branch. The hub was still uncovered by the Navigator's
+    /// pop animation and only replaced once the route rebuild landed, which
+    /// is why it read as the Definitions page bouncing back to Settings by
+    /// itself a moment later.
+    ///
+    /// Each `(leaf URL, hub URL, hub page key)`, **derived from the same
+    /// lists the routing reads** — `definitionsLeafPaths`,
+    /// `preferencesLeafPaths` and `advancedFlatLeafPaths`. A leaf added to one
+    /// of those is added to every group below at once; a hand-written table
+    /// here would let a new leaf ship with the bug and no red test.
+    ///
+    /// Shared by all three groups so a leaf is provably covered at the
+    /// predicate, `buildPages` and real-navigator levels alike.
+    final branchLeaves = <(String, String, ValueKey<String>)>[
+      // Definitions — the reported bug.
+      for (final leaf in definitionsLeafPaths)
+        (leaf, definitionsHubUrl, definitionsHubKey),
+      // Preferences — the same flat-URL shape, so the same bug. Animations is
+      // in this list while its URL sits under `/settings/advanced/`, so its
+      // default pop reached the *wrong branch's* hub, not merely the root.
+      for (final leaf in preferencesLeafPaths)
+        (leaf, preferencesHubUrl, preferencesHubKey),
+      // Advanced's two flat leaves.
+      for (final leaf in advancedFlatLeafPaths)
+        (leaf, advancedHubUrl, advancedHubKey),
+    ];
+
+    test('every branch leaf is covered by the tables below', () {
+      // Guards the derivation itself: if a list is emptied or a branch is
+      // dropped, the loops below would silently generate no tests at all.
+      expect(definitionsLeafPaths, isNotEmpty);
+      expect(preferencesLeafPaths, isNotEmpty);
+      expect(advancedFlatLeafPaths, isNotEmpty);
+      expect(
+        branchLeaves.length,
+        definitionsLeafPaths.length +
+            preferencesLeafPaths.length +
+            advancedFlatLeafPaths.length,
+      );
+      // The hub URLs resolve out of the settings tree, so a branch renamed
+      // there fails here rather than at runtime on a null assertion.
+      expect(definitionsHubUrl, '/settings/definitions');
+      expect(preferencesHubUrl, '/settings/preferences');
+      expect(advancedHubUrl, '/settings/advanced');
+    });
+
+    group('settingsBranchHubOf names the hub a leaf returns to', () {
+      for (final (leaf, hub, _) in branchLeaves) {
+        test('$leaf -> $hub', () {
+          expect(settingsBranchHubOf(leaf), hub);
+        });
+      }
+
+      test(
+        'animations resolves to Preferences, not the Advanced hub its URL '
+        'sits under — the branch is a property of the leaf, not the path',
+        () {
+          expect(
+            settingsBranchHubOf('/settings/advanced/animations'),
+            preferencesHubUrl,
+          );
+          expect(
+            settingsBranchHubOf('/settings/advanced/maintenance'),
+            advancedHubUrl,
+          );
+        },
+      );
+
+      test(
+        'a detail URL under a leaf still names the hub, for the list page '
+        'sitting beneath it in the stack',
+        () {
+          expect(
+            settingsBranchHubOf('/settings/categories/cat-1'),
+            definitionsHubUrl,
+          );
+          expect(
+            settingsBranchHubOf('/settings/habits/by_id/h-1'),
+            definitionsHubUrl,
+          );
+        },
+      );
+
+      // A hub naming itself would make its own back tap a no-op, trapping
+      // the user on the hub.
+      for (final hub in [
+        definitionsHubUrl,
+        preferencesHubUrl,
+        advancedHubUrl,
+      ]) {
+        test('the $hub hub itself names no destination', () {
+          expect(settingsBranchHubOf(hub), isNull);
+        });
+      }
+
+      for (final outside in const [
+        '/settings',
+        '/settings/ai',
+        '/settings/ai/provider/gemini-1',
+        '/settings/sync/backfill',
+        '/settings/agents',
+        '/settings/onboarding',
+        '/settings/daily-os',
+      ]) {
+        test('$outside is not in a hub branch, so it names no destination', () {
+          expect(settingsBranchHubOf(outside), isNull);
+        });
+      }
+    });
+
+    group('branch leaf pages declare their hub as popToNamed', () {
+      List<BeamPage> buildFor(String uri) {
+        final routeInformation = RouteInformation(uri: Uri.parse(uri));
+        return SettingsLocation(routeInformation).buildPages(
+          mockBuildContext,
+          BeamState.fromRouteInformation(routeInformation),
+        );
+      }
+
+      for (final (leaf, hub, _) in branchLeaves) {
+        test('$leaf pops to $hub', () {
+          expect(buildFor(leaf).last.popToNamed, hub);
+        });
+      }
+
+      for (final hub in [
+        definitionsHubUrl,
+        preferencesHubUrl,
+        advancedHubUrl,
+      ]) {
+        test('the $hub hub sets none — its default pop reaches /settings', () {
+          expect(buildFor(hub).last.popToNamed, isNull);
+        });
+      }
+
+      test(
+        'a leaf detail page pops to its list, not past it to the hub — the '
+        'list page beneath is the one carrying the hub destination',
+        () {
+          final routeInformation = RouteInformation(
+            uri: Uri.parse('/settings/categories/cat-1'),
+          );
+          final pages = SettingsLocation(routeInformation).buildPages(
+            mockBuildContext,
+            BeamState.fromRouteInformation(
+              routeInformation,
+            ).copyWith(pathParameters: {'categoryId': 'cat-1'}),
+          );
+
+          expect(pages, hasLength(4));
+          expect(pages[2].key, const ValueKey('settings-categories'));
+          expect(pages[2].popToNamed, definitionsHubUrl);
+          // No destination of its own: the default single-segment pop from
+          // `/settings/categories/cat-1` already reaches the list.
+          expect(pages[3].popToNamed, isNull);
+        },
+      );
+    });
+
+    /// The same contract end to end, through a real [BeamerDelegate] and
+    /// [Navigator] — the layer that actually consumes `popToNamed`. Children
+    /// are placeholders ([_RoutingOnlySettingsLocation]); every routing input
+    /// Beamer reads still comes from the production location.
+    group('branch back navigation through a real Beamer navigator', () {
+      late BeamerDelegate delegate;
+      late _RouteRecordingObserver observer;
+
+      /// Walks the route sequence a user does — Settings, hub, leaf — rather
+      /// than deep-linking to the leaf, so Beamer has the real beaming
+      /// history its pop machinery consults.
+      Future<void> openLeaf(
+        WidgetTester tester,
+        String hub,
+        String leaf, {
+        List<String> then = const [],
+      }) async {
+        observer = _RouteRecordingObserver();
+        delegate = BeamerDelegate(
+          setBrowserTabTitle: false,
+          initialPath: '/settings',
+          navigatorObservers: [observer],
+          locationBuilder: (routeInformation, _) =>
+              _RoutingOnlySettingsLocation(routeInformation),
+        );
+        await delegate.setNewRoutePath(
+          RouteInformation(uri: Uri.parse('/settings')),
+        );
+        await tester.pumpWidget(
+          MaterialApp.router(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            routeInformationParser: BeamerParser(),
+            routerDelegate: delegate,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        for (final url in [hub, leaf, ...then]) {
+          delegate.beamToNamed(url);
+          await tester.pumpAndSettle();
+        }
+      }
+
+      Future<void> tapBack(WidgetTester tester) async {
+        delegate.navigator.pop();
+        await tester.pumpAndSettle();
+      }
+
+      List<Object?> pageKeys() =>
+          delegate.currentPages.map((page) => page.key).toList();
+
+      tearDown(() => delegate.dispose());
+
+      for (final (leaf, hub, hubKey) in branchLeaves) {
+        testWidgets('one back tap from $leaf lands on $hub, not /settings', (
+          tester,
+        ) async {
+          await openLeaf(tester, hub, leaf);
+          expect(delegate.currentPages, hasLength(3));
+
+          await tapBack(tester);
+
+          expect(delegate.configuration.uri.path, hub);
+          expect(pageKeys(), [const ValueKey('settings'), hubKey]);
+        });
+      }
+
+      testWidgets(
+        'the hub is uncovered rather than swapped for a fresh copy, so the '
+        'back tap plays a pop and not a push',
+        (tester) async {
+          await openLeaf(tester, definitionsHubUrl, '/settings/categories');
+
+          observer.reset();
+          await tapBack(tester);
+
+          expect(observer.pushedKeys, isEmpty);
+          expect(observer.goneKeys, const [ValueKey('settings-categories')]);
+        },
+      );
+
+      testWidgets(
+        'a second back tap then leaves the branch for the Settings root — '
+        'the two levels the one tap used to collapse into one',
+        (tester) async {
+          await openLeaf(tester, definitionsHubUrl, '/settings/categories');
+
+          await tapBack(tester);
+          await tapBack(tester);
+
+          expect(delegate.configuration.uri.path, '/settings');
+          expect(pageKeys(), const [ValueKey('settings')]);
+        },
+      );
+
+      testWidgets(
+        'from a category detail the way out is detail, list, hub, root — one '
+        'level per tap, no level skipped',
+        (tester) async {
+          await openLeaf(
+            tester,
+            definitionsHubUrl,
+            '/settings/categories',
+            then: ['/settings/categories/cat-1'],
+          );
+          expect(delegate.currentPages, hasLength(4));
+
+          await tapBack(tester);
+          expect(delegate.configuration.uri.path, '/settings/categories');
+
+          await tapBack(tester);
+          expect(delegate.configuration.uri.path, definitionsHubUrl);
+
+          await tapBack(tester);
+          expect(delegate.configuration.uri.path, '/settings');
+        },
+      );
+
+      testWidgets(
+        'backing out of Animations reaches Preferences, not the Advanced hub '
+        'whose URL prefix it borrows',
+        (tester) async {
+          await openLeaf(
+            tester,
+            preferencesHubUrl,
+            '/settings/advanced/animations',
+          );
+
+          await tapBack(tester);
+
+          expect(delegate.configuration.uri.path, preferencesHubUrl);
+          expect(pageKeys(), const [
+            ValueKey('settings'),
+            preferencesHubKey,
+          ]);
+        },
+      );
+
+      testWidgets(
+        'a nested Advanced leaf was never broken and still pops to its hub',
+        (tester) async {
+          await openLeaf(
+            tester,
+            advancedHubUrl,
+            '/settings/advanced/maintenance',
+          );
+
+          await tapBack(tester);
+
+          expect(delegate.configuration.uri.path, advancedHubUrl);
+          expect(pageKeys(), const [ValueKey('settings'), advancedHubKey]);
         },
       );
     });

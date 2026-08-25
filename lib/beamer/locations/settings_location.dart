@@ -123,6 +123,15 @@ class SettingsLocation extends BeamLocation<BeamState> {
     '/settings/theming',
     '/settings/keyboard-shortcuts',
     '/settings/speech',
+    // Spelled out, not `definitionsHubUrl` & co. `pathPatterns` doubles as
+    // this app's machine-readable route manifest: `validate-manual.mjs` in
+    // `docs-site/scripts` regex-scans this getter for quoted route literals
+    // and cross-checks them against the manual's surface inventory. A
+    // constant here is invisible to that scan, and the manual build fails
+    // claiming no location declares the route. (Its regex reads comments
+    // too, so do not write an example route in one.) The hub URL constants
+    // are still what the branch predicates and `settingsBranchHubOf` read —
+    // that is where a second spelling could actually diverge in behaviour.
     '/settings/definitions',
     '/settings/preferences',
     '/settings/advanced',
@@ -152,6 +161,9 @@ class SettingsLocation extends BeamLocation<BeamState> {
     bool pathContains(String s) => state.uri.path.contains(s);
     bool pathContainsKey(String s) => state.pathParameters.containsKey(s);
     final path = state.uri.path;
+    // The hub a branch leaf pops back to. Null outside the three branches and
+    // on the hubs themselves — see [settingsBranchHubOf].
+    final branchHub = settingsBranchHubOf(path);
     final navService = getIt<NavService>();
     final isDesktop = navService.isDesktopMode;
 
@@ -371,9 +383,10 @@ class SettingsLocation extends BeamLocation<BeamState> {
         ),
 
       if (pathContains('labels'))
-        const BeamPage(
-          key: ValueKey('settings-labels'),
-          child: LabelsListPage(),
+        BeamPage(
+          key: const ValueKey('settings-labels'),
+          popToNamed: branchHub,
+          child: const LabelsListPage(),
         ),
 
       if (pathContains('labels/create'))
@@ -394,9 +407,10 @@ class SettingsLocation extends BeamLocation<BeamState> {
 
       // New Categories Implementation (Riverpod)
       if (pathContains('categories'))
-        const BeamPage(
-          key: ValueKey('settings-categories'),
-          child: new_categories.CategoriesListPage(),
+        BeamPage(
+          key: const ValueKey('settings-categories'),
+          popToNamed: branchHub,
+          child: const new_categories.CategoriesListPage(),
         ),
 
       if (pathContains('categories/create'))
@@ -439,9 +453,10 @@ class SettingsLocation extends BeamLocation<BeamState> {
 
       // Dashboards
       if (pathContains('dashboards'))
-        const BeamPage(
-          key: ValueKey('settings-dashboards'),
-          child: DashboardSettingsPage(),
+        BeamPage(
+          key: const ValueKey('settings-dashboards'),
+          popToNamed: branchHub,
+          child: const DashboardSettingsPage(),
         ),
 
       if (pathContains('dashboards') &&
@@ -464,9 +479,10 @@ class SettingsLocation extends BeamLocation<BeamState> {
 
       // Measurables
       if (pathContains('measurables'))
-        const BeamPage(
-          key: ValueKey('settings-measurables'),
-          child: MeasurablesPage(),
+        BeamPage(
+          key: const ValueKey('settings-measurables'),
+          popToNamed: branchHub,
+          child: const MeasurablesPage(),
         ),
 
       if (pathContains('measurables') &&
@@ -489,9 +505,10 @@ class SettingsLocation extends BeamLocation<BeamState> {
 
       // Habits
       if (pathContains('habits') && !pathContains('/search'))
-        const BeamPage(
-          key: ValueKey('settings-habits'),
-          child: HabitsPage(),
+        BeamPage(
+          key: const ValueKey('settings-habits'),
+          popToNamed: branchHub,
+          child: const HabitsPage(),
         ),
 
       // The habits sub-routes are two segments deep (`by_id/<id>`,
@@ -611,9 +628,10 @@ class SettingsLocation extends BeamLocation<BeamState> {
 
       // Flags
       if (pathContains('flags'))
-        const BeamPage(
-          key: ValueKey('settings-flags'),
-          child: FlagsPage(),
+        BeamPage(
+          key: const ValueKey('settings-flags'),
+          popToNamed: branchHub,
+          child: const FlagsPage(),
         ),
 
       // Onboarding — top-level leaf, opens directly. Exact-path match
@@ -627,42 +645,48 @@ class SettingsLocation extends BeamLocation<BeamState> {
 
       // Recording style — top-level leaf, opens directly.
       if (pathContains('recording-style'))
-        const BeamPage(
-          key: ValueKey('settings-recording-style'),
-          child: RecordingStyleSettingsPage(),
+        BeamPage(
+          key: const ValueKey('settings-recording-style'),
+          popToNamed: branchHub,
+          child: const RecordingStyleSettingsPage(),
         ),
 
       // Theming
       if (pathContains('theming'))
-        const BeamPage(
-          key: ValueKey('settings-theming'),
-          child: ThemingPage(),
+        BeamPage(
+          key: const ValueKey('settings-theming'),
+          popToNamed: branchHub,
+          child: const ThemingPage(),
         ),
 
       if (pathContains('keyboard-shortcuts'))
-        const BeamPage(
-          key: ValueKey('settings-keyboard-shortcuts'),
-          child: KeyboardShortcutsPage(),
+        BeamPage(
+          key: const ValueKey('settings-keyboard-shortcuts'),
+          popToNamed: branchHub,
+          child: const KeyboardShortcutsPage(),
         ),
 
       // Speech (text-to-speech) — top-level leaf, opens directly.
       if (pathContains('speech'))
-        const BeamPage(
-          key: ValueKey('settings-speech'),
-          child: SpeechSettingsPage(),
+        BeamPage(
+          key: const ValueKey('settings-speech'),
+          popToNamed: branchHub,
+          child: const SpeechSettingsPage(),
         ),
 
       // Health Import
       if (pathContains('health_import'))
-        const BeamPage(
-          key: ValueKey('settings-health_import'),
-          child: HealthImportPage(),
+        BeamPage(
+          key: const ValueKey('settings-health_import'),
+          popToNamed: branchHub,
+          child: const HealthImportPage(),
         ),
 
       if (pathContains('advanced/animations'))
-        const BeamPage(
-          key: ValueKey('settings-animations'),
-          child: CelebrationSettingsPage(),
+        BeamPage(
+          key: const ValueKey('settings-animations'),
+          popToNamed: branchHub,
+          child: const CelebrationSettingsPage(),
         ),
 
       if (pathContains('advanced/manual-language'))
@@ -719,7 +743,7 @@ class SettingsLocation extends BeamLocation<BeamState> {
 /// the `definitions/` branch, but their URLs stay flat for deep-link
 /// compatibility (see `settingsNodeUrls`), so the Definitions hub is
 /// matched on the flat URL here.
-const List<String> _definitionsLeafPaths = [
+const List<String> definitionsLeafPaths = [
   '/settings/categories',
   '/settings/labels',
   '/settings/habits',
@@ -728,8 +752,8 @@ const List<String> _definitionsLeafPaths = [
 ];
 
 bool _inDefinitionsBranch(String path) =>
-    path == '/settings/definitions' ||
-    _definitionsLeafPaths.any((p) => path == p || path.startsWith('$p/'));
+    path == definitionsHubUrl ||
+    definitionsLeafPaths.any((p) => path == p || path.startsWith('$p/'));
 
 /// Animations moved into the `preferences` branch but kept the URL it
 /// shipped with, under `/settings/advanced/` (see `settingsNodeUrls`). That
@@ -742,7 +766,7 @@ const String _animationsPath = '/settings/advanced/animations';
 /// the `preferences/` branch while their URLs stay where they were, so the
 /// Preferences hub is matched on those URLs here — exactly as the
 /// Definitions hub is matched on the flat definition URLs.
-const List<String> _preferencesLeafPaths = [
+const List<String> preferencesLeafPaths = [
   '/settings/theming',
   _animationsPath,
   '/settings/recording-style',
@@ -751,15 +775,67 @@ const List<String> _preferencesLeafPaths = [
 ];
 
 bool _inPreferencesBranch(String path) =>
-    path == '/settings/preferences' ||
-    _preferencesLeafPaths.any((p) => path == p || path.startsWith('$p/'));
+    path == preferencesHubUrl ||
+    preferencesLeafPaths.any((p) => path == p || path.startsWith('$p/'));
+
+/// The hub of the branch [path] belongs to, or `null` when it belongs to
+/// none — and, on a branch's own leaf page, the destination that leaf must
+/// name with `popToNamed`.
+///
+/// **Only a leaf page may use this as its pop destination.** The answer is
+/// branch membership, which every URL inside a branch shares: a page stacked
+/// *above* a leaf gets the same hub back, though it must pop to the leaf
+/// beneath it instead. `/settings/advanced/conflicts/:conflictId` returns
+/// [advancedHubUrl] here and pops to `/settings/advanced/conflicts`; the
+/// habit editor returns [definitionsHubUrl] and pops to `/settings/habits`.
+/// Passing this to a detail page would skip a level.
+///
+/// Beamer's default pop ([BeamPage.pathSegmentPop]) strips exactly one URI
+/// segment. That is the right answer only when a leaf's URL nests under its
+/// hub's: popping `/settings/advanced/maintenance` lands on
+/// `/settings/advanced`, where [_inAdvancedBranch] still matches, so the hub
+/// stays in the stack and the back tap moves one level.
+///
+/// Most branch leaves do not nest. The definition and preference leaves keep
+/// the flat URLs they shipped with (`/settings/categories`,
+/// `/settings/theming`) for deep-link compatibility, `/settings/flags` and
+/// `/settings/health_import` do the same under Advanced, and Animations sits
+/// under `/settings/advanced/` while belonging to Preferences. For every one
+/// of them the single-segment pop lands where the leaf's own hub predicate
+/// does *not* match — so `buildPages` drops the hub as well, and one back tap
+/// left the branch entirely. The hub was still revealed by the Navigator's
+/// pop animation, then replaced by the Settings root when the rebuild landed,
+/// which is why it read as the page bouncing back on its own after a second.
+///
+/// Deriving the destination from the same predicates that decide whether the
+/// hub is *in* the stack is the point: hub presence and hub pop cannot
+/// disagree, and a leaf added to one of the `*LeafPaths` lists is routed here
+/// without a second edit.
+String? settingsBranchHubOf(String path) {
+  // A hub itself pops to the Settings root, which the default pop already
+  // does — naming a hub as its own destination would trap the back gesture.
+  if (path == definitionsHubUrl ||
+      path == preferencesHubUrl ||
+      path == advancedHubUrl) {
+    return null;
+  }
+  if (_inDefinitionsBranch(path)) return definitionsHubUrl;
+  if (_inPreferencesBranch(path)) return preferencesHubUrl;
+  if (_inAdvancedBranch(path)) return advancedHubUrl;
+  return null;
+}
+
+/// Advanced's leaves that kept a flat URL instead of nesting under
+/// [advancedHubUrl] — Health import's tree node lives under Advanced but its
+/// public URL never moved. Listed so the hub is matched on them, and so the
+/// tests can derive their coverage from the same list the routing reads.
+const List<String> advancedFlatLeafPaths = [
+  '/settings/flags',
+  '/settings/health_import',
+];
 
 bool _inAdvancedBranch(String path) =>
     !_inPreferencesBranch(path) &&
-    (path == '/settings/advanced' ||
-        path.startsWith('/settings/advanced/') ||
-        path == '/settings/flags' ||
-        // Health import's tree node lives under Advanced but keeps its
-        // flat legacy URL, so match it here to keep the hub in the back
-        // stack.
-        path == '/settings/health_import');
+    (path == advancedHubUrl ||
+        path.startsWith('$advancedHubUrl/') ||
+        advancedFlatLeafPaths.contains(path));
