@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/components/action_modal/ds_action_toggle_chip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
@@ -35,7 +36,9 @@ class EntryToggleChips extends ConsumerWidget {
     final tokens = context.designTokens;
     final starred = entry.meta.starred ?? false;
     final private = entry.meta.private ?? false;
-    final flagged = entry.meta.flag != null;
+    // Not `flag != null`: the flag is three-valued and is cleared by writing
+    // `EntryFlag.none`. See [MetadataFlag.isFlagged].
+    final flagged = entry.meta.isFlagged;
 
     return Wrap(
       spacing: tokens.spacing.step3,

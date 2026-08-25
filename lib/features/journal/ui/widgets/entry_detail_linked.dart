@@ -126,7 +126,7 @@ class _FilteredEntryDetails extends ConsumerWidget {
       if (kind != null && !activeKinds.contains(kind)) {
         return const SizedBox.shrink();
       }
-      if (showFlaggedOnly && entry.meta.flag != EntryFlag.import) {
+      if (showFlaggedOnly && !entry.meta.isFlagged) {
         return const SizedBox.shrink();
       }
     }

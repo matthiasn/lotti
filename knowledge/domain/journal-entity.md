@@ -5,7 +5,7 @@ description: The eighteen-variant union every recorded journal entry is, what si
 resource: ../../lib/classes/journal_entities.dart
 tags: [domain, journal-entity, metadata, freezed]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T02:30:00Z }
+generated: { by: claude-code/opus-5, at: 2026-08-25T10:30:00Z }
 stale_after: 2027-07-12
 sources:
   - id: entities
@@ -113,15 +113,24 @@ concerns live:
 | `utcOffset`, `timezone` | Preserved so a time reads correctly where it was recorded. `timezone` is an IANA location name (`Europe/Berlin`), not the ambiguous, DST-dependent abbreviation `DateTime.timeZoneName` returns — see [`getLocalTimezone`](../../lib/utils/timezone.dart) |
 | `vectorClock` | Causal ordering for [sync](../features/sync/vector-clocks-and-conflicts.md) |
 | `deletedAt` | **Soft delete** — the row is the tombstone, which is what lets deletion replicate |
-| `flag` | `EntryFlag`, e.g. `import` |
+| `flag` | `EntryFlag` — **three-valued, and not a nullable bool**. `import` is the only member the app ever sets, and the only one every reader treats as *flagged*. Clearing the flag writes `none`, so `flag != null` is **not** "is flagged" |
 | `starred`, `private` | User-facing markers |
 
-Two consequences worth stating:
+A few consequences worth stating:
 
 - **`dateFrom`/`dateTo` are user-editable and independent of `createdAt`.** A
   time entry, an audio recording and a task all use the same pair, so recorded-time
   and timeline queries work uniformly. See
   [the date-time editor](../features/journal/detail-and-saving.md).
+- **`flag` is cleared by writing, not by erasing.**
+  [`EntryController.toggleFlagged`](../../lib/features/journal/state/entry_controller.dart)
+  flips between `EntryFlag.import` and `EntryFlag.none`; it never writes null.
+  Null therefore means *never flagged*, `none` means *un-flagged*, and both must
+  read as off — so ask
+  [`Metadata.isFlagged`](../../lib/classes/journal_entities.dart), never
+  `flag != null`. Writer and every reader go through that one getter, because
+  the predicate spelled out at six call sites is one that a seventh can get
+  wrong, and did.
 - **Deletion is a stamp, not a row removal.** That is what makes "deleted"
   distinguishable from "never existed" on a peer, and it is the same pattern the
   [AI config lifecycle](../features/ai/seeding-and-lifecycle.md) adopted later.

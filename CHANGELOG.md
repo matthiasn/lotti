@@ -75,6 +75,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   its disk symbol alone on narrow screens — the word returns on a wider window —
   and the discard and "…" buttons regained the full-size touch target they were
   meant to have, having been shrunk to 40 pixels.
+- **The Flagged chip in an entry's `•••` menu stayed lit after you cleared the
+  flag.** Switching the flag off records "not flagged" rather than erasing the
+  field, and the chip only asked whether the field had ever been written — so
+  once an entry had been flagged, its chip went on claiming it still was, for
+  good. Nothing else was fooled: the header glyph, the journal cards and the
+  flagged-only filter all read the entry correctly, and the Favorite and
+  Private chips beside it were never affected.
 
 ## [1.0.12]
 ### Fixed

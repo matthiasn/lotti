@@ -762,6 +762,106 @@ void main() {
       verify(testFn).called(1);
     });
 
+    // The writer half of the `•••` menu's flag chip. Clearing the flag writes
+    // `EntryFlag.none`, *not* null — a reader that tests `flag != null` is
+    // therefore wrong, which is exactly how the chip stayed lit after being
+    // switched off. `entry_toggle_chips_test.dart` pins the reader half.
+    test(
+      'toggling a flagged entry clears it to EntryFlag.none, not null',
+      () async {
+        reset(mockPersistenceLogic);
+        final flagged = testTextEntry.copyWith(
+          meta: testTextEntry.meta.copyWith(flag: EntryFlag.import),
+        );
+        when(
+          () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+        ).thenAnswer((_) async => flagged);
+        when(
+          () => mockPersistenceLogic.updateJournalEntity(any(), any()),
+        ).thenAnswer((_) async => true);
+
+        final container = makeProviderContainer();
+        final notifier = container.read(
+          entryControllerProvider(testTextEntry.meta.id).notifier,
+        );
+
+        await notifier.toggleFlagged();
+
+        final captured =
+            verify(
+                  () => mockPersistenceLogic.updateJournalEntity(
+                    any(),
+                    captureAny(),
+                  ),
+                ).captured.single
+                as Metadata;
+        expect(captured.flag, EntryFlag.none);
+      },
+    );
+
+    // Both directions of the two boolean toggles, so the chips beside the flag
+    // are covered by contract rather than by the assumption that a bool cannot
+    // go wrong the way a three-valued enum did.
+    test('toggling an unstarred entry sets starred true', () async {
+      reset(mockPersistenceLogic);
+      final unstarred = testTextEntry.copyWith(
+        meta: testTextEntry.meta.copyWith(starred: false),
+      );
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => unstarred);
+      when(
+        () => mockPersistenceLogic.updateJournalEntity(any(), any()),
+      ).thenAnswer((_) async => true);
+
+      final container = makeProviderContainer();
+      final notifier = container.read(
+        entryControllerProvider(testTextEntry.meta.id).notifier,
+      );
+
+      await notifier.toggleStarred();
+
+      final captured =
+          verify(
+                () => mockPersistenceLogic.updateJournalEntity(
+                  any(),
+                  captureAny(),
+                ),
+              ).captured.single
+              as Metadata;
+      expect(captured.starred, isTrue);
+    });
+
+    test('toggling a private entry clears private to false', () async {
+      reset(mockPersistenceLogic);
+      final private = testTextEntry.copyWith(
+        meta: testTextEntry.meta.copyWith(private: true),
+      );
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => private);
+      when(
+        () => mockPersistenceLogic.updateJournalEntity(any(), any()),
+      ).thenAnswer((_) async => true);
+
+      final container = makeProviderContainer();
+      final notifier = container.read(
+        entryControllerProvider(testTextEntry.meta.id).notifier,
+      );
+
+      await notifier.togglePrivate();
+
+      final captured =
+          verify(
+                () => mockPersistenceLogic.updateJournalEntity(
+                  any(),
+                  captureAny(),
+                ),
+              ).captured.single
+              as Metadata;
+      expect(captured.private, isFalse);
+    });
+
     test('set dirty & save text', () async {
       final container = makeProviderContainer();
       final entryId = testTextEntry.meta.id;

@@ -644,9 +644,9 @@ class EntryController extends AsyncNotifier<EntryState?> {
       await _persistenceLogic.updateJournalEntity(
         item,
         item.meta.copyWith(
-          flag: item.meta.flag == EntryFlag.import
-              ? EntryFlag.none
-              : EntryFlag.import,
+          // Cleared by writing `none`, never by writing null — see
+          // [MetadataFlag.isFlagged], which is what every reader asks.
+          flag: item.meta.isFlagged ? EntryFlag.none : EntryFlag.import,
         ),
       );
     }

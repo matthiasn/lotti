@@ -202,11 +202,11 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
           entry is! JournalEvent &&
           !widget.inLinkedEntries)
         CategorySelectionIconButton(entry: entry),
-      if (entry?.meta.flag == EntryFlag.import)
+      if (entry?.meta.isFlagged ?? false)
         SwitchIconWidget(
           tooltip: context.messages.journalToggleFlaggedTitle,
           onPressed: notifier.toggleFlagged,
-          value: entry?.meta.flag == EntryFlag.import,
+          value: entry?.meta.isFlagged ?? false,
           icon: LottiIcons.flag,
           activeIcon: LottiIconsFilled.flag,
           activeColor: context.colorScheme.error,
