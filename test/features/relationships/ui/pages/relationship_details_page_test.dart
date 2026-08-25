@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -10,21 +11,27 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/features/relationships/ui/pages/relationship_details_page.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/widgets/picker/entity_picker_sheet.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
+import '../../../categories/test_utils.dart';
 
 void main() {
   final testDate = DateTime(2026, 8, 13, 10, 30);
@@ -38,12 +45,14 @@ void main() {
   // mock here and keeps the prompt's "no marker → renders nothing" default.
   late SettingsDb settingsDb;
 
-  Metadata meta(String id) => Metadata(
+  Metadata meta(String id, {String? categoryId, bool? private}) => Metadata(
     id: id,
     createdAt: testDate,
     updatedAt: testDate,
     dateFrom: testDate,
     dateTo: testDate,
+    categoryId: categoryId,
+    private: private,
   );
 
   RelationshipEntry relationship({
@@ -51,8 +60,10 @@ void main() {
     int? cadenceDays,
     RelationshipStatus? status,
     List<ContactChannel> contactChannels = const [],
+    String? categoryId,
+    bool? private,
   }) => RelationshipEntry(
-    meta: meta('rel-1'),
+    meta: meta('rel-1', categoryId: categoryId, private: private),
     data: RelationshipData(
       title: 'Anna',
       nickname: 'Sis',
@@ -69,9 +80,13 @@ void main() {
     ),
   );
 
-  Task task(String id, {String title = 'Prepare the call'}) =>
+  Task task(
+    String id, {
+    String title = 'Prepare the call',
+    String? categoryId,
+  }) =>
       JournalEntity.task(
-            meta: meta(id),
+            meta: meta(id, categoryId: categoryId),
             data: TaskData(
               status: TaskStatus.open(
                 id: 'ts-$id',
@@ -129,14 +144,16 @@ void main() {
     await settingsDb.close();
   });
 
-  Widget buildPage() => makeTestableWidgetNoScroll(
-    const RelationshipDetailsPage(relationshipId: 'rel-1'),
-    overrides: [
-      relationshipRepositoryProvider.overrideWithValue(mockRepository),
-      relationshipAgentServiceProvider.overrideWithValue(mockAgentService),
-      relationshipReminderServiceProvider.overrideWithValue(mockReminders),
-    ],
-  );
+  Widget buildPage({List<Override> overrides = const []}) =>
+      makeTestableWidgetNoScroll(
+        const RelationshipDetailsPage(relationshipId: 'rel-1'),
+        overrides: [
+          relationshipRepositoryProvider.overrideWithValue(mockRepository),
+          relationshipAgentServiceProvider.overrideWithValue(mockAgentService),
+          relationshipReminderServiceProvider.overrideWithValue(mockReminders),
+          ...overrides,
+        ],
+      );
 
   testWidgets(
     'renders header chips (status, cadence, nickname) and check-in rows',
@@ -996,6 +1013,427 @@ void main() {
         find.text('Could not link the task. Please try again.'),
         findsOne,
       );
+    });
+
+    // The picker offers a create row once the query matches nothing, and
+    // feeds whatever it creates back through the same pick callback that
+    // links it. These cover what the page contributes to that: what the task
+    // is created *as*, and that creating and linking stay one act.
+    group('create task from the query -', () {
+      late MockPersistenceLogic mockPersistence;
+      late MockProjectRepository mockProjects;
+      late MockTaskAgentService mockTaskAgents;
+
+      final createdTask = task(
+        'new-task',
+        title: 'Buy flowers',
+        categoryId: 'cat-1',
+      );
+
+      setUp(() {
+        mockPersistence = MockPersistenceLogic();
+        mockProjects = MockProjectRepository();
+        mockTaskAgents = MockTaskAgentService();
+        getIt
+          ..registerSingleton<PersistenceLogic>(mockPersistence)
+          ..registerSingleton<ProjectRepository>(mockProjects);
+
+        // This person lives in a category; a task created here inherits it.
+        when(
+          () => mockRepository.getRelationshipById('rel-1'),
+        ).thenAnswer((_) async => relationship(categoryId: 'cat-1'));
+        // The shared create path reads the person back to inherit privacy.
+        when(
+          () => mockDb.journalEntityById('rel-1'),
+        ).thenAnswer((_) async => relationship(categoryId: 'cat-1'));
+        when(() => mockCache.getCategoryById(any())).thenReturn(null);
+        when(() => mockFts5Db.insertText(any())).thenAnswer((_) async {});
+        // A person holds no project, so the inheritance the shared create
+        // path attempts finds nothing. Stubbed rather than left to throw
+        // inside a catch that would hide a real failure here.
+        when(
+          () => mockProjects.inheritProjectFromTask(
+            sourceTaskId: any(named: 'sourceTaskId'),
+            newTaskId: any(named: 'newTaskId'),
+          ),
+        ).thenAnswer((_) async => false);
+        when(
+          () => mockRepository.linkTask(
+            relationshipId: 'rel-1',
+            taskId: 'new-task',
+          ),
+        ).thenAnswer((_) async => true);
+      });
+
+      tearDown(() async {
+        await getIt.unregister<PersistenceLogic>();
+        await getIt.unregister<ProjectRepository>();
+      });
+
+      /// Answers the task write with [result], ignoring what it was asked.
+      void stubWrite(Task? result) {
+        when(
+          () => mockPersistence.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+            labelIds: any(named: 'labelIds'),
+            private: any(named: 'private'),
+          ),
+        ).thenAnswer((_) async => result);
+      }
+
+      /// Answers the write with [createdTask] and records the arguments, so a
+      /// test can assert on the task that was created rather than on the mock
+      /// call alone.
+      Map<Symbol, dynamic> captureWrite() {
+        final captured = <Symbol, dynamic>{};
+        when(
+          () => mockPersistence.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+            labelIds: any(named: 'labelIds'),
+            private: any(named: 'private'),
+          ),
+        ).thenAnswer((invocation) async {
+          captured.addAll(invocation.namedArguments);
+          return createdTask;
+        });
+        return captured;
+      }
+
+      /// Opens the person's task picker, types [query] — which matches
+      /// nothing here — and taps the create row that appears.
+      Future<void> createFromQuery(
+        WidgetTester tester, {
+        String query = 'Buy flowers',
+      }) async {
+        await tester.pumpWidget(
+          buildPage(
+            overrides: [
+              taskAgentServiceProvider.overrideWithValue(mockTaskAgents),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Link task'));
+        await tester.pumpAndSettle();
+        await tester.enterText(find.byType(TextField), query);
+        await tester.pump(entityPickerSearchDebounce);
+        await tester.pump();
+        await tester.tap(find.byKey(const ValueKey('link-picker-create')));
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets(
+        'the query becomes the title, so the task is never nameless',
+        (tester) async {
+          final written = captureWrite();
+
+          await createFromQuery(tester);
+
+          expect((written[#data] as TaskData).title, 'Buy flowers');
+        },
+      );
+
+      testWidgets('the new task lands in the category the person is in', (
+        tester,
+      ) async {
+        final written = captureWrite();
+
+        await createFromQuery(tester);
+
+        expect(written[#categoryId], 'cat-1');
+      });
+
+      testWidgets('a person with no category leaves the task uncategorized', (
+        tester,
+      ) async {
+        when(
+          () => mockRepository.getRelationshipById('rel-1'),
+        ).thenAnswer((_) async => relationship());
+        final written = captureWrite();
+
+        await createFromQuery(tester);
+
+        expect(written[#categoryId], isNull);
+      });
+
+      testWidgets('no plain link is written — the relationship edge is the '
+          'only one', (tester) async {
+        final written = captureWrite();
+
+        await createFromQuery(tester);
+
+        // A linkedId here would leave a basic link beside the typed one,
+        // which this page would then have to unpick.
+        expect(written[#linkedId], isNull);
+        verify(
+          () => mockRepository.linkTask(
+            relationshipId: 'rel-1',
+            taskId: 'new-task',
+          ),
+        ).called(1);
+      });
+
+      testWidgets('a private person gets a private task', (tester) async {
+        when(() => mockDb.journalEntityById('rel-1')).thenAnswer(
+          (_) async => relationship(categoryId: 'cat-1', private: true),
+        );
+        final written = captureWrite();
+
+        await createFromQuery(tester);
+
+        expect(written[#private], isTrue);
+      });
+
+      testWidgets('a public person does not make the task private', (
+        tester,
+      ) async {
+        final written = captureWrite();
+
+        await createFromQuery(tester);
+
+        expect(written[#private], isNull);
+      });
+
+      testWidgets('creating links the task and closes the picker', (
+        tester,
+      ) async {
+        stubWrite(createdTask);
+
+        await createFromQuery(tester);
+
+        verify(
+          () => mockRepository.linkTask(
+            relationshipId: 'rel-1',
+            taskId: 'new-task',
+          ),
+        ).called(1);
+        // The picker is gone: its search field went with it.
+        expect(find.byType(TextField), findsNothing);
+        expect(
+          find.text('Could not link the task. Please try again.'),
+          findsNothing,
+        );
+      });
+
+      testWidgets('a write that returns nothing links nothing and keeps the '
+          'picker open', (tester) async {
+        stubWrite(null);
+
+        await createFromQuery(tester);
+
+        verifyNever(
+          () => mockRepository.linkTask(
+            relationshipId: any(named: 'relationshipId'),
+            taskId: any(named: 'taskId'),
+          ),
+        );
+        // Still on the picker, so the user can retype or pick something else
+        // instead of landing back on the page with nothing to show for it.
+        expect(find.byType(TextField), findsOneWidget);
+      });
+
+      testWidgets('a link that changes no row still reports the failure after '
+          'a create', (tester) async {
+        stubWrite(createdTask);
+        when(
+          () => mockRepository.linkTask(
+            relationshipId: 'rel-1',
+            taskId: 'new-task',
+          ),
+        ).thenAnswer((_) async => false);
+
+        await createFromQuery(tester);
+
+        expect(
+          find.text('Could not link the task. Please try again.'),
+          findsOne,
+        );
+      });
+
+      testWidgets('the created task gets the default agent of its category, '
+          'like every other create flow', (tester) async {
+        stubWrite(createdTask);
+        when(() => mockCache.getCategoryById('cat-1')).thenReturn(
+          CategoryTestUtils.createTestCategory(
+            id: 'cat-1',
+            defaultTemplateId: 'tmpl-1',
+            defaultProfileId: 'prof-1',
+          ),
+        );
+        when(
+          () => mockTaskAgents.createTaskAgent(
+            taskId: any(named: 'taskId'),
+            templateId: any(named: 'templateId'),
+            profileId: any(named: 'profileId'),
+            setupOrigin: any(named: 'setupOrigin'),
+            setupOriginEntityId: any(named: 'setupOriginEntityId'),
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            awaitContent: any(named: 'awaitContent'),
+            automaticUpdatesEnabled: any(named: 'automaticUpdatesEnabled'),
+          ),
+        ).thenThrow(StateError('not asserted on the identity result'));
+
+        await createFromQuery(tester);
+
+        verify(
+          () => mockTaskAgents.createTaskAgent(
+            taskId: 'new-task',
+            templateId: 'tmpl-1',
+            profileId: 'prof-1',
+            setupOrigin: AgentInferenceSetupOrigin.categorySnapshot,
+            setupOriginEntityId: 'cat-1',
+            allowedCategoryIds: {'cat-1'},
+            awaitContent: any(named: 'awaitContent'),
+            automaticUpdatesEnabled: any(named: 'automaticUpdatesEnabled'),
+          ),
+        ).called(1);
+      });
+
+      testWidgets('a write that throws links nothing and keeps the picker '
+          'open', (tester) async {
+        when(
+          () => mockPersistence.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+            labelIds: any(named: 'labelIds'),
+            private: any(named: 'private'),
+          ),
+        ).thenThrow(Exception('database unavailable'));
+
+        await createFromQuery(tester);
+
+        verifyNever(
+          () => mockRepository.linkTask(
+            relationshipId: any(named: 'relationshipId'),
+            taskId: any(named: 'taskId'),
+          ),
+        );
+        expect(find.byType(TextField), findsOneWidget);
+      });
+
+      testWidgets('a picker dismissed mid-write still links the task it just '
+          'created', (tester) async {
+        // Holds the write open so the picker can be closed while it is still
+        // in flight — the race that would otherwise leave a created task
+        // unlinked and unannounced.
+        final write = Completer<Task?>();
+        when(
+          () => mockPersistence.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+            labelIds: any(named: 'labelIds'),
+            private: any(named: 'private'),
+          ),
+        ).thenAnswer((_) => write.future);
+
+        await tester.pumpWidget(
+          buildPage(
+            overrides: [
+              taskAgentServiceProvider.overrideWithValue(mockTaskAgents),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Link task'));
+        await tester.pumpAndSettle();
+        await tester.enterText(find.byType(TextField), 'Buy flowers');
+        await tester.pump(entityPickerSearchDebounce);
+        await tester.pump();
+        await tester.tap(find.byKey(const ValueKey('link-picker-create')));
+        await tester.pump();
+
+        // Gone before the write lands.
+        await tester.tap(find.byIcon(LottiIcons.close));
+        await tester.pumpAndSettle();
+        expect(find.byType(TextField), findsNothing);
+
+        write.complete(createdTask);
+        await tester.pumpAndSettle();
+
+        verify(
+          () => mockRepository.linkTask(
+            relationshipId: 'rel-1',
+            taskId: 'new-task',
+          ),
+        ).called(1);
+      });
+
+      testWidgets('a link that fails after the dismissal is still reported on '
+          'the page', (tester) async {
+        final write = Completer<Task?>();
+        when(
+          () => mockPersistence.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+            labelIds: any(named: 'labelIds'),
+            private: any(named: 'private'),
+          ),
+        ).thenAnswer((_) => write.future);
+        when(
+          () => mockRepository.linkTask(
+            relationshipId: 'rel-1',
+            taskId: 'new-task',
+          ),
+        ).thenThrow(Exception('database unavailable'));
+
+        await tester.pumpWidget(
+          buildPage(
+            overrides: [
+              taskAgentServiceProvider.overrideWithValue(mockTaskAgents),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Link task'));
+        await tester.pumpAndSettle();
+        await tester.enterText(find.byType(TextField), 'Buy flowers');
+        await tester.pump(entityPickerSearchDebounce);
+        await tester.pump();
+        await tester.tap(find.byKey(const ValueKey('link-picker-create')));
+        await tester.pump();
+        await tester.tap(find.byIcon(LottiIcons.close));
+        await tester.pumpAndSettle();
+
+        write.complete(createdTask);
+        await tester.pumpAndSettle();
+
+        // The picker is gone, but the page is back — and it is the page that
+        // has to say the link never landed.
+        expect(
+          find.text('Could not link the task. Please try again.'),
+          findsOne,
+        );
+      });
+
+      testWidgets('a category without a default template creates no agent', (
+        tester,
+      ) async {
+        stubWrite(createdTask);
+        when(
+          () => mockCache.getCategoryById('cat-1'),
+        ).thenReturn(CategoryTestUtils.createTestCategory(id: 'cat-1'));
+
+        await createFromQuery(tester);
+
+        verifyNever(
+          () => mockTaskAgents.createTaskAgent(
+            taskId: any(named: 'taskId'),
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+          ),
+        );
+      });
     });
   });
 

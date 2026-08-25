@@ -28,7 +28,8 @@ the `enable_relationships` flag):
   beamer location): the relationship list ordered by last-check-in recency,
   the per-person detail page (status/cadence/nickname chips, contact
   channels, a linked-tasks section — `RelationshipLink` both ways, with a
-  task picker and per-row unlink — and the check-in log, with edit and
+  task picker that also creates the task when none exists yet, and per-row
+  unlink — and the check-in log, with edit and
   delete actions), the add/edit person modal (name, nickname, importance,
   cadence presets, status, and the manual contact-channel editor — desktop
   parity per ADR 0041 §2), and the check-in capture sheet (interaction
