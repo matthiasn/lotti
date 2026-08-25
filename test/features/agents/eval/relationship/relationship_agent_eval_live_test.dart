@@ -25,14 +25,23 @@ import 'support/relationship_agent_eval_scenarios.dart';
 ///
 ///     LOTTI_RELATIONSHIP_AGENT_EVAL_LIVE=1 \
 ///     RELATIONSHIP_AGENT_EVAL_API_KEY=$MELIOUS_API_KEY \
-///     RELATIONSHIP_AGENT_EVAL_MODELS=deepseek-v4-flash \
+///     RELATIONSHIP_AGENT_EVAL_MODELS=deepseek-v4-flash-0731 \
 ///     fvm flutter test test/features/agents/eval/relationship/ \
 ///       --tags eval-live --plain-name 'relationship-agent inference report'
 ///
 /// Provider type defaults to `melious` deliberately: it is the only provider
 /// whose responses carry billing, and cost-per-case is a first-class output
-/// of this eval. The default model is `deepseek-v4-flash` — the candidate
-/// this contract must work well on, because it is the viable option on cost.
+/// of this eval. The default model is `deepseek-v4-flash-0731` — the
+/// candidate this contract must work well on, because it is the viable
+/// option on cost. It is the DATED SNAPSHOT on purpose: the floating
+/// `deepseek-v4-flash` alias returned five consecutive `HTTP 503` during
+/// the goal matrix, and a run against a dead alias reads as a model that
+/// fails every case.
+///
+/// One process is one sample. For a readable result use
+/// `scripts/relationship_agent_eval_matrix.sh`, which drives several
+/// samples per model and merges them — a single pass over 24 cases sits
+/// under the noise floor the goal suite measured.
 void main() {
   test(
     'writes a relationship-agent inference report',

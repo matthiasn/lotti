@@ -1519,7 +1519,7 @@ class _AgentReadCardState extends ConsumerState<_AgentReadCard> {
               // stop fitting side by side the caption drops UNDER the pill —
               // end-aligned, still the header's trailing rail — rather than
               // either of them being truncated into a wrong number.
-              playbackControl: Wrap(
+              trailing: Wrap(
                 alignment: WrapAlignment.end,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 spacing: tokens.spacing.step3,

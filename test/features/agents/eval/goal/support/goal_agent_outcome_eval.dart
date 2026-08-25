@@ -47,7 +47,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../../mocks/mocks.dart';
 import '../../../../ai/eval/support/eval_text_matchers.dart';
 import '../../../test_data/entity_factories.dart';
-import 'goal_eval_cost_table.dart';
+import '../../support/eval_cost_table.dart';
 
 const goalAgentOutcomeEvalKind = 'lotti.goalAgentOutcomeEvalReport';
 
@@ -412,7 +412,7 @@ GoalOutcomeFailureCategory classifyGoalAgentOutcome({
 }
 
 /// One (model, scenario) tier-2 outcome.
-class GoalOutcomeEvalCaseResult implements GoalEvalCostCase {
+class GoalOutcomeEvalCaseResult implements AgentEvalCostCase {
   const GoalOutcomeEvalCaseResult({
     required this.modelId,
     required this.scenario,
@@ -567,10 +567,14 @@ class GoalOutcomeEvalReport {
     }
 
     buffer.write(
-      renderGoalEvalCostTable(
+      renderAgentEvalCostTable(
         modelIds: modelIds,
         cases: results,
         wakesPerDayAssumption: wakesPerDayAssumption,
+        subject: 'goal',
+        closingNote:
+            'Banner creation itself (ADR 0058) adds no image inference on '
+            'top of the Phase B text turn.',
       ),
     );
     return buffer.toString();

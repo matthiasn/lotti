@@ -7,6 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
+import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -145,14 +147,21 @@ class RelationshipDetailsPage extends ConsumerWidget {
     final data = relationship.data;
 
     return Scaffold(
+      // The page's primary action, so it wears the interactive accent every
+      // other create-here FAB in the app wears — Material's default
+      // `FloatingActionButton` painted it in the theme's secondary container
+      // instead, which read as a neutral pill beside the teal used for
+      // "Link task" a few rows below it.
       floatingActionButton: DesignSystemBottomNavigationFabPadding(
-        child: FloatingActionButton.extended(
+        child: DesignSystemFloatingActionButton(
+          key: const ValueKey('relationship-log-check-in-fab'),
+          semanticLabel: context.messages.relationshipLogCheckIn,
+          label: context.messages.relationshipLogCheckIn,
+          icon: LottiIcons.greeting,
           onPressed: () => showCheckInCaptureSheet(
             context: context,
             relationshipId: relationshipId,
           ),
-          label: Text(context.messages.relationshipLogCheckIn),
-          icon: const Icon(LottiIcons.greeting),
         ),
       ),
       body: SafeArea(
@@ -597,17 +606,20 @@ class _CheckInRow extends StatelessWidget {
               ],
               if (data.topics.isNotEmpty) ...[
                 SizedBox(height: tokens.spacing.step3),
+                // Topics are this check-in's tags, so they wear the tag
+                // pill the rest of the app spends on labels — the tight
+                // `radii.xs` corner that says "read-out, not button".
                 Wrap(
                   spacing: tokens.spacing.step2,
                   runSpacing: tokens.spacing.step2,
                   children: [
                     for (final topic in data.topics)
-                      Chip(
-                        label: Text(topic),
-                        labelStyle: tokens.typography.styles.body.bodySmall
-                            .copyWith(
-                              color: tokens.colors.text.mediumEmphasis,
-                            ),
+                      DsPill(
+                        variant: DsPillVariant.filled,
+                        shape: DsPillShape.tag,
+                        bordered: true,
+                        label: topic,
+                        labelColor: tokens.colors.text.mediumEmphasis,
                       ),
                   ],
                 ),

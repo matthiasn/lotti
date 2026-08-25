@@ -914,7 +914,7 @@ inference or generation. The leakage evals police the copy fields.
 Merging artifacts by hand:
 
 ```bash
-fvm dart run tool/goal_agent_eval_report.dart eval_artifacts/goal_agent_*.json
+fvm dart run tool/agent_eval_report.dart eval_artifacts/goal_agent_*.json
 ```
 
 `qwen3.5-397b-a17b` is the optional ceiling probe — add it to

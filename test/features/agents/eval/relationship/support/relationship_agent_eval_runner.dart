@@ -29,6 +29,7 @@ import 'package:lotti/features/relationships/model/relationship_health_metrics.d
 import 'package:openai_dart/openai_dart.dart';
 
 import '../../../../ai/eval/support/eval_text_matchers.dart';
+import '../../support/eval_cost_table.dart';
 import 'relationship_agent_eval_scenarios.dart';
 import 'relationship_agent_spec.dart';
 
@@ -89,7 +90,7 @@ enum RelationshipAgentEvalFailureCategory {
 }
 
 /// One (model, scenario) outcome.
-class RelationshipAgentEvalCaseResult {
+class RelationshipAgentEvalCaseResult implements AgentEvalCostCase {
   const RelationshipAgentEvalCaseResult({
     required this.modelId,
     required this.scenario,
@@ -105,6 +106,7 @@ class RelationshipAgentEvalCaseResult {
     this.errorMessage,
   });
 
+  @override
   final String modelId;
   final RelationshipAgentEvalScenario scenario;
   final List<RelationshipAgentEvalToolCall> toolCalls;
@@ -113,7 +115,9 @@ class RelationshipAgentEvalCaseResult {
   final String assistantContent;
   final int latencyMs;
   final RelationshipAgentEvalFailureCategory failureCategory;
+  @override
   final int? inputTokens;
+  @override
   final int? outputTokens;
   final int? thoughtsTokens;
   final int? cachedInputTokens;
@@ -128,6 +132,7 @@ class RelationshipAgentEvalCaseResult {
 
   /// Total reported energy for this case in watt-hours, or null when the
   /// provider sent no energy data.
+  @override
   double? get energyWh {
     final values = consumption
         .map((e) => e.energyKwh)
@@ -138,6 +143,7 @@ class RelationshipAgentEvalCaseResult {
 
   /// Total billed credits, or null when nothing was reported. Never
   /// zero-defaulted: a missing bill is not a free run.
+  @override
   double? get credits {
     final values = consumption
         .map((e) => e.credits)
@@ -260,67 +266,17 @@ class RelationshipAgentEvalReport {
       }
     }
 
-    buffer
-      ..writeln('## Cost (observed, not a target)')
-      ..writeln()
-      ..writeln(
-        '| Model | Cases | In | Out | Credits | '
-        'Credits/relationship-month* | Wh | Wh/relationship-month* |',
-      )
-      ..writeln('| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |');
-    for (final modelId in modelIds) {
-      final cases = results.where((r) => r.modelId == modelId).toList();
-      final inTokens = cases.fold<int>(
-        0,
-        (sum, r) => sum + (r.inputTokens ?? 0),
-      );
-      final outTokens = cases.fold<int>(
-        0,
-        (sum, r) => sum + (r.outputTokens ?? 0),
-      );
-      final creditValues = cases
-          .map((r) => r.credits)
-          .whereType<double>()
-          .toList();
-      final credits = creditValues.isEmpty
-          ? null
-          : creditValues.reduce((a, b) => a + b);
-      // Per-month figures divide by REPORTED cases only: missing telemetry
-      // must widen uncertainty, never masquerade as zero cost.
-      final perRelationshipMonth = credits == null
-          ? null
-          : credits / creditValues.length * wakesPerDayAssumption * 30;
-      final energyValues = cases
-          .map((r) => r.energyWh)
-          .whereType<double>()
-          .toList();
-      final energyWh = energyValues.isEmpty
-          ? null
-          : energyValues.reduce((a, b) => a + b);
-      final energyPerRelationshipMonth = energyWh == null
-          ? null
-          : energyWh / energyValues.length * wakesPerDayAssumption * 30;
-      buffer.writeln(
-        '| `$modelId` | ${cases.length} | $inTokens | $outTokens | '
-        '${credits?.toStringAsFixed(4) ?? 'not reported'} | '
-        '${perRelationshipMonth?.toStringAsFixed(4) ?? 'not reported'} | '
-        '${energyWh?.toStringAsFixed(2) ?? 'not reported'} | '
-        '${energyPerRelationshipMonth?.toStringAsFixed(1) ?? 'not reported'} '
-        '|',
-      );
-    }
-    buffer
-      ..writeln()
-      ..writeln(
-        '*Extrapolation assumes $wakesPerDayAssumption LLM wakes '
-        'per relationship per day — a printed assumption, not a '
-        'measurement — and divides by cases that actually reported the '
-        'figure: missing telemetry widens uncertainty, it is never counted '
-        'as zero. Credits and energy are Melious-reported; "not reported" '
-        'means the provider sent no data, never that the run was free. '
-        'A deterministic Phase A tick costs no inference at all, so the '
-        'real monthly figure is bounded above by this one.',
-      );
+    buffer.write(
+      renderAgentEvalCostTable(
+        modelIds: modelIds,
+        cases: results,
+        wakesPerDayAssumption: wakesPerDayAssumption,
+        subject: 'relationship',
+        closingNote:
+            'A deterministic Phase A tick costs no inference at all, so '
+            'the real monthly figure is bounded above by this one.',
+      ),
+    );
     return buffer.toString();
   }
 }

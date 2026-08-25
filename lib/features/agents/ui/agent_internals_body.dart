@@ -339,6 +339,28 @@ class _ProfileSection extends ConsumerWidget {
     final canOpenTaskSetup =
         identity != null &&
         (identity.kind == AgentKinds.goalAgent || taskId != null);
+    final setupTap = isDailyOs
+        ? (dailyOsSetupLauncher == null
+              ? null
+              : () => dailyOsSetupLauncher(context))
+        : !canOpenTaskSetup
+        ? null
+        : () => AgentModelSheet.show(
+            context: context,
+            agentId: agentId,
+            taskId: taskId,
+          );
+    // This row reports and edits the task/goal/planner setup path. A
+    // relationship agent is on none of them: it owns no task and no
+    // template, so `agentResolvedSetupProvider` returns null *by
+    // construction* and the row turned that silence into "No AI setup"
+    // under an error glyph — about an agent that resolves a model perfectly
+    // well through the person's own profile and briefs with it every day.
+    // Keyed on the kind rather than on a null resolution, because a null
+    // resolution for a kind that SHOULD have one is a real misconfiguration
+    // this row is the only place to see.
+    final kindOwnsSetupRow = identity?.kind != AgentKinds.relationshipAgent;
+    final showSetupRow = kindOwnsSetupRow || setupTap != null;
 
     return Padding(
       padding: EdgeInsets.symmetric(
@@ -348,37 +370,33 @@ class _ProfileSection extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            isDailyOs
-                ? context.messages.dailyOsSettingsInstanceOverrideTitle
-                : context.messages.taskAgentSetupTitle,
-            style: tokens.typography.styles.subtitle.subtitle2,
-          ),
-          SizedBox(height: tokens.spacing.step3),
-          DesignSystemListItem(
-            title: route ?? setupTitle,
-            subtitle: route == null
-                ? setupSubtitle
-                : isDailyOs
-                ? context.messages.dailyOsSettingsInstanceCurrentSetup
-                : context.messages.taskAgentCurrentSetupLabel,
-            subtitleMaxLines: null,
-            leading: Icon(
-              route == null ? LottiIcons.error : LottiIcons.reasoning,
+          if (showSetupRow) ...[
+            Text(
+              isDailyOs
+                  ? context.messages.dailyOsSettingsInstanceOverrideTitle
+                  : context.messages.taskAgentSetupTitle,
+              style: tokens.typography.styles.subtitle.subtitle2,
             ),
-            trailing: const Icon(LottiIcons.chevronRight),
-            onTap: isDailyOs
-                ? (dailyOsSetupLauncher == null
-                      ? null
-                      : () => dailyOsSetupLauncher(context))
-                : !canOpenTaskSetup
-                ? null
-                : () => AgentModelSheet.show(
-                    context: context,
-                    agentId: agentId,
-                    taskId: taskId,
-                  ),
-          ),
+            SizedBox(height: tokens.spacing.step3),
+            DesignSystemListItem(
+              title: route ?? setupTitle,
+              subtitle: route == null
+                  ? setupSubtitle
+                  : isDailyOs
+                  ? context.messages.dailyOsSettingsInstanceCurrentSetup
+                  : context.messages.taskAgentCurrentSetupLabel,
+              subtitleMaxLines: null,
+              leading: Icon(
+                route == null ? LottiIcons.error : LottiIcons.reasoning,
+              ),
+              // A chevron promises somewhere to go; an untappable row has
+              // nowhere. Daily OS with no launcher wired hits this too.
+              trailing: setupTap == null
+                  ? null
+                  : const Icon(LottiIcons.chevronRight),
+              onTap: setupTap,
+            ),
+          ],
         ],
       ),
     );
