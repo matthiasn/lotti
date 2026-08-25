@@ -732,6 +732,15 @@ class _LabeledField extends StatelessWidget {
 /// Design-system field surface: a rounded box whose hairline ramps from a
 /// faint idle border to `interactive.enabled` (teal, 2px) on focus and
 /// `text.mediumEmphasis` on hover — matching `DesignSystemTextInput`.
+///
+/// The box is also the field's tap target: a tap anywhere inside it focuses
+/// [focusNode]. Without that, only the input itself accepts taps, and the hero
+/// value input is a centred [IntrinsicWidth] barely wider than the digits it
+/// holds — so on a phone the box reads as the field while nearly all of it is
+/// dead space to a thumb.
+///
+/// The box counts as part of the field it frames, not as somewhere else on the
+/// screen, which is what [TextFieldTapRegion] declares.
 class _FieldShell extends StatefulWidget {
   const _FieldShell({
     required this.focusNode,
@@ -766,6 +775,28 @@ class _FieldShellState extends State<_FieldShell> {
   void _onFocusChanged() =>
       setState(() => _focused = widget.focusNode.hasFocus);
 
+  /// Hands a tap that missed the input to the field the box frames.
+  ///
+  /// Only taps on the dead space reach this: a tap on the input itself is
+  /// claimed by the input's own recognizer, which enters the gesture arena
+  /// first as the deeper hit-test entry, so caret placement within the text is
+  /// untouched.
+  ///
+  /// [EditableTextState.requestKeyboard] is the whole implementation on
+  /// purpose. It focuses an unfocused field and re-opens the keyboard on a
+  /// focused one — focus outlives the soft keyboard, so a swipe-down leaves a
+  /// field that is focused and unusable — and it marks the focus change as
+  /// coming from within the field. That last part is load-bearing: an
+  /// *external* focus gain makes a single-line field select all its text on
+  /// every platform where `selectAllOnFocus` defaults to true (desktop and
+  /// web), so calling `focusNode.requestFocus()` here would select the value a
+  /// tap two pixels away merely puts a caret in.
+  void _focusField() {
+    widget.focusNode.context
+        ?.findAncestorStateOfType<EditableTextState>()
+        ?.requestKeyboard();
+  }
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -778,22 +809,39 @@ class _FieldShellState extends State<_FieldShell> {
       borderColor = tokens.colors.decorative.level01;
     }
 
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(tokens.radii.m),
-          border: Border.all(color: borderColor, width: _focused ? 2 : 1),
-        ),
-        child: Padding(
-          padding:
-              widget.padding ??
-              EdgeInsets.symmetric(
-                horizontal: tokens.spacing.step4,
-                vertical: tokens.spacing.step4,
-              ),
-          child: widget.child,
+    return TextFieldTapRegion(
+      // Without this the box is "outside" the field on desktop and web, where
+      // a tap outside a text field unfocuses it: the pointer-down would drop
+      // focus and _focusField would immediately take it back, churning the
+      // input connection on every tap that this widget exists to answer.
+      child: MouseRegion(
+        // The whole box behaves like the field, so it points like one too.
+        cursor: SystemMouseCursors.text,
+        onEnter: (_) => setState(() => _hovered = true),
+        onExit: (_) => setState(() => _hovered = false),
+        child: GestureDetector(
+          // Opaque: the padding ring and the gap beside a narrow input are not
+          // covered by any child, so nothing there would be hit otherwise.
+          behavior: HitTestBehavior.opaque,
+          // The input inside already exposes its own label and focus action; a
+          // second, unlabelled tappable node would only add noise.
+          excludeFromSemantics: true,
+          onTap: _focusField,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(tokens.radii.m),
+              border: Border.all(color: borderColor, width: _focused ? 2 : 1),
+            ),
+            child: Padding(
+              padding:
+                  widget.padding ??
+                  EdgeInsets.symmetric(
+                    horizontal: tokens.spacing.step4,
+                    vertical: tokens.spacing.step4,
+                  ),
+              child: widget.child,
+            ),
+          ),
         ),
       ),
     );

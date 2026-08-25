@@ -1,7 +1,10 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -681,6 +684,328 @@ void main() {
       },
     );
   }
+
+  group('the box around a field', () {
+    // The hero value input is a centred [IntrinsicWidth] barely wider than the
+    // digits it holds, so before the fix the bordered box read as the field
+    // while only a ~40px strip in its middle accepted a tap — unmissable with
+    // a pointer, unhittable with a thumb.
+    /// The bordered box drawn around [fieldKey] — anchored on the box the user
+    /// sees, not on the gesture detector this fix adds, so a revert fails these
+    /// tests on behaviour rather than on a finder that no longer resolves.
+    Finder shellOf(Key fieldKey) => find
+        .ancestor(of: find.byKey(fieldKey), matching: find.byType(DecoratedBox))
+        .first;
+
+    FocusNode focusNodeOf(WidgetTester tester, Key fieldKey) =>
+        tester.widget<TextField>(find.byKey(fieldKey)).focusNode!;
+
+    /// A point on [fieldKey]'s box that the input itself does not cover, so a
+    /// tap there can only be answered by the box.
+    Offset deadZone(WidgetTester tester, Key fieldKey, {required bool left}) {
+      final shell = tester.getRect(shellOf(fieldKey));
+      final input = tester.getRect(find.byKey(fieldKey));
+      final point = Offset(
+        left ? shell.left + 8 : shell.right - 8,
+        shell.center.dy,
+      );
+      expect(
+        shell.contains(point),
+        isTrue,
+        reason: 'the sample point must sit on the box',
+      );
+      expect(
+        input.contains(point),
+        isFalse,
+        reason: 'the sample point must miss the input, or it proves nothing',
+      );
+      return point;
+    }
+
+    Future<void> blur(WidgetTester tester) async {
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pump();
+    }
+
+    testWidgets('a tap left of the digits focuses the value field', (
+      tester,
+    ) async {
+      await pumpLauncher(tester);
+      await openCapture(tester);
+      await blur(tester);
+      expect(focusNodeOf(tester, _valueKey).hasFocus, isFalse);
+      expect(tester.testTextInput.isVisible, isFalse);
+
+      await tester.tapAt(deadZone(tester, _valueKey, left: true));
+      await tester.pump();
+
+      expect(focusNodeOf(tester, _valueKey).hasFocus, isTrue);
+      expect(
+        tester.testTextInput.isVisible,
+        isTrue,
+        reason: 'focusing the field must also raise the soft keyboard',
+      );
+    });
+
+    testWidgets('a tap right of the unit focuses the value field', (
+      tester,
+    ) async {
+      await pumpLauncher(tester);
+      await openCapture(tester);
+      await blur(tester);
+
+      await tester.tapAt(deadZone(tester, _valueKey, left: false));
+      await tester.pump();
+
+      expect(focusNodeOf(tester, _valueKey).hasFocus, isTrue);
+    });
+
+    testWidgets('every point across the value box is a target', (tester) async {
+      await pumpLauncher(tester);
+      await openCapture(tester);
+      final shell = tester.getRect(shellOf(_valueKey));
+      final focusNode = focusNodeOf(tester, _valueKey);
+
+      for (final fraction in const [0.02, 0.2, 0.5, 0.8, 0.98]) {
+        await blur(tester);
+        expect(focusNode.hasFocus, isFalse);
+
+        await tester.tapAt(
+          Offset(shell.left + shell.width * fraction, shell.center.dy),
+        );
+        await tester.pump();
+
+        expect(
+          focusNode.hasFocus,
+          isTrue,
+          reason: 'tap ${(fraction * 100).round()}% across the box',
+        );
+      }
+    });
+
+    testWidgets('a tap on the digits still places the caret there', (
+      tester,
+    ) async {
+      await pumpLauncher(tester);
+      await openCapture(tester);
+      await tester.enterText(find.byKey(_valueKey), '250');
+      await tester.pump();
+      final controller = tester
+          .widget<TextField>(find.byKey(_valueKey))
+          .controller!;
+      final input = tester.getRect(find.byKey(_valueKey));
+
+      await blur(tester);
+      await tester.tapAt(Offset(input.left + 2, input.center.dy));
+      await tester.pump();
+
+      expect(
+        controller.selection.baseOffset,
+        0,
+        reason: 'the box must not swallow taps meant for the input',
+      );
+
+      await tester.tapAt(Offset(input.right - 2, input.center.dy));
+      await tester.pump();
+
+      expect(controller.selection.baseOffset, '250'.length);
+    });
+
+    testWidgets(
+      'a dead-zone tap on a focused field restores the keyboard and keeps '
+      'the caret',
+      (tester) async {
+        await pumpLauncher(tester);
+        await openCapture(tester);
+        await tester.enterText(find.byKey(_valueKey), '250');
+        await tester.pump();
+        // A correction mid-number, the caret parked between the 2 and the 5.
+        final controller =
+            tester.widget<TextField>(find.byKey(_valueKey)).controller!
+              ..selection = const TextSelection.collapsed(offset: 1);
+        await tester.pump();
+
+        // The user swipes the keyboard away; focus stays on the field.
+        tester.testTextInput.hide();
+        expect(focusNodeOf(tester, _valueKey).hasFocus, isTrue);
+        expect(tester.testTextInput.isVisible, isFalse);
+
+        await tester.tapAt(deadZone(tester, _valueKey, left: true));
+        await tester.pump();
+
+        expect(tester.testTextInput.isVisible, isTrue);
+        expect(controller.selection, const TextSelection.collapsed(offset: 1));
+        expect(controller.text, '250');
+      },
+    );
+
+    testWidgets('a tap beside the comment focuses the comment field', (
+      tester,
+    ) async {
+      await pumpLauncher(tester);
+      await openCapture(tester);
+      await blur(tester);
+
+      await tester.tapAt(deadZone(tester, _commentKey, left: true));
+      await tester.pump();
+
+      expect(focusNodeOf(tester, _commentKey).hasFocus, isTrue);
+      expect(focusNodeOf(tester, _valueKey).hasFocus, isFalse);
+    });
+
+    testWidgets('the box points like a text field and clears 48dp', (
+      tester,
+    ) async {
+      await pumpLauncher(tester);
+      await openCapture(tester);
+
+      final shell = tester.getRect(shellOf(_valueKey));
+      final input = tester.getRect(find.byKey(_valueKey));
+      expect(
+        input.width,
+        lessThan(shell.width / 4),
+        reason: 'the digits alone can never be the target',
+      );
+      expect(shell.height, greaterThanOrEqualTo(48));
+
+      final region = tester.widget<MouseRegion>(
+        find
+            .ancestor(
+              of: shellOf(_valueKey),
+              matching: find.byType(MouseRegion),
+            )
+            .first,
+      );
+      expect(region.cursor, SystemMouseCursors.text);
+    });
+
+    testWidgets('the box ramps its border under the pointer', (tester) async {
+      await pumpLauncher(tester);
+      await openCapture(tester);
+      await blur(tester);
+
+      final tokens = tester.element(find.byKey(_valueKey)).designTokens;
+      Color borderColor() {
+        final box = tester.widget<DecoratedBox>(shellOf(_valueKey));
+        return ((box.decoration as BoxDecoration).border! as Border).top.color;
+      }
+
+      expect(borderColor(), tokens.colors.decorative.level01);
+
+      final pointer = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await pointer.addPointer(location: Offset.zero);
+      addTearDown(pointer.removePointer);
+      await pointer.moveTo(tester.getCenter(shellOf(_valueKey)));
+      await tester.pump();
+
+      expect(borderColor(), tokens.colors.text.mediumEmphasis);
+
+      await pointer.moveTo(Offset.zero);
+      await tester.pump();
+
+      expect(borderColor(), tokens.colors.decorative.level01);
+    });
+
+    testWidgets('neither box adds an unlabelled node to the semantics tree', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await pumpLauncher(tester);
+      await openCapture(tester);
+
+      // Scoped to the two boxes rather than the whole tree: the nearest
+      // semantics node enclosing a box must never be a bare tap node the box
+      // introduced, and an unlabelled tappable somewhere else on screen is a
+      // different bug than this one.
+      final offenders = <SemanticsNode>[];
+      for (final key in const [_valueKey, _commentKey]) {
+        final node = tester.getSemantics(shellOf(key));
+        if (node.getSemanticsData().hasAction(SemanticsAction.tap) &&
+            node.label.isEmpty &&
+            node.tooltip.isEmpty &&
+            node.hint.isEmpty) {
+          offenders.add(node);
+        }
+      }
+
+      handle.dispose();
+      expect(
+        offenders,
+        isEmpty,
+        reason: 'the input already exposes its own label and focus action',
+      );
+    });
+
+    /// Runs [body] as though the app were on macOS, where a tap outside a text
+    /// field drops its focus and `selectAllOnFocus` defaults to true. Reset
+    /// inside the body: a tearDown runs after the binding's debug-variable
+    /// invariant check and would fail the whole file.
+    Future<void> onDesktop(Future<void> Function() body) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+      try {
+        await body();
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    }
+
+    testWidgets('pressing on the box is not a tap outside the field', (
+      tester,
+    ) async {
+      await onDesktop(() async {
+        await pumpLauncher(tester);
+        await openCapture(tester);
+        await tester.enterText(find.byKey(_valueKey), '250');
+        await tester.pump();
+
+        // Focus is dropped on pointer *down*, so the press has to be held to
+        // observe it — by pointer-up the box would have taken focus back and
+        // hidden the churn.
+        final press = await tester.startGesture(
+          deadZone(tester, _valueKey, left: true),
+        );
+        await tester.pump();
+
+        expect(
+          focusNodeOf(tester, _valueKey).hasFocus,
+          isTrue,
+          reason: 'the box belongs to the field, so focus never leaves it',
+        );
+
+        await press.up();
+        await tester.pump();
+      });
+    });
+
+    testWidgets('a tap on the box does not select the whole value', (
+      tester,
+    ) async {
+      await onDesktop(() async {
+        await pumpLauncher(tester);
+        await openCapture(tester);
+        await tester.enterText(find.byKey(_valueKey), '250');
+        await tester.pump();
+        final controller = tester
+            .widget<TextField>(find.byKey(_valueKey))
+            .controller!;
+        await blur(tester);
+
+        await tester.tapAt(deadZone(tester, _valueKey, left: true));
+        await tester.pump();
+
+        // A field gaining focus from *outside* itself selects all its text
+        // where selectAllOnFocus defaults to true. A tap two pixels further
+        // right merely puts a caret in, so this one must too.
+        expect(focusNodeOf(tester, _valueKey).hasFocus, isTrue);
+        expect(
+          controller.selection.isCollapsed,
+          isTrue,
+          reason: 'selection was ${controller.selection}',
+        );
+        expect(controller.selection.baseOffset, '250'.length);
+      });
+    });
+  });
 
   testWidgets('close dismisses the complete route without saving', (
     tester,
