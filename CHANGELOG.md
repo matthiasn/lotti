@@ -35,6 +35,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Mac stored a seasonal abbreviation such as "CEST" instead of the zone's real
   name, which is ambiguous — "CST" alone belongs to three different zones — and
   changes twice a year. They now store the full name, e.g. `Europe/Berlin`.
+- **The active list button in the editor toolbar showed nothing at all.** With
+  the cursor inside a bulleted or numbered list, that list's button turned into
+  a solid teal disc with no symbol on it: the toolbar painted the glyph in the
+  same teal the button's highlight already used, so it vanished into its own
+  background. Every toolbar button that can switch on — the lists, quote, code
+  block, checklist, link — now draws its symbol in a contrasting ink against the
+  highlight, in both light and dark themes.
+- **The editor's paragraph-format control no longer reads "Nor".** It showed a
+  word ("Normal") inside a button sized for a symbol, so the label was cut off
+  mid-word at every window size. It is now a compact row of N / H1 / H2 / H3
+  buttons, and on a phone it moves into the "…" menu with the other advanced
+  formatting rather than taking space in the main row.
+- **The editor toolbar no longer runs out of room on a phone.** Save now shows
+  its disk symbol alone on narrow screens — the word returns on a wider window —
+  and the discard and "…" buttons regained the full-size touch target they were
+  meant to have, having been shrunk to 40 pixels.
 
 ## [1.0.12]
 ### Fixed
