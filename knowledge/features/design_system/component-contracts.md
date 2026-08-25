@@ -32,6 +32,10 @@ sources:
     resource: ../../../lib/widgets/nav_bar/design_system_bottom_navigation_bar.dart
     title: Bottom navigation shell
     last_modified: 2026-06-12
+  - id: measurement-capture
+    resource: ../../../lib/pages/create/create_measurement_dialog.dart
+    title: Measurement capture sheet — the hero value field and the box that focuses it
+    last_modified: 2026-08-25
 ---
 
 # Token-first sizing and styling
@@ -438,6 +442,50 @@ pairing is now pinned in `design_system_dropdown_test.dart`, which renders both 
 one tree and asserts fill, border and radius agree — against each other *and*
 against the tokens, so a change moving both in the same wrong direction still
 fails.
+
+# A field's box is its tap target, not its text
+
+A bordered field surface reads as one control, so **every point inside the
+border has to focus the input it frames** — the padding ring included, and
+whatever space the input itself does not fill.
+
+`DesignSystemTextInput` lays its `TextField` across the row, so only its padding
+ring is inert. The measurement capture sheet's hero value input does not. It is
+a centred `IntrinsicWidth` sized to the digits it holds, with the unit as an
+adjacent suffix so "750 ml" reads as one measurement — which on a 402pt phone
+left a 370pt-wide box whose middle **40pt** were the only part that answered a
+tap. A pointer finds that strip and a physical keyboard makes the initial
+autofocus enough, so desktop never showed the defect; a thumb finds the other
+330pt, and the field looked focusable while being inert.
+
+`_FieldShell` in `create_measurement_dialog.dart` therefore wraps its box in an
+opaque `GestureDetector` that hands the tap to its focus node. Three details
+carry the design, and the last two are the ones that bite:
+
+- **The input keeps its own taps.** The box's recognizer loses the gesture arena
+  to the input's, which is entered first as the deeper hit-test entry, so caret
+  placement inside the text is untouched and needs no special case.
+- **The box is inside the field's `TextFieldTapRegion`.** Without that
+  declaration, the box is *outside* the text field as far as `TapRegion` is
+  concerned, and on desktop and web a tap outside a text field drops its focus:
+  the pointer-down would unfocus and the box would take focus straight back,
+  churning the input connection on every tap this widget exists to answer.
+- **Focus is asked for through `EditableTextState.requestKeyboard`, never
+  `FocusNode.requestFocus`.** `requestKeyboard` covers both states — it focuses
+  an unfocused field and re-opens the keyboard on a focused one, which matters
+  because focus outlives the soft keyboard and a swipe-down leaves a field that
+  is focused and unusable — and it marks the focus change as *internal*. That
+  flag is load-bearing: on an external focus gain a single-line field selects
+  all its text wherever `selectAllOnFocus` defaults to true (desktop and web),
+  so the plain `requestFocus` would select the value that a tap two pixels
+  further right merely puts a caret in.
+
+The detector is `excludeFromSemantics: true`: the input already publishes its
+label and its focus action, and a second, unlabelled tappable node is noise to a
+screen reader. `create_measurement_dialog_test.dart` pins the lot — a sweep of
+tap points across the box, caret placement on a direct tap, the keyboard
+returning to a focused field, the desktop pair above under a macOS platform
+override, and the semantics node enclosing each box.
 
 # Shell-aware overlay spacing
 

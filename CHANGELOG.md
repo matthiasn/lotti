@@ -18,6 +18,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Settings.
 
 ### Fixed
+- **Typing a measurement value works on a phone.** Logging an amount that is not
+  one of the Quick log chips — 300 ml of water when only 200 and 500 are
+  offered — meant tapping the value field, and on a phone that tap usually did
+  nothing. Only the digits themselves accepted it: a strip about a fingertip
+  wide in the middle of a box spanning the whole sheet, easy to hit with a
+  mouse pointer and all but impossible with a thumb. The whole box is the field
+  now, and tapping it after the keyboard has been swiped away brings the
+  keyboard back rather than leaving the cursor stranded. The comment box below
+  it behaves the same way.
 - **Daily habit reminders arrived hours late on iPhone, iPad and Android.** The
   app could not work out which timezone the device was in, quietly settled for
   UTC, and then built the reminder's time of day in UTC — so an 08:00 habit
