@@ -11408,14 +11408,14 @@ class AppLocalizationsIt extends AppLocalizations {
       'Nessuna bandiera corrisponde alla tua ricerca';
 
   @override
-  String get settingsFlagsSearchHint => 'Bandiere di ricerca';
+  String get settingsFlagsSearchHint => 'Cerca flag';
 
   @override
   String get settingsFlagsSubtitle =>
       'Configurare bandiere e opzioni di funzionalità';
 
   @override
-  String get settingsFlagsTitle => 'Bandiere di conflitto';
+  String get settingsFlagsTitle => 'Flag di configurazione';
 
   @override
   String get settingsHabitsCreateTitle => 'Creare l\'abitudine';
