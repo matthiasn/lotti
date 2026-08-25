@@ -156,6 +156,81 @@ Override createEntryControllerOverride(JournalEntity entity) {
   return (override, tracker);
 }
 
+/// Fake EntryController whose toggles apply the production *writer* contract
+/// and push the result back into state, so a test can drive a full
+/// tap-on/tap-off round trip and then read the widget.
+///
+/// The plain [FakeEntryController] records toggle calls and leaves its entity
+/// frozen, which is right for asserting that a widget *calls* the controller
+/// but cannot show what the widget renders once the write lands. This subclass
+/// covers the other half.
+///
+/// The flag transition it encodes — flagged is [EntryFlag.import], and clearing
+/// writes [EntryFlag.none] rather than null — is pinned independently by
+/// `entry_controller_test.dart`, so this double cannot quietly drift into
+/// agreeing with a reader that is wrong.
+class StatefulTogglesFakeEntryController extends FakeEntryController {
+  // ignore: use_super_parameters, parent uses private `_entity` field
+  StatefulTogglesFakeEntryController(
+    JournalEntity entity, {
+    ToggleCallTracker? tracker,
+  }) : super(entity, tracker: tracker);
+
+  JournalEntity? _currentEntity;
+
+  JournalEntity get _entityNow => _currentEntity ?? super._entity;
+
+  @override
+  Future<EntryState?> build() {
+    _currentEntity = super._entity;
+    return super.build();
+  }
+
+  void _apply(Metadata Function(Metadata meta) update) {
+    final entity = _entityNow.copyWith(meta: update(_entityNow.meta));
+    _currentEntity = entity;
+    final currentState = state.value;
+    if (currentState != null) {
+      state = AsyncData(currentState.copyWith(entry: entity));
+    }
+  }
+
+  @override
+  Future<void> toggleFlagged() async {
+    await super.toggleFlagged();
+    _apply(
+      (meta) => meta.copyWith(
+        flag: meta.flag == EntryFlag.import ? EntryFlag.none : EntryFlag.import,
+      ),
+    );
+  }
+
+  @override
+  Future<void> toggleStarred() async {
+    await super.toggleStarred();
+    _apply((meta) => meta.copyWith(starred: !(meta.starred ?? false)));
+  }
+
+  @override
+  Future<void> togglePrivate() async {
+    await super.togglePrivate();
+    _apply((meta) => meta.copyWith(private: !(meta.private ?? false)));
+  }
+}
+
+/// Helper to create an entry controller override whose toggles are stateful.
+/// Returns the override and a tracker, so a test can assert both the call and
+/// the resulting rendered state.
+(Override, ToggleCallTracker) createStatefulTogglesEntryControllerOverride(
+  JournalEntity entity,
+) {
+  final tracker = ToggleCallTracker();
+  final override = entryControllerProvider(entity.id).overrideWith(
+    () => StatefulTogglesFakeEntryController(entity, tracker: tracker),
+  );
+  return (override, tracker);
+}
+
 /// Tracks calls to setCoverArt for testing.
 class CoverArtCallTracker {
   final List<String?> calls = [];

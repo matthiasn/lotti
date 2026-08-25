@@ -1,11 +1,8 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/components/action_modal/ds_action_toggle_chip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/journal/model/entry_state.dart';
-import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/entry_toggle_chips.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -37,49 +34,6 @@ JournalEntry _entry({
       flag: flag,
     ),
   );
-}
-
-/// A controller that applies the *writer* contract `EntryController` holds for
-/// the flag — flagged means `EntryFlag.import`, and clearing it writes
-/// `EntryFlag.none` rather than null — and pushes the result back into state.
-///
-/// It exists so one test can drive the whole loop the user reported: tap on,
-/// tap off, then read the chip. The transition it encodes is pinned
-/// independently by `entry_controller_test.dart` ("toggle flagged" and
-/// "toggling a flagged entry clears it to EntryFlag.none"), so this double
-/// cannot quietly drift into agreeing with a reader that is wrong.
-class _FlagRoundTripController extends EntryController {
-  _FlagRoundTripController(this._entity);
-
-  JournalEntry _entity;
-
-  @override
-  Future<EntryState?> build() async {
-    final value = EntryState.saved(
-      entryId: id,
-      entry: _entity,
-      showMap: false,
-      isFocused: false,
-      shouldShowEditorToolBar: false,
-    );
-    state = AsyncData(value);
-    return value;
-  }
-
-  @override
-  Future<void> toggleFlagged() async {
-    _entity = _entity.copyWith(
-      meta: _entity.meta.copyWith(
-        flag: _entity.meta.flag == EntryFlag.import
-            ? EntryFlag.none
-            : EntryFlag.import,
-      ),
-    );
-    final current = state.value;
-    if (current != null) {
-      state = AsyncData(current.copyWith(entry: _entity));
-    }
-  }
 }
 
 void main() {
@@ -288,15 +242,10 @@ void main() {
     testWidgets('goes dark again when the flag is toggled back off', (
       tester,
     ) async {
-      final entry = _entry();
-      await pump(
-        tester,
-        overrides: [
-          entryControllerProvider(_entryId).overrideWith(
-            () => _FlagRoundTripController(entry),
-          ),
-        ],
+      final (override, tracker) = createStatefulTogglesEntryControllerOverride(
+        _entry(),
       );
+      await pump(tester, overrides: [override]);
 
       final label = messagesOf(tester).journalToggleFlaggedTitle;
       expect(flaggedChip(tester).selected, isFalse);
@@ -315,6 +264,11 @@ void main() {
             'unflagged',
       );
       expect(find.byIcon(LottiIcons.flag), findsOneWidget);
+      expect(
+        tracker.toggleFlaggedCalls,
+        hasLength(2),
+        reason: 'both taps must have reached the controller',
+      );
     });
   });
 
