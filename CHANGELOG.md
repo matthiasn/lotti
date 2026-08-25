@@ -4,18 +4,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.13]
+## [1.0.14]
+### Added
+- **Create a task for someone from their own page.** A person's Linked tasks
+  section could only link a task that already existed: typing the name of one
+  that did not dead-ended on "No tasks found", and the way forward was to
+  leave the person, create the task elsewhere, come back and link it. Typing a
+  name that matches nothing now offers to create it there and then. The new
+  task is titled what you typed, lands in the person's own category, is
+  private if they are, and is linked to them in the same tap.
+
 ### Changed
-- **Settings groups your preferences.** Theming, Keyboard shortcuts, Recording
-  style and Speech used to sit loose in the Settings list, four unrelated-looking
-  rows wedged between Definitions and Advanced Settings. Animations sat in the
-  wrong place too — buried in Advanced beside the log domains, though how a
-  finished task celebrates is taste, not maintenance. All five now live together
-  under **Preferences**, directly above Advanced Settings, so the top level lists
-  menus rather than a menu and a pile of leftovers. Nothing moved out of reach:
-  every link that used to open one of those pages still opens it, and a back tap
-  from one of them returns to Preferences rather than all the way to the top of
-  Settings.
 - **A person's briefing is now the same AI card as everywhere else.** It used
   to print the agent's own formatting on screen — `##` in front of headings,
   asterisks around the words meant to be bold — on a plain grey panel of its
@@ -42,23 +41,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   now, and tapping it after the keyboard has been swiped away brings the
   keyboard back rather than leaving the cursor stranded. The comment box below
   it behaves the same way.
-- **Daily habit reminders arrived hours late on iPhone, iPad and Android.** The
-  app could not work out which timezone the device was in, quietly settled for
-  UTC, and then built the reminder's time of day in UTC — so an 08:00 habit
-  reminder rang at 10:00 in Central European Summer Time, and further off the
-  further you live from Greenwich. Reminders now use the zone the device is
-  actually in. Notifications scheduled for a specific moment — task suggestions,
-  overdue alerts and relationship check-ins — were unaffected and kept their
-  timing.
-- **The log no longer fills with `Location with the name "CEST" doesn't
-  exist`.** macOS stores its timezone data in a folder named after the current
-  tzdata release, and looking through it for a zone name failed on every Mac
-  that had taken a data update, leaving the app with the seasonal abbreviation
-  it could not use.
-- **New entries record the timezone they were made in.** Entries written on a
-  Mac stored a seasonal abbreviation such as "CEST" instead of the zone's real
-  name, which is ambiguous — "CST" alone belongs to three different zones — and
-  changes twice a year. They now store the full name, e.g. `Europe/Berlin`.
 - **The active list button in the editor toolbar showed nothing at all.** With
   the cursor inside a bulleted or numbered list, that list's button turned into
   a solid teal disc with no symbol on it: the toolbar painted the glyph in the
@@ -82,6 +64,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   good. Nothing else was fooled: the header glyph, the journal cards and the
   flagged-only filter all read the entry correctly, and the Favorite and
   Private chips beside it were never affected.
+
+## [1.0.13]
+### Changed
+- **Settings groups your preferences.** Theming, Keyboard shortcuts, Recording
+  style and Speech used to sit loose in the Settings list, four unrelated-looking
+  rows wedged between Definitions and Advanced Settings. Animations sat in the
+  wrong place too — buried in Advanced beside the log domains, though how a
+  finished task celebrates is taste, not maintenance. All five now live together
+  under **Preferences**, directly above Advanced Settings, so the top level lists
+  menus rather than a menu and a pile of leftovers. Nothing moved out of reach:
+  every link that used to open one of those pages still opens it, and a back tap
+  from one of them returns to Preferences rather than all the way to the top of
+  Settings.
+
+### Fixed
+- **Daily habit reminders arrived hours late on iPhone, iPad and Android.** The
+  app could not work out which timezone the device was in, quietly settled for
+  UTC, and then built the reminder's time of day in UTC — so an 08:00 habit
+  reminder rang at 10:00 in Central European Summer Time, and further off the
+  further you live from Greenwich. Reminders now use the zone the device is
+  actually in. Notifications scheduled for a specific moment — task suggestions,
+  overdue alerts and relationship check-ins — were unaffected and kept their
+  timing.
+- **The log no longer fills with `Location with the name "CEST" doesn't
+  exist`.** macOS stores its timezone data in a folder named after the current
+  tzdata release, and looking through it for a zone name failed on every Mac
+  that had taken a data update, leaving the app with the seasonal abbreviation
+  it could not use.
+- **New entries record the timezone they were made in.** Entries written on a
+  Mac stored a seasonal abbreviation such as "CEST" instead of the zone's real
+  name, which is ambiguous — "CST" alone belongs to three different zones — and
+  changes twice a year. They now store the full name, e.g. `Europe/Berlin`.
 
 ## [1.0.12]
 ### Fixed
