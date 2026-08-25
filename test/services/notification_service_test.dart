@@ -866,6 +866,79 @@ void main() {
       expect(channel.countOf('cancel'), 1);
     });
 
+    test('builds the wall clock in the device zone, not in UTC', () async {
+      // The reported failure, at the point where it actually costs the user a
+      // reminder. Unlike `scheduleNotificationAt`, this path composes an
+      // *instant out of wall-clock components* in the resolved location, so
+      // the location is not cosmetic: build 07:45 in UTC for a device in
+      // Berlin and the habit reminder arrives at 09:45.
+      //
+      // `local` stood in for the device zone whenever `getLocalTimezone()`
+      // could only produce an abbreviation — and on macOS it always could,
+      // because the tzdata version directory in the resolved /etc/localtime
+      // path defeated the IANA lookup. `configureLocalTimezone()` then failed
+      // the same way and left `local` at the package's UTC default, so the
+      // fallback silently became the bug.
+      // Mirrors `scheduleHabitNotification`'s own call: mobile on, desktop
+      // off. `_alertDetails` hands a platform the caller did not opt into null
+      // details, so a habit reminder only ever presents on iOS and Android —
+      // which is where this mistiming was actually felt.
+      _usePlatform(TargetPlatform.iOS);
+      tz.setLocalLocation(tz.getLocation('Europe/Berlin'));
+      final service = await buildService();
+
+      await withClock(Clock.fixed(DateTime.utc(2000)), () async {
+        await service.scheduleNotification(
+          title: 'Meditate',
+          body: 'Daily meditation',
+          notifyAt: DateTime(2024, 3, 15, 7, 45),
+          notificationId: 42,
+          showOnMobile: true,
+          showOnDesktop: false,
+        );
+      });
+
+      final args = channel.argsOf('zonedSchedule');
+      final scheduled = DateTime.parse(
+        args['scheduledDateTimeISO8601']! as String,
+      );
+      final today = DateTime.now();
+
+      expect(
+        args['scheduledDateTime'],
+        endsWith('T07:45:00'),
+        reason: 'the wall clock the user set is what they must see',
+      );
+      final berlin = tz.getLocation('Europe/Berlin');
+      final expected = tz.TZDateTime(
+        berlin,
+        today.year,
+        today.month,
+        today.day,
+        7,
+        45,
+      );
+
+      // Compared as instants: TZDateTime and DateTime never test equal to each
+      // other, so `expect(a, b)` on the objects would fail even when the two
+      // name the same moment.
+      expect(
+        scheduled.toUtc().millisecondsSinceEpoch,
+        expected.millisecondsSinceEpoch,
+        reason:
+            '07:45 in Berlin, not 07:45 in UTC — the gap is the whole '
+            'offset the device is in, which is exactly how late the reminder '
+            'used to arrive',
+      );
+      expect(
+        expected.toUtc().hour,
+        isNot(7),
+        reason:
+            'guards the guard: if Berlin ever sat at UTC+0 this test would '
+            'pass without distinguishing the two',
+      );
+    });
+
     test('repeat asks the OS to match on time of day', () async {
       final service = await buildService();
 

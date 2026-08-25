@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.13]
+### Fixed
+- **Daily habit reminders arrived hours late on iPhone, iPad and Android.** The
+  app could not work out which timezone the device was in, quietly settled for
+  UTC, and then built the reminder's time of day in UTC — so an 08:00 habit
+  reminder rang at 10:00 in Central European Summer Time, and further off the
+  further you live from Greenwich. Reminders now use the zone the device is
+  actually in. Notifications scheduled for a specific moment — task suggestions,
+  overdue alerts and relationship check-ins — were unaffected and kept their
+  timing.
+- **The log no longer fills with `Location with the name "CEST" doesn't
+  exist`.** macOS stores its timezone data in a folder named after the current
+  tzdata release, and looking through it for a zone name failed on every Mac
+  that had taken a data update, leaving the app with the seasonal abbreviation
+  it could not use.
+- **New entries record the timezone they were made in.** Entries written on a
+  Mac stored a seasonal abbreviation such as "CEST" instead of the zone's real
+  name, which is ambiguous — "CST" alone belongs to three different zones — and
+  changes twice a year. They now store the full name, e.g. `Europe/Berlin`.
+
 ## [1.0.12]
 ### Fixed
 - **Picking a date in a settings editor on a phone no longer throws the edit

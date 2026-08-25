@@ -110,7 +110,7 @@ concerns live:
 | `dateFrom`, `dateTo` | **The entry's own time span** — what timelines, day plans and recorded-time queries read |
 | `categoryId` | Ownership, and the scope for AI consent and agent allow-lists |
 | `labelIds` | Label assignments — **not** stored in per-variant data |
-| `utcOffset`, `timezone` | Preserved so a time reads correctly where it was recorded |
+| `utcOffset`, `timezone` | Preserved so a time reads correctly where it was recorded. `timezone` is an IANA location name (`Europe/Berlin`), not the ambiguous, DST-dependent abbreviation `DateTime.timeZoneName` returns — see [`getLocalTimezone`](../../lib/utils/timezone.dart) |
 | `vectorClock` | Causal ordering for [sync](../features/sync/vector-clocks-and-conflicts.md) |
 | `deletedAt` | **Soft delete** — the row is the tombstone, which is what lets deletion replicate |
 | `flag` | `EntryFlag`, e.g. `import` |
