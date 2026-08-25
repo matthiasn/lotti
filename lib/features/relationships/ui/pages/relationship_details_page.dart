@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
@@ -25,6 +26,7 @@ import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.
 import 'package:lotti/features/tasks/ui/linked_tasks/task_search_picker_body.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
@@ -238,6 +240,7 @@ class RelationshipDetailsPage extends ConsumerWidget {
                       _LinkedTasksSection(
                         relationshipId: relationshipId,
                         tasks: detail.linkedTasks,
+                        categoryId: relationship.meta.categoryId,
                       ),
                       SizedBox(height: tokens.spacing.sectionGap),
                       _SectionHeading(
@@ -378,10 +381,107 @@ class _LinkedTasksSection extends ConsumerWidget {
   const _LinkedTasksSection({
     required this.relationshipId,
     required this.tasks,
+    this.categoryId,
   });
 
   final String relationshipId;
   final List<Task> tasks;
+
+  /// The person's category, inherited by a task created from their picker so
+  /// it lands in the same life area the person does.
+  final String? categoryId;
+
+  /// Links [taskId] to this person.
+  ///
+  /// Answers false for a write that changed no row *and* for one that threw:
+  /// both mean the link the user asked for does not exist, and the caller —
+  /// which knows whether there is still a page to say so on — decides how to
+  /// report it.
+  Future<bool> _linkTask(
+    RelationshipRepository repository,
+    String taskId,
+  ) async {
+    try {
+      return await repository.linkTask(
+        relationshipId: relationshipId,
+        taskId: taskId,
+      );
+    } catch (error, stackTrace) {
+      developer.log(
+        'Failed to link task to relationship',
+        name: 'RelationshipDetailsPage',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return false;
+    }
+  }
+
+  /// Creates a task titled after the picker's query, for the person whose
+  /// page this is.
+  ///
+  /// Answering "there is no such task yet" without leaving the page: the
+  /// picker offers this on a search that matches nothing, and feeds whatever
+  /// comes back through its own pick callback — so creating and linking stay
+  /// the one path [_pickTask] already owns, error toast and all. The one
+  /// case that path cannot serve is a picker dismissed mid-write, handled
+  /// below.
+  ///
+  /// No `linkedId`: that writes a plain link, and this page writes its own
+  /// relationship-typed edge a moment later. `inheritContextFrom` carries the
+  /// one thing that must travel — a private person's task is private too —
+  /// without leaving a second edge to unpick.
+  Future<Task?> _createTask({
+    required BuildContext pageContext,
+    required BuildContext modalContext,
+    required WidgetRef ref,
+    required String title,
+  }) async {
+    // Read before the await: persistence can outlive the sheet, and a
+    // post-gap read on a disposed ref would strand a task already written.
+    final agentService = ref.read(taskAgentServiceProvider);
+    final repository = ref.read(relationshipRepositoryProvider);
+
+    Task? created;
+    try {
+      created = await createTask(
+        title: title,
+        categoryId: categoryId,
+        inheritContextFrom: relationshipId,
+      );
+    } catch (error, stackTrace) {
+      developer.log(
+        'Failed to create a task for the relationship',
+        name: 'RelationshipDetailsPage',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+    // Nothing was written. The picker stays open on the query that failed,
+    // which says more than a toast would: a snack bar raised from here is
+    // hosted by the page's messenger and renders *behind* the modal route it
+    // would be explaining.
+    if (created == null) return null;
+
+    // The same follow-up every other create flow performs, so a task created
+    // here is not the one left without its category's agent.
+    unawaited(autoAssignCategoryAgentWith(agentService, created));
+
+    if (modalContext.mounted) return created;
+
+    // Dismissed while the write was in flight. The task exists and the user
+    // asked for it to be linked, so handing back null here would leave it
+    // created, unlinked and unannounced — visible only as a stray row in the
+    // task list. Link it on the dependencies captured before the gap.
+    final linked = await _linkTask(repository, created.meta.id);
+    if (!linked && pageContext.mounted) {
+      pageContext.showToast(
+        tone: DesignSystemToastTone.error,
+        title: pageContext.messages.relationshipErrorLinkTaskFailed,
+      );
+    }
+    return null;
+  }
 
   Future<void> _pickTask(BuildContext context, WidgetRef ref) async {
     final repository = ref.read(relationshipRepositoryProvider);
@@ -398,21 +498,14 @@ class _LinkedTasksSection extends ConsumerWidget {
           Flexible(
             child: TaskSearchPickerBody(
               excludeIds: {relationshipId, ...linkedIds},
+              onCreateTask: (title) => _createTask(
+                pageContext: context,
+                modalContext: modalContext,
+                ref: ref,
+                title: title,
+              ),
               onTaskSelected: (task) async {
-                var linked = false;
-                try {
-                  linked = await repository.linkTask(
-                    relationshipId: relationshipId,
-                    taskId: task.meta.id,
-                  );
-                } catch (error, stackTrace) {
-                  developer.log(
-                    'Failed to link task to relationship',
-                    name: 'RelationshipDetailsPage',
-                    error: error,
-                    stackTrace: stackTrace,
-                  );
-                }
+                final linked = await _linkTask(repository, task.meta.id);
                 if (!modalContext.mounted) return;
                 Navigator.of(modalContext).pop();
                 // `createLink` answers false when the upsert changed no row,
