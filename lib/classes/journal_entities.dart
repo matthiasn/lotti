@@ -51,6 +51,23 @@ abstract class Metadata with _$Metadata {
       _$MetadataFromJson(json);
 }
 
+/// The one definition of "this entry carries the user-facing flag".
+///
+/// [EntryFlag] is three-valued and is *cleared by writing* [EntryFlag.none],
+/// never by writing null — so `flag != null` does not answer this question.
+/// Null means the flag was never set, [EntryFlag.none] means it was set and
+/// then cleared, and both are off.
+///
+/// It lives here because the predicate had been spelled out at every reader —
+/// the detail header, both list cards, the linked-entries filter and the
+/// `•••` menu's toggle chip — and an unnamed concept copied six times is a
+/// concept one copy can drift away from. One did: the chip asked
+/// `flag != null` and so stayed lit for the rest of the life of any entry that
+/// had ever been flagged.
+extension MetadataFlag on Metadata {
+  bool get isFlagged => flag == EntryFlag.import;
+}
+
 @freezed
 abstract class ImageData with _$ImageData {
   const factory ImageData({

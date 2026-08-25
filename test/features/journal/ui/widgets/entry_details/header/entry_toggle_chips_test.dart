@@ -1,9 +1,11 @@
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/components/action_modal/ds_action_toggle_chip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/entry_toggle_chips.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/editor_state_service.dart';
 
@@ -15,8 +17,8 @@ import '../../../../../../widget_test_utils.dart';
 const _entryId = 'entry-1';
 
 JournalEntry _entry({
-  bool starred = false,
-  bool private = false,
+  bool? starred,
+  bool? private,
   EntryFlag? flag,
 }) {
   final now = DateTime(2026, 8, 21);
@@ -34,15 +36,6 @@ JournalEntry _entry({
   );
 }
 
-DsActionToggleChip _chipWithLabel(WidgetTester tester, String label) {
-  return tester.widget<DsActionToggleChip>(
-    find.ancestor(
-      of: find.text(label),
-      matching: find.byType(DsActionToggleChip),
-    ),
-  );
-}
-
 void main() {
   setUpAll(() async {
     await setUpTestGetIt(
@@ -54,88 +47,263 @@ void main() {
 
   tearDownAll(tearDownTestGetIt);
 
-  group('EntryToggleChips', () {
-    testWidgets("offers the entry's three states, all off", (tester) async {
-      await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          overrides: [createEntryControllerOverride(_entry())],
-          child: const EntryToggleChips(entryId: _entryId),
-        ),
-      );
-      await tester.pump();
+  Future<void> pump(
+    WidgetTester tester, {
+    required List<Override> overrides,
+    String entryId = _entryId,
+  }) async {
+    await tester.pumpWidget(
+      RiverpodWidgetTestBench(
+        overrides: overrides,
+        child: EntryToggleChips(entryId: entryId),
+      ),
+    );
+    await tester.pump();
+  }
 
-      expect(find.byType(DsActionToggleChip), findsNWidgets(3));
-      for (final chip in tester.widgetList<DsActionToggleChip>(
-        find.byType(DsActionToggleChip),
-      )) {
-        expect(chip.selected, isFalse, reason: chip.label);
-      }
-      // Off states are the outlined glyphs — an open padlock, not a closed one.
+  Future<void> pumpEntry(WidgetTester tester, JournalEntity entry) =>
+      pump(tester, overrides: [createEntryControllerOverride(entry)]);
+
+  AppLocalizations messagesOf(WidgetTester tester) =>
+      tester.element(find.byType(EntryToggleChips)).messages;
+
+  DsActionToggleChip chip(WidgetTester tester, String label) {
+    return tester.widget<DsActionToggleChip>(
+      find.ancestor(
+        of: find.text(label),
+        matching: find.byType(DsActionToggleChip),
+      ),
+    );
+  }
+
+  DsActionToggleChip starredChip(WidgetTester tester) =>
+      chip(tester, messagesOf(tester).journalToggleStarredTitle);
+
+  DsActionToggleChip privateChip(WidgetTester tester) =>
+      chip(tester, messagesOf(tester).journalTogglePrivateTitle);
+
+  DsActionToggleChip flaggedChip(WidgetTester tester) =>
+      chip(tester, messagesOf(tester).journalToggleFlaggedTitle);
+
+  group('EntryToggleChips gating', () {
+    testWidgets('renders nothing when there is no entry to describe', (
+      tester,
+    ) async {
+      await pump(tester, overrides: const [], entryId: 'missing-entry');
+
+      expect(find.byType(DsActionToggleChip), findsNothing);
+    });
+
+    testWidgets('offers exactly the three states the entry owns', (
+      tester,
+    ) async {
+      await pumpEntry(tester, _entry());
+
+      final messages = messagesOf(tester);
+      expect(
+        tester
+            .widgetList<DsActionToggleChip>(find.byType(DsActionToggleChip))
+            .map((c) => c.label),
+        [
+          messages.journalToggleStarredTitle,
+          messages.journalTogglePrivateTitle,
+          messages.journalToggleFlaggedTitle,
+        ],
+      );
+    });
+  });
+
+  group('starred chip', () {
+    testWidgets('an unset star reads as off, with the outlined glyph', (
+      tester,
+    ) async {
+      await pumpEntry(tester, _entry());
+
+      expect(starredChip(tester).selected, isFalse);
       expect(find.byIcon(LottiIcons.star), findsOneWidget);
-      expect(find.byIcon(LottiIcons.unlocked), findsOneWidget);
-      expect(find.byIcon(LottiIcons.flag), findsOneWidget);
+      expect(find.byIcon(LottiIconsFilled.star), findsNothing);
     });
 
-    testWidgets('each chip reflects its own bit of the entry', (tester) async {
-      await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          overrides: [
-            createEntryControllerOverride(
-              _entry(starred: true, flag: EntryFlag.import),
-            ),
-          ],
-          child: const EntryToggleChips(entryId: _entryId),
-        ),
-      );
-      await tester.pump();
+    testWidgets('an explicit false reads as off', (tester) async {
+      await pumpEntry(tester, _entry(starred: false));
 
-      final context = tester.element(find.byType(EntryToggleChips));
-      final messages = context.messages;
-      expect(
-        _chipWithLabel(tester, messages.journalToggleStarredTitle).selected,
-        isTrue,
-      );
-      expect(
-        _chipWithLabel(tester, messages.journalTogglePrivateTitle).selected,
-        isFalse,
-      );
-      expect(
-        _chipWithLabel(tester, messages.journalToggleFlaggedTitle).selected,
-        isTrue,
-      );
+      expect(starredChip(tester).selected, isFalse);
+    });
+
+    testWidgets('a starred entry lights the chip and fills the glyph', (
+      tester,
+    ) async {
+      await pumpEntry(tester, _entry(starred: true));
+
+      expect(starredChip(tester).selected, isTrue);
       expect(find.byIcon(LottiIconsFilled.star), findsOneWidget);
-      expect(find.byIcon(LottiIconsFilled.flag), findsOneWidget);
-      expect(find.byIcon(LottiIcons.unlocked), findsOneWidget);
+      expect(find.byIcon(LottiIcons.star), findsNothing);
     });
 
-    testWidgets('a private entry shows the closed padlock', (tester) async {
-      await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          overrides: [createEntryControllerOverride(_entry(private: true))],
-          child: const EntryToggleChips(entryId: _entryId),
-        ),
-      );
-      await tester.pump();
+    testWidgets('the star does not leak into the other two chips', (
+      tester,
+    ) async {
+      await pumpEntry(tester, _entry(starred: true));
 
+      expect(privateChip(tester).selected, isFalse);
+      expect(flaggedChip(tester).selected, isFalse);
+    });
+  });
+
+  group('private chip', () {
+    testWidgets('an unset private bit reads as off, padlock open', (
+      tester,
+    ) async {
+      await pumpEntry(tester, _entry());
+
+      expect(privateChip(tester).selected, isFalse);
+      expect(find.byIcon(LottiIcons.unlocked), findsOneWidget);
+      expect(find.byIcon(LottiIcons.lock), findsNothing);
+    });
+
+    testWidgets('an explicit false reads as off', (tester) async {
+      await pumpEntry(tester, _entry(private: false));
+
+      expect(privateChip(tester).selected, isFalse);
+    });
+
+    testWidgets('a private entry lights the chip and closes the padlock', (
+      tester,
+    ) async {
+      await pumpEntry(tester, _entry(private: true));
+
+      expect(privateChip(tester).selected, isTrue);
       expect(find.byIcon(LottiIcons.lock), findsOneWidget);
       expect(find.byIcon(LottiIcons.unlocked), findsNothing);
     });
 
-    testWidgets('each chip writes through its own toggle and leaves the '
-        'sheet standing', (tester) async {
+    testWidgets('the private bit does not leak into the other two chips', (
+      tester,
+    ) async {
+      await pumpEntry(tester, _entry(private: true));
+
+      expect(starredChip(tester).selected, isFalse);
+      expect(flaggedChip(tester).selected, isFalse);
+    });
+  });
+
+  group('flagged chip', () {
+    testWidgets('a never-flagged entry reads as off, with the outlined flag', (
+      tester,
+    ) async {
+      await pumpEntry(tester, _entry());
+
+      expect(flaggedChip(tester).selected, isFalse);
+      expect(find.byIcon(LottiIcons.flag), findsOneWidget);
+      expect(find.byIcon(LottiIconsFilled.flag), findsNothing);
+    });
+
+    testWidgets('EntryFlag.import lights the chip and fills the glyph', (
+      tester,
+    ) async {
+      await pumpEntry(tester, _entry(flag: EntryFlag.import));
+
+      expect(flaggedChip(tester).selected, isTrue);
+      expect(find.byIcon(LottiIconsFilled.flag), findsOneWidget);
+      expect(find.byIcon(LottiIcons.flag), findsNothing);
+    });
+
+    // The regression. `toggleFlagged` clears the flag by writing
+    // `EntryFlag.none`, never null, so a chip that tested `flag != null`
+    // stayed lit for the rest of the entry's life once flagged even once.
+    testWidgets('EntryFlag.none reads as off — the flag was cleared, not '
+        'merely never set', (tester) async {
+      await pumpEntry(tester, _entry(flag: EntryFlag.none));
+
+      expect(flaggedChip(tester).selected, isFalse);
+      expect(find.byIcon(LottiIcons.flag), findsOneWidget);
+      expect(find.byIcon(LottiIconsFilled.flag), findsNothing);
+    });
+
+    // The chip sets and clears exactly one flag value, and every other reader
+    // of `meta.flag` in the app — the header glyph, both list cards, the
+    // linked-entries filter — treats `import` as the flagged state. A
+    // different member is some other feature's business, not this chip's.
+    testWidgets('EntryFlag.followUpNeeded reads as off', (tester) async {
+      await pumpEntry(tester, _entry(flag: EntryFlag.followUpNeeded));
+
+      expect(flaggedChip(tester).selected, isFalse);
+    });
+
+    testWidgets('the flag does not leak into the other two chips', (
+      tester,
+    ) async {
+      await pumpEntry(tester, _entry(flag: EntryFlag.import));
+
+      expect(starredChip(tester).selected, isFalse);
+      expect(privateChip(tester).selected, isFalse);
+    });
+
+    testWidgets('goes dark again when the flag is toggled back off', (
+      tester,
+    ) async {
+      final (override, tracker) = createStatefulTogglesEntryControllerOverride(
+        _entry(),
+      );
+      await pump(tester, overrides: [override]);
+
+      final label = messagesOf(tester).journalToggleFlaggedTitle;
+      expect(flaggedChip(tester).selected, isFalse);
+
+      await tester.tap(find.text(label));
+      await tester.pump();
+      expect(flaggedChip(tester).selected, isTrue);
+
+      await tester.tap(find.text(label));
+      await tester.pump();
+      expect(
+        flaggedChip(tester).selected,
+        isFalse,
+        reason:
+            'clearing the flag writes EntryFlag.none, which must read as '
+            'unflagged',
+      );
+      expect(find.byIcon(LottiIcons.flag), findsOneWidget);
+      expect(
+        tracker.toggleFlaggedCalls,
+        hasLength(2),
+        reason: 'both taps must have reached the controller',
+      );
+    });
+  });
+
+  group('write-through', () {
+    testWidgets('each chip calls its own toggle', (tester) async {
       final (override, tracker) = createEntryControllerOverrideWithTracker(
         _entry(),
       );
+      await pump(tester, overrides: [override]);
 
-      await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          overrides: [override],
-          child: const EntryToggleChips(entryId: _entryId),
-        ),
-      );
+      final messages = messagesOf(tester);
+      await tester.tap(find.text(messages.journalToggleStarredTitle));
       await tester.pump();
+      expect(tracker.toggleStarredCalls, [_entryId]);
+      expect(tracker.togglePrivateCalls, isEmpty);
+      expect(tracker.toggleFlaggedCalls, isEmpty);
 
-      final messages = tester.element(find.byType(EntryToggleChips)).messages;
+      await tester.tap(find.text(messages.journalTogglePrivateTitle));
+      await tester.pump();
+      expect(tracker.togglePrivateCalls, [_entryId]);
+      expect(tracker.toggleFlaggedCalls, isEmpty);
+
+      await tester.tap(find.text(messages.journalToggleFlaggedTitle));
+      await tester.pump();
+      expect(tracker.toggleFlaggedCalls, [_entryId]);
+    });
+
+    testWidgets('three settings cost one visit — the chips do not dismiss '
+        'the sheet', (tester) async {
+      final (override, tracker) = createEntryControllerOverrideWithTracker(
+        _entry(),
+      );
+      await pump(tester, overrides: [override]);
+
+      final messages = messagesOf(tester);
       for (final label in [
         messages.journalToggleStarredTitle,
         messages.journalTogglePrivateTitle,
@@ -145,23 +313,10 @@ void main() {
         await tester.pump();
       }
 
-      expect(tracker.toggleStarredCalls, contains(_entryId));
-      expect(tracker.togglePrivateCalls, contains(_entryId));
-      expect(tracker.toggleFlaggedCalls, contains(_entryId));
-      // Three settings, one visit: the chips do not dismiss the sheet the way
-      // the three menu rows they replaced each did.
+      expect(tracker.toggleStarredCalls, isNotEmpty);
+      expect(tracker.togglePrivateCalls, isNotEmpty);
+      expect(tracker.toggleFlaggedCalls, isNotEmpty);
       expect(find.byType(DsActionToggleChip), findsNWidgets(3));
-    });
-
-    testWidgets('renders nothing until the entry has loaded', (tester) async {
-      await tester.pumpWidget(
-        const RiverpodWidgetTestBench(
-          child: EntryToggleChips(entryId: 'missing-entry'),
-        ),
-      );
-      await tester.pump();
-
-      expect(find.byType(DsActionToggleChip), findsNothing);
     });
   });
 }

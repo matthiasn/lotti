@@ -778,7 +778,7 @@ class _EntryCardContent extends StatelessWidget {
           Icon(LottiIcons.star, color: starredGold, size: size),
         ),
       // An import flag means "needs review", which is a warning, not an error.
-      if (!isEvent && item.meta.flag == EntryFlag.import)
+      if (!isEvent && item.meta.isFlagged)
         labeled(
           context.messages.journalFilterFlagged,
           Icon(

@@ -11,6 +11,48 @@ import 'journal_entities_test_helpers.dart';
 import 'project_test_generators.dart';
 
 void main() {
+  group('Metadata.isFlagged', () {
+    Metadata meta({EntryFlag? flag}) {
+      final date = DateTime(2024, 3, 15, 10);
+      return Metadata(
+        id: 'meta-1',
+        createdAt: date,
+        updatedAt: date,
+        dateFrom: date,
+        dateTo: date,
+        flag: flag,
+      );
+    }
+
+    test('only EntryFlag.import counts as flagged', () {
+      expect(meta(flag: EntryFlag.import).isFlagged, isTrue);
+    });
+
+    test('a flag that was never set is not flagged', () {
+      expect(meta().isFlagged, isFalse);
+    });
+
+    // The whole point of the getter: `toggleFlagged` clears the flag by
+    // writing `none`, so an un-flagged entry has a non-null `flag` and any
+    // `flag != null` test reads it as still flagged.
+    test('a flag cleared to EntryFlag.none is not flagged', () {
+      final cleared = meta(flag: EntryFlag.none);
+      expect(cleared.flag, isNotNull);
+      expect(cleared.isFlagged, isFalse);
+    });
+
+    test('followUpNeeded is a different marker, not this one', () {
+      expect(meta(flag: EntryFlag.followUpNeeded).isFlagged, isFalse);
+    });
+
+    test('every EntryFlag member other than import reads as unflagged', () {
+      expect(
+        EntryFlag.values.where((f) => meta(flag: f).isFlagged),
+        [EntryFlag.import],
+      );
+    });
+  });
+
   group('Metadata JSON round-trips — static examples', () {
     final date = DateTime(2024, 3, 15, 10);
 

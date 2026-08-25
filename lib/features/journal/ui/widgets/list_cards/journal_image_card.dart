@@ -184,8 +184,7 @@ class _StatusIndicators extends StatelessWidget {
         Icon(LottiIcons.shield, color: cs.error, size: 16),
       if (fromNullableBool(item.meta.starred))
         const Icon(LottiIcons.star, color: starredGold, size: 16),
-      if (item.meta.flag == EntryFlag.import)
-        Icon(LottiIcons.flag, color: cs.error, size: 16),
+      if (item.meta.isFlagged) Icon(LottiIcons.flag, color: cs.error, size: 16),
     ];
 
     if (indicators.isEmpty) {

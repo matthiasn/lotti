@@ -27,6 +27,12 @@ Register through `setUpTestGetIt()` rather than hand-rolling a container:
   opening a modal at all.
 - **The chips** — `entry_toggle_chips_test.dart`. Starred / private / flagged
   are `DsActionToggleChip`s that write through and leave the sheet standing.
+  One group per chip, because the three bits are not alike: `starred` and
+  `private` are nullable bools, but `flag` is a three-valued `EntryFlag` that
+  `toggleFlagged` *clears by writing* `EntryFlag.none`. A fixture built with
+  `flag: null` therefore never exercises the off state a user actually reaches
+  — cover `none` explicitly, and let `entry_controller_test.dart` pin the
+  writing half of that contract.
 - **Page navigation** — `extended_header_modal_test.dart`, which really opens
   the modal.
 
