@@ -155,14 +155,16 @@ sequenceDiagram
   C->>C: weigh vs capacity, standing agreements, recent outcomes
   alt capacity allows a feasible placement
     C->>D: directive commitment(source=attentionAward, 45m evening)
-    alt plan already drafted — diff path
+    note over L: claim is now proposed — NOT satisfied
+    alt plan already drafted — diff path (gated)
       D->>U: plan diff through ChangeSet gate (resolvePlanDiff)
       U-->>D: accept / reject / modify
-    else initial draft — NO ChangeSet gate today
+      D->>L: disposition on the resolution event only:<br/>accepted → satisfied / partiallySatisfied<br/>rejected → back to open
+    else initial draft — NO gate and NO acceptance event today
       D->>D: persistDraftPlan writes the block directly
+      note over D,L: GAP 5 — nothing authoritative to write a disposition from.<br/>A discarded draft would otherwise leave the claim satisfied.
     end
-    C->>L: disposition = satisfied / partiallySatisfied (see gap 5)
-  else no feasible placement
+  else no feasible placement — no commitment issued
     C->>L: disposition = deferred(reason) or declined(reason)
   end
   L-->>G: next Phase A reads disposition
@@ -179,9 +181,10 @@ All nine states below are members of `AttentionClaimStatus`
 stateDiagram-v2
   [*] --> open: goal agent emits claim
   open --> proposed: coordinator places a commitment
+  open --> deferred: no feasible placement — no commitment issued
   proposed --> satisfied: accepted ChangeSet / committed block covers the ask
   proposed --> partiallySatisfied: placement covers part of the ask
-  proposed --> deferred: no feasible placement this window
+  proposed --> deferred: commitment withdrawn before placement
   proposed --> open: ChangeSet rejected — ask stands
   partiallySatisfied --> proposed: coordinator places the remainder
   partiallySatisfied --> expired: window passed with the remainder unfilled
@@ -202,6 +205,13 @@ Two rules the diagram depends on, both currently unowned (see §7):
 - **One disposition writer.** A claim reaches `satisfied` only on the accepted
   ChangeSet or the defined placement event — never optimistically when the
   commitment is issued. Exactly one component may write the disposition.
+- **`deferred` and `declined` are not the same verdict, and neither requires a
+  commitment.** A claim can reach either straight from `open`, without ever
+  being `proposed` — `proposed` means a commitment exists, so the
+  no-feasible-placement path never passes through it. `deferred` means the ask
+  is still good but this window has no room, and Phase A should re-ask;
+  `declined` means the coordinator rejected the ask on its merits, and re-asking
+  unchanged is noise. Only `declined` is terminal.
 - **`partiallySatisfied` is not a terminal shortcut.** Placing one 45-minute
   block against a 90-minute ask must leave the remainder live; collapsing it to
   `satisfied` makes Phase A stand down, while re-asking the whole request
