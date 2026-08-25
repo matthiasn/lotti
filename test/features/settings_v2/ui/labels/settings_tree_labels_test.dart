@@ -80,8 +80,9 @@ void main() {
       expect(resolve('sync').title, 'Sync Settings');
       expect(resolve('definitions/dashboards').title, 'Dashboards');
       expect(resolve('definitions/measurables').title, 'Measurables');
-      expect(resolve('recording-style').title, 'Recording Style');
-      expect(resolve('theming').title, 'Theming');
+      expect(resolve('preferences').title, 'Preferences');
+      expect(resolve('preferences/recording-style').title, 'Recording Style');
+      expect(resolve('preferences/theming').title, 'Theming');
       expect(resolve('advanced/flags').title, 'Config Flags');
       expect(resolve('advanced').title, 'Advanced Settings');
       expect(resolve('whats-new').title, "What's New");
@@ -113,6 +114,60 @@ void main() {
     ) async {
       final resolve = await _buildResolver(tester);
       expect(resolve('advanced/maintenance').title, 'Maintenance');
+    });
+  });
+
+  group('settingsTreeLabelsFor — the preferences branch', () {
+    testWidgets('the branch names what it groups', (tester) async {
+      final resolve = await _buildResolver(tester);
+      expect(resolve('preferences').title, 'Preferences');
+      expect(
+        resolve('preferences').desc,
+        'Theming, animations, recording style, speech, and shortcuts',
+      );
+    });
+
+    testWidgets('each leaf keeps the arb title it had at the root', (
+      tester,
+    ) async {
+      // Reparenting renamed the ids, not the copy: a user who knew the
+      // rows by name still finds the same words one level down.
+      final resolve = await _buildResolver(tester);
+      expect(resolve('preferences/theming').title, 'Theming');
+      expect(
+        resolve('preferences/keyboard-shortcuts').title,
+        'Keyboard shortcuts',
+      );
+      expect(resolve('preferences/recording-style').title, 'Recording Style');
+      expect(resolve('preferences/speech').title, 'Speech');
+    });
+
+    testWidgets('animations resolves under its new preferences id', (
+      tester,
+    ) async {
+      final resolve = await _buildResolver(tester);
+      expect(resolve('preferences/animations').title, 'Animations');
+      // The Advanced-branch id is retired, so it echoes itself.
+      expect(resolve('advanced/animations').title, 'advanced/animations');
+      expect(resolve('advanced/animations').desc, isEmpty);
+    });
+
+    testWidgets('the retired flat ids no longer resolve to real copy', (
+      tester,
+    ) async {
+      // The resolver echoes an unknown id as its own title with an empty
+      // desc. Asserting that here is what proves the old cases were
+      // removed rather than left behind as a silent second source of copy.
+      final resolve = await _buildResolver(tester);
+      for (final legacyId in const [
+        'theming',
+        'keyboard-shortcuts',
+        'recording-style',
+        'speech',
+      ]) {
+        expect(resolve(legacyId).title, legacyId, reason: legacyId);
+        expect(resolve(legacyId).desc, isEmpty, reason: legacyId);
+      }
     });
   });
 

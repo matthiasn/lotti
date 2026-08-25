@@ -5150,6 +5150,8 @@
   "settingsOnboardingTestResetTitle": "Redefinir o estado do teste de integração",
   "settingsOnboardingTitle": "Integração",
   "settingsOptionsTitle": "Opções",
+  "settingsPreferencesSubtitle": "Tema, animações, estilo de gravação, fala e atalhos",
+  "settingsPreferencesTitle": "Preferências",
   "settingsRecordingStyleExplanation": "Escolha a aparência do microfone enquanto você grava.",
   "settingsRecordingStyleSubtitle": "Medidor VU ou orbe de energia durante a gravação",
   "settingsRecordingStyleTitle": "Estilo de gravação",

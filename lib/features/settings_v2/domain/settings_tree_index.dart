@@ -59,15 +59,28 @@ const Map<String, String> settingsNodeUrls = {
   'sync/matrix-maintenance': '/settings/sync/matrix/maintenance',
   'definitions/dashboards': '/settings/dashboards',
   'definitions/measurables': '/settings/measurables',
-  'recording-style': '/settings/recording-style',
-  'theming': '/settings/theming',
-  'keyboard-shortcuts': '/settings/keyboard-shortcuts',
-  'speech': '/settings/speech',
+  // The `preferences` branch itself maps to `/settings/preferences` so
+  // desktop tree selection updates the address bar and the mobile root
+  // list beams to the drill-down hub.
+  'preferences': '/settings/preferences',
+  // Preference leaves live under the `preferences/` branch in the V2
+  // tree, but their public Beamer URLs remain flat
+  // (`/settings/theming`, …) so existing deep links and what's-new
+  // releases keep resolving. The greedy URL → id resolver picks these
+  // up regardless of which branch they hang from.
+  'preferences/theming': '/settings/theming',
+  'preferences/recording-style': '/settings/recording-style',
+  'preferences/speech': '/settings/speech',
+  'preferences/keyboard-shortcuts': '/settings/keyboard-shortcuts',
+  // Completion celebrations moved from the Advanced branch to
+  // Preferences, but the URL stays `/settings/advanced/animations` — the
+  // same legacy-path treatment `sync/conflicts` gets, for the same
+  // reason: the tree may be reshuffled, shipped links may not.
+  'preferences/animations': '/settings/advanced/animations',
   // `flags` moved under the `advanced` branch in the V2 tree; its URL
   // stays `/settings/flags` for deep-link compatibility.
   'advanced/flags': '/settings/flags',
   'advanced': '/settings/advanced',
-  'advanced/animations': '/settings/advanced/animations',
   'advanced/manual-language': '/settings/advanced/manual-language',
   'advanced/logging': '/settings/advanced/logging_domains',
   // Mobile-only Health import leaf; the flat route is unchanged.

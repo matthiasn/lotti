@@ -4605,6 +4605,8 @@
   "settingsOnboardingTestResetTitle": "Restablecer el estado de prueba del onboarding",
   "settingsOnboardingTitle": "Primeros pasos",
   "settingsOptionsTitle": "Opciones",
+  "settingsPreferencesSubtitle": "Temas, animaciones, estilo de grabación, voz y atajos",
+  "settingsPreferencesTitle": "Preferencias",
   "settingsRecordingStyleExplanation": "Elige cómo se ve el micrófono mientras grabas.",
   "settingsRecordingStyleSubtitle": "Vúmetro u orbe de energía durante la grabación",
   "settingsRecordingStyleTitle": "Estilo de grabación",

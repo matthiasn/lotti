@@ -160,8 +160,8 @@ const Map<String, SettingsPanelSpec> kSettingsPanels =
         build: _advancedLoggingPanel,
         scrollable: true,
       ),
-      'advanced-animations': SettingsPanelSpec(
-        build: _advancedAnimationsPanel,
+      'preferences-animations': SettingsPanelSpec(
+        build: _preferencesAnimationsPanel,
         scrollable: true,
       ),
       'advanced-manual-language': SettingsPanelSpec(
@@ -253,7 +253,7 @@ Widget _advancedOnboardingMetricsPanel(BuildContext context) =>
     const OnboardingMetricsBody();
 Widget _advancedLoggingPanel(BuildContext context) =>
     const LoggingSettingsBody();
-Widget _advancedAnimationsPanel(BuildContext context) =>
+Widget _preferencesAnimationsPanel(BuildContext context) =>
     const CelebrationSettingsBody();
 Widget _advancedManualLanguagePanel(BuildContext context) =>
     const ManualLanguageSettingsBody();

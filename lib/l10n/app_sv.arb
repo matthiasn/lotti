@@ -5151,6 +5151,8 @@
   "settingsOnboardingTestResetTitle": "Återställ onboarding-teststatus",
   "settingsOnboardingTitle": "Onboarding",
   "settingsOptionsTitle": "Alternativ",
+  "settingsPreferencesSubtitle": "Tematisering, animationer, inspelningsstil, tal och genvägar",
+  "settingsPreferencesTitle": "Preferenser",
   "settingsRecordingStyleExplanation": "Välj hur mikrofonen ser ut medan du spelar in.",
   "settingsRecordingStyleSubtitle": "VU-mätare eller energikula under inspelning",
   "settingsRecordingStyleTitle": "Inspelningsstil",

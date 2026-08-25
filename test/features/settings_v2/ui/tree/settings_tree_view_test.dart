@@ -72,13 +72,17 @@ void main() {
   group('SettingsTreeView — flag-off baseline', () {
     testWidgets(
       'renders every always-on top-level section (ai, definitions, '
-      'theming, advanced)',
+      'preferences, advanced)',
       (tester) async {
         await _pumpView(tester);
         expect(find.text('AI Settings'), findsOneWidget);
         expect(find.text('Definitions'), findsOneWidget);
-        expect(find.text('Theming'), findsOneWidget);
+        expect(find.text('Preferences'), findsOneWidget);
         expect(find.text('Advanced Settings'), findsOneWidget);
+        // Theming moved under Preferences. The branch is collapsed by
+        // default but its children stay mounted, so the row is still
+        // found — one level down, not at the root.
+        expect(find.text('Theming'), findsOneWidget);
         expect(find.text('Manual'), findsOneWidget);
         // Categories / Labels / Measurables / Config Flags moved off
         // the root list — they now hang off the Definitions / Advanced
@@ -164,24 +168,22 @@ void main() {
       (tester) async {
         // With every flag off the root list is the always-on set
         // declared in `buildSettingsTree`: onboarding, ai, agents, daily-os,
-        // definitions, recording-style, theming, keyboard-shortcuts,
-        // advanced, manual. Sync is gated on enableMatrix so it drops out when the
-        // flag is off; onboarding is unconditional (the welcome has no flag).
-        // A depth-0 `SettingsTreeNodeWidget` per root proves every entry
-        // rendered through the widget, not a raw row.
+        // definitions, preferences, advanced, manual. Sync is gated on
+        // enableMatrix so it drops out when the flag is off; onboarding is
+        // unconditional (the welcome has no flag). A depth-0
+        // `SettingsTreeNodeWidget` per root proves every entry rendered
+        // through the widget, not a raw row.
         await _pumpView(tester);
         final rootNodeFinder = find.byWidgetPredicate(
           (w) => w is SettingsTreeNodeWidget && w.depth == 0,
         );
-        expect(rootNodeFinder, findsNWidgets(10));
+        expect(rootNodeFinder, findsNWidgets(8));
         for (final title in const [
           'AI Settings',
           'Agents',
           'Daily OS',
           'Definitions',
-          'Recording Style',
-          'Theming',
-          'Keyboard shortcuts',
+          'Preferences',
           'Advanced Settings',
           'Manual',
         ]) {
@@ -195,24 +197,87 @@ void main() {
     );
 
     testWidgets(
-      'tapping a root branch updates settingsTreePathProvider to its id',
+      'tapping a root leaf updates settingsTreePathProvider to its id',
       (tester) async {
-        // Theming is a leaf at the root level, so tapping its row sets
-        // a single-segment path. (Config Flags moved under Advanced
-        // and is no longer reachable without expanding that branch
-        // first.)
+        // Daily OS is the remaining leaf at the root level, so tapping
+        // its row sets a single-segment path. (Config Flags moved under
+        // Advanced, and Theming under Preferences — neither is reachable
+        // now without expanding its branch first.)
         await _pumpView(tester);
-        final themingRow = find.ancestor(
-          of: find.text('Theming'),
+        final dailyOsRow = find.ancestor(
+          of: find.text('Daily OS'),
           matching: find.byType(SettingsTreeRow),
         );
-        await tester.tap(themingRow);
+        await tester.tap(dailyOsRow);
         await tester.pump();
         final container = ProviderScope.containerOf(
           tester.element(find.byType(SettingsTreeView)),
           listen: false,
         );
-        expect(container.read(settingsTreePathProvider), ['theming']);
+        expect(container.read(settingsTreePathProvider), ['daily-os']);
+      },
+    );
+
+    testWidgets(
+      'expanding Preferences and tapping Theming selects it through the '
+      'branch',
+      (tester) async {
+        // Theming now lives one level down, so reaching it is two taps
+        // and its selection path is two segments. Getting the second
+        // segment wrong is what would leave the desktop sidebar
+        // highlighting nothing after a tap.
+        await _pumpView(tester);
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(SettingsTreeView)),
+          listen: false,
+        );
+
+        await tester.tap(
+          find.ancestor(
+            of: find.text('Preferences'),
+            matching: find.byType(SettingsTreeRow),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(container.read(settingsTreePathProvider), ['preferences']);
+
+        await tester.tap(
+          find.ancestor(
+            of: find.text('Theming'),
+            matching: find.byType(SettingsTreeRow),
+          ),
+        );
+        await tester.pump();
+        expect(container.read(settingsTreePathProvider), [
+          'preferences',
+          'preferences/theming',
+        ]);
+      },
+    );
+
+    testWidgets(
+      'the collapsed Preferences branch does not select its children',
+      (tester) async {
+        // Children stay mounted while the branch is collapsed (the
+        // expand animation keeps them alive), so a hit test at a child's
+        // nominal position must not reach it. Without this, "tap
+        // Theming" would silently land on whatever row occupies that
+        // pixel — which is exactly how the first draft of the test
+        // above selected Advanced instead.
+        await _pumpView(tester);
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(SettingsTreeView)),
+          listen: false,
+        );
+        expect(container.read(settingsTreePathProvider), isEmpty);
+        final themingRow = find.ancestor(
+          of: find.text('Theming'),
+          matching: find.byType(SettingsTreeRow),
+        );
+        // Mounted (so `find.text` locates it) but clipped away by the
+        // collapsed branch, hence unreachable by a pointer.
+        expect(themingRow, findsOneWidget);
+        expect(themingRow.hitTestable(), findsNothing);
       },
     );
 

@@ -243,18 +243,56 @@ List<SettingsNode> buildSettingsTree({
         ),
       ],
     ),
-    leaf(
-      'recording-style',
-      LottiIcons.waveform,
-      panel: 'recording-style',
+    // Personal-preference branch — groups the settings that shape how the
+    // app looks, sounds and responds to you behind a single "Preferences"
+    // entry, directly above Advanced.
+    //
+    // Four of them used to sit loose at the root (theming, keyboard
+    // shortcuts, recording style, speech), where they separated Definitions
+    // from Advanced and made the top level read as a menu plus leftovers.
+    // Animations came the other way, out of Advanced: completion
+    // celebrations are a matter of taste, not a maintenance tool, and they
+    // belong beside theming rather than beside the log domains.
+    //
+    // Order is look → feel → capture → voice → input.
+    //
+    // Leaf ids are namespaced under `preferences/` (e.g.
+    // `preferences/theming`) but their public Beamer URLs are unchanged —
+    // flat for the four that were at the root (`/settings/theming`, …) and
+    // still `/settings/advanced/animations` for animations, because a URL
+    // that has shipped is not worth breaking to tidy a menu.
+    // `settingsNodeUrls` does the translation, exactly as it does for
+    // `sync/conflicts`.
+    //
+    // Panel ids are a third namespace again: the four that were already at
+    // the root keep theirs untouched, and animations was renamed from
+    // `advanced-animations` to `preferences-animations` — a key with no
+    // deep-link value, so the only cost of keeping it honest was one
+    // registry entry. Same contract the `definitions` branch runs on.
+    branch(
+      'preferences',
+      LottiIcons.tune,
+      children: [
+        leaf('preferences/theming', LottiIcons.palette, panel: 'theming'),
+        leaf(
+          'preferences/animations',
+          LottiIcons.animation,
+          panel: 'preferences-animations',
+        ),
+        leaf(
+          'preferences/recording-style',
+          LottiIcons.waveform,
+          panel: 'recording-style',
+        ),
+        if (enableSpeechTts)
+          leaf('preferences/speech', LottiIcons.voice, panel: 'speech'),
+        leaf(
+          'preferences/keyboard-shortcuts',
+          LottiIcons.keyboard,
+          panel: 'keyboard-shortcuts',
+        ),
+      ],
     ),
-    leaf('theming', LottiIcons.palette, panel: 'theming'),
-    leaf(
-      'keyboard-shortcuts',
-      LottiIcons.keyboard,
-      panel: 'keyboard-shortcuts',
-    ),
-    if (enableSpeechTts) leaf('speech', LottiIcons.voice, panel: 'speech'),
     branch(
       'advanced',
       LottiIcons.settings,
@@ -264,11 +302,6 @@ List<SettingsNode> buildSettingsTree({
         // first-class settings. Power users still reach it through
         // Advanced. URL stays `/settings/flags` for deep-link compat.
         leaf('advanced/flags', LottiIcons.flag, panel: 'flags'),
-        leaf(
-          'advanced/animations',
-          LottiIcons.animation,
-          panel: 'advanced-animations',
-        ),
         leaf(
           'advanced/manual-language',
           LottiIcons.language,

@@ -54,6 +54,46 @@ A node id must also stay a single tree segment: `sync/matrix-maintenance` keeps 
 hyphen where its URL uses a slash, because `sync/matrix/maintenance` would imply a
 `sync/matrix` parent that does not exist.
 
+# A branch can be added without moving a single URL
+
+Grouping is a **tree-shape** change, not a routing change. `definitions` and
+`preferences` were both introduced by renaming their leaves' ids into the branch
+namespace (`theming` → `preferences/theming`) while leaving the `settingsNodeUrls`
+value untouched — so `/settings/theming` still routes exactly where it did, and
+every shipped deep link, what's-new entry and manual page keeps resolving.
+
+A leaf can even move *between* branches this way: `advanced/animations` became
+`preferences/animations` and kept answering on `/settings/advanced/animations`.
+
+Three properties make that safe, and all three are load-bearing:
+
+- **`beamUrlToPath` is a greedy longest-prefix walk over URLs, not a path
+  parser.** It never assumes the URL shape mirrors the tree, so a one-segment URL
+  resolving to a two-segment tree path is ordinary, not a special case.
+- **Panel ids are a third namespace**, and independent of both. A leaf that
+  merely changed branch keeps its key — `preferences/theming` still declares
+  `panel: 'theming'` — so `kSettingsPanels` needed no entry and the detail pane
+  needed no change. A key is only worth renaming when it *names* the branch the
+  leaf left, as `advanced-animations` did; it became `preferences-animations`,
+  which is safe precisely because panel ids are internal and carry no
+  deep-link value. The rule the two cases share: rename for honesty, never for
+  symmetry.
+- **Mobile matches the hub on the leaf URLs.** `_inPreferencesBranch` (and
+  `_inDefinitionsBranch` before it) lists those URLs explicitly, which is what
+  keeps the hub in the page stack beneath the leaf so a back tap walks up one
+  level instead of jumping to the Settings root.
+
+The last point is where a moved leaf can bite. `_inAdvancedBranch` matches the
+whole `/settings/advanced/` prefix, so it would claim `animations` — a page that
+is no longer in that branch. It therefore starts with
+`!_inPreferencesBranch(path)`: **the tree decides the hub, the URL never does.**
+Any future leaf that keeps a URL under another branch's prefix needs the same
+guard.
+
+The cost is that the URL list lives in two files — `settingsNodeUrls` and the
+`_*LeafPaths` constant in `settings_location.dart`. Adding a leaf to such a branch
+means editing both, or the page stack silently loses its hub.
+
 # Panels embed real pages
 
 Leaf panels embed **the real feature pages** — which still physically live in

@@ -6633,6 +6633,8 @@
   "settingsOnboardingTestResetTitle": "Reset onboarding test state",
   "settingsOnboardingTitle": "Onboarding",
   "settingsOptionsTitle": "Options",
+  "settingsPreferencesSubtitle": "Theming, animations, recording style, speech, and shortcuts",
+  "settingsPreferencesTitle": "Preferences",
   "settingsRecordingStyleExplanation": "Choose how the mic looks while you're recording.",
   "settingsRecordingStyleSubtitle": "VU meter or energy orb while recording",
   "settingsRecordingStyleTitle": "Recording Style",

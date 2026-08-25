@@ -11728,6 +11728,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsOptionsTitle => 'Options';
 
   @override
+  String get settingsPreferencesSubtitle =>
+      'Theming, animations, recording style, speech, and shortcuts';
+
+  @override
+  String get settingsPreferencesTitle => 'Preferences';
+
+  @override
   String get settingsRecordingStyleExplanation =>
       'Choose how the mic looks while you\'re recording.';
 

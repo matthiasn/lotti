@@ -4612,6 +4612,8 @@
   "settingsOnboardingTestResetTitle": "Resetovat testovací stav onboardingu",
   "settingsOnboardingTitle": "Onboarding",
   "settingsOptionsTitle": "Možnosti",
+  "settingsPreferencesSubtitle": "Vzhled, animace, styl nahrávání, řeč a klávesové zkratky",
+  "settingsPreferencesTitle": "Předvolby",
   "settingsRecordingStyleExplanation": "Vyber, jak má mikrofon vypadat při nahrávání.",
   "settingsRecordingStyleSubtitle": "VU metr nebo energetická koule při nahrávání",
   "settingsRecordingStyleTitle": "Styl nahrávání",

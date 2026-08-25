@@ -135,22 +135,32 @@ SettingsTreeLabelResolver settingsTreeLabelsFor(BuildContext context) {
           title: m.settingsMeasurablesTitle,
           desc: m.settingsMeasurablesSubtitle,
         );
-      case 'recording-style':
+      case 'preferences':
+        return (
+          title: m.settingsPreferencesTitle,
+          desc: m.settingsPreferencesSubtitle,
+        );
+      case 'preferences/animations':
+        return (
+          title: m.settingsCelebrationsTitle,
+          desc: m.settingsCelebrationsSubtitle,
+        );
+      case 'preferences/recording-style':
         return (
           title: m.settingsRecordingStyleTitle,
           desc: m.settingsRecordingStyleSubtitle,
         );
-      case 'theming':
+      case 'preferences/theming':
         return (
           title: m.settingsThemingTitle,
           desc: m.settingsThemingSubtitle,
         );
-      case 'keyboard-shortcuts':
+      case 'preferences/keyboard-shortcuts':
         return (
           title: m.settingsKeyboardShortcutsTitle,
           desc: m.settingsKeyboardShortcutsSubtitle,
         );
-      case 'speech':
+      case 'preferences/speech':
         return (
           title: m.settingsSpeechTitle,
           desc: m.settingsSpeechSubtitle,
@@ -162,11 +172,6 @@ SettingsTreeLabelResolver settingsTreeLabelsFor(BuildContext context) {
         );
       case 'advanced/flags':
         return (title: m.settingsFlagsTitle, desc: m.settingsFlagsSubtitle);
-      case 'advanced/animations':
-        return (
-          title: m.settingsCelebrationsTitle,
-          desc: m.settingsCelebrationsSubtitle,
-        );
       case 'advanced/manual-language':
         return (
           title: m.settingsManualLanguageTitle,

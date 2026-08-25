@@ -55,17 +55,18 @@ right-hand pane through that `ValueNotifier`.
 
 **Mobile builds real stacks, not single pages.** Parent pages stay in the Beamer
 stack so a back tap walks up one level at a time. `SettingsMobileRootPage` is
-always first; for the three branches that are **pure navigation** —
-`definitions`, `advanced` and `sync` — a `SettingsMobileBranchPage` hub is also
-pushed and **stays beneath** the leaf, making it a true drill-down. The sync hub
-is the same page wrapped in `SyncFeatureGate`. AI and Agents are the exception:
+always first; for the four branches that are **pure navigation** —
+`definitions`, `preferences`, `advanced` and `sync` — a
+`SettingsMobileBranchPage` hub is also pushed and **stays beneath** the leaf,
+making it a true drill-down. The sync hub is the same page wrapped in
+`SyncFeatureGate`. AI and Agents are the exception:
 each has its own landing page (`AiSettingsPage` and its agents counterpart) and is
 opened directly.
 
-Each of the three hubs lists its children from the shared tree, which is what
-replaced the hand-maintained `DefinitionsPage`, `AdvancedSettingsPage` and
-`SyncSettingsPage` item lists — entries, icons, copy, ordering and flag gating all
-come from `buildSettingsTree`.
+Each hub lists its children from the shared tree, which is what replaced the
+hand-maintained `DefinitionsPage`, `AdvancedSettingsPage` and `SyncSettingsPage`
+item lists — entries, icons, copy, ordering and flag gating all come from
+`buildSettingsTree`.
 
 Tapping a node is routed by `handleSettingsNodeTap`: `whats-new` opens a modal,
 everything else beams to its canonical URL from `settingsNodeUrls`, and
@@ -82,10 +83,7 @@ flowchart LR
   Landing --> DailyOs["Daily OS"]
   Landing --> Sync["Sync — if enableMatrix"]
   Landing --> Definitions["Definitions"]
-  Landing --> RecordingStyle["Recording style"]
-  Landing --> Theming["Theming"]
-  Landing --> Keyboard["Keyboard shortcuts"]
-  Landing --> Speech["Speech — if enableSpeechTts"]
+  Landing --> Preferences["Preferences"]
   Landing --> Advanced["Advanced"]
   Landing --> Manual["Manual — opens the browser"]
 
@@ -114,8 +112,13 @@ flowchart LR
   Definitions --> Measurables["Measurables"]
   Categories --> Projects["Project detail — /settings/projects/:projectId"]
 
+  Preferences --> Theming["Theming — URL /settings/theming"]
+  Preferences --> Animations["Animations — URL /settings/advanced/animations"]
+  Preferences --> RecordingStyle["Recording style — URL /settings/recording-style"]
+  Preferences --> Speech["Speech — if enableSpeechTts, URL /settings/speech"]
+  Preferences --> Keyboard["Keyboard shortcuts — URL /settings/keyboard-shortcuts"]
+
   Advanced --> Flags["Config flags"]
-  Advanced --> Animations["Animations"]
   Advanced --> ManualLanguage["Manual language"]
   Advanced --> Logging["Logging domains"]
   Advanced --> HealthImport["Health import — if enableHealthImport, mobile only"]
@@ -128,10 +131,20 @@ The agents children mirror the tab order inside `AgentSettingsBody`, so the tree
 shape matches what the right pane shows. `Manual` is not a panel at all — it
 carries `SettingsNodeAction.openManual` and leaves the app.
 
-**One code-accurate wrinkle:** Conflicts is a child of the Sync branch in the
-tree, but its Beamer URL is still `/settings/advanced/conflicts`.
-`settingsNodeUrls` maps the `sync/conflicts` node id to that legacy path so
-existing deep links keep resolving.
+**Two code-accurate wrinkles, both the same one:** a node's branch in the tree
+says nothing about its URL. Conflicts is a child of Sync but still answers on
+`/settings/advanced/conflicts`, and Animations is a child of Preferences but
+still answers on `/settings/advanced/animations` — `settingsNodeUrls` maps each
+node id to its legacy path so existing deep links keep resolving.
+
+The `definitions` and `preferences` branches run the same trick wholesale: every
+one of their leaves keeps the URL it had before the branch existed
+(`/settings/habits`, `/settings/theming`, …), so grouping the menu never
+invalidated a link. Animations is the case that makes the rule visible on
+mobile: `_inAdvancedBranch` would claim its URL by prefix, so it defers to
+`_inPreferencesBranch`, and the hub pushed beneath the page is the one the
+*tree* says, not the one the URL looks like. See
+[settings_v2](settings_v2.md#a-branch-can-be-added-without-moving-a-single-url).
 
 # Ownership boundaries
 
@@ -150,8 +163,8 @@ lives here but the state machine is in the theming feature; health import lives
 here but the implementation is `lib/logic/health_import.dart`.
 
 **The menu surfaces themselves are no longer Settings-owned widgets** — the mobile
-landing and the Definitions/Advanced hubs render from the shared tree in
-`settings_v2`.
+landing and the Definitions/Preferences/Advanced hubs render from the shared tree
+in `settings_v2`.
 
 # The shared list/detail pattern
 

@@ -12,7 +12,14 @@ import 'package:lotti/utils/consts.dart';
 
 import '../../../../widget_test_utils.dart';
 
-List<Override> _flags({bool habits = true, bool dashboards = true}) => [
+List<Override> _flags({
+  bool habits = true,
+  bool dashboards = true,
+  bool speechTts = false,
+}) => [
+  configFlagProvider(
+    enableAiSummaryTtsFlag,
+  ).overrideWith((ref) => Stream.value(speechTts)),
   configFlagProvider(
     enableMatrixFlag,
   ).overrideWith((ref) => Stream.value(true)),
@@ -86,10 +93,98 @@ void main() {
     expect(beamed, '/settings/categories');
   });
 
+  testWidgets(
+    'preferences hub lists its children in tree order, with a back button',
+    (tester) async {
+      await _pump(
+        tester,
+        branchId: 'preferences',
+        overrides: _flags(speechTts: true),
+      );
+      final rowIds = tester
+          .widgetList<SettingsTreeRow>(find.byType(SettingsTreeRow))
+          .map((row) => row.node.id)
+          .toList();
+      expect(rowIds, [
+        'preferences/theming',
+        'preferences/animations',
+        'preferences/recording-style',
+        'preferences/speech',
+        'preferences/keyboard-shortcuts',
+      ]);
+      final shell = tester.widget<SettingsMobileShell>(
+        find.byType(SettingsMobileShell),
+      );
+      expect(shell.showBack, isTrue);
+    },
+  );
+
+  testWidgets('preferences hub honours the speech (TTS) flag', (tester) async {
+    await _pump(tester, branchId: 'preferences', overrides: _flags());
+    expect(find.text('Speech'), findsNothing);
+    // The unconditional siblings still render.
+    expect(find.text('Theming'), findsOneWidget);
+    expect(find.text('Keyboard shortcuts'), findsOneWidget);
+    expect(find.text('Recording Style'), findsOneWidget);
+  });
+
+  testWidgets(
+    'tapping a preference child beams to its flat, legacy-compatible URL',
+    (tester) async {
+      // The node id is `preferences/theming`, but the URL that ships and
+      // that old links point at is still `/settings/theming`.
+      await _pump(tester, branchId: 'preferences', overrides: _flags());
+      await tester.tap(find.byKey(const ValueKey('preferences/theming')));
+      await tester.pump();
+      expect(beamed, '/settings/theming');
+    },
+  );
+
+  testWidgets(
+    'every preference child beams to the URL it had before the regrouping',
+    (tester) async {
+      await _pump(
+        tester,
+        branchId: 'preferences',
+        overrides: _flags(speechTts: true),
+      );
+      const expected = {
+        'preferences/theming': '/settings/theming',
+        // Animations came from Advanced and kept that URL.
+        'preferences/animations': '/settings/advanced/animations',
+        'preferences/recording-style': '/settings/recording-style',
+        'preferences/speech': '/settings/speech',
+        'preferences/keyboard-shortcuts': '/settings/keyboard-shortcuts',
+      };
+      for (final entry in expected.entries) {
+        await tester.tap(find.byKey(ValueKey(entry.key)));
+        await tester.pump();
+        expect(beamed, entry.value, reason: entry.key);
+      }
+    },
+  );
+
+  testWidgets('preferences hub renders no landing-panel header', (
+    tester,
+  ) async {
+    // `preferences` is a pure branch: it carries no `panel`, so the hub
+    // must show rows only. A branch panel here would have to be
+    // scrollable: false-safe (see the assert the hub carries).
+    await _pump(tester, branchId: 'preferences', overrides: _flags());
+    expect(find.byType(SyncSetupEmptyState), findsNothing);
+  });
+
   testWidgets('advanced hub lists its tooling children', (tester) async {
     await _pump(tester, branchId: 'advanced', overrides: _flags());
     expect(find.text('Config Flags'), findsOneWidget);
     expect(find.text('About Lotti'), findsOneWidget);
+  });
+
+  testWidgets('advanced hub no longer lists Animations', (tester) async {
+    // It is a matter of taste, not a maintenance tool, so it now sits in
+    // Preferences. Appearing in both hubs would be the regression.
+    await _pump(tester, branchId: 'advanced', overrides: _flags());
+    expect(find.text('Animations'), findsNothing);
   });
 
   testWidgets(

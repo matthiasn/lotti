@@ -4605,6 +4605,8 @@
   "settingsOnboardingTestResetTitle": "Réinitialiser l’état de test de l’intégration",
   "settingsOnboardingTitle": "Intégration",
   "settingsOptionsTitle": "Options",
+  "settingsPreferencesSubtitle": "Thème, animations, style d’enregistrement, voix et raccourcis",
+  "settingsPreferencesTitle": "Préférences",
   "settingsRecordingStyleExplanation": "Choisis comment le micro doit apparaître quand tu enregistres.",
   "settingsRecordingStyleSubtitle": "VU-mètre ou orbe d'énergie pendant l'enregistrement",
   "settingsRecordingStyleTitle": "Style d'enregistrement",

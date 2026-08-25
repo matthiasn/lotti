@@ -125,12 +125,25 @@ void main() {
 
       final element = tester.element(find.byType(SettingsV2Page));
       final container = ProviderScope.containerOf(element, listen: false);
-      container
-          .read(settingsTreePathProvider.notifier)
-          .onNodeTap('theming', depth: 0, hasChildren: false);
-      await tester.pump();
+      Future<void> tapNode(
+        String id, {
+        required int depth,
+        required bool hasChildren,
+      }) async {
+        container
+            .read(settingsTreePathProvider.notifier)
+            .onNodeTap(id, depth: depth, hasChildren: hasChildren);
+        await tester.pump();
+      }
 
-      expect(locations, ['/settings/theming']);
+      // Drill the real two-level route: opening the Preferences branch
+      // addresses the branch URL, and selecting a child inside it
+      // addresses the child's own (flat) URL. Both hops go through the
+      // bridge, so both are asserted.
+      await tapNode('preferences', depth: 0, hasChildren: true);
+      await tapNode('preferences/theming', depth: 1, hasChildren: false);
+
+      expect(locations, ['/settings/preferences', '/settings/theming']);
     });
   });
 
