@@ -37,6 +37,17 @@ class ToolbarWidget extends ConsumerWidget {
   /// click away. Measured: the full row needs ~870px, so 900 leaves a margin.
   static const double fullToolbarMinWidth = 900;
 
+  /// At or below this content width the trailing save control drops its "Save"
+  /// text and runs icon-only (the glyph it already carries), keeping its
+  /// accessible name.
+  ///
+  /// On a phone the labelled pill costs roughly a formatting button's worth of
+  /// width in a row that has none to give — the whole complaint behind the
+  /// crowded mobile toolbar. Above this width the label is affordable and
+  /// stays: an icon-only primary action is a worse control when there is room
+  /// to name it.
+  static const double compactActionsMaxWidth = 600;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final notifier = ref.read(entryControllerProvider(entryId).notifier);
@@ -57,6 +68,7 @@ class ToolbarWidget extends ConsumerWidget {
         // essentials + a "…" overflow on narrow widths where the full row would
         // clip.
         final showAll = constraints.maxWidth >= fullToolbarMinWidth;
+        final compactActions = constraints.maxWidth <= compactActionsMaxWidth;
 
         final toolbar = Material(
           // No elevation and no divider: the toolbar shares the editor card's
@@ -91,7 +103,10 @@ class ToolbarWidget extends ConsumerWidget {
                 // cluster and an overshoot can't land on it (no orphan divider
                 // glyph).
                 SizedBox(width: tokens.spacing.step3),
-                _ToolbarActions(entryId: entryId),
+                _ToolbarActions(
+                  entryId: entryId,
+                  compact: compactActions,
+                ),
               ],
             ),
           ),
@@ -125,10 +140,24 @@ class ToolbarWidget extends ConsumerWidget {
 /// control teal so the active state is perceivable, and give code-block and
 /// checklist distinct glyphs so they don't collide with inline code / the
 /// bulleted list.
+///
+/// The selected state carries the *ink* token, never the accent: Quill renders
+/// a toggled-on control as an `IconButton.filled`, whose disc is already the
+/// accent. Painting the glyph with the accent too made every active control
+/// (the bulleted/numbered list above all) a solid teal disc with no readable
+/// glyph — teal on teal. Both the fill and the glyph are pinned to tokens here
+/// rather than left to `colorScheme`, so the pair stays a deliberate contrast
+/// pair in light and dark alike.
+///
+/// `color` *and* `style` both carry the ink on purpose. Quill's icon buttons
+/// take the foreground from `style`, but the header-style buttons paint their
+/// text glyph straight from `iconButtonSelectedData.color` — setting only one
+/// of the two leaves the other family invisible when active.
 QuillSimpleToolbarButtonOptions _buttonOptions(
   EntryController notifier,
   DsTokens tokens,
 ) {
+  final activeInk = tokens.colors.text.onInteractiveAlert;
   return QuillSimpleToolbarButtonOptions(
     base:
         QuillToolbarBaseButtonOptions<
@@ -141,7 +170,11 @@ QuillSimpleToolbarButtonOptions _buttonOptions(
               color: tokens.colors.text.highEmphasis,
             ),
             iconButtonSelectedData: IconButtonData(
-              color: tokens.colors.interactive.enabled,
+              color: activeInk,
+              style: IconButton.styleFrom(
+                backgroundColor: tokens.colors.interactive.enabled,
+                foregroundColor: activeInk,
+              ),
             ),
           ),
         ),
@@ -182,6 +215,11 @@ QuillSimpleToolbarConfig _fullConfig(
     showRightAlignment: false,
     showJustifyAlignment: false,
     showSearchButton: false,
+    // Glyph buttons (N / H1 / H2 / H3), not the default dropdown. The dropdown
+    // paints a full word ("Normal") inside a fixed 44px icon button, so it
+    // clips to "Nor▸" at every toolbar width — a truncation no amount of room
+    // fixes. The glyph row is legible and costs no more space here.
+    headerStyleType: HeaderStyleType.buttons,
     customButtons: [
       QuillToolbarCustomButtonOptions(
         icon: const Icon(LottiIcons.divider),
@@ -220,6 +258,10 @@ QuillSimpleToolbarConfig _essentialsConfig(
     showSuperscript: false,
     showCodeBlock: false,
     showQuote: false,
+    // The header control moves into the "…" sheet on narrow widths. It is the
+    // widest formatting control and the least used of the essentials, so it is
+    // the right thing to spend first when the row has no room.
+    showHeaderStyle: false,
     showIndent: false,
     showLeftAlignment: false,
     showCenterAlignment: false,
@@ -248,7 +290,9 @@ QuillSimpleToolbarConfig _advancedConfig(
     showBoldButton: false,
     showItalicButton: false,
     showUnderLineButton: false,
-    showHeaderStyle: false,
+    // Displaced from the narrow inline row (see `_essentialsConfig`), so the
+    // sheet is where it lives — as glyph buttons, never the clipping dropdown.
+    headerStyleType: HeaderStyleType.buttons,
     showListNumbers: false,
     showListBullets: false,
     showListCheck: false,
@@ -288,7 +332,10 @@ class _MoreFormattingButton extends StatelessWidget {
       color: tokens.colors.text.mediumEmphasis,
       tooltip: context.messages.editorMoreFormatting,
       padding: EdgeInsets.zero,
-      visualDensity: VisualDensity.compact,
+      // No `VisualDensity.compact` here: the tight constraints below already
+      // pin the box to _trailingControlSize with no slack around the glyph,
+      // and the density adjustment on top of them shaved the tap target to
+      // 40px — under the accessible floor the rest of the row keeps.
       constraints: const BoxConstraints.tightFor(
         width: _trailingControlSize,
         height: _trailingControlSize,
@@ -332,9 +379,12 @@ const double _trailingControlSize = 44;
 /// toolbar never reflows the moment editing begins — only the icon inside it
 /// appears/disappears. A single watch of the save state drives both controls.
 class _ToolbarActions extends ConsumerWidget {
-  const _ToolbarActions({required this.entryId});
+  const _ToolbarActions({required this.entryId, required this.compact});
 
   final String entryId;
+
+  /// Narrow-toolbar mode: the save control runs icon-only.
+  final bool compact;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -359,7 +409,9 @@ class _ToolbarActions extends ConsumerWidget {
                   color: tokens.colors.text.mediumEmphasis,
                   tooltip: context.messages.editorDiscardChanges,
                   padding: EdgeInsets.zero,
-                  visualDensity: VisualDensity.compact,
+                  // See _MoreFormattingButton: the tight constraints alone
+                  // give the 44px target; adding a density adjustment on top
+                  // shrinks it below the accessible floor.
                   constraints: const BoxConstraints.tightFor(
                     width: _trailingControlSize,
                     height: _trailingControlSize,
@@ -376,7 +428,11 @@ class _ToolbarActions extends ConsumerWidget {
           // (== the card's corner radius) keeps the pill clear of the rounded
           // corner instead of pinching it.
           padding: EdgeInsets.only(right: tokens.spacing.step4),
-          child: _ToolbarSaveButton(entryId: entryId, unsaved: unsaved),
+          child: _ToolbarSaveButton(
+            entryId: entryId,
+            unsaved: unsaved,
+            compact: compact,
+          ),
         ),
       ],
     );
@@ -386,10 +442,18 @@ class _ToolbarActions extends ConsumerWidget {
 /// Pinned save control: always present while editing, quiet/disabled until there
 /// are unsaved changes, then a clear accent.
 class _ToolbarSaveButton extends ConsumerWidget {
-  const _ToolbarSaveButton({required this.entryId, required this.unsaved});
+  const _ToolbarSaveButton({
+    required this.entryId,
+    required this.unsaved,
+    required this.compact,
+  });
 
   final String entryId;
   final bool unsaved;
+
+  /// Narrow-toolbar mode: render the glyph alone, with the label carried as the
+  /// button's accessible name instead of as visible text.
+  final bool compact;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -410,7 +474,12 @@ class _ToolbarSaveButton extends ConsumerWidget {
         ),
       ),
       child: DesignSystemButton(
-        label: context.messages.saveLabel,
+        // Icon-only on a narrow toolbar. The empty label hides the text; the
+        // semantics label keeps the control named for assistive tech, and the
+        // glyph is the same one the labelled state already leads with, so the
+        // two states read as one control at different widths.
+        label: compact ? '' : context.messages.saveLabel,
+        semanticsLabel: context.messages.saveLabel,
         // Always present (greyed when clean) so the chip keeps a fixed width and
         // the narrow toolbar never reflows between clean and dirty states.
         leadingIcon: LottiIcons.save,
