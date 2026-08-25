@@ -5,17 +5,21 @@ description: Five platform targets from one codebase, the checks every branch ru
 resource: ../..
 tags: [architecture, ci, release, platforms, build]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-08-01T12:10:00Z }
+generated: { by: claude-code/opus-5, at: 2026-08-25T12:00:00Z }
 stale_after: 2027-02-01
 sources:
   - id: workflows
     resource: ../../.github/workflows
     title: GitHub Actions workflows
-    last_modified: 2026-07-31
+    last_modified: 2026-08-25
   - id: makefile
     resource: ../../Makefile
     title: Developer and build entry points
-    last_modified: 2026-07-26
+    last_modified: 2026-08-25
+  - id: changelog-fragments
+    resource: ../../tool/changelog/fragment_guard.dart
+    title: Release-note fragment guard
+    last_modified: 2026-08-25
   - id: pubspec
     resource: ../../pubspec.yaml
     title: Version, SDK constraints, dependencies
@@ -158,7 +162,8 @@ fans out from the same tag on a different provider:
 
 ```mermaid
 flowchart TD
-  Bump["Bump version in pubspec.yaml + CHANGELOG.md + flatpak metainfo"] --> Tag["git tag <version> && git push origin <version>"]
+  Assemble["Release PR: changelog.d fragments into CHANGELOG.md + flatpak metainfo, version bumped"] --> Merge["Merge to main"]
+  Merge --> Tag["git tag version && git push origin version"]
   Tag --> A["flutter-macos-testflight.yml"]
   Tag --> B["flutter-macos-release.yml"]
   Tag --> C["flutter-ios-testflight.yml"]
@@ -180,16 +185,20 @@ build-notification email, never on a pull request.
 commit SHA and version override, for re-cutting a Flathub PR without moving the
 tag.
 
-Two files must move together with every user-visible change, and the repo treats
-them as a pair:
+**No ordinary change writes the release files.** `CHANGELOG.md`,
+`flatpak/com.matthiasn.lotti.metainfo.xml` and the `version:` line in
+`pubspec.yaml` are all written at their top, so every pull request that edited
+them conflicted with every other one still open. Instead each change drops a
+note in [`changelog.d/`](../../changelog.d/README.md) — one new file, which
+cannot conflict — and a release pull request assembles them into the three
+files, once, and deletes what it consumed. `make changelog_check` gates both
+halves: the fragments' shape, and that the three files agree on the released
+version. Assembling a release is
+[`.agents/skills/release/SKILL.md`](../../.agents/skills/release/SKILL.md).
 
-- `CHANGELOG.md` — an entry under the **current** `pubspec.yaml` version, not
-  under `[Unreleased]`.
-- `flatpak/com.matthiasn.lotti.metainfo.xml` — the same release, in AppStream
-  form, which is what Flathub renders.
-
-Entries are only for things a user would notice. Dependency bumps, refactors,
-test-only changes and CI tweaks get none.
+Because the tag carries the build number and every lane above triggers on tag
+push rather than on merges to `main`, the build number moves once per release
+too — not once per pull request.
 
 # Local commands
 
@@ -202,6 +211,7 @@ test-only changes and CI tweaks get none.
 | Localization | `make l10n`, `make sort_arb_files` |
 | Integration tests | `make integration_test` |
 | Knowledge bundle check | `make knowledge_check` (validator + mermaid) |
+| Release-note fragments | `make changelog_check` |
 | Run the app | `fvm flutter run -d <device>` |
 
 Generated files — `*.g.dart`, `*.freezed.dart` — are checked in and must never

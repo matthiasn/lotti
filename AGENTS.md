@@ -162,15 +162,20 @@ and what is enforced at construction rather than by review.
 - Aim for full coverage of every code path.
 - Every widget we touch should get as close to full test coverage as is reasonable, with meaningful
   tests.
-- Add CHANGELOG entry under the current version from `pubspec.yaml` (not under [Unreleased]).
-- Update `flatpak/com.matthiasn.lotti.metainfo.xml` alongside CHANGELOG — these two files go hand in hand.
-- Do not mention bugfixes in CHANGELOG for bugs that were never released. E.g. when working on a 
-  feature that comprises many commits, and the bug was fixed before being merged, then there is 
-  no reason to mention that bug in the CHANGELOG.
-- CHANGELOG entries are only required for things a user would actually notice. Skip them for
-  invisible work: dependency bumps with no behavior change, internal refactors, test-only
-  changes, build/CI tweaks, doc updates. If in doubt, ask — but default to "no entry" when the
-  user wouldn't see a difference at runtime.
+- **Release notes go in `changelog.d/`, never straight into `CHANGELOG.md`.** Add one new file
+  per pull request — `changelog.d/YYYY-MM-DD-slug.md`, holding the `### Fixed` (or `### Added`,
+  `### Changed`, …) section your change deserves, worded as it should read to a user. **Never
+  edit `CHANGELOG.md`, `flatpak/com.matthiasn.lotti.metainfo.xml` or the `version:` line in
+  `pubspec.yaml`.** Those three are written at the top by everything, so they are written once
+  per release, by the release — which is what stops concurrent pull requests conflicting over
+  prose they do not share. The format, the naming and what deserves an entry at all are in
+  [changelog.d/README.md](changelog.d/README.md); `make changelog_check` validates it.
+- Fragments are only for what a user would actually notice — not dependency bumps, refactors,
+  test-only changes, CI tweaks, docs, or a bug introduced and fixed before it ever shipped. If
+  in doubt, ask, but default to no fragment when nothing changes at runtime.
+- Assembling a release — fragments into `CHANGELOG.md` and the Flathub metainfo, version bump,
+  tag — is [.agents/skills/release/SKILL.md](.agents/skills/release/SKILL.md). It is the only
+  change permitted to touch those three files.
 - Update the documentation we touch such that it matches reality in the codebase, not only
   for what we touch but in its entirety. See "Documentation" below for which file gets what.
 - In most cases we prefer one test file for one implementation file.
