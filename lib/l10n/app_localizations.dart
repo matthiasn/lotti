@@ -17899,6 +17899,18 @@ abstract class AppLocalizations {
   /// **'Stay in touch'**
   String get relationshipStayInTouch;
 
+  /// The relative day word in a relationship timestamp, e.g. "Today 14:20".
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get relationshipTimestampToday;
+
+  /// The relative day word in a relationship timestamp, e.g. "Yesterday 19:05".
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday'**
+  String get relationshipTimestampYesterday;
+
   /// No description provided for @relationshipTrackingSinceLabel.
   ///
   /// In en, this message translates to:

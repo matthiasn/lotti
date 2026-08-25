@@ -4222,6 +4222,8 @@
   "@relationshipStayInTouch": {
     "description": "Relationships redesign label."
   },
+  "relationshipTimestampToday": "Dnes",
+  "relationshipTimestampYesterday": "Včera",
   "relationshipTrackingSinceLabel": "Sledováno od {date}",
   "relationshipUpdateFromContact": "Aktualizovat z kontaktu",
   "saveButton": "Uložit",

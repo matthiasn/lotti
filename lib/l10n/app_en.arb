@@ -6194,6 +6194,14 @@
   "@relationshipStayInTouch": {
     "description": "Relationships redesign label."
   },
+  "relationshipTimestampToday": "Today",
+  "@relationshipTimestampToday": {
+    "description": "The relative day word in a relationship timestamp, e.g. \"Today 14:20\"."
+  },
+  "relationshipTimestampYesterday": "Yesterday",
+  "@relationshipTimestampYesterday": {
+    "description": "The relative day word in a relationship timestamp, e.g. \"Yesterday 19:05\"."
+  },
   "relationshipTrackingSinceLabel": "Tracking since {date}",
   "@relationshipTrackingSinceLabel": {
     "placeholders": {

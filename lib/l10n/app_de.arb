@@ -4215,6 +4215,8 @@
   "@relationshipStayInTouch": {
     "description": "Relationships redesign label."
   },
+  "relationshipTimestampToday": "Heute",
+  "relationshipTimestampYesterday": "Gestern",
   "relationshipTrackingSinceLabel": "Erfasst seit {date}",
   "relationshipUpdateFromContact": "Aus Kontakt aktualisieren",
   "saveButton": "Speichern",

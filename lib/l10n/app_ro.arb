@@ -4215,6 +4215,8 @@
   "@relationshipStayInTouch": {
     "description": "Relationships redesign label."
   },
+  "relationshipTimestampToday": "Azi",
+  "relationshipTimestampYesterday": "Ieri",
   "relationshipTrackingSinceLabel": "Urmărire din {date}",
   "relationshipUpdateFromContact": "Actualizați din contact",
   "saveButton": "Salvați",
