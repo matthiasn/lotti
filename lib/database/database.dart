@@ -145,6 +145,16 @@ class JournalDb extends _$JournalDb
          ),
        );
 
+  /// Test-only seam: lets tests wrap a [DatabaseConnection] with a
+  /// [QueryInterceptor] (e.g. to count real SQL statements) before handing
+  /// it to [JournalDb] — mirrors [SyncDatabase.connect].
+  @visibleForTesting
+  JournalDb.connect(super.connection)
+    : inMemoryDatabase = true,
+      _loggingService = null,
+      _documentsDirectory = null,
+      super.connect();
+
   @override
   bool inMemoryDatabase = false;
   final DomainLogger? _loggingService;

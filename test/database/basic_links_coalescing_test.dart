@@ -1,4 +1,6 @@
 // ignore_for_file: avoid_redundant_argument_values
+import 'package:drift/drift.dart';
+import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/database/database.dart';
@@ -158,6 +160,68 @@ void main() {
       },
     );
   });
+
+  group('basicLinksForEntryIds batch chunking', () {
+    // _sqliteInListChunk is private to the library, so tests hardcode 500
+    // with this explanatory comment.
+    const chunkSize = 500;
+
+    test(
+      'issues 1 SELECT for 500 ids, 2 for 501 ids, and 3 for 1001 ids',
+      () async {
+        final counter = _LinkedEntriesSelectCounter();
+        final countedBench = await CoalescingDbBench.create(
+          () => JournalDb.connect(
+            DatabaseConnection(NativeDatabase.memory().interceptWith(counter)),
+          ),
+        );
+        addTearDown(countedBench.tearDown);
+        final countedDb = countedBench.db;
+
+        counter.reset();
+        await countedDb.basicLinksForEntryIds({
+          for (var i = 0; i < chunkSize; i++) 'id-500-$i',
+        });
+        expect(counter.count, 1);
+
+        counter.reset();
+        await countedDb.basicLinksForEntryIds({
+          for (var i = 0; i < chunkSize + 1; i++) 'id-501-$i',
+        });
+        expect(counter.count, 2);
+
+        counter.reset();
+        await countedDb.basicLinksForEntryIds({
+          for (var i = 0; i < chunkSize * 2 + 1; i++) 'id-1001-$i',
+        });
+        expect(counter.count, 3);
+      },
+    );
+
+    test(
+      'completeness check: 501 inserted links queried in one wave are all returned across the chunk seam',
+      () async {
+        const count = chunkSize + 1;
+        final targetIds = <String>{};
+
+        for (var i = 0; i < count; i++) {
+          final targetId = 'target-$i';
+          targetIds.add(targetId);
+          await insertBasicLink(fromId: 'parent-$i', toId: targetId);
+        }
+
+        db.basicLinkQueryCount = 0;
+        final results = await db.basicLinksForEntryIds(targetIds);
+
+        expect(results.length, count);
+        expect(
+          results.map((link) => link.toId).toSet(),
+          targetIds,
+        );
+        expect(db.basicLinkQueryCount, 1);
+      },
+    );
+  });
 }
 
 /// Subclass whose `runBasicLinksQueryForIds` throws, so the coalescer's
@@ -173,5 +237,25 @@ class _FailingLinksJournalDb extends JournalDb {
   Future<List<EntryLink>> runBasicLinksQueryForIds(Set<String> ids) {
     attempts += 1;
     return Future<List<EntryLink>>.error(failure);
+  }
+}
+
+class _LinkedEntriesSelectCounter extends QueryInterceptor {
+  int count = 0;
+
+  void reset() {
+    count = 0;
+  }
+
+  @override
+  Future<List<Map<String, Object?>>> runSelect(
+    QueryExecutor executor,
+    String statement,
+    List<Object?> args,
+  ) {
+    if (statement.contains('linked_entries')) {
+      count += 1;
+    }
+    return executor.runSelect(statement, args);
   }
 }
