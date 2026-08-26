@@ -4,6 +4,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.15]
+### Added
+- **Qwen 3.8 Max and Qwen 3.8 27B ship as Melious.ai defaults.** Both are
+  available as soon as a Melious provider is added, without browsing the full
+  remote catalog. Qwen 3.8 27B also handles image input.
+
+### Fixed
+- **Goal check-ins recorded and played back, but were only transcribed when
+  stopped from the recording sheet.** A check-in stopped from the sidebar's
+  Stop button or the floating recording indicator — after the sheet had been
+  dismissed — was saved on the goal and never transcribed, with no failure
+  shown. Transcription now runs wherever the recording ends, still under the
+  goal's automatic-updates switch, and a switched-off goal records a visible
+  decline with Retry.
+- **The desktop Logbook offered no way to create a linked entry.** The split
+  view's detail pane had dropped its floating action button as a duplicate of
+  the list's, but the list's button only creates standalone entries. The
+  detail pane's button is back, creating entries linked to the open one.
+- **Qwen 3.8 models on Melious.ai failed with a "malformed request" error.**
+  Qwen 3.8 Max and Qwen 3.8 27B require a reasoning-effort setting that Lotti
+  was not sending, so every request to them was rejected before it reached the
+  model.
+
 ## [1.0.14]
 ### Added
 - **Create a task for someone from their own page.** A person's Linked tasks

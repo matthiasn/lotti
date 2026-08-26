@@ -40,6 +40,14 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="1.0.15" date="2026-08-26">
+      <description>
+        <p>Added: Qwen 3.8 Max and Qwen 3.8 27B ship as Melious.ai defaults. Both are available as soon as a Melious provider is added, without browsing the full remote catalog. Qwen 3.8 27B also handles image input.</p>
+        <p>Fixed: goal check-ins recorded and played back, but were only transcribed when stopped from the recording sheet. A check-in stopped from the sidebar's Stop button or the floating recording indicator - after the sheet had been dismissed - was saved on the goal and never transcribed, with no failure shown. Transcription now runs wherever the recording ends, still under the goal's automatic-updates switch, and a switched-off goal records a visible decline with Retry.</p>
+        <p>Fixed: the desktop Logbook offered no way to create a linked entry. The split view's detail pane had dropped its floating action button as a duplicate of the list's, but the list's button only creates standalone entries. The detail pane's button is back, creating entries linked to the open one.</p>
+        <p>Fixed: Qwen 3.8 models on Melious.ai failed with a "malformed request" error. Qwen 3.8 Max and Qwen 3.8 27B require a reasoning-effort setting that Lotti was not sending, so every request to them was rejected before it reached the model.</p>
+      </description>
+    </release>
     <release version="1.0.14" date="2026-08-25">
       <description>
         <p>Added: create a task for someone from their own page. A person's Linked tasks section could only link a task that already existed: typing the name of one that did not dead-ended on "No tasks found", and the way forward was to leave the person, create the task elsewhere, come back and link it. Typing a name that matches nothing now offers to create it there and then. The new task is titled what you typed, lands in the person's own category, is private if they are, and is linked to them in the same tap.</p>
