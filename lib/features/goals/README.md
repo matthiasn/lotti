@@ -278,14 +278,16 @@ app-bar mic, its Check-ins header, or a banner whose CTA asks for one — with
 "write instead" as the typed fallback. A check-in is an ordinary journal entry
 linked to the goal, so it inherits sync, privacy, categories, export and
 transcription rather than owning any of them, and the recording is saved
-before it is transcribed so nothing is lost waiting for words. The one thing
-this feature does own is asking for the transcript: the app-wide
-post-recording automation gates on the linked subject's category, and a goal
-has none — so a check-in calls the shared transcription skill itself once the
-recorder hands back an entry, gated on the goal's automatic-updates switch.
-When that switch is off the decline is recorded rather than skipped, so the
-beat offers Retry instead of looking like it is still being transcribed. Tapping a beat
-opens the journal entry behind it.
+before it is transcribed so nothing is lost waiting for words. The transcript
+is asked for by the recorder's own stop path, not by this feature: the
+app-wide post-recording automation gates on the linked subject's category,
+and a goal has none, so for a goal-linked recording it falls back to the goal
+agent's automatic-updates switch as the consent signal. That happens wherever
+the recording ends — the sheet's stop button, the sidebar's, or the floating
+indicator's — which is why it cannot live in the composer that opened the
+recorder. When the switch is off the decline is recorded rather than skipped,
+so the beat offers Retry instead of looking like it is still being
+transcribed. Tapping a beat opens the journal entry behind it.
 
 They appear as dated beats on the goal's timeline, which is the shared
 `lib/widgets/timeline/` rail that Events uses, merged with the standing daily

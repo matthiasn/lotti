@@ -1,12 +1,16 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/service/subject_agent_lookup.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/ai/services/skill_inference_runner.dart';
+import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
+import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/device_messages.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:lotti/services/domain_logging.dart';
 
@@ -18,8 +22,10 @@ import 'package:lotti/services/domain_logging.dart';
 /// happens.
 ///
 /// The subject is whatever the recording was linked to — a task, a project, an
-/// event, or a person. Everything here is kind-agnostic except the task
-/// context handed to the transcription prompt, which only a task can supply.
+/// event, a person, or a goal. Everything here is kind-agnostic except the
+/// task context handed to the transcription prompt, which only a task can
+/// supply, and the consent question for a goal: a goal has no category to
+/// answer it, so its agent's automatic-updates switch decides instead.
 class AutomaticPromptTrigger {
   AutomaticPromptTrigger({
     required this.ref,
@@ -63,6 +69,10 @@ class AutomaticPromptTrigger {
           'subject $linkedSubjectId (handled=${result.handled})',
           subDomain: 'triggerAutomaticPrompts',
         );
+        await _transcribeGoalCheckIn(
+          entryId: entryId,
+          linkedSubjectId: linkedSubjectId,
+        );
         return;
       }
 
@@ -97,6 +107,78 @@ class AutomaticPromptTrigger {
         subDomain: 'triggerAutomaticPrompts',
       );
     }
+  }
+
+  /// Transcribes a goal check-in that the category gate just declined.
+  ///
+  /// A check-in is an ordinary `JournalAudio` linked to a goal's journal
+  /// entry, which belongs to no task and no category — so the profile
+  /// automation above always declines it, and for a long time that decline was
+  /// a log line: every check-in saved, played back, and was never transcribed.
+  ///
+  /// This runs here, on the controller's stop path, rather than in the goal
+  /// composer that opened the recorder, because the composer only learns of a
+  /// recording it awaited. A recording stopped from the sidebar's Stop button
+  /// or the floating indicator after the sheet was dismissed reaches
+  /// `AudioRecorderController.stop` — and therefore this method — without the
+  /// composer ever hearing back. Handling it once, here, covers every way a
+  /// recording ends.
+  ///
+  /// The consent signal is the goal agent's own automatic-updates switch, the
+  /// one the user sees on the goal. Switched off is a decision, not a failure,
+  /// but on the check-ins rail the two look identical unless it is recorded —
+  /// so the decline is written as a visible failed state, and Retry is the
+  /// affordance for transcribing this one by hand.
+  Future<void> _transcribeGoalCheckIn({
+    required String entryId,
+    required String linkedSubjectId,
+  }) async {
+    final agent = await ref.read(subjectAgentResolverProvider)(
+      linkedSubjectId,
+    );
+    if (agent == null || agent.kind != AgentKinds.goalAgent) return;
+
+    // Null reads as on, as `GoalAgentService.automaticUpdatesEnabled` reads
+    // it: goals created before the switch existed shipped with updates on, and
+    // the task-agent default of off would silently stop transcribing every
+    // check-in on them.
+    final automaticUpdatesEnabled =
+        agent.config.automaticUpdatesEnabled ?? true;
+    if (!automaticUpdatesEnabled) {
+      loggingService.log(
+        LogDomain.ai,
+        'automatic updates are off for goal ${agent.agentId} — check-in '
+        '$entryId stays untranscribed until it is triggered by hand',
+        subDomain: 'triggerAutomaticPrompts',
+      );
+      await recordTranscriptionDecline(
+        ref,
+        entityId: entryId,
+        reason: 'automatic updates are off for goal ${agent.agentId}',
+        message: deviceMessages().goalCheckInTranscriptionOff,
+      );
+      return;
+    }
+
+    loggingService.log(
+      LogDomain.ai,
+      'transcribing check-in $entryId for goal ${agent.agentId}',
+      subDomain: 'triggerAutomaticPrompts',
+    );
+    // The shared skill trigger — the same entry point the AI popup and the
+    // timeline's Retry use — so a check-in transcribes with the same skill,
+    // the same model resolution (including the category-less direct
+    // fallback) and the same failure reporting as every other recording.
+    await ref.read(
+      triggerSkillProvider((
+        entityId: entryId,
+        skillId: skillTranscribeContextId,
+        linkedTaskId: null,
+        referenceImages: null,
+        overrideModelId: null,
+        geminiThinkingMode: null,
+      )).future,
+    );
   }
 
   /// [subjectId] when it names a task, `null` for every other subject kind.

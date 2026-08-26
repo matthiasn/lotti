@@ -20,6 +20,7 @@ import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/journal/state/journal_focus_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
+import 'package:lotti/features/journal/ui/widgets/create/create_entry_action_button.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/linked_entries_with_timer.dart';
@@ -1089,7 +1090,7 @@ void main() {
     });
 
     testWidgets(
-      'split-pane embedding (showFloatingActionButton false) drops the FAB',
+      'split-pane embedding (showBackButton false) keeps the linked-entry FAB',
       (tester) async {
         when(
           () => mockJournalDbEdge.journalEntityById(testTextEntry.meta.id),
@@ -1099,7 +1100,7 @@ void main() {
           makeTestableWidgetWithScaffold(
             EntryDetailsPage(
               itemId: testTextEntry.meta.id,
-              showFloatingActionButton: false,
+              showBackButton: false,
             ),
           ),
         );
@@ -1107,8 +1108,13 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // The list pane owns the only create FAB in the desktop split.
-        expect(find.byType(DesignSystemFloatingActionButton), findsNothing);
+        // The list pane's FAB creates a standalone entry; only this one
+        // creates an entry linked to the open one. Dropping it as a
+        // "duplicate" left desktop with no way to create a linked entry.
+        final fab = tester.widget<FloatingAddActionButton>(
+          find.byType(FloatingAddActionButton),
+        );
+        expect(fab.linkedFromId, testTextEntry.meta.id);
       },
     );
 

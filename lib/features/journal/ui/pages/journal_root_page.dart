@@ -86,10 +86,11 @@ class JournalRootPage extends ConsumerWidget {
                     ? EntryDetailsPage(
                         key: ValueKey(selectedEntryId),
                         itemId: selectedEntryId,
-                        // The list pane provides both the way back and the create
-                        // FAB, so the detail pane renders neither.
+                        // The list stays on screen beside the details, so
+                        // there is nothing to go back to. The details keep
+                        // their own FAB: it creates a linked entry, which the
+                        // list pane's standalone-entry FAB cannot.
                         showBackButton: false,
-                        showFloatingActionButton: false,
                       )
                     // Reachable only when the feed itself is empty (or holds
                     // only tasks/events): the list pane already carries the

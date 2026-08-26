@@ -158,10 +158,8 @@ void main() {
       find.byType(EntryDetailsPage),
     );
     expect(detailsPage.itemId, 'entry-42');
-    // The list stays on screen beside the details, so no back affordance,
-    // and the list pane already owns the create FAB.
+    // The list stays on screen beside the details, so no back affordance.
     expect(detailsPage.showBackButton, isFalse);
-    expect(detailsPage.showFloatingActionButton, isFalse);
 
     // Dispose the tree and flush pending animation timers.
     await tester.pumpWidget(const SizedBox.shrink());
