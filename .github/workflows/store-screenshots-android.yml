@@ -1,0 +1,114 @@
+name: Store screenshots (Android)
+
+# Captures the Play Store listing screenshots on an Android emulator and
+# publishes them as a workflow artifact. Manual, or on a pull request that
+# touches the capture itself; the listing changes rarely enough that a run per
+# push would be noise, and the emulator makes this the slowest lane we have.
+
+on:
+  workflow_dispatch:
+    inputs:
+      locale:
+        description: Fixture locale (see MANUAL_LOCALES in the Makefile)
+        default: en
+      themes:
+        description: Space-separated themes to capture
+        default: dark light
+  pull_request:
+    paths:
+      - integration_test/store_screenshots_test.dart
+      - integration_test/tutorial/tutorial_harness.dart
+      - tool/store_screenshots/**
+      - .github/workflows/store-screenshots-android.yml
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  capture:
+    name: Capture on emulator
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v5
+
+      # The emulator needs hardware acceleration; GitHub's Linux runners
+      # expose /dev/kvm but only to root until the node is made world-usable.
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Install Android NDK 28
+        run: |
+          echo "y" | sudo "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" "ndk;28.2.13676358"
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          targets: x86_64-linux-android
+
+      - uses: kuhnroyal/flutter-fvm-config-action@v2
+        id: fvm-config-action
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ steps.fvm-config-action.outputs.FLUTTER_VERSION }}
+          channel: ${{ steps.fvm-config-action.outputs.FLUTTER_CHANNEL }}
+          cache: true
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      # AGP writes the debug keystore under $XDG_CONFIG_HOME/.android, which
+      # on this runner is not writable ("Unable to create debug keystore in
+      # /home/runner/.config/.android"). Point AGP at a home it owns.
+      - name: Give AGP a writable Android home
+        run: |
+          mkdir -p "$HOME/.android"
+          echo "ANDROID_USER_HOME=$HOME/.android" >> "$GITHUB_ENV"
+
+      # Build before the emulator boots: the Rust crates and Gradle take
+      # longer than the capture itself, a build failure then fails the job
+      # without an emulator log to wade through, and `flutter drive` reuses
+      # the warm caches. x64 only — that is the emulator's ABI.
+      - name: Build the test APK
+        run: >-
+          flutter build apk --debug
+          --target-platform android-x64
+          --target integration_test/store_screenshots_test.dart
+
+      - name: Capture
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          profile: pixel_6
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: >-
+            FLUTTER=flutter
+            LOTTI_ANDROID_DEVICE=emulator-5554
+            LOTTI_MANUAL_LOCALE="${{ inputs.locale || 'en' }}"
+            LOTTI_STORE_THEMES="${{ inputs.themes || 'dark light' }}"
+            LOTTI_SCREENSHOT_DIR="$GITHUB_WORKSPACE/build/store_screenshots/android"
+            ./tool/store_screenshots/android.sh
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: store-screenshots-android-${{ inputs.locale || 'en' }}
+          path: build/store_screenshots/android/*.png
+          if-no-files-found: error

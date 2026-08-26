@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/demo/media/demo_media_asset.dart';
 import 'package:lotti/features/demo/seed/demo_seed_text.dart';
@@ -99,17 +100,29 @@ Future<Uint8List> downloadManualDemoMedia(Uri uri) =>
     _manualDemoMediaDownloader(uri);
 
 /// Materializes the manual fixture from R2 for a widget screenshot suite.
+///
+/// Installs the cover art by default; pass [images] to install a wider slice
+/// of the catalog, e.g. `world.images` for a task detail page whose attached
+/// photos must resolve too. [download] defaults to the `curl` downloader,
+/// which a widget test needs because the test binding answers every Dart
+/// `HttpClient` request with HTTP 400 — a device harness under
+/// `flutter drive` has no such override and no `curl`, so it passes an
+/// in-process downloader instead.
 Future<List<File>> installManualDemoMedia(
   ManualDemoWorld world,
-  Directory documentsDirectory,
-) {
-  final coverIds = world.coverImages.map((image) => image.meta.id).toSet();
+  Directory documentsDirectory, {
+  Iterable<JournalImage>? images,
+  Future<Uint8List> Function(Uri uri) download = downloadManualDemoMedia,
+}) {
+  final imageIds = (images ?? world.coverImages)
+      .map((image) => image.meta.id)
+      .toSet();
   final catalog = demoMediaAssets
-      .where((asset) => coverIds.contains(asset.id))
+      .where((asset) => imageIds.contains(asset.id))
       .toList();
   return world.installMedia(
     documentsDirectory,
-    download: downloadManualDemoMedia,
+    download: download,
     catalog: catalog,
   );
 }

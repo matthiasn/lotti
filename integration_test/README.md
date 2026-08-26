@@ -78,7 +78,33 @@ Basic UI smoke test that creates a journal entry through the UI.
 - Navigation failures
 - Basic widget rendering issues
 
-### 4. Manual Screenshots (`manual_screenshots_test.dart`)
+### 4. Store listing screenshots (`store_screenshots_test.dart`)
+
+Captures the Play Store listing screenshots on a real Android device or emulator.
+Not a verification suite and excluded from `make integration_test` by its
+`store-screenshots` tag.
+
+It boots the production app shell on the tutorial harness — in-memory databases, a
+temp documents directory, the Intergalactic Penguin Logistics world seeded with its
+habits, time records and notes (`seedHistory: true`), and no demo-mode banner — then
+walks the task list, one task, habits, time analysis and the logbook, handing each
+screen to the driver as a PNG. Configuration is passed as dart-defines
+(`LOTTI_STORE_THEME`, `LOTTI_MANUAL_LOCALE`) because the test runs on the device,
+whose environment is not the host's.
+
+Run it through the script, which also pins the emulator window to a ratio Play
+accepts (see [knowledge/conventions/screenshots.md](../knowledge/conventions/screenshots.md)):
+
+```bash
+make store_screenshots_android                 # attached emulator-5554, dark + light
+make store_screenshots_android LOTTI_AVD=Medium_Phone_API_36.0 LOTTI_STORE_THEMES=dark
+```
+
+Output lands in `build/store_screenshots/android/`. CI runs the same script on an
+emulator in `store-screenshots-android.yml` (manual dispatch, or a pull request that
+touches the capture) and uploads the PNGs as a workflow artifact.
+
+### 5. Manual Screenshots (`manual_screenshots_test.dart`)
 
 A legacy full-shell screenshot-capture tool rather than a CI verification suite. It runs the full app shell
 with an in-memory harness and a single `testWidgets` case (`captures AI provider onboarding states

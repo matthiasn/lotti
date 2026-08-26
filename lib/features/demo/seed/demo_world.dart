@@ -2786,15 +2786,29 @@ class ManualDemoWorld {
     required Future<Uint8List> Function(Uri uri) download,
     required List<DemoMediaAsset> catalog,
   }) async {
+    // The hydrator reports per-asset failures through a callback and
+    // returns a count; without the first cause in the message, a screenshot
+    // suite failing on a device only says "incomplete" and nothing about the
+    // DNS, TLS or checksum problem behind it.
+    Object? firstError;
+    DemoMediaAsset? firstFailed;
     final hydrator = DemoMediaHydrator(
       root: documentsDirectory,
       assets: catalog,
       download: download,
+      onError: (asset, error, _) {
+        firstError ??= error;
+        firstFailed ??= asset;
+      },
     );
     try {
       final result = await hydrator.hydrate();
       if (!result.isComplete) {
-        throw StateError('Unable to hydrate every manual demo cover');
+        throw StateError(
+          'Unable to hydrate every manual demo cover '
+          '(${result.failed} failed, ${result.cancelled} cancelled)'
+          '${firstFailed == null ? '' : ': ${firstFailed!.fileName}: $firstError'}',
+        );
       }
     } finally {
       hydrator.dispose();
