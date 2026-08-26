@@ -680,9 +680,6 @@ abstract final class LottiIcons {
   /// Dawn or dusk — the shoulder of the day.
   static const IconData twilight = LucideIcons.sunrise;
 
-  /// A live recording indicator.
-  static const IconData recordDot = LucideIcons.dot;
-
   // ── Extended media & content ────────────────────────────────────────────────
 
   /// A stored recording.

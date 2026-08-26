@@ -24,6 +24,7 @@ void main() {
     'folder': LottiIconsFilled.folder,
     'heart': LottiIconsFilled.heart,
     'moon': LottiIconsFilled.moon,
+    'square': LottiIconsFilled.square,
     'star': LottiIconsFilled.star,
   };
 

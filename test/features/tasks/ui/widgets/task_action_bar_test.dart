@@ -444,6 +444,36 @@ void main() {
 
       expect(find.text('Track time'), findsOneWidget);
       expect(find.byIcon(LottiIcons.timer), findsOneWidget);
+      expect(find.byIcon(LottiIconsFilled.square), findsNothing);
+    },
+  );
+
+  testWidgets(
+    "the tracking pill's stop circle carries the filled square, not the "
+    'outline that read as an empty checkbox',
+    (tester) async {
+      await pumpBar(tester);
+
+      fakeTimeService
+        ..linkedFrom = testTask
+        ..emit(
+          _runningTimerEntry(
+            id: 'timer-1',
+            elapsed: const Duration(seconds: 5),
+          ),
+        );
+      await _settleStream(tester);
+
+      final icon = tester.widget<Icon>(
+        find.descendant(
+          of: find.byKey(TaskActionBar.trackTimeStopKey),
+          matching: find.byType(Icon),
+        ),
+      );
+      expect(icon.icon, LottiIconsFilled.square);
+      expect(icon.icon!.fontFamily, 'LottiFilled');
+      expect(icon.size, TaskActionBar.pillStopIconSize);
+      expect(icon.color, Colors.white);
       expect(find.byIcon(LottiIcons.stop), findsNothing);
     },
   );

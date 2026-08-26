@@ -19,9 +19,10 @@ import 'package:lotti/themes/theme.dart';
 /// Shows an entry's elapsed time and the timer controls in the detail footer.
 ///
 /// Subscribes to the [TimeService] stream so the duration ticks live while
-/// recording. It surfaces a record button (for the newest linked timer-capable
-/// entry, or a standalone entry), a stop button while recording, and — after a
-/// recording of at least a minute ends — a pulsating "rate" button driven by
+/// recording. It surfaces a continue (record) button (for the newest linked
+/// timer-capable entry, or a standalone entry), a stop button while recording,
+/// and — after a recording of at least a minute ends — a pulsating "rate"
+/// button driven by
 /// `sessionEndedControllerProvider`. Tapping the duration opens the
 /// start/end date-time editor.
 class DurationWidget extends ConsumerStatefulWidget {
@@ -160,10 +161,15 @@ class _DurationWidgetState extends ConsumerState<DurationWidget> {
               isRecording: isRecording,
               displayed: displayed,
             ),
+            // Stop and continue are one control in two states, so both wear
+            // a filled glyph at the same size: the row keeps its footprint
+            // when the timer flips, and neither reads as an empty checkbox
+            // (the outlined square) or vanishes (Lucide's `dot` drew a ~4px
+            // mark inside a 20px glyph; the filled circle fills it).
             Visibility(
               visible: isRecent && showRecordIcon && !isRecording,
               child: IconButton(
-                icon: const Icon(LottiIcons.recordDot),
+                icon: const Icon(LottiIconsFilled.circle),
                 iconSize: 20,
                 tooltip: context.messages.addActionAddTimeRecording,
                 color: context.colorScheme.error,
@@ -182,7 +188,7 @@ class _DurationWidgetState extends ConsumerState<DurationWidget> {
             Visibility(
               visible: isRecording,
               child: IconButton(
-                icon: const Icon(LottiIcons.stop),
+                icon: const Icon(LottiIconsFilled.square),
                 iconSize: 20,
                 tooltip: context.messages.doneButton,
                 color: labelColor,
