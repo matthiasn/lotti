@@ -747,7 +747,14 @@ void main() {
           isA<StateError>().having(
             (error) => error.message,
             'message',
-            'Unable to hydrate every manual demo cover',
+            // The count and the first cause are what make a device-suite
+            // failure diagnosable from its log alone.
+            allOf(
+              contains('Unable to hydrate every manual demo cover'),
+              contains('1 failed, 0 cancelled'),
+              contains('bad-manual-test.webp'),
+              contains('Checksum mismatch'),
+            ),
           ),
         ),
       );

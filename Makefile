@@ -112,7 +112,7 @@ junit_upload:
 
 .PHONY: integration_test
 integration_test:
-	 $(FLUTTER_CMD) test integration_test --exclude-tags tutorial-video
+	 $(FLUTTER_CMD) test integration_test --exclude-tags tutorial-video --exclude-tags store-screenshots
 
 .PHONY: clean
 clean:
@@ -187,6 +187,14 @@ fluttium_production:
 .PHONY: fluttium_docs
 fluttium_docs: manual_screenshots
 	@echo "fluttium_docs is deprecated; generated manual media is ready in $(MANUAL_MEDIA_DIR)."
+
+# Play Store listing screenshots, captured on an Android emulator through
+# `flutter drive` so they are what a phone actually renders. Boots $(LOTTI_AVD)
+# when no device is attached; see tool/store_screenshots/android.sh for the
+# knobs. Output lands in build/store_screenshots/android (gitignored).
+.PHONY: store_screenshots_android
+store_screenshots_android:
+	FLUTTER="$(FLUTTER_CMD)" ./tool/store_screenshots/android.sh
 
 .PHONY: manual_deps
 manual_deps: docs-site/node_modules

@@ -31,6 +31,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/fts5_db.dart';
@@ -451,10 +452,28 @@ class TutorialAppHarness {
   final ManualDemoWorld world;
   final List<Object> _closeables;
 
+  /// Boots the harness.
+  ///
+  /// The tutorial scenarios take the defaults: dark theme, the penguin
+  /// category with its labels, cover art and tasks, and the config flags as
+  /// a fresh install has them. The store-listing capture asks for more —
+  /// [seedHistory] also writes every category, the habits with their four
+  /// weeks of completions, the checklists, time records and notes, and the
+  /// links between them, so the screens look lived-in; [configFlags] switches
+  /// tabs on before [NavService] reads them; [downloadMedia] replaces the
+  /// `curl` downloader on a device that has none; [now] anchors the world's
+  /// relative dates (due today, logged last Tuesday) — the tutorials keep the
+  /// fixture's fixed clock for determinism, a store capture passes the real
+  /// one so the tracked time lands in this month and nothing reads overdue.
   static Future<TutorialAppHarness> setUp({
     required List<AiConfig> aiConfigs,
     required String languageCode,
     CategoryDefinition Function(CategoryDefinition category)? categoryTransform,
+    ThemeMode themeMode = ThemeMode.dark,
+    bool seedHistory = false,
+    Map<String, bool> configFlags = const {},
+    Future<Uint8List> Function(Uri uri)? downloadMedia,
+    DateTime? now,
   }) async {
     _ignoreBenignOverlayRebuildRace();
     await getIt.reset();
@@ -490,7 +509,7 @@ class TutorialAppHarness {
     final outboxService = _outboxServiceMock();
 
     await Future.wait([
-      settingsDb.saveSettingsItem(themeModeKey, ThemeMode.dark.name),
+      settingsDb.saveSettingsItem(themeModeKey, themeMode.name),
       // The app shell resolves its UI language from this settings override
       // (ManualLanguageController) — platformDispatcher test locales are not
       // enough for the real desktop shell.
@@ -533,6 +552,13 @@ class TutorialAppHarness {
       );
 
     await initConfigFlags(journalDb, inMemoryDatabase: true);
+    for (final flag in configFlags.entries) {
+      final existing = await journalDb.getConfigFlagByName(flag.key);
+      if (existing == null) {
+        throw StateError('Config flag ${flag.key} missing after init');
+      }
+      await journalDb.upsertConfigFlag(existing.copyWith(status: flag.value));
+    }
 
     final vectorClockService = VectorClockService();
     getIt.registerSingleton<VectorClockService>(vectorClockService);
@@ -564,7 +590,7 @@ class TutorialAppHarness {
       ..registerSingleton<NotificationService>(NotificationService());
 
     final persistenceLogic = getIt<PersistenceLogic>();
-    final world = ManualDemoWorld.penguinLogistics();
+    final world = ManualDemoWorld.penguinLogistics(now: now);
     final category = categoryTransform == null
         ? world.category
         : categoryTransform(world.category);
@@ -572,7 +598,10 @@ class TutorialAppHarness {
       world,
       category,
       persistenceLogic,
+      journalDb,
       documentsDirectory,
+      seedHistory: seedHistory,
+      downloadMedia: downloadMedia,
     );
     for (final config in aiConfigs) {
       await aiConfigRepository.saveConfig(config, fromSync: true);
@@ -622,26 +651,54 @@ class TutorialAppHarness {
     ManualDemoWorld world,
     CategoryDefinition category,
     PersistenceLogic persistenceLogic,
-    Directory documentsDirectory,
-  ) async {
+    JournalDb journalDb,
+    Directory documentsDirectory, {
+    required bool seedHistory,
+    required Future<Uint8List> Function(Uri uri)? downloadMedia,
+  }) async {
     await persistenceLogic.upsertEntityDefinition(category);
+    if (seedHistory) {
+      for (final other in world.categories) {
+        if (other.id == category.id) continue;
+        await persistenceLogic.upsertEntityDefinition(other);
+      }
+    }
     for (final label in world.labels) {
       await persistenceLogic.upsertEntityDefinition(label);
     }
-    await installManualDemoMedia(world, documentsDirectory);
-    for (final image in world.coverImages) {
+    if (seedHistory) {
+      // Definitions before the completion entries that reference them.
+      for (final habit in world.habits) {
+        await persistenceLogic.upsertEntityDefinition(habit);
+      }
+    }
+
+    final images = seedHistory ? world.images : world.coverImages;
+    await installManualDemoMedia(
+      world,
+      documentsDirectory,
+      images: images,
+      download: downloadMedia ?? downloadManualDemoMedia,
+    );
+
+    // Same reference order as the production DemoSeeder: images, checklist
+    // items, the checklists that list them, the tasks that own them, then the
+    // history that hangs off the tasks.
+    final entities = seedHistory
+        ? world.journalEntities
+        : <JournalEntity>[...world.coverImages, ...world.tasks];
+    for (final entity in entities) {
       await persistenceLogic.createDbEntity(
-        image,
+        entity,
         shouldAddGeolocation: false,
         enqueueSync: false,
       );
     }
-    for (final task in world.tasks) {
-      await persistenceLogic.createDbEntity(
-        task,
-        shouldAddGeolocation: false,
-        enqueueSync: false,
-      );
+    if (seedHistory) {
+      // Links last: both endpoints must exist first.
+      for (final link in world.links) {
+        await journalDb.upsertEntryLink(link);
+      }
     }
   }
 

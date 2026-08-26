@@ -24,6 +24,14 @@ sources:
     resource: ../../tool/pr_screenshot_publish.py
     title: Immutable PR screenshot publisher
     last_modified: 2026-08-05
+  - id: store-capture
+    resource: ../../tool/store_screenshots/android.sh
+    title: Play Store listing capture on an Android emulator
+    last_modified: 2026-08-26
+  - id: store-test
+    resource: ../../integration_test/store_screenshots_test.dart
+    title: The screens the store listing shows, driven on the device
+    last_modified: 2026-08-26
 ---
 
 # Images do not live in this repository
@@ -93,6 +101,41 @@ does when iterating on one language:
 ```bash
 make manual_screenshots_shard MANUAL_LOCALE=de
 ```
+
+# Store listing screenshots come from a phone
+
+The Play Store listing is the one place a screenshot must come from the
+platform it advertises: a widget-test capture at a phone size is the right
+shape but not the real thing — no device fonts, no device image decoding, no
+platform text input. `integration_test/store_screenshots_test.dart` therefore
+runs on an Android emulator under `flutter drive`, booting the production app
+shell on the tutorial harness with the penguin world seeded in full (habits,
+time records, notes, links) and *no demo-mode banner*, then walks the screens
+that say what the app is. `tool/store_screenshots/android.sh` — `make
+store_screenshots_android` — boots the emulator if needed, runs the test once
+per theme, and collects the PNGs the driver writes; CI runs the same script in
+`store-screenshots-android.yml` on manual dispatch and uploads an artifact.
+
+Two device facts shape the script:
+
+- **Play rejects a screenshot whose long side is more than twice its short
+  side**, and the stock Pixel profiles are 20:9. The script pins the emulator
+  window to 1080×1920 (9:16, which Play also asks for when it features a
+  listing) with `adb shell wm size` and resets it afterwards.
+- **The test runs on the device, whose environment is not the host's.** Theme
+  and locale arrive as `--dart-define`s, not environment variables; the
+  driver, which does run on the host, still writes to `LOTTI_SCREENSHOT_DIR`.
+  And there is no `curl` on a phone, so the fixture media comes down through
+  `package:http` instead of the widget-test downloader.
+- **The emulator's DNS fails silently under Private DNS.** Android's
+  opportunistic DNS-over-TLS "validates" against the emulator's virtual
+  resolver at 10.0.2.3 and then answers nothing: ICMP works, no hostname
+  resolves, and the fixture media never arrives. The script turns
+  `private_dns_mode` off on the guest before driving; plain DNS through the
+  same resolver is fine.
+
+The output is a listing asset, not review evidence: it is uploaded to the
+Play Console by hand and does not go to R2.
 
 # A UI pull request shows before *and* after
 
