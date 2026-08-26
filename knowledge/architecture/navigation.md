@@ -5,7 +5,7 @@ description: Ten independent Beamer stacks behind one IndexedStack, how the acti
 resource: ../../lib/beamer
 tags: [architecture, navigation, beamer, routing, app-shell]
 status: stable
-generated: { by: codex/gpt-5, at: 2026-08-05T20:23:15Z }
+generated: { by: codex/gpt-5, at: 2026-08-25T14:10:00Z }
 stale_after: 2027-02-05
 sources:
   - id: beamer-app
@@ -321,15 +321,50 @@ one level and the pop plays as a pop:
 | AI provider detail | `/settings/ai/provider/:providerId` | `/settings/ai` |
 | AI model edit | `/settings/ai/model/:modelId` | `/settings/ai` |
 | AI profile edit | `/settings/ai/profile/:profileId` | `/settings/ai` |
+| Every definition leaf | `/settings/categories`, `/settings/labels`, `/settings/habits`, `/settings/dashboards`, `/settings/measurables` | `/settings/definitions` |
+| Every preference leaf | `/settings/theming`, `/settings/recording-style`, `/settings/speech`, `/settings/keyboard-shortcuts`, `/settings/advanced/animations` | `/settings/preferences` |
+| Advanced's two flat leaves | `/settings/flags`, `/settings/health_import` | `/settings/advanced` |
 
 The AI rows all use `aiSettingsParentRoute`, the same constant the detail pages'
 own back affordance beams to (`popAiSettingsDetail`), so the gesture and the
-chevron cannot drift apart.
+chevron cannot drift apart. The three branch rows are derived rather than
+written out, by
+[`settingsBranchHubOf`](../../lib/beamer/locations/settings_location.dart) —
+the same predicates that decide whether a hub is *in* the stack decide where
+its leaves pop to, so the two cannot disagree. The hub URLs themselves sit
+beside `aiSettingsParentRoute` in
+[`settings_tree_index.dart`](../../lib/features/settings_v2/domain/settings_tree_index.dart)
+and are read out of `settingsNodeUrls`, for the reason that constant documents:
+the tree tap, the hub page and the leaf's `popToNamed` all have to name one
+string, and the tree is where a settings URL is decided.
 
 A one-segment leaf like `/settings/daily-os` needs no `popToNamed`: the default
-pop already lands on its parent. (One-segment URLs that hang off a branch in the
-tree — `/settings/theming` under `preferences`, `/settings/habits` under
-`definitions` — are the case the next paragraph covers, not this one.)
+pop already lands on its parent, the Settings root, which is where that leaf
+belongs.
+
+# A branch leaf pops to its hub, not to its URL's parent
+
+The rule above is about *depth*. The branch hubs add a second, independent way
+to strand a back tap: the leaf's URL is not under its hub's.
+
+Definitions, Preferences and Advanced are pure-navigation hubs that
+`buildPages` keeps beneath their leaves. Whether a hub stays there is decided
+by a path predicate (`_inDefinitionsBranch` and friends) evaluated against
+whatever URL the pop produces — and most branch leaves kept the flat URLs they
+shipped with. `/settings/categories` does not nest under
+`/settings/definitions`; `/settings/theming` does not nest under
+`/settings/preferences`; and `/settings/advanced/animations` nests under the
+*wrong* branch's hub, since Animations belongs to Preferences.
+
+So the single-segment pop lands on `/settings`, the hub predicate stops
+matching, and `buildPages` drops the hub along with the leaf: **one back tap
+left the branch entirely**. It read as a page bouncing back on its own, because
+the Navigator still uncovered the hub for the length of the pop animation
+before the route rebuild replaced it with the Settings root.
+
+Depth and branch membership are separate questions, and a page can need
+`popToNamed` for either. A nested leaf like `/settings/advanced/maintenance`
+needs none: it is one segment deep *and* its URL sits under its own hub's.
 
 But landing on the right URL is only half of it. The page the leaf pops *onto*
 must already be in the stack beneath it, on a stable key, or Navigator swaps
