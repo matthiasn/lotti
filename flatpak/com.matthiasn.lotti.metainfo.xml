@@ -40,6 +40,14 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="1.0.16" date="2026-08-26">
+      <description>
+        <p>Changed: Lotti on Android no longer asks for the foreground location service permission. A location library declared it for a background-tracking mode the app never uses; Lotti only reads your position once, when you save an entry, and only if you switched that on. The permission is gone from the app's manifest.</p>
+        <p>Fixed: health import on Android never connected to Health Connect. The plugin that talks to Health Connect refused to load on every app start - the Android activity Lotti ran in was not the kind it needs - so the Health import page had no working platform side beneath it on Android. It loads now, and the import works the way it does on iOS.</p>
+        <p>Fixed: back out of a definitions list and you stay in Definitions. On a phone, leaving Categories - or Labels, Habits, Dashboards or Measurables - showed the Definitions menu for a moment and then dropped you at the top of Settings on its own, so reaching a second definition meant walking back down. One back tap is now one level, and getting to Settings takes the second tap you make yourself. Preferences and Advanced Settings had the same bug on their own entries (Theming, Animations, Recording style, Speech, Keyboard shortcuts, Feature flags, Health import) and are fixed with it - including Animations, which used to land on Advanced Settings although it lives under Preferences.</p>
+        <p>Fixed: the running timer's stop button looked like an empty checkbox, and the button to continue a stopped timer was a barely visible dot. Both the "Duration:" row of a time entry and the red tracking pill at the bottom of a task now show a solid stop square, and a stopped entry's continue button is a solid record dot at full size - the same size as the stop control it replaces, so nothing shifts when the timer flips between running and stopped.</p>
+      </description>
+    </release>
     <release version="1.0.15" date="2026-08-26">
       <description>
         <p>Added: Qwen 3.8 Max and Qwen 3.8 27B ship as Melious.ai defaults. Both are available as soon as a Melious provider is added, without browsing the full remote catalog. Qwen 3.8 27B also handles image input.</p>

@@ -4,6 +4,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.16]
+### Changed
+- **Lotti on Android no longer asks for the foreground location service
+  permission.** A location library declared it for a background-tracking mode
+  the app never uses; Lotti only reads your position once, when you save an
+  entry, and only if you switched that on. The permission is gone from the
+  app's manifest.
+
+### Fixed
+- **Health import on Android never connected to Health Connect.** The plugin
+  that talks to Health Connect refused to load on every app start — the
+  Android activity Lotti ran in was not the kind it needs — so the Health
+  import page had no working platform side beneath it on Android. It loads
+  now, and the import works the way it does on iOS.
+- **Back out of a definitions list and you stay in Definitions.** On a phone,
+  leaving Categories — or Labels, Habits, Dashboards or Measurables — showed the
+  Definitions menu for a moment and then dropped you at the top of Settings on
+  its own, so reaching a second definition meant walking back down. One back tap
+  is now one level, and getting to Settings takes the second tap you make
+  yourself. Preferences and Advanced Settings had the same bug on their own
+  entries (Theming, Animations, Recording style, Speech, Keyboard shortcuts,
+  Feature flags, Health import) and are fixed with it — including Animations,
+  which used to land on Advanced Settings although it lives under Preferences.
+- **The running timer's stop button looked like an empty checkbox, and the
+  button to continue a stopped timer was a barely visible dot.** Both the
+  "Duration:" row of a time entry and the red tracking pill at the bottom of a
+  task now show a solid stop square, and a stopped entry's continue button is
+  a solid record dot at full size — the same size as the stop control it
+  replaces, so nothing shifts when the timer flips between running and
+  stopped.
+
 ## [1.0.15]
 ### Added
 - **Qwen 3.8 Max and Qwen 3.8 27B ship as Melious.ai defaults.** Both are
