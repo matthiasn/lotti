@@ -1,7 +1,7 @@
 ---
 type: Feature Module
 title: Icon tokens
-description: The semantic icon vocabulary bound to Lucide's outlined family, the generated filled font for toggles, the guard that keeps call sites off raw Material glyphs, and where domain pictograms live instead.
+description: The semantic icon vocabulary bound to Lucide's outlined family, the generated filled font for toggles and the timer controls, the guard that keeps call sites off raw Material glyphs, and where domain pictograms live instead.
 resource: ../../../lib/features/design_system/theme/icon_tokens.dart
 tags: [design-system, icons, tokens, lucide, migration]
 status: stable
@@ -26,12 +26,12 @@ sources:
     last_modified: 2026-08-19
   - id: filled
     resource: ../../../lib/features/design_system/theme/icon_tokens_filled.dart
-    title: Filled counterparts for toggles
-    last_modified: 2026-08-19
+    title: Filled counterparts for toggles and the timer controls
+    last_modified: 2026-08-26
   - id: filled-font
     resource: ../../../tool/icons/filled_font
     title: Filled font generator
-    last_modified: 2026-08-19
+    last_modified: 2026-08-26
 ---
 
 # Why this exists
@@ -105,12 +105,20 @@ they now carry the state in colour alone (which is the idiomatic answer for an
 outline-only set). One did not: `entry_detail_header`'s flag had no colour
 signal, so a flagged entry became indistinguishable from an unflagged one.
 
-`LottiIconsFilled` closes that: a seven-glyph font generated from **Lucide's own
+`LottiIconsFilled` closes that: an eight-glyph font generated from **Lucide's own
 SVG geometry** with the silhouette filled — same shapes, same optical weight, no
 second icon family. Only glyphs whose outline is a single closed silhouette can
 be built this way; `book` fills to a featureless square, and `list`,
 `chartColumn` and `users` are open strokes. `tool/icons/filled_font/README.md`
 carries the build, the exclusions, and why `flag` needed its pole re-added.
+
+One of the eight is not a toggle. `square` is the timer's stop control — the
+entry footer's `DurationWidget` and the task action bar's tracking pill —
+where the outline read as an empty checkbox. The footer's continue control
+reuses `circle` as a full-size record dot; it used to be Lucide's `dot`, a
+~4px mark inside a 20px glyph that all but vanished beside "Duration: 0m".
+The two states share one glyph size so the footer keeps its footprint when
+the timer flips.
 
 Codepoints are assigned positionally by the generator, so **adding a glyph
 renumbers every glyph after it**. `icon_tokens_filled_test.dart` derives the

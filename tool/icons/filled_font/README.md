@@ -13,7 +13,7 @@ did not, and a flagged entry became indistinguishable from an unflagged one.
 So this builds a very small font of filled counterparts, generated from
 **Lucide's own SVG geometry** with the silhouette filled. Same shapes, same
 optical weight, no second icon family — and only for glyphs that actually
-toggle.
+toggle, plus the timer's stop control (see the table).
 
 ## Rebuilding
 
@@ -44,6 +44,7 @@ Only glyphs whose outline is a **single closed silhouette** work this way:
 | Glyph | Why it is here |
 |---|---|
 | `star`, `bookmark`, `heart`, `circle`, `folder`, `moon` | one closed path; fills cleanly |
+| `square` | not a toggle: the timer's stop control. Outlined it read as an empty checkbox on the red pill. (`circle` doubles as the timer's full-size record mark for continue.) |
 | `flag` | needed a correction — see below |
 
 `flag`'s outline draws its pole as an open run (`M4 22V4…`), and filling the

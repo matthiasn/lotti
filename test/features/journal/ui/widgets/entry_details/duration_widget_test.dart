@@ -300,8 +300,8 @@ void main() {
           );
           await tester.pump();
 
-          // The record button should be visible
-          final recordButton = find.byIcon(LottiIcons.recordDot);
+          // The continue button should be visible
+          final recordButton = find.byIcon(LottiIconsFilled.circle);
           expect(recordButton, findsOneWidget);
 
           await tester.tap(recordButton);
@@ -369,6 +369,202 @@ void main() {
         await tester.pump();
 
         // No crash, no false positive session-ended
+      },
+    );
+  });
+
+  group('DurationWidget timer controls', () {
+    final fixedNow = DateTime(2024, 3, 15, 10, 30);
+
+    /// An entry that ended at [fixedNow] after [elapsed], with [dateFrom]
+    /// therefore inside the twelve-hour window that shows the continue
+    /// control.
+    JournalEntity entryEndingNow({Duration elapsed = Duration.zero}) {
+      final start = fixedNow.subtract(elapsed);
+      return JournalEntity.journalEntry(
+        meta: Metadata(
+          id: entryId,
+          createdAt: start,
+          updatedAt: fixedNow,
+          dateFrom: start,
+          dateTo: fixedNow,
+        ),
+      );
+    }
+
+    /// Pumps the widget for [entry] under [fixedNow] and hands back the
+    /// tracker recording every `save` the widget routes through the entry
+    /// controller.
+    Future<ToggleCallTracker> pumpControls(
+      WidgetTester tester, {
+      required JournalEntity entry,
+      JournalEntity? linkedFrom,
+      String? newestLinkedId,
+    }) async {
+      final (override, tracker) = createEntryControllerOverrideWithTracker(
+        entry,
+      );
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          DurationWidget(item: entry, linkedFrom: linkedFrom),
+          overrides: [
+            override,
+            newestLinkedIdControllerProvider(linkedFrom?.id).overrideWith(
+              () => _StubNewestLinkedIdController(
+                newestLinkedId ?? entry.meta.id,
+              ),
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+      return tracker;
+    }
+
+    /// Pushes [entry] through the timer stream and pumps twice: once to
+    /// drain the broadcast delivery (a microtask), once to render — the same
+    /// cadence the stream-subscription tests above rely on.
+    Future<void> startRecording(
+      WidgetTester tester,
+      JournalEntity entry,
+    ) async {
+      fakeTimeService.emit(entry);
+      await tester.pump(Duration.zero);
+      await tester.pump();
+    }
+
+    Finder controlButton(IconData glyph) => find.ancestor(
+      of: find.byIcon(glyph),
+      matching: find.byType(IconButton),
+    );
+
+    Color errorColorOf(WidgetTester tester) =>
+        Theme.of(tester.element(find.byType(DurationWidget))).colorScheme.error;
+
+    testWidgets(
+      'at rest, the continue control is the filled circle at the stop '
+      "control's size, in the timer's red",
+      (tester) async {
+        await withClock(Clock.fixed(fixedNow), () async {
+          await pumpControls(tester, entry: entryEndingNow());
+
+          final icon = tester.widget<Icon>(
+            find.byIcon(LottiIconsFilled.circle),
+          );
+          expect(icon.icon!.fontFamily, 'LottiFilled');
+          final button = tester.widget<IconButton>(
+            controlButton(LottiIconsFilled.circle),
+          );
+          expect(button.iconSize, 20);
+          expect(button.color, errorColorOf(tester));
+          expect(find.byIcon(LottiIconsFilled.square), findsNothing);
+        });
+      },
+    );
+
+    testWidgets(
+      'while recording, the stop control is the filled square and the '
+      'continue control is gone',
+      (tester) async {
+        await withClock(Clock.fixed(fixedNow), () async {
+          final entry = entryEndingNow(elapsed: const Duration(seconds: 9));
+          await pumpControls(tester, entry: entry);
+
+          await startRecording(tester, entry);
+
+          final icon = tester.widget<Icon>(
+            find.byIcon(LottiIconsFilled.square),
+          );
+          expect(icon.icon!.fontFamily, 'LottiFilled');
+          expect(find.byIcon(LottiIcons.stop), findsNothing);
+          expect(find.byIcon(LottiIconsFilled.circle), findsNothing);
+          final button = tester.widget<IconButton>(
+            controlButton(LottiIconsFilled.square),
+          );
+          expect(button.iconSize, 20);
+          expect(button.color, errorColorOf(tester));
+        });
+      },
+    );
+
+    testWidgets(
+      'the control keeps one footprint when the timer flips between '
+      'running and stopped',
+      (tester) async {
+        await withClock(Clock.fixed(fixedNow), () async {
+          final entry = entryEndingNow(elapsed: const Duration(seconds: 9));
+          await pumpControls(tester, entry: entry);
+          final atRest = tester.getSize(controlButton(LottiIconsFilled.circle));
+
+          await startRecording(tester, entry);
+          final running = tester.getSize(
+            controlButton(LottiIconsFilled.square),
+          );
+
+          expect(running, atRest);
+        });
+      },
+    );
+
+    testWidgets(
+      'tapping stop saves the entry with stopRecording: true',
+      (tester) async {
+        await withClock(Clock.fixed(fixedNow), () async {
+          final entry = entryEndingNow(elapsed: const Duration(seconds: 9));
+          final tracker = await pumpControls(tester, entry: entry);
+
+          await startRecording(tester, entry);
+
+          await tester.tap(controlButton(LottiIconsFilled.square));
+          await tester.pump();
+
+          expect(tracker.saveCalls, hasLength(1));
+          expect(tracker.saveCalls.single['stopRecording'], isTrue);
+          expect(fakeTimeService.startCalled, isFalse);
+        });
+      },
+    );
+
+    testWidgets(
+      'the continue control is withheld from an entry older than twelve '
+      'hours',
+      (tester) async {
+        await withClock(Clock.fixed(fixedNow), () async {
+          final start = fixedNow.subtract(const Duration(hours: 13));
+          final stale = JournalEntity.journalEntry(
+            meta: Metadata(
+              id: entryId,
+              createdAt: start,
+              updatedAt: start,
+              dateFrom: start,
+              dateTo: start.add(const Duration(minutes: 5)),
+            ),
+          );
+          await pumpControls(tester, entry: stale);
+
+          // The duration itself still shows; only the control is withheld —
+          // no button of any glyph, so this holds independent of the icon.
+          expect(find.textContaining('5m'), findsOneWidget);
+          expect(find.byType(IconButton), findsNothing);
+        });
+      },
+    );
+
+    testWidgets(
+      'the continue control belongs to the newest linked entry only',
+      (tester) async {
+        await withClock(Clock.fixed(fixedNow), () async {
+          await pumpControls(
+            tester,
+            entry: entryEndingNow(),
+            linkedFrom: testEntry.copyWith(
+              meta: testEntry.meta.copyWith(id: 'parent-task'),
+            ),
+            newestLinkedId: 'a-newer-sibling',
+          );
+
+          expect(find.byType(IconButton), findsNothing);
+        });
       },
     );
   });

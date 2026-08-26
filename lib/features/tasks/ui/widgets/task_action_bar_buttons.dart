@@ -195,8 +195,10 @@ class _PillStopButton extends StatelessWidget {
           onTap: onStop,
           child: const SizedBox.square(
             dimension: TaskActionBar.pillStopButtonSize,
+            // Filled: the outlined square read as an empty checkbox on the
+            // red pill, not as the stop control it is.
             child: Icon(
-              LottiIcons.stop,
+              LottiIconsFilled.square,
               size: TaskActionBar.pillStopIconSize,
               color: Colors.white,
             ),

@@ -157,7 +157,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 10));
 
-      final recordIconFinder = find.byIcon(LottiIcons.recordDot);
+      final recordIconFinder = find.byIcon(LottiIconsFilled.circle);
       expect(recordIconFinder, findsNothing);
     });
 
@@ -194,8 +194,8 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        final recordIconFinder = find.byIcon(LottiIcons.recordDot);
-        final stopIconFinder = find.byIcon(LottiIcons.stop);
+        final recordIconFinder = find.byIcon(LottiIconsFilled.circle);
+        final stopIconFinder = find.byIcon(LottiIconsFilled.square);
         expect(recordIconFinder, findsOneWidget);
         expect(stopIconFinder, findsNothing);
 
@@ -243,8 +243,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final recordIconFinder = find.byIcon(LottiIcons.recordDot);
-      final stopIconFinder = find.byIcon(LottiIcons.stop);
+      final recordIconFinder = find.byIcon(LottiIconsFilled.circle);
+      final stopIconFinder = find.byIcon(LottiIconsFilled.square);
       expect(recordIconFinder, findsNothing);
       expect(stopIconFinder, findsOneWidget);
 
