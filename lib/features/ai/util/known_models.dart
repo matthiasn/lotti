@@ -144,6 +144,16 @@ const String meliousMistralSmall4119BInstructModelId =
 /// "DeepSeek V4 Flash" in settings could only ever fail.
 const String meliousDeepseekV4FlashModelId = 'deepseek-v4-flash-0731';
 const String meliousQwen35122BA10BModelId = 'qwen3.5-122b-a10b';
+
+/// Qwen 3.8 flagships.
+///
+/// Both reject a chat completion unless `reasoning_effort` is present, and
+/// both reject `high`. `MeliousInferenceRepository.resolveReasoningEffort`
+/// supplies and clamps it; without that they answer `400` with the misleading
+/// "the request was rejected as malformed".
+const String meliousQwen38MaxModelId = 'qwen3.8-max';
+const String meliousQwen3827BModelId = 'qwen3.8-27b';
+
 const String meliousKimiK3ModelId = 'kimi-k3';
 const String meliousVoxtralSmall24B2507ModelId = 'voxtral-small-24b-2507';
 const String meliousWhisperLargeV3ModelId = 'whisper-large-v3';

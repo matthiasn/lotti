@@ -501,6 +501,8 @@ void main() {
             meliousMinimaxM27ModelId,
             meliousMistralSmall4119BInstructModelId,
             meliousQwen35122BA10BModelId,
+            meliousQwen38MaxModelId,
+            meliousQwen3827BModelId,
             meliousKimiK3ModelId,
             meliousDeepseekV4FlashModelId,
             meliousFlux2Klein9BModelId,
@@ -510,6 +512,48 @@ void main() {
           }),
         );
       });
+
+      test(
+        'Qwen 3.8 defaults carry the capabilities the catalog advertises',
+        () {
+          // Shipped as defaults, so a wrong capability here silently misroutes
+          // real work: a model missing Modality.image never gets vision
+          // requests, and one missing supportsFunctionCalling is skipped for
+          // task-agent execution.
+          final byId = {
+            for (final model in meliousModels) model.providerModelId: model,
+          };
+
+          final max = byId[meliousQwen38MaxModelId];
+          expect(max, isNotNull, reason: 'Qwen 3.8 Max must ship as a default');
+          expect(max!.name, 'Qwen 3.8 Max');
+          expect(max.isReasoningModel, isTrue);
+          expect(max.supportsFunctionCalling, isTrue);
+          expect(
+            max.inputModalities,
+            [Modality.text],
+            reason: 'the catalog lists Qwen 3.8 Max as text-only',
+          );
+          // publisher is resolved when the row is installed, not on the const.
+          expect(publisherForCuratedModel(max.providerModelId), 'Alibaba');
+
+          final small = byId[meliousQwen3827BModelId];
+          expect(
+            small,
+            isNotNull,
+            reason: 'Qwen 3.8 27B must ship as a default',
+          );
+          expect(small!.name, 'Qwen 3.8 27B');
+          expect(small.isReasoningModel, isTrue);
+          expect(small.supportsFunctionCalling, isTrue);
+          expect(
+            small.inputModalities,
+            containsAll([Modality.text, Modality.image]),
+            reason: 'Qwen 3.8 27B is multimodal and is offered for vision work',
+          );
+          expect(publisherForCuratedModel(small.providerModelId), 'Alibaba');
+        },
+      );
 
       test('every curated Melious model id is unique', () {
         final ids = meliousModels

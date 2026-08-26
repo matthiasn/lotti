@@ -76,6 +76,30 @@ const List<KnownModel> meliousModels = [
         'task-agent execution with evidence-first reporting.',
   ),
   KnownModel(
+    providerModelId: meliousQwen38MaxModelId,
+    name: 'Qwen 3.8 Max',
+    inputModalities: [Modality.text],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    supportsFunctionCalling: true,
+    description:
+        'Melious-hosted Qwen 3.8 Max, the largest Qwen reasoning model, with '
+        'a 256k-token context window, tool calling, and structured output.',
+  ),
+  KnownModel(
+    providerModelId: meliousQwen3827BModelId,
+    name: 'Qwen 3.8 27B',
+    // The live catalog also advertises `video` input, which `Modality` does
+    // not model; the vision path only ever sends images.
+    inputModalities: [Modality.text, Modality.image],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    supportsFunctionCalling: true,
+    description:
+        'Fast multimodal Qwen 3.8 27B for text and image understanding, with '
+        'a 262k-token context window, tool calling, and structured output.',
+  ),
+  KnownModel(
     providerModelId: meliousKimiK3ModelId,
     name: 'Kimi K3',
     // The live catalog also advertises `video` input, which `Modality` does
