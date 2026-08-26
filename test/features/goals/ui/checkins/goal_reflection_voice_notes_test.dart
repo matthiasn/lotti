@@ -3,19 +3,12 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/goals/service/goal_checkin_transcription_trigger.dart';
-import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
 import 'package:lotti/features/goals/ui/checkins/goal_reflection_voice_notes.dart';
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
 
-import 'package:mocktail/mocktail.dart';
-
-import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
-import '../../../agents/test_data/entity_factories.dart';
 
 void main() {
   final today = DateTime(2026, 8, 18, 9);
@@ -43,20 +36,9 @@ void main() {
       );
 
   late List<String> recorded;
-  late List<String> transcribed;
-  late MockAgentService agentService;
 
   setUp(() {
     recorded = [];
-    transcribed = [];
-    agentService = MockAgentService();
-    when(() => agentService.getAgent('agent-1')).thenAnswer(
-      (_) async => makeTestIdentity(
-        agentId: 'agent-1',
-        kind: 'goal_agent',
-        config: const AgentConfig(automaticUpdatesEnabled: true),
-      ),
-    );
   });
 
   Future<void> pump(
@@ -89,13 +71,6 @@ void main() {
             goalCaptureTargetProvider(
               'agent-1',
             ).overrideWith((ref) async => captureTarget),
-            goalCheckInTranscriptionTriggerProvider.overrideWithValue(
-              GoalCheckInTranscriptionTrigger(
-                agentService: agentService,
-                runTranscription: (entryId) async => transcribed.add(entryId),
-                recordDecline: (_, _) async {},
-              ),
-            ),
           ],
         ),
       );
@@ -168,11 +143,10 @@ void main() {
     );
     await tester.pump();
 
-    // Linked immediately, so a dismissed sheet cannot orphan the recording.
+    // Linked immediately, so a dismissed sheet cannot orphan the recording —
+    // and the link is what makes the recorder's stop path transcribe it as a
+    // check-in.
     expect(recorded, ['goal-1']);
-    // A voice note on a reflection is a check-in, so it earns the same
-    // transcript — and the same route into the agent's context.
-    expect(transcribed, ['audio-1']);
   });
 
   testWidgets('a disabled sheet offers no capture', (tester) async {

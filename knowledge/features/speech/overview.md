@@ -125,6 +125,20 @@ the check *is* the permission request. The app shell watches
 frame of any route — a probe in `build()` popped the OS microphone dialog over
 the task list on a fresh install. Permission is requested lazily, in `record()`.
 
+## Every stop runs the automation, and a goal gets its own gate
+
+`stop()` hands every created entry to `AutomaticPromptTrigger`, whichever
+control stopped it — the sheet's stop button, the sidebar's, or the floating
+indicator's. That is why the post-recording decision lives here and not in
+the surface that opened the recorder: a surface only learns of a recording it
+awaited, and a sheet dismissed mid-recording never hears back. The trigger
+gates on the linked subject's category; a goal check-in has no category, so
+when the category gate declines and the subject's agent is a goal agent, the
+trigger falls back to that agent's automatic-updates switch and calls
+`triggerSkillProvider` with no task context. Switched off records a visible
+decline instead of skipping. The goal side of this is in
+[goals](../goals.md).
+
 ## Navigation is kept out of teardown
 
 `AudioRecordingModal.show()` hosts the Wolt sheet on the **root navigator** by

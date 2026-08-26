@@ -45,7 +45,6 @@ class EntryDetailsPage extends ConsumerStatefulWidget {
   const EntryDetailsPage({
     required this.itemId,
     this.showBackButton = true,
-    this.showFloatingActionButton = true,
     super.key,
   });
 
@@ -57,14 +56,6 @@ class EntryDetailsPage extends ConsumerStatefulWidget {
   /// only way out. False in the desktop split pane, where the list stays on
   /// screen beside the details and there is nothing to go back to.
   final bool showBackButton;
-
-  /// Whether this page contributes its own create FAB.
-  ///
-  /// True on mobile, where this page is the only thing on screen. False in
-  /// the desktop split pane, where the list pane already shows the create FAB
-  /// and a second one floating over the details would duplicate it — matching
-  /// the tasks split, whose detail pane has no FAB either.
-  final bool showFloatingActionButton;
 
   @override
   ConsumerState<EntryDetailsPage> createState() => _EntryDetailsPageState();
@@ -165,12 +156,14 @@ class _EntryDetailsPageState extends ConsumerState<EntryDetailsPage>
           // shares the list column's page surface, and the entry body sits on
           // it as a card — the same card-on-canvas recipe as the list rows.
           backgroundColor: dsPageSurface(context),
-          floatingActionButton: widget.showFloatingActionButton
-              ? FloatingAddActionButton(
-                  linkedFromId: item.meta.id,
-                  categoryId: item.meta.categoryId,
-                )
-              : null,
+          // Always, including in the desktop split pane: this FAB creates an
+          // entry *linked to this one*, which the list pane's FAB cannot —
+          // that one creates a standalone entry. Dropping it as a duplicate
+          // left desktop with no way to create a linked entry at all.
+          floatingActionButton: FloatingAddActionButton(
+            linkedFromId: item.meta.id,
+            categoryId: item.meta.categoryId,
+          ),
           body: Stack(
             children: [
               CustomScrollView(

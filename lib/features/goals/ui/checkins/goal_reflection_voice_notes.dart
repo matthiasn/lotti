@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
 import 'package:lotti/features/goals/ui/checkins/goal_checkin_composer.dart';
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
@@ -81,19 +80,10 @@ class GoalReflectionVoiceNotes extends ConsumerWidget {
             // the fine print beside it stays quiet.
             child: DsQuietInk(
               key: const ValueKey('goal-reflection-add-voice-note'),
-              onTap: () async {
-                final createdId = await openRecorder(
-                  context,
-                  goalEntryId: goalEntryId,
-                );
-                if (createdId == null) return;
-                // A voice note on a reflection IS a check-in, so it earns the
-                // same transcript — without this the rail showed it as a
-                // recording that was forever about to be transcribed.
-                await ref
-                    .read(goalCheckInTranscriptionTriggerProvider)
-                    .transcribe(agentId: agentId, entryId: createdId);
-              },
+              // A voice note on a reflection IS a check-in: the recording is
+              // linked to the goal, and the recorder's stop path transcribes
+              // it like any other check-in.
+              onTap: () => openRecorder(context, goalEntryId: goalEntryId),
               borderRadius: BorderRadius.circular(tokens.radii.s),
               builder: (context, highlighted) {
                 final ink = highlighted

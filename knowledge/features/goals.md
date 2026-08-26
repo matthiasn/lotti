@@ -1444,7 +1444,7 @@ flowchart LR
     S["GoalCheckInSummary<br/>≤500 tokens"]
     F["userVoice section<br/>in FACTS"]
   end
-  A -. "GoalCheckInTranscriptionTrigger<br/>→ triggerSkillProvider" .-> T["transcript<br/>(on the audio entry)"]
+  A -. "AutomaticPromptTrigger goal fallback<br/>→ triggerSkillProvider" .-> T["transcript<br/>(on the audio entry)"]
   T -. "automatic report wake:<br/>compact with minimal reasoning" .-> S
   S -- "token-bounded by planCompaction" --> F
   R --> TL["goal timeline"]
@@ -1467,9 +1467,10 @@ Key pieces:
   readable there (only the day strip's colouring stays spec-scoped).
   Reflections are withheld entirely while the active spec is unknown. Full history renders in bounded pages instead of eagerly
   mounting every audio player; the inline card remains a short preview.
-- `lib/features/goals/service/goal_checkin_transcription_trigger.dart` — asks
-  the shared skill pipeline to transcribe a recording that has just been
-  captured, gated on the goal agent's automatic-updates switch.
+- `lib/features/speech/helpers/automatic_prompt_trigger.dart` — the
+  recorder's post-stop automation; its goal fallback asks the shared skill
+  pipeline to transcribe a goal-linked recording, gated on the goal agent's
+  automatic-updates switch.
 - `lib/features/goals/service/goal_checkin_compactor.dart` — one structured
   summary per check-in, keyed `(agentId, entryId)` so retries and second
   devices converge instead of appending; deterministic failure rows carry the
@@ -1496,21 +1497,27 @@ Invariants worth not breaking:
   12 hours, then the third failure is terminal until the transcript changes;
   reaching that ceiling emits a dedicated operator-visible log event. It never
   fails the wake or the recording.
-- **A check-in asks for its own transcript.** The app-wide post-recording
-  automation (`AutomaticPromptTrigger`) runs for any *subject* the recording is
-  linked to, but gates on **that subject's category** — and a goal has none, so
-  the gate reads "nothing opted in" and a check-in gets nothing from it. The
-  goals feature therefore calls `triggerSkillProvider` itself after the
-  recorder returns an entry id, with the goal agent's automatic-updates switch
-  as the consent signal a goal actually has.
-  Without that call a check-in saved, played back, and was never transcribed,
-  which also left the compactor with nothing to distill: `checkInSources` only
-  yields entries that carry text.
+- **A check-in is transcribed on the recorder's stop path, not by the
+  composer.** The app-wide post-recording automation
+  (`AutomaticPromptTrigger`) runs for any *subject* the recording is linked
+  to, but gates on **that subject's category** — and a goal has none, so the
+  gate reads "nothing opted in". When the category gate declines and the
+  subject's agent is a goal agent, the trigger falls back to that agent's
+  automatic-updates switch — the consent signal a goal actually has — and
+  calls `triggerSkillProvider` with no task context. Without that fallback a
+  check-in saved, played back, and was never transcribed, which also left the
+  compactor with nothing to distill: `checkInSources` only yields entries that
+  carry text. The fallback lives on the stop path because that is the only
+  place every recording passes: the goal composer once asked for the
+  transcript itself after awaiting the recorder, and missed every recording
+  stopped from the sidebar's Stop button or the floating indicator after the
+  sheet was dismissed — those reach `AudioRecorderController.stop` without the
+  composer ever hearing back.
 - **A category-less recording still resolves a model.** `triggerSkillProvider`
   ends transcription on `ProfileAutomationService.resolveDirectTranscription`,
   which picks a configured speech-to-text model with no profile involved. A
   goal check-in has no task and no category, so without that step every
-  surface — the AI popup, the timeline's Retry, the trigger above — declined
+  surface — the AI popup, the timeline's Retry, the fallback above — declined
   it for "no profile configured".
 - **A declined run is a failed run, visibly — including a run never started.**
   `triggerSkillProvider` writes both halves of the failed state before

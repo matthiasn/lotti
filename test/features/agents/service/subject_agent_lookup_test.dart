@@ -64,6 +64,7 @@ void main() {
         AgentLinkTypes.agentProject,
         AgentLinkTypes.agentEvent,
         AgentLinkTypes.agentRelationship,
+        AgentLinkTypes.agentGoal,
       ]);
     });
 

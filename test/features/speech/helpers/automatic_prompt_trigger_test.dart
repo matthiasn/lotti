@@ -1,16 +1,23 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/service/subject_agent_lookup.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/services/profile_automation_service.dart';
 import 'package:lotti/features/ai/services/skill_inference_runner.dart';
+import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/state/inference_error_controller.dart';
+import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
+import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
 import 'package:lotti/features/speech/helpers/automatic_prompt_trigger.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_en.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
@@ -29,6 +36,7 @@ void main() {
   late MockSubjectAgentResolver mockSubjectAgentResolver;
   late MockWakeOrchestrator mockWakeOrchestrator;
   late ProviderContainer container;
+  late List<TriggerSkillParams> skillTriggers;
 
   const entryId = 'entry-1';
 
@@ -99,6 +107,7 @@ void main() {
       () => mockSubjectAgentResolver(any<String>()),
     ).thenAnswer((_) async => null);
     mockWakeOrchestrator = MockWakeOrchestrator();
+    skillTriggers = [];
 
     // The trigger resolves `getIt<DomainLogger>()`; swap the real logger
     // registered by setUpTestGetIt for the mock so log/error calls can be
@@ -158,6 +167,9 @@ void main() {
           mockSubjectAgentResolver,
         ),
         wakeOrchestratorProvider.overrideWithValue(mockWakeOrchestrator),
+        triggerSkillProvider.overrideWith((ref, params) async {
+          skillTriggers.add(params);
+        }),
       ],
     );
   });
@@ -517,6 +529,149 @@ void main() {
           subDomain: 'triggerAutomaticPrompts',
         ),
       );
+    });
+  });
+
+  // A goal check-in is a `JournalAudio` linked to a goal's journal entry,
+  // which belongs to no task and no category — so the category gate above
+  // always declines it. The goal agent's own automatic-updates switch decides
+  // instead, and it decides HERE, on the stop path, because a recording
+  // stopped from the sidebar or the floating indicator never reports back to
+  // the composer that opened the recorder.
+  group('goal check-in fallback', () {
+    const goalEntryId = 'goal-entry-1';
+
+    void stubGoalAgent({AgentConfig config = const AgentConfig()}) {
+      when(() => mockSubjectAgentResolver(goalEntryId)).thenAnswer(
+        (_) async => makeTestIdentity(
+          agentId: 'goal-agent',
+          kind: AgentKinds.goalAgent,
+          config: config,
+        ),
+      );
+    }
+
+    test(
+      'a category-less check-in enters the shared skill pipeline',
+      () async {
+        stubGoalAgent(
+          config: const AgentConfig(automaticUpdatesEnabled: true),
+        );
+
+        await trigger().triggerAutomaticPrompts(
+          entryId,
+          stoppedState(),
+          linkedSubjectId: goalEntryId,
+        );
+
+        // The whole point: the recording enters the pipeline every other
+        // recording uses, with no task context claimed — the runner would go
+        // looking for a task that does not exist.
+        expect(skillTriggers, hasLength(1));
+        expect(skillTriggers.single.entityId, entryId);
+        expect(skillTriggers.single.skillId, skillTranscribeContextId);
+        expect(skillTriggers.single.linkedTaskId, isNull);
+        // …and not through the profile runner, which had nothing to run.
+        verifyNever(
+          () => mockRunner.runTranscription(
+            audioEntryId: any(named: 'audioEntryId'),
+            automationResult: any(named: 'automationResult'),
+            linkedTaskId: any(named: 'linkedTaskId'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'a goal created before the switch existed still transcribes',
+      () async {
+        // Legacy goal agents carry no explicit value and shipped with automatic
+        // updates ON — reading null as off (the task-agent default) would
+        // silently stop transcribing every check-in on them.
+        stubGoalAgent();
+
+        await trigger().triggerAutomaticPrompts(
+          entryId,
+          stoppedState(),
+          linkedSubjectId: goalEntryId,
+        );
+
+        expect(skillTriggers.map((p) => p.entityId), [entryId]);
+      },
+    );
+
+    test('automatic updates switched off records a visible decline', () async {
+      stubGoalAgent(
+        config: const AgentConfig(automaticUpdatesEnabled: false),
+      );
+
+      await trigger().triggerAutomaticPrompts(
+        entryId,
+        stoppedState(),
+        linkedSubjectId: goalEntryId,
+      );
+
+      // Nothing is spent — that is what the switch is for…
+      expect(skillTriggers, isEmpty);
+      // …but the recording is marked as needing the user rather than left
+      // claiming progress it will never make: the failed state is what makes
+      // the check-ins rail offer Retry.
+      expect(
+        container.read(
+          inferenceStatusControllerProvider((
+            id: entryId,
+            aiResponseType: AiResponseType.audioTranscription,
+          )),
+        ),
+        InferenceStatus.error,
+      );
+      expect(
+        container.read(
+          inferenceErrorControllerProvider((
+            id: entryId,
+            aiResponseType: AiResponseType.audioTranscription,
+          )),
+        ),
+        AppLocalizationsEn().goalCheckInTranscriptionOff,
+      );
+    });
+
+    test('a declined task recording is not rescued by its agent', () async {
+      // The category switch is the task's consent signal. When it says no,
+      // the task agent's own switch must not override it.
+      when(() => mockSubjectAgentResolver('task-1')).thenAnswer(
+        (_) async => makeTestIdentity(
+          agentId: 'task-agent',
+          config: const AgentConfig(automaticUpdatesEnabled: true),
+        ),
+      );
+
+      await trigger().triggerAutomaticPrompts(
+        entryId,
+        stoppedState(),
+        linkedSubjectId: 'task-1',
+      );
+
+      expect(skillTriggers, isEmpty);
+      expect(
+        container.read(
+          inferenceStatusControllerProvider((
+            id: entryId,
+            aiResponseType: AiResponseType.audioTranscription,
+          )),
+        ),
+        InferenceStatus.idle,
+      );
+    });
+
+    test('a subject with no agent is left to the category gate', () async {
+      await trigger().triggerAutomaticPrompts(
+        entryId,
+        stoppedState(),
+        linkedSubjectId: 'orphan-subject',
+      );
+
+      expect(skillTriggers, isEmpty);
     });
   });
 }
