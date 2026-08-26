@@ -42,7 +42,7 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '17'
@@ -70,6 +70,24 @@ jobs:
       - name: Flutter pub get
         run: flutter pub get
 
+      # AGP writes the debug keystore under $XDG_CONFIG_HOME/.android, which
+      # on this runner is not writable ("Unable to create debug keystore in
+      # /home/runner/.config/.android"). Point AGP at a home it owns.
+      - name: Give AGP a writable Android home
+        run: |
+          mkdir -p "$HOME/.android"
+          echo "ANDROID_USER_HOME=$HOME/.android" >> "$GITHUB_ENV"
+
+      # Build before the emulator boots: the Rust crates and Gradle take
+      # longer than the capture itself, a build failure then fails the job
+      # without an emulator log to wade through, and `flutter drive` reuses
+      # the warm caches. x64 only — that is the emulator's ABI.
+      - name: Build the test APK
+        run: >-
+          flutter build apk --debug
+          --target-platform android-x64
+          --target integration_test/store_screenshots_test.dart
+
       - name: Capture
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -89,7 +107,7 @@ jobs:
 
       - name: Upload screenshots
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: store-screenshots-android-${{ inputs.locale || 'en' }}
           path: build/store_screenshots/android/*.png
