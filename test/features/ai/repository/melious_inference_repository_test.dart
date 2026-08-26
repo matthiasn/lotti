@@ -2782,13 +2782,49 @@ void main() {
     });
 
     test('clamps high, which these models reject, down to medium', () {
-      expect(
-        MeliousInferenceRepository.resolveReasoningEffort(
-          quirkedModel,
-          ReasoningEffort.high,
-        ),
+      for (final model
+          in MeliousInferenceRepository.modelsRequiringReasoningEffort) {
+        expect(
+          MeliousInferenceRepository.resolveReasoningEffort(
+            model,
+            ReasoningEffort.high,
+          ),
+          ReasoningEffort.medium,
+          reason: '$model rejects high; medium is the nearest it accepts',
+        );
+      }
+    });
+
+    test('never resolves to a value the live API rejects', () {
+      // The property that actually matters: whatever a caller asks for, what
+      // goes on the wire must be something the model answers 200 for.
+      // Measured accepted set for both models, over the values
+      // ReasoningEffort can express in openai_dart 0.6.2.
+      const accepted = {
+        ReasoningEffort.minimal,
+        ReasoningEffort.low,
         ReasoningEffort.medium,
-      );
+      };
+      for (final model
+          in MeliousInferenceRepository.modelsRequiringReasoningEffort) {
+        for (final requested in <ReasoningEffort?>[
+          null,
+          ...ReasoningEffort.values,
+        ]) {
+          expect(
+            accepted,
+            contains(
+              MeliousInferenceRepository.resolveReasoningEffort(
+                model,
+                requested,
+              ),
+            ),
+            reason:
+                'resolving $requested for $model produced a value the '
+                'API answers 400 for',
+          );
+        }
+      }
     });
 
     test('passes an already-supported effort through untouched', () {

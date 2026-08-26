@@ -9,6 +9,7 @@ cannot be attributed to an optional parameter we chose to send.
 from __future__ import annotations
 
 import json
+from typing import Any
 
 import pytest
 
@@ -42,11 +43,17 @@ def test_minimal_body_is_schema_valid() -> None:
 @pytest.mark.live
 @pytest.mark.parametrize("model", CONTROL_MODELS)
 def test_control_models_accept_minimal_body(
-    client: MeliousClient, recorder: list[Probe], model: str
+    client: MeliousClient,
+    recorder: list[Probe],
+    require_model: Any,
+    model: str,
 ) -> None:
     """The account and the harness are both healthy."""
+    require_model(model)
     probe = client.probe_chat(model)
     recorder.append(probe)
+    if probe.outcome is Outcome.UPSTREAM_ERROR:
+        pytest.skip(f"{model}: upstream 5xx after {probe.attempts} attempts")
     assert probe.ok, (
         f"Control model {model} failed with HTTP {probe.status} "
         f"({probe.outcome}): {probe.message}. Either the credential lost "
@@ -57,7 +64,7 @@ def test_control_models_accept_minimal_body(
 
 @pytest.mark.live
 def test_only_the_model_id_differs(
-    client: MeliousClient, recorder: list[Probe]
+    client: MeliousClient, recorder: list[Probe], require_model: Any
 ) -> None:
     """The decisive experiment.
 
@@ -65,9 +72,15 @@ def test_only_the_model_id_differs(
     called malformed. Since the bytes are otherwise the same, the payload
     cannot be what is wrong.
     """
+    require_model("qwen3.6-27b", "qwen3.8-27b")
     accepted = client.probe_chat("qwen3.6-27b")
     rejected = client.probe_chat("qwen3.8-27b")
     recorder.extend((accepted, rejected))
+    for probe in (accepted, rejected):
+        if probe.outcome is Outcome.UPSTREAM_ERROR:
+            pytest.skip(
+                f"{probe.model}: upstream 5xx after {probe.attempts} attempts"
+            )
 
     accepted_body = minimal_chat_body("qwen3.6-27b")
     rejected_body = minimal_chat_body("qwen3.8-27b")
@@ -99,6 +112,13 @@ def test_catalog_model_accepts_minimal_body(
     A 400 on this body is a genuine defect: the provider is advertising a
     model it will not serve, and blaming the caller for it.
     """
+    if chat_model in REASONING_EFFORT_REQUIRED:
+        pytest.skip(
+            f"{chat_model} requires reasoning_effort, which minimal_chat_body "
+            "deliberately omits — covered by "
+            "test_reasoning_effort_is_what_the_400_is_really_about"
+        )
+
     probe = client.probe_chat(chat_model)
     recorder.append(probe)
 
@@ -118,7 +138,10 @@ def test_catalog_model_accepts_minimal_body(
 @pytest.mark.live
 @pytest.mark.parametrize("model", REASONING_EFFORT_REQUIRED)
 def test_reasoning_effort_is_what_the_400_is_really_about(
-    client: MeliousClient, recorder: list[Probe], model: str
+    client: MeliousClient,
+    recorder: list[Probe],
+    require_model: Any,
+    model: str,
 ) -> None:
     """Pins the actual contract these models enforce.
 
@@ -126,14 +149,20 @@ def test_reasoning_effort_is_what_the_400_is_really_about(
     basis for the fix in `MeliousInferenceRepository.resolveReasoningEffort`.
     `high` is rejected, so the app clamps to `medium`.
     """
-    without = client.probe_chat(model, retries=0)
-    body = minimal_chat_body(model) | {"reasoning_effort": "low"}
-    with_low = client.probe_chat(model, body=body, retries=0)
+    require_model(model)
+    without = client.probe_chat(model)
+    with_low = client.probe_chat(
+        model, body=minimal_chat_body(model) | {"reasoning_effort": "low"}
+    )
     too_high = client.probe_chat(
-        model, body=minimal_chat_body(model) | {"reasoning_effort": "high"},
-        retries=0,
+        model, body=minimal_chat_body(model) | {"reasoning_effort": "high"}
     )
     recorder.extend((without, with_low, too_high))
+    for probe in (without, with_low, too_high):
+        if probe.outcome is Outcome.UPSTREAM_ERROR:
+            pytest.skip(
+                f"{model}: upstream 5xx after {probe.attempts} attempts"
+            )
 
     assert without.outcome is Outcome.MALFORMED, (
         f"{model} was expected to reject a body with no reasoning_effort, "

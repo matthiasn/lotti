@@ -12,7 +12,7 @@ from typing import Any
 
 import pytest
 
-from melious import MeliousClient, Probe, redact, resolve_credentials
+from melious import MeliousClient, Probe, describe_secret, resolve_credentials
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
 
@@ -74,7 +74,7 @@ def credentials() -> tuple[str, str]:
 @pytest.fixture(scope="session")
 def client(credentials: tuple[str, str]) -> Any:
     api_key, base_url = credentials
-    print(f"\nMelious probe: {base_url} key={redact(api_key)}")
+    print(f"\nMelious probe: {base_url} key=({describe_secret(api_key)})")
     instance = MeliousClient(api_key, base_url)
     yield instance
     instance.close()
@@ -99,6 +99,34 @@ def chat_models(
         for entry in catalog
         if entry.get("_meta", {}).get("type") == "chat"
     )
+
+
+@pytest.fixture(scope="session")
+def model_allowlist(pytestconfig: pytest.Config) -> frozenset[str] | None:
+    """The --models allowlist, or None when the caller did not restrict it.
+
+    Every live probe must consult this. `--models` is documented as "probe
+    just these", and a probe outside the list both spends money the caller
+    did not authorise and can fail for reasons unrelated to their query.
+    """
+    override = pytestconfig.getoption("--models")
+    if not override:
+        return None
+    return frozenset(m.strip() for m in override.split(",") if m.strip())
+
+
+@pytest.fixture
+def require_model(model_allowlist: frozenset[str] | None) -> Any:
+    """Skips the calling test when a model is outside the --models allowlist."""
+
+    def check(*models: str) -> None:
+        if model_allowlist is None:
+            return
+        outside = [m for m in models if m not in model_allowlist]
+        if outside:
+            pytest.skip(f"outside --models allowlist: {', '.join(outside)}")
+
+    return check
 
 
 @pytest.fixture(scope="session")

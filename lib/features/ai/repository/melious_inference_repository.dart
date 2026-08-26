@@ -74,9 +74,14 @@ class MeliousInferenceRepository extends TranscriptionRepository {
   /// Every other Melious chat model accepts all six, so this stays a narrow
   /// quirk table rather than a blanket policy — forcing an effort on models
   /// that do not need one would silently change their thinking budget.
+  ///
+  /// The two models differ on `none` — the 27B accepts it, Max rejects it —
+  /// but `ReasoningEffort` in openai_dart 0.6.2 is only
+  /// `{minimal, low, medium, high}`, so no caller can express `none` and the
+  /// distinction is unreachable. Revisit if that enum ever gains the value.
   static const modelsRequiringReasoningEffort = <String>{
-    'qwen3.8-27b',
-    'qwen3.8-max',
+    meliousQwen3827BModelId,
+    meliousQwen38MaxModelId,
   };
 
   /// Used when a caller supplied no effort for a model that demands one.

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import dataclasses
 import enum
+import hashlib
 import os
 import pathlib
 import time
@@ -72,11 +73,15 @@ class Probe:
         return data
 
 
-def redact(secret: str) -> str:
-    """Render a credential safe to print. Never log the raw value."""
-    if len(secret) <= 12:
-        return "***"
-    return f"{secret[:6]}...{secret[-4:]} ({len(secret)} chars)"
+def describe_secret(secret: str) -> str:
+    """Describe a credential without disclosing any of it.
+
+    Deliberately returns no characters of the secret — not even a prefix.
+    A partial reveal is still a leak into CI logs, and the length plus a
+    non-reversible fingerprint is enough to tell two keys apart.
+    """
+    digest = hashlib.sha256(secret.encode()).hexdigest()[:8]
+    return f"{len(secret)} chars, sha256:{digest}"
 
 
 def load_dotenv(path: pathlib.Path) -> dict[str, str]:
