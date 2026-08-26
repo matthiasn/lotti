@@ -52,6 +52,68 @@ class MeliousInferenceRepository extends TranscriptionRepository {
            temporaryFileDeleter ?? ((file) => file.deleteSync()),
        _clock = clockSource ?? clock;
 
+  /// Melious models that reject a chat completion outright unless
+  /// `reasoning_effort` is present in the body.
+  ///
+  /// Omitting the field — which is what every non-Gemini call site does, since
+  /// `CloudInferenceGenerate` only resolves an effort for Gemini 3 — makes
+  /// these models answer `400 invalid_request_error` with the misleading text
+  /// "The request was rejected as malformed. Check the message format, tools
+  /// schema, or response_format". There is nothing wrong with the message
+  /// format: a two-field `{model, messages}` body is rejected just the same,
+  /// and the identical body succeeds against every other model in the catalog.
+  ///
+  /// Verified against the live API on 2026-08-26, five consecutive probes per
+  /// cell (probe sequentially — concurrent requests produce spurious 400s):
+  ///
+  /// | model         | absent | none | minimal | low | medium | high |
+  /// |---------------|--------|------|---------|-----|--------|------|
+  /// | `qwen3.8-27b` | 400    | 200  | 200     | 200 | 200    | 400  |
+  /// | `qwen3.8-max` | 400    | 400  | 200     | 200 | 200    | 400  |
+  ///
+  /// Every other Melious chat model accepts all six, so this stays a narrow
+  /// quirk table rather than a blanket policy — forcing an effort on models
+  /// that do not need one would silently change their thinking budget.
+  ///
+  /// The two models differ on `none` — the 27B accepts it, Max rejects it —
+  /// but `ReasoningEffort` in openai_dart 0.6.2 is only
+  /// `{minimal, low, medium, high}`, so no caller can express `none` and the
+  /// distinction is unreachable. Revisit if that enum ever gains the value.
+  static const modelsRequiringReasoningEffort = <String>{
+    meliousQwen3827BModelId,
+    meliousQwen38MaxModelId,
+  };
+
+  /// Used when a caller supplied no effort for a model that demands one.
+  /// Matches [CloudInferenceRequestHelpers.resolveGeminiThinkingConfig], which
+  /// also treats `low` as the app-wide default thinking level.
+  static const ReasoningEffort _defaultRequiredReasoningEffort =
+      ReasoningEffort.low;
+
+  /// The strongest effort the models in [modelsRequiringReasoningEffort]
+  /// accept; `high` is rejected as malformed.
+  static const ReasoningEffort _maxRequiredReasoningEffort =
+      ReasoningEffort.medium;
+
+  /// Resolves the `reasoning_effort` to send for [model].
+  ///
+  /// Returns [requested] unchanged for models without the quirk, so nothing
+  /// else in the catalog changes behaviour. For a quirked model it supplies
+  /// [_defaultRequiredReasoningEffort] when the caller asked for nothing, and
+  /// clamps `high` down to [_maxRequiredReasoningEffort] rather than letting
+  /// the request fail. Idempotent, so applying it twice on one path is safe.
+  static ReasoningEffort? resolveReasoningEffort(
+    String model,
+    ReasoningEffort? requested,
+  ) {
+    if (!modelsRequiringReasoningEffort.contains(model.trim())) {
+      return requested;
+    }
+    if (requested == null) return _defaultRequiredReasoningEffort;
+    if (requested == ReasoningEffort.high) return _maxRequiredReasoningEffort;
+    return requested;
+  }
+
   static const _providerName = 'MeliousInferenceRepository';
   static const _modelListTimeout = Duration(seconds: 15);
   static const _imageGenerationTimeout = Duration(seconds: 180);
@@ -287,7 +349,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
         maxCompletionTokens: maxCompletionTokens,
         tools: tools,
         toolChoice: toolChoice,
-        reasoningEffort: reasoningEffort,
+        reasoningEffort: resolveReasoningEffort(model, reasoningEffort),
       ),
     );
 
@@ -332,7 +394,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
         maxCompletionTokens: maxCompletionTokens,
         tools: tools,
         toolChoice: toolChoice,
-        reasoningEffort: reasoningEffort,
+        reasoningEffort: resolveReasoningEffort(model, reasoningEffort),
       ),
     );
 
@@ -392,6 +454,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
         maxCompletionTokens: maxCompletionTokens,
         tools: tools,
         toolChoice: toolChoice,
+        reasoningEffort: resolveReasoningEffort(model, null),
       ),
     ).asBroadcastStream();
   }
@@ -438,7 +501,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
         maxCompletionTokens: maxCompletionTokens,
         tools: tools,
         toolChoice: toolChoice,
-        reasoningEffort: reasoningEffort,
+        reasoningEffort: resolveReasoningEffort(model, reasoningEffort),
         stream: false,
       ),
     );
