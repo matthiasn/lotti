@@ -1,4 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="com.matthiasn.lotti">
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.INTERNET" />
@@ -7,6 +8,13 @@
     <uses-permission android:name="android.permission.ACCESS_MEDIA_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!-- The location plugin declares this for a background-tracking mode Lotti
+         never enables: location is read once, in the foreground, when an entry
+         is saved. Play requires a declared use for the permission, and there is
+         none, so it is removed from the merged manifest. -->
+    <uses-permission
+        android:name="android.permission.FOREGROUND_SERVICE_LOCATION"
+        tools:node="remove" />
     <!-- Notifications. POST_NOTIFICATIONS is the Android 13+ runtime
          permission, requested only after the in-app notifications flag is on.
          RECEIVE_BOOT_COMPLETED lets the receiver below restore reminders a
