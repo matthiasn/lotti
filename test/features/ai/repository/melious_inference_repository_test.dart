@@ -2763,4 +2763,193 @@ void main() {
       },
     );
   });
+
+  group('reasoning_effort quirk for Qwen 3.8 models', () {
+    // Melious rejects a chat request for these two models with
+    // `400 invalid_request_error` unless `reasoning_effort` is present, and
+    // rejects `high` outright. See the table on
+    // MeliousInferenceRepository.modelsRequiringReasoningEffort.
+    const quirkedModel = 'qwen3.8-27b';
+    const unaffectedModel = 'glm-5.2';
+    const baseUrl = 'https://api.melious.ai/v1';
+    const apiKey = 'sk-mel-test';
+
+    test('supplies a default effort for a model that demands one', () {
+      expect(
+        MeliousInferenceRepository.resolveReasoningEffort(quirkedModel, null),
+        ReasoningEffort.low,
+      );
+    });
+
+    test('clamps high, which these models reject, down to medium', () {
+      expect(
+        MeliousInferenceRepository.resolveReasoningEffort(
+          quirkedModel,
+          ReasoningEffort.high,
+        ),
+        ReasoningEffort.medium,
+      );
+    });
+
+    test('passes an already-supported effort through untouched', () {
+      for (final effort in [
+        ReasoningEffort.minimal,
+        ReasoningEffort.low,
+        ReasoningEffort.medium,
+      ]) {
+        expect(
+          MeliousInferenceRepository.resolveReasoningEffort(
+            quirkedModel,
+            effort,
+          ),
+          effort,
+          reason: '$effort is accepted by $quirkedModel and must not change',
+        );
+      }
+    });
+
+    test('leaves models without the quirk completely alone', () {
+      // The blast radius matters: forcing an effort on a model that does not
+      // need one would silently change its thinking budget and its cost.
+      expect(
+        MeliousInferenceRepository.resolveReasoningEffort(
+          unaffectedModel,
+          null,
+        ),
+        isNull,
+      );
+      expect(
+        MeliousInferenceRepository.resolveReasoningEffort(
+          unaffectedModel,
+          ReasoningEffort.high,
+        ),
+        ReasoningEffort.high,
+      );
+    });
+
+    test('is idempotent, so applying it twice on one path is safe', () {
+      const once = MeliousInferenceRepository.resolveReasoningEffort;
+      for (final model in [quirkedModel, unaffectedModel]) {
+        for (final effort in [null, ...ReasoningEffort.values]) {
+          expect(
+            once(model, once(model, effort)),
+            once(model, effort),
+            reason: 'resolving $effort twice for $model must not drift',
+          );
+        }
+      }
+    });
+
+    test('tolerates surrounding whitespace in the model id', () {
+      expect(
+        MeliousInferenceRepository.resolveReasoningEffort(
+          '  $quirkedModel  ',
+          null,
+        ),
+        ReasoningEffort.low,
+      );
+    });
+
+    test('generateText sends reasoning_effort for a quirked model', () async {
+      final probe = _ChatStreamProbe(content: 'ok');
+      final repository = MeliousInferenceRepository(
+        chatCompletionStreamFactory: probe.call,
+      );
+      addTearDown(repository.close);
+
+      await repository
+          .generateText(
+            prompt: 'Say hello',
+            model: quirkedModel,
+            baseUrl: baseUrl,
+            apiKey: apiKey,
+          )
+          .toList();
+
+      // Assert on the serialised body, because that is what the provider
+      // parses — a non-null Dart field that failed to encode would still 400.
+      final json = probe.requests.single.toJson();
+      expect(
+        json['reasoning_effort'],
+        'low',
+        reason:
+            'omitting this field is exactly what makes Melious answer '
+            '400 "the request was rejected as malformed"',
+      );
+    });
+
+    test(
+      'generateText omits reasoning_effort for an unaffected model',
+      () async {
+        final probe = _ChatStreamProbe(content: 'ok');
+        final repository = MeliousInferenceRepository(
+          chatCompletionStreamFactory: probe.call,
+        );
+        addTearDown(repository.close);
+
+        await repository
+            .generateText(
+              prompt: 'Say hello',
+              model: unaffectedModel,
+              baseUrl: baseUrl,
+              apiKey: apiKey,
+            )
+            .toList();
+
+        expect(
+          probe.requests.single.toJson().containsKey('reasoning_effort'),
+          isFalse,
+        );
+      },
+    );
+
+    test(
+      'generateWithImages sends reasoning_effort for a quirked model',
+      () async {
+        // This path has no reasoningEffort parameter at all, so before the fix
+        // it could never have satisfied the requirement.
+        final probe = _ChatStreamProbe(content: 'ok');
+        final repository = MeliousInferenceRepository(
+          chatCompletionStreamFactory: probe.call,
+        );
+        addTearDown(repository.close);
+
+        await repository
+            .generateWithImages(
+              prompt: 'What is in this image?',
+              model: quirkedModel,
+              baseUrl: baseUrl,
+              apiKey: apiKey,
+              images: const ['aGVsbG8='],
+            )
+            .toList();
+
+        expect(probe.requests.single.toJson()['reasoning_effort'], 'low');
+      },
+    );
+
+    test('generateTextWithMessages clamps a caller-supplied high', () async {
+      final probe = _ChatStreamProbe(content: 'ok');
+      final repository = MeliousInferenceRepository(
+        chatCompletionStreamFactory: probe.call,
+      );
+      addTearDown(repository.close);
+
+      await repository
+          .generateTextWithMessages(
+            messages: const [
+              ChatCompletionMessage.user(
+                content: ChatCompletionUserMessageContent.string('Hi'),
+              ),
+            ],
+            model: quirkedModel,
+            baseUrl: baseUrl,
+            apiKey: apiKey,
+            reasoningEffort: ReasoningEffort.high,
+          )
+          .toList();
+
+      expect(probe.requests.single.toJson()['reasoning_effort'], 'medium');
+    });
+  });
 }
