@@ -63,8 +63,8 @@ class MeliousInferenceRepository extends TranscriptionRepository {
   /// format: a two-field `{model, messages}` body is rejected just the same,
   /// and the identical body succeeds against every other model in the catalog.
   ///
-  /// Verified against the live API on 2026-08-26 (`tool/melious_probe`), five
-  /// consecutive probes per cell:
+  /// Verified against the live API on 2026-08-26, five consecutive probes per
+  /// cell (probe sequentially — concurrent requests produce spurious 400s):
   ///
   /// | model         | absent | none | minimal | low | medium | high |
   /// |---------------|--------|------|---------|-----|--------|------|
