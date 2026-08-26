@@ -22,6 +22,11 @@ const subjectAgentLinkTypes = <String>[
   AgentLinkTypes.agentProject,
   AgentLinkTypes.agentEvent,
   AgentLinkTypes.agentRelationship,
+  // A goal's subject is its mirrored journal entry — the thing a check-in
+  // recording is linked to. Leaving it out made every goal-linked recording
+  // resolve to "no agent" on the recorder's stop path, so the goal agent's
+  // consent switch was never even consulted.
+  AgentLinkTypes.agentGoal,
 ];
 
 /// Resolves "which agent is about this entity" for any subject kind.
