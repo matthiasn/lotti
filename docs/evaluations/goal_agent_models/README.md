@@ -808,6 +808,85 @@ applying. "Would a correct answer pass this?" caught the first. "Is this rule
 even running?" is the same question one level up, and the rejection log is
 where both are cheap to ask.
 
+## Qwen 3.8 Max and Qwen 3.8 27B — 2026-08-27
+
+Both models were unservable until #4047: Melious rejects them as "malformed"
+unless `reasoning_effort` is in the body (`resolveReasoningEffort` in
+`MeliousInferenceRepository` now supplies `low`, the app-wide default thinking
+level). A live probe before the matrix confirmed the fix on the eval path —
+`qwen3.8-max` 400 without the field, 200 with it; the 27B by now answers
+either way — and the smoke run produced no malformed-request errors.
+
+Same contract, same 26 scenarios and 10 samples as the deepseek baselines,
+run twice per model (both sides), three processes in parallel. Baseline
+rows are the two runs recorded under "The interactive ad bucket".
+
+| Model | Run 1 | Run 2 | Credits/goal-month | Wh/goal-month | Mean latency | P95 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `deepseek-v4-flash-0731` | 243/260 | 244/260 | 0.030 | 103 | 3.2s | 5.4s |
+| `qwen3.8-max` | 229/260 | 232/260 | 0.678, 0.684 | 164, 240 | 18.2s, 22.5s | 15.5s, 144.5s |
+| `qwen3.8-27b` | 218/260 | 218/260 | 0.255, 0.255 | 344, 241 | 9.8s, 7.0s | 37.1s, 14.7s |
+
+Failure classes, run 1 / run 2:
+
+| Model | inferenceError | missingAssistantContent | argumentMismatch | missingRequiredToolArguments | forbiddenToolCall | missingExpectedToolCall | missingRequiredReportContent | noOpViolated |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `deepseek-v4-flash-0731` | 0 / 0 | 9 / 7 | 0 / 0 | 0 / 0 | 0 / 0 | 2 / 2 | 5 / 7 | 0 / 0 |
+| `qwen3.8-max` | **15 / 21** | 13 / 6 | 0 / 0 | 1 / 0 | 0 / 0 | 1 / 0 | 1 / 1 | 0 / 0 |
+| `qwen3.8-27b` | 0 / 0 | 19 / 19 | **11 / 11** | 3 / 5 | **2 / 3** | 4 / 1 | 3 / 3 | 0 / 0 |
+
+**Qwen 3.8 Max: quality at parity, wire unreliable, 22x the price.** Its
+largest failure class is not the model at all: 15 and 21 cases per run ended
+in a transport failure — five-minute timeouts (9, 12), "connection reset by
+peer" (6, 5) and `HTTP 503 provider_error` (0, 4). No other model in this log
+has produced one under the same harness and parallelism; the deepseek
+baselines had zero. Those stalls are why the mean latency (18–22s) exceeds
+the p95 in run 1 and why the p95 explodes to 144s in run 2. Scored on the
+cases that came back, Max is 229/245 and 232/239 (0.935, 0.971) — flash's
+range or above it — with `forbiddenToolCall` 0, `noOpViolated` 0 and every
+policy scenario at 8–10/10; both `gp_noop` misses in run 2 were transport
+errors. Its `wk_mixed_musing_question` 2/10 in run 1 recovered to 7/10 in run
+2, which is the high-variance row behaving as documented. At
+**0.68 credits/goal-month it is 22.6x flash**, twice deepseek-v4-pro's price
+for the same "not better" verdict, and it carries 1.6–2.3x the energy.
+Whether the stalls are load-related was not isolated (a sequential re-run of
+the failed cases would settle it) because no answer to that question changes
+the ruling: the cost gap is three orders of magnitude clear of its noise.
+
+**Qwen 3.8 27B: worse on quality, 8.5x the price, 2.3–3.3x the energy.**
+218/260 both runs (0.838), 25 cases under flash — far outside the ±10 total
+floor. The gap is concentrated, and every part of it is genuine model
+behaviour rather than transport:
+
+- `evo_ambiguous` **0/10, 0/10** (flash 4–6) and `wk_mixed_musing_question`
+  1/10, 1/10 (flash 7): it answers instead of asking the clarifying
+  question, the same shape as muse-glimmer's prose-instead-of-policy.
+- `gh_complex_latest_on_target` 4/10, 1/10 and `gh_complex_habit_behind`
+  2/10, 5/10 (flash 6–8), scored `argumentMismatch` — a class flash never
+  produces. Reading the calls: it **overrides the deterministic status with
+  `insufficientData`** ("coverage is too thin (29%) for a confident track
+  call") where the evaluator has already ruled. That is the exact "restate,
+  never recompute" rule the goal agent exists to enforce, and it also
+  encodes the `report` object as a JSON string in several of them — the GLM
+  quirk recorded above.
+- `gp_slightly_off` 8/10, 7/10 with **`forbiddenToolCall` 2 and 3** —
+  creating a banner on an at-risk first evaluation where policy says wait.
+  Flash has held this at 0 since the fixture correction.
+- `cx_gym_done_steps_collapse` 6/10, 5/10, `missingRequiredToolArguments`:
+  the retire → create → report sequence is right, but `create_goal_ad`
+  drops a required argument.
+
+`noOpViolated` is 0 for both, so neither churns on a quiet wake — the
+cheapest discriminator held.
+
+**Verdict: neither challenges `deepseek-v4-flash-0731`.** The 27B loses on
+every axis. Max reproduces the deepseek-v4-pro pattern — quality at parity,
+ruled out on cost — with a worse wire on top; "very fast in interactive use"
+did not survive 26 scenarios at three-way concurrency. The "quality at
+parity, cost wins" criterion that decided the pro ruling decides this one
+identically. Artifacts: `goal_agent_20260827-184951` (run 1) and
+`goal_agent_20260827-194724` (run 2).
+
 ## Cost and latency
 
 Cost and wall-clock latency are first-class outputs, captured per case:
@@ -842,7 +921,7 @@ Everything is manual — no CI runs these.
 
 **Probe the model before launching a matrix.** `GET /v1/models` on Melious
 lists models the chat endpoint refuses. `qwen3.8-27b`, `qwen3.8-max` and
-`qwen3.6-35b-a3b` return `HTTP 400 "The request was rejected as malformed.
+`qwen3.6-35b-a3b` returned `HTTP 400 "The request was rejected as malformed.
 Check the message format, tools schema, or response_format"` on a bare
 `{model, messages}` call — no tools, no params — while `glm-5.2` returns 200
 on a byte-identical payload. Request shape changes nothing: system message,
@@ -853,7 +932,9 @@ than a version boundary — `qwen3.6-27b`, `qwen3.5-9b`, `qwen3.5-122b-a10b`
 and `qwen3.5-397b-a17b` all serve — so a listing is never evidence of
 availability, and the error text points at the request rather than at the
 model. Inside a matrix run this surfaces only as per-case `inferenceError`,
-after the run has been paid for. One curl per model settles it — probe the list
+after the run has been paid for. (For the two Qwen 3.8 models the cause was
+later found — a missing `reasoning_effort` — and fixed in #4047; see the
+2026-08-27 section above.) One curl per model settles it — probe the list
 you are about to run, and keep a known-good model in it as a control, since a
 400 proves nothing unless the same payload succeeds somewhere:
 
