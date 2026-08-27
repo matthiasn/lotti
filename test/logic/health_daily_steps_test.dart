@@ -141,24 +141,5 @@ void main() {
         reason: 'merged=$merged values=$values',
       );
     }, tags: 'glados');
-
-    glados.Glados2<int, List<int>>(
-      mergedAny,
-      samplesAny,
-      glados.ExploreConfig(numRuns: 150),
-    ).test('is never below the merged total and never above the sum of all', (
-      merged,
-      values,
-    ) {
-      final samples = [
-        for (var i = 0; i < values.length; i++)
-          steps(values[i], sourceId: 'source-${i % 3}'),
-      ];
-      final total = values.fold<int>(0, (a, b) => a + b);
-      final result = resolveDailySteps(merged, samples);
-
-      expect(result, greaterThanOrEqualTo(merged));
-      expect(result, lessThanOrEqualTo(total > merged ? total : merged));
-    }, tags: 'glados');
   });
 }

@@ -1,46 +1,38 @@
+import 'dart:math';
+
+import 'package:collection/collection.dart';
 import 'package:health/health.dart';
 
-/// Resolves one day's step total from what the health store hands back.
+/// Sums the numeric values in [dataPoints], ignoring any other value kind.
+num sumNumericHealthValues(List<HealthDataPoint> dataPoints) => dataPoints
+    .map((point) => point.value)
+    .whereType<NumericHealthValue>()
+    .map((value) => value.numericValue)
+    .sum;
+
+/// Resolves one day's step total: the larger of the store's own merged sum
+/// ([mergedTotal], `getTotalStepsInInterval`) and the best single source's sum
+/// over the raw [samples] for the same day.
 ///
-/// [mergedTotal] is the store's own de-duplicated sum over every source
-/// (`getTotalStepsInInterval`). HealthKit builds that figure by resolving
-/// overlapping samples in favour of the source ranked highest under *Data
-/// Sources & Access*, which is what quietly discards a wearable's count: an
-/// iPhone that sat on a desk still writes samples whenever it moved, and every
-/// wearable sample those overlap loses to it. A band that syncs its day once,
-/// overnight, is the worst case — its one sample overlaps everything.
+/// HealthKit builds the merged figure by resolving overlapping samples in
+/// favour of the source ranked highest under *Data Sources & Access*, which
+/// discards a wearable ranked below the phone wherever the two overlap. Every
+/// source counts the same person's day, so the largest single-source total is
+/// the best complete count on record; taking the larger of the two restores a
+/// dropped source and never sums across sources, which would double-count.
+/// Background in `knowledge/features/health_import.md`.
 ///
-/// [samples] are the raw `STEPS` samples for the same day, which the store
-/// hands over unmerged and stamped with their source. Every source counts the
-/// same person's steps over the same day, so the largest single-source total
-/// is the best complete count on record — and the merged figure can only be
-/// less than or equal to the best source when priority dropped that source's
-/// samples. The answer is therefore the larger of the two, never a sum across
-/// sources, which would double-count.
-///
-/// Samples without a numeric value are ignored; a `null` [mergedTotal] (no
-/// answer from the store) counts as zero.
-///
-/// A source is identified by `sourceId`, falling back to `sourceName`: Health
-/// Connect hands over step records with an empty id and the provider's package
-/// name, and keying on the empty id alone would pool every provider into one
-/// "source" and sum them.
+/// A source is its `sourceId`, falling back to `sourceName` — Health Connect
+/// hands over step records with an empty id and the provider's package name.
+/// A `null` [mergedTotal] counts as zero.
 int resolveDailySteps(int? mergedTotal, List<HealthDataPoint> samples) {
-  final bySource = <String, double>{};
-  for (final sample in samples) {
-    final value = sample.value;
-    if (value is NumericHealthValue) {
-      bySource.update(
-        sample.sourceId.isNotEmpty ? sample.sourceId : sample.sourceName,
-        (total) => total + value.numericValue,
-        ifAbsent: () => value.numericValue.toDouble(),
-      );
-    }
-  }
-  final bestSource = bySource.values.fold<double>(
-    0,
-    (best, total) => total > best ? total : best,
-  );
-  final merged = mergedTotal ?? 0;
-  return bestSource > merged ? bestSource.round() : merged;
+  final bestSource = samples
+      .groupListsBy(
+        (sample) =>
+            sample.sourceId.isNotEmpty ? sample.sourceId : sample.sourceName,
+      )
+      .values
+      .map(sumNumericHealthValues)
+      .fold<num>(0, max);
+  return max(bestSource.round(), mergedTotal ?? 0);
 }

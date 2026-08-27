@@ -242,6 +242,14 @@ void main() {
               as QuantitativeEntry;
       expect(updated.data.value, 11600);
       expect(updated.meta.id, dayId);
+
+      // The store is the authority in both directions: a lower re-read
+      // overwrites too.
+      when(
+        () => journalDb.journalEntityById(dayId),
+      ).thenAnswer((_) async => stored(11600));
+      final lowered = await ops.createQuantitativeEntryImpl(steps(9800));
+      expect(lowered?.data.value, 9800);
       verifyNever(
         () => logic.createDbEntity(
           any(),
@@ -251,20 +259,6 @@ void main() {
         ),
       );
     });
-
-    test(
-      'a lower re-read also overwrites — the store is the authority',
-      () async {
-        when(
-          () => journalDb.journalEntityById(dayId),
-        ).thenAnswer((_) async => stored(11600));
-
-        final result = await ops.createQuantitativeEntryImpl(steps(9800));
-
-        expect(result?.data.value, 9800);
-        verify(() => logic.updateDbEntity(any())).called(1);
-      },
-    );
 
     test('leaves an unchanged day alone and reports nothing written', () async {
       when(

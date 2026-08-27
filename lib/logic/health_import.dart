@@ -11,13 +11,16 @@ import 'package:lotti/classes/health.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/health_daily_steps.dart';
+import 'package:lotti/logic/health_daily_steps.dart'
+    as health_daily_steps
+    show resolveDailySteps, sumNumericHealthValues;
 import 'package:lotti/logic/health_data_types.dart';
 import 'package:lotti/logic/health_import_result.dart';
 import 'package:lotti/logic/health_permission_gate.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/health_service.dart';
+import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -83,6 +86,12 @@ class HealthImport {
   }
 
   Duration defaultFetchDuration = const Duration(days: 90);
+
+  /// How many calendar days before the newest stored day a cumulative delta
+  /// re-reads. A source that syncs its day late — a band that uploads
+  /// overnight — lands its final total after that day already has a row, and
+  /// a delta that only looked forward would never see it.
+  static const cumulativeDeltaLookBackDays = 1;
 
   final queue = Queue<String>();
   bool running = false;
@@ -193,34 +202,26 @@ class HealthImport {
         999,
       );
 
-      // The merged total alone is not enough: HealthKit resolves overlapping
-      // samples by source priority, so a wearable ranked below the phone
-      // loses its count wherever the phone also recorded steps. The raw
-      // samples come back per source, and the best single source wins — see
-      // [resolveDailySteps].
       final mergedSteps = await health.getTotalStepsInInterval(
         dateFrom,
         dateTo,
       );
-      final stepSamples = await health.getHealthDataFromTypes(
-        types: [HealthDataType.STEPS],
+      final samplesByType = (await health.getHealthDataFromTypes(
+        types: activityTypes,
         startTime: dateFrom,
         endTime: dateTo,
-      );
-      stepsByDay[dateFrom] = resolveDailySteps(mergedSteps, stepSamples);
+      )).groupListsBy((point) => point.type);
+      final flightsClimbedDataPoints =
+          samplesByType[HealthDataType.FLIGHTS_CLIMBED] ?? const [];
+      final distanceDataPoints =
+          samplesByType[HealthDataType.DISTANCE_WALKING_RUNNING] ?? const [];
 
-      final flightsClimbedDataPoints = await health.getHealthDataFromTypes(
-        types: [HealthDataType.FLIGHTS_CLIMBED],
-        startTime: dateFrom,
-        endTime: dateTo,
+      // Steps go through the raw samples as well — see [resolveDailySteps].
+      // Flights and distance keep their plain sum, as they always have.
+      stepsByDay[dateFrom] = health_daily_steps.resolveDailySteps(
+        mergedSteps,
+        samplesByType[HealthDataType.STEPS] ?? const [],
       );
-
-      final distanceDataPoints = await health.getHealthDataFromTypes(
-        types: [HealthDataType.DISTANCE_WALKING_RUNNING],
-        startTime: dateFrom,
-        endTime: dateTo,
-      );
-
       flightsByDay[dateFrom] = sumNumericHealthValues(flightsClimbedDataPoints);
       distanceByDay[dateFrom] = sumNumericHealthValues(distanceDataPoints);
     }
@@ -390,13 +391,8 @@ class HealthImport {
     }
   }
 
-  num sumNumericHealthValues(List<HealthDataPoint> dataPoints) {
-    return dataPoints
-        .map((HealthDataPoint e) => e.value)
-        .whereType<NumericHealthValue>()
-        .map((NumericHealthValue e) => e.numericValue)
-        .sum;
-  }
+  num sumNumericHealthValues(List<HealthDataPoint> dataPoints) =>
+      health_daily_steps.sumNumericHealthValues(dataPoints);
 
   /// Authorizes [types] and everything in their permission families.
   ///
@@ -644,20 +640,11 @@ class HealthImport {
         latest?.meta.dateFrom ?? now.subtract(defaultFetchDuration);
 
     if (type.contains('cumulative')) {
-      // Re-read the day before the newest stored one as well. A source that
-      // syncs its day late — a band that uploads overnight — lands its final
-      // total after that day already has a row, and a delta that only looks
-      // from the newest day forward would never see it: the dashboards kept
-      // showing the phone's own count at bedtime until a manual import.
-      // Calendar arithmetic, not a 24-hour duration: across a spring-forward
-      // transition the duration lands at 23:00 two dates back, and `getDays`
-      // would then skip the intended day.
-      final latestDay = latest?.meta.dateFrom;
-      final dayBeforeLatest = latestDay == null
-          ? dateFrom
-          : DateTime(latestDay.year, latestDay.month, latestDay.day - 1);
+      // See [cumulativeDeltaLookBackDays].
       return _getActivityHealthData(
-        dateFrom: dayBeforeLatest,
+        dateFrom: latest == null
+            ? dateFrom
+            : dateFrom.dateOnly.addCalendarDays(-cumulativeDeltaLookBackDays),
         dateTo: now,
         // Nobody asked for this — a chart scheduled it on open. Re-raising an
         // authorization sheet the user has already answered would put a modal

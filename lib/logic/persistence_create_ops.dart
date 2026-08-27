@@ -13,6 +13,7 @@ import 'package:lotti/logic/persistence_logic.dart' show PersistenceLogic;
 import 'package:lotti/logic/persistence_logic_contract.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/notification_service.dart';
+import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/utils/entry_utils.dart';
 
 /// Entry-creation operations of [PersistenceLogic].
@@ -40,26 +41,9 @@ class PersistenceCreateOps extends PersistenceCollaboratorBase {
     QuantitativeData data,
   ) async {
     try {
-      if (data is CumulativeQuantityData) {
-        return await _upsertCumulativeDay(data);
-      }
-      final journalEntity = QuantitativeEntry(
-        data: data,
-        meta: await logic.createMetadata(
-          dateFrom: data.dateFrom,
-          dateTo: data.dateTo,
-          uuidV5Input: json.encode(data),
-        ),
-      );
-      // Honour the write verdict. Returning the entity regardless made every
-      // caller unable to tell a fresh sample from a duplicate — the health
-      // import counted both and told the user it had imported samples it had
-      // not.
-      final applied = await logic.createDbEntity(
-        journalEntity,
-        shouldAddGeolocation: false,
-      );
-      return (applied ?? false) ? journalEntity : null;
+      return data is CumulativeQuantityData
+          ? await _upsertCumulativeDay(data)
+          : await _createQuantitativeEntry(data, json.encode(data));
     } catch (exception, stackTrace) {
       loggingService.error(
         LogDomain.persistence,
@@ -70,6 +54,27 @@ class PersistenceCreateOps extends PersistenceCollaboratorBase {
     }
 
     return null;
+  }
+
+  /// Writes a fresh row under the id derived from [uuidV5Input], honouring the
+  /// write verdict: `null` when the database rejected it as a duplicate.
+  Future<QuantitativeEntry?> _createQuantitativeEntry(
+    QuantitativeData data,
+    String uuidV5Input,
+  ) async {
+    final entry = QuantitativeEntry(
+      data: data,
+      meta: await logic.createMetadata(
+        dateFrom: data.dateFrom,
+        dateTo: data.dateTo,
+        uuidV5Input: uuidV5Input,
+      ),
+    );
+    final applied = await logic.createDbEntity(
+      entry,
+      shouldAddGeolocation: false,
+    );
+    return (applied ?? false) ? entry : null;
   }
 
   /// The deterministic uuidV5 input for one cumulative day: its type, its
@@ -87,12 +92,7 @@ class PersistenceCreateOps extends PersistenceCollaboratorBase {
     CumulativeQuantityData data, {
     required String? host,
   }) {
-    final day = data.dateFrom;
-    final date =
-        '${day.year.toString().padLeft(4, '0')}-'
-        '${day.month.toString().padLeft(2, '0')}-'
-        '${day.day.toString().padLeft(2, '0')}';
-    return 'cumulative:${data.dataType}:$date:$host';
+    return 'cumulative:${data.dataType}:${data.dateFrom.ymd}:$host';
   }
 
   /// Creates the day's row, or rewrites it when the stored total differs.
@@ -129,19 +129,7 @@ class PersistenceCreateOps extends PersistenceCollaboratorBase {
       return (applied ?? false) ? updated : null;
     }
 
-    final created = QuantitativeEntry(
-      data: data,
-      meta: await logic.createMetadata(
-        dateFrom: data.dateFrom,
-        dateTo: data.dateTo,
-        uuidV5Input: uuidV5Input,
-      ),
-    );
-    final applied = await logic.createDbEntity(
-      created,
-      shouldAddGeolocation: false,
-    );
-    return (applied ?? false) ? created : null;
+    return _createQuantitativeEntry(data, uuidV5Input);
   }
 
   Future<WorkoutEntry?> createWorkoutEntryImpl(WorkoutData data) async {

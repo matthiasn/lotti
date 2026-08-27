@@ -415,39 +415,29 @@ void main() {
           startTime: any(named: 'startTime'),
           endTime: any(named: 'endTime'),
         ),
-      ).thenAnswer((invocation) async {
-        final types =
-            invocation.namedArguments[const Symbol('types')]
-                as List<HealthDataType>;
-
-        if (types.contains(HealthDataType.FLIGHTS_CLIMBED)) {
-          return [
-            makeNumericDataPoint(
-              type: HealthDataType.FLIGHTS_CLIMBED,
-              value: 15,
-              dateFrom: testDate,
-              dateTo: testDate.add(const Duration(hours: 1)),
-            ),
-            makeNumericDataPoint(
-              type: HealthDataType.FLIGHTS_CLIMBED,
-              value: 10,
-              dateFrom: testDate.add(const Duration(hours: 2)),
-              dateTo: testDate.add(const Duration(hours: 3)),
-            ),
-          ];
-        } else if (types.contains(HealthDataType.DISTANCE_WALKING_RUNNING)) {
-          return [
-            makeNumericDataPoint(
-              type: HealthDataType.DISTANCE_WALKING_RUNNING,
-              value: 5000,
-              dateFrom: testDate,
-              dateTo: testDate.add(const Duration(hours: 1)),
-              unit: HealthDataUnit.METER,
-            ),
-          ];
-        }
-        return [];
-      });
+      ).thenAnswer(
+        (_) async => [
+          makeNumericDataPoint(
+            type: HealthDataType.FLIGHTS_CLIMBED,
+            value: 15,
+            dateFrom: testDate,
+            dateTo: testDate.add(const Duration(hours: 1)),
+          ),
+          makeNumericDataPoint(
+            type: HealthDataType.FLIGHTS_CLIMBED,
+            value: 10,
+            dateFrom: testDate.add(const Duration(hours: 2)),
+            dateTo: testDate.add(const Duration(hours: 3)),
+          ),
+          makeNumericDataPoint(
+            type: HealthDataType.DISTANCE_WALKING_RUNNING,
+            value: 5000,
+            dateFrom: testDate,
+            dateTo: testDate.add(const Duration(hours: 1)),
+            unit: HealthDataUnit.METER,
+          ),
+        ],
+      );
 
       await healthImport.fetchAndProcessActivityDataForDay(
         testDate,
@@ -469,27 +459,7 @@ void main() {
           startTime: any(named: 'startTime'),
           endTime: any(named: 'endTime'),
         ),
-      ).called(3); // Steps samples, flights, distance
-    });
-
-    test('reads the raw step samples over the same whole day', () async {
-      final testDate = DateTime(2024);
-      stubHealthStore();
-
-      await healthImport.fetchAndProcessActivityDataForDay(
-        testDate,
-        <DateTime, num>{},
-        <DateTime, num>{},
-        <DateTime, num>{},
-      );
-
-      verify(
-        () => mockHealthService.getHealthDataFromTypes(
-          types: [HealthDataType.STEPS],
-          startTime: testDate,
-          endTime: DateTime(2024, 1, 1, 23, 59, 59, 999),
-        ),
-      ).called(1);
+      ).called(1); // One batched read for steps, flights and distance
     });
 
     // The reported bug: a band that syncs its whole day once overnight is
@@ -546,6 +516,13 @@ void main() {
         );
 
         expect(stepsByDay[testDate], 11600);
+        verify(
+          () => mockHealthService.getHealthDataFromTypes(
+            types: activityTypes,
+            startTime: testDate,
+            endTime: DateTime(2024, 1, 1, 23, 59, 59, 999),
+          ),
+        ).called(1);
       },
     );
 
@@ -1860,37 +1837,39 @@ void main() {
     // yesterday already has a row. A delta that only looked from the newest
     // stored day forward never re-read it, so the dashboards kept the phone's
     // bedtime count until a manual import.
-    test(
-      'a cumulative delta re-reads the day before the newest stored one',
-      () {
+    group('cumulative delta look-back', () {
+      void stubLatestCumulativeDay(DateTime day) {
+        final dateTo = day.add(const Duration(hours: 8));
+        when(
+          () => mockJournalDb.latestQuantitativeByType(any()),
+        ).thenAnswer(
+          (_) async => QuantitativeEntry(
+            data: QuantitativeData.cumulativeQuantityData(
+              dateFrom: day,
+              dateTo: dateTo,
+              value: 1200,
+              dataType: 'cumulative_step_count',
+              unit: 'count',
+            ),
+            meta: Metadata(
+              id: 'latest',
+              createdAt: day,
+              updatedAt: day,
+              dateFrom: day,
+              dateTo: dateTo,
+            ),
+          ),
+        );
+      }
+
+      test('re-reads the day before the newest stored one', () {
         fakeAsync((async) {
           final mobileImport = createMobileHealthImport();
-          final now = DateTime(2024, 1, 10, 9);
           final latestDay = DateTime(2024, 1, 10);
-
-          when(
-            () => mockJournalDb.latestQuantitativeByType(any()),
-          ).thenAnswer(
-            (_) async => QuantitativeEntry(
-              data: QuantitativeData.cumulativeQuantityData(
-                dateFrom: latestDay,
-                dateTo: DateTime(2024, 1, 10, 8),
-                value: 1200,
-                dataType: 'cumulative_step_count',
-                unit: 'count',
-              ),
-              meta: Metadata(
-                id: 'latest',
-                createdAt: latestDay,
-                updatedAt: latestDay,
-                dateFrom: latestDay,
-                dateTo: DateTime(2024, 1, 10, 8),
-              ),
-            ),
-          );
+          stubLatestCumulativeDay(latestDay);
           stubHealthStore();
 
-          withClock(Clock.fixed(now), () {
+          withClock(Clock.fixed(DateTime(2024, 1, 10, 9)), () {
             mobileImport.fetchHealthDataDelta('cumulative_step_count');
             async.flushMicrotasks();
           });
@@ -1914,50 +1893,29 @@ void main() {
             ),
           );
         });
-      },
-    );
+      });
 
-    test('the look-back is a calendar day, not 24 hours', () {
-      fakeAsync((async) {
-        final mobileImport = createMobileHealthImport();
-        final latestDay = DateTime(2024, 3, 31);
+      // The previous calendar date at local midnight — the same value the
+      // day-keyed row for that date carries — whatever the clock offset
+      // between the two midnights happens to be across a DST transition.
+      test('steps back a calendar day, not 24 hours', () {
+        fakeAsync((async) {
+          final mobileImport = createMobileHealthImport();
+          stubLatestCumulativeDay(DateTime(2024, 3, 31));
+          stubHealthStore();
 
-        when(
-          () => mockJournalDb.latestQuantitativeByType(any()),
-        ).thenAnswer(
-          (_) async => QuantitativeEntry(
-            data: QuantitativeData.cumulativeQuantityData(
-              dateFrom: latestDay,
-              dateTo: DateTime(2024, 3, 31, 8),
-              value: 1,
-              dataType: 'cumulative_step_count',
-              unit: 'count',
+          withClock(Clock.fixed(DateTime(2024, 3, 31, 9)), () {
+            mobileImport.fetchHealthDataDelta('cumulative_step_count');
+            async.flushMicrotasks();
+          });
+
+          verify(
+            () => mockHealthService.getTotalStepsInInterval(
+              DateTime(2024, 3, 30),
+              any(),
             ),
-            meta: Metadata(
-              id: 'latest',
-              createdAt: latestDay,
-              updatedAt: latestDay,
-              dateFrom: latestDay,
-              dateTo: DateTime(2024, 3, 31, 8),
-            ),
-          ),
-        );
-        stubHealthStore();
-
-        withClock(Clock.fixed(DateTime(2024, 3, 31, 9)), () {
-          mobileImport.fetchHealthDataDelta('cumulative_step_count');
-          async.flushMicrotasks();
+          ).called(1);
         });
-
-        // The previous calendar date at local midnight — the same value the
-        // day-keyed row for that date carries — whatever the clock offset
-        // between the two midnights happens to be.
-        verify(
-          () => mockHealthService.getTotalStepsInInterval(
-            DateTime(2024, 3, 30),
-            any(),
-          ),
-        ).called(1);
       });
     });
 
