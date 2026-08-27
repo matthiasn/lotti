@@ -7276,6 +7276,33 @@ class AppLocalizationsRo extends AppLocalizations {
   String get habitArchivedLabel => 'Arhivat';
 
   @override
+  String habitAutoCompletedBody(String signal) {
+    return 'Bifat automat pe baza $signal.';
+  }
+
+  @override
+  String habitAutoCompletedGroupTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de obiceiuri bifate automat',
+      few: '$count obiceiuri bifate automat',
+      one: '1 obicei bifat automat',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String habitAutoCompletedLateBody(String signal, String day) {
+    return '$signal a fost importat târziu; contează pentru $day.';
+  }
+
+  @override
+  String habitAutoCompletedTitle(String habit) {
+    return '✓ $habit gata';
+  }
+
+  @override
   String get habitCategoryHint => 'Selectați o categorie';
 
   @override

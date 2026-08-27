@@ -39,6 +39,24 @@ sealed class NotificationEntity with _$NotificationEntity {
     required String body,
   }) = RelationshipCheckInNotification;
 
+  /// One or more habits the auto-completion engine checked off on [dayKey]
+  /// (`yyyy-MM-dd`, the local calendar day the completions count for).
+  ///
+  /// Written the moment the engine completes, so it is due on arrival; the
+  /// row is the durable record and the OS banner its projection, the same
+  /// split as the other variants. Several habits completed by one import
+  /// share a row so the user gets one notification, not one per habit.
+  ///
+  /// [title] and [body] are baked in the completing device's locale (see the
+  /// check-in variant for why).
+  const factory NotificationEntity.habitAutoCompleted({
+    required NotificationMeta meta,
+    required List<String> linkedHabitIds,
+    required String dayKey,
+    required String title,
+    required String body,
+  }) = HabitAutoCompletedNotification;
+
   factory NotificationEntity.fromJson(Map<String, dynamic> json) =>
       _$NotificationEntityFromJson(json);
 }
@@ -67,6 +85,7 @@ extension NotificationEntityFields on NotificationEntity {
     TaskSuggestionNotification(:final meta) => meta,
     TaskOverdueNotification(:final meta) => meta,
     RelationshipCheckInNotification(:final meta) => meta,
+    HabitAutoCompletedNotification(:final meta) => meta,
   };
 
   String get id => meta.id;
@@ -75,6 +94,7 @@ extension NotificationEntityFields on NotificationEntity {
     TaskSuggestionNotification() => 'taskSuggestion',
     TaskOverdueNotification() => 'taskOverdue',
     RelationshipCheckInNotification() => 'relationshipCheckIn',
+    HabitAutoCompletedNotification() => 'habitAutoCompleted',
   };
 
   String? get linkedEntityId => switch (this) {
@@ -82,6 +102,9 @@ extension NotificationEntityFields on NotificationEntity {
     TaskOverdueNotification(:final linkedTaskId) => linkedTaskId,
     RelationshipCheckInNotification(:final linkedRelationshipId) =>
       linkedRelationshipId,
+    // A grouped row links several habits; the row itself leads to the
+    // habits page, so no single id is "the" linked entity.
+    HabitAutoCompletedNotification() => null,
   };
 
   NotificationEntity copyWithMeta(NotificationMeta meta) => switch (this) {
@@ -113,6 +136,19 @@ extension NotificationEntityFields on NotificationEntity {
       NotificationEntity.relationshipCheckIn(
         meta: meta,
         linkedRelationshipId: linkedRelationshipId,
+        title: title,
+        body: body,
+      ),
+    HabitAutoCompletedNotification(
+      :final linkedHabitIds,
+      :final dayKey,
+      :final title,
+      :final body,
+    ) =>
+      NotificationEntity.habitAutoCompleted(
+        meta: meta,
+        linkedHabitIds: linkedHabitIds,
+        dayKey: dayKey,
         title: title,
         body: body,
       ),

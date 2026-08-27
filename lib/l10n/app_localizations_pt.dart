@@ -7220,6 +7220,32 @@ class AppLocalizationsPt extends AppLocalizations {
   String get habitArchivedLabel => 'Arquivado';
 
   @override
+  String habitAutoCompletedBody(String signal) {
+    return 'Marcado automaticamente a partir de $signal.';
+  }
+
+  @override
+  String habitAutoCompletedGroupTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count hábitos marcados automaticamente',
+      one: '1 hábito marcado automaticamente',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String habitAutoCompletedLateBody(String signal, String day) {
+    return '$signal chegou tarde; contou para $day.';
+  }
+
+  @override
+  String habitAutoCompletedTitle(String habit) {
+    return '✓ $habit feito';
+  }
+
+  @override
   String get habitCategoryHint => 'Selecione uma categoria';
 
   @override

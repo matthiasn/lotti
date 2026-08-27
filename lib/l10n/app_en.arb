@@ -4254,6 +4254,41 @@
   "habitActiveFromLabel": "Start date",
   "habitActiveSwitchDescription": "Shown on the Habits page",
   "habitArchivedLabel": "Archived",
+  "habitAutoCompletedBody": "Checked off automatically from {signal}.",
+  "@habitAutoCompletedBody": {
+    "placeholders": {
+      "signal": {
+        "type": "String"
+      }
+    }
+  },
+  "habitAutoCompletedGroupTitle": "{count, plural, =1{1 habit checked off automatically} other{{count} habits checked off automatically}}",
+  "@habitAutoCompletedGroupTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "habitAutoCompletedLateBody": "{signal} imported late; counted for {day}.",
+  "@habitAutoCompletedLateBody": {
+    "placeholders": {
+      "signal": {
+        "type": "String"
+      },
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "habitAutoCompletedTitle": "✓ {habit} done",
+  "@habitAutoCompletedTitle": {
+    "placeholders": {
+      "habit": {
+        "type": "String"
+      }
+    }
+  },
   "habitCategoryHint": "Select a category",
   "habitCategoryLabel": "Category",
   "habitCloseCompletionLabel": "Close habit completion",

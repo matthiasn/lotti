@@ -467,6 +467,48 @@ void main() {
   );
 
   testWidgets(
+    'tapping an auto-completion row opens the habits page',
+    (tester) async {
+      final navService = _registerNavService();
+      final beamedTo = <String>[];
+      beamToNamedOverride = beamedTo.add;
+      addTearDown(() => beamToNamedOverride = null);
+
+      final entity = _makeHabitAutoCompletedNotification(
+        id: 'auto-sat',
+        title: '✓ Walk done',
+        body: 'Checked off automatically from Steps · 7412.',
+      );
+      final container = ProviderContainer(
+        overrides: [
+          unseenNotificationCountProvider.overrideWith(() => _CountUnseen(1)),
+          inboxNotificationsProvider.overrideWith(
+            () => _StaticInbox([entity]),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        _makeBellHarness(
+          container: container,
+          mediaQueryData: const MediaQueryData(size: Size(1400, 900)),
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.byIcon(LottiIcons.notificationActive));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('✓ Walk done'));
+      await tester.pump();
+
+      expect(beamedTo, ['/habits']);
+      verifyNever(() => navService.pushDesktopTaskDetail(any()));
+      verify(() => repository.markSeen('auto-sat')).called(1);
+    },
+  );
+
+  testWidgets(
     'dismissing a check-in reminder retracts only that row',
     (tester) async {
       // The suggestion path retracts every open row for the task; a reminder
@@ -658,6 +700,28 @@ NotificationEntity _makeCheckInNotification({
       originatingHostId: 'host-A',
     ),
     linkedRelationshipId: 'rel-$id',
+    title: title,
+    body: body,
+  );
+}
+
+NotificationEntity _makeHabitAutoCompletedNotification({
+  required String id,
+  required String title,
+  required String body,
+}) {
+  final now = DateTime.utc(2026, 5, 17, 10);
+  return NotificationEntity.habitAutoCompleted(
+    meta: NotificationMeta(
+      id: id,
+      createdAt: now,
+      updatedAt: now,
+      scheduledFor: now,
+      vectorClock: const VectorClock({'host-A': 1}),
+      originatingHostId: 'host-A',
+    ),
+    linkedHabitIds: ['habit-$id'],
+    dayKey: '2026-05-17',
     title: title,
     body: body,
   );

@@ -16,6 +16,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/service/embedding_service.dart';
 import 'package:lotti/features/ai_consumption/database/consumption_database.dart';
 import 'package:lotti/features/daily_os_next/database/day_processing_db.dart';
+import 'package:lotti/features/habits/service/habit_auto_completion_notifier.dart';
 import 'package:lotti/features/habits/service/habit_auto_completion_service.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
@@ -52,6 +53,10 @@ void main() {
     test('disposeAll calls services and databases in expected order', () async {
       final order = <String>[];
 
+      final autoCompletionNotifier = MockHabitAutoCompletionNotifier();
+      when(autoCompletionNotifier.dispose).thenAnswer((_) {
+        order.add('HabitAutoCompletionNotifier');
+      });
       final autoCompletion = MockHabitAutoCompletionService();
       when(autoCompletion.dispose).thenAnswer((_) {
         order.add('HabitAutoCompletionService');
@@ -123,6 +128,9 @@ void main() {
       });
 
       testGetIt
+        ..registerSingleton<HabitAutoCompletionNotifier>(
+          autoCompletionNotifier,
+        )
         ..registerSingleton<HabitAutoCompletionService>(autoCompletion)
         ..registerSingleton<BackfillRequestService>(backfill)
         ..registerSingleton<EmbeddingService>(embeddingService)
@@ -144,6 +152,7 @@ void main() {
       await disposer.disposeAll();
 
       expect(order, [
+        'HabitAutoCompletionNotifier',
         'HabitAutoCompletionService',
         'BackfillRequestService',
         'EmbeddingService',

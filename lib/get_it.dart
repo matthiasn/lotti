@@ -31,6 +31,7 @@ import 'package:lotti/features/ai_consumption/sync/consumption_sync_service.dart
 import 'package:lotti/features/daily_os_next/database/day_processing_db.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_startup.dart';
+import 'package:lotti/features/habits/service/habit_auto_completion_notifier.dart';
 import 'package:lotti/features/habits/service/habit_auto_completion_service.dart';
 import 'package:lotti/features/journal/service/image_path_migration_service.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
@@ -396,6 +397,13 @@ Future<void> registerSingletons({
         persistenceLogic: getIt<PersistenceLogic>(),
         updateNotifications: getIt<UpdateNotifications>(),
         entitiesCache: getIt<EntitiesCacheService>(),
+        logger: domainLogger,
+      )..start(),
+    )
+    ..registerSingleton<HabitAutoCompletionNotifier>(
+      HabitAutoCompletionNotifier(
+        service: getIt<HabitAutoCompletionService>(),
+        notifications: getIt<NotificationRepository>(),
         logger: domainLogger,
       )..start(),
     )

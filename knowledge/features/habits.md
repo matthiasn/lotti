@@ -213,9 +213,21 @@ The `autoCompleteReason` stored on the entry names the satisfied leaves —
 `EntitiesCacheService` and health types through the dashboard health config,
 so the habit row can say what checked it off without another read.
 
-Consumers: the `completions` stream (the notification layer) and
-`autoCompletedToday`, which `HabitsSummaryCard` consults so a day the engine
-finished does not play the all-done flourish — the notification covers it.
+Consumers: the `completions` stream and `autoCompletedToday`, which
+`HabitsSummaryCard` consults so a day the engine finished does not play the
+all-done flourish — the notification covers it.
+
+`HabitAutoCompletionNotifier` (`service/habit_auto_completion_notifier.dart`)
+is the stream's consumer. It drops habits whose `autoCompleteNotify` is off,
+collects the rest for 3 s after the first completion of a batch — a health
+import that completes three habits should be heard about once — and writes
+**one durable inbox row per batch and day** through
+`NotificationRepository.createHabitAutoCompletion`, which the scheduler
+projects to an OS banner on write (see
+[notifications](notifications.md#where-a-notification-leads)). A single
+completion reads `✓ {habit} done` / `Checked off automatically from {signal}.`;
+a late one names the day it counted for; a group reads
+`{n} habits checked off automatically` with the names as the body.
 
 **Gotcha — its own write is a trigger.** The completion emits the habit's id,
 which is a legitimate token for any *other* habit whose rule references this

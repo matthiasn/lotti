@@ -11,7 +11,7 @@ sources:
   - id: src
     resource: ../../lib/features/notifications
     title: Synced notifications source
-    last_modified: 2026-08-18
+    last_modified: 2026-08-27
   - id: os-boundary
     resource: ../../lib/services/notification_service.dart
     title: NotificationService — the OS delivery boundary
@@ -62,8 +62,12 @@ when the field it sets is still null. That is what makes the lifecycle a lattice
 rather than a sequence: the three marks are independent, so replaying a
 transition is a no-op and reordering two of them converges either way.
 
-The union has three variants — `taskSuggestion`, `taskOverdue` and
-`relationshipCheckIn` — and the discriminator strings are the sync wire format,
+The union has four variants — `taskSuggestion`, `taskOverdue`,
+`relationshipCheckIn` and `habitAutoCompleted` (one row for every habit the
+[auto-completion engine](habits.md#auto-completion-the-engine-only-fills-empty-days)
+checked off in one batch; its `linkedEntityId` is `null` because a grouped row
+leads to the habits page, not to one habit) — and the discriminator strings
+are the sync wire format,
 so renaming one would make every already-synced row of that kind undecodable on
 upgrade. A peer too old to know a variant throws in `fromJson`, which
 `SyncEventProcessor` turns into `UnrecoverableSyncPayloadException` and skips:
@@ -312,7 +316,8 @@ standing between a closed app and a missed reminder.
 appending `/tasks/` silently produced a dead route for anything that was not a
 task — which is what happened the moment a second entity kind got a
 notification. The same trap exists in the bell, where `_InboxRow` routes
-through `onSelectEntry` with the whole entity for the same reason.
+through `onSelectEntry` with the whole entity for the same reason. An
+auto-completion row leads to `/habits`, on both channels.
 
 **The payload is still not consumed anywhere.** `initialize` is called without
 `onDidReceiveNotificationResponse`, and nothing calls
@@ -332,7 +337,8 @@ would park "Check in with Anna?" in the bell for the entire cadence, turning a
 once-per-episode nudge into the ambient noise the banner channel was chosen
 over an inbox to avoid. `showsBeforeScheduledTime` is the per-variant gate, and
 it is exhaustive over the union so a new variant has to make the choice rather
-than inherit one.
+than inherit one. `habitAutoCompleted` chose like the task rows: it is written
+at the moment of completion, so it is due on arrival.
 
 # Copy is baked, not composed
 
@@ -343,5 +349,6 @@ reads the armer's language on both.
 This knowingly departs from [localization](../conventions/localization.md)'s
 rule to persist structured facts and compose the sentence at render time. The
 reason is that there is no render moment: the OS holds the alarm for weeks with
-the app closed, and what it will show has to be a string by then. All three
-variants do this.
+the app closed, and what it will show has to be a string by then. All four
+variants do this; `HabitAutoCompletionNotifier` bakes its copy through
+`deviceMessages()` like the check-in reminder does.

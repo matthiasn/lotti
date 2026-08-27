@@ -7148,6 +7148,32 @@ class AppLocalizationsDa extends AppLocalizations {
   String get habitArchivedLabel => 'Arkiveret';
 
   @override
+  String habitAutoCompletedBody(String signal) {
+    return 'Krydset af automatisk ud fra $signal.';
+  }
+
+  @override
+  String habitAutoCompletedGroupTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count vaner krydset af automatisk',
+      one: '1 vane krydset af automatisk',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String habitAutoCompletedLateBody(String signal, String day) {
+    return '$signal blev importeret sent; tæller for $day.';
+  }
+
+  @override
+  String habitAutoCompletedTitle(String habit) {
+    return '✓ $habit gjort';
+  }
+
+  @override
   String get habitCategoryHint => 'Vælg en kategori';
 
   @override

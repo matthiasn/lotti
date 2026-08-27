@@ -101,6 +101,32 @@ void main() {
       expect(updated.meta.deletedAt, DateTime.utc(2026, 5, 17, 16));
     });
 
+    test('a habitAutoCompleted row links no single entity', () {
+      final entity = _habitAuto(id: 'ha-1', linkedHabitIds: ['h1', 'h2']);
+
+      expect(entity.type, 'habitAutoCompleted');
+      expect(entity.title, 'Title');
+      expect(entity.body, 'Body');
+      // A grouped row leads to the habits page, not to one habit, so the
+      // shared getter must not pretend otherwise.
+      expect(entity.linkedEntityId, isNull);
+    });
+
+    test('copyWithMeta preserves the habitAutoCompleted variant', () {
+      final entity = _habitAuto(id: 'ha-2', linkedHabitIds: ['h1', 'h2']);
+      final replacement = entity.meta.copyWith(
+        seenAt: DateTime.utc(2026, 5, 17, 16),
+      );
+
+      final updated = entity.copyWithMeta(replacement);
+
+      expect(updated, isA<HabitAutoCompletedNotification>());
+      final updatedHabit = updated as HabitAutoCompletedNotification;
+      expect(updatedHabit.linkedHabitIds, ['h1', 'h2']);
+      expect(updatedHabit.dayKey, '2026-05-17');
+      expect(updated.meta.seenAt, DateTime.utc(2026, 5, 17, 16));
+    });
+
     test('copyWithMeta preserves the overdue variant', () {
       final entity = _overdue(
         id: 'od-2',
@@ -212,6 +238,7 @@ void main() {
           title: 'x',
           body: 'y',
         ): 'relationshipCheckIn',
+        _habitAuto(id: 'd', linkedHabitIds: ['h1', 'h2']): 'habitAutoCompleted',
       };
 
       for (final row in rows.entries) {
@@ -284,9 +311,9 @@ class _GeneratedEntity {
       category: _category(categorySlot),
     );
 
-    // Modulo three, so the generator reaches every variant of the union
+    // Modulo four, so the generator reaches every variant of the union
     // rather than only the two it had when it was written.
-    return switch (variantSlot % 3) {
+    return switch (variantSlot % 4) {
       0 => NotificationEntity.taskSuggestion(
         meta: meta,
         linkedTaskId: 'task-$idSlot',
@@ -300,9 +327,18 @@ class _GeneratedEntity {
         title: 'Title $idSlot',
         body: 'Body $idSlot',
       ),
-      _ => NotificationEntity.relationshipCheckIn(
+      2 => NotificationEntity.relationshipCheckIn(
         meta: meta,
         linkedRelationshipId: 'rel-$idSlot',
+        title: 'Title $idSlot',
+        body: 'Body $idSlot',
+      ),
+      _ => NotificationEntity.habitAutoCompleted(
+        meta: meta,
+        linkedHabitIds: [
+          for (var i = 0; i <= suggestionCountSlot % 3; i++) 'habit-$i',
+        ],
+        dayKey: '2026-05-${10 + idSlot}',
         title: 'Title $idSlot',
         body: 'Body $idSlot',
       ),
@@ -416,5 +452,26 @@ NotificationEntity _checkIn({
     linkedRelationshipId: linkedRelationshipId,
     title: title,
     body: body,
+  );
+}
+
+NotificationEntity _habitAuto({
+  required String id,
+  required List<String> linkedHabitIds,
+}) {
+  final timestamp = DateTime.utc(2026, 5, 17, 8);
+  return NotificationEntity.habitAutoCompleted(
+    meta: NotificationMeta(
+      id: id,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      scheduledFor: timestamp,
+      vectorClock: const VectorClock({'host-a': 1}),
+      originatingHostId: 'host-a',
+    ),
+    linkedHabitIds: linkedHabitIds,
+    dayKey: '2026-05-17',
+    title: 'Title',
+    body: 'Body',
   );
 }

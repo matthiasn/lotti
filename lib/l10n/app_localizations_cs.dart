@@ -7226,6 +7226,33 @@ class AppLocalizationsCs extends AppLocalizations {
   String get habitArchivedLabel => 'Archivováno';
 
   @override
+  String habitAutoCompletedBody(String signal) {
+    return 'Automaticky odškrtnuto podle $signal.';
+  }
+
+  @override
+  String habitAutoCompletedGroupTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count návyků automaticky odškrtnuto',
+      few: '$count návyky automaticky odškrtnuty',
+      one: '1 návyk automaticky odškrtnut',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String habitAutoCompletedLateBody(String signal, String day) {
+    return '$signal dorazilo pozdě; počítá se pro $day.';
+  }
+
+  @override
+  String habitAutoCompletedTitle(String habit) {
+    return '✓ $habit hotovo';
+  }
+
+  @override
   String get habitCategoryHint => 'Vyber kategorii';
 
   @override

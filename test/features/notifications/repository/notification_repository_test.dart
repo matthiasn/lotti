@@ -933,6 +933,66 @@ void main() {
     });
   });
 
+  group('NotificationRepository.createHabitAutoCompletion', () {
+    Future<NotificationEntity?> notify({
+      List<String> habitIds = const ['habit-b', 'habit-a'],
+      String dayKey = '2026-05-17',
+    }) => repository.createHabitAutoCompletion(
+      linkedHabitIds: habitIds,
+      dayKey: dayKey,
+      title: '2 habits checked off automatically',
+      body: 'Walk, Drink water',
+    );
+
+    test('writes a row due now that the scheduler projects at once', () async {
+      final saved = await notify();
+
+      expect(saved, isA<HabitAutoCompletedNotification>());
+      final row = saved! as HabitAutoCompletedNotification;
+      expect(row.linkedHabitIds, ['habit-b', 'habit-a']);
+      expect(row.dayKey, '2026-05-17');
+      expect(row.meta.scheduledFor, fixedNow);
+      expect(row.type, 'habitAutoCompleted');
+      verify(() => scheduler.schedule(saved, now: fixedNow)).called(1);
+    });
+
+    test('the id is stable across habit order, one row per batch per day', () {
+      final a = repository.notificationIdForHabitAutoCompletion(
+        dayKey: '2026-05-17',
+        linkedHabitIds: const ['habit-b', 'habit-a'],
+      );
+      final b = repository.notificationIdForHabitAutoCompletion(
+        dayKey: '2026-05-17',
+        linkedHabitIds: const ['habit-a', 'habit-b'],
+      );
+      final otherDay = repository.notificationIdForHabitAutoCompletion(
+        dayKey: '2026-05-18',
+        linkedHabitIds: const ['habit-a', 'habit-b'],
+      );
+      expect(a, b);
+      expect(a, isNot(otherDay));
+    });
+
+    test('a repeat for the same batch and day writes nothing', () async {
+      await notify();
+      clearInteractions(scheduler);
+
+      expect(await notify(), isNull);
+      verifyNever(
+        () => scheduler.schedule(
+          any<NotificationEntity>(),
+          now: any(named: 'now'),
+        ),
+      );
+    });
+
+    test('a different batch on the same day is its own row', () async {
+      await notify();
+      final next = await notify(habitIds: const ['habit-c']);
+      expect(next, isNotNull);
+    });
+  });
+
   group('NotificationRepository.retractRelationshipCheckIns', () {
     Future<NotificationEntity> armEpisode(String dueDayKey) async {
       final saved = await repository.createRelationshipCheckIn(

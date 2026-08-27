@@ -125,6 +125,51 @@ class NotificationRepository {
     );
   }
 
+  /// Deterministic id for the auto-completion row of [dayKey] covering
+  /// [linkedHabitIds]: one import that completes three habits yields one
+  /// row, and the engine never completes a habit twice on a day, so two rows
+  /// for the same day never overlap in habits.
+  String notificationIdForHabitAutoCompletion({
+    required String dayKey,
+    required List<String> linkedHabitIds,
+  }) {
+    final habits = [...linkedHabitIds]..sort();
+    return 'habit-auto-$dayKey-${habits.join('+')}';
+  }
+
+  /// Records that the engine checked [linkedHabitIds] off on [dayKey], due
+  /// immediately. The scheduler projects it to an OS banner on write.
+  Future<NotificationEntity?> createHabitAutoCompletion({
+    required List<String> linkedHabitIds,
+    required String dayKey,
+    required String title,
+    required String body,
+  }) async {
+    final id = notificationIdForHabitAutoCompletion(
+      dayKey: dayKey,
+      linkedHabitIds: linkedHabitIds,
+    );
+    if (await _notificationsDb.notificationById(id) != null) return null;
+
+    final now = _now();
+    return create(
+      NotificationEntity.habitAutoCompleted(
+        meta: NotificationMeta(
+          id: id,
+          createdAt: now,
+          updatedAt: now,
+          scheduledFor: now,
+          vectorClock: const VectorClock({}),
+          originatingHostId: '',
+        ),
+        linkedHabitIds: linkedHabitIds,
+        dayKey: dayKey,
+        title: title,
+        body: body,
+      ),
+    );
+  }
+
   /// Retracts every still-open check-in reminder for [linkedRelationshipId],
   /// optionally sparing [exceptId] (the episode currently armed).
   ///
