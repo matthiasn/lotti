@@ -393,19 +393,25 @@ class HabitEditorPageState extends ConsumerState<HabitEditorPage> {
                                       setDateTime: _controller.setActiveFrom,
                                       mode: CupertinoDatePickerMode.date,
                                     ),
-                                    SettingsDateTimeField(
-                                      dateTime: showFrom,
-                                      labelText: messages.habitShowFromLabel,
-                                      setDateTime: _controller.setShowFrom,
-                                      mode: CupertinoDatePickerMode.time,
-                                    ),
-                                    SettingsDateTimeField(
-                                      dateTime: alertAtTime,
-                                      labelText: messages.habitShowAlertAtLabel,
-                                      setDateTime: _controller.setAlertAtTime,
-                                      clear: _controller.clearAlertAtTime,
-                                      mode: CupertinoDatePickerMode.time,
-                                    ),
+                                    // Only a daily schedule has a show-from and alert time; the setters
+                                    // would turn a weekly or monthly habit into a daily one.
+                                    if (item.habitSchedule
+                                        is DailyHabitSchedule) ...[
+                                      SettingsDateTimeField(
+                                        dateTime: showFrom,
+                                        labelText: messages.habitShowFromLabel,
+                                        setDateTime: _controller.setShowFrom,
+                                        mode: CupertinoDatePickerMode.time,
+                                      ),
+                                      SettingsDateTimeField(
+                                        dateTime: alertAtTime,
+                                        labelText:
+                                            messages.habitShowAlertAtLabel,
+                                        setDateTime: _controller.setAlertAtTime,
+                                        clear: _controller.clearAlertAtTime,
+                                        mode: CupertinoDatePickerMode.time,
+                                      ),
+                                    ],
                                     DesignSystemSelectionRow(
                                       key: const ValueKey(
                                         'habit-editor-notify',

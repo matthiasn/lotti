@@ -120,7 +120,7 @@ void main() {
     tester,
   ) async {
     await pump(tester, const HabitSignalsForm(signals: [run]));
-    await tester.tap(find.text('Distance ≥').first);
+    await tester.tap(find.text('Distance').first);
     await tester.pump();
     final distance = changes.last.signals.single;
     expect(distance.mode, HabitSignalMode.atLeast);
@@ -251,5 +251,49 @@ void main() {
     await tester.pump();
     expect(find.text('250'), findsOneWidget);
     expect(find.text('1000'), findsNothing);
+  });
+
+  group('workout direction', () {
+    testWidgets('a persisted maximum shows "at most", never a ≥ segment', (
+      tester,
+    ) async {
+      final atMost = run.copyWith(
+        mode: HabitSignalMode.atMost,
+        threshold: 5,
+        workoutValueType: WorkoutValueType.distance,
+      );
+      await pump(tester, HabitSignalsForm(signals: [atMost]));
+      expect(find.text('at most'), findsWidgets);
+      expect(find.textContaining('≥'), findsNothing);
+      // Switching the dimension keeps the direction.
+      await tester.tap(find.text('Duration').first);
+      await tester.pump();
+      final switched = changes.last.signals.single;
+      expect(switched.mode, HabitSignalMode.atMost);
+      expect(switched.workoutValueType, WorkoutValueType.duration);
+      // The direction control flips it explicitly.
+      await tester.tap(find.text('at least').first);
+      await tester.pump();
+      expect(changes.last.signals.single.mode, HabitSignalMode.atLeast);
+    });
+  });
+
+  testWidgets('removing a signal clamps an at-least count to what is left', (
+    tester,
+  ) async {
+    await pump(
+      tester,
+      const HabitSignalsForm(
+        signals: [waterAny, steps, run],
+        composite: HabitCompositeRule.atLeast,
+        requiredCount: 3,
+      ),
+    );
+    await tester.tap(
+      find.byKey(const ValueKey('habit-signal-check-workout-running')),
+    );
+    await tester.pump();
+    expect(changes.last.signals, [waterAny, steps]);
+    expect(changes.last.requiredCount, 2);
   });
 }

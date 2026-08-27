@@ -39,7 +39,16 @@ class HabitSignalCard extends StatelessWidget {
 
   void _remove(int index) {
     final signals = [...form.signals]..removeAt(index);
-    onChanged(form.copyWith(signals: signals));
+    onChanged(
+      form.copyWith(
+        signals: signals,
+        // "At least 3 of 2" must never be shown: the count follows the rows.
+        requiredCount: form.requiredCount.clamp(
+          1,
+          signals.isEmpty ? 1 : signals.length,
+        ),
+      ),
+    );
   }
 
   @override
@@ -383,10 +392,14 @@ class _RuleEditorState extends State<_RuleEditor> {
           (_, WorkoutValueType.energy) => _WorkoutRule.energy,
           (_, null) => _WorkoutRule.any,
         },
+        // Picking a dimension keeps the direction a persisted rule had;
+        // "≤" is never silently shown as "≥".
         onChanged: (rule) => _switchMode(
           mode: rule == _WorkoutRule.any
               ? HabitSignalMode.any
-              : HabitSignalMode.atLeast,
+              : (signal.mode == HabitSignalMode.any
+                    ? HabitSignalMode.atLeast
+                    : signal.mode),
           workoutValueType: switch (rule) {
             _WorkoutRule.duration => WorkoutValueType.duration,
             _WorkoutRule.distance => WorkoutValueType.distance,
@@ -396,15 +409,9 @@ class _RuleEditorState extends State<_RuleEditor> {
         ),
         segments: [
           DsSegment(_WorkoutRule.any, messages.habitEditorRuleAnyWorkout),
-          DsSegment(
-            _WorkoutRule.duration,
-            messages.habitEditorRuleDurationAtLeast,
-          ),
-          DsSegment(
-            _WorkoutRule.distance,
-            messages.habitEditorRuleDistanceAtLeast,
-          ),
-          DsSegment(_WorkoutRule.energy, messages.habitEditorRuleEnergyAtLeast),
+          DsSegment(_WorkoutRule.duration, messages.habitEditorRuleDuration),
+          DsSegment(_WorkoutRule.distance, messages.habitEditorRuleDistance),
+          DsSegment(_WorkoutRule.energy, messages.habitEditorRuleEnergy),
         ],
       ),
       _ => DsSegmentedToggle<HabitSignalMode>(
@@ -439,6 +446,26 @@ class _RuleEditorState extends State<_RuleEditor> {
       children: [
         toggle,
         if (bounded) ...[
+          if (signal.kind == HabitSignalKind.workout) ...[
+            SizedBox(height: tokens.spacing.step2),
+            DsSegmentedToggle<HabitSignalMode>(
+              key: ValueKey('habit-signal-direction-${signal.id}'),
+              expand: true,
+              selected: signal.mode,
+              onChanged: (mode) =>
+                  widget.onChanged(signal.copyWith(mode: mode)),
+              segments: [
+                DsSegment(
+                  HabitSignalMode.atLeast,
+                  messages.habitEditorRuleAtLeast,
+                ),
+                DsSegment(
+                  HabitSignalMode.atMost,
+                  messages.habitEditorRuleAtMost,
+                ),
+              ],
+            ),
+          ],
           SizedBox(height: tokens.spacing.step3),
           DesignSystemTextInput(
             key: ValueKey(

@@ -140,4 +140,18 @@ void main() {
     expect(habitHealthTypeName(messages, 'HealthDataType.WEIGHT'), 'Weight');
     expect(habitHealthTypeName(messages, 'unknown_type'), 'unknown_type');
   });
+
+  test('health thresholds carry the config unit', () {
+    expect(
+      habitSignalUnit(
+        messages,
+        const HabitSignalForm(
+          kind: HabitSignalKind.health,
+          id: 'HealthDataType.WEIGHT',
+        ),
+        byId,
+      ),
+      'kg',
+    );
+  });
 }

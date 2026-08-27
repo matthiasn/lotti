@@ -194,7 +194,7 @@ void main() {
         ),
       );
       await tester.pump();
-      expect(find.text('≥ 6,000 · 4,120 so far'), findsOneWidget);
+      expect(find.text('≥ 6,000 steps · 4,120 so far'), findsOneWidget);
       expect(find.byType(MeasurableQuickRecordChips), findsNothing);
     });
 
@@ -377,7 +377,7 @@ void main() {
         ),
       );
       await tester.pump();
-      expect(find.text('≥ 6.000 · bisher 4.120'), findsOneWidget);
+      expect(find.text('≥ 6.000 steps · bisher 4.120'), findsOneWidget);
     });
   });
 }

@@ -12396,6 +12396,18 @@ abstract class AppLocalizations {
   /// **'Any workout'**
   String get habitEditorRuleAnyWorkout;
 
+  /// No description provided for @habitEditorRuleAtLeast.
+  ///
+  /// In en, this message translates to:
+  /// **'at least'**
+  String get habitEditorRuleAtLeast;
+
+  /// No description provided for @habitEditorRuleAtMost.
+  ///
+  /// In en, this message translates to:
+  /// **'at most'**
+  String get habitEditorRuleAtMost;
+
   /// No description provided for @habitEditorRuleDailyAtLeast.
   ///
   /// In en, this message translates to:
@@ -12408,23 +12420,23 @@ abstract class AppLocalizations {
   /// **'Daily ≤'**
   String get habitEditorRuleDailyAtMost;
 
-  /// No description provided for @habitEditorRuleDistanceAtLeast.
+  /// No description provided for @habitEditorRuleDistance.
   ///
   /// In en, this message translates to:
-  /// **'Distance ≥'**
-  String get habitEditorRuleDistanceAtLeast;
+  /// **'Distance'**
+  String get habitEditorRuleDistance;
 
-  /// No description provided for @habitEditorRuleDurationAtLeast.
+  /// No description provided for @habitEditorRuleDuration.
   ///
   /// In en, this message translates to:
-  /// **'Duration ≥'**
-  String get habitEditorRuleDurationAtLeast;
+  /// **'Duration'**
+  String get habitEditorRuleDuration;
 
-  /// No description provided for @habitEditorRuleEnergyAtLeast.
+  /// No description provided for @habitEditorRuleEnergy.
   ///
   /// In en, this message translates to:
-  /// **'Energy ≥'**
-  String get habitEditorRuleEnergyAtLeast;
+  /// **'Energy'**
+  String get habitEditorRuleEnergy;
 
   /// No description provided for @habitEditorRuleTotalAtLeast.
   ///

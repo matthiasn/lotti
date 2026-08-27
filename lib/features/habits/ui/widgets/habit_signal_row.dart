@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
@@ -58,6 +59,8 @@ class HabitSignalRow extends StatelessWidget {
     };
     final unit = switch (rule) {
       AutoCompleteRuleMeasurable() => measurable?.unitName ?? '',
+      AutoCompleteRuleHealth(:final dataType) =>
+        healthTypes[dataType]?.unit ?? '',
       AutoCompleteRuleWorkout(:final valueType?) => habitWorkoutUnit(
         messages,
         valueType,

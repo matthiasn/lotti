@@ -7432,19 +7432,25 @@ class AppLocalizationsFr extends AppLocalizations {
   String get habitEditorRuleAnyWorkout => 'Un entraînement';
 
   @override
+  String get habitEditorRuleAtLeast => 'au moins';
+
+  @override
+  String get habitEditorRuleAtMost => 'au plus';
+
+  @override
   String get habitEditorRuleDailyAtLeast => 'Par jour ≥';
 
   @override
   String get habitEditorRuleDailyAtMost => 'Par jour ≤';
 
   @override
-  String get habitEditorRuleDistanceAtLeast => 'Distance ≥';
+  String get habitEditorRuleDistance => 'Distance';
 
   @override
-  String get habitEditorRuleDurationAtLeast => 'Durée ≥';
+  String get habitEditorRuleDuration => 'Durée';
 
   @override
-  String get habitEditorRuleEnergyAtLeast => 'Énergie ≥';
+  String get habitEditorRuleEnergy => 'Énergie';
 
   @override
   String get habitEditorRuleTotalAtLeast => 'Total ≥';

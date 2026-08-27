@@ -84,7 +84,7 @@ String habitSignalUnit(
   Map<String, MeasurableDataType> measurablesById,
 ) => switch (signal.kind) {
   HabitSignalKind.measurable => measurablesById[signal.id]?.unitName ?? '',
-  HabitSignalKind.health => '',
+  HabitSignalKind.health => healthTypes[signal.id]?.unit ?? '',
   HabitSignalKind.workout => switch (signal.workoutValueType) {
     null => '',
     final type => habitWorkoutUnit(messages, type),

@@ -7449,19 +7449,25 @@ class AppLocalizationsRo extends AppLocalizations {
   String get habitEditorRuleAnyWorkout => 'Orice antrenament';
 
   @override
+  String get habitEditorRuleAtLeast => 'cel puțin';
+
+  @override
+  String get habitEditorRuleAtMost => 'cel mult';
+
+  @override
   String get habitEditorRuleDailyAtLeast => 'Zilnic ≥';
 
   @override
   String get habitEditorRuleDailyAtMost => 'Zilnic ≤';
 
   @override
-  String get habitEditorRuleDistanceAtLeast => 'Distanță ≥';
+  String get habitEditorRuleDistance => 'Distanță';
 
   @override
-  String get habitEditorRuleDurationAtLeast => 'Durată ≥';
+  String get habitEditorRuleDuration => 'Durată';
 
   @override
-  String get habitEditorRuleEnergyAtLeast => 'Energie ≥';
+  String get habitEditorRuleEnergy => 'Energie';
 
   @override
   String get habitEditorRuleTotalAtLeast => 'Total ≥';

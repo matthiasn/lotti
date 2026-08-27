@@ -325,6 +325,22 @@ void main() {
   });
 
   group('edit', () {
+    testWidgets('a weekly habit gets no daily show-from or alert fields', (
+      tester,
+    ) async {
+      final weekly = habitFlossing.copyWith(
+        id: 'weekly',
+        habitSchedule: const HabitSchedule.weekly(requiredCompletions: 3),
+      );
+      when(
+        () => mocks.journalDb.getHabitById('weekly'),
+      ).thenAnswer((_) async => weekly);
+      await pumpEditor(tester, habitId: 'weekly');
+      expect(find.text('Start date'), findsOneWidget);
+      expect(find.text('Show from'), findsNothing);
+      expect(find.text('Show alert at'), findsNothing);
+    });
+
     testWidgets('shows the existing rule, settings and options on one page', (
       tester,
     ) async {

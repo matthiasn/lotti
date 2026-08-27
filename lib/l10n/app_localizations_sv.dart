@@ -7328,19 +7328,25 @@ class AppLocalizationsSv extends AppLocalizations {
   String get habitEditorRuleAnyWorkout => 'Valfritt pass';
 
   @override
+  String get habitEditorRuleAtLeast => 'minst';
+
+  @override
+  String get habitEditorRuleAtMost => 'högst';
+
+  @override
   String get habitEditorRuleDailyAtLeast => 'Per dag ≥';
 
   @override
   String get habitEditorRuleDailyAtMost => 'Per dag ≤';
 
   @override
-  String get habitEditorRuleDistanceAtLeast => 'Sträcka ≥';
+  String get habitEditorRuleDistance => 'Sträcka';
 
   @override
-  String get habitEditorRuleDurationAtLeast => 'Tid ≥';
+  String get habitEditorRuleDuration => 'Tid';
 
   @override
-  String get habitEditorRuleEnergyAtLeast => 'Energi ≥';
+  String get habitEditorRuleEnergy => 'Energi';
 
   @override
   String get habitEditorRuleTotalAtLeast => 'Totalt ≥';

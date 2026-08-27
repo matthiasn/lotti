@@ -7397,19 +7397,25 @@ class AppLocalizationsCs extends AppLocalizations {
   String get habitEditorRuleAnyWorkout => 'Jakýkoli trénink';
 
   @override
+  String get habitEditorRuleAtLeast => 'alespoň';
+
+  @override
+  String get habitEditorRuleAtMost => 'nejvýše';
+
+  @override
   String get habitEditorRuleDailyAtLeast => 'Denně ≥';
 
   @override
   String get habitEditorRuleDailyAtMost => 'Denně ≤';
 
   @override
-  String get habitEditorRuleDistanceAtLeast => 'Vzdálenost ≥';
+  String get habitEditorRuleDistance => 'Vzdálenost';
 
   @override
-  String get habitEditorRuleDurationAtLeast => 'Doba ≥';
+  String get habitEditorRuleDuration => 'Doba';
 
   @override
-  String get habitEditorRuleEnergyAtLeast => 'Energie ≥';
+  String get habitEditorRuleEnergy => 'Energie';
 
   @override
   String get habitEditorRuleTotalAtLeast => 'Celkem ≥';
