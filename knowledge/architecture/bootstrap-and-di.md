@@ -146,7 +146,7 @@ flowchart TD
     P5["ConsumptionSyncService, AiAttributionService,<br/>NotificationRepository"]
   end
   subgraph Phase6["6. Logic layer"]
-    P6["MetadataService, GeolocationService, PersistenceLogic,<br/>EditorStateService, HealthImport, LinkService,<br/>Maintenance, NavService"]
+    P6["MetadataService, GeolocationService, PersistenceLogic,<br/>HabitAutoCompletionService (started here),<br/>EditorStateService, HealthImport, LinkService,<br/>Maintenance, NavService"]
   end
   Phase1 --> Phase2 --> Phase3 --> Phase4 --> Phase5 --> Phase6
   Phase6 --> Late["_registerLateAndOptionalServices(profile)"]
@@ -188,6 +188,10 @@ plugin may ask the OS for, and when, is in
 [synced notifications](../features/notifications.md#nothing-reaches-the-os-before-the-config-flag-says-so).
 
 # Shutdown
+
+`ServiceDisposer` stops `HabitAutoCompletionService` first — it holds a
+journal-update subscription and timers that must not fire into a closing
+database — before the sync stack and then every Drift database in order.
 
 Desktop close paths converge on one ordered teardown. `AppLifecycleListener`'s
 `onExitRequested` and the window-manager close event both call

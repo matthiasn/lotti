@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/habits/service/habit_auto_completion_service.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
 import 'package:lotti/features/habits/ui/widgets/habits_summary_card.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
 import '../../test_utils.dart';
@@ -32,6 +36,20 @@ HabitsState _state({
     shortStreakCount: shortStreakCount,
     longStreakCount: longStreakCount,
   );
+}
+
+/// The card asks the auto-completion engine which habits it checked off today
+/// before celebrating; [auto] is that set.
+List<Override> _overrides(
+  HabitsController Function() controller, {
+  Set<String> auto = const {},
+}) {
+  final engine = MockHabitAutoCompletionService();
+  when(() => engine.autoCompletedToday).thenReturn(auto);
+  return [
+    habitsControllerProvider.overrideWith(controller),
+    habitAutoCompletionServiceProvider.overrideWithValue(engine),
+  ];
 }
 
 Future<void> _pump(WidgetTester tester, HabitsState state) async {
@@ -304,9 +322,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             const HabitsSummaryCard(),
-            overrides: [
-              habitsControllerProvider.overrideWith(() => controller),
-            ],
+            overrides: _overrides(() => controller),
           ),
         );
         await tester.pump();
@@ -338,9 +354,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             const HabitsSummaryCard(),
-            overrides: [
-              habitsControllerProvider.overrideWith(() => controller),
-            ],
+            overrides: _overrides(() => controller),
           ),
         );
         await tester.pump();
@@ -375,9 +389,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             const HabitsSummaryCard(),
-            overrides: [
-              habitsControllerProvider.overrideWith(() => controller),
-            ],
+            overrides: _overrides(() => controller),
           ),
         );
         await tester.pump();
@@ -398,6 +410,30 @@ void main() {
         expect(flash, findsNothing);
       });
 
+      testWidgets('no all-done glow when the engine finished the day', (
+        tester,
+      ) async {
+        final flash = find.byKey(const ValueKey('habit-all-done-flash'));
+        final controller = _ControllableController(
+          _state(definitionCount: 3, completedCount: 2),
+        );
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            const HabitsSummaryCard(),
+            // The last habit to complete ('done-2') was auto-completed.
+            overrides: _overrides(() => controller, auto: const {'done-2'}),
+          ),
+        );
+        await tester.pump();
+
+        controller.emit(_state(definitionCount: 3, completedCount: 3));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(flash, findsNothing);
+        await tester.pump(const Duration(milliseconds: 1000));
+        expect(flash, findsNothing);
+      });
+
       testWidgets('reduced motion: all-done glow still plays (static)', (
         tester,
       ) async {
@@ -411,9 +447,7 @@ void main() {
             mediaQueryData: phoneMediaQueryData.copyWith(
               disableAnimations: true,
             ),
-            overrides: [
-              habitsControllerProvider.overrideWith(() => controller),
-            ],
+            overrides: _overrides(() => controller),
           ),
         );
         await tester.pump();
