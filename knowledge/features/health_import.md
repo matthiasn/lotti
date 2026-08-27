@@ -252,9 +252,11 @@ follow, and both are deliberate:
   and the counters honour it. Counting attempts instead would tell the user it
   had imported samples it had not.
 - A cumulative day whose total **changed** counts as one. Those rows are keyed
-  by type, local date and importing device (`cumulativeQuantityEntryId`), and
-  `createQuantitativeEntryImpl` rewrites the stored day in place when the total
-  differs and returns `null` when it does not. See [Late-syncing
+  by type, local date and the importing installation's sync host
+  (`cumulativeQuantityEntryId`), and `createQuantitativeEntryImpl` rewrites the
+  stored day in place when the total differs and returns `null` when it does
+  not — the value alone decides, so the in-progress day's advancing end time
+  is not a rewrite. See [Late-syncing
   sources](#late-syncing-sources) for why.
 
 # Late-syncing sources
@@ -269,21 +271,27 @@ on screen:
   maximum hid that most of the time, but the journal accumulated a row per
   refresh of the day in progress, and a day whose store-side total went
   *down* could never be corrected. `addActivityEntries` now writes each day
-  under `cumulativeQuantityEntryId` — type, local date, device — and the
-  create op updates that row in place when the total differs. The device is
-  part of the key so two phones importing the same day do not race for one
-  row through sync; their rows still merge through the readers' maximum, as
-  the payload-keyed rows did.
+  under `cumulativeQuantityEntryId` — type, local date, sync host — and the
+  create op updates that row in place when the total differs. The host is
+  part of the key so two installations importing the same day do not race
+  for one row through sync; their rows still merge through the readers'
+  maximum, as the payload-keyed rows did. Rows written before this scheme
+  keep their payload-derived ids and are not migrated: they still merge
+  through the same maximum, which is right for a total that rose, and a
+  legacy row above a corrected-downward total is a known limit.
 - **The delta never looked back.** A cumulative delta started at the newest
   stored day, which is today, so yesterday was only ever re-read by a manual
-  import. It now starts one day earlier.
+  import. It now starts one calendar day earlier (date arithmetic, not a
+  24-hour duration, which lands a date short across a spring-forward).
 
 `fetchAndProcessActivityDataForDay` also reads the raw `STEPS` samples next to
 the store's merged total and takes the larger of the merged figure and the best
 single source (`resolveDailySteps`). HealthKit's merged sum resolves
 overlapping samples by the *Data Sources & Access* priority, which can drop a
 wearable ranked below the phone; the guard cannot lower a figure, only restore
-one that priority discarded, and never sums across sources.
+one that priority discarded, and never sums across sources. A source is its
+`sourceId`, falling back to `sourceName` — Health Connect hands over step
+records with an empty id and the provider's package name.
 
 # Type strings, and the composites
 

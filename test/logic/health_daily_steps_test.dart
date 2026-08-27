@@ -6,19 +6,22 @@ import 'package:lotti/logic/health_daily_steps.dart';
 void main() {
   final day = DateTime(2026, 8, 26);
 
-  HealthDataPoint steps(num value, {required String sourceId}) =>
-      HealthDataPoint(
-        uuid: '$sourceId-$value',
-        value: NumericHealthValue(numericValue: value),
-        type: HealthDataType.STEPS,
-        unit: HealthDataUnit.COUNT,
-        dateFrom: day,
-        dateTo: day.add(const Duration(hours: 1)),
-        sourcePlatform: HealthPlatformType.appleHealth,
-        sourceDeviceId: sourceId,
-        sourceId: sourceId,
-        sourceName: sourceId,
-      );
+  HealthDataPoint steps(
+    num value, {
+    required String sourceId,
+    String? sourceName,
+  }) => HealthDataPoint(
+    uuid: '$sourceId-${sourceName ?? ''}-$value',
+    value: NumericHealthValue(numericValue: value),
+    type: HealthDataType.STEPS,
+    unit: HealthDataUnit.COUNT,
+    dateFrom: day,
+    dateTo: day.add(const Duration(hours: 1)),
+    sourcePlatform: HealthPlatformType.appleHealth,
+    sourceDeviceId: sourceId,
+    sourceId: sourceId,
+    sourceName: sourceName ?? sourceId,
+  );
 
   group('resolveDailySteps', () {
     // The reported scenario: the phone under-counts a day spent without it,
@@ -56,6 +59,22 @@ void main() {
         ]),
         6000,
       );
+    });
+
+    // Health Connect step records arrive with an empty `sourceId` and the
+    // provider's package name as `sourceName`. Keyed on the id alone, every
+    // provider pooled into one "source" and their counts were summed.
+    test('falls back to the source name when the source id is empty', () {
+      final result = resolveDailySteps(7000, [
+        steps(
+          6000,
+          sourceId: '',
+          sourceName: 'com.google.android.apps.fitness',
+        ),
+        steps(7000, sourceId: '', sourceName: 'com.whoop.android'),
+      ]);
+
+      expect(result, 7000);
     });
 
     test('a missing merged total counts as zero', () {

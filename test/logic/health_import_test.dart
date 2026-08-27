@@ -1917,6 +1917,50 @@ void main() {
       },
     );
 
+    test('the look-back is a calendar day, not 24 hours', () {
+      fakeAsync((async) {
+        final mobileImport = createMobileHealthImport();
+        final latestDay = DateTime(2024, 3, 31);
+
+        when(
+          () => mockJournalDb.latestQuantitativeByType(any()),
+        ).thenAnswer(
+          (_) async => QuantitativeEntry(
+            data: QuantitativeData.cumulativeQuantityData(
+              dateFrom: latestDay,
+              dateTo: DateTime(2024, 3, 31, 8),
+              value: 1,
+              dataType: 'cumulative_step_count',
+              unit: 'count',
+            ),
+            meta: Metadata(
+              id: 'latest',
+              createdAt: latestDay,
+              updatedAt: latestDay,
+              dateFrom: latestDay,
+              dateTo: DateTime(2024, 3, 31, 8),
+            ),
+          ),
+        );
+        stubHealthStore();
+
+        withClock(Clock.fixed(DateTime(2024, 3, 31, 9)), () {
+          mobileImport.fetchHealthDataDelta('cumulative_step_count');
+          async.flushMicrotasks();
+        });
+
+        // The previous calendar date at local midnight — the same value the
+        // day-keyed row for that date carries — whatever the clock offset
+        // between the two midnights happens to be.
+        verify(
+          () => mockHealthService.getTotalStepsInInterval(
+            DateTime(2024, 3, 30),
+            any(),
+          ),
+        ).called(1);
+      });
+    });
+
     // Silently importing nothing is what made a dashboard configured for a
     // retired type look like a broken import rather than stale configuration.
     test('an unresolvable type is reported, not silently skipped', () {

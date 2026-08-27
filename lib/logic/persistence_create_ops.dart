@@ -73,36 +73,48 @@ class PersistenceCreateOps extends PersistenceCollaboratorBase {
   }
 
   /// The deterministic uuidV5 input for one cumulative day: its type, its
-  /// local calendar date and the importing device, so every import of that day
-  /// on that device addresses the same row whatever total it read.
+  /// local calendar date and the importing installation's sync [host], so
+  /// every import of that day on that installation addresses the same row
+  /// whatever total it read.
   ///
-  /// The device is part of the key on purpose. Two devices importing the same
+  /// The host is part of the key on purpose. Two devices importing the same
   /// day would otherwise race for one row through sync and land as a conflict;
   /// kept apart, each writes its own row and the readers' per-day maximum
-  /// merges them, exactly as it merged the payload-keyed rows before.
-  static String cumulativeQuantityEntryId(CumulativeQuantityData data) {
+  /// merges them, exactly as it merged the payload-keyed rows before. The
+  /// hardware model would not do: two phones of the same model, or two whose
+  /// device-info lookup failed, share one.
+  static String cumulativeQuantityEntryId(
+    CumulativeQuantityData data, {
+    required String? host,
+  }) {
     final day = data.dateFrom;
     final date =
         '${day.year.toString().padLeft(4, '0')}-'
         '${day.month.toString().padLeft(2, '0')}-'
         '${day.day.toString().padLeft(2, '0')}';
-    return 'cumulative:${data.dataType}:$date:${data.deviceType}';
+    return 'cumulative:${data.dataType}:$date:$host';
   }
 
   /// Creates the day's row, or rewrites it when the stored total differs.
   ///
-  /// Returns `null` when the stored day already carries exactly [data], so an
-  /// import over an unchanged range still reports nothing new.
+  /// Returns `null` when the stored day already carries the same total, so an
+  /// import over an unchanged range still reports nothing new. Only the value
+  /// decides: the day in progress carries "now" as its end, which advances on
+  /// every background refresh, and rewriting (and syncing) three rows every ten
+  /// minutes to move an end time nobody reads is not a change worth a write.
   Future<QuantitativeEntry?> _upsertCumulativeDay(
     CumulativeQuantityData data,
   ) async {
-    final uuidV5Input = cumulativeQuantityEntryId(data);
+    final uuidV5Input = cumulativeQuantityEntryId(
+      data,
+      host: await vectorClockService.getHost(),
+    );
     final existing = await journalDb.journalEntityById(
       metadataService.generateId(uuidV5Input: uuidV5Input),
     );
 
     if (existing is QuantitativeEntry) {
-      if (existing.data == data) {
+      if (existing.data.value == data.value) {
         return null;
       }
       final updated = existing.copyWith(

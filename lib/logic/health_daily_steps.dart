@@ -20,13 +20,18 @@ import 'package:health/health.dart';
 ///
 /// Samples without a numeric value are ignored; a `null` [mergedTotal] (no
 /// answer from the store) counts as zero.
+///
+/// A source is identified by `sourceId`, falling back to `sourceName`: Health
+/// Connect hands over step records with an empty id and the provider's package
+/// name, and keying on the empty id alone would pool every provider into one
+/// "source" and sum them.
 int resolveDailySteps(int? mergedTotal, List<HealthDataPoint> samples) {
   final bySource = <String, double>{};
   for (final sample in samples) {
     final value = sample.value;
     if (value is NumericHealthValue) {
       bySource.update(
-        sample.sourceId,
+        sample.sourceId.isNotEmpty ? sample.sourceId : sample.sourceName,
         (total) => total + value.numericValue,
         ifAbsent: () => value.numericValue.toDouble(),
       );

@@ -649,9 +649,13 @@ class HealthImport {
       // total after that day already has a row, and a delta that only looks
       // from the newest day forward would never see it: the dashboards kept
       // showing the phone's own count at bedtime until a manual import.
-      final dayBeforeLatest = latest == null
+      // Calendar arithmetic, not a 24-hour duration: across a spring-forward
+      // transition the duration lands at 23:00 two dates back, and `getDays`
+      // would then skip the intended day.
+      final latestDay = latest?.meta.dateFrom;
+      final dayBeforeLatest = latestDay == null
           ? dateFrom
-          : latest.meta.dateFrom.subtract(const Duration(days: 1));
+          : DateTime(latestDay.year, latestDay.month, latestDay.day - 1);
       return _getActivityHealthData(
         dateFrom: dayBeforeLatest,
         dateTo: now,

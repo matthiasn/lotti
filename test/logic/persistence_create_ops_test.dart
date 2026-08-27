@@ -11,6 +11,7 @@ import 'package:lotti/logic/persistence_create_ops.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/notification_service.dart';
+import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../helpers/fallbacks.dart';
@@ -29,6 +30,7 @@ void main() {
   late MockDomainLogger domainLogger;
   late MockJournalDb journalDb;
   late MockMetadataService metadataService;
+  late MockVectorClockService vectorClockService;
   late PersistenceCreateOps ops;
 
   Metadata metaFor(String id) => Metadata(
@@ -43,12 +45,15 @@ void main() {
     registerAllFallbackValues();
     domainLogger = MockDomainLogger();
     metadataService = MockMetadataService();
+    vectorClockService = MockVectorClockService();
+    when(() => vectorClockService.getHost()).thenAnswer((_) async => 'host-a');
     final mocks = await setUpTestGetIt(
       additionalSetup: () {
         getIt
           ..unregister<DomainLogger>()
           ..registerSingleton<DomainLogger>(domainLogger)
           ..registerSingleton<MetadataService>(metadataService)
+          ..registerSingleton<VectorClockService>(vectorClockService)
           ..registerSingleton<NotificationService>(MockNotificationService());
       },
     );
@@ -156,7 +161,7 @@ void main() {
           deviceType: 'iPhone17,1',
           platformType: 'IOS',
         );
-    const dayId = 'id:cumulative:cumulative_step_count:2026-08-26:iPhone17,1';
+    const dayId = 'id:cumulative:cumulative_step_count:2026-08-26:host-a';
 
     QuantitativeEntry stored(num value) => QuantitativeEntry(
       data: steps(value),
@@ -176,34 +181,29 @@ void main() {
       when(() => logic.updateDbEntity(any())).thenAnswer((_) async => true);
     });
 
-    test('the id is keyed by type and local calendar day, not by value', () {
+    test('the id is keyed by type, local calendar day and sync host', () {
+      String idOf(CumulativeQuantityData data, {String? host = 'host-a'}) =>
+          PersistenceCreateOps.cumulativeQuantityEntryId(data, host: host);
+
+      expect(idOf(steps(9800)), idOf(steps(11600)));
       expect(
-        PersistenceCreateOps.cumulativeQuantityEntryId(steps(9800)),
-        PersistenceCreateOps.cumulativeQuantityEntryId(steps(11600)),
+        idOf(steps(1)),
+        'cumulative:cumulative_step_count:2026-08-26:host-a',
       );
       expect(
-        PersistenceCreateOps.cumulativeQuantityEntryId(steps(1)),
-        'cumulative:cumulative_step_count:2026-08-26:iPhone17,1',
+        idOf(steps(1).copyWith(dateFrom: DateTime(2026, 8, 27))),
+        isNot(idOf(steps(1))),
       );
       expect(
-        PersistenceCreateOps.cumulativeQuantityEntryId(
-          steps(1).copyWith(dateFrom: DateTime(2026, 8, 27)),
-        ),
-        isNot(PersistenceCreateOps.cumulativeQuantityEntryId(steps(1))),
+        idOf(steps(1).copyWith(dataType: 'cumulative_distance')),
+        isNot(idOf(steps(1))),
       );
-      // Two devices importing the same day keep separate rows rather than
-      // racing for one through sync.
+      // Two installations importing the same day keep separate rows rather
+      // than racing for one through sync — even on the same hardware model.
+      expect(idOf(steps(1), host: 'host-b'), isNot(idOf(steps(1))));
       expect(
-        PersistenceCreateOps.cumulativeQuantityEntryId(
-          steps(1).copyWith(deviceType: 'iPad16,3'),
-        ),
-        isNot(PersistenceCreateOps.cumulativeQuantityEntryId(steps(1))),
-      );
-      expect(
-        PersistenceCreateOps.cumulativeQuantityEntryId(
-          steps(1).copyWith(dataType: 'cumulative_distance'),
-        ),
-        isNot(PersistenceCreateOps.cumulativeQuantityEntryId(steps(1))),
+        idOf(steps(1).copyWith(deviceType: 'iPad16,3')),
+        idOf(steps(1)),
       );
     });
 
@@ -218,8 +218,7 @@ void main() {
           () => logic.createMetadata(
             dateFrom: day,
             dateTo: DateTime(2026, 8, 26, 23, 59, 59, 999),
-            uuidV5Input:
-                'cumulative:cumulative_step_count:2026-08-26:iPhone17,1',
+            uuidV5Input: 'cumulative:cumulative_step_count:2026-08-26:host-a',
           ),
         ).called(1);
         verifyNever(() => logic.updateDbEntity(any()));
@@ -284,6 +283,25 @@ void main() {
           linkedId: any(named: 'linkedId'),
         ),
       );
+    });
+
+    // The day in progress carries "now" as its end, which moves on every
+    // background refresh. Only the total decides whether to rewrite.
+    test('an advanced end time with the same total is not a rewrite', () async {
+      when(
+        () => journalDb.journalEntityById(dayId),
+      ).thenAnswer(
+        (_) async => stored(9800).copyWith(
+          data: steps(9800, dateTo: DateTime(2026, 8, 26, 10)),
+        ),
+      );
+
+      final result = await ops.createQuantitativeEntryImpl(
+        steps(9800, dateTo: DateTime(2026, 8, 26, 10, 10)),
+      );
+
+      expect(result, isNull);
+      verifyNever(() => logic.updateDbEntity(any()));
     });
 
     test('returns null when the database rejects the rewrite', () async {
