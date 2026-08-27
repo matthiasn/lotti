@@ -297,6 +297,29 @@ void main() {
       },
     );
 
+    test('without a judged full arm there is no verdict', () {
+      final noFull = _packet(
+        [
+          for (final c in cases)
+            if (c['strategyId'] != 'full') c,
+        ],
+      )..['strategyIds'] = ['truncate', 'hierarchical'];
+      final partial = scores(
+        truncateGrades: ['correct', 'correct', 'correct', 'correct'],
+        hierarchicalGrades: ['correct', 'correct', 'correct', 'correct'],
+      );
+      (partial['cases'] as List).removeWhere(
+        (c) => (c as Map)['strategyId'] == 'full',
+      );
+      final report = buildGoalCompactionEvalReport(
+        packet: noFull,
+        scores: partial,
+      );
+      expect(report, contains('No judged `full` arm in this run: no verdict'));
+      expect(report, isNot(contains('**PASS**')));
+      expect(report, isNot(contains('**FAIL**')));
+    });
+
     test('a scores file missing a packet case is refused', () {
       final partial = scores(
         truncateGrades: ['correct', 'correct', 'correct', 'correct'],

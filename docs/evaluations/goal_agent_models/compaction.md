@@ -295,9 +295,12 @@ Pass bar:
 What changed, and what did not:
 
 - **The token bound is met and the curve bends.** 2,436 tokens at 24 months
-  (was 3,064), digest entries capped at ten, and the yearly layer makes the
-  count independent of the goal's age — a four-year history adds at most two
-  entries over a two-year one (asserted in the strategy's unit test). Digests
+  (was 3,064), ten digest entries on this two-year fixture. At this point the
+  oldest layer was still one entry per calendar year — O(years), not a fixed
+  bound; the single "earlier" span beyond 36 months that makes the count
+  independent of the goal's age landed after review, and the strategy's unit
+  test now asserts a six-year history carries no more entries than a
+  four-year one. Digests
   cost ≈77 tokens per check-in, once.
 - **Recall held**: 95% on facts older than six months, 100% otherwise, zero
   hallucinations.
@@ -362,8 +365,9 @@ Pass bar:
   direction. The second run's "new challenge" nudge did not recur in three
   samples of the completed goal.
 - Tokens: 10.4k per wake against 33.3k for the full history; `userVoice`
-  2,436 at 24 months with the count of digest entries capped by the yearly
-  layer.
+  2,436 at 24 months. (On a two-year fixture the "earlier" span added later
+  changes nothing — it only applies beyond 36 months — so these numbers
+  stand for the shipped layering.)
 - Truncation, at n = 15: 10% old-fact recall, contradicts the full-context
   coach in 11 of 15 wakes and takes a forbidden direction in 12 — lowering
   the stalled goal's target, offering 10,000 steps to the user whose doctor

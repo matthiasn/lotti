@@ -341,7 +341,17 @@ String buildGoalCompactionEvalReport({
     // ── Pass bar ────────────────────────────────────────────────────────
     final full = judged['full'];
     final fullDet = deterministic['full'];
-    if (full != null && fullDet != null) {
+    if (full == null || fullDet == null || full.all.total == 0) {
+      // A candidate is only ever judged AGAINST the oracle. Without judged
+      // full-arm probes the recall and hallucination gates would compare
+      // against zero and pass anything.
+      buffer
+        ..writeln()
+        ..writeln(
+          '## Pass bar\n\n_No judged `full` arm in this run: no verdict. '
+          'Run the full arm alongside every candidate._',
+        );
+    } else {
       buffer
         ..writeln()
         ..writeln('## Pass bar')
