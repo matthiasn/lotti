@@ -4,6 +4,9 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
+import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
+import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/features/goals/logic/goal_checkin_compaction_strategy.dart';
 import 'package:lotti/features/goals/model/goal_checkin_summary.dart';
 import 'package:lotti/features/goals/service/goal_checkin_digest_service.dart';
@@ -14,6 +17,7 @@ import 'package:openai_dart/openai_dart.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../agents/test_data/ai_config_factories.dart';
+import '../../ai_consumption/test_utils.dart';
 
 void main() {
   setUpAll(registerAllFallbackValues);
@@ -59,6 +63,23 @@ void main() {
               delta: ChatCompletionStreamResponseDelta(content: body),
             ),
           ],
+        ),
+        // A usage chunk, so the token accounting the cost pills read is
+        // exercised rather than assumed.
+        const CreateChatCompletionStreamResponse(
+          id: 'usage',
+          object: 'chat.completion.chunk',
+          created: 0,
+          choices: [],
+          usage: CompletionUsage(
+            promptTokens: 300,
+            completionTokens: 60,
+            totalTokens: 360,
+            promptTokensDetails: PromptTokensDetails(cachedTokens: 50),
+            completionTokensDetails: CompletionTokensDetails(
+              reasoningTokens: 4,
+            ),
+          ),
         ),
       ]);
 
@@ -364,6 +385,37 @@ void main() {
         stackTrace: any(named: 'stackTrace'),
       ),
     ).called(1);
+  });
+
+  test('a digest is attributed to the goal that paid for it', () async {
+    final attribution = AiInteractionCaptureTestBench.create()..register();
+    addTearDown(attribution.unregister);
+    scripted.add('Attributed digest.');
+
+    expect(await writer().write(request()), 'Attributed digest.');
+
+    final start =
+        verify(() => attribution.service.begin(captureAny())).captured.single
+            as AiAttributionStart;
+    expect(start.initiator.type, AiActorType.automation);
+    expect(start.initiator.id, 'automation:goal-check-in-digest');
+
+    final event =
+        verify(
+              () => attribution.service.recordInteraction(
+                attributionId: any(named: 'attributionId'),
+                event: captureAny(named: 'event'),
+              ),
+            ).captured.single
+            as AiConsumptionEvent;
+    // Totals by agent are what the goal's lifetime cost pills show; a
+    // digest without its agent id would be invisible spend.
+    expect(event.agentId, agentId);
+    expect(event.inputTokens, 300);
+    expect(event.outputTokens, 60);
+    expect(event.cachedInputTokens, 50);
+    expect(event.thoughtsTokens, 4);
+    expect(event.totalTokens, 360);
   });
 
   test('fromContent rejects malformed rows rather than guessing', () {
