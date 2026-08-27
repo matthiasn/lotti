@@ -97,6 +97,11 @@ AutoCompleteRuleWorkout _$AutoCompleteRuleWorkoutFromJson(
   dataType: json['dataType'] as String,
   minimum: json['minimum'] as num?,
   maximum: json['maximum'] as num?,
+  valueType: $enumDecodeNullable(
+    _$WorkoutValueTypeEnumMap,
+    json['valueType'],
+    unknownValue: JsonKey.nullForUndefinedEnumValue,
+  ),
   title: json['title'] as String?,
   $type: json['runtimeType'] as String?,
 );
@@ -107,8 +112,15 @@ Map<String, dynamic> _$AutoCompleteRuleWorkoutToJson(
   'dataType': instance.dataType,
   'minimum': instance.minimum,
   'maximum': instance.maximum,
+  'valueType': _$WorkoutValueTypeEnumMap[instance.valueType],
   'title': instance.title,
   'runtimeType': instance.$type,
+};
+
+const _$WorkoutValueTypeEnumMap = {
+  WorkoutValueType.duration: 'duration',
+  WorkoutValueType.distance: 'distance',
+  WorkoutValueType.energy: 'energy',
 };
 
 AutoCompleteRuleMeasurable _$AutoCompleteRuleMeasurableFromJson(
@@ -386,6 +398,7 @@ HabitDefinition _$HabitDefinitionFromJson(Map<String, dynamic> json) =>
       categoryId: json['categoryId'] as String?,
       dashboardId: json['dashboardId'] as String?,
       priority: json['priority'] as bool?,
+      autoCompleteNotify: json['autoCompleteNotify'] as bool? ?? true,
       $type: json['runtimeType'] as String?,
     );
 
@@ -409,6 +422,7 @@ Map<String, dynamic> _$HabitDefinitionToJson(HabitDefinition instance) =>
       'categoryId': instance.categoryId,
       'dashboardId': instance.dashboardId,
       'priority': instance.priority,
+      'autoCompleteNotify': instance.autoCompleteNotify,
       'runtimeType': instance.$type,
     };
 
@@ -568,6 +582,14 @@ _HabitCompletionData _$HabitCompletionDataFromJson(Map<String, dynamic> json) =>
         _$HabitCompletionTypeEnumMap,
         json['completionType'],
       ),
+      source:
+          $enumDecodeNullable(
+            _$HabitCompletionSourceEnumMap,
+            json['source'],
+            unknownValue: HabitCompletionSource.manual,
+          ) ??
+          HabitCompletionSource.manual,
+      autoCompleteReason: json['autoCompleteReason'] as String?,
     );
 
 Map<String, dynamic> _$HabitCompletionDataToJson(
@@ -577,6 +599,8 @@ Map<String, dynamic> _$HabitCompletionDataToJson(
   'dateTo': instance.dateTo.toIso8601String(),
   'habitId': instance.habitId,
   'completionType': _$HabitCompletionTypeEnumMap[instance.completionType],
+  'source': _$HabitCompletionSourceEnumMap[instance.source]!,
+  'autoCompleteReason': instance.autoCompleteReason,
 };
 
 const _$HabitCompletionTypeEnumMap = {
@@ -584,6 +608,11 @@ const _$HabitCompletionTypeEnumMap = {
   HabitCompletionType.skip: 'skip',
   HabitCompletionType.fail: 'fail',
   HabitCompletionType.open: 'open',
+};
+
+const _$HabitCompletionSourceEnumMap = {
+  HabitCompletionSource.manual: 'manual',
+  HabitCompletionSource.auto: 'auto',
 };
 
 DashboardMeasurementItem _$DashboardMeasurementItemFromJson(
@@ -638,12 +667,6 @@ Map<String, dynamic> _$DashboardWorkoutItemToJson(
   'color': instance.color,
   'valueType': _$WorkoutValueTypeEnumMap[instance.valueType]!,
   'runtimeType': instance.$type,
-};
-
-const _$WorkoutValueTypeEnumMap = {
-  WorkoutValueType.duration: 'duration',
-  WorkoutValueType.distance: 'distance',
-  WorkoutValueType.energy: 'energy',
 };
 
 DashboardHabitItem _$DashboardHabitItemFromJson(Map<String, dynamic> json) =>

@@ -15,7 +15,7 @@ sources:
   - id: definitions
     resource: ../../lib/classes/entity_definitions.dart
     title: HabitDefinition
-    last_modified: 2026-07-26
+    last_modified: 2026-08-27
 ---
 
 Habits sit on top of **two different records**: `HabitDefinition`, describing the
@@ -146,6 +146,24 @@ effectively daily-first:
   `openNow` and `pendingLater`.
 
 This is stated plainly rather than pretending the weekly/monthly UI exists.
+
+The same is true of the signal side. `HabitDefinition.autoCompleteRule` — the
+`AutoCompleteRule` tree of measurable / health / workout leaves under
+`and` / `or` / `multiple` — is persisted and synced but has **no evaluator and
+no editor yet**: only `lib/logic/habits/autocomplete_update.dart` rewrites it
+and `GoalCriterion.fromAutoCompleteRule` reads it as a goal seed. The habits
+rework makes that tree the habit ↔ signal association, and the model already
+carries the fields the engine will need:
+
+- `AutoCompleteRule.workout.valueType` (`WorkoutValueType?`) chooses which
+  workout value a threshold applies to; `null` means "any workout of that
+  type". An unknown value from a newer peer decodes to `null`.
+- `HabitDefinition.autoCompleteNotify` (default `true`) gates the
+  auto-completion notification.
+- `HabitCompletionData.source` (`manual` | `auto`, default `manual`, unknown
+  values decode as `manual`) and `autoCompleteReason` record who wrote a
+  completion. A manual entry for a day always outranks an auto one; the
+  last-write-wins resolver above is what enforces that ordering.
 
 # Page composition
 

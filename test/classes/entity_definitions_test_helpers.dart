@@ -78,6 +78,10 @@ class GeneratedAutoCompleteRule {
       dataType: 'WorkoutType.$dataSlot',
       minimum: hOptionalNum(minimumSlot),
       maximum: hOptionalNum(maximumSlot),
+      // Slot 0 keeps the "any workout" shape (null) in the generated space.
+      valueType: titleSlot == 0
+          ? null
+          : WorkoutValueType.values[titleSlot % WorkoutValueType.values.length],
       title: hOptionalText(titleSlot, 'Workout'),
     ),
     GeneratedAutoCompleteRuleKind.measurable => AutoCompleteRule.measurable(
