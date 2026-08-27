@@ -69,6 +69,8 @@ void main() {
     required DateTime date,
     required HabitCompletionType completionType,
     DateTime? writtenAt,
+    HabitCompletionSource source = HabitCompletionSource.manual,
+    String? autoCompleteReason,
   }) {
     final effectiveWrittenAt = writtenAt ?? date;
     return HabitCompletionEntry(
@@ -85,6 +87,8 @@ void main() {
         dateTo: date,
         habitId: habitId,
         completionType: completionType,
+        source: source,
+        autoCompleteReason: autoCompleteReason,
       ),
     );
   }
@@ -250,6 +254,51 @@ void main() {
   group('_determineHabitSuccessByDays', () {
     final controllerToday = controllerNow;
     final controllerTodayYmd = controllerNow.ymd;
+
+    test(
+      'autoCompletedToday names the engine-written habits with reasons',
+      () async {
+        final completions = [
+          createCompletion(
+            id: 'auto',
+            habitId: 'habit-1',
+            date: controllerToday,
+            completionType: HabitCompletionType.success,
+            source: HabitCompletionSource.auto,
+            autoCompleteReason: 'Steps · 7412',
+          ),
+          createCompletion(
+            id: 'manual',
+            habitId: 'habit-2',
+            date: controllerToday,
+            completionType: HabitCompletionType.success,
+          ),
+          // Yesterday's auto completion is history, not today's pill.
+          createCompletion(
+            id: 'auto-yesterday',
+            habitId: 'habit-2',
+            date: controllerToday.subtract(const Duration(days: 1)),
+            completionType: HabitCompletionType.success,
+            source: HabitCompletionSource.auto,
+            autoCompleteReason: 'Steps · 6001',
+          ),
+        ];
+        when(
+          () => mockRepository.getHabitCompletionsInRange(
+            rangeStart: any(named: 'rangeStart'),
+          ),
+        ).thenAnswer((_) async => habitCompletionRecordsFrom(completions));
+
+        container.read(habitsControllerProvider);
+        await pumpEventQueue();
+        definitionsController.add([testHabit1, testHabit2]);
+        await pumpEventQueue();
+
+        final state = container.read(habitsControllerProvider);
+        expect(state.autoCompletedToday, {'habit-1': 'Steps · 7412'});
+        expect(state.completedToday, {'habit-1', 'habit-2'});
+      },
+    );
 
     test('processes completions and updates state fields', () async {
       // Setup completions

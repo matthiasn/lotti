@@ -2199,7 +2199,7 @@ class HabitDefinition implements EntityDefinition {
  final  String? categoryId;
  final  String? dashboardId;
  final  bool? priority;
-/// Whether an auto-completion derived from [autoCompleteRule] raises a
+/// Whether an auto-completion derived from `autoCompleteRule` raises a
 /// notification. Defaults to true so habits created before the field
 /// existed keep the documented behaviour.
 @JsonKey() final  bool autoCompleteNotify;

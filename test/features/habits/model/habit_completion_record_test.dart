@@ -15,11 +15,15 @@ void main() {
     String habitId = 'habit-1',
     DateTime? dateFrom,
     HabitCompletionType? completionType = HabitCompletionType.success,
+    HabitCompletionSource source = HabitCompletionSource.manual,
+    String? autoCompleteReason,
   }) {
     return HabitCompletionRecord(
       habitId: habitId,
       dateFrom: dateFrom ?? DateTime(2026, 3, 15),
       completionType: completionType,
+      source: source,
+      autoCompleteReason: autoCompleteReason,
     );
   }
 
@@ -33,6 +37,13 @@ void main() {
     expect(record(dateFrom: DateTime(2026, 3, 16)), isNot(record()));
     expect(record(completionType: HabitCompletionType.fail), isNot(record()));
     expect(record(completionType: null), isNot(record()));
+    expect(record(source: HabitCompletionSource.auto), isNot(record()));
+    expect(record(autoCompleteReason: 'Steps · 7412'), isNot(record()));
+  });
+
+  test('source defaults to manual, the value legacy entries carry', () {
+    expect(record().source, HabitCompletionSource.manual);
+    expect(record().autoCompleteReason, isNull);
   });
 
   test('a null completion type is a value, not an absence', () {

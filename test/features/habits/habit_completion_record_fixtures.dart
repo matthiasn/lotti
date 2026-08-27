@@ -12,6 +12,8 @@ HabitCompletionRecord habitCompletionRecordFrom(HabitCompletionEntry entry) {
     habitId: entry.data.habitId,
     dateFrom: entry.meta.dateFrom,
     completionType: entry.data.completionType,
+    source: entry.data.source,
+    autoCompleteReason: entry.data.autoCompleteReason,
   );
 }
 

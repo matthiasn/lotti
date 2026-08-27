@@ -244,7 +244,7 @@ sealed class EntityDefinition with _$EntityDefinition {
     String? dashboardId,
     bool? priority,
 
-    /// Whether an auto-completion derived from [autoCompleteRule] raises a
+    /// Whether an auto-completion derived from `autoCompleteRule` raises a
     /// notification. Defaults to true so habits created before the field
     /// existed keep the documented behaviour.
     @Default(true) bool autoCompleteNotify,

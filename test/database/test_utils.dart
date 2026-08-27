@@ -309,6 +309,8 @@ JournalEntity buildHabitCompletionEntry({
   DateTime? deletedAt,
   DateTime? writtenAt,
   HabitCompletionType? completionType,
+  HabitCompletionSource source = HabitCompletionSource.manual,
+  String? autoCompleteReason,
 }) {
   final effectiveWrittenAt = writtenAt ?? timestamp;
   return JournalEntity.habitCompletion(
@@ -327,6 +329,8 @@ JournalEntity buildHabitCompletionEntry({
       dateFrom: timestamp,
       dateTo: timestamp,
       completionType: completionType,
+      source: source,
+      autoCompleteReason: autoCompleteReason,
     ),
   );
 }

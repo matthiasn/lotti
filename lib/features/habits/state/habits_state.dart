@@ -62,6 +62,10 @@ abstract class HabitsState with _$HabitsState {
     // this state but expose no category-filter control (the unified Goals
     // page), which must not silently inherit the Habits tab's hidden
     // selection.
+    /// Habits whose latest completion today was written by the
+    /// auto-completion engine, with the reason it recorded — what the row's
+    /// "auto" pill and caption show.
+    @Default(<String, String?>{}) Map<String, String?> autoCompletedToday,
     @Default(<HabitDefinition>[]) List<HabitDefinition> openNowAll,
     @Default(<HabitDefinition>[]) List<HabitDefinition> pendingLaterAll,
     @Default(<HabitDefinition>[]) List<HabitDefinition> completedAll,

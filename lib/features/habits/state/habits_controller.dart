@@ -139,6 +139,7 @@ class HabitsController extends Notifier<HabitsState> {
   void _determineHabitSuccessByDays() {
     final completedToday = <String>{};
     final successfulToday = <String>{};
+    final autoCompletedToday = <String, String?>{};
     final successfulByDay = <String, Set<String>>{};
     final skippedByDay = <String, Set<String>>{};
     final failedByDay = <String, Set<String>>{};
@@ -164,6 +165,9 @@ class HabitsController extends Notifier<HabitsState> {
 
         if (day == today) {
           completedToday.add(habitId);
+          if (item.source == HabitCompletionSource.auto) {
+            autoCompletedToday[habitId] = item.autoCompleteReason;
+          }
         }
 
         addId(allByDay, day, habitId);
@@ -276,6 +280,7 @@ class HabitsController extends Notifier<HabitsState> {
       habitDefinitions: _habitDefinitions,
       habitCompletions: _habitCompletions,
       completedToday: completedToday,
+      autoCompletedToday: autoCompletedToday,
       openHabits: openHabits,
       openNow: filteredOpenNow,
       pendingLater: filteredPendingLater,

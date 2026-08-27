@@ -191,6 +191,43 @@ void main() {
       );
 
       test(
+        'getHabitCompletionRecordsInRange projects the completion source',
+        () async {
+          await db!.upsertJournalDbEntity(
+            toDbEntity(
+              buildHabitCompletionEntry(
+                id: 'auto',
+                habitId: 'habit-auto',
+                timestamp: DateTime(2024, 4, 15, 8, 12),
+                completionType: HabitCompletionType.success,
+                source: HabitCompletionSource.auto,
+                autoCompleteReason: 'Steps · 7412',
+              ),
+            ),
+          );
+          await db!.upsertJournalDbEntity(
+            toDbEntity(
+              buildHabitCompletionEntry(
+                id: 'manual',
+                habitId: 'habit-manual',
+                timestamp: DateTime(2024, 4, 15, 9),
+                completionType: HabitCompletionType.success,
+              ),
+            ),
+          );
+
+          final records = await db!.getHabitCompletionRecordsInRange(
+            rangeStart: DateTime(2024, 4),
+          );
+          final byHabit = {for (final r in records) r.habitId: r};
+          expect(byHabit['habit-auto']!.source, HabitCompletionSource.auto);
+          expect(byHabit['habit-auto']!.autoCompleteReason, 'Steps · 7412');
+          expect(byHabit['habit-manual']!.source, HabitCompletionSource.manual);
+          expect(byHabit['habit-manual']!.autoCompleteReason, isNull);
+        },
+      );
+
+      test(
         'getHabitCompletionRecordsInRange preserves write-recency tie breakers',
         () async {
           final habitId = habitFlossing.id;

@@ -64,13 +64,15 @@ mixin _JournalDbDataQueries on _$JournalDb, _JournalDbConfigFlags {
   }) async {
     final rows = await customSelect(
       r'''
-        SELECT habit_id, recorded_at, completion_type
+        SELECT habit_id, recorded_at, completion_type, source, auto_reason
         FROM (
           SELECT
             json_extract(serialized, '$.data.habitId') AS habit_id,
             json_extract(serialized, '$.meta.dateFrom') AS recorded_at,
             journal.date_from AS date_from,
             json_extract(serialized, '$.data.completionType') AS completion_type,
+            json_extract(serialized, '$.data.source') AS source,
+            json_extract(serialized, '$.data.autoCompleteReason') AS auto_reason,
             ROW_NUMBER() OVER (
               PARTITION BY
                 json_extract(serialized, '$.data.habitId'),
@@ -116,11 +118,24 @@ mixin _JournalDbDataQueries on _$JournalDb, _JournalDbConfigFlags {
           completionType: _habitCompletionTypeFromDb(
             row.readNullable<String>('completion_type'),
           ),
+          source: _habitCompletionSourceFromDb(
+            row.readNullable<String>('source'),
+          ),
+          autoCompleteReason: row.readNullable<String>('auto_reason'),
         ),
       );
     }
     return records;
   }
+
+  /// Maps the serialized enum name back to [HabitCompletionSource]; missing
+  /// (pre-field entries) and unknown values are manual, matching the
+  /// entity's own JSON default.
+  HabitCompletionSource _habitCompletionSourceFromDb(String? value) =>
+      HabitCompletionSource.values.firstWhere(
+        (source) => source.name == value,
+        orElse: () => HabitCompletionSource.manual,
+      );
 
   /// Maps the serialized enum name back to [HabitCompletionType].
   ///

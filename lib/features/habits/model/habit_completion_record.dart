@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 
-/// The three fields every habit-completion consumer actually reads.
+/// The few fields every habit-completion consumer actually reads.
 ///
 /// The habits controller and the heatmap both used to take
 /// `List<JournalEntity>` and then touch only `data.habitId`,
@@ -23,6 +23,8 @@ class HabitCompletionRecord {
     required this.habitId,
     required this.dateFrom,
     this.completionType,
+    this.source = HabitCompletionSource.manual,
+    this.autoCompleteReason,
   });
 
   /// `json_extract(serialized, '$.data.habitId')`.
@@ -49,19 +51,37 @@ class HabitCompletionRecord {
   /// heatmap's success numerator.
   final HabitCompletionType? completionType;
 
+  /// `json_extract(serialized, '$.data.source')` — who wrote the completion.
+  /// Missing or unrecognised values decode as manual, the value every entry
+  /// written before the field existed carries.
+  final HabitCompletionSource source;
+
+  /// `json_extract(serialized, '$.data.autoCompleteReason')` — for an auto
+  /// completion, the signal that fired, as the habit row shows it.
+  final String? autoCompleteReason;
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is HabitCompletionRecord &&
           other.habitId == habitId &&
           other.dateFrom == dateFrom &&
-          other.completionType == completionType;
+          other.completionType == completionType &&
+          other.source == source &&
+          other.autoCompleteReason == autoCompleteReason;
 
   @override
-  int get hashCode => Object.hash(habitId, dateFrom, completionType);
+  int get hashCode => Object.hash(
+    habitId,
+    dateFrom,
+    completionType,
+    source,
+    autoCompleteReason,
+  );
 
   @override
   String toString() =>
       'HabitCompletionRecord(habitId: $habitId, dateFrom: $dateFrom, '
-      'completionType: $completionType)';
+      'completionType: $completionType, source: $source, '
+      'autoCompleteReason: $autoCompleteReason)';
 }
