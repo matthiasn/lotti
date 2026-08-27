@@ -389,6 +389,25 @@ void main() {
       );
     });
 
+    test('a habit leaf resolves the habit name, falling back to its id', () {
+      when(() => entitiesCache.getHabitById('habit-known')).thenReturn(
+        habitFlossing.copyWith(id: 'habit-known', name: 'Floss'),
+      );
+      final verdict = HabitRuleVerdict(
+        satisfied: true,
+        leaves: [
+          leaf(const AutoCompleteRule.habit(habitId: 'habit-known')),
+          leaf(const AutoCompleteRule.habit(habitId: 'habit-gone')),
+          // A composite never carries a value; if one ever ends up in the
+          // leaf list it is skipped rather than named.
+          leaf(const AutoCompleteRule.and(rules: [])),
+          leaf(const AutoCompleteRule.or(rules: [])),
+          leaf(const AutoCompleteRule.multiple(rules: [], successes: 1)),
+        ],
+      );
+      expect(service.describeReason(verdict), 'Floss · habit-gone');
+    });
+
     test('an authored title wins over the resolved name', () {
       final verdict = HabitRuleVerdict(
         satisfied: true,
@@ -404,6 +423,26 @@ void main() {
       );
       expect(service.describeReason(verdict), 'H₂O · 1.5');
     });
+  });
+
+  test('a failing candidate lookup on an update is logged, not thrown', () {
+    stubHabits([waterHabit]);
+    run((async) {
+      service.start();
+      async.flushMicrotasks();
+      when(journalDb.getAllHabitDefinitions).thenThrow(StateError('closed'));
+      updateNotifications.notify({'water'});
+      async.elapse(const Duration(seconds: 3));
+      verify(
+        () => logger.error(
+          any(),
+          any<Object>(),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: 'autoCompletion.onUpdate',
+        ),
+      ).called(1);
+    });
+    expect(written, isEmpty);
   });
 
   test('a failing read is logged, not thrown, and later runs still work', () {

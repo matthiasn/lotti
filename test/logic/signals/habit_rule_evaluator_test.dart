@@ -253,6 +253,75 @@ void main() {
     });
   });
 
+  group('HabitLeafVerdict value semantics', () {
+    const rule = AutoCompleteRule.measurable(dataTypeId: 'water');
+    const a = HabitLeafVerdict(
+      rule: rule,
+      satisfied: true,
+      present: true,
+      value: 750,
+    );
+
+    test('equal fields are equal and hash alike', () {
+      const b = HabitLeafVerdict(
+        rule: rule,
+        satisfied: true,
+        present: true,
+        value: 750,
+      );
+      expect(a, b);
+      expect(a.hashCode, b.hashCode);
+    });
+
+    test('each field participates in equality', () {
+      expect(
+        a,
+        isNot(
+          const HabitLeafVerdict(
+            rule: rule,
+            satisfied: false,
+            present: true,
+            value: 750,
+          ),
+        ),
+      );
+      expect(
+        a,
+        isNot(
+          const HabitLeafVerdict(
+            rule: rule,
+            satisfied: true,
+            present: false,
+            value: 750,
+          ),
+        ),
+      );
+      expect(
+        a,
+        isNot(
+          const HabitLeafVerdict(rule: rule, satisfied: true, present: true),
+        ),
+      );
+      expect(
+        a,
+        isNot(
+          const HabitLeafVerdict(
+            rule: AutoCompleteRule.measurable(dataTypeId: 'coffee'),
+            satisfied: true,
+            present: true,
+            value: 750,
+          ),
+        ),
+      );
+    });
+
+    test('toString names the fields', () {
+      expect(a.toString(), contains('water'));
+      expect(a.toString(), contains('satisfied: true'));
+      expect(a.toString(), contains('value: 750'));
+    });
+  });
+
   group('composites', () {
     const a = AutoCompleteRule.measurable(dataTypeId: 'a');
     const b = AutoCompleteRule.measurable(dataTypeId: 'b');

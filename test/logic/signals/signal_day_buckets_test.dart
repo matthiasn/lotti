@@ -90,6 +90,13 @@ void main() {
       expect(byDay[day]!.length, 2);
     });
 
+    test('ignores entities that are not workouts', () {
+      expect(
+        bucketWorkoutsByDay([measurementEntity(DateTime(2026, 8, 8), 1)]),
+        isEmpty,
+      );
+    });
+
     test('values are minutes, kilometres and kcal', () {
       final workout = workoutEntity(
         DateTime(2026, 8, 8, 7),
@@ -138,6 +145,10 @@ void main() {
         habitCompletionEntity(DateTime(2026, 8, 4, 9), null),
       ]);
       expect(days, {day});
+    });
+
+    test('ignores entities that are not habit completions', () {
+      expect(habitSuccessDays([stepsEntity(DateTime(2026, 8, 8), 1)]), isEmpty);
     });
   });
 }
