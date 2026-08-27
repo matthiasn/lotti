@@ -287,7 +287,9 @@ flowchart TD
   pace feasibility, and coverage remain inspectable instead of disappearing
   into one overall score. The composite result controls goal health, while its
   children retain the evidence for which dimension carried or missed it.
-- **Borrowed data semantics.** Quantitative day totals follow the health
+- **Borrowed data semantics.** Leaf loading and day bucketing are delegated
+  to the neutral [signals logic](../architecture/signals.md) (`SignalReader`,
+  `signal_day_buckets.dart` in `lib/logic/signals/`), which habits share. Quantitative day totals follow the health
   charts' per-type aggregation (`cumulative_step_count` day total is the
   daily max), point-sample types keep the day's latest sample, habit days
   follow the habits UI's latest-completion-per-day collapse with

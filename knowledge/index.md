@@ -79,6 +79,7 @@ README, this is the way in:
 | [`lib/classes/`](../lib/classes) | [Domain concepts](domain/) | the entity unions; not every class |
 | [`lib/features/goals/`](../lib/features/goals) | [Goal agents — deterministic runtime](features/goals.md) | Phase A: signal reading, evaluation, registers, escalation; entities/vocabulary live in `lib/classes` |
 | [`lib/l10n/`](../lib/l10n) | [Localization](conventions/localization.md) | the ARB workflow |
+| [`lib/logic/signals/`](../lib/logic/signals) | [Signals — shared journal series](architecture/signals.md) | the whole directory: day bucketing, `SignalReader`, `HabitRuleEvaluator` |
 | [`lib/logic/`](../lib/logic) | [Persistence layer](architecture/persistence.md) | **almost nothing** — `PersistenceLogic` appears only as a node in the write-path diagram. The import paths and the rest of the tree are undocumented; read the code |
 | [`lib/themes/`](../lib/themes) | [Tokens and theming](features/design_system/tokens-and-theming.md) | **`theme_overrides.dart` only**, as the token-injection seam |
 | [`lib/utils/`](../lib/utils) | — | nothing; small helpers, read the code |

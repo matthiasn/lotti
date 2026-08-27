@@ -149,11 +149,13 @@ This is stated plainly rather than pretending the weekly/monthly UI exists.
 
 The same is true of the signal side. `HabitDefinition.autoCompleteRule` — the
 `AutoCompleteRule` tree of measurable / health / workout leaves under
-`and` / `or` / `multiple` — is persisted and synced but has **no evaluator and
-no editor yet**: only `lib/logic/habits/autocomplete_update.dart` rewrites it
-and `GoalCriterion.fromAutoCompleteRule` reads it as a goal seed. The habits
-rework makes that tree the habit ↔ signal association, and the model already
-carries the fields the engine will need:
+`and` / `or` / `multiple` — is persisted and synced and can be evaluated
+(`HabitRuleEvaluator` over a `SignalWindow`, in
+[signals](../architecture/signals.md)), but **nothing runs that evaluator
+yet and there is no editor**: only `lib/logic/habits/autocomplete_update.dart`
+rewrites the tree and `GoalCriterion.fromAutoCompleteRule` reads it as a goal
+seed. The habits rework makes that tree the habit ↔ signal association, and
+the model already carries the fields the engine will need:
 
 - `AutoCompleteRule.workout.valueType` (`WorkoutValueType?`) chooses which
   workout value a threshold applies to; `null` means "any workout of that

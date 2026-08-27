@@ -3,12 +3,12 @@ import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
-import 'package:lotti/features/dashboards/state/health_data.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
 import 'package:lotti/features/goals/model/goal_health_data_types.dart';
 import 'package:lotti/features/insights/logic/time_bucketing.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
+import 'package:lotti/logic/signals/signal_day_buckets.dart';
+import 'package:lotti/logic/signals/signal_reader.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/time_service.dart';
 
@@ -34,12 +34,14 @@ import 'package:lotti/services/time_service.dart';
 ///   union rules. Overlapping timers in one category count once, while an
 ///   optional daily time range clips the absolute spans in local time.
 class GoalSignalReader {
-  const GoalSignalReader({
-    required this._journalDb,
+  GoalSignalReader({
+    required JournalDb journalDb,
     this._timeService,
-  });
+  }) : _journalDb = journalDb,
+       _signals = SignalReader(journalDb: journalDb);
 
   final JournalDb _journalDb;
+  final SignalReader _signals;
   final TimeService? _timeService;
 
   /// Loads every signal series the [criteria] tree needs to be evaluated
@@ -75,20 +77,18 @@ class GoalSignalReader {
     final quantitative = <String, Map<DateTime, num>>{};
     final quantitativeObservations = <String, List<GoalMetricObservation>>{};
     for (final dataType in needs.quantitativeTypes) {
-      final queriedEntities = await _journalDb.getQuantitativeByType(
-        type: dataType,
-        rangeStart: rangeStart,
-        rangeEnd: rangeEnd,
-      );
       // The query intentionally reaches the next local midnight so completed
       // historical days retain their final hour. A live wake can receive a
       // row written after it captured [reference] while this await is in
-      // flight, though. Clip once here so deterministic aggregates and the
-      // parallel exact series describe the same snapshot.
-      final entities = queriedEntities
-          .where((entity) => !entity.meta.dateFrom.isAfter(reference))
-          .toList(growable: false);
-      quantitative[dataType] = _bucketQuantitative(entities, dataType);
+      // flight, though. Clip once (`notAfter`) so deterministic aggregates
+      // and the parallel exact series describe the same snapshot.
+      final entities = await _signals.quantitativeEntities(
+        type: dataType,
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+        notAfter: reference,
+      );
+      quantitative[dataType] = bucketQuantitativeByDay(entities, dataType);
       if (GoalHealthDataTypes.supported.contains(dataType)) {
         quantitativeObservations[dataType] = _rawQuantitativeObservations(
           entities,
@@ -131,23 +131,22 @@ class GoalSignalReader {
     final measurables = <String, Map<DateTime, num>>{};
     final measurableEntryDaysById = <String, DateTime>{};
     for (final dataTypeId in needs.measurableTypeIds) {
-      final entities = await _journalDb.getMeasurementsByType(
-        type: dataTypeId,
+      final entities = await _signals.measurableEntities(
+        dataTypeId: dataTypeId,
         rangeStart: rangeStart,
         rangeEnd: rangeEnd,
       );
-      final byDay = <DateTime, num>{};
       for (final entity in entities) {
         entity.maybeMap(
           measurement: (measurement) {
-            final day = GoalWindow.dayUtc(measurement.data.dateFrom);
-            byDay[day] = (byDay[day] ?? 0) + measurement.data.value;
-            measurableEntryDaysById[measurement.meta.id] = day;
+            measurableEntryDaysById[measurement.meta.id] = GoalWindow.dayUtc(
+              measurement.data.dateFrom,
+            );
           },
           orElse: () {},
         );
       }
-      measurables[dataTypeId] = byDay;
+      measurables[dataTypeId] = bucketMeasurableTotalsByDay(entities);
     }
 
     final categoryTime = <String, Map<DateTime, num>>{};
@@ -563,72 +562,14 @@ class GoalSignalReader {
           minute % Duration.minutesPerHour,
         );
 
-  /// One deterministic value per day, honoring the health config's
-  /// per-type aggregation:
-  ///
-  /// - `dailyMax` (cumulative counters like steps): the day's peak;
-  /// - `dailySum` / `dailyTimeSum`: the day's total (hours for time);
-  /// - `none` (point samples like weight or heart rate): the day's LATEST
-  ///   sample — `aggregateNone` returns every raw sample, and folding
-  ///   those into a day-keyed map would keep whichever the query order
-  ///   put last (the oldest, since results are newest-first);
-  /// - unknown types: a daily sum, never silence.
-  Map<DateTime, num> _bucketQuantitative(
-    List<JournalEntity> entities,
-    String dataType,
-  ) {
-    final byDay = <DateTime, num>{};
-    switch (healthTypes[dataType]?.aggregationType) {
-      case HealthAggregationType.none:
-        final multiplier = _displayMultiplier(dataType);
-        final latestByDay = <DateTime, ({DateTime from, String id})>{};
-        for (final entity in entities) {
-          entity.maybeMap(
-            quantitative: (quant) {
-              final day = GoalWindow.dayUtc(quant.data.dateFrom);
-              final current = latestByDay[day];
-              // Identical timestamps are broken by entity id: the query
-              // orders by date_from only, so relying on return order
-              // would let replicas pick different daily values from the
-              // same journal and diverge their registers.
-              final wins =
-                  current == null ||
-                  quant.data.dateFrom.isAfter(current.from) ||
-                  (quant.data.dateFrom.isAtSameMomentAs(current.from) &&
-                      quant.meta.id.compareTo(current.id) > 0);
-              if (wins) {
-                latestByDay[day] = (
-                  from: quant.data.dateFrom,
-                  id: quant.meta.id,
-                );
-                byDay[day] = quant.data.value * multiplier;
-              }
-            },
-            orElse: () {},
-          );
-        }
-      case HealthAggregationType.dailyMax:
-      case HealthAggregationType.dailySum:
-      case HealthAggregationType.dailyTimeSum:
-        for (final observation in aggregateByType(entities, dataType)) {
-          byDay[GoalWindow.dayUtc(observation.dateTime)] = observation.value;
-        }
-      case null:
-        for (final observation in aggregateDailySum(entities)) {
-          byDay[GoalWindow.dayUtc(observation.dateTime)] = observation.value;
-        }
-    }
-    return byDay;
-  }
-
   /// Preserves every quantitative journal sample before daily aggregation.
-  /// Values use the same display normalization as [_bucketQuantitative], and
+  /// Values use the same display normalization as [bucketQuantitativeByDay], and
   /// ordering matches its equal-timestamp entity-id tie break.
   List<GoalMetricObservation> _rawQuantitativeObservations(
     List<JournalEntity> entities,
     String dataType,
   ) {
-    final multiplier = _displayMultiplier(dataType);
+    final multiplier = quantitativeDisplayMultiplier(dataType);
     final observations = <GoalMetricObservation>[];
     for (final entity in entities) {
       entity.maybeMap(
@@ -650,11 +591,6 @@ class GoalSignalReader {
     });
     return observations;
   }
-
-  /// Matches health aggregation display units: stored percentage fractions
-  /// become whole percentages, while every other type keeps its native unit.
-  num _displayMultiplier(String dataType) =>
-      dataType.contains('PERCENTAGE') ? 100 : 1;
 
   /// Earliest day any leaf's period (or the short-term lookback, or the
   /// grace-period prior window) reaches back to, as a local date.
