@@ -560,9 +560,9 @@ Future<void> _pumpHabitEditor(
         localizationsDelegates: _localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         locale: manualScreenshotLocale,
-        home: RepaintBoundary(
+        home: const RepaintBoundary(
           key: screenshotBoundaryKey,
-          child: const AppCommandHost(
+          child: AppCommandHost(
             handlers: {},
             child: HabitEditorPage(),
           ),
