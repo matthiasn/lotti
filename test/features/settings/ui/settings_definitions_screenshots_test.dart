@@ -39,13 +39,13 @@ import 'package:lotti/features/dashboards/ui/pages/dashboards_list_page.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_survey_chart.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/habits/ui/pages/habit_editor_page.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/labels/ui/pages/label_details_page.dart';
 import 'package:lotti/features/labels/ui/pages/labels_list_page.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/dashboard_definition_page.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/dashboards_page.dart';
-import 'package:lotti/features/settings/ui/pages/habits/habit_details_page.dart';
 import 'package:lotti/features/settings/ui/pages/habits/habits_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurable_details_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurables_page.dart';
@@ -1038,10 +1038,13 @@ void main() {
           tester,
           device: device,
           brightness: brightness,
-          home: EditHabitPage(habitId: _rollCall.id),
+          home: HabitEditorPage(
+            habitId: _rollCall.id,
+            returnPath: '/settings/habits',
+          ),
         );
         expect(
-          find.text(_messages(tester).settingsHabitsDetailsLabel),
+          find.text(_messages(tester).habitEditorEditTitle),
           findsOneWidget,
         );
         expect(
@@ -1060,8 +1063,9 @@ void main() {
           subdir: _subdir,
         );
 
+        // The dates live in the editor's Settings section now.
         await tester.scrollUntilVisible(
-          find.text(_messages(tester).habitSectionScheduleTitle),
+          find.text(_messages(tester).habitEditorSectionSettings),
           300,
           scrollable: find.byType(Scrollable).first,
         );

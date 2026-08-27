@@ -19,6 +19,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/signals/habit_rule_evaluator.dart';
 import 'package:lotti/logic/signals/signal_window.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/date_time/datetime_field.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
@@ -361,6 +362,19 @@ void main() {
           habitDefinition: any(named: 'habitDefinition'),
         ),
       );
+    });
+
+    clockedWidgets('the edit action closes the sheet and opens the editor', (
+      tester,
+    ) async {
+      String? beamedTo;
+      beamToNamedOverride = (path) => beamedTo = path;
+      addTearDown(() => beamToNamedOverride = null);
+      await pumpSheet(tester);
+      await tester.tap(find.byKey(const ValueKey('habit-sheet-edit')));
+      await tester.pumpAndSettle();
+      expect(beamedTo, '/habits/edit/${habitFlossing.id}');
+      expect(find.byType(HabitCompletionSheet), findsNothing);
     });
 
     clockedWidgets('renders nothing for an unknown habit', (tester) async {

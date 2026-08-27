@@ -7183,12 +7183,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get habitCompletionStatusSkipped => 'Skipped';
 
   @override
-  String get habitDashboardHint => 'Select a dashboard';
-
-  @override
-  String get habitDashboardLabel => 'Dashboard (optional)';
-
-  @override
   String habitDayStatusSemantic(String habit, String status) {
     return '$habit, $status';
   }
@@ -7198,6 +7192,142 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get habitDeleteQuestion => 'Do you want to delete this habit?';
+
+  @override
+  String get habitEditorAddSignal => 'Add a signal';
+
+  @override
+  String get habitEditorCompositeAll => 'All signals';
+
+  @override
+  String get habitEditorCompositeAny => 'Any signal';
+
+  @override
+  String habitEditorCompositeAtLeast(int count, int total) {
+    return 'At least $count of $total';
+  }
+
+  @override
+  String get habitEditorCompositeChange => 'Change';
+
+  @override
+  String get habitEditorCompositeTitle => 'How this habit counts as done';
+
+  @override
+  String get habitEditorContinue => 'Continue';
+
+  @override
+  String get habitEditorCreateAction => 'Create habit';
+
+  @override
+  String get habitEditorCreatedToast => 'Habit created';
+
+  @override
+  String get habitEditorCreateTitle => 'New habit';
+
+  @override
+  String get habitEditorEditTitle => 'Edit habit';
+
+  @override
+  String get habitEditorExampleBloodPressure => 'measure blood pressure';
+
+  @override
+  String get habitEditorExampleMedication => 'take medication';
+
+  @override
+  String get habitEditorExamplesHint =>
+      'Tap an example to start from it — it also pre-selects the matching signal.';
+
+  @override
+  String get habitEditorExampleSteps => '6,000 steps';
+
+  @override
+  String get habitEditorExampleStrength => 'functional strength training';
+
+  @override
+  String get habitEditorManualRowCaption =>
+      'you record it from the Habits page';
+
+  @override
+  String get habitEditorManualRowTitle => 'I\'ll tick it myself';
+
+  @override
+  String get habitEditorNameHeading => 'What do you want to keep doing?';
+
+  @override
+  String get habitEditorNameSubtitle =>
+      'Name it your way — this is how it reads on your Habits page.';
+
+  @override
+  String get habitEditorNotifyCaption =>
+      'One notification per day when signals complete it';
+
+  @override
+  String get habitEditorNotifyTitle => 'Notify on auto-completion';
+
+  @override
+  String get habitEditorPickerEmpty => 'Nothing matches';
+
+  @override
+  String get habitEditorPickerHealth => 'Health data';
+
+  @override
+  String get habitEditorPickerMeasurables => 'Measurables';
+
+  @override
+  String get habitEditorPickerSearchHint =>
+      'Search measurables, health data, workouts';
+
+  @override
+  String get habitEditorPickerTitle => 'Add a signal';
+
+  @override
+  String get habitEditorPickerWorkouts => 'Workouts';
+
+  @override
+  String get habitEditorRuleAnyEntry => 'Any entry';
+
+  @override
+  String get habitEditorRuleAnyReading => 'Any reading';
+
+  @override
+  String get habitEditorRuleAnyWorkout => 'Any workout';
+
+  @override
+  String get habitEditorRuleDailyAtLeast => 'Daily ≥';
+
+  @override
+  String get habitEditorRuleDailyAtMost => 'Daily ≤';
+
+  @override
+  String get habitEditorRuleDistanceAtLeast => 'Distance ≥';
+
+  @override
+  String get habitEditorRuleDurationAtLeast => 'Duration ≥';
+
+  @override
+  String get habitEditorRuleEnergyAtLeast => 'Energy ≥';
+
+  @override
+  String get habitEditorRuleTotalAtLeast => 'Total ≥';
+
+  @override
+  String get habitEditorRuleTotalAtMost => 'Total ≤';
+
+  @override
+  String get habitEditorSectionSettings => 'Settings';
+
+  @override
+  String get habitEditorSignalsHeading => 'How do we know it\'s done?';
+
+  @override
+  String get habitEditorSignalsSubtitle =>
+      'Recorded data can check this habit off for you.';
+
+  @override
+  String habitEditorStepProgress(int step, int total) {
+    return 'Step $step of $total';
+  }
 
   @override
   String habitHeatmapDaySemantic(String date, int done, int total) {
@@ -7265,9 +7395,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get habitSectionOptionsTitle => 'Options';
-
-  @override
-  String get habitSectionScheduleTitle => 'Schedule';
 
   @override
   String get habitsFilterAll => 'all';
@@ -11283,9 +11410,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsHabitsDescriptionLabel => 'Description (optional)';
 
   @override
-  String get settingsHabitsDetailsLabel => 'Edit habit';
-
-  @override
   String get settingsHabitsEmptyState => 'No habits yet';
 
   @override
@@ -14047,12 +14171,6 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String get habitCategoryLabel => 'Category';
-
-  @override
-  String get habitDashboardHint => 'Select a dashboard';
-
-  @override
-  String get habitDashboardLabel => 'Dashboard (optional)';
 
   @override
   String get habitDeleteQuestion => 'Do you want to delete this habit?';

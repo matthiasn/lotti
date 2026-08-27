@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/beamer/locations/habits_location.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
@@ -18,6 +19,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/widgets/charts/habits/dashboard_habits_data.dart';
 
@@ -345,6 +347,8 @@ class _HabitActionRowState extends ConsumerState<HabitActionRow>
                 celebrate: celebrate,
                 history: widget.history,
                 onTapAdd: onTapAdd,
+                onEdit: () =>
+                    beamToNamed(HabitsLocation.editPath(widget.habitId)),
                 onQuickComplete: () => _recordQuickCompletion(
                   HabitCompletionType.success,
                   habitDefinition,
@@ -412,6 +416,7 @@ class _HabitCardBody extends StatelessWidget {
     required this.doneColor,
     required this.celebrate,
     required this.onTapAdd,
+    required this.onEdit,
     required this.onQuickComplete,
     this.history,
   });
@@ -429,6 +434,7 @@ class _HabitCardBody extends StatelessWidget {
   final bool celebrate;
   final Widget? history;
   final void Function({String? dateString}) onTapAdd;
+  final VoidCallback onEdit;
 
   /// One-tap "mark done today" — the trailing check records a success directly
   /// (the icon's universal meaning), instead of opening the detail dialog the
@@ -447,6 +453,8 @@ class _HabitCardBody extends StatelessWidget {
       color: dsCardSurface(context),
       child: InkWell(
         onTap: onTapAdd,
+        // Press-and-hold the body → the editor for this habit.
+        onLongPress: onEdit,
         child: DecoratedBox(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(tokens.radii.m),

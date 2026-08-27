@@ -7258,12 +7258,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get habitCompletionStatusSkipped => 'Übersprungen';
 
   @override
-  String get habitDashboardHint => 'Dashboard auswählen';
-
-  @override
-  String get habitDashboardLabel => 'Dashboard (optional)';
-
-  @override
   String habitDayStatusSemantic(String habit, String status) {
     return '$habit, $status';
   }
@@ -7273,6 +7267,145 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get habitDeleteQuestion => 'Möchtest du diese Gewohnheit löschen?';
+
+  @override
+  String get habitEditorAddSignal => 'Signal hinzufügen';
+
+  @override
+  String get habitEditorCompositeAll => 'Alle Signale';
+
+  @override
+  String get habitEditorCompositeAny => 'Ein beliebiges Signal';
+
+  @override
+  String habitEditorCompositeAtLeast(int count, int total) {
+    return 'Mindestens $count von $total';
+  }
+
+  @override
+  String get habitEditorCompositeChange => 'Ändern';
+
+  @override
+  String get habitEditorCompositeTitle =>
+      'Wann gilt die Gewohnheit als erledigt';
+
+  @override
+  String get habitEditorContinue => 'Weiter';
+
+  @override
+  String get habitEditorCreateAction => 'Gewohnheit anlegen';
+
+  @override
+  String get habitEditorCreatedToast => 'Gewohnheit angelegt';
+
+  @override
+  String get habitEditorCreateTitle => 'Neue Gewohnheit';
+
+  @override
+  String get habitEditorEditTitle => 'Gewohnheit bearbeiten';
+
+  @override
+  String get habitEditorExampleBloodPressure => 'Blutdruck messen';
+
+  @override
+  String get habitEditorExampleMedication => 'Medikamente nehmen';
+
+  @override
+  String get habitEditorExamplesHint =>
+      'Tippe auf ein Beispiel, um damit zu starten – das passende Signal wird gleich mit ausgewählt.';
+
+  @override
+  String get habitEditorExampleSteps => '6.000 Schritte';
+
+  @override
+  String get habitEditorExampleStrength => 'funktionelles Krafttraining';
+
+  @override
+  String get habitEditorManualRowCaption =>
+      'du erfasst es auf der Gewohnheiten-Seite';
+
+  @override
+  String get habitEditorManualRowTitle => 'Ich hake selbst ab';
+
+  @override
+  String get habitEditorNameHeading => 'Was willst du beibehalten?';
+
+  @override
+  String get habitEditorNameSubtitle =>
+      'Nenn es, wie du willst – so steht es auf deiner Gewohnheiten-Seite.';
+
+  @override
+  String get habitEditorNotifyCaption =>
+      'Eine Benachrichtigung pro Tag, wenn Signale sie abhaken';
+
+  @override
+  String get habitEditorNotifyTitle =>
+      'Bei automatischem Abhaken benachrichtigen';
+
+  @override
+  String get habitEditorPickerEmpty => 'Nichts gefunden';
+
+  @override
+  String get habitEditorPickerHealth => 'Gesundheitsdaten';
+
+  @override
+  String get habitEditorPickerMeasurables => 'Messgrößen';
+
+  @override
+  String get habitEditorPickerSearchHint =>
+      'Messgrößen, Gesundheitsdaten, Workouts suchen';
+
+  @override
+  String get habitEditorPickerTitle => 'Signal hinzufügen';
+
+  @override
+  String get habitEditorPickerWorkouts => 'Workouts';
+
+  @override
+  String get habitEditorRuleAnyEntry => 'Beliebiger Eintrag';
+
+  @override
+  String get habitEditorRuleAnyReading => 'Beliebiger Messwert';
+
+  @override
+  String get habitEditorRuleAnyWorkout => 'Beliebiges Workout';
+
+  @override
+  String get habitEditorRuleDailyAtLeast => 'Täglich ≥';
+
+  @override
+  String get habitEditorRuleDailyAtMost => 'Täglich ≤';
+
+  @override
+  String get habitEditorRuleDistanceAtLeast => 'Distanz ≥';
+
+  @override
+  String get habitEditorRuleDurationAtLeast => 'Dauer ≥';
+
+  @override
+  String get habitEditorRuleEnergyAtLeast => 'Energie ≥';
+
+  @override
+  String get habitEditorRuleTotalAtLeast => 'Summe ≥';
+
+  @override
+  String get habitEditorRuleTotalAtMost => 'Summe ≤';
+
+  @override
+  String get habitEditorSectionSettings => 'Einstellungen';
+
+  @override
+  String get habitEditorSignalsHeading =>
+      'Woran erkennen wir, dass es erledigt ist?';
+
+  @override
+  String get habitEditorSignalsSubtitle =>
+      'Erfasste Daten können diese Gewohnheit für dich abhaken.';
+
+  @override
+  String habitEditorStepProgress(int step, int total) {
+    return 'Schritt $step von $total';
+  }
 
   @override
   String habitHeatmapDaySemantic(String date, int done, int total) {
@@ -7340,9 +7473,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get habitSectionOptionsTitle => 'Optionen';
-
-  @override
-  String get habitSectionScheduleTitle => 'Zeitplan';
 
   @override
   String get habitsFilterAll => 'alle';
@@ -11415,9 +11545,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsHabitsDescriptionLabel => 'Beschreibung (optional)';
-
-  @override
-  String get settingsHabitsDetailsLabel => 'Gewohnheit bearbeiten';
 
   @override
   String get settingsHabitsEmptyState => 'Noch keine Gewohnheiten';

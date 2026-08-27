@@ -7287,12 +7287,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get habitCompletionStatusSkipped => 'Přeskočeno';
 
   @override
-  String get habitDashboardHint => 'Vyber panel';
-
-  @override
-  String get habitDashboardLabel => 'Panel (volitelné)';
-
-  @override
   String habitDayStatusSemantic(String habit, String status) {
     return '$habit, $status';
   }
@@ -7302,6 +7296,141 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get habitDeleteQuestion => 'Chceš tento návyk smazat?';
+
+  @override
+  String get habitEditorAddSignal => 'Přidat signál';
+
+  @override
+  String get habitEditorCompositeAll => 'Všechny signály';
+
+  @override
+  String get habitEditorCompositeAny => 'Libovolný signál';
+
+  @override
+  String habitEditorCompositeAtLeast(int count, int total) {
+    return 'Alespoň $count z $total';
+  }
+
+  @override
+  String get habitEditorCompositeChange => 'Změnit';
+
+  @override
+  String get habitEditorCompositeTitle => 'Kdy se návyk počítá jako splněný';
+
+  @override
+  String get habitEditorContinue => 'Pokračovat';
+
+  @override
+  String get habitEditorCreateAction => 'Vytvořit návyk';
+
+  @override
+  String get habitEditorCreatedToast => 'Návyk vytvořen';
+
+  @override
+  String get habitEditorCreateTitle => 'Nový návyk';
+
+  @override
+  String get habitEditorEditTitle => 'Upravit návyk';
+
+  @override
+  String get habitEditorExampleBloodPressure => 'změřit tlak';
+
+  @override
+  String get habitEditorExampleMedication => 'vzít si léky';
+
+  @override
+  String get habitEditorExamplesHint =>
+      'Klepni na příklad a začni od něj – rovnou se vybere i odpovídající signál.';
+
+  @override
+  String get habitEditorExampleSteps => '6 000 kroků';
+
+  @override
+  String get habitEditorExampleStrength => 'funkční silový trénink';
+
+  @override
+  String get habitEditorManualRowCaption => 'zaznamenáš to na stránce Návyky';
+
+  @override
+  String get habitEditorManualRowTitle => 'Odškrtnu si to sám/sama';
+
+  @override
+  String get habitEditorNameHeading => 'Co chceš dělat dál?';
+
+  @override
+  String get habitEditorNameSubtitle =>
+      'Pojmenuj to po svém – tak se to zobrazí na stránce Návyky.';
+
+  @override
+  String get habitEditorNotifyCaption =>
+      'Jedno upozornění denně, když ho signály splní';
+
+  @override
+  String get habitEditorNotifyTitle => 'Upozornit při automatickém odškrtnutí';
+
+  @override
+  String get habitEditorPickerEmpty => 'Nic nenalezeno';
+
+  @override
+  String get habitEditorPickerHealth => 'Zdravotní data';
+
+  @override
+  String get habitEditorPickerMeasurables => 'Měření';
+
+  @override
+  String get habitEditorPickerSearchHint =>
+      'Hledat měření, zdravotní data, tréninky';
+
+  @override
+  String get habitEditorPickerTitle => 'Přidat signál';
+
+  @override
+  String get habitEditorPickerWorkouts => 'Tréninky';
+
+  @override
+  String get habitEditorRuleAnyEntry => 'Jakýkoli záznam';
+
+  @override
+  String get habitEditorRuleAnyReading => 'Jakékoli měření';
+
+  @override
+  String get habitEditorRuleAnyWorkout => 'Jakýkoli trénink';
+
+  @override
+  String get habitEditorRuleDailyAtLeast => 'Denně ≥';
+
+  @override
+  String get habitEditorRuleDailyAtMost => 'Denně ≤';
+
+  @override
+  String get habitEditorRuleDistanceAtLeast => 'Vzdálenost ≥';
+
+  @override
+  String get habitEditorRuleDurationAtLeast => 'Doba ≥';
+
+  @override
+  String get habitEditorRuleEnergyAtLeast => 'Energie ≥';
+
+  @override
+  String get habitEditorRuleTotalAtLeast => 'Celkem ≥';
+
+  @override
+  String get habitEditorRuleTotalAtMost => 'Celkem ≤';
+
+  @override
+  String get habitEditorSectionSettings => 'Nastavení';
+
+  @override
+  String get habitEditorSignalsHeading => 'Jak poznáme, že je hotovo?';
+
+  @override
+  String get habitEditorSignalsSubtitle =>
+      'Zaznamenaná data mohou tento návyk odškrtnout za tebe.';
+
+  @override
+  String habitEditorStepProgress(int step, int total) {
+    return 'Krok $step z $total';
+  }
 
   @override
   String habitHeatmapDaySemantic(String date, int done, int total) {
@@ -7371,9 +7500,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get habitSectionOptionsTitle => 'Možnosti';
-
-  @override
-  String get habitSectionScheduleTitle => 'Rozvrh';
 
   @override
   String get habitsFilterAll => 'všechny';
@@ -11489,9 +11615,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsHabitsDescriptionLabel => 'Popis (volitelné)';
-
-  @override
-  String get settingsHabitsDetailsLabel => 'Upravit návyk';
 
   @override
   String get settingsHabitsEmptyState => 'Zatím žádné návyky';

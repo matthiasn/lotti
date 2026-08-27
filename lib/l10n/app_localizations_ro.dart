@@ -7337,12 +7337,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get habitCompletionStatusSkipped => 'Omis';
 
   @override
-  String get habitDashboardHint => 'Selectați un panou de bord';
-
-  @override
-  String get habitDashboardLabel => 'Panou de bord (opțional)';
-
-  @override
   String habitDayStatusSemantic(String habit, String status) {
     return '$habit, $status';
   }
@@ -7352,6 +7346,143 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get habitDeleteQuestion => 'Doriți să ștergeți acest obicei?';
+
+  @override
+  String get habitEditorAddSignal => 'Adăugați un semnal';
+
+  @override
+  String get habitEditorCompositeAll => 'Toate semnalele';
+
+  @override
+  String get habitEditorCompositeAny => 'Orice semnal';
+
+  @override
+  String habitEditorCompositeAtLeast(int count, int total) {
+    return 'Cel puțin $count din $total';
+  }
+
+  @override
+  String get habitEditorCompositeChange => 'Modificați';
+
+  @override
+  String get habitEditorCompositeTitle =>
+      'Când obiceiul contează ca îndeplinit';
+
+  @override
+  String get habitEditorContinue => 'Continuați';
+
+  @override
+  String get habitEditorCreateAction => 'Creați obiceiul';
+
+  @override
+  String get habitEditorCreatedToast => 'Obicei creat';
+
+  @override
+  String get habitEditorCreateTitle => 'Obicei nou';
+
+  @override
+  String get habitEditorEditTitle => 'Editați obiceiul';
+
+  @override
+  String get habitEditorExampleBloodPressure => 'măsurarea tensiunii';
+
+  @override
+  String get habitEditorExampleMedication => 'luarea medicamentelor';
+
+  @override
+  String get habitEditorExamplesHint =>
+      'Atingeți un exemplu pentru a porni de la el — se preselectează și semnalul potrivit.';
+
+  @override
+  String get habitEditorExampleSteps => '6.000 de pași';
+
+  @override
+  String get habitEditorExampleStrength => 'antrenament funcțional de forță';
+
+  @override
+  String get habitEditorManualRowCaption =>
+      'îl înregistrați din pagina Obiceiuri';
+
+  @override
+  String get habitEditorManualRowTitle => 'Îl bifez eu';
+
+  @override
+  String get habitEditorNameHeading => 'Ce doriți să continuați să faceți?';
+
+  @override
+  String get habitEditorNameSubtitle =>
+      'Numiți-l cum doriți — așa va apărea pe pagina Obiceiuri.';
+
+  @override
+  String get habitEditorNotifyCaption =>
+      'O notificare pe zi când semnalele îl completează';
+
+  @override
+  String get habitEditorNotifyTitle => 'Notificare la completarea automată';
+
+  @override
+  String get habitEditorPickerEmpty => 'Niciun rezultat';
+
+  @override
+  String get habitEditorPickerHealth => 'Date de sănătate';
+
+  @override
+  String get habitEditorPickerMeasurables => 'Măsurători';
+
+  @override
+  String get habitEditorPickerSearchHint =>
+      'Căutați măsurători, date de sănătate, antrenamente';
+
+  @override
+  String get habitEditorPickerTitle => 'Adăugați un semnal';
+
+  @override
+  String get habitEditorPickerWorkouts => 'Antrenamente';
+
+  @override
+  String get habitEditorRuleAnyEntry => 'Orice înregistrare';
+
+  @override
+  String get habitEditorRuleAnyReading => 'Orice măsurătoare';
+
+  @override
+  String get habitEditorRuleAnyWorkout => 'Orice antrenament';
+
+  @override
+  String get habitEditorRuleDailyAtLeast => 'Zilnic ≥';
+
+  @override
+  String get habitEditorRuleDailyAtMost => 'Zilnic ≤';
+
+  @override
+  String get habitEditorRuleDistanceAtLeast => 'Distanță ≥';
+
+  @override
+  String get habitEditorRuleDurationAtLeast => 'Durată ≥';
+
+  @override
+  String get habitEditorRuleEnergyAtLeast => 'Energie ≥';
+
+  @override
+  String get habitEditorRuleTotalAtLeast => 'Total ≥';
+
+  @override
+  String get habitEditorRuleTotalAtMost => 'Total ≤';
+
+  @override
+  String get habitEditorSectionSettings => 'Setări';
+
+  @override
+  String get habitEditorSignalsHeading => 'Cum știm că este îndeplinit?';
+
+  @override
+  String get habitEditorSignalsSubtitle =>
+      'Datele înregistrate pot bifa acest obicei pentru dvs.';
+
+  @override
+  String habitEditorStepProgress(int step, int total) {
+    return 'Pasul $step din $total';
+  }
 
   @override
   String habitHeatmapDaySemantic(String date, int done, int total) {
@@ -7428,9 +7559,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get habitSectionOptionsTitle => 'Opțiuni';
-
-  @override
-  String get habitSectionScheduleTitle => 'Programare';
 
   @override
   String get habitsFilterAll => 'toate';
@@ -11567,9 +11695,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsHabitsDescriptionLabel => 'Descriere (opțional)';
-
-  @override
-  String get settingsHabitsDetailsLabel => 'Editare obicei';
 
   @override
   String get settingsHabitsEmptyState => 'Niciun obicei încă';

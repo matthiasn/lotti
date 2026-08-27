@@ -17,6 +17,7 @@ import 'package:lotti/features/ai/ui/settings/provider/ai_provider_detail_page.d
 import 'package:lotti/features/categories/ui/pages/categories_list_page.dart';
 import 'package:lotti/features/categories/ui/pages/category_details_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/daily_os_settings_page.dart';
+import 'package:lotti/features/habits/ui/pages/habit_editor_page.dart';
 import 'package:lotti/features/keyboard/ui/keyboard_shortcuts_page.dart';
 import 'package:lotti/features/labels/ui/pages/label_details_page.dart';
 import 'package:lotti/features/labels/ui/pages/labels_list_page.dart';
@@ -32,8 +33,6 @@ import 'package:lotti/features/settings/ui/pages/dashboards/create_dashboard_pag
 import 'package:lotti/features/settings/ui/pages/dashboards/dashboard_definition_page.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/dashboards_page.dart';
 import 'package:lotti/features/settings/ui/pages/flags_page.dart';
-import 'package:lotti/features/settings/ui/pages/habits/habit_create_page.dart';
-import 'package:lotti/features/settings/ui/pages/habits/habit_details_page.dart';
 import 'package:lotti/features/settings/ui/pages/habits/habits_page.dart';
 import 'package:lotti/features/settings/ui/pages/health_import_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurable_create_page.dart';
@@ -1359,7 +1358,7 @@ void main() {
       expect(pages[2].popToNamed, '/settings/habits');
     });
 
-    test('buildPages builds EditHabitPage', () {
+    test('buildPages builds the habit editor for an existing habit', () {
       final routeInformation = RouteInformation(
         uri: Uri.parse('/settings/habits/by_id/habit-123'),
       );
@@ -1380,7 +1379,11 @@ void main() {
         'definitions',
       );
       expect(pages[2].child, isA<HabitsPage>());
-      expect(pages[3].child, isA<EditHabitPage>());
+      final editor = pages[3].child as HabitEditorPage;
+      expect(editor.habitId, 'habit-123');
+      expect(editor.isCreate, isFalse);
+      // Opened from settings, the editor returns to the settings list.
+      expect(editor.returnPath, '/settings/habits');
       // Beamer's default pop walks one URI segment at a time, which would
       // strand the route on the dead `/settings/habits/by_id` URI — the
       // list page would render with the bottom nav still hidden, costing
@@ -1388,7 +1391,7 @@ void main() {
       expect(pages[3].popToNamed, '/settings/habits');
     });
 
-    test('buildPages builds CreateHabitPage', () {
+    test('buildPages builds the habit editor in create mode', () {
       final routeInformation = RouteInformation(
         uri: Uri.parse('/settings/habits/create'),
       );
@@ -1406,7 +1409,9 @@ void main() {
         'definitions',
       );
       expect(pages[2].child, isA<HabitsPage>());
-      expect(pages[3].child, isA<CreateHabitPage>());
+      final editor = pages[3].child as HabitEditorPage;
+      expect(editor.isCreate, isTrue);
+      expect(editor.returnPath, '/settings/habits');
     });
 
     test('buildPages builds AgentSettingsPage', () {

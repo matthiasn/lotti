@@ -160,24 +160,54 @@ void main() {
       expect(state.dirty, isTrue);
     });
 
-    test('setDashboard updates dashboardId and marks dirty', () {
+    test('setAutoCompleteRule replaces the rule and marks dirty', () {
       const testHabitId = 'test-habit-id';
-      const dashboardId = 'new-dashboard-id';
+      const rule = AutoCompleteRule.measurable(dataTypeId: 'water', minimum: 1);
 
       final container = ProviderContainer();
       addTearDown(container.dispose);
-
       final controller = container.read(
         habitSettingsControllerProvider(testHabitId).notifier,
       );
 
-      controller.setDashboard(dashboardId);
+      controller.setAutoCompleteRule(rule);
+      expect(
+        container.read(habitSettingsControllerProvider(testHabitId)),
+        isA<HabitSettingsState>()
+            .having((s) => s.habitDefinition.autoCompleteRule, 'rule', rule)
+            .having((s) => s.dirty, 'dirty', isTrue),
+      );
 
+      controller.setAutoCompleteRule(null);
+      expect(
+        container
+            .read(habitSettingsControllerProvider(testHabitId))
+            .habitDefinition
+            .autoCompleteRule,
+        isNull,
+      );
+    });
+
+    test('setAutoCompleteNotify flips the flag and marks dirty', () {
+      const testHabitId = 'test-habit-id';
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final controller = container.read(
+        habitSettingsControllerProvider(testHabitId).notifier,
+      );
+      expect(
+        container
+            .read(habitSettingsControllerProvider(testHabitId))
+            .habitDefinition
+            .autoCompleteNotify,
+        isTrue,
+      );
+
+      controller.setAutoCompleteNotify(notify: false);
       final state = container.read(
         habitSettingsControllerProvider(testHabitId),
       );
-
-      expect(state.habitDefinition.dashboardId, equals(dashboardId));
+      expect(state.habitDefinition.autoCompleteNotify, isFalse);
       expect(state.dirty, isTrue);
     });
 

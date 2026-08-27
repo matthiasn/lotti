@@ -22,14 +22,12 @@ abstract class HabitSettingsState with _$HabitSettingsState {
     required HabitDefinition habitDefinition,
     required bool dirty,
     required GlobalKey<FormBuilderState> formKey,
-    required AutoCompleteRule? autoCompleteRule,
   }) = _HabitSettingsState;
 
   factory HabitSettingsState.initial(String habitId) => HabitSettingsState(
     habitDefinition: _createEmptyHabitDefinition(habitId),
     dirty: false,
     formKey: GlobalKey<FormBuilderState>(),
-    autoCompleteRule: null,
   );
 }
 
@@ -42,14 +40,6 @@ final habitByIdProvider = StreamProvider.autoDispose
         return repository.watchHabitById(habitId);
       },
     );
-
-/// Stream provider for dashboards used in habit settings.
-/// Uses the repository for data access.
-final habitDashboardsProvider =
-    StreamProvider.autoDispose<List<DashboardDefinition>>((ref) {
-      final repository = ref.watch(habitsRepositoryProvider);
-      return repository.watchDashboards();
-    });
 
 /// Creates a new empty HabitDefinition for the create flow.
 HabitDefinition _createEmptyHabitDefinition(String habitId) {
@@ -125,11 +115,22 @@ class HabitSettingsController extends Notifier<HabitSettingsState> {
     );
   }
 
-  /// Sets the dashboard ID for the habit.
-  void setDashboard(String? dashboardId) {
+  /// Replaces the habit's signal rule (the association the editor's signal
+  /// card produces); `null` means the habit is ticked off by hand only.
+  void setAutoCompleteRule(AutoCompleteRule? rule) {
     state = state.copyWith(
       dirty: true,
-      habitDefinition: state.habitDefinition.copyWith(dashboardId: dashboardId),
+      habitDefinition: state.habitDefinition.copyWith(autoCompleteRule: rule),
+    );
+  }
+
+  /// Whether an automatic completion raises a notification.
+  void setAutoCompleteNotify({required bool notify}) {
+    state = state.copyWith(
+      dirty: true,
+      habitDefinition: state.habitDefinition.copyWith(
+        autoCompleteNotify: notify,
+      ),
     );
   }
 

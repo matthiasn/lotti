@@ -32,21 +32,6 @@ void main() {
     habitSchedule: const HabitSchedule.daily(requiredCompletions: 1),
   );
 
-  final testDashboard = DashboardDefinition(
-    id: 'dashboard-1',
-    name: 'Test Dashboard',
-    description: 'Test dashboard',
-    version: '1.0',
-    createdAt: DateTime(2025),
-    updatedAt: DateTime(2025),
-    vectorClock: null,
-    private: false,
-    active: true,
-    reviewAt: DateTime(2025),
-    lastReviewed: DateTime(2025),
-    items: [],
-  );
-
   setUp(() {
     mockJournalDb = MockJournalDb();
     mockUpdateNotifications = MockUpdateNotifications();
@@ -272,21 +257,6 @@ void main() {
 
         expect(result, 1);
         verify(() => mockJournalDb.upsertHabitDefinition(testHabit)).called(1);
-      });
-    });
-
-    group('watchDashboards', () {
-      test('emits dashboards from initial fetch', () async {
-        when(
-          mockJournalDb.getAllDashboards,
-        ).thenAnswer((_) async => [testDashboard]);
-
-        final result = await repository.watchDashboards().first;
-
-        expect(result, hasLength(1));
-        expect(result.first.id, 'dashboard-1');
-
-        verify(mockJournalDb.getAllDashboards).called(1);
       });
     });
 

@@ -12,15 +12,20 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/dashboards/state/measurables_controller.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/habits/model/habit_completion_record.dart';
+import 'package:lotti/features/habits/state/habit_editor_providers.dart';
 import 'package:lotti/features/habits/state/habit_signal_status_controller.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
 import 'package:lotti/features/habits/state/heatmap/habit_heatmap_controller.dart';
 import 'package:lotti/features/habits/state/heatmap/habit_heatmap_data.dart';
 import 'package:lotti/features/habits/ui/habits_page.dart';
+import 'package:lotti/features/habits/ui/pages/habit_editor_page.dart';
 import 'package:lotti/features/habits/ui/sheets/habit_completion_sheet.dart';
+import 'package:lotti/features/habits/ui/widgets/editor/habit_signal_card.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_signal_row.dart';
+import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/settings/state/celebration_preferences_controller.dart';
+import 'package:lotti/features/settings/ui/pages/measurables/measurables_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -41,8 +46,11 @@ String _t(String en, String de) => manualScreenshotText(en: en, de: de);
 
 AppLocalizations _messages(WidgetTester tester) {
   final habitsPage = find.byType(HabitsTabPage);
+  final editor = find.byType(HabitEditorPage);
   final context = habitsPage.evaluate().isNotEmpty
       ? tester.element(habitsPage)
+      : editor.evaluate().isNotEmpty
+      ? tester.element(editor)
       : tester.element(find.byType(HabitCompletionSheet));
   return AppLocalizations.of(context)!;
 }
@@ -276,6 +284,38 @@ void main() {
         );
       });
 
+      testWidgets('$viewport habit editor step 1 — $theme', (tester) async {
+        await _pumpHabitEditor(tester, device: device, brightness: brightness);
+        expect(
+          find.text(_messages(tester).habitEditorNameHeading),
+          findsOneWidget,
+        );
+        await captureScreenshot(
+          tester,
+          'habit_editor_step1_${viewport}_$theme',
+          subdir: 'manual',
+        );
+      });
+
+      testWidgets('$viewport habit editor step 2 — $theme', (tester) async {
+        await _pumpHabitEditor(
+          tester,
+          device: device,
+          brightness: brightness,
+          signalsStep: true,
+        );
+        expect(
+          find.text(_messages(tester).habitEditorSignalsHeading),
+          findsOneWidget,
+        );
+        expect(find.byType(HabitSignalCard), findsOneWidget);
+        await captureScreenshot(
+          tester,
+          'habit_editor_step2_${viewport}_$theme',
+          subdir: 'manual',
+        );
+      });
+
       testWidgets('$viewport habit completion — $theme', (tester) async {
         await _pumpHabitCompletion(
           tester,
@@ -493,3 +533,47 @@ HabitHeatmapData _heatmapData() {
 }
 
 String _ymd(DateTime date) => date.toIso8601String().substring(0, 10);
+
+/// The create wizard under the fixed clock: step 1 as it opens, or step 2
+/// after the "6,000 steps" example filled the name and pre-checked Steps.
+Future<void> _pumpHabitEditor(
+  WidgetTester tester, {
+  required ScreenshotDevice device,
+  required Brightness brightness,
+  bool signalsStep = false,
+}) => withClock(Clock.fixed(_captureNow), () async {
+  applyScreenshotDevice(tester, device);
+  final theme = _theme(brightness);
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        measurableDataTypesStreamProvider.overrideWith(
+          (ref) => Stream.value([_krillRations]),
+        ),
+        workoutTypesProvider.overrideWith(
+          (ref) async => ['functionalStrengthTraining', 'running'],
+        ),
+      ],
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: theme,
+        localizationsDelegates: _localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        locale: manualScreenshotLocale,
+        home: RepaintBoundary(
+          key: screenshotBoundaryKey,
+          child: AppCommandHost(
+            handlers: const {},
+            child: HabitEditorPage(),
+          ),
+        ),
+      ),
+    ),
+  );
+  await settleFrames(tester, 6);
+  if (!signalsStep) return;
+  await tester.tap(find.byKey(const ValueKey('habit-editor-example-1')));
+  await settleFrames(tester, 2);
+  await tester.tap(find.byKey(const ValueKey('habit-editor-primary')));
+  await settleFrames(tester, 4);
+});
