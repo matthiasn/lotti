@@ -16,6 +16,10 @@ and keeps the policy matrix the scenarios are derived from.
 
 ## Two tiers
 
+(A third, orthogonal eval — does compacting years of check-ins change the
+agent's conclusions? — has its own run book: [compaction.md](compaction.md).
+Its numbers are not comparable with either tier below.)
+
 There are two evals here, and they answer different questions. Their numbers
 are **not comparable** — do not put them in one table.
 

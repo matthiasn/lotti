@@ -68,6 +68,14 @@ sources:
     resource: ../../lib/features/goals/service/goal_checkin_compactor.dart
     title: GoalCheckInCompactor — bounded user-voice distillation
     last_modified: 2026-08-18
+  - id: checkin-compaction-strategy
+    resource: ../../lib/features/goals/logic/goal_checkin_compaction_strategy.dart
+    title: GoalCheckInCompactionStrategy — the seam the compaction eval measures across
+    last_modified: 2026-08-27
+  - id: compaction-eval
+    resource: ../../docs/evaluations/goal_agent_models/compaction.md
+    title: Check-in compaction evaluation — full vs truncate vs hierarchical
+    last_modified: 2026-08-27
   - id: goal-agent-evals
     resource: ../../docs/evaluations/goal_agent_models/README.md
     title: Goal-agent model evaluation run book and results
@@ -1478,8 +1486,43 @@ Key pieces:
 - `lib/features/goals/logic/goal_user_voice.dart` — selection under a token
   budget via `planCompaction`; the oldest fall away first and the newest is
   always kept.
+- `lib/features/goals/logic/goal_checkin_compaction_strategy.dart` — the
+  seam above that selection: a `GoalCheckInCompactionStrategy` turns the
+  summary list into `userVoice` entries. `TruncatingCheckInCompaction` wraps
+  the shipped selection; `FullContextCheckInCompaction` is the unbounded
+  oracle; `HierarchicalCheckInCompaction` keeps the same verbatim tail and
+  folds older check-ins into calendar-aligned digests — monthly inside six
+  months, quarterly inside eighteen, yearly beyond — through a
+  `GoalCheckInDigestWriter`, with a per-layer word cap that falls as the
+  span ages, so the block is bounded by the number of live layers rather
+  than by the goal's age.
+  Only the truncating strategy is wired into the wake today; the others
+  exist for the evaluation below, and a persisted-digest implementation
+  slots in behind the same interface.
 - `lib/features/goals/service/goal_mirror_service.dart` — keeps the
   journal-side `GoalEntry` in step with the agent-side spec chain.
+
+### Compaction layers and their evaluation
+
+```mermaid
+flowchart LR
+  T["transcript"] -- "Layer 1: GoalCheckInCompactor<br/>≤500 tokens, per check-in" --> S["GoalCheckInSummary"]
+  S -- "verbatim tail<br/>1,200 tokens (today)" --> V["userVoice: recent"]
+  S -. "Layer 2: monthly digest<br/>inside 6 months, ≤120 words<br/>(eval-side today)" .-> M["userVoice: month"]
+  S -. "Layer 3: quarterly digest<br/>6–18 months, ≤80 words" .-> Q["userVoice: quarter"]
+  S -. "Layer 4: yearly digest<br/>beyond 18 months, ≤80 words" .-> Y["userVoice: year"]
+```
+
+Today's selection is truncation: the 1,200-token slice holds roughly the
+last three months, and a two-year goal's redefinition, injury or best-ever
+streak is invisible to the wake. Whether hierarchical digests close that gap
+without inventing history is a measured question, not an assumed one —
+[the compaction evaluation](../../docs/evaluations/goal_agent_models/compaction.md)
+runs five seeded two-year goals through all three strategies on the real
+renderer and contract, and scores status accuracy, dated fact recall by age,
+recommendation agreement with the full-context arm, and the token growth
+curve. The pass bar is written down there; the production digest layer is
+not to be wired in before it is met.
 
 Invariants worth not breaking:
 
