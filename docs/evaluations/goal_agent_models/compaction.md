@@ -17,12 +17,15 @@ strategy reads the same `GoalCheckInSummary` list and fills the same
 | --- | --- | --- |
 | `full` | every check-in, verbatim, unbounded | the oracle: what a coach who read everything would conclude |
 | `truncate` | the newest check-ins that fit 1,200 tokens (`goalUserVoiceEntries`) | **what ships today** — about the last three months |
-| `hierarchical` | recent tail verbatim (same 1,200 tokens); folded history as calendar digests — monthly inside 6 months (≤120 words), quarterly inside 18 months (≤80), yearly beyond (≤80) | the candidate |
+| `hierarchical` | recent tail verbatim (same 1,200 tokens); folded history as calendar digests — monthly inside 6 months (≤120 words), quarterly inside 18 months (≤80), yearly inside 36 months (≤80), one "earlier" span beyond (≤80) | the candidate |
 
 The hierarchical arm's digests are written by `CachedLlmDigestWriter`
 (one call per span with the layer's word limit in the prompt, temperature 0,
-cached on disk by content). The yearly layer is what bounds the total: the
-first run below, without it, grew ~220 tokens per quarter for ever. The
+cached on disk by content) — the eval-side twin of the production
+`GoalCheckInDigestService`, which persists digests as agent messages and
+runs the same prompt. The yearly layer is what bounds the total: the first
+run below, without it, grew ~220 tokens per quarter for ever. Since the
+third run met the pass bar, the wake uses the hierarchical strategy. The
 production implementation will persist digests as agent messages; the
 strategy interface is what it plugs into.
 

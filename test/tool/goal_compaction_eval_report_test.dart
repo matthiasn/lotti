@@ -297,6 +297,55 @@ void main() {
       },
     );
 
+    test('a scores file missing a packet case is refused', () {
+      final partial = scores(
+        truncateGrades: ['correct', 'correct', 'correct', 'correct'],
+        hierarchicalGrades: ['correct', 'correct', 'correct', 'correct'],
+      );
+      (partial['cases'] as List).removeWhere(
+        (c) => (c as Map)['strategyId'] == 'hierarchical',
+      );
+      expect(
+        () => buildGoalCompactionEvalReport(
+          packet: _packet(cases),
+          scores: partial,
+        ),
+        throwsA(
+          isA<StateError>().having(
+            (e) => e.message,
+            'message',
+            contains('stall|hierarchical|1 has no scores case'),
+          ),
+        ),
+      );
+    });
+
+    test('a scores case missing a probe grade is refused', () {
+      final partial = scores(
+        truncateGrades: ['correct', 'correct', 'correct', 'correct'],
+        hierarchicalGrades: ['correct', 'correct', 'correct', 'correct'],
+      );
+      final hier =
+          (partial['cases'] as List).firstWhere(
+                (c) => (c as Map)['strategyId'] == 'hierarchical',
+              )
+              as Map<String, dynamic>;
+      (hier['probes'] as List).removeWhere((p) => (p as Map)['id'] == 'b');
+      expect(
+        () => buildGoalCompactionEvalReport(
+          packet: _packet(cases),
+          scores: partial,
+        ),
+        throwsA(
+          isA<StateError>().having(
+            (e) => e.message,
+            'message',
+            contains('missing probe(s): b'),
+          ),
+        ),
+      );
+    });
+
     test('a scores case with no packet counterpart is refused', () {
       final stray = scores(
         truncateGrades: ['correct', 'correct', 'correct', 'correct'],

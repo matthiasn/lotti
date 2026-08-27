@@ -1492,13 +1492,22 @@ Key pieces:
   the shipped selection; `FullContextCheckInCompaction` is the unbounded
   oracle; `HierarchicalCheckInCompaction` keeps the same verbatim tail and
   folds older check-ins into calendar-aligned digests — monthly inside six
-  months, quarterly inside eighteen, yearly beyond — through a
+  months, quarterly inside eighteen, yearly inside thirty-six, one
+  "earlier" span beyond — through a
   `GoalCheckInDigestWriter`, with a per-layer word cap that falls as the
   span ages, so the block is bounded by the number of live layers rather
-  than by the goal's age.
-  Only the truncating strategy is wired into the wake today; the others
-  exist for the evaluation below, and a persisted-digest implementation
-  slots in behind the same interface.
+  than by the goal's age. This is what the wake uses when a
+  `GoalCheckInDigestService` is wired (it is, via
+  `goalCheckInDigestServiceProvider`); without one, or when digesting fails,
+  the wake falls back to the truncating selection.
+- `lib/features/goals/service/goal_checkin_digest_service.dart` — writes
+  and stores one digest per calendar span as an agent action message keyed
+  `(agentId, periodLabel)`, with a source key over the span's members so a
+  late-synced or re-transcribed check-in rewrites its span. Inference runs
+  only on wakes that also compact check-ins (never interactive turns), at
+  most `goalCheckInDigestsPerWake` spans per wake; other spans read their
+  stored digest or a short placeholder naming what is not yet digested.
+  The full-context strategy exists for the evaluation only.
 - `lib/features/goals/service/goal_mirror_service.dart` — keeps the
   journal-side `GoalEntry` in step with the agent-side spec chain.
 
@@ -1508,21 +1517,24 @@ Key pieces:
 flowchart LR
   T["transcript"] -- "Layer 1: GoalCheckInCompactor<br/>≤500 tokens, per check-in" --> S["GoalCheckInSummary"]
   S -- "verbatim tail<br/>1,200 tokens (today)" --> V["userVoice: recent"]
-  S -. "Layer 2: monthly digest<br/>inside 6 months, ≤120 words<br/>(eval-side today)" .-> M["userVoice: month"]
+  S -. "Layer 2: monthly digest<br/>inside 6 months, ≤120 words" .-> M["userVoice: month"]
   S -. "Layer 3: quarterly digest<br/>6–18 months, ≤80 words" .-> Q["userVoice: quarter"]
-  S -. "Layer 4: yearly digest<br/>beyond 18 months, ≤80 words" .-> Y["userVoice: year"]
+  S -. "Layer 4: yearly digest<br/>18–36 months, ≤80 words" .-> Y["userVoice: year"]
+  S -. "Layer 5: one earlier span<br/>beyond 36 months, ≤80 words" .-> E["userVoice: earlier"]
 ```
 
-Today's selection is truncation: the 1,200-token slice holds roughly the
-last three months, and a two-year goal's redefinition, injury or best-ever
-streak is invisible to the wake. Whether hierarchical digests close that gap
-without inventing history is a measured question, not an assumed one —
+Before the digest layers, the selection was truncation: the 1,200-token
+slice holds roughly the last three months, and a two-year goal's
+redefinition, injury or best-ever streak was invisible to the wake. Whether
+hierarchical digests close that gap without inventing history was a measured
+question, not an assumed one —
 [the compaction evaluation](../../docs/evaluations/goal_agent_models/compaction.md)
 runs five seeded two-year goals through all three strategies on the real
 renderer and contract, and scores status accuracy, dated fact recall by age,
 recommendation agreement with the full-context arm, and the token growth
-curve. The pass bar is written down there; the production digest layer is
-not to be wired in before it is met.
+curve. The pass bar is written down there and was met before the digest
+layer was wired in (third run, 2026-08-27); re-run it as the gate for any
+change to the layering or the digest prompt.
 
 Invariants worth not breaking:
 

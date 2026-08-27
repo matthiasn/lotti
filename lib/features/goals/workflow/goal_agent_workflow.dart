@@ -33,6 +33,7 @@ import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/features/goals/evaluation/goal_evaluation.dart';
 import 'package:lotti/features/goals/logic/goal_aggregate_rounding.dart';
+import 'package:lotti/features/goals/logic/goal_checkin_compaction_strategy.dart';
 import 'package:lotti/features/goals/logic/goal_user_voice.dart';
 import 'package:lotti/features/goals/model/goal_checkin_source.dart';
 import 'package:lotti/features/goals/model/goal_checkin_summary.dart';
@@ -40,6 +41,7 @@ import 'package:lotti/features/goals/runtime/goal_agent_phase_a.dart';
 import 'package:lotti/features/goals/runtime/goal_wake_facts.dart';
 import 'package:lotti/features/goals/service/goal_chat_history_service.dart';
 import 'package:lotti/features/goals/service/goal_checkin_compactor.dart';
+import 'package:lotti/features/goals/service/goal_checkin_digest_service.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_strategy.dart';
 import 'package:lotti/features/goals/workflow/goal_facts_renderer.dart';
@@ -111,6 +113,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
     this._factsRenderer = const GoalFactsRenderer(),
     this._checkInCompactor,
     this._checkInSourceReader,
+    this._checkInDigestService,
     this._domainLogger,
   }) : _chatHistoryService =
            chatHistoryService ?? GoalChatHistoryService(_repository);
@@ -133,6 +136,10 @@ class GoalAgentWorkflow with AgentErrorLogging {
   /// imported so this headless workflow keeps no dependency on the journal
   /// stack.
   final GoalCheckInSourceReader? _checkInSourceReader;
+
+  /// Writes the span digests the hierarchical compaction reads. Null keeps
+  /// the truncating selection: the recent tail only.
+  final GoalCheckInDigestService? _checkInDigestService;
   final DomainLogger? _domainLogger;
 
   @override
@@ -428,7 +435,22 @@ class GoalAgentWorkflow with AgentErrorLogging {
     // this wake its check-ins, never the wake itself — the deterministic FACTS
     // are what the agent is actually accountable to, and they are already
     // assembled.
-    final userVoice = goalUserVoiceEntries(checkInSummaries);
+    //
+    // Hierarchical when a digest service is wired: the recent tail verbatim,
+    // older spans as stored digests, so a two-year goal's redefinition or
+    // injury stays in view (the compaction evaluation is the gate for this:
+    // docs/evaluations/goal_agent_models/compaction.md). Digests are written
+    // on the same wakes that compact check-ins — never on an interactive
+    // turn — and a failure anywhere falls back to the truncating selection.
+    final userVoice = await _userVoiceEntries(
+      agentId: agentId,
+      summaries: checkInSummaries,
+      goalStatement: version.statement,
+      model: resolved.modelId,
+      provider: resolved.provider,
+      allowInference: pendingUserMessage == null,
+      reference: reference,
+    );
 
     final renderedFacts = _factsRenderer.render(
       version: version,
@@ -1198,6 +1220,42 @@ class GoalAgentWorkflow with AgentErrorLogging {
       for (final summary in stored)
         if (live.containsKey(summary.sourceEntryId)) summary,
     ];
+  }
+
+  Future<List<Map<String, Object?>>> _userVoiceEntries({
+    required String agentId,
+    required List<GoalCheckInSummary> summaries,
+    required String goalStatement,
+    required String model,
+    required AiConfigInferenceProvider provider,
+    required bool allowInference,
+    required DateTime reference,
+  }) async {
+    final digestService = _checkInDigestService;
+    if (digestService == null || summaries.isEmpty) {
+      return goalUserVoiceEntries(summaries);
+    }
+    try {
+      final context = await HierarchicalCheckInCompaction(
+        digestWriter: digestService.forWake(
+          agentId: agentId,
+          goalStatement: goalStatement,
+          model: model,
+          provider: provider,
+          allowInference: allowInference,
+        ),
+      ).build(summaries, reference: reference);
+      return context.entries;
+    } catch (error, stackTrace) {
+      _domainLogger?.error(
+        LogDomain.agentWorkflow,
+        error,
+        subDomain: 'goalCheckInDigest',
+        message: 'hierarchical user voice failed; falling back to the tail',
+        stackTrace: stackTrace,
+      );
+      return goalUserVoiceEntries(summaries);
+    }
   }
 
   /// The compacted check-ins and retry failures stored for this goal.

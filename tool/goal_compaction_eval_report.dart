@@ -226,6 +226,7 @@ String buildGoalCompactionEvalReport({
     final probesByCase = <String, Map<String, dynamic>>{
       for (final c in cases) _caseKey(c, withStrategy: true): c,
     };
+    _requireCompleteScores(cases, scoreCases);
     buffer
       ..writeln()
       ..writeln('## Judged metrics (judge: ${scores['judge']})')
@@ -445,6 +446,42 @@ String buildGoalCompactionEvalReport({
     }
   }
   return buffer.toString();
+}
+
+/// A verdict over a subset would be a verdict over the judge's selection.
+/// Every packet case must be scored, and every probe of every case graded,
+/// before any rate is computed.
+void _requireCompleteScores(
+  List<Map<String, dynamic>> cases,
+  List<Map<String, dynamic>> scoreCases,
+) {
+  final scored = <String, Map<String, dynamic>>{
+    for (final s in scoreCases) _caseKey(s, withStrategy: true): s,
+  };
+  for (final c in cases) {
+    final key = _caseKey(c, withStrategy: true);
+    final s = scored[key];
+    if (s == null) {
+      throw StateError('packet case $key has no scores case');
+    }
+    final expected = {
+      for (final p in (c['probes'] as List).cast<Map<String, dynamic>>())
+        p['id'] as String,
+    };
+    final graded = {
+      for (final p in (s['probes'] as List).cast<Map<String, dynamic>>())
+        p['id'] as String,
+    };
+    final missing = expected.difference(graded);
+    if (missing.isNotEmpty) {
+      throw StateError(
+        'scores case $key is missing probe(s): ${missing.join(', ')}',
+      );
+    }
+    if (s['recommendation'] == null) {
+      throw StateError('scores case $key has no recommendation verdict');
+    }
+  }
 }
 
 String _caseKey(Map<String, dynamic> c, {bool withStrategy = false}) =>

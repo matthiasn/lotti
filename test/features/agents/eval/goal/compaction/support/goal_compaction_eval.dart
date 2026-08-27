@@ -86,7 +86,16 @@ class CachedLlmDigestWriter implements GoalCheckInDigestWriter {
   @override
   Future<String> write(GoalCheckInDigestRequest request) async {
     final prompt = _prompt(request);
-    final key = sha256.convert(utf8.encode('$modelId\n$prompt')).toString();
+    // Every input that shapes the digest: a provider or prompt change must
+    // miss the cache rather than silently reuse another backend's output.
+    final key = sha256
+        .convert(
+          utf8.encode(
+            '${provider.inferenceProviderType.name}\n${provider.baseUrl}\n'
+            '$modelId\n$temperature\n$_digestSystemMessage\n$prompt',
+          ),
+        )
+        .toString();
     final file = File('${cacheDirectory.path}/$key.json');
     if (file.existsSync()) {
       cacheHits++;
@@ -495,7 +504,16 @@ class GoalCompactionEvalRunner {
         // digest cache for the spans the full-horizon wake will fold.
         for (final months in horizons) {
           final prefix = fixture.upTo(months);
-          final context = await strategy.build(prefix, reference: _reference);
+          // Dated at its own horizon: a six-month-old goal is compacted as
+          // seen from its sixth month, not from two years on, or the early
+          // history would be folded into layers it had not yet aged into.
+          final context = await strategy.build(
+            prefix,
+            reference: DateTime.utc(
+              fixture.startDate.year,
+              fixture.startDate.month + months,
+            ),
+          );
           growth.add(
             GoalCompactionGrowthPoint(
               fixtureId: fixture.id,

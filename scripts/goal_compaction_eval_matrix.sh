@@ -35,6 +35,7 @@ LOTTI_GOAL_COMPACTION_EVAL_LIVE=1 \
 GOAL_COMPACTION_EVAL_SAMPLES="$SAMPLES" \
 GOAL_COMPACTION_EVAL_PACKET="$OUT_DIR/packet.json" \
 fvm flutter test "$TEST_PATH" --tags eval-live 2>&1 | tee "$OUT_DIR/run.log" | grep -E '^\[compaction-eval\]|All tests passed|Some tests failed'
+TEST_STATUS=${PIPESTATUS[0]}
 
 if [[ ! -f "$OUT_DIR/packet.json" ]]; then
   echo "No packet written; see $OUT_DIR/run.log" >&2
@@ -45,4 +46,10 @@ if ! fvm dart run tool/goal_compaction_eval_report.dart "$OUT_DIR/packet.json" >
   exit 1
 fi
 echo "Deterministic report: $OUT_DIR/report.md"
+if (( TEST_STATUS != 0 )); then
+  # The packet is kept for diagnosis, but a run with errored cases is not a
+  # result: do not hand it to the judge as if it were.
+  echo "Live eval FAILED (exit $TEST_STATUS); see $OUT_DIR/run.log. Do not judge this packet." >&2
+  exit 1
+fi
 echo "Next: judge $OUT_DIR/packet.json into $OUT_DIR/scores.json, then re-run the report with both."

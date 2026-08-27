@@ -102,7 +102,12 @@ class TruncatingCheckInCompaction implements GoalCheckInCompactionStrategy {
 enum GoalCheckInDigestLayer {
   month(maxWords: 120),
   quarter(maxWords: 80),
-  year(maxWords: 80);
+  year(maxWords: 80),
+
+  /// Everything older than the yearly horizon, as ONE span. This is what
+  /// makes the block bounded: without it a goal adds an entry per year of
+  /// its life.
+  earlier(maxWords: 80);
 
   const GoalCheckInDigestLayer({required this.maxWords});
 
@@ -123,7 +128,8 @@ class GoalCheckInDigestRequest {
     required this.checkIns,
   });
 
-  /// Human-readable span, e.g. `2025-03`, `2024-Q4` or `2024`.
+  /// Human-readable span, e.g. `2025-03`, `2024-Q4`, `2024` or
+  /// `before-2023`.
   final String periodLabel;
   final GoalCheckInDigestLayer layer;
   final DateTime from;
@@ -146,24 +152,31 @@ abstract interface class GoalCheckInDigestWriter {
 }
 
 /// Recent check-ins verbatim, older months digested, then quarters, then
-/// years — each coarser layer shorter than the last.
+/// years, then one "earlier" span for everything beyond the yearly horizon —
+/// each coarser layer shorter than the last.
 ///
 /// Layer boundaries are calendar-aligned so a span's digest is stable as
 /// time moves on: a month that has been folded once reads the same on every
 /// later wake until it ages into a quarter, which is what makes the digests
-/// cacheable and, later, persistable. The yearly layer is what bounds the
-/// total: without it every quarter of a goal's life stays a separate entry
-/// and the block grows without limit.
+/// cacheable and persistable. The entry count is bounded by the horizons
+/// alone — at most the months inside the monthly horizon, the quarters
+/// inside the quarterly one, the years inside the yearly one, and one
+/// earlier span — never by the goal's age.
 class HierarchicalCheckInCompaction implements GoalCheckInCompactionStrategy {
   const HierarchicalCheckInCompaction({
     required this.digestWriter,
     this.verbatimBudget = goalUserVoiceTokenBudget,
     this.monthlyHorizonMonths = 6,
     this.quarterlyHorizonMonths = 18,
+    this.yearlyHorizonMonths = 36,
   }) : assert(monthlyHorizonMonths > 0, 'monthlyHorizonMonths must be > 0'),
        assert(
          quarterlyHorizonMonths > monthlyHorizonMonths,
          'quarterlyHorizonMonths must exceed monthlyHorizonMonths',
+       ),
+       assert(
+         yearlyHorizonMonths > quarterlyHorizonMonths,
+         'yearlyHorizonMonths must exceed quarterlyHorizonMonths',
        );
 
   final GoalCheckInDigestWriter digestWriter;
@@ -179,6 +192,9 @@ class HierarchicalCheckInCompaction implements GoalCheckInCompactionStrategy {
   /// Quarters younger than this stay quarterly; older ones merge into
   /// calendar years.
   final int quarterlyHorizonMonths;
+
+  /// Years younger than this stay yearly; everything older is one span.
+  final int yearlyHorizonMonths;
 
   @override
   String get id => 'hierarchical';
@@ -237,7 +253,8 @@ class HierarchicalCheckInCompaction implements GoalCheckInCompactionStrategy {
 
   /// Groups [folded] (oldest first) into calendar spans: monthly inside
   /// [monthlyHorizonMonths] before [reference], quarterly inside
-  /// [quarterlyHorizonMonths], yearly beyond.
+  /// [quarterlyHorizonMonths], yearly inside [yearlyHorizonMonths], and one
+  /// span for everything earlier.
   List<GoalCheckInDigestRequest> _spans(
     List<GoalCheckInSummary> folded,
     DateTime reference,
@@ -255,11 +272,17 @@ class HierarchicalCheckInCompaction implements GoalCheckInCompactionStrategy {
       local.year,
       local.month - quarterlyHorizonMonths,
     );
+    final yearlyHorizon = DateTime(
+      local.year,
+      local.month - yearlyHorizonMonths,
+    );
     final groups =
         <String, (GoalCheckInDigestLayer, List<GoalCheckInSummary>)>{};
     for (final s in folded) {
       final at = s.recordedAt.toLocal();
-      final (layer, label) = at.isBefore(quarterlyHorizon)
+      final (layer, label) = at.isBefore(yearlyHorizon)
+          ? (GoalCheckInDigestLayer.earlier, 'before-${yearlyHorizon.year}')
+          : at.isBefore(quarterlyHorizon)
           ? (GoalCheckInDigestLayer.year, '${at.year}')
           : at.isBefore(monthlyHorizon)
           ? (

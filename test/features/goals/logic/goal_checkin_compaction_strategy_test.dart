@@ -195,16 +195,29 @@ void main() {
     });
 
     test('the number of digest entries stops growing with age', () async {
-      // Four years of history: the yearly layer holds the count to
-      // (months in horizon) + (quarters in horizon) + years.
+      // Beyond the yearly horizon everything is ONE span, so a six-year
+      // history carries exactly as many digest entries as a four-year one.
       final fourYears = history(DateTime.utc(2022, 9, 5), 207);
+      final sixYears = history(DateTime.utc(2020, 9, 7), 311);
       final writer = _RecordingDigestWriter();
       final strategy = HierarchicalCheckInCompaction(digestWriter: writer);
 
       final two = await strategy.build(twoYears, reference: reference);
       final four = await strategy.build(fourYears, reference: reference);
+      final six = await strategy.build(sixYears, reference: reference);
 
-      expect(four.digestCount - two.digestCount, lessThanOrEqualTo(2));
+      expect(four.digestCount, greaterThan(two.digestCount));
+      expect(six.digestCount, four.digestCount);
+      final earlier = writer.requests.where(
+        (r) => r.layer == GoalCheckInDigestLayer.earlier,
+      );
+      expect(earlier.map((r) => r.periodLabel).toSet(), {'before-2023'});
+      // The earlier span for six years holds everything from 2020 to the
+      // yearly horizon (2023-08), oldest first.
+      final sixEarlier = earlier.last;
+      expect(sixEarlier.checkIns.first.recordedAt.year, 2020);
+      expect(sixEarlier.to.isBefore(DateTime(2023, 8)), isTrue);
+      expect(six.estimatedTokens - four.estimatedTokens, lessThan(50));
     });
 
     test('a history that fits the verbatim budget needs no digest', () async {

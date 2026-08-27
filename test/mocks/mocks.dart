@@ -113,6 +113,7 @@ import 'package:lotti/features/goals/repository/goal_repository.dart';
 import 'package:lotti/features/goals/service/goal_agent_service.dart';
 import 'package:lotti/features/goals/service/goal_chat_service.dart';
 import 'package:lotti/features/goals/service/goal_checkin_compactor.dart';
+import 'package:lotti/features/goals/service/goal_checkin_digest_service.dart';
 import 'package:lotti/features/goals/service/goal_checkin_notifier.dart';
 import 'package:lotti/features/goals/service/goal_habit_completion_service.dart';
 import 'package:lotti/features/goals/service/goal_mirror_service.dart';
@@ -995,6 +996,9 @@ class MockGoalMirrorService extends Mock implements GoalMirrorService {}
 class MockGoalCheckInNotifier extends Mock implements GoalCheckInNotifier {}
 
 class MockGoalCheckInCompactor extends Mock implements GoalCheckInCompactor {}
+
+class MockGoalCheckInDigestService extends Mock
+    implements GoalCheckInDigestService {}
 
 class MockAgentRepository extends Mock implements AgentRepository {
   @override

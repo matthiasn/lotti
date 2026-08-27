@@ -31,6 +31,7 @@ import 'package:lotti/features/goals/service/goal_agent_service.dart';
 import 'package:lotti/features/goals/service/goal_chat_history_service.dart';
 import 'package:lotti/features/goals/service/goal_chat_service.dart';
 import 'package:lotti/features/goals/service/goal_checkin_compactor.dart';
+import 'package:lotti/features/goals/service/goal_checkin_digest_service.dart';
 import 'package:lotti/features/goals/service/goal_checkin_notifier.dart';
 import 'package:lotti/features/goals/service/goal_mirror_service.dart';
 import 'package:lotti/features/goals/service/goal_spec_revision_service.dart';
@@ -163,6 +164,17 @@ final Provider<GoalCheckInCompactor> goalCheckInCompactorProvider =
       name: 'goalCheckInCompactorProvider',
     );
 
+final Provider<GoalCheckInDigestService> goalCheckInDigestServiceProvider =
+    Provider<GoalCheckInDigestService>(
+      (ref) => GoalCheckInDigestService(
+        inferenceRepository: ref.watch(cloudInferenceRepositoryProvider),
+        repository: ref.watch(agentRepositoryProvider),
+        syncService: ref.watch(agentSyncServiceProvider),
+        domainLogger: ref.watch(domainLoggerProvider),
+      ),
+      name: 'goalCheckInDigestServiceProvider',
+    );
+
 /// Reads a goal's check-ins out of the journal for the headless workflow.
 ///
 /// A function rather than a repository handle, so the agent tier depends on
@@ -185,6 +197,7 @@ final goalAgentWorkflowProvider = Provider<GoalAgentWorkflow>(
     chatHistoryService: ref.watch(goalChatHistoryServiceProvider),
     checkInCompactor: ref.watch(goalCheckInCompactorProvider),
     checkInSourceReader: ref.watch(goalCheckInSourceReaderProvider),
+    checkInDigestService: ref.watch(goalCheckInDigestServiceProvider),
     domainLogger: ref.watch(domainLoggerProvider),
   ),
   name: 'goalAgentWorkflowProvider',

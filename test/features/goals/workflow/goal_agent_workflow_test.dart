@@ -19,11 +19,13 @@ import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dar
 import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_reader.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
+import 'package:lotti/features/goals/logic/goal_checkin_compaction_strategy.dart';
 import 'package:lotti/features/goals/model/goal_checkin_source.dart';
 import 'package:lotti/features/goals/model/goal_health_data_types.dart';
 import 'package:lotti/features/goals/runtime/goal_agent_phase_a.dart';
 import 'package:lotti/features/goals/runtime/goal_wake_facts.dart';
 import 'package:lotti/features/goals/service/goal_checkin_compactor.dart';
+import 'package:lotti/features/goals/service/goal_checkin_digest_service.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_strategy.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_workflow.dart';
@@ -1114,6 +1116,216 @@ void main() {
     expect(sentFacts, isNot(contains('Skipped the lunch walk.')));
     expect(sentFacts, contains('userVoice'));
     expect(sentFacts, contains('walk after lunch tomorrow'));
+  });
+
+  group('hierarchical user voice', () {
+    /// Two years of stored summaries, three a week, all with live sources.
+    List<GoalCheckInSource> stubTwoYearsOfCheckIns() {
+      final sources = <GoalCheckInSource>[];
+      final messages = <AgentDomainEntity>[];
+      final start = DateTime.utc(2024, 8, 12, 9);
+      for (var i = 0; i < 300; i++) {
+        final at = start.add(Duration(days: (i ~/ 3) * 7 + (i % 3) * 2));
+        if (!at.isBefore(now)) break;
+        final id = 'summary-$i';
+        sources.add(
+          GoalCheckInSource(entryId: 'audio-$i', recordedAt: at, text: 'w $i'),
+        );
+        messages.add(
+          AgentDomainEntity.agentMessage(
+            id: id,
+            agentId: agentId,
+            threadId: id,
+            kind: AgentMessageKind.action,
+            createdAt: at,
+            vectorClock: null,
+            metadata: const AgentMessageMetadata(
+              toolName: goalCheckInSummaryToolName,
+            ),
+            contentEntryId: '$id:payload',
+          ),
+        );
+        when(() => repository.getEntity('$id:payload')).thenAnswer(
+          (_) async => AgentDomainEntity.agentMessagePayload(
+            id: '$id:payload',
+            agentId: agentId,
+            createdAt: at,
+            vectorClock: null,
+            content: <String, Object?>{
+              'sourceEntryId': 'audio-$i',
+              'recordedAt': at.toIso8601String(),
+              'whatHappened': 'Walked the perimeter loop, check-in $i.',
+              'committedTo': 'Loop again tomorrow, check-in $i.',
+              'sourceDigest': goalCheckInSourceDigest('w $i'),
+            },
+          ),
+        );
+      }
+      when(
+        () => repository.getEntitiesByAgentIdAndSubtype(
+          agentId,
+          type: any(named: 'type'),
+          subtype: any(named: 'subtype'),
+        ),
+      ).thenAnswer((_) async => messages);
+      return sources;
+    }
+
+    var liveCheckIns = 0;
+    Future<String?> runWake({
+      required GoalCheckInDigestService digestService,
+      String? pendingUserMessage,
+    }) async {
+      stubSpec();
+      stubGlmResolution();
+      _stubBadPrior(repository, agentId, now);
+      final compactor = MockGoalCheckInCompactor();
+      final sources = stubTwoYearsOfCheckIns();
+      liveCheckIns = sources.length;
+      workflow = GoalAgentWorkflow(
+        repository: repository,
+        syncService: syncService,
+        phaseA: GoalAgentPhaseA(
+          repository: repository,
+          syncService: syncService,
+          signalReader: _FakeReader(),
+        ),
+        conversationRepository: conversationRepository,
+        cloudInferenceRepository: cloudInferenceRepository,
+        aiConfigRepository: aiConfigRepository,
+        checkInCompactor: compactor,
+        checkInSourceReader: (agentId) async => sources,
+        checkInDigestService: digestService,
+      );
+      String? sentFacts;
+      conversationRepository.sendMessageDelegate =
+          ({
+            required conversationId,
+            required message,
+            required model,
+            required provider,
+            required inferenceRepo,
+            tools,
+            toolChoice,
+            temperature = 0.7,
+            strategy,
+          }) async {
+            sentFacts ??= message;
+            return const InferenceUsage(inputTokens: 10, outputTokens: 5);
+          };
+      await workflow.execute(
+        agentIdentity: identity,
+        runKey: 'run-hierarchical',
+        triggerTokens: pendingUserMessage == null
+            ? const {'goal-escalation:2026-08-11'}
+            : const {},
+        threadId: 'thread-hierarchical',
+        pendingUserMessage: pendingUserMessage,
+        chatMessageId: pendingUserMessage == null ? null : 'chat-source',
+      );
+      return sentFacts;
+    }
+
+    test('an automatic wake carries digests of the older spans and the '
+        'recent tail verbatim', () async {
+      final digestService = MockGoalCheckInDigestService();
+      final writer = _RecordingDigestWriter();
+      bool? allowInference;
+      when(
+        () => digestService.forWake(
+          agentId: any(named: 'agentId'),
+          goalStatement: any(named: 'goalStatement'),
+          model: any(named: 'model'),
+          provider: any(named: 'provider'),
+          allowInference: any(named: 'allowInference'),
+        ),
+      ).thenAnswer((invocation) {
+        allowInference = invocation.namedArguments[#allowInference] as bool;
+        return writer;
+      });
+
+      final facts = await runWake(digestService: digestService);
+
+      expect(facts, isNotNull);
+      // A scheduled wake may write digests, and it asks with the goal's own
+      // model — the same wake that compacts check-ins.
+      expect(allowInference, isTrue);
+      verify(
+        () => digestService.forWake(
+          agentId: agentId,
+          goalStatement: any(named: 'goalStatement'),
+          model: 'glm-5.2',
+          provider: any(named: 'provider'),
+          allowInference: true,
+        ),
+      ).called(1);
+      // Older spans reach FACTS as digests, oldest first, and the most
+      // recent check-in stays verbatim with its commitment.
+      expect(writer.requests, isNotEmpty);
+      expect(writer.requests.first.layer, GoalCheckInDigestLayer.year);
+      expect(facts, contains('"kind": "digest"'));
+      expect(facts, contains('digest of ${writer.requests.first.periodLabel}'));
+      final newest = 'check-in ${liveCheckIns - 1}.';
+      expect(facts, contains('Walked the perimeter loop, $newest'));
+      expect(facts, contains('Loop again tomorrow, $newest'));
+      expect(
+        facts,
+        isNot(contains('Walked the perimeter loop, check-in 0.')),
+        reason: 'the oldest check-in is digested, not verbatim',
+      );
+      // Every folded check-in is in exactly one span; nothing is dropped.
+      final folded = writer.requests.fold<int>(
+        0,
+        (n, r) => n + r.checkIns.length,
+      );
+      final verbatim = RegExp('"whatHappened"').allMatches(facts!).length;
+      expect(folded + verbatim, liveCheckIns);
+    });
+
+    test('an interactive turn reads digests but must not write them', () async {
+      final digestService = MockGoalCheckInDigestService();
+      bool? allowInference;
+      when(
+        () => digestService.forWake(
+          agentId: any(named: 'agentId'),
+          goalStatement: any(named: 'goalStatement'),
+          model: any(named: 'model'),
+          provider: any(named: 'provider'),
+          allowInference: any(named: 'allowInference'),
+        ),
+      ).thenAnswer((invocation) {
+        allowInference = invocation.namedArguments[#allowInference] as bool;
+        return _RecordingDigestWriter();
+      });
+      await runWake(
+        digestService: digestService,
+        pendingUserMessage: 'How am I doing?',
+      );
+
+      expect(allowInference, isFalse);
+    });
+
+    test('a failing digest layer falls back to the truncating tail', () async {
+      final digestService = MockGoalCheckInDigestService();
+      when(
+        () => digestService.forWake(
+          agentId: any(named: 'agentId'),
+          goalStatement: any(named: 'goalStatement'),
+          model: any(named: 'model'),
+          provider: any(named: 'provider'),
+          allowInference: any(named: 'allowInference'),
+        ),
+      ).thenReturn(_ThrowingDigestWriter());
+
+      final facts = await runWake(digestService: digestService);
+
+      expect(facts, isNotNull);
+      expect(facts, contains('userVoice'));
+      expect(facts, isNot(contains('"kind": "digest"')));
+      // The newest check-in is still there: the wake lost the digests, not
+      // its user voice.
+      expect(facts, contains('"whatHappened"'));
+    });
   });
 
   test(
@@ -5602,4 +5814,21 @@ void main() {
     ]);
     expect(sections['unexpected'], 7);
   });
+}
+
+/// Records digest requests and answers with a legible stub.
+class _RecordingDigestWriter implements GoalCheckInDigestWriter {
+  final requests = <GoalCheckInDigestRequest>[];
+
+  @override
+  Future<String> write(GoalCheckInDigestRequest request) async {
+    requests.add(request);
+    return 'digest of ${request.periodLabel}';
+  }
+}
+
+class _ThrowingDigestWriter implements GoalCheckInDigestWriter {
+  @override
+  Future<String> write(GoalCheckInDigestRequest request) =>
+      throw StateError('digest store unavailable');
 }
