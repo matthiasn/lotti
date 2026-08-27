@@ -11,7 +11,15 @@ sources:
   - id: import
     resource: ../../lib/logic/health_import.dart
     title: HealthImport — the queue, the gate and the per-type fetchers
-    last_modified: 2026-08-05
+    last_modified: 2026-08-27
+  - id: daily-steps
+    resource: ../../lib/logic/health_daily_steps.dart
+    title: resolveDailySteps — the merged total versus the best single source
+    last_modified: 2026-08-27
+  - id: create-ops
+    resource: ../../lib/logic/persistence_create_ops.dart
+    title: PersistenceCreateOps — where a cumulative day is rewritten in place
+    last_modified: 2026-08-27
   - id: result
     resource: ../../lib/logic/health_import_result.dart
     title: HealthImportResult — the outcome type every request returns
@@ -55,7 +63,7 @@ load-bearing rather than incidental. See [One request at a time](#one-request-at
 
 | Caller | Entry point | Range | Awaited? |
 |--------|-------------|-------|----------|
-| A dashboard chart | `fetchHealthDataDelta(type)` / `getWorkoutsHealthDataDelta()` | newest stored sample → now | No — returns as soon as the type is queued |
+| A dashboard chart | `fetchHealthDataDelta(type)` / `getWorkoutsHealthDataDelta()` | newest stored sample → now (cumulative types: the day **before** the newest stored day → now) | No — returns as soon as the type is queued |
 | Settings → Health Import | `getActivityHealthData` / `fetchHealthData` / `getWorkoutsHealthData` | user-chosen | Yes — the page renders the outcome |
 
 `HealthObservationsController`'s constructor schedules a delta fetch for its
@@ -237,12 +245,53 @@ follow, and both are deliberate:
 
 - A staged sleep sample stored twice (see below) counts once — it is one
   measurement, not two.
-- Re-importing a range that is already stored counts **zero**. Health entries
-  carry deterministic `uuidV5` ids and `createDbEntity` writes with
-  `overwrite: false`, so each duplicate row is rejected;
-  `createQuantitativeEntryImpl` returns `null` for a rejected write and the
-  counters honour it. Counting attempts instead would tell the user it had
-  imported samples it had not.
+- Re-importing a range that is already stored counts **zero**. Discrete
+  samples carry deterministic `uuidV5` ids over their payload and
+  `createDbEntity` writes with `overwrite: false`, so each duplicate row is
+  rejected; `createQuantitativeEntryImpl` returns `null` for a rejected write
+  and the counters honour it. Counting attempts instead would tell the user it
+  had imported samples it had not.
+- A cumulative day whose total **changed** counts as one. Those rows are keyed
+  by type, local date and the importing installation's sync host
+  (`cumulativeQuantityEntryId`), and `createQuantitativeEntryImpl` rewrites the
+  stored day in place when the total differs and returns `null` when it does
+  not — the value alone decides, so the in-progress day's advancing end time
+  is not a rewrite. See [Late-syncing
+  sources](#late-syncing-sources) for why.
+
+# Late-syncing sources
+
+A wearable that uploads its day once, overnight, lands yesterday's final step
+count *after* yesterday already has a row — the phone's own count at bedtime,
+written by the last background delta. Two things used to keep that stale figure
+on screen:
+
+- **Nothing replaced the day.** The day's row was keyed by its payload, so a
+  new total became a second row beside the old one. The readers' per-day
+  maximum hid that most of the time, but the journal accumulated a row per
+  refresh of the day in progress, and a day whose store-side total went
+  *down* could never be corrected. `addActivityEntries` now writes each day
+  under `cumulativeQuantityEntryId` — type, local date, sync host — and the
+  create op updates that row in place when the total differs. The host is
+  part of the key so two installations importing the same day do not race
+  for one row through sync; their rows still merge through the readers'
+  maximum, as the payload-keyed rows did. Rows written before this scheme
+  keep their payload-derived ids and are not migrated: they still merge
+  through the same maximum, which is right for a total that rose, and a
+  legacy row above a corrected-downward total is a known limit.
+- **The delta never looked back.** A cumulative delta started at the newest
+  stored day, which is today, so yesterday was only ever re-read by a manual
+  import. It now starts one calendar day earlier (date arithmetic, not a
+  24-hour duration, which lands a date short across a spring-forward).
+
+`fetchAndProcessActivityDataForDay` also reads the raw `STEPS` samples next to
+the store's merged total and takes the larger of the merged figure and the best
+single source (`resolveDailySteps`). HealthKit's merged sum resolves
+overlapping samples by the *Data Sources & Access* priority, which can drop a
+wearable ranked below the phone; the guard cannot lower a figure, only restore
+one that priority discarded, and never sums across sources. A source is its
+`sourceId`, falling back to `sourceName` — Health Connect hands over step
+records with an empty id and the provider's package name.
 
 # Type strings, and the composites
 

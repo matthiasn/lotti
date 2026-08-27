@@ -11,12 +11,16 @@ import 'package:lotti/classes/health.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/health_daily_steps.dart'
+    as health_daily_steps
+    show resolveDailySteps, sumNumericHealthValues;
 import 'package:lotti/logic/health_data_types.dart';
 import 'package:lotti/logic/health_import_result.dart';
 import 'package:lotti/logic/health_permission_gate.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/health_service.dart';
+import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -82,6 +86,12 @@ class HealthImport {
   }
 
   Duration defaultFetchDuration = const Duration(days: 90);
+
+  /// How many calendar days before the newest stored day a cumulative delta
+  /// re-reads. A source that syncs its day late — a band that uploads
+  /// overnight — lands its final total after that day already has a row, and
+  /// a delta that only looked forward would never see it.
+  static const cumulativeDeltaLookBackDays = 1;
 
   final queue = Queue<String>();
   bool running = false;
@@ -192,21 +202,26 @@ class HealthImport {
         999,
       );
 
-      final steps = await health.getTotalStepsInInterval(dateFrom, dateTo);
-      stepsByDay[dateFrom] = steps ?? 0;
-
-      final flightsClimbedDataPoints = await health.getHealthDataFromTypes(
-        types: [HealthDataType.FLIGHTS_CLIMBED],
+      final mergedSteps = await health.getTotalStepsInInterval(
+        dateFrom,
+        dateTo,
+      );
+      final samplesByType = (await health.getHealthDataFromTypes(
+        types: activityTypes,
         startTime: dateFrom,
         endTime: dateTo,
-      );
+      )).groupListsBy((point) => point.type);
+      final flightsClimbedDataPoints =
+          samplesByType[HealthDataType.FLIGHTS_CLIMBED] ?? const [];
+      final distanceDataPoints =
+          samplesByType[HealthDataType.DISTANCE_WALKING_RUNNING] ?? const [];
 
-      final distanceDataPoints = await health.getHealthDataFromTypes(
-        types: [HealthDataType.DISTANCE_WALKING_RUNNING],
-        startTime: dateFrom,
-        endTime: dateTo,
+      // Steps go through the raw samples as well — see [resolveDailySteps].
+      // Flights and distance keep their plain sum, as they always have.
+      stepsByDay[dateFrom] = health_daily_steps.resolveDailySteps(
+        mergedSteps,
+        samplesByType[HealthDataType.STEPS] ?? const [],
       );
-
       flightsByDay[dateFrom] = sumNumericHealthValues(flightsClimbedDataPoints);
       distanceByDay[dateFrom] = sumNumericHealthValues(distanceDataPoints);
     }
@@ -218,6 +233,12 @@ class HealthImport {
   /// Each entry spans its whole calendar day, except the day in progress, whose
   /// end is capped at the current instant so a chart never plots a total into
   /// the future.
+  ///
+  /// A day is keyed by its type and date, not by its value:
+  /// `createQuantitativeEntry` updates the stored day in place when the total
+  /// has changed and leaves it alone when it has not, so re-importing after a
+  /// late-syncing source has landed replaces the stale figure rather than
+  /// sitting a second row next to it (see `createQuantitativeEntryImpl`).
   Future<int> addActivityEntries(
     Map<DateTime, num> data,
     String type,
@@ -370,13 +391,8 @@ class HealthImport {
     }
   }
 
-  num sumNumericHealthValues(List<HealthDataPoint> dataPoints) {
-    return dataPoints
-        .map((HealthDataPoint e) => e.value)
-        .whereType<NumericHealthValue>()
-        .map((NumericHealthValue e) => e.numericValue)
-        .sum;
-  }
+  num sumNumericHealthValues(List<HealthDataPoint> dataPoints) =>
+      health_daily_steps.sumNumericHealthValues(dataPoints);
 
   /// Authorizes [types] and everything in their permission families.
   ///
@@ -624,8 +640,11 @@ class HealthImport {
         latest?.meta.dateFrom ?? now.subtract(defaultFetchDuration);
 
     if (type.contains('cumulative')) {
+      // See [cumulativeDeltaLookBackDays].
       return _getActivityHealthData(
-        dateFrom: dateFrom,
+        dateFrom: latest == null
+            ? dateFrom
+            : dateFrom.dateOnly.addCalendarDays(-cumulativeDeltaLookBackDays),
         dateTo: now,
         // Nobody asked for this — a chart scheduled it on open. Re-raising an
         // authorization sheet the user has already answered would put a modal

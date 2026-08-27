@@ -415,39 +415,29 @@ void main() {
           startTime: any(named: 'startTime'),
           endTime: any(named: 'endTime'),
         ),
-      ).thenAnswer((invocation) async {
-        final types =
-            invocation.namedArguments[const Symbol('types')]
-                as List<HealthDataType>;
-
-        if (types.contains(HealthDataType.FLIGHTS_CLIMBED)) {
-          return [
-            makeNumericDataPoint(
-              type: HealthDataType.FLIGHTS_CLIMBED,
-              value: 15,
-              dateFrom: testDate,
-              dateTo: testDate.add(const Duration(hours: 1)),
-            ),
-            makeNumericDataPoint(
-              type: HealthDataType.FLIGHTS_CLIMBED,
-              value: 10,
-              dateFrom: testDate.add(const Duration(hours: 2)),
-              dateTo: testDate.add(const Duration(hours: 3)),
-            ),
-          ];
-        } else if (types.contains(HealthDataType.DISTANCE_WALKING_RUNNING)) {
-          return [
-            makeNumericDataPoint(
-              type: HealthDataType.DISTANCE_WALKING_RUNNING,
-              value: 5000,
-              dateFrom: testDate,
-              dateTo: testDate.add(const Duration(hours: 1)),
-              unit: HealthDataUnit.METER,
-            ),
-          ];
-        }
-        return [];
-      });
+      ).thenAnswer(
+        (_) async => [
+          makeNumericDataPoint(
+            type: HealthDataType.FLIGHTS_CLIMBED,
+            value: 15,
+            dateFrom: testDate,
+            dateTo: testDate.add(const Duration(hours: 1)),
+          ),
+          makeNumericDataPoint(
+            type: HealthDataType.FLIGHTS_CLIMBED,
+            value: 10,
+            dateFrom: testDate.add(const Duration(hours: 2)),
+            dateTo: testDate.add(const Duration(hours: 3)),
+          ),
+          makeNumericDataPoint(
+            type: HealthDataType.DISTANCE_WALKING_RUNNING,
+            value: 5000,
+            dateFrom: testDate,
+            dateTo: testDate.add(const Duration(hours: 1)),
+            unit: HealthDataUnit.METER,
+          ),
+        ],
+      );
 
       await healthImport.fetchAndProcessActivityDataForDay(
         testDate,
@@ -469,8 +459,72 @@ void main() {
           startTime: any(named: 'startTime'),
           endTime: any(named: 'endTime'),
         ),
-      ).called(2); // Once for flights, once for distance
+      ).called(1); // One batched read for steps, flights and distance
     });
+
+    // The reported bug: a band that syncs its whole day once overnight is
+    // ranked below the phone in Health's source priority, so HealthKit's merged
+    // total kept the phone's under-count. The per-source samples still carry
+    // the band's figure, and the best single source wins.
+    test(
+      'prefers the best single source over a merged total that dropped it',
+      () async {
+        final testDate = DateTime(2024);
+        final stepsByDay = <DateTime, num>{};
+
+        when(
+          () => mockHealthService.getTotalStepsInInterval(any(), any()),
+        ).thenAnswer((_) async => 9800);
+        when(
+          () => mockHealthService.getHealthDataFromTypes(
+            types: any(named: 'types'),
+            startTime: any(named: 'startTime'),
+            endTime: any(named: 'endTime'),
+          ),
+        ).thenAnswer((invocation) async {
+          final types =
+              invocation.namedArguments[const Symbol('types')]
+                  as List<HealthDataType>;
+          if (!types.contains(HealthDataType.STEPS)) {
+            return [];
+          }
+          return [
+            makeNumericDataPoint(
+              type: HealthDataType.STEPS,
+              value: 9800,
+              dateFrom: testDate,
+              dateTo: testDate.add(const Duration(hours: 23)),
+              sourceId: 'com.apple.health.iphone',
+              sourceName: 'iPhone',
+            ),
+            makeNumericDataPoint(
+              type: HealthDataType.STEPS,
+              value: 11600,
+              dateFrom: testDate,
+              dateTo: testDate.add(const Duration(hours: 24)),
+              sourceId: 'com.whoop.app',
+              sourceName: 'WHOOP',
+            ),
+          ];
+        });
+
+        await healthImport.fetchAndProcessActivityDataForDay(
+          testDate,
+          stepsByDay,
+          <DateTime, num>{},
+          <DateTime, num>{},
+        );
+
+        expect(stepsByDay[testDate], 11600);
+        verify(
+          () => mockHealthService.getHealthDataFromTypes(
+            types: activityTypes,
+            startTime: testDate,
+            endTime: DateTime(2024, 1, 1, 23, 59, 59, 999),
+          ),
+        ).called(1);
+      },
+    );
 
     test('should handle zero values correctly', () async {
       final testDate = DateTime(2024);
@@ -1776,6 +1830,92 @@ void main() {
         verify(
           () => mockHealthService.requestAuthorization(activityTypes),
         ).called(1);
+      });
+    });
+
+    // A band that syncs its day overnight lands yesterday's final total after
+    // yesterday already has a row. A delta that only looked from the newest
+    // stored day forward never re-read it, so the dashboards kept the phone's
+    // bedtime count until a manual import.
+    group('cumulative delta look-back', () {
+      void stubLatestCumulativeDay(DateTime day) {
+        final dateTo = day.add(const Duration(hours: 8));
+        when(
+          () => mockJournalDb.latestQuantitativeByType(any()),
+        ).thenAnswer(
+          (_) async => QuantitativeEntry(
+            data: QuantitativeData.cumulativeQuantityData(
+              dateFrom: day,
+              dateTo: dateTo,
+              value: 1200,
+              dataType: 'cumulative_step_count',
+              unit: 'count',
+            ),
+            meta: Metadata(
+              id: 'latest',
+              createdAt: day,
+              updatedAt: day,
+              dateFrom: day,
+              dateTo: dateTo,
+            ),
+          ),
+        );
+      }
+
+      test('re-reads the day before the newest stored one', () {
+        fakeAsync((async) {
+          final mobileImport = createMobileHealthImport();
+          final latestDay = DateTime(2024, 1, 10);
+          stubLatestCumulativeDay(latestDay);
+          stubHealthStore();
+
+          withClock(Clock.fixed(DateTime(2024, 1, 10, 9)), () {
+            mobileImport.fetchHealthDataDelta('cumulative_step_count');
+            async.flushMicrotasks();
+          });
+
+          verify(
+            () => mockHealthService.getTotalStepsInInterval(
+              DateTime(2024, 1, 9),
+              DateTime(2024, 1, 9, 23, 59, 59, 999),
+            ),
+          ).called(1);
+          verify(
+            () => mockHealthService.getTotalStepsInInterval(
+              latestDay,
+              DateTime(2024, 1, 10, 23, 59, 59, 999),
+            ),
+          ).called(1);
+          verifyNever(
+            () => mockHealthService.getTotalStepsInInterval(
+              DateTime(2024, 1, 8),
+              any(),
+            ),
+          );
+        });
+      });
+
+      // The previous calendar date at local midnight — the same value the
+      // day-keyed row for that date carries — whatever the clock offset
+      // between the two midnights happens to be across a DST transition.
+      test('steps back a calendar day, not 24 hours', () {
+        fakeAsync((async) {
+          final mobileImport = createMobileHealthImport();
+          stubLatestCumulativeDay(DateTime(2024, 3, 31));
+          stubHealthStore();
+
+          withClock(Clock.fixed(DateTime(2024, 3, 31, 9)), () {
+            mobileImport.fetchHealthDataDelta('cumulative_step_count');
+            async.flushMicrotasks();
+          });
+
+          verify(
+            () => mockHealthService.getTotalStepsInInterval(
+              DateTime(2024, 3, 30),
+              any(),
+            ),
+          ).called(1);
+        });
       });
     });
 

@@ -13,6 +13,7 @@ import 'package:lotti/logic/persistence_logic.dart' show PersistenceLogic;
 import 'package:lotti/logic/persistence_logic_contract.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/notification_service.dart';
+import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/utils/entry_utils.dart';
 
 /// Entry-creation operations of [PersistenceLogic].
@@ -23,29 +24,26 @@ import 'package:lotti/utils/entry_utils.dart';
 class PersistenceCreateOps extends PersistenceCollaboratorBase {
   PersistenceCreateOps(super.logic);
 
+  /// Stores a health sample, returning the entity when the database accepted a
+  /// change and `null` when nothing was written.
+  ///
+  /// Discrete samples are keyed by their whole payload: a re-imported sample
+  /// hashes to the id it already has, `createDbEntity` writes with
+  /// `overwrite: false`, and the duplicate is rejected row by row.
+  ///
+  /// Cumulative days ([CumulativeQuantityData]) are keyed by type and day
+  /// instead, and **updated in place** when the total differs — see
+  /// [cumulativeQuantityEntryId]. Keyed by payload, a day whose total rose after
+  /// import (a wearable that syncs overnight, a phone that caught up) became a
+  /// second row beside the stale one, and a day whose total was unchanged was
+  /// "rejected" indistinguishably from one that never reached the database.
   Future<QuantitativeEntry?> createQuantitativeEntryImpl(
     QuantitativeData data,
   ) async {
     try {
-      final journalEntity = QuantitativeEntry(
-        data: data,
-        meta: await logic.createMetadata(
-          dateFrom: data.dateFrom,
-          dateTo: data.dateTo,
-          uuidV5Input: json.encode(data),
-        ),
-      );
-      // Honour the write verdict. Health entries carry deterministic uuidV5
-      // ids and `createDbEntity` writes with `overwrite: false`, so
-      // re-importing a range that is already stored is rejected row by row.
-      // Returning the entity regardless made every caller unable to tell a
-      // fresh sample from a duplicate — the health import counted both and
-      // told the user it had imported samples it had not.
-      final applied = await logic.createDbEntity(
-        journalEntity,
-        shouldAddGeolocation: false,
-      );
-      return (applied ?? false) ? journalEntity : null;
+      return data is CumulativeQuantityData
+          ? await _upsertCumulativeDay(data)
+          : await _createQuantitativeEntry(data, json.encode(data));
     } catch (exception, stackTrace) {
       loggingService.error(
         LogDomain.persistence,
@@ -56,6 +54,82 @@ class PersistenceCreateOps extends PersistenceCollaboratorBase {
     }
 
     return null;
+  }
+
+  /// Writes a fresh row under the id derived from [uuidV5Input], honouring the
+  /// write verdict: `null` when the database rejected it as a duplicate.
+  Future<QuantitativeEntry?> _createQuantitativeEntry(
+    QuantitativeData data,
+    String uuidV5Input,
+  ) async {
+    final entry = QuantitativeEntry(
+      data: data,
+      meta: await logic.createMetadata(
+        dateFrom: data.dateFrom,
+        dateTo: data.dateTo,
+        uuidV5Input: uuidV5Input,
+      ),
+    );
+    final applied = await logic.createDbEntity(
+      entry,
+      shouldAddGeolocation: false,
+    );
+    return (applied ?? false) ? entry : null;
+  }
+
+  /// The deterministic uuidV5 input for one cumulative day: its type, its
+  /// local calendar date and the importing installation's sync [host], so
+  /// every import of that day on that installation addresses the same row
+  /// whatever total it read.
+  ///
+  /// The host is part of the key on purpose. Two devices importing the same
+  /// day would otherwise race for one row through sync and land as a conflict;
+  /// kept apart, each writes its own row and the readers' per-day maximum
+  /// merges them, exactly as it merged the payload-keyed rows before. The
+  /// hardware model would not do: two phones of the same model, or two whose
+  /// device-info lookup failed, share one.
+  static String cumulativeQuantityEntryId(
+    CumulativeQuantityData data, {
+    required String? host,
+  }) {
+    return 'cumulative:${data.dataType}:${data.dateFrom.ymd}:$host';
+  }
+
+  /// Creates the day's row, or rewrites it when the stored total differs.
+  ///
+  /// Returns `null` when the stored day already carries the same total, so an
+  /// import over an unchanged range still reports nothing new. Only the value
+  /// decides: the day in progress carries "now" as its end, which advances on
+  /// every background refresh, and rewriting (and syncing) three rows every ten
+  /// minutes to move an end time nobody reads is not a change worth a write.
+  Future<QuantitativeEntry?> _upsertCumulativeDay(
+    CumulativeQuantityData data,
+  ) async {
+    final uuidV5Input = cumulativeQuantityEntryId(
+      data,
+      host: await vectorClockService.getHost(),
+    );
+    final existing = await journalDb.journalEntityById(
+      metadataService.generateId(uuidV5Input: uuidV5Input),
+    );
+
+    if (existing is QuantitativeEntry) {
+      if (existing.data.value == data.value) {
+        return null;
+      }
+      final updated = existing.copyWith(
+        data: data,
+        meta: await logic.updateMetadata(
+          existing.meta,
+          dateFrom: data.dateFrom,
+          dateTo: data.dateTo,
+        ),
+      );
+      final applied = await logic.updateDbEntity(updated);
+      return (applied ?? false) ? updated : null;
+    }
+
+    return _createQuantitativeEntry(data, uuidV5Input);
   }
 
   Future<WorkoutEntry?> createWorkoutEntryImpl(WorkoutData data) async {
