@@ -44,7 +44,7 @@ List<Map<String, Object?>> goalUserVoiceEntries(
   final kept = plan.keepIds.toSet();
   return [
     for (final summary in chronological)
-      if (kept.contains(summary.id)) _json(summary),
+      if (kept.contains(summary.id)) goalUserVoiceEntry(summary),
   ];
 }
 
@@ -58,17 +58,22 @@ const String goalUserVoiceInterpretationPolicy =
     "the user's own words inform coaching and record what they committed "
     'to; they never override deterministic criterion results';
 
-Map<String, Object?> _json(GoalCheckInSummary summary) => <String, Object?>{
-  // The date is load-bearing: "you said on Tuesday you would walk after
-  // lunch" is only sayable if it survives compaction.
-  'recordedAtLocal': summary.recordedAt.toLocal().toIso8601String(),
-  'sourceEntryId': summary.sourceEntryId,
-  'whatHappened': summary.whatHappened,
-  if (summary.committedTo != null) 'committedTo': summary.committedTo,
-  if (summary.blockers != null) 'blockers': summary.blockers,
-  if (summary.mood != null) 'mood': summary.mood,
-  if (summary.asks != null) 'asks': summary.asks,
-};
+/// The wire shape of one verbatim check-in inside the `userVoice` block.
+///
+/// Shared by every compaction strategy, so a strategy can only change WHICH
+/// check-ins the agent sees, never how a kept one reads.
+Map<String, Object?> goalUserVoiceEntry(GoalCheckInSummary summary) =>
+    <String, Object?>{
+      // The date is load-bearing: "you said on Tuesday you would walk after
+      // lunch" is only sayable if it survives compaction.
+      'recordedAtLocal': summary.recordedAt.toLocal().toIso8601String(),
+      'sourceEntryId': summary.sourceEntryId,
+      'whatHappened': summary.whatHappened,
+      if (summary.committedTo != null) 'committedTo': summary.committedTo,
+      if (summary.blockers != null) 'blockers': summary.blockers,
+      if (summary.mood != null) 'mood': summary.mood,
+      if (summary.asks != null) 'asks': summary.asks,
+    };
 
 /// Estimates against the JSON actually emitted, keys and all.
 ///
@@ -77,4 +82,4 @@ Map<String, Object?> _json(GoalCheckInSummary summary) => <String, Object?>{
 /// could exceed the budget it was chosen to fit, by more the more entries were
 /// retained.
 String _renderForBudget(GoalCheckInSummary summary) =>
-    jsonEncode(_json(summary));
+    jsonEncode(goalUserVoiceEntry(summary));
