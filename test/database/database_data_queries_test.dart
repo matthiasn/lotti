@@ -568,6 +568,75 @@ void main() {
         },
       );
 
+      test('getWorkoutsByType filters on the workout type', () async {
+        await db!.updateJournalEntity(
+          buildWorkoutEntry(
+            id: 'run',
+            start: DateTime(2024, 5, 2, 8),
+            end: DateTime(2024, 5, 2, 9),
+          ),
+        );
+        await db!.updateJournalEntity(
+          buildWorkoutEntry(
+            id: 'swim',
+            start: DateTime(2024, 5, 3, 8),
+            end: DateTime(2024, 5, 3, 9),
+            workoutType: 'swimming',
+          ),
+        );
+        await db!.updateJournalEntity(
+          buildWorkoutEntry(
+            id: 'swim-deleted',
+            start: DateTime(2024, 5, 4, 8),
+            end: DateTime(2024, 5, 4, 9),
+            workoutType: 'swimming',
+            deletedAt: DateTime(2024, 5, 5),
+          ),
+        );
+
+        final swims = await db!.getWorkoutsByType(
+          workoutType: 'swimming',
+          rangeStart: DateTime(2024, 5),
+          rangeEnd: DateTime(2024, 5, 8),
+        );
+        expect(swims.map((w) => w.meta.id), ['swim']);
+        expect(
+          await db!.getWorkoutsByType(
+            workoutType: 'cycling',
+            rangeStart: DateTime(2024, 5),
+            rangeEnd: DateTime(2024, 5, 8),
+          ),
+          isEmpty,
+        );
+      });
+
+      test('getWorkoutTypes lists each imported type once, sorted', () async {
+        for (final (id, type) in [
+          ('a', 'walking'),
+          ('b', 'running'),
+          ('c', 'running'),
+        ]) {
+          await db!.updateJournalEntity(
+            buildWorkoutEntry(
+              id: id,
+              start: DateTime(2024, 5, 2, 8),
+              end: DateTime(2024, 5, 2, 9),
+              workoutType: type,
+            ),
+          );
+        }
+        await db!.updateJournalEntity(
+          buildWorkoutEntry(
+            id: 'gone',
+            start: DateTime(2024, 5, 2, 8),
+            end: DateTime(2024, 5, 2, 9),
+            workoutType: 'cycling',
+            deletedAt: DateTime(2024, 5, 3),
+          ),
+        );
+        expect(await db!.getWorkoutTypes(), ['running', 'walking']);
+      });
+
       test('returns empty list when no workouts fall in range', () async {
         final workouts = await db!.getWorkouts(
           rangeStart: DateTime(2030),

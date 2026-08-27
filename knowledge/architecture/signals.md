@@ -74,9 +74,11 @@ Per-series semantics, all inherited from the surfaces the user already sees:
   of an "any entry" rule.
 - **Workouts** keep the `WorkoutData` list per day so thresholds can be applied
   later; `workoutSignalValue` reports minutes, kilometres (stored metres ÷
-  1000) or kcal — the units the workout chart labels. Loading workouts into
-  the window is not implemented yet (the query does not exist; see the habits
-  concept).
+  1000) or kcal — the units the workout chart labels. They are loaded through
+  `JournalDb.getWorkoutsByType`, an indexed `type + subtype` lookup (the
+  `subtype` column holds the raw `workoutType`); `getWorkoutTypes` lists the
+  distinct imported types for pickers, because those strings arrive from
+  Apple Health / Health Connect un-normalised and no fixed list is honest.
 - **Habit completions** count only `success` days from the
   latest-completion-per-day collapse the query already performs.
 

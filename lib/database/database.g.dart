@@ -7021,6 +7021,30 @@ abstract class _$JournalDb extends GeneratedDatabase {
     ).asyncMap(journal.mapFromRow);
   }
 
+  Selectable<JournalDbEntity> workoutsByType(
+    String? workoutType,
+    DateTime rangeStart,
+    DateTime rangeEnd,
+  ) {
+    return customSelect(
+      'SELECT * FROM journal WHERE type = \'WorkoutEntry\' AND subtype = ?1 AND date_from >= ?2 AND date_to <= ?3 AND deleted = FALSE ORDER BY date_from DESC',
+      variables: [
+        Variable<String>(workoutType),
+        Variable<DateTime>(rangeStart),
+        Variable<DateTime>(rangeEnd),
+      ],
+      readsFrom: {journal},
+    ).asyncMap(journal.mapFromRow);
+  }
+
+  Selectable<String?> workoutTypes() {
+    return customSelect(
+      'SELECT DISTINCT subtype FROM journal WHERE type = \'WorkoutEntry\' AND subtype IS NOT NULL AND deleted = FALSE ORDER BY subtype ASC',
+      variables: [],
+      readsFrom: {journal},
+    ).map((QueryRow row) => row.readNullable<String>('subtype'));
+  }
+
   Selectable<JournalDbEntity> surveysByType(
     String subtype,
     DateTime rangeStart,

@@ -193,4 +193,23 @@ mixin _JournalDbDataQueries on _$JournalDb, _JournalDbConfigFlags {
     final res = await workouts(rangeStart, rangeEnd).get();
     return res.map(fromDbEntity).toList();
   }
+
+  /// Workouts of one [workoutType] (the raw imported string, stored as the
+  /// row's `subtype`) fully inside the range, newest first.
+  Future<List<JournalEntity>> getWorkoutsByType({
+    required String workoutType,
+    required DateTime rangeStart,
+    required DateTime rangeEnd,
+  }) async {
+    final res = await workoutsByType(workoutType, rangeStart, rangeEnd).get();
+    return res.map(fromDbEntity).toList();
+  }
+
+  /// The distinct workout types present in the journal, sorted. Workout type
+  /// strings arrive from Apple Health / Health Connect un-normalised, so a
+  /// picker must offer what was actually imported rather than a fixed list.
+  Future<List<String>> getWorkoutTypes() async {
+    final types = await workoutTypes().get();
+    return types.nonNulls.toList();
+  }
 }

@@ -47,6 +47,17 @@ class SignalReader {
     rangeEnd: rangeEnd,
   );
 
+  /// Workout entities of [workoutType] in the range.
+  Future<List<JournalEntity>> workoutEntities({
+    required String workoutType,
+    required DateTime rangeStart,
+    required DateTime rangeEnd,
+  }) => journalDb.getWorkoutsByType(
+    workoutType: workoutType,
+    rangeStart: rangeStart,
+    rangeEnd: rangeEnd,
+  );
+
   /// Every series an [AutoCompleteRule] tree needs, covering [days] calendar
   /// days ending on [reference]'s day (so `days: 14` is a two-week window
   /// including today). Entries after [reference] are excluded.
@@ -94,6 +105,20 @@ class SignalReader {
       );
     }
 
+    final workouts = <String, Map<DateTime, List<WorkoutData>>>{};
+    for (final type in needs.workoutTypes) {
+      final entities = await workoutEntities(
+        workoutType: type,
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+      );
+      workouts[type] = bucketWorkoutsByDay(
+        entities
+            .where((entity) => !entity.meta.dateFrom.isAfter(reference))
+            .toList(growable: false),
+      );
+    }
+
     final habits = <String, Set<DateTime>>{};
     for (final habitId in needs.habitIds) {
       final entities = await journalDb.getHabitCompletionsByHabitId(
@@ -109,6 +134,7 @@ class SignalReader {
       end: end,
       quantitativeByDay: quantitative,
       measurableTotalsByDay: measurables,
+      workoutsByDay: workouts,
       habitSuccessDays: habits,
     );
   }

@@ -277,6 +277,7 @@ JournalEntity buildWorkoutEntry({
   required DateTime start,
   required DateTime end,
   DateTime? deletedAt,
+  String workoutType = 'running',
 }) {
   return JournalEntity.workout(
     meta: Metadata(
@@ -293,7 +294,7 @@ JournalEntity buildWorkoutEntry({
       distance: 1000,
       dateFrom: start,
       dateTo: end,
-      workoutType: 'running',
+      workoutType: workoutType,
       energy: 200,
       id: 'workout-$id',
       source: 'test',

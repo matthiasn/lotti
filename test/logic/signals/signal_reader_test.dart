@@ -36,6 +36,14 @@ void main() {
     ),
   ).thenAnswer((_) async => entities);
 
+  void stubWorkouts(List<JournalEntity> entities) => when(
+    () => journalDb.getWorkoutsByType(
+      workoutType: any(named: 'workoutType'),
+      rangeStart: any(named: 'rangeStart'),
+      rangeEnd: any(named: 'rangeEnd'),
+    ),
+  ).thenAnswer((_) async => entities);
+
   void stubHabit(List<JournalEntity> entities) => when(
     () => journalDb.getHabitCompletionsByHabitId(
       habitId: any(named: 'habitId'),
@@ -134,12 +142,25 @@ void main() {
           HabitCompletionType.skip,
         ),
       ]);
+      final run = workoutEntity(
+        DateTime(2026, 8, 8, 7),
+        length: const Duration(minutes: 30),
+        distance: 5000,
+      );
+      stubWorkouts([
+        run,
+        workoutEntity(
+          DateTime(2026, 8, 8, 18),
+          length: const Duration(minutes: 30),
+        ),
+      ]);
 
       final window = await reader.read(
         rule: const AutoCompleteRule.and(
           rules: [
             AutoCompleteRule.measurable(dataTypeId: 'water'),
             AutoCompleteRule.health(dataType: 'cumulative_step_count'),
+            AutoCompleteRule.workout(dataType: 'running'),
             AutoCompleteRule.habit(habitId: 'habit-a'),
           ],
         ),
@@ -157,11 +178,23 @@ void main() {
           quantitativeByDay: {
             'cumulative_step_count': {todayKey: 4120},
           },
+          workoutsByDay: {
+            'running': {
+              todayKey: [(run as WorkoutEntry).data],
+            },
+          },
           habitSuccessDays: {
             'habit-a': {DateTime.utc(2026, 8, 7)},
           },
         ),
       );
+      verify(
+        () => journalDb.getWorkoutsByType(
+          workoutType: 'running',
+          rangeStart: DateTime(2026, 7, 26),
+          rangeEnd: DateTime(2026, 8, 9),
+        ),
+      ).called(1);
     },
   );
 
