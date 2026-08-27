@@ -3164,7 +3164,7 @@
   "habitEditorExampleStrength": "funktionel styrketræning",
   "habitEditorManualRowCaption": "du registrerer den på Vaner-siden",
   "habitEditorManualRowTitle": "Jeg krydser selv af",
-  "habitEditorNameHeading": "Hvad vil du blive ved med?",
+  "habitEditorNameHeading": "Hvad vil du fortsætte med?",
   "habitEditorNameSubtitle": "Kald den, hvad du vil – sådan står den på din Vaner-side.",
   "habitEditorNotifyCaption": "Én besked om dagen, når signaler fuldfører den",
   "habitEditorNotifyTitle": "Giv besked ved automatisk afkrydsning",
@@ -3346,6 +3346,9 @@
     }
   },
   "habitsVsPreviousWeek": "vs forrige uge",
+  "habitUnitKilocalories": "kcal",
+  "habitUnitKilometres": "km",
+  "habitUnitMinutes": "min.",
   "helpMenuCommandPalette": "Kommandopalette...",
   "helpMenuKeyboardShortcuts": "Tastaturgenveje...",
   "helpMenuTitle": "Hjælp",

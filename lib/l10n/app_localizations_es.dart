@@ -7724,6 +7724,15 @@ class AppLocalizationsEs extends AppLocalizations {
   String get habitsVsPreviousWeek => 'vs. semana anterior';
 
   @override
+  String get habitUnitKilocalories => 'kcal';
+
+  @override
+  String get habitUnitKilometres => 'km';
+
+  @override
+  String get habitUnitMinutes => 'min';
+
+  @override
   String get helpMenuCommandPalette => 'Paleta de comandos…';
 
   @override

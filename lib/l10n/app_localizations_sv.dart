@@ -7151,7 +7151,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get habitActiveFromLabel => 'Startdatum';
 
   @override
-  String get habitActiveSwitchDescription => 'Visas på sidan Habits';
+  String get habitActiveSwitchDescription => 'Visas på sidan Habiter';
 
   @override
   String get habitArchivedLabel => 'Arkiverad';
@@ -7279,7 +7279,8 @@ class AppLocalizationsSv extends AppLocalizations {
   String get habitEditorExampleStrength => 'funktionell styrketräning';
 
   @override
-  String get habitEditorManualRowCaption => 'du registrerar den på Vanor-sidan';
+  String get habitEditorManualRowCaption =>
+      'du registrerar den på sidan Habiter';
 
   @override
   String get habitEditorManualRowTitle => 'Jag bockar av själv';
@@ -7289,7 +7290,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get habitEditorNameSubtitle =>
-      'Kalla den vad du vill – så står det på din Vanor-sida.';
+      'Kalla den vad du vill – så står det på sidan Habiter.';
 
   @override
   String get habitEditorNotifyCaption =>
@@ -7613,6 +7614,15 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get habitsVsPreviousWeek => 'Mot föregående vecka';
+
+  @override
+  String get habitUnitKilocalories => 'kcal';
+
+  @override
+  String get habitUnitKilometres => 'km';
+
+  @override
+  String get habitUnitMinutes => 'min';
 
   @override
   String get helpMenuCommandPalette => 'Kommandopalett...';

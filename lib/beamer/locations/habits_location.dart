@@ -26,8 +26,8 @@ class HabitsLocation extends BeamLocation<BeamState> {
         child: HabitsTabPage(),
       ),
       if (state.uri.path == createPath)
-        BeamPage(
-          key: const ValueKey('habits-create'),
+        const BeamPage(
+          key: ValueKey('habits-create'),
           title: 'Habits',
           popToNamed: '/habits',
           child: HabitEditorPage(),

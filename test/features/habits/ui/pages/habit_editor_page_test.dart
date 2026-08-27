@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/goals/model/goal_health_data_types.dart';
 import 'package:lotti/features/habits/state/habit_editor_providers.dart';
+import 'package:lotti/features/habits/state/habit_settings_controller.dart';
 import 'package:lotti/features/habits/ui/pages/habit_editor_page.dart';
 import 'package:lotti/features/habits/ui/widgets/editor/habit_composite_picker.dart';
 import 'package:lotti/features/habits/ui/widgets/editor/habit_signal_card.dart';
@@ -287,6 +289,25 @@ void main() {
       expect(beamedTo, isNull);
     });
 
+    testWidgets('a route rebuild keeps the same new-habit id and its state', (
+      tester,
+    ) async {
+      await pumpEditor(tester);
+      final first = tester.state<HabitEditorPageState>(
+        find.byType(HabitEditorPage),
+      );
+      final firstId = first.habitId;
+      await tester.enterText(find.byKey(const Key('habit_name_field')), 'Keep');
+      // Beamer rebuilds the page with a fresh widget instance; the element
+      // (and its state) is reused because the BeamPage key is stable.
+      await pumpEditor(tester);
+      final second = tester.state<HabitEditorPageState>(
+        find.byType(HabitEditorPage),
+      );
+      expect(second.habitId, firstId);
+      expect(find.text('Keep'), findsOneWidget);
+    });
+
     testWidgets('back on step 2 returns to step 1; on step 1 leaves', (
       tester,
     ) async {
@@ -381,10 +402,48 @@ void main() {
       expect(find.byType(HabitSignalCard), findsOneWidget);
     });
 
-    testWidgets('an unknown habit renders an empty scaffold', (tester) async {
+    testWidgets('an unknown habit renders a titled empty scaffold', (
+      tester,
+    ) async {
       await pumpEditor(tester, habitId: 'missing');
       expect(find.byType(HabitSignalCard), findsNothing);
       expect(find.byKey(const ValueKey('habit-editor-primary')), findsNothing);
+      expect(find.text('Edit habit'), findsOneWidget);
+    });
+
+    testWidgets('a stream error after load keeps the editor on screen', (
+      tester,
+    ) async {
+      // The provider re-emits on journal updates; a transient failure must
+      // not swap a loaded editor for the shell.
+      final habits = StreamController<HabitDefinition?>.broadcast();
+      addTearDown(habits.close);
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          AppCommandHost(
+            handlers: const <AppCommandId, AppCommandHandler>{},
+            platform: TargetPlatform.windows,
+            child: HabitEditorPage(habitId: ruledHabit.id),
+          ),
+          mediaQueryData: const MediaQueryData(size: Size(1200, 1800)),
+          overrides: [
+            habitByIdProvider(
+              ruledHabit.id,
+            ).overrideWith((ref) => habits.stream),
+            measurableDataTypesStreamProvider.overrideWith(
+              (ref) => Stream.value([water]),
+            ),
+            workoutTypesProvider.overrideWith((ref) async => ['running']),
+          ],
+        ),
+      );
+      habits.add(ruledHabit);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.byType(HabitSignalCard), findsOneWidget);
+      habits.addError(StateError('db hiccup'));
+      await tester.pump();
+      expect(find.byType(HabitSignalCard), findsOneWidget);
     });
   });
 }

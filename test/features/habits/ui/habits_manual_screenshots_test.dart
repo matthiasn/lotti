@@ -562,8 +562,8 @@ Future<void> _pumpHabitEditor(
         locale: manualScreenshotLocale,
         home: RepaintBoundary(
           key: screenshotBoundaryKey,
-          child: AppCommandHost(
-            handlers: const {},
+          child: const AppCommandHost(
+            handlers: {},
             child: HabitEditorPage(),
           ),
         ),

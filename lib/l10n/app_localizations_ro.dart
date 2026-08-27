@@ -7754,6 +7754,15 @@ class AppLocalizationsRo extends AppLocalizations {
   String get habitsVsPreviousWeek => 'față de săptămâna trecută';
 
   @override
+  String get habitUnitKilocalories => 'kcal';
+
+  @override
+  String get habitUnitKilometres => 'km';
+
+  @override
+  String get habitUnitMinutes => 'min';
+
+  @override
   String get helpMenuCommandPalette => 'Paletă de comenzi…';
 
   @override

@@ -12876,6 +12876,24 @@ abstract class AppLocalizations {
   /// **'vs previous week'**
   String get habitsVsPreviousWeek;
 
+  /// No description provided for @habitUnitKilocalories.
+  ///
+  /// In en, this message translates to:
+  /// **'kcal'**
+  String get habitUnitKilocalories;
+
+  /// No description provided for @habitUnitKilometres.
+  ///
+  /// In en, this message translates to:
+  /// **'km'**
+  String get habitUnitKilometres;
+
+  /// No description provided for @habitUnitMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'min'**
+  String get habitUnitMinutes;
+
   /// No description provided for @helpMenuCommandPalette.
   ///
   /// In en, this message translates to:

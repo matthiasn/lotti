@@ -7355,7 +7355,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get habitEditorManualRowTitle => 'Odškrtnu si to sám/sama';
 
   @override
-  String get habitEditorNameHeading => 'Co chceš dělat dál?';
+  String get habitEditorNameHeading => 'V čem chceš pokračovat?';
 
   @override
   String get habitEditorNameSubtitle =>
@@ -7692,6 +7692,15 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get habitsVsPreviousWeek => 'vs. minulý týden';
+
+  @override
+  String get habitUnitKilocalories => 'kcal';
+
+  @override
+  String get habitUnitKilometres => 'km';
+
+  @override
+  String get habitUnitMinutes => 'min';
 
   @override
   String get helpMenuCommandPalette => 'Paleta příkazů…';

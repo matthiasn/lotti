@@ -49,6 +49,7 @@ void main() {
       expect(pages.length, 2);
       final editor = pages[1].child as HabitEditorPage;
       expect(editor.isCreate, isTrue);
+      expect(editor.habitId, isNull);
       expect(editor.returnPath, '/habits');
       expect(pages[1].popToNamed, '/habits');
     });

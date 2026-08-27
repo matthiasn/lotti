@@ -79,7 +79,7 @@ class HabitSignalCard extends StatelessWidget {
                 onToggle: () => _remove(index),
                 child: _RuleEditor(
                   signal: signal,
-                  unit: habitSignalUnit(signal, measurablesById),
+                  unit: habitSignalUnit(messages, signal, measurablesById),
                   onChanged: (updated) => _replace(index, updated),
                 ),
               ),
@@ -318,6 +318,17 @@ class _RuleEditorState extends State<_RuleEditor> {
   late final _threshold = TextEditingController(
     text: widget.signal.threshold?.toString() ?? '',
   );
+
+  @override
+  void didUpdateWidget(_RuleEditor old) {
+    super.didUpdateWidget(old);
+    // The element is reused per (kind, id); when the parent hands in a
+    // different threshold the field must follow it, not keep stale text.
+    if (old.signal.threshold != widget.signal.threshold) {
+      final text = widget.signal.threshold?.toString() ?? '';
+      if (_threshold.text != text) _threshold.text = text;
+    }
+  }
 
   @override
   void dispose() {

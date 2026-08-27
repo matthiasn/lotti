@@ -7345,7 +7345,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get habitEditorManualRowCaption => 'registas na página de Hábitos';
 
   @override
-  String get habitEditorManualRowTitle => 'Marco eu';
+  String get habitEditorManualRowTitle => 'Eu marco';
 
   @override
   String get habitEditorNameHeading => 'O que queres continuar a fazer?';
@@ -7369,11 +7369,11 @@ class AppLocalizationsPt extends AppLocalizations {
   String get habitEditorPickerHealth => 'Dados de saúde';
 
   @override
-  String get habitEditorPickerMeasurables => 'Medições';
+  String get habitEditorPickerMeasurables => 'Mensuráveis';
 
   @override
   String get habitEditorPickerSearchHint =>
-      'Procurar medições, dados de saúde, treinos';
+      'Procurar mensuráveis, dados de saúde, treinos';
 
   @override
   String get habitEditorPickerTitle => 'Adicionar um sinal';
@@ -7678,6 +7678,15 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get habitsVsPreviousWeek => 'versus semana anterior';
+
+  @override
+  String get habitUnitKilocalories => 'kcal';
+
+  @override
+  String get habitUnitKilometres => 'km';
+
+  @override
+  String get habitUnitMinutes => 'min';
 
   @override
   String get helpMenuCommandPalette => 'Paleta de comandos…';

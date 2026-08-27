@@ -58,11 +58,10 @@ class HabitSignalRow extends StatelessWidget {
     };
     final unit = switch (rule) {
       AutoCompleteRuleMeasurable() => measurable?.unitName ?? '',
-      AutoCompleteRuleWorkout(:final valueType?) => switch (valueType) {
-        WorkoutValueType.duration => 'min',
-        WorkoutValueType.distance => 'km',
-        WorkoutValueType.energy => 'kcal',
-      },
+      AutoCompleteRuleWorkout(:final valueType?) => habitWorkoutUnit(
+        messages,
+        valueType,
+      ),
       _ => '',
     };
 

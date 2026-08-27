@@ -44,16 +44,17 @@ import 'package:lotti/widgets/settings/settings_form_section.dart';
 /// Save persists exactly what the card shows. The dashboard picker is gone —
 /// the signals are the association.
 class HabitEditorPage extends ConsumerStatefulWidget {
-  HabitEditorPage({
-    String? habitId,
+  const HabitEditorPage({
+    this.habitId,
     this.returnPath = habitsRootPath,
     super.key,
-  }) : habitId = habitId ?? uuid.v1(),
-       isCreate = habitId == null;
+  });
 
-  /// The habit being edited, or a freshly minted id for a new one.
-  final String habitId;
-  final bool isCreate;
+  /// The habit being edited; `null` creates one. The new habit's id is
+  /// minted once by the state, so a route rebuild that hands the element a
+  /// fresh widget keeps editing — and saving — the same habit.
+  final String? habitId;
+  bool get isCreate => habitId == null;
 
   /// Where Save, Cancel and Delete lead — the habits page, or the settings
   /// list when opened from there.
@@ -62,12 +63,15 @@ class HabitEditorPage extends ConsumerStatefulWidget {
   static const habitsRootPath = '/habits';
 
   @override
-  ConsumerState<HabitEditorPage> createState() => _HabitEditorPageState();
+  ConsumerState<HabitEditorPage> createState() => HabitEditorPageState();
 }
 
 enum _Step { name, signals }
 
-class _HabitEditorPageState extends ConsumerState<HabitEditorPage> {
+class HabitEditorPageState extends ConsumerState<HabitEditorPage> {
+  /// The id this editor writes under — the given one, or one minted here
+  /// for the lifetime of the element.
+  late final String habitId = widget.habitId ?? uuid.v1();
   _Step _step = _Step.name;
   HabitSignalsForm? _signals;
   bool _saving = false;
@@ -75,7 +79,7 @@ class _HabitEditorPageState extends ConsumerState<HabitEditorPage> {
   List<String> _workoutTypes = const [];
 
   HabitSettingsController get _controller =>
-      ref.read(habitSettingsControllerProvider(widget.habitId).notifier);
+      ref.read(habitSettingsControllerProvider(habitId).notifier);
 
   HabitSignalsForm _formFrom(HabitSettingsState state) =>
       _signals ??= HabitFormMapping.fromRule(
@@ -226,12 +230,12 @@ class _HabitEditorPageState extends ConsumerState<HabitEditorPage> {
     final tokens = context.designTokens;
 
     if (!widget.isCreate) {
-      final habitAsync = ref.watch(habitByIdProvider(widget.habitId));
-      if (habitAsync.isLoading && habitAsync.value == null) {
-        return const EmptyScaffoldWithTitle('');
-      }
-      if (habitAsync.hasError || habitAsync.value == null) {
-        return const EmptyScaffoldWithTitle('');
+      final habitAsync = ref.watch(habitByIdProvider(habitId));
+      // A loaded editor stays on screen through a background reload or a
+      // transient stream error; only a habit that never arrived gets the
+      // shell.
+      if (habitAsync.value == null) {
+        return EmptyScaffoldWithTitle(messages.habitEditorEditTitle);
       }
     }
 
@@ -247,7 +251,7 @@ class _HabitEditorPageState extends ConsumerState<HabitEditorPage> {
     }
     final measurablesById = {for (final m in _measurables) m.id: m};
 
-    final state = ref.watch(habitSettingsControllerProvider(widget.habitId));
+    final state = ref.watch(habitSettingsControllerProvider(habitId));
     final signals = _formFrom(state);
     final item = state.habitDefinition;
     final showFrom = item.habitSchedule.mapOrNull(daily: (d) => d.showFrom);
@@ -381,7 +385,7 @@ class _HabitEditorPageState extends ConsumerState<HabitEditorPage> {
                                   title: messages.habitEditorSectionSettings,
                                   children: [
                                     SelectCategoryWidget(
-                                      habitId: widget.habitId,
+                                      habitId: habitId,
                                     ),
                                     SettingsDateTimeField(
                                       dateTime: item.activeFrom,

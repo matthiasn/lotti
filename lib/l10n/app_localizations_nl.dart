@@ -7239,7 +7239,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get habitEditorCompositeAll => 'Alle signalen';
 
   @override
-  String get habitEditorCompositeAny => 'Elk signaal';
+  String get habitEditorCompositeAny => 'Eén van de signalen';
 
   @override
   String habitEditorCompositeAtLeast(int count, int total) {
@@ -7324,13 +7324,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get habitEditorPickerWorkouts => 'Workouts';
 
   @override
-  String get habitEditorRuleAnyEntry => 'Elke invoer';
+  String get habitEditorRuleAnyEntry => 'Een invoer';
 
   @override
-  String get habitEditorRuleAnyReading => 'Elke meting';
+  String get habitEditorRuleAnyReading => 'Een meting';
 
   @override
-  String get habitEditorRuleAnyWorkout => 'Elke workout';
+  String get habitEditorRuleAnyWorkout => 'Een workout';
 
   @override
   String get habitEditorRuleDailyAtLeast => 'Per dag ≥';
@@ -7619,6 +7619,15 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get habitsVsPreviousWeek => 'vs vorige week';
+
+  @override
+  String get habitUnitKilocalories => 'kcal';
+
+  @override
+  String get habitUnitKilometres => 'km';
+
+  @override
+  String get habitUnitMinutes => 'min';
 
   @override
   String get helpMenuCommandPalette => 'Commandopalet...';

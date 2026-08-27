@@ -7287,7 +7287,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get habitEditorCompositeTitle =>
-      'Wann gilt die Gewohnheit als erledigt';
+      'Wann gilt die Gewohnheit als erledigt?';
 
   @override
   String get habitEditorContinue => 'Weiter';
@@ -7659,6 +7659,15 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get habitsVsPreviousWeek => 'ggü. Vorwoche';
+
+  @override
+  String get habitUnitKilocalories => 'kcal';
+
+  @override
+  String get habitUnitKilometres => 'km';
+
+  @override
+  String get habitUnitMinutes => 'Min.';
 
   @override
   String get helpMenuCommandPalette => 'Befehlspalette…';

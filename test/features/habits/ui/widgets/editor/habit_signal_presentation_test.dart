@@ -78,6 +78,7 @@ void main() {
   test('units come from the measurable or the workout dimension', () {
     expect(
       habitSignalUnit(
+        messages,
         const HabitSignalForm(kind: HabitSignalKind.measurable, id: 'water'),
         byId,
       ),
@@ -85,6 +86,7 @@ void main() {
     );
     expect(
       habitSignalUnit(
+        messages,
         const HabitSignalForm(kind: HabitSignalKind.health, id: 'x'),
         byId,
       ),
@@ -97,6 +99,7 @@ void main() {
     ]) {
       expect(
         habitSignalUnit(
+          messages,
           HabitSignalForm(
             kind: HabitSignalKind.workout,
             id: 'running',
@@ -110,6 +113,7 @@ void main() {
     }
     expect(
       habitSignalUnit(
+        messages,
         const HabitSignalForm(kind: HabitSignalKind.workout, id: 'running'),
         byId,
       ),

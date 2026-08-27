@@ -226,4 +226,30 @@ void main() {
       expect(changes.last.signals.single, run);
     });
   });
+
+  testWidgets('a threshold handed in by the parent replaces stale text', (
+    tester,
+  ) async {
+    final bounded = waterAny.copyWith(
+      mode: HabitSignalMode.atLeast,
+      threshold: 1000,
+    );
+    await pump(tester, HabitSignalsForm(signals: [bounded]));
+    expect(find.text('1000'), findsOneWidget);
+    // Same row identity, new threshold from above (e.g. an example pill).
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        HabitSignalCard(
+          form: HabitSignalsForm(signals: [bounded.copyWith(threshold: 250)]),
+          measurablesById: {'water': water},
+          onChanged: changes.add,
+          onAddSignal: () {},
+          onChangeComposite: () {},
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(find.text('250'), findsOneWidget);
+    expect(find.text('1000'), findsNothing);
+  });
 }

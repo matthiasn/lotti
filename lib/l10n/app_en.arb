@@ -4580,6 +4580,9 @@
     }
   },
   "habitsVsPreviousWeek": "vs previous week",
+  "habitUnitKilocalories": "kcal",
+  "habitUnitKilometres": "km",
+  "habitUnitMinutes": "min",
   "helpMenuCommandPalette": "Command Palette…",
   "helpMenuKeyboardShortcuts": "Keyboard Shortcuts…",
   "helpMenuTitle": "Help",

@@ -353,7 +353,7 @@ Widget _labelsPanel(BuildContext context) => DetailIdDispatch(
 Widget _habitsPanel(BuildContext context) => DetailIdDispatch(
   idParamKey: 'habitId',
   list: (_) => const HabitsBody(),
-  create: (_, _) => HabitEditorPage(returnPath: '/settings/habits'),
+  create: (_, _) => const HabitEditorPage(returnPath: '/settings/habits'),
   detail: (_, id) => HabitEditorPage(
     key: ValueKey('settings-v2-habit-$id'),
     habitId: id,

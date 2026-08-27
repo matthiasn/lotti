@@ -7351,7 +7351,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get habitEditorExamplesHint =>
-      'Tocca un esempio per partire da lì: seleziona anche il segnale corrispondente.';
+      'Tocca un esempio per partire da lì: il segnale corrispondente viene selezionato automaticamente.';
 
   @override
   String get habitEditorExampleSteps => '6.000 passi';
@@ -7387,11 +7387,11 @@ class AppLocalizationsIt extends AppLocalizations {
   String get habitEditorPickerHealth => 'Dati sulla salute';
 
   @override
-  String get habitEditorPickerMeasurables => 'Misure';
+  String get habitEditorPickerMeasurables => 'Misurabili';
 
   @override
   String get habitEditorPickerSearchHint =>
-      'Cerca misure, dati sulla salute, allenamenti';
+      'Cerca misurabili, dati sulla salute, allenamenti';
 
   @override
   String get habitEditorPickerTitle => 'Aggiungi un segnale';
@@ -7696,6 +7696,15 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get habitsVsPreviousWeek => 'vs settimana precedente';
+
+  @override
+  String get habitUnitKilocalories => 'kcal';
+
+  @override
+  String get habitUnitKilometres => 'km';
+
+  @override
+  String get habitUnitMinutes => 'min';
 
   @override
   String get helpMenuCommandPalette => 'Comando Palette...';

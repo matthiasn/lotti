@@ -69,17 +69,24 @@ String habitSignalDisplayName(
   HabitSignalKind.workout => signal.title ?? signal.id,
 };
 
+/// The unit label for a workout dimension.
+String habitWorkoutUnit(AppLocalizations messages, WorkoutValueType type) =>
+    switch (type) {
+      WorkoutValueType.duration => messages.habitUnitMinutes,
+      WorkoutValueType.distance => messages.habitUnitKilometres,
+      WorkoutValueType.energy => messages.habitUnitKilocalories,
+    };
+
 /// The unit a threshold is entered in.
 String habitSignalUnit(
+  AppLocalizations messages,
   HabitSignalForm signal,
   Map<String, MeasurableDataType> measurablesById,
 ) => switch (signal.kind) {
   HabitSignalKind.measurable => measurablesById[signal.id]?.unitName ?? '',
   HabitSignalKind.health => '',
   HabitSignalKind.workout => switch (signal.workoutValueType) {
-    WorkoutValueType.duration => 'min',
-    WorkoutValueType.distance => 'km',
-    WorkoutValueType.energy => 'kcal',
     null => '',
+    final type => habitWorkoutUnit(messages, type),
   },
 };

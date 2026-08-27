@@ -7276,7 +7276,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get habitEditorManualRowTitle => 'Jeg krydser selv af';
 
   @override
-  String get habitEditorNameHeading => 'Hvad vil du blive ved med?';
+  String get habitEditorNameHeading => 'Hvad vil du fortsætte med?';
 
   @override
   String get habitEditorNameSubtitle =>
@@ -7603,6 +7603,15 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get habitsVsPreviousWeek => 'vs forrige uge';
+
+  @override
+  String get habitUnitKilocalories => 'kcal';
+
+  @override
+  String get habitUnitKilometres => 'km';
+
+  @override
+  String get habitUnitMinutes => 'min.';
 
   @override
   String get helpMenuCommandPalette => 'Kommandopalette...';

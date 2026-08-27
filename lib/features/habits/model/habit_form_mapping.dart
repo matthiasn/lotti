@@ -101,7 +101,10 @@ class HabitSignalsForm {
   /// Whether every bounded signal has the threshold it needs; a bounded
   /// mode without one would serialize as "any entry".
   bool get isComplete => signals.every(
-    (s) => s.mode == HabitSignalMode.any || s.threshold != null,
+    (s) =>
+        s.mode == HabitSignalMode.any ||
+        (s.threshold != null &&
+            (s.kind != HabitSignalKind.workout || s.workoutValueType != null)),
   );
 
   HabitSignalsForm copyWith({

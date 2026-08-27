@@ -7735,6 +7735,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get habitsVsPreviousWeek => 'vs semaine précédente';
 
   @override
+  String get habitUnitKilocalories => 'kcal';
+
+  @override
+  String get habitUnitKilometres => 'km';
+
+  @override
+  String get habitUnitMinutes => 'min';
+
+  @override
   String get helpMenuCommandPalette => 'Palette de commandes…';
 
   @override

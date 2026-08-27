@@ -217,6 +217,16 @@ void main() {
         isFalse,
       );
       expect(const HabitSignalsForm(signals: [anyRun]).isComplete, isTrue);
+      // A bounded workout needs both a number and a dimension.
+      expect(
+        HabitSignalsForm(
+          signals: [
+            anyRun.copyWith(mode: HabitSignalMode.atLeast, threshold: 5),
+          ],
+        ).isComplete,
+        isFalse,
+      );
+      expect(const HabitSignalsForm(signals: [longRun]).isComplete, isTrue);
     });
 
     test('an or root reads back as "any"', () {
