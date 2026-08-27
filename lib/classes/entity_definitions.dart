@@ -45,6 +45,15 @@ enum AggregationType { none, dailySum, dailyMax, dailyAvg, hourlySum }
 
 enum HabitCompletionType { success, skip, fail, open }
 
+/// Origin of a habit completion entry.
+enum HabitCompletionSource {
+  /// Recorded by the user from the habits page or completion sheet.
+  manual,
+
+  /// Written by the auto-completion engine from recorded signals.
+  auto,
+}
+
 @freezed
 sealed class HabitSchedule with _$HabitSchedule {
   const factory HabitSchedule.daily({
@@ -74,10 +83,16 @@ sealed class AutoCompleteRule with _$AutoCompleteRule {
     String? title,
   }) = AutoCompleteRuleHealth;
 
+  /// A workout of [dataType] (the raw `workoutType` string as imported from
+  /// Apple Health / Health Connect). With [valueType] set, [minimum] and
+  /// [maximum] apply to that value of the day's workouts (minutes, km, kcal);
+  /// with [valueType] null the rule is satisfied by any workout of that type.
   const factory AutoCompleteRule.workout({
     required String dataType,
     num? minimum,
     num? maximum,
+    @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)
+    WorkoutValueType? valueType,
     String? title,
   }) = AutoCompleteRuleWorkout;
 
@@ -228,6 +243,11 @@ sealed class EntityDefinition with _$EntityDefinition {
     String? categoryId,
     String? dashboardId,
     bool? priority,
+
+    /// Whether an auto-completion derived from `autoCompleteRule` raises a
+    /// notification. Defaults to true so habits created before the field
+    /// existed keep the documented behaviour.
+    @Default(true) bool autoCompleteNotify,
   }) = HabitDefinition;
 
   const factory EntityDefinition.dashboard({
@@ -349,6 +369,16 @@ abstract class HabitCompletionData with _$HabitCompletionData {
     required DateTime dateTo,
     required String habitId,
     HabitCompletionType? completionType,
+
+    /// Who produced this completion. Manual entries always outrank auto ones
+    /// for the same day; missing in entries written before the field existed.
+    @Default(HabitCompletionSource.manual)
+    @JsonKey(unknownEnumValue: HabitCompletionSource.manual)
+    HabitCompletionSource source,
+
+    /// For [HabitCompletionSource.auto]: which rule leaf fired, e.g. the
+    /// measurable name and value, as shown on the habit row.
+    String? autoCompleteReason,
   }) = _HabitCompletionData;
 
   factory HabitCompletionData.fromJson(Map<String, dynamic> json) =>

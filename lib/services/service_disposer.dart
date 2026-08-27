@@ -14,6 +14,8 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/service/embedding_service.dart';
 import 'package:lotti/features/ai_consumption/database/consumption_database.dart';
 import 'package:lotti/features/daily_os_next/database/day_processing_db.dart';
+import 'package:lotti/features/habits/service/habit_auto_completion_notifier.dart';
+import 'package:lotti/features/habits/service/habit_auto_completion_service.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
@@ -49,6 +51,16 @@ class ServiceDisposer {
 
   Future<void> _disposeServices() async {
     // 1. Stop periodic background services.
+    _disposeSyncSafely<HabitAutoCompletionNotifier>(
+      (s) => s.dispose(),
+      'HabitAutoCompletionNotifier',
+    );
+
+    _disposeSyncSafely<HabitAutoCompletionService>(
+      (s) => s.dispose(),
+      'HabitAutoCompletionService',
+    );
+
     _disposeSyncSafely<BackfillRequestService>(
       (s) => s.dispose(),
       'BackfillRequestService',

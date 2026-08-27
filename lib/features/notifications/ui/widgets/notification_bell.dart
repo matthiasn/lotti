@@ -123,6 +123,8 @@ class _NotificationBellState extends ConsumerState<NotificationBell> {
                   :final linkedRelationshipId,
                 ):
                   beamToNamed('/people/$linkedRelationshipId');
+                case HabitAutoCompletedNotification():
+                  beamToNamed('/habits');
               }
             },
           ),

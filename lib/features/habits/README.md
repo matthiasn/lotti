@@ -28,8 +28,10 @@ derived from combining the two.
 
 The habits tab and its derived sections; the summary card; the consistency
 heatmap; completion-rate chart state and the time-span switch; quick completion
-capture and the detailed dialog; habit settings state for create and edit; and
-category and dashboard assignment from the settings form.
+capture and the detailed dialog; habit settings state for create and edit;
+category and dashboard assignment from the settings form; and the
+auto-completion engine that checks a habit off when its recorded signals
+satisfy its rule.
 
 It does not own every write path — reads go through `HabitsRepository`, while
 definition saves and completion writes both go through shared persistence.
@@ -38,14 +40,15 @@ definition saves and completion writes both go through shared persistence.
 
 ```text
 lib/features/habits/
-├── repository/ · state/
+├── repository/ · state/ · service/
 └── ui/{pages,widgets,charts}
 ```
 
 ## How it works
 
 The three read models, the last-write-wins resolution per habit and day, exactly
-what the tab controller derives, and where the data model outruns the current
-editing surface are documented in the knowledge bundle:
+what the tab controller derives, how auto-completion decides and when it runs,
+and where the data model outruns the current editing surface are documented in
+the knowledge bundle:
 
 **→ [knowledge/features/habits.md](../../../knowledge/features/habits.md)**

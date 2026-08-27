@@ -398,6 +398,39 @@ void main() {
         expect(flash, findsNothing);
       });
 
+      testWidgets('no all-done glow when the engine finished the day', (
+        tester,
+      ) async {
+        final flash = find.byKey(const ValueKey('habit-all-done-flash'));
+        final controller = _ControllableController(
+          _state(definitionCount: 3, completedCount: 2),
+        );
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            const HabitsSummaryCard(),
+            // The last habit to complete ('done-2') was auto-completed.
+            overrides: [
+              habitsControllerProvider.overrideWith(() => controller),
+            ],
+          ),
+        );
+        await tester.pump();
+
+        // The last habit to complete ('done-2') was auto-completed — as the
+        // persisted state says, whether this device or a synced peer wrote it.
+        controller.emit(
+          _state(
+            definitionCount: 3,
+            completedCount: 3,
+          ).copyWith(autoCompletedToday: {'done-2': 'Steps · 7412'}),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(flash, findsNothing);
+        await tester.pump(const Duration(milliseconds: 1000));
+        expect(flash, findsNothing);
+      });
+
       testWidgets('reduced motion: all-done glow still plays (static)', (
         tester,
       ) async {

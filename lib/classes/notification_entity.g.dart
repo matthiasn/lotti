@@ -68,6 +68,30 @@ Map<String, dynamic> _$RelationshipCheckInNotificationToJson(
   'runtimeType': instance.$type,
 };
 
+HabitAutoCompletedNotification _$HabitAutoCompletedNotificationFromJson(
+  Map<String, dynamic> json,
+) => HabitAutoCompletedNotification(
+  meta: NotificationMeta.fromJson(json['meta'] as Map<String, dynamic>),
+  linkedHabitIds: (json['linkedHabitIds'] as List<dynamic>)
+      .map((e) => e as String)
+      .toList(),
+  dayKey: json['dayKey'] as String,
+  title: json['title'] as String,
+  body: json['body'] as String,
+  $type: json['runtimeType'] as String?,
+);
+
+Map<String, dynamic> _$HabitAutoCompletedNotificationToJson(
+  HabitAutoCompletedNotification instance,
+) => <String, dynamic>{
+  'meta': instance.meta,
+  'linkedHabitIds': instance.linkedHabitIds,
+  'dayKey': instance.dayKey,
+  'title': instance.title,
+  'body': instance.body,
+  'runtimeType': instance.$type,
+};
+
 _NotificationMeta _$NotificationMetaFromJson(Map<String, dynamic> json) =>
     _NotificationMeta(
       id: json['id'] as String,

@@ -259,6 +259,26 @@ void main() {
     test('a check-in reminder waits for its due day', () {
       expect(showsBeforeScheduledTime(_checkInRow(id: 'c')), isFalse);
     });
+
+    test('an auto-completion row is due on arrival', () {
+      final base = DateTime.utc(2026, 5, 17, 8);
+      final row = NotificationEntity.habitAutoCompleted(
+        meta: NotificationMeta(
+          id: 'h',
+          createdAt: base,
+          updatedAt: base,
+          // Ahead only through clock skew between devices.
+          scheduledFor: base.add(const Duration(minutes: 5)),
+          vectorClock: const VectorClock({'host': 1}),
+          originatingHostId: 'host',
+        ),
+        linkedHabitIds: const ['habit-1'],
+        dayKey: '2026-05-17',
+        title: '✓ Walk done',
+        body: 'Checked off automatically from Steps · 7412.',
+      );
+      expect(showsBeforeScheduledTime(row), isTrue);
+    });
   });
 }
 

@@ -191,6 +191,43 @@ void main() {
       );
 
       test(
+        'getHabitCompletionRecordsInRange projects the completion source',
+        () async {
+          await db!.upsertJournalDbEntity(
+            toDbEntity(
+              buildHabitCompletionEntry(
+                id: 'auto',
+                habitId: 'habit-auto',
+                timestamp: DateTime(2024, 4, 15, 8, 12),
+                completionType: HabitCompletionType.success,
+                source: HabitCompletionSource.auto,
+                autoCompleteReason: 'Steps · 7412',
+              ),
+            ),
+          );
+          await db!.upsertJournalDbEntity(
+            toDbEntity(
+              buildHabitCompletionEntry(
+                id: 'manual',
+                habitId: 'habit-manual',
+                timestamp: DateTime(2024, 4, 15, 9),
+                completionType: HabitCompletionType.success,
+              ),
+            ),
+          );
+
+          final records = await db!.getHabitCompletionRecordsInRange(
+            rangeStart: DateTime(2024, 4),
+          );
+          final byHabit = {for (final r in records) r.habitId: r};
+          expect(byHabit['habit-auto']!.source, HabitCompletionSource.auto);
+          expect(byHabit['habit-auto']!.autoCompleteReason, 'Steps · 7412');
+          expect(byHabit['habit-manual']!.source, HabitCompletionSource.manual);
+          expect(byHabit['habit-manual']!.autoCompleteReason, isNull);
+        },
+      );
+
+      test(
         'getHabitCompletionRecordsInRange preserves write-recency tie breakers',
         () async {
           final habitId = habitFlossing.id;
@@ -567,6 +604,100 @@ void main() {
           expect(workouts.first, isA<WorkoutEntry>());
         },
       );
+
+      test('getWorkoutsByType filters on the workout type', () async {
+        await db!.updateJournalEntity(
+          buildWorkoutEntry(
+            id: 'run',
+            start: DateTime(2024, 5, 2, 8),
+            end: DateTime(2024, 5, 2, 9),
+          ),
+        );
+        await db!.updateJournalEntity(
+          buildWorkoutEntry(
+            id: 'swim',
+            start: DateTime(2024, 5, 3, 8),
+            end: DateTime(2024, 5, 3, 9),
+            workoutType: 'swimming',
+          ),
+        );
+        await db!.updateJournalEntity(
+          buildWorkoutEntry(
+            id: 'swim-deleted',
+            start: DateTime(2024, 5, 4, 8),
+            end: DateTime(2024, 5, 4, 9),
+            workoutType: 'swimming',
+            deletedAt: DateTime(2024, 5, 5),
+          ),
+        );
+
+        final swims = await db!.getWorkoutsByType(
+          workoutType: 'swimming',
+          rangeStart: DateTime(2024, 5),
+          rangeEnd: DateTime(2024, 5, 8),
+        );
+        expect(swims.map((w) => w.meta.id), ['swim']);
+        expect(
+          await db!.getWorkoutsByType(
+            workoutType: 'cycling',
+            rangeStart: DateTime(2024, 5),
+            rangeEnd: DateTime(2024, 5, 8),
+          ),
+          isEmpty,
+        );
+      });
+
+      test('getWorkoutsByType keeps a workout that crosses midnight', () async {
+        await db!.updateJournalEntity(
+          buildWorkoutEntry(
+            id: 'late-run',
+            start: DateTime(2024, 5, 2, 23, 45),
+            end: DateTime(2024, 5, 3, 0, 15),
+          ),
+        );
+        final onStartDay = await db!.getWorkoutsByType(
+          workoutType: 'running',
+          rangeStart: DateTime(2024, 5, 2),
+          rangeEnd: DateTime(2024, 5, 3),
+        );
+        expect(onStartDay.map((w) => w.meta.id), ['late-run']);
+        // It belongs to the day it started, not the day it ended.
+        expect(
+          await db!.getWorkoutsByType(
+            workoutType: 'running',
+            rangeStart: DateTime(2024, 5, 3),
+            rangeEnd: DateTime(2024, 5, 4),
+          ),
+          isEmpty,
+        );
+      });
+
+      test('getWorkoutTypes lists each imported type once, sorted', () async {
+        for (final (id, type) in [
+          ('a', 'walking'),
+          ('b', 'running'),
+          ('c', 'running'),
+        ]) {
+          await db!.updateJournalEntity(
+            buildWorkoutEntry(
+              id: id,
+              start: DateTime(2024, 5, 2, 8),
+              end: DateTime(2024, 5, 2, 9),
+              workoutType: type,
+            ),
+          );
+        }
+        await db!.updateJournalEntity(
+          buildWorkoutEntry(
+            id: 'gone',
+            start: DateTime(2024, 5, 2, 8),
+            end: DateTime(2024, 5, 2, 9),
+            workoutType: 'cycling',
+            deletedAt: DateTime(2024, 5, 3),
+          ),
+        );
+        expect(await db!.getWorkoutTypes(), ['running', 'walking']);
+      });
 
       test('returns empty list when no workouts fall in range', () async {
         final workouts = await db!.getWorkouts(

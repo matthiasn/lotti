@@ -12108,6 +12108,30 @@ abstract class AppLocalizations {
   /// **'Archived'**
   String get habitArchivedLabel;
 
+  /// No description provided for @habitAutoCompletedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Checked off automatically from {signal}.'**
+  String habitAutoCompletedBody(String signal);
+
+  /// No description provided for @habitAutoCompletedGroupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 habit checked off automatically} other{{count} habits checked off automatically}}'**
+  String habitAutoCompletedGroupTitle(int count);
+
+  /// No description provided for @habitAutoCompletedLateBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{signal} imported late; counted for {day}.'**
+  String habitAutoCompletedLateBody(String signal, String day);
+
+  /// No description provided for @habitAutoCompletedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'✓ {habit} done'**
+  String habitAutoCompletedTitle(String habit);
+
   /// No description provided for @habitCategoryHint.
   ///
   /// In en, this message translates to:

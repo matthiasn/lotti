@@ -108,5 +108,6 @@ class NotificationScheduler {
     TaskOverdueNotification(:final linkedTaskId) => '/tasks/$linkedTaskId',
     RelationshipCheckInNotification(:final linkedRelationshipId) =>
       '/people/$linkedRelationshipId',
+    HabitAutoCompletedNotification() => '/habits',
   };
 }

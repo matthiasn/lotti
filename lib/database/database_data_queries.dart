@@ -64,13 +64,15 @@ mixin _JournalDbDataQueries on _$JournalDb, _JournalDbConfigFlags {
   }) async {
     final rows = await customSelect(
       r'''
-        SELECT habit_id, recorded_at, completion_type
+        SELECT habit_id, recorded_at, completion_type, source, auto_reason
         FROM (
           SELECT
             json_extract(serialized, '$.data.habitId') AS habit_id,
             json_extract(serialized, '$.meta.dateFrom') AS recorded_at,
             journal.date_from AS date_from,
             json_extract(serialized, '$.data.completionType') AS completion_type,
+            json_extract(serialized, '$.data.source') AS source,
+            json_extract(serialized, '$.data.autoCompleteReason') AS auto_reason,
             ROW_NUMBER() OVER (
               PARTITION BY
                 json_extract(serialized, '$.data.habitId'),
@@ -116,11 +118,24 @@ mixin _JournalDbDataQueries on _$JournalDb, _JournalDbConfigFlags {
           completionType: _habitCompletionTypeFromDb(
             row.readNullable<String>('completion_type'),
           ),
+          source: _habitCompletionSourceFromDb(
+            row.readNullable<String>('source'),
+          ),
+          autoCompleteReason: row.readNullable<String>('auto_reason'),
         ),
       );
     }
     return records;
   }
+
+  /// Maps the serialized enum name back to [HabitCompletionSource]; missing
+  /// (pre-field entries) and unknown values are manual, matching the
+  /// entity's own JSON default.
+  HabitCompletionSource _habitCompletionSourceFromDb(String? value) =>
+      HabitCompletionSource.values.firstWhere(
+        (source) => source.name == value,
+        orElse: () => HabitCompletionSource.manual,
+      );
 
   /// Maps the serialized enum name back to [HabitCompletionType].
   ///
@@ -192,5 +207,25 @@ mixin _JournalDbDataQueries on _$JournalDb, _JournalDbConfigFlags {
   }) async {
     final res = await workouts(rangeStart, rangeEnd).get();
     return res.map(fromDbEntity).toList();
+  }
+
+  /// Workouts of one [workoutType] (the raw imported string, stored as the
+  /// row's `subtype`) that *started* in `[rangeStart, rangeEnd)`, newest
+  /// first — a workout crossing midnight belongs to the day it began.
+  Future<List<JournalEntity>> getWorkoutsByType({
+    required String workoutType,
+    required DateTime rangeStart,
+    required DateTime rangeEnd,
+  }) async {
+    final res = await workoutsByType(workoutType, rangeStart, rangeEnd).get();
+    return res.map(fromDbEntity).toList();
+  }
+
+  /// The distinct workout types present in the journal, sorted. Workout type
+  /// strings arrive from Apple Health / Health Connect un-normalised, so a
+  /// picker must offer what was actually imported rather than a fixed list.
+  Future<List<String>> getWorkoutTypes() async {
+    final types = await workoutTypes().get();
+    return types.nonNulls.toList();
   }
 }

@@ -9,6 +9,7 @@ Cross-cutting runtime structure — the parts no single feature owns.
 * [Navigation and app shell](navigation.md) - independent Beamer stacks behind one IndexedStack, and the rules that decide which chrome each route gets.
 * [Security and privacy posture](security-and-privacy.md) - what is encrypted, what is not, where secrets live, and what leaves the device.
 * [Logging and diagnostics](logging-and-diagnostics.md) - the opt-in logging domains, where their lines land, and why errors bypass the gate.
+* [Signals](signals.md) - the journal series goals and habits both evaluate, bucketed by calendar day, and the habit rule evaluator.
 * [Shared widgets](shared-widgets.md) - the widgets that belong to no single feature.
 * [Platform targets, CI and release](platform-and-release.md) - every platform target from one codebase, the checks each branch runs, and the tag that triggers the release pipelines.
 

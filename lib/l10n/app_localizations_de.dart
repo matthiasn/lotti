@@ -7198,6 +7198,32 @@ class AppLocalizationsDe extends AppLocalizations {
   String get habitArchivedLabel => 'Archiviert';
 
   @override
+  String habitAutoCompletedBody(String signal) {
+    return 'Automatisch abgehakt anhand von $signal.';
+  }
+
+  @override
+  String habitAutoCompletedGroupTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Gewohnheiten automatisch abgehakt',
+      one: '1 Gewohnheit automatisch abgehakt',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String habitAutoCompletedLateBody(String signal, String day) {
+    return '$signal kam verspätet an; zählt für $day.';
+  }
+
+  @override
+  String habitAutoCompletedTitle(String habit) {
+    return '✓ $habit erledigt';
+  }
+
+  @override
   String get habitCategoryHint => 'Kategorie auswählen';
 
   @override

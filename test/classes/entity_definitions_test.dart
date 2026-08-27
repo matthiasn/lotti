@@ -121,6 +121,126 @@ void main() {
   });
 
   // -------------------------------------------------------------------------
+  // Habit ↔ signal association fields (B1 of the habits rework)
+  // -------------------------------------------------------------------------
+  group('AutoCompleteRule.workout valueType', () {
+    test('round-trips a thresholded workout rule', () {
+      const rule = AutoCompleteRule.workout(
+        dataType: 'HKWorkoutActivityTypeRunning',
+        minimum: 5,
+        valueType: WorkoutValueType.distance,
+      );
+      final decoded = AutoCompleteRule.fromJson(
+        jsonDecode(jsonEncode(rule.toJson())) as Map<String, dynamic>,
+      );
+      expect(decoded, rule);
+      expect(
+        (decoded as AutoCompleteRuleWorkout).valueType,
+        WorkoutValueType.distance,
+      );
+    });
+
+    test('a payload without valueType decodes as "any workout"', () {
+      final decoded = AutoCompleteRule.fromJson({
+        'dataType': 'HKWorkoutActivityTypeRunning',
+        'runtimeType': 'workout',
+      });
+      expect(
+        decoded,
+        const AutoCompleteRule.workout(
+          dataType: 'HKWorkoutActivityTypeRunning',
+        ),
+      );
+    });
+
+    test(
+      'an unknown valueType from a newer peer decodes as null, not a throw',
+      () {
+        final decoded = AutoCompleteRule.fromJson({
+          'dataType': 'HKWorkoutActivityTypeRunning',
+          'valueType': 'elevation',
+          'runtimeType': 'workout',
+        });
+        expect((decoded as AutoCompleteRuleWorkout).valueType, isNull);
+      },
+    );
+  });
+
+  group('HabitDefinition.autoCompleteNotify', () {
+    Map<String, dynamic> habitJson({bool? notify}) => {
+      'id': 'habit-1',
+      'createdAt': '2026-01-01T00:00:00.000',
+      'updatedAt': '2026-01-01T00:00:00.000',
+      'name': 'Walk',
+      'description': '',
+      'habitSchedule': {'requiredCompletions': 1, 'runtimeType': 'daily'},
+      'vectorClock': null,
+      'active': true,
+      'private': false,
+      'autoCompleteNotify': ?notify,
+      'runtimeType': 'habit',
+    };
+
+    test('defaults to true for habits written before the field existed', () {
+      final habit = EntityDefinition.fromJson(habitJson()) as HabitDefinition;
+      expect(habit.autoCompleteNotify, isTrue);
+    });
+
+    test('a stored false survives the round trip', () {
+      final habit =
+          EntityDefinition.fromJson(habitJson(notify: false))
+              as HabitDefinition;
+      expect(habit.autoCompleteNotify, isFalse);
+      final again =
+          EntityDefinition.fromJson(
+                jsonDecode(jsonEncode(habit.toJson())) as Map<String, dynamic>,
+              )
+              as HabitDefinition;
+      expect(again.autoCompleteNotify, isFalse);
+    });
+  });
+
+  group('HabitCompletionData source', () {
+    final base = {
+      'dateFrom': '2026-03-15T08:12:00.000',
+      'dateTo': '2026-03-15T08:12:00.000',
+      'habitId': 'habit-1',
+      'completionType': 'success',
+    };
+
+    test(
+      'an entry written before the field existed is a manual completion',
+      () {
+        final data = HabitCompletionData.fromJson(base);
+        expect(data.source, HabitCompletionSource.manual);
+        expect(data.autoCompleteReason, isNull);
+      },
+    );
+
+    test('an auto completion keeps its source and reason across JSON', () {
+      final data = HabitCompletionData(
+        dateFrom: DateTime(2026, 3, 15, 8, 12),
+        dateTo: DateTime(2026, 3, 15, 8, 12),
+        habitId: 'habit-1',
+        completionType: HabitCompletionType.success,
+        source: HabitCompletionSource.auto,
+        autoCompleteReason: 'Steps · 7,412 steps',
+      );
+      final decoded = HabitCompletionData.fromJson(
+        jsonDecode(jsonEncode(data.toJson())) as Map<String, dynamic>,
+      );
+      expect(decoded, data);
+      expect(decoded.source, HabitCompletionSource.auto);
+      expect(decoded.autoCompleteReason, 'Steps · 7,412 steps');
+    });
+
+    test('an unknown source from a newer peer falls back to manual', () {
+      final data = HabitCompletionData.fromJson({...base, 'source': 'agent'});
+      expect(data.source, HabitCompletionSource.manual);
+    });
+  });
+
+  // -------------------------------------------------------------------------
   // CategoryAutomation — the two independent automation preferences
   // -------------------------------------------------------------------------
   group('CategoryAutomation', () {

@@ -7162,6 +7162,32 @@ class AppLocalizationsNl extends AppLocalizations {
   String get habitArchivedLabel => 'Gearchiveerd';
 
   @override
+  String habitAutoCompletedBody(String signal) {
+    return 'Automatisch afgevinkt op basis van $signal.';
+  }
+
+  @override
+  String habitAutoCompletedGroupTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count gewoontes automatisch afgevinkt',
+      one: '1 gewoonte automatisch afgevinkt',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String habitAutoCompletedLateBody(String signal, String day) {
+    return '$signal kwam laat binnen; telt voor $day.';
+  }
+
+  @override
+  String habitAutoCompletedTitle(String habit) {
+    return '✓ $habit gedaan';
+  }
+
+  @override
   String get habitCategoryHint => 'Een categorie selecteren';
 
   @override

@@ -15,7 +15,8 @@ today:
   entirely in ADR 0059 and is now the kind-agnostic `nudge_models.dart`.
   `GoalCriterion.fromAutoCompleteRule` imports an existing habit rule as a
   goal seed.
-- `evaluation/` — `GoalProgressEvaluator`, a pure fold over a
+- `evaluation/` — `GoalSignalReader`, which loads leaf series through the
+  shared `lib/logic/signals/` helpers, `GoalProgressEvaluator`, a pure fold over a
   `GoalSignalWindow` of daily aggregates, and `GoalTrackPolicy`, which turns
   attainment, pace, grace, and data coverage into a `GoalTrackStatus`.
   Quantitative and user-defined measurable leaves share the existing journal

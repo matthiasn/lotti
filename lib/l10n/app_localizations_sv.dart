@@ -7157,6 +7157,32 @@ class AppLocalizationsSv extends AppLocalizations {
   String get habitArchivedLabel => 'Arkiverad';
 
   @override
+  String habitAutoCompletedBody(String signal) {
+    return 'Bockades av automatiskt utifrån $signal.';
+  }
+
+  @override
+  String habitAutoCompletedGroupTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count vanor avbockade automatiskt',
+      one: '1 vana avbockad automatiskt',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String habitAutoCompletedLateBody(String signal, String day) {
+    return '$signal importerades sent; räknas för $day.';
+  }
+
+  @override
+  String habitAutoCompletedTitle(String habit) {
+    return '✓ $habit klart';
+  }
+
+  @override
   String get habitCategoryHint => 'Välj en kategori';
 
   @override

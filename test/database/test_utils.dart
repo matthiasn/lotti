@@ -277,6 +277,7 @@ JournalEntity buildWorkoutEntry({
   required DateTime start,
   required DateTime end,
   DateTime? deletedAt,
+  String workoutType = 'running',
 }) {
   return JournalEntity.workout(
     meta: Metadata(
@@ -293,7 +294,7 @@ JournalEntity buildWorkoutEntry({
       distance: 1000,
       dateFrom: start,
       dateTo: end,
-      workoutType: 'running',
+      workoutType: workoutType,
       energy: 200,
       id: 'workout-$id',
       source: 'test',
@@ -308,6 +309,8 @@ JournalEntity buildHabitCompletionEntry({
   DateTime? deletedAt,
   DateTime? writtenAt,
   HabitCompletionType? completionType,
+  HabitCompletionSource source = HabitCompletionSource.manual,
+  String? autoCompleteReason,
 }) {
   final effectiveWrittenAt = writtenAt ?? timestamp;
   return JournalEntity.habitCompletion(
@@ -326,6 +329,8 @@ JournalEntity buildHabitCompletionEntry({
       dateFrom: timestamp,
       dateTo: timestamp,
       completionType: completionType,
+      source: source,
+      autoCompleteReason: autoCompleteReason,
     ),
   );
 }

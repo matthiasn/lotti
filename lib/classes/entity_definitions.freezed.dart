@@ -936,11 +936,11 @@ return multiple(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String dataType,  num? minimum,  num? maximum,  String? title)?  health,TResult Function( String dataType,  num? minimum,  num? maximum,  String? title)?  workout,TResult Function( String dataTypeId,  num? minimum,  num? maximum,  String? title)?  measurable,TResult Function( String habitId,  String? title)?  habit,TResult Function( List<AutoCompleteRule> rules,  String? title)?  and,TResult Function( List<AutoCompleteRule> rules,  String? title)?  or,TResult Function( List<AutoCompleteRule> rules,  int successes,  String? title)?  multiple,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String dataType,  num? minimum,  num? maximum,  String? title)?  health,TResult Function( String dataType,  num? minimum,  num? maximum, @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)  WorkoutValueType? valueType,  String? title)?  workout,TResult Function( String dataTypeId,  num? minimum,  num? maximum,  String? title)?  measurable,TResult Function( String habitId,  String? title)?  habit,TResult Function( List<AutoCompleteRule> rules,  String? title)?  and,TResult Function( List<AutoCompleteRule> rules,  String? title)?  or,TResult Function( List<AutoCompleteRule> rules,  int successes,  String? title)?  multiple,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case AutoCompleteRuleHealth() when health != null:
 return health(_that.dataType,_that.minimum,_that.maximum,_that.title);case AutoCompleteRuleWorkout() when workout != null:
-return workout(_that.dataType,_that.minimum,_that.maximum,_that.title);case AutoCompleteRuleMeasurable() when measurable != null:
+return workout(_that.dataType,_that.minimum,_that.maximum,_that.valueType,_that.title);case AutoCompleteRuleMeasurable() when measurable != null:
 return measurable(_that.dataTypeId,_that.minimum,_that.maximum,_that.title);case AutoCompleteRuleHabit() when habit != null:
 return habit(_that.habitId,_that.title);case AutoCompleteRuleAnd() when and != null:
 return and(_that.rules,_that.title);case AutoCompleteRuleOr() when or != null:
@@ -963,11 +963,11 @@ return multiple(_that.rules,_that.successes,_that.title);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String dataType,  num? minimum,  num? maximum,  String? title)  health,required TResult Function( String dataType,  num? minimum,  num? maximum,  String? title)  workout,required TResult Function( String dataTypeId,  num? minimum,  num? maximum,  String? title)  measurable,required TResult Function( String habitId,  String? title)  habit,required TResult Function( List<AutoCompleteRule> rules,  String? title)  and,required TResult Function( List<AutoCompleteRule> rules,  String? title)  or,required TResult Function( List<AutoCompleteRule> rules,  int successes,  String? title)  multiple,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String dataType,  num? minimum,  num? maximum,  String? title)  health,required TResult Function( String dataType,  num? minimum,  num? maximum, @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)  WorkoutValueType? valueType,  String? title)  workout,required TResult Function( String dataTypeId,  num? minimum,  num? maximum,  String? title)  measurable,required TResult Function( String habitId,  String? title)  habit,required TResult Function( List<AutoCompleteRule> rules,  String? title)  and,required TResult Function( List<AutoCompleteRule> rules,  String? title)  or,required TResult Function( List<AutoCompleteRule> rules,  int successes,  String? title)  multiple,}) {final _that = this;
 switch (_that) {
 case AutoCompleteRuleHealth():
 return health(_that.dataType,_that.minimum,_that.maximum,_that.title);case AutoCompleteRuleWorkout():
-return workout(_that.dataType,_that.minimum,_that.maximum,_that.title);case AutoCompleteRuleMeasurable():
+return workout(_that.dataType,_that.minimum,_that.maximum,_that.valueType,_that.title);case AutoCompleteRuleMeasurable():
 return measurable(_that.dataTypeId,_that.minimum,_that.maximum,_that.title);case AutoCompleteRuleHabit():
 return habit(_that.habitId,_that.title);case AutoCompleteRuleAnd():
 return and(_that.rules,_that.title);case AutoCompleteRuleOr():
@@ -986,11 +986,11 @@ return multiple(_that.rules,_that.successes,_that.title);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String dataType,  num? minimum,  num? maximum,  String? title)?  health,TResult? Function( String dataType,  num? minimum,  num? maximum,  String? title)?  workout,TResult? Function( String dataTypeId,  num? minimum,  num? maximum,  String? title)?  measurable,TResult? Function( String habitId,  String? title)?  habit,TResult? Function( List<AutoCompleteRule> rules,  String? title)?  and,TResult? Function( List<AutoCompleteRule> rules,  String? title)?  or,TResult? Function( List<AutoCompleteRule> rules,  int successes,  String? title)?  multiple,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String dataType,  num? minimum,  num? maximum,  String? title)?  health,TResult? Function( String dataType,  num? minimum,  num? maximum, @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)  WorkoutValueType? valueType,  String? title)?  workout,TResult? Function( String dataTypeId,  num? minimum,  num? maximum,  String? title)?  measurable,TResult? Function( String habitId,  String? title)?  habit,TResult? Function( List<AutoCompleteRule> rules,  String? title)?  and,TResult? Function( List<AutoCompleteRule> rules,  String? title)?  or,TResult? Function( List<AutoCompleteRule> rules,  int successes,  String? title)?  multiple,}) {final _that = this;
 switch (_that) {
 case AutoCompleteRuleHealth() when health != null:
 return health(_that.dataType,_that.minimum,_that.maximum,_that.title);case AutoCompleteRuleWorkout() when workout != null:
-return workout(_that.dataType,_that.minimum,_that.maximum,_that.title);case AutoCompleteRuleMeasurable() when measurable != null:
+return workout(_that.dataType,_that.minimum,_that.maximum,_that.valueType,_that.title);case AutoCompleteRuleMeasurable() when measurable != null:
 return measurable(_that.dataTypeId,_that.minimum,_that.maximum,_that.title);case AutoCompleteRuleHabit() when habit != null:
 return habit(_that.habitId,_that.title);case AutoCompleteRuleAnd() when and != null:
 return and(_that.rules,_that.title);case AutoCompleteRuleOr() when or != null:
@@ -1086,12 +1086,13 @@ as String?,
 @JsonSerializable()
 
 class AutoCompleteRuleWorkout implements AutoCompleteRule {
-  const AutoCompleteRuleWorkout({required this.dataType, this.minimum, this.maximum, this.title, final  String? $type}): $type = $type ?? 'workout';
+  const AutoCompleteRuleWorkout({required this.dataType, this.minimum, this.maximum, @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue) this.valueType, this.title, final  String? $type}): $type = $type ?? 'workout';
   factory AutoCompleteRuleWorkout.fromJson(Map<String, dynamic> json) => _$AutoCompleteRuleWorkoutFromJson(json);
 
  final  String dataType;
  final  num? minimum;
  final  num? maximum;
+@JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue) final  WorkoutValueType? valueType;
 @override final  String? title;
 
 @JsonKey(name: 'runtimeType')
@@ -1111,16 +1112,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AutoCompleteRuleWorkout&&(identical(other.dataType, dataType) || other.dataType == dataType)&&(identical(other.minimum, minimum) || other.minimum == minimum)&&(identical(other.maximum, maximum) || other.maximum == maximum)&&(identical(other.title, title) || other.title == title));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AutoCompleteRuleWorkout&&(identical(other.dataType, dataType) || other.dataType == dataType)&&(identical(other.minimum, minimum) || other.minimum == minimum)&&(identical(other.maximum, maximum) || other.maximum == maximum)&&(identical(other.valueType, valueType) || other.valueType == valueType)&&(identical(other.title, title) || other.title == title));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,dataType,minimum,maximum,title);
+int get hashCode => Object.hash(runtimeType,dataType,minimum,maximum,valueType,title);
 
 @override
 String toString() {
-  return 'AutoCompleteRule.workout(dataType: $dataType, minimum: $minimum, maximum: $maximum, title: $title)';
+  return 'AutoCompleteRule.workout(dataType: $dataType, minimum: $minimum, maximum: $maximum, valueType: $valueType, title: $title)';
 }
 
 
@@ -1131,7 +1132,7 @@ abstract mixin class $AutoCompleteRuleWorkoutCopyWith<$Res> implements $AutoComp
   factory $AutoCompleteRuleWorkoutCopyWith(AutoCompleteRuleWorkout value, $Res Function(AutoCompleteRuleWorkout) _then) = _$AutoCompleteRuleWorkoutCopyWithImpl;
 @override @useResult
 $Res call({
- String dataType, num? minimum, num? maximum, String? title
+ String dataType, num? minimum, num? maximum,@JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue) WorkoutValueType? valueType, String? title
 });
 
 
@@ -1148,12 +1149,13 @@ class _$AutoCompleteRuleWorkoutCopyWithImpl<$Res>
 
 /// Create a copy of AutoCompleteRule
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? dataType = null,Object? minimum = freezed,Object? maximum = freezed,Object? title = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? dataType = null,Object? minimum = freezed,Object? maximum = freezed,Object? valueType = freezed,Object? title = freezed,}) {
   return _then(AutoCompleteRuleWorkout(
 dataType: null == dataType ? _self.dataType : dataType // ignore: cast_nullable_to_non_nullable
 as String,minimum: freezed == minimum ? _self.minimum : minimum // ignore: cast_nullable_to_non_nullable
 as num?,maximum: freezed == maximum ? _self.maximum : maximum // ignore: cast_nullable_to_non_nullable
-as num?,title: freezed == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
+as num?,valueType: freezed == valueType ? _self.valueType : valueType // ignore: cast_nullable_to_non_nullable
+as WorkoutValueType?,title: freezed == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
@@ -1751,13 +1753,13 @@ return dashboard(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String displayName,  String description,  String unitName,  int version,  VectorClock? vectorClock,  DateTime? deletedAt,  bool? private,  bool? favorite,  String? categoryId,  AggregationType? aggregationType)?  measurableDataType,TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  VectorClock? vectorClock,  bool private,  bool active,  bool? favorite,  String? color,  String? categoryId,  DateTime? deletedAt,  String? defaultLanguageCode, @CategoryIconConverter()  CategoryIcon? icon,  List<String>? speechDictionary,  List<ChecklistCorrectionExample>? correctionExamples,  String? defaultProfileId,  bool? automaticInferenceEnabled,  String? defaultTemplateId,  bool? automaticAgentWakesEnabled,  String? defaultEventTemplateId,  bool? isAvailableForDayPlan)?  categoryDefinition,TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  String color,  VectorClock? vectorClock,  String? description,  int? sortOrder,  List<String>? applicableCategoryIds,  DateTime? deletedAt,  bool? private)?  labelDefinition,TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  String description,  HabitSchedule habitSchedule,  VectorClock? vectorClock,  bool active,  bool private,  AutoCompleteRule? autoCompleteRule,  String? version,  DateTime? activeFrom,  DateTime? activeUntil,  DateTime? deletedAt, @Deprecated('Tags concept removed — kept for JSON backward compatibility')  String? defaultStoryId,  String? categoryId,  String? dashboardId,  bool? priority)?  habit,TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  DateTime lastReviewed,  String name,  String description,  List<DashboardItem> items,  String version,  VectorClock? vectorClock,  bool active,  bool private,  DateTime? reviewAt,  int days,  DateTime? deletedAt,  String? categoryId)?  dashboard,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String displayName,  String description,  String unitName,  int version,  VectorClock? vectorClock,  DateTime? deletedAt,  bool? private,  bool? favorite,  String? categoryId,  AggregationType? aggregationType)?  measurableDataType,TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  VectorClock? vectorClock,  bool private,  bool active,  bool? favorite,  String? color,  String? categoryId,  DateTime? deletedAt,  String? defaultLanguageCode, @CategoryIconConverter()  CategoryIcon? icon,  List<String>? speechDictionary,  List<ChecklistCorrectionExample>? correctionExamples,  String? defaultProfileId,  bool? automaticInferenceEnabled,  String? defaultTemplateId,  bool? automaticAgentWakesEnabled,  String? defaultEventTemplateId,  bool? isAvailableForDayPlan)?  categoryDefinition,TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  String color,  VectorClock? vectorClock,  String? description,  int? sortOrder,  List<String>? applicableCategoryIds,  DateTime? deletedAt,  bool? private)?  labelDefinition,TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  String description,  HabitSchedule habitSchedule,  VectorClock? vectorClock,  bool active,  bool private,  AutoCompleteRule? autoCompleteRule,  String? version,  DateTime? activeFrom,  DateTime? activeUntil,  DateTime? deletedAt, @Deprecated('Tags concept removed — kept for JSON backward compatibility')  String? defaultStoryId,  String? categoryId,  String? dashboardId,  bool? priority,  bool autoCompleteNotify)?  habit,TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  DateTime lastReviewed,  String name,  String description,  List<DashboardItem> items,  String version,  VectorClock? vectorClock,  bool active,  bool private,  DateTime? reviewAt,  int days,  DateTime? deletedAt,  String? categoryId)?  dashboard,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case MeasurableDataType() when measurableDataType != null:
 return measurableDataType(_that.id,_that.createdAt,_that.updatedAt,_that.displayName,_that.description,_that.unitName,_that.version,_that.vectorClock,_that.deletedAt,_that.private,_that.favorite,_that.categoryId,_that.aggregationType);case CategoryDefinition() when categoryDefinition != null:
 return categoryDefinition(_that.id,_that.createdAt,_that.updatedAt,_that.name,_that.vectorClock,_that.private,_that.active,_that.favorite,_that.color,_that.categoryId,_that.deletedAt,_that.defaultLanguageCode,_that.icon,_that.speechDictionary,_that.correctionExamples,_that.defaultProfileId,_that.automaticInferenceEnabled,_that.defaultTemplateId,_that.automaticAgentWakesEnabled,_that.defaultEventTemplateId,_that.isAvailableForDayPlan);case LabelDefinition() when labelDefinition != null:
 return labelDefinition(_that.id,_that.createdAt,_that.updatedAt,_that.name,_that.color,_that.vectorClock,_that.description,_that.sortOrder,_that.applicableCategoryIds,_that.deletedAt,_that.private);case HabitDefinition() when habit != null:
-return habit(_that.id,_that.createdAt,_that.updatedAt,_that.name,_that.description,_that.habitSchedule,_that.vectorClock,_that.active,_that.private,_that.autoCompleteRule,_that.version,_that.activeFrom,_that.activeUntil,_that.deletedAt,_that.defaultStoryId,_that.categoryId,_that.dashboardId,_that.priority);case DashboardDefinition() when dashboard != null:
+return habit(_that.id,_that.createdAt,_that.updatedAt,_that.name,_that.description,_that.habitSchedule,_that.vectorClock,_that.active,_that.private,_that.autoCompleteRule,_that.version,_that.activeFrom,_that.activeUntil,_that.deletedAt,_that.defaultStoryId,_that.categoryId,_that.dashboardId,_that.priority,_that.autoCompleteNotify);case DashboardDefinition() when dashboard != null:
 return dashboard(_that.id,_that.createdAt,_that.updatedAt,_that.lastReviewed,_that.name,_that.description,_that.items,_that.version,_that.vectorClock,_that.active,_that.private,_that.reviewAt,_that.days,_that.deletedAt,_that.categoryId);case _:
   return orElse();
 
@@ -1776,13 +1778,13 @@ return dashboard(_that.id,_that.createdAt,_that.updatedAt,_that.lastReviewed,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String displayName,  String description,  String unitName,  int version,  VectorClock? vectorClock,  DateTime? deletedAt,  bool? private,  bool? favorite,  String? categoryId,  AggregationType? aggregationType)  measurableDataType,required TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  VectorClock? vectorClock,  bool private,  bool active,  bool? favorite,  String? color,  String? categoryId,  DateTime? deletedAt,  String? defaultLanguageCode, @CategoryIconConverter()  CategoryIcon? icon,  List<String>? speechDictionary,  List<ChecklistCorrectionExample>? correctionExamples,  String? defaultProfileId,  bool? automaticInferenceEnabled,  String? defaultTemplateId,  bool? automaticAgentWakesEnabled,  String? defaultEventTemplateId,  bool? isAvailableForDayPlan)  categoryDefinition,required TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  String color,  VectorClock? vectorClock,  String? description,  int? sortOrder,  List<String>? applicableCategoryIds,  DateTime? deletedAt,  bool? private)  labelDefinition,required TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  String description,  HabitSchedule habitSchedule,  VectorClock? vectorClock,  bool active,  bool private,  AutoCompleteRule? autoCompleteRule,  String? version,  DateTime? activeFrom,  DateTime? activeUntil,  DateTime? deletedAt, @Deprecated('Tags concept removed — kept for JSON backward compatibility')  String? defaultStoryId,  String? categoryId,  String? dashboardId,  bool? priority)  habit,required TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  DateTime lastReviewed,  String name,  String description,  List<DashboardItem> items,  String version,  VectorClock? vectorClock,  bool active,  bool private,  DateTime? reviewAt,  int days,  DateTime? deletedAt,  String? categoryId)  dashboard,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String displayName,  String description,  String unitName,  int version,  VectorClock? vectorClock,  DateTime? deletedAt,  bool? private,  bool? favorite,  String? categoryId,  AggregationType? aggregationType)  measurableDataType,required TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  VectorClock? vectorClock,  bool private,  bool active,  bool? favorite,  String? color,  String? categoryId,  DateTime? deletedAt,  String? defaultLanguageCode, @CategoryIconConverter()  CategoryIcon? icon,  List<String>? speechDictionary,  List<ChecklistCorrectionExample>? correctionExamples,  String? defaultProfileId,  bool? automaticInferenceEnabled,  String? defaultTemplateId,  bool? automaticAgentWakesEnabled,  String? defaultEventTemplateId,  bool? isAvailableForDayPlan)  categoryDefinition,required TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  String color,  VectorClock? vectorClock,  String? description,  int? sortOrder,  List<String>? applicableCategoryIds,  DateTime? deletedAt,  bool? private)  labelDefinition,required TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  String description,  HabitSchedule habitSchedule,  VectorClock? vectorClock,  bool active,  bool private,  AutoCompleteRule? autoCompleteRule,  String? version,  DateTime? activeFrom,  DateTime? activeUntil,  DateTime? deletedAt, @Deprecated('Tags concept removed — kept for JSON backward compatibility')  String? defaultStoryId,  String? categoryId,  String? dashboardId,  bool? priority,  bool autoCompleteNotify)  habit,required TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  DateTime lastReviewed,  String name,  String description,  List<DashboardItem> items,  String version,  VectorClock? vectorClock,  bool active,  bool private,  DateTime? reviewAt,  int days,  DateTime? deletedAt,  String? categoryId)  dashboard,}) {final _that = this;
 switch (_that) {
 case MeasurableDataType():
 return measurableDataType(_that.id,_that.createdAt,_that.updatedAt,_that.displayName,_that.description,_that.unitName,_that.version,_that.vectorClock,_that.deletedAt,_that.private,_that.favorite,_that.categoryId,_that.aggregationType);case CategoryDefinition():
 return categoryDefinition(_that.id,_that.createdAt,_that.updatedAt,_that.name,_that.vectorClock,_that.private,_that.active,_that.favorite,_that.color,_that.categoryId,_that.deletedAt,_that.defaultLanguageCode,_that.icon,_that.speechDictionary,_that.correctionExamples,_that.defaultProfileId,_that.automaticInferenceEnabled,_that.defaultTemplateId,_that.automaticAgentWakesEnabled,_that.defaultEventTemplateId,_that.isAvailableForDayPlan);case LabelDefinition():
 return labelDefinition(_that.id,_that.createdAt,_that.updatedAt,_that.name,_that.color,_that.vectorClock,_that.description,_that.sortOrder,_that.applicableCategoryIds,_that.deletedAt,_that.private);case HabitDefinition():
-return habit(_that.id,_that.createdAt,_that.updatedAt,_that.name,_that.description,_that.habitSchedule,_that.vectorClock,_that.active,_that.private,_that.autoCompleteRule,_that.version,_that.activeFrom,_that.activeUntil,_that.deletedAt,_that.defaultStoryId,_that.categoryId,_that.dashboardId,_that.priority);case DashboardDefinition():
+return habit(_that.id,_that.createdAt,_that.updatedAt,_that.name,_that.description,_that.habitSchedule,_that.vectorClock,_that.active,_that.private,_that.autoCompleteRule,_that.version,_that.activeFrom,_that.activeUntil,_that.deletedAt,_that.defaultStoryId,_that.categoryId,_that.dashboardId,_that.priority,_that.autoCompleteNotify);case DashboardDefinition():
 return dashboard(_that.id,_that.createdAt,_that.updatedAt,_that.lastReviewed,_that.name,_that.description,_that.items,_that.version,_that.vectorClock,_that.active,_that.private,_that.reviewAt,_that.days,_that.deletedAt,_that.categoryId);}
 }
 /// A variant of `when` that fallback to returning `null`
@@ -1797,13 +1799,13 @@ return dashboard(_that.id,_that.createdAt,_that.updatedAt,_that.lastReviewed,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  DateTime createdAt,  DateTime updatedAt,  String displayName,  String description,  String unitName,  int version,  VectorClock? vectorClock,  DateTime? deletedAt,  bool? private,  bool? favorite,  String? categoryId,  AggregationType? aggregationType)?  measurableDataType,TResult? Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  VectorClock? vectorClock,  bool private,  bool active,  bool? favorite,  String? color,  String? categoryId,  DateTime? deletedAt,  String? defaultLanguageCode, @CategoryIconConverter()  CategoryIcon? icon,  List<String>? speechDictionary,  List<ChecklistCorrectionExample>? correctionExamples,  String? defaultProfileId,  bool? automaticInferenceEnabled,  String? defaultTemplateId,  bool? automaticAgentWakesEnabled,  String? defaultEventTemplateId,  bool? isAvailableForDayPlan)?  categoryDefinition,TResult? Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  String color,  VectorClock? vectorClock,  String? description,  int? sortOrder,  List<String>? applicableCategoryIds,  DateTime? deletedAt,  bool? private)?  labelDefinition,TResult? Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  String description,  HabitSchedule habitSchedule,  VectorClock? vectorClock,  bool active,  bool private,  AutoCompleteRule? autoCompleteRule,  String? version,  DateTime? activeFrom,  DateTime? activeUntil,  DateTime? deletedAt, @Deprecated('Tags concept removed — kept for JSON backward compatibility')  String? defaultStoryId,  String? categoryId,  String? dashboardId,  bool? priority)?  habit,TResult? Function( String id,  DateTime createdAt,  DateTime updatedAt,  DateTime lastReviewed,  String name,  String description,  List<DashboardItem> items,  String version,  VectorClock? vectorClock,  bool active,  bool private,  DateTime? reviewAt,  int days,  DateTime? deletedAt,  String? categoryId)?  dashboard,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  DateTime createdAt,  DateTime updatedAt,  String displayName,  String description,  String unitName,  int version,  VectorClock? vectorClock,  DateTime? deletedAt,  bool? private,  bool? favorite,  String? categoryId,  AggregationType? aggregationType)?  measurableDataType,TResult? Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  VectorClock? vectorClock,  bool private,  bool active,  bool? favorite,  String? color,  String? categoryId,  DateTime? deletedAt,  String? defaultLanguageCode, @CategoryIconConverter()  CategoryIcon? icon,  List<String>? speechDictionary,  List<ChecklistCorrectionExample>? correctionExamples,  String? defaultProfileId,  bool? automaticInferenceEnabled,  String? defaultTemplateId,  bool? automaticAgentWakesEnabled,  String? defaultEventTemplateId,  bool? isAvailableForDayPlan)?  categoryDefinition,TResult? Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  String color,  VectorClock? vectorClock,  String? description,  int? sortOrder,  List<String>? applicableCategoryIds,  DateTime? deletedAt,  bool? private)?  labelDefinition,TResult? Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  String description,  HabitSchedule habitSchedule,  VectorClock? vectorClock,  bool active,  bool private,  AutoCompleteRule? autoCompleteRule,  String? version,  DateTime? activeFrom,  DateTime? activeUntil,  DateTime? deletedAt, @Deprecated('Tags concept removed — kept for JSON backward compatibility')  String? defaultStoryId,  String? categoryId,  String? dashboardId,  bool? priority,  bool autoCompleteNotify)?  habit,TResult? Function( String id,  DateTime createdAt,  DateTime updatedAt,  DateTime lastReviewed,  String name,  String description,  List<DashboardItem> items,  String version,  VectorClock? vectorClock,  bool active,  bool private,  DateTime? reviewAt,  int days,  DateTime? deletedAt,  String? categoryId)?  dashboard,}) {final _that = this;
 switch (_that) {
 case MeasurableDataType() when measurableDataType != null:
 return measurableDataType(_that.id,_that.createdAt,_that.updatedAt,_that.displayName,_that.description,_that.unitName,_that.version,_that.vectorClock,_that.deletedAt,_that.private,_that.favorite,_that.categoryId,_that.aggregationType);case CategoryDefinition() when categoryDefinition != null:
 return categoryDefinition(_that.id,_that.createdAt,_that.updatedAt,_that.name,_that.vectorClock,_that.private,_that.active,_that.favorite,_that.color,_that.categoryId,_that.deletedAt,_that.defaultLanguageCode,_that.icon,_that.speechDictionary,_that.correctionExamples,_that.defaultProfileId,_that.automaticInferenceEnabled,_that.defaultTemplateId,_that.automaticAgentWakesEnabled,_that.defaultEventTemplateId,_that.isAvailableForDayPlan);case LabelDefinition() when labelDefinition != null:
 return labelDefinition(_that.id,_that.createdAt,_that.updatedAt,_that.name,_that.color,_that.vectorClock,_that.description,_that.sortOrder,_that.applicableCategoryIds,_that.deletedAt,_that.private);case HabitDefinition() when habit != null:
-return habit(_that.id,_that.createdAt,_that.updatedAt,_that.name,_that.description,_that.habitSchedule,_that.vectorClock,_that.active,_that.private,_that.autoCompleteRule,_that.version,_that.activeFrom,_that.activeUntil,_that.deletedAt,_that.defaultStoryId,_that.categoryId,_that.dashboardId,_that.priority);case DashboardDefinition() when dashboard != null:
+return habit(_that.id,_that.createdAt,_that.updatedAt,_that.name,_that.description,_that.habitSchedule,_that.vectorClock,_that.active,_that.private,_that.autoCompleteRule,_that.version,_that.activeFrom,_that.activeUntil,_that.deletedAt,_that.defaultStoryId,_that.categoryId,_that.dashboardId,_that.priority,_that.autoCompleteNotify);case DashboardDefinition() when dashboard != null:
 return dashboard(_that.id,_that.createdAt,_that.updatedAt,_that.lastReviewed,_that.name,_that.description,_that.items,_that.version,_that.vectorClock,_that.active,_that.private,_that.reviewAt,_that.days,_that.deletedAt,_that.categoryId);case _:
   return null;
 
@@ -2176,7 +2178,7 @@ as bool?,
 @JsonSerializable()
 
 class HabitDefinition implements EntityDefinition {
-  const HabitDefinition({required this.id, required this.createdAt, required this.updatedAt, required this.name, required this.description, required this.habitSchedule, required this.vectorClock, required this.active, required this.private, this.autoCompleteRule, this.version, this.activeFrom, this.activeUntil, this.deletedAt, @Deprecated('Tags concept removed — kept for JSON backward compatibility') this.defaultStoryId, this.categoryId, this.dashboardId, this.priority, final  String? $type}): $type = $type ?? 'habit';
+  const HabitDefinition({required this.id, required this.createdAt, required this.updatedAt, required this.name, required this.description, required this.habitSchedule, required this.vectorClock, required this.active, required this.private, this.autoCompleteRule, this.version, this.activeFrom, this.activeUntil, this.deletedAt, @Deprecated('Tags concept removed — kept for JSON backward compatibility') this.defaultStoryId, this.categoryId, this.dashboardId, this.priority, this.autoCompleteNotify = true, final  String? $type}): $type = $type ?? 'habit';
   factory HabitDefinition.fromJson(Map<String, dynamic> json) => _$HabitDefinitionFromJson(json);
 
 @override final  String id;
@@ -2197,6 +2199,10 @@ class HabitDefinition implements EntityDefinition {
  final  String? categoryId;
  final  String? dashboardId;
  final  bool? priority;
+/// Whether an auto-completion derived from `autoCompleteRule` raises a
+/// notification. Defaults to true so habits created before the field
+/// existed keep the documented behaviour.
+@JsonKey() final  bool autoCompleteNotify;
 
 @JsonKey(name: 'runtimeType')
 final String $type;
@@ -2215,16 +2221,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is HabitDefinition&&(identical(other.id, id) || other.id == id)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.habitSchedule, habitSchedule) || other.habitSchedule == habitSchedule)&&(identical(other.vectorClock, vectorClock) || other.vectorClock == vectorClock)&&(identical(other.active, active) || other.active == active)&&(identical(other.private, private) || other.private == private)&&(identical(other.autoCompleteRule, autoCompleteRule) || other.autoCompleteRule == autoCompleteRule)&&(identical(other.version, version) || other.version == version)&&(identical(other.activeFrom, activeFrom) || other.activeFrom == activeFrom)&&(identical(other.activeUntil, activeUntil) || other.activeUntil == activeUntil)&&(identical(other.deletedAt, deletedAt) || other.deletedAt == deletedAt)&&(identical(other.defaultStoryId, defaultStoryId) || other.defaultStoryId == defaultStoryId)&&(identical(other.categoryId, categoryId) || other.categoryId == categoryId)&&(identical(other.dashboardId, dashboardId) || other.dashboardId == dashboardId)&&(identical(other.priority, priority) || other.priority == priority));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is HabitDefinition&&(identical(other.id, id) || other.id == id)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.habitSchedule, habitSchedule) || other.habitSchedule == habitSchedule)&&(identical(other.vectorClock, vectorClock) || other.vectorClock == vectorClock)&&(identical(other.active, active) || other.active == active)&&(identical(other.private, private) || other.private == private)&&(identical(other.autoCompleteRule, autoCompleteRule) || other.autoCompleteRule == autoCompleteRule)&&(identical(other.version, version) || other.version == version)&&(identical(other.activeFrom, activeFrom) || other.activeFrom == activeFrom)&&(identical(other.activeUntil, activeUntil) || other.activeUntil == activeUntil)&&(identical(other.deletedAt, deletedAt) || other.deletedAt == deletedAt)&&(identical(other.defaultStoryId, defaultStoryId) || other.defaultStoryId == defaultStoryId)&&(identical(other.categoryId, categoryId) || other.categoryId == categoryId)&&(identical(other.dashboardId, dashboardId) || other.dashboardId == dashboardId)&&(identical(other.priority, priority) || other.priority == priority)&&(identical(other.autoCompleteNotify, autoCompleteNotify) || other.autoCompleteNotify == autoCompleteNotify));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,createdAt,updatedAt,name,description,habitSchedule,vectorClock,active,private,autoCompleteRule,version,activeFrom,activeUntil,deletedAt,defaultStoryId,categoryId,dashboardId,priority);
+int get hashCode => Object.hashAll([runtimeType,id,createdAt,updatedAt,name,description,habitSchedule,vectorClock,active,private,autoCompleteRule,version,activeFrom,activeUntil,deletedAt,defaultStoryId,categoryId,dashboardId,priority,autoCompleteNotify]);
 
 @override
 String toString() {
-  return 'EntityDefinition.habit(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, name: $name, description: $description, habitSchedule: $habitSchedule, vectorClock: $vectorClock, active: $active, private: $private, autoCompleteRule: $autoCompleteRule, version: $version, activeFrom: $activeFrom, activeUntil: $activeUntil, deletedAt: $deletedAt, defaultStoryId: $defaultStoryId, categoryId: $categoryId, dashboardId: $dashboardId, priority: $priority)';
+  return 'EntityDefinition.habit(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, name: $name, description: $description, habitSchedule: $habitSchedule, vectorClock: $vectorClock, active: $active, private: $private, autoCompleteRule: $autoCompleteRule, version: $version, activeFrom: $activeFrom, activeUntil: $activeUntil, deletedAt: $deletedAt, defaultStoryId: $defaultStoryId, categoryId: $categoryId, dashboardId: $dashboardId, priority: $priority, autoCompleteNotify: $autoCompleteNotify)';
 }
 
 
@@ -2235,7 +2241,7 @@ abstract mixin class $HabitDefinitionCopyWith<$Res> implements $EntityDefinition
   factory $HabitDefinitionCopyWith(HabitDefinition value, $Res Function(HabitDefinition) _then) = _$HabitDefinitionCopyWithImpl;
 @override @useResult
 $Res call({
- String id, DateTime createdAt, DateTime updatedAt, String name, String description, HabitSchedule habitSchedule, VectorClock? vectorClock, bool active, bool private, AutoCompleteRule? autoCompleteRule, String? version, DateTime? activeFrom, DateTime? activeUntil, DateTime? deletedAt,@Deprecated('Tags concept removed — kept for JSON backward compatibility') String? defaultStoryId, String? categoryId, String? dashboardId, bool? priority
+ String id, DateTime createdAt, DateTime updatedAt, String name, String description, HabitSchedule habitSchedule, VectorClock? vectorClock, bool active, bool private, AutoCompleteRule? autoCompleteRule, String? version, DateTime? activeFrom, DateTime? activeUntil, DateTime? deletedAt,@Deprecated('Tags concept removed — kept for JSON backward compatibility') String? defaultStoryId, String? categoryId, String? dashboardId, bool? priority, bool autoCompleteNotify
 });
 
 
@@ -2252,7 +2258,7 @@ class _$HabitDefinitionCopyWithImpl<$Res>
 
 /// Create a copy of EntityDefinition
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? createdAt = null,Object? updatedAt = null,Object? name = null,Object? description = null,Object? habitSchedule = null,Object? vectorClock = freezed,Object? active = null,Object? private = null,Object? autoCompleteRule = freezed,Object? version = freezed,Object? activeFrom = freezed,Object? activeUntil = freezed,Object? deletedAt = freezed,Object? defaultStoryId = freezed,Object? categoryId = freezed,Object? dashboardId = freezed,Object? priority = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? createdAt = null,Object? updatedAt = null,Object? name = null,Object? description = null,Object? habitSchedule = null,Object? vectorClock = freezed,Object? active = null,Object? private = null,Object? autoCompleteRule = freezed,Object? version = freezed,Object? activeFrom = freezed,Object? activeUntil = freezed,Object? deletedAt = freezed,Object? defaultStoryId = freezed,Object? categoryId = freezed,Object? dashboardId = freezed,Object? priority = freezed,Object? autoCompleteNotify = null,}) {
   return _then(HabitDefinition(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
@@ -2272,7 +2278,8 @@ as DateTime?,defaultStoryId: freezed == defaultStoryId ? _self.defaultStoryId : 
 as String?,categoryId: freezed == categoryId ? _self.categoryId : categoryId // ignore: cast_nullable_to_non_nullable
 as String?,dashboardId: freezed == dashboardId ? _self.dashboardId : dashboardId // ignore: cast_nullable_to_non_nullable
 as String?,priority: freezed == priority ? _self.priority : priority // ignore: cast_nullable_to_non_nullable
-as bool?,
+as bool?,autoCompleteNotify: null == autoCompleteNotify ? _self.autoCompleteNotify : autoCompleteNotify // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 
@@ -3344,7 +3351,11 @@ as String?,
 /// @nodoc
 mixin _$HabitCompletionData {
 
- DateTime get dateFrom; DateTime get dateTo; String get habitId; HabitCompletionType? get completionType;
+ DateTime get dateFrom; DateTime get dateTo; String get habitId; HabitCompletionType? get completionType;/// Who produced this completion. Manual entries always outrank auto ones
+/// for the same day; missing in entries written before the field existed.
+@JsonKey(unknownEnumValue: HabitCompletionSource.manual) HabitCompletionSource get source;/// For [HabitCompletionSource.auto]: which rule leaf fired, e.g. the
+/// measurable name and value, as shown on the habit row.
+ String? get autoCompleteReason;
 /// Create a copy of HabitCompletionData
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -3357,16 +3368,16 @@ $HabitCompletionDataCopyWith<HabitCompletionData> get copyWith => _$HabitComplet
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is HabitCompletionData&&(identical(other.dateFrom, dateFrom) || other.dateFrom == dateFrom)&&(identical(other.dateTo, dateTo) || other.dateTo == dateTo)&&(identical(other.habitId, habitId) || other.habitId == habitId)&&(identical(other.completionType, completionType) || other.completionType == completionType));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is HabitCompletionData&&(identical(other.dateFrom, dateFrom) || other.dateFrom == dateFrom)&&(identical(other.dateTo, dateTo) || other.dateTo == dateTo)&&(identical(other.habitId, habitId) || other.habitId == habitId)&&(identical(other.completionType, completionType) || other.completionType == completionType)&&(identical(other.source, source) || other.source == source)&&(identical(other.autoCompleteReason, autoCompleteReason) || other.autoCompleteReason == autoCompleteReason));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,dateFrom,dateTo,habitId,completionType);
+int get hashCode => Object.hash(runtimeType,dateFrom,dateTo,habitId,completionType,source,autoCompleteReason);
 
 @override
 String toString() {
-  return 'HabitCompletionData(dateFrom: $dateFrom, dateTo: $dateTo, habitId: $habitId, completionType: $completionType)';
+  return 'HabitCompletionData(dateFrom: $dateFrom, dateTo: $dateTo, habitId: $habitId, completionType: $completionType, source: $source, autoCompleteReason: $autoCompleteReason)';
 }
 
 
@@ -3377,7 +3388,7 @@ abstract mixin class $HabitCompletionDataCopyWith<$Res>  {
   factory $HabitCompletionDataCopyWith(HabitCompletionData value, $Res Function(HabitCompletionData) _then) = _$HabitCompletionDataCopyWithImpl;
 @useResult
 $Res call({
- DateTime dateFrom, DateTime dateTo, String habitId, HabitCompletionType? completionType
+ DateTime dateFrom, DateTime dateTo, String habitId, HabitCompletionType? completionType,@JsonKey(unknownEnumValue: HabitCompletionSource.manual) HabitCompletionSource source, String? autoCompleteReason
 });
 
 
@@ -3394,13 +3405,15 @@ class _$HabitCompletionDataCopyWithImpl<$Res>
 
 /// Create a copy of HabitCompletionData
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? dateFrom = null,Object? dateTo = null,Object? habitId = null,Object? completionType = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? dateFrom = null,Object? dateTo = null,Object? habitId = null,Object? completionType = freezed,Object? source = null,Object? autoCompleteReason = freezed,}) {
   return _then(_self.copyWith(
 dateFrom: null == dateFrom ? _self.dateFrom : dateFrom // ignore: cast_nullable_to_non_nullable
 as DateTime,dateTo: null == dateTo ? _self.dateTo : dateTo // ignore: cast_nullable_to_non_nullable
 as DateTime,habitId: null == habitId ? _self.habitId : habitId // ignore: cast_nullable_to_non_nullable
 as String,completionType: freezed == completionType ? _self.completionType : completionType // ignore: cast_nullable_to_non_nullable
-as HabitCompletionType?,
+as HabitCompletionType?,source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
+as HabitCompletionSource,autoCompleteReason: freezed == autoCompleteReason ? _self.autoCompleteReason : autoCompleteReason // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 
@@ -3485,10 +3498,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( DateTime dateFrom,  DateTime dateTo,  String habitId,  HabitCompletionType? completionType)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( DateTime dateFrom,  DateTime dateTo,  String habitId,  HabitCompletionType? completionType, @JsonKey(unknownEnumValue: HabitCompletionSource.manual)  HabitCompletionSource source,  String? autoCompleteReason)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _HabitCompletionData() when $default != null:
-return $default(_that.dateFrom,_that.dateTo,_that.habitId,_that.completionType);case _:
+return $default(_that.dateFrom,_that.dateTo,_that.habitId,_that.completionType,_that.source,_that.autoCompleteReason);case _:
   return orElse();
 
 }
@@ -3506,10 +3519,10 @@ return $default(_that.dateFrom,_that.dateTo,_that.habitId,_that.completionType);
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( DateTime dateFrom,  DateTime dateTo,  String habitId,  HabitCompletionType? completionType)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( DateTime dateFrom,  DateTime dateTo,  String habitId,  HabitCompletionType? completionType, @JsonKey(unknownEnumValue: HabitCompletionSource.manual)  HabitCompletionSource source,  String? autoCompleteReason)  $default,) {final _that = this;
 switch (_that) {
 case _HabitCompletionData():
-return $default(_that.dateFrom,_that.dateTo,_that.habitId,_that.completionType);case _:
+return $default(_that.dateFrom,_that.dateTo,_that.habitId,_that.completionType,_that.source,_that.autoCompleteReason);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -3526,10 +3539,10 @@ return $default(_that.dateFrom,_that.dateTo,_that.habitId,_that.completionType);
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( DateTime dateFrom,  DateTime dateTo,  String habitId,  HabitCompletionType? completionType)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( DateTime dateFrom,  DateTime dateTo,  String habitId,  HabitCompletionType? completionType, @JsonKey(unknownEnumValue: HabitCompletionSource.manual)  HabitCompletionSource source,  String? autoCompleteReason)?  $default,) {final _that = this;
 switch (_that) {
 case _HabitCompletionData() when $default != null:
-return $default(_that.dateFrom,_that.dateTo,_that.habitId,_that.completionType);case _:
+return $default(_that.dateFrom,_that.dateTo,_that.habitId,_that.completionType,_that.source,_that.autoCompleteReason);case _:
   return null;
 
 }
@@ -3541,13 +3554,19 @@ return $default(_that.dateFrom,_that.dateTo,_that.habitId,_that.completionType);
 @JsonSerializable()
 
 class _HabitCompletionData implements HabitCompletionData {
-  const _HabitCompletionData({required this.dateFrom, required this.dateTo, required this.habitId, this.completionType});
+  const _HabitCompletionData({required this.dateFrom, required this.dateTo, required this.habitId, this.completionType, @JsonKey(unknownEnumValue: HabitCompletionSource.manual) this.source = HabitCompletionSource.manual, this.autoCompleteReason});
   factory _HabitCompletionData.fromJson(Map<String, dynamic> json) => _$HabitCompletionDataFromJson(json);
 
 @override final  DateTime dateFrom;
 @override final  DateTime dateTo;
 @override final  String habitId;
 @override final  HabitCompletionType? completionType;
+/// Who produced this completion. Manual entries always outrank auto ones
+/// for the same day; missing in entries written before the field existed.
+@override@JsonKey(unknownEnumValue: HabitCompletionSource.manual) final  HabitCompletionSource source;
+/// For [HabitCompletionSource.auto]: which rule leaf fired, e.g. the
+/// measurable name and value, as shown on the habit row.
+@override final  String? autoCompleteReason;
 
 /// Create a copy of HabitCompletionData
 /// with the given fields replaced by the non-null parameter values.
@@ -3562,16 +3581,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _HabitCompletionData&&(identical(other.dateFrom, dateFrom) || other.dateFrom == dateFrom)&&(identical(other.dateTo, dateTo) || other.dateTo == dateTo)&&(identical(other.habitId, habitId) || other.habitId == habitId)&&(identical(other.completionType, completionType) || other.completionType == completionType));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _HabitCompletionData&&(identical(other.dateFrom, dateFrom) || other.dateFrom == dateFrom)&&(identical(other.dateTo, dateTo) || other.dateTo == dateTo)&&(identical(other.habitId, habitId) || other.habitId == habitId)&&(identical(other.completionType, completionType) || other.completionType == completionType)&&(identical(other.source, source) || other.source == source)&&(identical(other.autoCompleteReason, autoCompleteReason) || other.autoCompleteReason == autoCompleteReason));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,dateFrom,dateTo,habitId,completionType);
+int get hashCode => Object.hash(runtimeType,dateFrom,dateTo,habitId,completionType,source,autoCompleteReason);
 
 @override
 String toString() {
-  return 'HabitCompletionData(dateFrom: $dateFrom, dateTo: $dateTo, habitId: $habitId, completionType: $completionType)';
+  return 'HabitCompletionData(dateFrom: $dateFrom, dateTo: $dateTo, habitId: $habitId, completionType: $completionType, source: $source, autoCompleteReason: $autoCompleteReason)';
 }
 
 
@@ -3582,7 +3601,7 @@ abstract mixin class _$HabitCompletionDataCopyWith<$Res> implements $HabitComple
   factory _$HabitCompletionDataCopyWith(_HabitCompletionData value, $Res Function(_HabitCompletionData) _then) = __$HabitCompletionDataCopyWithImpl;
 @override @useResult
 $Res call({
- DateTime dateFrom, DateTime dateTo, String habitId, HabitCompletionType? completionType
+ DateTime dateFrom, DateTime dateTo, String habitId, HabitCompletionType? completionType,@JsonKey(unknownEnumValue: HabitCompletionSource.manual) HabitCompletionSource source, String? autoCompleteReason
 });
 
 
@@ -3599,13 +3618,15 @@ class __$HabitCompletionDataCopyWithImpl<$Res>
 
 /// Create a copy of HabitCompletionData
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? dateFrom = null,Object? dateTo = null,Object? habitId = null,Object? completionType = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? dateFrom = null,Object? dateTo = null,Object? habitId = null,Object? completionType = freezed,Object? source = null,Object? autoCompleteReason = freezed,}) {
   return _then(_HabitCompletionData(
 dateFrom: null == dateFrom ? _self.dateFrom : dateFrom // ignore: cast_nullable_to_non_nullable
 as DateTime,dateTo: null == dateTo ? _self.dateTo : dateTo // ignore: cast_nullable_to_non_nullable
 as DateTime,habitId: null == habitId ? _self.habitId : habitId // ignore: cast_nullable_to_non_nullable
 as String,completionType: freezed == completionType ? _self.completionType : completionType // ignore: cast_nullable_to_non_nullable
-as HabitCompletionType?,
+as HabitCompletionType?,source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
+as HabitCompletionSource,autoCompleteReason: freezed == autoCompleteReason ? _self.autoCompleteReason : autoCompleteReason // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

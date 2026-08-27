@@ -89,6 +89,39 @@ void main() {
       },
     );
 
+    test('an auto-completion row deep-links to the habits page', () async {
+      final now = DateTime.utc(2026, 5, 17, 10);
+      final entity = NotificationEntity.habitAutoCompleted(
+        meta: NotificationMeta(
+          id: 'habits-auto',
+          createdAt: now,
+          updatedAt: now,
+          scheduledFor: now,
+          vectorClock: const VectorClock({'host': 1}),
+          originatingHostId: 'host',
+        ),
+        linkedHabitIds: const ['habit-1', 'habit-2'],
+        dayKey: '2026-05-17',
+        title: '2 habits checked off automatically',
+        body: 'Walk, Drink water',
+      );
+
+      await scheduler.schedule(entity, now: now);
+
+      verify(
+        () => notificationService.showNotificationNow(
+          title: '2 habits checked off automatically',
+          body: 'Walk, Drink water',
+          notificationId: NotificationScheduler.notificationIdFor(
+            'habits-auto',
+          ),
+          showOnMobile: true,
+          showOnDesktop: true,
+          deepLink: '/habits',
+        ),
+      ).called(1);
+    });
+
     test('schedules future notifications at their full timestamp', () async {
       final now = DateTime.utc(2026, 5, 17, 10);
       final notifyAt = DateTime.utc(2026, 5, 18, 7, 45);

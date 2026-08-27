@@ -72,6 +72,18 @@ class _HabitsSummaryCardState extends ConsumerState<HabitsSummaryCard>
     return total > 0 && done >= total;
   }
 
+  /// Whether every habit newly done in [next] was written by the
+  /// auto-completion engine today — read from the persisted state, so a
+  /// completion that arrived through sync or was loaded after a restart is
+  /// recognised the same as one this instance wrote.
+  bool _completedByEngine(HabitsState? previous, HabitsState next) {
+    final newlyDone = next.completedToday.difference(
+      previous?.completedToday ?? const {},
+    );
+    if (newlyDone.isEmpty) return false;
+    return next.autoCompletedToday.keys.toSet().containsAll(newlyDone);
+  }
+
   /// The (total, done) pair under the optional [HabitsSummaryCard
   /// .visibleHabitIds] scope.
   (int, int) _counts(HabitsState state) {
@@ -105,10 +117,14 @@ class _HabitsSummaryCardState extends ConsumerState<HabitsSummaryCard>
     // announced to screen readers by the live region in _DoneFraction. The glow
     // plays either way; under reduced motion it holds a fixed size and only
     // fades (see the builder below).
+    // A day the auto-completion engine finished is not the user's own
+    // achievement: when every habit that just became done was checked off
+    // from data, the flourish stays quiet (the notification covers it).
     ref.listen(habitsControllerProvider, (previous, next) {
       if ((previous == null || !_isAllDone(previous)) &&
           _isAllDone(next) &&
-          ref.read(celebrationPreferencesProvider).habits) {
+          ref.read(celebrationPreferencesProvider).habits &&
+          !_completedByEngine(previous, next)) {
         _allDoneFlash.forward(from: 0);
       }
     });

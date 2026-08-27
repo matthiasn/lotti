@@ -118,6 +118,8 @@ import 'package:lotti/features/goals/service/goal_checkin_notifier.dart';
 import 'package:lotti/features/goals/service/goal_habit_completion_service.dart';
 import 'package:lotti/features/goals/service/goal_mirror_service.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
+import 'package:lotti/features/habits/service/habit_auto_completion_notifier.dart';
+import 'package:lotti/features/habits/service/habit_auto_completion_service.dart';
 import 'package:lotti/features/insights/repository/insights_repository.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/service/image_path_migration_service.dart';
@@ -556,6 +558,12 @@ MockJournalDb mockJournalDbWithSyncFlag({
 }
 
 class MockPersistenceLogic extends Mock implements PersistenceLogic {}
+
+class MockHabitAutoCompletionService extends Mock
+    implements HabitAutoCompletionService {}
+
+class MockHabitAutoCompletionNotifier extends Mock
+    implements HabitAutoCompletionNotifier {}
 
 class MockEmbeddingStore extends Mock implements EmbeddingStore {}
 
