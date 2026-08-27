@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_linkify/flutter_linkify.dart';
@@ -97,7 +98,7 @@ class _HabitCompletionSheetState extends ConsumerState<HabitCompletionSheet> {
   final _recorded = <String, num>{};
 
   bool get _isToday =>
-      widget.dateString == null || DateTime.now().ymd == widget.dateString;
+      widget.dateString == null || clock.now().ymd == widget.dateString;
 
   @override
   void initState() {
@@ -107,7 +108,7 @@ class _HabitCompletionSheetState extends ConsumerState<HabitCompletionSheet> {
       return DateTime(date.year, date.month, date.day, 23, 59, 59);
     }
 
-    _started = _isToday ? DateTime.now() : endOfDay();
+    _started = _isToday ? clock.now() : endOfDay();
   }
 
   Future<void> _save() async {
@@ -121,7 +122,7 @@ class _HabitCompletionSheetState extends ConsumerState<HabitCompletionSheet> {
     await getIt<PersistenceLogic>().createHabitCompletionEntry(
       data: HabitCompletionData(
         habitId: widget.habitId,
-        dateTo: !_startReset ? DateTime.now() : _started,
+        dateTo: !_startReset ? clock.now() : _started,
         dateFrom: _started,
         completionType: _outcome,
       ),
@@ -131,7 +132,7 @@ class _HabitCompletionSheetState extends ConsumerState<HabitCompletionSheet> {
   }
 
   Future<void> _recordMeasurable(MeasurableDataType dataType, num value) async {
-    final now = DateTime.now();
+    final now = clock.now();
     setState(() => _recorded[dataType.id] = value);
     await getIt<PersistenceLogic>().createMeasurementEntry(
       data: MeasurementData(

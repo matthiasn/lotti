@@ -517,6 +517,7 @@ class _HabitCardBody extends StatelessWidget {
                               .copyWith(
                                 color: tokens.colors.text.mediumEmphasis,
                               ),
+                          maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ],

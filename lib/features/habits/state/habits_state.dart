@@ -247,7 +247,7 @@ extension HabitsStateAutoCompletion on HabitsState {
   /// when today's completion is the user's own — the time the habit row's
   /// "auto" caption names.
   String? autoCompletedAt(String habitId, {DateTime? now}) {
-    final today = (now ?? DateTime.now()).ymd;
+    final today = (now ?? clock.now()).ymd;
     for (final record in habitCompletions.reversed) {
       if (record.habitId == habitId &&
           record.dateFrom.ymd == today &&

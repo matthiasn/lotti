@@ -247,7 +247,46 @@ action content stays a comfortable column.
 
 Tab rows are lean **action rows**: icon, name, swipe, one-tap complete — **no
 per-row history**. Per-day history reads from the heatmap instead. The older
-per-row history strip survives only inside the dashboard habit chart.
+per-row history strip survives only inside the dashboard habit chart. A row
+whose completion today came from the engine wears an **auto** pill and a
+caption naming the signal and the time (`HabitsState.autoCompletedToday` and
+`autoCompletedAt`); tapping it still opens the sheet, because a manual entry
+always overrides.
+
+# The completion sheet shows the habit's own signals
+
+`HabitCompletionSheet` (`ui/sheets/habit_completion_sheet.dart`, opened from
+the row body, the done check and the long-press "other day" path) replaced
+the old dialog that embedded a whole linked dashboard. It renders **one
+`HabitSignalRow` per leaf of the habit's `autoCompleteRule`** — status pill
+("≥ 500 ml · 250 so far", "any workout · done"), quick-record chips for a
+measurable (its three most-logged values, from the same ranking the
+measurement dialog uses, plus *Other* for the full capture), and a two-week
+`SignalSparkline` — above the unchanged form (date, comment, Success / Skip /
+Missed, Record).
+
+```mermaid
+flowchart LR
+  Open["row tap"] --> Sheet["HabitCompletionSheet"]
+  Sheet --> Status["habitSignalStatusProvider(habitId)"]
+  Status --> Reader["SignalReader.read(rule, now, 14 days)"]
+  Reader --> Eval["HabitRuleEvaluator"]
+  Eval --> Rows["HabitSignalRow × leaves"]
+  Rows -- chip tap --> Write["PersistenceLogic.createMeasurementEntry"]
+  Write --> Refresh["controller.refresh() — in place"]
+  Refresh --> Status
+  Status -- satisfied & outcome untouched --> Flip["outcome → Success + banner"]
+```
+
+The status provider is the sheet's single source: it reads through the same
+`SignalReader` and `HabitRuleEvaluator` the engine uses, so a pill can never
+say "done" while the engine would not write. It refreshes **in place** on
+journal updates touching the rule's series (never a loading shell), and a
+chip tap refreshes it explicitly after the write. A chip that satisfies the
+rule flips an *untouched* outcome to Success and shows the auto banner; an
+outcome the user picked is never overridden, and the sheet stays open so a
+comment can still be added. Only today shows signals — a past `dateString`
+gets the plain form.
 
 # Write paths are shared
 

@@ -2,24 +2,31 @@
 /// form. Generated PNGs are external staging inputs, not golden files.
 library;
 
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/dashboards/state/measurables_controller.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/habits/model/habit_completion_record.dart';
+import 'package:lotti/features/habits/state/habit_signal_status_controller.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
 import 'package:lotti/features/habits/state/heatmap/habit_heatmap_controller.dart';
 import 'package:lotti/features/habits/state/heatmap/habit_heatmap_data.dart';
 import 'package:lotti/features/habits/ui/habits_page.dart';
 import 'package:lotti/features/habits/ui/sheets/habit_completion_sheet.dart';
+import 'package:lotti/features/habits/ui/widgets/habit_signal_row.dart';
 import 'package:lotti/features/settings/state/celebration_preferences_controller.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/logic/signals/habit_rule_evaluator.dart';
+import 'package:lotti/logic/signals/signal_window.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/device_region.dart';
 import 'package:lotti/utils/platform.dart' as platform;
@@ -69,14 +76,101 @@ HabitDefinition _habit({
   categoryId: _penguinOps.id,
 );
 
-final HabitDefinition _inspectHabitatSeals = _habit(
-  id: 'inspect-habitat-seals',
-  name: _t('Inspect habitat seals', 'Habitatdichtungen inspizieren'),
-  description: _t(
-    'Check the pressure seals before the colony wakes.',
-    'Prüfe die Druckdichtungen, bevor die Kolonie aufwacht.',
-  ),
+final _krillRations = MeasurableDataType(
+  id: 'krill-rations',
+  displayName: _t('Krill rations', 'Krillrationen'),
+  description: '',
+  unitName: 'kg',
+  version: 1,
+  createdAt: DateTime(2026),
+  updatedAt: _today,
+  vectorClock: null,
+  aggregationType: AggregationType.dailySum,
 );
+
+final HabitDefinition _inspectHabitatSeals =
+    _habit(
+      id: 'inspect-habitat-seals',
+      name: _t('Inspect habitat seals', 'Habitatdichtungen inspizieren'),
+      description: _t(
+        'Check the pressure seals before the colony wakes.',
+        'Prüfe die Druckdichtungen, bevor die Kolonie aufwacht.',
+      ),
+    ).copyWith(
+      autoCompleteRule: AutoCompleteRule.and(
+        rules: [
+          AutoCompleteRule.measurable(dataTypeId: _krillRations.id, minimum: 3),
+          const AutoCompleteRule.health(
+            dataType: 'cumulative_step_count',
+            minimum: 6000,
+          ),
+        ],
+      ),
+    );
+
+/// The instant every capture is taken at, so dates and times in the sheet
+/// are the same on every run.
+final _captureNow = DateTime(2026, 7, 17, 8, 12);
+final _todayKey = DateTime.utc(2026, 7, 17);
+
+/// A fixed two-week window for the seals habit: krill logged most days, steps
+/// short of the target today.
+class _FixedSignalStatus extends HabitSignalStatusController {
+  _FixedSignalStatus(super.habitId);
+
+  @override
+  Future<HabitSignalStatus?> build() async {
+    final rule = _inspectHabitatSeals.autoCompleteRule!;
+    final krill = <DateTime, num>{};
+    final steps = <DateTime, num>{};
+    const krillByOffset = [2, 4, 3, null, 5, 3, 4, 2, null, 4, 3, 5, 4, 2];
+    const stepsByOffset = [
+      5200,
+      7100,
+      6400,
+      3900,
+      8200,
+      6900,
+      7400,
+      4100,
+      6600,
+      7800,
+      5900,
+      6100,
+      9100,
+      4120,
+    ];
+    for (var i = 0; i < 14; i++) {
+      final day = _todayKey.subtract(Duration(days: 13 - i));
+      if (krillByOffset[i] != null) krill[day] = krillByOffset[i]!;
+      steps[day] = stepsByOffset[i];
+    }
+    final window = SignalWindow(
+      start: _todayKey.subtract(const Duration(days: 13)),
+      end: _todayKey,
+      measurableTotalsByDay: {_krillRations.id: krill},
+      quantitativeByDay: {'cumulative_step_count': steps},
+    );
+    return HabitSignalStatus(
+      rule: rule,
+      window: window,
+      verdict: const HabitRuleEvaluator().evaluate(
+        rule: rule,
+        window: window,
+        day: _todayKey,
+      ),
+      today: _todayKey,
+    );
+  }
+}
+
+class _FixedSuggestions extends MeasurableSuggestionsController {
+  _FixedSuggestions() : super('krill-rations');
+
+  @override
+  Future<List<num>?> build() async => [3, 5, 8];
+}
+
 final HabitDefinition _penguinRollCall = _habit(
   id: 'penguin-roll-call',
   name: _t('Log penguin roll call', 'Pinguin-Zählappell protokollieren'),
@@ -137,6 +231,7 @@ void main() {
             updateNotifications: mocks.updateNotifications,
           )
           ..categoriesById[_penguinOps.id] = _penguinOps
+          ..dataTypesById[_krillRations.id] = _krillRations
           ..habitsById.addEntries(
             _habits.map((habit) => MapEntry(habit.id, habit)),
           );
@@ -208,6 +303,7 @@ void main() {
           findsNWidgets(2),
         );
         expect(find.byKey(const Key('habit_save')), findsOneWidget);
+        expect(find.byType(HabitSignalRow), findsNWidgets(2));
         await captureScreenshot(
           tester,
           'habits_record_${viewport}_$theme',
@@ -222,7 +318,7 @@ Future<void> _pumpHabitsDashboard(
   WidgetTester tester, {
   required ScreenshotDevice device,
   required Brightness brightness,
-}) async {
+}) => withClock(Clock.fixed(_captureNow), () async {
   applyScreenshotDevice(tester, device);
   final state = _habitsState();
   final controller = FakeHabitsController(state);
@@ -254,13 +350,13 @@ Future<void> _pumpHabitsDashboard(
     ),
   );
   await settleFrames(tester, 8);
-}
+});
 
 Future<void> _pumpHabitCompletion(
   WidgetTester tester, {
   required ScreenshotDevice device,
   required Brightness brightness,
-}) async {
+}) => withClock(Clock.fixed(_captureNow), () async {
   applyScreenshotDevice(tester, device);
   final originalIsMobile = platform.isMobile;
   final originalIsDesktop = platform.isDesktop;
@@ -273,28 +369,38 @@ Future<void> _pumpHabitCompletion(
   final theme = _theme(brightness);
 
   await tester.pumpWidget(
-    MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: theme,
-      localizationsDelegates: _localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      locale: manualScreenshotLocale,
-      home: RepaintBoundary(
-        key: screenshotBoundaryKey,
-        child: Scaffold(
-          body: HabitCompletionSheet(
-            habitId: _inspectHabitatSeals.id,
-            themeData: theme,
-            // A past day resolves to the production form's deterministic
-            // end-of-day timestamp instead of sampling the wall clock.
-            dateString: '2026-07-16',
+    ProviderScope(
+      overrides: [
+        habitSignalStatusProvider(
+          _inspectHabitatSeals.id,
+        ).overrideWith(() => _FixedSignalStatus(_inspectHabitatSeals.id)),
+        measurableSuggestionsControllerProvider(
+          _krillRations.id,
+        ).overrideWith(_FixedSuggestions.new),
+      ],
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: theme,
+        localizationsDelegates: _localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        locale: manualScreenshotLocale,
+        home: RepaintBoundary(
+          key: screenshotBoundaryKey,
+          child: Scaffold(
+            body: HabitCompletionSheet(
+              habitId: _inspectHabitatSeals.id,
+              themeData: theme,
+              // "Today" under the fixed capture clock, so the signal rows
+              // show and the date field is deterministic.
+              dateString: '2026-07-17',
+            ),
           ),
         ),
       ),
     ),
   );
   await settleFrames(tester, 6);
-}
+});
 
 ThemeData _theme(Brightness brightness) => brightness == Brightness.dark
     ? DesignSystemTheme.dark()
@@ -337,6 +443,16 @@ HabitsState _habitsState() {
     completed: [_reviewSardineInventory],
     completedToday: {_reviewSardineInventory.id},
     successfulToday: {_reviewSardineInventory.id},
+    autoCompletedToday: {_reviewSardineInventory.id: 'Steps · 7412'},
+    habitCompletions: [
+      HabitCompletionRecord(
+        habitId: _reviewSardineInventory.id,
+        dateFrom: DateTime(2026, 7, 17, 7, 58),
+        completionType: HabitCompletionType.success,
+        source: HabitCompletionSource.auto,
+        autoCompleteReason: 'Steps · 7412',
+      ),
+    ],
     days: days,
     successfulByDay: successes,
     skippedByDay: {

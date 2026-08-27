@@ -28,7 +28,8 @@ derived from combining the two.
 
 The habits tab and its derived sections; the summary card; the consistency
 heatmap; completion-rate chart state and the time-span switch; quick completion
-capture and the detailed dialog; habit settings state for create and edit;
+capture and the compact completion sheet that shows a habit's own signals with
+quick-record chips; habit settings state for create and edit;
 category and dashboard assignment from the settings form; and the
 auto-completion engine that checks a habit off when its recorded signals
 satisfy its rule.
@@ -41,7 +42,7 @@ definition saves and completion writes both go through shared persistence.
 ```text
 lib/features/habits/
 ├── repository/ · state/ · service/
-└── ui/{pages,widgets,charts}
+└── ui/{pages,sheets,widgets,charts}
 ```
 
 ## How it works
