@@ -7433,6 +7433,60 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get habitEditorThresholdRequired => 'Zadej hodnotu pro toto pravidlo';
+
+  @override
+  String get habitHealthBloodPressureDiastolic => 'Diastolický tlak';
+
+  @override
+  String get habitHealthBloodPressureSystolic => 'Systolický tlak';
+
+  @override
+  String get habitHealthBodyFat => 'Tělesný tuk';
+
+  @override
+  String get habitHealthBodyMassIndex => 'Index tělesné hmotnosti';
+
+  @override
+  String get habitHealthDistance => 'Vzdálenost';
+
+  @override
+  String get habitHealthFlightsClimbed => 'Vystoupaná patra';
+
+  @override
+  String get habitHealthHeartRateVariability => 'Variabilita tepové frekvence';
+
+  @override
+  String get habitHealthRestingHeartRate => 'Klidová tepová frekvence';
+
+  @override
+  String get habitHealthSleepAsleep => 'Spánek';
+
+  @override
+  String get habitHealthSleepAwake => 'Vzhůru v posteli';
+
+  @override
+  String get habitHealthSleepDeep => 'Hluboký spánek';
+
+  @override
+  String get habitHealthSleepInBed => 'Čas v posteli';
+
+  @override
+  String get habitHealthSleepLight => 'Lehký spánek';
+
+  @override
+  String get habitHealthSleepRem => 'REM spánek';
+
+  @override
+  String get habitHealthSteps => 'Kroky';
+
+  @override
+  String get habitHealthWalkingHeartRate => 'Tepová frekvence při chůzi';
+
+  @override
+  String get habitHealthWeight => 'Váha';
+
+  @override
   String habitHeatmapDaySemantic(String date, int done, int total) {
     return '$date, $done z $total splněno';
   }

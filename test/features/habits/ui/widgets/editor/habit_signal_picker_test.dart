@@ -97,4 +97,23 @@ void main() {
     await tester.pump();
     expect(find.text('Nothing matches'), findsOneWidget);
   });
+
+  testWidgets('dashboard-only health keys are not offered', (tester) async {
+    await pump(tester);
+    await tester.enterText(
+      find.byKey(const ValueKey('habit-signal-picker-search')),
+      'blood',
+    );
+    await tester.pump();
+    // The two real series, not the combined-chart key.
+    expect(find.text('Systolic blood pressure'), findsOneWidget);
+    expect(find.text('Diastolic blood pressure'), findsOneWidget);
+    expect(find.text('Blood Pressure'), findsNothing);
+    expect(
+      find.byKey(
+        const ValueKey('habit-signal-option-health-BLOOD_PRESSURE'),
+      ),
+      findsNothing,
+    );
+  });
 }

@@ -58,7 +58,6 @@ class HabitSignalCard extends StatelessWidget {
               icon: LottiIcons.confirmCircled,
               title: messages.habitEditorManualRowTitle,
               caption: messages.habitEditorManualRowCaption,
-              checked: true,
               onToggle: null,
             ),
             for (final (index, signal) in form.signals.indexed) ...[
@@ -68,9 +67,12 @@ class HabitSignalCard extends StatelessWidget {
                   'habit-signal-row-${signal.kind.name}-${signal.id}',
                 ),
                 icon: signal.kind.icon,
-                title: habitSignalDisplayName(signal, measurablesById),
+                title: habitSignalDisplayName(
+                  messages,
+                  signal,
+                  measurablesById,
+                ),
                 caption: _caption(messages, signal),
-                checked: true,
                 checkKey: ValueKey(
                   'habit-signal-check-${signal.kind.name}-${signal.id}',
                 ),
@@ -204,7 +206,6 @@ class _Row extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.caption,
-    required this.checked,
     required this.onToggle,
     this.checkKey,
     this.child,
@@ -214,7 +215,6 @@ class _Row extends StatelessWidget {
   final IconData icon;
   final String title;
   final String caption;
-  final bool checked;
 
   /// Null for the fixed manual row.
   final VoidCallback? onToggle;
@@ -262,7 +262,7 @@ class _Row extends StatelessWidget {
               SizedBox(width: tokens.spacing.step3),
               Semantics(
                 button: onToggle != null,
-                checked: checked,
+                checked: true,
                 child: InkWell(
                   key: checkKey,
                   onTap: onToggle,
@@ -271,22 +271,14 @@ class _Row extends StatelessWidget {
                     width: tokens.spacing.step6,
                     height: tokens.spacing.step6,
                     decoration: BoxDecoration(
-                      color: checked ? accent : null,
+                      color: accent,
                       borderRadius: BorderRadius.circular(tokens.radii.s),
-                      border: checked
-                          ? null
-                          : Border.all(
-                              color: tokens.colors.decorative.level02,
-                              width: 2,
-                            ),
                     ),
-                    child: checked
-                        ? Icon(
-                            LottiIcons.confirm,
-                            size: IconSizes.s,
-                            color: tokens.colors.text.onInteractiveAlert,
-                          )
-                        : null,
+                    child: Icon(
+                      LottiIcons.confirm,
+                      size: IconSizes.s,
+                      color: tokens.colors.text.onInteractiveAlert,
+                    ),
                   ),
                 ),
               ),
@@ -333,6 +325,36 @@ class _RuleEditorState extends State<_RuleEditor> {
     super.dispose();
   }
 
+  /// Model and field move together: "any" clears both, a bounded mode
+  /// takes whatever the field already shows as the threshold — so the rule
+  /// that is saved is always the one on screen.
+  void _switchMode({
+    required HabitSignalMode mode,
+    WorkoutValueType? workoutValueType,
+  }) {
+    final signal = widget.signal;
+    if (mode == HabitSignalMode.any) {
+      _threshold.clear();
+      widget.onChanged(
+        signal.copyWith(
+          mode: mode,
+          clearThreshold: true,
+          clearWorkoutValueType: signal.kind == HabitSignalKind.workout,
+        ),
+      );
+      return;
+    }
+    final shown = num.tryParse(_threshold.text.trim().replaceAll(',', '.'));
+    widget.onChanged(
+      signal.copyWith(
+        mode: mode,
+        threshold: shown,
+        clearThreshold: shown == null,
+        workoutValueType: workoutValueType,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -350,22 +372,16 @@ class _RuleEditorState extends State<_RuleEditor> {
           (_, WorkoutValueType.energy) => _WorkoutRule.energy,
           (_, null) => _WorkoutRule.any,
         },
-        onChanged: (rule) => widget.onChanged(
-          rule == _WorkoutRule.any
-              ? signal.copyWith(
-                  mode: HabitSignalMode.any,
-                  clearThreshold: true,
-                  clearWorkoutValueType: true,
-                )
-              : signal.copyWith(
-                  mode: HabitSignalMode.atLeast,
-                  workoutValueType: switch (rule) {
-                    _WorkoutRule.duration => WorkoutValueType.duration,
-                    _WorkoutRule.distance => WorkoutValueType.distance,
-                    _WorkoutRule.energy => WorkoutValueType.energy,
-                    _WorkoutRule.any => null,
-                  },
-                ),
+        onChanged: (rule) => _switchMode(
+          mode: rule == _WorkoutRule.any
+              ? HabitSignalMode.any
+              : HabitSignalMode.atLeast,
+          workoutValueType: switch (rule) {
+            _WorkoutRule.duration => WorkoutValueType.duration,
+            _WorkoutRule.distance => WorkoutValueType.distance,
+            _WorkoutRule.energy => WorkoutValueType.energy,
+            _WorkoutRule.any => null,
+          },
         ),
         segments: [
           DsSegment(_WorkoutRule.any, messages.habitEditorRuleAnyWorkout),
@@ -383,11 +399,7 @@ class _RuleEditorState extends State<_RuleEditor> {
       _ => DsSegmentedToggle<HabitSignalMode>(
         expand: true,
         selected: signal.mode,
-        onChanged: (mode) => widget.onChanged(
-          mode == HabitSignalMode.any
-              ? signal.copyWith(mode: mode, clearThreshold: true)
-              : signal.copyWith(mode: mode),
-        ),
+        onChanged: (mode) => _switchMode(mode: mode),
         segments: [
           DsSegment(
             HabitSignalMode.any,
@@ -424,6 +436,11 @@ class _RuleEditorState extends State<_RuleEditor> {
             controller: _threshold,
             size: DesignSystemTextInputSize.small,
             helperText: widget.unit.isEmpty ? null : widget.unit,
+            // A bounded mode without a number would save as "any entry";
+            // say so until there is one.
+            errorText: signal.threshold == null
+                ? messages.habitEditorThresholdRequired
+                : null,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             onChanged: (raw) {
               final value = num.tryParse(raw.trim().replaceAll(',', '.'));

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
@@ -61,9 +60,10 @@ class _HabitSignalPickerState extends State<HabitSignalPicker> {
     final measurables = widget.measurables.where(
       (m) => _matches(m.displayName) || _matches(m.unitName),
     );
-    final health = healthTypes.entries.where(
-      (e) => _matches(e.value.displayName),
-    );
+    final health = [
+      for (final key in evaluableHealthDataTypes)
+        (key: key, name: habitHealthTypeName(messages, key)),
+    ].where((e) => _matches(e.name));
     final workouts = widget.workoutTypes.where(_matches);
     final empty = measurables.isEmpty && health.isEmpty && workouts.isEmpty;
 
@@ -138,12 +138,7 @@ class _HabitSignalPickerState extends State<HabitSignalPicker> {
                   if (health.isNotEmpty)
                     section(messages.habitEditorPickerHealth),
                   for (final e in health)
-                    row(
-                      HabitSignalKind.health,
-                      e.key,
-                      e.value.displayName,
-                      null,
-                    ),
+                    row(HabitSignalKind.health, e.key, e.name, null),
                   if (workouts.isNotEmpty)
                     section(messages.habitEditorPickerWorkouts),
                   for (final w in workouts)

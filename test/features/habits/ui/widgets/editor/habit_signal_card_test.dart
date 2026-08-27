@@ -83,7 +83,9 @@ void main() {
       await pump(
         tester,
         HabitSignalsForm(
-          signals: [waterAny.copyWith(mode: HabitSignalMode.atLeast)],
+          signals: [
+            waterAny.copyWith(mode: HabitSignalMode.atLeast, threshold: 1000),
+          ],
         ),
       );
       final field = find.byKey(
@@ -124,7 +126,10 @@ void main() {
     expect(distance.mode, HabitSignalMode.atLeast);
     expect(distance.workoutValueType, WorkoutValueType.distance);
 
-    await pump(tester, HabitSignalsForm(signals: [distance]));
+    await pump(
+      tester,
+      HabitSignalsForm(signals: [distance.copyWith(threshold: 5)]),
+    );
     expect(find.text('km'), findsOneWidget);
     await tester.tap(find.text('Any workout').first);
     await tester.pump();
@@ -151,5 +156,74 @@ void main() {
     );
     await tester.pump();
     expect(changes.last.signals, [steps]);
+  });
+
+  group('threshold and mode stay together', () {
+    testWidgets('switching to any clears the field; back keeps what it shows', (
+      tester,
+    ) async {
+      final bounded = waterAny.copyWith(
+        mode: HabitSignalMode.atLeast,
+        threshold: 1000,
+      );
+      await pump(tester, HabitSignalsForm(signals: [bounded]));
+      final field = find.byKey(
+        const ValueKey('habit-signal-threshold-measurable-water'),
+      );
+      expect(find.text('1000'), findsOneWidget);
+      expect(find.text('Enter a value for this rule'), findsNothing);
+
+      await tester.tap(find.text('Any entry').first);
+      await tester.pump();
+      expect(changes.last.signals.single, waterAny);
+      // The card is rebuilt by its parent with the new form in the app;
+      // here the field is gone with the bounded mode either way.
+      // The parent rebuilds the card with the new form in the app; the
+      // field's own text is cleared regardless, so a later bounded mode
+      // cannot pick up a stale number.
+      final input = tester.widget<TextField>(
+        find.descendant(of: field, matching: find.byType(TextField)),
+      );
+      expect(input.controller!.text, isEmpty);
+    });
+
+    testWidgets('a bounded mode adopts the number already in the field', (
+      tester,
+    ) async {
+      final bounded = waterAny.copyWith(
+        mode: HabitSignalMode.atLeast,
+        threshold: 1000,
+      );
+      await pump(tester, HabitSignalsForm(signals: [bounded]));
+      await tester.tap(find.text('Total ≤').first);
+      await tester.pump();
+      final switched = changes.last.signals.single;
+      expect(switched.mode, HabitSignalMode.atMost);
+      expect(switched.threshold, 1000);
+    });
+
+    testWidgets('a bounded mode without a value says so', (tester) async {
+      await pump(
+        tester,
+        HabitSignalsForm(
+          signals: [waterAny.copyWith(mode: HabitSignalMode.atLeast)],
+        ),
+      );
+      expect(find.text('Enter a value for this rule'), findsOneWidget);
+    });
+
+    testWidgets('a workout back to any drops its dimension too', (
+      tester,
+    ) async {
+      final distance = run.copyWith(
+        mode: HabitSignalMode.atLeast,
+        threshold: 5,
+        workoutValueType: WorkoutValueType.distance,
+      );
+      await pump(tester, HabitSignalsForm(signals: [distance]));
+      await tester.tap(find.text('Any workout').first);
+      await tester.pump();
+      expect(changes.last.signals.single, run);
+    });
   });
 }

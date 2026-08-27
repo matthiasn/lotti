@@ -194,6 +194,44 @@ void main() {
   });
 
   group('HabitSignalsForm', () {
+    test('value semantics, emptiness and completeness', () {
+      const a = HabitSignalsForm(signals: [water, steps]);
+      const b = HabitSignalsForm(signals: [water, steps]);
+      expect(a, b);
+      expect(a.hashCode, b.hashCode);
+      expect(a, isNot(const HabitSignalsForm(signals: [water])));
+      expect(a.toString(), contains('water'));
+      expect(const HabitSignalsForm().isEmpty, isTrue);
+      expect(a.isEmpty, isFalse);
+      expect(a.isComplete, isTrue);
+      expect(
+        const HabitSignalsForm(
+          signals: [
+            HabitSignalForm(
+              kind: HabitSignalKind.measurable,
+              id: 'water',
+              mode: HabitSignalMode.atLeast,
+            ),
+          ],
+        ).isComplete,
+        isFalse,
+      );
+      expect(const HabitSignalsForm(signals: [anyRun]).isComplete, isTrue);
+    });
+
+    test('an or root reads back as "any"', () {
+      final form = HabitFormMapping.fromRule(
+        const AutoCompleteRule.or(
+          rules: [
+            AutoCompleteRule.measurable(dataTypeId: 'water', minimum: 1000),
+            AutoCompleteRule.measurable(dataTypeId: 'coffee', maximum: 2),
+          ],
+        ),
+      );
+      expect(form.composite, HabitCompositeRule.any);
+      expect(form.signals, [water, coffee]);
+    });
+
     test('normalized clamps and drops an irrelevant composite', () {
       const single = HabitSignalsForm(
         signals: [water],

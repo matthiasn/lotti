@@ -3,6 +3,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/habits/model/habit_form_mapping.dart';
 import 'package:lotti/features/habits/ui/widgets/editor/habit_signal_presentation.dart';
+import 'package:lotti/l10n/app_localizations_en.dart';
 
 import '../../../../../test_data/test_data.dart';
 
@@ -13,6 +14,7 @@ void main() {
     unitName: 'ml',
   );
   final byId = {'water': water};
+  final messages = AppLocalizationsEn();
 
   test('each kind has its own icon', () {
     expect(HabitSignalKind.measurable.icon, LottiIcons.measure);
@@ -25,6 +27,7 @@ void main() {
     () {
       expect(
         habitSignalDisplayName(
+          messages,
           const HabitSignalForm(kind: HabitSignalKind.measurable, id: 'water'),
           byId,
         ),
@@ -32,6 +35,7 @@ void main() {
       );
       expect(
         habitSignalDisplayName(
+          messages,
           const HabitSignalForm(kind: HabitSignalKind.measurable, id: 'gone'),
           byId,
         ),
@@ -39,6 +43,7 @@ void main() {
       );
       expect(
         habitSignalDisplayName(
+          messages,
           const HabitSignalForm(
             kind: HabitSignalKind.health,
             id: 'cumulative_step_count',
@@ -49,6 +54,7 @@ void main() {
       );
       expect(
         habitSignalDisplayName(
+          messages,
           const HabitSignalForm(kind: HabitSignalKind.workout, id: 'running'),
           byId,
         ),
@@ -56,6 +62,7 @@ void main() {
       );
       expect(
         habitSignalDisplayName(
+          messages,
           const HabitSignalForm(
             kind: HabitSignalKind.workout,
             id: 'running',
@@ -108,5 +115,25 @@ void main() {
       ),
       '',
     );
+  });
+
+  test(
+    'only real journal series are evaluable; synthetic chart keys are not',
+    () {
+      final keys = evaluableHealthDataTypes.toSet();
+      expect(keys, contains('HealthDataType.WEIGHT'));
+      expect(keys, contains('cumulative_step_count'));
+      expect(keys, isNot(contains('BLOOD_PRESSURE')));
+      expect(keys, isNot(contains('BODY_MASS_INDEX')));
+    },
+  );
+
+  test('health names come from the catalog, with a config fallback', () {
+    for (final key in evaluableHealthDataTypes) {
+      // Every evaluable key has a translated name (not the raw id).
+      expect(habitHealthTypeName(messages, key), isNot(key));
+    }
+    expect(habitHealthTypeName(messages, 'HealthDataType.WEIGHT'), 'Weight');
+    expect(habitHealthTypeName(messages, 'unknown_type'), 'unknown_type');
   });
 }

@@ -7453,6 +7453,62 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get habitEditorThresholdRequired =>
+      'Introduce un valor para esta regla';
+
+  @override
+  String get habitHealthBloodPressureDiastolic => 'Tensión diastólica';
+
+  @override
+  String get habitHealthBloodPressureSystolic => 'Tensión sistólica';
+
+  @override
+  String get habitHealthBodyFat => 'Grasa corporal';
+
+  @override
+  String get habitHealthBodyMassIndex => 'Índice de masa corporal';
+
+  @override
+  String get habitHealthDistance => 'Distancia';
+
+  @override
+  String get habitHealthFlightsClimbed => 'Pisos subidos';
+
+  @override
+  String get habitHealthHeartRateVariability =>
+      'Variabilidad de la frecuencia cardiaca';
+
+  @override
+  String get habitHealthRestingHeartRate => 'Frecuencia cardiaca en reposo';
+
+  @override
+  String get habitHealthSleepAsleep => 'Sueño';
+
+  @override
+  String get habitHealthSleepAwake => 'Despierto en la cama';
+
+  @override
+  String get habitHealthSleepDeep => 'Sueño profundo';
+
+  @override
+  String get habitHealthSleepInBed => 'Tiempo en la cama';
+
+  @override
+  String get habitHealthSleepLight => 'Sueño ligero';
+
+  @override
+  String get habitHealthSleepRem => 'Sueño REM';
+
+  @override
+  String get habitHealthSteps => 'Pasos';
+
+  @override
+  String get habitHealthWalkingHeartRate => 'Frecuencia cardiaca al caminar';
+
+  @override
+  String get habitHealthWeight => 'Peso';
+
+  @override
   String habitHeatmapDaySemantic(String date, int done, int total) {
     String _temp0 = intl.Intl.pluralLogic(
       total,

@@ -7363,6 +7363,61 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get habitEditorThresholdRequired =>
+      'Ange ett värde för den här regeln';
+
+  @override
+  String get habitHealthBloodPressureDiastolic => 'Diastoliskt blodtryck';
+
+  @override
+  String get habitHealthBloodPressureSystolic => 'Systoliskt blodtryck';
+
+  @override
+  String get habitHealthBodyFat => 'Kroppsfett';
+
+  @override
+  String get habitHealthBodyMassIndex => 'Body mass index';
+
+  @override
+  String get habitHealthDistance => 'Sträcka';
+
+  @override
+  String get habitHealthFlightsClimbed => 'Våningar';
+
+  @override
+  String get habitHealthHeartRateVariability => 'Pulsvariabilitet';
+
+  @override
+  String get habitHealthRestingHeartRate => 'Vilopuls';
+
+  @override
+  String get habitHealthSleepAsleep => 'Sömn';
+
+  @override
+  String get habitHealthSleepAwake => 'Vaken i sängen';
+
+  @override
+  String get habitHealthSleepDeep => 'Djupsömn';
+
+  @override
+  String get habitHealthSleepInBed => 'Tid i sängen';
+
+  @override
+  String get habitHealthSleepLight => 'Lätt sömn';
+
+  @override
+  String get habitHealthSleepRem => 'REM-sömn';
+
+  @override
+  String get habitHealthSteps => 'Steg';
+
+  @override
+  String get habitHealthWalkingHeartRate => 'Puls vid promenad';
+
+  @override
+  String get habitHealthWeight => 'Vikt';
+
+  @override
   String habitHeatmapDaySemantic(String date, int done, int total) {
     return '$date, $done av $total gjort';
   }

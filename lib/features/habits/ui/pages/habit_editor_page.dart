@@ -89,6 +89,14 @@ class _HabitEditorPageState extends ConsumerState<HabitEditorPage> {
 
   Future<void> _save() async {
     if (_saving) return;
+    final signals = _signals;
+    if (signals != null && !signals.isComplete) {
+      context.showToast(
+        tone: DesignSystemToastTone.error,
+        title: context.messages.habitEditorThresholdRequired,
+      );
+      return;
+    }
     setState(() => _saving = true);
     bool saved;
     try {

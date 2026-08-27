@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/habits/state/habit_signal_status_controller.dart';
+import 'package:lotti/features/habits/ui/widgets/editor/habit_signal_presentation.dart';
 import 'package:lotti/features/habits/ui/widgets/measurable_quick_record_chips.dart';
 import 'package:lotti/features/habits/ui/widgets/signal_sparkline.dart';
 import 'package:lotti/get_it.dart';
@@ -49,7 +49,7 @@ class HabitSignalRow extends StatelessWidget {
       AutoCompleteRuleMeasurable(:final dataTypeId, :final title) =>
         title ?? measurable?.displayName ?? dataTypeId,
       AutoCompleteRuleHealth(:final dataType, :final title) =>
-        title ?? healthTypes[dataType]?.displayName ?? dataType,
+        title ?? habitHealthTypeName(messages, dataType),
       AutoCompleteRuleWorkout(:final dataType, :final title) =>
         title ?? dataType,
       AutoCompleteRuleHabit(:final habitId, :final title) =>

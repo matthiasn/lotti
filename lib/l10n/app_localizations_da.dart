@@ -7354,6 +7354,60 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String get habitEditorThresholdRequired => 'Indtast en værdi for denne regel';
+
+  @override
+  String get habitHealthBloodPressureDiastolic => 'Diastolisk blodtryk';
+
+  @override
+  String get habitHealthBloodPressureSystolic => 'Systolisk blodtryk';
+
+  @override
+  String get habitHealthBodyFat => 'Kropsfedt';
+
+  @override
+  String get habitHealthBodyMassIndex => 'Body mass index';
+
+  @override
+  String get habitHealthDistance => 'Distance';
+
+  @override
+  String get habitHealthFlightsClimbed => 'Etager';
+
+  @override
+  String get habitHealthHeartRateVariability => 'Pulsvariabilitet';
+
+  @override
+  String get habitHealthRestingHeartRate => 'Hvilepuls';
+
+  @override
+  String get habitHealthSleepAsleep => 'Søvn';
+
+  @override
+  String get habitHealthSleepAwake => 'Vågen i sengen';
+
+  @override
+  String get habitHealthSleepDeep => 'Dyb søvn';
+
+  @override
+  String get habitHealthSleepInBed => 'Tid i sengen';
+
+  @override
+  String get habitHealthSleepLight => 'Let søvn';
+
+  @override
+  String get habitHealthSleepRem => 'REM-søvn';
+
+  @override
+  String get habitHealthSteps => 'Skridt';
+
+  @override
+  String get habitHealthWalkingHeartRate => 'Puls ved gang';
+
+  @override
+  String get habitHealthWeight => 'Vægt';
+
+  @override
   String habitHeatmapDaySemantic(String date, int done, int total) {
     return '$date, $done af $total færdig';
   }

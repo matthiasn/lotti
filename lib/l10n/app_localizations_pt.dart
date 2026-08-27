@@ -7427,6 +7427,62 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String get habitEditorThresholdRequired =>
+      'Introduz um valor para esta regra';
+
+  @override
+  String get habitHealthBloodPressureDiastolic => 'Tensão diastólica';
+
+  @override
+  String get habitHealthBloodPressureSystolic => 'Tensão sistólica';
+
+  @override
+  String get habitHealthBodyFat => 'Gordura corporal';
+
+  @override
+  String get habitHealthBodyMassIndex => 'Índice de massa corporal';
+
+  @override
+  String get habitHealthDistance => 'Distância';
+
+  @override
+  String get habitHealthFlightsClimbed => 'Lanços subidos';
+
+  @override
+  String get habitHealthHeartRateVariability =>
+      'Variabilidade da frequência cardíaca';
+
+  @override
+  String get habitHealthRestingHeartRate => 'Frequência cardíaca em repouso';
+
+  @override
+  String get habitHealthSleepAsleep => 'Sono';
+
+  @override
+  String get habitHealthSleepAwake => 'Acordado na cama';
+
+  @override
+  String get habitHealthSleepDeep => 'Sono profundo';
+
+  @override
+  String get habitHealthSleepInBed => 'Tempo na cama';
+
+  @override
+  String get habitHealthSleepLight => 'Sono leve';
+
+  @override
+  String get habitHealthSleepRem => 'Sono REM';
+
+  @override
+  String get habitHealthSteps => 'Passos';
+
+  @override
+  String get habitHealthWalkingHeartRate => 'Frequência cardíaca a caminhar';
+
+  @override
+  String get habitHealthWeight => 'Peso';
+
+  @override
   String habitHeatmapDaySemantic(String date, int done, int total) {
     return '$date, $done de $total concluído';
   }

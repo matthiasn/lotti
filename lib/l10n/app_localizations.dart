@@ -12462,6 +12462,114 @@ abstract class AppLocalizations {
   /// **'Step {step} of {total}'**
   String habitEditorStepProgress(int step, int total);
 
+  /// No description provided for @habitEditorThresholdRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a value for this rule'**
+  String get habitEditorThresholdRequired;
+
+  /// No description provided for @habitHealthBloodPressureDiastolic.
+  ///
+  /// In en, this message translates to:
+  /// **'Diastolic blood pressure'**
+  String get habitHealthBloodPressureDiastolic;
+
+  /// No description provided for @habitHealthBloodPressureSystolic.
+  ///
+  /// In en, this message translates to:
+  /// **'Systolic blood pressure'**
+  String get habitHealthBloodPressureSystolic;
+
+  /// No description provided for @habitHealthBodyFat.
+  ///
+  /// In en, this message translates to:
+  /// **'Body fat'**
+  String get habitHealthBodyFat;
+
+  /// No description provided for @habitHealthBodyMassIndex.
+  ///
+  /// In en, this message translates to:
+  /// **'Body mass index'**
+  String get habitHealthBodyMassIndex;
+
+  /// No description provided for @habitHealthDistance.
+  ///
+  /// In en, this message translates to:
+  /// **'Distance'**
+  String get habitHealthDistance;
+
+  /// No description provided for @habitHealthFlightsClimbed.
+  ///
+  /// In en, this message translates to:
+  /// **'Flights climbed'**
+  String get habitHealthFlightsClimbed;
+
+  /// No description provided for @habitHealthHeartRateVariability.
+  ///
+  /// In en, this message translates to:
+  /// **'Heart rate variability'**
+  String get habitHealthHeartRateVariability;
+
+  /// No description provided for @habitHealthRestingHeartRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Resting heart rate'**
+  String get habitHealthRestingHeartRate;
+
+  /// No description provided for @habitHealthSleepAsleep.
+  ///
+  /// In en, this message translates to:
+  /// **'Sleep'**
+  String get habitHealthSleepAsleep;
+
+  /// No description provided for @habitHealthSleepAwake.
+  ///
+  /// In en, this message translates to:
+  /// **'Awake in bed'**
+  String get habitHealthSleepAwake;
+
+  /// No description provided for @habitHealthSleepDeep.
+  ///
+  /// In en, this message translates to:
+  /// **'Deep sleep'**
+  String get habitHealthSleepDeep;
+
+  /// No description provided for @habitHealthSleepInBed.
+  ///
+  /// In en, this message translates to:
+  /// **'Time in bed'**
+  String get habitHealthSleepInBed;
+
+  /// No description provided for @habitHealthSleepLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Light sleep'**
+  String get habitHealthSleepLight;
+
+  /// No description provided for @habitHealthSleepRem.
+  ///
+  /// In en, this message translates to:
+  /// **'REM sleep'**
+  String get habitHealthSleepRem;
+
+  /// No description provided for @habitHealthSteps.
+  ///
+  /// In en, this message translates to:
+  /// **'Steps'**
+  String get habitHealthSteps;
+
+  /// No description provided for @habitHealthWalkingHeartRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Walking heart rate'**
+  String get habitHealthWalkingHeartRate;
+
+  /// No description provided for @habitHealthWeight.
+  ///
+  /// In en, this message translates to:
+  /// **'Weight'**
+  String get habitHealthWeight;
+
   /// No description provided for @habitHeatmapDaySemantic.
   ///
   /// In en, this message translates to:

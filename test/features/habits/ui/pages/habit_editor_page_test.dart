@@ -239,6 +239,54 @@ void main() {
       },
     );
 
+    testWidgets('unchecking in the picker removes the signal', (tester) async {
+      await pumpEditor(tester, habitId: ruledHabit.id);
+      await tester.tap(find.byKey(const ValueKey('habit-signal-add-row')));
+      await tester.pumpAndSettle();
+      // Water is already selected; tapping it deselects.
+      await tester.tap(find.text('Water').last);
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('habit-signal-picker-done')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('habit-editor-primary')));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(
+        savedHabit().autoCompleteRule,
+        const AutoCompleteRule.health(
+          dataType: 'cumulative_step_count',
+          minimum: 6000,
+        ),
+      );
+    });
+
+    testWidgets('Primary+S on step 1 does not save', (tester) async {
+      await pumpEditor(tester);
+      await tester.tap(find.byKey(const Key('habit_name_field')));
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      await tester.pump(const Duration(milliseconds: 300));
+      verifyNever(() => persistence.upsertEntityDefinition(any()));
+    });
+
+    testWidgets('a bounded rule without a value cannot be saved', (
+      tester,
+    ) async {
+      await pumpEditor(tester, habitId: ruledHabit.id);
+      await tester.enterText(
+        find.byKey(
+          const ValueKey('habit-signal-threshold-measurable-water'),
+        ),
+        '',
+      );
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('habit-editor-primary')));
+      await tester.pump(const Duration(milliseconds: 300));
+      verifyNever(() => persistence.upsertEntityDefinition(any()));
+      expect(find.text('Enter a value for this rule'), findsWidgets);
+      expect(beamedTo, isNull);
+    });
+
     testWidgets('back on step 2 returns to step 1; on step 1 leaves', (
       tester,
     ) async {

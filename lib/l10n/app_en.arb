@@ -4391,6 +4391,24 @@
       }
     }
   },
+  "habitEditorThresholdRequired": "Enter a value for this rule",
+  "habitHealthBloodPressureDiastolic": "Diastolic blood pressure",
+  "habitHealthBloodPressureSystolic": "Systolic blood pressure",
+  "habitHealthBodyFat": "Body fat",
+  "habitHealthBodyMassIndex": "Body mass index",
+  "habitHealthDistance": "Distance",
+  "habitHealthFlightsClimbed": "Flights climbed",
+  "habitHealthHeartRateVariability": "Heart rate variability",
+  "habitHealthRestingHeartRate": "Resting heart rate",
+  "habitHealthSleepAsleep": "Sleep",
+  "habitHealthSleepAwake": "Awake in bed",
+  "habitHealthSleepDeep": "Deep sleep",
+  "habitHealthSleepInBed": "Time in bed",
+  "habitHealthSleepLight": "Light sleep",
+  "habitHealthSleepRem": "REM sleep",
+  "habitHealthSteps": "Steps",
+  "habitHealthWalkingHeartRate": "Walking heart rate",
+  "habitHealthWeight": "Weight",
   "habitHeatmapDaySemantic": "{date}, {done} of {total} done",
   "@habitHeatmapDaySemantic": {
     "placeholders": {
