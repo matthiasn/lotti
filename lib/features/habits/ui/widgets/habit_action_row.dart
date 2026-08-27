@@ -339,7 +339,7 @@ class _HabitActionRowState extends ConsumerState<HabitActionRow>
                 completedToday: widget.completedToday,
                 autoCompleted: widget.autoCompleted,
                 autoCompleteReason: widget.autoCompleteReason,
-                autoCompletedAt: widget.autoCompletedAt ?? '',
+                autoCompletedAt: widget.autoCompletedAt,
                 currentStreak: widget.currentStreak,
                 doneColor: doneColor,
                 celebrate: celebrate,
@@ -420,7 +420,7 @@ class _HabitCardBody extends StatelessWidget {
   final bool completedToday;
   final bool autoCompleted;
   final String? autoCompleteReason;
-  final String autoCompletedAt;
+  final String? autoCompletedAt;
   final int currentStreak;
   final Color doneColor;
 
@@ -505,12 +505,14 @@ class _HabitCardBody extends StatelessWidget {
                           ],
                         ],
                       ),
-                      if (autoCompleted && autoCompleteReason != null) ...[
+                      if (autoCompleted &&
+                          autoCompleteReason != null &&
+                          autoCompletedAt != null) ...[
                         SizedBox(height: tokens.spacing.step1),
                         Text(
                           messages.habitAutoCompletedCaption(
                             autoCompleteReason!,
-                            autoCompletedAt,
+                            autoCompletedAt!,
                           ),
                           key: const ValueKey('habit-auto-caption'),
                           style: tokens.typography.styles.others.caption

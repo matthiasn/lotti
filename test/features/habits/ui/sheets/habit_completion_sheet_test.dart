@@ -313,19 +313,50 @@ void main() {
       );
     });
 
-    clockedWidgets('a tap on the scrim pops, a tap on the form does not', (
+    clockedWidgets('shown as a sheet: the scrim dismisses, the form does not', (
       tester,
     ) async {
-      await pumpSheet(tester);
-      await tester.tapAt(const Offset(5, 5));
-      await tester.pump();
-      // The sheet is the only route here, so maybePop is a no-op — the
-      // point is that the scrim handled the tap and the form swallowed
-      // its own without either throwing.
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(
+        makeTestableWidget(
+          Builder(
+            builder: (context) => Scaffold(
+              body: Center(
+                child: TextButton(
+                  onPressed: () => HabitCompletionSheet.show(
+                    context,
+                    habitId: habitFlossing.id,
+                  ),
+                  child: const Text('open'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+      expect(find.byType(HabitCompletionSheet), findsOneWidget);
+
+      // A tap on the form keeps the sheet.
       await tester.tap(find.text(habitFlossing.name));
-      await tester.pump();
-      expect(tester.takeException(), isNull);
-      expect(find.byKey(const Key('habit_save')), findsOneWidget);
+      await tester.pumpAndSettle();
+      expect(find.byType(HabitCompletionSheet), findsOneWidget);
+
+      // A tap on the transparent area above the form dismisses it.
+      await tester.tapAt(const Offset(400, 20));
+      await tester.pumpAndSettle();
+      expect(find.byType(HabitCompletionSheet), findsNothing);
+      verifyNever(
+        () => persistence.createHabitCompletionEntry(
+          data: any(named: 'data'),
+          comment: any(named: 'comment'),
+          habitDefinition: any(named: 'habitDefinition'),
+        ),
+      );
     });
 
     clockedWidgets('renders nothing for an unknown habit', (tester) async {

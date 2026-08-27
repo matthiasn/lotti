@@ -7330,7 +7330,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get habitSheetAutoCompletedBanner =>
-      'Klar automatiskt – datan är registrerad. Lägg till en kommentar eller spara direkt.';
+      'Avbockad automatiskt – datan är registrerad. Lägg till en kommentar eller spara direkt.';
 
   @override
   String get habitShowAlertAtLabel => 'Visa varning på';

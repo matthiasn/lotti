@@ -18,7 +18,7 @@ class SignalSparkline extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     return Semantics(
-      label: values.last?.toString(),
+      label: values.isEmpty ? null : values.last?.toString(),
       child: SizedBox(
         height: tokens.spacing.step8,
         child: CustomPaint(

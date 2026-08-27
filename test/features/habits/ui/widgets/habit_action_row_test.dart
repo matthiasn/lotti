@@ -714,7 +714,26 @@ void main() {
       await tester.tap(find.text(habitFlossing.name));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
-      expect(find.byType(HabitCompletionSheet), findsOneWidget);
+      final sheet = tester.widget<HabitCompletionSheet>(
+        find.byType(HabitCompletionSheet),
+      );
+      expect(sheet.habitId, habitFlossing.id);
+    });
+
+    testWidgets('an auto completion without a time shows the pill only', (
+      tester,
+    ) async {
+      // A rebuild across midnight can keep the pill data while the time for
+      // the new day is not known yet — the caption must not render with a
+      // blank time.
+      await pumpRow(
+        tester,
+        completedToday: true,
+        autoCompleted: true,
+        autoCompleteReason: 'Steps · 7412',
+      );
+      expect(find.byKey(const ValueKey('habit-auto-pill')), findsOneWidget);
+      expect(find.byKey(const ValueKey('habit-auto-caption')), findsNothing);
     });
   });
 }

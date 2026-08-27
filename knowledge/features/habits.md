@@ -279,8 +279,9 @@ flowchart LR
 ```
 
 The status provider is the sheet's single source: it reads through the same
-`SignalReader` and `HabitRuleEvaluator` the engine uses, so a pill can never
-say "done" while the engine would not write. It refreshes **in place** on
+`SignalReader` and `HabitRuleEvaluator` the engine uses, so the pill shows the
+same rule-satisfaction result as the engine; the engine additionally writes
+only when the day has no completion yet. It refreshes **in place** on
 journal updates touching the rule's series (never a loading shell), and a
 chip tap refreshes it explicitly after the write. A chip that satisfies the
 rule flips an *untouched* outcome to Success and shows the auto banner; an

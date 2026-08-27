@@ -35,6 +35,14 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('an empty series renders nothing and announces nothing', (
+    tester,
+  ) async {
+    await pump(tester, const []);
+    expect(tester.takeException(), isNull);
+    expect(find.byType(SignalSparkline), findsOneWidget);
+  });
+
   testWidgets('all-empty and all-zero series render without dividing by zero', (
     tester,
   ) async {
