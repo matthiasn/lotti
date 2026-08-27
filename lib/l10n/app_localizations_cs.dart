@@ -7231,6 +7231,11 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String habitAutoCompletedCaption(String signal, String time) {
+    return 'Odškrtnuto podle $signal v $time';
+  }
+
+  @override
   String habitAutoCompletedGroupTitle(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -7251,6 +7256,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String habitAutoCompletedTitle(String habit) {
     return '✓ $habit hotovo';
   }
+
+  @override
+  String get habitAutoPillLabel => 'auto';
 
   @override
   String get habitCategoryHint => 'Vyber kategorii';
@@ -7393,10 +7401,52 @@ class AppLocalizationsCs extends AppLocalizations {
   String get habitsHeatmapMore => 'Více';
 
   @override
+  String get habitSheetAutoCompletedBanner =>
+      'Splněno automaticky – data jsou zaznamenána. Přidej komentář, nebo prostě ulož.';
+
+  @override
   String get habitShowAlertAtLabel => 'Zobrazit upozornění v';
 
   @override
   String get habitShowFromLabel => 'Zobrazit od';
+
+  @override
+  String get habitSignalAnyEntry => 'jakýkoli záznam';
+
+  @override
+  String get habitSignalAnyReading => 'jakékoli měření';
+
+  @override
+  String get habitSignalAnyWorkout => 'jakýkoli trénink';
+
+  @override
+  String get habitSignalHabitDone => 'návyk splněn';
+
+  @override
+  String get habitSignalRecordOther => 'Jiná hodnota';
+
+  @override
+  String habitSignalStatusDone(String target) {
+    return '$target · hotovo';
+  }
+
+  @override
+  String habitSignalStatusNotYet(String target) {
+    return '$target · zatím ne';
+  }
+
+  @override
+  String habitSignalStatusSoFar(String target, String value) {
+    return '$target · zatím $value';
+  }
+
+  @override
+  String habitSignalToday(String value) {
+    return 'dnes: $value';
+  }
+
+  @override
+  String get habitSignalTodayNone => 'dnes: —';
 
   @override
   String habitsLaggardHint(String habit, int kept, int active) {

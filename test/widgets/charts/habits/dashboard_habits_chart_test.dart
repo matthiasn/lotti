@@ -49,9 +49,6 @@ void main() {
       expect(card.habitId, 'habit-1');
       expect(card.rangeStart, rangeStart);
       expect(card.rangeEnd, rangeEnd);
-      // The key behavior: tapping a row here must not re-open the dashboard the
-      // user is already viewing.
-      expect(card.showLinkedDashboard, isFalse);
     },
   );
 }

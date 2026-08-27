@@ -1,6 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/habits/model/habit_completion_record.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
 
 void main() {
@@ -335,6 +336,42 @@ void main() {
       final result = completionRate(state, byDay);
 
       expect(result, 100);
+    });
+  });
+
+  group('autoCompletedAt', () {
+    final now = DateTime(2026, 8, 8, 15);
+    HabitCompletionRecord record(
+      String habitId,
+      DateTime at, {
+      HabitCompletionSource source = HabitCompletionSource.manual,
+    }) => HabitCompletionRecord(
+      habitId: habitId,
+      dateFrom: at,
+      completionType: HabitCompletionType.success,
+      source: source,
+    );
+
+    test("names the time of today's engine-written completion", () {
+      final state = HabitsState.initial(now: now).copyWith(
+        habitCompletions: [
+          record(
+            'a',
+            DateTime(2026, 8, 8, 8, 12),
+            source: HabitCompletionSource.auto,
+          ),
+          record('b', DateTime(2026, 8, 8, 9)),
+          record(
+            'c',
+            DateTime(2026, 8, 7, 8),
+            source: HabitCompletionSource.auto,
+          ),
+        ],
+      );
+      expect(state.autoCompletedAt('a', now: now), '08:12');
+      expect(state.autoCompletedAt('b', now: now), isNull);
+      expect(state.autoCompletedAt('c', now: now), isNull);
+      expect(state.autoCompletedAt('missing', now: now), isNull);
     });
   });
 }

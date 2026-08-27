@@ -7225,6 +7225,11 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String habitAutoCompletedCaption(String signal, String time) {
+    return 'Marcado a partir de $signal às $time';
+  }
+
+  @override
   String habitAutoCompletedGroupTitle(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -7244,6 +7249,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String habitAutoCompletedTitle(String habit) {
     return '✓ $habit feito';
   }
+
+  @override
+  String get habitAutoPillLabel => 'auto';
 
   @override
   String get habitCategoryHint => 'Selecione uma categoria';
@@ -7384,10 +7392,52 @@ class AppLocalizationsPt extends AppLocalizations {
   String get habitsHeatmapMore => 'Mais';
 
   @override
+  String get habitSheetAutoCompletedBanner =>
+      'Concluído automaticamente — os dados estão registados. Adiciona um comentário ou guarda já.';
+
+  @override
   String get habitShowAlertAtLabel => 'Mostrar alerta em';
 
   @override
   String get habitShowFromLabel => 'Mostrar de';
+
+  @override
+  String get habitSignalAnyEntry => 'qualquer registo';
+
+  @override
+  String get habitSignalAnyReading => 'qualquer leitura';
+
+  @override
+  String get habitSignalAnyWorkout => 'qualquer treino';
+
+  @override
+  String get habitSignalHabitDone => 'hábito feito';
+
+  @override
+  String get habitSignalRecordOther => 'Outro';
+
+  @override
+  String habitSignalStatusDone(String target) {
+    return '$target · feito';
+  }
+
+  @override
+  String habitSignalStatusNotYet(String target) {
+    return '$target · ainda não';
+  }
+
+  @override
+  String habitSignalStatusSoFar(String target, String value) {
+    return '$target · $value até agora';
+  }
+
+  @override
+  String habitSignalToday(String value) {
+    return 'hoje: $value';
+  }
+
+  @override
+  String get habitSignalTodayNone => 'hoje: —';
 
   @override
   String habitsLaggardHint(String habit, int kept, int active) {

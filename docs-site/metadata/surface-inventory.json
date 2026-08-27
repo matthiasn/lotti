@@ -1076,8 +1076,8 @@
       "id": "workflow-habit-completion",
       "title": "Record habit completion",
       "kind": "workflow",
-      "source": "lib/pages/create/complete_habit_dialog.dart",
-      "sourcePattern": "class HabitDialog",
+      "source": "lib/features/habits/ui/sheets/habit_completion_sheet.dart",
+      "sourcePattern": "class HabitCompletionSheet",
       "locator": "Habits → Record",
       "page": "organize-and-reflect/habits-and-measurables",
       "status": "verified"

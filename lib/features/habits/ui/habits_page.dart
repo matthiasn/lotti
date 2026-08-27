@@ -234,6 +234,9 @@ class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
         key: Key(habitDefinition.id),
         habitId: habitDefinition.id,
         completedToday: state.successfulToday.contains(habitDefinition.id),
+        autoCompleted: state.autoCompletedToday.containsKey(habitDefinition.id),
+        autoCompleteReason: state.autoCompletedToday[habitDefinition.id],
+        autoCompletedAt: state.autoCompletedAt(habitDefinition.id),
         currentStreak: streaks[habitDefinition.id] ?? 0,
       );
     }

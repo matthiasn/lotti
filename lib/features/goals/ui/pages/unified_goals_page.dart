@@ -238,6 +238,9 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage>
         // Orphan rows keep the Habits tab's semantics (skip counts as
         // handled) — they ARE the old habits list, just grouped.
         completedToday: state.successfulToday.contains(habitDefinition.id),
+        autoCompleted: state.autoCompletedToday.containsKey(habitDefinition.id),
+        autoCompleteReason: state.autoCompletedToday[habitDefinition.id],
+        autoCompletedAt: state.autoCompletedAt(habitDefinition.id),
         currentStreak: streaks[habitDefinition.id] ?? 0,
       );
     }
