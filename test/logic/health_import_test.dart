@@ -469,8 +469,85 @@ void main() {
           startTime: any(named: 'startTime'),
           endTime: any(named: 'endTime'),
         ),
-      ).called(2); // Once for flights, once for distance
+      ).called(3); // Steps samples, flights, distance
     });
+
+    test('reads the raw step samples over the same whole day', () async {
+      final testDate = DateTime(2024);
+      stubHealthStore();
+
+      await healthImport.fetchAndProcessActivityDataForDay(
+        testDate,
+        <DateTime, num>{},
+        <DateTime, num>{},
+        <DateTime, num>{},
+      );
+
+      verify(
+        () => mockHealthService.getHealthDataFromTypes(
+          types: [HealthDataType.STEPS],
+          startTime: testDate,
+          endTime: DateTime(2024, 1, 1, 23, 59, 59, 999),
+        ),
+      ).called(1);
+    });
+
+    // The reported bug: a band that syncs its whole day once overnight is
+    // ranked below the phone in Health's source priority, so HealthKit's merged
+    // total kept the phone's under-count. The per-source samples still carry
+    // the band's figure, and the best single source wins.
+    test(
+      'prefers the best single source over a merged total that dropped it',
+      () async {
+        final testDate = DateTime(2024);
+        final stepsByDay = <DateTime, num>{};
+
+        when(
+          () => mockHealthService.getTotalStepsInInterval(any(), any()),
+        ).thenAnswer((_) async => 9800);
+        when(
+          () => mockHealthService.getHealthDataFromTypes(
+            types: any(named: 'types'),
+            startTime: any(named: 'startTime'),
+            endTime: any(named: 'endTime'),
+          ),
+        ).thenAnswer((invocation) async {
+          final types =
+              invocation.namedArguments[const Symbol('types')]
+                  as List<HealthDataType>;
+          if (!types.contains(HealthDataType.STEPS)) {
+            return [];
+          }
+          return [
+            makeNumericDataPoint(
+              type: HealthDataType.STEPS,
+              value: 9800,
+              dateFrom: testDate,
+              dateTo: testDate.add(const Duration(hours: 23)),
+              sourceId: 'com.apple.health.iphone',
+              sourceName: 'iPhone',
+            ),
+            makeNumericDataPoint(
+              type: HealthDataType.STEPS,
+              value: 11600,
+              dateFrom: testDate,
+              dateTo: testDate.add(const Duration(hours: 24)),
+              sourceId: 'com.whoop.app',
+              sourceName: 'WHOOP',
+            ),
+          ];
+        });
+
+        await healthImport.fetchAndProcessActivityDataForDay(
+          testDate,
+          stepsByDay,
+          <DateTime, num>{},
+          <DateTime, num>{},
+        );
+
+        expect(stepsByDay[testDate], 11600);
+      },
+    );
 
     test('should handle zero values correctly', () async {
       final testDate = DateTime(2024);
@@ -1778,6 +1855,67 @@ void main() {
         ).called(1);
       });
     });
+
+    // A band that syncs its day overnight lands yesterday's final total after
+    // yesterday already has a row. A delta that only looked from the newest
+    // stored day forward never re-read it, so the dashboards kept the phone's
+    // bedtime count until a manual import.
+    test(
+      'a cumulative delta re-reads the day before the newest stored one',
+      () {
+        fakeAsync((async) {
+          final mobileImport = createMobileHealthImport();
+          final now = DateTime(2024, 1, 10, 9);
+          final latestDay = DateTime(2024, 1, 10);
+
+          when(
+            () => mockJournalDb.latestQuantitativeByType(any()),
+          ).thenAnswer(
+            (_) async => QuantitativeEntry(
+              data: QuantitativeData.cumulativeQuantityData(
+                dateFrom: latestDay,
+                dateTo: DateTime(2024, 1, 10, 8),
+                value: 1200,
+                dataType: 'cumulative_step_count',
+                unit: 'count',
+              ),
+              meta: Metadata(
+                id: 'latest',
+                createdAt: latestDay,
+                updatedAt: latestDay,
+                dateFrom: latestDay,
+                dateTo: DateTime(2024, 1, 10, 8),
+              ),
+            ),
+          );
+          stubHealthStore();
+
+          withClock(Clock.fixed(now), () {
+            mobileImport.fetchHealthDataDelta('cumulative_step_count');
+            async.flushMicrotasks();
+          });
+
+          verify(
+            () => mockHealthService.getTotalStepsInInterval(
+              DateTime(2024, 1, 9),
+              DateTime(2024, 1, 9, 23, 59, 59, 999),
+            ),
+          ).called(1);
+          verify(
+            () => mockHealthService.getTotalStepsInInterval(
+              latestDay,
+              DateTime(2024, 1, 10, 23, 59, 59, 999),
+            ),
+          ).called(1);
+          verifyNever(
+            () => mockHealthService.getTotalStepsInInterval(
+              DateTime(2024, 1, 8),
+              any(),
+            ),
+          );
+        });
+      },
+    );
 
     // Silently importing nothing is what made a dashboard configured for a
     // retired type look like a broken import rather than stale configuration.

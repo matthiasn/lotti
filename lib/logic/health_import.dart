@@ -11,6 +11,7 @@ import 'package:lotti/classes/health.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/health_daily_steps.dart';
 import 'package:lotti/logic/health_data_types.dart';
 import 'package:lotti/logic/health_import_result.dart';
 import 'package:lotti/logic/health_permission_gate.dart';
@@ -192,8 +193,21 @@ class HealthImport {
         999,
       );
 
-      final steps = await health.getTotalStepsInInterval(dateFrom, dateTo);
-      stepsByDay[dateFrom] = steps ?? 0;
+      // The merged total alone is not enough: HealthKit resolves overlapping
+      // samples by source priority, so a wearable ranked below the phone
+      // loses its count wherever the phone also recorded steps. The raw
+      // samples come back per source, and the best single source wins — see
+      // [resolveDailySteps].
+      final mergedSteps = await health.getTotalStepsInInterval(
+        dateFrom,
+        dateTo,
+      );
+      final stepSamples = await health.getHealthDataFromTypes(
+        types: [HealthDataType.STEPS],
+        startTime: dateFrom,
+        endTime: dateTo,
+      );
+      stepsByDay[dateFrom] = resolveDailySteps(mergedSteps, stepSamples);
 
       final flightsClimbedDataPoints = await health.getHealthDataFromTypes(
         types: [HealthDataType.FLIGHTS_CLIMBED],
@@ -218,6 +232,12 @@ class HealthImport {
   /// Each entry spans its whole calendar day, except the day in progress, whose
   /// end is capped at the current instant so a chart never plots a total into
   /// the future.
+  ///
+  /// A day is keyed by its type and date, not by its value:
+  /// `createQuantitativeEntry` updates the stored day in place when the total
+  /// has changed and leaves it alone when it has not, so re-importing after a
+  /// late-syncing source has landed replaces the stale figure rather than
+  /// sitting a second row next to it (see `createQuantitativeEntryImpl`).
   Future<int> addActivityEntries(
     Map<DateTime, num> data,
     String type,
@@ -624,8 +644,16 @@ class HealthImport {
         latest?.meta.dateFrom ?? now.subtract(defaultFetchDuration);
 
     if (type.contains('cumulative')) {
+      // Re-read the day before the newest stored one as well. A source that
+      // syncs its day late — a band that uploads overnight — lands its final
+      // total after that day already has a row, and a delta that only looks
+      // from the newest day forward would never see it: the dashboards kept
+      // showing the phone's own count at bedtime until a manual import.
+      final dayBeforeLatest = latest == null
+          ? dateFrom
+          : latest.meta.dateFrom.subtract(const Duration(days: 1));
       return _getActivityHealthData(
-        dateFrom: dateFrom,
+        dateFrom: dayBeforeLatest,
         dateTo: now,
         // Nobody asked for this — a chart scheduled it on open. Re-raising an
         // authorization sheet the user has already answered would put a modal

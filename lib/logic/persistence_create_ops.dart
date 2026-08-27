@@ -23,10 +23,26 @@ import 'package:lotti/utils/entry_utils.dart';
 class PersistenceCreateOps extends PersistenceCollaboratorBase {
   PersistenceCreateOps(super.logic);
 
+  /// Stores a health sample, returning the entity when the database accepted a
+  /// change and `null` when nothing was written.
+  ///
+  /// Discrete samples are keyed by their whole payload: a re-imported sample
+  /// hashes to the id it already has, `createDbEntity` writes with
+  /// `overwrite: false`, and the duplicate is rejected row by row.
+  ///
+  /// Cumulative days ([CumulativeQuantityData]) are keyed by type and day
+  /// instead, and **updated in place** when the total differs — see
+  /// [cumulativeQuantityEntryId]. Keyed by payload, a day whose total rose after
+  /// import (a wearable that syncs overnight, a phone that caught up) became a
+  /// second row beside the stale one, and a day whose total was unchanged was
+  /// "rejected" indistinguishably from one that never reached the database.
   Future<QuantitativeEntry?> createQuantitativeEntryImpl(
     QuantitativeData data,
   ) async {
     try {
+      if (data is CumulativeQuantityData) {
+        return await _upsertCumulativeDay(data);
+      }
       final journalEntity = QuantitativeEntry(
         data: data,
         meta: await logic.createMetadata(
@@ -35,12 +51,10 @@ class PersistenceCreateOps extends PersistenceCollaboratorBase {
           uuidV5Input: json.encode(data),
         ),
       );
-      // Honour the write verdict. Health entries carry deterministic uuidV5
-      // ids and `createDbEntity` writes with `overwrite: false`, so
-      // re-importing a range that is already stored is rejected row by row.
-      // Returning the entity regardless made every caller unable to tell a
-      // fresh sample from a duplicate — the health import counted both and
-      // told the user it had imported samples it had not.
+      // Honour the write verdict. Returning the entity regardless made every
+      // caller unable to tell a fresh sample from a duplicate — the health
+      // import counted both and told the user it had imported samples it had
+      // not.
       final applied = await logic.createDbEntity(
         journalEntity,
         shouldAddGeolocation: false,
@@ -56,6 +70,66 @@ class PersistenceCreateOps extends PersistenceCollaboratorBase {
     }
 
     return null;
+  }
+
+  /// The deterministic uuidV5 input for one cumulative day: its type, its
+  /// local calendar date and the importing device, so every import of that day
+  /// on that device addresses the same row whatever total it read.
+  ///
+  /// The device is part of the key on purpose. Two devices importing the same
+  /// day would otherwise race for one row through sync and land as a conflict;
+  /// kept apart, each writes its own row and the readers' per-day maximum
+  /// merges them, exactly as it merged the payload-keyed rows before.
+  static String cumulativeQuantityEntryId(CumulativeQuantityData data) {
+    final day = data.dateFrom;
+    final date =
+        '${day.year.toString().padLeft(4, '0')}-'
+        '${day.month.toString().padLeft(2, '0')}-'
+        '${day.day.toString().padLeft(2, '0')}';
+    return 'cumulative:${data.dataType}:$date:${data.deviceType}';
+  }
+
+  /// Creates the day's row, or rewrites it when the stored total differs.
+  ///
+  /// Returns `null` when the stored day already carries exactly [data], so an
+  /// import over an unchanged range still reports nothing new.
+  Future<QuantitativeEntry?> _upsertCumulativeDay(
+    CumulativeQuantityData data,
+  ) async {
+    final uuidV5Input = cumulativeQuantityEntryId(data);
+    final existing = await journalDb.journalEntityById(
+      metadataService.generateId(uuidV5Input: uuidV5Input),
+    );
+
+    if (existing is QuantitativeEntry) {
+      if (existing.data == data) {
+        return null;
+      }
+      final updated = existing.copyWith(
+        data: data,
+        meta: await logic.updateMetadata(
+          existing.meta,
+          dateFrom: data.dateFrom,
+          dateTo: data.dateTo,
+        ),
+      );
+      final applied = await logic.updateDbEntity(updated);
+      return (applied ?? false) ? updated : null;
+    }
+
+    final created = QuantitativeEntry(
+      data: data,
+      meta: await logic.createMetadata(
+        dateFrom: data.dateFrom,
+        dateTo: data.dateTo,
+        uuidV5Input: uuidV5Input,
+      ),
+    );
+    final applied = await logic.createDbEntity(
+      created,
+      shouldAddGeolocation: false,
+    );
+    return (applied ?? false) ? created : null;
   }
 
   Future<WorkoutEntry?> createWorkoutEntryImpl(WorkoutData data) async {

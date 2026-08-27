@@ -8,6 +8,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_create_ops.dart';
+import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -26,6 +27,8 @@ import '../widget_test_utils.dart';
 void main() {
   late MockPersistenceLogic logic;
   late MockDomainLogger domainLogger;
+  late MockJournalDb journalDb;
+  late MockMetadataService metadataService;
   late PersistenceCreateOps ops;
 
   Metadata metaFor(String id) => Metadata(
@@ -39,13 +42,22 @@ void main() {
   setUp(() async {
     registerAllFallbackValues();
     domainLogger = MockDomainLogger();
-    await setUpTestGetIt(
+    metadataService = MockMetadataService();
+    final mocks = await setUpTestGetIt(
       additionalSetup: () {
         getIt
           ..unregister<DomainLogger>()
           ..registerSingleton<DomainLogger>(domainLogger)
+          ..registerSingleton<MetadataService>(metadataService)
           ..registerSingleton<NotificationService>(MockNotificationService());
       },
+    );
+    journalDb = mocks.journalDb;
+    when(
+      () => metadataService.generateId(uuidV5Input: any(named: 'uuidV5Input')),
+    ).thenAnswer(
+      (invocation) =>
+          'id:${invocation.namedArguments[const Symbol('uuidV5Input')]}',
     );
     logic = MockPersistenceLogic();
     ops = PersistenceCreateOps(logic);
@@ -131,6 +143,205 @@ void main() {
       expect(result, isNull);
     },
   );
+
+  group('createQuantitativeEntryImpl — cumulative days', () {
+    final day = DateTime(2026, 8, 26);
+    CumulativeQuantityData steps(num value, {DateTime? dateTo}) =>
+        CumulativeQuantityData(
+          dateFrom: day,
+          dateTo: dateTo ?? DateTime(2026, 8, 26, 23, 59, 59, 999),
+          value: value,
+          dataType: 'cumulative_step_count',
+          unit: 'count',
+          deviceType: 'iPhone17,1',
+          platformType: 'IOS',
+        );
+    const dayId = 'id:cumulative:cumulative_step_count:2026-08-26:iPhone17,1';
+
+    QuantitativeEntry stored(num value) => QuantitativeEntry(
+      data: steps(value),
+      meta: metaFor(dayId).copyWith(dateFrom: day),
+    );
+
+    setUp(() {
+      when(
+        () => logic.updateMetadata(
+          any(),
+          dateFrom: any(named: 'dateFrom'),
+          dateTo: any(named: 'dateTo'),
+        ),
+      ).thenAnswer(
+        (invocation) async => invocation.positionalArguments.first as Metadata,
+      );
+      when(() => logic.updateDbEntity(any())).thenAnswer((_) async => true);
+    });
+
+    test('the id is keyed by type and local calendar day, not by value', () {
+      expect(
+        PersistenceCreateOps.cumulativeQuantityEntryId(steps(9800)),
+        PersistenceCreateOps.cumulativeQuantityEntryId(steps(11600)),
+      );
+      expect(
+        PersistenceCreateOps.cumulativeQuantityEntryId(steps(1)),
+        'cumulative:cumulative_step_count:2026-08-26:iPhone17,1',
+      );
+      expect(
+        PersistenceCreateOps.cumulativeQuantityEntryId(
+          steps(1).copyWith(dateFrom: DateTime(2026, 8, 27)),
+        ),
+        isNot(PersistenceCreateOps.cumulativeQuantityEntryId(steps(1))),
+      );
+      // Two devices importing the same day keep separate rows rather than
+      // racing for one through sync.
+      expect(
+        PersistenceCreateOps.cumulativeQuantityEntryId(
+          steps(1).copyWith(deviceType: 'iPad16,3'),
+        ),
+        isNot(PersistenceCreateOps.cumulativeQuantityEntryId(steps(1))),
+      );
+      expect(
+        PersistenceCreateOps.cumulativeQuantityEntryId(
+          steps(1).copyWith(dataType: 'cumulative_distance'),
+        ),
+        isNot(PersistenceCreateOps.cumulativeQuantityEntryId(steps(1))),
+      );
+    });
+
+    test(
+      'creates the day under its day-keyed id when none is stored',
+      () async {
+        final result = await ops.createQuantitativeEntryImpl(steps(9800));
+
+        expect(result, isA<QuantitativeEntry>());
+        verify(() => journalDb.journalEntityById(dayId)).called(1);
+        verify(
+          () => logic.createMetadata(
+            dateFrom: day,
+            dateTo: DateTime(2026, 8, 26, 23, 59, 59, 999),
+            uuidV5Input:
+                'cumulative:cumulative_step_count:2026-08-26:iPhone17,1',
+          ),
+        ).called(1);
+        verifyNever(() => logic.updateDbEntity(any()));
+      },
+    );
+
+    // The stale-steps bug: the phone's count was stored before the band
+    // synced its (higher) day overnight. Re-importing must replace the day.
+    test('overwrites the stored day when the total changed', () async {
+      when(
+        () => journalDb.journalEntityById(dayId),
+      ).thenAnswer((_) async => stored(9800));
+
+      final result = await ops.createQuantitativeEntryImpl(steps(11600));
+
+      expect(result, isA<QuantitativeEntry>());
+      expect(result!.data.value, 11600);
+      expect(result.meta.id, dayId);
+      final updated =
+          verify(() => logic.updateDbEntity(captureAny())).captured.single
+              as QuantitativeEntry;
+      expect(updated.data.value, 11600);
+      expect(updated.meta.id, dayId);
+      verifyNever(
+        () => logic.createDbEntity(
+          any(),
+          shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+          enqueueSync: any(named: 'enqueueSync'),
+          linkedId: any(named: 'linkedId'),
+        ),
+      );
+    });
+
+    test(
+      'a lower re-read also overwrites — the store is the authority',
+      () async {
+        when(
+          () => journalDb.journalEntityById(dayId),
+        ).thenAnswer((_) async => stored(11600));
+
+        final result = await ops.createQuantitativeEntryImpl(steps(9800));
+
+        expect(result?.data.value, 9800);
+        verify(() => logic.updateDbEntity(any())).called(1);
+      },
+    );
+
+    test('leaves an unchanged day alone and reports nothing written', () async {
+      when(
+        () => journalDb.journalEntityById(dayId),
+      ).thenAnswer((_) async => stored(9800));
+
+      final result = await ops.createQuantitativeEntryImpl(steps(9800));
+
+      expect(result, isNull);
+      verifyNever(() => logic.updateDbEntity(any()));
+      verifyNever(
+        () => logic.createDbEntity(
+          any(),
+          shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+          enqueueSync: any(named: 'enqueueSync'),
+          linkedId: any(named: 'linkedId'),
+        ),
+      );
+    });
+
+    test('returns null when the database rejects the rewrite', () async {
+      when(
+        () => journalDb.journalEntityById(dayId),
+      ).thenAnswer((_) async => stored(9800));
+      when(() => logic.updateDbEntity(any())).thenAnswer((_) async => false);
+
+      expect(await ops.createQuantitativeEntryImpl(steps(11600)), isNull);
+    });
+
+    test(
+      'a row under the day id that is not quantitative is not touched',
+      () async {
+        when(() => journalDb.journalEntityById(dayId)).thenAnswer(
+          (_) async => JournalEntity.journalEntry(meta: metaFor(dayId)),
+        );
+
+        // Falls through to a create, which the DB will reject as a duplicate —
+        // never an update that would clobber a foreign row.
+        await ops.createQuantitativeEntryImpl(steps(9800));
+
+        verifyNever(() => logic.updateDbEntity(any()));
+        verify(
+          () => logic.createDbEntity(
+            any(),
+            shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+            enqueueSync: any(named: 'enqueueSync'),
+            linkedId: any(named: 'linkedId'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test('discrete samples keep the payload-keyed id', () async {
+      await ops.createQuantitativeEntryImpl(
+        QuantitativeData.discreteQuantityData(
+          dateFrom: day,
+          dateTo: day,
+          value: 72,
+          dataType: 'HealthDataType.HEART_RATE',
+          unit: 'BEATS_PER_MINUTE',
+        ),
+      );
+
+      verifyNever(() => journalDb.journalEntityById(any()));
+      final input =
+          verify(
+                () => logic.createMetadata(
+                  dateFrom: any(named: 'dateFrom'),
+                  dateTo: any(named: 'dateTo'),
+                  uuidV5Input: captureAny(named: 'uuidV5Input'),
+                ),
+              ).captured.single
+              as String;
+      expect(input, contains('"value":72'));
+    });
+  });
 
   test('createWorkoutEntryImpl returns null on a rejected write', () async {
     when(
