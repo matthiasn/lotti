@@ -4262,6 +4262,17 @@
       }
     }
   },
+  "habitAutoCompletedCaption": "Checked off from {signal} at {time}",
+  "@habitAutoCompletedCaption": {
+    "placeholders": {
+      "signal": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "habitAutoCompletedGroupTitle": "{count, plural, =1{1 habit checked off automatically} other{{count} habits checked off automatically}}",
   "@habitAutoCompletedGroupTitle": {
     "placeholders": {
@@ -4289,6 +4300,7 @@
       }
     }
   },
+  "habitAutoPillLabel": "auto",
   "habitCategoryHint": "Select a category",
   "habitCategoryLabel": "Category",
   "habitCloseCompletionLabel": "Close habit completion",
@@ -4386,8 +4398,50 @@
   "habitsHeatmapEmpty": "Add a habit to start building your consistency",
   "habitsHeatmapLess": "Less",
   "habitsHeatmapMore": "More",
+  "habitSheetAutoCompletedBanner": "Auto-completed — the signals are recorded. Add a comment or just Record.",
   "habitShowAlertAtLabel": "Show alert at",
   "habitShowFromLabel": "Show from",
+  "habitSignalAnyEntry": "any entry",
+  "habitSignalAnyReading": "any reading",
+  "habitSignalAnyWorkout": "any workout",
+  "habitSignalHabitDone": "habit done",
+  "habitSignalRecordOther": "Other",
+  "habitSignalStatusDone": "{target} · done",
+  "@habitSignalStatusDone": {
+    "placeholders": {
+      "target": {
+        "type": "String"
+      }
+    }
+  },
+  "habitSignalStatusNotYet": "{target} · not yet",
+  "@habitSignalStatusNotYet": {
+    "placeholders": {
+      "target": {
+        "type": "String"
+      }
+    }
+  },
+  "habitSignalStatusSoFar": "{target} · {value} so far",
+  "@habitSignalStatusSoFar": {
+    "placeholders": {
+      "target": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "habitSignalToday": "today: {value}",
+  "@habitSignalToday": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "habitSignalTodayNone": "today: —",
   "habitsLaggardHint": "{habit} — kept {kept} of {active}",
   "@habitsLaggardHint": {
     "placeholders": {

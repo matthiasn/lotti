@@ -82,7 +82,6 @@ void main() {
   Future<void> pumpCard(
     WidgetTester tester, {
     HabitDefinition? habit,
-    bool showLinkedDashboard = true,
   }) async {
     final definition = habit ?? habitFlossing;
     await tester.pumpWidget(
@@ -91,7 +90,6 @@ void main() {
           habitId: definition.id,
           rangeStart: _rangeStart,
           rangeEnd: _rangeEnd,
-          showLinkedDashboard: showLinkedDashboard,
         ),
         overrides: [
           habitCompletionControllerProvider.overrideWith2(
@@ -182,14 +180,6 @@ void main() {
       // shows no check glyph at all.
       expect(find.byIcon(LottiIcons.confirm), findsNothing);
       expect(find.byIcon(LottiIcons.add), findsOneWidget);
-    });
-  });
-
-  group('passthrough to the action row', () {
-    testWidgets('forwards showLinkedDashboard', (tester) async {
-      _results = _last(HabitCompletionType.open);
-      await pumpCard(tester, showLinkedDashboard: false);
-      expect(row(tester).showLinkedDashboard, isFalse);
     });
   });
 

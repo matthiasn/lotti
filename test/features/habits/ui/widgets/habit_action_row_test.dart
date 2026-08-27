@@ -4,17 +4,16 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/dashboards/state/dashboards_page_controller.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_selection.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_variant.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_burst.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_glow.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/habits/ui/sheets/habit_completion_sheet.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_action_row.dart';
 import 'package:lotti/features/settings/state/celebration_preferences_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/pages/create/complete_habit_dialog.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:mocktail/mocktail.dart';
@@ -79,9 +78,11 @@ void main() {
     WidgetTester tester, {
     HabitDefinition? habit,
     bool completedToday = false,
+    bool autoCompleted = false,
+    String? autoCompleteReason,
+    String? autoCompletedAt,
     int currentStreak = 0,
     Widget? history,
-    bool showLinkedDashboard = true,
     bool reduceMotion = false,
     List<Override> extraOverrides = const [],
   }) async {
@@ -91,9 +92,11 @@ void main() {
         HabitActionRow(
           habitId: definition.id,
           completedToday: completedToday,
+          autoCompleted: autoCompleted,
+          autoCompleteReason: autoCompleteReason,
+          autoCompletedAt: autoCompletedAt,
           currentStreak: currentStreak,
           history: history,
-          showLinkedDashboard: showLinkedDashboard,
         ),
         mediaQueryData: reduceMotion
             ? phoneMediaQueryData.copyWith(disableAnimations: true)
@@ -608,18 +611,20 @@ void main() {
           habitDefinition: any(named: 'habitDefinition'),
         ),
       );
-      expect(find.byType(HabitDialog), findsOneWidget);
+      expect(find.byType(HabitCompletionSheet), findsOneWidget);
     });
   });
 
   group('row body tap', () {
-    testWidgets('opens the HabitDialog for the habit', (tester) async {
+    testWidgets('opens the HabitCompletionSheet for the habit', (tester) async {
       await pumpRow(tester);
       await tester.tap(find.text(habitFlossing.name));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      final dialog = tester.widget<HabitDialog>(find.byType(HabitDialog));
+      final dialog = tester.widget<HabitCompletionSheet>(
+        find.byType(HabitCompletionSheet),
+      );
       expect(dialog.habitId, habitFlossing.id);
     });
   });
@@ -641,7 +646,9 @@ void main() {
           habitDefinition: any(named: 'habitDefinition'),
         ),
       );
-      final dialog = tester.widget<HabitDialog>(find.byType(HabitDialog));
+      final dialog = tester.widget<HabitCompletionSheet>(
+        find.byType(HabitCompletionSheet),
+      );
       expect(dialog.habitId, habitFlossing.id);
     });
   });
@@ -677,33 +684,37 @@ void main() {
     });
   });
 
-  group('linked dashboard', () {
-    testWidgets('passes showLinkedDashboard through to the dialog', (
-      tester,
-    ) async {
-      final dashboardHabit = habitFlossing.copyWith(dashboardId: 'dash-1');
-      when(
-        () => mockCacheService.getHabitById(dashboardHabit.id),
-      ).thenReturn(dashboardHabit);
-      when(
-        () => mockCacheService.getDashboardById('dash-1'),
-      ).thenReturn(null);
-
+  group('auto-completed row', () {
+    testWidgets('shows the auto pill and the signal caption', (tester) async {
       await pumpRow(
         tester,
-        habit: dashboardHabit,
-        extraOverrides: [
-          dashboardByIdProvider('dash-1').overrideWithValue(null),
-        ],
+        completedToday: true,
+        autoCompleted: true,
+        autoCompleteReason: 'Steps · 7412',
+        autoCompletedAt: '08:12',
       );
+      expect(find.byKey(const ValueKey('habit-auto-pill')), findsOneWidget);
+      expect(find.text('auto'), findsOneWidget);
+      expect(
+        find.text('Checked off from Steps · 7412 at 08:12'),
+        findsOneWidget,
+      );
+    });
 
-      await tester.tap(find.text(dashboardHabit.name));
+    testWidgets('a manual completion shows neither', (tester) async {
+      await pumpRow(tester, completedToday: true);
+      expect(find.byKey(const ValueKey('habit-auto-pill')), findsNothing);
+      expect(find.byKey(const ValueKey('habit-auto-caption')), findsNothing);
+    });
+
+    testWidgets('tapping an auto-completed row still opens the sheet', (
+      tester,
+    ) async {
+      await pumpRow(tester, completedToday: true, autoCompleted: true);
+      await tester.tap(find.text(habitFlossing.name));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
-
-      final dialog = tester.widget<HabitDialog>(find.byType(HabitDialog));
-      expect(dialog.habitId, dashboardHabit.id);
-      expect(dialog.showLinkedDashboard, isTrue);
+      expect(find.byType(HabitCompletionSheet), findsOneWidget);
     });
   });
 }

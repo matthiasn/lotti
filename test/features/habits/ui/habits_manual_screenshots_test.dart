@@ -14,12 +14,12 @@ import 'package:lotti/features/habits/state/habits_state.dart';
 import 'package:lotti/features/habits/state/heatmap/habit_heatmap_controller.dart';
 import 'package:lotti/features/habits/state/heatmap/habit_heatmap_data.dart';
 import 'package:lotti/features/habits/ui/habits_page.dart';
+import 'package:lotti/features/habits/ui/sheets/habit_completion_sheet.dart';
 import 'package:lotti/features/settings/state/celebration_preferences_controller.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/pages/create/complete_habit_dialog.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/device_region.dart';
 import 'package:lotti/utils/platform.dart' as platform;
@@ -36,7 +36,7 @@ AppLocalizations _messages(WidgetTester tester) {
   final habitsPage = find.byType(HabitsTabPage);
   final context = habitsPage.evaluate().isNotEmpty
       ? tester.element(habitsPage)
-      : tester.element(find.byType(HabitDialog));
+      : tester.element(find.byType(HabitCompletionSheet));
   return AppLocalizations.of(context)!;
 }
 
@@ -282,13 +282,12 @@ Future<void> _pumpHabitCompletion(
       home: RepaintBoundary(
         key: screenshotBoundaryKey,
         child: Scaffold(
-          body: HabitDialog(
+          body: HabitCompletionSheet(
             habitId: _inspectHabitatSeals.id,
             themeData: theme,
             // A past day resolves to the production form's deterministic
             // end-of-day timestamp instead of sampling the wall clock.
             dateString: '2026-07-16',
-            showLinkedDashboard: false,
           ),
         ),
       ),

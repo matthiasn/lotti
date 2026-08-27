@@ -12114,6 +12114,12 @@ abstract class AppLocalizations {
   /// **'Checked off automatically from {signal}.'**
   String habitAutoCompletedBody(String signal);
 
+  /// No description provided for @habitAutoCompletedCaption.
+  ///
+  /// In en, this message translates to:
+  /// **'Checked off from {signal} at {time}'**
+  String habitAutoCompletedCaption(String signal, String time);
+
   /// No description provided for @habitAutoCompletedGroupTitle.
   ///
   /// In en, this message translates to:
@@ -12131,6 +12137,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'✓ {habit} done'**
   String habitAutoCompletedTitle(String habit);
+
+  /// No description provided for @habitAutoPillLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'auto'**
+  String get habitAutoPillLabel;
 
   /// No description provided for @habitCategoryHint.
   ///
@@ -12366,6 +12378,12 @@ abstract class AppLocalizations {
   /// **'More'**
   String get habitsHeatmapMore;
 
+  /// No description provided for @habitSheetAutoCompletedBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-completed — the signals are recorded. Add a comment or just Record.'**
+  String get habitSheetAutoCompletedBanner;
+
   /// No description provided for @habitShowAlertAtLabel.
   ///
   /// In en, this message translates to:
@@ -12377,6 +12395,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show from'**
   String get habitShowFromLabel;
+
+  /// No description provided for @habitSignalAnyEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'any entry'**
+  String get habitSignalAnyEntry;
+
+  /// No description provided for @habitSignalAnyReading.
+  ///
+  /// In en, this message translates to:
+  /// **'any reading'**
+  String get habitSignalAnyReading;
+
+  /// No description provided for @habitSignalAnyWorkout.
+  ///
+  /// In en, this message translates to:
+  /// **'any workout'**
+  String get habitSignalAnyWorkout;
+
+  /// No description provided for @habitSignalHabitDone.
+  ///
+  /// In en, this message translates to:
+  /// **'habit done'**
+  String get habitSignalHabitDone;
+
+  /// No description provided for @habitSignalRecordOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get habitSignalRecordOther;
+
+  /// No description provided for @habitSignalStatusDone.
+  ///
+  /// In en, this message translates to:
+  /// **'{target} · done'**
+  String habitSignalStatusDone(String target);
+
+  /// No description provided for @habitSignalStatusNotYet.
+  ///
+  /// In en, this message translates to:
+  /// **'{target} · not yet'**
+  String habitSignalStatusNotYet(String target);
+
+  /// No description provided for @habitSignalStatusSoFar.
+  ///
+  /// In en, this message translates to:
+  /// **'{target} · {value} so far'**
+  String habitSignalStatusSoFar(String target, String value);
+
+  /// No description provided for @habitSignalToday.
+  ///
+  /// In en, this message translates to:
+  /// **'today: {value}'**
+  String habitSignalToday(String value);
+
+  /// No description provided for @habitSignalTodayNone.
+  ///
+  /// In en, this message translates to:
+  /// **'today: —'**
+  String get habitSignalTodayNone;
 
   /// No description provided for @habitsLaggardHint.
   ///

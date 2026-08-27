@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:clock/clock.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/habits/model/habit_completion_record.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
@@ -239,4 +240,21 @@ List<String> getHabitDays(int timeSpanDays, {DateTime? now}) {
     rangeEnd: currentTime,
   )..sort();
   return days;
+}
+
+extension HabitsStateAutoCompletion on HabitsState {
+  /// `HH:mm` of the engine-written completion for [habitId] today, or null
+  /// when today's completion is the user's own — the time the habit row's
+  /// "auto" caption names.
+  String? autoCompletedAt(String habitId, {DateTime? now}) {
+    final today = (now ?? DateTime.now()).ymd;
+    for (final record in habitCompletions.reversed) {
+      if (record.habitId == habitId &&
+          record.dateFrom.ymd == today &&
+          record.source == HabitCompletionSource.auto) {
+        return DateFormat.Hm().format(record.dateFrom);
+      }
+    }
+    return null;
+  }
 }

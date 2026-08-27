@@ -28,7 +28,6 @@ class HabitCompletionCard extends ConsumerStatefulWidget {
     required this.rangeStart,
     required this.rangeEnd,
     this.showGaps = true,
-    this.showLinkedDashboard = true,
     super.key,
   });
 
@@ -36,11 +35,6 @@ class HabitCompletionCard extends ConsumerStatefulWidget {
   final DateTime rangeStart;
   final DateTime rangeEnd;
   final bool showGaps;
-
-  /// Whether the completion dialog embeds the habit's linked dashboard.
-  /// Set to false when this card is itself rendered inside that dashboard, so
-  /// tapping a row doesn't re-open the dashboard the user is already viewing.
-  final bool showLinkedDashboard;
 
   @override
   ConsumerState<HabitCompletionCard> createState() =>
@@ -102,7 +96,6 @@ class _HabitCompletionCardState extends ConsumerState<HabitCompletionCard> {
     return HabitActionRow(
       habitId: habitDefinition.id,
       completedToday: completedToday,
-      showLinkedDashboard: widget.showLinkedDashboard,
       history: _HistoryStrip(
         results: results,
         showGaps: widget.showGaps,

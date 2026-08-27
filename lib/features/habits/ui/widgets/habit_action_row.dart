@@ -9,17 +9,17 @@ import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart'
 import 'package:lotti/features/design_system/components/celebration/celebration_selection.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_burst.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_glow.dart';
+import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
+import 'package:lotti/features/habits/ui/sheets/habit_completion_sheet.dart';
 import 'package:lotti/features/settings/state/celebration_preferences_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/pages/create/complete_habit_dialog.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/widgets/charts/habits/dashboard_habits_data.dart';
-import 'package:lotti/widgets/modal/modal_utils.dart';
 
 /// The 0→1 progress of a celebration beat whose window is `[start, end]` within
 /// the shared timeline [c], or `null` when [c] is outside that window so the
@@ -47,7 +47,9 @@ class HabitActionRow extends ConsumerStatefulWidget {
     required this.completedToday,
     this.currentStreak = 0,
     this.history,
-    this.showLinkedDashboard = true,
+    this.autoCompleted = false,
+    this.autoCompleteReason,
+    this.autoCompletedAt,
     super.key,
   });
 
@@ -66,10 +68,16 @@ class HabitActionRow extends ConsumerStatefulWidget {
   /// Optional per-day history shown under the name (the dashboard card's strip).
   final Widget? history;
 
-  /// Whether the completion dialog embeds the habit's linked dashboard. Set to
-  /// false when this row is itself rendered inside that dashboard, so tapping it
-  /// doesn't re-open the dashboard the user is already viewing.
-  final bool showLinkedDashboard;
+  /// Whether today's completion was written by the auto-completion engine —
+  /// shows the "auto" pill and, with [autoCompleteReason], the caption naming
+  /// the signal that checked it off. Tapping still opens the sheet, so the
+  /// outcome can be changed (a manual entry always overrides).
+  final bool autoCompleted;
+  final String? autoCompleteReason;
+
+  /// When the engine wrote today's completion (`HH:mm`, local), for the
+  /// caption.
+  final String? autoCompletedAt;
 
   @override
   ConsumerState<HabitActionRow> createState() => _HabitActionRowState();
@@ -156,37 +164,10 @@ class _HabitActionRowState extends ConsumerState<HabitActionRow>
   }
 
   void onTapAdd({String? dateString}) {
-    final height = MediaQuery.sizeOf(context).height;
-    final maxHeight = height * 0.9;
-    final habitDefinition = getIt<EntitiesCacheService>().getHabitById(
-      widget.habitId,
-    );
-
-    if (habitDefinition == null) {
-      return;
-    }
-
-    // Mirror the dialog's gate: the linked dashboard only fills the sheet when
-    // it will actually be shown, otherwise the form floats on a transparent
-    // background.
-    final showLinkedDashboard =
-        widget.showLinkedDashboard && habitDefinition.dashboardId != null;
-
-    ModalUtils.showBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      constraints: BoxConstraints(maxHeight: maxHeight),
-      backgroundColor: showLinkedDashboard
-          ? Theme.of(context).bottomSheetTheme.backgroundColor
-          : Colors.transparent,
-      builder: (BuildContext context) {
-        return HabitDialog(
-          habitId: habitDefinition.id,
-          themeData: Theme.of(context),
-          dateString: dateString,
-          showLinkedDashboard: widget.showLinkedDashboard,
-        );
-      },
+    HabitCompletionSheet.show(
+      context,
+      habitId: widget.habitId,
+      dateString: dateString,
     );
   }
 
@@ -356,6 +337,9 @@ class _HabitActionRowState extends ConsumerState<HabitActionRow>
               child: _HabitCardBody(
                 habitDefinition: habitDefinition,
                 completedToday: widget.completedToday,
+                autoCompleted: widget.autoCompleted,
+                autoCompleteReason: widget.autoCompleteReason,
+                autoCompletedAt: widget.autoCompletedAt ?? '',
                 currentStreak: widget.currentStreak,
                 doneColor: doneColor,
                 celebrate: celebrate,
@@ -421,6 +405,9 @@ class _HabitCardBody extends StatelessWidget {
   const _HabitCardBody({
     required this.habitDefinition,
     required this.completedToday,
+    required this.autoCompleted,
+    required this.autoCompleteReason,
+    required this.autoCompletedAt,
     required this.currentStreak,
     required this.doneColor,
     required this.celebrate,
@@ -431,6 +418,9 @@ class _HabitCardBody extends StatelessWidget {
 
   final HabitDefinition habitDefinition;
   final bool completedToday;
+  final bool autoCompleted;
+  final String? autoCompleteReason;
+  final String autoCompletedAt;
   final int currentStreak;
   final Color doneColor;
 
@@ -499,8 +489,37 @@ class _HabitCardBody extends StatelessWidget {
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
+                          if (autoCompleted) ...[
+                            SizedBox(width: tokens.spacing.step2),
+                            DsPill(
+                              key: const ValueKey('habit-auto-pill'),
+                              variant: DsPillVariant.tinted,
+                              color: tokens.colors.interactive.enabled,
+                              leading: Icon(
+                                LottiIcons.aiSpark,
+                                size: IconSizes.xs,
+                                color: tokens.colors.interactive.enabled,
+                              ),
+                              label: messages.habitAutoPillLabel,
+                            ),
+                          ],
                         ],
                       ),
+                      if (autoCompleted && autoCompleteReason != null) ...[
+                        SizedBox(height: tokens.spacing.step1),
+                        Text(
+                          messages.habitAutoCompletedCaption(
+                            autoCompleteReason!,
+                            autoCompletedAt,
+                          ),
+                          key: const ValueKey('habit-auto-caption'),
+                          style: tokens.typography.styles.others.caption
+                              .copyWith(
+                                color: tokens.colors.text.mediumEmphasis,
+                              ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
                       // The current streak as a chain of green boxes — the
                       // visible "don't break the chain". Empty when there's no
                       // run going.

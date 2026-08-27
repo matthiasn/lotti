@@ -7281,6 +7281,11 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String habitAutoCompletedCaption(String signal, String time) {
+    return 'Bifat pe baza $signal la $time';
+  }
+
+  @override
   String habitAutoCompletedGroupTitle(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -7301,6 +7306,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String habitAutoCompletedTitle(String habit) {
     return '✓ $habit gata';
   }
+
+  @override
+  String get habitAutoPillLabel => 'auto';
 
   @override
   String get habitCategoryHint => 'Selectați o categorie';
@@ -7450,10 +7458,52 @@ class AppLocalizationsRo extends AppLocalizations {
   String get habitsHeatmapMore => 'Mai mult';
 
   @override
+  String get habitSheetAutoCompletedBanner =>
+      'Completat automat — datele sunt înregistrate. Adăugați un comentariu sau salvați direct.';
+
+  @override
   String get habitShowAlertAtLabel => 'Afișați alerta la';
 
   @override
   String get habitShowFromLabel => 'Afișați de la';
+
+  @override
+  String get habitSignalAnyEntry => 'orice înregistrare';
+
+  @override
+  String get habitSignalAnyReading => 'orice măsurătoare';
+
+  @override
+  String get habitSignalAnyWorkout => 'orice antrenament';
+
+  @override
+  String get habitSignalHabitDone => 'obicei îndeplinit';
+
+  @override
+  String get habitSignalRecordOther => 'Altă valoare';
+
+  @override
+  String habitSignalStatusDone(String target) {
+    return '$target · gata';
+  }
+
+  @override
+  String habitSignalStatusNotYet(String target) {
+    return '$target · încă nu';
+  }
+
+  @override
+  String habitSignalStatusSoFar(String target, String value) {
+    return '$target · $value până acum';
+  }
+
+  @override
+  String habitSignalToday(String value) {
+    return 'azi: $value';
+  }
+
+  @override
+  String get habitSignalTodayNone => 'azi: —';
 
   @override
   String habitsLaggardHint(String habit, int kept, int active) {
