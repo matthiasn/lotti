@@ -1,10 +1,13 @@
 import 'package:beamer/beamer.dart';
+import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_linkify/flutter_linkify.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/dashboards/state/measurables_controller.dart';
 import 'package:lotti/features/habits/state/habit_signal_status_controller.dart';
@@ -18,6 +21,7 @@ import 'package:lotti/logic/signals/signal_window.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/widgets/date_time/datetime_field.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
 import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
@@ -62,15 +66,24 @@ class _FakeStatus extends HabitSignalStatusController {
   Future<void> refresh() async => state = AsyncData(_status());
 }
 
+/// [testWidgets] under the fixed sheet clock.
+void clockedWidgets(
+  String description,
+  Future<void> Function(WidgetTester tester) body,
+) => testWidgets(
+  description,
+  (tester) =>
+      withClock(Clock.fixed(DateTime(2026, 8, 8, 14, 30)), () => body(tester)),
+);
+
 void main() {
   late MockPersistenceLogic persistence;
   late MockEntitiesCacheService cache;
 
-  final todayKey = DateTime.utc(
-    DateTime.now().year,
-    DateTime.now().month,
-    DateTime.now().day,
-  );
+  // Every sheet runs under the clockedWidgets instant, so "today" never
+  // depends on the wall clock (a run crossing midnight would otherwise
+  // build the fake window for one day while the sheet evaluated another).
+  final todayKey = DateTime.utc(2026, 8, 8);
   final water = measurableWater.copyWith(
     id: 'water',
     displayName: 'Water',
@@ -115,7 +128,17 @@ void main() {
       final data = invocation.namedArguments[#data] as MeasurementData;
       // Bucket like the reader does: one total per calendar day.
       waterToday[todayKey] = (waterToday[todayKey] ?? 0) + data.value;
-      return null;
+      return JournalEntity.measurement(
+            meta: Metadata(
+              id: 'm-${data.value}',
+              createdAt: data.dateFrom,
+              updatedAt: data.dateFrom,
+              dateFrom: data.dateFrom,
+              dateTo: data.dateTo,
+            ),
+            data: data,
+          )
+          as MeasurementEntry;
     });
     await setUpTestGetIt(
       additionalSetup: () {
@@ -185,7 +208,7 @@ void main() {
           as HabitCompletionData;
 
   group('recording', () {
-    testWidgets('Record persists a success completion by default', (
+    clockedWidgets('Record persists a success completion by default', (
       tester,
     ) async {
       await pumpSheet(tester);
@@ -199,7 +222,9 @@ void main() {
       ('Skip', HabitCompletionType.skip),
       ('Missed', HabitCompletionType.fail),
     ]) {
-      testWidgets('selecting $label then Record persists it', (tester) async {
+      clockedWidgets('selecting $label then Record persists it', (
+        tester,
+      ) async {
         await pumpSheet(tester);
         await tester.tap(find.text(label).first);
         await tester.pump();
@@ -209,7 +234,9 @@ void main() {
       });
     }
 
-    testWidgets('a comment is persisted with the completion', (tester) async {
+    clockedWidgets('a comment is persisted with the completion', (
+      tester,
+    ) async {
       await pumpSheet(tester);
       await tester.enterText(
         find.byKey(const Key('habit_comment_field')),
@@ -226,7 +253,9 @@ void main() {
       ).called(1);
     });
 
-    testWidgets('Primary+S records through the command scope', (tester) async {
+    clockedWidgets('Primary+S records through the command scope', (
+      tester,
+    ) async {
       debugDefaultTargetPlatformOverride = TargetPlatform.windows;
       try {
         await pumpSheet(tester);
@@ -241,7 +270,7 @@ void main() {
       }
     });
 
-    testWidgets('a past dateString records at the end of that day', (
+    clockedWidgets('a past dateString records at the end of that day', (
       tester,
     ) async {
       await pumpSheet(tester, dateString: '2024-01-15');
@@ -251,7 +280,7 @@ void main() {
       expect(captured().dateFrom, DateTime(2024, 1, 15, 23, 59, 59));
     });
 
-    testWidgets('picking a date moves the recorded start', (tester) async {
+    clockedWidgets('picking a date moves the recorded start', (tester) async {
       await pumpSheet(tester);
       tester
           .widget<DateTimeField>(find.byType(DateTimeField))
@@ -265,7 +294,7 @@ void main() {
       expect(data.dateTo, DateTime(2024, 6, 1, 9, 30));
     });
 
-    testWidgets('close dismisses without recording', (tester) async {
+    clockedWidgets('close dismisses without recording', (tester) async {
       await pumpSheet(tester);
       await tester.tap(find.bySemanticsLabel('Close habit completion'));
       await tester.pumpAndSettle();
@@ -279,19 +308,38 @@ void main() {
       );
     });
 
-    testWidgets('renders nothing for an unknown habit', (tester) async {
+    clockedWidgets('a tap on the scrim pops, a tap on the form does not', (
+      tester,
+    ) async {
+      await pumpSheet(tester);
+      await tester.tapAt(const Offset(5, 5));
+      await tester.pump();
+      // The sheet is the only route here, so maybePop is a no-op — the
+      // point is that the scrim handled the tap and the form swallowed
+      // its own without either throwing.
+      await tester.tap(find.text(habitFlossing.name));
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+      expect(find.byKey(const Key('habit_save')), findsOneWidget);
+    });
+
+    clockedWidgets('renders nothing for an unknown habit', (tester) async {
       await pumpSheet(tester, habitId: 'missing');
       expect(find.byKey(const Key('habit_save')), findsNothing);
     });
   });
 
   group('signals', () {
-    testWidgets('a habit without a rule shows no signal rows', (tester) async {
+    clockedWidgets('a habit without a rule shows no signal rows', (
+      tester,
+    ) async {
       await pumpSheet(tester);
       expect(find.byType(HabitSignalRow), findsNothing);
     });
 
-    testWidgets("one row per leaf, from the habit's own rule", (tester) async {
+    clockedWidgets("one row per leaf, from the habit's own rule", (
+      tester,
+    ) async {
       await pumpSheet(tester, habitId: waterHabit.id);
       expect(find.byType(HabitSignalRow), findsOneWidget);
       expect(find.text('≥ 500 ml · not yet'), findsOneWidget);
@@ -301,7 +349,7 @@ void main() {
       );
     });
 
-    testWidgets(
+    clockedWidgets(
       'a chip writes the measurement at once; meeting the rule flips the '
       'outcome to Success and shows the banner, sheet stays open',
       (tester) async {
@@ -333,32 +381,136 @@ void main() {
       },
     );
 
-    testWidgets('an untouched outcome flips to Success when the rule is met', (
+    clockedWidgets(
+      'an untouched outcome flips to Success when the rule is met',
+      (
+        tester,
+      ) async {
+        await pumpSheet(tester, habitId: waterHabit.id);
+        await tester.tap(find.text('250 ml'));
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.text('≥ 500 ml · 250 so far'), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('habit-sheet-auto-banner')),
+          findsNothing,
+        );
+
+        await tester.tap(find.text('500 ml'));
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(
+          find.byKey(const ValueKey('habit-sheet-auto-banner')),
+          findsOneWidget,
+        );
+        await tester.tap(find.byKey(const Key('habit_save')));
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(captured().completionType, HabitCompletionType.success);
+      },
+    );
+
+    clockedWidgets('a failed measurement write leaves the chip unrecorded', (
       tester,
     ) async {
+      when(
+        () => persistence.createMeasurementEntry(
+          data: any(named: 'data'),
+          private: any(named: 'private'),
+        ),
+      ).thenAnswer((_) async => null);
       await pumpSheet(tester, habitId: waterHabit.id);
-      await tester.tap(find.text('250 ml'));
+      await tester.tap(find.text('500 ml'));
       await tester.pump(const Duration(milliseconds: 300));
-      expect(find.text('≥ 500 ml · 250 so far'), findsOneWidget);
+      expect(find.text('≥ 500 ml · not yet'), findsOneWidget);
       expect(
         find.byKey(const ValueKey('habit-sheet-auto-banner')),
         findsNothing,
       );
-
-      await tester.tap(find.text('500 ml'));
-      await tester.pump(const Duration(milliseconds: 300));
-      expect(
-        find.byKey(const ValueKey('habit-sheet-auto-banner')),
-        findsOneWidget,
-      );
-      await tester.tap(find.byKey(const Key('habit_save')));
-      await tester.pump(const Duration(milliseconds: 300));
-      expect(captured().completionType, HabitCompletionType.success);
+      expect(find.text("That didn't save — please try again."), findsOneWidget);
     });
 
-    testWidgets('a past day shows no signal rows', (tester) async {
+    clockedWidgets('picking a past day in the field hides the signal rows', (
+      tester,
+    ) async {
+      await pumpSheet(tester, habitId: waterHabit.id);
+      expect(find.byType(HabitSignalRow), findsOneWidget);
+      tester
+          .widget<DateTimeField>(find.byType(DateTimeField))
+          .setDateTime(DateTime(2026, 8, 1, 9));
+      await tester.pump();
+      expect(find.byType(HabitSignalRow), findsNothing);
+    });
+
+    clockedWidgets('Other opens the full measurement capture', (tester) async {
+      await pumpSheet(tester, habitId: waterHabit.id);
+      await tester.tap(find.text('Other'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Water'), findsWidgets);
+      expect(tester.takeException(), isNull);
+    });
+
+    clockedWidgets('a past day shows no signal rows', (tester) async {
       await pumpSheet(tester, habitId: waterHabit.id, dateString: '2024-01-15');
       expect(find.byType(HabitSignalRow), findsNothing);
+    });
+  });
+
+  group('HabitDescription', () {
+    late MockUrlLauncher mockUrlLauncher;
+    late UrlLauncherPlatform originalPlatform;
+
+    setUp(() {
+      originalPlatform = UrlLauncherPlatform.instance;
+      mockUrlLauncher = MockUrlLauncher();
+      UrlLauncherPlatform.instance = mockUrlLauncher;
+      registerFallbackValue(FakeLaunchOptions());
+    });
+
+    tearDown(() {
+      UrlLauncherPlatform.instance = originalPlatform;
+    });
+
+    Future<Linkify> pumpDescription(WidgetTester tester, String text) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          Material(
+            child: HabitDescription(habitFlossing.copyWith(description: text)),
+          ),
+        ),
+      );
+      await tester.pump();
+      return tester.widget<Linkify>(find.byType(Linkify));
+    }
+
+    testWidgets('renders the description text', (tester) async {
+      await pumpDescription(tester, habitFlossing.description);
+      expect(find.textContaining(habitFlossing.description), findsOneWidget);
+    });
+
+    testWidgets('a launchable link opens through url_launcher', (tester) async {
+      when(
+        () => mockUrlLauncher.canLaunch(any()),
+      ).thenAnswer((_) async => true);
+      when(
+        () => mockUrlLauncher.launchUrl(any(), any()),
+      ).thenAnswer((_) async => true);
+      final linkify = await pumpDescription(tester, 'See https://example.com');
+      linkify.onOpen!(LinkableElement('example', 'https://example.com'));
+      await tester.pump();
+      verify(
+        () => mockUrlLauncher.launchUrl('https://example.com', any()),
+      ).called(1);
+    });
+
+    testWidgets('an unlaunchable link is logged, never thrown', (tester) async {
+      when(
+        () => mockUrlLauncher.canLaunch(any()),
+      ).thenAnswer((_) async => false);
+      final linkify = await pumpDescription(tester, 'See https://bad.url');
+      await expectLater(
+        () => linkify.onOpen!(LinkableElement('bad', 'https://bad.url')),
+        returnsNormally,
+      );
+      verifyNever(() => mockUrlLauncher.launchUrl(any(), any()));
     });
   });
 }

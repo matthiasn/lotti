@@ -38,6 +38,7 @@ class HabitSignalRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
+    final locale = Localizations.localeOf(context).toLanguageTag();
     final cache = getIt<EntitiesCacheService>();
     final rule = leaf.rule;
     final measurable = rule is AutoCompleteRuleMeasurable
@@ -74,7 +75,9 @@ class HabitSignalRow extends StatelessWidget {
     final todayValue = leaf.value;
     final todayText = todayValue == null
         ? messages.habitSignalTodayNone
-        : messages.habitSignalToday('${_format(todayValue)} $unit'.trim());
+        : messages.habitSignalToday(
+            '${_format(todayValue, locale)} $unit'.trim(),
+          );
 
     return Container(
       key: ValueKey('habit-signal-row-${_leafKey(rule)}'),
@@ -119,7 +122,7 @@ class HabitSignalRow extends StatelessWidget {
                         color: pillColor,
                       )
                     : null,
-                label: _ruleStatus(messages, leaf, unit),
+                label: _ruleStatus(messages, leaf, unit, locale),
               ),
             ],
           ),
@@ -191,6 +194,7 @@ class HabitSignalRow extends StatelessWidget {
     AppLocalizations messages,
     HabitLeafVerdict leaf,
     String unit,
+    String locale,
   ) {
     final rule = leaf.rule;
     final (num? minimum, num? maximum) = switch (rule) {
@@ -209,20 +213,26 @@ class HabitSignalRow extends StatelessWidget {
       _ => messages.habitSignalAnyEntry,
     };
     final target = minimum != null
-        ? '≥ ${_format(minimum)} $unit'.trim()
+        ? '≥ ${_format(minimum, locale)} $unit'.trim()
         : maximum != null
-        ? '≤ ${_format(maximum)} $unit'.trim()
+        ? '≤ ${_format(maximum, locale)} $unit'.trim()
         : anyLabel;
     if (leaf.satisfied) return messages.habitSignalStatusDone(target);
     if (leaf.value != null && (minimum != null || maximum != null)) {
-      return messages.habitSignalStatusSoFar(target, _format(leaf.value!));
+      return messages.habitSignalStatusSoFar(
+        target,
+        _format(leaf.value!, locale),
+      );
     }
     return messages.habitSignalStatusNotYet(target);
   }
 
-  static String _format(num value) => NumberFormat.decimalPattern().format(
-    value == value.roundToDouble() ? value.round() : value,
-  );
+  /// Formats in the app's locale — the one the surrounding copy is in —
+  /// rather than the process locale, so German text never reads `6,000`.
+  static String _format(num value, String locale) =>
+      NumberFormat.decimalPattern(locale).format(
+        value == value.roundToDouble() ? value.round() : value,
+      );
 
   static String _leafKey(AutoCompleteRule rule) => switch (rule) {
     AutoCompleteRuleMeasurable(:final dataTypeId) => dataTypeId,

@@ -1,4 +1,5 @@
 import 'package:clock/clock.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -91,46 +92,68 @@ void main() {
     expect(status.verdict.leaves.single.value, 250);
   });
 
-  test(
-    'a write to the measurable refreshes in place, never via loading',
-    () async {
-      await withClock(Clock.fixed(now), () async {
+  test('a write to the measurable refreshes in place, never via loading', () {
+    withClock(Clock.fixed(now), () {
+      fakeAsync((async) {
         final sub = container.listen(
           habitSignalStatusProvider(habit.id),
           (_, _) {},
         );
-        await container.read(habitSignalStatusProvider(habit.id).future);
+        async.flushMicrotasks();
+        expect(
+          container.read(habitSignalStatusProvider(habit.id)).value,
+          isNotNull,
+        );
         measurements[DateTime(2026, 8, 8, 12)] = 500;
         updates.notify({'water'});
         // The batcher emits after 100 ms; then the reload lands.
-        await Future<void>.delayed(const Duration(milliseconds: 150));
-        await Future<void>.delayed(Duration.zero);
+        async.elapse(const Duration(milliseconds: 150));
         final state = container.read(habitSignalStatusProvider(habit.id));
         expect(state.isLoading, isFalse);
         expect(state.value!.verdict.satisfied, isTrue);
         expect(state.value!.verdict.leaves.single.value, 750);
         sub.close();
-      });
-    },
-  );
+      }, initialTime: now);
+    });
+  });
 
-  test('an unrelated write does not re-read', () async {
+  test('an unrelated write does not re-read', () {
+    withClock(Clock.fixed(now), () {
+      fakeAsync((async) {
+        final sub = container.listen(
+          habitSignalStatusProvider(habit.id),
+          (_, _) {},
+        );
+        async.flushMicrotasks();
+        clearInteractions(journalDb);
+        updates.notify({'coffee'});
+        async.elapse(const Duration(milliseconds: 150));
+        verifyNever(
+          () => journalDb.getMeasurementsByType(
+            type: any(named: 'type'),
+            rangeStart: any(named: 'rangeStart'),
+            rangeEnd: any(named: 'rangeEnd'),
+          ),
+        );
+        sub.close();
+      }, initialTime: now);
+    });
+  });
+
+  test('refresh after the rule was removed yields no status', () async {
     await withClock(Clock.fixed(now), () async {
       final sub = container.listen(
         habitSignalStatusProvider(habit.id),
         (_, _) {},
       );
       await container.read(habitSignalStatusProvider(habit.id).future);
-      clearInteractions(journalDb);
-      updates.notify({'coffee'});
-      await Future<void>.delayed(const Duration(milliseconds: 150));
-      verifyNever(
-        () => journalDb.getMeasurementsByType(
-          type: any(named: 'type'),
-          rangeStart: any(named: 'rangeStart'),
-          rangeEnd: any(named: 'rangeEnd'),
-        ),
-      );
+      when(
+        () => cache.getHabitById(habit.id),
+      ).thenReturn(habit.copyWith(autoCompleteRule: null));
+      await container
+          .read(habitSignalStatusProvider(habit.id).notifier)
+          .refresh();
+      expect(container.read(habitSignalStatusProvider(habit.id)).value, isNull);
       sub.close();
     });
   });

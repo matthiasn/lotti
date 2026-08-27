@@ -97,8 +97,11 @@ class _HabitCompletionSheetState extends ConsumerState<HabitCompletionSheet> {
   /// Values recorded from chips during this sheet, by measurable id.
   final _recorded = <String, num>{};
 
-  bool get _isToday =>
-      widget.dateString == null || clock.now().ymd == widget.dateString;
+  /// Whether the completion being recorded is for the current day — from
+  /// the date actually selected, so picking a past day in the field hides
+  /// the signal controls (a chip would record a measurement *now* against a
+  /// completion saved for another day).
+  bool get _isToday => _started.ymd == clock.now().ymd;
 
   @override
   void initState() {
@@ -108,7 +111,9 @@ class _HabitCompletionSheetState extends ConsumerState<HabitCompletionSheet> {
       return DateTime(date.year, date.month, date.day, 23, 59, 59);
     }
 
-    _started = _isToday ? clock.now() : endOfDay();
+    final forToday =
+        widget.dateString == null || clock.now().ymd == widget.dateString;
+    _started = forToday ? clock.now() : endOfDay();
   }
 
   Future<void> _save() async {
@@ -133,8 +138,7 @@ class _HabitCompletionSheetState extends ConsumerState<HabitCompletionSheet> {
 
   Future<void> _recordMeasurable(MeasurableDataType dataType, num value) async {
     final now = clock.now();
-    setState(() => _recorded[dataType.id] = value);
-    await getIt<PersistenceLogic>().createMeasurementEntry(
+    final saved = await getIt<PersistenceLogic>().createMeasurementEntry(
       data: MeasurementData(
         dateFrom: now,
         dateTo: now,
@@ -144,6 +148,17 @@ class _HabitCompletionSheetState extends ConsumerState<HabitCompletionSheet> {
       private: dataType.private ?? false,
     );
     if (!mounted) return;
+    if (saved == null) {
+      // The write failed (persistence logs it); the chip must not read as
+      // recorded and the rule must not be re-evaluated as if it were.
+      ScaffoldMessenger.maybeOf(context)
+        ?..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(content: Text(context.messages.saveFailedRetry)),
+        );
+      return;
+    }
+    setState(() => _recorded[dataType.id] = value);
     await ref
         .read(habitSignalStatusProvider(widget.habitId).notifier)
         .refresh();

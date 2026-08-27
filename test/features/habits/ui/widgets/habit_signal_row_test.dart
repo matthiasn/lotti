@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -232,6 +233,151 @@ void main() {
       await tester.pump();
       expect(find.text('≥ 5 km · done'), findsOneWidget);
       expect(find.text('today: 5 km'), findsOneWidget);
+    });
+  });
+
+  group('other leaves', () {
+    testWidgets('a habit leaf names the habit and marks a done day', (
+      tester,
+    ) async {
+      when(() => cache.getHabitById('floss')).thenReturn(
+        habitFlossing.copyWith(id: 'floss', name: 'Floss'),
+      );
+      final w = SignalWindow(
+        start: DateTime.utc(2026, 7, 26),
+        end: todayKey,
+        habitSuccessDays: {
+          'floss': {todayKey, DateTime.utc(2026, 8, 3)},
+        },
+      );
+      await pump(tester, const AutoCompleteRule.habit(habitId: 'floss'), w);
+      await tester.pump();
+      expect(find.text('Floss'), findsOneWidget);
+      expect(find.text('habit done · done'), findsOneWidget);
+      final spark = tester.widget<SignalSparkline>(
+        find.byType(SignalSparkline),
+      );
+      expect(spark.values.last, 1);
+      expect(spark.values[8], 1);
+      expect(spark.values.first, isNull);
+    });
+
+    testWidgets('workout duration and energy use minutes and kcal', (
+      tester,
+    ) async {
+      final run = workoutEntity(
+        DateTime(2026, 8, 8, 7),
+        length: const Duration(minutes: 30),
+        energy: 320,
+      );
+      final w = window(
+        workouts: {
+          'running': {
+            todayKey: [(run as WorkoutEntry).data],
+          },
+        },
+      );
+      await pump(
+        tester,
+        const AutoCompleteRule.workout(
+          dataType: 'running',
+          minimum: 45,
+          valueType: WorkoutValueType.duration,
+        ),
+        w,
+      );
+      await tester.pump();
+      expect(find.text('≥ 45 min · 30 so far'), findsOneWidget);
+      await pump(
+        tester,
+        const AutoCompleteRule.workout(
+          dataType: 'running',
+          minimum: 300,
+          valueType: WorkoutValueType.energy,
+        ),
+        w,
+      );
+      await tester.pump();
+      expect(find.text('≥ 300 kcal · done'), findsOneWidget);
+    });
+
+    testWidgets('a maximum rule reads with ≤', (tester) async {
+      await pump(
+        tester,
+        const AutoCompleteRule.measurable(dataTypeId: 'water', maximum: 2),
+        window(
+          measurables: {
+            'water': {todayKey: 3},
+          },
+        ),
+      );
+      await tester.pump();
+      expect(find.text('≤ 2 ml · 3 so far'), findsOneWidget);
+    });
+
+    testWidgets('a composite handed in as a leaf gets a stable key', (
+      tester,
+    ) async {
+      const composite = AutoCompleteRule.and(rules: []);
+      final s = HabitSignalStatus(
+        rule: composite,
+        window: window(),
+        verdict: const HabitRuleVerdict(
+          satisfied: true,
+          leaves: [
+            HabitLeafVerdict(rule: composite, satisfied: true, present: true),
+          ],
+        ),
+        today: todayKey,
+      );
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          HabitSignalRow(
+            leaf: s.verdict.leaves.single,
+            status: s,
+            onRecordMeasurable: (_, _) {},
+            onMoreMeasurable: (_) {},
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(
+        find.byKey(const ValueKey('habit-signal-row-composite')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('numbers follow the app locale, not the process locale', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          Builder(
+            builder: (context) {
+              final s = status(
+                const AutoCompleteRule.health(
+                  dataType: 'cumulative_step_count',
+                  minimum: 6000,
+                ),
+                window(
+                  quantitative: {
+                    'cumulative_step_count': {todayKey: 4120},
+                  },
+                ),
+              );
+              return HabitSignalRow(
+                leaf: s.verdict.leaves.single,
+                status: s,
+                onRecordMeasurable: (_, _) {},
+                onMoreMeasurable: (_) {},
+              );
+            },
+          ),
+          locale: const Locale('de'),
+        ),
+      );
+      await tester.pump();
+      expect(find.text('≥ 6.000 · bisher 4.120'), findsOneWidget);
     });
   });
 }
