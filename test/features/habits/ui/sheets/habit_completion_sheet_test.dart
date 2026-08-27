@@ -174,11 +174,16 @@ void main() {
           routerDelegate: delegate,
           child: AppCommandHost(
             handlers: const {},
-            child: Material(
-              child: HabitCompletionSheet(
-                habitId: habitId ?? habitFlossing.id,
-                themeData: resolveTestTheme(),
-                dateString: dateString,
+            // A Scaffold, as in the app: the failed-write snackbar needs one.
+            // Bounded, because the harness scrolls its child.
+            child: SizedBox(
+              height: 1300,
+              child: Scaffold(
+                body: HabitCompletionSheet(
+                  habitId: habitId ?? habitFlossing.id,
+                  themeData: resolveTestTheme(),
+                  dateString: dateString,
+                ),
               ),
             ),
           ),
