@@ -210,7 +210,8 @@ mixin _JournalDbDataQueries on _$JournalDb, _JournalDbConfigFlags {
   }
 
   /// Workouts of one [workoutType] (the raw imported string, stored as the
-  /// row's `subtype`) fully inside the range, newest first.
+  /// row's `subtype`) that *started* in `[rangeStart, rangeEnd)`, newest
+  /// first — a workout crossing midnight belongs to the day it began.
   Future<List<JournalEntity>> getWorkoutsByType({
     required String workoutType,
     required DateTime rangeStart,

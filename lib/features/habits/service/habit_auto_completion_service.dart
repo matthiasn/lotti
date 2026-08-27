@@ -2,12 +2,10 @@ import 'dart:async';
 
 import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/signals/habit_rule_evaluator.dart';
 import 'package:lotti/logic/signals/signal_day_buckets.dart';
@@ -59,8 +57,9 @@ class HabitAutoCompletion {
 ///   with [HabitCompletionSource.auto] and a reason naming the leaf that
 ///   fired, so they sync and resolve exactly as user entries do.
 ///
-/// Consumers observe [completions]; [autoCompletedToday] lets UI tell an
-/// automatic check-off apart from a user's own, e.g. to skip the celebration.
+/// Consumers observe [completions]; [autoCompletedToday] lists what this
+/// instance wrote today (the persisted, sync-aware view is
+/// `HabitsState.autoCompletedToday`).
 class HabitAutoCompletionService {
   HabitAutoCompletionService({
     required JournalDb journalDb,
@@ -223,7 +222,7 @@ class HabitAutoCompletionService {
       rangeStart: dayStart,
       rangeEnd: dayEnd,
     );
-    if (existing.isNotEmpty) return;
+    if (existing.isNotEmpty || _disposed) return;
 
     // A past day is evaluated at its last instant so nothing of it is
     // clipped; today is evaluated as of now.
@@ -236,7 +235,11 @@ class HabitAutoCompletionService {
       days: 1,
     );
     final verdict = evaluator.evaluate(rule: rule, window: window, day: day);
-    if (!verdict.satisfied) return;
+    // Re-checked after every await: a profile switch or shutdown that
+    // disposed the service mid-read must not write through a PersistenceLogic
+    // that may already belong to the next generation, nor add to a closed
+    // stream.
+    if (!verdict.satisfied || _disposed) return;
 
     final data = HabitCompletionData(
       dateFrom: reference,
@@ -250,7 +253,7 @@ class HabitAutoCompletionService {
       data: data,
       habitDefinition: habit,
     );
-    if (entry == null) return;
+    if (entry == null || _disposed) return;
     if (day == signalDayKey(now)) {
       autoCompletedToday; // roll the day if needed
       _autoCompletedToday.add(habit.id);
@@ -321,9 +324,3 @@ class HabitAutoCompletionService {
     _completions.close();
   }
 }
-
-/// The app-wide engine, for widgets that need to tell an automatic check-off
-/// from the user's own (the summary card's celebration).
-final habitAutoCompletionServiceProvider = Provider<HabitAutoCompletionService>(
-  (ref) => getIt<HabitAutoCompletionService>(),
-);

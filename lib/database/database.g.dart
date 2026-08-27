@@ -7027,7 +7027,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     DateTime rangeEnd,
   ) {
     return customSelect(
-      'SELECT * FROM journal WHERE type = \'WorkoutEntry\' AND subtype = ?1 AND date_from >= ?2 AND date_to <= ?3 AND deleted = FALSE ORDER BY date_from DESC',
+      'SELECT * FROM journal WHERE type = \'WorkoutEntry\' AND subtype = ?1 AND date_from >= ?2 AND date_from < ?3 AND deleted = FALSE ORDER BY date_from DESC',
       variables: [
         Variable<String>(workoutType),
         Variable<DateTime>(rangeStart),

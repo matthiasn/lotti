@@ -126,7 +126,11 @@ class SignalReader {
         rangeStart: rangeStart,
         rangeEnd: rangeEnd,
       );
-      habits[habitId] = habitSuccessDays(entities);
+      habits[habitId] = habitSuccessDays(
+        entities
+            .where((entity) => !entity.meta.dateFrom.isAfter(reference))
+            .toList(growable: false),
+      );
     }
 
     return SignalWindow(

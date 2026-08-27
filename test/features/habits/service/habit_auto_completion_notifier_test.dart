@@ -200,6 +200,45 @@ void main() {
     expect(all.map((row) => row.habitIds.single).toSet(), {'walk', 'water'});
   });
 
+  test('a batch whose write failed is retried, not lost', () {
+    var calls = 0;
+    when(
+      () => notifications.createHabitAutoCompletion(
+        linkedHabitIds: any(named: 'linkedHabitIds'),
+        dayKey: any(named: 'dayKey'),
+        title: any(named: 'title'),
+        body: any(named: 'body'),
+      ),
+    ).thenAnswer((_) async {
+      calls++;
+      if (calls == 1) throw StateError('inbox busy');
+      return null;
+    });
+    run((async) {
+      completions.add(completion(id: 'walk', name: 'Walk'));
+      async.elapse(const Duration(seconds: 8));
+    });
+    final all = rows();
+    expect(all, hasLength(2));
+    expect(all.last.habitIds, ['walk']);
+  });
+
+  test('a batch that keeps failing is dropped after the attempt cap', () {
+    when(
+      () => notifications.createHabitAutoCompletion(
+        linkedHabitIds: any(named: 'linkedHabitIds'),
+        dayKey: any(named: 'dayKey'),
+        title: any(named: 'title'),
+        body: any(named: 'body'),
+      ),
+    ).thenThrow(StateError('inbox gone'));
+    run((async) {
+      completions.add(completion(id: 'walk', name: 'Walk'));
+      async.elapse(const Duration(minutes: 5));
+    });
+    expect(rows(), hasLength(HabitAutoCompletionNotifier.maxWriteAttempts));
+  });
+
   test('a failing write is logged and does not block the next batch', () {
     when(
       () => notifications.createHabitAutoCompletion(
@@ -231,8 +270,9 @@ void main() {
       completions.add(completion(id: 'water', name: 'Drink water'));
       async.elapse(const Duration(seconds: 4));
     });
-    // The throwing call is recorded too; the retry is the last one.
-    expect(rows().last.habitIds, ['water']);
+    // The throwing call is recorded; the retried walk completion then rides
+    // along with the water batch, so nothing is lost.
+    expect(rows().expand((row) => row.habitIds).toSet(), {'walk', 'water'});
   });
 
   test('nothing pending is written after dispose', () {

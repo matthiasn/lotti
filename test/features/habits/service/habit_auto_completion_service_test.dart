@@ -282,6 +282,20 @@ void main() {
       });
     });
 
+    test('disposing mid-evaluation aborts before the write', () {
+      stubHabits([waterHabit]);
+      stubMeasurements([measurementEntity(DateTime(2026, 8, 8, 9), 750)]);
+      run((async) {
+        // start() kicks off the pass; dispose lands while its reads are
+        // still pending microtasks.
+        service
+          ..start()
+          ..dispose();
+      });
+      expect(written, isEmpty);
+      expect(emitted, isEmpty);
+    });
+
     test('nothing happens after dispose', () {
       stubHabits([waterHabit]);
       run((async) {

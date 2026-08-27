@@ -141,6 +141,12 @@ void main() {
           DateTime(2026, 8, 8, 9),
           HabitCompletionType.skip,
         ),
+        // A success stamped after the reference instant is not part of this
+        // snapshot either — same rule as every other series.
+        habitCompletionEntity(
+          DateTime(2026, 8, 8, 16),
+          HabitCompletionType.success,
+        ),
       ]);
       final run = workoutEntity(
         DateTime(2026, 8, 8, 7),

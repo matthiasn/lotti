@@ -1,13 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/habits/service/habit_auto_completion_service.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
 import 'package:lotti/features/habits/ui/widgets/habits_summary_card.dart';
-import 'package:mocktail/mocktail.dart';
 
-import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
 import '../../test_utils.dart';
@@ -36,20 +32,6 @@ HabitsState _state({
     shortStreakCount: shortStreakCount,
     longStreakCount: longStreakCount,
   );
-}
-
-/// The card asks the auto-completion engine which habits it checked off today
-/// before celebrating; [auto] is that set.
-List<Override> _overrides(
-  HabitsController Function() controller, {
-  Set<String> auto = const {},
-}) {
-  final engine = MockHabitAutoCompletionService();
-  when(() => engine.autoCompletedToday).thenReturn(auto);
-  return [
-    habitsControllerProvider.overrideWith(controller),
-    habitAutoCompletionServiceProvider.overrideWithValue(engine),
-  ];
 }
 
 Future<void> _pump(WidgetTester tester, HabitsState state) async {
@@ -322,7 +304,9 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             const HabitsSummaryCard(),
-            overrides: _overrides(() => controller),
+            overrides: [
+              habitsControllerProvider.overrideWith(() => controller),
+            ],
           ),
         );
         await tester.pump();
@@ -354,7 +338,9 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             const HabitsSummaryCard(),
-            overrides: _overrides(() => controller),
+            overrides: [
+              habitsControllerProvider.overrideWith(() => controller),
+            ],
           ),
         );
         await tester.pump();
@@ -389,7 +375,9 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             const HabitsSummaryCard(),
-            overrides: _overrides(() => controller),
+            overrides: [
+              habitsControllerProvider.overrideWith(() => controller),
+            ],
           ),
         );
         await tester.pump();
@@ -421,12 +409,21 @@ void main() {
           makeTestableWidgetWithScaffold(
             const HabitsSummaryCard(),
             // The last habit to complete ('done-2') was auto-completed.
-            overrides: _overrides(() => controller, auto: const {'done-2'}),
+            overrides: [
+              habitsControllerProvider.overrideWith(() => controller),
+            ],
           ),
         );
         await tester.pump();
 
-        controller.emit(_state(definitionCount: 3, completedCount: 3));
+        // The last habit to complete ('done-2') was auto-completed — as the
+        // persisted state says, whether this device or a synced peer wrote it.
+        controller.emit(
+          _state(
+            definitionCount: 3,
+            completedCount: 3,
+          ).copyWith(autoCompletedToday: {'done-2': 'Steps · 7412'}),
+        );
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 500));
         expect(flash, findsNothing);
@@ -447,7 +444,9 @@ void main() {
             mediaQueryData: phoneMediaQueryData.copyWith(
               disableAnimations: true,
             ),
-            overrides: _overrides(() => controller),
+            overrides: [
+              habitsControllerProvider.overrideWith(() => controller),
+            ],
           ),
         );
         await tester.pump();

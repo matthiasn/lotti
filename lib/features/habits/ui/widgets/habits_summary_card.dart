@@ -4,7 +4,6 @@ import 'package:lotti/features/design_system/components/celebration/completion_g
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
-import 'package:lotti/features/habits/service/habit_auto_completion_service.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
 import 'package:lotti/features/settings/state/celebration_preferences_controller.dart';
@@ -74,16 +73,15 @@ class _HabitsSummaryCardState extends ConsumerState<HabitsSummaryCard>
   }
 
   /// Whether every habit newly done in [next] was written by the
-  /// auto-completion engine today.
+  /// auto-completion engine today — read from the persisted state, so a
+  /// completion that arrived through sync or was loaded after a restart is
+  /// recognised the same as one this instance wrote.
   bool _completedByEngine(HabitsState? previous, HabitsState next) {
     final newlyDone = next.completedToday.difference(
       previous?.completedToday ?? const {},
     );
     if (newlyDone.isEmpty) return false;
-    final auto = ref
-        .read(habitAutoCompletionServiceProvider)
-        .autoCompletedToday;
-    return auto.containsAll(newlyDone);
+    return next.autoCompletedToday.keys.toSet().containsAll(newlyDone);
   }
 
   /// The (total, done) pair under the optional [HabitsSummaryCard

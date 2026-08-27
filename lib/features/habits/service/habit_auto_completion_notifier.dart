@@ -36,7 +36,13 @@ class HabitAutoCompletionNotifier {
   /// How long after the first completion of a batch to wait for more.
   final Duration groupingWindow;
 
+  /// How many times a failed batch is retried before it is dropped. The
+  /// engine never emits a completion twice (the habit day is occupied), so a
+  /// batch lost here is lost for good — hence the retries.
+  static const maxWriteAttempts = 5;
+
   final _pending = <HabitAutoCompletion>[];
+  final _attempts = <String, int>{};
   StreamSubscription<HabitAutoCompletion>? _subscription;
   Timer? _flushTimer;
 
@@ -67,6 +73,9 @@ class HabitAutoCompletionNotifier {
     for (final entry in byDay.entries) {
       try {
         await _write(entry.key, entry.value);
+        for (final completion in entry.value) {
+          _attempts.remove(completion.entry.meta.id);
+        }
       } catch (error, stackTrace) {
         _logger.error(
           LogDomain.habits,
@@ -74,7 +83,29 @@ class HabitAutoCompletionNotifier {
           stackTrace: stackTrace,
           subDomain: 'autoCompletion.notify',
         );
+        _requeue(entry.value);
       }
+    }
+  }
+
+  /// Puts a batch whose write failed back in line for the next flush, giving
+  /// up on a completion after [maxWriteAttempts] tries.
+  void _requeue(List<HabitAutoCompletion> group) {
+    if (_subscription == null) return; // disposed
+    for (final completion in group) {
+      final attempts = (_attempts[completion.entry.meta.id] ?? 0) + 1;
+      if (attempts >= maxWriteAttempts) {
+        _attempts.remove(completion.entry.meta.id);
+        continue;
+      }
+      _attempts[completion.entry.meta.id] = attempts;
+      _pending.add(completion);
+    }
+    if (_pending.isNotEmpty) {
+      _flushTimer ??= Timer(groupingWindow, () {
+        _flushTimer = null;
+        unawaited(flush());
+      });
     }
   }
 
@@ -112,5 +143,6 @@ class HabitAutoCompletionNotifier {
     _flushTimer?.cancel();
     _flushTimer = null;
     _pending.clear();
+    _attempts.clear();
   }
 }

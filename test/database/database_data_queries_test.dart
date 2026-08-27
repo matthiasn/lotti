@@ -647,6 +647,31 @@ void main() {
         );
       });
 
+      test('getWorkoutsByType keeps a workout that crosses midnight', () async {
+        await db!.updateJournalEntity(
+          buildWorkoutEntry(
+            id: 'late-run',
+            start: DateTime(2024, 5, 2, 23, 45),
+            end: DateTime(2024, 5, 3, 0, 15),
+          ),
+        );
+        final onStartDay = await db!.getWorkoutsByType(
+          workoutType: 'running',
+          rangeStart: DateTime(2024, 5, 2),
+          rangeEnd: DateTime(2024, 5, 3),
+        );
+        expect(onStartDay.map((w) => w.meta.id), ['late-run']);
+        // It belongs to the day it started, not the day it ended.
+        expect(
+          await db!.getWorkoutsByType(
+            workoutType: 'running',
+            rangeStart: DateTime(2024, 5, 3),
+            rangeEnd: DateTime(2024, 5, 4),
+          ),
+          isEmpty,
+        );
+      });
+
       test('getWorkoutTypes lists each imported type once, sorted', () async {
         for (final (id, type) in [
           ('a', 'walking'),
