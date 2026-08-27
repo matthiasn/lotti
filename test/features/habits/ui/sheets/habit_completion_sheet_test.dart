@@ -322,15 +322,19 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
       await tester.pumpWidget(
         makeTestableWidget(
-          Builder(
-            builder: (context) => Scaffold(
-              body: Center(
-                child: TextButton(
-                  onPressed: () => HabitCompletionSheet.show(
-                    context,
-                    habitId: habitFlossing.id,
+          // Bounded: the harness scrolls its child.
+          SizedBox(
+            height: 1300,
+            child: Builder(
+              builder: (context) => Scaffold(
+                body: Center(
+                  child: TextButton(
+                    onPressed: () => HabitCompletionSheet.show(
+                      context,
+                      habitId: habitFlossing.id,
+                    ),
+                    child: const Text('open'),
                   ),
-                  child: const Text('open'),
                 ),
               ),
             ),
