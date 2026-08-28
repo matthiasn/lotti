@@ -7,11 +7,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/proposals_section_part.dart';
+import 'package:lotti/features/design_system/components/motion/size_fade_entrance.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
@@ -31,6 +34,7 @@ Widget _buildShell({
   AgentDomainEntity? Function(Ref ref)? agentState,
   UnifiedSuggestionList Function(Ref ref)? suggestionsSync,
   MockTaskAgentService? taskAgentService,
+  AgentReportEntity? report,
   bool enableSummaryTts = false,
   MediaQueryData mediaQueryData = desktopMediaQueryData,
 }) {
@@ -47,7 +51,7 @@ Widget _buildShell({
         (ref, id) async => defaultResolvedSetup,
       ),
       agentReportProvider.overrideWith(
-        (ref, agentId) async => makeTestReport(tldr: 'Tldr line.'),
+        (ref, agentId) async => report ?? makeTestReport(tldr: 'Tldr line.'),
       ),
       templateForAgentProvider.overrideWith((ref, agentId) async => null),
       agentIsRunningProvider.overrideWith(
@@ -222,6 +226,70 @@ void main() {
 
         firstUpdate.complete();
         await tester.pump();
+      },
+    );
+  });
+
+  group('AiSummaryCard – didUpdateWidget resets the history latch', () {
+    testWidgets(
+      "history present on the next task's first list appears at once, "
+      'not with a reveal',
+      (tester) async {
+        // The reveal flag distinguishes a band on the initial load from one
+        // appearing later. When the shell is reused for another agent, the
+        // new agent's first list is an initial load again — a stale flag
+        // from the previous one would ease the band open.
+        final first = makeTestIdentity(
+          id: 'agent-A',
+          agentId: 'agent-A',
+          displayName: 'Agent Alpha',
+        );
+        final second = makeTestIdentity(
+          id: 'agent-B',
+          agentId: 'agent-B',
+          displayName: 'Agent Beta',
+        );
+        var current = first;
+
+        await tester.pumpWidget(
+          _buildShell(
+            identity: (ref) => current,
+            // Nothing behind Read more, so history shows unconditionally.
+            report: makeTestReport(content: 'Same text', tldr: 'Same text'),
+            suggestionsSync: (ref) => current.agentId == 'agent-A'
+                ? const UnifiedSuggestionList.empty()
+                : UnifiedSuggestionList(
+                    open: const [],
+                    activity: [
+                      makeLedgerEntry(
+                        id: 'b-0',
+                        status: ChangeItemStatus.confirmed,
+                      ),
+                    ],
+                  ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(find.byType(ProposalHistorySection), findsNothing);
+
+        final element = tester.element(find.byType(AiSummaryCard));
+        final container = ProviderScope.containerOf(element);
+        current = second;
+        container
+          ..invalidate(taskAgentProvider(AgentTestBench.taskId))
+          ..invalidate(unifiedSuggestionListProvider(AgentTestBench.taskId));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Agent Beta'), findsOneWidget);
+        expect(find.byType(ProposalHistorySection), findsOneWidget);
+        expect(
+          tester
+              .widget<SizeFadeEntrance>(
+                find.byKey(const ValueKey('proposalHistoryBand')),
+              )
+              .animate,
+          isFalse,
+        );
       },
     );
   });

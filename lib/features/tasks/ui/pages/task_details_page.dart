@@ -87,16 +87,19 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
   );
   Timer? _suggestionsRetryTimer;
 
-  /// Fallback anchor for above-card changes that do not report their own size
-  /// delta to [_scrollController]. With the AI card sitting right below the
-  /// header, the header band is the only content above the proposals; this
-  /// anchor covers proposal-driven header mutations (title, tagline,
-  /// metadata) that slip past the pre-paint correction path.
-  late final ScrollAnchor _suggestionsAnchor;
+  /// Pins the AI card's bottom edge while a proposal resolves with the card
+  /// in view. Every resolved row collapses *inside* the card, so holding this
+  /// edge keeps the rows still to come, the Confirm-all rail and everything
+  /// below the card where they were; the collapse is paid for above, by the
+  /// summary sliding down into the space the rows leave. It is also the
+  /// fallback for above-card changes that slip past the pre-paint path (the
+  /// header and the card both report their deltas to [_scrollController]).
+  late final ScrollAnchor _cardBottomAnchor;
 
-  /// Holds the content below the AI card fixed while the card grows off-screen
-  /// above the viewport (a new suggestion landing), so the visible area never
-  /// jumps. The dual of [_suggestionsAnchor], which guards shrink-above-card.
+  /// Holds the content below the work bands fixed while the card changes
+  /// height off-screen above the viewport (a new suggestion landing, a row
+  /// collapsing), so the visible area never jumps. The off-screen counterpart
+  /// of [_cardBottomAnchor].
   late final ScrollAnchor _belowCardAnchor;
 
   /// Spans the card's `EnterTransition` reveal (`MotionDurations.medium2`) plus
@@ -147,15 +150,13 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
       ..addListener(_listener)
       ..addListener(_updateOffsetListener);
 
-    _suggestionsAnchor = ScrollAnchor(
+    _cardBottomAnchor = ScrollAnchor(
       controller: _scrollController,
-      locate: _suggestionsViewportTop,
-      // Cover a checked-off item's *delayed* row collapse: confirming a
-      // "check off" proposal leaves the checklist row in place, then collapses
-      // it (hold + cross-fade) ~a second later. The checklist sits below the
-      // card now, so that shrink no longer displaces the proposals — but the
-      // window still has to span header-band mutations from the same batch.
-      // The hold bows out early if the user scrolls in the meantime.
+      locate: _cardRegionBottomGlobal,
+      // Spans a confirm-all sweep: the staggered row exits, the rail and the
+      // section collapsing after the last row, and header-band mutations from
+      // the same batch. The hold bows out early if the user scrolls in the
+      // meantime.
       holdDuration: _suggestionResolveHold,
     );
 
@@ -172,7 +173,7 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
   void dispose() {
     disposeHighlight();
     _suggestionsRetryTimer?.cancel();
-    _suggestionsAnchor.dispose();
+    _cardBottomAnchor.dispose();
     _belowCardAnchor.dispose();
     _scrollController
       ..removeListener(_listener)
@@ -181,40 +182,39 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
     super.dispose();
   }
 
-  /// Global-Y of the AI proposals section, or null when it isn't laid out.
-  double? _suggestionsViewportTop() {
-    final renderObject = _suggestionsKey.currentContext?.findRenderObject();
-    if (renderObject is! RenderBox || !renderObject.attached) return null;
-    return renderObject.localToGlobal(Offset.zero).dy;
-  }
-
   /// Arms exactly one stabilization geometry before proposal persistence
   /// begins.
   ///
-  /// The header — the only band above the card — always reports its height
-  /// deltas to [_scrollController], which corrects during viewport layout so
-  /// no displaced frame is painted. The checklist and linked-tasks bands sit
-  /// below the card and report only while the below-card hold is armed. What
-  /// changes is *which point* has to stay still, and that flips when the card
-  /// leaves the screen:
+  /// The header — the only band above the card — and the card band itself
+  /// report their height deltas to [_scrollController], which corrects during
+  /// viewport layout so no displaced frame is painted. The checklist and
+  /// linked-tasks bands sit below the card and report only while the
+  /// below-card hold is armed. What changes is *which edge* has to stay still,
+  /// and that flips when the card leaves the screen:
   ///
-  /// * **Card visible** — the proposals under the user's pointer must not move,
-  ///   so [_suggestionsAnchor] holds. The card's own collapse is the reflow the
-  ///   user is watching, so the card band stays silent.
+  /// * **Card visible** — the user is watching the proposals being worked
+  ///   through, and every resolved row collapses *inside* the card. So the
+  ///   card's bottom edge holds ([_cardBottomAnchor]): the rows still to come,
+  ///   the Confirm-all rail and everything below the card stay exactly where
+  ///   they were, and the collapse is absorbed above them by the summary
+  ///   sliding down. Pinning the proposals' *top* instead — the previous
+  ///   design — sent the whole visible page racing upwards by the collapsed
+  ///   height on a confirm-all, because the collapsing rows sit between that
+  ///   edge and everything the user is looking at. A checklist item landing
+  ///   below the card is left as the visible reflow it is: new content
+  ///   appears, and only the content beneath it moves.
   /// * **Card fully above the viewport** — the user is reading the content
   ///   below it, and every resolved proposal — confirmed or dismissed
-  ///   alike — collapses a row and shrinks
-  ///   the card, dragging that content up. [_suggestionsAnchor] is structurally
-  ///   blind to it, because a row collapsing *inside* the proposals section does
-  ///   not move the section's top. So the card band reports its own shrink for a
-  ///   pre-paint correction — as do the checklist and linked-tasks bands, which
-  ///   sit between the card and the seam — and [_belowCardAnchor] pins the
-  ///   linked-entries seam.
+  ///   alike — collapses a row and shrinks the card, dragging that content up.
+  ///   The card band's own shrink is corrected pre-paint — as are the
+  ///   checklist and linked-tasks bands, which sit between the card and the
+  ///   seam — and [_belowCardAnchor] pins the linked-entries seam.
   ///
   /// The two anchors are never armed together. They sit either side of the
-  /// change, so the correction that holds one still moves the other by exactly
-  /// that height change — which the other then reads as drift and undoes on the
-  /// next post-frame. Both holding means both jumping, every frame.
+  /// work bands, so the correction that holds one still moves the other by
+  /// exactly those bands' height change — which the other then reads as drift
+  /// and undoes on the next post-frame. Both holding means both jumping, every
+  /// frame.
   ///
   /// The layers cooperate via [CooperativeScrollStabilizer] so neither mistakes
   /// the other's correction for a user scroll and disarms mid-batch.
@@ -225,11 +225,11 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
       includeOffscreenRegions: cardOffscreen,
     );
     if (cardOffscreen) {
-      _suggestionsAnchor.release();
+      _cardBottomAnchor.release();
       _belowCardAnchor.hold(duration: _suggestionResolveHold);
     } else {
       _belowCardAnchor.release();
-      _suggestionsAnchor.hold();
+      _cardBottomAnchor.hold();
     }
   }
 
@@ -253,8 +253,8 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
   }
 
   /// When the open-proposal count drops (a proposal was confirmed/dismissed),
-  /// pin the proposals' position so the relayout above them doesn't yank the
-  /// page down under the user's eyes.
+  /// re-arm the hold so the row collapsing inside the card, and any header
+  /// mutation from the same batch, cannot move what the user is looking at.
   void _onSuggestionsChanged(
     AsyncValue<UnifiedSuggestionList>? previous,
     AsyncValue<UnifiedSuggestionList> next,
@@ -293,7 +293,9 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
 
   /// Global-Y of the bottom of the AI card band, or null when it isn't laid
   /// out. `SliverToBoxAdapter` lays its child out at any scroll offset, so this
-  /// stays valid however far the card has scrolled away.
+  /// stays valid however far the card has scrolled away. Both the off-screen
+  /// predicate and [_cardBottomAnchor] read this same edge, so the decision
+  /// which anchor to arm and the point it then holds can never disagree.
   double? _cardRegionBottomGlobal() {
     final renderObject = _cardRegionKey.currentContext?.findRenderObject();
     if (renderObject is! RenderBox ||
@@ -346,7 +348,7 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
       _belowCardGrowthHold,
       includeOffscreenRegions: true,
     );
-    _suggestionsAnchor.release();
+    _cardBottomAnchor.release();
     _belowCardAnchor.hold();
   }
 
@@ -384,7 +386,7 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
   /// band that is visible or above stays worth arming for, because the
   /// linked entries below it would otherwise shift. (While the card is
   /// visible the armed hold ignores this band's delta anyway — the band sits
-  /// below the proposals, so its growth is the visible reflow.)
+  /// below the card's pinned edge, so its growth is the visible reflow.)
   ///
   /// The baseline falls back to the listener's own [previous] value, because
   /// `taskLinkGroupsControllerProvider` is cached for `entryCacheDuration`: a
@@ -483,8 +485,9 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
         focusProvider,
         (previous, next) => handleFocus(next, isInitialLoad: previous == null),
       )
-      // Hold the AI proposals in place when one is confirmed (which can grow
-      // the header above them) so the page doesn't jump under the user.
+      // Hold the content below the AI card in place when a proposal is
+      // confirmed (its row collapses inside the card, and the header above
+      // can grow) so the page doesn't jump under the user.
       ..listen<AsyncValue<UnifiedSuggestionList>>(
         unifiedSuggestionListProvider(widget.taskId),
         _onSuggestionsChanged,

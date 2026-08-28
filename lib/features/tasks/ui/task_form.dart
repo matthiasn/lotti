@@ -29,18 +29,19 @@ import 'package:lotti/features/tasks/ui/widgets/viewport_stable_animated_size.da
 /// * **header** — title, tagline and metadata; the only band above the AI
 ///   card, so its growth is compensated unconditionally to keep the proposals
 ///   still under the user's pointer
-/// * **AI card**, off-screen only — every resolved proposal collapses its row
-///   and so shrinks the card, whether it was confirmed or dismissed (both
-///   gestures run the same resolve-then-collapse path). While the card is
-///   visible that collapse is the
-///   reflow the user is watching and must not move the page; once the card has
-///   scrolled above the viewport the same shrink drags the content the
-///   user *is* reading upwards, so the page arms
-///   [ViewportStableScrollController.hold]'s `includeOffscreenRegions` and this
-///   band's delta is absorbed instead.
+/// * **AI card** — every resolved proposal collapses its row and so shrinks
+///   the card, whether it was confirmed or dismissed (both gestures run the
+///   same resolve-then-collapse path), and the Confirm-all rail and the
+///   section itself collapse after the last row. Whichever edge the page has
+///   pinned — the card's own bottom while it is visible, the seam below the
+///   work bands once it has scrolled above the viewport — sits *below* this
+///   band, so its delta is absorbed unconditionally: the content under that
+///   edge never moves, and the collapse is paid for by the summary above
+///   sliding down into the space the rows leave.
 /// * **checklist**, off-screen only — items added, checked off, archived or
-///   migrated. Below the card, so while the card is visible its growth is the
-///   visible reflow under the proposals; only the below-card hold absorbs it.
+///   migrated. Below the card's pinned edge, so while the card is visible its
+///   growth is the visible reflow under the proposals — new content appears
+///   and only what is beneath it moves; only the below-card hold absorbs it.
 /// * **linked tasks**, off-screen only — `create_follow_up_task` links a new
 ///   task here, and the first link is a large step: two tall empty-state
 ///   actions plus a divider give way to one compact row while the card header
@@ -143,7 +144,6 @@ class TaskForm extends ConsumerWidget {
           ),
         ViewportStableSizeReporter(
           key: ValueKey('ai-card-size-reporter-$taskId'),
-          offscreenOnly: true,
           child: Padding(
             key: cardRegionKey,
             // A step4 top bonds the card to the identity header above it, the
@@ -165,11 +165,11 @@ class TaskForm extends ConsumerWidget {
             ),
           ),
         ),
-        // Both work bands sit BELOW the AI card now, so their deltas are
+        // Both work bands sit BELOW the AI card, so their deltas are
         // consumed only while the page armed the below-card hold (card fully
         // above the viewport, `_belowCardAnchor` pinning the linked-entries
-        // seam). While the card is visible the proposals are the anchor, and
-        // a checklist or linked-task growing underneath them is the visible
+        // seam). While the card is visible its bottom edge is the anchor, and
+        // a checklist or linked-task growing underneath it is the visible
         // reflow — compensating it would drag the proposals out from under
         // the user's pointer.
         ViewportStableSizeReporter(

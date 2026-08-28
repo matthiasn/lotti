@@ -9,6 +9,7 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
@@ -172,6 +173,7 @@ void main() {
     ).thenAnswer(
       (_) => Stream<bool>.fromIterable([false]),
     );
+    when(() => mockEditorStateService.entryIsUnsaved(any())).thenReturn(false);
 
     when(
       mockTimeService.getStream,
@@ -826,14 +828,97 @@ void main() {
     setUp(registerTaskDetailsServices);
     tearDown(getIt.reset);
 
-    testWidgets(
-      'Accept all keeps the proposals position stable at a nonzero scroll '
-      'offset while its rows collapse',
-      (tester) async {
-        tester.view.physicalSize = const Size(800, 500);
-        tester.view.devicePixelRatio = 1;
-        addTearDown(tester.view.reset);
+    /// Four proposals, so the section is tall enough to scroll the rail well
+    /// down the page — and long enough a sweep to observe.
+    const fourItems = [
+      ChangeItem(
+        toolName: 'update_task_estimate',
+        args: {'minutes': 30},
+        humanSummary: 'Set estimate to 30 minutes',
+      ),
+      ChangeItem(
+        toolName: 'add_checklist_item',
+        args: {'title': 'Add a checklist item'},
+        humanSummary: 'Add a checklist item',
+      ),
+      ChangeItem(
+        toolName: 'set_task_language',
+        args: {'languageCode': 'de', 'confidence': 'high'},
+        humanSummary: 'Set language to "de"',
+      ),
+      ChangeItem(
+        toolName: 'update_task_priority',
+        args: {'priority': 'P1'},
+        humanSummary: 'Raise priority to P1',
+      ),
+    ];
 
+    /// Pumps the page with the AI card in view and the Confirm-all rail at
+    /// the viewport's centre, far enough down the page that the correction
+    /// has room to run: the collapse of the whole section has to fit above
+    /// the scroll origin, or the clamp at zero would move the content below
+    /// the card for a reason these tests are not about. A short viewport and
+    /// a four-row section put the rail that far down.
+    Future<ScrollPosition> pumpWithRailCentred(
+      WidgetTester tester,
+      ProviderContainer container,
+    ) async {
+      tester.view.physicalSize = const Size(800, 400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      container
+          .read(controllableOpenSuggestionCountProvider.notifier)
+          .set(fourItems.length);
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: makeTestableWidget2(
+            TaskDetailsPage(taskId: testTask.id),
+          ),
+        ),
+      );
+      // Explicit pumps (not pumpAndSettle, which would hang on the AI
+      // card's long-lived wake timers) to let the async providers resolve.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final confirmAll = find.text('Confirm all');
+      expect(find.byType(ProposalsSection), findsOneWidget);
+      expect(confirmAll, findsOneWidget);
+      await Scrollable.ensureVisible(
+        tester.element(confirmAll),
+        alignment: 0.5,
+      );
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      final position = tester
+          .state<ScrollableState>(
+            find
+                .descendant(
+                  of: find.byType(CustomScrollView),
+                  matching: find.byType(Scrollable),
+                )
+                .first,
+          )
+          .position;
+      final sectionHeight = tester
+          .getSize(find.byType(ProposalsSection, skipOffstage: false))
+          .height;
+      expect(
+        position.pixels,
+        greaterThan(sectionHeight + 20),
+        reason:
+            'the rail must sit further down the page than the section '
+            'is tall, or the correction has no room',
+      );
+      return position;
+    }
+
+    testWidgets(
+      'Accept all keeps everything below the AI card fixed while its rows '
+      'collapse — the summary above slides down into the space they leave',
+      (tester) async {
         final confirmationService = MockChangeSetConfirmationService();
         late final ProviderContainer container;
         when(() => confirmationService.confirmAll(any())).thenAnswer((_) async {
@@ -846,56 +931,47 @@ void main() {
         container = ProviderContainer(
           overrides: [
             ...hTaskDetailsPageOverrides(),
-            ...hControllableSuggestionOverrides(),
+            ...hLinkedEntriesOverrides(),
+            ...hControllableSuggestionOverrides(items: fourItems),
             changeSetConfirmationServiceProvider.overrideWith(
               (ref) => confirmationService,
             ),
           ],
         );
+        final position = await pumpWithRailCentred(tester, container);
 
-        await tester.pumpWidget(
-          UncontrolledProviderScope(
-            container: container,
-            child: makeTestableWidget2(
-              TaskDetailsPage(taskId: testTask.id),
-            ),
-          ),
-        );
-        // Explicit pumps (not pumpAndSettle, which would hang on the AI
-        // card's long-lived wake timers) to let the async providers resolve.
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-        await tester.pump(const Duration(milliseconds: 300));
-
-        final proposals = find.byType(ProposalsSection);
-        final confirmAll = find.text('Confirm all');
-        expect(proposals, findsOneWidget);
-        expect(confirmAll, findsOneWidget);
-
-        await tester.ensureVisible(confirmAll);
-        await tester.pump();
-        final position = tester
-            .state<ScrollableState>(
-              find
-                  .descendant(
-                    of: find.byType(CustomScrollView),
-                    matching: find.byType(Scrollable),
-                  )
-                  .first,
-            )
-            .position;
-        expect(position.pixels, greaterThan(0));
+        // The band directly under the card: the first thing the user is not
+        // meant to see move. Offstage-tolerant, because the correction
+        // decides where it ends up.
+        final belowCard = find.byType(LinkedTasksWidget, skipOffstage: false);
+        final proposals = find.byType(ProposalsSection, skipOffstage: false);
+        final belowCardTop = tester.getTopLeft(belowCard).dy;
         final proposalsTop = tester.getTopLeft(proposals).dy;
+        final offsetBefore = position.pixels;
 
-        await tester.tap(confirmAll);
-        for (var frame = 0; frame < 6; frame++) {
+        await tester.tap(find.text('Confirm all'));
+        var proposalsDescended = false;
+        for (var frame = 0; frame < 12; frame++) {
           await tester.pump(const Duration(milliseconds: 100));
           expect(
-            tester.getTopLeft(proposals).dy,
-            closeTo(proposalsTop, 1),
-            reason: 'proposals moved during Accept-all frame $frame',
+            tester.getTopLeft(belowCard).dy,
+            closeTo(belowCardTop, 1),
+            reason:
+                'the band below the card moved during Accept-all '
+                'frame $frame',
           );
+          if (proposals.evaluate().isNotEmpty &&
+              tester.getTopLeft(proposals).dy > proposalsTop + 1) {
+            proposalsDescended = true;
+          }
         }
+
+        // The rows really collapsed above the pinned edge: the section's top
+        // came down to meet the rows still leaving, the offset gave back the
+        // collapsed height, and the section is gone once the sweep settled.
+        expect(proposalsDescended, isTrue);
+        expect(position.pixels, lessThan(offsetBefore - 100));
+        expect(proposals, findsNothing);
 
         verify(() => confirmationService.confirmAll(any())).called(1);
         expect(
@@ -903,9 +979,84 @@ void main() {
           isZero,
         );
         expect(tester.takeException(), isNull);
+        container.dispose();
+      },
+    );
 
-        // Dispose the container (cancels the entry-controller cache timer)
-        // before the framework's pending-timer check.
+    testWidgets(
+      'a header growing while the rows collapse composes with the same '
+      'correction — the band below the card still does not move',
+      (tester) async {
+        // A title proposal lands in the header band while the sweep is still
+        // running. The header reports its delta pre-paint like the card does,
+        // so the two corrections sum and the pinned edge stays put.
+        final updates = StreamController<Set<String>>.broadcast();
+        addTearDown(updates.close);
+        var currentTask = testTask;
+        when(
+          () => mockUpdateNotifications.updateStream,
+        ).thenAnswer((_) => updates.stream);
+        when(
+          () => mockJournalDb.journalEntityById(testTask.meta.id),
+        ).thenAnswer((_) async => currentTask);
+
+        // The test releases the write itself, a few frames into the sweep,
+        // so the title lands while rows are still collapsing.
+        final release = Completer<void>();
+        final confirmationService = MockChangeSetConfirmationService();
+        late final ProviderContainer container;
+        when(() => confirmationService.confirmAll(any())).thenAnswer((_) async {
+          await release.future;
+          currentTask = testTask.copyWith(
+            data: testTask.data.copyWith(
+              title: List.filled(
+                6,
+                'A title long enough to wrap onto several lines',
+              ).join(' '),
+            ),
+          );
+          updates.add({testTask.meta.id});
+          container
+              .read(controllableOpenSuggestionCountProvider.notifier)
+              .set(0);
+          return const [ToolExecutionResult(success: true, output: 'ok')];
+        });
+
+        container = ProviderContainer(
+          overrides: [
+            ...hTaskDetailsPageOverrides(),
+            ...hLinkedEntriesOverrides(),
+            ...hControllableSuggestionOverrides(items: fourItems),
+            changeSetConfirmationServiceProvider.overrideWith(
+              (ref) => confirmationService,
+            ),
+          ],
+        );
+        await pumpWithRailCentred(tester, container);
+
+        final belowCard = find.byType(LinkedTasksWidget, skipOffstage: false);
+        final header = find.byType(
+          DesktopTaskHeaderConnector,
+          skipOffstage: false,
+        );
+        final belowCardTop = tester.getTopLeft(belowCard).dy;
+        final headerHeight = tester.getSize(header).height;
+
+        await tester.tap(find.text('Confirm all'));
+        for (var frame = 0; frame < 12; frame++) {
+          if (frame == 2) release.complete();
+          await tester.pump(const Duration(milliseconds: 100));
+          expect(
+            tester.getTopLeft(belowCard).dy,
+            closeTo(belowCardTop, 1),
+            reason: 'the band below the card moved on frame $frame',
+          );
+        }
+
+        // The header really did grow — otherwise the assertion above would
+        // hold trivially.
+        expect(tester.getSize(header).height, greaterThan(headerHeight + 10));
+        expect(tester.takeException(), isNull);
         container.dispose();
       },
     );

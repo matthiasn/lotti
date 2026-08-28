@@ -39,6 +39,17 @@ The authoritative metric contract, thresholds, corpus design, and diagnostic
 interpretation are documented in
 [Daily OS evaluation](../knowledge/features/daily_os_next/evaluation.md).
 
+## An animation ends strictly *after* its duration
+
+`AnimationController` reports `completed` only once the elapsed time is
+*greater than* the duration, and the first tick after `forward()` lands on the
+next pumped frame with zero elapsed. So `pump(duration)` right after the trigger
+leaves the value at its end but the status still `forward`: `onEnd`-style
+callbacks, `whenComplete` futures and status listeners have not fired, and a
+`SizeFadeCollapse(onCollapsed:)` owner has not dropped its subtree. Pump the
+start frame, then the duration, then a little past it — or sample in small steps
+until the state you are waiting for appears, and assert you saw it.
+
 ## Platform-channel calls in widgets (e.g. HapticFeedback)
 
 A widget action that `await`s a `SystemChannels.platform` call — `HapticFeedback.lightImpact()`, clipboard, etc. — never resolves under the test binding unless a mock handler is installed, so any follow-up work after the await (a DB write, a `setState`, a navigation) silently never runs and the test fails in a confusing way. Install a handler in `setUp` **and reset it in `tearDown`**, or it leaks into every later test in the same isolate under the batched (`very_good`) runner:

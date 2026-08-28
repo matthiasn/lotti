@@ -336,29 +336,28 @@ void main() {
     );
 
     testWidgets(
-      'reports the header unconditionally, and every band from the AI card '
-      'down only while the below-card hold is armed',
+      'reports the header and the AI card unconditionally, and the work bands '
+      'below the card only while the below-card hold is armed',
       (tester) async {
         await tester.pumpWidget(buildSubject(task: testTask));
         await tester.pumpAndSettle();
 
-        // The header is the only band above the proposals: its growth moves
-        // them, so it is compensated unconditionally.
-        expect(
-          reporterFor(
-            tester,
-            find.byType(DesktopTaskHeaderConnector),
-          ).offscreenOnly,
-          isFalse,
-        );
-        // The card's own collapse must move the page only when the user
-        // cannot see it; a visible collapse is the reflow they are watching.
+        // Whichever edge the page pins — the card's bottom while it is
+        // visible, the seam below the work bands once it has scrolled away —
+        // lies below both the header and the card, so their height changes
+        // are compensated unconditionally: a proposal row collapsing inside
+        // the card must never move what sits under that edge.
+        for (final band in [
+          find.byType(DesktopTaskHeaderConnector),
+          find.byType(AiSummaryCard),
+        ]) {
+          expect(reporterFor(tester, band).offscreenOnly, isFalse);
+        }
         // The checklist and linked-tasks bands sit BELOW the card, so while
-        // the card is visible their growth is the visible reflow under the
-        // proposals — compensating it would drag the proposals out from
+        // the card is visible their growth is the visible reflow under its
+        // pinned edge — compensating it would drag the proposals out from
         // under the user's pointer.
         for (final band in [
-          find.byType(AiSummaryCard),
           find.byType(ChecklistsWidget),
           find.byType(LinkedTasksWidget),
         ]) {

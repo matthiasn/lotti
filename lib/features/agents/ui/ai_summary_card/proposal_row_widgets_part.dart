@@ -16,14 +16,24 @@ class RowActions extends StatelessWidget {
   final Future<void> Function() onReject;
   final Future<void> Function() onConfirm;
 
+  /// The hit target of one action: 48×48, the visible disc centred inside.
+  static const double buttonSize = 48;
+
+  /// The width of the two-button rail, gap included. Every other state of the
+  /// trailing slot — the busy spinner, the resolve badge's placeholder — keeps
+  /// this exact width so the summary text beside it never rewraps: a narrower
+  /// slot widened the text column mid-resolve, and a two-line proposal
+  /// snapping to one line dropped the row's height a beat *before* its
+  /// collapse began.
+  static double footprintWidth(BuildContext context) =>
+      buttonSize * 2 + context.designTokens.spacing.step2;
+
   @override
   Widget build(BuildContext context) {
     if (busy) {
-      // Match the 48×48 footprint of a single non-busy
-      // [_SquareIconButton] so the row doesn't reflow when toggling.
       return SizedBox(
-        width: 48,
-        height: 48,
+        width: footprintWidth(context),
+        height: buttonSize,
         child: Center(
           child: SizedBox(
             width: 14,
@@ -107,8 +117,8 @@ class _SquareIconButton extends StatelessWidget {
             onTap: onPressed.call,
             borderRadius: BorderRadius.circular(tokens.radii.s),
             builder: (context, highlighted) => SizedBox(
-              width: 48,
-              height: 48,
+              width: RowActions.buttonSize,
+              height: RowActions.buttonSize,
               child: Center(
                 child: Container(
                   width: tokens.spacing.step7,

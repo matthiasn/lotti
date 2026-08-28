@@ -55,11 +55,13 @@ class ViewportStableScrollController extends ScrollController
   /// [includeOffscreenRegions] additionally admits deltas from regions built as
   /// `ViewportStableSizeReporter(offscreenOnly: true)` — regions whose own
   /// height change must be compensated only while they are out of sight. The
-  /// AI card is the case this exists for: a proposal row collapsing inside it
-  /// drags everything below the card up, which matters only when the card
-  /// itself cannot be seen. While it is visible that reflow is the animation
-  /// the user is watching, and compensating it would slide the card out from
-  /// under their next tap.
+  /// task page's checklist and linked-tasks bands are the case this exists
+  /// for: a checklist item landing there pushes everything below it down,
+  /// which matters only once the AI card above has scrolled out of view and
+  /// the page is pinning the seam below the bands. While the card is visible
+  /// the page pins the card's own bottom edge instead, and the band growing
+  /// beneath it is the reflow the user is watching — new content appearing,
+  /// only what lies under it moving.
   ///
   /// The caller owns that predicate rather than the region, because the caller
   /// must pick a matching post-frame [ScrollAnchor] in the same breath: the
@@ -376,11 +378,11 @@ class ViewportStableSizeReporter extends StatelessWidget {
   /// only while the page has determined that this region is scrolled fully
   /// above the viewport.
   ///
-  /// Regions the user can see must never be compensated this way: a proposal
-  /// row collapsing inside a *visible* AI card is the reflow the user is
-  /// watching, and correcting it would scroll the page under their pointer.
-  /// The predicate lives with the page rather than here because the page must
-  /// pick the matching anchor from the same answer — see
+  /// Regions the user can see must never be compensated this way: a checklist
+  /// item landing in a *visible* checklist band is new content appearing, and
+  /// correcting it would scroll the page under their pointer. The predicate
+  /// lives with the page rather than here because the page must pick the
+  /// matching anchor from the same answer — see
   /// [ViewportStableScrollController.hold].
   final bool offscreenOnly;
 

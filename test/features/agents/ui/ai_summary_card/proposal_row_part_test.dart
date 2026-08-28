@@ -153,8 +153,10 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.byIcon(LottiIcons.confirm));
-        // A couple of frames is enough — no resolve/collapse animation runs
-        // under reduced motion, so the row is pruned without a timed window.
+        // A few frames is enough — no resolve/collapse animation runs under
+        // reduced motion, so the row is pruned without a timed window, the
+        // section snaps shut, and the frame after that it is dropped.
+        await tester.pump();
         await tester.pump();
         await tester.pump();
         expect(find.byType(ProposalRow), findsNothing);
@@ -613,7 +615,11 @@ void main() {
         await tester.pump(ProposalMotion.resolveHold);
         await tester.pump(ProposalMotion.collapse);
         await tester.pump(ProposalMotion.collapse);
-        await tester.pump();
+        // Then the section itself collapses away and is dropped: the first
+        // pump is the ticker's zero-elapsed start frame, the second runs it.
+        await tester.pump(ProposalMotion.collapse);
+        await tester.pump(ProposalMotion.collapse);
+        await tester.pump(const Duration(milliseconds: 50));
         expect(find.byType(ProposalRow), findsNothing);
         expect(find.byIcon(LottiIcons.confirm), findsNothing);
       },

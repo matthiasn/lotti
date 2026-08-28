@@ -942,12 +942,18 @@ class ProposalRowContent extends StatelessWidget {
   final Future<void> Function() onReject;
   final Future<void> Function() onConfirm;
 
-  /// The trailing slot: a resolved-status tag for history rows, an empty
-  /// 48×48 slot while resolving (the badge overlays it), else the action
-  /// buttons. The fixed slot keeps the text from reflowing on resolve.
-  Widget _trailing() {
+  /// The trailing slot: a resolved-status tag for history rows, an empty slot
+  /// the width of the action rail while resolving (the badge overlays it),
+  /// else the action buttons. The slot keeps [RowActions.footprintWidth] in
+  /// every pending state so the text beside it never rewraps on resolve.
+  Widget _trailing(BuildContext context) {
     if (isResolved) return ResolvedTag(status: resolvedStatus);
-    if (resolving) return const SizedBox(width: 48, height: 48);
+    if (resolving) {
+      return SizedBox(
+        width: RowActions.footprintWidth(context),
+        height: RowActions.buttonSize,
+      );
+    }
     return RowActions(busy: busy, onReject: onReject, onConfirm: onConfirm);
   }
 
@@ -984,7 +990,7 @@ class ProposalRowContent extends StatelessWidget {
       children: [
         Expanded(child: textWidget),
         SizedBox(width: tokens.spacing.step2),
-        _trailing(),
+        _trailing(context),
       ],
     );
   }
