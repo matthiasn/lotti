@@ -27,13 +27,53 @@ as the entire story.
   alt="Penguin Operations habits dashboard showing habitat checks, penguin roll call, sardine inventory, completion state, streaks, and recent history"
 />
 
-### Create and find habit definitions
+### Create and edit habits
 
-1. Open **Settings → Definitions → Habits**.
-2. Select **Create habit**.
-3. Give the behavior a concrete, repeatable name and useful description.
-4. Choose its category, options, and schedule.
-5. Save.
+1. Open **Habits** and select **+**. To change an existing habit, press and
+   hold it, or open its completion sheet and select the pencil. **Settings →
+   Definitions → Habits** still lists every definition and opens the same
+   editor.
+2. Name the behavior concretely. The example chips (**measure blood pressure**,
+   **6,000 steps**, **functional strength training**, **take medication**) fill
+   in a name and pre-select the matching signal.
+3. Select **Continue**, decide how Lotti knows the habit is done (below), and
+   set its category and times.
+4. Select **Create habit**.
+
+<ManualScreenshot
+  caseId="habits/editor-step1"
+  alt="New habit, step 1 of 2: What do you want to keep doing? with name and description fields and example chips"
+/>
+
+<ManualScreenshot
+  caseId="habits/editor-step2"
+  alt="New habit, step 2 of 2: How do we know it's done? with the manual row, a Steps signal set to daily at least 6,000, Add a signal, and the Settings section"
+/>
+
+### Let recorded data check a habit off
+
+The **How do we know it's done?** card lists the habit's signals. **I'll tick
+it myself** is always on — you can record any habit by hand. **Add a signal**
+offers three kinds:
+
+- a **measurable** you record in Lotti (any entry, or a daily total at least /
+  at most a value, in the measurable's unit);
+- **health data** imported from Apple Health or Health Connect (any reading,
+  or a daily value at least / at most a threshold — steps default to at least
+  6,000);
+- a **workout** type that has appeared in your imports (any session, or a
+  duration, distance, or energy at least / at most a value).
+
+With two or more signals, **How this habit counts as done** chooses whether
+**any** signal, **all** signals, or **at least N** of them complete it. Once
+the day's data satisfies the rule, the habit is checked off for you, marked
+**auto** on the Habits page with the signal and time, and announced with one
+notification per day — several habits completed by the same import share one
+notification, and **Notify on auto-completion** switches it off per habit.
+Anything you record yourself, including a skip, always wins over the automatic
+check-off.
+
+### The editor's settings
 
 <ManualScreenshot
   caseId="habits/settings-list"
@@ -43,34 +83,31 @@ as the entire story.
 
 <ManualScreenshot
   caseId="habits/settings-detail"
-  alt="Emperor penguin roll call habit editor with expedition description, Penguin Operations category, and favorite, private, and active options"
+  alt="Edit habit page for Emperor penguin roll call with the signals card, the Settings section, and the favorite, private, and active options"
 />
-
-The definition editor includes:
-
-- **Category** for filtering and visual context.
-- **Dashboard** when the habit should appear as a chart on a selected dashboard.
-- **Favorite** for higher prominence.
-- **Private** to hide it unless private entries are shown.
-- **Active** to control whether it appears on the Habits page without deleting
-  its history.
-
-### Schedule a daily habit
 
 <ManualScreenshot
   caseId="habits/schedule"
-  alt="Emperor penguin roll call schedule starting July 1, shown from 06:00 with a 06:30 alert"
+  alt="The editor's Settings section with category, start date, show from, alert time, and the notify-on-auto-completion switch"
 />
 
-The current editor is daily-first. Set a **Start date**, optionally delay when
-the habit is **shown from**, and optionally choose when Lotti should **show an
-alert**. The data model also understands weekly and monthly schedules, but the
-present editor exposes the richer time controls for daily habits.
+- **Category** for filtering and visual context.
+- **Start date**, and for a daily habit the time it is **shown from** and when
+  Lotti should **show an alert**. The data model also understands weekly and
+  monthly schedules; the editor exposes these time controls for daily habits.
+- **Notify on auto-completion** (on by default).
+- When editing: **Favorite** for higher prominence, **Private** to hide it
+  unless private entries are shown, **Active** to control whether it appears on
+  the Habits page without deleting its history, and **Delete**.
 
 ### Record what actually happened
 
-Open a due habit or use its quick action. The detailed completion form supports
-three outcomes:
+Open a due habit or use its quick action. The completion sheet shows the
+habit's own signals first — each with its rule status, one-tap chips for the
+values you log most, and a two-week sparkline. Tapping a chip records the
+measurement immediately; if that completes the habit, **Success** is
+pre-selected and you can still add a comment before **Record**. Below the
+signals, the form supports three outcomes:
 
 - **Success** — the behavior happened.
 - **Missed** — it was expected and possible, but did not happen.
@@ -78,7 +115,7 @@ three outcomes:
 
 <ManualScreenshot
   caseId="habits/record"
-  alt="Habit completion form for inspecting the penguin habitat seals, with Success, Skip, and Missed outcomes plus date and notes"
+  alt="Completion sheet for inspecting the habitat seals, with Krill rations and Steps signal rows, quick-record chips, sparklines, and the Success, Skip, and Missed outcomes"
 />
 
 Use the state that preserves reality. A candid history is more useful than a

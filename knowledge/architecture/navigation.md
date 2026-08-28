@@ -316,7 +316,8 @@ one level and the pop plays as a pop:
 
 | Page | URL | `popToNamed` |
 |------|-----|--------------|
-| Habit editor | `/settings/habits/by_id/:habitId` | `/settings/habits` |
+| Habit editor (from the tab) | `/habits/create`, `/habits/edit/:habitId` | `/habits` |
+| Habit editor (from settings) | `/settings/habits/by_id/:habitId`, `/settings/habits/create` | `/settings/habits` |
 | Habit search | `/settings/habits/search/:searchTerm` | `/settings/habits` |
 | AI provider detail | `/settings/ai/provider/:providerId` | `/settings/ai` |
 | AI model edit | `/settings/ai/model/:modelId` | `/settings/ai` |

@@ -357,6 +357,28 @@
       }
     },
     {
+      "id": "habits/editor-step1",
+      "title": "Habit editor: name",
+      "sourceTest": "test/features/habits/ui/habits_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "habit_editor_step1_mobile_light.png",
+        "mobile-dark": "habit_editor_step1_mobile_dark.png",
+        "desktop-light": "habit_editor_step1_desktop_light.png",
+        "desktop-dark": "habit_editor_step1_desktop_dark.png"
+      }
+    },
+    {
+      "id": "habits/editor-step2",
+      "title": "Habit editor: signals",
+      "sourceTest": "test/features/habits/ui/habits_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "habit_editor_step2_mobile_light.png",
+        "mobile-dark": "habit_editor_step2_mobile_dark.png",
+        "desktop-light": "habit_editor_step2_desktop_light.png",
+        "desktop-dark": "habit_editor_step2_desktop_dark.png"
+      }
+    },
+    {
       "id": "habits/schedule",
       "title": "Habit schedule",
       "sourceTest": "test/features/settings/ui/settings_definitions_screenshots_test.dart",

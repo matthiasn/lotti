@@ -181,6 +181,15 @@ void main() {
       'runtimeType': 'habit',
     };
 
+    test('a dashboardId from an older peer is ignored, not fatal', () {
+      // The field was removed with the habit editor; rows synced from a peer
+      // that still writes it must decode.
+      final habit =
+          EntityDefinition.fromJson({...habitJson(), 'dashboardId': 'dash-1'})
+              as HabitDefinition;
+      expect(habit.id, 'habit-1');
+    });
+
     test('defaults to true for habits written before the field existed', () {
       final habit = EntityDefinition.fromJson(habitJson()) as HabitDefinition;
       expect(habit.autoCompleteNotify, isTrue);

@@ -25,66 +25,107 @@ repérer des tendances sans faire d’un jour manqué toute l’histoire.
   alt="Tableau de bord des habitudes Opérations Pingouins montrant vérifications de l’habitat, appel des manchots, inventaire des sardines, état de réalisation, séries et historique récent"
 />
 
-### Crée et retrouve des définitions d’habitudes
+### Créer et modifier des habitudes
 
-1. Ouvre **Paramètres → Définitions → Habitudes**.
-2. Sélectionne **Créer une habitude**.
-3. Donne au comportement un nom concret et répétable, ainsi qu’une description utile.
-4. Choisis sa catégorie, ses options et son calendrier.
-5. Enregistre.
+1. Ouvre **Habitudes** et touche **+**. Pour modifier une habitude existante,
+   fais un appui long dessus, ou ouvre sa feuille de validation et touche le
+   crayon. **Réglages → Définitions → Habitudes** liste toujours toutes les
+   définitions et ouvre le même éditeur.
+2. Nomme le comportement concrètement. Les puces d'exemple (**mesurer la
+   tension**, **6 000 pas**, **renforcement musculaire fonctionnel**, **prendre
+   mes médicaments**) remplissent un nom et présélectionnent le signal
+   correspondant.
+3. Touche **Continuer**, décide comment Lotti sait que l'habitude est faite
+   (ci-dessous), puis règle sa catégorie et ses horaires.
+4. Touche **Créer l'habitude**.
+
+<ManualScreenshot
+  caseId="habits/editor-step1"
+  alt="Nouvelle habitude, étape 1 sur 2 : Que veux-tu continuer à faire ? avec les champs nom et description et des puces d'exemple"
+/>
+
+<ManualScreenshot
+  caseId="habits/editor-step2"
+  alt="Nouvelle habitude, étape 2 sur 2 : Comment savoir que c'est fait ? avec la ligne manuelle, un signal Pas réglé sur par jour au moins 6 000, Ajouter un signal et la section Réglages"
+/>
+
+### Laisser les données enregistrées cocher une habitude
+
+La carte **Comment savoir que c'est fait ?** liste les signaux de l'habitude.
+**Je la coche moi-même** est toujours actif : tu peux enregistrer n'importe
+quelle habitude à la main. **Ajouter un signal** propose trois types :
+
+- une **mesure** que tu enregistres dans Lotti (une entrée, ou un total
+  quotidien au moins / au plus une valeur, dans l'unité de la mesure) ;
+- des **données de santé** importées d'Apple Santé ou de Health Connect (une
+  mesure, ou une valeur quotidienne au moins / au plus un seuil — les pas
+  démarrent à au moins 6 000) ;
+- un type d'**entraînement** apparu dans tes imports (une séance, ou une durée,
+  une distance ou une énergie au moins / au plus une valeur).
+
+Avec deux signaux ou plus, **Quand l'habitude compte comme faite** choisit si
+**n'importe quel** signal, **tous** les signaux ou **au moins N** d'entre eux
+la valident. Dès que les données du jour satisfont la règle, l'habitude est
+cochée pour toi, marquée **auto** sur la page Habitudes avec le signal et
+l'heure, et annoncée par une notification par jour — plusieurs habitudes
+validées par le même import partagent une notification, et **Notifier lors
+d'une validation automatique** la désactive par habitude. Ce que tu enregistres
+toi-même, y compris un passage, l'emporte toujours sur la validation
+automatique.
+
+### Les réglages de l'éditeur
 
 <ManualScreenshot
   caseId="habits/settings-list"
-  alt="Paramètres des habitudes contenant Appel des manchots empereurs, Examiner les prévisions de sardines et Inspecter les joints de l’habitat, avec états favori, inactif et privé"
-  caption="Cherche les définitions ici. L’étoile, l’œil barré et le cadenas identifient les habitudes favorites, inactives et privées."
+  alt="Réglages des habitudes avec Appel des manchots empereurs, Vérifier la prévision de sardines et Parcourir les joints de l'habitat, avec les états favori, inactif et privé"
+  caption="Cherche les définitions ici. L'étoile, l'œil masqué et le cadenas signalent les habitudes favorites, inactives et privées."
 />
 
 <ManualScreenshot
   caseId="habits/settings-detail"
-  alt="Éditeur de l’habitude Appel des manchots empereurs, avec description de l’expédition, catégorie Opérations Pingouins et options favori, privée et actif"
+  alt="Page Modifier l'habitude pour Appel des manchots empereurs avec la carte des signaux, la section Réglages et les options favori, privé et actif"
 />
-
-L’éditeur de définition comprend :
-
-- **Catégorie** pour le filtrage et le contexte visuel.
-- **Tableau de bord** lorsque l’habitude doit apparaître comme graphique dans un tableau de bord choisi.
-- **Favori** pour lui donner plus d’importance.
-- **Privée** pour la masquer tant que les entrées privées ne sont pas affichées.
-- **Actif** pour déterminer si elle apparaît sur la page Habitudes sans
-  supprimer son historique.
-
-### Programme une habitude quotidienne
 
 <ManualScreenshot
   caseId="habits/schedule"
-  alt="Calendrier de l’appel des manchots empereurs commençant le 1er juillet, affiché à partir de 06:00 avec une alerte à 06:30"
+  alt="La section Réglages de l'éditeur avec catégorie, date de début, affichée à partir de, heure d'alerte et l'interrupteur de notification lors d'une validation automatique"
 />
 
-L’éditeur actuel privilégie les habitudes quotidiennes. Définis une **Date de
-début**, ajuste si besoin l’heure **affichée à partir de** pour ne montrer
-l’habitude que plus tard dans la journée, puis choisis éventuellement quand
-Lotti doit **afficher une alerte**. Le modèle de données comprend aussi les calendriers hebdomadaires et
-mensuels, mais l’éditeur expose aujourd’hui les contrôles temporels plus riches
-pour les habitudes quotidiennes.
+- **Catégorie** pour filtrer et situer visuellement.
+- **Date de début**, et pour une habitude quotidienne l'heure à partir de
+  laquelle elle est **affichée** et le moment où Lotti doit **afficher une
+  alerte**. Le modèle de données comprend aussi les plans hebdomadaires et
+  mensuels ; l'éditeur expose ces réglages horaires pour les habitudes
+  quotidiennes.
+- **Notifier lors d'une validation automatique** (activé par défaut).
+- En modification : **Favori** pour plus de visibilité, **Privé** pour la
+  masquer sauf si les entrées privées sont affichées, **Actif** pour contrôler
+  sa présence sur la page Habitudes sans effacer son historique, et
+  **Supprimer**.
 
-### Consigne ce qui s’est réellement passé
+### Enregistrer ce qui s'est vraiment passé
 
-Ouvre une habitude due ou utilise son action rapide. Le formulaire détaillé de
-réalisation prend en charge trois résultats :
+Ouvre une habitude due ou utilise son action rapide. La feuille de validation
+montre d'abord les signaux de l'habitude — chacun avec l'état de sa règle, des
+puces pour les valeurs que tu enregistres le plus, et une courbe sur deux
+semaines. Toucher une puce enregistre la mesure immédiatement ; si cela valide
+l'habitude, **Succès** est présélectionné et tu peux encore ajouter un
+commentaire avant **Enregistrer**. Sous les signaux, le formulaire propose
+trois résultats :
 
-- **Réussi** — le comportement a eu lieu.
-- **Manqué** — il était prévu et possible, mais n’a pas eu lieu.
-- **Ignoré** — il ne s’appliquait raisonnablement pas ce jour-là.
+- **Succès** — le comportement a eu lieu.
+- **Manqué** — c'était attendu et possible, mais ça n'a pas eu lieu.
+- **Passer** — ça ne s'appliquait raisonnablement pas ce jour-là.
 
 <ManualScreenshot
   caseId="habits/record"
-  alt="Formulaire de réalisation de l’habitude Inspecter les joints de l’habitat des manchots, avec résultats Réussi, Ignoré et Manqué, ainsi qu’une date et des notes"
+  alt="Feuille de validation pour l'inspection des joints de l'habitat, avec les lignes de signal Rations de krill et Pas, des puces d'enregistrement rapide, des courbes et les résultats Succès, Passer et Manqué"
 />
 
-Utilise l’état qui préserve la réalité. Un historique sincère est plus utile
-qu’un graphique parfait. Les enregistrements de réalisation sont des entrées de
-journal ; les vues ultérieures peuvent donc reconstruire le résultat effectif
-pour chaque habitude et chaque jour.
+Choisis l'état qui préserve la réalité. Un historique sincère est plus utile
+qu'un graphique parfait. Les validations sont des entrées du journal, si bien
+que les vues ultérieures peuvent reconstituer le résultat effectif pour chaque
+habitude et chaque jour.
 
 ## Travaille avec les mesures
 

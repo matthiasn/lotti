@@ -25,65 +25,101 @@ inteira.
   alt="Painel de hábitos de Operações Penguin mostrando verificações de habitat, chamada dos pinguins, inventário de sardinhas, estado de conclusão, sequências e histórico recente"
 />
 
-### Crie e encontre definições de hábitos
+### Criar e editar hábitos
 
-1. Abra **Configurações → Definições → Hábitos**.
-2. Selecione **Criar hábito**.
-3. Dê ao comportamento um nome concreto e repetível e uma descrição útil.
-4. Escolha sua categoria, opções e programação.
-5. Salve.
+1. Abre **Hábitos** e toca em **+**. Para alterar um hábito existente,
+   mantém-no premido ou abre a sua folha de registo e toca no lápis.
+   **Definições → Definições → Hábitos** continua a listar todas as definições
+   e abre o mesmo editor.
+2. Dá ao comportamento um nome concreto. Os chips de exemplo (**medir a tensão
+   arterial**, **6.000 passos**, **treino de força funcional**, **tomar a
+   medicação**) preenchem um nome e pré-selecionam o sinal correspondente.
+3. Toca em **Continuar**, decide como a Lotti sabe que o hábito está feito
+   (abaixo) e define a categoria e as horas.
+4. Toca em **Criar hábito**.
+
+<ManualScreenshot
+  caseId="habits/editor-step1"
+  alt="Novo hábito, passo 1 de 2: O que queres continuar a fazer? com os campos de nome e descrição e chips de exemplo"
+/>
+
+<ManualScreenshot
+  caseId="habits/editor-step2"
+  alt="Novo hábito, passo 2 de 2: Como sabemos que está feito? com a linha manual, um sinal de Passos em diário pelo menos 6.000, Adicionar um sinal e a secção Definições"
+/>
+
+### Deixar os dados registados marcar um hábito
+
+O cartão **Como sabemos que está feito?** lista os sinais do hábito. **Eu
+marco** está sempre ativo: qualquer hábito pode ser registado à mão.
+**Adicionar um sinal** oferece três tipos:
+
+- um **mensurável** que registas na Lotti (qualquer registo, ou um total
+  diário pelo menos / no máximo um valor, na unidade do mensurável);
+- **dados de saúde** importados do Apple Saúde ou do Health Connect (qualquer
+  leitura, ou um valor diário pelo menos / no máximo um limiar; os passos
+  começam em pelo menos 6.000);
+- um tipo de **treino** que apareceu nas tuas importações (qualquer sessão, ou
+  duração, distância ou energia pelo menos / no máximo um valor).
+
+Com dois ou mais sinais, **Quando o hábito conta como feito** decide se o
+completa **qualquer** sinal, **todos** os sinais ou **pelo menos N** deles.
+Quando os dados do dia satisfazem a regra, o hábito é marcado por ti, aparece
+como **auto** na página de Hábitos com o sinal e a hora, e é anunciado com uma
+notificação por dia; vários hábitos concluídos pela mesma importação partilham
+uma notificação, e **Notificar quando for concluído automaticamente**
+desliga-a por hábito. O que registas tu, incluindo um salto, prevalece sempre
+sobre a marcação automática.
+
+### As definições do editor
 
 <ManualScreenshot
   caseId="habits/settings-list"
-  alt="Configurações de hábitos contendo Chamada do pinguim-imperador, Revisar a previsão de sardinhas e Percorrer as vedações do habitat, com estados de favorito, inativo e privado"
-  caption="Pesquise definições aqui. A estrela, o olho oculto e o cadeado identificam hábitos favoritos, inativos e privados."
+  alt="Definições de hábitos com Chamada dos pinguins-imperadores, Rever a previsão de sardinhas e Percorrer os vedantes do habitat, com estados favorito, inativo e privado"
+  caption="Procura definições aqui. A estrela, o olho oculto e o cadeado identificam hábitos favoritos, inativos e privados."
 />
 
 <ManualScreenshot
   caseId="habits/settings-detail"
-  alt="Editor do hábito Chamada do pinguim-imperador com descrição da expedição, categoria Operações Penguin e opções de favorito, privado e ativo"
+  alt="Página Editar hábito para Chamada dos pinguins-imperadores com o cartão de sinais, a secção Definições e as opções favorito, privado e ativo"
 />
-
-O editor de definição inclui:
-
-- **Categoria** para filtragem e contexto visual.
-- **Painel** quando o hábito deve aparecer como um gráfico em um painel selecionado.
-- **Favorito** para maior destaque.
-- **Privado** para ocultá-lo, a menos que entradas privadas sejam mostradas.
-- **Ativo** para controlar se ele aparece na página de Hábitos sem excluir
-  seu histórico.
-
-### Programe um hábito diário
 
 <ManualScreenshot
   caseId="habits/schedule"
-  alt="Programação da chamada do pinguim-imperador a partir de 1º de julho, exibida a partir das 06h com alerta às 06h30"
+  alt="A secção Definições do editor com categoria, data de início, mostrar a partir de, hora do alerta e o interruptor de notificar quando for concluído automaticamente"
 />
 
-O editor atual é voltado para hábitos diários. Defina uma **data de início**,
-opcionalmente adie o horário a partir do qual o hábito é **mostrado a partir
-de** e, opcionalmente, escolha quando a Lotti deve **mostrar um alerta**. O
-modelo de dados também entende programações semanais e mensais, mas o editor
-atual expõe os controles de tempo mais completos para hábitos diários.
+- **Categoria** para filtrar e dar contexto visual.
+- **Data de início** e, num hábito diário, a hora a partir da qual é
+  **mostrado** e quando a Lotti deve **mostrar um alerta**. O modelo de dados
+  também entende planos semanais e mensais; o editor expõe estes controlos de
+  horas para hábitos diários.
+- **Notificar quando for concluído automaticamente** (ativo por predefinição).
+- Ao editar: **Favorito** para mais destaque, **Privado** para o esconder a
+  menos que as entradas privadas estejam visíveis, **Ativo** para controlar se
+  aparece na página de Hábitos sem apagar o histórico, e **Eliminar**.
 
-### Registre o que realmente aconteceu
+### Registar o que realmente aconteceu
 
-Abra um hábito pendente ou use sua ação rápida. O formulário de conclusão
-detalhado aceita três resultados:
+Abre um hábito pendente ou usa a sua ação rápida. A folha de registo mostra
+primeiro os sinais do hábito: cada um com o estado da regra, chips para os
+valores que mais registas e um gráfico de duas semanas. Tocar num chip regista
+a medição de imediato; se isso concluir o hábito, **Sucesso** fica
+pré-selecionado e ainda podes acrescentar um comentário antes de **Registar**.
+Abaixo dos sinais, o formulário admite três resultados:
 
 - **Sucesso** — o comportamento aconteceu.
-- **Perdido** — era esperado e possível, mas não aconteceu.
-- **Pular** — não se aplicava razoavelmente naquele dia.
+- **Falhado** — era esperado e possível, mas não aconteceu.
+- **Saltar** — nesse dia não se aplicava razoavelmente.
 
 <ManualScreenshot
   caseId="habits/record"
-  alt="Formulário de preenchimento de hábito para inspecionar as vedações do habitat dos pinguins, com resultados de Sucesso, Pular e Perdido, além de data e notas"
+  alt="Folha de registo para inspecionar os vedantes do habitat, com as linhas de sinal Rações de krill e Passos, chips de registo rápido, gráficos e os resultados Sucesso, Saltar e Falhado"
 />
 
-Use o estado que preserva a realidade. Um histórico sincero é mais útil do que
-um gráfico de aparência perfeita. Os registros de conclusão são entradas do
-diário, então visualizações posteriores podem reconstruir o resultado efetivo
-de cada hábito e dia.
+Usa o estado que preserva a realidade. Um histórico sincero é mais útil do que
+um gráfico perfeito. Os registos são entradas do diário, por isso as vistas
+posteriores conseguem reconstruir o resultado efetivo de cada hábito e dia.
 
 ## Trabalhe com mensuráveis
 

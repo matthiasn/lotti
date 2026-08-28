@@ -241,7 +241,6 @@ sealed class EntityDefinition with _$EntityDefinition {
     @Deprecated('Tags concept removed — kept for JSON backward compatibility')
     String? defaultStoryId,
     String? categoryId,
-    String? dashboardId,
     bool? priority,
 
     /// Whether an auto-completion derived from `autoCompleteRule` raises a

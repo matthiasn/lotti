@@ -25,14 +25,54 @@ zu machen.
   alt="Gewohnheitsübersicht für Pinguinbetrieb mit Habitatprüfungen, Pinguinzählung, Sardinenbestand, Abschlussstatus, Serien und Verlauf"
 />
 
-### Gewohnheitsdefinitionen erstellen und finden
+### Gewohnheiten erstellen und bearbeiten
 
-1. Öffne **Einstellungen → Definitionen → Gewohnheiten**.
-2. Wähle **Gewohnheit erstellen**.
-3. Gib dem Verhalten einen konkreten, wiederholbaren Namen und eine nützliche
-   Beschreibung.
-4. Wähle Kategorie, Optionen und Zeitplan.
-5. Speichere.
+1. Öffne **Gewohnheiten** und wähle **+**. Um eine bestehende Gewohnheit zu
+   ändern, halte sie gedrückt oder öffne ihr Erfassungsblatt und wähle den
+   Stift. **Einstellungen → Definitionen → Gewohnheiten** listet weiterhin alle
+   Definitionen auf und öffnet denselben Editor.
+2. Benenne das Verhalten konkret. Die Beispiel-Chips (**Blutdruck messen**,
+   **6.000 Schritte**, **funktionelles Krafttraining**, **Medikamente nehmen**)
+   füllen einen Namen ein und wählen das passende Signal vor.
+3. Wähle **Weiter**, lege fest, woran Lotti erkennt, dass die Gewohnheit
+   erledigt ist (siehe unten), und setze Kategorie und Zeiten.
+4. Wähle **Gewohnheit anlegen**.
+
+<ManualScreenshot
+  caseId="habits/editor-step1"
+  alt="Neue Gewohnheit, Schritt 1 von 2: Was willst du beibehalten? mit Feldern für Name und Beschreibung sowie Beispiel-Chips"
+/>
+
+<ManualScreenshot
+  caseId="habits/editor-step2"
+  alt="Neue Gewohnheit, Schritt 2 von 2: Woran erkennen wir, dass es erledigt ist? mit der manuellen Zeile, einem Schritte-Signal auf täglich mindestens 6.000, Signal hinzufügen und dem Abschnitt Einstellungen"
+/>
+
+### Erfasste Daten eine Gewohnheit abhaken lassen
+
+Die Karte **Woran erkennen wir, dass es erledigt ist?** listet die Signale der
+Gewohnheit. **Ich hake selbst ab** ist immer aktiv – jede Gewohnheit lässt sich
+von Hand erfassen. **Signal hinzufügen** bietet drei Arten:
+
+- eine **Messgröße**, die du in Lotti erfasst (beliebiger Eintrag oder eine
+  Tagessumme mindestens / höchstens ein Wert, in der Einheit der Messgröße);
+- **Gesundheitsdaten** aus Apple Health oder Health Connect (beliebiger
+  Messwert oder ein Tageswert mindestens / höchstens ein Schwellenwert –
+  Schritte starten mit mindestens 6.000);
+- ein **Workout**-Typ, der in deinen Importen vorkommt (beliebige Einheit oder
+  Dauer, Distanz oder Energie mindestens / höchstens ein Wert).
+
+Bei zwei oder mehr Signalen legt **Wann gilt die Gewohnheit als erledigt?**
+fest, ob **ein beliebiges** Signal, **alle** Signale oder **mindestens N**
+davon sie abschließen. Sobald die Daten des Tages die Regel erfüllen, wird die
+Gewohnheit für dich abgehakt, auf der Gewohnheiten-Seite mit Signal und
+Uhrzeit als **auto** markiert und mit einer Benachrichtigung pro Tag gemeldet –
+mehrere Gewohnheiten aus demselben Import teilen sich eine Benachrichtigung,
+und **Bei automatischem Abhaken benachrichtigen** schaltet sie pro Gewohnheit
+ab. Was du selbst erfasst, auch ein Überspringen, hat immer Vorrang vor dem
+automatischen Abhaken.
+
+### Die Einstellungen des Editors
 
 <ManualScreenshot
   caseId="habits/settings-list"
@@ -42,45 +82,47 @@ zu machen.
 
 <ManualScreenshot
   caseId="habits/settings-detail"
-  alt="Editor für Kaiserpinguine durchzählen mit Expeditionsbeschreibung, Kategorie Pinguinbetrieb und Optionen Favorit, Privat und Aktiv"
+  alt="Seite Gewohnheit bearbeiten für Kaiserpinguine durchzählen mit der Signalkarte, dem Abschnitt Einstellungen und den Optionen Favorit, Privat und Aktiv"
 />
-
-Der Editor enthält:
-
-- **Kategorie** für Filter und visuellen Kontext.
-- **Dashboard**, wenn die Gewohnheit dort als Diagramm erscheinen soll.
-- **Favorit** für höhere Sichtbarkeit.
-- **Privat**, um sie bei ausgeblendeten privaten Einträgen zu verstecken.
-- **Aktiv**, um ihre Sichtbarkeit ohne Löschen des Verlaufs zu steuern.
-
-### Eine tägliche Gewohnheit planen
 
 <ManualScreenshot
   caseId="habits/schedule"
-  alt="Zeitplan für Kaiserpinguine durchzählen ab 1. Juli, sichtbar ab 06:00 Uhr mit Alarm um 06:30 Uhr"
+  alt="Der Abschnitt Einstellungen des Editors mit Kategorie, Startdatum, Anzeigen ab, Alarmzeit und dem Schalter für Benachrichtigung bei automatischem Abhaken"
 />
 
-Der aktuelle Editor ist auf tägliche Gewohnheiten ausgerichtet. Setze ein
-**Startdatum**, verschiebe optional **Anzeigen ab** und wähle optional einen
-**Alarm**. Das Datenmodell versteht auch wöchentliche und monatliche Pläne,
-aber die reicheren Zeitoptionen gibt es derzeit nur für tägliche Pläne.
+- **Kategorie** für Filter und visuellen Kontext.
+- **Startdatum** und bei einer täglichen Gewohnheit die Zeit, ab der sie
+  **angezeigt** wird, und wann Lotti einen **Alarm** zeigen soll. Das
+  Datenmodell versteht auch wöchentliche und monatliche Pläne; der Editor
+  zeigt diese Zeitoptionen für tägliche Gewohnheiten.
+- **Bei automatischem Abhaken benachrichtigen** (standardmäßig an).
+- Beim Bearbeiten: **Favorit** für höhere Sichtbarkeit, **Privat**, um sie bei
+  ausgeblendeten privaten Einträgen zu verstecken, **Aktiv**, um ihre
+  Sichtbarkeit ohne Löschen des Verlaufs zu steuern, und **Löschen**.
 
 ### Erfassen, was tatsächlich passiert ist
 
-Öffne eine fällige Gewohnheit oder ihre Schnellaktion. Das Formular bietet:
+Öffne eine fällige Gewohnheit oder nutze ihre Schnellaktion. Das
+Erfassungsblatt zeigt zuerst die Signale der Gewohnheit – jedes mit seinem
+Regelstatus, Chips für die Werte, die du am häufigsten erfasst, und einer
+Zwei-Wochen-Kurve. Ein Tipp auf einen Chip erfasst die Messung sofort; erfüllt
+das die Gewohnheit, ist **Erfolg** vorausgewählt und du kannst vor **Speichern**
+noch einen Kommentar hinzufügen. Unter den Signalen bietet das Formular drei
+Ergebnisse:
 
-- **Erfolg** – das Verhalten fand statt.
-- **Verpasst** – es war erwartet und möglich, fand aber nicht statt.
-- **Überspringen** – es war an diesem Tag nicht sinnvoll anwendbar.
+- **Erfolg** – das Verhalten hat stattgefunden.
+- **Verpasst** – es war erwartet und möglich, ist aber nicht passiert.
+- **Übersprungen** – es traf an dem Tag vernünftigerweise nicht zu.
 
 <ManualScreenshot
   caseId="habits/record"
-  alt="Gewohnheitsabschluss für die Inspektion der Pinguin-Habitatdichtungen mit Erfolg, Überspringen, Verpasst, Datum und Notizen"
+  alt="Erfassungsblatt für das Inspizieren der Habitatdichtungen mit den Signalzeilen Krillrationen und Schritte, Schnellerfassungs-Chips, Kurven und den Ergebnissen Erfolg, Überspringen und Verpasst"
 />
 
-Wähle den Zustand, der der Wirklichkeit entspricht. Ein ehrlicher Verlauf ist
-nützlicher als ein perfektes Diagramm. Abschlüsse sind Journaleinträge; spätere
-Ansichten können das Ergebnis pro Gewohnheit und Tag rekonstruieren.
+Nutze den Zustand, der die Realität bewahrt. Ein ehrlicher Verlauf ist
+nützlicher als ein perfekt aussehendes Diagramm. Erfassungen sind
+Journaleinträge, sodass spätere Ansichten das effektive Ergebnis für jede
+Gewohnheit und jeden Tag rekonstruieren können.
 
 ## Mit Messgrößen arbeiten
 
