@@ -11,7 +11,7 @@ sources:
   - id: src
     resource: ../../lib/features/dashboards
     title: Dashboards feature source
-    last_modified: 2026-07-26
+    last_modified: 2026-08-28
   - id: aggregation
     resource: ../../lib/features/dashboards/state/health_data.dart
     title: Health aggregations — and which day a sample belongs to
@@ -51,7 +51,7 @@ flowchart LR
   Def["DashboardDefinition<br/>an EntityDefinition variant"] --> Items["ordered List of DashboardItem"]
   Items --> Sw{"DashboardWidget<br/>switch on the sealed variant"}
 
-  Sw -->|DashboardMeasurementItem| M["MeasurablesBarChart<br/>key: measurement:id:aggregationType<br/>enableCreate — opens capture"]
+  Sw -->|DashboardMeasurementItem| M["MeasurablesBarChart<br/>key: measurement:id:aggregationType<br/>enableCreate — opens capture<br/>choice kind → day strip + legend"]
   Sw -->|DashboardSurveyItem| S["DashboardSurveyChart<br/>key: survey:surveyType<br/>runs CFQ-11 / PANAS / GHQ-12"]
   Sw -->|DashboardHealthItem| H["DashboardHealthChart<br/>key: health:healthType"]
   Sw -->|DashboardWorkoutItem| W["DashboardWorkoutChart<br/>key: workout:workoutType:valueType"]
@@ -69,6 +69,28 @@ data across a range change, so the `State` has to follow the item; without
 identity keys, replacing an item with another of the same type at the same index
 would reuse the old `State` and show the previous item's cached data under the new
 header.
+
+**A choice measurable is the one item whose chart is not a series of
+numbers.** `MeasurablesBarChart` branches on `MeasurableDataType.isChoice`
+before any aggregation is resolved: its raw entries for the range are reduced
+by `choiceDaySeries` (`state/measurable_choice_series.dart`) to one choice per
+calendar day — the day's **latest** recording, by time then entry id, so two
+replicas agree — and drawn by `MeasurableChoiceStrip` as one cell per day under
+the same `kChartLeftAxisWidth` inset every other card uses, so the shared date
+axis reads across it. The cells are **painted** (`ChoiceStripPainter`), not
+laid out: a range runs to a year, and a row of flex children with fixed gaps
+would be wider than a phone long before that. The painter fits the range to
+its width, drops the gaps once a cell would be narrower than one and then
+merges neighbouring days of one choice into a single run; one tooltip, worded
+for the day under the pointer, replaces a tooltip per cell. Cell colours come from `choiceColorsFor`: the accent
+token stepped from `background.level03` to `interactive.enabled` across the
+definition's choice list in the user's order (archived choices keep their
+step, an unknown id draws in `decorative.level02`), which reads the list as
+the ordinal scale it is without a categorical palette the token set does not
+have. A recorded day names its date and choice in a tooltip; the footer is a
+`MeasurableChoiceLegend` of the active choices plus any archived one still
+colouring a day. The dashboard editor neither names nor edits an aggregation
+for such an item, and the measurable picker adds it with `AggregationType.none`.
 
 **Two of those keys carry a second discriminator**, and it is load-bearing:
 `measurement:id:aggregationType` and `workout:workoutType:valueType`. Changing

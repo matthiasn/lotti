@@ -77,13 +77,29 @@ String habitWorkoutUnit(AppLocalizations messages, WorkoutValueType type) =>
       WorkoutValueType.energy => messages.habitUnitKilocalories,
     };
 
-/// The unit a threshold is entered in.
+/// The picker row's second line for a measurable: its unit, or for a choice
+/// measurable its active choices — "Clear · Pale · Dark" — since those are
+/// what a rule on it would be about. `null` when there is nothing to say.
+String? habitMeasurableSubtitle(MeasurableDataType measurable) {
+  if (measurable.isChoice) {
+    final titles = measurable.activeChoices.map((choice) => choice.title);
+    return titles.isEmpty ? null : titles.join(' · ');
+  }
+  return measurable.unitName.isEmpty ? null : measurable.unitName;
+}
+
+/// The unit a threshold is entered in. A choice measurable has none — its
+/// unit field is a leftover from before it was switched — so it reads as
+/// empty rather than labelling a threshold that does not exist.
 String habitSignalUnit(
   AppLocalizations messages,
   HabitSignalForm signal,
   Map<String, MeasurableDataType> measurablesById,
 ) => switch (signal.kind) {
-  HabitSignalKind.measurable => measurablesById[signal.id]?.unitName ?? '',
+  HabitSignalKind.measurable => switch (measurablesById[signal.id]) {
+    null => '',
+    final measurable => measurable.isChoice ? '' : measurable.unitName,
+  },
   HabitSignalKind.health => healthTypes[signal.id]?.unit ?? '',
   HabitSignalKind.workout => switch (signal.workoutValueType) {
     null => '',

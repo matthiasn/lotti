@@ -2971,6 +2971,7 @@
   "habitSignalStatusNotYet": "{target} · încă nu",
   "habitSignalStatusSoFar": "{target} · {value} până acum",
   "habitSignalToday": "azi: {value}",
+  "habitSignalTodayLogged": "azi: înregistrat",
   "habitSignalTodayNone": "azi: —",
   "habitsLaggardHint": "{habit} — {kept} din {active} realizate",
   "habitsOpenHeader": "Scadente acum",
@@ -3551,9 +3552,19 @@
   "matrixStatsSignals": "Semnale",
   "matrixStatsSignalsConnectivity": "Semnale (conectivitate)",
   "matrixStatsTopKpis": "Indicatori principali",
+  "measurableChoiceNotFound": "Opțiune eliminată",
   "measurableDeleteConfirm": "Da, ștergeți acest tip de măsurătoare",
   "measurableDeleteQuestion": "Sigur doriți să ștergeți acest tip de măsurătoare?",
   "measurableNotFound": "Masuratoarea nu a fost gasita",
+  "measurementChoicePrompt": "Alegeți una",
+  "measurementChoiceSelectSemantic": "Selectați {title}",
+  "@measurementChoiceSelectSemantic": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "measurementCommentHint": "Adăugați o notă (opțional)",
   "measurementCommentSemantic": "Comentariu, opțional",
   "measurementObservedAtChangeSemantic": "Înregistrat la {dateTime}. Modificați data și ora.",
@@ -4645,6 +4656,38 @@
   "settingsMatrixVerifyLabel": "Verificați",
   "settingsMeasurableAggregationHelper": "Cum se combină intrările unei zile în grafice",
   "settingsMeasurableAggregationLabel": "Agregare implicită",
+  "settingsMeasurableChoiceAdd": "Adăugați o opțiune",
+  "settingsMeasurableChoiceArchive": "Arhivați {title}",
+  "@settingsMeasurableChoiceArchive": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsMeasurableChoiceNameHint": "Numele opțiunii",
+  "settingsMeasurableChoiceNameRequired": "Dați un nume acestei opțiuni",
+  "settingsMeasurableChoiceReorder": "Mutați {title}",
+  "@settingsMeasurableChoiceReorder": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsMeasurableChoiceRestore": "Restaurați {title}",
+  "@settingsMeasurableChoiceRestore": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsMeasurableChoicesArchivedDescription": "Ascunse la înregistrare; intrările care le-au folosit își afișează în continuare numele.",
+  "settingsMeasurableChoicesArchivedTitle": "Opțiuni arhivate",
+  "settingsMeasurableChoicesDescription": "La înregistrare alegeți una dintre ele. Le puteți redenumi sau reordona oricând – intrările deja înregistrate își păstrează opțiunea.",
+  "settingsMeasurableChoicesRequired": "Adăugați cel puțin o opțiune",
+  "settingsMeasurableChoicesTitle": "Opțiuni",
   "settingsMeasurableDeleteTooltip": "Ștergeți tipul măsurătorii",
   "settingsMeasurableDescriptionLabel": "Descriere",
   "settingsMeasurableDetailsLabel": "Editare măsurătoare",
@@ -4653,7 +4696,7 @@
   "settingsMeasurableSaveLabel": "Salvare",
   "settingsMeasurablesCreateTitle": "Creare măsurătoare",
   "settingsMeasurablesEmptyState": "Nicio măsurătoare încă",
-  "settingsMeasurablesEmptyStateHint": "Măsurătorile sunt valori urmărite în timp — greutate, apă, pași.",
+  "settingsMeasurablesEmptyStateHint": "Măsurătorile sunt valori urmărite în timp — greutate, apă, pași sau o opțiune precum cât de odihnit vă simțiți.",
   "settingsMeasurablesErrorLoading": "Eroare la încărcarea măsurătorilor",
   "settingsMeasurablesNoMatchQuery": "Nicio măsurătoare nu corespunde cu \"{query}\"",
   "@settingsMeasurablesNoMatchQuery": {
@@ -4667,6 +4710,10 @@
   "settingsMeasurablesSubtitle": "Configurați tipurile de date măsurabile",
   "settingsMeasurablesTitle": "Măsurători",
   "settingsMeasurableUnitLabel": "Unitatea abrevierii",
+  "settingsMeasurableValueKindChoice": "Opțiune",
+  "settingsMeasurableValueKindHelper": "Un număr cu unitate sau una dintre opțiunile pe care le definiți",
+  "settingsMeasurableValueKindLabel": "Se înregistrează ca",
+  "settingsMeasurableValueKindNumber": "Număr",
   "settingsOnboardingActionSubtitle": "Redeschideți fluxul de bun venit — conectați-vă creierul AI și creați o sarcină",
   "settingsOnboardingMetricsSubtitle": "Pâlnie FTUE — instalare, activare, retenție (depanare)",
   "settingsOnboardingMetricsTitle": "Valori de onboarding",

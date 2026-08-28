@@ -12804,6 +12804,12 @@ abstract class AppLocalizations {
   /// **'today: {value}'**
   String habitSignalToday(String value);
 
+  /// No description provided for @habitSignalTodayLogged.
+  ///
+  /// In en, this message translates to:
+  /// **'today: logged'**
+  String get habitSignalTodayLogged;
+
   /// No description provided for @habitSignalTodayNone.
   ///
   /// In en, this message translates to:
@@ -15637,6 +15643,12 @@ abstract class AppLocalizations {
   /// **'Top KPIs'**
   String get matrixStatsTopKpis;
 
+  /// No description provided for @measurableChoiceNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed choice'**
+  String get measurableChoiceNotFound;
+
   /// No description provided for @measurableDeleteConfirm.
   ///
   /// In en, this message translates to:
@@ -15654,6 +15666,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Measurable not found'**
   String get measurableNotFound;
+
+  /// No description provided for @measurementChoicePrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick one'**
+  String get measurementChoicePrompt;
+
+  /// No description provided for @measurementChoiceSelectSemantic.
+  ///
+  /// In en, this message translates to:
+  /// **'Select {title}'**
+  String measurementChoiceSelectSemantic(String title);
 
   /// No description provided for @measurementCommentHint.
   ///
@@ -20185,6 +20209,72 @@ abstract class AppLocalizations {
   /// **'Default aggregation type'**
   String get settingsMeasurableAggregationLabel;
 
+  /// No description provided for @settingsMeasurableChoiceAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add choice'**
+  String get settingsMeasurableChoiceAdd;
+
+  /// No description provided for @settingsMeasurableChoiceArchive.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive {title}'**
+  String settingsMeasurableChoiceArchive(String title);
+
+  /// No description provided for @settingsMeasurableChoiceNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Choice name'**
+  String get settingsMeasurableChoiceNameHint;
+
+  /// No description provided for @settingsMeasurableChoiceNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Give this choice a name'**
+  String get settingsMeasurableChoiceNameRequired;
+
+  /// No description provided for @settingsMeasurableChoiceReorder.
+  ///
+  /// In en, this message translates to:
+  /// **'Reorder {title}'**
+  String settingsMeasurableChoiceReorder(String title);
+
+  /// No description provided for @settingsMeasurableChoiceRestore.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore {title}'**
+  String settingsMeasurableChoiceRestore(String title);
+
+  /// No description provided for @settingsMeasurableChoicesArchivedDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Hidden when recording; entries that used them still show their name.'**
+  String get settingsMeasurableChoicesArchivedDescription;
+
+  /// No description provided for @settingsMeasurableChoicesArchivedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived choices'**
+  String get settingsMeasurableChoicesArchivedTitle;
+
+  /// No description provided for @settingsMeasurableChoicesDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording picks one of these. Rename or reorder them any time — entries you already recorded keep their choice.'**
+  String get settingsMeasurableChoicesDescription;
+
+  /// No description provided for @settingsMeasurableChoicesRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Add at least one choice'**
+  String get settingsMeasurableChoicesRequired;
+
+  /// No description provided for @settingsMeasurableChoicesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choices'**
+  String get settingsMeasurableChoicesTitle;
+
   /// No description provided for @settingsMeasurableDeleteTooltip.
   ///
   /// In en, this message translates to:
@@ -20236,7 +20326,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsMeasurablesEmptyStateHint.
   ///
   /// In en, this message translates to:
-  /// **'Measurables are numbers you track over time — weight, water, steps.'**
+  /// **'Measurables are values you track over time — weight, water, steps, or a choice like how rested you feel.'**
   String get settingsMeasurablesEmptyStateHint;
 
   /// No description provided for @settingsMeasurablesErrorLoading.
@@ -20274,6 +20364,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unit abbreviation (optional)'**
   String get settingsMeasurableUnitLabel;
+
+  /// No description provided for @settingsMeasurableValueKindChoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Choice'**
+  String get settingsMeasurableValueKindChoice;
+
+  /// No description provided for @settingsMeasurableValueKindHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'A number with a unit, or one of the choices you define'**
+  String get settingsMeasurableValueKindHelper;
+
+  /// No description provided for @settingsMeasurableValueKindLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Recorded as'**
+  String get settingsMeasurableValueKindLabel;
+
+  /// No description provided for @settingsMeasurableValueKindNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Number'**
+  String get settingsMeasurableValueKindNumber;
 
   /// No description provided for @settingsOnboardingActionSubtitle.
   ///

@@ -3,11 +3,13 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/ui/widgets/helpers.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 
 /// Detail-view summary for a measurement entry: the entry's note text (if any)
-/// plus the formatted `name: value unit` line. Renders nothing when the
-/// measurement's data type is no longer in the cache.
+/// plus the formatted `name: value unit` line — `name: choice` for a choice
+/// recording. Renders nothing when the measurement's data type is no longer
+/// in the cache.
 class MeasurementSummary extends StatelessWidget {
   const MeasurementSummary(
     this.measurementEntry, {
@@ -31,7 +33,11 @@ class MeasurementSummary extends StatelessWidget {
     // The entry's note is rendered once by the card's editor above this
     // summary, so the summary shows only the value line (no duplicate note).
     return EntryTextWidget(
-      entryTextForMeasurable(data, dataType),
+      entryTextForMeasurable(
+        data,
+        dataType,
+        removedChoiceLabel: context.messages.measurableChoiceNotFound,
+      ),
       padding: EdgeInsets.zero,
     );
   }

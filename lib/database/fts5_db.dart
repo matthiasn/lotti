@@ -4,6 +4,7 @@ import 'package:drift/drift.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/common.dart';
 import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
+import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 
@@ -60,8 +61,12 @@ class Fts5Db extends _$Fts5Db {
         final dataType = getIt<EntitiesCacheService>().getDataTypeById(
           m.data.dataTypeId,
         );
-        final value = m.data.value;
-        return '${dataType?.displayName} $value ${dataType?.unitName}';
+        // A choice recording indexes the choice's title, so searching for
+        // "clear" finds the hydration entry; a number keeps value and unit.
+        final value = dataType == null
+            ? '${m.data.value}'
+            : measurementValueLabel(m.data, dataType);
+        return '${dataType?.displayName} $value';
       },
       survey: (survey) {
         final scores = survey.data.calculatedScores.entries.map(

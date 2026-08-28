@@ -286,6 +286,275 @@ as DateTime?,
 
 }
 
+
+/// @nodoc
+mixin _$MeasurableChoice {
+
+ String get id; String get title; bool? get archived;
+/// Create a copy of MeasurableChoice
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$MeasurableChoiceCopyWith<MeasurableChoice> get copyWith => _$MeasurableChoiceCopyWithImpl<MeasurableChoice>(this as MeasurableChoice, _$identity);
+
+  /// Serializes this MeasurableChoice to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MeasurableChoice&&(identical(other.id, id) || other.id == id)&&(identical(other.title, title) || other.title == title)&&(identical(other.archived, archived) || other.archived == archived));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,title,archived);
+
+@override
+String toString() {
+  return 'MeasurableChoice(id: $id, title: $title, archived: $archived)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $MeasurableChoiceCopyWith<$Res>  {
+  factory $MeasurableChoiceCopyWith(MeasurableChoice value, $Res Function(MeasurableChoice) _then) = _$MeasurableChoiceCopyWithImpl;
+@useResult
+$Res call({
+ String id, String title, bool? archived
+});
+
+
+
+
+}
+/// @nodoc
+class _$MeasurableChoiceCopyWithImpl<$Res>
+    implements $MeasurableChoiceCopyWith<$Res> {
+  _$MeasurableChoiceCopyWithImpl(this._self, this._then);
+
+  final MeasurableChoice _self;
+  final $Res Function(MeasurableChoice) _then;
+
+/// Create a copy of MeasurableChoice
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? title = null,Object? archived = freezed,}) {
+  return _then(_self.copyWith(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
+as String,archived: freezed == archived ? _self.archived : archived // ignore: cast_nullable_to_non_nullable
+as bool?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [MeasurableChoice].
+extension MeasurableChoicePatterns on MeasurableChoice {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _MeasurableChoice value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _MeasurableChoice() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _MeasurableChoice value)  $default,){
+final _that = this;
+switch (_that) {
+case _MeasurableChoice():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _MeasurableChoice value)?  $default,){
+final _that = this;
+switch (_that) {
+case _MeasurableChoice() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String title,  bool? archived)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _MeasurableChoice() when $default != null:
+return $default(_that.id,_that.title,_that.archived);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String title,  bool? archived)  $default,) {final _that = this;
+switch (_that) {
+case _MeasurableChoice():
+return $default(_that.id,_that.title,_that.archived);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String title,  bool? archived)?  $default,) {final _that = this;
+switch (_that) {
+case _MeasurableChoice() when $default != null:
+return $default(_that.id,_that.title,_that.archived);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _MeasurableChoice implements MeasurableChoice {
+  const _MeasurableChoice({required this.id, required this.title, this.archived});
+  factory _MeasurableChoice.fromJson(Map<String, dynamic> json) => _$MeasurableChoiceFromJson(json);
+
+@override final  String id;
+@override final  String title;
+@override final  bool? archived;
+
+/// Create a copy of MeasurableChoice
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$MeasurableChoiceCopyWith<_MeasurableChoice> get copyWith => __$MeasurableChoiceCopyWithImpl<_MeasurableChoice>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$MeasurableChoiceToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MeasurableChoice&&(identical(other.id, id) || other.id == id)&&(identical(other.title, title) || other.title == title)&&(identical(other.archived, archived) || other.archived == archived));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,title,archived);
+
+@override
+String toString() {
+  return 'MeasurableChoice(id: $id, title: $title, archived: $archived)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$MeasurableChoiceCopyWith<$Res> implements $MeasurableChoiceCopyWith<$Res> {
+  factory _$MeasurableChoiceCopyWith(_MeasurableChoice value, $Res Function(_MeasurableChoice) _then) = __$MeasurableChoiceCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, String title, bool? archived
+});
+
+
+
+
+}
+/// @nodoc
+class __$MeasurableChoiceCopyWithImpl<$Res>
+    implements _$MeasurableChoiceCopyWith<$Res> {
+  __$MeasurableChoiceCopyWithImpl(this._self, this._then);
+
+  final _MeasurableChoice _self;
+  final $Res Function(_MeasurableChoice) _then;
+
+/// Create a copy of MeasurableChoice
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? title = null,Object? archived = freezed,}) {
+  return _then(_MeasurableChoice(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
+as String,archived: freezed == archived ? _self.archived : archived // ignore: cast_nullable_to_non_nullable
+as bool?,
+  ));
+}
+
+
+}
+
 HabitSchedule _$HabitScheduleFromJson(
   Map<String, dynamic> json
 ) {
@@ -1753,10 +2022,10 @@ return dashboard(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String displayName,  String description,  String unitName,  int version,  VectorClock? vectorClock,  DateTime? deletedAt,  bool? private,  bool? favorite,  String? categoryId,  AggregationType? aggregationType)?  measurableDataType,TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  VectorClock? vectorClock,  bool private,  bool active,  bool? favorite,  String? color,  String? categoryId,  DateTime? deletedAt,  String? defaultLanguageCode, @CategoryIconConverter()  CategoryIcon? icon,  List<String>? speechDictionary,  List<ChecklistCorrectionExample>? correctionExamples,  String? defaultProfileId,  bool? automaticInferenceEnabled,  String? defaultTemplateId,  bool? automaticAgentWakesEnabled,  String? defaultEventTemplateId,  bool? isAvailableForDayPlan)?  categoryDefinition,TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  String color,  VectorClock? vectorClock,  String? description,  int? sortOrder,  List<String>? applicableCategoryIds,  DateTime? deletedAt,  bool? private)?  labelDefinition,TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  String description,  HabitSchedule habitSchedule,  VectorClock? vectorClock,  bool active,  bool private,  AutoCompleteRule? autoCompleteRule,  String? version,  DateTime? activeFrom,  DateTime? activeUntil,  DateTime? deletedAt, @Deprecated('Tags concept removed — kept for JSON backward compatibility')  String? defaultStoryId,  String? categoryId,  bool? priority,  bool autoCompleteNotify)?  habit,TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  DateTime lastReviewed,  String name,  String description,  List<DashboardItem> items,  String version,  VectorClock? vectorClock,  bool active,  bool private,  DateTime? reviewAt,  int days,  DateTime? deletedAt,  String? categoryId)?  dashboard,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String displayName,  String description,  String unitName,  int version,  VectorClock? vectorClock,  DateTime? deletedAt,  bool? private,  bool? favorite,  String? categoryId,  AggregationType? aggregationType, @JsonKey(unknownEnumValue: MeasurableValueKind.number)  MeasurableValueKind? valueKind,  List<MeasurableChoice>? choices)?  measurableDataType,TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  VectorClock? vectorClock,  bool private,  bool active,  bool? favorite,  String? color,  String? categoryId,  DateTime? deletedAt,  String? defaultLanguageCode, @CategoryIconConverter()  CategoryIcon? icon,  List<String>? speechDictionary,  List<ChecklistCorrectionExample>? correctionExamples,  String? defaultProfileId,  bool? automaticInferenceEnabled,  String? defaultTemplateId,  bool? automaticAgentWakesEnabled,  String? defaultEventTemplateId,  bool? isAvailableForDayPlan)?  categoryDefinition,TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  String color,  VectorClock? vectorClock,  String? description,  int? sortOrder,  List<String>? applicableCategoryIds,  DateTime? deletedAt,  bool? private)?  labelDefinition,TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  String description,  HabitSchedule habitSchedule,  VectorClock? vectorClock,  bool active,  bool private,  AutoCompleteRule? autoCompleteRule,  String? version,  DateTime? activeFrom,  DateTime? activeUntil,  DateTime? deletedAt, @Deprecated('Tags concept removed — kept for JSON backward compatibility')  String? defaultStoryId,  String? categoryId,  bool? priority,  bool autoCompleteNotify)?  habit,TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  DateTime lastReviewed,  String name,  String description,  List<DashboardItem> items,  String version,  VectorClock? vectorClock,  bool active,  bool private,  DateTime? reviewAt,  int days,  DateTime? deletedAt,  String? categoryId)?  dashboard,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case MeasurableDataType() when measurableDataType != null:
-return measurableDataType(_that.id,_that.createdAt,_that.updatedAt,_that.displayName,_that.description,_that.unitName,_that.version,_that.vectorClock,_that.deletedAt,_that.private,_that.favorite,_that.categoryId,_that.aggregationType);case CategoryDefinition() when categoryDefinition != null:
+return measurableDataType(_that.id,_that.createdAt,_that.updatedAt,_that.displayName,_that.description,_that.unitName,_that.version,_that.vectorClock,_that.deletedAt,_that.private,_that.favorite,_that.categoryId,_that.aggregationType,_that.valueKind,_that.choices);case CategoryDefinition() when categoryDefinition != null:
 return categoryDefinition(_that.id,_that.createdAt,_that.updatedAt,_that.name,_that.vectorClock,_that.private,_that.active,_that.favorite,_that.color,_that.categoryId,_that.deletedAt,_that.defaultLanguageCode,_that.icon,_that.speechDictionary,_that.correctionExamples,_that.defaultProfileId,_that.automaticInferenceEnabled,_that.defaultTemplateId,_that.automaticAgentWakesEnabled,_that.defaultEventTemplateId,_that.isAvailableForDayPlan);case LabelDefinition() when labelDefinition != null:
 return labelDefinition(_that.id,_that.createdAt,_that.updatedAt,_that.name,_that.color,_that.vectorClock,_that.description,_that.sortOrder,_that.applicableCategoryIds,_that.deletedAt,_that.private);case HabitDefinition() when habit != null:
 return habit(_that.id,_that.createdAt,_that.updatedAt,_that.name,_that.description,_that.habitSchedule,_that.vectorClock,_that.active,_that.private,_that.autoCompleteRule,_that.version,_that.activeFrom,_that.activeUntil,_that.deletedAt,_that.defaultStoryId,_that.categoryId,_that.priority,_that.autoCompleteNotify);case DashboardDefinition() when dashboard != null:
@@ -1778,10 +2047,10 @@ return dashboard(_that.id,_that.createdAt,_that.updatedAt,_that.lastReviewed,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String displayName,  String description,  String unitName,  int version,  VectorClock? vectorClock,  DateTime? deletedAt,  bool? private,  bool? favorite,  String? categoryId,  AggregationType? aggregationType)  measurableDataType,required TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  VectorClock? vectorClock,  bool private,  bool active,  bool? favorite,  String? color,  String? categoryId,  DateTime? deletedAt,  String? defaultLanguageCode, @CategoryIconConverter()  CategoryIcon? icon,  List<String>? speechDictionary,  List<ChecklistCorrectionExample>? correctionExamples,  String? defaultProfileId,  bool? automaticInferenceEnabled,  String? defaultTemplateId,  bool? automaticAgentWakesEnabled,  String? defaultEventTemplateId,  bool? isAvailableForDayPlan)  categoryDefinition,required TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  String color,  VectorClock? vectorClock,  String? description,  int? sortOrder,  List<String>? applicableCategoryIds,  DateTime? deletedAt,  bool? private)  labelDefinition,required TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  String description,  HabitSchedule habitSchedule,  VectorClock? vectorClock,  bool active,  bool private,  AutoCompleteRule? autoCompleteRule,  String? version,  DateTime? activeFrom,  DateTime? activeUntil,  DateTime? deletedAt, @Deprecated('Tags concept removed — kept for JSON backward compatibility')  String? defaultStoryId,  String? categoryId,  bool? priority,  bool autoCompleteNotify)  habit,required TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  DateTime lastReviewed,  String name,  String description,  List<DashboardItem> items,  String version,  VectorClock? vectorClock,  bool active,  bool private,  DateTime? reviewAt,  int days,  DateTime? deletedAt,  String? categoryId)  dashboard,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String displayName,  String description,  String unitName,  int version,  VectorClock? vectorClock,  DateTime? deletedAt,  bool? private,  bool? favorite,  String? categoryId,  AggregationType? aggregationType, @JsonKey(unknownEnumValue: MeasurableValueKind.number)  MeasurableValueKind? valueKind,  List<MeasurableChoice>? choices)  measurableDataType,required TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  VectorClock? vectorClock,  bool private,  bool active,  bool? favorite,  String? color,  String? categoryId,  DateTime? deletedAt,  String? defaultLanguageCode, @CategoryIconConverter()  CategoryIcon? icon,  List<String>? speechDictionary,  List<ChecklistCorrectionExample>? correctionExamples,  String? defaultProfileId,  bool? automaticInferenceEnabled,  String? defaultTemplateId,  bool? automaticAgentWakesEnabled,  String? defaultEventTemplateId,  bool? isAvailableForDayPlan)  categoryDefinition,required TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  String color,  VectorClock? vectorClock,  String? description,  int? sortOrder,  List<String>? applicableCategoryIds,  DateTime? deletedAt,  bool? private)  labelDefinition,required TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  String description,  HabitSchedule habitSchedule,  VectorClock? vectorClock,  bool active,  bool private,  AutoCompleteRule? autoCompleteRule,  String? version,  DateTime? activeFrom,  DateTime? activeUntil,  DateTime? deletedAt, @Deprecated('Tags concept removed — kept for JSON backward compatibility')  String? defaultStoryId,  String? categoryId,  bool? priority,  bool autoCompleteNotify)  habit,required TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  DateTime lastReviewed,  String name,  String description,  List<DashboardItem> items,  String version,  VectorClock? vectorClock,  bool active,  bool private,  DateTime? reviewAt,  int days,  DateTime? deletedAt,  String? categoryId)  dashboard,}) {final _that = this;
 switch (_that) {
 case MeasurableDataType():
-return measurableDataType(_that.id,_that.createdAt,_that.updatedAt,_that.displayName,_that.description,_that.unitName,_that.version,_that.vectorClock,_that.deletedAt,_that.private,_that.favorite,_that.categoryId,_that.aggregationType);case CategoryDefinition():
+return measurableDataType(_that.id,_that.createdAt,_that.updatedAt,_that.displayName,_that.description,_that.unitName,_that.version,_that.vectorClock,_that.deletedAt,_that.private,_that.favorite,_that.categoryId,_that.aggregationType,_that.valueKind,_that.choices);case CategoryDefinition():
 return categoryDefinition(_that.id,_that.createdAt,_that.updatedAt,_that.name,_that.vectorClock,_that.private,_that.active,_that.favorite,_that.color,_that.categoryId,_that.deletedAt,_that.defaultLanguageCode,_that.icon,_that.speechDictionary,_that.correctionExamples,_that.defaultProfileId,_that.automaticInferenceEnabled,_that.defaultTemplateId,_that.automaticAgentWakesEnabled,_that.defaultEventTemplateId,_that.isAvailableForDayPlan);case LabelDefinition():
 return labelDefinition(_that.id,_that.createdAt,_that.updatedAt,_that.name,_that.color,_that.vectorClock,_that.description,_that.sortOrder,_that.applicableCategoryIds,_that.deletedAt,_that.private);case HabitDefinition():
 return habit(_that.id,_that.createdAt,_that.updatedAt,_that.name,_that.description,_that.habitSchedule,_that.vectorClock,_that.active,_that.private,_that.autoCompleteRule,_that.version,_that.activeFrom,_that.activeUntil,_that.deletedAt,_that.defaultStoryId,_that.categoryId,_that.priority,_that.autoCompleteNotify);case DashboardDefinition():
@@ -1799,10 +2068,10 @@ return dashboard(_that.id,_that.createdAt,_that.updatedAt,_that.lastReviewed,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  DateTime createdAt,  DateTime updatedAt,  String displayName,  String description,  String unitName,  int version,  VectorClock? vectorClock,  DateTime? deletedAt,  bool? private,  bool? favorite,  String? categoryId,  AggregationType? aggregationType)?  measurableDataType,TResult? Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  VectorClock? vectorClock,  bool private,  bool active,  bool? favorite,  String? color,  String? categoryId,  DateTime? deletedAt,  String? defaultLanguageCode, @CategoryIconConverter()  CategoryIcon? icon,  List<String>? speechDictionary,  List<ChecklistCorrectionExample>? correctionExamples,  String? defaultProfileId,  bool? automaticInferenceEnabled,  String? defaultTemplateId,  bool? automaticAgentWakesEnabled,  String? defaultEventTemplateId,  bool? isAvailableForDayPlan)?  categoryDefinition,TResult? Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  String color,  VectorClock? vectorClock,  String? description,  int? sortOrder,  List<String>? applicableCategoryIds,  DateTime? deletedAt,  bool? private)?  labelDefinition,TResult? Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  String description,  HabitSchedule habitSchedule,  VectorClock? vectorClock,  bool active,  bool private,  AutoCompleteRule? autoCompleteRule,  String? version,  DateTime? activeFrom,  DateTime? activeUntil,  DateTime? deletedAt, @Deprecated('Tags concept removed — kept for JSON backward compatibility')  String? defaultStoryId,  String? categoryId,  bool? priority,  bool autoCompleteNotify)?  habit,TResult? Function( String id,  DateTime createdAt,  DateTime updatedAt,  DateTime lastReviewed,  String name,  String description,  List<DashboardItem> items,  String version,  VectorClock? vectorClock,  bool active,  bool private,  DateTime? reviewAt,  int days,  DateTime? deletedAt,  String? categoryId)?  dashboard,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  DateTime createdAt,  DateTime updatedAt,  String displayName,  String description,  String unitName,  int version,  VectorClock? vectorClock,  DateTime? deletedAt,  bool? private,  bool? favorite,  String? categoryId,  AggregationType? aggregationType, @JsonKey(unknownEnumValue: MeasurableValueKind.number)  MeasurableValueKind? valueKind,  List<MeasurableChoice>? choices)?  measurableDataType,TResult? Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  VectorClock? vectorClock,  bool private,  bool active,  bool? favorite,  String? color,  String? categoryId,  DateTime? deletedAt,  String? defaultLanguageCode, @CategoryIconConverter()  CategoryIcon? icon,  List<String>? speechDictionary,  List<ChecklistCorrectionExample>? correctionExamples,  String? defaultProfileId,  bool? automaticInferenceEnabled,  String? defaultTemplateId,  bool? automaticAgentWakesEnabled,  String? defaultEventTemplateId,  bool? isAvailableForDayPlan)?  categoryDefinition,TResult? Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  String color,  VectorClock? vectorClock,  String? description,  int? sortOrder,  List<String>? applicableCategoryIds,  DateTime? deletedAt,  bool? private)?  labelDefinition,TResult? Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  String description,  HabitSchedule habitSchedule,  VectorClock? vectorClock,  bool active,  bool private,  AutoCompleteRule? autoCompleteRule,  String? version,  DateTime? activeFrom,  DateTime? activeUntil,  DateTime? deletedAt, @Deprecated('Tags concept removed — kept for JSON backward compatibility')  String? defaultStoryId,  String? categoryId,  bool? priority,  bool autoCompleteNotify)?  habit,TResult? Function( String id,  DateTime createdAt,  DateTime updatedAt,  DateTime lastReviewed,  String name,  String description,  List<DashboardItem> items,  String version,  VectorClock? vectorClock,  bool active,  bool private,  DateTime? reviewAt,  int days,  DateTime? deletedAt,  String? categoryId)?  dashboard,}) {final _that = this;
 switch (_that) {
 case MeasurableDataType() when measurableDataType != null:
-return measurableDataType(_that.id,_that.createdAt,_that.updatedAt,_that.displayName,_that.description,_that.unitName,_that.version,_that.vectorClock,_that.deletedAt,_that.private,_that.favorite,_that.categoryId,_that.aggregationType);case CategoryDefinition() when categoryDefinition != null:
+return measurableDataType(_that.id,_that.createdAt,_that.updatedAt,_that.displayName,_that.description,_that.unitName,_that.version,_that.vectorClock,_that.deletedAt,_that.private,_that.favorite,_that.categoryId,_that.aggregationType,_that.valueKind,_that.choices);case CategoryDefinition() when categoryDefinition != null:
 return categoryDefinition(_that.id,_that.createdAt,_that.updatedAt,_that.name,_that.vectorClock,_that.private,_that.active,_that.favorite,_that.color,_that.categoryId,_that.deletedAt,_that.defaultLanguageCode,_that.icon,_that.speechDictionary,_that.correctionExamples,_that.defaultProfileId,_that.automaticInferenceEnabled,_that.defaultTemplateId,_that.automaticAgentWakesEnabled,_that.defaultEventTemplateId,_that.isAvailableForDayPlan);case LabelDefinition() when labelDefinition != null:
 return labelDefinition(_that.id,_that.createdAt,_that.updatedAt,_that.name,_that.color,_that.vectorClock,_that.description,_that.sortOrder,_that.applicableCategoryIds,_that.deletedAt,_that.private);case HabitDefinition() when habit != null:
 return habit(_that.id,_that.createdAt,_that.updatedAt,_that.name,_that.description,_that.habitSchedule,_that.vectorClock,_that.active,_that.private,_that.autoCompleteRule,_that.version,_that.activeFrom,_that.activeUntil,_that.deletedAt,_that.defaultStoryId,_that.categoryId,_that.priority,_that.autoCompleteNotify);case DashboardDefinition() when dashboard != null:
@@ -1818,7 +2087,7 @@ return dashboard(_that.id,_that.createdAt,_that.updatedAt,_that.lastReviewed,_th
 @JsonSerializable()
 
 class MeasurableDataType implements EntityDefinition {
-  const MeasurableDataType({required this.id, required this.createdAt, required this.updatedAt, required this.displayName, required this.description, required this.unitName, required this.version, required this.vectorClock, this.deletedAt, this.private, this.favorite, this.categoryId, this.aggregationType, final  String? $type}): $type = $type ?? 'measurableDataType';
+  const MeasurableDataType({required this.id, required this.createdAt, required this.updatedAt, required this.displayName, required this.description, required this.unitName, required this.version, required this.vectorClock, this.deletedAt, this.private, this.favorite, this.categoryId, this.aggregationType, @JsonKey(unknownEnumValue: MeasurableValueKind.number) this.valueKind, final  List<MeasurableChoice>? choices, final  String? $type}): _choices = choices,$type = $type ?? 'measurableDataType';
   factory MeasurableDataType.fromJson(Map<String, dynamic> json) => _$MeasurableDataTypeFromJson(json);
 
 @override final  String id;
@@ -1834,6 +2103,24 @@ class MeasurableDataType implements EntityDefinition {
  final  bool? favorite;
  final  String? categoryId;
  final  AggregationType? aggregationType;
+/// [MeasurableValueKind.number] when absent. A kind this build does not
+/// know reads as `number` rather than failing the whole definition.
+@JsonKey(unknownEnumValue: MeasurableValueKind.number) final  MeasurableValueKind? valueKind;
+/// The selectable values of a [MeasurableValueKind.choice] measurable, in
+/// the order the user arranged them. Kept (harmlessly) when the kind is
+/// switched back to `number`, so a round trip loses nothing.
+ final  List<MeasurableChoice>? _choices;
+/// The selectable values of a [MeasurableValueKind.choice] measurable, in
+/// the order the user arranged them. Kept (harmlessly) when the kind is
+/// switched back to `number`, so a round trip loses nothing.
+ List<MeasurableChoice>? get choices {
+  final value = _choices;
+  if (value == null) return null;
+  if (_choices is EqualUnmodifiableListView) return _choices;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(value);
+}
+
 
 @JsonKey(name: 'runtimeType')
 final String $type;
@@ -1852,16 +2139,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is MeasurableDataType&&(identical(other.id, id) || other.id == id)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.description, description) || other.description == description)&&(identical(other.unitName, unitName) || other.unitName == unitName)&&(identical(other.version, version) || other.version == version)&&(identical(other.vectorClock, vectorClock) || other.vectorClock == vectorClock)&&(identical(other.deletedAt, deletedAt) || other.deletedAt == deletedAt)&&(identical(other.private, private) || other.private == private)&&(identical(other.favorite, favorite) || other.favorite == favorite)&&(identical(other.categoryId, categoryId) || other.categoryId == categoryId)&&(identical(other.aggregationType, aggregationType) || other.aggregationType == aggregationType));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MeasurableDataType&&(identical(other.id, id) || other.id == id)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.description, description) || other.description == description)&&(identical(other.unitName, unitName) || other.unitName == unitName)&&(identical(other.version, version) || other.version == version)&&(identical(other.vectorClock, vectorClock) || other.vectorClock == vectorClock)&&(identical(other.deletedAt, deletedAt) || other.deletedAt == deletedAt)&&(identical(other.private, private) || other.private == private)&&(identical(other.favorite, favorite) || other.favorite == favorite)&&(identical(other.categoryId, categoryId) || other.categoryId == categoryId)&&(identical(other.aggregationType, aggregationType) || other.aggregationType == aggregationType)&&(identical(other.valueKind, valueKind) || other.valueKind == valueKind)&&const DeepCollectionEquality().equals(other._choices, _choices));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,createdAt,updatedAt,displayName,description,unitName,version,vectorClock,deletedAt,private,favorite,categoryId,aggregationType);
+int get hashCode => Object.hash(runtimeType,id,createdAt,updatedAt,displayName,description,unitName,version,vectorClock,deletedAt,private,favorite,categoryId,aggregationType,valueKind,const DeepCollectionEquality().hash(_choices));
 
 @override
 String toString() {
-  return 'EntityDefinition.measurableDataType(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, displayName: $displayName, description: $description, unitName: $unitName, version: $version, vectorClock: $vectorClock, deletedAt: $deletedAt, private: $private, favorite: $favorite, categoryId: $categoryId, aggregationType: $aggregationType)';
+  return 'EntityDefinition.measurableDataType(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, displayName: $displayName, description: $description, unitName: $unitName, version: $version, vectorClock: $vectorClock, deletedAt: $deletedAt, private: $private, favorite: $favorite, categoryId: $categoryId, aggregationType: $aggregationType, valueKind: $valueKind, choices: $choices)';
 }
 
 
@@ -1872,7 +2159,7 @@ abstract mixin class $MeasurableDataTypeCopyWith<$Res> implements $EntityDefinit
   factory $MeasurableDataTypeCopyWith(MeasurableDataType value, $Res Function(MeasurableDataType) _then) = _$MeasurableDataTypeCopyWithImpl;
 @override @useResult
 $Res call({
- String id, DateTime createdAt, DateTime updatedAt, String displayName, String description, String unitName, int version, VectorClock? vectorClock, DateTime? deletedAt, bool? private, bool? favorite, String? categoryId, AggregationType? aggregationType
+ String id, DateTime createdAt, DateTime updatedAt, String displayName, String description, String unitName, int version, VectorClock? vectorClock, DateTime? deletedAt, bool? private, bool? favorite, String? categoryId, AggregationType? aggregationType,@JsonKey(unknownEnumValue: MeasurableValueKind.number) MeasurableValueKind? valueKind, List<MeasurableChoice>? choices
 });
 
 
@@ -1889,7 +2176,7 @@ class _$MeasurableDataTypeCopyWithImpl<$Res>
 
 /// Create a copy of EntityDefinition
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? createdAt = null,Object? updatedAt = null,Object? displayName = null,Object? description = null,Object? unitName = null,Object? version = null,Object? vectorClock = freezed,Object? deletedAt = freezed,Object? private = freezed,Object? favorite = freezed,Object? categoryId = freezed,Object? aggregationType = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? createdAt = null,Object? updatedAt = null,Object? displayName = null,Object? description = null,Object? unitName = null,Object? version = null,Object? vectorClock = freezed,Object? deletedAt = freezed,Object? private = freezed,Object? favorite = freezed,Object? categoryId = freezed,Object? aggregationType = freezed,Object? valueKind = freezed,Object? choices = freezed,}) {
   return _then(MeasurableDataType(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
@@ -1904,7 +2191,9 @@ as DateTime?,private: freezed == private ? _self.private : private // ignore: ca
 as bool?,favorite: freezed == favorite ? _self.favorite : favorite // ignore: cast_nullable_to_non_nullable
 as bool?,categoryId: freezed == categoryId ? _self.categoryId : categoryId // ignore: cast_nullable_to_non_nullable
 as String?,aggregationType: freezed == aggregationType ? _self.aggregationType : aggregationType // ignore: cast_nullable_to_non_nullable
-as AggregationType?,
+as AggregationType?,valueKind: freezed == valueKind ? _self.valueKind : valueKind // ignore: cast_nullable_to_non_nullable
+as MeasurableValueKind?,choices: freezed == choices ? _self._choices : choices // ignore: cast_nullable_to_non_nullable
+as List<MeasurableChoice>?,
   ));
 }
 
@@ -2416,7 +2705,11 @@ as String?,
 /// @nodoc
 mixin _$MeasurementData {
 
- DateTime get dateFrom; DateTime get dateTo; num get value; String get dataTypeId;
+ DateTime get dateFrom; DateTime get dateTo; num get value; String get dataTypeId;/// The [MeasurableChoice.id] recorded for a choice measurable. Set only
+/// for [MeasurableValueKind.choice]; [value] is then `1` — one occurrence
+/// — so every consumer that sums measurements per day counts recordings
+/// instead of breaking on a missing number.
+ String? get choiceId;
 /// Create a copy of MeasurementData
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -2429,16 +2722,16 @@ $MeasurementDataCopyWith<MeasurementData> get copyWith => _$MeasurementDataCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is MeasurementData&&(identical(other.dateFrom, dateFrom) || other.dateFrom == dateFrom)&&(identical(other.dateTo, dateTo) || other.dateTo == dateTo)&&(identical(other.value, value) || other.value == value)&&(identical(other.dataTypeId, dataTypeId) || other.dataTypeId == dataTypeId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MeasurementData&&(identical(other.dateFrom, dateFrom) || other.dateFrom == dateFrom)&&(identical(other.dateTo, dateTo) || other.dateTo == dateTo)&&(identical(other.value, value) || other.value == value)&&(identical(other.dataTypeId, dataTypeId) || other.dataTypeId == dataTypeId)&&(identical(other.choiceId, choiceId) || other.choiceId == choiceId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,dateFrom,dateTo,value,dataTypeId);
+int get hashCode => Object.hash(runtimeType,dateFrom,dateTo,value,dataTypeId,choiceId);
 
 @override
 String toString() {
-  return 'MeasurementData(dateFrom: $dateFrom, dateTo: $dateTo, value: $value, dataTypeId: $dataTypeId)';
+  return 'MeasurementData(dateFrom: $dateFrom, dateTo: $dateTo, value: $value, dataTypeId: $dataTypeId, choiceId: $choiceId)';
 }
 
 
@@ -2449,7 +2742,7 @@ abstract mixin class $MeasurementDataCopyWith<$Res>  {
   factory $MeasurementDataCopyWith(MeasurementData value, $Res Function(MeasurementData) _then) = _$MeasurementDataCopyWithImpl;
 @useResult
 $Res call({
- DateTime dateFrom, DateTime dateTo, num value, String dataTypeId
+ DateTime dateFrom, DateTime dateTo, num value, String dataTypeId, String? choiceId
 });
 
 
@@ -2466,13 +2759,14 @@ class _$MeasurementDataCopyWithImpl<$Res>
 
 /// Create a copy of MeasurementData
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? dateFrom = null,Object? dateTo = null,Object? value = null,Object? dataTypeId = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? dateFrom = null,Object? dateTo = null,Object? value = null,Object? dataTypeId = null,Object? choiceId = freezed,}) {
   return _then(_self.copyWith(
 dateFrom: null == dateFrom ? _self.dateFrom : dateFrom // ignore: cast_nullable_to_non_nullable
 as DateTime,dateTo: null == dateTo ? _self.dateTo : dateTo // ignore: cast_nullable_to_non_nullable
 as DateTime,value: null == value ? _self.value : value // ignore: cast_nullable_to_non_nullable
 as num,dataTypeId: null == dataTypeId ? _self.dataTypeId : dataTypeId // ignore: cast_nullable_to_non_nullable
-as String,
+as String,choiceId: freezed == choiceId ? _self.choiceId : choiceId // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 
@@ -2557,10 +2851,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( DateTime dateFrom,  DateTime dateTo,  num value,  String dataTypeId)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( DateTime dateFrom,  DateTime dateTo,  num value,  String dataTypeId,  String? choiceId)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _MeasurementData() when $default != null:
-return $default(_that.dateFrom,_that.dateTo,_that.value,_that.dataTypeId);case _:
+return $default(_that.dateFrom,_that.dateTo,_that.value,_that.dataTypeId,_that.choiceId);case _:
   return orElse();
 
 }
@@ -2578,10 +2872,10 @@ return $default(_that.dateFrom,_that.dateTo,_that.value,_that.dataTypeId);case _
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( DateTime dateFrom,  DateTime dateTo,  num value,  String dataTypeId)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( DateTime dateFrom,  DateTime dateTo,  num value,  String dataTypeId,  String? choiceId)  $default,) {final _that = this;
 switch (_that) {
 case _MeasurementData():
-return $default(_that.dateFrom,_that.dateTo,_that.value,_that.dataTypeId);case _:
+return $default(_that.dateFrom,_that.dateTo,_that.value,_that.dataTypeId,_that.choiceId);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -2598,10 +2892,10 @@ return $default(_that.dateFrom,_that.dateTo,_that.value,_that.dataTypeId);case _
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( DateTime dateFrom,  DateTime dateTo,  num value,  String dataTypeId)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( DateTime dateFrom,  DateTime dateTo,  num value,  String dataTypeId,  String? choiceId)?  $default,) {final _that = this;
 switch (_that) {
 case _MeasurementData() when $default != null:
-return $default(_that.dateFrom,_that.dateTo,_that.value,_that.dataTypeId);case _:
+return $default(_that.dateFrom,_that.dateTo,_that.value,_that.dataTypeId,_that.choiceId);case _:
   return null;
 
 }
@@ -2613,13 +2907,18 @@ return $default(_that.dateFrom,_that.dateTo,_that.value,_that.dataTypeId);case _
 @JsonSerializable()
 
 class _MeasurementData implements MeasurementData {
-  const _MeasurementData({required this.dateFrom, required this.dateTo, required this.value, required this.dataTypeId});
+  const _MeasurementData({required this.dateFrom, required this.dateTo, required this.value, required this.dataTypeId, this.choiceId});
   factory _MeasurementData.fromJson(Map<String, dynamic> json) => _$MeasurementDataFromJson(json);
 
 @override final  DateTime dateFrom;
 @override final  DateTime dateTo;
 @override final  num value;
 @override final  String dataTypeId;
+/// The [MeasurableChoice.id] recorded for a choice measurable. Set only
+/// for [MeasurableValueKind.choice]; [value] is then `1` — one occurrence
+/// — so every consumer that sums measurements per day counts recordings
+/// instead of breaking on a missing number.
+@override final  String? choiceId;
 
 /// Create a copy of MeasurementData
 /// with the given fields replaced by the non-null parameter values.
@@ -2634,16 +2933,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MeasurementData&&(identical(other.dateFrom, dateFrom) || other.dateFrom == dateFrom)&&(identical(other.dateTo, dateTo) || other.dateTo == dateTo)&&(identical(other.value, value) || other.value == value)&&(identical(other.dataTypeId, dataTypeId) || other.dataTypeId == dataTypeId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MeasurementData&&(identical(other.dateFrom, dateFrom) || other.dateFrom == dateFrom)&&(identical(other.dateTo, dateTo) || other.dateTo == dateTo)&&(identical(other.value, value) || other.value == value)&&(identical(other.dataTypeId, dataTypeId) || other.dataTypeId == dataTypeId)&&(identical(other.choiceId, choiceId) || other.choiceId == choiceId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,dateFrom,dateTo,value,dataTypeId);
+int get hashCode => Object.hash(runtimeType,dateFrom,dateTo,value,dataTypeId,choiceId);
 
 @override
 String toString() {
-  return 'MeasurementData(dateFrom: $dateFrom, dateTo: $dateTo, value: $value, dataTypeId: $dataTypeId)';
+  return 'MeasurementData(dateFrom: $dateFrom, dateTo: $dateTo, value: $value, dataTypeId: $dataTypeId, choiceId: $choiceId)';
 }
 
 
@@ -2654,7 +2953,7 @@ abstract mixin class _$MeasurementDataCopyWith<$Res> implements $MeasurementData
   factory _$MeasurementDataCopyWith(_MeasurementData value, $Res Function(_MeasurementData) _then) = __$MeasurementDataCopyWithImpl;
 @override @useResult
 $Res call({
- DateTime dateFrom, DateTime dateTo, num value, String dataTypeId
+ DateTime dateFrom, DateTime dateTo, num value, String dataTypeId, String? choiceId
 });
 
 
@@ -2671,13 +2970,14 @@ class __$MeasurementDataCopyWithImpl<$Res>
 
 /// Create a copy of MeasurementData
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? dateFrom = null,Object? dateTo = null,Object? value = null,Object? dataTypeId = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? dateFrom = null,Object? dateTo = null,Object? value = null,Object? dataTypeId = null,Object? choiceId = freezed,}) {
   return _then(_MeasurementData(
 dateFrom: null == dateFrom ? _self.dateFrom : dateFrom // ignore: cast_nullable_to_non_nullable
 as DateTime,dateTo: null == dateTo ? _self.dateTo : dateTo // ignore: cast_nullable_to_non_nullable
 as DateTime,value: null == value ? _self.value : value // ignore: cast_nullable_to_non_nullable
 as num,dataTypeId: null == dataTypeId ? _self.dataTypeId : dataTypeId // ignore: cast_nullable_to_non_nullable
-as String,
+as String,choiceId: freezed == choiceId ? _self.choiceId : choiceId // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

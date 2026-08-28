@@ -350,12 +350,15 @@ void main() {
         findsOneWidget,
       );
 
-      // measurement entry displays its name (title) and value chip
+      // measurement entry displays its name (title) and value chip, worded
+      // by the same formatter as the entry summary ("55%", no space).
       expect(find.text(measurableCoverage.displayName), findsOneWidget);
       expect(
         find.text(
-          '${nf.format(testMeasuredCoverageEntry.data.value)} '
-          '${measurableCoverage.unitName}',
+          measurementValueLabel(
+            testMeasuredCoverageEntry.data,
+            measurableCoverage,
+          ),
         ),
         findsOneWidget,
       );

@@ -247,8 +247,8 @@ void main() {
         expect(find.text('No measurables yet'), findsOneWidget);
         expect(
           find.text(
-            'Measurables are numbers you track over time — weight, water, '
-            'steps.',
+            'Measurables are values you track over time — weight, water, '
+            'steps, or a choice like how rested you feel.',
           ),
           findsOneWidget,
         );

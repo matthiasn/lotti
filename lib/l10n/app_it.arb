@@ -3286,6 +3286,7 @@
   "habitSignalStatusNotYet": "{target} · non ancora",
   "habitSignalStatusSoFar": "{target} · {value} finora",
   "habitSignalToday": "oggi: {value}",
+  "habitSignalTodayLogged": "oggi: registrato",
   "habitSignalTodayNone": "oggi: —",
   "habitsLaggardHint": "{habit} — tenuto {kept} di {active}",
   "@habitsLaggardHint": {
@@ -3944,9 +3945,19 @@
   "matrixStatsSignals": "Segnali",
   "matrixStatsSignalsConnectivity": "Segnali (connettività)",
   "matrixStatsTopKpis": "I migliori KPI",
+  "measurableChoiceNotFound": "Scelta rimossa",
   "measurableDeleteConfirm": "Sì, elimina questo misurabile",
   "measurableDeleteQuestion": "Vuoi eliminare questo tipo di dati misurabile?",
   "measurableNotFound": "Misurazione non trovata",
+  "measurementChoicePrompt": "Scegline una",
+  "measurementChoiceSelectSemantic": "Seleziona {title}",
+  "@measurementChoiceSelectSemantic": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "measurementCommentHint": "Aggiungi una nota (opzionale)",
   "measurementCommentSemantic": "Commento, opzionale",
   "measurementObservedAtChangeSemantic": "Osservato a {dateTime}. Cambia la data e l'ora.",
@@ -5191,6 +5202,38 @@
   "settingsMatrixVerifyLabel": "Verifica",
   "settingsMeasurableAggregationHelper": "Come le voci di un giorno si combinano sui grafici",
   "settingsMeasurableAggregationLabel": "Tipo di aggregazione predefinito",
+  "settingsMeasurableChoiceAdd": "Aggiungi scelta",
+  "settingsMeasurableChoiceArchive": "Archivia {title}",
+  "@settingsMeasurableChoiceArchive": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsMeasurableChoiceNameHint": "Nome della scelta",
+  "settingsMeasurableChoiceNameRequired": "Dai un nome a questa scelta",
+  "settingsMeasurableChoiceReorder": "Sposta {title}",
+  "@settingsMeasurableChoiceReorder": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsMeasurableChoiceRestore": "Ripristina {title}",
+  "@settingsMeasurableChoiceRestore": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsMeasurableChoicesArchivedDescription": "Nascoste durante la registrazione; le voci che le hanno usate mostrano ancora il loro nome.",
+  "settingsMeasurableChoicesArchivedTitle": "Scelte archiviate",
+  "settingsMeasurableChoicesDescription": "Quando registri ne scegli una. Puoi rinominarle o riordinarle quando vuoi: le voci già registrate mantengono la loro scelta.",
+  "settingsMeasurableChoicesRequired": "Aggiungi almeno una scelta",
+  "settingsMeasurableChoicesTitle": "Scelte",
   "settingsMeasurableDeleteTooltip": "Eliminare il tipo misurabile",
   "settingsMeasurableDescriptionLabel": "Descrizione (opzionale)",
   "settingsMeasurableDetailsLabel": "Modificare misurabile",
@@ -5199,7 +5242,7 @@
   "settingsMeasurableSaveLabel": "Salva",
   "settingsMeasurablesCreateTitle": "Creare misurabili",
   "settingsMeasurablesEmptyState": "Non ancora misurabili",
-  "settingsMeasurablesEmptyStateHint": "Misurabili sono numeri che si traccia nel tempo — peso, acqua, passi.",
+  "settingsMeasurablesEmptyStateHint": "I misurabili sono valori di cui tieni traccia nel tempo — peso, acqua, passi, oppure una scelta come quanto ti senti riposato.",
   "settingsMeasurablesErrorLoading": "Caricamento errori misurabili",
   "settingsMeasurablesNoMatchQuery": "Nessuna corrispondenza misurabile \"{query}\"",
   "@settingsMeasurablesNoMatchQuery": {
@@ -5213,6 +5256,10 @@
   "settingsMeasurablesSubtitle": "Configurare tipi di dati misurabili",
   "settingsMeasurablesTitle": "Misurabili",
   "settingsMeasurableUnitLabel": "Abbreviazione unità (opzionale)",
+  "settingsMeasurableValueKindChoice": "Scelta",
+  "settingsMeasurableValueKindHelper": "Un numero con unità, oppure una delle scelte che definisci",
+  "settingsMeasurableValueKindLabel": "Registrato come",
+  "settingsMeasurableValueKindNumber": "Numero",
   "settingsOnboardingActionSubtitle": "Riaprire il flusso di benvenuto — collegare il cervello AI e creare un compito",
   "settingsOnboardingMetricsSubtitle": "Imbuto FTUE — installazione, attivazione, ritenzione (debug)",
   "settingsOnboardingMetricsTitle": "Metriche di bordo",

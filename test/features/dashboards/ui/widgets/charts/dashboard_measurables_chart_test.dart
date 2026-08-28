@@ -1,13 +1,16 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/dashboards/state/measurables_controller.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_measurables_chart.dart';
+import 'package:lotti/features/dashboards/ui/widgets/charts/measurable_choice_strip.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_bar_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_line_chart.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 import '../../../../../helpers/fallbacks.dart';
+import '../../../../../test_data/test_data.dart';
 import '../../../../../widget_test_utils.dart';
 
 void main() {
@@ -156,5 +159,105 @@ void main() {
       // The header still renders so the chart stays identifiable.
       expect(find.text('Water'), findsOneWidget);
     });
+  });
+
+  group('choice measurable', () {
+    final hydration = measurableHydration.copyWith(id: typeId);
+
+    Future<void> pumpChoiceChart(
+      WidgetTester tester, {
+      required List<JournalEntity> entries,
+    }) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          MeasurablesBarChart(
+            measurableDataTypeId: typeId,
+            rangeStart: rangeStart,
+            rangeEnd: rangeEnd,
+          ),
+          overrides: [
+            measurableDataTypeControllerProvider(
+              typeId,
+            ).overrideWithBuild((ref, notifier) => hydration),
+            measurableChartDataControllerProvider((
+              measurableDataTypeId: typeId,
+              rangeStart: rangeStart,
+              rangeEnd: rangeEnd,
+            )).overrideWithBuild((ref, notifier) => entries),
+          ],
+        ),
+      );
+      await tester.pump();
+    }
+
+    testWidgets(
+      'renders the day strip and legend under the header — never a bar or '
+      'line chart — and shows the description, not the unit',
+      (tester) async {
+        final recordedAt = rangeStart.add(const Duration(days: 2, hours: 9));
+        await pumpChoiceChart(
+          tester,
+          entries: [
+            testMeasurementHydrationEntry.copyWith(
+              meta: testMeasurementHydrationEntry.meta.copyWith(
+                dateFrom: recordedAt,
+                dateTo: recordedAt,
+              ),
+              data: testMeasurementHydrationEntry.data.copyWith(
+                dataTypeId: typeId,
+                dateFrom: recordedAt,
+                dateTo: recordedAt,
+              ),
+            ),
+          ],
+        );
+
+        expect(find.byType(DashboardChart), findsOneWidget);
+        expect(find.byType(MeasurableChoiceStrip), findsOneWidget);
+        expect(find.byType(MeasurableChoiceLegend), findsOneWidget);
+        expect(find.byType(TimeSeriesBarChart), findsNothing);
+        expect(find.byType(TimeSeriesLineChart), findsNothing);
+        expect(find.text('Hydration'), findsOneWidget);
+        expect(find.text('Urine colour check'), findsOneWidget);
+
+        final strip = tester.widget<MeasurableChoiceStrip>(
+          find.byType(MeasurableChoiceStrip),
+        );
+        expect(strip.days, hasLength(30));
+        expect(strip.days[2].choiceId, hydrationClear.id);
+        expect(strip.days.where((d) => d.choiceId != null), hasLength(1));
+      },
+    );
+
+    testWidgets('with no entries in range the card says so', (tester) async {
+      await pumpChoiceChart(tester, entries: const []);
+      expect(find.text('No data in this range'), findsOneWidget);
+      expect(find.byType(MeasurableChoiceStrip), findsNothing);
+    });
+
+    testWidgets(
+      'numeric entries from before the switch are not data for the strip',
+      (tester) async {
+        final recordedAt = rangeStart.add(const Duration(days: 1, hours: 9));
+        await pumpChoiceChart(
+          tester,
+          entries: [
+            testMeasurementChocolateEntry.copyWith(
+              meta: testMeasurementChocolateEntry.meta.copyWith(
+                dateFrom: recordedAt,
+                dateTo: recordedAt,
+              ),
+              data: testMeasurementChocolateEntry.data.copyWith(
+                dataTypeId: typeId,
+                dateFrom: recordedAt,
+                dateTo: recordedAt,
+              ),
+            ),
+          ],
+        );
+        expect(find.text('No data in this range'), findsOneWidget);
+        expect(find.byType(MeasurableChoiceStrip), findsNothing);
+      },
+    );
   });
 }

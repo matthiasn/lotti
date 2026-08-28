@@ -7675,6 +7675,9 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get habitSignalTodayLogged => 'aujourd\'hui : enregistré';
+
+  @override
   String get habitSignalTodayNone => 'aujourd’hui : —';
 
   @override
@@ -9358,6 +9361,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get matrixStatsTopKpis => 'Indicateurs clés';
 
   @override
+  String get measurableChoiceNotFound => 'Choix supprimé';
+
+  @override
   String get measurableDeleteConfirm => 'Oui, supprimer cet élément mesurable';
 
   @override
@@ -9366,6 +9372,14 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get measurableNotFound => 'Élément mesurable introuvable';
+
+  @override
+  String get measurementChoicePrompt => 'Choisis-en un';
+
+  @override
+  String measurementChoiceSelectSemantic(String title) {
+    return 'Sélectionner $title';
+  }
 
   @override
   String get measurementCommentHint => 'Ajoute une note (facultatif)';
@@ -12171,6 +12185,47 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsMeasurableAggregationLabel => 'Agrégation par défaut';
 
   @override
+  String get settingsMeasurableChoiceAdd => 'Ajouter un choix';
+
+  @override
+  String settingsMeasurableChoiceArchive(String title) {
+    return 'Archiver $title';
+  }
+
+  @override
+  String get settingsMeasurableChoiceNameHint => 'Nom du choix';
+
+  @override
+  String get settingsMeasurableChoiceNameRequired => 'Donne un nom à ce choix';
+
+  @override
+  String settingsMeasurableChoiceReorder(String title) {
+    return 'Déplacer $title';
+  }
+
+  @override
+  String settingsMeasurableChoiceRestore(String title) {
+    return 'Restaurer $title';
+  }
+
+  @override
+  String get settingsMeasurableChoicesArchivedDescription =>
+      'Masqués à l\'enregistrement ; les entrées qui les ont utilisés affichent toujours leur nom.';
+
+  @override
+  String get settingsMeasurableChoicesArchivedTitle => 'Choix archivés';
+
+  @override
+  String get settingsMeasurableChoicesDescription =>
+      'Tu en choisis un à chaque enregistrement. Renomme-les ou réordonne-les quand tu veux : les entrées déjà enregistrées gardent leur choix.';
+
+  @override
+  String get settingsMeasurableChoicesRequired => 'Ajoute au moins un choix';
+
+  @override
+  String get settingsMeasurableChoicesTitle => 'Choix';
+
+  @override
   String get settingsMeasurableDeleteTooltip => 'Supprimer type mesurable';
 
   @override
@@ -12197,7 +12252,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get settingsMeasurablesEmptyStateHint =>
-      'Les éléments mesurables sont des chiffres que tu suis dans le temps — poids, eau, pas.';
+      'Les éléments mesurables sont des valeurs que tu suis dans le temps — poids, eau, pas, ou un choix comme ton niveau de repos.';
 
   @override
   String get settingsMeasurablesErrorLoading =>
@@ -12221,6 +12276,19 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get settingsMeasurableUnitLabel => 'Abréviation d\'unité';
+
+  @override
+  String get settingsMeasurableValueKindChoice => 'Choix';
+
+  @override
+  String get settingsMeasurableValueKindHelper =>
+      'Un nombre avec une unité, ou l\'un des choix que tu définis';
+
+  @override
+  String get settingsMeasurableValueKindLabel => 'Enregistré comme';
+
+  @override
+  String get settingsMeasurableValueKindNumber => 'Nombre';
 
   @override
   String get settingsOnboardingActionSubtitle =>

@@ -11,6 +11,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/habits/state/habit_signal_status_controller.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_signal_row.dart';
+import 'package:lotti/features/habits/ui/widgets/measurable_quick_record_chips.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
@@ -97,7 +98,7 @@ class _HabitCompletionSheetState extends ConsumerState<HabitCompletionSheet> {
   bool _autoSatisfied = false;
 
   /// Values recorded from chips during this sheet, by measurable id.
-  final _recorded = <String, num>{};
+  final _recorded = <String, MeasurableQuickValue>{};
 
   /// Whether the completion being recorded is for the current day — from
   /// the date actually selected, so picking a past day in the field hides
@@ -138,13 +139,17 @@ class _HabitCompletionSheetState extends ConsumerState<HabitCompletionSheet> {
     );
   }
 
-  Future<void> _recordMeasurable(MeasurableDataType dataType, num value) async {
+  Future<void> _recordMeasurable(
+    MeasurableDataType dataType,
+    MeasurableQuickValue value,
+  ) async {
     final now = clock.now();
     final saved = await getIt<PersistenceLogic>().createMeasurementEntry(
       data: MeasurementData(
         dateFrom: now,
         dateTo: now,
-        value: value,
+        value: value.value,
+        choiceId: value.choiceId,
         dataTypeId: dataType.id,
       ),
       private: dataType.private ?? false,
@@ -252,10 +257,11 @@ class _HabitCompletionSheetState extends ConsumerState<HabitCompletionSheet> {
     );
   }
 
-  num? _recordedFor(HabitLeafVerdict leaf) => switch (leaf.rule) {
-    AutoCompleteRuleMeasurable(:final dataTypeId) => _recorded[dataTypeId],
-    _ => null,
-  };
+  MeasurableQuickValue? _recordedFor(HabitLeafVerdict leaf) =>
+      switch (leaf.rule) {
+        AutoCompleteRuleMeasurable(:final dataTypeId) => _recorded[dataTypeId],
+        _ => null,
+      };
 }
 
 /// The completion-capture card: habit name, optional description, the

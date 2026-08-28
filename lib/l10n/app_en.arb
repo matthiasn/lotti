@@ -4520,6 +4520,7 @@
       }
     }
   },
+  "habitSignalTodayLogged": "today: logged",
   "habitSignalTodayNone": "today: —",
   "habitsLaggardHint": "{habit} — kept {kept} of {active}",
   "@habitsLaggardHint": {
@@ -5332,9 +5333,19 @@
   "matrixStatsSignals": "Signals",
   "matrixStatsSignalsConnectivity": "Signals (connectivity)",
   "matrixStatsTopKpis": "Top KPIs",
+  "measurableChoiceNotFound": "Removed choice",
   "measurableDeleteConfirm": "Yes, delete this measurable",
   "measurableDeleteQuestion": "Do you want to delete this measurable data type?",
   "measurableNotFound": "Measurable not found",
+  "measurementChoicePrompt": "Pick one",
+  "measurementChoiceSelectSemantic": "Select {title}",
+  "@measurementChoiceSelectSemantic": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "measurementCommentHint": "Add a note (optional)",
   "measurementCommentSemantic": "Comment, optional",
   "measurementObservedAtChangeSemantic": "Observed at {dateTime}. Change date and time.",
@@ -6765,6 +6776,38 @@
   "settingsMatrixVerifyLabel": "Verify",
   "settingsMeasurableAggregationHelper": "How a day's entries combine on charts",
   "settingsMeasurableAggregationLabel": "Default aggregation type",
+  "settingsMeasurableChoiceAdd": "Add choice",
+  "settingsMeasurableChoiceArchive": "Archive {title}",
+  "@settingsMeasurableChoiceArchive": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsMeasurableChoiceNameHint": "Choice name",
+  "settingsMeasurableChoiceNameRequired": "Give this choice a name",
+  "settingsMeasurableChoiceReorder": "Reorder {title}",
+  "@settingsMeasurableChoiceReorder": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsMeasurableChoiceRestore": "Restore {title}",
+  "@settingsMeasurableChoiceRestore": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsMeasurableChoicesArchivedDescription": "Hidden when recording; entries that used them still show their name.",
+  "settingsMeasurableChoicesArchivedTitle": "Archived choices",
+  "settingsMeasurableChoicesDescription": "Recording picks one of these. Rename or reorder them any time — entries you already recorded keep their choice.",
+  "settingsMeasurableChoicesRequired": "Add at least one choice",
+  "settingsMeasurableChoicesTitle": "Choices",
   "settingsMeasurableDeleteTooltip": "Delete measurable type",
   "settingsMeasurableDescriptionLabel": "Description (optional)",
   "settingsMeasurableDetailsLabel": "Edit measurable",
@@ -6773,7 +6816,7 @@
   "settingsMeasurableSaveLabel": "Save",
   "settingsMeasurablesCreateTitle": "Create measurable",
   "settingsMeasurablesEmptyState": "No measurables yet",
-  "settingsMeasurablesEmptyStateHint": "Measurables are numbers you track over time — weight, water, steps.",
+  "settingsMeasurablesEmptyStateHint": "Measurables are values you track over time — weight, water, steps, or a choice like how rested you feel.",
   "settingsMeasurablesErrorLoading": "Error loading measurables",
   "settingsMeasurablesNoMatchQuery": "No measurables match \"{query}\"",
   "@settingsMeasurablesNoMatchQuery": {
@@ -6787,6 +6830,10 @@
   "settingsMeasurablesSubtitle": "Configure measurable data types",
   "settingsMeasurablesTitle": "Measurables",
   "settingsMeasurableUnitLabel": "Unit abbreviation (optional)",
+  "settingsMeasurableValueKindChoice": "Choice",
+  "settingsMeasurableValueKindHelper": "A number with a unit, or one of the choices you define",
+  "settingsMeasurableValueKindLabel": "Recorded as",
+  "settingsMeasurableValueKindNumber": "Number",
   "settingsOnboardingActionSubtitle": "Reopen the welcome flow — connect your AI brain and create a task",
   "settingsOnboardingMetricsSubtitle": "FTUE funnel — install, activation, retention (debug)",
   "settingsOnboardingMetricsTitle": "Onboarding Metrics",

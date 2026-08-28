@@ -3286,6 +3286,7 @@
   "habitSignalStatusNotYet": "{target} · ikke endnu",
   "habitSignalStatusSoFar": "{target} · {value} indtil videre",
   "habitSignalToday": "i dag: {value}",
+  "habitSignalTodayLogged": "i dag: registreret",
   "habitSignalTodayNone": "i dag: —",
   "habitsLaggardHint": "{habit} — beholdt {kept} af {active}",
   "@habitsLaggardHint": {
@@ -3944,9 +3945,19 @@
   "matrixStatsSignals": "Signaler",
   "matrixStatsSignalsConnectivity": "Signaler (forbindelse)",
   "matrixStatsTopKpis": "Top KPI'er",
+  "measurableChoiceNotFound": "Fjernet valg",
   "measurableDeleteConfirm": "Ja, slet denne målbare værdi",
   "measurableDeleteQuestion": "Vil du slette denne målbare datatype?",
   "measurableNotFound": "Målbar ikke fundet",
+  "measurementChoicePrompt": "Vælg ét",
+  "measurementChoiceSelectSemantic": "Vælg {title}",
+  "@measurementChoiceSelectSemantic": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "measurementCommentHint": "Tilføj en note (valgfrit)",
   "measurementCommentSemantic": "Kommentar, valgfrit",
   "measurementObservedAtChangeSemantic": "Observeret ved {dateTime}. Skift dato og tidspunkt.",
@@ -5191,6 +5202,38 @@
   "settingsMatrixVerifyLabel": "Bekræft",
   "settingsMeasurableAggregationHelper": "Hvordan dagens indgange kombineres på diagrammer",
   "settingsMeasurableAggregationLabel": "Standard aggregeringstype",
+  "settingsMeasurableChoiceAdd": "Tilføj valg",
+  "settingsMeasurableChoiceArchive": "Arkivér {title}",
+  "@settingsMeasurableChoiceArchive": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsMeasurableChoiceNameHint": "Navn på valg",
+  "settingsMeasurableChoiceNameRequired": "Giv dette valg et navn",
+  "settingsMeasurableChoiceReorder": "Flyt {title}",
+  "@settingsMeasurableChoiceReorder": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsMeasurableChoiceRestore": "Gendan {title}",
+  "@settingsMeasurableChoiceRestore": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsMeasurableChoicesArchivedDescription": "Skjult ved registrering; poster, der brugte dem, viser stadig deres navn.",
+  "settingsMeasurableChoicesArchivedTitle": "Arkiverede valg",
+  "settingsMeasurableChoicesDescription": "Når du registrerer, vælger du ét af dem. Omdøb eller omarranger dem når som helst – allerede registrerede poster beholder deres valg.",
+  "settingsMeasurableChoicesRequired": "Tilføj mindst ét valg",
+  "settingsMeasurableChoicesTitle": "Valgmuligheder",
   "settingsMeasurableDeleteTooltip": "Slet målbar type",
   "settingsMeasurableDescriptionLabel": "Beskrivelse (valgfrit)",
   "settingsMeasurableDetailsLabel": "Redigeret målbar",
@@ -5199,7 +5242,7 @@
   "settingsMeasurableSaveLabel": "Gem",
   "settingsMeasurablesCreateTitle": "Skab målbar",
   "settingsMeasurablesEmptyState": "Ingen målbare ting endnu",
-  "settingsMeasurablesEmptyStateHint": "Målbare tal er tal, du følger over tid — vægt, vand, skridt.",
+  "settingsMeasurablesEmptyStateHint": "Målbare er værdier, du følger over tid — vægt, vand, skridt eller et valg som hvor udhvilet du føler dig.",
   "settingsMeasurablesErrorLoading": "Fejlindlæsning af målbare",
   "settingsMeasurablesNoMatchQuery": "Ingen målbare størrelser matcher \"{query}\"",
   "@settingsMeasurablesNoMatchQuery": {
@@ -5213,6 +5256,10 @@
   "settingsMeasurablesSubtitle": "Konfigurér målbare datatyper",
   "settingsMeasurablesTitle": "Målbare ting",
   "settingsMeasurableUnitLabel": "Enhedsforkortelse (valgfrit)",
+  "settingsMeasurableValueKindChoice": "Valg",
+  "settingsMeasurableValueKindHelper": "Et tal med enhed, eller et af de valg, du selv definerer",
+  "settingsMeasurableValueKindLabel": "Registreres som",
+  "settingsMeasurableValueKindNumber": "Tal",
   "settingsOnboardingActionSubtitle": "Genopblæs velkomstflowet — forbind din AI-hjerne og skab en opgave",
   "settingsOnboardingMetricsSubtitle": "FTUE-tragt — installation, aktivering, fastholdelse (fejlsøgning)",
   "settingsOnboardingMetricsTitle": "Onboarding-målinger",

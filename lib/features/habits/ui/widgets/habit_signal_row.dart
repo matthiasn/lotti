@@ -30,10 +30,10 @@ class HabitSignalRow extends StatelessWidget {
 
   final HabitLeafVerdict leaf;
   final HabitSignalStatus status;
-  final void Function(MeasurableDataType dataType, num value)
+  final void Function(MeasurableDataType dataType, MeasurableQuickValue value)
   onRecordMeasurable;
   final ValueChanged<MeasurableDataType> onMoreMeasurable;
-  final num? recordedValue;
+  final MeasurableQuickValue? recordedValue;
 
   @override
   Widget build(BuildContext context) {
@@ -57,8 +57,10 @@ class HabitSignalRow extends StatelessWidget {
         title ?? cache.getHabitById(habitId)?.name ?? habitId,
       _ => '',
     };
+    final isChoice = measurable?.isChoice ?? false;
     final unit = switch (rule) {
-      AutoCompleteRuleMeasurable() => measurable?.unitName ?? '',
+      AutoCompleteRuleMeasurable() =>
+        isChoice ? '' : measurable?.unitName ?? '',
       AutoCompleteRuleHealth(:final dataType) =>
         healthTypes[dataType]?.unit ?? '',
       AutoCompleteRuleWorkout(:final valueType?) => habitWorkoutUnit(
@@ -74,9 +76,13 @@ class HabitSignalRow extends StatelessWidget {
     final captionStyle = tokens.typography.styles.others.caption.copyWith(
       color: tokens.colors.text.mediumEmphasis,
     );
+    // A choice measurable's day value is an occurrence count, which is not
+    // what the user recorded; the row says only that something was logged.
     final todayValue = leaf.value;
     final todayText = todayValue == null
         ? messages.habitSignalTodayNone
+        : isChoice
+        ? messages.habitSignalTodayLogged
         : messages.habitSignalToday(
             '${_format(todayValue, locale)} $unit'.trim(),
           );

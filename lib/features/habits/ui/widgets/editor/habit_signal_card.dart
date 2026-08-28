@@ -89,6 +89,9 @@ class HabitSignalCard extends StatelessWidget {
                 child: _RuleEditor(
                   signal: signal,
                   unit: habitSignalUnit(messages, signal, measurablesById),
+                  choiceOnly:
+                      signal.kind == HabitSignalKind.measurable &&
+                      (measurablesById[signal.id]?.isChoice ?? false),
                   onChanged: (updated) => _replace(index, updated),
                 ),
               ),
@@ -313,11 +316,17 @@ class _RuleEditor extends StatefulWidget {
     required this.signal,
     required this.unit,
     required this.onChanged,
+    this.choiceOnly = false,
   });
 
   final HabitSignalForm signal;
   final String unit;
   final ValueChanged<HabitSignalForm> onChanged;
+
+  /// A choice measurable has no quantity to bound: the only rule it can
+  /// satisfy is "any entry today", so the mode toggle and threshold give
+  /// way to that one line.
+  final bool choiceOnly;
 
   @override
   State<_RuleEditor> createState() => _RuleEditorState();
@@ -381,6 +390,16 @@ class _RuleEditorState extends State<_RuleEditor> {
     final messages = context.messages;
     final signal = widget.signal;
     final bounded = signal.mode != HabitSignalMode.any;
+
+    if (widget.choiceOnly) {
+      return Text(
+        messages.habitEditorRuleAnyEntry,
+        key: ValueKey('habit-signal-choice-any-${signal.id}'),
+        style: tokens.typography.styles.body.bodySmall.copyWith(
+          color: tokens.colors.text.mediumEmphasis,
+        ),
+      );
+    }
 
     final Widget toggle = switch (signal.kind) {
       HabitSignalKind.workout => DsSegmentedToggle<_WorkoutRule>(

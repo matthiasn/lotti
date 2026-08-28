@@ -12,6 +12,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/calendar_pickers/design_system_date_picker_modal.dart';
+import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/components/time_pickers/design_system_picker_wheels.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -1026,5 +1027,170 @@ void main() {
         private: any(named: 'private'),
       ),
     );
+  });
+
+  group('choice measurable', () {
+    const choiceFieldKey = Key('measurement_choice_field');
+    Finder chip(MeasurableChoice choice) =>
+        find.byKey(ValueKey('measurement-choice-${choice.id}'));
+    bool chipSelected(WidgetTester tester, MeasurableChoice choice) =>
+        tester.widget<DesignSystemChip>(chip(choice)).selected;
+
+    Future<void> openChoiceCapture(WidgetTester tester) async {
+      await tester.tap(find.byKey(_openKey));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 450));
+      expect(find.byKey(choiceFieldKey), findsOneWidget);
+    }
+
+    testWidgets(
+      'offers one chip per active choice instead of a number field, with '
+      'Save held until a choice is picked',
+      (tester) async {
+        await pumpLauncher(tester, dataType: measurableHydration);
+        await openChoiceCapture(tester);
+
+        expect(find.byKey(_valueKey), findsNothing);
+        expect(find.text('Quick log'), findsNothing);
+        expect(find.text('Pick one'), findsOneWidget);
+        expect(chip(hydrationClear), findsOneWidget);
+        expect(chip(hydrationPale), findsOneWidget);
+        expect(chip(hydrationDark), findsOneWidget);
+        // Archived choices are not on offer.
+        expect(chip(hydrationBrown), findsNothing);
+        expect(find.text('Brown'), findsNothing);
+        expect(
+          tester.widget<DesignSystemChip>(chip(hydrationClear)).semanticsLabel,
+          'Select Clear',
+        );
+
+        final save = tester.widget<DesignSystemButton>(find.byKey(_saveKey));
+        expect(save.onPressed, isNull);
+        for (final choice in [hydrationClear, hydrationPale, hydrationDark]) {
+          expect(chipSelected(tester, choice), isFalse);
+        }
+      },
+    );
+
+    testWidgets('picking a chip selects it exclusively and arms Save', (
+      tester,
+    ) async {
+      await pumpLauncher(tester, dataType: measurableHydration);
+      await openChoiceCapture(tester);
+
+      await tester.tap(chip(hydrationPale));
+      await tester.pump();
+      expect(chipSelected(tester, hydrationPale), isTrue);
+      expect(chipSelected(tester, hydrationClear), isFalse);
+      expect(
+        tester.widget<DesignSystemButton>(find.byKey(_saveKey)).onPressed,
+        isNotNull,
+      );
+
+      await tester.tap(chip(hydrationDark));
+      await tester.pump();
+      expect(chipSelected(tester, hydrationDark), isTrue);
+      expect(chipSelected(tester, hydrationPale), isFalse);
+    });
+
+    testWidgets(
+      'Save persists the choice as one occurrence at the observed time, '
+      'with the comment, and closes the sheet',
+      (tester) async {
+        MeasurementData? saved;
+        String? savedComment;
+        bool? savedPrivate;
+        when(
+          () => mockPersistenceLogic.createMeasurementEntry(
+            data: any(named: 'data'),
+            comment: any(named: 'comment'),
+            private: any(named: 'private'),
+          ),
+        ).thenAnswer((invocation) async {
+          saved = capturedData(invocation);
+          savedComment =
+              invocation.namedArguments[const Symbol('comment')] as String?;
+          savedPrivate =
+              invocation.namedArguments[const Symbol('private')] as bool?;
+          return testMeasurementHydrationEntry;
+        });
+
+        await pumpLauncher(
+          tester,
+          dataType: measurableHydration.copyWith(private: true),
+        );
+        await openChoiceCapture(tester);
+
+        await tester.tap(chip(hydrationPale));
+        await tester.pump();
+        await tester.enterText(find.byKey(_commentKey), 'After the run');
+        await tester.pump();
+
+        await tester.tap(find.byKey(_saveKey));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 450));
+
+        expect(saved, isNotNull);
+        expect(saved!.dataTypeId, measurableHydration.id);
+        expect(saved!.choiceId, hydrationPale.id);
+        expect(saved!.value, 1);
+        expect(saved!.dateFrom, _fixedNow);
+        expect(saved!.dateTo, _fixedNow);
+        expect(savedComment, 'After the run');
+        expect(savedPrivate, isTrue);
+        expect(find.byKey(choiceFieldKey), findsNothing);
+      },
+    );
+
+    testWidgets('the picked choice survives the observed-at round trip', (
+      tester,
+    ) async {
+      await pumpLauncher(tester, dataType: measurableHydration);
+      await openChoiceCapture(tester);
+
+      await tester.tap(chip(hydrationDark));
+      await tester.pump();
+
+      await openObservedAt(tester);
+      await tapDone(tester);
+
+      expect(chipSelected(tester, hydrationDark), isTrue);
+      expect(
+        tester.widget<DesignSystemButton>(find.byKey(_saveKey)).onPressed,
+        isNotNull,
+      );
+    });
+
+    testWidgets('chips go inert while the save is in flight', (tester) async {
+      final pending = Completer<MeasurementEntry?>();
+      when(
+        () => mockPersistenceLogic.createMeasurementEntry(
+          data: any(named: 'data'),
+          comment: any(named: 'comment'),
+          private: any(named: 'private'),
+        ),
+      ).thenAnswer((_) => pending.future);
+
+      await pumpLauncher(tester, dataType: measurableHydration);
+      await openChoiceCapture(tester);
+      await tester.tap(chip(hydrationClear));
+      await tester.pump();
+      await tester.tap(find.byKey(_saveKey));
+      await tester.pump();
+
+      expect(
+        tester.widget<DesignSystemChip>(chip(hydrationPale)).onPressed,
+        isNull,
+      );
+      expect(
+        tester.widget<DesignSystemButton>(find.byKey(_saveKey)).isLoading,
+        isTrue,
+      );
+
+      pending.complete(testMeasurementHydrationEntry);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 450));
+      expect(find.byKey(choiceFieldKey), findsNothing);
+    });
   });
 }

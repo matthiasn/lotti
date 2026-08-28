@@ -408,6 +408,29 @@ void main() {
       expect(service.describeReason(verdict), 'Floss · habit-gone');
     });
 
+    test('a choice measurable is named without its occurrence count', () {
+      when(
+        () => entitiesCache.getDataTypeById('hydration'),
+      ).thenReturn(measurableHydration.copyWith(id: 'hydration'));
+      final verdict = HabitRuleVerdict(
+        satisfied: true,
+        leaves: [
+          leaf(
+            const AutoCompleteRule.measurable(dataTypeId: 'hydration'),
+            value: 1,
+          ),
+          leaf(
+            const AutoCompleteRule.measurable(
+              dataTypeId: 'hydration',
+              title: 'Pee check',
+            ),
+            value: 2,
+          ),
+        ],
+      );
+      expect(service.describeReason(verdict), 'Hydration · Pee check');
+    });
+
     test('an authored title wins over the resolved name', () {
       final verdict = HabitRuleVerdict(
         satisfied: true,

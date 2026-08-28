@@ -325,10 +325,37 @@ final MeasurableDataType _penguinsAccountedFor = _measurable(
   favorite: true,
 );
 
+final MeasurableDataType _hydrationCheck =
+    _measurable(
+      id: 'meas-hydration-check',
+      displayName: _t('Hydration check', 'Hydrationscheck'),
+      unitName: '',
+      description: _t(
+        'Urine colour, first thing.',
+        'Urinfarbe, gleich morgens.',
+      ),
+    ).copyWith(
+      valueKind: MeasurableValueKind.choice,
+      choices: [
+        MeasurableChoice(id: 'hyd-clear', title: _t('Clear', 'Klar')),
+        MeasurableChoice(id: 'hyd-pale', title: _t('Pale yellow', 'Hellgelb')),
+        MeasurableChoice(
+          id: 'hyd-dark',
+          title: _t('Dark yellow', 'Dunkelgelb'),
+        ),
+        MeasurableChoice(
+          id: 'hyd-amber',
+          title: _t('Amber', 'Bernstein'),
+          archived: true,
+        ),
+      ],
+    );
+
 final List<MeasurableDataType> _allMeasurables = [
   _habitatPressure,
   _sardinesConsumed,
   _penguinsAccountedFor,
+  _hydrationCheck,
 ];
 
 DashboardDefinition _dashboard({
@@ -1158,6 +1185,31 @@ void main() {
         await captureScreenshot(
           tester,
           'measurables_settings_detail_${viewport}_$theme',
+          subdir: _subdir,
+        );
+      });
+
+      testWidgets('$viewport measurables settings detail (choice) — $theme', (
+        tester,
+      ) async {
+        await _pumpScreen(
+          tester,
+          device: device,
+          brightness: brightness,
+          home: MeasurableDetailsPage(dataType: _hydrationCheck),
+        );
+        expect(
+          find.text(_t('Hydration check', 'Hydrationscheck')),
+          findsOneWidget,
+        );
+        expect(
+          find.text(_messages(tester).settingsMeasurableChoicesTitle),
+          findsOneWidget,
+        );
+        expect(find.text(_t('Amber', 'Bernstein')), findsOneWidget);
+        await captureScreenshot(
+          tester,
+          'measurables_settings_detail_choice_${viewport}_$theme',
           subdir: _subdir,
         );
       });

@@ -98,6 +98,7 @@ void main() {
     WidgetTester tester, {
     String? habitId,
     String returnPath = '/habits',
+    List<MeasurableDataType>? measurables,
   }) async {
     tester.view.physicalSize = const Size(1200, 1800);
     tester.view.devicePixelRatio = 1.0;
@@ -113,7 +114,7 @@ void main() {
         mediaQueryData: const MediaQueryData(size: Size(1200, 1800)),
         overrides: [
           measurableDataTypesStreamProvider.overrideWith(
-            (ref) => Stream.value([water]),
+            (ref) => Stream.value(measurables ?? [water]),
           ),
           workoutTypesProvider.overrideWith((ref) async => ['running']),
         ],
@@ -235,6 +236,52 @@ void main() {
             rules: [
               AutoCompleteRule.measurable(dataTypeId: 'water'),
               AutoCompleteRule.workout(dataType: 'running'),
+            ],
+          ),
+        );
+      },
+    );
+
+    testWidgets(
+      'a bound persisted on a choice measurable is dropped on load and '
+      'saved as any entry',
+      (tester) async {
+        final hydration = measurableHydration.copyWith(id: 'hydration');
+        final stale = ruledHabit.copyWith(
+          id: 'stale',
+          autoCompleteRule: const AutoCompleteRule.and(
+            rules: [
+              AutoCompleteRule.measurable(
+                dataTypeId: 'hydration',
+                minimum: 500,
+              ),
+              AutoCompleteRule.measurable(dataTypeId: 'water', minimum: 1000),
+            ],
+          ),
+        );
+        when(
+          () => mocks.journalDb.getHabitById(stale.id),
+        ).thenAnswer((_) async => stale);
+        await pumpEditor(
+          tester,
+          habitId: stale.id,
+          measurables: [water, hydration],
+        );
+        // The card already shows the choice signal as "any entry"…
+        expect(
+          find.byKey(const ValueKey('habit-signal-choice-any-hydration')),
+          findsOneWidget,
+        );
+        await tester.tap(find.byKey(const ValueKey('habit-editor-primary')));
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // …and the saved rule is the one on screen, the water bound intact.
+        expect(
+          savedHabit().autoCompleteRule,
+          const AutoCompleteRule.and(
+            rules: [
+              AutoCompleteRule.measurable(dataTypeId: 'hydration'),
+              AutoCompleteRule.measurable(dataTypeId: 'water', minimum: 1000),
             ],
           ),
         );

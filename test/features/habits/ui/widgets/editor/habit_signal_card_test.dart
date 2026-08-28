@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
 import 'package:lotti/features/habits/model/habit_form_mapping.dart';
 import 'package:lotti/features/habits/ui/widgets/editor/habit_signal_card.dart';
 
@@ -16,6 +17,11 @@ void main() {
   const waterAny = HabitSignalForm(
     kind: HabitSignalKind.measurable,
     id: 'water',
+  );
+  final hydration = measurableHydration.copyWith(id: 'hydration');
+  const hydrationAny = HabitSignalForm(
+    kind: HabitSignalKind.measurable,
+    id: 'hydration',
   );
   const steps = HabitSignalForm(
     kind: HabitSignalKind.health,
@@ -41,7 +47,7 @@ void main() {
       makeTestableWidgetWithScaffold(
         HabitSignalCard(
           form: form,
-          measurablesById: {'water': water},
+          measurablesById: {'water': water, 'hydration': hydration},
           onChanged: changes.add,
           onAddSignal: () => adds++,
           onChangeComposite: () => composites++,
@@ -103,6 +109,28 @@ void main() {
       await tester.tap(find.text('Any entry').first);
       await tester.pump();
       expect(changes.last.signals.single, waterAny);
+    },
+  );
+
+  testWidgets(
+    'a choice measurable row offers only "any entry" — no mode toggle, no '
+    'threshold — while a numeric row keeps both',
+    (tester) async {
+      await pump(
+        tester,
+        const HabitSignalsForm(signals: [hydrationAny, waterAny]),
+      );
+      expect(find.text('Hydration'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('habit-signal-choice-any-hydration')),
+        findsOneWidget,
+      );
+      // Exactly one toggle on the page: the water row's.
+      expect(find.byType(DsSegmentedToggle<HabitSignalMode>), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('habit-signal-choice-any-water')),
+        findsNothing,
+      );
     },
   );
 
@@ -241,7 +269,7 @@ void main() {
       makeTestableWidgetWithScaffold(
         HabitSignalCard(
           form: HabitSignalsForm(signals: [bounded.copyWith(threshold: 250)]),
-          measurablesById: {'water': water},
+          measurablesById: {'water': water, 'hydration': hydration},
           onChanged: changes.add,
           onAddSignal: () {},
           onChangeComposite: () {},

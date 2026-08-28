@@ -7606,6 +7606,9 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get habitSignalTodayLogged => 'heute: erfasst';
+
+  @override
   String get habitSignalTodayNone => 'heute: —';
 
   @override
@@ -9259,6 +9262,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get matrixStatsTopKpis => 'Wichtigste KPIs';
 
   @override
+  String get measurableChoiceNotFound => 'Entfernte Auswahl';
+
+  @override
   String get measurableDeleteConfirm => 'Ja, diese Messgröße löschen';
 
   @override
@@ -9267,6 +9273,14 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get measurableNotFound => 'Messgröße nicht gefunden';
+
+  @override
+  String get measurementChoicePrompt => 'Wähle eine';
+
+  @override
+  String measurementChoiceSelectSemantic(String title) {
+    return '$title auswählen';
+  }
 
   @override
   String get measurementCommentHint => 'Notiz hinzufügen (optional)';
@@ -12038,6 +12052,50 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsMeasurableAggregationLabel => 'Standard-Aggregation';
 
   @override
+  String get settingsMeasurableChoiceAdd => 'Auswahl hinzufügen';
+
+  @override
+  String settingsMeasurableChoiceArchive(String title) {
+    return '$title archivieren';
+  }
+
+  @override
+  String get settingsMeasurableChoiceNameHint => 'Name der Auswahl';
+
+  @override
+  String get settingsMeasurableChoiceNameRequired =>
+      'Gib dieser Auswahl einen Namen';
+
+  @override
+  String settingsMeasurableChoiceReorder(String title) {
+    return '$title verschieben';
+  }
+
+  @override
+  String settingsMeasurableChoiceRestore(String title) {
+    return '$title wiederherstellen';
+  }
+
+  @override
+  String get settingsMeasurableChoicesArchivedDescription =>
+      'Beim Erfassen ausgeblendet; Einträge, die sie verwendet haben, zeigen weiterhin ihren Namen.';
+
+  @override
+  String get settingsMeasurableChoicesArchivedTitle =>
+      'Archivierte Auswahlmöglichkeiten';
+
+  @override
+  String get settingsMeasurableChoicesDescription =>
+      'Beim Erfassen wählst du eine davon. Du kannst sie jederzeit umbenennen oder neu anordnen – bereits erfasste Einträge behalten ihre Auswahl.';
+
+  @override
+  String get settingsMeasurableChoicesRequired =>
+      'Füge mindestens eine Auswahl hinzu';
+
+  @override
+  String get settingsMeasurableChoicesTitle => 'Auswahlmöglichkeiten';
+
+  @override
   String get settingsMeasurableDeleteTooltip => 'Messgröße löschen';
 
   @override
@@ -12063,7 +12121,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsMeasurablesEmptyStateHint =>
-      'Messgrößen sind Zahlen, die du über die Zeit verfolgst — Gewicht, Wasser, Schritte.';
+      'Messgrößen sind Werte, die du über die Zeit verfolgst — Gewicht, Wasser, Schritte oder eine Auswahl wie „wie ausgeruht du bist“.';
 
   @override
   String get settingsMeasurablesErrorLoading =>
@@ -12085,6 +12143,19 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsMeasurableUnitLabel => 'Einheitenabkürzung (optional)';
+
+  @override
+  String get settingsMeasurableValueKindChoice => 'Auswahl';
+
+  @override
+  String get settingsMeasurableValueKindHelper =>
+      'Eine Zahl mit Einheit oder eine der Auswahlmöglichkeiten, die du festlegst';
+
+  @override
+  String get settingsMeasurableValueKindLabel => 'Erfasst als';
+
+  @override
+  String get settingsMeasurableValueKindNumber => 'Zahl';
 
   @override
   String get settingsOnboardingActionSubtitle =>

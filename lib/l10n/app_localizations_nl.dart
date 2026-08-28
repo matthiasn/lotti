@@ -7567,6 +7567,9 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get habitSignalTodayLogged => 'vandaag: vastgelegd';
+
+  @override
   String get habitSignalTodayNone => 'vandaag: —';
 
   @override
@@ -9214,6 +9217,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get matrixStatsTopKpis => 'Top KPI\'s';
 
   @override
+  String get measurableChoiceNotFound => 'Verwijderde keuze';
+
+  @override
   String get measurableDeleteConfirm =>
       'Ja, verwijder dit meetbare gegevenstype';
 
@@ -9223,6 +9229,14 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get measurableNotFound => 'Maattabel niet gevonden';
+
+  @override
+  String get measurementChoicePrompt => 'Kies er een';
+
+  @override
+  String measurementChoiceSelectSemantic(String title) {
+    return '$title selecteren';
+  }
 
   @override
   String get measurementCommentHint => 'Nota toevoegen (facultatief)';
@@ -11982,6 +11996,47 @@ class AppLocalizationsNl extends AppLocalizations {
   String get settingsMeasurableAggregationLabel => 'Standaard aggregatietype';
 
   @override
+  String get settingsMeasurableChoiceAdd => 'Keuze toevoegen';
+
+  @override
+  String settingsMeasurableChoiceArchive(String title) {
+    return '$title archiveren';
+  }
+
+  @override
+  String get settingsMeasurableChoiceNameHint => 'Naam van de keuze';
+
+  @override
+  String get settingsMeasurableChoiceNameRequired => 'Geef deze keuze een naam';
+
+  @override
+  String settingsMeasurableChoiceReorder(String title) {
+    return '$title verplaatsen';
+  }
+
+  @override
+  String settingsMeasurableChoiceRestore(String title) {
+    return '$title terugzetten';
+  }
+
+  @override
+  String get settingsMeasurableChoicesArchivedDescription =>
+      'Verborgen bij het vastleggen; items die ze gebruikten tonen nog steeds hun naam.';
+
+  @override
+  String get settingsMeasurableChoicesArchivedTitle => 'Gearchiveerde keuzes';
+
+  @override
+  String get settingsMeasurableChoicesDescription =>
+      'Bij het vastleggen kies je er een. Je kunt ze altijd hernoemen of herschikken – al vastgelegde items houden hun keuze.';
+
+  @override
+  String get settingsMeasurableChoicesRequired => 'Voeg minstens één keuze toe';
+
+  @override
+  String get settingsMeasurableChoicesTitle => 'Keuzes';
+
+  @override
   String get settingsMeasurableDeleteTooltip => 'Meetbaar type verwijderen';
 
   @override
@@ -12007,7 +12062,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get settingsMeasurablesEmptyStateHint =>
-      'Measurables zijn nummers die je volgt in de tijd .. gewicht, water, stappen.';
+      'Meetwaarden zijn waarden die je in de tijd volgt — gewicht, water, stappen, of een keuze zoals hoe uitgerust je je voelt.';
 
   @override
   String get settingsMeasurablesErrorLoading =>
@@ -12030,6 +12085,19 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get settingsMeasurableUnitLabel => 'Eenheidsafkorting (facultatief)';
+
+  @override
+  String get settingsMeasurableValueKindChoice => 'Keuze';
+
+  @override
+  String get settingsMeasurableValueKindHelper =>
+      'Een getal met eenheid, of een van de keuzes die je zelf bepaalt';
+
+  @override
+  String get settingsMeasurableValueKindLabel => 'Vastgelegd als';
+
+  @override
+  String get settingsMeasurableValueKindNumber => 'Getal';
 
   @override
   String get settingsOnboardingActionSubtitle =>

@@ -2978,6 +2978,7 @@
   "habitSignalStatusNotYet": "{target} · zatím ne",
   "habitSignalStatusSoFar": "{target} · zatím {value}",
   "habitSignalToday": "dnes: {value}",
+  "habitSignalTodayLogged": "dnes: zaznamenáno",
   "habitSignalTodayNone": "dnes: —",
   "habitsLaggardHint": "{habit} — splněno {kept} z {active}",
   "habitsOpenHeader": "K splnění",
@@ -3558,9 +3559,19 @@
   "matrixStatsSignals": "Signály",
   "matrixStatsSignalsConnectivity": "Signály (připojení)",
   "matrixStatsTopKpis": "Hlavní ukazatele",
+  "measurableChoiceNotFound": "Odstraněná volba",
   "measurableDeleteConfirm": "Ano, smazat tuto měřitelnou veličinu",
   "measurableDeleteQuestion": "Chcete tento měřitelný datový typ smazat?",
   "measurableNotFound": "Měřitelný typ nenalezen",
+  "measurementChoicePrompt": "Vyber jednu",
+  "measurementChoiceSelectSemantic": "Vybrat {title}",
+  "@measurementChoiceSelectSemantic": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "measurementCommentHint": "Přidat poznámku (volitelné)",
   "measurementCommentSemantic": "Poznámka, volitelná",
   "measurementObservedAtChangeSemantic": "Naměřeno {dateTime}. Změnit datum a čas.",
@@ -4652,6 +4663,38 @@
   "settingsMatrixVerifyLabel": "Ověřit",
   "settingsMeasurableAggregationHelper": "Jak se záznamy jednoho dne kombinují v grafech",
   "settingsMeasurableAggregationLabel": "Výchozí agregace",
+  "settingsMeasurableChoiceAdd": "Přidat volbu",
+  "settingsMeasurableChoiceArchive": "Archivovat {title}",
+  "@settingsMeasurableChoiceArchive": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsMeasurableChoiceNameHint": "Název volby",
+  "settingsMeasurableChoiceNameRequired": "Pojmenuj tuto volbu",
+  "settingsMeasurableChoiceReorder": "Přesunout {title}",
+  "@settingsMeasurableChoiceReorder": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsMeasurableChoiceRestore": "Obnovit {title}",
+  "@settingsMeasurableChoiceRestore": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsMeasurableChoicesArchivedDescription": "Při zaznamenávání skryté; položky, které je použily, dál ukazují jejich název.",
+  "settingsMeasurableChoicesArchivedTitle": "Archivované volby",
+  "settingsMeasurableChoicesDescription": "Při zaznamenávání si jednu vybereš. Kdykoli je můžeš přejmenovat nebo přeuspořádat – už zaznamenané položky si svou volbu ponechají.",
+  "settingsMeasurableChoicesRequired": "Přidej alespoň jednu volbu",
+  "settingsMeasurableChoicesTitle": "Volby",
   "settingsMeasurableDeleteTooltip": "Smazat měřitelný typ",
   "settingsMeasurableDescriptionLabel": "Popis (volitelné)",
   "settingsMeasurableDetailsLabel": "Upravit měřitelný typ",
@@ -4660,7 +4703,7 @@
   "settingsMeasurableSaveLabel": "Uložit",
   "settingsMeasurablesCreateTitle": "Vytvořit měřitelný typ",
   "settingsMeasurablesEmptyState": "Zatím žádné měřitelné typy",
-  "settingsMeasurablesEmptyStateHint": "Měřitelné typy jsou čísla sledovaná v čase — váha, voda, kroky.",
+  "settingsMeasurablesEmptyStateHint": "Měřitelné typy jsou hodnoty sledované v čase — váha, voda, kroky nebo volba jako to, jak odpočatě se cítíš.",
   "settingsMeasurablesErrorLoading": "Chyba při načítání měřitelných typů",
   "settingsMeasurablesNoMatchQuery": "Žádný měřitelný typ neodpovídá \"{query}\"",
   "@settingsMeasurablesNoMatchQuery": {
@@ -4674,6 +4717,10 @@
   "settingsMeasurablesSubtitle": "Konfigurace měřitelných datových typů",
   "settingsMeasurablesTitle": "Měřitelné typy",
   "settingsMeasurableUnitLabel": "Zkratka jednotky (volitelné)",
+  "settingsMeasurableValueKindChoice": "Volba",
+  "settingsMeasurableValueKindHelper": "Číslo s jednotkou, nebo jedna z voleb, které si nastavíš",
+  "settingsMeasurableValueKindLabel": "Zaznamenává se jako",
+  "settingsMeasurableValueKindNumber": "Číslo",
   "settingsOnboardingActionSubtitle": "Znovu otevři uvítací postup — připoj svou AI a vytvoř úkol",
   "settingsOnboardingMetricsSubtitle": "FTUE trychtýř — instalace, aktivace, retence (ladění)",
   "settingsOnboardingMetricsTitle": "Metriky onboardingu",

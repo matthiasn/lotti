@@ -13,7 +13,13 @@ void main() {
     displayName: 'Water',
     unitName: 'ml',
   );
-  final byId = {'water': water};
+  final hydration = measurableHydration.copyWith(
+    id: 'hydration',
+    // A leftover unit from before the switch to choices must not label a
+    // threshold that no longer exists.
+    unitName: 'ml',
+  );
+  final byId = {'water': water, 'hydration': hydration};
   final messages = AppLocalizationsEn();
 
   test('each kind has its own icon', () {
@@ -118,6 +124,40 @@ void main() {
         byId,
       ),
       '',
+    );
+  });
+
+  test('a choice measurable has no threshold unit, whatever it stores', () {
+    expect(
+      habitSignalUnit(
+        messages,
+        const HabitSignalForm(
+          kind: HabitSignalKind.measurable,
+          id: 'hydration',
+        ),
+        byId,
+      ),
+      '',
+    );
+    expect(
+      habitSignalUnit(
+        messages,
+        const HabitSignalForm(kind: HabitSignalKind.measurable, id: 'gone'),
+        byId,
+      ),
+      '',
+    );
+  });
+
+  test('the picker subtitle is the unit, or the active choices', () {
+    expect(habitMeasurableSubtitle(water), 'ml');
+    expect(habitMeasurableSubtitle(water.copyWith(unitName: '')), isNull);
+    expect(habitMeasurableSubtitle(hydration), 'Clear · Pale · Dark');
+    expect(
+      habitMeasurableSubtitle(
+        hydration.copyWith(choices: const [hydrationBrown]),
+      ),
+      isNull,
     );
   });
 

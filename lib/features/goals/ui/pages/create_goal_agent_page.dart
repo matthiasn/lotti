@@ -998,9 +998,14 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     }
     final habits = habitsAsync.value ?? _knownHabits;
     if (measurablesAsync.value case final loaded?) {
-      _knownMeasurables = loaded;
+      // A goal criterion on a measurable is a numeric target; a choice
+      // measurable has no quantity to target, so it is not on offer here.
+      _knownMeasurables = [
+        for (final measurable in loaded)
+          if (!measurable.isChoice) measurable,
+      ];
     }
-    final measurables = measurablesAsync.value ?? _knownMeasurables;
+    final measurables = _knownMeasurables;
     if (categoriesAsync.value case final loaded?) {
       _knownCategories = [
         for (final category in loaded)

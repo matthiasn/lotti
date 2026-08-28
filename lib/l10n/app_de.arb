@@ -2971,6 +2971,7 @@
   "habitSignalStatusNotYet": "{target} · noch nicht",
   "habitSignalStatusSoFar": "{target} · bisher {value}",
   "habitSignalToday": "heute: {value}",
+  "habitSignalTodayLogged": "heute: erfasst",
   "habitSignalTodayNone": "heute: —",
   "habitsLaggardHint": "{habit} — {kept} von {active} geschafft",
   "habitsOpenHeader": "Jetzt fällig",
@@ -3551,9 +3552,19 @@
   "matrixStatsSignals": "Signale",
   "matrixStatsSignalsConnectivity": "Signale (Verbindung)",
   "matrixStatsTopKpis": "Wichtigste KPIs",
+  "measurableChoiceNotFound": "Entfernte Auswahl",
   "measurableDeleteConfirm": "Ja, diese Messgröße löschen",
   "measurableDeleteQuestion": "Möchtest du diesen Messgrößen-Datentyp löschen?",
   "measurableNotFound": "Messgröße nicht gefunden",
+  "measurementChoicePrompt": "Wähle eine",
+  "measurementChoiceSelectSemantic": "{title} auswählen",
+  "@measurementChoiceSelectSemantic": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "measurementCommentHint": "Notiz hinzufügen (optional)",
   "measurementCommentSemantic": "Kommentar, optional",
   "measurementObservedAtChangeSemantic": "Erfasst am {dateTime}. Datum und Uhrzeit ändern.",
@@ -4645,6 +4656,38 @@
   "settingsMatrixVerifyLabel": "Verifizieren",
   "settingsMeasurableAggregationHelper": "Wie die Einträge eines Tages in Diagrammen zusammengefasst werden",
   "settingsMeasurableAggregationLabel": "Standard-Aggregation",
+  "settingsMeasurableChoiceAdd": "Auswahl hinzufügen",
+  "settingsMeasurableChoiceArchive": "{title} archivieren",
+  "@settingsMeasurableChoiceArchive": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsMeasurableChoiceNameHint": "Name der Auswahl",
+  "settingsMeasurableChoiceNameRequired": "Gib dieser Auswahl einen Namen",
+  "settingsMeasurableChoiceReorder": "{title} verschieben",
+  "@settingsMeasurableChoiceReorder": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsMeasurableChoiceRestore": "{title} wiederherstellen",
+  "@settingsMeasurableChoiceRestore": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsMeasurableChoicesArchivedDescription": "Beim Erfassen ausgeblendet; Einträge, die sie verwendet haben, zeigen weiterhin ihren Namen.",
+  "settingsMeasurableChoicesArchivedTitle": "Archivierte Auswahlmöglichkeiten",
+  "settingsMeasurableChoicesDescription": "Beim Erfassen wählst du eine davon. Du kannst sie jederzeit umbenennen oder neu anordnen – bereits erfasste Einträge behalten ihre Auswahl.",
+  "settingsMeasurableChoicesRequired": "Füge mindestens eine Auswahl hinzu",
+  "settingsMeasurableChoicesTitle": "Auswahlmöglichkeiten",
   "settingsMeasurableDeleteTooltip": "Messgröße löschen",
   "settingsMeasurableDescriptionLabel": "Beschreibung (optional)",
   "settingsMeasurableDetailsLabel": "Messgröße bearbeiten",
@@ -4653,7 +4696,7 @@
   "settingsMeasurableSaveLabel": "Speichern",
   "settingsMeasurablesCreateTitle": "Messgröße erstellen",
   "settingsMeasurablesEmptyState": "Noch keine Messgrößen",
-  "settingsMeasurablesEmptyStateHint": "Messgrößen sind Zahlen, die du über die Zeit verfolgst — Gewicht, Wasser, Schritte.",
+  "settingsMeasurablesEmptyStateHint": "Messgrößen sind Werte, die du über die Zeit verfolgst — Gewicht, Wasser, Schritte oder eine Auswahl wie „wie ausgeruht du bist“.",
   "settingsMeasurablesErrorLoading": "Fehler beim Laden der Messgrößen",
   "settingsMeasurablesNoMatchQuery": "Keine Messgrößen passend zu \"{query}\"",
   "@settingsMeasurablesNoMatchQuery": {
@@ -4667,6 +4710,10 @@
   "settingsMeasurablesSubtitle": "Messbare Datentypen konfigurieren",
   "settingsMeasurablesTitle": "Messgrößen",
   "settingsMeasurableUnitLabel": "Einheitenabkürzung (optional)",
+  "settingsMeasurableValueKindChoice": "Auswahl",
+  "settingsMeasurableValueKindHelper": "Eine Zahl mit Einheit oder eine der Auswahlmöglichkeiten, die du festlegst",
+  "settingsMeasurableValueKindLabel": "Erfasst als",
+  "settingsMeasurableValueKindNumber": "Zahl",
   "settingsOnboardingActionSubtitle": "Öffne den Willkommens-Ablauf erneut – verbinde dein KI-Gehirn und erstelle eine Aufgabe",
   "settingsOnboardingMetricsSubtitle": "FTUE-Funnel – Installation, Aktivierung, Bindung (Debug)",
   "settingsOnboardingMetricsTitle": "Onboarding-Metriken",

@@ -5,6 +5,8 @@ import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 
+import '../../../test_data/test_data.dart';
+
 /// Glados generators for entry-tools property tests.
 extension _AnyDuration on glados.Any {
   /// Generates non-negative durations up to 99 hours 59 minutes 59 seconds,
@@ -452,5 +454,92 @@ void main() {
         'Body Fat: 55%',
       );
     });
+
+    test('a unit-less number is the bare number', () {
+      expect(
+        entryTextForMeasurable(
+          measurement(7.5),
+          dataType(displayName: 'Mood', unitName: ''),
+        ),
+        'Mood: 7.5',
+      );
+    });
+
+    test('a choice recording reads as the choice title', () {
+      expect(
+        entryTextForMeasurable(
+          testMeasurementHydrationEntry.data,
+          measurableHydration,
+        ),
+        'Hydration: Clear',
+      );
+    });
+
+    test('a choice the definition no longer lists reads as the fallback', () {
+      final orphan = testMeasurementHydrationEntry.data.copyWith(
+        choiceId: 'gone',
+      );
+      expect(
+        entryTextForMeasurable(
+          orphan,
+          measurableHydration,
+          removedChoiceLabel: 'Removed choice',
+        ),
+        'Hydration: Removed choice',
+      );
+    });
+  });
+
+  group('measurementValueLabel', () {
+    test('formats a number with its unit', () {
+      expect(
+        measurementValueLabel(
+          testMeasurementChocolateEntry.data,
+          measurableChocolate,
+        ),
+        '100 g',
+      );
+    });
+
+    test('an archived choice still resolves to its title', () {
+      final brown = testMeasurementHydrationEntry.data.copyWith(
+        choiceId: hydrationBrown.id,
+      );
+      expect(measurementValueLabel(brown, measurableHydration), 'Brown');
+    });
+
+    test('a missing choice is empty without a fallback', () {
+      final orphan = testMeasurementHydrationEntry.data.copyWith(
+        choiceId: 'gone',
+      );
+      expect(measurementValueLabel(orphan, measurableHydration), '');
+    });
+
+    test(
+      'the data decides: a numeric entry on a choice measurable is a number',
+      () {
+        // Recorded before the measurable was switched to choices.
+        final legacy = MeasurementData(
+          value: 3,
+          dateFrom: DateTime(2024, 3, 15),
+          dateTo: DateTime(2024, 3, 15),
+          dataTypeId: measurableHydration.id,
+        );
+        expect(measurementValueLabel(legacy, measurableHydration), '3');
+      },
+    );
+
+    test(
+      'and a choice id resolves even after the measurable went numeric',
+      () {
+        final numeric = measurableHydration.copyWith(
+          valueKind: MeasurableValueKind.number,
+        );
+        expect(
+          measurementValueLabel(testMeasurementHydrationEntry.data, numeric),
+          'Clear',
+        );
+      },
+    );
   });
 }

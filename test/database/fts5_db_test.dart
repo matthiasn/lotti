@@ -192,6 +192,43 @@ void main() {
         },
       );
 
+      test(
+        'insertText with a choice recording indexes the choice title, not '
+        'the occurrence count',
+        () async {
+          when(
+            () => entitiesCacheService.getDataTypeById(measurableHydration.id),
+          ).thenReturn(measurableHydration);
+
+          await db.insertText(testMeasurementHydrationEntry);
+
+          final byTitle = await db
+              .watchFullTextMatches('"Hydration Clear"')
+              .first;
+          expect(byTitle, contains(testMeasurementHydrationEntry.meta.id));
+
+          final byCount = await db.watchFullTextMatches('"Hydration 1"').first;
+          expect(
+            byCount,
+            isNot(contains(testMeasurementHydrationEntry.meta.id)),
+          );
+        },
+      );
+
+      test(
+        'a measurement whose definition is gone still indexes its number',
+        () async {
+          when(
+            () => entitiesCacheService.getDataTypeById(measurableChocolate.id),
+          ).thenReturn(null);
+
+          await db.insertText(testMeasurementChocolateEntry);
+
+          final matches = await db.watchFullTextMatches('100').first;
+          expect(matches, contains(testMeasurementChocolateEntry.meta.id));
+        },
+      );
+
       test('insertText with quantitative entry indexes health data', () async {
         await db.insertText(testWeightEntry);
 

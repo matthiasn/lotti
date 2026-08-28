@@ -155,6 +155,43 @@ void main() {
     );
 
     testWidgets(
+      'a choice measurable captions with its description only — a leftover '
+      'unit and the aggregation are ignored',
+      (tester) async {
+        final withUnit = _makeDataType(
+          displayName: 'Hydration',
+          unitName: 'ml',
+          description: 'Urine colour check',
+          aggregationType: AggregationType.dailySum,
+        ).copyWith(valueKind: MeasurableValueKind.choice);
+
+        await _pumpWidget(
+          tester,
+          MeasurablesChartInfoWidget(
+            withUnit,
+            aggregationType: AggregationType.dailySum,
+            enableCreate: false,
+          ),
+        );
+        expect(find.text('Hydration'), findsOneWidget);
+        expect(find.text('Urine colour check'), findsOneWidget);
+        expect(find.text('ml'), findsNothing);
+        expect(find.text('Daily total'), findsNothing);
+
+        await _pumpWidget(
+          tester,
+          MeasurablesChartInfoWidget(
+            withUnit.copyWith(description: ''),
+            aggregationType: AggregationType.dailySum,
+            enableCreate: false,
+          ),
+        );
+        expect(find.text('ml'), findsNothing);
+        expect(find.text('Daily total'), findsNothing);
+      },
+    );
+
+    testWidgets(
       'humanized aggregation appears in the subtitle, not the title',
       (tester) async {
         const expected = {

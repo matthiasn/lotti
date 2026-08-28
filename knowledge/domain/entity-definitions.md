@@ -1,9 +1,9 @@
 ---
 type: Domain Model
 title: Entity definitions
-description: The five configuration entities — categories, labels, habits, dashboards, measurables — and why the category flag is a consent switch rather than a preference.
+description: The five configuration entities — categories, labels, habits, dashboards, measurables — why the category flag is a consent switch rather than a preference, and how a measurable records a number or one of its own choices.
 resource: ../../lib/classes/entity_definitions.dart
-tags: [domain, categories, labels, habits, dashboards]
+tags: [domain, categories, labels, habits, dashboards, measurables]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T02:30:00Z }
 stale_after: 2027-07-12
@@ -11,7 +11,7 @@ sources:
   - id: definitions
     resource: ../../lib/classes/entity_definitions.dart
     title: EntityDefinition union
-    last_modified: 2026-07-26
+    last_modified: 2026-08-28
 ---
 
 `EntityDefinition` is a union of five configuration entities:
@@ -72,6 +72,45 @@ so a later category edit does not reach back into existing agents. See
 
 The category model deliberately does **not** contain prompt allowlists, and the
 old `automaticPrompts` concept is not part of it.
+
+# `MeasurableDataType` records a number or a choice
+
+A measurable's `valueKind` decides what a `MeasurementData` for it carries:
+
+| `valueKind` | Recorded as | `MeasurementData` |
+|-------------|-------------|-------------------|
+| `number` (or absent) | a `num` with the definition's `unitName` | `value` |
+| `choice` | one of the definition's `choices` | `choiceId`, with `value: 1` |
+
+**Absent means `number`.** Every measurable that predates the choice kind has
+no `valueKind` key, and `@JsonKey(unknownEnumValue: number)` makes a kind this
+build does not know read the same way, so an older client sees a newer
+definition as a numeric measurable rather than failing to decode it.
+
+**A choice is an id with a title, never a Dart enum.** `MeasurableChoice` is
+`{id, title, archived?}`: the id is what a measurement stores and stays
+constant for the choice's lifetime; the title is presentation and may be
+renamed at will without touching recorded history. That split is the whole
+point — a serialized enum value cannot be relabelled, and a user's own
+vocabulary ("clear", "pale", "dark") changes. `archived` retires a choice from
+the recording surfaces while entries that recorded it keep resolving to its
+title; an archived choice can be restored. The list order is the user's
+display order, and the only structure the set has.
+
+**The data decides, not the definition.** `measurementValueLabel`
+(`lib/features/journal/util/entry_tools.dart`) reads a measurement as a choice
+recording iff `choiceId` is set: a number recorded before the measurable was
+switched to choices still reads as its number, and a choice id still resolves
+after a switch back. A choice the definition no longer lists reads as a
+localized "removed choice" label.
+
+**`value` is `1` for a choice recording — one occurrence.** That is what lets
+every consumer that sums measurements per day — the signal window behind
+habits and goals, the numeric aggregators — count recordings instead of
+breaking on a missing number, and it is why a habit rule on a choice
+measurable can only be "any entry today": the sum is a count, not a quantity.
+`MeasurableDataTypeChoices` (`isChoice`, `activeChoices`, `archivedChoices`,
+`choiceById`) is the extension the surfaces read the kind through.
 
 # Related
 

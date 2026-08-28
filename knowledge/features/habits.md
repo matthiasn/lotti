@@ -11,7 +11,7 @@ sources:
   - id: src
     resource: ../../lib/features/habits
     title: Habits feature source
-    last_modified: 2026-08-16
+    last_modified: 2026-08-28
   - id: definitions
     resource: ../../lib/classes/entity_definitions.dart
     title: HabitDefinition
@@ -247,7 +247,9 @@ the current instant.
 The `autoCompleteReason` stored on the entry names the satisfied leaves —
 `Water · 750`, `Steps · 7412`, `running` — resolving measurable names through
 `EntitiesCacheService` and health types through the dashboard health config,
-so the habit row can say what checked it off without another read.
+so the habit row can say what checked it off without another read. A choice
+measurable is named without its value: its day total is an occurrence count,
+not something the user recorded.
 
 Consumers: the `completions` stream and `autoCompletedToday`, which
 `HabitsSummaryCard` consults so a day the engine finished does not play the
@@ -299,7 +301,12 @@ the old dialog that embedded a whole linked dashboard. It renders **one
 measurable (its three most-logged values, from the same ranking the
 measurement dialog uses, plus *Other* for the full capture), and a two-week
 `SignalSparkline` — above the unchanged form (date, comment, Success / Skip /
-Missed, Record).
+Missed, Record). A **choice measurable** offers every active choice as a chip
+instead of suggestions — the set is the vocabulary, not a ranking — records
+one occurrence of the tapped choice (`MeasurableQuickValue`, the number-or-
+choice shape the chips, row and sheet pass around), reports today as *logged*
+rather than as a count, and in the editor its only rule is *any entry*: the
+threshold modes are numeric and are not shown for it.
 
 ```mermaid
 flowchart LR

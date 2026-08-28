@@ -366,9 +366,10 @@ class _MeasurementSelectListState extends State<_MeasurementSelectList> {
                           onSelectedChanged: (checked) {
                             setState(() {
                               if (checked ?? false) {
-                                _selected[item.id] =
-                                    item.aggregationType ??
-                                    AggregationType.dailySum;
+                                _selected[item.id] = item.isChoice
+                                    ? AggregationType.none
+                                    : item.aggregationType ??
+                                          AggregationType.dailySum;
                               } else {
                                 _selected.remove(item.id);
                               }
@@ -430,11 +431,13 @@ class _MeasurementSelectRow extends StatelessWidget {
     final aggregation = selectedAggregation;
     final selected = aggregation != null;
 
+    // A choice measurable is charted as a day strip; there is no
+    // aggregation to pick for it.
     return _PickerSelectRow(
       label: item.displayName,
       selected: selected,
       onChanged: onSelectedChanged,
-      trailing: aggregation != null
+      trailing: aggregation != null && !item.isChoice
           ? _ChartModeSelector(
               label: context.messages.dashboardMeasurementAggregationFor(
                 item.displayName,

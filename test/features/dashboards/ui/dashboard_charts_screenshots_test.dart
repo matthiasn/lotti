@@ -24,6 +24,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/dashboards/state/health_chart_controller.dart';
 import 'package:lotti/features/dashboards/state/measurables_controller.dart';
 import 'package:lotti/features/dashboards/state/workout_chart_controller.dart';
@@ -54,6 +55,52 @@ final DateTime _rangeEnd = DateTime(2026, 5, 31);
 
 const _measureBarId = 'screenshot-water';
 const _measureLineId = 'screenshot-mood';
+const _measureChoiceId = 'screenshot-hydration';
+
+final MeasurableDataType _hydrationCheck = MeasurableDataType(
+  id: _measureChoiceId,
+  displayName: 'Hydration check',
+  description: 'Urine colour, first thing',
+  unitName: '',
+  createdAt: DateTime(2024),
+  updatedAt: DateTime(2024),
+  vectorClock: const VectorClock({}),
+  version: 1,
+  valueKind: MeasurableValueKind.choice,
+  choices: const [
+    MeasurableChoice(id: 'hyd-clear', title: 'Clear'),
+    MeasurableChoice(id: 'hyd-pale', title: 'Pale yellow'),
+    MeasurableChoice(id: 'hyd-dark', title: 'Dark yellow'),
+  ],
+);
+
+/// A recording most days of the range, cycling through the choices.
+List<JournalEntity> _hydrationRecordings() {
+  final days = _rangeEnd.difference(_rangeStart).inDays;
+  const cycle = ['hyd-clear', 'hyd-pale', 'hyd-clear', 'hyd-clear', 'hyd-dark'];
+  return [
+    for (var i = 0; i < days; i++)
+      if (i % 9 != 4)
+        JournalEntity.measurement(
+          meta: Metadata(
+            id: 'hydration-$i',
+            createdAt: _rangeStart.add(Duration(days: i, hours: 8)),
+            updatedAt: _rangeStart.add(Duration(days: i, hours: 8)),
+            dateFrom: _rangeStart.add(Duration(days: i, hours: 8)),
+            dateTo: _rangeStart.add(Duration(days: i, hours: 8)),
+            starred: false,
+            private: false,
+          ),
+          data: MeasurementData(
+            value: 1,
+            dataTypeId: _measureChoiceId,
+            choiceId: cycle[i % cycle.length],
+            dateFrom: _rangeStart.add(Duration(days: i, hours: 8)),
+            dateTo: _rangeStart.add(Duration(days: i, hours: 8)),
+          ),
+        ),
+  ];
+}
 
 const _workoutConfig =
     DashboardItem.workoutChart(
@@ -204,6 +251,16 @@ List<Override> _overrides() {
       rangeEnd: _rangeEnd,
     )).overrideWithBuild((ref, notifier) => _series(78, 6, everyNthDay: 3)),
 
+    // Measurement (choice strip).
+    measurableDataTypeControllerProvider(_measureChoiceId).overrideWithBuild(
+      (ref, notifier) => _hydrationCheck,
+    ),
+    measurableChartDataControllerProvider((
+      measurableDataTypeId: _measureChoiceId,
+      rangeStart: _rangeStart,
+      rangeEnd: _rangeEnd,
+    )).overrideWithBuild((ref, notifier) => _hydrationRecordings()),
+
     // BMI / weight.
     healthObservationsControllerProvider((
       healthDataType: 'HealthDataType.WEIGHT',
@@ -223,6 +280,12 @@ Widget _cards() {
     ),
     MeasurablesBarChart(
       measurableDataTypeId: _measureLineId,
+      rangeStart: _rangeStart,
+      rangeEnd: _rangeEnd,
+      enableCreate: true,
+    ),
+    MeasurablesBarChart(
+      measurableDataTypeId: _measureChoiceId,
       rangeStart: _rangeStart,
       rangeEnd: _rangeEnd,
       enableCreate: true,
@@ -384,7 +447,7 @@ void main() {
   testWidgets('dashboard charts — dark', (tester) async {
     await _pump(tester, brightness: Brightness.dark);
     expect(find.textContaining('Water'), findsOneWidget);
-    expect(find.byIcon(LottiIcons.add), findsNWidgets(2));
+    expect(find.byIcon(LottiIcons.add), findsNWidgets(3));
     await _capture(tester, '01_dashboard_charts_dark');
   });
 
@@ -404,7 +467,7 @@ void main() {
       brightness: Brightness.dark,
       contentWidth: 480,
     );
-    expect(find.byIcon(LottiIcons.add), findsNWidgets(2));
+    expect(find.byIcon(LottiIcons.add), findsNWidgets(3));
     await _capture(tester, '03_dashboard_charts_narrow_pane_dark');
   });
 }

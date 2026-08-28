@@ -253,6 +253,16 @@ class HabitEditorPageState extends ConsumerState<HabitEditorPage> {
 
     final state = ref.watch(habitSettingsControllerProvider(habitId));
     final signals = _formFrom(state);
+    // A bound on a choice measurable cannot be shown or satisfied; drop it
+    // once the definitions are known, after this frame, so the controller's
+    // rule matches the card. Returns the same instance when nothing changed,
+    // so this settles after one pass.
+    final unbounded = signals.unboundedForChoices(measurablesById);
+    if (!identical(unbounded, signals)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _setSignals(unbounded);
+      });
+    }
     final item = state.habitDefinition;
     final showFrom = item.habitSchedule.mapOrNull(daily: (d) => d.showFrom);
     final alertAtTime = item.habitSchedule.mapOrNull(

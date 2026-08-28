@@ -35,6 +35,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
+import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
 
 class _MockGoalSpecRevisionService extends Mock
@@ -2179,6 +2180,53 @@ void main() {
     await tester.tap(find.text('Create measurable'));
     await tester.pumpAndSettle();
     expect(navigated, ['/settings/measurables/create']);
+  });
+
+  testWidgets('a choice measurable is not offered as a goal signal', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final doses = MeasurableDataType(
+      id: 'meds',
+      createdAt: DateTime(2026),
+      updatedAt: DateTime(2026),
+      displayName: 'Medication doses',
+      description: '',
+      unitName: 'doses',
+      version: 1,
+      vectorClock: null,
+    );
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: [
+          ...overrides(),
+          measurableDataTypesStreamProvider.overrideWith(
+            (ref) => Stream.value([doses, measurableHydration]),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Take my meds',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('goal-form-add-signal')),
+    );
+    await tester.tap(find.byKey(const ValueKey('goal-form-add-signal')));
+    await tester.pumpAndSettle();
+
+    // The numeric measurable can carry a target; the choice one cannot, so
+    // it is simply not there to pick.
+    expect(find.text('Medication doses'), findsOneWidget);
+    expect(find.text('Hydration'), findsNothing);
   });
 
   testWidgets('clearing a selected measurable target blocks confirmation', (

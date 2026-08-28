@@ -519,6 +519,48 @@ void main() {
       expect(find.text('100 g'), findsOneWidget);
     });
 
+    testWidgets('a choice recording shows the choice title as its chip', (
+      tester,
+    ) async {
+      when(
+        () => mockEntitiesCacheService.getDataTypeById(measurableHydration.id),
+      ).thenReturn(measurableHydration);
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          ModernJournalCard(item: testMeasurementHydrationEntry),
+        ),
+      );
+
+      expect(find.text('Hydration'), findsOneWidget);
+      expect(find.text('Clear'), findsOneWidget);
+      // The occurrence count backing the value never surfaces.
+      expect(find.text('1'), findsNothing);
+    });
+
+    testWidgets('a choice the definition dropped shows the removed label', (
+      tester,
+    ) async {
+      when(
+        () => mockEntitiesCacheService.getDataTypeById(measurableHydration.id),
+      ).thenReturn(measurableHydration);
+      final orphan = testMeasurementHydrationEntry.copyWith(
+        data: testMeasurementHydrationEntry.data.copyWith(choiceId: 'gone'),
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidget(ModernJournalCard(item: orphan)),
+      );
+
+      final BuildContext context = tester.element(
+        find.byType(ModernJournalCard),
+      );
+      expect(
+        find.text(context.messages.measurableChoiceNotFound),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('measurement falls back to not-found when type is unknown', (
       tester,
     ) async {
@@ -572,7 +614,8 @@ void main() {
       expect(find.byIcon(LottiIcons.measure), findsOneWidget);
       expect(find.text(measurableCoverage.displayName), findsOneWidget);
       // value 55 + unit '%' -> '55 %'.
-      expect(find.text('55 %'), findsOneWidget);
+      // Same rule as the entry summary: no space before a percent sign.
+      expect(find.text('55%'), findsOneWidget);
     });
 
     testWidgets('shows starred icon when entry is starred', (tester) async {

@@ -36,9 +36,14 @@ class MeasurablesChartInfoWidget extends StatelessWidget {
     // like the health/workout cards' "bpm"/"kcal"). Only when a measurable has
     // no unit (e.g. a 1-10 rating) do we fall back to its description, then to
     // the humanized aggregation. Never an "[agg] · [description]" stack.
-    final unit = measurableDataType.unitName;
+    // A choice measurable has neither a unit nor an aggregation to speak of
+    // (a leftover unit from before the switch must not caption its strip),
+    // so its only caption is the description.
+    final unit = measurableDataType.isChoice ? '' : measurableDataType.unitName;
     final description = measurableDataType.description;
-    final aggregation = aggregationDisplayLabel(context, aggregationType);
+    final aggregation = measurableDataType.isChoice
+        ? ''
+        : aggregationDisplayLabel(context, aggregationType);
     final subtitle = unit.isNotEmpty
         ? unit
         : (description.isNotEmpty

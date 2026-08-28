@@ -6,7 +6,9 @@ chosen and ordered by the user, grouped on one page.
 ## What it does for the user
 
 - **Builds a view per interest.** A dashboard is a named, ordered set of charts —
-  measurements, health data, workouts, habits, survey results, time.
+  measurements, health data, workouts, habits, survey results, time. A
+  measurable recorded as a choice draws a day strip shaded by the day's choice,
+  with a legend, rather than a bar chart.
 - **Groups by area.** The dashboard list can be filtered by category.
 - **Picks a time range.** One control re-slices every chart on the page.
 - **Records from the chart.** A measurement chart can open its capture flow

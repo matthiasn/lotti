@@ -43,6 +43,44 @@ class CategoryIconConverter implements JsonConverter<CategoryIcon?, String?> {
 
 enum AggregationType { none, dailySum, dailyMax, dailyAvg, hourlySum }
 
+/// How a [MeasurableDataType] records a value.
+///
+/// Absent from JSON on every measurable that predates the choice kind, so
+/// `null` reads as [number] everywhere — the original numeric measurable is
+/// the default, never a migration.
+enum MeasurableValueKind {
+  /// A number, optionally carrying a unit ("750 ml", "7.5").
+  number,
+
+  /// One of the measurable's own [MeasurableChoice]s — a user-defined set of
+  /// named values ("clear", "pale", "dark") rather than a quantity.
+  choice,
+}
+
+/// One selectable value of a [MeasurableValueKind.choice] measurable.
+///
+/// The [id] is what a measurement stores and what stays constant for the
+/// lifetime of the choice; the [title] is presentation and may be renamed at
+/// any time without touching recorded history. That split is the whole point
+/// of not using a Dart enum: a serialized enum value cannot be relabelled,
+/// and a user's own vocabulary changes.
+///
+/// [archived] retires a choice from the recording surfaces without deleting
+/// it, so entries that recorded it keep resolving to their title. `null` and
+/// `false` both mean active; the field is nullable so older definitions
+/// deserialize unchanged.
+@freezed
+abstract class MeasurableChoice with _$MeasurableChoice {
+  const factory MeasurableChoice({
+    required String id,
+    required String title,
+    bool? archived,
+  }) = _MeasurableChoice;
+
+  factory MeasurableChoice.fromJson(Map<String, dynamic> json) =>
+      _$MeasurableChoiceFromJson(json);
+}
+
 enum HabitCompletionType { success, skip, fail, open }
 
 /// Origin of a habit completion entry.
@@ -144,6 +182,16 @@ sealed class EntityDefinition with _$EntityDefinition {
     bool? favorite,
     String? categoryId,
     AggregationType? aggregationType,
+
+    /// [MeasurableValueKind.number] when absent. A kind this build does not
+    /// know reads as `number` rather than failing the whole definition.
+    @JsonKey(unknownEnumValue: MeasurableValueKind.number)
+    MeasurableValueKind? valueKind,
+
+    /// The selectable values of a [MeasurableValueKind.choice] measurable, in
+    /// the order the user arranged them. Kept (harmlessly) when the kind is
+    /// switched back to `number`, so a round trip loses nothing.
+    List<MeasurableChoice>? choices,
   }) = MeasurableDataType;
 
   const factory EntityDefinition.categoryDefinition({
@@ -293,6 +341,12 @@ abstract class MeasurementData with _$MeasurementData {
     required DateTime dateTo,
     required num value,
     required String dataTypeId,
+
+    /// The [MeasurableChoice.id] recorded for a choice measurable. Set only
+    /// for [MeasurableValueKind.choice]; [value] is then `1` — one occurrence
+    /// — so every consumer that sums measurements per day counts recordings
+    /// instead of breaking on a missing number.
+    String? choiceId,
   }) = _MeasurementData;
 
   factory MeasurementData.fromJson(Map<String, dynamic> json) =>
@@ -421,4 +475,35 @@ sealed class DashboardItem with _$DashboardItem {
 
   factory DashboardItem.fromJson(Map<String, dynamic> json) =>
       _$DashboardItemFromJson(json);
+}
+
+/// Choice-kind helpers on a [MeasurableDataType].
+extension MeasurableDataTypeChoices on MeasurableDataType {
+  /// Whether values are recorded as one of [choices] rather than a number.
+  bool get isChoice => valueKind == MeasurableValueKind.choice;
+
+  /// The choices still offered for recording, in the user's order. Archived
+  /// choices are excluded; a definition with no list yields an empty list.
+  List<MeasurableChoice> get activeChoices => [
+    for (final choice in choices ?? const <MeasurableChoice>[])
+      if (choice.archived != true) choice,
+  ];
+
+  /// The retired choices, in the user's order, so history stays legible and
+  /// an editor can restore one.
+  List<MeasurableChoice> get archivedChoices => [
+    for (final choice in choices ?? const <MeasurableChoice>[])
+      if (choice.archived == true) choice,
+  ];
+
+  /// The choice with [id], archived or not — history that recorded an
+  /// archived choice still has to resolve its title. `null` when [id] is
+  /// `null` or names no choice of this measurable.
+  MeasurableChoice? choiceById(String? id) {
+    if (id == null) return null;
+    for (final choice in choices ?? const <MeasurableChoice>[]) {
+      if (choice.id == id) return choice;
+    }
+    return null;
+  }
 }
