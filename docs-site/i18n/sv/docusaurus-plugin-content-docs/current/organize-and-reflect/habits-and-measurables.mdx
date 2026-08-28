@@ -24,66 +24,99 @@ upptäcka mönster utan att en missad dag behandlas som hela historien.
   alt="Vanepanel för Penguin-operationer med habitatkontroller, pingvinupprop, sardininventarium, slutförandestatus, sviter och senaste historik"
 />
 
-### Skapa och hitta vanedefinitioner
+### Skapa och redigera vanor
 
-1. Öppna **Inställningar → Definitioner → Habiter**.
-2. Välj **Skapa vana**.
-3. Ge beteendet ett konkret, upprepbart namn och en användbar beskrivning.
-4. Välj dess kategori, alternativ och schema.
-5. Spara.
+1. Öppna **Habiter** och tryck på **+**. För att ändra en befintlig vana håller
+   du den intryckt eller öppnar dess registreringsblad och trycker på pennan.
+   **Inställningar → Definitioner → Habiter** listar fortfarande alla
+   definitioner och öppnar samma redigerare.
+2. Ge beteendet ett konkret namn. Exempelchipen (**mäta blodtrycket**,
+   **6 000 steg**, **funktionell styrketräning**, **ta medicin**) fyller i ett
+   namn och förväljer motsvarande signal.
+3. Tryck på **Fortsätt**, bestäm hur Lotti vet att vanan är gjord (nedan) och
+   ställ in kategori och tider.
+4. Tryck på **Skapa vana**.
+
+<ManualScreenshot
+  caseId="habits/editor-step1"
+  alt="Ny vana, steg 1 av 2: Vad vill du fortsätta göra? med fält för namn och beskrivning samt exempelchip"
+/>
+
+<ManualScreenshot
+  caseId="habits/editor-step2"
+  alt="Ny vana, steg 2 av 2: Hur vet vi att det är gjort? med den manuella raden, en Steg-signal inställd på per dag minst 6 000, Lägg till en signal och avsnittet Inställningar"
+/>
+
+### Låta registrerad data bocka av en vana
+
+Kortet **Hur vet vi att det är gjort?** listar vanans signaler. **Jag bockar av
+själv** är alltid på – varje vana kan registreras för hand. **Lägg till en
+signal** erbjuder tre slag:
+
+- ett **mätvärde** som du registrerar i Lotti (valfri post, eller en dagssumma
+  minst / högst ett värde, i mätvärdets enhet);
+- **hälsodata** importerad från Apple Hälsa eller Health Connect (valfri
+  mätning, eller ett dagsvärde minst / högst en tröskel – steg börjar på minst
+  6 000);
+- en **träningspass**-typ som förekommit i dina importer (valfritt pass, eller
+  tid, sträcka eller energi minst / högst ett värde).
+
+Med två eller fler signaler väljer **När vanan räknas som gjord** om **valfri**
+signal, **alla** signaler eller **minst N** av dem fullbordar den. När dagens
+data uppfyller regeln bockas vanan av åt dig, markeras **auto** på sidan
+Habiter med signal och tid, och meddelas med en avisering – vanor som fullbordas inom några sekunder slås ihop till en, varje vana meddelas högst en gång per dag, och
+**Meddela vid automatisk avbockning** stänger av det per vana. Det du registrerar själv, även
+ett överhopp, vinner alltid över den automatiska avbockningen.
+
+### Redigerarens inställningar
 
 <ManualScreenshot
   caseId="habits/settings-list"
-  alt="Vaneinställningar med Kejsarpingvinens uppräkning, Översikt av sardinprognosen och Gå med habitatsälar, med favorit-, inaktiv- och privatstatus"
-  caption="Sök bland definitioner här. Stjärnan, det dolda ögat och låset markerar favorit-, inaktiva och privata vanor."
+  alt="Vaneinställningar med Upprop av kejsarpingviner, Granska sardinprognosen och Gå runt habitatets tätningar, med statusarna favorit, inaktiv och privat"
+  caption="Sök definitioner här. Stjärnan, det dolda ögat och låset markerar favorit-, inaktiva och privata vanor."
 />
 
 <ManualScreenshot
   caseId="habits/settings-detail"
-  alt="Redigerare för vanan Kejsarpingvinens uppräkning med expeditionsbeskrivning, kategorin Penguin-operationer och alternativ för favorit, privat och aktiv"
+  alt="Sidan Redigera vana för Upprop av kejsarpingviner med signalkortet, avsnittet Inställningar och alternativen favorit, privat och aktiv"
 />
-
-Definitionsredigeraren innehåller:
-
-- **Kategori** för filtrering och visuell kontext.
-- **Instrumentpanel** när vanan ska visas som ett diagram på en vald
-  instrumentpanel.
-- **Favorit** för högre framträdande.
-- **Privat** för att dölja den om inte privata poster visas.
-- **Aktiv** för att styra om den visas på vanesidan, utan att dess historik
-  raderas.
-
-### Schemalägg en daglig vana
 
 <ManualScreenshot
   caseId="habits/schedule"
-  alt="Schema för vanan Kejsarpingvinens uppräkning med start 1 juli, visat från 06:00 och med en varning 06:30"
+  alt="Redigerarens avsnitt Inställningar med kategori, startdatum, visa från, aviseringstid och reglaget för meddelande vid automatisk avbockning"
 />
 
-Den nuvarande redigeraren utgår från dagliga vanor. Sätt ett **Startdatum**,
-skjut eventuellt upp när vanan visas via **Visa från**, och välj eventuellt
-när Lotti ska visa en påminnelse via **Visa varning på**. Datamodellen
-förstår också vecko- och månadsscheman, men den nuvarande redigeraren visar
-de rikare tidskontrollerna för dagliga vanor.
+- **Kategori** för filtrering och visuell inramning.
+- **Startdatum**, och för en daglig vana tiden den **visas från** och när Lotti
+  ska **visa en avisering**. Datamodellen förstår även vecko- och månadsplaner;
+  redigeraren visar dessa tidsinställningar för dagliga vanor.
+- **Meddela vid automatisk avbockning** (på som standard).
+- Vid redigering: **Favorit** för större synlighet, **Privat** för att dölja
+  den om inte privata poster visas, **Aktiv** för att styra om den syns på
+  sidan Habiter utan att radera historiken, och **Radera**.
 
 ### Registrera vad som faktiskt hände
 
-Öppna en vana som ska göras eller använd dess snabbåtgärd. Det detaljerade
-slutförandeformuläret stödjer tre utfall:
+Öppna en vana som ska göras eller använd dess snabbåtgärd.
+Registreringsbladet visar först vanans egna signaler – var och en med sin
+regelstatus och en tvåveckorskurva, och för ett mätvärde chip med de värden du
+registrerar oftast (hälsodata och träningspass kommer från importer och har
+inga chip). Ett tryck på ett chip registrerar mätningen direkt; om det fullbordar vanan är
+**Lyckades** förvalt och du kan fortfarande lägga till en kommentar före
+**Registrera**. Under signalerna erbjuder formuläret tre utfall:
 
-- **Framgång** — beteendet inträffade.
-- **Missade** — det var väntat och möjligt, men hände inte.
-- **Hoppa över** — det gällde rimligen inte den dagen.
+- **Lyckades** – beteendet skedde.
+- **Missade** – det var förväntat och möjligt, men skedde inte.
+- **Hoppa över** – det gällde rimligen inte den dagen.
 
 <ManualScreenshot
   caseId="habits/record"
-  alt="Slutförandeformulär för vanan att inspektera habitatets trycktätningar, med utfallen Framgång, Hoppa över och Missade samt datum och anteckningar"
+  alt="Registreringsblad för att inspektera habitatets tätningar, med signalraderna Krillransoner och Steg, snabbregistreringschip, kurvor och utfallen Lyckades, Hoppa över och Missade"
 />
 
-Använd det utfall som bevarar verkligheten. En uppriktig historik är mer
-användbar än ett diagram som ser perfekt ut. Slutförandeposter är
-journalposter, så senare vyer kan återskapa det effektiva resultatet för
-varje vana och dag.
+Använd det tillstånd som bevarar verkligheten. En ärlig historik är mer
+användbar än ett perfekt diagram. Registreringar är journalposter, så senare
+vyer kan återskapa det faktiska resultatet för varje vana och dag.
 
 ## Arbeta med mätvärden
 

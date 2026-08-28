@@ -24,64 +24,105 @@ patronen op te merken zonder één gemiste dag als het hele verhaal te behandele
   alt="Penguin Operations-gewoontedashboard met habitatcontroles, pinguïnappèl, sardine-inventaris, voltooiingsstatus, streaks en recente geschiedenis"
 />
 
-### Creëer en vind gewoontedefinities
+### Gewoontes aanmaken en bewerken
 
-1. Open **Instellingen → Definities → Gewoontes**.
-2. Selecteer **Gebruiking maken**.
-3. Geef het gedrag een concrete, herhaalbare naam en een bruikbare beschrijving.
-4. Kies de categorie, opties en planning.
-5. Sla op.
+1. Open **Gewoontes** en tik op **+**. Om een bestaande gewoonte te wijzigen,
+   houd je haar ingedrukt of open je haar registratieblad en tik je op het
+   potlood. **Instellingen → Definities → Gewoontes** toont nog steeds alle
+   definities en opent dezelfde editor.
+2. Geef het gedrag een concrete naam. De voorbeeldchips (**bloeddruk meten**,
+   **6.000 stappen**, **functionele krachttraining**, **medicijnen innemen**)
+   vullen een naam in en vinken het bijbehorende signaal alvast aan.
+3. Tik op **Doorgaan**, bepaal hoe Lotti weet dat de gewoonte gedaan is
+   (hieronder) en stel categorie en tijden in.
+4. Tik op **Gewoonte aanmaken**.
+
+<ManualScreenshot
+  caseId="habits/editor-step1"
+  alt="Nieuwe gewoonte, stap 1 van 2: Wat wil je blijven doen? met naam- en beschrijvingsvelden en voorbeeldchips"
+/>
+
+<ManualScreenshot
+  caseId="habits/editor-step2"
+  alt="Nieuwe gewoonte, stap 2 van 2: Hoe weten we dat het gedaan is? met de handmatige rij, een Stappen-signaal op per dag minstens 6.000, Signaal toevoegen en de sectie Instellingen"
+/>
+
+### Vastgelegde gegevens een gewoonte laten afvinken
+
+De kaart **Hoe weten we dat het gedaan is?** toont de signalen van de gewoonte.
+**Ik vink het zelf af** staat altijd aan: elke gewoonte kun je met de hand
+vastleggen. **Signaal toevoegen** biedt drie soorten:
+
+- een **meetwaarde** die je in Lotti vastlegt (elke invoer, of een dagtotaal
+  minstens / hoogstens een waarde, in de eenheid van de meetwaarde);
+- **gezondheidsgegevens** uit Apple Gezondheid of Health Connect (elke meting,
+  of een dagwaarde minstens / hoogstens een drempel; stappen beginnen op
+  minstens 6.000);
+- een **workout**-type dat in je imports voorkomt (elke sessie, of duur,
+  afstand of energie minstens / hoogstens een waarde).
+
+Bij twee of meer signalen bepaalt **Wanneer de gewoonte als gedaan telt** of
+**één van de** signalen, **alle** signalen of **minstens N** ervan haar
+afronden. Zodra de gegevens van de dag aan de regel voldoen, wordt de gewoonte
+voor je afgevinkt, op de Gewoontes-pagina als **auto** gemarkeerd met signaal
+en tijd, en met een melding aangekondigd: gewoontes die binnen enkele seconden na elkaar worden afgevinkt, worden gebundeld tot één melding, elke gewoonte wordt hoogstens één keer per dag
+aangekondigd, en **Melding bij automatisch afvinken** zet dat per gewoonte
+uit. Wat je zelf vastlegt, ook een overslaan, gaat altijd voor
+op het automatisch afvinken.
+
+### De instellingen van de editor
 
 <ManualScreenshot
   caseId="habits/settings-list"
-  alt="Gewoonte-instellingen met Keizerpinguïn roll call, Sardientvoorspelling herzien en Loop de habitat zeehonden, met favoriete, inactieve en privéstatussen"
-  caption="Zoek definities hier. De ster, het verborgen oog en het slotje identificeren favoriete, inactieve en privégewoonten."
+  alt="Gewoonte-instellingen met Keizerspinguïns tellen, Sardineprognose bekijken en Habitatafdichtingen nalopen, met de statussen favoriet, inactief en privé"
+  caption="Zoek hier definities. Ster, verborgen oog en slot markeren favoriete, inactieve en privégewoontes."
 />
 
 <ManualScreenshot
   caseId="habits/settings-detail"
-  alt="Gewoonte-editor voor Keizerpinguïn roll call met expeditiebeschrijving, categorie Penguin Operations en de opties favoriet, privé en actief"
+  alt="Pagina Gewoonte bewerken voor Keizerspinguïns tellen met de signaalkaart, de sectie Instellingen en de opties favoriet, privé en actief"
 />
-
-De definitie-editor bevat:
-
-- **Categorie** voor filtering en visuele context.
-- **Dashboard** wanneer de gewoonte als een diagram op een geselecteerd dashboard moet verschijnen.
-- **Favoriet** voor meer zichtbaarheid.
-- **Privé** om haar te verbergen, tenzij privé-invoer wordt getoond.
-- **Actief** om te bepalen of ze op de pagina Gewoontes verschijnt zonder de
-  geschiedenis te verwijderen.
-
-### Plan een dagelijkse gewoonte
 
 <ManualScreenshot
   caseId="habits/schedule"
-  alt="Schema van Keizerpinguïn roll call vanaf 1 juli, getoond vanaf 06:00 met een melding om 06:30"
+  alt="De sectie Instellingen van de editor met categorie, startdatum, tonen vanaf, meldingstijd en de schakelaar voor melding bij automatisch afvinken"
 />
 
-De huidige editor is dagelijks-eerst. Stel een **Begindatum** in, stel eventueel uit
-vanaf wanneer de gewoonte wordt getoond met **Tonen van**, en kies optioneel wanneer
-Lotti een melding toont met **Alert tonen op**. Het datamodel begrijpt ook wekelijkse
-en maandelijkse schema's, maar de huidige editor toont de rijkere tijdsbesturing voor
-dagelijkse gewoonten.
+- **Categorie** om te filteren en visueel te plaatsen.
+- **Startdatum**, en bij een dagelijkse gewoonte de tijd vanaf wanneer ze
+  **getoond** wordt en wanneer Lotti een **melding** moet tonen. Het datamodel
+  kent ook wekelijkse en maandelijkse schema's; de editor toont deze
+  tijdinstellingen voor dagelijkse gewoontes.
+- **Melding bij automatisch afvinken** (standaard aan).
+- Bij bewerken: **Favoriet** voor meer nadruk, **Privé** om haar te verbergen
+  tenzij privé-items getoond worden, **Actief** om te bepalen of ze op de
+  Gewoontes-pagina verschijnt zonder de geschiedenis te wissen, en
+  **Verwijderen**.
 
-### Leg vast wat er werkelijk is gebeurd
+### Vastleggen wat er echt gebeurde
 
-Open een gewoonte die klaarstaat of gebruik de snelle actie ervan. Het gedetailleerde
-invulformulier ondersteunt drie uitkomsten:
+Open een gewoonte die aan de beurt is of gebruik haar snelle actie. Het
+registratieblad toont eerst de signalen van de gewoonte: elk met de status van
+zijn regel en een grafiekje van twee weken, en bij een meetwaarde chips met de
+waarden die je het vaakst vastlegt (gezondheidsgegevens en workouts komen uit
+imports en hebben geen chips). Een tik op een chip legt de meting meteen vast; rondt dat de
+gewoonte af, dan staat **Succes** alvast geselecteerd en kun je vóór
+**Vastleggen** nog een opmerking toevoegen. Onder de signalen kent het
+formulier drie uitkomsten:
 
-- **Succes** — het gedrag is gebeurd.
-- **Gemiste** — het werd verwacht en was mogelijk, maar gebeurde niet.
-- **Overslaan** — het was die dag redelijkerwijs niet van toepassing.
+- **Succes** – het gedrag vond plaats.
+- **Gemist** – het werd verwacht en was mogelijk, maar gebeurde niet.
+- **Overslaan** – het was die dag redelijkerwijs niet van toepassing.
 
 <ManualScreenshot
   caseId="habits/record"
-  alt="Invulformulier voor het inspecteren van de habitatafdichtingen, met de uitkomsten Succes, Overslaan en Gemiste plus datum en notities"
+  alt="Registratieblad voor het inspecteren van de habitatafdichtingen, met de signaalrijen Krillrantsoenen en Stappen, snelle-registratiechips, grafiekjes en de uitkomsten Succes, Overslaan en Gemist"
 />
 
-Gebruik de status die de werkelijkheid bewaart. Een eerlijke geschiedenis is nuttiger
-dan een perfect ogende grafiek. Voltooiingsrecords zijn logboekinvoer, dus latere
-weergaven kunnen voor elke gewoonte en dag het effectieve resultaat reconstrueren.
+Kies de staat die de werkelijkheid bewaart. Een eerlijke geschiedenis is
+nuttiger dan een perfect ogende grafiek. Registraties zijn dagboekitems, zodat
+latere weergaven het werkelijke resultaat per gewoonte en dag kunnen
+reconstrueren.
 
 ## Werk met meetbare waarden
 

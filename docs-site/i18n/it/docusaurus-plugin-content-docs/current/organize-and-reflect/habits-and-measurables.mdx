@@ -25,67 +25,106 @@ storia.
   alt="Dashboard delle abitudini di Operazioni del Pinguino con i controlli dell'habitat, l'appello dei pinguini, l'inventario delle sardine, lo stato di completamento, le serie e la storia recente"
 />
 
-### Crea e trova le definizioni delle abitudini
+### Creare e modificare abitudini
 
-1. Apri **Impostazioni → Definizioni → Abitazioni**.
-2. Seleziona **Creare l'abitudine**.
-3. Dai al comportamento un nome concreto e ripetibile e una descrizione utile.
-4. Scegli categoria, opzioni e pianificazione.
-5. Salva.
+1. Apri **Abitudini** e tocca **+**. Per cambiare un'abitudine esistente,
+   tienila premuta oppure apri la sua scheda di registrazione e tocca la
+   matita. **Impostazioni → Definizioni → Abitudini** elenca ancora tutte le
+   definizioni e apre lo stesso editor.
+2. Dai al comportamento un nome concreto. I chip di esempio (**misurare la
+   pressione**, **6.000 passi**, **allenamento di forza funzionale**,
+   **prendere i farmaci**) compilano un nome e preselezionano il segnale
+   corrispondente.
+3. Tocca **Continua**, decidi come Lotti capisce che l'abitudine è fatta (sotto)
+   e imposta categoria e orari.
+4. Tocca **Crea abitudine**.
+
+<ManualScreenshot
+  caseId="habits/editor-step1"
+  alt="Nuova abitudine, passo 1 di 2: Cosa vuoi continuare a fare? con i campi nome e descrizione e i chip di esempio"
+/>
+
+<ManualScreenshot
+  caseId="habits/editor-step2"
+  alt="Nuova abitudine, passo 2 di 2: Come capiamo che è fatta? con la riga manuale, un segnale Passi impostato su al giorno almeno 6.000, Aggiungi un segnale e la sezione Impostazioni"
+/>
+
+### Lasciare che i dati registrati spuntino un'abitudine
+
+La scheda **Come capiamo che è fatta?** elenca i segnali dell'abitudine. **La
+spunto io** è sempre attivo: puoi registrare qualsiasi abitudine a mano.
+**Aggiungi un segnale** offre tre tipi:
+
+- un **misurabile** che registri in Lotti (qualsiasi voce, oppure un totale
+  giornaliero almeno / al massimo un valore, nell'unità del misurabile);
+- **dati sulla salute** importati da Apple Salute o Health Connect (qualsiasi
+  lettura, oppure un valore giornaliero almeno / al massimo una soglia; i
+  passi partono da almeno 6.000);
+- un tipo di **allenamento** comparso nelle tue importazioni (qualsiasi
+  sessione, oppure durata, distanza o energia almeno / al massimo un valore).
+
+Con due o più segnali, **Quando l'abitudine conta come fatta** decide se la
+completa **un segnale qualsiasi**, **tutti** i segnali o **almeno N** di essi.
+Quando i dati del giorno soddisfano la regola, l'abitudine viene spuntata per
+te, segnata **auto** nella pagina Abitudini con segnale e ora, e annunciata con
+una notifica: le abitudini completate a pochi secondi di distanza sono raggruppate in una, ogni abitudine è annunciata al massimo una volta al
+giorno, e **Notifica al completamento automatico** la disattiva per abitudine. Ciò che registri tu, anche un salto, prevale sempre
+sulla spunta automatica.
+
+### Le impostazioni dell'editor
 
 <ManualScreenshot
   caseId="habits/settings-list"
-  alt="Impostazioni delle abitudini con Imperatore pinguino roll chiamata, Recensione sardine previsione e Camminare le foche dell'habitat, con stati preferito, inattivo e privato"
-  caption="Cerca le definizioni qui. La stella, l'occhio nascosto e il lucchetto identificano le abitudini preferite, inattive e private."
+  alt="Impostazioni delle abitudini con Appello dei pinguini imperatore, Rivedere la previsione delle sardine e Percorrere le guarnizioni dell'habitat, con stati preferito, inattivo e privato"
+  caption="Cerca qui le definizioni. Stella, occhio nascosto e lucchetto indicano le abitudini preferite, inattive e private."
 />
 
 <ManualScreenshot
   caseId="habits/settings-detail"
-  alt="Editor dell'abitudine Imperatore pinguino roll chiamata con la descrizione della spedizione, la categoria Operazioni del Pinguino e le opzioni preferito, privato e attivo"
+  alt="Pagina Modifica abitudine per Appello dei pinguini imperatore con la scheda dei segnali, la sezione Impostazioni e le opzioni preferito, privato e attivo"
 />
-
-L'editor della definizione include:
-
-- **Categoria** per il filtro e il contesto visivo.
-- **Dashboard** quando l'abitudine deve apparire come grafico su una dashboard
-  selezionata.
-- **Preferito** per una maggiore visibilità.
-- **Privato** per nasconderla a meno che le voci private non siano mostrate.
-- **Attivo** per controllare se appare nella pagina delle abitudini senza
-  cancellarne la storia.
-
-### Pianifica un'abitudine quotidiana
 
 <ManualScreenshot
   caseId="habits/schedule"
-  alt="Pianificazione dell'abitudine Imperatore pinguino roll chiamata che parte dal 1 luglio, mostrata dalle 06:00 con un avviso alle 06:30"
+  alt="La sezione Impostazioni dell'editor con categoria, data di inizio, mostra da, ora dell'avviso e l'interruttore di notifica al completamento automatico"
 />
 
-L'editor attuale è pensato prima di tutto per le abitudini quotidiane. Imposta
-una **Data di inizio**, ritarda facoltativamente il momento da cui l'abitudine
-è mostrata con **Mostra da**, e scegli facoltativamente quando Lotti deve
-mostrare un avviso con **Mostra all'allerta**. Il modello dei dati comprende
-anche pianificazioni settimanali e mensili, ma l'editor attuale espone i
-controlli temporali più ricchi per le abitudini quotidiane.
+- **Categoria** per filtrare e dare contesto visivo.
+- **Data di inizio** e, per un'abitudine giornaliera, l'ora da cui viene
+  **mostrata** e quando Lotti deve **mostrare un avviso**. Il modello dati
+  capisce anche piani settimanali e mensili; l'editor espone questi controlli
+  orari per le abitudini giornaliere.
+- **Notifica al completamento automatico** (attiva per impostazione
+  predefinita).
+- In modifica: **Preferita** per maggiore rilievo, **Privata** per nasconderla
+  a meno che non siano mostrate le voci private, **Attiva** per controllare se
+  compare nella pagina Abitudini senza cancellarne la cronologia, ed
+  **Elimina**.
 
-### Registra quello che è successo davvero
+### Registrare cosa è successo davvero
 
-Apri un'abitudine in scadenza o usa la sua azione rapida. Il modulo di
-completamento dettagliato supporta tre esiti:
+Apri un'abitudine in scadenza o usa la sua azione rapida. La scheda di
+registrazione mostra prima i segnali dell'abitudine: ognuno con lo stato della
+regola e un grafico di due settimane, e per un misurabile chip con i valori che
+registri più spesso (dati sulla salute e allenamenti arrivano dalle
+importazioni, quindi non hanno chip). Toccando un chip la misurazione viene
+registrata subito; se questo completa
+l'abitudine, **Successo** è preselezionato e puoi ancora aggiungere un commento
+prima di **Registra**. Sotto i segnali, il modulo offre tre esiti:
 
-- **Successo** — il comportamento è avvenuto.
-- **Mancato** — era previsto e possibile, ma non è avvenuto.
-- **Salta!** — quel giorno ragionevolmente non si applicava.
+- **Successo**: il comportamento c'è stato.
+- **Mancato**: era atteso e possibile, ma non è avvenuto.
+- **Salta**: quel giorno ragionevolmente non si applicava.
 
 <ManualScreenshot
   caseId="habits/record"
-  alt="Modulo di completamento dell'abitudine per ispezionare le guarnizioni dell'habitat dei pinguini, con gli esiti Successo, Salta! e Mancato più data e note"
+  alt="Scheda di registrazione per l'ispezione delle guarnizioni dell'habitat, con le righe di segnale Razioni di krill e Passi, chip di registrazione rapida, grafici e gli esiti Successo, Salta e Mancato"
 />
 
-Usa lo stato che preserva la realtà. Una storia sincera è più utile di un
-grafico dall'aspetto perfetto. Le registrazioni di completamento sono voci di
-diario, quindi le viste successive possono ricostruire il risultato effettivo
-per ogni abitudine e giorno.
+Usa lo stato che preserva la realtà. Una cronologia sincera è più utile di un
+grafico perfetto. Le registrazioni sono voci del diario, quindi le viste
+successive possono ricostruire il risultato effettivo per ogni abitudine e
+giorno.
 
 ## Lavora con i misurabili
 

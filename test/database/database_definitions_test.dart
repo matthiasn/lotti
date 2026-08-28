@@ -272,7 +272,6 @@ void main() {
             // ignore: deprecated_member_use_from_same_package
             defaultStoryId: habit.defaultStoryId,
             categoryId: habit.categoryId,
-            dashboardId: habit.dashboardId,
             priority: habit.priority,
           ),
         );

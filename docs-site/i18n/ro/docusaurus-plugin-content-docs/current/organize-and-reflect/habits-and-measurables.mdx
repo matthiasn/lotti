@@ -18,56 +18,105 @@ Pagina Obiceiuri organizează definițiile active în ceea ce este scadent acum,
   alt="Tabloul de bord al obiceiurilor Operațiuni cu pinguini, cu verificări ale habitatului, apel nominal, inventarul sardinelor, stare de finalizare, serii și istoric recent"
 />
 
-### Creați și găsiți definiții de obiceiuri
+### Crearea și editarea obiceiurilor
 
-1. Deschideți **Setări → Definiții → Obiceiuri**.
-2. Selectați **Creați obicei**.
-3. Dați comportamentului un nume concret, repetabil și o descriere utilă.
-4. Alegeți categoria, opțiunile și programul.
-5. Salvați.
+1. Deschideți **Obiceiuri** și atingeți **+**. Pentru a modifica un obicei
+   existent, țineți-l apăsat sau deschideți fișa sa de înregistrare și atingeți
+   creionul. **Setări → Definiții → Obiceiuri** listează în continuare toate
+   definițiile și deschide același editor.
+2. Denumiți comportamentul concret. Cipurile-exemplu (**măsurarea tensiunii**,
+   **6.000 de pași**, **antrenament funcțional de forță**, **luarea
+   medicamentelor**) completează un nume și preselectează semnalul potrivit.
+3. Atingeți **Continuați**, decideți cum știe Lotti că obiceiul este îndeplinit
+   (mai jos) și setați categoria și orele.
+4. Atingeți **Creați obiceiul**.
+
+<ManualScreenshot
+  caseId="habits/editor-step1"
+  alt="Obicei nou, pasul 1 din 2: Ce doriți să continuați să faceți? cu câmpurile pentru nume și descriere și cipuri-exemplu"
+/>
+
+<ManualScreenshot
+  caseId="habits/editor-step2"
+  alt="Obicei nou, pasul 2 din 2: Cum știm că este îndeplinit? cu rândul manual, un semnal Pași setat la zilnic cel puțin 6.000, Adăugați un semnal și secțiunea Setări"
+/>
+
+### Lăsați datele înregistrate să bifeze un obicei
+
+Cardul **Cum știm că este îndeplinit?** listează semnalele obiceiului. **Îl
+bifez eu** este mereu activ – orice obicei poate fi înregistrat manual.
+**Adăugați un semnal** oferă trei tipuri:
+
+- o **măsurătoare** pe care o înregistrați în Lotti (orice înregistrare sau un
+  total zilnic cel puțin / cel mult o valoare, în unitatea măsurătorii);
+- **date de sănătate** importate din Apple Health sau Health Connect (orice
+  măsurătoare sau o valoare zilnică cel puțin / cel mult un prag – pașii
+  pornesc de la cel puțin 6.000);
+- un tip de **antrenament** apărut în importurile dvs. (orice antrenament sau
+  durată, distanță ori energie cel puțin / cel mult o valoare).
+
+Cu două sau mai multe semnale, **Când obiceiul contează ca îndeplinit** alege
+dacă îl completează **orice** semnal, **toate** semnalele sau **cel puțin N**
+dintre ele. Când datele zilei îndeplinesc regula, obiceiul este bifat pentru
+dvs., marcat **auto** pe pagina Obiceiuri cu semnalul și ora, și anunțat cu o
+notificare – obiceiurile completate la câteva secunde distanță sunt grupate într-una,
+fiecare obicei este anunțat cel mult o dată pe zi, iar **Notificare la
+completarea automată** o dezactivează per obicei. Ce înregistrați dvs., inclusiv o omitere, are întotdeauna prioritate
+față de bifarea automată.
+
+### Setările editorului
 
 <ManualScreenshot
   caseId="habits/settings-list"
-  alt="Setările obiceiurilor, cu Apel nominal al pinguinilor imperiali, Revizuiți prognoza sardinelor și Inspectați sigiliile habitatului, cu stări favorit, inactiv și privat"
-  caption="Căutați definițiile aici. Steaua, ochiul ascuns și lacătul identifică obiceiurile favorite, inactive și private."
+  alt="Setările obiceiurilor cu Apelul pinguinilor imperiali, Verificarea prognozei de sardine și Parcurgerea garniturilor habitatului, cu stările favorit, inactiv și privat"
+  caption="Căutați definiții aici. Steaua, ochiul ascuns și lacătul identifică obiceiurile favorite, inactive și private."
 />
 
 <ManualScreenshot
   caseId="habits/settings-detail"
-  alt="Editorul obiceiului Apel nominal al pinguinilor imperiali, cu descrierea expediției, categoria Operațiuni cu pinguini și opțiunile favorit, privat și activ"
+  alt="Pagina Editați obiceiul pentru Apelul pinguinilor imperiali cu cardul de semnale, secțiunea Setări și opțiunile favorit, privat și activ"
 />
-
-Editorul definiției include:
-
-- **Categorie** pentru filtrare și context vizual.
-- **Tablou de bord** atunci când obiceiul trebuie să apară ca grafic într-un tablou de bord selectat.
-- **Favorit** pentru mai multă vizibilitate.
-- **Privat** pentru a-l ascunde dacă nu sunt afișate înregistrările private.
-- **Activ** pentru a controla dacă apare în pagina Obiceiuri fără a-i șterge istoricul.
-
-### Programați un obicei zilnic
 
 <ManualScreenshot
   caseId="habits/schedule"
-  alt="Programul apelului nominal al pinguinilor imperiali, începând la 1 iulie, afișat de la 06:00, cu alertă la 06:30"
+  alt="Secțiunea Setări a editorului cu categorie, dată de început, afișare de la, ora alertei și comutatorul de notificare la completarea automată"
 />
 
-Editorul actual este orientat în primul rând spre zile. Setați o **Dată de început**, folosiți opțional **afișat de la** pentru a amâna momentul din zi în care apare obiceiul și alegeți opțional când Lotti trebuie să **afișeze o alertă**. Modelul de date înțelege și programe săptămânale și lunare, însă editorul curent oferă controalele de timp mai bogate pentru obiceiurile zilnice.
+- **Categorie** pentru filtrare și context vizual.
+- **Data de început** și, pentru un obicei zilnic, ora de la care este
+  **afișat** și când Lotti trebuie să **afișeze o alertă**. Modelul de date
+  înțelege și planuri săptămânale și lunare; editorul expune aceste controale
+  de timp pentru obiceiurile zilnice.
+- **Notificare la completarea automată** (activată implicit).
+- La editare: **Favorit** pentru mai multă vizibilitate, **Privat** pentru a-l
+  ascunde dacă nu sunt afișate intrările private, **Activ** pentru a controla
+  dacă apare pe pagina Obiceiuri fără a-i șterge istoricul, și **Ștergeți**.
 
-### Înregistrați ce s-a întâmplat de fapt
+### Înregistrați ce s-a întâmplat cu adevărat
 
-Deschideți un obicei scadent sau folosiți acțiunea lui rapidă. Formularul detaliat de finalizare oferă trei rezultate:
+Deschideți un obicei scadent sau folosiți acțiunea sa rapidă. Fișa de
+înregistrare arată mai întâi semnalele obiceiului – fiecare cu starea regulii și un
+grafic pe două săptămâni, iar pentru o măsurătoare cipuri cu valorile pe care
+le înregistrați cel mai des (datele de sănătate și antrenamentele provin din
+importuri, deci nu au cipuri). Atingerea unui cip înregistrează măsurătoarea
+imediat; dacă astfel
+obiceiul este completat, **Succes** este preselectat și mai puteți adăuga un
+comentariu înainte de **Înregistrați**. Sub semnale, formularul acceptă trei
+rezultate:
 
-- **Reușită** — comportamentul s-a întâmplat.
-- **Ratată** — era așteptat și posibil, dar nu s-a întâmplat.
-- **Omitere** — nu s-a aplicat în mod rezonabil în acea zi.
+- **Succes** – comportamentul a avut loc.
+- **Ratat** – era așteptat și posibil, dar nu a avut loc.
+- **Omiteți** – în acea zi nu se aplica în mod rezonabil.
 
 <ManualScreenshot
   caseId="habits/record"
-  alt="Formularul de finalizare a obiceiului pentru inspectarea sigiliilor habitatului pinguinilor, cu rezultatele Reușită, Omitere și Ratată, plus dată și note"
+  alt="Fișa de înregistrare pentru inspectarea garniturilor habitatului, cu rândurile de semnal Rații de krill și Pași, cipuri de înregistrare rapidă, grafice și rezultatele Succes, Omiteți și Ratat"
 />
 
-Folosiți starea care păstrează realitatea. Un istoric sincer este mai util decât un grafic cu aspect perfect. Înregistrările de finalizare sunt intrări de jurnal, astfel încât perspectivele ulterioare pot reconstrui rezultatul efectiv pentru fiecare obicei și zi.
+Folosiți starea care păstrează realitatea. Un istoric sincer este mai util
+decât un grafic perfect. Înregistrările sunt intrări de jurnal, așa că
+vizualizările ulterioare pot reconstitui rezultatul efectiv pentru fiecare
+obicei și zi.
 
 ## Lucrați cu măsurători
 

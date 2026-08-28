@@ -24,62 +24,99 @@ den vyprávěl celý příběh.
   alt="Přehled návyků Tučňáčí provoz s kontrolami obydlí, nástupem tučňáků, inventurou sardinek, stavem dokončení, sériemi a nedávnou historií"
 />
 
-### Vytvářej a hledej definice návyků
+### Vytváření a úprava návyků
 
-1. Otevři **Nastavení → Definice → Návyky**.
-2. Vyber **Vytvořit návyk**.
-3. Pojmenuj chování konkrétně a opakovatelně a přidej užitečný popis.
-4. Vyber kategorii, možnosti a rozvrh.
-5. Ulož.
+1. Otevři **Návyky** a klepni na **+**. Existující návyk upravíš dlouhým
+   stiskem nebo tak, že otevřeš jeho záznamový list a klepneš na tužku.
+   **Nastavení → Definice → Návyky** dál zobrazuje všechny definice a otevírá
+   stejný editor.
+2. Pojmenuj chování konkrétně. Ukázkové čipy (**změřit tlak**, **6 000 kroků**,
+   **funkční silový trénink**, **vzít si léky**) vyplní název a předvyberou
+   odpovídající signál.
+3. Klepni na **Pokračovat**, rozhodni, jak Lotti pozná, že je návyk splněný
+   (níže), a nastav kategorii a časy.
+4. Klepni na **Vytvořit návyk**.
+
+<ManualScreenshot
+  caseId="habits/editor-step1"
+  alt="Nový návyk, krok 1 ze 2: V čem chceš pokračovat? s poli pro název a popis a ukázkovými čipy"
+/>
+
+<ManualScreenshot
+  caseId="habits/editor-step2"
+  alt="Nový návyk, krok 2 ze 2: Jak poznáme, že je hotovo? s ručním řádkem, signálem Kroky nastaveným na denně alespoň 6 000, Přidat signál a sekcí Nastavení"
+/>
+
+### Nech zaznamenaná data odškrtnout návyk
+
+Karta **Jak poznáme, že je hotovo?** vypisuje signály návyku. **Odškrtnu si to
+sám/sama** je vždy zapnuté – každý návyk jde zaznamenat ručně. **Přidat
+signál** nabízí tři druhy:
+
+- **měření**, které zaznamenáváš v Lotti (jakýkoli záznam, nebo denní součet
+  alespoň / nejvýše hodnota, v jednotce měření);
+- **zdravotní data** importovaná z Apple Zdraví nebo Health Connect (jakékoli
+  měření, nebo denní hodnota alespoň / nejvýše prahová hodnota – kroky začínají
+  na alespoň 6 000);
+- typ **tréninku**, který se objevil v tvých importech (jakýkoli trénink, nebo
+  doba, vzdálenost či energie alespoň / nejvýše hodnota).
+
+U dvou a více signálů rozhoduje **Kdy se návyk počítá jako splněný**, zda ho
+splní **libovolný** signál, **všechny** signály nebo **alespoň N** z nich.
+Jakmile data dne splní pravidlo, návyk se za tebe odškrtne, na stránce Návyky
+se označí **auto** se signálem a časem a oznámí se upozorněním – návyky splněné během několika sekund po sobě se sloučí do jednoho, každý návyk se oznámí nejvýše jednou denně a **Upozornit
+při automatickém odškrtnutí** to vypne pro jednotlivý návyk. Co zaznamenáš
+sám/sama, včetně přeskočení, má vždy přednost před automatickým odškrtnutím.
+
+### Nastavení editoru
 
 <ManualScreenshot
   caseId="habits/settings-list"
-  alt="Nastavení návyků s Nástupem tučňáků císařských, Kontrolou sardinkové předpovědi a Kontrolou těsnění obydlí v oblíbeném, neaktivním a soukromém stavu"
-  caption="Definice hledej zde. Hvězda, skryté oko a zámek označují oblíbené, neaktivní a soukromé návyky."
+  alt="Nastavení návyků s položkami Sčítání tučňáků císařských, Kontrola předpovědi sardinek a Obejít těsnění habitatu, se stavy oblíbený, neaktivní a soukromý"
+  caption="Tady hledej definice. Hvězda, skryté oko a zámek označují oblíbené, neaktivní a soukromé návyky."
 />
 
 <ManualScreenshot
   caseId="habits/settings-detail"
-  alt="Editor návyku Nástup tučňáků císařských s popisem expedice, kategorií Tučňáčí provoz a volbami oblíbené, soukromé a aktivní"
+  alt="Stránka Upravit návyk pro Sčítání tučňáků císařských s kartou signálů, sekcí Nastavení a volbami oblíbený, soukromý a aktivní"
 />
-
-Editor definice obsahuje:
-
-- **Kategorii** pro filtrování a vizuální kontext.
-- **Panel**, pokud se má návyk zobrazit jako graf ve vybraném přehledu.
-- **Oblíbené** pro vyšší viditelnost.
-- **Soukromé** pro skrytí, pokud nejsou zobrazené soukromé záznamy.
-- **Aktivní** pro řízení zobrazení na stránce Návyky bez smazání historie.
-
-### Naplánuj denní návyk
 
 <ManualScreenshot
   caseId="habits/schedule"
-  alt="Rozvrh nástupu tučňáků císařských od 1. července, zobrazovaný od 06:00 s upozorněním v 06:30"
+  alt="Sekce Nastavení editoru s kategorií, datem začátku, zobrazit od, časem upozornění a přepínačem upozornění při automatickém odškrtnutí"
 />
 
-Aktuální editor je zaměřený na denní návyky. Nastav **Datum začátku**, volitelně
-odlož **Zobrazovat od** a případně vyber čas, kdy má Lotti **Zobrazit
-upozornění**. Lotti umí pracovat také s týdenními a měsíčními rozvrhy, ale
-současný editor nabízí podrobnější časové ovládání pro denní návyky.
+- **Kategorie** pro filtrování a vizuální kontext.
+- **Datum začátku** a u denního návyku čas, od kdy se **zobrazuje**, a kdy má
+  Lotti **zobrazit upozornění**. Datový model rozumí i týdenním a měsíčním
+  plánům; editor tyto časové volby nabízí u denních návyků.
+- **Upozornit při automatickém odškrtnutí** (ve výchozím stavu zapnuto).
+- Při úpravě: **Oblíbený** pro větší důraz, **Soukromý** pro skrytí, pokud se
+  nezobrazují soukromé záznamy, **Aktivní** pro řízení, zda se zobrazí na
+  stránce Návyky, aniž by se smazala historie, a **Smazat**.
 
 ### Zaznamenej, co se skutečně stalo
 
-Otevři návyk čekající na splnění nebo použij jeho rychlou akci. Podrobný
-formulář dokončení podporuje tři výsledky:
+Otevři návyk, který je na řadě, nebo použij jeho rychlou akci. Záznamový list
+nejdřív ukáže vlastní signály návyku – každý se stavem pravidla a dvoutýdenním
+grafem, u měření navíc s čipy pro hodnoty, které zaznamenáváš nejčastěji
+(zdravotní data a tréninky pocházejí z importů, takže čipy nemají). Klepnutí
+na čip měření hned zaznamená; pokud tím návyk splníš, je předvybraný **Úspěch** a
+před **Zaznamenat** můžeš ještě přidat komentář. Pod signály formulář nabízí tři
+výsledky:
 
-- **Úspěch** — chování proběhlo.
-- **Zmeškáno** — bylo očekávané a možné, ale neproběhlo.
-- **Přeskočeno** — v daný den se rozumně nedalo uplatnit.
+- **Úspěch** – chování proběhlo.
+- **Nesplněno** – bylo očekávané a možné, ale neproběhlo.
+- **Přeskočit** – ten den to rozumně neplatilo.
 
 <ManualScreenshot
   caseId="habits/record"
-  alt="Formulář dokončení návyku kontroly těsnění obydlí s výsledky Úspěch, Přeskočeno a Zmeškáno, datem a poznámkami"
+  alt="Záznamový list pro kontrolu těsnění habitatu s řádky signálů Krillové příděly a Kroky, čipy rychlého záznamu, grafy a výsledky Úspěch, Přeskočit a Nesplněno"
 />
 
-Použij stav, který zachovává skutečnost. Upřímná historie je užitečnější než
-dokonale vypadající graf. Záznamy dokončení jsou záznamy deníku, takže pozdější
-pohledy mohou obnovit účinný výsledek každého návyku a dne.
+Použij stav, který zachová realitu. Upřímná historie je užitečnější než
+dokonale vypadající graf. Záznamy jsou položky deníku, takže pozdější pohledy
+dokážou zrekonstruovat skutečný výsledek pro každý návyk a den.
 
 ## Práce s měřitelnými veličinami
 
