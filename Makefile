@@ -196,6 +196,15 @@ fluttium_docs: manual_screenshots
 store_screenshots_android:
 	FLUTTER="$(FLUTTER_CMD)" ./tool/store_screenshots/android.sh
 
+# App Store listing screenshots, captured on iOS simulators the same way. The
+# simulators render at their native device sizes, which are exactly the sizes
+# App Store Connect asks for (6.9" iPhone, 13" iPad); see
+# tool/store_screenshots/ios.sh for the knobs. Output lands in
+# build/store_screenshots/ios/<device> (gitignored).
+.PHONY: store_screenshots_ios
+store_screenshots_ios:
+	FLUTTER="$(FLUTTER_CMD)" ./tool/store_screenshots/ios.sh
+
 .PHONY: manual_deps
 manual_deps: docs-site/node_modules
 

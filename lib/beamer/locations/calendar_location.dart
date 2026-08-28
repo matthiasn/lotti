@@ -1,6 +1,7 @@
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/beamer/locations/route_state_mirror.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/daily_os_next_routes.dart';
@@ -33,11 +34,16 @@ class CalendarLocation extends BeamLocation<BeamState> {
     final isTimeAnalysis = state.uri.path == '/calendar/time';
     // Single writer for the sidebar sub-entry highlights: the URL.
     // Registration-guarded for location-level tests that build pages
-    // without the service locator.
+    // without the service locator; deferred past the frame when this runs
+    // inside a build, because the entries listening are siblings of the
+    // delegate — see [mirrorRouteState].
     if (getIt.isRegistered<NavService>()) {
-      getIt<NavService>()
-        ..desktopShowTimeAnalysis.value = isTimeAnalysis
-        ..desktopShowAiImpact.value = false;
+      final navService = getIt<NavService>();
+      mirrorRouteState(() {
+        navService
+          ..desktopShowTimeAnalysis.value = isTimeAnalysis
+          ..desktopShowAiImpact.value = false;
+      });
     }
 
     final pages = [

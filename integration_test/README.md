@@ -80,29 +80,40 @@ Basic UI smoke test that creates a journal entry through the UI.
 
 ### 4. Store listing screenshots (`store_screenshots_test.dart`)
 
-Captures the Play Store listing screenshots on a real Android device or emulator.
-Not a verification suite and excluded from `make integration_test` by its
-`store-screenshots` tag.
+Captures the store listing screenshots — Play Store and App Store — on a real
+Android device or emulator, or on iOS simulators. Not a verification suite and
+excluded from `make integration_test` by its `store-screenshots` tag.
 
 It boots the production app shell on the tutorial harness — in-memory databases, a
 temp documents directory, the Intergalactic Penguin Logistics world seeded with its
 habits, time records and notes (`seedHistory: true`), and no demo-mode banner — then
-walks the task list, one task, habits, time analysis and the logbook, handing each
-screen to the driver as a PNG. Configuration is passed as dart-defines
+walks the task list, one task, habits, time analysis and the logbook. On Android
+each screen is captured on the device and handed to the driver as a PNG; on an
+iOS simulator the test announces each capture point on stdout and waits for the
+script, which takes the whole screen (status bar included) with `simctl` and
+acknowledges through a file in the app's sandbox. Configuration is passed as
+dart-defines
 (`LOTTI_STORE_THEME`, `LOTTI_MANUAL_LOCALE`) because the test runs on the device,
 whose environment is not the host's.
 
-Run it through the script, which also pins the emulator window to a ratio Play
-accepts (see [knowledge/conventions/screenshots.md](../knowledge/conventions/screenshots.md)):
+Run it through the platform's script (see
+[knowledge/conventions/screenshots.md](../knowledge/conventions/screenshots.md)).
+The Android one also pins the emulator window to a ratio Play accepts; the iOS
+one boots the simulators whose native sizes are the App Store's listing sizes
+and dresses the status bar to Apple's 9:41 convention:
 
 ```bash
 make store_screenshots_android                 # attached emulator-5554, dark + light
 make store_screenshots_android LOTTI_AVD=Medium_Phone_API_36.0 LOTTI_STORE_THEMES=dark
+make store_screenshots_ios                     # iPhone 17 Pro Max + iPad Pro 13-inch, dark + light
+make store_screenshots_ios LOTTI_IOS_DEVICES="iPhone 17 Pro Max" LOTTI_STORE_THEMES=dark
 ```
 
-Output lands in `build/store_screenshots/android/`. CI runs the same script on an
-emulator in `store-screenshots-android.yml` (manual dispatch, or a pull request that
-touches the capture) and uploads the PNGs as a workflow artifact.
+Output lands in `build/store_screenshots/android/` and
+`build/store_screenshots/ios/<device>/`. CI runs the same scripts — on an emulator
+in `store-screenshots-android.yml`, on simulators in `store-screenshots-ios.yml`
+(manual dispatch, or a pull request that touches the capture) — and uploads the
+PNGs as workflow artifacts.
 
 ### 5. Manual Screenshots (`manual_screenshots_test.dart`)
 

@@ -1,5 +1,6 @@
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
+import 'package:lotti/beamer/locations/route_state_mirror.dart';
 import 'package:lotti/features/ai_consumption/ui/impact_analysis_page.dart';
 import 'package:lotti/features/dashboards/ui/pages/dashboard_page.dart';
 import 'package:lotti/features/dashboards/ui/pages/dashboards_list_page.dart';
@@ -24,7 +25,9 @@ class DashboardsLocation extends BeamLocation<BeamState> {
     final isDesktop = navService.isDesktopMode;
     final isAiImpact = state.uri.path == '/dashboards/impact';
 
-    navService.desktopShowAiImpact.value = isAiImpact;
+    // The AI Impact sidebar entry listening to this is a sibling of the
+    // delegate, so the mirror waits for the frame when built inside one.
+    mirrorRouteState(() => navService.desktopShowAiImpact.value = isAiImpact);
 
     if (isDesktop) {
       navService.desktopSelectedDashboardId.value =
