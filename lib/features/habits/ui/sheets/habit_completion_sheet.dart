@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_linkify/flutter_linkify.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/beamer/locations/habits_location.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
@@ -21,6 +22,7 @@ import 'package:lotti/pages/create/create_measurement_dialog.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/utils/platform.dart';
@@ -218,6 +220,10 @@ class _HabitCompletionSheetState extends ConsumerState<HabitCompletionSheet> {
         _started = picked;
       }),
       onClose: () => Navigator.pop(context),
+      onEdit: () {
+        Navigator.pop(context);
+        beamToNamed(HabitsLocation.editPath(widget.habitId));
+      },
       onRecord: _save,
     );
 
@@ -266,6 +272,7 @@ class _CompletionForm extends StatelessWidget {
     required this.onOutcomeChanged,
     required this.onPickDate,
     required this.onClose,
+    required this.onEdit,
     required this.onRecord,
   });
 
@@ -278,6 +285,7 @@ class _CompletionForm extends StatelessWidget {
   final ValueChanged<HabitCompletionType> onOutcomeChanged;
   final ValueChanged<DateTime> onPickDate;
   final VoidCallback onClose;
+  final VoidCallback onEdit;
   final VoidCallback onRecord;
 
   @override
@@ -322,6 +330,13 @@ class _CompletionForm extends StatelessWidget {
                         style: tokens.typography.styles.subtitle.subtitle1
                             .copyWith(color: tokens.colors.text.highEmphasis),
                       ),
+                    ),
+                    IconButton(
+                      key: const ValueKey('habit-sheet-edit'),
+                      padding: EdgeInsets.all(tokens.spacing.step3),
+                      tooltip: messages.habitEditorEditTitle,
+                      icon: const Icon(LottiIcons.edit),
+                      onPressed: onEdit,
                     ),
                     IconButton(
                       padding: EdgeInsets.all(tokens.spacing.step3),

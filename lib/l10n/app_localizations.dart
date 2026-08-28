@@ -12192,18 +12192,6 @@ abstract class AppLocalizations {
   /// **'Skipped'**
   String get habitCompletionStatusSkipped;
 
-  /// No description provided for @habitDashboardHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Select a dashboard'**
-  String get habitDashboardHint;
-
-  /// No description provided for @habitDashboardLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Dashboard (optional)'**
-  String get habitDashboardLabel;
-
   /// No description provided for @habitDayStatusSemantic.
   ///
   /// In en, this message translates to:
@@ -12221,6 +12209,378 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Do you want to delete this habit?'**
   String get habitDeleteQuestion;
+
+  /// No description provided for @habitEditorAddSignal.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a signal'**
+  String get habitEditorAddSignal;
+
+  /// No description provided for @habitEditorCompositeAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All signals'**
+  String get habitEditorCompositeAll;
+
+  /// No description provided for @habitEditorCompositeAny.
+  ///
+  /// In en, this message translates to:
+  /// **'Any signal'**
+  String get habitEditorCompositeAny;
+
+  /// No description provided for @habitEditorCompositeAtLeast.
+  ///
+  /// In en, this message translates to:
+  /// **'At least {count} of {total}'**
+  String habitEditorCompositeAtLeast(int count, int total);
+
+  /// No description provided for @habitEditorCompositeChange.
+  ///
+  /// In en, this message translates to:
+  /// **'Change'**
+  String get habitEditorCompositeChange;
+
+  /// No description provided for @habitEditorCompositeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How this habit counts as done'**
+  String get habitEditorCompositeTitle;
+
+  /// No description provided for @habitEditorContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get habitEditorContinue;
+
+  /// No description provided for @habitEditorCreateAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Create habit'**
+  String get habitEditorCreateAction;
+
+  /// No description provided for @habitEditorCreatedToast.
+  ///
+  /// In en, this message translates to:
+  /// **'Habit created'**
+  String get habitEditorCreatedToast;
+
+  /// No description provided for @habitEditorCreateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New habit'**
+  String get habitEditorCreateTitle;
+
+  /// No description provided for @habitEditorEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit habit'**
+  String get habitEditorEditTitle;
+
+  /// No description provided for @habitEditorExampleBloodPressure.
+  ///
+  /// In en, this message translates to:
+  /// **'measure blood pressure'**
+  String get habitEditorExampleBloodPressure;
+
+  /// No description provided for @habitEditorExampleMedication.
+  ///
+  /// In en, this message translates to:
+  /// **'take medication'**
+  String get habitEditorExampleMedication;
+
+  /// No description provided for @habitEditorExamplesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap an example to start from it — it also pre-selects the matching signal.'**
+  String get habitEditorExamplesHint;
+
+  /// No description provided for @habitEditorExampleSteps.
+  ///
+  /// In en, this message translates to:
+  /// **'6,000 steps'**
+  String get habitEditorExampleSteps;
+
+  /// No description provided for @habitEditorExampleStrength.
+  ///
+  /// In en, this message translates to:
+  /// **'functional strength training'**
+  String get habitEditorExampleStrength;
+
+  /// No description provided for @habitEditorManualRowCaption.
+  ///
+  /// In en, this message translates to:
+  /// **'you record it from the Habits page'**
+  String get habitEditorManualRowCaption;
+
+  /// No description provided for @habitEditorManualRowTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'I\'ll tick it myself'**
+  String get habitEditorManualRowTitle;
+
+  /// No description provided for @habitEditorNameHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'What do you want to keep doing?'**
+  String get habitEditorNameHeading;
+
+  /// No description provided for @habitEditorNameSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Name it your way — this is how it reads on your Habits page.'**
+  String get habitEditorNameSubtitle;
+
+  /// No description provided for @habitEditorNotifyCaption.
+  ///
+  /// In en, this message translates to:
+  /// **'One notification per day when signals complete it'**
+  String get habitEditorNotifyCaption;
+
+  /// No description provided for @habitEditorNotifyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Notify on auto-completion'**
+  String get habitEditorNotifyTitle;
+
+  /// No description provided for @habitEditorPickerEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing matches'**
+  String get habitEditorPickerEmpty;
+
+  /// No description provided for @habitEditorPickerHealth.
+  ///
+  /// In en, this message translates to:
+  /// **'Health data'**
+  String get habitEditorPickerHealth;
+
+  /// No description provided for @habitEditorPickerMeasurables.
+  ///
+  /// In en, this message translates to:
+  /// **'Measurables'**
+  String get habitEditorPickerMeasurables;
+
+  /// No description provided for @habitEditorPickerSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search measurables, health data, workouts'**
+  String get habitEditorPickerSearchHint;
+
+  /// No description provided for @habitEditorPickerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a signal'**
+  String get habitEditorPickerTitle;
+
+  /// No description provided for @habitEditorPickerWorkouts.
+  ///
+  /// In en, this message translates to:
+  /// **'Workouts'**
+  String get habitEditorPickerWorkouts;
+
+  /// No description provided for @habitEditorRuleAnyEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Any entry'**
+  String get habitEditorRuleAnyEntry;
+
+  /// No description provided for @habitEditorRuleAnyReading.
+  ///
+  /// In en, this message translates to:
+  /// **'Any reading'**
+  String get habitEditorRuleAnyReading;
+
+  /// No description provided for @habitEditorRuleAnyWorkout.
+  ///
+  /// In en, this message translates to:
+  /// **'Any workout'**
+  String get habitEditorRuleAnyWorkout;
+
+  /// No description provided for @habitEditorRuleAtLeast.
+  ///
+  /// In en, this message translates to:
+  /// **'at least'**
+  String get habitEditorRuleAtLeast;
+
+  /// No description provided for @habitEditorRuleAtMost.
+  ///
+  /// In en, this message translates to:
+  /// **'at most'**
+  String get habitEditorRuleAtMost;
+
+  /// No description provided for @habitEditorRuleDailyAtLeast.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily ≥'**
+  String get habitEditorRuleDailyAtLeast;
+
+  /// No description provided for @habitEditorRuleDailyAtMost.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily ≤'**
+  String get habitEditorRuleDailyAtMost;
+
+  /// No description provided for @habitEditorRuleDistance.
+  ///
+  /// In en, this message translates to:
+  /// **'Distance'**
+  String get habitEditorRuleDistance;
+
+  /// No description provided for @habitEditorRuleDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Duration'**
+  String get habitEditorRuleDuration;
+
+  /// No description provided for @habitEditorRuleEnergy.
+  ///
+  /// In en, this message translates to:
+  /// **'Energy'**
+  String get habitEditorRuleEnergy;
+
+  /// No description provided for @habitEditorRuleTotalAtLeast.
+  ///
+  /// In en, this message translates to:
+  /// **'Total ≥'**
+  String get habitEditorRuleTotalAtLeast;
+
+  /// No description provided for @habitEditorRuleTotalAtMost.
+  ///
+  /// In en, this message translates to:
+  /// **'Total ≤'**
+  String get habitEditorRuleTotalAtMost;
+
+  /// No description provided for @habitEditorSectionSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get habitEditorSectionSettings;
+
+  /// No description provided for @habitEditorSignalsHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'How do we know it\'s done?'**
+  String get habitEditorSignalsHeading;
+
+  /// No description provided for @habitEditorSignalsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recorded data can check this habit off for you.'**
+  String get habitEditorSignalsSubtitle;
+
+  /// No description provided for @habitEditorStepProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Step {step} of {total}'**
+  String habitEditorStepProgress(int step, int total);
+
+  /// No description provided for @habitEditorThresholdRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a value for this rule'**
+  String get habitEditorThresholdRequired;
+
+  /// No description provided for @habitHealthBloodPressureDiastolic.
+  ///
+  /// In en, this message translates to:
+  /// **'Diastolic blood pressure'**
+  String get habitHealthBloodPressureDiastolic;
+
+  /// No description provided for @habitHealthBloodPressureSystolic.
+  ///
+  /// In en, this message translates to:
+  /// **'Systolic blood pressure'**
+  String get habitHealthBloodPressureSystolic;
+
+  /// No description provided for @habitHealthBodyFat.
+  ///
+  /// In en, this message translates to:
+  /// **'Body fat'**
+  String get habitHealthBodyFat;
+
+  /// No description provided for @habitHealthBodyMassIndex.
+  ///
+  /// In en, this message translates to:
+  /// **'Body mass index'**
+  String get habitHealthBodyMassIndex;
+
+  /// No description provided for @habitHealthDistance.
+  ///
+  /// In en, this message translates to:
+  /// **'Distance'**
+  String get habitHealthDistance;
+
+  /// No description provided for @habitHealthFlightsClimbed.
+  ///
+  /// In en, this message translates to:
+  /// **'Flights climbed'**
+  String get habitHealthFlightsClimbed;
+
+  /// No description provided for @habitHealthHeartRateVariability.
+  ///
+  /// In en, this message translates to:
+  /// **'Heart rate variability'**
+  String get habitHealthHeartRateVariability;
+
+  /// No description provided for @habitHealthRestingHeartRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Resting heart rate'**
+  String get habitHealthRestingHeartRate;
+
+  /// No description provided for @habitHealthSleepAsleep.
+  ///
+  /// In en, this message translates to:
+  /// **'Sleep'**
+  String get habitHealthSleepAsleep;
+
+  /// No description provided for @habitHealthSleepAwake.
+  ///
+  /// In en, this message translates to:
+  /// **'Awake in bed'**
+  String get habitHealthSleepAwake;
+
+  /// No description provided for @habitHealthSleepDeep.
+  ///
+  /// In en, this message translates to:
+  /// **'Deep sleep'**
+  String get habitHealthSleepDeep;
+
+  /// No description provided for @habitHealthSleepInBed.
+  ///
+  /// In en, this message translates to:
+  /// **'Time in bed'**
+  String get habitHealthSleepInBed;
+
+  /// No description provided for @habitHealthSleepLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Light sleep'**
+  String get habitHealthSleepLight;
+
+  /// No description provided for @habitHealthSleepRem.
+  ///
+  /// In en, this message translates to:
+  /// **'REM sleep'**
+  String get habitHealthSleepRem;
+
+  /// No description provided for @habitHealthSteps.
+  ///
+  /// In en, this message translates to:
+  /// **'Steps'**
+  String get habitHealthSteps;
+
+  /// No description provided for @habitHealthWalkingHeartRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Walking heart rate'**
+  String get habitHealthWalkingHeartRate;
+
+  /// No description provided for @habitHealthWeight.
+  ///
+  /// In en, this message translates to:
+  /// **'Weight'**
+  String get habitHealthWeight;
 
   /// No description provided for @habitHeatmapDaySemantic.
   ///
@@ -12323,12 +12683,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Options'**
   String get habitSectionOptionsTitle;
-
-  /// No description provided for @habitSectionScheduleTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Schedule'**
-  String get habitSectionScheduleTitle;
 
   /// No description provided for @habitsFilterAll.
   ///
@@ -12533,6 +12887,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'vs previous week'**
   String get habitsVsPreviousWeek;
+
+  /// No description provided for @habitUnitKilocalories.
+  ///
+  /// In en, this message translates to:
+  /// **'kcal'**
+  String get habitUnitKilocalories;
+
+  /// No description provided for @habitUnitKilometres.
+  ///
+  /// In en, this message translates to:
+  /// **'km'**
+  String get habitUnitKilometres;
+
+  /// No description provided for @habitUnitMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'min'**
+  String get habitUnitMinutes;
 
   /// No description provided for @helpMenuCommandPalette.
   ///
@@ -19116,12 +19488,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Description (optional)'**
   String get settingsHabitsDescriptionLabel;
-
-  /// No description provided for @settingsHabitsDetailsLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Edit habit'**
-  String get settingsHabitsDetailsLabel;
 
   /// No description provided for @settingsHabitsEmptyState.
   ///

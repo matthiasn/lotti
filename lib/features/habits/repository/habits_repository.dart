@@ -56,11 +56,6 @@ abstract class HabitsRepository {
   /// Returns the number of affected rows (1 on success).
   Future<int> upsertHabitDefinition(HabitDefinition habitDefinition);
 
-  /// Watches all dashboard definitions.
-  ///
-  /// Used for selecting which dashboard a habit belongs to.
-  Stream<List<DashboardDefinition>> watchDashboards();
-
   /// Stream of notification IDs that may affect habits.
   ///
   /// Consumers should filter for [habitCompletionNotification] to know
@@ -123,15 +118,6 @@ class HabitsRepositoryImpl implements HabitsRepository {
   @override
   Future<int> upsertHabitDefinition(HabitDefinition habitDefinition) {
     return _journalDb.upsertHabitDefinition(habitDefinition);
-  }
-
-  @override
-  Stream<List<DashboardDefinition>> watchDashboards() {
-    return notificationDrivenStream(
-      notifications: _updateNotifications,
-      notificationKeys: {dashboardsNotification, privateToggleNotification},
-      fetcher: _journalDb.getAllDashboards,
-    );
   }
 
   @override

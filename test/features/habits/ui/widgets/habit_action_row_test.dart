@@ -15,6 +15,7 @@ import 'package:lotti/features/settings/state/celebration_preferences_controller
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -734,6 +735,19 @@ void main() {
       );
       expect(find.byKey(const ValueKey('habit-auto-pill')), findsOneWidget);
       expect(find.byKey(const ValueKey('habit-auto-caption')), findsNothing);
+    });
+  });
+
+  group('editing', () {
+    testWidgets('press-and-hold on the body opens the editor', (tester) async {
+      String? beamedTo;
+      beamToNamedOverride = (path) => beamedTo = path;
+      addTearDown(() => beamToNamedOverride = null);
+      await pumpRow(tester);
+      await tester.longPress(find.text(habitFlossing.name));
+      await tester.pump();
+      expect(beamedTo, '/habits/edit/${habitFlossing.id}');
+      expect(find.byType(HabitCompletionSheet), findsNothing);
     });
   });
 }

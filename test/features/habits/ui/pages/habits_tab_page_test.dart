@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
@@ -16,6 +17,7 @@ import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/device_region.dart';
 import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
 import 'package:mocktail/mocktail.dart';
@@ -540,6 +542,21 @@ void main() {
       expect(find.byKey(Key(habitFlossing.id)), findsNothing);
       expect(find.byKey(Key(habitFlossingDueLater.id)), findsNothing);
       expect(find.byType(HabitActionRow), findsNothing);
+    });
+    group('creating a habit', () {
+      testWidgets('the FAB leads to the habit editor', (tester) async {
+        String? beamedTo;
+        beamToNamedOverride = (path) => beamedTo = path;
+        addTearDown(() => beamToNamedOverride = null);
+        await pump(tester, HabitsState.initial());
+        // The FAB floats below the 600 px test viewport; invoke it directly.
+        tester
+            .widget<DesignSystemFloatingActionButton>(
+              find.byKey(const ValueKey('habits-create-fab')),
+            )
+            .onPressed!();
+        expect(beamedTo, '/habits/create');
+      });
     });
   });
 }

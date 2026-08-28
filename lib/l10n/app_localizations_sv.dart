@@ -7151,7 +7151,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get habitActiveFromLabel => 'Startdatum';
 
   @override
-  String get habitActiveSwitchDescription => 'Visas på sidan Habits';
+  String get habitActiveSwitchDescription => 'Visas på sidan Habiter';
 
   @override
   String get habitArchivedLabel => 'Arkiverad';
@@ -7217,12 +7217,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get habitCompletionStatusSkipped => 'Hoppade över';
 
   @override
-  String get habitDashboardHint => 'Välj en instrumentpanel';
-
-  @override
-  String get habitDashboardLabel => 'Instrumentpanel (valfritt)';
-
-  @override
   String habitDayStatusSemantic(String habit, String status) {
     return '$habit, $status';
   }
@@ -7232,6 +7226,203 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get habitDeleteQuestion => 'Vill du ta bort den här vanan?';
+
+  @override
+  String get habitEditorAddSignal => 'Lägg till en signal';
+
+  @override
+  String get habitEditorCompositeAll => 'Alla signaler';
+
+  @override
+  String get habitEditorCompositeAny => 'Valfri signal';
+
+  @override
+  String habitEditorCompositeAtLeast(int count, int total) {
+    return 'Minst $count av $total';
+  }
+
+  @override
+  String get habitEditorCompositeChange => 'Ändra';
+
+  @override
+  String get habitEditorCompositeTitle => 'När vanan räknas som gjord';
+
+  @override
+  String get habitEditorContinue => 'Fortsätt';
+
+  @override
+  String get habitEditorCreateAction => 'Skapa vana';
+
+  @override
+  String get habitEditorCreatedToast => 'Vana skapad';
+
+  @override
+  String get habitEditorCreateTitle => 'Ny vana';
+
+  @override
+  String get habitEditorEditTitle => 'Redigera vana';
+
+  @override
+  String get habitEditorExampleBloodPressure => 'mäta blodtrycket';
+
+  @override
+  String get habitEditorExampleMedication => 'ta medicin';
+
+  @override
+  String get habitEditorExamplesHint =>
+      'Tryck på ett exempel för att utgå från det – motsvarande signal förväljs också.';
+
+  @override
+  String get habitEditorExampleSteps => '6 000 steg';
+
+  @override
+  String get habitEditorExampleStrength => 'funktionell styrketräning';
+
+  @override
+  String get habitEditorManualRowCaption =>
+      'du registrerar den på sidan Habiter';
+
+  @override
+  String get habitEditorManualRowTitle => 'Jag bockar av själv';
+
+  @override
+  String get habitEditorNameHeading => 'Vad vill du fortsätta göra?';
+
+  @override
+  String get habitEditorNameSubtitle =>
+      'Kalla den vad du vill – så står det på sidan Habiter.';
+
+  @override
+  String get habitEditorNotifyCaption =>
+      'En avisering per dag när signaler bockar av den';
+
+  @override
+  String get habitEditorNotifyTitle => 'Meddela vid automatisk avbockning';
+
+  @override
+  String get habitEditorPickerEmpty => 'Inget matchar';
+
+  @override
+  String get habitEditorPickerHealth => 'Hälsodata';
+
+  @override
+  String get habitEditorPickerMeasurables => 'Mätvärden';
+
+  @override
+  String get habitEditorPickerSearchHint =>
+      'Sök mätvärden, hälsodata, träningspass';
+
+  @override
+  String get habitEditorPickerTitle => 'Lägg till en signal';
+
+  @override
+  String get habitEditorPickerWorkouts => 'Träningspass';
+
+  @override
+  String get habitEditorRuleAnyEntry => 'Valfri post';
+
+  @override
+  String get habitEditorRuleAnyReading => 'Valfri mätning';
+
+  @override
+  String get habitEditorRuleAnyWorkout => 'Valfritt pass';
+
+  @override
+  String get habitEditorRuleAtLeast => 'minst';
+
+  @override
+  String get habitEditorRuleAtMost => 'högst';
+
+  @override
+  String get habitEditorRuleDailyAtLeast => 'Per dag ≥';
+
+  @override
+  String get habitEditorRuleDailyAtMost => 'Per dag ≤';
+
+  @override
+  String get habitEditorRuleDistance => 'Sträcka';
+
+  @override
+  String get habitEditorRuleDuration => 'Tid';
+
+  @override
+  String get habitEditorRuleEnergy => 'Energi';
+
+  @override
+  String get habitEditorRuleTotalAtLeast => 'Totalt ≥';
+
+  @override
+  String get habitEditorRuleTotalAtMost => 'Totalt ≤';
+
+  @override
+  String get habitEditorSectionSettings => 'Inställningar';
+
+  @override
+  String get habitEditorSignalsHeading => 'Hur vet vi att det är gjort?';
+
+  @override
+  String get habitEditorSignalsSubtitle =>
+      'Registrerad data kan bocka av den här vanan åt dig.';
+
+  @override
+  String habitEditorStepProgress(int step, int total) {
+    return 'Steg $step av $total';
+  }
+
+  @override
+  String get habitEditorThresholdRequired =>
+      'Ange ett värde för den här regeln';
+
+  @override
+  String get habitHealthBloodPressureDiastolic => 'Diastoliskt blodtryck';
+
+  @override
+  String get habitHealthBloodPressureSystolic => 'Systoliskt blodtryck';
+
+  @override
+  String get habitHealthBodyFat => 'Kroppsfett';
+
+  @override
+  String get habitHealthBodyMassIndex => 'Body mass index';
+
+  @override
+  String get habitHealthDistance => 'Sträcka';
+
+  @override
+  String get habitHealthFlightsClimbed => 'Våningar';
+
+  @override
+  String get habitHealthHeartRateVariability => 'Pulsvariabilitet';
+
+  @override
+  String get habitHealthRestingHeartRate => 'Vilopuls';
+
+  @override
+  String get habitHealthSleepAsleep => 'Sömn';
+
+  @override
+  String get habitHealthSleepAwake => 'Vaken i sängen';
+
+  @override
+  String get habitHealthSleepDeep => 'Djupsömn';
+
+  @override
+  String get habitHealthSleepInBed => 'Tid i sängen';
+
+  @override
+  String get habitHealthSleepLight => 'Lätt sömn';
+
+  @override
+  String get habitHealthSleepRem => 'REM-sömn';
+
+  @override
+  String get habitHealthSteps => 'Steg';
+
+  @override
+  String get habitHealthWalkingHeartRate => 'Puls vid promenad';
+
+  @override
+  String get habitHealthWeight => 'Vikt';
 
   @override
   String habitHeatmapDaySemantic(String date, int done, int total) {
@@ -7299,9 +7490,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get habitSectionOptionsTitle => 'Alternativ';
-
-  @override
-  String get habitSectionScheduleTitle => 'Schema';
 
   @override
   String get habitsFilterAll => 'alla';
@@ -7432,6 +7620,15 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get habitsVsPreviousWeek => 'Mot föregående vecka';
+
+  @override
+  String get habitUnitKilocalories => 'kcal';
+
+  @override
+  String get habitUnitKilometres => 'km';
+
+  @override
+  String get habitUnitMinutes => 'min';
 
   @override
   String get helpMenuCommandPalette => 'Kommandopalett...';
@@ -11355,9 +11552,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get settingsHabitsDescriptionLabel => 'Beskrivning (valfritt)';
-
-  @override
-  String get settingsHabitsDetailsLabel => 'Redigeringsvana';
 
   @override
   String get settingsHabitsEmptyState => 'Inga vanor än';

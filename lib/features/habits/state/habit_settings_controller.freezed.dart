@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$HabitSettingsState {
 
- HabitDefinition get habitDefinition; bool get dirty; GlobalKey<FormBuilderState> get formKey; AutoCompleteRule? get autoCompleteRule;
+ HabitDefinition get habitDefinition; bool get dirty; GlobalKey<FormBuilderState> get formKey;
 /// Create a copy of HabitSettingsState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +25,16 @@ $HabitSettingsStateCopyWith<HabitSettingsState> get copyWith => _$HabitSettingsS
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is HabitSettingsState&&const DeepCollectionEquality().equals(other.habitDefinition, habitDefinition)&&(identical(other.dirty, dirty) || other.dirty == dirty)&&(identical(other.formKey, formKey) || other.formKey == formKey)&&(identical(other.autoCompleteRule, autoCompleteRule) || other.autoCompleteRule == autoCompleteRule));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is HabitSettingsState&&const DeepCollectionEquality().equals(other.habitDefinition, habitDefinition)&&(identical(other.dirty, dirty) || other.dirty == dirty)&&(identical(other.formKey, formKey) || other.formKey == formKey));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(habitDefinition),dirty,formKey,autoCompleteRule);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(habitDefinition),dirty,formKey);
 
 @override
 String toString() {
-  return 'HabitSettingsState(habitDefinition: $habitDefinition, dirty: $dirty, formKey: $formKey, autoCompleteRule: $autoCompleteRule)';
+  return 'HabitSettingsState(habitDefinition: $habitDefinition, dirty: $dirty, formKey: $formKey)';
 }
 
 
@@ -45,11 +45,11 @@ abstract mixin class $HabitSettingsStateCopyWith<$Res>  {
   factory $HabitSettingsStateCopyWith(HabitSettingsState value, $Res Function(HabitSettingsState) _then) = _$HabitSettingsStateCopyWithImpl;
 @useResult
 $Res call({
- HabitDefinition habitDefinition, bool dirty, GlobalKey<FormBuilderState> formKey, AutoCompleteRule? autoCompleteRule
+ HabitDefinition habitDefinition, bool dirty, GlobalKey<FormBuilderState> formKey
 });
 
 
-$AutoCompleteRuleCopyWith<$Res>? get autoCompleteRule;
+
 
 }
 /// @nodoc
@@ -62,28 +62,15 @@ class _$HabitSettingsStateCopyWithImpl<$Res>
 
 /// Create a copy of HabitSettingsState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? habitDefinition = freezed,Object? dirty = null,Object? formKey = null,Object? autoCompleteRule = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? habitDefinition = freezed,Object? dirty = null,Object? formKey = null,}) {
   return _then(_self.copyWith(
 habitDefinition: freezed == habitDefinition ? _self.habitDefinition : habitDefinition // ignore: cast_nullable_to_non_nullable
 as HabitDefinition,dirty: null == dirty ? _self.dirty : dirty // ignore: cast_nullable_to_non_nullable
 as bool,formKey: null == formKey ? _self.formKey : formKey // ignore: cast_nullable_to_non_nullable
-as GlobalKey<FormBuilderState>,autoCompleteRule: freezed == autoCompleteRule ? _self.autoCompleteRule : autoCompleteRule // ignore: cast_nullable_to_non_nullable
-as AutoCompleteRule?,
+as GlobalKey<FormBuilderState>,
   ));
 }
-/// Create a copy of HabitSettingsState
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$AutoCompleteRuleCopyWith<$Res>? get autoCompleteRule {
-    if (_self.autoCompleteRule == null) {
-    return null;
-  }
 
-  return $AutoCompleteRuleCopyWith<$Res>(_self.autoCompleteRule!, (value) {
-    return _then(_self.copyWith(autoCompleteRule: value));
-  });
-}
 }
 
 
@@ -165,10 +152,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( HabitDefinition habitDefinition,  bool dirty,  GlobalKey<FormBuilderState> formKey,  AutoCompleteRule? autoCompleteRule)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( HabitDefinition habitDefinition,  bool dirty,  GlobalKey<FormBuilderState> formKey)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _HabitSettingsState() when $default != null:
-return $default(_that.habitDefinition,_that.dirty,_that.formKey,_that.autoCompleteRule);case _:
+return $default(_that.habitDefinition,_that.dirty,_that.formKey);case _:
   return orElse();
 
 }
@@ -186,10 +173,10 @@ return $default(_that.habitDefinition,_that.dirty,_that.formKey,_that.autoComple
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( HabitDefinition habitDefinition,  bool dirty,  GlobalKey<FormBuilderState> formKey,  AutoCompleteRule? autoCompleteRule)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( HabitDefinition habitDefinition,  bool dirty,  GlobalKey<FormBuilderState> formKey)  $default,) {final _that = this;
 switch (_that) {
 case _HabitSettingsState():
-return $default(_that.habitDefinition,_that.dirty,_that.formKey,_that.autoCompleteRule);case _:
+return $default(_that.habitDefinition,_that.dirty,_that.formKey);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -206,10 +193,10 @@ return $default(_that.habitDefinition,_that.dirty,_that.formKey,_that.autoComple
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( HabitDefinition habitDefinition,  bool dirty,  GlobalKey<FormBuilderState> formKey,  AutoCompleteRule? autoCompleteRule)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( HabitDefinition habitDefinition,  bool dirty,  GlobalKey<FormBuilderState> formKey)?  $default,) {final _that = this;
 switch (_that) {
 case _HabitSettingsState() when $default != null:
-return $default(_that.habitDefinition,_that.dirty,_that.formKey,_that.autoCompleteRule);case _:
+return $default(_that.habitDefinition,_that.dirty,_that.formKey);case _:
   return null;
 
 }
@@ -221,13 +208,12 @@ return $default(_that.habitDefinition,_that.dirty,_that.formKey,_that.autoComple
 
 
 class _HabitSettingsState implements HabitSettingsState {
-  const _HabitSettingsState({required this.habitDefinition, required this.dirty, required this.formKey, required this.autoCompleteRule});
+  const _HabitSettingsState({required this.habitDefinition, required this.dirty, required this.formKey});
   
 
 @override final  HabitDefinition habitDefinition;
 @override final  bool dirty;
 @override final  GlobalKey<FormBuilderState> formKey;
-@override final  AutoCompleteRule? autoCompleteRule;
 
 /// Create a copy of HabitSettingsState
 /// with the given fields replaced by the non-null parameter values.
@@ -239,16 +225,16 @@ _$HabitSettingsStateCopyWith<_HabitSettingsState> get copyWith => __$HabitSettin
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _HabitSettingsState&&const DeepCollectionEquality().equals(other.habitDefinition, habitDefinition)&&(identical(other.dirty, dirty) || other.dirty == dirty)&&(identical(other.formKey, formKey) || other.formKey == formKey)&&(identical(other.autoCompleteRule, autoCompleteRule) || other.autoCompleteRule == autoCompleteRule));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _HabitSettingsState&&const DeepCollectionEquality().equals(other.habitDefinition, habitDefinition)&&(identical(other.dirty, dirty) || other.dirty == dirty)&&(identical(other.formKey, formKey) || other.formKey == formKey));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(habitDefinition),dirty,formKey,autoCompleteRule);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(habitDefinition),dirty,formKey);
 
 @override
 String toString() {
-  return 'HabitSettingsState(habitDefinition: $habitDefinition, dirty: $dirty, formKey: $formKey, autoCompleteRule: $autoCompleteRule)';
+  return 'HabitSettingsState(habitDefinition: $habitDefinition, dirty: $dirty, formKey: $formKey)';
 }
 
 
@@ -259,11 +245,11 @@ abstract mixin class _$HabitSettingsStateCopyWith<$Res> implements $HabitSetting
   factory _$HabitSettingsStateCopyWith(_HabitSettingsState value, $Res Function(_HabitSettingsState) _then) = __$HabitSettingsStateCopyWithImpl;
 @override @useResult
 $Res call({
- HabitDefinition habitDefinition, bool dirty, GlobalKey<FormBuilderState> formKey, AutoCompleteRule? autoCompleteRule
+ HabitDefinition habitDefinition, bool dirty, GlobalKey<FormBuilderState> formKey
 });
 
 
-@override $AutoCompleteRuleCopyWith<$Res>? get autoCompleteRule;
+
 
 }
 /// @nodoc
@@ -276,29 +262,16 @@ class __$HabitSettingsStateCopyWithImpl<$Res>
 
 /// Create a copy of HabitSettingsState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? habitDefinition = freezed,Object? dirty = null,Object? formKey = null,Object? autoCompleteRule = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? habitDefinition = freezed,Object? dirty = null,Object? formKey = null,}) {
   return _then(_HabitSettingsState(
 habitDefinition: freezed == habitDefinition ? _self.habitDefinition : habitDefinition // ignore: cast_nullable_to_non_nullable
 as HabitDefinition,dirty: null == dirty ? _self.dirty : dirty // ignore: cast_nullable_to_non_nullable
 as bool,formKey: null == formKey ? _self.formKey : formKey // ignore: cast_nullable_to_non_nullable
-as GlobalKey<FormBuilderState>,autoCompleteRule: freezed == autoCompleteRule ? _self.autoCompleteRule : autoCompleteRule // ignore: cast_nullable_to_non_nullable
-as AutoCompleteRule?,
+as GlobalKey<FormBuilderState>,
   ));
 }
 
-/// Create a copy of HabitSettingsState
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$AutoCompleteRuleCopyWith<$Res>? get autoCompleteRule {
-    if (_self.autoCompleteRule == null) {
-    return null;
-  }
 
-  return $AutoCompleteRuleCopyWith<$Res>(_self.autoCompleteRule!, (value) {
-    return _then(_self.copyWith(autoCompleteRule: value));
-  });
-}
 }
 
 // dart format on

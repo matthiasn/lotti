@@ -4316,8 +4316,6 @@
   "habitCompletionStatusFailed": "Failed",
   "habitCompletionStatusOpen": "Open",
   "habitCompletionStatusSkipped": "Skipped",
-  "habitDashboardHint": "Select a dashboard",
-  "habitDashboardLabel": "Dashboard (optional)",
   "habitDayStatusSemantic": "{habit}, {status}",
   "@habitDayStatusSemantic": {
     "placeholders": {
@@ -4331,6 +4329,88 @@
   },
   "habitDeleteConfirm": "Yes, delete this habit",
   "habitDeleteQuestion": "Do you want to delete this habit?",
+  "habitEditorAddSignal": "Add a signal",
+  "habitEditorCompositeAll": "All signals",
+  "habitEditorCompositeAny": "Any signal",
+  "habitEditorCompositeAtLeast": "At least {count} of {total}",
+  "@habitEditorCompositeAtLeast": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "habitEditorCompositeChange": "Change",
+  "habitEditorCompositeTitle": "How this habit counts as done",
+  "habitEditorContinue": "Continue",
+  "habitEditorCreateAction": "Create habit",
+  "habitEditorCreatedToast": "Habit created",
+  "habitEditorCreateTitle": "New habit",
+  "habitEditorEditTitle": "Edit habit",
+  "habitEditorExampleBloodPressure": "measure blood pressure",
+  "habitEditorExampleMedication": "take medication",
+  "habitEditorExamplesHint": "Tap an example to start from it — it also pre-selects the matching signal.",
+  "habitEditorExampleSteps": "6,000 steps",
+  "habitEditorExampleStrength": "functional strength training",
+  "habitEditorManualRowCaption": "you record it from the Habits page",
+  "habitEditorManualRowTitle": "I'll tick it myself",
+  "habitEditorNameHeading": "What do you want to keep doing?",
+  "habitEditorNameSubtitle": "Name it your way — this is how it reads on your Habits page.",
+  "habitEditorNotifyCaption": "One notification per day when signals complete it",
+  "habitEditorNotifyTitle": "Notify on auto-completion",
+  "habitEditorPickerEmpty": "Nothing matches",
+  "habitEditorPickerHealth": "Health data",
+  "habitEditorPickerMeasurables": "Measurables",
+  "habitEditorPickerSearchHint": "Search measurables, health data, workouts",
+  "habitEditorPickerTitle": "Add a signal",
+  "habitEditorPickerWorkouts": "Workouts",
+  "habitEditorRuleAnyEntry": "Any entry",
+  "habitEditorRuleAnyReading": "Any reading",
+  "habitEditorRuleAnyWorkout": "Any workout",
+  "habitEditorRuleAtLeast": "at least",
+  "habitEditorRuleAtMost": "at most",
+  "habitEditorRuleDailyAtLeast": "Daily ≥",
+  "habitEditorRuleDailyAtMost": "Daily ≤",
+  "habitEditorRuleDistance": "Distance",
+  "habitEditorRuleDuration": "Duration",
+  "habitEditorRuleEnergy": "Energy",
+  "habitEditorRuleTotalAtLeast": "Total ≥",
+  "habitEditorRuleTotalAtMost": "Total ≤",
+  "habitEditorSectionSettings": "Settings",
+  "habitEditorSignalsHeading": "How do we know it's done?",
+  "habitEditorSignalsSubtitle": "Recorded data can check this habit off for you.",
+  "habitEditorStepProgress": "Step {step} of {total}",
+  "@habitEditorStepProgress": {
+    "placeholders": {
+      "step": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "habitEditorThresholdRequired": "Enter a value for this rule",
+  "habitHealthBloodPressureDiastolic": "Diastolic blood pressure",
+  "habitHealthBloodPressureSystolic": "Systolic blood pressure",
+  "habitHealthBodyFat": "Body fat",
+  "habitHealthBodyMassIndex": "Body mass index",
+  "habitHealthDistance": "Distance",
+  "habitHealthFlightsClimbed": "Flights climbed",
+  "habitHealthHeartRateVariability": "Heart rate variability",
+  "habitHealthRestingHeartRate": "Resting heart rate",
+  "habitHealthSleepAsleep": "Sleep",
+  "habitHealthSleepAwake": "Awake in bed",
+  "habitHealthSleepDeep": "Deep sleep",
+  "habitHealthSleepInBed": "Time in bed",
+  "habitHealthSleepLight": "Light sleep",
+  "habitHealthSleepRem": "REM sleep",
+  "habitHealthSteps": "Steps",
+  "habitHealthWalkingHeartRate": "Walking heart rate",
+  "habitHealthWeight": "Weight",
   "habitHeatmapDaySemantic": "{date}, {done} of {total} done",
   "@habitHeatmapDaySemantic": {
     "placeholders": {
@@ -4389,7 +4469,6 @@
   },
   "habitsDoneTodayLabel": "Habits done today",
   "habitSectionOptionsTitle": "Options",
-  "habitSectionScheduleTitle": "Schedule",
   "habitsFilterAll": "all",
   "habitsFilterCompleted": "done",
   "habitsFilterOpenNow": "due",
@@ -4503,6 +4582,9 @@
     }
   },
   "habitsVsPreviousWeek": "vs previous week",
+  "habitUnitKilocalories": "kcal",
+  "habitUnitKilometres": "km",
+  "habitUnitMinutes": "min",
   "helpMenuCommandPalette": "Command Palette…",
   "helpMenuKeyboardShortcuts": "Keyboard Shortcuts…",
   "helpMenuTitle": "Help",
@@ -6506,7 +6588,6 @@
   "settingsHabitsCreateTitle": "Create habit",
   "settingsHabitsDeleteTooltip": "Delete Habit",
   "settingsHabitsDescriptionLabel": "Description (optional)",
-  "settingsHabitsDetailsLabel": "Edit habit",
   "settingsHabitsEmptyState": "No habits yet",
   "settingsHabitsEmptyStateHint": "Tap the + button to create your first habit.",
   "settingsHabitsErrorLoading": "Error loading habits",

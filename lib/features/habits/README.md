@@ -22,17 +22,18 @@ derived from combining the two.
   breakdowns.
 - **Reminds at the right time.** A habit can carry a time it becomes visible and a
   time to be alerted, scheduled as a notification.
-- **Groups by area and dashboard**, assigned from the habit's settings form.
+- **Groups by area**, and knows which signals complete it, both set in the
+  habit editor on the Habits page.
 
 ## What it owns
 
 The habits tab and its derived sections; the summary card; the consistency
 heatmap; completion-rate chart state and the time-span switch; quick completion
 capture and the compact completion sheet that shows a habit's own signals with
-quick-record chips; habit settings state for create and edit;
-category and dashboard assignment from the settings form; and the
-auto-completion engine that checks a habit off when its recorded signals
-satisfy its rule.
+quick-record chips; the habit editor (create wizard and edit page) with its
+signal card, signal picker and composite picker; the settings state behind it;
+and the auto-completion engine that checks a habit off when its recorded
+signals satisfy its rule.
 
 It does not own every write path — reads go through `HabitsRepository`, while
 definition saves and completion writes both go through shared persistence.
@@ -41,8 +42,8 @@ definition saves and completion writes both go through shared persistence.
 
 ```text
 lib/features/habits/
-├── repository/ · state/ · service/
-└── ui/{pages,sheets,widgets,charts}
+├── model/ · repository/ · state/ · service/
+└── ui/{pages,sheets,widgets/editor,widgets,charts}
 ```
 
 ## How it works

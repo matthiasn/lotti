@@ -7222,12 +7222,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get habitCompletionStatusSkipped => 'Overgeslagen';
 
   @override
-  String get habitDashboardHint => 'Een dashboard selecteren';
-
-  @override
-  String get habitDashboardLabel => 'Dashboard (facultatief)';
-
-  @override
   String habitDayStatusSemantic(String habit, String status) {
     return '$habit, $status';
   }
@@ -7237,6 +7231,203 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get habitDeleteQuestion => 'Wilt u deze gewoonte verwijderen?';
+
+  @override
+  String get habitEditorAddSignal => 'Signaal toevoegen';
+
+  @override
+  String get habitEditorCompositeAll => 'Alle signalen';
+
+  @override
+  String get habitEditorCompositeAny => 'Eén van de signalen';
+
+  @override
+  String habitEditorCompositeAtLeast(int count, int total) {
+    return 'Minstens $count van $total';
+  }
+
+  @override
+  String get habitEditorCompositeChange => 'Wijzigen';
+
+  @override
+  String get habitEditorCompositeTitle => 'Wanneer de gewoonte als gedaan telt';
+
+  @override
+  String get habitEditorContinue => 'Doorgaan';
+
+  @override
+  String get habitEditorCreateAction => 'Gewoonte aanmaken';
+
+  @override
+  String get habitEditorCreatedToast => 'Gewoonte aangemaakt';
+
+  @override
+  String get habitEditorCreateTitle => 'Nieuwe gewoonte';
+
+  @override
+  String get habitEditorEditTitle => 'Gewoonte bewerken';
+
+  @override
+  String get habitEditorExampleBloodPressure => 'bloeddruk meten';
+
+  @override
+  String get habitEditorExampleMedication => 'medicijnen innemen';
+
+  @override
+  String get habitEditorExamplesHint =>
+      'Tik op een voorbeeld om ermee te beginnen – het bijbehorende signaal wordt meteen aangevinkt.';
+
+  @override
+  String get habitEditorExampleSteps => '6.000 stappen';
+
+  @override
+  String get habitEditorExampleStrength => 'functionele krachttraining';
+
+  @override
+  String get habitEditorManualRowCaption =>
+      'je legt het vast op de Gewoontes-pagina';
+
+  @override
+  String get habitEditorManualRowTitle => 'Ik vink het zelf af';
+
+  @override
+  String get habitEditorNameHeading => 'Wat wil je blijven doen?';
+
+  @override
+  String get habitEditorNameSubtitle =>
+      'Noem het zoals je wilt – zo staat het op je Gewoontes-pagina.';
+
+  @override
+  String get habitEditorNotifyCaption =>
+      'Eén melding per dag als signalen de gewoonte afronden';
+
+  @override
+  String get habitEditorNotifyTitle => 'Melding bij automatisch afvinken';
+
+  @override
+  String get habitEditorPickerEmpty => 'Niets gevonden';
+
+  @override
+  String get habitEditorPickerHealth => 'Gezondheidsgegevens';
+
+  @override
+  String get habitEditorPickerMeasurables => 'Meetwaarden';
+
+  @override
+  String get habitEditorPickerSearchHint =>
+      'Zoek meetwaarden, gezondheidsgegevens, workouts';
+
+  @override
+  String get habitEditorPickerTitle => 'Signaal toevoegen';
+
+  @override
+  String get habitEditorPickerWorkouts => 'Workouts';
+
+  @override
+  String get habitEditorRuleAnyEntry => 'Een invoer';
+
+  @override
+  String get habitEditorRuleAnyReading => 'Een meting';
+
+  @override
+  String get habitEditorRuleAnyWorkout => 'Een workout';
+
+  @override
+  String get habitEditorRuleAtLeast => 'minstens';
+
+  @override
+  String get habitEditorRuleAtMost => 'hoogstens';
+
+  @override
+  String get habitEditorRuleDailyAtLeast => 'Per dag ≥';
+
+  @override
+  String get habitEditorRuleDailyAtMost => 'Per dag ≤';
+
+  @override
+  String get habitEditorRuleDistance => 'Afstand';
+
+  @override
+  String get habitEditorRuleDuration => 'Duur';
+
+  @override
+  String get habitEditorRuleEnergy => 'Energie';
+
+  @override
+  String get habitEditorRuleTotalAtLeast => 'Totaal ≥';
+
+  @override
+  String get habitEditorRuleTotalAtMost => 'Totaal ≤';
+
+  @override
+  String get habitEditorSectionSettings => 'Instellingen';
+
+  @override
+  String get habitEditorSignalsHeading => 'Hoe weten we dat het gedaan is?';
+
+  @override
+  String get habitEditorSignalsSubtitle =>
+      'Vastgelegde gegevens kunnen deze gewoonte voor je afvinken.';
+
+  @override
+  String habitEditorStepProgress(int step, int total) {
+    return 'Stap $step van $total';
+  }
+
+  @override
+  String get habitEditorThresholdRequired =>
+      'Vul een waarde in voor deze regel';
+
+  @override
+  String get habitHealthBloodPressureDiastolic => 'Diastolische bloeddruk';
+
+  @override
+  String get habitHealthBloodPressureSystolic => 'Systolische bloeddruk';
+
+  @override
+  String get habitHealthBodyFat => 'Lichaamsvet';
+
+  @override
+  String get habitHealthBodyMassIndex => 'Body mass index';
+
+  @override
+  String get habitHealthDistance => 'Afstand';
+
+  @override
+  String get habitHealthFlightsClimbed => 'Verdiepingen beklommen';
+
+  @override
+  String get habitHealthHeartRateVariability => 'Hartslagvariabiliteit';
+
+  @override
+  String get habitHealthRestingHeartRate => 'Rusthartslag';
+
+  @override
+  String get habitHealthSleepAsleep => 'Slaap';
+
+  @override
+  String get habitHealthSleepAwake => 'Wakker in bed';
+
+  @override
+  String get habitHealthSleepDeep => 'Diepe slaap';
+
+  @override
+  String get habitHealthSleepInBed => 'Tijd in bed';
+
+  @override
+  String get habitHealthSleepLight => 'Lichte slaap';
+
+  @override
+  String get habitHealthSleepRem => 'REM-slaap';
+
+  @override
+  String get habitHealthSteps => 'Stappen';
+
+  @override
+  String get habitHealthWalkingHeartRate => 'Hartslag bij wandelen';
+
+  @override
+  String get habitHealthWeight => 'Gewicht';
 
   @override
   String habitHeatmapDaySemantic(String date, int done, int total) {
@@ -7304,9 +7495,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get habitSectionOptionsTitle => 'Opties';
-
-  @override
-  String get habitSectionScheduleTitle => 'Schema';
 
   @override
   String get habitsFilterAll => 'alle';
@@ -7437,6 +7625,15 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get habitsVsPreviousWeek => 'vs vorige week';
+
+  @override
+  String get habitUnitKilocalories => 'kcal';
+
+  @override
+  String get habitUnitKilometres => 'km';
+
+  @override
+  String get habitUnitMinutes => 'min';
 
   @override
   String get helpMenuCommandPalette => 'Commandopalet...';
@@ -11365,9 +11562,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get settingsHabitsDescriptionLabel => 'Beschrijving (facultatief)';
-
-  @override
-  String get settingsHabitsDetailsLabel => 'Bewerken';
 
   @override
   String get settingsHabitsEmptyState => 'Nog geen gewoontes';

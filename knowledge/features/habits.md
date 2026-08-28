@@ -135,13 +135,52 @@ as explicit successes; only an explicit `fail`, or a missing day, breaks it.**
 still exist in settings and storage, but the main tab derives only from active
 definitions.
 
-# The data model is more ambitious than the editing surface
+# The editor lives on the habits page
+
+`HabitEditorPage` (`ui/pages/habit_editor_page.dart`) is where a definition is
+written — reached from the tab's FAB (`/habits/create`), a press-and-hold on a
+row body or the completion sheet's pencil (`/habits/edit/:habitId`), and still
+from Settings › Habits, whose `by_id` / `create` routes mount the same page
+with `returnPath: '/settings/habits'`. Creating is a two-step wizard (name and
+description with example pills, then "how do we know it's done?"); editing is
+one flat page with the same sections plus Favorite / Private / Active and
+Delete.
+
+The definition itself stays in `HabitSettingsController` (`FormBuilder` for
+name, description and the three switches; setters for category, dates, the
+rule and `autoCompleteNotify`). The page owns only the signal card's form:
+
+```mermaid
+flowchart LR
+  Rule["HabitDefinition.autoCompleteRule"] -- fromRule --> Form["HabitSignalsForm<br/>rows + composite"]
+  Form -- every change: toRule --> Set["controller.setAutoCompleteRule"]
+  Set --> Save["onSavePressed → PersistenceLogic"]
+  Card["HabitSignalCard"] --> Form
+  Picker["HabitSignalPicker<br/>measurables · health config · imported workout types"] --> Card
+  Composite["HabitCompositePicker<br/>any / all / at least N"] --> Card
+```
+
+`HabitFormMapping` is the lossless bridge for the trees the card can show —
+a leaf, or one `and` / `or` / `multiple` over measurable, health and workout
+leaves. Anything else is read as faithfully as the card can show it (nested
+composites flatten under the root, a two-bounded leaf keeps its minimum,
+`habit` leaves are dropped because the card does not offer "another habit")
+and rewritten to what the card shows on save. The property test pins
+form → rule → form to the normalised form.
+
+Each row's rule is a segmented mode — *Any entry / Total ≥ / Total ≤* for a
+measurable, *Any reading / Daily ≥ / Daily ≤* for a health type, *Any
+workout / Duration ≥ / Distance ≥ / Energy ≥* for a workout — with a
+threshold in the signal's unit. Steps default to *Daily ≥ 6,000*; everything
+else defaults to the record-based "any" mode.
+
+# The data model is more ambitious than the schedule surface
 
 The model supports `daily`, `weekly` and `monthly` schedules, but the UI is
 effectively daily-first:
 
 - New habits are created with `HabitSchedule.daily(requiredCompletions: 1)`.
-- The settings page exposes only `showFrom` and `alertAtTime`, for daily habits.
+- The editor exposes only `showFrom` and `alertAtTime`, for daily habits.
 - `showHabit()` checks only the daily `showFrom` time when deciding between
   `openNow` and `pendingLater`.
 
@@ -149,12 +188,9 @@ This is stated plainly rather than pretending the weekly/monthly UI exists.
 
 The same is true of the signal side. `HabitDefinition.autoCompleteRule` — the
 `AutoCompleteRule` tree of measurable / health / workout leaves under
-`and` / `or` / `multiple` — is persisted, synced and now evaluated by the
-engine below, but **there is no editor for it yet**: only
-`lib/logic/habits/autocomplete_update.dart` rewrites the tree and
-`GoalCriterion.fromAutoCompleteRule` reads it as a goal seed. The habits
-rework makes that tree the habit ↔ signal association; the model already
-carries the fields it needs:
+`and` / `or` / `multiple` — is the habit ↔ signal association: edited by the
+signal card (below), evaluated by the engine, and read by
+`GoalCriterion.fromAutoCompleteRule` as a goal seed. The fields around it:
 
 - `AutoCompleteRule.workout.valueType` (`WorkoutValueType?`) chooses which
   workout value a threshold applies to; `null` means "any workout of that

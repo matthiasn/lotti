@@ -735,10 +735,12 @@
       "id": "settings-habit-editor",
       "title": "Habit editor",
       "kind": "settings-page",
-      "source": "lib/beamer/locations/settings_location.dart",
-      "sourcePattern": "'/settings/habits/by_id/:habitId'",
-      "locator": "/settings/habits/create or by_id/:habitId",
+      "source": "lib/features/habits/ui/pages/habit_editor_page.dart",
+      "sourcePattern": "class HabitEditorPage",
+      "locator": "Habits → + or /settings/habits/create or by_id/:habitId",
       "routes": [
+        "/habits/create",
+        "/habits/edit/:habitId",
         "/settings/habits/create",
         "/settings/habits/by_id/:habitId"
       ],
