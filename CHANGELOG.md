@@ -4,6 +4,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0]
+### Added
+- **Habits can now check themselves off from recorded data.** When you create or
+  edit a habit — now right on the Habits page, via the + button or a
+  press-and-hold on a habit — you can attach the signals it depends on: a
+  measurable ("water ≥ 1,000 ml"), health data ("6,000 steps a day"), or an
+  imported workout ("any strength training"), combined as any / all / at least
+  N. Once the day's data satisfies the rule, the habit is checked off for you,
+  marked *auto* on the Habits page, and announced with one notification (one
+  per day, several habits grouped; switchable off per habit). Anything you
+  record yourself still wins over the automatic check-off.
+
+### Changed
+- **Recording a habit is quicker and shows only what matters.** The completion
+  sheet no longer embeds a whole dashboard; it lists the habit's own signals
+  with their status, one-tap chips for the values you log most, and a two-week
+  sparkline each. Tapping a chip records the measurement immediately and, if
+  that completes the habit, pre-selects Success. Habit definitions moved from
+  Settings to the Habits page; the Settings › Habits list still opens the same
+  editor.
+- **Goal coaching now remembers years of check-ins, not just the last few
+  months.** A goal agent's wake used to carry only the newest check-in
+  summaries that fit its budget — roughly the last three months — so the
+  reason a goal was redefined, an injury a year ago, or the routine that
+  worked before a stall had quietly dropped out of view. Older check-ins are
+  now folded into short digests by month, then by quarter, then by year, and
+  the recent ones stay verbatim, so the agent's report and advice rest on the
+  whole history at a fraction of the token cost. Digests are written on the
+  same automatic wakes that summarise check-ins, a few spans at a time, and
+  are shared across devices like the summaries.
+
+### Removed
+- **The dashboard picker on a habit.** A habit's signals replace the linked
+  dashboard; existing habits keep working and can be given signals in the
+  editor.
+
 ## [1.0.17]
 ### Fixed
 - **Step counts stayed stuck on the phone's bedtime figure after a wearable
