@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:lotti/features/design_system/theme/motion_tokens.dart';
 
 /// Collapses content away — and brings it back — as a single unit.
@@ -27,6 +28,7 @@ class SizeFadeCollapse extends StatefulWidget {
     required this.collapsed,
     required this.duration,
     required this.child,
+    this.onCollapsed,
     super.key,
   });
 
@@ -41,6 +43,13 @@ class SizeFadeCollapse extends StatefulWidget {
   final Duration duration;
 
   final Widget child;
+
+  /// Called once the content has fully collapsed away — after the animation,
+  /// or at once under reduced motion. Lets an owner that keeps a departed
+  /// subtree mounted only for the sake of this exit drop it afterwards, at
+  /// zero height where unmounting moves nothing. Not called for content that
+  /// starts out collapsed.
+  final VoidCallback? onCollapsed;
 
   @override
   State<SizeFadeCollapse> createState() => _SizeFadeCollapseState();
@@ -68,6 +77,24 @@ class _SizeFadeCollapseState extends State<SizeFadeCollapse>
       .animate(
         CurvedAnimation(parent: _controller, curve: MotionCurves.standard),
       );
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.addStatusListener(_onStatus);
+  }
+
+  /// Reports a collapse that ran to the end. A status listener rather than
+  /// the `forward()` future, so the reduced-motion snap — a plain value
+  /// assignment — reports the same way. Delivered after the frame: the snap
+  /// fires from [didUpdateWidget], mid-build, where an owner's `setState`
+  /// would be illegal, and at zero height one frame's delay is invisible.
+  void _onStatus(AnimationStatus status) {
+    if (status != AnimationStatus.completed) return;
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (mounted) widget.onCollapsed?.call();
+    });
+  }
 
   @override
   void didUpdateWidget(SizeFadeCollapse oldWidget) {

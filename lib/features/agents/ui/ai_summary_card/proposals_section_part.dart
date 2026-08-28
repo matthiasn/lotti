@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_part.dart'
 import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
+import 'package:lotti/features/design_system/components/motion/size_fade_collapse.dart';
 import 'package:lotti/features/design_system/components/motion/size_fade_entrance.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -41,6 +42,10 @@ class ProposalsSection extends StatelessWidget {
   /// Falls back to `open.length` when not supplied.
   final int? pendingCount;
   final bool confirmAllBusy;
+
+  /// Confirms every open row. Null when the rail has nothing to offer — one
+  /// pending row, or none — which collapses the rail rather than unmounting
+  /// it; see the rail's own note in [build].
   final Future<void> Function()? onConfirmAll;
 
   /// Bumped by the shell on each "Confirm all" press; forwarded to the rows so
@@ -107,11 +112,12 @@ class ProposalsSection extends StatelessWidget {
                   ),
                   // At zero the pill is furniture — the absence of rows
                   // already says it, so the count earns its ink only when
-                  // there is something to act on.
-                  if ((pendingCount ?? open.length) > 0) ...[
-                    SizedBox(width: tokens.spacing.step3),
-                    _PendingPill(count: pendingCount ?? open.length),
-                  ],
+                  // there is something to act on. It fades rather than
+                  // unmounts: it is the tallest thing on this line, and
+                  // zero is only ever reached mid-sweep, when dropping it
+                  // stepped the whole header up by the difference.
+                  SizedBox(width: tokens.spacing.step3),
+                  _PendingPill(count: pendingCount ?? open.length),
                 ],
               ),
               SizedBox(height: tokens.spacing.step3),
@@ -151,19 +157,29 @@ class ProposalsSection extends StatelessWidget {
                 ),
               // Bottom rail: the one list-level operation, trailing-aligned.
               // Open rows already end with their own trailing gap, so the
-              // rail needs none of its own.
-              if (onConfirmAll != null)
-                Align(
-                  key: const ValueKey('proposalBottomRail'),
+              // rail needs none of its own. Always mounted and collapsed
+              // away rather than conditionally built: when a confirm leaves
+              // a single row behind, the rail eases out on the same clock as
+              // the row that just left instead of vanishing in one frame and
+              // snapping the last row up by its height. A section that never
+              // needed the rail starts collapsed, without animation.
+              SizeFadeCollapse(
+                key: const ValueKey('proposalBottomRail'),
+                collapsed: onConfirmAll == null,
+                duration: ProposalMotion.collapse,
+                child: Align(
                   alignment: Alignment.centerRight,
                   child: DesignSystemButton(
                     label: messages.changeSetConfirmAll,
                     leadingIcon: LottiIcons.confirmAll,
                     variant: DesignSystemButtonVariant.outlined,
                     isLoading: confirmAllBusy,
-                    onPressed: () => unawaited(onConfirmAll!()),
+                    onPressed: onConfirmAll == null
+                        ? null
+                        : () => unawaited(onConfirmAll!()),
                   ),
                 ),
+              ),
             ],
           ),
         ),
@@ -267,24 +283,35 @@ class _PendingPill extends StatelessWidget {
     // Instant under reduced motion. Keyed by count so the switcher
     // cross-fades only when it changes.
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.step3,
-        vertical: tokens.spacing.step1,
-      ),
-      decoration: BoxDecoration(
-        color: ai.subtleWashStrong,
-        borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
-      ),
-      child: AnimatedSwitcher(
-        duration: reduceMotion ? Duration.zero : MotionDurations.medium1,
-        switchInCurve: MotionCurves.standard,
-        switchOutCurve: MotionCurves.standard,
-        child: Text(
-          context.messages.changeSetPendingCount(count),
-          key: ValueKey(count),
-          style: tokens.typography.styles.others.caption.copyWith(
-            color: ai.metaText,
+    final duration = reduceMotion ? Duration.zero : MotionDurations.medium1;
+    // Zero fades the pill out in place — see the header row in
+    // [ProposalsSection.build] for why it keeps its footprint.
+    return ExcludeSemantics(
+      excluding: count == 0,
+      child: AnimatedOpacity(
+        opacity: count > 0 ? 1 : 0,
+        duration: duration,
+        curve: MotionCurves.standard,
+        child: Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: tokens.spacing.step3,
+            vertical: tokens.spacing.step1,
+          ),
+          decoration: BoxDecoration(
+            color: ai.subtleWashStrong,
+            borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
+          ),
+          child: AnimatedSwitcher(
+            duration: duration,
+            switchInCurve: MotionCurves.standard,
+            switchOutCurve: MotionCurves.standard,
+            child: Text(
+              context.messages.changeSetPendingCount(count),
+              key: ValueKey(count),
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: ai.metaText,
+              ),
+            ),
           ),
         ),
       ),

@@ -23,6 +23,8 @@ import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart'
 import 'package:lotti/features/agents/ui/task_agent_controls_footer.dart';
 import 'package:lotti/features/agents/ui/task_agent_model_identity.dart';
 import 'package:lotti/features/agents/ui/widgets/ai_card_chrome.dart';
+import 'package:lotti/features/design_system/components/motion/size_fade_collapse.dart';
+import 'package:lotti/features/design_system/components/motion/size_fade_entrance.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -156,6 +158,46 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
   /// from under the finger. The dual of [_mergeUnresolvedOpenSuggestions].
   final Set<String> _exitingFingerprints = {};
 
+  /// True from a Confirm-all tap until the last row of that batch has left.
+  /// Keeps the rail on screen for the whole sweep: the rows prune one by one,
+  /// and the rail would otherwise collapse the moment a single row remained,
+  /// while that row was still leaving.
+  bool _confirmAllSweeping = false;
+
+  /// Whether the resolved-history band is showing. Latched while rows are
+  /// collapsing: the first confirm of a sweep already puts an entry in the
+  /// ledger, and letting the band appear mid-sweep would shove the rows still
+  /// leaving — the ones the user is watching — by its own height. It reveals
+  /// once the sweep has settled, easing open instead of snapping.
+  bool _showHistory = false;
+
+  /// Whether the history band's next appearance should ease open. False when
+  /// the band is part of the initial load, whose bands the `StaggeredEntrance`
+  /// above already choreographs; true for a band that appears later.
+  bool _historyRevealAnimates = false;
+
+  /// Whether the history decision has been taken against a real list at
+  /// least once. Distinguishes a band present on the initial load (no reveal)
+  /// from one appearing after it.
+  bool _historyDecidedWithList = false;
+
+  /// The proposals section most recently built with rows in it, kept so the
+  /// section can collapse away as a unit once the last row has left. Without
+  /// it the residual — the section header, its paddings and the rail — would
+  /// unmount in one frame.
+  ProposalsSection? _lastProposalsSection;
+
+  /// Bumped each time the section comes back after having been absent, so
+  /// the collapse wrapper is rebuilt fresh and the returning rows play their
+  /// own entrance reveal rather than the whole section scaling back open.
+  int _proposalsGeneration = 0;
+
+  /// Whether the previous build had a section with rows in it. Read against
+  /// the *previous build* rather than [_lastProposalsSection], which is only
+  /// dropped a frame after the collapse ends — a section returning inside
+  /// that frame would otherwise keep the collapsed wrapper and scale open.
+  bool _hadProposalsSection = false;
+
   ProviderSubscription<AsyncValue<UnifiedSuggestionList>>?
   _suggestionsSubscription;
   ProviderSubscription<AsyncValue<bool>>? _runningSubscription;
@@ -175,6 +217,12 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
       // previous task must not carry into the next one (it would keep
       // `settling` on or skew the pending-count filter).
       _exitingFingerprints.clear();
+      _confirmAllSweeping = false;
+      _lastProposalsSection = null;
+      _hadProposalsSection = false;
+      _showHistory = false;
+      _historyRevealAnimates = false;
+      _historyDecidedWithList = false;
       _lastVisibleSuggestions = null;
       _seenFingerprints.clear();
       _hasSeededFingerprints = false;
@@ -228,6 +276,7 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
   /// stays.
   void _onRowResolveEnd(PendingSuggestion suggestion, {required bool removed}) {
     if (!_exitingFingerprints.remove(suggestion.fingerprint)) return;
+    if (_exitingFingerprints.isEmpty) _confirmAllSweeping = false;
     // The exiting set changed, and both `settling` and the pending count derive
     // from it — always rebuild so neither can stick in a stale state, even on
     // the paths where the visible list itself doesn't change.
@@ -371,6 +420,7 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
     );
     setState(() {
       _exitingFingerprints.addAll(pending.map((s) => s.fingerprint));
+      _confirmAllSweeping = true;
       _confirmAllBusy = true;
       _confirmAllPulse++;
     });
@@ -608,8 +658,9 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
     );
     // Nothing to propose, no section: an empty "Proposed changes" band cost a
     // divider and two paddings to say what the missing rows already said. A
-    // row committed by the user stays in `open` until its collapse finishes,
-    // so the section fades out with the last row rather than snapping.
+    // row committed by the user stays in `open` until its collapse finishes;
+    // then the section — header, paddings, rail — collapses away as a unit
+    // on the row's own clock, rather than unmounting in one frame.
     final proposalsSection = list == null || list.open.isEmpty
         ? null
         : ProposalsSection(
@@ -624,9 +675,17 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
                   (s) => !_exitingFingerprints.contains(s.fingerprint),
                 )
                 .length,
-            confirmAllBusy: _confirmAllBusy,
+            // Loading for the whole sweep, not just the writes: fast writes
+            // return before the rows have left, and a rail that re-enables
+            // then would re-run the batch — a second haptic, a second
+            // announcement, a redundant service round-trip.
+            confirmAllBusy: _confirmAllBusy || _confirmAllSweeping,
             confirmAllPulse: _confirmAllPulse,
-            onConfirmAll: list.open.length > 1
+            // The rail earns its place with more than one row to act on, and
+            // keeps it for the whole of a Confirm-all sweep: the rows prune
+            // one at a time, and it must not drop out while the last is
+            // still leaving.
+            onConfirmAll: list.open.length > 1 || _confirmAllSweeping
                 ? () => _confirmAll(list.open)
                 : null,
             onResolveStart: _onRowResolveStart,
@@ -635,6 +694,36 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
             // up — guard them so a fast second tap can't land on a row
             // that just moved under the pointer.
             settling: _exitingFingerprints.isNotEmpty,
+          );
+    // Latches, updated in build rather than in a listener: each is a pure
+    // function of state the build already holds (`_expanded`, the report,
+    // the exiting set), so the frame that reads them is the frame that can
+    // decide them, with no setState behind it. The same applies to the
+    // history latch below.
+    if (proposalsSection != null && !_hadProposalsSection) {
+      _proposalsGeneration++;
+    }
+    _hadProposalsSection = proposalsSection != null;
+    if (proposalsSection != null) _lastProposalsSection = proposalsSection;
+    // Mounted whenever there has been a section to show: the current one, or
+    // the last one collapsing away. A section that returns after collapsing
+    // gets a fresh wrapper (the generation key) so it stands at full height
+    // at once and only its new rows reveal themselves.
+    final retainedSection = _lastProposalsSection;
+    final proposalsBand = retainedSection == null
+        ? null
+        : SizeFadeCollapse(
+            key: ValueKey('proposals-band-$_proposalsGeneration'),
+            collapsed: proposalsSection == null,
+            duration: ProposalMotion.collapse,
+            // Fully gone: drop the departed section, at zero height, where
+            // unmounting it moves nothing.
+            onCollapsed: () {
+              if (mounted && (_lastVisibleSuggestions?.open.isEmpty ?? true)) {
+                setState(() => _lastProposalsSection = null);
+              }
+            },
+            child: retainedSection,
           );
     // History rides with the full report, not with the summary: while the
     // card is collapsed the reader wants the TL;DR and the decisions still
@@ -646,15 +735,25 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
     // — there the card is already showing everything it has, and hiding the
     // record behind a control that does not exist would strand it.
     final reportIsExpandable = additionalReport?.trim().isNotEmpty ?? false;
-    final showHistory =
+    final wantHistory =
         list != null &&
         list.activity.isNotEmpty &&
         (_expanded || !reportIsExpandable);
-    final historySection = showHistory
-        ? ProposalHistorySection(
-            resolved: list.activity,
-            open: _historyOpen,
-            onToggle: () => setState(() => _historyOpen = !_historyOpen),
+    // Latched while rows are collapsing — see [_showHistory].
+    if (_exitingFingerprints.isEmpty && wantHistory != _showHistory) {
+      _showHistory = wantHistory;
+      _historyRevealAnimates = wantHistory && _historyDecidedWithList;
+    }
+    if (list != null) _historyDecidedWithList = true;
+    final historySection = _showHistory && list != null
+        ? SizeFadeEntrance(
+            key: const ValueKey('proposalHistoryBand'),
+            animate: _historyRevealAnimates,
+            child: ProposalHistorySection(
+              resolved: list.activity,
+              open: _historyOpen,
+              onToggle: () => setState(() => _historyOpen = !_historyOpen),
+            ),
           )
         : null;
 
@@ -686,7 +785,7 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
                 child: reportBody,
               ),
             // Both hidden until the first value to avoid flashing empty state.
-            ?proposalsSection,
+            ?proposalsBand,
             ?historySection,
             controlsFooter,
           ],

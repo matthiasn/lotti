@@ -30,6 +30,7 @@ Future<void> _pump(
   required bool collapsed,
   bool reduceMotion = false,
   VoidCallback? onTap,
+  VoidCallback? onCollapsed,
   Duration duration = const Duration(milliseconds: 300),
 }) => tester.pumpWidget(
   makeTestableWidgetNoScroll(
@@ -42,6 +43,7 @@ Future<void> _pump(
         child: SizeFadeCollapse(
           collapsed: collapsed,
           duration: duration,
+          onCollapsed: onCollapsed,
           child: _content(onTap: onTap),
         ),
       ),
@@ -217,6 +219,67 @@ void main() {
 
       semantics.dispose();
     });
+
+    testWidgets(
+      'onCollapsed fires once the collapse has run to the end, not before',
+      (tester) async {
+        var calls = 0;
+        await _pump(tester, collapsed: false, onCollapsed: () => calls++);
+        await _pump(tester, collapsed: true, onCollapsed: () => calls++);
+        // The ticker's zero-elapsed start frame, then half the collapse.
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 150));
+        // Mid-collapse the content is still partly there — the owner must
+        // not drop it yet.
+        final mid = _measure(tester).reserved.height;
+        expect(mid, greaterThan(0));
+        expect(mid, lessThan(_contentSize.height));
+        expect(calls, 0);
+
+        // Past the end, not exactly at it: the simulation reports done only
+        // strictly after its duration, and the callback lands post-frame.
+        await tester.pump(const Duration(milliseconds: 200));
+        expect(_measure(tester).reserved.height, 0);
+        expect(calls, 1);
+      },
+    );
+
+    testWidgets(
+      'onCollapsed fires for the reduced-motion snap too',
+      (tester) async {
+        var calls = 0;
+        await _pump(
+          tester,
+          collapsed: false,
+          reduceMotion: true,
+          onCollapsed: () => calls++,
+        );
+        await _pump(
+          tester,
+          collapsed: true,
+          reduceMotion: true,
+          onCollapsed: () => calls++,
+        );
+        expect(_measure(tester).reserved.height, 0);
+        expect(calls, 1);
+      },
+    );
+
+    testWidgets(
+      'onCollapsed does not fire for content that starts out collapsed, nor '
+      'on a reveal',
+      (tester) async {
+        var calls = 0;
+        await _pump(tester, collapsed: true, onCollapsed: () => calls++);
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(calls, 0);
+
+        await _pump(tester, collapsed: false, onCollapsed: () => calls++);
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(_measure(tester).reserved.height, _contentSize.height);
+        expect(calls, 0);
+      },
+    );
 
     testWidgets('a changed duration retimes the next collapse', (tester) async {
       const slow = Duration(milliseconds: 800);

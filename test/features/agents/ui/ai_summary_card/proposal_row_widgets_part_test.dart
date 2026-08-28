@@ -1,12 +1,19 @@
+import 'dart:async';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
+import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_part.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_widgets_part.dart';
 import 'package:lotti/features/agents/ui/localized_change_summary.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../mocks/mocks.dart';
+import '../../../../widget_test_utils.dart';
 import '../../test_data/change_set_factories.dart';
 import 'test_bench.dart';
 
@@ -184,6 +191,101 @@ void main() {
           inkWell.overlayColor?.resolve({WidgetState.hovered}),
           Colors.transparent,
         );
+      },
+    );
+  });
+
+  group('AiSummaryCard – RowActions footprint', () {
+    // The summary text beside the slot must never rewrap: a narrower slot
+    // widened the text column mid-resolve, and a two-line proposal snapping
+    // to one line dropped the row's height a beat before its collapse.
+    testWidgets(
+      'the busy spinner keeps the two-button footprint',
+      (tester) async {
+        late double expected;
+        await tester.pumpWidget(
+          makeTestableWidget(
+            Builder(
+              builder: (context) {
+                expected = RowActions.footprintWidth(context);
+                return Center(
+                  child: RowActions(
+                    busy: true,
+                    onReject: () async {},
+                    onConfirm: () async {},
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+        await tester.pump();
+        final tokens = tester.element(find.byType(RowActions)).designTokens;
+        expect(expected, RowActions.buttonSize * 2 + tokens.spacing.step2);
+        expect(
+          tester.getSize(find.byType(RowActions)),
+          Size(expected, RowActions.buttonSize),
+        );
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'a resolving row keeps its text at the same width as a pending one',
+      (tester) async {
+        final completer = Completer<ToolExecutionResult>();
+        final service = MockChangeSetConfirmationService();
+        when(
+          () => service.confirmItem(any(), any()),
+        ).thenAnswer((_) => completer.future);
+        final bench = AgentTestBench(
+          confirmationService: service,
+          updateNotifications: MockUpdateNotifications(),
+          suggestions: UnifiedSuggestionList(
+            open: [_pending('set_task_status')],
+            activity: const [],
+          ),
+        );
+        await tester.pumpWidget(bench.build());
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        Finder body() => find.byWidgetPredicate(
+          (w) => w is Text && w.textSpan != null,
+        );
+        final pendingWidth = tester.getSize(body()).width;
+        final buttonsWidth = tester.getSize(find.byType(RowActions)).width;
+        // The rendered two-button rail is what the footprint stands for.
+        expect(
+          buttonsWidth,
+          RowActions.footprintWidth(tester.element(find.byType(RowActions))),
+        );
+
+        await tester.tap(find.byIcon(LottiIcons.confirm));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+        expect(find.text('Confirmed'), findsOneWidget);
+        expect(find.byType(RowActions), findsNothing);
+        expect(tester.getSize(body()).width, pendingWidth);
+        // And the placeholder that replaced the buttons is exactly their size.
+        expect(
+          tester.getSize(
+            find.descendant(
+              of: find.byType(ProposalRowContent),
+              matching: find.byWidgetPredicate(
+                (w) =>
+                    w is SizedBox &&
+                    w.width == buttonsWidth &&
+                    w.height == RowActions.buttonSize,
+              ),
+            ),
+          ),
+          Size(buttonsWidth, RowActions.buttonSize),
+        );
+        completer.complete(
+          const ToolExecutionResult(success: true, output: 'ok'),
+        );
+        await tester.pump();
       },
     );
   });

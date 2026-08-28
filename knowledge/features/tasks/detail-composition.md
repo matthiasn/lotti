@@ -19,7 +19,7 @@ sources:
   - id: pages
     resource: ../../../lib/features/tasks/ui/pages
     title: TaskDetailsPage, TasksRootPage and TaskForm
-    last_modified: 2026-08-20
+    last_modified: 2026-08-28
   - id: first-run
     resource: ../../../lib/features/tasks/ui/widgets/task_first_run_actions.dart
     title: First-run actions block
@@ -47,7 +47,7 @@ sources:
   - id: scroll-stability
     resource: ../../../lib/features/tasks/ui/widgets/viewport_stable_animated_size.dart
     title: TaskScrollStabilityScope and ViewportStableScrollController
-    last_modified: 2026-08-12
+    last_modified: 2026-08-28
 ---
 
 # Band order
@@ -449,13 +449,49 @@ three region-adapter modes over one `ViewportStableScrollController`:
 | Adapter | Behaviour |
 |---------|-----------|
 | `ViewportStableAnimatedSize` | Animates generated entry text and nested AI-response height, arming only when the region is fully above the viewport |
-| `ViewportStableSizeReporter` | No motion — used by the header band (the only band above the proposals) while a suggestion-resolution hold is armed, because its content already owns its own animations |
-| `ViewportStableSizeReporter(offscreenOnly: true)` | Wraps the AI card, checklist and linked-tasks bands, reporting only while the page armed the hold with `includeOffscreenRegions` — i.e. while the card is fully above the viewport and `_belowCardAnchor` pins the linked-entries seam. While the card is visible, a checklist or linked-task growing *below* the proposals is the visible reflow; compensating it would drag the proposals out from under the pointer |
+| `ViewportStableSizeReporter` | No motion — used by the header band and the AI card band while a suggestion-resolution hold is armed, because their content already owns its own animations. Whichever edge the page pins lies *below* both bands, so their deltas are absorbed unconditionally |
+| `ViewportStableSizeReporter(offscreenOnly: true)` | Wraps the checklist and linked-tasks bands, reporting only while the page armed the hold with `includeOffscreenRegions` — i.e. while the card is fully above the viewport and `_belowCardAnchor` pins the linked-entries seam. While the card is visible, a checklist or linked task growing *below* it is the visible reflow — new content appearing, only what lies under it moving |
 
 The offscreen-only reporters **deliberately do not compute the offscreen
 predicate themselves**: the page has to pick a matching `ScrollAnchor` from the
 same answer, and two mechanisms deciding independently would disagree over the
 padding between their reference points and then fight each frame.
+
+## Which edge holds
+
+The page arms exactly one post-frame `ScrollAnchor` per resolve, chosen by
+whether the AI card band has scrolled fully above the viewport:
+
+```mermaid
+flowchart TD
+  resolve["proposal resolves\n(tap, swipe or Confirm all)"] --> q{"card band bottom\nabove viewport top?"}
+  q -- no --> visible["_cardBottomAnchor\npins the card band's bottom edge"]
+  q -- yes --> off["_belowCardAnchor\npins the linked-entries seam"]
+  visible --> h["header + card report\ndeltas pre-paint"]
+  off --> h2["header + card + checklist +\nlinked tasks report pre-paint"]
+```
+
+**Card visible — the card's bottom edge.** Every resolved row collapses *inside*
+the card, and on a Confirm-all the rows collapse one after another from the top.
+Pinning the card's bottom keeps the rows still to come, the Confirm-all rail and
+everything below the card exactly where they were; the collapse is paid for above
+them, by the summary sliding down into the space the rows leave. The previous
+design pinned the proposals section's *top*, which sent the whole visible page
+racing upwards by the collapsed height — five rows is well over half a phone
+screen — because the collapsing rows sit between that edge and everything the
+user is looking at. Both the off-screen predicate and this anchor read the same
+edge (`_cardRegionBottomGlobal`), so the decision and the point held can never
+disagree.
+
+**Card fully above the viewport — the seam below the work bands.** The user is
+reading the linked entries; the card, the checklist and the linked-tasks bands
+all report so the correction lands pre-paint, and `_belowCardAnchor` catches
+whatever slips past.
+
+The two anchors are never armed together: they sit either side of the work
+bands, so the correction that holds one moves the other by exactly those bands'
+height change, which the other then reads as drift and undoes on the next
+post-frame.
 
 Each band carries a distinct, task-scoped `ValueKey`. `StaggeredEntrance` maps its
 children through `flutter_animate`, **which does not forward their keys**, so the
@@ -469,7 +505,12 @@ position**. The scroll position also retains a temporary trailing extent when a
 simultaneous shrink below the anchor would otherwise clamp the viewport; that
 extent disappears once the user scrolls inside the real range. User scrolling
 cancels the hold immediately, and the standalone journal-entry detail page stays
-outside the scope.
+outside the scope. At the scroll origin the correction clamps: what a collapse
+cannot give back above the viewport, the content below it moves up by.
+
+What the card itself does to stay collapse-only — no unmount in a single frame
+anywhere in the section — is the card's contract, in
+[agent UI surfaces](../agents/ui-surfaces.md#proposal-acceptreject-motion).
 
 ## Known gap: insertions inside the below-card sliver
 

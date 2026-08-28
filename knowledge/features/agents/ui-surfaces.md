@@ -15,7 +15,7 @@ sources:
   - id: card
     resource: ../../../lib/features/agents/ui/ai_summary_card.dart
     title: AiSummaryCard
-    last_modified: 2026-07-25
+    last_modified: 2026-08-28
   - id: automation-row
     resource: ../../../lib/features/agents/ui/agent_automation_row.dart
     title: Shared agent report automation controls
@@ -291,6 +291,26 @@ Invariants:
   reflow (`SizeTransition`, `alignment: topCenter`), so neighbours slide up on
   the same tween with no snap. The inter-row gap lives inside the collapse so
   nothing snaps on prune.
+- **Nothing in the section changes height in a single frame.** The task page
+  pins the card's bottom edge while a proposal resolves, so any instant change
+  inside the section would snap the content above it. Four things that used to
+  unmount now ease out instead: the row's trailing slot keeps
+  `RowActions.footprintWidth` while resolving (a narrower placeholder let the
+  text rewrap and the row lose a line before its collapse); the pending pill
+  fades in place at zero rather than leaving the header line; the Confirm-all
+  rail is always mounted inside a `SizeFadeCollapse` and collapses when a
+  confirm leaves one row — and stays for the whole of a Confirm-all sweep via
+  `_confirmAllSweeping`, rather than dropping while the last row is still
+  leaving; and the section itself is retained (`_lastProposalsSection`) inside a
+  `SizeFadeCollapse` so it collapses as a unit after the last row, then is
+  dropped from `onCollapsed` at zero height. A section that returns afterwards
+  gets a fresh wrapper (`_proposalsGeneration`) so it stands at full height at
+  once and only its new rows reveal themselves.
+- **The history band waits for the sweep.** The first confirm already writes a
+  ledger entry, and a report with nothing behind Read more shows history
+  unconditionally — so the band is latched (`_showHistory`) while any row is
+  still collapsing and reveals afterwards through a `SizeFadeEntrance`, animated
+  only when it appears after the initial load.
 - **The shell, not the provider, removes the row.** `_AiSummaryShellState` keeps
   a `Set<String> _exitingFingerprints`; `onResolveStart` records a fingerprint so
   the visible list re-inserts it even after the provider drops it, and
@@ -328,28 +348,25 @@ Invariants:
   travel, instant prune, instant pill swap, instant entrance — but the haptic
   still fires, because it is feedback rather than motion.
 
-### The off-screen card anchor
+### The card anchors
 
-While the card has scrolled **fully above** the viewport, `TaskDetailsPage` pins
-the seam just below it — a second `ScrollAnchor` keyed on the linked-entries
-sliver — instead of pinning the proposals, so neither a new proposal growing the
-card nor a resolved row collapsing it moves the visible area.
+The task page pins one edge per resolve. While the card is in view it pins the
+**card's bottom edge**, so a row collapsing inside the card — every accepted or
+dismissed proposal, and the whole staggered Confirm-all sweep — leaves the rows
+still to come, the rail and everything below the card exactly where they were,
+and the summary above slides down into the vacated space. While the card has
+scrolled **fully above** the viewport it pins the seam just below the work bands
+instead, so neither a new proposal growing the card nor a resolved row collapsing
+it moves the visible area.
 
 The collapse side matters for *every* tool and *both* verdicts: `_confirm` and
 `_reject` share the choreography, so a dismissed proposal shrinks the card
-exactly as an accepted one does. `_suggestionsAnchor` cannot cover it — it
-locates `ProposalsSection`'s own top, and a row collapsing *inside* that section
-never moves it, so the anchor measures zero drift and does nothing.
-`set_task_language` was the clearest reproducer: nothing above the card renders
-the language, so the card's collapse is that tool's entire page-layout effect.
-
-While off-screen the band also reports its own height delta
-(`ViewportStableSizeReporter(offscreenOnly: true)`), so the correction lands
-pre-paint rather than one frame late per frame of the collapse. The two anchors
-are mutually exclusive — they sit either side of the card, so the correction that
-holds one moves the other by exactly the card's height change.
-`TaskDetailsPage` evaluates the off-screen predicate once per resolve and arms
-exactly one.
+exactly as an accepted one does. The card band reports its own height delta
+(`ViewportStableSizeReporter`) whenever a hold is armed, so the correction lands
+pre-paint rather than one frame late per frame of the collapse; the anchor is
+the fallback. Which edge is pinned, and why the two anchors are mutually
+exclusive, is the page's concern — see
+[task detail composition](../tasks/detail-composition.md#which-edge-holds).
 
 ## Holding the list steady during a wake
 
