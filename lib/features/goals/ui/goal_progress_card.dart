@@ -1786,7 +1786,6 @@ class _ProgressDayCell extends StatelessWidget {
     final tokens = context.designTokens;
     final hit = day.hasValue;
     final completionType = day.habitCompletionType;
-    final skipped = completionType == HabitCompletionType.skip;
     final missed = completionType == HabitCompletionType.fail;
     // A completed day is a partial success (lighter wash) while the habit's
     // own window target was not yet met as of that day; a null verdict from
