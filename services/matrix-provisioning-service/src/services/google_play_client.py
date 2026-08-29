@@ -204,7 +204,7 @@ class GooglePlayClient:
         return await self._request(
             "POST",
             f"{PLAY_INTEGRITY_BASE_URL}/v1/{package}:decodeIntegrityToken",
-            json={"integrity_token": integrity_token},
+            json={"integrityToken": integrity_token},
         )
 
     async def aclose(self) -> None:

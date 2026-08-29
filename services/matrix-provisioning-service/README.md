@@ -205,6 +205,13 @@ no `Authorization` header — are answered rather than rejected.
 | `POST` | `/purges` | Purge every redeemed, non-revoked room |
 | `GET` | `/purges`, `/purges/{purge_id}` | List / poll purge runs |
 
+Purchase verification returns `bundle_import_required=true` with the
+short-lived bundle fields for first provisioning. When a linked replacement
+purchase recovers an account whose rotation was already confirmed, it returns
+`bundle_import_required=false` with those fields set to `null` and restores the
+existing Matrix account before responding. Destroyed bootstrap credentials are
+never regenerated.
+
 ## Production deployment requirements
 
 - Run exactly one service instance while `DB_PATH` points at SQLite. WAL,

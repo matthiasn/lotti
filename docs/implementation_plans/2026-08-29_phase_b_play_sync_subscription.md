@@ -127,6 +127,10 @@ escrow for paid provisioning:
   import/password rotation, with a strict TTL and audit trail.
 - Idempotent retries with the same purchase token and claim proof return the
   same pending claim; they never create a second Matrix user.
+- Once rotation is confirmed and escrow is destroyed, a linked replacement
+  purchase returns an explicit recovery result with no bundle payload, then
+  restores Matrix access before the verification response succeeds. Bootstrap
+  credentials are never recreated for an established account.
 - Do not trust a bare `bundle_id` rotation callback. After import, issue a
   one-time rotation challenge; require the bound Matrix user to publish it in
   the provisioned non-federated room and verify that the escrowed bootstrap

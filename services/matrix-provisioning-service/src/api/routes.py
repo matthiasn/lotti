@@ -151,9 +151,15 @@ async def verify_subscription_purchase(
             submission,
             now=now,
         )
+        current = await container.get_subscription_repository().get_current_subscription(
+            verified.subscription.entitlement_id
+        )
+        if current is None:
+            raise BundleClaimConflictException("Verified subscription is missing")
+        await container.get_subscription_access_service().enforce(current, now=now)
         return PaidBundleResponse(
             **delivery.__dict__,
-            entitlement_state=verified.subscription.entitlement_state.value,
+            entitlement_state=current.entitlement_state.value,
         )
     except EntitlementAuthenticationException as exc:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc

@@ -177,7 +177,7 @@ async def test_decode_integrity_token_posts_only_the_signed_token():
 
     assert payload == {"tokenPayloadExternal": {"requestDetails": {}}}
     assert requests[0].url.path == ("/v1/com.matthiasn.lotti:decodeIntegrityToken")
-    assert json.loads(requests[0].content) == {"integrity_token": "signed-integrity-token"}
+    assert json.loads(requests[0].content) == {"integrityToken": "signed-integrity-token"}
 
 
 @pytest.mark.parametrize("status_code", [429, 500, 502, 503, 504])

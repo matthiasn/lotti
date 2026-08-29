@@ -126,8 +126,11 @@ CLI provisioning return a credential once and retain only its fingerprint. The
 Google Play path, gated by `ENABLE_PLAY_SUBSCRIPTIONS`, binds a verified purchase
 to a stable anonymous entitlement and retains the paid bundle in short-lived
 authenticated encryption so a lost HTTP response can return the same bundle
-rather than create a second Matrix account. The Android Billing client is not
-wired yet, so this backend path is dormant while the feature flag remains off.
+rather than create a second Matrix account. After confirmed rotation destroys
+that escrow, a replacement purchase returns a no-import recovery result and
+unsuspends the existing Matrix account before responding; it never recreates
+the bootstrap credential. The Android Billing client is not wired yet, so this
+backend path is dormant while the feature flag remains off.
 
 Play RTDN is only a refresh signal. An authenticated Pub/Sub push resolves an
 already-known token and causes a new `purchases.subscriptionsv2.get`; a periodic

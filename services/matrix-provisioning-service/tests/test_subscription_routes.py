@@ -15,6 +15,7 @@ from src.core.constants import (
     SERVICE_BUNDLE_ROTATION_SERVICE,
     SERVICE_GOOGLE_PLAY_NOTIFICATIONS,
     SERVICE_PAID_BUNDLE_SERVICE,
+    SERVICE_SUBSCRIPTION_ACCESS_SERVICE,
     SERVICE_SUBSCRIPTION_IDENTITY,
     SERVICE_SUBSCRIPTION_RECONCILER,
     SERVICE_SUBSCRIPTION_REPOSITORY,
@@ -104,10 +105,10 @@ class FakePaidBundleService:
         self.provision_calls = []
         self.delivery_calls = []
         self.failure = None
+        self.delivery = None
 
-    @staticmethod
-    def _delivery():
-        return PaidBundleDelivery(
+    def _delivery(self):
+        return self.delivery or PaidBundleDelivery(
             bundle_id="bundle-one",
             bundle="encoded-bundle",
             expires_at=NOW + timedelta(hours=24),
@@ -157,6 +158,15 @@ class FakeSubscriptionRepository:
         return self.subscription
 
 
+class FakeSubscriptionAccessService:
+    def __init__(self):
+        self.calls = []
+
+    async def enforce(self, subscription, *, now):
+        self.calls.append((subscription, now))
+        return False
+
+
 class FakeReconciler:
     def start(self):
         pass
@@ -170,6 +180,7 @@ def services(repository, monkeypatch):
     monkeypatch.setenv("ENABLE_PLAY_SUBSCRIPTIONS", "true")
     instances = {
         SERVICE_SUBSCRIPTION_IDENTITY: FakeIdentityService(),
+        SERVICE_SUBSCRIPTION_ACCESS_SERVICE: FakeSubscriptionAccessService(),
         SERVICE_SUBSCRIPTION_SERVICE: FakeSubscriptionService(),
         SERVICE_PAID_BUNDLE_SERVICE: FakePaidBundleService(),
         SERVICE_BUNDLE_ROTATION_SERVICE: FakeRotationService(),
@@ -268,9 +279,53 @@ def test_verified_purchase_returns_paid_bundle_and_rotation_challenge(client, se
     assert response.status_code == 200
     assert response.json()["bundle"] == "encoded-bundle"
     assert response.json()["rotation_challenge"] == "rotation-proof"
+    assert response.json()["bundle_import_required"] is True
     assert response.json()["entitlement_state"] == "active"
     _, values = services[SERVICE_SUBSCRIPTION_SERVICE].calls[0]
     assert values["entitlement_auth_secret"] == AUTH_SECRET
+    access_calls = services[SERVICE_SUBSCRIPTION_ACCESS_SERVICE].calls
+    assert access_calls[0][0] is services[SERVICE_SUBSCRIPTION_REPOSITORY].subscription
+    assert len(access_calls) == 1
+
+
+def test_verified_replacement_purchase_returns_account_recovery_result(client, services):
+    services[SERVICE_PAID_BUNDLE_SERVICE].delivery = PaidBundleDelivery(
+        bundle_id="bundle-one",
+        bundle=None,
+        expires_at=None,
+        rotation_challenge=None,
+        bundle_import_required=False,
+    )
+
+    response = client.post(
+        "/api/v1/client/subscriptions/purchases/verify",
+        headers={"Authorization": f"Bearer {AUTH_SECRET}"},
+        json=purchase_payload(),
+    )
+
+    assert response.status_code == 200
+    assert response.json()["bundle_id"] == "bundle-one"
+    assert response.json()["bundle"] is None
+    assert response.json()["expires_at"] is None
+    assert response.json()["rotation_challenge"] is None
+    assert response.json()["bundle_import_required"] is False
+
+
+def test_purchase_verification_fails_closed_when_persisted_subscription_is_missing(
+    client,
+    services,
+):
+    services[SERVICE_SUBSCRIPTION_REPOSITORY].subscription = None
+
+    response = client.post(
+        "/api/v1/client/subscriptions/purchases/verify",
+        headers={"Authorization": f"Bearer {AUTH_SECRET}"},
+        json=purchase_payload(),
+    )
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "Verified subscription is missing"
+    assert services[SERVICE_SUBSCRIPTION_ACCESS_SERVICE].calls == []
 
 
 def test_delivery_retry_authenticates_entitlement_without_replaying_purchase(client, services):

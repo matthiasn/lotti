@@ -297,10 +297,11 @@ class ConfirmPaidRotationRequest(BundleDeliveryRequest):
 
 
 class PaidBundleResponse(BaseModel):
-    """Encrypted-at-rest bundle delivery returned after verified purchase."""
+    """Bundle delivery or recovery result returned after verified purchase."""
 
     bundle_id: str
-    bundle: str
-    expires_at: datetime
-    rotation_challenge: str
+    bundle: str | None
+    expires_at: datetime | None
+    rotation_challenge: str | None
+    bundle_import_required: bool
     entitlement_state: str

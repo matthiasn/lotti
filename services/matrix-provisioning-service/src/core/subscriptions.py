@@ -131,12 +131,13 @@ class BundleClaim:
 
 @dataclass(frozen=True)
 class PaidBundleDelivery:
-    """Idempotent paid provisioning response returned to the app."""
+    """Paid provisioning outcome, with credentials only when import is needed."""
 
     bundle_id: str
-    bundle: str
-    expires_at: datetime
-    rotation_challenge: str
+    bundle: str | None
+    expires_at: datetime | None
+    rotation_challenge: str | None
+    bundle_import_required: bool = True
 
 
 @dataclass(frozen=True)

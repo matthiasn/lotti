@@ -77,11 +77,23 @@ class PaidBundleService:
             verified.subscription.entitlement_id
         )
         if existing is not None:
-            delivery = await self._deliver_existing(
-                existing,
-                claim_secret=submission.claim_secret,
-                now=now,
-            )
+            if existing.confirmed_at is not None:
+                # A rotated Matrix account is already the durable sync identity.
+                # Replacement purchases restore access to it; the destroyed
+                # bootstrap credential must never be recreated or redelivered.
+                delivery = PaidBundleDelivery(
+                    bundle_id=existing.bundle_id,
+                    bundle=None,
+                    expires_at=None,
+                    rotation_challenge=None,
+                    bundle_import_required=False,
+                )
+            else:
+                delivery = await self._deliver_existing(
+                    existing,
+                    claim_secret=submission.claim_secret,
+                    now=now,
+                )
         else:
             username = self._username(verified.subscription.entitlement_id)
             request = CreateBundleRequest(

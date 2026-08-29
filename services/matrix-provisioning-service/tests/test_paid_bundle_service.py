@@ -239,6 +239,69 @@ async def test_acknowledgement_failure_leaves_bundle_available_for_retry(
     assert len(bundle_service.calls) == 1
 
 
+async def test_confirmed_claim_recovers_replacement_purchase_without_redelivery(
+    service,
+    repository,
+    bundle_service,
+    google_client,
+):
+    original = await verified_purchase(repository)
+    first_delivery = await service.provision_or_deliver(original, submission(), now=NOW)
+    await repository.destroy_bundle_claim(
+        first_delivery.bundle_id,
+        now=NOW + timedelta(minutes=1),
+    )
+    replacement = await repository.store_verified_subscription(
+        VerifiedSubscription(
+            entitlement_id="entitlement-one",
+            token_fingerprint="replacement-token-fingerprint",
+            encrypted_purchase_token=b"encrypted-replacement-token",
+            encryption_key_id="test-key",
+            package_name="com.matthiasn.lotti",
+            product_id="lotti_sync",
+            base_plan_id="annual",
+            latest_order_id="GPA.5678",
+            google_state=GoogleSubscriptionState.ACTIVE,
+            entitlement_state=EntitlementState.ACTIVE,
+            start_time=NOW + timedelta(days=30),
+            current_period_end=NOW + timedelta(days=395),
+            grace_deadline=None,
+            acknowledgement_state=AcknowledgementState.PENDING,
+            binding_verified=True,
+            last_verified_at=NOW + timedelta(days=30),
+            next_reconciliation_at=NOW + timedelta(days=30, hours=6),
+            linked_token_fingerprint="purchase-token-fingerprint",
+        ),
+        now=NOW + timedelta(days=30),
+    )
+
+    recovered = await service.provision_or_deliver(
+        VerifiedPurchaseResult(
+            subscription=replacement,
+            request_hash="replacement-request-hash",
+            claim_secret_hash=SecretHasher().hash("new-claim-secret"),
+        ),
+        submission(
+            base_plan_id="annual",
+            purchase_token="replacement-token",
+            claim_secret="new-claim-secret",
+        ),
+        now=NOW + timedelta(days=30),
+    )
+
+    assert recovered.bundle_id == first_delivery.bundle_id
+    assert recovered.bundle is None
+    assert recovered.expires_at is None
+    assert recovered.rotation_challenge is None
+    assert recovered.bundle_import_required is False
+    assert len(bundle_service.calls) == 1
+    assert google_client.acknowledgements[-1] == (
+        "com.matthiasn.lotti",
+        "lotti_sync",
+        "replacement-token",
+    )
+
+
 async def test_delivery_retry_rejects_missing_claim(service):
     with pytest.raises(BundleClaimConflictException, match="No bundle claim"):
         await service.deliver_existing_claim(
