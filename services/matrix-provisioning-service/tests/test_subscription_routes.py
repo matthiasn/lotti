@@ -1,5 +1,7 @@
 """Tests for public subscription routes and their per-entitlement auth boundary."""
 
+# ruff: noqa: S106 - explicit non-production credential fixtures
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone

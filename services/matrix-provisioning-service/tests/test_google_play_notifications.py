@@ -1,5 +1,7 @@
 """Tests for authenticated RTDN decoding and authoritative refresh routing."""
 
+# ruff: noqa: S105 - explicit non-production token fixtures
+
 from __future__ import annotations
 
 import base64

@@ -1,5 +1,7 @@
 """Tests for the authenticated Google Play HTTP and response boundary."""
 
+# ruff: noqa: S105 - explicit non-production token fixtures
+
 from __future__ import annotations
 
 import json

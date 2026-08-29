@@ -1,5 +1,7 @@
 """Tests for the end-to-end Play verification and persistence transaction."""
 
+# ruff: noqa: S105,S106 - explicit non-production token and secret fixtures
+
 from __future__ import annotations
 
 from dataclasses import replace

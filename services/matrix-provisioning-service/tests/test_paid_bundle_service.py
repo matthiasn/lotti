@@ -1,5 +1,7 @@
 """Tests for idempotent paid Matrix provisioning and encrypted delivery."""
 
+# ruff: noqa: S106 - explicit non-production credential fixtures
+
 from __future__ import annotations
 
 from dataclasses import replace

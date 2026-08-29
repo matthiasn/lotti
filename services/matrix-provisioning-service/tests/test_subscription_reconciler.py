@@ -1,5 +1,7 @@
 """Tests for missed-RTDN recovery and per-token failure isolation."""
 
+# ruff: noqa: S106 - explicit non-production credential fixtures
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
