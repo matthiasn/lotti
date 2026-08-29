@@ -5,9 +5,10 @@ import 'package:flutter/foundation.dart';
 /// [full] means the requirement held as of that day; [partial] means the user
 /// did everything within their control (the routine was kept) while a window
 /// target was still building — rendered as a lighter wash of the same success
-/// hue. [skipped] and [missed] are recorded outcomes a habit day can carry:
-/// deciding a day was missed and never looking at it are different facts, so
-/// [missed] is never the neutral grey of [none].
+/// hue. [skipped] and [missed] are recorded outcomes a habit day can carry.
+/// A strip records what was KEPT, so they share the neutral fill of [none];
+/// the label and tooltip say which of the three a neutral square stands for
+/// (see `dayMarkStateLabel`).
 enum DayMarkState { none, partial, full, skipped, missed }
 
 /// How a day turned out, in the user's own judgement.

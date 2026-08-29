@@ -1,7 +1,7 @@
 ---
 type: Architecture
 title: Day indicators — the shared day-mark model and cells
-description: One model (DayMark, DayMarkState, DayVerdict) and one component set (the handover's 12px square, the strip, the track geometry) that both goals and habits draw their per-day squares with, so a day looks the same wherever it is judged.
+description: One model (DayMark, DayMarkState, DayVerdict) and one component set (the handover's 11px square at the nearest icon size, the strip, the track geometry) that both goals and habits draw their per-day squares with, so a day looks the same wherever it is judged.
 resource: ../../lib/widgets/day_indicators
 tags: [day-indicators, habits, goals, design-system, accessibility]
 status: draft

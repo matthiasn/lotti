@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -170,12 +171,9 @@ void main() {
         findsNothing,
       );
 
-      // A read-only strip publishes one summary, counted from the marks: the
-      // success day is the only one that counts.
-      expect(
-        find.bySemanticsLabel(RegExp('1 successful day')),
-        findsOneWidget,
-      );
+      // A read-only strip publishes one summary. The range ends on a kept
+      // day, so it is the streak that is announced.
+      expect(find.bySemanticsLabel(RegExp('1-day streak')), findsOneWidget);
       handle.dispose();
     });
 
@@ -199,6 +197,47 @@ void main() {
         findsOneWidget,
       );
       handle.dispose();
+    });
+  });
+
+  group('current streak', () {
+    testWidgets('counts the trailing kept days, letting an open today ride', (
+      tester,
+    ) async {
+      _results = [
+        _result(DateTime(2024, 3, 11), HabitCompletionType.fail),
+        _result(DateTime(2024, 3, 12), HabitCompletionType.success),
+        _result(DateTime(2024, 3, 13), HabitCompletionType.success),
+        _result(DateTime(2024, 3, 14), HabitCompletionType.success),
+        _result(_rangeEnd, HabitCompletionType.open),
+      ];
+      await withClock(Clock.fixed(_rangeEnd.add(const Duration(hours: 9))), () {
+        return pumpCard(tester);
+      });
+      expect(row(tester).currentStreak, 3);
+      expect(find.text('3'), findsOneWidget);
+    });
+
+    testWidgets('a past open day or a skip breaks the run', (tester) async {
+      _results = [
+        _result(DateTime(2024, 3, 13), HabitCompletionType.success),
+        _result(DateTime(2024, 3, 14), HabitCompletionType.skip),
+        _result(_rangeEnd, HabitCompletionType.success),
+      ];
+      await pumpCard(tester);
+      expect(row(tester).currentStreak, 1);
+    });
+
+    testWidgets('an open day that is not today breaks the run', (tester) async {
+      _results = [
+        _result(DateTime(2024, 3, 14), HabitCompletionType.success),
+        _result(_rangeEnd, HabitCompletionType.open),
+      ];
+      await withClock(Clock.fixed(DateTime(2024, 3, 20)), () {
+        return pumpCard(tester);
+      });
+      expect(row(tester).currentStreak, 0);
+      expect(find.byIcon(LottiIcons.streak), findsNothing);
     });
   });
 

@@ -91,6 +91,7 @@ class _HabitCompletionCardState extends ConsumerState<HabitCompletionCard> {
     return HabitActionRow(
       habitId: habitDefinition.id,
       completedToday: completedToday,
+      currentStreak: _currentStreak(results),
       history: _historyMarks(results),
     );
   }
@@ -110,6 +111,24 @@ List<DayMark> _historyMarks(List<HabitResult> results) {
         isToday: result.dayString == today,
       ),
   ];
+}
+
+/// The current unbroken run of kept days at the end of [results]: today
+/// still open does not break it, any other non-success day does.
+int _currentStreak(List<HabitResult> results) {
+  var streak = 0;
+  var index = results.length - 1;
+  if (index >= 0 &&
+      results[index].completionType == HabitCompletionType.open &&
+      results[index].dayString == clock.now().ymd) {
+    index--;
+  }
+  while (index >= 0 &&
+      results[index].completionType == HabitCompletionType.success) {
+    streak++;
+    index--;
+  }
+  return streak;
 }
 
 /// The shared day-mark state a recorded habit outcome renders as.

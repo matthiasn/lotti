@@ -931,7 +931,7 @@ flowchart TD
   range. The retained snapshot is scoped to the active spec version and only
   promoted from a settled provider value, so a spec reload cannot relabel
   prior-spec evidence. A day track never resizes its
-  squares: `dayTrackMetrics` is one `kDaySquareSize` square plus `step1`
+  squares: `dayTrackMetrics` is one `kDaySquareSize` square plus `step2`
   per column, and a span wider than the width it was given becomes a
   trailing-anchored (`reverse: true`) scroller joined to one
   `LinkedScrollGroup`, where every track then pans in unison. The habit

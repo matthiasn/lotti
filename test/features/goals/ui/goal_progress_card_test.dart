@@ -827,6 +827,67 @@ void main() {
     expect(find.text('Today'), findsNothing);
   });
 
+  testWidgets('a raised text scale gives the metric bars full weekday '
+      'captions on a pitch widened to hold them', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        MediaQuery(
+          data: const MediaQueryData(textScaler: TextScaler.linear(1.01)),
+          child: SingleChildScrollView(
+            child: GoalProgressCard(
+              progress: GoalProgressView(
+                today: today,
+                metric: GoalMetricProgressView(
+                  name: 'Daily steps',
+                  target: 8000,
+                  days: [
+                    for (var index = 0; index < 7; index++)
+                      day(6 - index, 9000),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    // Wide enough for "Tue", so the one-letter fallback is not used.
+    expect(find.text('Tue'), findsOneWidget);
+    expect(find.text('T'), findsNothing);
+  });
+
+  testWidgets('a today recorded as open, not merely empty, is still the '
+      'dashed open square', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            habits: [
+              GoalHabitProgressView(
+                habitId: 'walk',
+                name: 'Walk',
+                targetCount: 3,
+                days: [
+                  for (var offset = 6; offset >= 1; offset--) day(offset, 0),
+                  day(0, 0, type: HabitCompletionType.open),
+                ],
+                successfulWeeks: 0,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(ValueKey('goal-habit-day-visual-walk-${dayKey(0)}')),
+        matching: find.byType(DsDashedBorder),
+      ),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('a point-sample health header quotes the latest reading, not '
       'the period average', (tester) async {
     await tester.pumpWidget(
@@ -2895,7 +2956,7 @@ void main() {
       );
 
       final tokens = tester.element(find.byType(GoalProgressCard)).designTokens;
-      final defaultPitch = ControlSizes.iconChipCompact + tokens.spacing.step2;
+      final defaultPitch = kDaySquareSize + tokens.spacing.step2;
       double? previousCellCenter;
       for (var offset = 6; offset >= 0; offset--) {
         final date = today

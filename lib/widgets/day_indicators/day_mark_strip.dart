@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -52,9 +54,8 @@ class DayMarkStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     final streak = this.streak ?? 0;
     if (marks.isEmpty && streak <= 0) return const SizedBox.shrink();
-    // Only a span longer than a week can outgrow its row; the seven-square
-    // list rows are narrower than any card and need no measuring.
-    if (marks.length <= 7) return _build(context, availableWidth: null);
+    // Always measured: even a seven-square row outgrows a phone card once a
+    // raised text scale widens the shared pitch for the weekday captions.
     return LayoutBuilder(
       builder: (context, constraints) => _build(
         context,
@@ -131,12 +132,32 @@ class DayMarkStrip extends StatelessWidget {
       ],
     );
     final streak = this.streak ?? 0;
-    final row = streak <= 0
+    final countStyle = tokens.typography.styles.body.bodySmall.copyWith(
+      color: tokens.colors.text.mediumEmphasis,
+    );
+    // The tail never scrolls away with the squares: the count is the one
+    // fact the strip states in words, so the squares fit or pan in whatever
+    // width is left beside it.
+    final tailWidth = streak <= 0
+        ? 0.0
+        : tokens.spacing.step2 +
+              kDaySquareSize +
+              tokens.spacing.step1 +
+              _textWidth(context, '$streak', countStyle);
+    final fitted = availableWidth == null
         ? squares
+        : fitOrScrollDayTrack(
+            contentWidth: metrics.pitch * marks.length,
+            availableWidth: math.max(0, availableWidth - tailWidth),
+            group: scrollGroup,
+            child: squares,
+          );
+    final row = streak <= 0
+        ? fitted
         : Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              squares,
+              Flexible(child: fitted),
               // Text-grade separation from the chain, so the flame reads as
               // the count's icon rather than one more cell. Flame and count
               // share the handover's medium-emphasis ink — the flame in the
@@ -152,12 +173,7 @@ class DayMarkStrip extends StatelessWidget {
                 color: tokens.colors.text.mediumEmphasis,
               ),
               SizedBox(width: tokens.spacing.step1),
-              Text(
-                '$streak',
-                style: tokens.typography.styles.body.bodySmall.copyWith(
-                  color: tokens.colors.text.mediumEmphasis,
-                ),
-              ),
+              Text('$streak', style: countStyle),
             ],
           );
 
@@ -194,17 +210,21 @@ class DayMarkStrip extends StatelessWidget {
     // with its first days cut off the left edge. A tappable strip publishes
     // each day as its own button, so the summary becomes the container's
     // label rather than the whole story.
-    final content = availableWidth == null
-        ? Align(alignment: AlignmentDirectional.centerStart, child: row)
-        : fitOrScrollDayTrack(
-            contentWidth: metrics.pitch * marks.length,
-            availableWidth: availableWidth,
-            group: scrollGroup,
-            child: row,
-          );
+    final content = Align(
+      alignment: AlignmentDirectional.centerStart,
+      child: row,
+    );
     return Semantics(
       label: summary,
       child: onDaySelected == null ? ExcludeSemantics(child: content) : content,
     );
   }
 }
+
+double _textWidth(BuildContext context, String text, TextStyle style) =>
+    (TextPainter(
+      text: TextSpan(text: text, style: style),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+      maxLines: 1,
+    )..layout()).width;

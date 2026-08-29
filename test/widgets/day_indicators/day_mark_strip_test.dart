@@ -142,7 +142,16 @@ void main() {
     // A read-only strip publishes one summary rather than seven nodes, so the
     // verdicts have to reach it there — otherwise the list announced a
     // measured day count while showing four verdict hues.
-    final label = tester.getSemantics(find.byType(DayMarkStrip)).label;
+    final label = tester
+        .getSemantics(
+          find
+              .descendant(
+                of: find.byType(DayMarkStrip),
+                matching: find.byType(Semantics),
+              )
+              .first,
+        )
+        .label;
     expect(label, startsWith('1 successful day'));
     expect(label, contains(cell(2, 'Met')));
     expect(label, contains(cell(1, 'Missed')));
