@@ -2872,6 +2872,7 @@
   "habitDeleteConfirm": "Sí, borrar este hábito",
   "habitDeleteQuestion": "¿Quieres borrar este hábito?",
   "habitEditorAddSignal": "Añadir una señal",
+  "habitEditorBack": "Atrás",
   "habitEditorCompositeAll": "Todas las señales",
   "habitEditorCompositeAny": "Cualquier señal",
   "habitEditorCompositeAtLeast": "Al menos {count} de {total}",

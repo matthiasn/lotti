@@ -146,6 +146,21 @@ description with example pills, then "how do we know it's done?"); editing is
 one flat page with the same sections plus Favorite / Private / Active and
 Delete.
 
+How it is reached depends on the window. `openHabitEditor`
+(`ui/pages/habit_editor_launcher.dart`) is the one doorway the FAB, the row
+long-press and the sheet's pencil use: on a phone it beams to the route above;
+on desktop (`isDesktopLayout`) it opens the same page **embedded in a
+right-anchored side panel** (`SizedWoltSideSheetType`, up to
+`kHabitEditorPanelWidth` = 800px) over the list, with a scrim — a form the user
+closes in a moment should not navigate them away from the list. Embedded
+(`HabitEditorPage.onClose`) the page renders no scaffold or app bar; back,
+save and delete close the panel instead of beaming, and the create wizard's
+signals step carries its own *Back*. At desktop widths the signals step lays
+identity + signals and Settings + Options out as two columns
+(`habit-editor-columns`), so two phone-width columns show the whole form
+without scrolling; the create wizard's name step stays a single narrow column.
+Deep links and Settings › Habits still mount the full route on any width.
+
 The definition itself stays in `HabitSettingsController` (`FormBuilder` for
 name, description and the three switches; setters for category, dates, the
 rule and `autoCompleteNotify`). The page owns only the signal card's form:

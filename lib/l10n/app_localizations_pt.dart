@@ -7289,6 +7289,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get habitEditorAddSignal => 'Adicionar um sinal';
 
   @override
+  String get habitEditorBack => 'Voltar';
+
+  @override
   String get habitEditorCompositeAll => 'Todos os sinais';
 
   @override

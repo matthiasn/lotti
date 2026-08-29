@@ -7267,6 +7267,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get habitEditorAddSignal => 'Signal hinzufügen';
 
   @override
+  String get habitEditorBack => 'Zurück';
+
+  @override
   String get habitEditorCompositeAll => 'Alle Signale';
 
   @override

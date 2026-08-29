@@ -2872,6 +2872,7 @@
   "habitDeleteConfirm": "Da, ștergeți acest obicei",
   "habitDeleteQuestion": "Doriți să ștergeți acest obicei?",
   "habitEditorAddSignal": "Adăugați un semnal",
+  "habitEditorBack": "Înapoi",
   "habitEditorCompositeAll": "Toate semnalele",
   "habitEditorCompositeAny": "Orice semnal",
   "habitEditorCompositeAtLeast": "Cel puțin {count} din {total}",

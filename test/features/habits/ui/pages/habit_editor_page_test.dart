@@ -99,8 +99,9 @@ void main() {
     String? habitId,
     String returnPath = '/habits',
     List<MeasurableDataType>? measurables,
+    Size size = const Size(1200, 1800),
   }) async {
-    tester.view.physicalSize = const Size(1200, 1800);
+    tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
@@ -111,7 +112,7 @@ void main() {
           platform: TargetPlatform.windows,
           child: HabitEditorPage(habitId: habitId, returnPath: returnPath),
         ),
-        mediaQueryData: const MediaQueryData(size: Size(1200, 1800)),
+        mediaQueryData: MediaQueryData(size: size),
         overrides: [
           measurableDataTypesStreamProvider.overrideWith(
             (ref) => Stream.value(measurables ?? [water]),
@@ -507,6 +508,60 @@ void main() {
       habits.addError(StateError('db hiccup'));
       await tester.pump();
       expect(find.byType(HabitSignalCard), findsOneWidget);
+    });
+  });
+  group('layout', () {
+    testWidgets('on desktop the edit page lays signals and settings out side '
+        'by side, wide enough that nothing needs to scroll', (tester) async {
+      await pumpEditor(tester, habitId: habitFlossing.id);
+      final columns = find.byKey(const ValueKey('habit-editor-columns'));
+      expect(columns, findsOneWidget);
+      // Signals on the left, settings and options on the right.
+      final row = tester.widget<Row>(columns);
+      expect(row.children.length, 3);
+      expect(
+        find.descendant(
+          of: find.byWidget(row.children.first),
+          matching: find.byType(HabitSignalCard),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byWidget(row.children.last),
+          matching: find.byKey(const Key('habit_active')),
+        ),
+        findsOneWidget,
+      );
+      // The whole form fits the window: the scroll view has no overflow.
+      final scrollable = tester.widget<Scrollable>(
+        find.byType(Scrollable).first,
+      );
+      expect(scrollable.controller?.position.maxScrollExtent ?? 0, 0);
+      expect(tester.getSize(columns).width, greaterThan(700));
+    });
+
+    testWidgets('a phone keeps the single column', (tester) async {
+      await pumpEditor(
+        tester,
+        habitId: habitFlossing.id,
+        size: const Size(390, 844),
+      );
+      expect(find.byKey(const ValueKey('habit-editor-columns')), findsNothing);
+      expect(find.byType(HabitSignalCard), findsOneWidget);
+    });
+
+    testWidgets("the create wizard's name step stays a narrow column even on "
+        'desktop', (tester) async {
+      await pumpEditor(tester);
+      expect(find.byKey(const ValueKey('habit-editor-columns')), findsNothing);
+      await tester.enterText(find.byType(TextField).first, 'Floss');
+      await tester.tap(find.text('Continue'));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(
+        find.byKey(const ValueKey('habit-editor-columns')),
+        findsOneWidget,
+      );
     });
   });
 }

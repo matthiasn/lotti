@@ -7217,6 +7217,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get habitEditorAddSignal => 'Tilføj et signal';
 
   @override
+  String get habitEditorBack => 'Tilbage';
+
+  @override
   String get habitEditorCompositeAll => 'Alle signaler';
 
   @override

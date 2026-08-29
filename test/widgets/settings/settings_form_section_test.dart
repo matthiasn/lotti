@@ -52,4 +52,14 @@ void main() {
     expect(find.text('Color'), findsOneWidget);
     expect(find.text('picker'), findsOneWidget);
   });
+  testWidgets('a section with no children is a heading only, never an empty '
+      'bordered card', (tester) async {
+    await tester.pumpWidget(
+      const WidgetTestBench(
+        child: SettingsFormSection(title: 'Signals', children: []),
+      ),
+    );
+    expect(find.text('Signals'), findsOneWidget);
+    expect(find.byType(DecoratedBox), findsNothing);
+  });
 }

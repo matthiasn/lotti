@@ -3136,6 +3136,7 @@
   "habitDeleteConfirm": "Ja, radera den här vanan",
   "habitDeleteQuestion": "Vill du ta bort den här vanan?",
   "habitEditorAddSignal": "Lägg till en signal",
+  "habitEditorBack": "Tillbaka",
   "habitEditorCompositeAll": "Alla signaler",
   "habitEditorCompositeAny": "Valfri signal",
   "habitEditorCompositeAtLeast": "Minst {count} av {total}",

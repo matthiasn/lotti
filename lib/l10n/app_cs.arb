@@ -2879,6 +2879,7 @@
   "habitDeleteConfirm": "Ano, smazat tento návyk",
   "habitDeleteQuestion": "Chceš tento návyk smazat?",
   "habitEditorAddSignal": "Přidat signál",
+  "habitEditorBack": "Zpět",
   "habitEditorCompositeAll": "Všechny signály",
   "habitEditorCompositeAny": "Libovolný signál",
   "habitEditorCompositeAtLeast": "Alespoň {count} z {total}",

@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/beamer/locations/habits_location.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
@@ -13,13 +12,13 @@ import 'package:lotti/features/design_system/components/celebration/completion_g
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
+import 'package:lotti/features/habits/ui/pages/habit_editor_launcher.dart';
 import 'package:lotti/features/habits/ui/sheets/habit_completion_sheet.dart';
 import 'package:lotti/features/settings/state/celebration_preferences_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/widgets/charts/habits/dashboard_habits_data.dart';
 
@@ -347,8 +346,7 @@ class _HabitActionRowState extends ConsumerState<HabitActionRow>
                 celebrate: celebrate,
                 history: widget.history,
                 onTapAdd: onTapAdd,
-                onEdit: () =>
-                    beamToNamed(HabitsLocation.editPath(widget.habitId)),
+                onEdit: () => openHabitEditor(context, habitId: widget.habitId),
                 onQuickComplete: () => _recordQuickCompletion(
                   HabitCompletionType.success,
                   habitDefinition,
