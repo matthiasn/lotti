@@ -95,9 +95,16 @@ habitDayVerdictsProvider = FutureProvider.autoDispose
           final verdict = entry.value.dimensionRatings[watcher.criterionId];
           if (verdict == null) continue;
           final held = latest[entry.key];
-          if (held != null && !entry.value.createdAt.isAfter(held.createdAt)) {
-            continue;
-          }
+          // The same tie-break `latestAssessmentsByDay` applies within one
+          // goal: equal timestamps fall back to the higher record id, so two
+          // devices iterating the goals in different orders agree.
+          final record = entry.value;
+          final wins =
+              held == null ||
+              record.createdAt.isAfter(held.createdAt) ||
+              (record.createdAt == held.createdAt &&
+                  record.id.compareTo(held.id) > 0);
+          if (!wins) continue;
           latest[entry.key] = entry.value;
           verdicts[entry.key] = verdict;
         }

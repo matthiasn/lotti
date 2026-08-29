@@ -753,9 +753,12 @@ void main() {
           goalsWatchingHabitProvider(
             habitFlossing.id,
           ).overrideWith((ref) async => [watcher('g1')]),
-          goalAgentProgressViewProvider(
-            'g1',
-          ).overrideWith((ref) async => progress()),
+          // The sheet asks for a span reaching the picked day (2 days back
+          // → the seven-day floor).
+          goalAgentProgressViewForSpanProvider((
+            agentId: 'g1',
+            historyDays: 7,
+          )).overrideWith((ref) async => progress()),
           goalAssessmentHistoryProvider(
             'g1',
           ).overrideWith((ref) async => const []),
@@ -776,6 +779,42 @@ void main() {
       // The day the habit sheet was opened for — a backfilled day judges
       // that day, not today.
       expect(DateUtils.dateOnly(sheet.day), DateTime(2026, 8, 6));
+    });
+    clockedWidgets('a backfilled day far back asks for a projection that '
+        'reaches it', (tester) async {
+      await pumpSheet(
+        tester,
+        dateString: '2026-07-20',
+        overrides: [
+          goalsWatchingHabitProvider(
+            habitFlossing.id,
+          ).overrideWith((ref) async => [watcher('g1')]),
+          // 19 days back plus the day itself.
+          goalAgentProgressViewForSpanProvider((
+            agentId: 'g1',
+            historyDays: 20,
+          )).overrideWith((ref) async => progress()),
+          goalAssessmentHistoryProvider(
+            'g1',
+          ).overrideWith((ref) async => const []),
+        ],
+      );
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('habit-reflect-g1')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.byType(GoalDayAssessmentSheet), findsOneWidget);
+    });
+
+    test('reflectionSpanDays covers the day and never drops below a week', () {
+      final today = DateTime(2026, 8, 8, 14);
+      expect(reflectionSpanDays(from: today, today: today), 7);
+      expect(
+        reflectionSpanDays(from: DateTime(2026, 8, 6, 23), today: today),
+        7,
+      );
+      expect(reflectionSpanDays(from: DateTime(2026, 8), today: today), 8);
+      expect(reflectionSpanDays(from: DateTime(2026, 7, 20), today: today), 20);
     });
   });
 }

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
@@ -132,8 +134,16 @@ class _HabitCompletionSheetState extends ConsumerState<HabitCompletionSheet> {
   /// backfilled day judges that day, not today.
   Future<void> _reflect(GoalHabitWatcher watcher) async {
     final agentId = watcher.identity.agentId;
+    // A projection that reaches back to the picked day: the authored window
+    // alone stops short of a backfilled day, and the reflection sheet would
+    // then present that day's evidence as absent and invite a verdict on
+    // nothing. Never shorter than a week, so a recent day keeps the goal's
+    // usual picture around it.
     final progress = await ref.read(
-      goalAgentProgressViewProvider(agentId).future,
+      goalAgentProgressViewForSpanProvider((
+        agentId: agentId,
+        historyDays: reflectionSpanDays(from: _started, today: clock.now()),
+      )).future,
     );
     final assessments = await ref.read(
       goalAssessmentHistoryProvider(agentId).future,
@@ -557,4 +567,14 @@ class HabitDescription extends StatelessWidget {
       ),
     );
   }
+}
+
+/// How many days of history a reflection opened for [from] needs so that
+/// the day itself is inside the projection: the days back to today plus the
+/// day, never fewer than seven.
+int reflectionSpanDays({required DateTime from, required DateTime today}) {
+  final back = DateUtils.dateOnly(
+    today,
+  ).difference(DateUtils.dateOnly(from)).inDays;
+  return math.max(7, back + 1);
 }

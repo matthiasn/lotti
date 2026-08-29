@@ -133,6 +133,36 @@ void main() {
       expect(goalCriterionIdForHabit(tree, 'swim'), isNull);
       expect(goalCriterionIdForHabit(steps, 'floss'), isNull);
     });
+
+    test('no leaf but a habit leaf can name a habit', () {
+      const leaves = [
+        steps,
+        GoalCriterion.measurable(
+          criterionId: 'm',
+          dataTypeId: 'water',
+          window: window,
+          aggregation: GoalAggregation.sum,
+          target: 2000,
+        ),
+        GoalCriterion.categoryTime(
+          criterionId: 'ct',
+          categoryId: 'work',
+          window: window,
+          aggregation: GoalAggregation.sum,
+          targetHours: 8,
+        ),
+        GoalCriterion.labelTime(
+          criterionId: 'lt',
+          labelId: 'deep',
+          window: window,
+          aggregation: GoalAggregation.sum,
+          targetHours: 2,
+        ),
+      ];
+      for (final leaf in leaves) {
+        expect(goalCriterionIdForHabit(leaf, 'floss'), isNull, reason: '$leaf');
+      }
+    });
   });
 
   group('goalsWatchingHabitProvider', () {
@@ -223,6 +253,44 @@ void main() {
       expect(await c.read(habitDayVerdictsProvider('floss').future), {
         day: DayVerdict.improving,
       });
+    });
+
+    test('equal timestamps across goals break by record id, whichever goal '
+        'is iterated first', () async {
+      for (final order in [
+        ['g1', 'g2'],
+        ['g2', 'g1'],
+      ]) {
+        final c = container(
+          agents: [for (final id in order) identity(id)],
+          specs: {'g1': spec('g1', flossing), 'g2': spec('g2', flossing)},
+          history: {
+            'g1': [
+              record(
+                id: 'a-lower',
+                specVersionId: 'g1:spec',
+                day: day,
+                createdAt: DateTime(2026, 8, 10, 21),
+                dimensions: {'c-floss': DayVerdict.missed},
+              ),
+            ],
+            'g2': [
+              record(
+                id: 'b-higher',
+                specVersionId: 'g2:spec',
+                day: day,
+                createdAt: DateTime(2026, 8, 10, 21),
+                dimensions: {'c-floss': DayVerdict.met},
+              ),
+            ],
+          },
+        );
+        expect(
+          await c.read(habitDayVerdictsProvider('floss').future),
+          {day: DayVerdict.met},
+          reason: 'order $order',
+        );
+      }
     });
 
     test(
