@@ -35,6 +35,7 @@ from src.core.exceptions import (
     PurchaseIntentRateLimitException,
     PurchaseIntentReplayException,
     PurchaseTokenConflictException,
+    PurchaseVerificationRateLimitException,
     SubscriptionLineageException,
 )
 from src.core.subscriptions import (
@@ -345,6 +346,22 @@ def test_verified_purchase_returns_paid_bundle_and_rotation_challenge(client, se
     assert access_calls[0][0] is services[SERVICE_SUBSCRIPTION_REPOSITORY].subscription
     assert len(access_calls) == 1
     assert services[SERVICE_SUBSCRIPTION_REPOSITORY].lookups == ["entitlement-one"]
+
+
+def test_purchase_verification_maps_attempt_rate_limit(client, services):
+    services[SERVICE_SUBSCRIPTION_SERVICE].failure = PurchaseVerificationRateLimitException(
+        retry_after_seconds=73
+    )
+
+    response = client.post(
+        "/api/v1/client/subscriptions/purchases/verify",
+        headers={"Authorization": f"Bearer {AUTH_SECRET}"},
+        json=purchase_payload(),
+    )
+
+    assert response.status_code == 429
+    assert response.headers["retry-after"] == "73"
+    assert response.json()["detail"] == "Purchase verification rate limit exceeded"
 
 
 def test_verified_replacement_purchase_returns_account_recovery_result(client, services):

@@ -30,6 +30,7 @@ from ..core.exceptions import (
     PurchaseIntentRateLimitException,
     PurchaseIntentReplayException,
     PurchaseTokenConflictException,
+    PurchaseVerificationRateLimitException,
     SubscriptionLineageException,
     SynapseUnavailableException,
     UsernameAlreadyProvisionedException,
@@ -200,6 +201,12 @@ async def verify_subscription_purchase(
     except GooglePlayUnavailableException as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)
+        ) from exc
+    except PurchaseVerificationRateLimitException as exc:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=str(exc),
+            headers={"Retry-After": str(exc.retry_after_seconds)},
         ) from exc
     except BundleClaimConflictException as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc

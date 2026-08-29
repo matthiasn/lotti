@@ -107,9 +107,13 @@ created. The client address is HMAC-derived with the account-binding key before
 storage; raw IP addresses are not persisted. Keep the reverse-proxy rate limit
 as the outer layer, but do not rely on it as the only database-exhaustion
 control. Authenticated purchase-intent issuance has its own durable
-per-entitlement fixed-window quota. Consuming that quota also removes expired
-intents and their Integrity replay markers, bounding both secret-hashing work
-and retained authorization state.
+per-entitlement fixed-window quota, preceded by a separate attempt window that
+runs before entitlement-secret verification. Consuming the issuance quota also
+removes expired intents and their Integrity replay markers, bounding both
+secret-hashing work and retained authorization state. Purchase verification
+uses an independent durable attempt scope before either scrypt check or Google
+API call, so replay traffic cannot consume the shared thread pool or Google
+quota without bound.
 
 Paid bundle delivery differs deliberately from admin provisioning. A network
 failure may retry the same authenticated claim for 24 hours, so the credential
@@ -169,6 +173,8 @@ authoritative observation wins.
 | `PURCHASE_INTENT_ATTEMPT_WINDOW_SECONDS` | No | `900` | Durable pre-authentication attempt window |
 | `PURCHASE_INTENT_ISSUANCE_LIMIT` | No | `10` | Purchase intents allowed per entitlement and window |
 | `PURCHASE_INTENT_ISSUANCE_WINDOW_SECONDS` | No | `900` | Durable purchase-intent quota and cleanup window |
+| `PURCHASE_VERIFICATION_ATTEMPT_LIMIT` | No | `10` | Purchase verifications allowed per entitlement before secret checks and Google calls |
+| `PURCHASE_VERIFICATION_ATTEMPT_WINDOW_SECONDS` | No | `900` | Durable pre-verification attempt window |
 | `SUBSCRIPTION_ENCRYPTION_KEY_ID` | When enabled | — | Identifier for the active AES-256-GCM write key |
 | `SUBSCRIPTION_ENCRYPTION_KEY_BASE64` | When enabled | — | Base64 for exactly 32 random bytes; encrypts tokens and pending bundles |
 | `SUBSCRIPTION_DECRYPTION_KEYS_JSON` | No | `{}` | JSON string map of retired key IDs to Base64 keys retained for decryption during rotation |
@@ -260,8 +266,11 @@ account instead. Failed reaper attempts use a separate five-minute retry time;
 they do not extend the claim's credential-delivery TTL or block newer claims. A
 linked replacement that arrives before rotation atomically rebinds the pending
 escrow to its newly verified claim secret, but only while that verified purchase
-token remains current. If a deterministic Matrix localpart survives an earlier
-rollback, provisioning retries once with a random suffix.
+token remains current and differs from the token that authorized the existing
+secret. A second request for the same token must prove the existing claim secret
+and cannot invalidate another client's delivery. If a deterministic Matrix
+localpart survives an earlier rollback, provisioning retries once with a random
+suffix.
 Every retry reloads the current subscription, converges Matrix suspension, and
 rejects non-granting states or an elapsed authoritative expiry before decrypting
 escrow.

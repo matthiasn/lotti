@@ -5,16 +5,19 @@
 from __future__ import annotations
 
 import asyncio
+import sqlite3
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 
 import pytest
 from src.core.exceptions import (
+    EntitlementAuthenticationException,
     GooglePlayVerificationException,
     InvalidSubscriptionProductException,
     PurchaseIntentExpiredException,
     PurchaseIntentNotFoundException,
     PurchaseIntentReplayException,
+    PurchaseVerificationRateLimitException,
 )
 from src.core.subscriptions import (
     AcknowledgementState,
@@ -217,6 +220,100 @@ async def test_valid_purchase_is_bound_and_stored_with_encrypted_token(
     assert result.claim_secret_hash != "claim-secret"
     assert google_client.decoded_tokens == [(PACKAGE, "signed-integrity-token")]
     assert google_client.queried_tokens == [(PACKAGE, "purchase-token")]
+
+
+async def test_purchase_verification_attempt_limit_rejects_replay_before_auth_and_google(
+    repository,
+    identity_service,
+    google_client,
+    cipher,
+    clock,
+    monkeypatch,
+):
+    entitlement, submission = await purchase_context(identity_service, google_client)
+    service = SubscriptionService(
+        repository,
+        identity_service,
+        google_client,
+        cipher,
+        package_name=PACKAGE,
+        allowed_products={"lotti_sync": frozenset({"monthly", "annual"})},
+        certificate_sha256_digests=frozenset({CERTIFICATE_DIGEST}),
+        purchase_verification_attempt_limit=1,
+        purchase_verification_attempt_window=timedelta(minutes=15),
+        now_provider=clock,
+    )
+    authenticate_calls = 0
+    original_authenticate = identity_service.authenticate
+
+    async def counted_authenticate(entitlement_id, auth_secret):
+        nonlocal authenticate_calls
+        authenticate_calls += 1
+        return await original_authenticate(entitlement_id, auth_secret)
+
+    monkeypatch.setattr(identity_service, "authenticate", counted_authenticate)
+
+    await service.verify_purchase(
+        submission,
+        entitlement_auth_secret=entitlement.auth_secret,
+        now=NOW,
+    )
+    with pytest.raises(PurchaseVerificationRateLimitException) as error:
+        await service.verify_purchase(
+            submission,
+            entitlement_auth_secret=entitlement.auth_secret,
+            now=NOW + timedelta(seconds=1),
+        )
+
+    assert error.value.retry_after_seconds == 899
+    assert authenticate_calls == 1
+    assert google_client.decoded_tokens == [(PACKAGE, "signed-integrity-token")]
+    assert google_client.queried_tokens == [(PACKAGE, "purchase-token")]
+    connection = sqlite3.connect(repository.db_path)
+    try:
+        attempts = dict(
+            connection.execute(
+                "SELECT operation_kind, request_count FROM subscription_attempt_limits "
+                "WHERE entitlement_id = ?",
+                (entitlement.entitlement_id,),
+            ).fetchall()
+        )
+    finally:
+        connection.close()
+    assert attempts == {"purchase_intent": 1, "purchase_verification": 1}
+
+
+async def test_purchase_verification_does_not_track_unknown_entitlements(
+    service,
+    identity_service,
+    google_client,
+    repository,
+    monkeypatch,
+):
+    _, submission = await purchase_context(identity_service, google_client)
+
+    async def unexpected_authentication(_entitlement_id, _auth_secret):
+        pytest.fail("Unknown entitlements must be rejected before scrypt")
+
+    monkeypatch.setattr(identity_service, "authenticate", unexpected_authentication)
+
+    with pytest.raises(EntitlementAuthenticationException):
+        await service.verify_purchase(
+            replace(submission, entitlement_id="unknown-entitlement"),
+            entitlement_auth_secret="unknown-secret",
+            now=NOW,
+        )
+
+    assert google_client.decoded_tokens == []
+    connection = sqlite3.connect(repository.db_path)
+    try:
+        verification_attempts = connection.execute(
+            "SELECT COUNT(*) FROM subscription_attempt_limits "
+            "WHERE operation_kind = 'purchase_verification'"
+        ).fetchone()[0]
+    finally:
+        connection.close()
+    assert verification_attempts == 0
 
 
 async def test_grace_purchase_uses_google_expiry_as_reconciliation_deadline(
@@ -791,4 +888,34 @@ def test_signing_certificate_configuration_is_required(
             package_name=PACKAGE,
             allowed_products={"lotti_sync": frozenset({"monthly"})},
             certificate_sha256_digests=frozenset(),
+        )
+
+
+@pytest.mark.parametrize(
+    ("limit", "window", "message"),
+    [
+        (0, timedelta(minutes=15), "attempt limit"),
+        (1, timedelta(0), "attempt window"),
+    ],
+)
+def test_purchase_verification_rate_limit_configuration_must_be_positive(
+    repository,
+    identity_service,
+    google_client,
+    cipher,
+    limit,
+    window,
+    message,
+):
+    with pytest.raises(ValueError, match=message):
+        SubscriptionService(
+            repository,
+            identity_service,
+            google_client,
+            cipher,
+            package_name=PACKAGE,
+            allowed_products={"lotti_sync": frozenset({"monthly"})},
+            certificate_sha256_digests=frozenset({CERTIFICATE_DIGEST}),
+            purchase_verification_attempt_limit=limit,
+            purchase_verification_attempt_window=window,
         )

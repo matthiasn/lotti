@@ -134,7 +134,14 @@ class PaidBundleService:
                     bundle_import_required=False,
                 )
             else:
-                if existing.claim_secret_hash != verified.claim_secret_hash:
+                existing_secret_matches = await asyncio.to_thread(
+                    self._secret_hasher.verify,
+                    submission.claim_secret,
+                    existing.claim_secret_hash,
+                )
+                if not existing_secret_matches:
+                    if existing.authorized_token_fingerprint == current.token_fingerprint:
+                        raise BundleClaimConflictException("Invalid bundle claim secret")
                     existing = await self._repository.reauthorize_pending_bundle_claim(
                         verified.subscription.entitlement_id,
                         token_fingerprint=current.token_fingerprint,

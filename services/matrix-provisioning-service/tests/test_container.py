@@ -166,6 +166,8 @@ def configure_play(env):
 
 def test_container_builds_complete_play_subscription_graph(env, monkeypatch):
     configure_play(env)
+    env.setenv("PURCHASE_VERIFICATION_ATTEMPT_LIMIT", "8")
+    env.setenv("PURCHASE_VERIFICATION_ATTEMPT_WINDOW_SECONDS", "420")
 
     class TokenProvider:
         async def get_token(self):
@@ -184,6 +186,10 @@ def test_container_builds_complete_play_subscription_graph(env, monkeypatch):
     assert isinstance(container.get_google_play_client(), GooglePlayClient)
     assert isinstance(container.get_subscription_identity_service(), SubscriptionIdentityService)
     assert isinstance(container.get_subscription_service(), SubscriptionService)
+    assert container.get_subscription_service()._purchase_verification_attempt_limit == 8
+    assert container.get_subscription_service()._purchase_verification_attempt_window == timedelta(
+        minutes=7
+    )
     assert isinstance(container.get_paid_bundle_service(), PaidBundleService)
     assert isinstance(container.get_bundle_rotation_service(), BundleRotationService)
     assert isinstance(container.get_subscription_access_service(), SubscriptionAccessService)

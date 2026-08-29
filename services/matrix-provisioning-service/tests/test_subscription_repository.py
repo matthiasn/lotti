@@ -60,6 +60,7 @@ def test_existing_bundle_claim_schema_is_migrated(tmp_path):
         "operation_token",
         "operation_kind",
         "operation_started_at",
+        "authorized_token_fingerprint",
     } <= columns
 
 
@@ -211,8 +212,9 @@ async def test_purchase_intent_attempt_quota_rolls_back_and_closes_on_database_f
     monkeypatch.setattr(subscription_repository, "_connect", lambda: connection)
 
     with pytest.raises(sqlite3.OperationalError, match="injected attempt quota failure"):
-        await subscription_repository.consume_purchase_intent_attempt_quota(
+        await subscription_repository.consume_subscription_attempt_quota(
             "entitlement-one",
+            "purchase_intent",
             now=NOW,
             window=timedelta(minutes=15),
             max_requests=10,
@@ -668,6 +670,7 @@ async def test_paid_bundle_account_claim_and_subscription_link_commit_together(
     assert user.bundle_id == "bundle-paid"
     assert user.payment_status.value == "paying"
     assert claim.subscription_id == subscription.subscription_id
+    assert claim.authorized_token_fingerprint == "paid-token"
     assert claim.encrypted_bundle == b"encrypted-bundle"
     assert linked.bundle_id == "bundle-paid"
     assert (
@@ -1069,6 +1072,31 @@ async def test_pending_claim_reauthorization_rejects_active_operation(
             now=NOW,
             operation_token="wrong-operation",
         )
+
+
+async def test_pending_claim_reauthorization_requires_a_replacement_token(
+    subscription_repository,
+):
+    entitlement = await create_entitlement(subscription_repository)
+    await subscription_repository.store_verified_subscription(
+        verified_subscription(entitlement.entitlement_id, "paid-token"),
+        now=NOW,
+    )
+    _, claim = await store_paid_bundle(subscription_repository, "paid-token")
+
+    with pytest.raises(BundleClaimConflictException, match="cannot be reauthorized"):
+        await subscription_repository.reauthorize_pending_bundle_claim(
+            entitlement.entitlement_id,
+            token_fingerprint="paid-token",
+            claim_secret_hash="replacement-secret-hash",
+        )
+
+    unchanged = await subscription_repository.get_bundle_claim_for_entitlement(
+        entitlement.entitlement_id
+    )
+    assert unchanged.bundle_id == claim.bundle_id
+    assert unchanged.claim_secret_hash == "claim-secret-hash"
+    assert unchanged.authorized_token_fingerprint == "paid-token"
 
 
 async def test_same_token_refresh_does_not_clear_existing_bundle(

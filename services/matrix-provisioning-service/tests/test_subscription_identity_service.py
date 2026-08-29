@@ -216,7 +216,7 @@ async def test_purchase_intent_attempt_limit_does_not_track_unknown_entitlements
     connection = sqlite3.connect(repository.db_path)
     try:
         attempt_count = connection.execute(
-            "SELECT COUNT(*) FROM purchase_intent_attempt_limits"
+            "SELECT COUNT(*) FROM subscription_attempt_limits"
         ).fetchone()[0]
     finally:
         connection.close()
@@ -251,7 +251,8 @@ async def test_purchase_intent_wrong_secret_consumes_attempt_without_issuing(
     connection = sqlite3.connect(repository.db_path)
     try:
         attempt_query = (
-            "SELECT request_count FROM purchase_intent_attempt_limits " "WHERE entitlement_id = ?"
+            "SELECT request_count FROM subscription_attempt_limits "
+            "WHERE entitlement_id = ? AND operation_kind = 'purchase_intent'"
         )
         attempt_count = connection.execute(
             attempt_query,

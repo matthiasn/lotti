@@ -554,6 +554,36 @@ async def test_replacement_purchase_reauthorizes_pending_escrow(
         )
 
 
+async def test_same_purchase_token_cannot_reauthorize_pending_escrow(
+    service,
+    repository,
+    bundle_service,
+):
+    original = await verified_purchase(repository)
+    first = await service.provision_or_deliver(original, submission(), now=NOW)
+    same_token = VerifiedPurchaseResult(
+        subscription=original.subscription,
+        request_hash="second-request-hash",
+        claim_secret_hash=SecretHasher().hash("second-claim-secret"),
+    )
+
+    with pytest.raises(BundleClaimConflictException, match="Invalid bundle claim secret"):
+        await service.provision_or_deliver(
+            same_token,
+            submission(claim_secret="second-claim-secret"),
+            now=NOW + timedelta(minutes=1),
+        )
+
+    recovered = await service.deliver_existing_claim(
+        entitlement_id="entitlement-one",
+        claim_secret="claim-secret",
+        now=NOW + timedelta(minutes=1),
+    )
+    assert recovered.bundle_id == first.bundle_id
+    assert recovered.bundle == first.bundle
+    assert len(bundle_service.calls) == 1
+
+
 async def test_stale_predecessor_cannot_rebind_replacement_escrow(
     service,
     repository,

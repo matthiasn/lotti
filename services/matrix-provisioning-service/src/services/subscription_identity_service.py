@@ -18,7 +18,10 @@ from ..core.subscriptions import (
     PurchaseIntentCredentials,
     SyncEntitlement,
 )
-from .subscription_repository import SubscriptionRepository
+from .subscription_repository import (
+    ATTEMPT_KIND_PURCHASE_INTENT,
+    SubscriptionRepository,
+)
 from .subscription_security import SecretHasher, derive_obfuscated_account_id
 
 
@@ -139,8 +142,9 @@ class SubscriptionIdentityService:
         entitlement = await self._repository.get_entitlement(entitlement_id)
         if entitlement is None or entitlement.disabled_at is not None:
             raise EntitlementAuthenticationException("Invalid entitlement credentials")
-        retry_after = await self._repository.consume_purchase_intent_attempt_quota(
+        retry_after = await self._repository.consume_subscription_attempt_quota(
             entitlement.entitlement_id,
+            ATTEMPT_KIND_PURCHASE_INTENT,
             now=now,
             window=self._purchase_intent_attempt_window,
             max_requests=self._purchase_intent_attempt_limit,

@@ -8,10 +8,12 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Callable
 
 from ..core.exceptions import (
+    EntitlementAuthenticationException,
     GooglePlayVerificationException,
     InvalidSubscriptionProductException,
     PurchaseIntentExpiredException,
     PurchaseIntentNotFoundException,
+    PurchaseVerificationRateLimitException,
 )
 from ..core.subscriptions import (
     AcknowledgementState,
@@ -27,7 +29,10 @@ from ..core.subscriptions import (
 from .google_play_client import GooglePlayClient
 from .secret_cipher import SecretCipher
 from .subscription_identity_service import SubscriptionIdentityService
-from .subscription_repository import SubscriptionRepository
+from .subscription_repository import (
+    ATTEMPT_KIND_PURCHASE_VERIFICATION,
+    SubscriptionRepository,
+)
 from .subscription_security import (
     SecretHasher,
     canonical_purchase_request_hash,
@@ -52,11 +57,17 @@ class SubscriptionService:
         integrity_max_age: timedelta = timedelta(minutes=5),
         integrity_future_skew: timedelta = timedelta(seconds=30),
         reconciliation_interval: timedelta = timedelta(hours=6),
+        purchase_verification_attempt_limit: int = 10,
+        purchase_verification_attempt_window: timedelta = timedelta(minutes=15),
         secret_hasher: SecretHasher | None = None,
         now_provider: Callable[[], datetime] | None = None,
     ):
         if not certificate_sha256_digests:
             raise ValueError("At least one Play signing certificate digest is required")
+        if purchase_verification_attempt_limit <= 0:
+            raise ValueError("Purchase verification attempt limit must be positive")
+        if purchase_verification_attempt_window <= timedelta(0):
+            raise ValueError("Purchase verification attempt window must be positive")
         self._repository = repository
         self._identity_service = identity_service
         self._google_play_client = google_play_client
@@ -68,6 +79,8 @@ class SubscriptionService:
         self._integrity_max_age = integrity_max_age
         self._integrity_future_skew = integrity_future_skew
         self._reconciliation_interval = reconciliation_interval
+        self._purchase_verification_attempt_limit = purchase_verification_attempt_limit
+        self._purchase_verification_attempt_window = purchase_verification_attempt_window
         self._secret_hasher = secret_hasher or SecretHasher()
         self._now_provider = now_provider or (lambda: datetime.now(timezone.utc))
 
@@ -79,6 +92,18 @@ class SubscriptionService:
         now: datetime,
     ) -> VerifiedPurchaseResult:
         """Verify every proof before persisting a replay-safe token binding."""
+        known_entitlement = await self._repository.get_entitlement(submission.entitlement_id)
+        if known_entitlement is None or known_entitlement.disabled_at is not None:
+            raise EntitlementAuthenticationException("Invalid entitlement credentials")
+        retry_after = await self._repository.consume_subscription_attempt_quota(
+            submission.entitlement_id,
+            ATTEMPT_KIND_PURCHASE_VERIFICATION,
+            now=now,
+            window=self._purchase_verification_attempt_window,
+            max_requests=self._purchase_verification_attempt_limit,
+        )
+        if retry_after is not None:
+            raise PurchaseVerificationRateLimitException(retry_after_seconds=retry_after)
         entitlement = await self._identity_service.authenticate(
             submission.entitlement_id,
             entitlement_auth_secret,

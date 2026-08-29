@@ -120,6 +120,7 @@ class BundleClaim:
     bundle_id: str
     subscription_id: str
     claim_secret_hash: str
+    authorized_token_fingerprint: str
     encrypted_bundle: bytes | None
     encryption_key_id: str
     expires_at: datetime

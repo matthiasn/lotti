@@ -95,6 +95,14 @@ class PurchaseIntentRateLimitException(ProvisioningServiceException):
         self.retry_after_seconds = retry_after_seconds
 
 
+class PurchaseVerificationRateLimitException(ProvisioningServiceException):
+    """Raised when one entitlement submits too many purchase verifications."""
+
+    def __init__(self, *, retry_after_seconds: int):
+        super().__init__("Purchase verification rate limit exceeded")
+        self.retry_after_seconds = retry_after_seconds
+
+
 class InvalidSubscriptionProductException(ProvisioningServiceException):
     """Raised when a product or base plan is not configured for SYNC."""
 

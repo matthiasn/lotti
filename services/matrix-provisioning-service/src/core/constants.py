@@ -56,6 +56,10 @@ DEFAULT_PURCHASE_INTENT_ATTEMPT_WINDOW_SECONDS = 900
 # growth even when a valid app credential is abused.
 DEFAULT_PURCHASE_INTENT_ISSUANCE_LIMIT = 10
 DEFAULT_PURCHASE_INTENT_ISSUANCE_WINDOW_SECONDS = 900
+# Verification reaches two Google APIs after checking two scrypt secrets. A
+# separate pre-authentication quota bounds both local work and Google usage.
+DEFAULT_PURCHASE_VERIFICATION_ATTEMPT_LIMIT = 10
+DEFAULT_PURCHASE_VERIFICATION_ATTEMPT_WINDOW_SECONDS = 900
 
 # Paid provisioning and cleanup both cross the SQLite/Synapse boundary. The
 # reservation survives process boundaries; the request wait is deliberately

@@ -25,6 +25,8 @@ from .core.constants import (
     DEFAULT_PURCHASE_INTENT_ATTEMPT_WINDOW_SECONDS,
     DEFAULT_PURCHASE_INTENT_ISSUANCE_LIMIT,
     DEFAULT_PURCHASE_INTENT_ISSUANCE_WINDOW_SECONDS,
+    DEFAULT_PURCHASE_VERIFICATION_ATTEMPT_LIMIT,
+    DEFAULT_PURCHASE_VERIFICATION_ATTEMPT_WINDOW_SECONDS,
     DEFAULT_RETENTION_DAYS,
     DEFAULT_RETENTION_SWEEP_HOURS,
     PAID_PROVISIONING_OPERATION_TIMEOUT_SECONDS,
@@ -285,6 +287,20 @@ class Container:
             package_name=PLAY_PACKAGE_NAME,
             allowed_products=_allowed_products(),
             certificate_sha256_digests=certificates,
+            purchase_verification_attempt_limit=int(
+                os.getenv(
+                    "PURCHASE_VERIFICATION_ATTEMPT_LIMIT",
+                    str(DEFAULT_PURCHASE_VERIFICATION_ATTEMPT_LIMIT),
+                )
+            ),
+            purchase_verification_attempt_window=timedelta(
+                seconds=float(
+                    os.getenv(
+                        "PURCHASE_VERIFICATION_ATTEMPT_WINDOW_SECONDS",
+                        str(DEFAULT_PURCHASE_VERIFICATION_ATTEMPT_WINDOW_SECONDS),
+                    )
+                )
+            ),
             allow_test_purchases=os.getenv("PLAY_ALLOW_TEST_PURCHASES", "false").lower()
             in ("1", "true", "yes"),
         )

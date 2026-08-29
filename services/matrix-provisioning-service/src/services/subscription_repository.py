@@ -30,6 +30,9 @@ from ..core.subscriptions import (
 )
 from .provisioning_repository import ProvisioningRepository
 
+ATTEMPT_KIND_PURCHASE_INTENT = "purchase_intent"
+ATTEMPT_KIND_PURCHASE_VERIFICATION = "purchase_verification"
+
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS sync_entitlements (
     entitlement_id         TEXT PRIMARY KEY,
@@ -107,15 +110,17 @@ CREATE TABLE IF NOT EXISTS purchase_intents (
 CREATE INDEX IF NOT EXISTS idx_purchase_intents_entitlement
     ON purchase_intents (entitlement_id, created_at);
 
-CREATE TABLE IF NOT EXISTS purchase_intent_attempt_limits (
-    entitlement_id    TEXT PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS subscription_attempt_limits (
+    entitlement_id    TEXT NOT NULL,
+    operation_kind    TEXT NOT NULL,
     window_started_at TEXT NOT NULL,
     request_count     INTEGER NOT NULL,
+    PRIMARY KEY (entitlement_id, operation_kind),
     FOREIGN KEY (entitlement_id) REFERENCES sync_entitlements (entitlement_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_purchase_intent_attempt_window
-    ON purchase_intent_attempt_limits (window_started_at);
+CREATE INDEX IF NOT EXISTS idx_subscription_attempt_window
+    ON subscription_attempt_limits (window_started_at);
 
 CREATE TABLE IF NOT EXISTS purchase_intent_issuance_limits (
     entitlement_id   TEXT PRIMARY KEY,
@@ -138,6 +143,7 @@ CREATE TABLE IF NOT EXISTS bundle_claims (
     bundle_id            TEXT PRIMARY KEY,
     subscription_id      TEXT NOT NULL UNIQUE,
     claim_secret_hash    TEXT NOT NULL,
+    authorized_token_fingerprint TEXT NOT NULL,
     encrypted_bundle     BLOB,
     encryption_key_id    TEXT NOT NULL,
     expires_at           TEXT NOT NULL,
@@ -203,6 +209,16 @@ class SubscriptionRepository(ProvisioningRepository):
                 conn.execute("ALTER TABLE bundle_claims ADD COLUMN operation_kind TEXT")
             if "operation_started_at" not in columns:
                 conn.execute("ALTER TABLE bundle_claims ADD COLUMN operation_started_at TEXT")
+            if "authorized_token_fingerprint" not in columns:
+                conn.execute(
+                    "ALTER TABLE bundle_claims ADD COLUMN authorized_token_fingerprint TEXT"
+                )
+                conn.execute(
+                    "UPDATE bundle_claims SET authorized_token_fingerprint = ("
+                    "SELECT s.token_fingerprint FROM play_subscriptions s "
+                    "WHERE s.bundle_id = bundle_claims.bundle_id "
+                    "ORDER BY s.created_at ASC LIMIT 1)"
+                )
             conn.commit()
         finally:
             conn.close()
@@ -276,6 +292,7 @@ class SubscriptionRepository(ProvisioningRepository):
             bundle_id=row["bundle_id"],
             subscription_id=row["subscription_id"],
             claim_secret_hash=row["claim_secret_hash"],
+            authorized_token_fingerprint=row["authorized_token_fingerprint"],
             encrypted_bundle=bytes(encrypted) if encrypted is not None else None,
             encryption_key_id=row["encryption_key_id"],
             expires_at=_parse(row["expires_at"]),
@@ -417,9 +434,10 @@ class SubscriptionRepository(ProvisioningRepository):
         """Fetch a stable entitlement identity by its opaque ID."""
         return await asyncio.to_thread(self._get_entitlement_sync, entitlement_id)
 
-    def _consume_purchase_intent_attempt_quota_sync(
+    def _consume_subscription_attempt_quota_sync(
         self,
         entitlement_id: str,
+        operation_kind: str,
         now: datetime,
         window: timedelta,
         max_requests: int,
@@ -429,18 +447,20 @@ class SubscriptionRepository(ProvisioningRepository):
             conn.execute("BEGIN IMMEDIATE")
             row = conn.execute(
                 "SELECT window_started_at, request_count "
-                "FROM purchase_intent_attempt_limits WHERE entitlement_id = ?",
-                (entitlement_id,),
+                "FROM subscription_attempt_limits "
+                "WHERE entitlement_id = ? AND operation_kind = ?",
+                (entitlement_id, operation_kind),
             ).fetchone()
             window_started_at = _parse(row["window_started_at"]) if row else None
             retry_after = None
             if window_started_at is None or now >= window_started_at + window:
                 conn.execute(
-                    "INSERT INTO purchase_intent_attempt_limits ("
-                    "entitlement_id, window_started_at, request_count"
-                    ") VALUES (?, ?, 1) ON CONFLICT(entitlement_id) DO UPDATE SET "
+                    "INSERT INTO subscription_attempt_limits ("
+                    "entitlement_id, operation_kind, window_started_at, request_count"
+                    ") VALUES (?, ?, ?, 1) "
+                    "ON CONFLICT(entitlement_id, operation_kind) DO UPDATE SET "
                     "window_started_at = excluded.window_started_at, request_count = 1",
-                    (entitlement_id, _iso(now)),
+                    (entitlement_id, operation_kind, _iso(now)),
                 )
             elif row["request_count"] >= max_requests:
                 retry_after = max(
@@ -449,14 +469,15 @@ class SubscriptionRepository(ProvisioningRepository):
                 )
             else:
                 conn.execute(
-                    "UPDATE purchase_intent_attempt_limits "
-                    "SET request_count = request_count + 1 WHERE entitlement_id = ?",
-                    (entitlement_id,),
+                    "UPDATE subscription_attempt_limits SET request_count = request_count + 1 "
+                    "WHERE entitlement_id = ? AND operation_kind = ?",
+                    (entitlement_id, operation_kind),
                 )
             conn.execute(
-                "DELETE FROM purchase_intent_attempt_limits "
-                "WHERE entitlement_id <> ? AND window_started_at <= ?",
-                (entitlement_id, _iso(now - window)),
+                "DELETE FROM subscription_attempt_limits "
+                "WHERE (entitlement_id <> ? OR operation_kind <> ?) "
+                "AND window_started_at <= ?",
+                (entitlement_id, operation_kind, _iso(now - window)),
             )
             conn.commit()
             return retry_after
@@ -466,18 +487,20 @@ class SubscriptionRepository(ProvisioningRepository):
         finally:
             conn.close()
 
-    async def consume_purchase_intent_attempt_quota(
+    async def consume_subscription_attempt_quota(
         self,
         entitlement_id: str,
+        operation_kind: str,
         *,
         now: datetime,
         window: timedelta,
         max_requests: int,
     ) -> int | None:
-        """Consume one cheap, durable slot before entitlement-secret hashing."""
+        """Consume one cheap durable slot before expensive subscription work."""
         return await asyncio.to_thread(
-            self._consume_purchase_intent_attempt_quota_sync,
+            self._consume_subscription_attempt_quota_sync,
             entitlement_id,
+            operation_kind,
             now,
             window,
             max_requests,
@@ -1110,13 +1133,15 @@ class SubscriptionRepository(ProvisioningRepository):
             )
             conn.execute(
                 "INSERT INTO bundle_claims ("
-                "bundle_id, subscription_id, claim_secret_hash, encrypted_bundle, "
+                "bundle_id, subscription_id, claim_secret_hash, "
+                "authorized_token_fingerprint, encrypted_bundle, "
                 "encryption_key_id, expires_at, created_at"
-                ") VALUES (?, ?, ?, ?, ?, ?, ?)",
+                ") VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                 (
                     bundle_id,
                     subscription["subscription_id"],
                     claim_secret_hash,
+                    token_fingerprint,
                     encrypted_bundle,
                     encryption_key_id,
                     _iso(expires_at),
@@ -1424,11 +1449,14 @@ class SubscriptionRepository(ProvisioningRepository):
                 or row["destroyed_at"] is not None
                 or row["encrypted_bundle"] is None
                 or row["operation_token"] is not None
+                or not row["authorized_token_fingerprint"]
+                or row["authorized_token_fingerprint"] == token_fingerprint
             ):
                 raise BundleClaimConflictException("Pending bundle claim cannot be reauthorized")
             conn.execute(
-                "UPDATE bundle_claims SET claim_secret_hash = ? WHERE bundle_id = ?",
-                (claim_secret_hash, row["bundle_id"]),
+                "UPDATE bundle_claims SET claim_secret_hash = ?, "
+                "authorized_token_fingerprint = ? WHERE bundle_id = ?",
+                (claim_secret_hash, token_fingerprint, row["bundle_id"]),
             )
             conn.commit()
             updated = conn.execute(

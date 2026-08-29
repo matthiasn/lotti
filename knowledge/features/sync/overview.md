@@ -5,7 +5,7 @@ description: Single-user multi-device replication over end-to-end encrypted Matr
 resource: ../../../lib/features/sync
 tags: [sync, matrix, replication, outbox, queue]
 status: stable
-generated: { by: codex/gpt-5, at: 2026-08-29T23:12:31Z }
+generated: { by: codex/gpt-5, at: 2026-08-29T23:27:45Z }
 stale_after: 2026-11-03
 sources:
   - id: sync-src
@@ -137,15 +137,19 @@ per-client quota before it creates any identity row. Purchase-intent requests
 consume a durable per-entitlement attempt quota before scrypt verifies the
 app-held secret, followed by a separate post-authentication issuance quota
 before hashing and storing another one-time secret; the latter transaction
-also prunes expired intents and their Integrity replay markers. Paid
-provisioning then takes a token-owned SQLite reservation keyed by entitlement
-before it touches Matrix. Requests in another service object or process wait
-for the owner's durable claim and reuse it; a killed owner becomes recoverable
-after five minutes. These are database invariants, with reverse-proxy
-throttling kept as an additional outer boundary. The bundled nginx forwards
-the original client chain and Uvicorn trusts only nginx's fixed Compose
-address, so direct callers cannot forge the quota identity through
-`X-Forwarded-For`.
+also prunes expired intents and their Integrity replay markers. Purchase
+verification has its own durable attempt scope, consumed before entitlement or
+intent scrypt checks and before either Google API call. Paid provisioning then
+takes a token-owned SQLite reservation keyed by entitlement before it touches
+Matrix. Pending escrow records the purchase-token fingerprint that authorized
+their current claim secret: only a verified replacement token can rebind it,
+while a second request for the same token must prove the existing secret.
+Requests in another service object or process wait for the owner's durable
+claim and reuse it; a killed owner becomes recoverable after five minutes.
+These are database invariants, with reverse-proxy throttling kept as an
+additional outer boundary. The bundled nginx forwards the original client
+chain and Uvicorn trusts only nginx's fixed Compose address, so direct callers
+cannot forge the quota identity through `X-Forwarded-For`.
 
 Play RTDN is only a refresh signal. An authenticated Pub/Sub push resolves an
 already-known token and causes a new `purchases.subscriptionsv2.get`; a periodic
