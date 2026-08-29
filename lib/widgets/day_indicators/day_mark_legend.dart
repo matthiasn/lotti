@@ -56,7 +56,11 @@ class DayMarkLegend extends StatelessWidget {
             ? Center(child: partialDayDot(tokens, tokens.spacing.step1))
             : glyph != null
             ? Center(
-                child: Icon(glyph, size: IconSizes.xs * 0.75, color: glyphInk),
+                child: Icon(
+                  glyph,
+                  size: dayMarkGlyphSize(IconSizes.xs),
+                  color: glyphInk,
+                ),
               )
             : null,
       );

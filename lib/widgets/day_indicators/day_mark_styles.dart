@@ -220,6 +220,12 @@ Widget? dayCellLetter(
   );
 }
 
+/// The glyph inside a day square, as a fraction of the square: large enough
+/// to read as a shape, small enough to leave the fill visible around it. One
+/// rule for the cells and for the legend swatches that key them, so the key
+/// cannot drift from the map.
+double dayMarkGlyphSize(double cellSize) => cellSize * 0.75;
+
 /// The ink the "today" ring is drawn in, on every surface that draws one —
 /// the habit day cells, the whole-goal strip and the legend swatch that keys
 /// them.

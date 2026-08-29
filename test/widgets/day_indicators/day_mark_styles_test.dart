@@ -175,4 +175,8 @@ void main() {
       );
     },
   );
+  test('the glyph takes three quarters of its square at every size', () {
+    expect(dayMarkGlyphSize(IconSizes.xs), IconSizes.xs * 0.75);
+    expect(dayMarkGlyphSize(28), 21);
+  });
 }

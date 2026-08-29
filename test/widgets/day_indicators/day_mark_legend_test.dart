@@ -106,6 +106,7 @@ void main() {
     }
 
     expect(iconBeside('Skip').icon, dayMarkStateGlyph(DayMarkState.skipped));
+    expect(iconBeside('Skip').size, dayMarkGlyphSize(IconSizes.xs));
     expect(
       iconBeside('judged Improving').icon,
       dayVerdictGlyph(DayVerdict.improving),
