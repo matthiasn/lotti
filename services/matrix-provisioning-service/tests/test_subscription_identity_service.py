@@ -13,7 +13,6 @@ from src.services.subscription_identity_service import SubscriptionIdentityServi
 from src.services.subscription_repository import SubscriptionRepository
 from src.services.subscription_security import SecretHasher
 
-
 pytestmark = pytest.mark.anyio
 
 NOW = datetime(2026, 8, 29, 12, tzinfo=timezone.utc)

@@ -21,7 +21,6 @@ from src.services.subscription_security import SecretHasher
 
 from shared.matrix import BundleKind, SyncBundle
 
-
 pytestmark = pytest.mark.anyio
 
 NOW = datetime(2026, 8, 29, 12, tzinfo=timezone.utc)

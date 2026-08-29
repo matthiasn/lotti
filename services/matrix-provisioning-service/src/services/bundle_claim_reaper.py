@@ -11,7 +11,6 @@ from shared.matrix import SynapseAdminClient
 from .periodic_task import PeriodicTask
 from .subscription_repository import SubscriptionRepository
 
-
 logger = logging.getLogger(__name__)
 
 

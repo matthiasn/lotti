@@ -27,7 +27,6 @@ from .secret_cipher import SecretCipher
 from .subscription_repository import SubscriptionRepository
 from .subscription_security import SecretHasher
 
-
 _ACCESS_STATES = {
     EntitlementState.ACTIVE,
     EntitlementState.GRACE,

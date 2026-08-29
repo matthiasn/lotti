@@ -16,6 +16,7 @@ from ..core.exceptions import (
     PurchaseTokenConflictException,
     SubscriptionLineageException,
 )
+from ..core.models import BundleEventType, BundleStatus, PaymentStatus, ProvisionedUser
 from ..core.subscriptions import (
     AcknowledgementState,
     BundleClaim,
@@ -26,9 +27,7 @@ from ..core.subscriptions import (
     SyncEntitlement,
     VerifiedSubscription,
 )
-from ..core.models import BundleEventType, BundleStatus, PaymentStatus, ProvisionedUser
 from .provisioning_repository import ProvisioningRepository
-
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS sync_entitlements (
@@ -520,9 +519,7 @@ class SubscriptionRepository(ProvisioningRepository):
                 inherited_bundle_id = (
                     snapshot.bundle_id
                     if snapshot.bundle_id is not None
-                    else current["bundle_id"]
-                    if current is not None
-                    else None
+                    else current["bundle_id"] if current is not None else None
                 )
                 conn.execute(
                     "UPDATE play_subscriptions SET is_current = 0, retired_at = ?, "

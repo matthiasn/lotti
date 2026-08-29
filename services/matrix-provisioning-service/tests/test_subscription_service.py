@@ -30,7 +30,6 @@ from src.services.subscription_security import (
 )
 from src.services.subscription_service import SubscriptionService
 
-
 pytestmark = pytest.mark.anyio
 
 NOW = datetime(2026, 8, 29, 12, tzinfo=timezone.utc)

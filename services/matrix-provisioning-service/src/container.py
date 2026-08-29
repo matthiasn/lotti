@@ -12,34 +12,34 @@ from shared.matrix import AdminCredentials, SynapseAdminClient, SynapseProvision
 
 from .core.constants import (
     DEFAULT_DB_PATH,
+    DEFAULT_PLAY_BASE_PLAN_IDS,
     DEFAULT_POLL_BATCH_SIZE,
     DEFAULT_POLL_INTERVAL_SECONDS,
     DEFAULT_RETENTION_DAYS,
     DEFAULT_RETENTION_SWEEP_HOURS,
-    DEFAULT_PLAY_BASE_PLAN_IDS,
     PLAY_PACKAGE_NAME,
     PLAY_SUBSCRIPTION_PRODUCT_ID,
     SERVICE_ADMIN_CLIENT,
+    SERVICE_BUNDLE_CLAIM_REAPER,
+    SERVICE_BUNDLE_ROTATION_SERVICE,
     SERVICE_BUNDLE_SERVICE,
+    SERVICE_GOOGLE_PLAY_CLIENT,
+    SERVICE_GOOGLE_PLAY_NOTIFICATIONS,
+    SERVICE_PAID_BUNDLE_SERVICE,
     SERVICE_PROVISIONER,
     SERVICE_PROVISIONING_REPOSITORY,
     SERVICE_REDEMPTION_POLLER,
     SERVICE_RETENTION_SCHEDULER,
     SERVICE_RETENTION_SERVICE,
-    SERVICE_BUNDLE_ROTATION_SERVICE,
-    SERVICE_BUNDLE_CLAIM_REAPER,
-    SERVICE_GOOGLE_PLAY_CLIENT,
-    SERVICE_GOOGLE_PLAY_NOTIFICATIONS,
-    SERVICE_PAID_BUNDLE_SERVICE,
     SERVICE_SECRET_CIPHER,
     SERVICE_SUBSCRIPTION_ACCESS_SERVICE,
     SERVICE_SUBSCRIPTION_IDENTITY,
-    SERVICE_SUBSCRIPTION_REPOSITORY,
     SERVICE_SUBSCRIPTION_RECONCILER,
+    SERVICE_SUBSCRIPTION_REPOSITORY,
     SERVICE_SUBSCRIPTION_SERVICE,
 )
-from .services.bundle_rotation_service import BundleRotationService
 from .services.bundle_claim_reaper import BundleClaimReaper
+from .services.bundle_rotation_service import BundleRotationService
 from .services.bundle_service import BundleService
 from .services.google_play_client import GoogleAccessTokenProvider, GooglePlayClient
 from .services.google_play_notifications import (
@@ -54,8 +54,8 @@ from .services.retention_service import RetentionService
 from .services.secret_cipher import SecretCipher
 from .services.subscription_access_service import SubscriptionAccessService
 from .services.subscription_identity_service import SubscriptionIdentityService
-from .services.subscription_repository import SubscriptionRepository
 from .services.subscription_reconciler import SubscriptionReconciler
+from .services.subscription_repository import SubscriptionRepository
 from .services.subscription_service import SubscriptionService
 
 

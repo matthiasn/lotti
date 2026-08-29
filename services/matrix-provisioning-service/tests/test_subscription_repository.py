@@ -23,7 +23,6 @@ from src.core.subscriptions import (
 from src.services.subscription_repository import SubscriptionRepository
 from tests.conftest import seed_user
 
-
 pytestmark = pytest.mark.anyio
 
 NOW = datetime(2026, 8, 29, 12, tzinfo=timezone.utc)

@@ -19,7 +19,6 @@ from src.services.google_play_notifications import (
     parse_rtdn_envelope,
 )
 
-
 pytestmark = pytest.mark.anyio
 
 NOW = datetime(2026, 8, 29, 12, tzinfo=timezone.utc)

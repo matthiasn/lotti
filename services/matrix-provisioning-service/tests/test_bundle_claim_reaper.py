@@ -14,7 +14,6 @@ from src.core.subscriptions import (
 from src.services.bundle_claim_reaper import BundleClaimReaper
 from src.services.subscription_repository import SubscriptionRepository
 
-
 pytestmark = pytest.mark.anyio
 
 NOW = datetime(2026, 8, 29, 12, tzinfo=timezone.utc)

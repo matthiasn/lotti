@@ -16,7 +16,6 @@ from src.services.subscription_reconciler import SubscriptionReconciler
 from src.services.subscription_repository import SubscriptionRepository
 from src.services.subscription_security import fingerprint
 
-
 pytestmark = pytest.mark.anyio
 
 NOW = datetime(2026, 8, 29, 12, tzinfo=timezone.utc)

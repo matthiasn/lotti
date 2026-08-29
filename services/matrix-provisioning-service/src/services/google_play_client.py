@@ -22,7 +22,6 @@ from ..core.subscriptions import (
     GoogleSubscriptionState,
 )
 
-
 ANDROID_PUBLISHER_SCOPE = "https://www.googleapis.com/auth/androidpublisher"
 PLAY_INTEGRITY_SCOPE = "https://www.googleapis.com/auth/playintegrity"
 ANDROID_PUBLISHER_BASE_URL = "https://androidpublisher.googleapis.com"

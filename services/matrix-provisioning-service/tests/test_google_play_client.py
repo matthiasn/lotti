@@ -18,7 +18,6 @@ from src.services.google_play_client import (
     parse_subscription,
 )
 
-
 pytestmark = pytest.mark.anyio
 
 

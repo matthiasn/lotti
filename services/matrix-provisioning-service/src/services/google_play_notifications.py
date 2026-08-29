@@ -9,8 +9,8 @@ import json
 from datetime import datetime, timezone
 from typing import Any, Callable
 
-from google.oauth2 import id_token
 from google.auth.transport.requests import Request
+from google.oauth2 import id_token
 
 from ..core.exceptions import (
     GooglePlayVerificationException,

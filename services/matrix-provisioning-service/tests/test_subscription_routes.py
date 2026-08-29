@@ -9,13 +9,13 @@ import pytest
 from fastapi.testclient import TestClient
 from src.container import container
 from src.core.constants import (
-    SERVICE_BUNDLE_ROTATION_SERVICE,
     SERVICE_BUNDLE_CLAIM_REAPER,
+    SERVICE_BUNDLE_ROTATION_SERVICE,
     SERVICE_GOOGLE_PLAY_NOTIFICATIONS,
     SERVICE_PAID_BUNDLE_SERVICE,
     SERVICE_SUBSCRIPTION_IDENTITY,
-    SERVICE_SUBSCRIPTION_REPOSITORY,
     SERVICE_SUBSCRIPTION_RECONCILER,
+    SERVICE_SUBSCRIPTION_REPOSITORY,
     SERVICE_SUBSCRIPTION_SERVICE,
 )
 from src.core.exceptions import (
@@ -37,7 +37,6 @@ from src.core.subscriptions import (
     VerifiedPurchaseResult,
 )
 from src.main import app
-
 
 NOW = datetime(2026, 8, 29, 12, tzinfo=timezone.utc)
 AUTH_SECRET = "a" * 43

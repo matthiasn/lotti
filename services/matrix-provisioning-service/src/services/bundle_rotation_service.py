@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 from datetime import datetime
 
-from shared.matrix import SyncBundle, SynapseAdminClient
+from shared.matrix import SynapseAdminClient, SyncBundle
 
 from ..core.exceptions import BundleClaimConflictException
 from ..core.subscriptions import BundleClaim
@@ -14,7 +14,6 @@ from .secret_cipher import SecretCipher
 from .subscription_identity_service import SubscriptionIdentityService
 from .subscription_repository import SubscriptionRepository
 from .subscription_security import SecretHasher
-
 
 ROTATION_EVENT_TYPE = "com.lotti.sync.provisioning.rotation"
 

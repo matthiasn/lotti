@@ -8,7 +8,6 @@ import pytest
 from src import main
 from src.core.constants import SERVICE_GOOGLE_PLAY_CLIENT
 
-
 pytestmark = pytest.mark.anyio
 
 

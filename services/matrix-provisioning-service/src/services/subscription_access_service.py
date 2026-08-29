@@ -10,7 +10,6 @@ from ..core.exceptions import BundleClaimConflictException
 from ..core.subscriptions import EntitlementState, StoredSubscription
 from .subscription_repository import SubscriptionRepository
 
-
 _ACCESS_STATES = {
     EntitlementState.ACTIVE,
     EntitlementState.GRACE,

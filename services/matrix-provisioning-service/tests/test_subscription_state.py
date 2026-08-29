@@ -11,7 +11,6 @@ from src.core.subscriptions import (
     normalize_entitlement,
 )
 
-
 NOW = datetime(2026, 8, 29, 12, tzinfo=timezone.utc)
 FUTURE = NOW + timedelta(days=3)
 PAST = NOW - timedelta(microseconds=1)

@@ -8,7 +8,6 @@ import pytest
 from cryptography.exceptions import InvalidTag
 from src.services.secret_cipher import SecretCipher
 
-
 KEY = bytes(range(32))
 
 

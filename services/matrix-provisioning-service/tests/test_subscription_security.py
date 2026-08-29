@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-
 from src.services.subscription_security import (
     SecretHasher,
     canonical_purchase_request_hash,
