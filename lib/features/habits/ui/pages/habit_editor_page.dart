@@ -357,9 +357,7 @@ class HabitEditorPageState extends ConsumerState<HabitEditorPage> {
         // the switch sits where the signal checks sit.
         : Padding(
             padding: EdgeInsetsDirectional.fromSTEB(
-              tokens.spacing.step4 +
-                  tokens.spacing.step6 +
-                  tokens.spacing.step3,
+              tokens.spacing.step4 + IconSizes.m + tokens.spacing.step3,
               tokens.spacing.step2,
               tokens.spacing.step4,
               tokens.spacing.step2,

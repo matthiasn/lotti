@@ -313,11 +313,12 @@ class _Row extends StatelessWidget {
           ),
           if (child != null) ...[
             SizedBox(height: tokens.spacing.step3),
-            // Aligned to the title's left edge — the icon column plus its
-            // gap — so the rule reads as the row's own detail.
+            // Aligned to the title's left edge — the leading icon plus its
+            // gap, the same two numbers the row above uses — so the rule
+            // reads as the row's own detail and starts on the title's rail.
             Padding(
               padding: EdgeInsets.only(
-                left: tokens.spacing.step6 + tokens.spacing.step3,
+                left: IconSizes.m + tokens.spacing.step3,
               ),
               child: child,
             ),

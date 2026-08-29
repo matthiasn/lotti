@@ -366,4 +366,34 @@ void main() {
       handle.dispose();
     });
   });
+  testWidgets('the rule controls start on the row title\'s own rail', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        SizedBox(
+          width: 400,
+          child: HabitSignalCard(
+            form: HabitSignalsForm(
+              signals: [
+                waterAny.copyWith(
+                  mode: HabitSignalMode.atLeast,
+                  threshold: 1000,
+                ),
+              ],
+            ),
+            measurablesById: {'water': water},
+            onChanged: (_) {},
+            onAddSignal: () {},
+            onChangeComposite: () {},
+          ),
+        ),
+      ),
+    );
+    final title = tester.getTopLeft(find.text('Water'));
+    final field = tester.getTopLeft(
+      find.byKey(const ValueKey('habit-signal-threshold-measurable-water')),
+    );
+    expect(field.dx, moreOrLessEquals(title.dx, epsilon: 0.5));
+  });
 }
