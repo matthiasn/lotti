@@ -31,7 +31,6 @@ import 'package:lotti/features/goals/ui/goal_day_marks.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:lotti/widgets/day_indicators/day_mark.dart';
-import 'package:lotti/widgets/day_indicators/day_mark_legend.dart';
 import 'package:lotti/widgets/day_indicators/day_mark_strip.dart';
 import 'package:lotti/widgets/day_indicators/day_mark_styles.dart';
 import 'package:lotti/widgets/day_indicators/day_track.dart';
@@ -106,6 +105,14 @@ class GoalProgressCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final verdictsByHabit = [
+      for (final habit in progress.habits)
+        latestDimensionRatingsByDay(
+          assessments,
+          criterionId: habit.criterionId,
+          specVersionId: specVersionId,
+        ),
+    ];
     final patternMetrics = progress.metrics.where(
       (metric) =>
           metric.kind == GoalDimensionKind.categoryTime &&
@@ -146,13 +153,8 @@ class GoalProgressCard extends StatelessWidget {
             habit: progress.habits[index],
             today: progress.today,
             onHabitOutcomeSelected: onHabitOutcomeSelected,
-            showLegend: index == 0,
             scrollGroup: scrollGroup,
-            verdictsByDay: latestDimensionRatingsByDay(
-              assessments,
-              criterionId: progress.habits[index].criterionId,
-              specVersionId: specVersionId,
-            ),
+            verdictsByDay: verdictsByHabit[index],
           ),
           SizedBox(height: tokens.spacing.step3),
         ],
@@ -331,14 +333,6 @@ class GoalThisWeekCard extends StatelessWidget {
           // one dimension, so a leaf goal gets the strip without the tally.
           // Centered under the strip it closes, like every legend and summary
           // line on the cards below it.
-          // A goal without habit cards has no card to carry the day-cell
-          // key, yet its strip still wears the four verdict hues — so the
-          // key rides here, under the only squares such a goal draws. A goal
-          // WITH habit cards keys them once, inside its first habit card.
-          if (progress.habits.isEmpty) ...[
-            SizedBox(height: tokens.spacing.step3),
-            const DayMarkLegend(showAgesOut: false, showVerdicts: true),
-          ],
           if (progress.compositeRule != null) ...[
             SizedBox(height: tokens.spacing.step2),
             SizedBox(
@@ -490,7 +484,6 @@ class _HabitDimensionCard extends StatelessWidget {
     required this.habit,
     required this.today,
     required this.onHabitOutcomeSelected,
-    required this.showLegend,
     this.scrollGroup,
     this.verdictsByDay = const {},
   });
@@ -503,11 +496,6 @@ class _HabitDimensionCard extends StatelessWidget {
   final DateTime today;
   final GoalHabitOutcomeSelected? onHabitOutcomeSelected;
 
-  /// Whether this card carries the shared day-cell key. Set on the FIRST habit
-  /// card only — one legend per goal, and placed where a reader meets the
-  /// squares it explains rather than four cards below them.
-  final bool showLegend;
-
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -517,18 +505,16 @@ class _HabitDimensionCard extends StatelessWidget {
         : null;
     // The shallow foot pays for the centering slack an interactive day track
     // leaves under its squares — so it is only right on a card that actually
-    // ENDS on that track. The legend closes some cards; a check-off callout
-    // closes others, and it is a bordered surface that would sit crowded
-    // against the card edge with the slack stranded above it instead.
+    // ENDS on that track. A check-off callout closes some cards, and it is a
+    // bordered surface that would sit crowded against the card edge with the
+    // slack stranded above it instead.
     final endsOnDayTrack =
-        !showLegend &&
         !(onHabitOutcomeSelected != null &&
             habit.suggestedFromDimensionName != null);
     return DesignSystemSectionCard(
       // An interactive day row is already a touch-floor-tall track around a
       // cell half its height, so the card gets ~10px of centering slack under
-      // the squares for free. On the cards that end there — every habit but
-      // the first, which is the only one carrying the legend — a full
+      // the squares for free. On the cards that end there, a full
       // card-padding foot on top of that slack left a band of dead space
       // taller than the squares themselves.
       padding: EdgeInsets.fromLTRB(
@@ -580,22 +566,6 @@ class _HabitDimensionCard extends StatelessWidget {
             // same window, and stacked they cost the card a row to say so.
             successfulWeeks: successfulWeeks,
           ),
-          // Inside the card, under the squares it keys. On the page background
-          // between two cards it was equidistant from both and read as
-          // annotating the chart below — which it does not explain at all.
-          // Once per goal, not once per habit: it is the same key.
-          if (showLegend) ...[
-            // No rule above the key. The legend is already set apart by
-            // being centered under a leading-aligned stack, and it closes
-            // the card — so the line had nothing to divide it FROM except
-            // the card's own bottom edge, and read as the card being cut in
-            // two.
-            SizedBox(height: tokens.spacing.step2),
-            // Everything a habit square on this page can wear: the three
-            // measured fills, the outcome glyphs, the ages-out and today
-            // rings, and the verdict a reflection stamps on a day.
-            const DayMarkLegend(showOutcomes: true, showVerdicts: true),
-          ],
         ],
       ),
     );
@@ -1759,20 +1729,11 @@ class _ProgressDayCell extends StatelessWidget {
     final tokens = context.designTokens;
     final hit = day.hasValue;
     final completionType = day.habitCompletionType;
-    final skipped = completionType == HabitCompletionType.skip;
     final missed = completionType == HabitCompletionType.fail;
     // A completed day is a partial success (lighter wash) while the habit's
     // own window target was not yet met as of that day; a null verdict from
     // older projections keeps the established full-strength rendering.
-    final dayState = missed
-        ? DayMarkState.missed
-        : skipped
-        ? DayMarkState.skipped
-        : !hit
-        ? DayMarkState.none
-        : (day.targetSatisfied ?? true)
-        ? DayMarkState.full
-        : DayMarkState.partial;
+    final dayState = goalProgressDayMarkState(day);
     // The square's own edge; the interactive slot around it is larger.
     final visualDimension = size;
     final glyphSize = math.min(IconSizes.xs, visualDimension * 0.6);
@@ -2845,3 +2806,17 @@ class _CategoryPatternCard extends StatelessWidget {
     );
   }
 }
+
+/// The measured day-mark state a habit's [GoalProgressDay] renders as: a
+/// recorded miss or skip first, then whether the day was hit, then whether
+/// the habit's own window target was met as of that day — a completed day
+/// while the target was still building is the lighter wash; a null verdict
+/// from older projections keeps the established full-strength rendering.
+DayMarkState goalProgressDayMarkState(GoalProgressDay day) =>
+    switch (day.habitCompletionType) {
+      HabitCompletionType.fail => DayMarkState.missed,
+      HabitCompletionType.skip => DayMarkState.skipped,
+      _ when !day.hasValue => DayMarkState.none,
+      _ when day.targetSatisfied ?? true => DayMarkState.full,
+      _ => DayMarkState.partial,
+    };

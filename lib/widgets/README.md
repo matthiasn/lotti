@@ -20,7 +20,7 @@ lib/widgets/
 ├── nav_bar/     # bottom navigation shell and FAB clearance
 ├── media/       # full-screen image-viewer orientation lifecycle
 ├── timeline/    # the one vertical timeline rail, shared by events and goals
-├── day_indicators/ # DayMark model, day cells, strip, track geometry and legend shared by goals and habits
+├── day_indicators/ # DayMark model, day cells, strip and track geometry shared by goals and habits
 └── misc/        # sidebar activity summary and similar cross-feature pieces
 ```
 

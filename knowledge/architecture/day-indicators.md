@@ -94,7 +94,6 @@ classDiagram
 | `DayTrack`, `dayTrackMetrics`, `fitOrScrollDayTrack`, `LinkedDayTrackScroller` | `day_track.dart` | Column geometry shared by every day row on a page, and the fit-or-pan policy. |
 | `DayMarkCell`, `PlaceholderDayCell` | `day_mark_cell.dart` | One square. Read-only by default; with `onTap` it becomes a labelled button whose hit slot clears the touch floor while the square keeps its size. |
 | `DayMarkStrip` | `day_mark_strip.dart` | A row of cells with one semantic summary; dated strips sit on the shared track, undated ones on a plain row. |
-| `DayMarkLegend` | `day_mark_legend.dart` | The key, drawn from the same helpers as the cells. |
 
 ```mermaid
 flowchart LR
@@ -105,7 +104,6 @@ flowchart LR
   M --> S["DayMarkStrip"]
   S --> C["DayMarkCell ×N"]
   C --> ST["day_mark_styles"]
-  L["DayMarkLegend"] --> ST
   P["_ProgressDayCell<br/>(goal detail, tappable outcome menu)"] --> ST
 ```
 
@@ -168,19 +166,16 @@ knows the day: reflecting on a backfilled day judges that day, not today. The
 reflection sheet itself stays the goal's — it needs the goal's spec, progress
 view and history — so the habit only contributes the day.
 
-# The legend, and where it rides
+# There is no key
 
-`DayMarkLegend` keys the measured fills always, and opts into the rest:
-`showAgesOut` (only the goal detail's rolling windows draw that ring),
-`showOutcomes` (the skip dash and missed cross a habit square can carry) and
-`showVerdicts` (the four verdict hues and glyphs). One key per surface, placed
-where a reader meets the squares it explains:
-
-| Surface | Legend |
-| --- | --- |
-| Goal detail, first habit card | outcomes + verdicts + ages-out |
-| Goal detail, a goal with no habit cards | under the whole-goal strip on the week card: verdicts, no ages-out |
-| A dashboard with habit items | once, after the items: outcomes + verdicts |
+The squares carry their own meaning: every non-neutral state has a
+non-color cue (the partial dot, the skip dash, the missed cross, a verdict's
+own glyph), and every cell answers hover or long-press with its day and its
+outcome or verdict. A static key was tried twice — an eleven-entry wrap under
+a dashboard, then a present-states-only line under the goal's habit squares —
+and a design-review panel rated both as more legend than data. Do not
+reintroduce one; if a mark needs explaining, give the mark a better cue or a
+better tooltip.
 
 # Cell sizing is a decision, not a gap
 

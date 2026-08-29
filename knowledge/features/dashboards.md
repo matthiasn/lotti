@@ -112,11 +112,6 @@ The other three render only: health and workout data arrive from outside the app
 each health chart schedules on construction — and a habit is completed on its own
 surface.
 
-A dashboard with habit items draws one `DayMarkLegend` after its items (key
-`dashboard-habit-legend`) — outcome glyphs and verdict hues, once per
-dashboard rather than once per habit; see [day
-indicators](../architecture/day-indicators.md).
-
 # Which day a health sample belongs to
 
 `aggregateByType` reduces samples to one observation per day, and the choice of

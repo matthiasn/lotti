@@ -28,7 +28,6 @@ import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/goal_progress_card.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/widgets/day_indicators/day_mark.dart';
-import 'package:lotti/widgets/day_indicators/day_mark_legend.dart';
 import 'package:lotti/widgets/day_indicators/day_mark_strip.dart';
 import 'package:lotti/widgets/day_indicators/day_mark_styles.dart';
 import 'package:lotti/widgets/day_indicators/day_track.dart';
@@ -90,10 +89,6 @@ void main() {
     );
     expect(find.text('4 / 6 weeks'), findsOneWidget);
     expect(find.textContaining('%'), findsNothing);
-    expect(find.text('done · target met'), findsOneWidget);
-    expect(find.text('done · target not met yet'), findsOneWidget);
-    expect(find.text('ages out tonight'), findsOneWidget);
-    expect(find.text('today'), findsOneWidget);
   });
 
   testWidgets('an authored rolling window is named in the corner reading', (
@@ -534,7 +529,7 @@ void main() {
   });
 
   testWidgets('the today ring is drawn in one ink and one stroke on every '
-      'surface that draws one, including the key that explains it', (
+      'surface that draws one', (
     tester,
   ) async {
     // Each ring-producing surface has to be MOUNTED, or the test grades an
@@ -583,65 +578,17 @@ void main() {
     final cardRings = ringsIn(find.byType(GoalProgressCard));
     expect(stripRings, hasLength(1), reason: 'the strip marks today once');
     expect(
-      cardRings.length,
-      greaterThanOrEqualTo(2),
-      reason: "the habit card's today cell plus the legend swatch keying it",
+      cardRings,
+      hasLength(1),
+      reason: "the habit card's today cell, drawn inside the square",
     );
 
-    // A hairline in the low-emphasis ink is a rumour on a dark screen. Mark
-    // and key must not diverge either: a key drawn differently from the mark
-    // is a key to nothing.
+    // A hairline in the low-emphasis ink is a rumour on a dark screen.
     for (final ring in [...stripRings, ...cardRings]) {
       expect(ring.color, todayRingInk(tokens));
       expect(ring.strokeWidth, BorderWidths.emphasis);
     }
     expect(todayRingInk(tokens), tokens.colors.text.mediumEmphasis);
-  });
-
-  testWidgets('a habit card that ends on its squares gets a shallower foot '
-      'than one closing on the legend', (tester) async {
-    await tester.pumpWidget(
-      makeTestableWidgetNoScroll(
-        GoalProgressCard(
-          progress: GoalProgressView(
-            today: today,
-            habits: [
-              for (final name in ['Gym', 'Read'])
-                GoalHabitProgressView(
-                  habitId: name,
-                  name: name,
-                  targetCount: 3,
-                  days: [
-                    for (var offset = 6; offset >= 0; offset--) day(offset, 0),
-                  ],
-                  successfulWeeks: 0,
-                ),
-            ],
-          ),
-          onHabitOutcomeSelected:
-              ({required day, required habitId, required outcome}) async =>
-                  true,
-        ),
-      ),
-    );
-
-    final tokens = tester.element(find.byType(GoalProgressCard)).designTokens;
-    EdgeInsets footOf(String habit) => tester
-        .widget<DesignSystemSectionCard>(
-          find.ancestor(
-            of: find.text(habit),
-            matching: find.byType(DesignSystemSectionCard),
-          ),
-        )
-        .padding!;
-
-    // An interactive day row is a touch-floor-tall track around a cell half
-    // its height, so the card already carries centering slack under the
-    // squares. On the card that ENDS there, a full card-padding foot on top
-    // of that slack was a dead band taller than the squares.
-    expect(footOf('Gym').bottom, tokens.spacing.step5);
-    expect(footOf('Read').bottom, tokens.spacing.step2);
-    expect(footOf('Read').top, tokens.spacing.step5);
   });
 
   testWidgets('a card closing on a check-off callout keeps its full foot, '
@@ -699,117 +646,6 @@ void main() {
       tokens.spacing.step5,
       reason: 'the callout closes this card, so it keeps the full foot',
     );
-  });
-
-  testWidgets('the day-cell legend rides inside the first habit card', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      makeTestableWidgetNoScroll(
-        GoalProgressCard(
-          progress: GoalProgressView(
-            today: today,
-            habits: [
-              for (final name in ['Gym', 'Read'])
-                GoalHabitProgressView(
-                  habitId: name,
-                  name: name,
-                  targetCount: 3,
-                  days: [
-                    for (var offset = 6; offset >= 0; offset--) day(offset, 0),
-                  ],
-                  successfulWeeks: 0,
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-
-    // Once per goal, not once per habit — and inside the FIRST card, where a
-    // reader meets the squares it explains. Attached to the last card it was
-    // a key printed after everything it keys; on the page background between
-    // two cards it read as annotating the chart below, which it does not
-    // explain at all.
-    expect(find.text('done · target met'), findsOneWidget);
-    final legend = tester.getRect(find.text('done · target met'));
-    final cards = find.byType(DesignSystemSectionCard);
-    final firstHabitCard = tester.getRect(cards.first);
-    expect(legend.top, greaterThan(firstHabitCard.top));
-    expect(legend.bottom, lessThan(firstHabitCard.bottom));
-    // ...and it precedes the second habit's squares rather than following
-    // them.
-    expect(
-      legend.bottom,
-      lessThan(tester.getRect(cards.at(1)).top),
-    );
-  });
-
-  testWidgets("the first habit card's key names the outcome glyphs and the "
-      'verdict hues its squares can wear', (tester) async {
-    await tester.pumpWidget(
-      makeTestableWidgetNoScroll(
-        GoalProgressCard(
-          progress: GoalProgressView(
-            today: today,
-            habits: [
-              GoalHabitProgressView(
-                habitId: 'gym',
-                name: 'Gym',
-                targetCount: 3,
-                days: [
-                  for (var offset = 6; offset >= 0; offset--) day(offset, 0),
-                ],
-                successfulWeeks: 0,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-    for (final label in [
-      'Skip',
-      'Missed',
-      'judged Met',
-      'judged Improving',
-      'judged Mixed',
-      'judged Missed',
-    ]) {
-      expect(find.text(label), findsOneWidget, reason: label);
-    }
-    expect(find.textContaining('ages out'), findsOneWidget);
-  });
-
-  testWidgets('a goal without habit cards keys its verdict strip on the '
-      'week card, and a goal with them does not', (tester) async {
-    Future<void> pump(GoalProgressView progress) => tester.pumpWidget(
-      makeTestableWidgetNoScroll(
-        GoalThisWeekCard(
-          progress: progress,
-          onReflectDay: (_) {},
-        ),
-      ),
-    );
-    await pump(GoalProgressView(today: today));
-    expect(find.byType(DayMarkLegend), findsOneWidget);
-    expect(find.text('judged Improving'), findsOneWidget);
-    expect(find.textContaining('ages out'), findsNothing);
-
-    await pump(
-      GoalProgressView(
-        today: today,
-        habits: [
-          GoalHabitProgressView(
-            habitId: 'gym',
-            name: 'Gym',
-            targetCount: 3,
-            days: [for (var offset = 6; offset >= 0; offset--) day(offset, 0)],
-            successfulWeeks: 0,
-          ),
-        ],
-      ),
-    );
-    expect(find.byType(DayMarkLegend), findsNothing);
   });
 
   testWidgets('a goal with no composite rule still gets a reflectable week', (
@@ -949,10 +785,10 @@ void main() {
 
     expect(find.text('Daily steps'), findsOneWidget);
     expect(find.byType(FractionallySizedBox), findsNWidgets(7));
-    expect(find.text('done · target met'), findsNothing);
-    expect(find.text('done · target not met yet'), findsNothing);
-    expect(find.text('ages out tonight'), findsNothing);
-    expect(find.text('today'), findsNothing);
+    expect(find.text('Done · target met'), findsNothing);
+    expect(find.text('Done · target not met yet'), findsNothing);
+    expect(find.text('Ages out tonight'), findsNothing);
+    expect(find.text('Today'), findsNothing);
   });
 
   testWidgets('a point-sample health header quotes the latest reading, not '
@@ -2566,8 +2402,7 @@ void main() {
     await tester.tap(dayFinder);
     await tester.pumpAndSettle();
     expect(find.byType(DesignSystemContextMenu), findsOneWidget);
-    // Scoped to the menu: the first habit card's key names Skip and Missed
-    // too.
+    // Scoped to the menu.
     final menu = find.byType(DesignSystemContextMenu);
     expect(
       find.descendant(of: menu, matching: find.text('Success')),
@@ -4189,17 +4024,7 @@ void main() {
       ),
     );
 
-    // The shared day-cell key centers as card-level annotation.
-    final legendWrap = tester.widget<Wrap>(
-      find
-          .ancestor(
-            of: find.text('done · target met'),
-            matching: find.byType(Wrap),
-          )
-          .first,
-    );
-    expect(legendWrap.alignment, WrapAlignment.center);
-    // So does the chart legend on the signal card…
+    // The chart legend on the signal card centers as card-level annotation.
     final chartLegend = tester.widget<DashboardChartLegend>(
       find.byType(DashboardChartLegend),
     );
