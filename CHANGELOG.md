@@ -4,6 +4,77 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.19]
+### Added
+- **Measurables can now record a choice instead of a number.** Not everything
+  worth tracking is a quantity: how hydrated you are reads off a colour, how
+  rested you feel is a word, not a value. A measurable's *Recorded as* switch
+  now offers *Choice* next to *Number*, and a choice measurable carries its
+  own list of choices — clear, pale, dark; very rested, somewhat, not at all;
+  emojis if you like — which you can rename and reorder at any time without
+  touching what you already recorded, because each choice keeps its identity
+  behind the name. Retiring a choice archives it: it leaves the picker but
+  every entry that recorded it still shows its name, and it can be restored.
+  Recording picks a chip instead of typing a number, in the measurement sheet
+  and in a habit's completion sheet alike; the journal shows the choice by
+  name; searching for a choice's name finds its entries; and on a dashboard a
+  choice measurable draws a day strip — one cell per day, shaded by the
+  choice you ended the day on, with a legend — instead of a bar chart.
+- **Pair new devices by camera on macOS and Linux.** Phones and tablets can
+  already show the pairing code, and desktop users can now scan it directly
+  with a webcam instead of copying the credential by hand. Manual entry remains
+  available when a camera cannot be used.
+- **Reflect on a habit's day from the habit itself.** The habit completion
+  sheet offers *Reflect on this day in ‹goal›* for every goal watching the
+  habit, opening that goal's reflection for the day being recorded; on the
+  goal's detail page a habit's square then wears your verdict (met, improving,
+  mixed, missed) instead of only the recorded outcome.
+
+### Changed
+- **On desktop the habit editor opens as a side panel over the Habits page
+  instead of a separate screen.** It slides in from the right over a dimmed
+  page and closes on save, on the scrim or with Escape — you stay on the list
+  you were reading. The panel is laid out with intent: the habit itself —
+  name, description, how it gets checked off — takes the wide left column and
+  the schedule settings, switches and Delete the narrow right one, so the
+  whole form is on screen at a normal window size with Save always at hand.
+  The signals card is a proper card, the threshold's unit sits beside the
+  number ("1000 ml"), the rule controls line up under their signal, the mode
+  toggle says *At least* / *At most* instead of symbols, the notification
+  choice lives with the signals it describes, and Delete looks like the
+  destructive action it is. Creating a habit stays a single column, and phones
+  keep the full-screen editor.
+- **Habit day squares look the same everywhere, and the habits list shows each
+  habit's last seven days.** Dashboard habit cards, the habits list and a
+  goal's habit rows all draw one small square per day, as the habits design
+  intends: filled when the habit was kept, neutral otherwise, a dashed outline
+  for a today that is still open. Every row on the habits list carries a week
+  of squares under the name followed by the flame and the current streak,
+  replacing the chain of identical squares that only repeated the streak
+  count. Hovering or long-pressing a square names its day and outcome; on a
+  goal page, where a square can be tapped to record an outcome, its weekday
+  sits above it. A range longer than a card can hold pans back through the
+  days, anchored on today, instead of silently dropping its oldest days.
+- **The journal list formats a measurement's value exactly like the entry's
+  own summary.** A percentage measurement showed as `55 %` in the list and
+  `55%` on the entry; both now read `55%`.
+
+### Fixed
+- **Accepting all of an agent's suggestions no longer sends the task page
+  racing up the screen.** The page held the *top* of the proposal list still
+  while its rows collapsed, so the "Confirm all" button, the checklist and the
+  history below it all slid upwards by the height of every row that left — over
+  half a phone screen for a handful of suggestions — while new checklist items
+  pushed them back down. It now holds everything below the AI card in place:
+  the rows are worked through where they are, and the summary above eases down
+  into the space they leave. The smaller snaps that made the sweep feel jumpy
+  are gone too: rows no longer lose a line of text the moment they are
+  confirmed, the pending count fades out instead of shortening the header, and
+  the "Confirm all" button and the proposal section itself collapse smoothly
+  rather than vanishing in a single frame.
+- **The habit edit page's "How do we know it's done?" heading no longer draws
+  an empty bordered box under itself.**
+
 ## [1.0.18]
 ### Added
 - **Habits can now check themselves off from recorded data.** When you create or
