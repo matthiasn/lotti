@@ -515,6 +515,9 @@ class _RuleEditorState extends State<_RuleEditor> {
                   key: ValueKey(
                     'habit-signal-threshold-${signal.kind.name}-${signal.id}',
                   ),
+                  // The unit rides beside the field visually; a screen
+                  // reader still needs it in the field's own name.
+                  semanticsLabel: widget.unit.isEmpty ? null : widget.unit,
                   controller: _threshold,
                   size: DesignSystemTextInputSize.small,
                   // A bounded mode without a number would save as "any entry";
@@ -537,13 +540,19 @@ class _RuleEditorState extends State<_RuleEditor> {
               ),
               if (widget.unit.isNotEmpty) ...[
                 SizedBox(width: tokens.spacing.step2),
-                Text(
-                  widget.unit,
-                  key: ValueKey(
-                    'habit-signal-unit-${signal.kind.name}-${signal.id}',
-                  ),
-                  style: tokens.typography.styles.body.bodyMedium.copyWith(
-                    color: tokens.colors.text.mediumEmphasis,
+                // Bounded, so a long user-entered unit or a large text scale
+                // truncates the unit rather than overflowing the row.
+                Flexible(
+                  child: Text(
+                    widget.unit,
+                    key: ValueKey(
+                      'habit-signal-unit-${signal.kind.name}-${signal.id}',
+                    ),
+                    style: tokens.typography.styles.body.bodyMedium.copyWith(
+                      color: tokens.colors.text.mediumEmphasis,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],

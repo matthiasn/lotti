@@ -324,4 +324,46 @@ void main() {
     expect(changes.last.signals, [waterAny, steps]);
     expect(changes.last.requiredCount, 2);
   });
+  group('the inline unit', () {
+    testWidgets('names the threshold field for a screen reader and yields '
+        'before the field when it is long', (tester) async {
+      final handle = tester.ensureSemantics();
+      final longUnit = water.copyWith(
+        unitName: 'millilitres of filtered still water per calendar day',
+      );
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          SizedBox(
+            width: 360,
+            child: HabitSignalCard(
+              form: HabitSignalsForm(
+                signals: [
+                  waterAny.copyWith(
+                    mode: HabitSignalMode.atLeast,
+                    threshold: 1000,
+                  ),
+                ],
+              ),
+              measurablesById: {'water': longUnit},
+              onChanged: (_) {},
+              onAddSignal: () {},
+              onChangeComposite: () {},
+            ),
+          ),
+        ),
+      );
+      expect(tester.takeException(), isNull, reason: 'no overflow');
+      final unit = tester.widget<Text>(
+        find.byKey(const ValueKey('habit-signal-unit-measurable-water')),
+      );
+      expect(unit.overflow, TextOverflow.ellipsis);
+      expect(unit.maxLines, 1);
+      expect(
+        find.bySemanticsLabel(RegExp('millilitres of filtered')),
+        findsWidgets,
+        reason: 'the field itself is named with its unit',
+      );
+      handle.dispose();
+    });
+  });
 }
