@@ -1027,8 +1027,7 @@ flowchart TD
   mark is the evaluator's verdict for the window ending that day, because a
   single day's contribution cannot be judged against a period total.
   Composite detail keeps every metric and measurable
-  leaf instead of silently collapsing the evidence to the first one, and the
-  habit-only legend is omitted when no habit grid is rendered. The compact
+  leaf instead of silently collapsing the evidence to the first one. The compact
   strip combines that per-day policy with daily accomplishment: a metric cell
   is green when `dayMark` holds, and a habit-composite cell when the authored
   `allOf`, `anyOf`, or `atLeastCount` tree folds
@@ -1048,10 +1047,9 @@ flowchart TD
   treatment as At risk everywhere, the ages-out ring is a quiet
   `text.lowEmphasis` outline (never warning orange on an on-track row), and
   the deterministic successful-days-needed-to-recover effort is neutral prose — the
-  header's verdict caption alone carries warning ink. ONE day-cell key renders
-  per page, inside the FIRST habit card — where a reader meets the squares it
-  explains rather than four cards past them — and it is truthful: the today
-  swatch is dashed like the cell, the partial swatch carries the dot. The
+  header's verdict caption alone carries warning ink. The habit squares carry
+  no key: their glyphs and tooltips explain them (see [day
+  indicators](../architecture/day-indicators.md)). The
   hand-painted metric bars carry their own three-fill key plus the threshold
   their rule marks, and answer a tap with the day's value in the same tooltip
   vocabulary the fl_chart series use. Each day square

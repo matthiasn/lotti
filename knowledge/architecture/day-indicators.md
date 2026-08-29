@@ -94,7 +94,6 @@ classDiagram
 | `DayTrack`, `dayTrackMetrics`, `fitOrScrollDayTrack`, `LinkedDayTrackScroller` | `day_track.dart` | Column geometry shared by every day row on a page, and the fit-or-pan policy. |
 | `DayMarkCell`, `PlaceholderDayCell` | `day_mark_cell.dart` | One square. Read-only by default; with `onTap` it becomes a labelled button whose hit slot clears the touch floor while the square keeps its size. |
 | `DayMarkStrip` | `day_mark_strip.dart` | A row of cells with one semantic summary; dated strips sit on the shared track, undated ones on a plain row. |
-| `DayMarkLegend` | `day_mark_legend.dart` | The key, drawn from the same helpers as the cells. |
 
 ```mermaid
 flowchart LR
@@ -105,7 +104,6 @@ flowchart LR
   M --> S["DayMarkStrip"]
   S --> C["DayMarkCell ×N"]
   C --> ST["day_mark_styles"]
-  L["DayMarkLegend"] --> ST
   P["_ProgressDayCell<br/>(goal detail, tappable outcome menu)"] --> ST
 ```
 
@@ -168,25 +166,16 @@ knows the day: reflecting on a backfilled day judges that day, not today. The
 reflection sheet itself stays the goal's — it needs the goal's spec, progress
 view and history — so the habit only contributes the day.
 
-# The legend keys only what is on the strip
+# There is no key
 
-`DayMarkLegend` takes the states and verdicts *present* on the strip it sits
-under and keys only what a reader cannot get from the mark itself: the
-colour-only states (done, done-but-target-still-building with its dot, no
-entry), the two rings where the strip draws them, and the verdict hues a
-judged day wears. It never lists the outcome glyphs — the skip dash and the
-missed cross name themselves, and every cell answers hover with its day and
-outcome — and it renders nothing when nothing needs keying.
-
-It rides in exactly one place — inside the goal detail's first habit card —
-but it is the **goal's** key: `GoalProgressCard` unions the states
-(`goalProgressDayMarkState`), the per-dimension verdicts and the rings across
-every habit card on the page, so a state on the third card is keyed on the
-first. A day that wears a verdict contributes the verdict, not its hidden
-measured fill. Dashboards and the whole-goal week card carry no key.
-A design-review panel rated the earlier eleven-entry wrap under a dashboard
-at 3.6/10: more legend than data, listing states that were not on screen,
-and two red crosses with different names.
+The squares carry their own meaning: every non-neutral state has a
+non-color cue (the partial dot, the skip dash, the missed cross, a verdict's
+own glyph), and every cell answers hover or long-press with its day and its
+outcome or verdict. A static key was tried twice — an eleven-entry wrap under
+a dashboard, then a present-states-only line under the goal's habit squares —
+and a design-review panel rated both as more legend than data. Do not
+reintroduce one; if a mark needs explaining, give the mark a better cue or a
+better tooltip.
 
 # Cell sizing is a decision, not a gap
 

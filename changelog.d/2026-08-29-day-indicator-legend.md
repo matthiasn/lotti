@@ -1,7 +1,7 @@
 ### Changed
 
-- **The key under a goal's habit squares explains only what those squares
-  show.** It lists the day colours actually on the strip, any judged-day
-  colours present, and the today or ages-out ring where drawn — never states
-  that are not there, and never the skip dash or missed cross, which speak
-  for themselves. Hover or long-press any square for its date and outcome.
+- **The key under a goal's habit squares is gone.** The squares explain
+  themselves — a dash for skipped, a cross for missed, a dot for a day done
+  while the target was still building, a verdict's own glyph on a judged day —
+  and every square names its date and outcome on hover or long-press. Today's
+  square on a goal's habit card now shows its dashed ring clearly.

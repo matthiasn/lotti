@@ -7,7 +7,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/widgets/charts/habits/dashboard_habits_chart.dart';
-import 'package:lotti/widgets/day_indicators/day_mark_legend.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -186,44 +185,6 @@ void main() {
         expect(chart.rangeEnd, rangeEnd);
       },
     );
-
-    testWidgets('a dashboard with habit items carries no day-square key — '
-        "the squares' glyphs and tooltips carry the meaning", (tester) async {
-      when(() => mockCache.getHabitById(any())).thenReturn(null);
-      final dashboard = DashboardDefinition(
-        id: 'with-habits',
-        name: 'Dashboard',
-        description: '',
-        items: const [
-          DashboardItem.habitChart(habitId: 'habit-1'),
-          DashboardItem.habitChart(habitId: 'habit-2'),
-        ],
-        createdAt: DateTime(2024, 3, 15),
-        updatedAt: DateTime(2024, 3, 15),
-        vectorClock: null,
-        private: false,
-        version: '',
-        lastReviewed: DateTime(2024, 3, 15),
-        active: true,
-      );
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          DashboardWidget(
-            dashboardId: 'with-habits',
-            rangeStart: rangeStart,
-            rangeEnd: rangeEnd,
-          ),
-          overrides: [
-            dashboardByIdProvider(
-              'with-habits',
-            ).overrideWith((ref) => dashboard),
-          ],
-        ),
-      );
-      await tester.pump();
-      expect(find.byType(DayMarkLegend), findsNothing);
-      expect(find.textContaining('udged'), findsNothing);
-    });
 
     testWidgets(
       'keys charts by item identity, not range, so stale data cannot cross '

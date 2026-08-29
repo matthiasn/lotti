@@ -31,7 +31,6 @@ import 'package:lotti/features/goals/ui/goal_day_marks.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:lotti/widgets/day_indicators/day_mark.dart';
-import 'package:lotti/widgets/day_indicators/day_mark_legend.dart';
 import 'package:lotti/widgets/day_indicators/day_mark_strip.dart';
 import 'package:lotti/widgets/day_indicators/day_mark_styles.dart';
 import 'package:lotti/widgets/day_indicators/day_track.dart';
@@ -114,41 +113,6 @@ class GoalProgressCard extends StatelessWidget {
           specVersionId: specVersionId,
         ),
     ];
-    // Only what the page's squares actually wear: a key to states that are
-    // not on any strip is noise, and the outcome glyphs name themselves.
-    final legend = DayMarkLegend(
-      // Today's square is keyed by its ring; its fill only counts when it
-      // is not the plain empty one, or the key would list a grey the reader
-      // cannot find on any other square.
-      // A judged day wears its verdict, not its measured fill, so it
-      // contributes the verdict below and not a state the reader cannot see.
-      states: {
-        for (var index = 0; index < progress.habits.length; index++)
-          for (final day in progress.habits[index].days)
-            if (verdictsByHabit[index][DateTime.utc(
-                  day.day.year,
-                  day.day.month,
-                  day.day.day,
-                )] ==
-                null)
-              if (!DateUtils.isSameDay(day.day, progress.today) ||
-                  goalProgressDayMarkState(day) != DayMarkState.none)
-                goalProgressDayMarkState(day),
-      },
-      verdicts: {
-        for (var index = 0; index < progress.habits.length; index++)
-          for (final day in progress.habits[index].days)
-            ?verdictsByHabit[index][DateTime.utc(
-              day.day.year,
-              day.day.month,
-              day.day.day,
-            )],
-      },
-      showAgesOut: progress.habits.any((h) => h.oldestSuccessAgesOutTonight),
-      showToday: progress.habits.any(
-        (h) => h.days.any((d) => DateUtils.isSameDay(d.day, progress.today)),
-      ),
-    );
     final patternMetrics = progress.metrics.where(
       (metric) =>
           metric.kind == GoalDimensionKind.categoryTime &&
@@ -189,13 +153,8 @@ class GoalProgressCard extends StatelessWidget {
             habit: progress.habits[index],
             today: progress.today,
             onHabitOutcomeSelected: onHabitOutcomeSelected,
-            showLegend: index == 0,
             scrollGroup: scrollGroup,
             verdictsByDay: verdictsByHabit[index],
-            // The first card's key is the GOAL's key: every square on the
-            // page, not only its own, or a state on the third card would
-            // go unkeyed.
-            legend: index == 0 ? legend : null,
           ),
           SizedBox(height: tokens.spacing.step3),
         ],
@@ -525,14 +484,9 @@ class _HabitDimensionCard extends StatelessWidget {
     required this.habit,
     required this.today,
     required this.onHabitOutcomeSelected,
-    required this.showLegend,
     this.scrollGroup,
     this.verdictsByDay = const {},
-    this.legend,
   });
-
-  /// The goal's day-cell key, handed to the first habit card only.
-  final DayMarkLegend? legend;
 
   final LinkedScrollGroup? scrollGroup;
 
@@ -541,11 +495,6 @@ class _HabitDimensionCard extends StatelessWidget {
   final GoalHabitProgressView habit;
   final DateTime today;
   final GoalHabitOutcomeSelected? onHabitOutcomeSelected;
-
-  /// Whether this card carries the shared day-cell key. Set on the FIRST habit
-  /// card only — one legend per goal, and placed where a reader meets the
-  /// squares it explains rather than four cards below them.
-  final bool showLegend;
 
   @override
   Widget build(BuildContext context) {
@@ -556,18 +505,16 @@ class _HabitDimensionCard extends StatelessWidget {
         : null;
     // The shallow foot pays for the centering slack an interactive day track
     // leaves under its squares — so it is only right on a card that actually
-    // ENDS on that track. The legend closes some cards; a check-off callout
-    // closes others, and it is a bordered surface that would sit crowded
-    // against the card edge with the slack stranded above it instead.
+    // ENDS on that track. A check-off callout closes some cards, and it is a
+    // bordered surface that would sit crowded against the card edge with the
+    // slack stranded above it instead.
     final endsOnDayTrack =
-        !showLegend &&
         !(onHabitOutcomeSelected != null &&
             habit.suggestedFromDimensionName != null);
     return DesignSystemSectionCard(
       // An interactive day row is already a touch-floor-tall track around a
       // cell half its height, so the card gets ~10px of centering slack under
-      // the squares for free. On the cards that end there — every habit but
-      // the first, which is the only one carrying the legend — a full
+      // the squares for free. On the cards that end there, a full
       // card-padding foot on top of that slack left a band of dead space
       // taller than the squares themselves.
       padding: EdgeInsets.fromLTRB(
@@ -619,18 +566,6 @@ class _HabitDimensionCard extends StatelessWidget {
             // same window, and stacked they cost the card a row to say so.
             successfulWeeks: successfulWeeks,
           ),
-          // Inside the card, under the squares it keys. On the page background
-          // between two cards it was equidistant from both and read as
-          // annotating the chart below — which it does not explain at all.
-          // Once per goal, not once per habit: it is the same key.
-          if (showLegend) ...[
-            // No rule above the key. The key is set apart by its caption
-            // size and quiet ink, and it closes the card — so a line had
-            // nothing to divide it FROM except the card's own bottom edge,
-            // and read as the card being cut in two.
-            SizedBox(height: tokens.spacing.step2),
-            ?legend,
-          ],
         ],
       ),
     );

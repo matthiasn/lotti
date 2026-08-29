@@ -42,7 +42,7 @@ composition and app-shell chrome.
 | `picker/` | `EntityPickerSheet`, shared by categories, labels and the task link pickers |
 | `nav_bar/` | The bottom navigation shell and its FAB clearance wrapper |
 | `media/` | The lifecycle scope that temporarily permits landscape in full-screen image viewers |
-| `day_indicators/` | The `DayMark` model and the day cells, strip, track geometry and legend goals and habits share |
+| `day_indicators/` | The `DayMark` model and the day cells, strip and track geometry goals and habits share |
 | `misc/` | The sidebar activity summary and similar cross-feature pieces |
 
 **Buttons are not here.** They all come from `DesignSystemButton` and its
@@ -58,7 +58,7 @@ widget has no shared home just because it is absent.
 
 `day_indicators/` is the exception to "composition and chrome only": it is a
 small data-visualisation vocabulary — one day square, a strip of them, the
-column geometry, a legend — shared by goals and habits so a day is drawn the
+column geometry — shared by goals and habits so a day is drawn the
 same way wherever it is judged. It has its own concept:
 [day indicators](day-indicators.md).
 
