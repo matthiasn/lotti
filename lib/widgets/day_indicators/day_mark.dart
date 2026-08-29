@@ -26,7 +26,7 @@ enum DayVerdict { met, improving, mixed, missed }
 enum DayVerdictProvenance { ratedByUser, suggestedAndAccepted }
 
 /// One day on a day-indicator surface: the measured [state], the user's
-/// [verdict] where one was recorded, and whether the cell stands for today.
+/// [verdict] where one was recorded, and whether the day is still open.
 ///
 /// A recorded verdict outranks the measured state wherever both are shown. The
 /// measurement is evidence about a day; the reflection is the user's ruling on
@@ -50,7 +50,15 @@ class DayMark {
   final DayMarkState state;
   final DayVerdict? verdict;
   final DayVerdictProvenance? verdictProvenance;
+
+  /// Whether the mark stands for the current day. An empty today is drawn as
+  /// "not yet" — the dashed unresolved outline — rather than as the neutral
+  /// fill a past day nobody kept wears, so a streak that is alive does not
+  /// look broken at its last square.
   final bool isToday;
+
+  /// An empty current day: nothing recorded, nothing ruled, still open.
+  bool get pending => isToday && state == DayMarkState.none && verdict == null;
 
   /// Whether the day counts toward a "successful days" tally: a verdict of
   /// [DayVerdict.met] where one exists, otherwise any measured state that is

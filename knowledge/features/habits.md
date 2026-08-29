@@ -314,14 +314,14 @@ step.
 window width** in its own sliver, so a wide screen shows more history while the
 action content stays a comfortable column.
 
-Tab rows are lean **action rows**: icon, name, swipe, one-tap complete — **no
-per-row history**. Per-day history reads from the heatmap instead. The older
-per-row history strip survives only inside the dashboard habit chart, drawn
-with the shared day-indicator cells ([day
-indicators](../architecture/day-indicators.md)) so it matches a goal's habit
-squares: success fill, skip dash, missed cross, dashed ring on today — and,
-for a day a watching goal's reflection judged, that verdict's fill and glyph
-(`habitDayVerdictsProvider`). A row
+Tab rows are **action rows**: icon, name, the handover's history strip —
+the last seven days as squares (`habitHistoryMarks`, read off the state's
+per-day completion sets), filled for a kept day and neutral otherwise, each
+naming its day and outcome on hover, then the flame and the current streak —
+swipe, and one-tap complete. The dashboard habit chart draws the same strip
+over its own range. Both go through the shared day-indicator squares ([day
+indicators](../architecture/day-indicators.md)) so they match a goal's habit
+squares. A row
 whose completion today came from the engine wears an **auto** pill and a
 caption naming the signal and the time (`HabitsState.autoCompletedToday` and
 `autoCompletedAt`); tapping it still opens the sheet, because a manual entry

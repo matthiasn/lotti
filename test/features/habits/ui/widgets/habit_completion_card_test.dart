@@ -1,10 +1,8 @@
-import 'package:clock/clock.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/goals/state/goal_habit_watchers.dart';
 import 'package:lotti/features/habits/state/habit_completion_controller.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_action_row.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_completion_card.dart';
@@ -83,11 +81,7 @@ void main() {
 
   /// Pumps a [HabitCompletionCard] for [habit] with the family overridden to
   /// serve [_results].
-  Future<void> pumpCard(
-    WidgetTester tester, {
-    HabitDefinition? habit,
-    Map<DateTime, DayVerdict> verdicts = const {},
-  }) async {
+  Future<void> pumpCard(WidgetTester tester, {HabitDefinition? habit}) async {
     final definition = habit ?? habitFlossing;
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
@@ -100,9 +94,6 @@ void main() {
           habitCompletionControllerProvider.overrideWith2(
             (_) => _FakeController(),
           ),
-          habitDayVerdictsProvider(
-            definition.id,
-          ).overrideWith((ref) async => verdicts),
         ],
       ),
     );
@@ -169,8 +160,15 @@ void main() {
         DayMarkState.skipped,
         DayMarkState.full,
       ]);
-      expect(find.byIcon(LottiIcons.close), findsOneWidget); // fail cell
-      expect(find.byIcon(LottiIcons.remove), findsOneWidget); // skip cell
+      // Nothing is drawn inside a square: the state is the fill, the words
+      // are in the summary and the tooltips.
+      expect(
+        find.descendant(
+          of: find.byType(DayMarkCell),
+          matching: find.byType(Icon),
+        ),
+        findsNothing,
+      );
 
       // A read-only strip publishes one summary, counted from the marks: the
       // success day is the only one that counts.
@@ -192,9 +190,7 @@ void main() {
       ];
       await pumpCard(tester);
 
-      expect(find.byIcon(LottiIcons.close), findsNothing);
-      expect(find.byIcon(LottiIcons.remove), findsNothing);
-      // No success cell, and the not-done button is a hollow "+" — so the strip
+      // No success cell, and the not-done button is a hollow "+" — so the card
       // shows no check glyph at all.
       expect(find.byIcon(LottiIcons.confirm), findsNothing);
       expect(find.byIcon(LottiIcons.add), findsOneWidget);
@@ -203,64 +199,6 @@ void main() {
         findsOneWidget,
       );
       handle.dispose();
-    });
-
-    testWidgets("only the cell for the clock's today wears the dashed ring", (
-      tester,
-    ) async {
-      _results = [
-        _result(DateTime(2024, 3, 14), HabitCompletionType.success),
-        _result(_rangeEnd, HabitCompletionType.open),
-      ];
-      await withClock(Clock.fixed(_rangeEnd.add(const Duration(hours: 9))), () {
-        return pumpCard(tester);
-      });
-
-      final marks = tester
-          .widgetList<DayMarkCell>(find.byType(DayMarkCell))
-          .map((cell) => cell.mark.isToday)
-          .toList();
-      expect(marks, [false, true]);
-      expect(find.byType(DsDashedBorder), findsOneWidget);
-    });
-
-    testWidgets("a day outside the clock's today wears no ring", (
-      tester,
-    ) async {
-      _results = _last(HabitCompletionType.success);
-      await withClock(Clock.fixed(DateTime(2024, 3, 20)), () {
-        return pumpCard(tester);
-      });
-      expect(find.byType(DsDashedBorder), findsNothing);
-    });
-  });
-
-  group('goal verdicts on the strip', () {
-    testWidgets('a day a watching goal judged wears that verdict, the rest '
-        'keep their measured state', (tester) async {
-      _results = [
-        _result(DateTime(2024, 3, 13), HabitCompletionType.fail),
-        _result(DateTime(2024, 3, 14), HabitCompletionType.success),
-        _result(_rangeEnd, HabitCompletionType.open),
-      ];
-      await pumpCard(
-        tester,
-        verdicts: {DateTime.utc(2024, 3, 13): DayVerdict.improving},
-      );
-      // One extra frame: the verdicts resolve after the results.
-      await tester.pump();
-      final marks = tester
-          .widgetList<DayMarkCell>(find.byType(DayMarkCell))
-          .map((cell) => (cell.mark.state, cell.mark.verdict))
-          .toList();
-      expect(marks, [
-        (DayMarkState.missed, DayVerdict.improving),
-        (DayMarkState.full, null),
-        (DayMarkState.none, null),
-      ]);
-      // The ruling replaces the measured cross with its own glyph.
-      expect(find.byIcon(LottiIcons.close), findsNothing);
-      expect(find.byIcon(LottiIcons.trendingUp), findsOneWidget);
     });
   });
 

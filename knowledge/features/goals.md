@@ -930,19 +930,16 @@ flowchart TD
   until that rollback lands; old evidence is never relabelled as the failed
   range. The retained snapshot is scoped to the active spec version and only
   promoted from a settled provider value, so a spec reload cannot relabel
-  prior-spec evidence. A day track FITS before it scrolls:
-  `dayTrackMetrics` narrows the column pitch — and the square inside it
-  — until the whole span fits the width it was given, and only a span that
-  overflows even at the legibility floor becomes a trailing-anchored
-  (`reverse: true`) scroller joined to one `LinkedScrollGroup`, where every
-  track then pans in unison. The habit squares and the whole-goal strip carry their weekday
-  axis INSIDE the cells (`dayCellLetter`: a small bottom-left corner
-  initial that yields to a center mark — verdict glyph, partial dot, missed
-  cross, which collide with it at the compact cell size — and is suppressed
-  below `IconSizes.l`) instead of a label
-  row above the track; only the hand-painted metric bars keep a caption
-  axis (`_WeekdayTrack`), below the bars, since a variable-height bar
-  cannot host a letter. Every tappable element on these cards carries the
+  prior-spec evidence. A day track never resizes its
+  squares: `dayTrackMetrics` is one `kDaySquareSize` square plus `step1`
+  per column, and a span wider than the width it was given becomes a
+  trailing-anchored (`reverse: true`) scroller joined to one
+  `LinkedScrollGroup`, where every track then pans in unison. The habit
+  squares and the whole-goal strip carry no label row — a square names its
+  day in its tooltip and semantics, and a tappable one wears its weekday
+  initial above itself inside its slot; only the hand-painted metric bars
+  keep a caption axis (`_WeekdayTrack`, one-letter at this pitch), below
+  the bars. Every tappable element on these cards carries the
   design system's `surface.hover` fill on its own transparent `Material` —
   ink painted on the Scaffold's Material sits under the opaque cards and
   never shows, which is why the day grids and rail rows previously had no

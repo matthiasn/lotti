@@ -7,11 +7,8 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
-import 'package:lotti/features/goals/model/goal_assessment.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
-import 'package:lotti/features/goals/state/goal_assessment_state.dart';
 import 'package:lotti/features/goals/state/goal_habit_watchers.dart';
-import 'package:lotti/widgets/day_indicators/day_mark.dart';
 
 void main() {
   const window = GoalWindow.rollingDays(count: 7);
@@ -78,26 +75,9 @@ void main() {
     buffer: null,
   );
 
-  GoalAssessmentRecord record({
-    required String id,
-    required String specVersionId,
-    required DateTime day,
-    required DateTime createdAt,
-    Map<String, DayVerdict> dimensions = const {},
-  }) => GoalAssessmentRecord(
-    id: id,
-    day: day,
-    specVersionId: specVersionId,
-    rating: DayVerdict.mixed,
-    createdAt: createdAt,
-    provenance: DayVerdictProvenance.ratedByUser,
-    dimensionRatings: dimensions,
-  );
-
   ProviderContainer container({
     required List<AgentIdentityEntity> agents,
     required Map<String, GoalSpecVersionEntity?> specs,
-    Map<String, List<GoalAssessmentRecord>> history = const {},
   }) {
     final c = ProviderContainer(
       overrides: [
@@ -106,10 +86,6 @@ void main() {
           goalAgentHealthProvider(
             entry.key,
           ).overrideWith((ref) async => health(entry.value)),
-        for (final id in specs.keys)
-          goalAssessmentHistoryProvider(
-            id,
-          ).overrideWith((ref) async => history[id] ?? const []),
       ],
     );
     addTearDown(c.dispose);
@@ -200,138 +176,5 @@ void main() {
       final watchers = await c.read(goalsWatchingHabitProvider('floss').future);
       expect(watchers.map((w) => w.identity.agentId), ['g2']);
     });
-  });
-
-  group('habitDayVerdictsProvider', () {
-    final day = DateTime.utc(2026, 8, 10);
-
-    test('a habit no goal watches has no verdicts', () async {
-      final c = container(
-        agents: [identity('g1')],
-        specs: {'g1': spec('g1', walking)},
-      );
-      expect(await c.read(habitDayVerdictsProvider('floss').future), isEmpty);
-    });
-
-    test('reads the habit dimension out of the latest record per day, '
-        'scoped to the spec in force', () async {
-      final c = container(
-        agents: [identity('g1')],
-        specs: {'g1': spec('g1', flossing)},
-        history: {
-          'g1': [
-            record(
-              id: 'old',
-              specVersionId: 'g1:spec',
-              day: day,
-              createdAt: DateTime(2026, 8, 10, 20),
-              dimensions: {'c-floss': DayVerdict.missed},
-            ),
-            record(
-              id: 'revised',
-              specVersionId: 'g1:spec',
-              day: day,
-              createdAt: DateTime(2026, 8, 10, 21),
-              dimensions: {'c-floss': DayVerdict.improving},
-            ),
-            record(
-              id: 'retired-spec',
-              specVersionId: 'g1:spec-v0',
-              day: day.subtract(const Duration(days: 1)),
-              createdAt: DateTime(2026, 8, 9, 21),
-              dimensions: {'c-floss': DayVerdict.met},
-            ),
-            record(
-              id: 'untouched-row',
-              specVersionId: 'g1:spec',
-              day: day.subtract(const Duration(days: 2)),
-              createdAt: DateTime(2026, 8, 8, 21),
-            ),
-          ],
-        },
-      );
-      expect(await c.read(habitDayVerdictsProvider('floss').future), {
-        day: DayVerdict.improving,
-      });
-    });
-
-    test('equal timestamps across goals break by record id, whichever goal '
-        'is iterated first', () async {
-      for (final order in [
-        ['g1', 'g2'],
-        ['g2', 'g1'],
-      ]) {
-        final c = container(
-          agents: [for (final id in order) identity(id)],
-          specs: {'g1': spec('g1', flossing), 'g2': spec('g2', flossing)},
-          history: {
-            'g1': [
-              record(
-                id: 'a-lower',
-                specVersionId: 'g1:spec',
-                day: day,
-                createdAt: DateTime(2026, 8, 10, 21),
-                dimensions: {'c-floss': DayVerdict.missed},
-              ),
-            ],
-            'g2': [
-              record(
-                id: 'b-higher',
-                specVersionId: 'g2:spec',
-                day: day,
-                createdAt: DateTime(2026, 8, 10, 21),
-                dimensions: {'c-floss': DayVerdict.met},
-              ),
-            ],
-          },
-        );
-        expect(
-          await c.read(habitDayVerdictsProvider('floss').future),
-          {day: DayVerdict.met},
-          reason: 'order $order',
-        );
-      }
-    });
-
-    test(
-      'across two watching goals the most recent judgement of a day wins',
-      () async {
-        final c = container(
-          agents: [identity('g1'), identity('g2')],
-          specs: {'g1': spec('g1', flossing), 'g2': spec('g2', flossing)},
-          history: {
-            'g1': [
-              record(
-                id: 'g1-day',
-                specVersionId: 'g1:spec',
-                day: day,
-                createdAt: DateTime(2026, 8, 10, 22),
-                dimensions: {'c-floss': DayVerdict.met},
-              ),
-              record(
-                id: 'g1-earlier-day',
-                specVersionId: 'g1:spec',
-                day: day.subtract(const Duration(days: 1)),
-                createdAt: DateTime(2026, 8, 9, 22),
-                dimensions: {'c-floss': DayVerdict.mixed},
-              ),
-            ],
-            'g2': [
-              record(
-                id: 'g2-day',
-                specVersionId: 'g2:spec',
-                day: day,
-                createdAt: DateTime(2026, 8, 10, 21),
-                dimensions: {'c-floss': DayVerdict.missed},
-              ),
-            ],
-          },
-        );
-        expect(await c.read(habitDayVerdictsProvider('floss').future), {
-          day: DayVerdict.met,
-          day.subtract(const Duration(days: 1)): DayVerdict.mixed,
-        });
-      },
-    );
   });
 }

@@ -1,7 +1,10 @@
 ### Changed
 
-- **Habit day squares on dashboard habit cards now speak the same language as
-  goal day cells.** The success fill, a dash for skipped and a cross for missed
-  days as non-color cues, and a dashed ring on today match the goal pages; a
-  range longer than the card can hold pans back through the chain, anchored on
+- **Habit day squares look the same everywhere.** Dashboard habit cards, the
+  habits list and a goal's habit rows all draw one small square per day, as
+  the habits design intends: filled when the habit was kept, neutral otherwise,
+  with the flame and streak count after the week on the habits list. Hovering
+  or long-pressing a square names its day and outcome; on a goal page, where a
+  square can be tapped to record an outcome, its weekday sits above it. A
+  range longer than a card can hold pans back through the days, anchored on
   today, instead of silently dropping its oldest days.

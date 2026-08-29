@@ -17,6 +17,9 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/colors.dart';
+import 'package:lotti/widgets/day_indicators/day_mark.dart';
+import 'package:lotti/widgets/day_indicators/day_mark_cell.dart';
+import 'package:lotti/widgets/day_indicators/day_mark_strip.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -83,7 +86,7 @@ void main() {
     String? autoCompleteReason,
     String? autoCompletedAt,
     int currentStreak = 0,
-    Widget? history,
+    List<DayMark> history = const [],
     bool reduceMotion = false,
     List<Override> extraOverrides = const [],
   }) async {
@@ -152,69 +155,85 @@ void main() {
     }
   });
 
-  group('history slot', () {
-    testWidgets('renders the history widget when provided', (tester) async {
+  group('history strip', () {
+    final today = DateTime(2026, 8, 11);
+    List<DayMark> week(List<DayMarkState> states) => [
+      for (var i = 0; i < states.length; i++)
+        DayMark(
+          day: today.subtract(Duration(days: states.length - 1 - i)),
+          state: states[i],
+        ),
+    ];
+    Finder squares() => find.byType(DayMarkCell);
+
+    testWidgets('draws one dated square per history day under the name, kept '
+        'days in the interactive fill', (tester) async {
       await pumpRow(
         tester,
-        history: const SizedBox(key: Key('history-slot')),
+        history: week(const [
+          DayMarkState.full,
+          DayMarkState.none,
+          DayMarkState.missed,
+          DayMarkState.skipped,
+          DayMarkState.none,
+          DayMarkState.full,
+          DayMarkState.full,
+        ]),
       );
-      expect(find.byKey(const Key('history-slot')), findsOneWidget);
+      expect(squares(), findsNWidgets(7));
+      expect(
+        tester.getTopLeft(squares().first).dy,
+        greaterThan(tester.getBottomLeft(find.text(habitFlossing.name)).dy),
+      );
+      final tokens = tester.element(find.byType(HabitActionRow)).designTokens;
+      Color fillAt(int index) =>
+          (tester
+                      .widget<Container>(
+                        find.descendant(
+                          of: squares().at(index),
+                          matching: find.byType(Container),
+                        ),
+                      )
+                      .decoration!
+                  as BoxDecoration)
+              .color!;
+      expect(fillAt(0), tokens.colors.interactive.enabled);
+      expect(fillAt(1), tokens.colors.background.level03);
+      expect(fillAt(2), tokens.colors.background.level03);
+      expect(fillAt(3), tokens.colors.background.level03);
+      expect(find.byIcon(LottiIcons.streak), findsNothing);
     });
 
-    testWidgets('omits history when none is supplied', (tester) async {
+    testWidgets('no history and no streak draws no strip', (tester) async {
       await pumpRow(tester);
-      expect(find.byKey(const Key('history-slot')), findsNothing);
-      // The body still renders without a history slot.
+      expect(find.byType(DayMarkStrip), findsNothing);
       expect(find.text(habitFlossing.name), findsOneWidget);
     });
-  });
 
-  group('streak chain', () {
-    Finder greenBoxes() => find.byWidgetPredicate(
-      (w) =>
-          w is Container &&
-          w.decoration is BoxDecoration &&
-          (w.decoration! as BoxDecoration).color == successColor,
-    );
+    testWidgets('the streak rides the strip as a flame and the exact count', (
+      tester,
+    ) async {
+      await pumpRow(
+        tester,
+        history: week(List.filled(7, DayMarkState.full)),
+        currentStreak: 41,
+      );
+      expect(squares(), findsNWidgets(7));
+      expect(find.byIcon(LottiIcons.streak), findsOneWidget);
+      expect(find.text('41'), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.byIcon(LottiIcons.streak)).dx,
+        greaterThan(tester.getTopRight(squares().last).dx),
+      );
+    });
 
-    testWidgets('shows one green box per kept day, plus the flame + count', (
+    testWidgets('a streak with no history still shows its tail', (
       tester,
     ) async {
       await pumpRow(tester, currentStreak: 3);
+      expect(squares(), findsNothing);
       expect(find.byIcon(LottiIcons.streak), findsOneWidget);
       expect(find.text('3'), findsOneWidget);
-      expect(greenBoxes(), findsNWidgets(3));
-    });
-
-    testWidgets('shows nothing when there is no current streak', (
-      tester,
-    ) async {
-      await pumpRow(tester);
-      expect(find.byIcon(LottiIcons.streak), findsNothing);
-      expect(greenBoxes(), findsNothing);
-    });
-
-    testWidgets('a long streak keeps the true count but caps the chain', (
-      tester,
-    ) async {
-      await pumpRow(tester, currentStreak: 41);
-      // The flame count is always the real length...
-      expect(find.text('41'), findsOneWidget);
-      // ...but the chain is capped (and never exceeds 30 boxes).
-      final boxes = greenBoxes().evaluate().length;
-      expect(boxes, greaterThan(0));
-      expect(boxes, lessThanOrEqualTo(30));
-    });
-
-    testWidgets('extends with a new box when the streak grows', (tester) async {
-      await pumpRow(tester, currentStreak: 5);
-      expect(greenBoxes(), findsNWidgets(5));
-
-      // Grow in place → the chain gains a box (which pops in); let it settle.
-      await pumpRow(tester, currentStreak: 6);
-      await tester.pump(const Duration(milliseconds: 500));
-      expect(greenBoxes(), findsNWidgets(6));
-      expect(find.text('6'), findsOneWidget);
     });
   });
 

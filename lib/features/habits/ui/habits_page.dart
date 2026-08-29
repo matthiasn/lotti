@@ -241,6 +241,7 @@ class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
         autoCompleteReason: state.autoCompletedToday[habitDefinition.id],
         autoCompletedAt: state.autoCompletedAt(habitDefinition.id),
         currentStreak: streaks[habitDefinition.id] ?? 0,
+        history: habitHistoryMarks(state, habitDefinition.id),
       );
     }
 

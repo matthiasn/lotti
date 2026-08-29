@@ -77,6 +77,30 @@ void main() {
     expect(a.toString(), contains('DayMarkState.full'));
   });
 
+  test('only an empty, unjudged today is pending', () {
+    expect(
+      const DayMark(state: DayMarkState.none, isToday: true).pending,
+      isTrue,
+    );
+    expect(const DayMark(state: DayMarkState.none).pending, isFalse);
+    expect(
+      const DayMark(state: DayMarkState.full, isToday: true).pending,
+      isFalse,
+    );
+    expect(
+      const DayMark(state: DayMarkState.skipped, isToday: true).pending,
+      isFalse,
+    );
+    expect(
+      const DayMark(
+        state: DayMarkState.none,
+        verdict: DayVerdict.missed,
+        isToday: true,
+      ).pending,
+      isFalse,
+    );
+  });
+
   test('verdict names are the persisted wire format and must not change', () {
     expect(DayVerdict.values.map((v) => v.name), [
       'met',

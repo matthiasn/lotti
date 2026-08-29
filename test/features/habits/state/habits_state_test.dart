@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/habits/model/habit_completion_record.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
+import 'package:lotti/widgets/day_indicators/day_mark.dart';
 
 void main() {
   group('HabitsState', () {
@@ -242,6 +243,73 @@ void main() {
 
       // 1 from definitions + 2 extra from allByDay
       expect(result, 3);
+    });
+  });
+
+  group('habitHistoryMarks', () {
+    final state = HabitsState.initial().copyWith(
+      days: [
+        for (var day = 1; day <= 10; day++)
+          '2026-08-${day.toString().padLeft(2, '0')}',
+      ],
+      successfulByDay: {
+        '2026-08-04': {'floss', 'walk'},
+        '2026-08-09': {'floss'},
+        '2026-08-10': {'walk'},
+      },
+      skippedByDay: {
+        '2026-08-06': {'floss'},
+      },
+      failedByDay: {
+        '2026-08-08': {'floss'},
+        '2026-08-10': {'floss'},
+      },
+    );
+
+    test('reads the last seven days off the per-day sets, oldest first', () {
+      final marks = habitHistoryMarks(state, 'floss');
+      expect(marks.map((m) => m.day), [
+        for (var day = 4; day <= 10; day++) DateTime(2026, 8, day),
+      ]);
+      expect(marks.map((m) => m.state), [
+        DayMarkState.full,
+        DayMarkState.none,
+        DayMarkState.skipped,
+        DayMarkState.none,
+        DayMarkState.missed,
+        DayMarkState.full,
+        DayMarkState.missed,
+      ]);
+      expect(marks.every((m) => m.verdict == null), isTrue);
+      // The span's last day is the day the state was built for.
+      expect(marks.map((m) => m.isToday), [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+      ]);
+    });
+
+    test('another habit reads its own days out of the same sets', () {
+      expect(habitHistoryMarks(state, 'walk', count: 3).map((m) => m.state), [
+        DayMarkState.none,
+        DayMarkState.none,
+        DayMarkState.full,
+      ]);
+    });
+
+    test('a shorter state yields what it has', () {
+      final short = state.copyWith(days: ['2026-08-09', '2026-08-10']);
+      expect(habitHistoryMarks(short, 'floss'), hasLength(2));
+      expect(habitHistoryMarks(state.copyWith(days: []), 'floss'), isEmpty);
+      // A fresh state already carries its default span of days, all empty.
+      expect(
+        habitHistoryMarks(HabitsState.initial(), 'floss').map((m) => m.state),
+        everyElement(DayMarkState.none),
+      );
     });
   });
 

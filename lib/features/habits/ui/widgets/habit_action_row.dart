@@ -21,6 +21,8 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/widgets/charts/habits/dashboard_habits_data.dart';
+import 'package:lotti/widgets/day_indicators/day_mark.dart';
+import 'package:lotti/widgets/day_indicators/day_mark_strip.dart';
 
 /// The 0→1 progress of a celebration beat whose window is `[start, end]` within
 /// the shared timeline [c], or `null` when [c] is outside that window so the
@@ -34,20 +36,21 @@ double? _stageProgress(double c, double start, double end) {
 /// The shared habit action row used by the habits tab and the dashboard habit
 /// chart: a swipe-to-record row (right = success, left = missed) whose body
 /// opens the completion dialog on tap, with a category icon, an optional
-/// priority star, the habit name, an optional [history] slot and a trailing
+/// priority star, the habit name, the handover's history strip — one square
+/// per day of [history], then a flame and [currentStreak] — and a trailing
 /// one-tap complete button.
 ///
-/// Whether to show per-day history is the caller's concern: the habits tab
-/// passes none (history lives in the consistency heatmap), while the dashboard
-/// card injects its strip. [completedToday] is supplied by the caller too — the
-/// tab derives it from the controller's `successfulToday` bucket, the dashboard
-/// card from its latest in-range result — so the row stays presentational.
+/// The history is the caller's to supply: the habits tab reads its week off
+/// `HabitsState` (`habitHistoryMarks`), the dashboard card off its own range.
+/// [completedToday] is supplied by the caller too — the tab derives it from
+/// the controller's `successfulToday` bucket, the dashboard card from its
+/// latest in-range result — so the row stays presentational.
 class HabitActionRow extends ConsumerStatefulWidget {
   const HabitActionRow({
     required this.habitId,
     required this.completedToday,
     this.currentStreak = 0,
-    this.history,
+    this.history = const [],
     this.autoCompleted = false,
     this.autoCompleteReason,
     this.autoCompletedAt,
@@ -60,14 +63,14 @@ class HabitActionRow extends ConsumerStatefulWidget {
   /// trailing button's two modes.
   final bool completedToday;
 
-  /// This habit's current consecutive-day streak. Rendered under the name as a
-  /// chain of green boxes (one per kept day, capped) plus a flame + count once
-  /// it reaches 1 — the per-habit "don't break the chain" signal the combined
-  /// heatmap can't give.
+  /// This habit's current consecutive-day streak, drawn as a flame and the
+  /// count after the history squares once it reaches 1 — the per-habit
+  /// "don't break the chain" signal the combined heatmap can't give.
   final int currentStreak;
 
-  /// Optional per-day history shown under the name (the dashboard card's strip).
-  final Widget? history;
+  /// The per-day history under the name, oldest first. Empty draws no
+  /// squares; the streak tail still shows when there is a run going.
+  final List<DayMark> history;
 
   /// Whether today's completion was written by the auto-completion engine —
   /// shows the "auto" pill and, with [autoCompleteReason], the caption naming
@@ -416,7 +419,7 @@ class _HabitCardBody extends StatelessWidget {
     required this.onTapAdd,
     required this.onEdit,
     required this.onQuickComplete,
-    this.history,
+    required this.history,
   });
 
   final HabitDefinition habitDefinition;
@@ -427,10 +430,9 @@ class _HabitCardBody extends StatelessWidget {
   final int currentStreak;
   final Color doneColor;
 
-  /// Whether habit-completion celebrations are enabled — gates the streak
-  /// chain's grow-in pop when a kept day extends the chain.
+  /// Whether habit-completion celebrations are enabled.
   final bool celebrate;
-  final Widget? history;
+  final List<DayMark> history;
   final void Function({String? dateString}) onTapAdd;
   final VoidCallback onEdit;
 
@@ -529,16 +531,12 @@ class _HabitCardBody extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ],
-                      // The current streak as a chain of green boxes — the
-                      // visible "don't break the chain". Empty when there's no
-                      // run going.
-                      if (currentStreak >= 1) ...[
+                      // The handover's history strip: the week's squares,
+                      // then the flame and the streak. Nothing when there is
+                      // neither history nor a run going.
+                      if (history.isNotEmpty || currentStreak >= 1) ...[
                         SizedBox(height: tokens.spacing.step3),
-                        _StreakChain(count: currentStreak, animate: celebrate),
-                      ],
-                      if (history != null) ...[
-                        SizedBox(height: tokens.spacing.step3),
-                        history!,
+                        DayMarkStrip(marks: history, streak: currentStreak),
                       ],
                     ],
                   ),
@@ -564,136 +562,6 @@ class _HabitCardBody extends StatelessWidget {
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-/// The current streak rendered as a chain of small green rounded boxes — the
-/// visible "don't break the chain" the combined heatmap can't surface per habit.
-///
-/// Only the *current unbroken run* is shown: when the streak breaks it resets to
-/// empty (a habit with no streak shows nothing), and there are no red or gap
-/// cells — a kept day is green, that's all, so a struggling habit is never a
-/// wall of failure. The chain caps at 30 boxes and fits to the available
-/// width (older boxes drop first); a trailing flame + count gives the exact
-/// length, including runs past the cap. The streak is announced once via a
-/// semantics label, so screen readers don't read each box.
-///
-/// When the streak grows the newest (rightmost) box pops in (a brief scale +
-/// fade), so extending the chain on completion reads as a small reward; the rest
-/// of the chain is static. Reduced motion skips the pop.
-class _StreakChain extends StatefulWidget {
-  const _StreakChain({required this.count, this.animate = true});
-
-  final int count;
-
-  /// Whether the newest box pops in when the streak grows. False mirrors
-  /// reduced motion (the chain still updates, just without the pop).
-  final bool animate;
-
-  @override
-  State<_StreakChain> createState() => _StreakChainState();
-}
-
-class _StreakChainState extends State<_StreakChain>
-    with SingleTickerProviderStateMixin {
-  static const _cap = 30;
-  static const _box = 14.0;
-
-  late final AnimationController _grow = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 420),
-    value: 1, // rest = newest box at full size
-  );
-
-  @override
-  void didUpdateWidget(_StreakChain oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.count > oldWidget.count &&
-        widget.animate &&
-        !(MediaQuery.maybeOf(context)?.disableAnimations ?? false)) {
-      _grow.forward(from: 0);
-    }
-  }
-
-  @override
-  void dispose() {
-    _grow.dispose();
-    super.dispose();
-  }
-
-  Widget _boxWidget(BuildContext context, {required bool newest}) {
-    final tokens = context.designTokens;
-    final box = Container(
-      width: _box,
-      height: _box,
-      decoration: BoxDecoration(
-        color: successColor,
-        borderRadius: BorderRadius.circular(tokens.radii.xs),
-      ),
-    );
-    if (!newest) return box;
-    return AnimatedBuilder(
-      animation: _grow,
-      builder: (context, child) => Opacity(
-        opacity: _grow.value.clamp(0.0, 1.0),
-        // easeOutBack overshoots past full then settles — a little pop.
-        child: Transform.scale(
-          scale: Curves.easeOutBack.transform(_grow.value),
-          child: child,
-        ),
-      ),
-      child: box,
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final gap = tokens.spacing.step1;
-
-    return Semantics(
-      label: context.messages.habitStreakDaysSemantic(widget.count),
-      child: ExcludeSemantics(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            // Reserve room for the trailing flame + count, then fit as many
-            // boxes as the width allows (capped), newest kept.
-            const reserve = 48.0;
-            final avail = (constraints.maxWidth - reserve).clamp(
-              0.0,
-              double.infinity,
-            );
-            final fits = (avail / (_box + gap)).floor();
-            var shown = widget.count < _cap ? widget.count : _cap;
-            if (shown > fits) shown = fits < 0 ? 0 : fits;
-
-            return Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                for (var i = 0; i < shown; i++) ...[
-                  if (i > 0) SizedBox(width: gap),
-                  _boxWidget(context, newest: i == shown - 1),
-                ],
-                SizedBox(width: tokens.spacing.step2),
-                Icon(
-                  LottiIcons.streak,
-                  size: tokens.spacing.step5,
-                  color: tokens.colors.interactive.enabled,
-                ),
-                SizedBox(width: tokens.spacing.step1),
-                Text(
-                  '${widget.count}',
-                  style: tokens.typography.styles.body.bodySmall.copyWith(
-                    color: tokens.colors.text.highEmphasis,
-                    fontWeight: tokens.typography.weight.semiBold,
-                  ),
-                ),
-              ],
-            );
-          },
         ),
       ),
     );

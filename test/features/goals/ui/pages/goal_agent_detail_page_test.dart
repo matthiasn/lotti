@@ -55,6 +55,7 @@ import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_exposure_tracker.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/charts/habits/habit_completion_rate_chart.dart';
+import 'package:lotti/widgets/day_indicators/day_mark_cell.dart';
 import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -2502,7 +2503,7 @@ void main() {
     final tokens = tester
         .element(find.byType(GoalAgentDetailPage))
         .designTokens;
-    final pitch = ControlSizes.iconChipCompact + tokens.spacing.step2;
+    final pitch = kDaySquareSize + tokens.spacing.step2;
     final contentWidth =
         math.min(
           kUnifiedGoalsContentMaxWidth,
