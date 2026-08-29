@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart';
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/habits/state/habit_completion_controller.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_action_row.dart';
@@ -10,6 +11,8 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/widgets/charts/habits/dashboard_habits_data.dart';
+import 'package:lotti/widgets/day_indicators/day_mark.dart';
+import 'package:lotti/widgets/day_indicators/day_mark_cell.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -137,12 +140,12 @@ void main() {
     });
   });
 
-  group('history strip glyphs', () {
-    testWidgets('renders the correct glyph per outcome with a Semantics label', (
-      tester,
-    ) async {
+  group('history strip', () {
+    testWidgets('draws every in-range day as a shared day-mark cell, with the '
+        'skip dash and missed cross as non-color cues', (tester) async {
+      final handle = tester.ensureSemantics();
       // The open day precedes the success day so `results.last` is success and
-      // the trailing button is the done-circle, not another check_rounded.
+      // the trailing button is the done-circle, not another check glyph.
       _results = [
         _result(DateTime(2024, 3, 11), HabitCompletionType.open),
         _result(DateTime(2024, 3, 12), HabitCompletionType.fail),
@@ -151,22 +154,32 @@ void main() {
       ];
       await pumpCard(tester);
 
-      expect(find.byIcon(LottiIcons.confirm), findsOneWidget); // success cell
+      final cells = tester
+          .widgetList<DayMarkCell>(find.byType(DayMarkCell))
+          .map((cell) => cell.mark.state)
+          .toList();
+      expect(cells, [
+        DayMarkState.none,
+        DayMarkState.missed,
+        DayMarkState.skipped,
+        DayMarkState.full,
+      ]);
       expect(find.byIcon(LottiIcons.close), findsOneWidget); // fail cell
       expect(find.byIcon(LottiIcons.remove), findsOneWidget); // skip cell
 
-      final labels = tester
-          .widgetList<Semantics>(find.byType(Semantics))
-          .map((s) => s.properties.label)
-          .whereType<String>();
+      // A read-only strip publishes one summary, counted from the marks: the
+      // success day is the only one that counts.
       expect(
-        labels.any((l) => l.contains(habitFlossing.name)),
-        isTrue,
-        reason: 'a strip cell labels itself with the habit name',
+        find.bySemanticsLabel(RegExp('1 successful day')),
+        findsOneWidget,
       );
+      handle.dispose();
     });
 
-    testWidgets('open-only days render no outcome glyph', (tester) async {
+    testWidgets('open-only days render no outcome glyph and count nothing', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
       _results = [
         _result(DateTime(2024, 3, 13), HabitCompletionType.open),
         _result(DateTime(2024, 3, 14), HabitCompletionType.open),
@@ -180,6 +193,57 @@ void main() {
       // shows no check glyph at all.
       expect(find.byIcon(LottiIcons.confirm), findsNothing);
       expect(find.byIcon(LottiIcons.add), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(RegExp('No successful days')),
+        findsOneWidget,
+      );
+      handle.dispose();
+    });
+
+    testWidgets("only the cell for the clock's today wears the dashed ring", (
+      tester,
+    ) async {
+      _results = [
+        _result(DateTime(2024, 3, 14), HabitCompletionType.success),
+        _result(_rangeEnd, HabitCompletionType.open),
+      ];
+      await withClock(Clock.fixed(_rangeEnd.add(const Duration(hours: 9))), () {
+        return pumpCard(tester);
+      });
+
+      final marks = tester
+          .widgetList<DayMarkCell>(find.byType(DayMarkCell))
+          .map((cell) => cell.mark.isToday)
+          .toList();
+      expect(marks, [false, true]);
+      expect(find.byType(DsDashedBorder), findsOneWidget);
+    });
+
+    testWidgets("a day outside the clock's today wears no ring", (
+      tester,
+    ) async {
+      _results = _last(HabitCompletionType.success);
+      await withClock(Clock.fixed(DateTime(2024, 3, 20)), () {
+        return pumpCard(tester);
+      });
+      expect(find.byType(DsDashedBorder), findsNothing);
+    });
+  });
+
+  group('habitCompletionDayMarkState', () {
+    test('maps every recorded outcome onto the shared day-mark state', () {
+      expect(
+        {
+          for (final type in HabitCompletionType.values)
+            type: habitCompletionDayMarkState(type),
+        },
+        {
+          HabitCompletionType.success: DayMarkState.full,
+          HabitCompletionType.skip: DayMarkState.skipped,
+          HabitCompletionType.fail: DayMarkState.missed,
+          HabitCompletionType.open: DayMarkState.none,
+        },
+      );
     });
   });
 

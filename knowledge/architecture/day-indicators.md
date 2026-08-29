@@ -1,0 +1,145 @@
+---
+type: Architecture
+title: Day indicators — the shared day-mark model and cells
+description: One model (DayMark, DayMarkState, DayVerdict) and one component set (cells, strip, track geometry, legend) that both goals and habits draw their per-day squares with, so a day looks the same wherever it is judged.
+resource: ../../lib/widgets/day_indicators
+tags: [day-indicators, habits, goals, design-system, accessibility]
+status: draft
+generated: { by: claude-code/fable-5, at: 2026-08-29T12:00:00Z }
+stale_after: 2027-02-28
+sources:
+  - id: src
+    resource: ../../lib/widgets/day_indicators
+    title: Day indicators package source
+    last_modified: 2026-08-29
+  - id: goal-adapter
+    resource: ../../lib/features/goals/ui/goal_day_marks.dart
+    title: goalDayMarks — the goal side's adapter
+    last_modified: 2026-08-29
+  - id: habit-card
+    resource: ../../lib/features/habits/ui/widgets/habit_completion_card.dart
+    title: HabitCompletionCard — the habit side's consumer
+    last_modified: 2026-08-29
+  - id: goal-card
+    resource: ../../lib/features/goals/ui/goal_progress_card.dart
+    title: GoalProgressCard — the tappable habit-day cells and the metric bars
+    last_modified: 2026-08-29
+---
+
+`lib/widgets/day_indicators/` exists because a goal's habit dimension and a
+habit's own history strip are **two views of the same day**, and for a while
+they drew it two ways — different fills, different corner radii, one with a
+today ring and one without. The package promotes the goal side's primitives
+into a module both features consume. It imports neither `features/goals` nor
+`features/habits`; each feature adapts its own state into the shared model.
+
+# The model
+
+```mermaid
+classDiagram
+  class DayMark {
+    DateTime? day
+    DayMarkState state
+    DayVerdict? verdict
+    DayVerdictProvenance? verdictProvenance
+    bool isToday
+    bool successful
+  }
+  class DayMarkState {
+    <<enumeration>>
+    none
+    partial
+    full
+    skipped
+    missed
+  }
+  class DayVerdict {
+    <<enumeration>>
+    met
+    improving
+    mixed
+    missed
+  }
+  class DayVerdictProvenance {
+    <<enumeration>>
+    ratedByUser
+    suggestedAndAccepted
+  }
+  DayMark --> DayMarkState
+  DayMark --> DayVerdict
+  DayMark --> DayVerdictProvenance
+```
+
+- **`DayMarkState` is what the app measured.** `full` means the requirement
+  held as of that day; `partial` means the routine was kept while a window
+  target was still building (the lighter wash plus a dot); `skipped` and
+  `missed` are recorded habit outcomes. `missed` is never the grey of `none`:
+  deciding a day was missed and never looking at it are different facts.
+- **`DayVerdict` is the user's ruling**, and a recorded verdict outranks the
+  measurement wherever both are shown. The enum is persisted by `name` in
+  goal assessment records (see [goals](../features/goals.md)), so the names
+  are frozen even though the type moved here.
+- **`day` is nullable** only for undated figures — a loading placeholder or a
+  strip whose cells carry no dates and therefore no weekday letters. A
+  tappable strip asserts that every mark is dated, because a tap must resolve
+  to a day.
+- **`isToday` is explicit.** The goal adapter flags the last cell; the habit
+  card compares each day against `clock.now()`.
+
+# The component set
+
+| Piece | File | Role |
+| --- | --- | --- |
+| Fills, glyphs, inks, labels, letter, ring, dot | `day_mark_styles.dart` | The ONE mapping from state/verdict to token colors and shapes. Every cell and every legend swatch goes through it. |
+| `DayTrack`, `dayTrackMetrics`, `fitOrScrollDayTrack`, `LinkedDayTrackScroller` | `day_track.dart` | Column geometry shared by every day row on a page, and the fit-or-pan policy. |
+| `DayMarkCell`, `PlaceholderDayCell` | `day_mark_cell.dart` | One square. Read-only by default; with `onTap` it becomes a labelled button whose hit slot clears the touch floor while the square keeps its size. |
+| `DayMarkStrip` | `day_mark_strip.dart` | A row of cells with one semantic summary; dated strips sit on the shared track, undated ones on a plain row. |
+| `DayMarkLegend` | `day_mark_legend.dart` | The key, drawn from the same helpers as the cells. |
+
+```mermaid
+flowchart LR
+  GV["GoalProgressView.compactWindow<br/>+ latestRatingsByDay"] --> GA["goalDayMarks()"]
+  HR["List&lt;HabitResult&gt;<br/>(dashboard range)"] --> HA["habitCompletionDayMarkState()"]
+  GA --> M["List&lt;DayMark&gt;"]
+  HA --> M
+  M --> S["DayMarkStrip"]
+  S --> C["DayMarkCell ×N"]
+  C --> ST["day_mark_styles"]
+  L["DayMarkLegend"] --> ST
+  P["_ProgressDayCell<br/>(goal detail, tappable outcome menu)"] --> ST
+```
+
+# Invariants
+
+- **Data never wears the interactive teal.** States use the `alert` families
+  and `background.level03`; the today ring is `text.mediumEmphasis`.
+- **Every non-neutral state has a non-color cue**: the partial dot, the skip
+  dash, the missed cross, a verdict's own glyph. A red-green deficiency can
+  read the strip.
+- **Read-only strips publish one semantics node** (the successful-day count
+  plus any verdicts); tappable strips publish one button per day, each naming
+  its date and outcome.
+- **A verdict outranks a state** for fill, glyph and the success tally.
+- **One pitch per page.** Anything that draws days on a goal detail page —
+  the whole-goal strip, the habit squares, the metric bars, the page chrome —
+  sizes its columns with `dayTrackMetrics` so a date lines up down the page.
+
+# Gotchas
+
+- `_ProgressDayCell` in `goal_progress_card.dart` is not a `DayMarkCell`: it
+  hosts the outcome menu, the saving spinner and the ages-out ring. It draws
+  with the shared styles and the shared state enum, so its squares still
+  match; only its interaction shell is its own.
+- The habit dashboard strip used to drop its oldest days to fit; it now pans
+  like every other track. There is no `LinkedScrollGroup` on a dashboard, so
+  each card pans alone.
+- The strip's semantics strings are still the `goalProgress*` l10n keys. They
+  read generically ("3 successful days in the trailing seven-day window") and
+  renaming them would touch every catalogue for no user-visible change.
+
+# Not yet shared
+
+The issue that created this package (lotti3-co1) also asks for habit day
+verdicts with the reflect sheet reachable from habit surfaces, a complete
+legend including the verdict hues on habit surfaces, and longer spans on the
+habits page. Those build on this module and are separate changes.

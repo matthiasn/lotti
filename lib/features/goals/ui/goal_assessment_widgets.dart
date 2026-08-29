@@ -15,6 +15,8 @@ import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/checkins/goal_reflection_voice_notes.dart';
 import 'package:lotti/features/goals/ui/goal_progress_card.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/widgets/day_indicators/day_mark.dart';
+import 'package:lotti/widgets/day_indicators/day_mark_styles.dart';
 
 /// The sheet's gap scale, so whitespace means something.
 ///
@@ -74,9 +76,9 @@ void showGoalDayAssessmentSheet(
 /// Both the day toggle and the per-dimension toggles read from here: hand-
 /// listing them twice is how a fourth verdict ends up offered on one and
 /// missing from the other.
-List<DsSegment<GoalAssessmentRating>> _ratingSegments(BuildContext context) => [
-  for (final rating in GoalAssessmentRating.values)
-    DsSegment(rating, goalAssessmentRatingLabel(context, rating)),
+List<DsSegment<DayVerdict>> _ratingSegments(BuildContext context) => [
+  for (final rating in DayVerdict.values)
+    DsSegment(rating, dayVerdictLabel(context, rating)),
 ];
 
 class GoalDayAssessmentSheet extends ConsumerStatefulWidget {
@@ -118,14 +120,14 @@ class GoalDayAssessmentSheet extends ConsumerStatefulWidget {
 class _GoalDayAssessmentSheetState
     extends ConsumerState<GoalDayAssessmentSheet> {
   final _note = TextEditingController();
-  late GoalAssessmentRating _rating;
-  final _dimensionRatings = <String, GoalAssessmentRating>{};
+  late DayVerdict _rating;
+  final _dimensionRatings = <String, DayVerdict>{};
   var _saving = false;
   String? _error;
 
   /// What the evidence suggests for this day. Null when there is nothing to
   /// judge, in which case the sheet opens on Met as it always did.
-  GoalAssessmentRating? _suggested;
+  DayVerdict? _suggested;
 
   @override
   void initState() {
@@ -135,7 +137,7 @@ class _GoalDayAssessmentSheetState
     // A day already reflected on opens on what was recorded. Otherwise the
     // evidence picks the starting point — the verdict used to default to Met
     // regardless of what the numbers directly above it said.
-    _rating = existing?.rating ?? _suggested ?? GoalAssessmentRating.met;
+    _rating = existing?.rating ?? _suggested ?? DayVerdict.met;
     _note.text = existing?.note ?? '';
     if (existing != null) _dimensionRatings.addAll(existing.dimensionRatings);
   }
@@ -180,8 +182,8 @@ class _GoalDayAssessmentSheetState
             dimensionRatings: _dimensionRatings,
             note: _note.text.trim().isEmpty ? null : _note.text.trim(),
             provenance: _acceptedSuggestion
-                ? GoalAssessmentProvenance.suggestedAndAccepted
-                : GoalAssessmentProvenance.ratedByUser,
+                ? DayVerdictProvenance.suggestedAndAccepted
+                : DayVerdictProvenance.ratedByUser,
           );
     } on Object {
       if (mounted) {
@@ -312,7 +314,7 @@ class _GoalDayAssessmentSheetState
                 ),
               ),
               SizedBox(height: _bindGap(tokens)),
-              DsSegmentedToggle<GoalAssessmentRating>(
+              DsSegmentedToggle<DayVerdict>(
                 expand: true,
                 selected: _rating,
                 onChanged: (value) => setState(() {
@@ -391,7 +393,7 @@ class _GoalDayAssessmentSheetState
                                   ),
                             ),
                             SizedBox(height: _bindGap(tokens)),
-                            DsSegmentedToggle<GoalAssessmentRating>(
+                            DsSegmentedToggle<DayVerdict>(
                               expand: true,
                               selected:
                                   _dimensionRatings[row.criterionId] ?? _rating,

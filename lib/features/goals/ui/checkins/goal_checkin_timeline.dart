@@ -14,10 +14,11 @@ import 'package:lotti/features/goals/logic/goal_timeline_projection.dart';
 import 'package:lotti/features/goals/model/goal_assessment.dart';
 import 'package:lotti/features/goals/model/goal_timeline_item.dart';
 import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
-import 'package:lotti/features/goals/ui/goal_progress_card.dart';
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/widgets/day_indicators/day_mark.dart';
+import 'package:lotti/widgets/day_indicators/day_mark_styles.dart';
 import 'package:lotti/widgets/timeline/timeline_models.dart';
 import 'package:lotti/widgets/timeline/timeline_view.dart';
 
@@ -277,10 +278,10 @@ class _GoalCheckInTimelineState extends ConsumerState<GoalCheckInTimeline> {
           id: reflection.id,
           timeLabel: timeLabel,
           kindLabel: context.messages.goalCheckInKindReflection,
-          glyph: goalAssessmentRatingGlyph(rating),
+          glyph: dayVerdictGlyph(rating),
           // The verdict's own colour, so the rail agrees with the day strip
           // and the reflection sheet rather than inventing a third vocabulary.
-          accent: goalAssessmentRatingSurfaceInk(tokens, rating),
+          accent: dayVerdictSurfaceInk(tokens, rating),
           // One tight row: the verdict rides the header's trailing slot,
           // fully right-aligned, instead of stacking beneath the label. No
           // "Rated by you"-style attribution — the provenance stays on the
@@ -340,7 +341,7 @@ class _ReflectionTrailing extends StatelessWidget {
 class _VerdictPill extends StatelessWidget {
   const _VerdictPill({required this.rating});
 
-  final GoalAssessmentRating rating;
+  final DayVerdict rating;
 
   @override
   Widget build(BuildContext context) {
@@ -351,17 +352,17 @@ class _VerdictPill extends StatelessWidget {
         vertical: tokens.spacing.step1,
       ),
       decoration: BoxDecoration(
-        color: goalAssessmentRatingFill(tokens, rating).withValues(alpha: 0.16),
+        color: dayVerdictFill(tokens, rating).withValues(alpha: 0.16),
         // Informative, not tappable: the small-chip radius, never the pill —
         // full rounding is reserved for clickable elements on this surface.
         borderRadius: BorderRadius.circular(tokens.radii.smallChips),
       ),
       child: Text(
-        goalAssessmentRatingLabel(context, rating),
+        dayVerdictLabel(context, rating),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: tokens.typography.styles.others.caption.copyWith(
-          color: goalAssessmentRatingSurfaceInk(tokens, rating),
+          color: dayVerdictSurfaceInk(tokens, rating),
           fontWeight: tokens.typography.weight.semiBold,
         ),
       ),

@@ -402,7 +402,7 @@ flowchart TD
 
   **A recorded verdict outranks the measurement wherever both are shown.** The
   seven-day strip colours a day from `latestRatingsByDay`, falling back to the
-  measured `GoalCompactDayState` only where no verdict exists — the
+  measured `DayMarkState` only where no verdict exists — the
   measurement is evidence about a day, the reflection is the user's ruling on
   it. Those lookups are scoped to the active `specVersionId`: spec versions are
   immutable and the history keeps them all, so an unscoped map would let a
@@ -916,12 +916,12 @@ flowchart TD
   range. The retained snapshot is scoped to the active spec version and only
   promoted from a settled provider value, so a spec reload cannot relabel
   prior-spec evidence. A day track FITS before it scrolls:
-  `goalDayTrackMetrics` narrows the column pitch — and the square inside it
+  `dayTrackMetrics` narrows the column pitch — and the square inside it
   — until the whole span fits the width it was given, and only a span that
   overflows even at the legibility floor becomes a trailing-anchored
   (`reverse: true`) scroller joined to one `LinkedScrollGroup`, where every
   track then pans in unison. The habit squares and the whole-goal strip carry their weekday
-  axis INSIDE the cells (`goalDayCellLetter`: a small bottom-left corner
+  axis INSIDE the cells (`dayCellLetter`: a small bottom-left corner
   initial that yields to a center mark — verdict glyph, partial dot, missed
   cross, which collide with it at the compact cell size — and is suppressed
   below `IconSizes.l`) instead of a label
@@ -932,7 +932,7 @@ flowchart TD
   ink painted on the Scaffold's Material sits under the opaque cards and
   never shows, which is why the day grids and rail rows previously had no
   hover feedback. One policy
-  (`_fitOrScroll`), by WIDTH, for all three tracks: deciding by day count
+  (`fitOrScrollDayTrack`), by WIDTH, for all three tracks: deciding by day count
   wrapped a span that provably fitted, and a fortnight at the authored pitch
   is wider than a phone card, so the scroller opened with the first days of
   the span cut in half off the left edge. A gutter is reserved where a VALUE
@@ -1021,7 +1021,9 @@ flowchart TD
   therefore be green while the current goal remains Behind or At risk.
   Numeric leaves still respect `atLeast` versus `atMost` direction, and missing
   samples never count as successful days. Both the compact strip and the
-  detail day cells are tri-state (`GoalCompactDayState`): the
+  detail day cells draw with the shared day-indicator cells and styles
+  ([day indicators](../architecture/day-indicators.md)), whose measured states
+  (`DayMarkState`) render as: the
   `alert.success` family at full strength when the goal requirement held as
   of that day, the same hue at `SurfaceAlphas.muted` (no new token) plus a
   full-strength inner dot — the non-color cue — for a partial success (the

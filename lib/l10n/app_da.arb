@@ -3133,17 +3133,6 @@
   "habitCompletionStatusFailed": "Mislykkedes",
   "habitCompletionStatusOpen": "Åben",
   "habitCompletionStatusSkipped": "Sprunget over",
-  "habitDayStatusSemantic": "{habit}, {status}",
-  "@habitDayStatusSemantic": {
-    "placeholders": {
-      "habit": {
-        "type": "String"
-      },
-      "status": {
-        "type": "String"
-      }
-    }
-  },
   "habitDeleteConfirm": "Ja, slet denne vane",
   "habitDeleteQuestion": "Vil du slette denne vane?",
   "habitEditorAddSignal": "Tilføj et signal",

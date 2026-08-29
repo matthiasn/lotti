@@ -2869,7 +2869,6 @@
   "habitCompletionStatusFailed": "Eșuat",
   "habitCompletionStatusOpen": "Deschis",
   "habitCompletionStatusSkipped": "Omis",
-  "habitDayStatusSemantic": "{habit}, {status}",
   "habitDeleteConfirm": "Da, ștergeți acest obicei",
   "habitDeleteQuestion": "Doriți să ștergeți acest obicei?",
   "habitEditorAddSignal": "Adăugați un semnal",

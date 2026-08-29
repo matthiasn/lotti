@@ -53,6 +53,7 @@ import 'package:lotti/features/projects/ui/widgets/expandable_report_section.dar
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/widgets/day_indicators/day_track.dart';
 import 'package:lotti/widgets/misc/linked_scroll_group.dart';
 import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
@@ -115,7 +116,7 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
   }) {
     if (_rangePicked) return;
     final tokens = context.designTokens;
-    final pitch = goalDayTrackMetrics(context, dayCount: 1).pitch;
+    final pitch = dayTrackMetrics(context, dayCount: 1).pitch;
     final contentWidth =
         math.min(
           kUnifiedGoalsContentMaxWidth,

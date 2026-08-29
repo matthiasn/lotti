@@ -3133,17 +3133,6 @@
   "habitCompletionStatusFailed": "Misslyckades",
   "habitCompletionStatusOpen": "Öppet",
   "habitCompletionStatusSkipped": "Hoppade över",
-  "habitDayStatusSemantic": "{habit}, {status}",
-  "@habitDayStatusSemantic": {
-    "placeholders": {
-      "habit": {
-        "type": "String"
-      },
-      "status": {
-        "type": "String"
-      }
-    }
-  },
   "habitDeleteConfirm": "Ja, radera den här vanan",
   "habitDeleteQuestion": "Vill du ta bort den här vanan?",
   "habitEditorAddSignal": "Lägg till en signal",

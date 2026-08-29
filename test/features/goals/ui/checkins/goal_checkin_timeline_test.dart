@@ -13,6 +13,7 @@ import 'package:lotti/features/goals/model/goal_timeline_item.dart';
 import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
 import 'package:lotti/features/goals/ui/checkins/goal_checkin_timeline.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/widgets/day_indicators/day_mark.dart';
 import 'package:lotti/widgets/timeline/timeline_view.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -307,14 +308,14 @@ void main() {
             id: 'r1',
             day: day,
             specVersionId: 'spec-1',
-            rating: GoalAssessmentRating.mixed,
+            rating: DayVerdict.mixed,
             createdAt: today,
             note: 'Cutoff held, but the evening was scattered.',
             dimensionRatings: const {
-              'a': GoalAssessmentRating.met,
-              'b': GoalAssessmentRating.missed,
+              'a': DayVerdict.met,
+              'b': DayVerdict.missed,
             },
-            provenance: GoalAssessmentProvenance.ratedByUser,
+            provenance: DayVerdictProvenance.ratedByUser,
           ),
         ),
       ],
@@ -489,11 +490,11 @@ void main() {
           id: 'r1',
           day: DateTime.utc(today.year, today.month, today.day),
           specVersionId: 'spec-1',
-          rating: GoalAssessmentRating.met,
+          rating: DayVerdict.met,
           createdAt: today,
           // ignore: avoid_redundant_argument_values
           dimensionRatings: const {},
-          provenance: GoalAssessmentProvenance.ratedByUser,
+          provenance: DayVerdictProvenance.ratedByUser,
         ),
       ),
     ]);

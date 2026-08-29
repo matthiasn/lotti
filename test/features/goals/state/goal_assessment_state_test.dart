@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/goals/model/goal_assessment.dart';
 import 'package:lotti/features/goals/service/goal_assessment_service.dart';
 import 'package:lotti/features/goals/state/goal_assessment_state.dart';
+import 'package:lotti/widgets/day_indicators/day_mark.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -85,7 +86,7 @@ void main() {
       );
 
       expect(records.map((record) => record.id), ['newer', 'older']);
-      expect(records.first.rating, GoalAssessmentRating.met);
+      expect(records.first.rating, DayVerdict.met);
       verify(() => repository.getEntitiesByIds(any())).called(1);
       verifyNever(() => repository.getEntity(any()));
     },
@@ -163,13 +164,13 @@ void main() {
       // older device would show the day as never reflected on at all. Reading
       // it as the honest middle keeps the reflection and its note.
       expect(records, hasLength(1));
-      expect(records.single.rating, GoalAssessmentRating.mixed);
+      expect(records.single.rating, DayVerdict.mixed);
       expect(records.single.note, 'Felt strong today');
       // Per-dimension verdicts degrade the same way, and a non-string value
       // is dropped as corruption rather than guessed at.
       expect(records.single.dimensionRatings, {
-        'habit-gym': GoalAssessmentRating.met,
-        'health-weight': GoalAssessmentRating.mixed,
+        'habit-gym': DayVerdict.met,
+        'health-weight': DayVerdict.mixed,
       });
     },
   );
@@ -192,7 +193,7 @@ void main() {
     GoalAssessmentRecord record({
       required String id,
       required DateTime day,
-      required GoalAssessmentRating rating,
+      required DayVerdict rating,
       required DateTime createdAt,
     }) => GoalAssessmentRecord(
       id: id,
@@ -200,7 +201,7 @@ void main() {
       specVersionId: 'spec-1',
       rating: rating,
       createdAt: createdAt,
-      provenance: GoalAssessmentProvenance.ratedByUser,
+      provenance: DayVerdictProvenance.ratedByUser,
     );
 
     test('the most recent record decides the day', () {
@@ -209,19 +210,19 @@ void main() {
         record(
           id: 'first',
           day: day,
-          rating: GoalAssessmentRating.missed,
+          rating: DayVerdict.missed,
           createdAt: DateTime.utc(2026, 8, 10, 9),
         ),
         // The user reflected, then thought better of it. The revision stands.
         record(
           id: 'revised',
           day: day,
-          rating: GoalAssessmentRating.improving,
+          rating: DayVerdict.improving,
           createdAt: DateTime.utc(2026, 8, 10, 21),
         ),
       ]);
 
-      expect(ratings, {day: GoalAssessmentRating.improving});
+      expect(ratings, {day: DayVerdict.improving});
     });
 
     test('records written in the same instant resolve the same way twice', () {
@@ -230,21 +231,21 @@ void main() {
       final a = record(
         id: 'aaa',
         day: day,
-        rating: GoalAssessmentRating.met,
+        rating: DayVerdict.met,
         createdAt: at,
       );
       final b = record(
         id: 'bbb',
         day: day,
-        rating: GoalAssessmentRating.missed,
+        rating: DayVerdict.missed,
         createdAt: at,
       );
 
       // The query orders by timestamp alone, so tied rows arrive in no
       // defined order. Without a stable tie-break two devices colour the same
       // day differently from identical data.
-      expect(latestRatingsByDay([a, b]), {day: GoalAssessmentRating.missed});
-      expect(latestRatingsByDay([b, a]), {day: GoalAssessmentRating.missed});
+      expect(latestRatingsByDay([a, b]), {day: DayVerdict.missed});
+      expect(latestRatingsByDay([b, a]), {day: DayVerdict.missed});
     });
 
     test('a local timestamp still keys by its UTC calendar day', () {
@@ -252,7 +253,7 @@ void main() {
         record(
           id: 'a',
           day: DateTime.utc(2026, 8, 10, 23, 30),
-          rating: GoalAssessmentRating.met,
+          rating: DayVerdict.met,
           createdAt: DateTime.utc(2026, 8, 11),
         ),
       ]);
@@ -267,20 +268,20 @@ void main() {
         record(
           id: 'a',
           day: DateTime.utc(2026, 8, 9),
-          rating: GoalAssessmentRating.met,
+          rating: DayVerdict.met,
           createdAt: DateTime.utc(2026, 8, 9),
         ),
         record(
           id: 'b',
           day: DateTime.utc(2026, 8, 10),
-          rating: GoalAssessmentRating.mixed,
+          rating: DayVerdict.mixed,
           createdAt: DateTime.utc(2026, 8, 10),
         ),
       ]);
 
       expect(ratings, {
-        DateTime.utc(2026, 8, 9): GoalAssessmentRating.met,
-        DateTime.utc(2026, 8, 10): GoalAssessmentRating.mixed,
+        DateTime.utc(2026, 8, 9): DayVerdict.met,
+        DateTime.utc(2026, 8, 10): DayVerdict.mixed,
       });
     });
 
@@ -294,16 +295,16 @@ void main() {
         record(
           id: 'old-spec',
           day: day,
-          rating: GoalAssessmentRating.met,
+          rating: DayVerdict.met,
           createdAt: DateTime.utc(2026, 8, 10, 21),
         ),
         GoalAssessmentRecord(
           id: 'current-spec',
           day: day,
           specVersionId: 'spec-2',
-          rating: GoalAssessmentRating.missed,
+          rating: DayVerdict.missed,
           createdAt: DateTime.utc(2026, 8, 10, 9),
-          provenance: GoalAssessmentProvenance.ratedByUser,
+          provenance: DayVerdictProvenance.ratedByUser,
         ),
       ];
 
@@ -312,14 +313,14 @@ void main() {
       // criteria it never judged.
       expect(
         latestRatingsByDay(records, specVersionId: 'spec-2'),
-        {day: GoalAssessmentRating.missed},
+        {day: DayVerdict.missed},
       );
       expect(
         latestRatingsByDay(records, specVersionId: 'spec-1'),
-        {day: GoalAssessmentRating.met},
+        {day: DayVerdict.met},
       );
       // Unscoped still means "whatever was written last".
-      expect(latestRatingsByDay(records), {day: GoalAssessmentRating.met});
+      expect(latestRatingsByDay(records), {day: DayVerdict.met});
     });
 
     test('the standing record is available whole, not just its rating', () {
@@ -330,13 +331,13 @@ void main() {
         record(
           id: 'r',
           day: day,
-          rating: GoalAssessmentRating.improving,
+          rating: DayVerdict.improving,
           createdAt: DateTime.utc(2026, 8, 10),
         ),
       ])[day];
 
       expect(standing?.id, 'r');
-      expect(standing?.rating, GoalAssessmentRating.improving);
+      expect(standing?.rating, DayVerdict.improving);
     });
   });
 }

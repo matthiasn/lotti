@@ -3132,17 +3132,6 @@
   "habitCompletionStatusFailed": "Fout",
   "habitCompletionStatusOpen": "Openen",
   "habitCompletionStatusSkipped": "Overgeslagen",
-  "habitDayStatusSemantic": "{habit}, {status}",
-  "@habitDayStatusSemantic": {
-    "placeholders": {
-      "habit": {
-        "type": "String"
-      },
-      "status": {
-        "type": "String"
-      }
-    }
-  },
   "habitDeleteConfirm": "Ja, verwijder deze gewoonte",
   "habitDeleteQuestion": "Wilt u deze gewoonte verwijderen?",
   "habitEditorAddSignal": "Signaal toevoegen",

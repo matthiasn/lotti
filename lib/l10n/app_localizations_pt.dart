@@ -7280,11 +7280,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get habitCompletionStatusSkipped => 'Ignorado';
 
   @override
-  String habitDayStatusSemantic(String habit, String status) {
-    return '$habit, $status';
-  }
-
-  @override
   String get habitDeleteConfirm => 'Sim, excluir este hábito';
 
   @override

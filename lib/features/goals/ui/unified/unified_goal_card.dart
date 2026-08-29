@@ -4,17 +4,18 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/goals/model/goal_assessment.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_assessment_state.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
+import 'package:lotti/features/goals/ui/goal_day_marks.dart';
 import 'package:lotti/features/goals/ui/goal_health_direction.dart';
-import 'package:lotti/features/goals/ui/goal_progress_card.dart';
 import 'package:lotti/features/goals/ui/goal_routes.dart';
 import 'package:lotti/features/goals/ui/unified/unified_goal_status.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_widgets.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/widgets/day_indicators/day_mark.dart';
+import 'package:lotti/widgets/day_indicators/day_mark_strip.dart';
 
 /// One goal on the unified Goals list (design handover "Goals, Unified"
 /// §4.2): header (persona chip · name · status pill with folded recovery
@@ -86,10 +87,9 @@ class UnifiedGoalCard extends ConsumerWidget {
       _ => null,
     };
     final days =
-        resolvedDays ??
-        List<GoalCompactDayState>.filled(7, GoalCompactDayState.none);
+        resolvedDays ?? List<DayMarkState>.filled(7, DayMarkState.none);
     final ratingsByDay = health?.spec == null
-        ? const <DateTime, GoalAssessmentRating>{}
+        ? const <DateTime, DayVerdict>{}
         : latestRatingsByDay(
             ref.watch(goalAssessmentHistoryProvider(identity.agentId)).value ??
                 const [],
@@ -148,11 +148,13 @@ class UnifiedGoalCard extends ConsumerWidget {
                 ],
               ],
             );
-            final strip = GoalCompactWindowStrip(
-              days: days,
+            final strip = DayMarkStrip(
+              marks: goalDayMarks(
+                states: days,
+                lastDay: progress?.today,
+                verdictsByDay: ratingsByDay,
+              ),
               placeholder: resolvedDays == null,
-              lastDay: progress?.today,
-              ratingsByDay: ratingsByDay,
             );
             final leading = NudgeBannerPersonaChip(
               monogram: NudgeBannerPersonaChip.monogramFor(

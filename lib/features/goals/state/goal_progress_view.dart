@@ -14,16 +14,11 @@ import 'package:lotti/features/goals/model/goal_health_data_types.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_measurable_capture_state.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
+import 'package:lotti/widgets/day_indicators/day_mark.dart';
 
 enum GoalDimensionKind { habit, health, measurable, categoryTime, labelTime }
 
 enum GoalCompositeRuleKind { all, any, atLeast }
-
-/// One cell of the seven-day picture. [full] means the goal requirement was
-/// satisfied as of that day; [partial] means the user did everything within
-/// their control that day (habits completed) while the goal target was not
-/// yet met — rendered as a lighter wash of the same success hue.
-enum GoalCompactDayState { none, partial, full }
 
 class GoalRecordedMeasurementProvenance {
   const GoalRecordedMeasurementProvenance({
@@ -254,7 +249,7 @@ class GoalProgressView {
   final DateTime today;
   final List<GoalHabitProgressView> habits;
   final List<GoalMetricProgressView> metrics;
-  final List<GoalCompactDayState>? compositeCompactWindow;
+  final List<DayMarkState>? compositeCompactWindow;
   final GoalCompositeRuleKind? compositeRule;
   final int? requiredSuccesses;
   final bool rootOnTrack;
@@ -268,7 +263,7 @@ class GoalProgressView {
   /// Metric goals respect their at-least/at-most direction. A day is `full`
   /// when the goal requirement held as of that day, `partial` when the
   /// routine was completed while the requirement was still building up.
-  List<GoalCompactDayState> get compactWindow {
+  List<DayMarkState> get compactWindow {
     if (compositeCompactWindow case final compact?) return compact;
     final activeDays = [
       for (var offset = compactWindowDays - 1; offset >= 0; offset--)
@@ -295,37 +290,34 @@ class GoalProgressView {
         // The same per-day policy as the bars and the reflection sheet this
         // cell opens — a strip cell must not call a day missed while the
         // sheet suggests "met" for it.
-        if (series.dayMark(day))
-          GoalCompactDayState.full
-        else
-          GoalCompactDayState.none,
+        if (series.dayMark(day)) DayMarkState.full else DayMarkState.none,
     ];
   }
 
-  static GoalCompactDayState _habitDayState({
+  static DayMarkState _habitDayState({
     required GoalHabitProgressView habit,
     required DateTime day,
   }) {
     final entry = habit.days
         .where((candidate) => candidate.day == day && candidate.hasValue)
         .firstOrNull;
-    if (entry == null) return GoalCompactDayState.none;
+    if (entry == null) return DayMarkState.none;
     return (entry.targetSatisfied ?? true)
-        ? GoalCompactDayState.full
-        : GoalCompactDayState.partial;
+        ? DayMarkState.full
+        : DayMarkState.partial;
   }
 
   /// A multi-habit day is only as strong as its weakest completed habit, and
   /// only counts at all when every habit was completed.
-  static GoalCompactDayState _combinedDayState(
-    List<GoalCompactDayState> states,
+  static DayMarkState _combinedDayState(
+    List<DayMarkState> states,
   ) {
-    if (states.any((state) => state == GoalCompactDayState.none)) {
-      return GoalCompactDayState.none;
+    if (states.any((state) => state == DayMarkState.none)) {
+      return DayMarkState.none;
     }
-    return states.any((state) => state == GoalCompactDayState.partial)
-        ? GoalCompactDayState.partial
-        : GoalCompactDayState.full;
+    return states.any((state) => state == DayMarkState.partial)
+        ? DayMarkState.partial
+        : DayMarkState.full;
   }
 }
 
@@ -417,7 +409,7 @@ GoalHabitProgressView _withCheckOffSuggestion({
   return habit;
 }
 
-GoalCompactDayState _criterionDayState(
+DayMarkState _criterionDayState(
   GoalCriterion criterion,
   GoalSignalWindow signals,
   DateTime day,
@@ -425,11 +417,11 @@ GoalCompactDayState _criterionDayState(
   if (const GoalProgressEvaluator()
       .evaluate(criterion, signals, day)
       .satisfied) {
-    return GoalCompactDayState.full;
+    return DayMarkState.full;
   }
   return _criterionCompletedOnDay(criterion, signals, day)
-      ? GoalCompactDayState.partial
-      : GoalCompactDayState.none;
+      ? DayMarkState.partial
+      : DayMarkState.none;
 }
 
 bool _criterionCompletedOnDay(

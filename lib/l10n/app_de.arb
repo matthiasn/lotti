@@ -2869,7 +2869,6 @@
   "habitCompletionStatusFailed": "Fehlgeschlagen",
   "habitCompletionStatusOpen": "Offen",
   "habitCompletionStatusSkipped": "Übersprungen",
-  "habitDayStatusSemantic": "{habit}, {status}",
   "habitDeleteConfirm": "Ja, diese Gewohnheit löschen",
   "habitDeleteQuestion": "Möchtest du diese Gewohnheit löschen?",
   "habitEditorAddSignal": "Signal hinzufügen",

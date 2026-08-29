@@ -3132,17 +3132,6 @@
   "habitCompletionStatusFailed": "Falha",
   "habitCompletionStatusOpen": "Abrir",
   "habitCompletionStatusSkipped": "Ignorado",
-  "habitDayStatusSemantic": "{habit}, {status}",
-  "@habitDayStatusSemantic": {
-    "placeholders": {
-      "habit": {
-        "type": "String"
-      },
-      "status": {
-        "type": "String"
-      }
-    }
-  },
   "habitDeleteConfirm": "Sim, excluir este hábito",
   "habitDeleteQuestion": "Quer eliminar esse hábito?",
   "habitEditorAddSignal": "Adicionar um sinal",

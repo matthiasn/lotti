@@ -2,8 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/features/goals/logic/goal_day_verdict.dart';
-import 'package:lotti/features/goals/model/goal_assessment.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
+import 'package:lotti/widgets/day_indicators/day_mark.dart';
 
 void main() {
   final today = DateTime.utc(2026, 8, 11);
@@ -45,7 +45,7 @@ void main() {
         ],
       );
 
-      expect(suggestedDayVerdict(progress, today), GoalAssessmentRating.met);
+      expect(suggestedDayVerdict(progress, today), DayVerdict.met);
     });
 
     test('logged everything and met nothing suggests Missed', () {
@@ -61,7 +61,7 @@ void main() {
 
       // The steps day IS observed — the user logged and fell short. That is a
       // real Missed, unlike a day nobody recorded.
-      expect(suggestedDayVerdict(progress, today), GoalAssessmentRating.missed);
+      expect(suggestedDayVerdict(progress, today), DayVerdict.missed);
     });
 
     test('a day with no observations at all suggests nothing', () {
@@ -103,11 +103,11 @@ void main() {
       // Missed could not express.
       expect(
         suggestedDayVerdict(progressWith(betterThanYesterday: true), today),
-        GoalAssessmentRating.improving,
+        DayVerdict.improving,
       );
       expect(
         suggestedDayVerdict(progressWith(betterThanYesterday: false), today),
-        GoalAssessmentRating.mixed,
+        DayVerdict.mixed,
       );
     });
 
@@ -134,7 +134,7 @@ void main() {
       // A logged failure carries no value, so checking `hasValue` alone read
       // a day the user explicitly marked as missed as a day they never
       // opened — and the sheet then fell back to suggesting Met.
-      expect(suggestedDayVerdict(progress, today), GoalAssessmentRating.missed);
+      expect(suggestedDayVerdict(progress, today), DayVerdict.missed);
     });
 
     test('improving needs a day to have improved on', () {
@@ -152,7 +152,7 @@ void main() {
       // is missing data, not a worse day, so calling today an improvement on
       // it would invent the baseline — and then record that invention as a
       // suggestion the user accepted.
-      expect(suggestedDayVerdict(progress, today), GoalAssessmentRating.mixed);
+      expect(suggestedDayVerdict(progress, today), DayVerdict.mixed);
     });
 
     test('a goal with nothing tracked suggests nothing', () {
@@ -175,7 +175,7 @@ void main() {
         ],
       );
 
-      expect(suggestedDayVerdict(progress, today), GoalAssessmentRating.met);
+      expect(suggestedDayVerdict(progress, today), DayVerdict.met);
     });
   });
 

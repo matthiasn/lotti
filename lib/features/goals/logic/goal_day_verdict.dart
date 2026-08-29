@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart' show DateUtils;
-import 'package:lotti/features/goals/model/goal_assessment.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
+import 'package:lotti/widgets/day_indicators/day_mark.dart';
 
 /// How one day's criteria actually turned out, per the evidence.
 typedef GoalDayOutcome = ({int met, int total});
@@ -48,16 +48,16 @@ GoalDayOutcome goalDayOutcome(GoalProgressView progress, DateTime day) {
 ///  * Nothing tracked, or nothing recorded all day → **null**. Suggesting
 ///    "missed" for a day the user simply did not open the app would be the app
 ///    passing judgement on its own blind spot.
-///  * Everything met → [GoalAssessmentRating.met].
-///  * Nothing met → [GoalAssessmentRating.missed].
+///  * Everything met → [DayVerdict.met].
+///  * Nothing met → [DayVerdict.missed].
 ///  * Some met, and more than the day before →
-///    [GoalAssessmentRating.improving]. This is the case the three-way verdict
+///    [DayVerdict.improving]. This is the case the three-way verdict
 ///    could not express: not a clean day, but a better one.
-///  * Some met otherwise → [GoalAssessmentRating.mixed].
+///  * Some met otherwise → [DayVerdict.mixed].
 ///
 /// The user can always override; the suggestion only decides what the sheet
 /// opens on.
-GoalAssessmentRating? suggestedDayVerdict(
+DayVerdict? suggestedDayVerdict(
   GoalProgressView progress,
   DateTime day,
 ) {
@@ -65,18 +65,18 @@ GoalAssessmentRating? suggestedDayVerdict(
   if (today.total == 0 || today.met == 0 && !_anyEvidence(progress, day)) {
     return null;
   }
-  if (today.met == today.total) return GoalAssessmentRating.met;
-  if (today.met == 0) return GoalAssessmentRating.missed;
+  if (today.met == today.total) return DayVerdict.met;
+  if (today.met == 0) return DayVerdict.missed;
   // Improving is a comparison, so it needs something to compare against. With
   // no observations yesterday its met count is zero for want of DATA, not for
   // want of effort, and calling today an improvement on it would be inventing
   // a baseline — then recording that invention as a suggestion the user
   // accepted.
   final previousDay = day.subtract(const Duration(days: 1));
-  if (!_anyEvidence(progress, previousDay)) return GoalAssessmentRating.mixed;
+  if (!_anyEvidence(progress, previousDay)) return DayVerdict.mixed;
   return today.met > goalDayOutcome(progress, previousDay).met
-      ? GoalAssessmentRating.improving
-      : GoalAssessmentRating.mixed;
+      ? DayVerdict.improving
+      : DayVerdict.mixed;
 }
 
 /// Whether the day carries any observation at all, met or not.

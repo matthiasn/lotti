@@ -4316,17 +4316,6 @@
   "habitCompletionStatusFailed": "Failed",
   "habitCompletionStatusOpen": "Open",
   "habitCompletionStatusSkipped": "Skipped",
-  "habitDayStatusSemantic": "{habit}, {status}",
-  "@habitDayStatusSemantic": {
-    "placeholders": {
-      "habit": {
-        "type": "String"
-      },
-      "status": {
-        "type": "String"
-      }
-    }
-  },
   "habitDeleteConfirm": "Yes, delete this habit",
   "habitDeleteQuestion": "Do you want to delete this habit?",
   "habitEditorAddSignal": "Add a signal",

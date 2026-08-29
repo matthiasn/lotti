@@ -12192,12 +12192,6 @@ abstract class AppLocalizations {
   /// **'Skipped'**
   String get habitCompletionStatusSkipped;
 
-  /// No description provided for @habitDayStatusSemantic.
-  ///
-  /// In en, this message translates to:
-  /// **'{habit}, {status}'**
-  String habitDayStatusSemantic(String habit, String status);
-
   /// No description provided for @habitDeleteConfirm.
   ///
   /// In en, this message translates to:

@@ -5,6 +5,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/goals/logic/goal_timeline_projection.dart';
 import 'package:lotti/features/goals/model/goal_assessment.dart';
 import 'package:lotti/features/goals/model/goal_timeline_item.dart';
+import 'package:lotti/widgets/day_indicators/day_mark.dart';
 
 void main() {
   final day = DateTime(2026, 8, 18);
@@ -40,14 +41,14 @@ void main() {
     DateTime recordedDay, {
     required DateTime createdAt,
     String specVersionId = 'spec-1',
-    GoalAssessmentRating rating = GoalAssessmentRating.mixed,
+    DayVerdict rating = DayVerdict.mixed,
   }) => GoalAssessmentRecord(
     id: id,
     day: recordedDay,
     specVersionId: specVersionId,
     rating: rating,
     createdAt: createdAt,
-    provenance: GoalAssessmentProvenance.ratedByUser,
+    provenance: DayVerdictProvenance.ratedByUser,
   );
 
   group('goalTimelineItems', () {
@@ -87,7 +88,7 @@ void main() {
             'later',
             DateTime.utc(2026, 8, 17),
             createdAt: day.add(const Duration(hours: 21)),
-            rating: GoalAssessmentRating.met,
+            rating: DayVerdict.met,
           ),
         ],
         specVersionId: 'spec-1',

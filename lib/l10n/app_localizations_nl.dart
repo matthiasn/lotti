@@ -7222,11 +7222,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get habitCompletionStatusSkipped => 'Overgeslagen';
 
   @override
-  String habitDayStatusSemantic(String habit, String status) {
-    return '$habit, $status';
-  }
-
-  @override
   String get habitDeleteConfirm => 'Ja, verwijder deze gewoonte';
 
   @override
