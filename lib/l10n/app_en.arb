@@ -2951,6 +2951,15 @@
   "dashboardRemoveChartLabel": "Remove chart",
   "dashboardReorderChartLabel": "Reorder chart",
   "dashboardTakeSurveyTooltip": "Take survey",
+  "dayMarkLegendJudged": "judged {verdict}",
+  "@dayMarkLegendJudged": {
+    "description": "Legend entry for a day the user judged in a reflection; {verdict} is the verdict name (Met, Improving, Mixed, Missed), distinguishing it from a recorded habit outcome of the same name.",
+    "placeholders": {
+      "verdict": {
+        "type": "String"
+      }
+    }
+  },
   "defaultLanguage": "Default Language",
   "deleteButton": "Delete",
   "deleteDeviceLabel": "Remove from sync",

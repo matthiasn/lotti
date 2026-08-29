@@ -2255,6 +2255,7 @@
   "dashboardRemoveChartLabel": "Eliminați graficul",
   "dashboardReorderChartLabel": "Reordonați graficul",
   "dashboardTakeSurveyTooltip": "Completați chestionarul",
+  "dayMarkLegendJudged": "evaluat ca {verdict}",
   "defaultLanguage": "Limbă implicită",
   "deleteButton": "Ștergeți",
   "deleteDeviceLabel": "Eliminați din sincronizare",

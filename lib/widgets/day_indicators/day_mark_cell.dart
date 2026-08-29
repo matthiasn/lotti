@@ -96,7 +96,7 @@ class DayMarkCell extends StatelessWidget {
         ? Center(
             child: Icon(
               dayVerdictGlyph(verdict),
-              size: size * 0.75,
+              size: dayMarkGlyphSize(size),
               // The ink of the fill's OWN family. Painting every glyph in
               // the success ink put a green tick's colour on a red missed
               // cell and an orange mixed one.
@@ -107,7 +107,7 @@ class DayMarkCell extends StatelessWidget {
         ? Center(
             child: Icon(
               stateGlyph,
-              size: size * 0.75,
+              size: dayMarkGlyphSize(size),
               color: dayMarkStateGlyphInk(tokens, state),
             ),
           )

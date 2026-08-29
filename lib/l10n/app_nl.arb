@@ -2501,6 +2501,7 @@
   "dashboardRemoveChartLabel": "Grafiek verwijderen",
   "dashboardReorderChartLabel": "Kaart herschikken",
   "dashboardTakeSurveyTooltip": "Onderzoek uitvoeren",
+  "dayMarkLegendJudged": "beoordeeld als {verdict}",
   "defaultLanguage": "Standaardtaal",
   "deleteButton": "Verwijderen",
   "deleteDeviceLabel": "Uit synchronisatie verwijderen",

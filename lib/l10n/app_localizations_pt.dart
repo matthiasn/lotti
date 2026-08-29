@@ -5216,6 +5216,11 @@ class AppLocalizationsPt extends AppLocalizations {
   String get dashboardTakeSurveyTooltip => 'Faça uma pesquisa';
 
   @override
+  String dayMarkLegendJudged(String verdict) {
+    return 'avaliado como $verdict';
+  }
+
+  @override
   String get defaultLanguage => 'Idioma padrão';
 
   @override

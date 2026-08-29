@@ -8765,6 +8765,12 @@ abstract class AppLocalizations {
   /// **'Take survey'**
   String get dashboardTakeSurveyTooltip;
 
+  /// Legend entry for a day the user judged in a reflection; {verdict} is the verdict name (Met, Improving, Mixed, Missed), distinguishing it from a recorded habit outcome of the same name.
+  ///
+  /// In en, this message translates to:
+  /// **'judged {verdict}'**
+  String dayMarkLegendJudged(String verdict);
+
   /// No description provided for @defaultLanguage.
   ///
   /// In en, this message translates to:

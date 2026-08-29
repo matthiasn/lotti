@@ -168,9 +168,30 @@ knows the day: reflecting on a backfilled day judges that day, not today. The
 reflection sheet itself stays the goal's — it needs the goal's spec, progress
 view and history — so the habit only contributes the day.
 
-# Not yet shared
+# The legend, and where it rides
 
-The remaining item from lotti3-co1 (step 4): a complete legend including the
-verdict hues on habit surfaces, longer spans on the habits page, and the
-explicit decision on proportional cell sizing. Those build on this module and
-are a separate change.
+`DayMarkLegend` keys the measured fills always, and opts into the rest:
+`showAgesOut` (only the goal detail's rolling windows draw that ring),
+`showOutcomes` (the skip dash and missed cross a habit square can carry) and
+`showVerdicts` (the four verdict hues and glyphs). One key per surface, placed
+where a reader meets the squares it explains:
+
+| Surface | Legend |
+| --- | --- |
+| Goal detail, first habit card | outcomes + verdicts + ages-out |
+| Goal detail, a goal with no habit cards | under the whole-goal strip on the week card: verdicts, no ages-out |
+| A dashboard with habit items | once, after the items: outcomes + verdicts |
+
+# Cell sizing is a decision, not a gap
+
+Cells never size proportionally to a value or a count. Every day track sizes
+its columns from `dayTrackMetrics`: one pitch per page derived from the
+available width, the square shrinking with its column down to `IconSizes.xs`
+and never growing past `ControlSizes.iconChipCompact`, and a track that
+still cannot fit pans. A proportional cell (wider for a longer window, taller
+for a bigger number) was considered in the 2026-08-15 audit and rejected: a
+date has to line up down the page across strips, habit squares and metric
+bars, which one grid guarantees and per-cell sizing cannot. Longer spans are
+handled the same way — the habits chart offers 14/30/90 days, the goal detail
+page keys every track to its shared range, and a dashboard strip follows the
+dashboard's range — never by a differently-shaped cell.

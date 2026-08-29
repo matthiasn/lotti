@@ -2262,6 +2262,7 @@
   "dashboardRemoveChartLabel": "Odebrat graf",
   "dashboardReorderChartLabel": "Změnit pořadí grafu",
   "dashboardTakeSurveyTooltip": "Vyplnit dotazník",
+  "dayMarkLegendJudged": "hodnoceno jako {verdict}",
   "defaultLanguage": "Výchozí jazyk",
   "deleteButton": "Smazat",
   "deleteDeviceLabel": "Odebrat ze synchronizace",

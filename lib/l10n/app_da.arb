@@ -2502,6 +2502,7 @@
   "dashboardRemoveChartLabel": "Fjern skemaet",
   "dashboardReorderChartLabel": "Omarranger kort",
   "dashboardTakeSurveyTooltip": "Tag en undersøgelse",
+  "dayMarkLegendJudged": "vurderet som {verdict}",
   "defaultLanguage": "Standardsprog",
   "deleteButton": "Slet",
   "deleteDeviceLabel": "Fjern fra synkronisering",
