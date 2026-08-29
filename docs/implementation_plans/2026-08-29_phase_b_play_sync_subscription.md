@@ -40,15 +40,17 @@ repository. The client:
 1. creates an authenticated purchase intent bound to a stable Lotti account or
    server-issued entitlement identity before opening Play Billing;
 2. attaches the server-derived obfuscated account/profile identifier to the
-   Billing flow, then sends `purchaseToken`, product id, package name, purchase
-   intent, and a client-generated delivery/claim secret over TLS;
-3. obtains a Play Integrity verdict whose `requestHash` covers a canonical
+   Billing flow;
+3. obtains a signed Play Integrity token whose `requestHash` covers a canonical
    serialization of the purchase-token fingerprint, product/base-plan,
    entitlement id, purchase-intent id, and claim-secret hash;
-4. never treats the local `PurchaseDetails` state as entitlement;
-5. waits for the server to verify and provision, then imports the returned v2
+4. sends the signed Play Integrity token together with `purchaseToken`, product
+   and base-plan ids, package name, entitlement id, purchase-intent id, and a
+   client-generated delivery/claim secret over TLS;
+5. never treats the local `PurchaseDetails` state as entitlement;
+6. waits for the server to verify and provision, then imports the returned v2
    bundle through the existing `ProvisioningController`; and
-6. completes the Play purchase only after the server confirms it has granted
+7. completes the Play purchase only after the server confirms it has granted
    entitlement.
 
 The app must not contain the service's current shared `API_KEYS` value. The
@@ -65,10 +67,14 @@ acceptable.
 ### Server verification
 
 Add a `GooglePlayClient` service using Google service-account credentials and
-the Android Publisher scope. For every client submission and RTDN:
+the Android Publisher scope.
 
-1. verify the authenticated account/purchase intent and the Play Integrity
-   verdict, including exact `requestHash`/nonce matching and replay controls;
+For a client purchase submission:
+
+1. verify the authenticated account and one-time purchase intent, decode and
+   verify the submitted signed Play Integrity token, recompute the canonical
+   request hash from the submitted fields, and require exact
+   `requestHash`/nonce matching with replay controls;
 2. call `purchases.subscriptionsv2.get` for `com.matthiasn.lotti` and the token;
 3. require an allowed product/base-plan line item and a grantable state:
    `ACTIVE`, `IN_GRACE_PERIOD`, or `CANCELED` only while the authoritative
@@ -87,9 +93,15 @@ the Android Publisher scope. For every client submission and RTDN:
 8. acknowledge a new, verified token server-side after the entitlement and
    bundle claim are durably recorded. Renewals do not need acknowledgement.
 
-Never trust RTDN state directly. Verify the Pub/Sub push JWT/audience, decode
-the notification, then re-query `subscriptionsv2.get`; notifications are only a
-signal that authoritative state may have changed.
+For RTDN, do not apply client-only account, purchase-intent, Play Integrity, or
+claim-secret checks: `SubscriptionNotification` does not carry those proofs.
+Instead, verify the Pub/Sub push JWT including issuer, audience, and service
+account identity; decode the notification; resolve its `purchaseToken` through
+the stored token-to-entitlement binding; and call
+`purchases.subscriptionsv2.get` with that notification token before changing
+state. An unknown token cannot create or rebind an entitlement. Never trust the
+notification's state directly: RTDN is only a signal that authoritative Google
+state may have changed.
 
 ## Reliable one-time bundle delivery
 
@@ -249,10 +261,15 @@ Expected additions/changes:
 - Mocked Android Publisher tests for verification, acknowledgement, retryable
   errors, invalid product/package, and token replay.
 - Repository migration/transaction/concurrency tests with unique-token races.
-- Route tests for Pub/Sub JWT failures, malformed notifications, idempotent
-  purchase submission, lost-response retry, claim authorization, stolen-token
-  rebinding attempts, mismatched Integrity request hashes/nonces, and replayed
-  purchase intents.
+- Client-submission route tests for a missing/invalid signed Play Integrity
+  token, server recomputation of the canonical request hash from every submitted
+  field, mismatched hashes/nonces, idempotent submission, lost-response retry,
+  claim authorization, stolen-token rebinding attempts, and replayed purchase
+  intents.
+- RTDN route tests for Pub/Sub JWT issuer/audience/service-account failures,
+  malformed notifications, unknown token bindings, duplicate/out-of-order
+  delivery, and proof that the notification token is re-queried through
+  `purchases.subscriptionsv2.get` before a bound entitlement changes.
 - Token-lineage tests for cancellation before expiry and post-expiry
   resubscription without `linkedPurchaseToken`, including
   `outOfAppPurchaseContext`, stable entitlement reuse, and atomic retirement of
