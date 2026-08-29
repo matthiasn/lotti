@@ -27,10 +27,13 @@ class FakeSubscriptionService:
     def __init__(self):
         self.calls = []
         self.failure_tokens = set()
+        self.failure_callback = None
 
     async def refresh_known_purchase(self, token, *, now):
         self.calls.append((token, now))
         if token in self.failure_tokens:
+            if self.failure_callback is not None:
+                await self.failure_callback()
             raise RuntimeError(f"cannot refresh {token}")
         return token
 
@@ -208,3 +211,48 @@ async def test_refresh_and_stored_state_enforcement_failures_are_both_recorded(s
     assert failed.last_error == (
         "cannot refresh failed-token; stored-state enforcement failed: synapse unavailable"
     )
+
+
+async def test_failed_old_token_enforces_racing_replacement_state(setup):
+    repository, cipher, subscriptions, access, reconciler = setup
+    old = await add_due(repository, cipher, "entitlement-one", "old-token")
+    new_token = "replacement-token"  # noqa: S105 - explicit test fixture
+    new_fingerprint = fingerprint(new_token)
+
+    async def replace_current():
+        await repository.store_verified_subscription(
+            VerifiedSubscription(
+                entitlement_id=old.entitlement_id,
+                token_fingerprint=new_fingerprint,
+                encrypted_purchase_token=cipher.encrypt(
+                    new_token.encode(),
+                    purpose="purchase-token",
+                    record_id=new_fingerprint,
+                ),
+                encryption_key_id=cipher.key_id,
+                package_name=old.package_name,
+                product_id=old.product_id,
+                base_plan_id=old.base_plan_id,
+                latest_order_id="GPA.replacement",
+                google_state=GoogleSubscriptionState.ACTIVE,
+                entitlement_state=EntitlementState.ACTIVE,
+                start_time=NOW,
+                current_period_end=NOW + timedelta(days=30),
+                grace_deadline=None,
+                acknowledgement_state=AcknowledgementState.ACKNOWLEDGED,
+                binding_verified=True,
+                last_verified_at=NOW,
+                next_reconciliation_at=NOW + timedelta(hours=6),
+                linked_token_fingerprint=old.token_fingerprint,
+            ),
+            now=NOW,
+        )
+
+    subscriptions.failure_tokens.add("old-token")
+    subscriptions.failure_callback = replace_current
+
+    assert await reconciler.reconcile_once() == 0
+
+    current = await repository.get_current_subscription(old.entitlement_id)
+    assert current.token_fingerprint == new_fingerprint
+    assert access.calls == [(current, NOW)]

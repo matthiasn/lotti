@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import sqlite3
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 
@@ -33,6 +34,28 @@ NOW = datetime(2026, 8, 29, 12, tzinfo=timezone.utc)
 @pytest.fixture
 def subscription_repository(tmp_path):
     return SubscriptionRepository(str(tmp_path / "subscriptions.db"))
+
+
+def test_existing_bundle_claim_schema_is_migrated(tmp_path):
+    db_path = tmp_path / "legacy.db"
+    connection = sqlite3.connect(db_path)
+    connection.execute(
+        "CREATE TABLE bundle_claims ("
+        "bundle_id TEXT PRIMARY KEY, subscription_id TEXT NOT NULL UNIQUE, "
+        "claim_secret_hash TEXT NOT NULL, encrypted_bundle BLOB, "
+        "encryption_key_id TEXT NOT NULL, expires_at TEXT NOT NULL, "
+        "first_delivered_at TEXT, confirmed_at TEXT, destroyed_at TEXT, "
+        "created_at TEXT NOT NULL)"
+    )
+    connection.commit()
+    connection.close()
+
+    SubscriptionRepository(str(db_path))
+
+    connection = sqlite3.connect(db_path)
+    columns = {row[1] for row in connection.execute("PRAGMA table_info(bundle_claims)")}
+    connection.close()
+    assert "next_reap_at" in columns
 
 
 def verified_subscription(
@@ -669,6 +692,7 @@ async def test_same_token_refresh_does_not_clear_existing_bundle(
         lambda repository: repository.mark_bundle_delivered("unknown", now=NOW),
         lambda repository: repository.destroy_bundle_claim("unknown", now=NOW),
         lambda repository: repository.abandon_bundle_claim("unknown", now=NOW),
+        lambda repository: repository.reschedule_bundle_claim_reap("unknown", next_reap_at=NOW),
         lambda repository: repository.confirm_paid_bundle_rotation("unknown", now=NOW),
     ],
 )
@@ -678,6 +702,11 @@ async def test_unknown_bundle_claim_mutations_are_rejected(
 ):
     with pytest.raises(BundleClaimConflictException):
         await operation(subscription_repository)
+
+
+async def test_only_revoked_abandoned_claim_can_be_released(subscription_repository):
+    with pytest.raises(BundleClaimConflictException, match="not abandoned"):
+        await subscription_repository.release_abandoned_bundle_claim("unknown", now=NOW)
 
 
 @pytest.mark.parametrize(

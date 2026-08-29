@@ -93,6 +93,18 @@ class PaidBundleService:
         existing = await self._repository.get_bundle_claim_for_entitlement(
             verified.subscription.entitlement_id
         )
+        reprovisioning = False
+        if (
+            existing is not None
+            and existing.confirmed_at is None
+            and existing.destroyed_at is not None
+        ):
+            await self._repository.release_abandoned_bundle_claim(
+                verified.subscription.entitlement_id,
+                now=now,
+            )
+            existing = None
+            reprovisioning = True
         if existing is not None:
             if existing.confirmed_at is not None:
                 # A rotated Matrix account is already the durable sync identity.
@@ -112,7 +124,10 @@ class PaidBundleService:
                     now=now,
                 )
         else:
-            username = self._username(verified.subscription.entitlement_id)
+            username = self._username(
+                verified.subscription.entitlement_id,
+                retry_suffix=(uuid.uuid4().hex[:8] if reprovisioning else None),
+            )
             request = CreateBundleRequest(
                 username=username,
                 display_name="Lotti SYNC",
@@ -211,8 +226,9 @@ class PaidBundleService:
         )
 
     @staticmethod
-    def _username(entitlement_id: str) -> str:
-        compact = "".join(character for character in entitlement_id if character.isalnum())
+    def _username(entitlement_id: str, *, retry_suffix: str | None = None) -> str:
+        source = entitlement_id if retry_suffix is None else f"{entitlement_id}_{retry_suffix}"
+        compact = "".join(character for character in source if character.isalnum())
         return f"sync_{compact.lower()}"[:64]
 
 

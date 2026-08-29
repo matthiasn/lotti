@@ -330,6 +330,36 @@ async def test_overlapping_retries_share_one_provisioned_bundle(
     assert len(bundle_service.calls) == 1
 
 
+async def test_abandoned_claim_is_replaced_by_fresh_bundle(
+    service,
+    repository,
+    bundle_service,
+):
+    verified = await verified_purchase(repository)
+    abandoned = await service.provision_or_deliver(verified, submission(), now=NOW)
+    await repository.revoke(abandoned.bundle_id, "claim expired")
+    await repository.abandon_bundle_claim(
+        abandoned.bundle_id,
+        now=NOW + timedelta(days=1),
+    )
+    current = await repository.get_current_subscription("entitlement-one")
+
+    replacement = await service.provision_or_deliver(
+        VerifiedPurchaseResult(
+            subscription=current,
+            request_hash="replacement-request-hash",
+            claim_secret_hash=SecretHasher().hash("replacement-claim-secret"),
+        ),
+        submission(claim_secret="replacement-claim-secret"),
+        now=NOW + timedelta(days=1),
+    )
+
+    assert replacement.bundle_id != abandoned.bundle_id
+    assert replacement.bundle == ENCODED_BUNDLE
+    assert len(bundle_service.calls) == 2
+    assert (await repository.get(abandoned.bundle_id)).status.value == "revoked"
+
+
 async def test_delivery_retry_rejects_missing_claim(service):
     with pytest.raises(BundleClaimConflictException, match="No bundle claim"):
         await service.deliver_existing_claim(

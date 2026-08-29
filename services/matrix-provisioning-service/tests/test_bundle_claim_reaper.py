@@ -130,6 +130,38 @@ async def test_synapse_failure_leaves_claim_for_next_retry(setup):
     stored = await repository.get_bundle_claim_for_entitlement(entitlement_id)
     assert stored.encrypted_bundle is not None
     assert (await repository.get(claim.bundle_id)).status.value == "unused"
+    assert await repository.list_expired_bundle_claims(NOW, limit=50) == []
+    assert await repository.list_expired_bundle_claims(NOW + timedelta(minutes=5), limit=50) == [
+        stored
+    ]
+
+
+async def test_failed_batch_head_is_rescheduled_so_later_claim_is_reaped(tmp_path):
+    repository = SubscriptionRepository(str(tmp_path / "subscriptions.db"))
+    _, failed = await setup_claim(
+        repository,
+        "failed",
+        NOW - timedelta(minutes=1),
+    )
+    _, healthy = await setup_claim(repository, "healthy", NOW)
+
+    class SelectiveAdmin(FakeAdminClient):
+        async def deactivate_user(self, user_mxid):
+            if user_mxid == "@sync_failed:example.com":
+                raise RuntimeError("permanent failure")
+            await super().deactivate_user(user_mxid)
+
+    reaper = BundleClaimReaper(
+        repository,
+        SelectiveAdmin(),
+        batch_size=1,
+        now_provider=lambda: NOW,
+    )
+
+    assert await reaper.reap_once() == 0
+    assert await reaper.reap_once() == 1
+    assert (await repository.get(failed.bundle_id)).status.value == "unused"
+    assert (await repository.get(healthy.bundle_id)).status.value == "revoked"
 
 
 async def test_missing_account_still_destroys_expired_escrow():
@@ -149,6 +181,9 @@ async def test_missing_account_still_destroys_expired_escrow():
 
         async def abandon_bundle_claim(self, bundle_id, *, now):
             self.abandoned.append((bundle_id, now))
+
+        async def reschedule_bundle_claim_reap(self, bundle_id, *, next_reap_at):
+            raise AssertionError("successful claims are not rescheduled")
 
     repository = Repository()
     reaper = BundleClaimReaper(repository, FakeAdminClient(), now_provider=lambda: NOW)

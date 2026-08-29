@@ -210,7 +210,10 @@ short-lived bundle fields for first provisioning. When a linked replacement
 purchase recovers an account whose rotation was already confirmed, it returns
 `bundle_import_required=false` with those fields set to `null` and restores the
 existing Matrix account before responding. Destroyed bootstrap credentials are
-never regenerated.
+never regenerated. An expired claim that never completed rotation is different:
+the reaper revokes that account, and a later verified payment provisions a new
+account instead. Failed reaper attempts use a separate five-minute retry time;
+they do not extend the claim's credential-delivery TTL or block newer claims.
 
 ## Production deployment requirements
 

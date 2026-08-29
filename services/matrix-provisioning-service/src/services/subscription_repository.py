@@ -114,6 +114,7 @@ CREATE TABLE IF NOT EXISTS bundle_claims (
     first_delivered_at   TEXT,
     confirmed_at         TEXT,
     destroyed_at         TEXT,
+    next_reap_at         TEXT,
     created_at           TEXT NOT NULL,
     FOREIGN KEY (bundle_id) REFERENCES provisioned_users (bundle_id) ON DELETE CASCADE,
     FOREIGN KEY (subscription_id) REFERENCES play_subscriptions (subscription_id)
@@ -146,6 +147,11 @@ class SubscriptionRepository(ProvisioningRepository):
             conn.execute("PRAGMA journal_mode = WAL")
             conn.execute("PRAGMA foreign_keys = ON")
             conn.executescript(_SCHEMA)
+            columns = {
+                row[1] for row in conn.execute("PRAGMA table_info(bundle_claims)").fetchall()
+            }
+            if "next_reap_at" not in columns:
+                conn.execute("ALTER TABLE bundle_claims ADD COLUMN next_reap_at TEXT")
             conn.commit()
         finally:
             conn.close()
@@ -833,8 +839,9 @@ class SubscriptionRepository(ProvisioningRepository):
         try:
             rows = conn.execute(
                 "SELECT * FROM bundle_claims WHERE destroyed_at IS NULL "
-                "AND expires_at <= ? ORDER BY expires_at ASC LIMIT ?",
-                (_iso(now), max(1, limit)),
+                "AND expires_at <= ? AND COALESCE(next_reap_at, expires_at) <= ? "
+                "ORDER BY COALESCE(next_reap_at, expires_at) ASC LIMIT ?",
+                (_iso(now), _iso(now), max(1, limit)),
             ).fetchall()
             return [self._row_to_bundle_claim(row) for row in rows]
         finally:
@@ -914,6 +921,77 @@ class SubscriptionRepository(ProvisioningRepository):
     async def abandon_bundle_claim(self, bundle_id: str, *, now: datetime) -> BundleClaim:
         """Destroy expired escrow without falsely marking rotation confirmed."""
         return await asyncio.to_thread(self._abandon_bundle_claim_sync, bundle_id, now)
+
+    def _reschedule_bundle_claim_reap_sync(
+        self, bundle_id: str, next_reap_at: datetime
+    ) -> BundleClaim:
+        conn = self._connect()
+        try:
+            conn.execute(
+                "UPDATE bundle_claims SET next_reap_at = ? WHERE bundle_id = ?",
+                (_iso(next_reap_at), bundle_id),
+            )
+            conn.commit()
+            row = conn.execute(
+                "SELECT * FROM bundle_claims WHERE bundle_id = ?", (bundle_id,)
+            ).fetchone()
+            if row is None:
+                raise BundleClaimConflictException("Unknown bundle claim")
+            return self._row_to_bundle_claim(row)
+        finally:
+            conn.close()
+
+    async def reschedule_bundle_claim_reap(
+        self, bundle_id: str, *, next_reap_at: datetime
+    ) -> BundleClaim:
+        """Move a failed reaper attempt aside without extending escrow TTL."""
+        return await asyncio.to_thread(
+            self._reschedule_bundle_claim_reap_sync,
+            bundle_id,
+            next_reap_at,
+        )
+
+    def _release_abandoned_bundle_claim_sync(self, entitlement_id: str, now: datetime) -> str:
+        conn = self._connect()
+        try:
+            conn.execute("BEGIN IMMEDIATE")
+            row = conn.execute(
+                "SELECT c.bundle_id, c.confirmed_at, c.destroyed_at, u.status "
+                "FROM bundle_claims c "
+                "JOIN play_subscriptions s ON s.subscription_id = c.subscription_id "
+                "JOIN provisioned_users u ON u.bundle_id = c.bundle_id "
+                "WHERE s.entitlement_id = ? AND s.is_current = 1",
+                (entitlement_id,),
+            ).fetchone()
+            if (
+                row is None
+                or row["confirmed_at"] is not None
+                or row["destroyed_at"] is None
+                or BundleStatus(row["status"]) is not BundleStatus.REVOKED
+            ):
+                raise BundleClaimConflictException("Bundle claim is not abandoned")
+            bundle_id = row["bundle_id"]
+            conn.execute("DELETE FROM bundle_claims WHERE bundle_id = ?", (bundle_id,))
+            conn.execute(
+                "UPDATE play_subscriptions SET bundle_id = NULL, updated_at = ? "
+                "WHERE entitlement_id = ? AND is_current = 1 AND bundle_id = ?",
+                (_iso(now), entitlement_id, bundle_id),
+            )
+            conn.commit()
+            return bundle_id
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
+    async def release_abandoned_bundle_claim(self, entitlement_id: str, *, now: datetime) -> str:
+        """Detach destroyed unconfirmed escrow so a paid retry can reprovision."""
+        return await asyncio.to_thread(
+            self._release_abandoned_bundle_claim_sync,
+            entitlement_id,
+            now,
+        )
 
     def _confirm_paid_bundle_rotation_sync(
         self, bundle_id: str, now: datetime

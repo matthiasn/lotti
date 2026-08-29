@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from shared.matrix import SynapseAdminClient
 
@@ -25,12 +25,14 @@ class BundleClaimReaper(PeriodicTask):
         interval_seconds: float = 300,
         batch_size: int = 50,
         now_provider: Callable[[], datetime] | None = None,
+        failure_retry_delay: timedelta = timedelta(minutes=5),
     ):
         super().__init__(name="Paid bundle claim reaper", interval_seconds=interval_seconds)
         self._repository = repository
         self._admin_client = admin_client
         self._batch_size = batch_size
         self._now_provider = now_provider or (lambda: datetime.now(timezone.utc))
+        self._failure_retry_delay = failure_retry_delay
 
     async def run_once(self) -> None:
         """Run one cleanup batch for the periodic loop."""
@@ -58,6 +60,10 @@ class BundleClaimReaper(PeriodicTask):
                 )
                 await self._repository.abandon_bundle_claim(claim.bundle_id, now=now)
                 reaped += 1
-            except Exception:  # noqa: BLE001 - leave claim intact for retry
+            except Exception:  # noqa: BLE001 - isolate and retry one claim later
                 logger.exception("Could not reap expired paid bundle %s", claim.bundle_id)
+                await self._repository.reschedule_bundle_claim_reap(
+                    claim.bundle_id,
+                    next_reap_at=now + self._failure_retry_delay,
+                )
         return reaped

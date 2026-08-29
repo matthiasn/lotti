@@ -79,8 +79,10 @@ class SubscriptionReconciler(PeriodicTask):
                 try:
                     # A Google outage must not extend a previously verified
                     # expiry/grace deadline. Converge from the durable snapshot
-                    # and keep the row due so the authoritative refresh retries.
-                    await self._access_service.enforce(stored, now=now)
+                    # and reschedule the authoritative refresh below.
+                    current = await self._repository.get_current_subscription(stored.entitlement_id)
+                    if current is not None:
+                        await self._access_service.enforce(current, now=now)
                 except Exception as enforcement_exc:  # noqa: BLE001 - record both failures
                     error = f"{error}; stored-state enforcement failed: {enforcement_exc}"
                 logger.warning(

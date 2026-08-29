@@ -160,7 +160,11 @@ authorized by the entitlement and claim secret, but escrow is destroyed only
 after the bound Matrix user publishes the server-derived rotation challenge in
 the provisioned room and the bootstrap password no longer authenticates. The
 claim reaper deactivates an account that never reaches that proof before its
-24-hour TTL.
+24-hour TTL. Failed reaper attempts receive a separate bounded retry time so
+one broken account cannot starve later claims; this never extends the escrow
+TTL. A later verified payment may detach an abandoned, revoked claim and
+provision a fresh Matrix account, while confirmed claims always recover the
+existing account without recreating bootstrap credentials.
 
 # Pairing a new device
 
