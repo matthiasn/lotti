@@ -7352,10 +7352,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get habitEditorRuleEnergy => 'Energi';
 
   @override
-  String get habitEditorRuleTotalAtLeast => 'Totalt ≥';
+  String get habitEditorRuleTotalAtLeast => 'Minst';
 
   @override
-  String get habitEditorRuleTotalAtMost => 'Totalt ≤';
+  String get habitEditorRuleTotalAtMost => 'Högst';
 
   @override
   String get habitEditorSectionSettings => 'Inställningar';

@@ -82,7 +82,7 @@ void main() {
         findsNothing,
       );
 
-      await tester.tap(find.text('Total ≥').first);
+      await tester.tap(find.text('At least').first);
       await tester.pump();
       expect(changes.last.signals.single.mode, HabitSignalMode.atLeast);
 
@@ -223,7 +223,7 @@ void main() {
         threshold: 1000,
       );
       await pump(tester, HabitSignalsForm(signals: [bounded]));
-      await tester.tap(find.text('Total ≤').first);
+      await tester.tap(find.text('At most').first);
       await tester.pump();
       final switched = changes.last.signals.single;
       expect(switched.mode, HabitSignalMode.atMost);
@@ -323,5 +323,77 @@ void main() {
     await tester.pump();
     expect(changes.last.signals, [waterAny, steps]);
     expect(changes.last.requiredCount, 2);
+  });
+  group('the inline unit', () {
+    testWidgets('names the threshold field for a screen reader and yields '
+        'before the field when it is long', (tester) async {
+      final handle = tester.ensureSemantics();
+      final longUnit = water.copyWith(
+        unitName: 'millilitres of filtered still water per calendar day',
+      );
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          SizedBox(
+            width: 360,
+            child: HabitSignalCard(
+              form: HabitSignalsForm(
+                signals: [
+                  waterAny.copyWith(
+                    mode: HabitSignalMode.atLeast,
+                    threshold: 1000,
+                  ),
+                ],
+              ),
+              measurablesById: {'water': longUnit},
+              onChanged: (_) {},
+              onAddSignal: () {},
+              onChangeComposite: () {},
+            ),
+          ),
+        ),
+      );
+      expect(tester.takeException(), isNull, reason: 'no overflow');
+      final unit = tester.widget<Text>(
+        find.byKey(const ValueKey('habit-signal-unit-measurable-water')),
+      );
+      expect(unit.overflow, TextOverflow.ellipsis);
+      expect(unit.maxLines, 1);
+      expect(
+        find.bySemanticsLabel(RegExp('millilitres of filtered')),
+        findsWidgets,
+        reason: 'the field itself is named with its unit',
+      );
+      handle.dispose();
+    });
+  });
+  testWidgets("the rule controls start on the row title's own rail", (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        SizedBox(
+          width: 400,
+          child: HabitSignalCard(
+            form: HabitSignalsForm(
+              signals: [
+                waterAny.copyWith(
+                  mode: HabitSignalMode.atLeast,
+                  threshold: 1000,
+                ),
+              ],
+            ),
+            measurablesById: {'water': water},
+            onChanged: (_) {},
+            onAddSignal: () {},
+            onChangeComposite: () {},
+          ),
+        ),
+      ),
+    );
+    final title = tester.getTopLeft(find.text('Water'));
+    final field = tester.getTopLeft(
+      find.byKey(const ValueKey('habit-signal-threshold-measurable-water')),
+    );
+    expect(field.dx, moreOrLessEquals(title.dx, epsilon: 0.5));
   });
 }

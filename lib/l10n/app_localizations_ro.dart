@@ -7473,10 +7473,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get habitEditorRuleEnergy => 'Energie';
 
   @override
-  String get habitEditorRuleTotalAtLeast => 'Total ≥';
+  String get habitEditorRuleTotalAtLeast => 'Cel puțin';
 
   @override
-  String get habitEditorRuleTotalAtMost => 'Total ≤';
+  String get habitEditorRuleTotalAtMost => 'Cel mult';
 
   @override
   String get habitEditorSectionSettings => 'Setări';

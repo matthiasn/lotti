@@ -12447,13 +12447,13 @@ abstract class AppLocalizations {
   /// No description provided for @habitEditorRuleTotalAtLeast.
   ///
   /// In en, this message translates to:
-  /// **'Total ≥'**
+  /// **'At least'**
   String get habitEditorRuleTotalAtLeast;
 
   /// No description provided for @habitEditorRuleTotalAtMost.
   ///
   /// In en, this message translates to:
-  /// **'Total ≤'**
+  /// **'At most'**
   String get habitEditorRuleTotalAtMost;
 
   /// No description provided for @habitEditorSectionSettings.
