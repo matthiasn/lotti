@@ -130,10 +130,19 @@ async def test_synapse_failure_leaves_claim_for_next_retry(setup):
     stored = await repository.get_bundle_claim_for_entitlement(entitlement_id)
     assert stored.encrypted_bundle is not None
     assert (await repository.get(claim.bundle_id)).status.value == "unused"
-    assert await repository.list_expired_bundle_claims(NOW, limit=50) == []
-    assert await repository.list_expired_bundle_claims(NOW + timedelta(minutes=5), limit=50) == [
-        stored
-    ]
+    assert (
+        await repository.list_expired_bundle_claims(
+            NOW,
+            stale_before=NOW - timedelta(minutes=5),
+            limit=50,
+        )
+        == []
+    )
+    assert await repository.list_expired_bundle_claims(
+        NOW + timedelta(minutes=5),
+        stale_before=NOW,
+        limit=50,
+    ) == [stored]
 
 
 async def test_failed_batch_head_is_rescheduled_so_later_claim_is_reaped(tmp_path):
@@ -171,18 +180,39 @@ async def test_missing_account_still_destroys_expired_escrow():
         def __init__(self):
             self.abandoned = []
 
-        async def list_expired_bundle_claims(self, now, *, limit):
+        async def list_expired_bundle_claims(self, now, *, stale_before, limit):
             assert (now, limit) == (NOW, 50)
+            assert stale_before == NOW - timedelta(minutes=5)
             return [claim]
+
+        async def reserve_bundle_reap(
+            self,
+            bundle_id,
+            *,
+            operation_token,
+            now,
+            stale_before,
+        ):
+            assert bundle_id == claim.bundle_id
+            assert operation_token
+            assert now == NOW
+            assert stale_before == NOW - timedelta(minutes=5)
+            return True
 
         async def get(self, bundle_id):
             assert bundle_id == claim.bundle_id
             return None
 
-        async def abandon_bundle_claim(self, bundle_id, *, now):
-            self.abandoned.append((bundle_id, now))
+        async def abandon_bundle_claim(self, bundle_id, *, now, operation_token):
+            self.abandoned.append((bundle_id, now, operation_token))
 
-        async def reschedule_bundle_claim_reap(self, bundle_id, *, next_reap_at):
+        async def reschedule_bundle_claim_reap(
+            self,
+            bundle_id,
+            *,
+            next_reap_at,
+            operation_token,
+        ):
             raise AssertionError("successful claims are not rescheduled")
 
     repository = Repository()
@@ -190,4 +220,27 @@ async def test_missing_account_still_destroys_expired_escrow():
 
     await reaper.run_once()
 
-    assert repository.abandoned == [(claim.bundle_id, NOW)]
+    assert len(repository.abandoned) == 1
+    assert repository.abandoned[0][:2] == (claim.bundle_id, NOW)
+    assert repository.abandoned[0][2]
+
+
+async def test_claim_reserved_by_another_worker_is_skipped():
+    claim = type("Claim", (), {"bundle_id": "leased-bundle"})()
+
+    class Repository:
+        async def list_expired_bundle_claims(self, now, *, stale_before, limit):
+            return [claim]
+
+        async def reserve_bundle_reap(self, bundle_id, **_kwargs):
+            assert bundle_id == claim.bundle_id
+            return False
+
+        async def get(self, _bundle_id):
+            raise AssertionError("an unreserved claim must not reach Matrix lookup")
+
+    admin = FakeAdminClient()
+    reaper = BundleClaimReaper(Repository(), admin, now_provider=lambda: NOW)
+
+    assert await reaper.reap_once() == 0
+    assert admin.deactivated == []

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import logging
 from collections.abc import Awaitable, Callable
@@ -151,6 +152,9 @@ class BundleService:
 
         try:
             return await persist(result, result.encoded_bundle)
+        except asyncio.CancelledError:
+            await self._deactivate_orphan(result.user_mxid)
+            raise
         except Exception:
             # The account exists on Synapse but we cannot record it. An
             # untracked live account is worse than none, so roll it back.
@@ -158,14 +162,18 @@ class BundleService:
                 "Failed to persist %s after provisioning; deactivating the account",
                 result.user_mxid,
             )
-            try:
-                await self._admin_client.deactivate_user(result.user_mxid)
-            except Exception:  # noqa: BLE001 - rollback is best-effort
-                logger.exception(
-                    "Could not deactivate orphan account %s — needs manual cleanup",
-                    result.user_mxid,
-                )
+            await self._deactivate_orphan(result.user_mxid)
             raise
+
+    async def _deactivate_orphan(self, user_mxid: str) -> None:
+        """Best-effort rollback for a provisioned account that was not persisted."""
+        try:
+            await self._admin_client.deactivate_user(user_mxid)
+        except Exception:  # noqa: BLE001 - rollback is best-effort
+            logger.exception(
+                "Could not deactivate orphan account %s — needs manual cleanup",
+                user_mxid,
+            )
 
     async def _persist_standard_bundle(
         self,

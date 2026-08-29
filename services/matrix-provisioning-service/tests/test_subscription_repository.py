@@ -55,7 +55,12 @@ def test_existing_bundle_claim_schema_is_migrated(tmp_path):
     connection = sqlite3.connect(db_path)
     columns = {row[1] for row in connection.execute("PRAGMA table_info(bundle_claims)")}
     connection.close()
-    assert "next_reap_at" in columns
+    assert {
+        "next_reap_at",
+        "operation_token",
+        "operation_kind",
+        "operation_started_at",
+    } <= columns
 
 
 def verified_subscription(
@@ -666,6 +671,133 @@ async def test_linked_purchase_inherits_existing_bundle_claim(subscription_repos
     assert moved_claim.subscription_id == replacement.subscription_id
 
 
+async def test_bundle_claim_operation_lease_is_exclusive_and_recoverable(
+    subscription_repository,
+):
+    entitlement = await create_entitlement(subscription_repository)
+    await subscription_repository.store_verified_subscription(
+        verified_subscription(entitlement.entitlement_id, "paid-token"),
+        now=NOW,
+    )
+    _, claim = await store_paid_bundle(subscription_repository, "paid-token")
+    await subscription_repository.reserve_bundle_rotation(
+        claim.bundle_id,
+        operation_token="rotation-one",
+        now=NOW,
+        stale_before=NOW - timedelta(minutes=5),
+    )
+
+    with pytest.raises(BundleClaimConflictException, match="already being processed"):
+        await subscription_repository.reserve_bundle_rotation(
+            claim.bundle_id,
+            operation_token="rotation-two",
+            now=NOW + timedelta(minutes=1),
+            stale_before=NOW - timedelta(minutes=4),
+        )
+    assert not await subscription_repository.reserve_bundle_reap(
+        claim.bundle_id,
+        operation_token="early-reap",
+        now=NOW + timedelta(hours=1),
+        stale_before=NOW - timedelta(minutes=4),
+    )
+    assert not await subscription_repository.release_bundle_claim_operation(
+        claim.bundle_id,
+        operation_token="wrong-owner",
+    )
+
+    assert await subscription_repository.reserve_bundle_reap(
+        claim.bundle_id,
+        operation_token="stale-reap",
+        now=claim.expires_at,
+        stale_before=NOW,
+    )
+    assert not await subscription_repository.release_bundle_claim_operation(
+        claim.bundle_id,
+        operation_token="rotation-one",
+    )
+    with pytest.raises(BundleClaimConflictException, match="lease was lost"):
+        await subscription_repository.reschedule_bundle_claim_reap(
+            claim.bundle_id,
+            next_reap_at=claim.expires_at + timedelta(minutes=5),
+            operation_token="wrong-owner",
+        )
+    rescheduled = await subscription_repository.reschedule_bundle_claim_reap(
+        claim.bundle_id,
+        next_reap_at=claim.expires_at + timedelta(minutes=5),
+        operation_token="stale-reap",
+    )
+
+    assert rescheduled.encrypted_bundle is not None
+    assert (
+        await subscription_repository.list_expired_bundle_claims(
+            claim.expires_at,
+            stale_before=claim.expires_at - timedelta(minutes=5),
+            limit=50,
+        )
+        == []
+    )
+
+
+async def test_terminal_and_unknown_claims_cannot_be_reserved(subscription_repository):
+    entitlement = await create_entitlement(subscription_repository)
+    await subscription_repository.store_verified_subscription(
+        verified_subscription(entitlement.entitlement_id, "paid-token"),
+        now=NOW,
+    )
+    _, claim = await store_paid_bundle(subscription_repository, "paid-token")
+    await subscription_repository.destroy_bundle_claim(claim.bundle_id, now=NOW)
+
+    assert not await subscription_repository.reserve_bundle_reap(
+        claim.bundle_id,
+        operation_token="reap-operation",
+        now=claim.expires_at,
+        stale_before=NOW,
+    )
+    with pytest.raises(BundleClaimConflictException, match="already being processed"):
+        await subscription_repository.reserve_bundle_rotation(
+            claim.bundle_id,
+            operation_token="rotation-operation",
+            now=NOW,
+            stale_before=NOW - timedelta(minutes=5),
+        )
+    with pytest.raises(BundleClaimConflictException, match="Unknown bundle claim"):
+        await subscription_repository.reserve_bundle_rotation(
+            "unknown",
+            operation_token="rotation-operation",
+            now=NOW,
+            stale_before=NOW - timedelta(minutes=5),
+        )
+
+
+async def test_pending_claim_reauthorization_rejects_active_operation(
+    subscription_repository,
+):
+    entitlement = await create_entitlement(subscription_repository)
+    await subscription_repository.store_verified_subscription(
+        verified_subscription(entitlement.entitlement_id, "paid-token"),
+        now=NOW,
+    )
+    _, claim = await store_paid_bundle(subscription_repository, "paid-token")
+    await subscription_repository.reserve_bundle_rotation(
+        claim.bundle_id,
+        operation_token="rotation-operation",
+        now=NOW,
+        stale_before=NOW - timedelta(minutes=5),
+    )
+
+    with pytest.raises(BundleClaimConflictException, match="cannot be reauthorized"):
+        await subscription_repository.reauthorize_pending_bundle_claim(
+            entitlement.entitlement_id,
+            claim_secret_hash="replacement-secret-hash",
+        )
+    with pytest.raises(BundleClaimConflictException, match="rotation lease was lost"):
+        await subscription_repository.confirm_paid_bundle_rotation(
+            claim.bundle_id,
+            now=NOW,
+            operation_token="wrong-operation",
+        )
+
+
 async def test_same_token_refresh_does_not_clear_existing_bundle(
     subscription_repository,
 ):
@@ -692,8 +824,16 @@ async def test_same_token_refresh_does_not_clear_existing_bundle(
         lambda repository: repository.mark_bundle_delivered("unknown", now=NOW),
         lambda repository: repository.destroy_bundle_claim("unknown", now=NOW),
         lambda repository: repository.abandon_bundle_claim("unknown", now=NOW),
-        lambda repository: repository.reschedule_bundle_claim_reap("unknown", next_reap_at=NOW),
-        lambda repository: repository.confirm_paid_bundle_rotation("unknown", now=NOW),
+        lambda repository: repository.reschedule_bundle_claim_reap(
+            "unknown",
+            next_reap_at=NOW,
+            operation_token="reap-operation",
+        ),
+        lambda repository: repository.confirm_paid_bundle_rotation(
+            "unknown",
+            now=NOW,
+            operation_token="rotation-operation",
+        ),
     ],
 )
 async def test_unknown_bundle_claim_mutations_are_rejected(
@@ -739,4 +879,8 @@ async def test_revoked_paid_bundle_cannot_be_confirmed(subscription_repository):
     await subscription_repository.revoke(user.bundle_id, "abandoned")
 
     with pytest.raises(BundleClaimConflictException, match="Revoked"):
-        await subscription_repository.confirm_paid_bundle_rotation(user.bundle_id, now=NOW)
+        await subscription_repository.confirm_paid_bundle_rotation(
+            user.bundle_id,
+            now=NOW,
+            operation_token="rotation-operation",
+        )

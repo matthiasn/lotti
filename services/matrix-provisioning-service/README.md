@@ -105,8 +105,10 @@ failure may retry the same authenticated claim for 24 hours, so the credential
 is held in AES-256-GCM escrow instead of being lost after one response. The
 server destroys that ciphertext only after it observes both the claim-bound
 challenge in the Matrix room and proof that the bootstrap password no longer
-authenticates. Expired unconfirmed claims deactivate the abandoned account and
-destroy the escrow.
+authenticates. Rotation validation and expiry cleanup take mutually exclusive,
+recoverable database leases before touching Matrix, so cleanup cannot revoke an
+account whose proof is already being checked. Expired unconfirmed claims
+deactivate the abandoned account and destroy the escrow.
 
 RTDN is a wake-up signal, never entitlement evidence. The push route verifies
 Google's OIDC token, resolves only an already-bound purchase token, re-queries
@@ -115,13 +117,15 @@ or delayed notifications. When Play reports an access-granting state the Matrix
 account is unsuspended; otherwise it is suspended reversibly. The service uses
 Google's authoritative line-item `expiryTime` as the exact boundary. Configure
 the Play Console grace period to **three days**; the service does not add a
-second local grace interval.
+second local grace interval. Enforcement is serialized per entitlement and
+reloads its current token while holding that stripe, preventing a retired token
+from overwriting a replacement token's access decision.
 
 ## Configuration
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `MATRIX_HOMESERVER` | Yes | — | Homeserver URL |
+| `MATRIX_HOMESERVER` | Yes | — | Non-empty HTTPS homeserver URL; redirects are never followed |
 | `MATRIX_ADMIN_TOKEN` | Preferred | — | Long-lived Synapse admin access token |
 | `MATRIX_ADMIN_USER` / `MATRIX_ADMIN_PASSWORD` | Fallback | — | Used only when no token is set |
 | `API_KEYS` | Yes | — | Comma-separated client keys (rotation callback) |
@@ -153,7 +157,10 @@ second local grace interval.
 
 Prefer `MATRIX_ADMIN_TOKEN`: it keeps no password at rest, is revocable
 independently, and skips the login round trip. A blank value falls back to
-password login rather than authenticating with an empty string.
+password login rather than authenticating with an empty string. Bootstrap
+password validation reuses one dedicated Matrix device and logs out its access
+token after every successful check, preventing rotation proofs from accumulating
+live validation sessions.
 
 Google authentication uses Application Default Credentials with the Android
 Publisher and Play Integrity scopes. Prefer workload identity or a Secret Manager-mounted
@@ -213,7 +220,13 @@ existing Matrix account before responding. Destroyed bootstrap credentials are
 never regenerated. An expired claim that never completed rotation is different:
 the reaper revokes that account, and a later verified payment provisions a new
 account instead. Failed reaper attempts use a separate five-minute retry time;
-they do not extend the claim's credential-delivery TTL or block newer claims.
+they do not extend the claim's credential-delivery TTL or block newer claims. A
+linked replacement that arrives before rotation atomically rebinds the pending
+escrow to its newly verified claim secret. If a deterministic Matrix localpart
+survives an earlier rollback, provisioning retries once with a random suffix.
+Every retry reloads the current subscription, converges Matrix suspension, and
+rejects non-granting states or an elapsed authoritative expiry before decrypting
+escrow.
 
 ## Production deployment requirements
 

@@ -28,8 +28,10 @@ class FakeAdminClient:
         self.suspended = suspended
         self.changes = []
         self.failure = None
+        self.activity_calls = 0
 
     async def get_user_activity(self, _user_mxid):
+        self.activity_calls += 1
         if self.failure:
             raise self.failure
         return SimpleNamespace(suspended=self.suspended)
@@ -162,6 +164,21 @@ async def test_unprovisioned_subscription_has_no_matrix_side_effect(repository):
     assert admin.changes == []
 
 
+async def test_retired_entitlement_without_current_subscription_has_no_side_effect():
+    subscription = SimpleNamespace(entitlement_id="retired-entitlement")
+
+    class Repository:
+        async def get_current_subscription(self, entitlement_id):
+            assert entitlement_id == subscription.entitlement_id
+            return None
+
+    admin = FakeAdminClient()
+    service = SubscriptionAccessService(Repository(), admin)
+
+    assert await service.enforce(subscription, now=NOW) is None
+    assert admin.activity_calls == 0
+
+
 async def test_synapse_failure_is_recorded_and_propagated(repository):
     subscription = await setup_subscription(
         repository,
@@ -180,12 +197,55 @@ async def test_synapse_failure_is_recorded_and_propagated(repository):
 
 async def test_subscription_with_dangling_bundle_reference_fails_closed():
     class Repository:
+        async def get_current_subscription(self, entitlement_id):
+            assert entitlement_id == "entitlement-one"
+            return subscription
+
         async def get(self, bundle_id):
             assert bundle_id == "missing-bundle"
             return None
 
     service = SubscriptionAccessService(Repository(), FakeAdminClient())
-    subscription = SimpleNamespace(bundle_id="missing-bundle")
+    subscription = SimpleNamespace(
+        entitlement_id="entitlement-one",
+        bundle_id="missing-bundle",
+    )
 
     with pytest.raises(BundleClaimConflictException, match="missing Matrix bundle"):
         await service.enforce(subscription, now=NOW)
+
+
+async def test_stale_predecessor_enforces_current_replacement(repository):
+    predecessor = await setup_subscription(
+        repository,
+        state=EntitlementState.EXPIRED,
+    )
+    await repository.store_verified_subscription(
+        VerifiedSubscription(
+            entitlement_id="entitlement-one",
+            token_fingerprint="replacement-token",
+            encrypted_purchase_token=b"replacement-token",
+            encryption_key_id="test-key",
+            package_name="com.matthiasn.lotti",
+            product_id="lotti_sync",
+            base_plan_id="annual",
+            latest_order_id="GPA.5678",
+            google_state=GoogleSubscriptionState.ACTIVE,
+            entitlement_state=EntitlementState.ACTIVE,
+            start_time=NOW,
+            current_period_end=NOW + timedelta(days=365),
+            grace_deadline=None,
+            acknowledgement_state=AcknowledgementState.ACKNOWLEDGED,
+            binding_verified=True,
+            last_verified_at=NOW,
+            next_reconciliation_at=NOW + timedelta(hours=6),
+            linked_token_fingerprint=predecessor.token_fingerprint,
+        ),
+        now=NOW,
+    )
+    admin = FakeAdminClient(suspended=True)
+    service = SubscriptionAccessService(repository, admin)
+
+    assert await service.enforce(predecessor, now=NOW) is False
+    assert admin.changes == [("@sync_one:example.com", False)]
+    assert admin.suspended is False

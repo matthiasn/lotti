@@ -8,6 +8,7 @@ activity and media usage.
 from __future__ import annotations
 
 import logging
+from collections.abc import Mapping
 from dataclasses import dataclass
 from time import time_ns
 
@@ -35,6 +36,10 @@ MAX_MEDIA_PAGES = 10_000
 # Login-as-user tokens are needed for one state read only. Synapse otherwise
 # makes these impersonation tokens non-expiring by default.
 LOGIN_AS_USER_TOKEN_TTL_MS = 60_000
+
+# Reusing one explicit device prevents password-validation logins from creating
+# an unbounded device list if a response is lost before logout completes.
+PASSWORD_CHECK_DEVICE_ID = "LOTTI_PROVISIONING_PASSWORD_CHECK"  # noqa: S105 - not a secret
 
 
 @dataclass(frozen=True)
@@ -408,9 +413,25 @@ class SynapseAdminClient(SynapseClientBase):
                 "type": "m.login.password",
                 "identifier": {"type": "m.id.user", "user": user_mxid},
                 "password": password,
+                "device_id": PASSWORD_CHECK_DEVICE_ID,
             },
         )
         if resp.is_success:
+            payload = resp.json()
+            token = payload.get("access_token") if isinstance(payload, Mapping) else None
+            if not isinstance(token, str) or not token:
+                raise ProvisioningError(
+                    f"Synapse did not return a login token while checking {user_mxid}"
+                )
+            logout = await client.post(
+                "/_matrix/client/v3/logout",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+            if not logout.is_success:
+                raise ProvisioningError(
+                    f"Could not clean up password check for {user_mxid} "
+                    f"(HTTP {logout.status_code})"
+                )
             return True
         if resp.status_code in (httpx.codes.UNAUTHORIZED, httpx.codes.FORBIDDEN):
             return False
@@ -439,8 +460,9 @@ class SynapseAdminClient(SynapseClientBase):
             },
         )
         token_response.raise_for_status()
-        token = token_response.json().get("access_token")
-        if not token:
+        login_payload = token_response.json()
+        token = login_payload.get("access_token") if isinstance(login_payload, Mapping) else None
+        if not isinstance(token, str) or not token:
             raise ProvisioningError(f"Synapse did not return a login token for {user_mxid}")
         encoded_type = encode_room_id_for_path(event_type)
         encoded_state_key = encode_room_id_for_path(state_key)

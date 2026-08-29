@@ -163,6 +163,67 @@ async def test_persistence_failure_deactivates_the_orphan_account(
     assert deactivations, "expected a rollback deactivation call"
 
 
+async def test_persistence_cancellation_deactivates_orphan_and_releases_username(
+    repository,
+    credentials,
+    tracking_transport,
+):
+    transport, requests = tracking_transport
+    service = _service(repository, credentials, transport)
+    persist_started = asyncio.Event()
+    keep_persisting = asyncio.Event()
+
+    async def persist(_result, _encoded):
+        persist_started.set()
+        await keep_persisting.wait()
+
+    task = asyncio.create_task(
+        service.create_bundle_with_persistence(
+            CreateBundleRequest(username="cancelled_user"),
+            persist,
+        )
+    )
+    await persist_started.wait()
+    task.cancel()
+
+    with pytest.raises(asyncio.CancelledError):
+        await task
+
+    deactivations = [
+        request
+        for request in requests
+        if request.method == "PUT"
+        and "/_synapse/admin/v2/users/" in str(request.url)
+        and json.loads(request.content).get("deactivated") is True
+    ]
+    assert len(deactivations) == 1
+    assert await repository.claim_username("cancelled_user") is True
+
+
+async def test_orphan_cleanup_failure_preserves_persistence_error(
+    repository,
+    credentials,
+    monkeypatch,
+    caplog,
+):
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "PUT" and json.loads(request.content).get("deactivated") is True:
+            return httpx.Response(503, json={})
+        return synapse_handler(request)
+
+    service = _service(repository, credentials, httpx.MockTransport(handler))
+
+    async def exploding_create(**_kwargs):
+        raise RuntimeError("disk full")
+
+    monkeypatch.setattr(repository, "create", exploding_create)
+
+    with pytest.raises(RuntimeError, match="disk full"):
+        await service.create_bundle(CreateBundleRequest(username="orphaned_user"))
+
+    assert "needs manual cleanup" in caplog.text
+
+
 async def test_confirm_rotation_marks_the_record_rotated(repository, credentials, mock_transport):
     service = _service(repository, credentials, mock_transport)
     response = await service.create_bundle(CreateBundleRequest(username="lotti_user"))

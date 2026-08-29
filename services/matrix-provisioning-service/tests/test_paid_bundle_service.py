@@ -5,13 +5,14 @@
 from __future__ import annotations
 
 import asyncio
-from dataclasses import replace
+from dataclasses import fields, replace
 from datetime import datetime, timedelta, timezone
 
 import pytest
 from src.core.exceptions import (
     BundleClaimConflictException,
     GooglePlayVerificationException,
+    UsernameAlreadyProvisionedException,
 )
 from src.core.subscriptions import (
     AcknowledgementState,
@@ -41,14 +42,17 @@ ENCODED_BUNDLE = SyncBundle(
 
 
 class FakeBundleService:
-    def __init__(self, *, block_first=False):
+    def __init__(self, *, block_first=False, reject_first_username=False):
         self.calls = []
         self.block_first = block_first
+        self.reject_first_username = reject_first_username
         self.first_started = asyncio.Event()
         self.release_first = asyncio.Event()
 
     async def create_bundle_with_persistence(self, request, persist):
         self.calls.append(request)
+        if self.reject_first_username and len(self.calls) == 1:
+            raise UsernameAlreadyProvisionedException("localpart already exists")
         if self.block_first and len(self.calls) == 1:
             self.first_started.set()
             await self.release_first.wait()
@@ -147,6 +151,12 @@ def submission(**overrides):
     }
     values.update(overrides)
     return PurchaseSubmission(**values)
+
+
+def refreshed_snapshot(stored, **overrides):
+    values = {field.name: getattr(stored, field.name) for field in fields(VerifiedSubscription)}
+    values.update(overrides)
+    return VerifiedSubscription(**values)
 
 
 async def test_first_delivery_provisions_once_escrows_and_acknowledges(
@@ -360,6 +370,81 @@ async def test_abandoned_claim_is_replaced_by_fresh_bundle(
     assert (await repository.get(abandoned.bundle_id)).status.value == "revoked"
 
 
+async def test_replacement_purchase_reauthorizes_pending_escrow(
+    service,
+    repository,
+    bundle_service,
+):
+    original = await verified_purchase(repository)
+    first = await service.provision_or_deliver(original, submission(), now=NOW)
+    replacement = await repository.store_verified_subscription(
+        VerifiedSubscription(
+            entitlement_id="entitlement-one",
+            token_fingerprint="replacement-token-fingerprint",
+            encrypted_purchase_token=b"encrypted-replacement-token",
+            encryption_key_id="test-key",
+            package_name="com.matthiasn.lotti",
+            product_id="lotti_sync",
+            base_plan_id="annual",
+            latest_order_id="GPA.5678",
+            google_state=GoogleSubscriptionState.ACTIVE,
+            entitlement_state=EntitlementState.ACTIVE,
+            start_time=NOW + timedelta(minutes=30),
+            current_period_end=NOW + timedelta(days=395),
+            grace_deadline=None,
+            acknowledgement_state=AcknowledgementState.PENDING,
+            binding_verified=True,
+            last_verified_at=NOW + timedelta(minutes=30),
+            next_reconciliation_at=NOW + timedelta(hours=6, minutes=30),
+            linked_token_fingerprint=original.subscription.token_fingerprint,
+        ),
+        now=NOW + timedelta(minutes=30),
+    )
+    replacement_verified = VerifiedPurchaseResult(
+        subscription=replacement,
+        request_hash="replacement-request-hash",
+        claim_secret_hash=SecretHasher().hash("replacement-claim-secret"),
+    )
+
+    delivered = await service.provision_or_deliver(
+        replacement_verified,
+        submission(
+            base_plan_id="annual",
+            purchase_token="replacement-token",
+            claim_secret="replacement-claim-secret",
+        ),
+        now=NOW + timedelta(minutes=30),
+    )
+
+    assert delivered.bundle_id == first.bundle_id
+    assert delivered.bundle == first.bundle
+    assert len(bundle_service.calls) == 1
+    with pytest.raises(BundleClaimConflictException, match="Invalid bundle claim secret"):
+        await service.deliver_existing_claim(
+            entitlement_id="entitlement-one",
+            claim_secret="claim-secret",
+            now=NOW + timedelta(minutes=30),
+        )
+
+
+async def test_occupied_deterministic_username_retries_with_fresh_localpart(
+    repository,
+    google_client,
+    cipher,
+):
+    bundle_service = FakeBundleService(reject_first_username=True)
+    service = PaidBundleService(bundle_service, repository, google_client, cipher)
+    verified = await verified_purchase(repository)
+
+    delivered = await service.provision_or_deliver(verified, submission(), now=NOW)
+
+    assert delivered.bundle == ENCODED_BUNDLE
+    assert len(bundle_service.calls) == 2
+    assert bundle_service.calls[0].username == "sync_entitlementone"
+    assert bundle_service.calls[1].username.startswith("sync_entitlementone")
+    assert bundle_service.calls[1].username != bundle_service.calls[0].username
+
+
 async def test_delivery_retry_rejects_missing_claim(service):
     with pytest.raises(BundleClaimConflictException, match="No bundle claim"):
         await service.deliver_existing_claim(
@@ -391,6 +476,42 @@ async def test_delivery_retry_rejects_wrong_claim_secret(service, repository):
             claim_secret="attacker-secret",
             now=NOW + timedelta(minutes=1),
         )
+
+
+@pytest.mark.parametrize(
+    ("state", "period_end"),
+    [
+        (EntitlementState.SUSPENDED, NOW + timedelta(days=30)),
+        (EntitlementState.ACTIVE, NOW + timedelta(minutes=1)),
+    ],
+)
+async def test_delivery_retry_rejects_current_subscription_without_access(
+    service,
+    repository,
+    state,
+    period_end,
+):
+    verified = await verified_purchase(repository)
+    first = await service.provision_or_deliver(verified, submission(), now=NOW)
+    await repository.store_verified_subscription(
+        refreshed_snapshot(
+            await repository.get_current_subscription("entitlement-one"),
+            entitlement_state=state,
+            current_period_end=period_end,
+        ),
+        now=NOW + timedelta(minutes=1),
+    )
+
+    with pytest.raises(GooglePlayVerificationException, match="does not currently grant"):
+        await service.deliver_existing_claim(
+            entitlement_id="entitlement-one",
+            claim_secret="claim-secret",
+            now=NOW + timedelta(minutes=1),
+        )
+
+    assert (await repository.get_bundle_claim_for_entitlement("entitlement-one")).bundle_id == (
+        first.bundle_id
+    )
 
 
 def test_paid_username_is_deterministic_safe_and_bounded():

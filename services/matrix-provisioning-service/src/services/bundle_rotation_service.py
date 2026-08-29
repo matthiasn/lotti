@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime
+import uuid
+from datetime import datetime, timedelta
 
 from shared.matrix import SynapseAdminClient, SyncBundle
 
@@ -29,12 +30,14 @@ class BundleRotationService:
         secret_cipher: SecretCipher,
         *,
         secret_hasher: SecretHasher | None = None,
+        operation_timeout: timedelta = timedelta(minutes=5),
     ):
         self._repository = repository
         self._identity_service = identity_service
         self._admin_client = admin_client
         self._secret_cipher = secret_cipher
         self._secret_hasher = secret_hasher or SecretHasher()
+        self._operation_timeout = operation_timeout
 
     async def confirm_rotation(
         self,
@@ -67,34 +70,51 @@ class BundleRotationService:
         if now >= claim.expires_at or claim.encrypted_bundle is None:
             raise BundleClaimConflictException("Bundle claim has expired")
 
-        user = await self._repository.get(bundle_id)
-        if user is None:
-            raise BundleClaimConflictException("Provisioned Matrix account is missing")
-        state = await self._admin_client.get_room_state_as_user(
-            user.user_mxid,
-            user.room_id,
-            ROTATION_EVENT_TYPE,
-            state_key=bundle_id,
-        )
-        expected_challenge = rotation_challenge(claim_secret, bundle_id)
-        if state.get("challenge") != expected_challenge:
-            raise BundleClaimConflictException("Matrix rotation challenge does not match")
-
-        encoded = self._secret_cipher.decrypt(
-            claim.encrypted_bundle,
-            purpose="bundle",
-            record_id=bundle_id,
-            key_id=claim.encryption_key_id,
-        ).decode()
-        bootstrap_password = SyncBundle.decode(encoded).password
-        if await self._admin_client.password_authenticates(
-            user.user_mxid,
-            bootstrap_password,
-        ):
-            raise BundleClaimConflictException("Bootstrap password still authenticates")
-
-        _, confirmed = await self._repository.confirm_paid_bundle_rotation(
+        operation_token = str(uuid.uuid4())
+        claim = await self._repository.reserve_bundle_rotation(
             bundle_id,
+            operation_token=operation_token,
             now=now,
+            stale_before=now - self._operation_timeout,
         )
-        return confirmed
+        completed = False
+        try:
+            user = await self._repository.get(bundle_id)
+            if user is None:
+                raise BundleClaimConflictException("Provisioned Matrix account is missing")
+            state = await self._admin_client.get_room_state_as_user(
+                user.user_mxid,
+                user.room_id,
+                ROTATION_EVENT_TYPE,
+                state_key=bundle_id,
+            )
+            expected_challenge = rotation_challenge(claim_secret, bundle_id)
+            if state.get("challenge") != expected_challenge:
+                raise BundleClaimConflictException("Matrix rotation challenge does not match")
+
+            encoded = self._secret_cipher.decrypt(
+                claim.encrypted_bundle,
+                purpose="bundle",
+                record_id=bundle_id,
+                key_id=claim.encryption_key_id,
+            ).decode()
+            bootstrap_password = SyncBundle.decode(encoded).password
+            if await self._admin_client.password_authenticates(
+                user.user_mxid,
+                bootstrap_password,
+            ):
+                raise BundleClaimConflictException("Bootstrap password still authenticates")
+
+            _, confirmed = await self._repository.confirm_paid_bundle_rotation(
+                bundle_id,
+                now=now,
+                operation_token=operation_token,
+            )
+            completed = True
+            return confirmed
+        finally:
+            if not completed:
+                await self._repository.release_bundle_claim_operation(
+                    bundle_id,
+                    operation_token=operation_token,
+                )

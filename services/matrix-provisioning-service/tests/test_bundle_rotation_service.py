@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -14,6 +15,7 @@ from src.core.subscriptions import (
     GoogleSubscriptionState,
     VerifiedSubscription,
 )
+from src.services.bundle_claim_reaper import BundleClaimReaper
 from src.services.bundle_rotation_service import BundleRotationService
 from src.services.paid_bundle_service import rotation_challenge
 from src.services.secret_cipher import SecretCipher
@@ -34,17 +36,27 @@ class FakeAdminClient:
         self.password_is_valid = False
         self.state_calls = 0
         self.password_calls = 0
+        self.state_started = asyncio.Event()
+        self.release_state = asyncio.Event()
+        self.block_state = False
+        self.deactivated = []
 
     async def get_room_state_as_user(self, *_args, **_kwargs):
         self.state_calls += 1
+        if self.block_state:
+            self.state_started.set()
+            await self.release_state.wait()
         return self.state
 
     async def password_authenticates(self, _user_mxid, _password):
         self.password_calls += 1
         return self.password_is_valid
 
+    async def deactivate_user(self, user_mxid):
+        self.deactivated.append(user_mxid)
 
-async def setup_claim(repository, identity_service, cipher):
+
+async def setup_claim(repository, identity_service, cipher, *, expires_at=None):
     entitlement = await identity_service.create_entitlement(now=NOW)
     subscription = await repository.store_verified_subscription(
         VerifiedSubscription(
@@ -90,7 +102,7 @@ async def setup_claim(repository, identity_service, cipher):
         claim_secret_hash=SecretHasher().hash("claim-secret"),
         encrypted_bundle=cipher.encrypt(encoded.encode(), purpose="bundle", record_id=bundle_id),
         encryption_key_id=cipher.key_id,
-        expires_at=NOW + timedelta(hours=24),
+        expires_at=expires_at or NOW + timedelta(hours=24),
         now=NOW,
     )
     return entitlement, claim
@@ -184,6 +196,17 @@ async def test_wrong_room_challenge_never_checks_or_destroys_password(dependenci
 
     assert admin_client.password_calls == 0
 
+    admin_client.state = {"challenge": rotation_challenge("claim-secret", claim.bundle_id)}
+    confirmed = await service.confirm_rotation(
+        entitlement_id=entitlement.entitlement_id,
+        entitlement_auth_secret=entitlement.auth_secret,
+        bundle_id=claim.bundle_id,
+        claim_secret="claim-secret",
+        now=NOW + timedelta(minutes=2),
+    )
+
+    assert confirmed.confirmed_at == NOW + timedelta(minutes=2)
+
 
 async def test_repeated_valid_confirmation_is_idempotent_without_matrix_calls(
     dependencies,
@@ -271,3 +294,40 @@ async def test_missing_provisioned_account_fails_before_matrix_lookup(
         )
 
     assert admin_client.state_calls == 0
+
+
+async def test_rotation_reservation_prevents_expiry_reaper_from_revoking_account(
+    dependencies,
+):
+    repository, identity_service, admin_client, cipher, service = dependencies
+    entitlement, claim = await setup_claim(
+        repository,
+        identity_service,
+        cipher,
+        expires_at=NOW + timedelta(minutes=1),
+    )
+    admin_client.state = {"challenge": rotation_challenge("claim-secret", claim.bundle_id)}
+    admin_client.block_state = True
+    confirmation = asyncio.create_task(
+        service.confirm_rotation(
+            entitlement_id=entitlement.entitlement_id,
+            entitlement_auth_secret=entitlement.auth_secret,
+            bundle_id=claim.bundle_id,
+            claim_secret="claim-secret",
+            now=NOW,
+        )
+    )
+    await admin_client.state_started.wait()
+    reaper = BundleClaimReaper(
+        repository,
+        admin_client,
+        now_provider=lambda: NOW + timedelta(minutes=1),
+    )
+
+    assert await reaper.reap_once() == 0
+    assert admin_client.deactivated == []
+    admin_client.release_state.set()
+    confirmed = await confirmation
+
+    assert confirmed.confirmed_at == NOW
+    assert (await repository.get(claim.bundle_id)).status.value == "rotated"

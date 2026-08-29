@@ -12,10 +12,12 @@ from datetime import datetime, timedelta
 from ..core.exceptions import (
     BundleClaimConflictException,
     GooglePlayVerificationException,
+    UsernameAlreadyProvisionedException,
 )
 from ..core.models import CreateBundleRequest
 from ..core.subscriptions import (
     AcknowledgementState,
+    BundleClaim,
     EntitlementState,
     PaidBundleDelivery,
     PurchaseSubmission,
@@ -63,7 +65,7 @@ class PaidBundleService:
         now: datetime,
     ) -> PaidBundleDelivery:
         """Return the same escrowed bundle across network retries."""
-        if verified.subscription.entitlement_state not in _ACCESS_STATES:
+        if not _grants_access(verified.subscription, now=now):
             raise GooglePlayVerificationException(
                 "Subscription does not currently grant SYNC access"
             )
@@ -74,10 +76,7 @@ class PaidBundleService:
         ):
             raise BundleClaimConflictException("Invalid bundle claim secret")
 
-        lock_index = int(
-            hashlib.sha256(verified.subscription.entitlement_id.encode()).hexdigest(),
-            16,
-        ) % len(self._provisioning_locks)
+        lock_index = self._lock_index(verified.subscription.entitlement_id)
         async with self._provisioning_locks[lock_index]:
             return await self._provision_or_deliver_locked(verified, submission, now=now)
 
@@ -118,49 +117,36 @@ class PaidBundleService:
                     bundle_import_required=False,
                 )
             else:
+                if existing.claim_secret_hash != verified.claim_secret_hash:
+                    existing = await self._repository.reauthorize_pending_bundle_claim(
+                        verified.subscription.entitlement_id,
+                        claim_secret_hash=verified.claim_secret_hash,
+                    )
                 delivery = await self._deliver_existing(
                     existing,
                     claim_secret=submission.claim_secret,
                     now=now,
                 )
         else:
-            username = self._username(
+            initial_username = self._username(
                 verified.subscription.entitlement_id,
                 retry_suffix=(uuid.uuid4().hex[:8] if reprovisioning else None),
             )
-            request = CreateBundleRequest(
-                username=username,
-                display_name="Lotti SYNC",
-                notes="Verified Google Play subscription",
-            )
-
-            async def persist(result, encoded):
-                bundle_id = str(uuid.uuid4())
-                encrypted_bundle = self._secret_cipher.encrypt(
-                    encoded.encode(),
-                    purpose="bundle",
-                    record_id=bundle_id,
-                )
-                _, claim = await self._repository.store_paid_bundle(
-                    token_fingerprint=verified.subscription.token_fingerprint,
-                    bundle_id=bundle_id,
-                    username=username,
-                    user_mxid=result.user_mxid,
-                    home_server=result.bundle.home_server,
-                    server_name=result.server_name,
-                    room_id=result.room_id,
-                    display_name=request.display_name,
-                    bundle_fingerprint=fingerprint_bundle(encoded),
-                    notes=request.notes,
-                    claim_secret_hash=verified.claim_secret_hash,
-                    encrypted_bundle=encrypted_bundle,
-                    encryption_key_id=self._secret_cipher.key_id,
-                    expires_at=now + self._claim_ttl,
+            try:
+                claim = await self._provision_claim(
+                    verified,
+                    username=initial_username,
                     now=now,
                 )
-                return claim
-
-            claim = await self._bundle_service.create_bundle_with_persistence(request, persist)
+            except UsernameAlreadyProvisionedException:
+                claim = await self._provision_claim(
+                    verified,
+                    username=self._username(
+                        verified.subscription.entitlement_id,
+                        retry_suffix=uuid.uuid4().hex[:8],
+                    ),
+                    now=now,
+                )
             delivery = await self._deliver_existing(
                 claim,
                 claim_secret=submission.claim_secret,
@@ -179,6 +165,48 @@ class PaidBundleService:
             )
         return delivery
 
+    async def _provision_claim(
+        self,
+        verified: VerifiedPurchaseResult,
+        *,
+        username: str,
+        now: datetime,
+    ) -> BundleClaim:
+        """Provision and atomically persist one paid claim for a chosen localpart."""
+        request = CreateBundleRequest(
+            username=username,
+            display_name="Lotti SYNC",
+            notes="Verified Google Play subscription",
+        )
+
+        async def persist(result, encoded):
+            bundle_id = str(uuid.uuid4())
+            encrypted_bundle = self._secret_cipher.encrypt(
+                encoded.encode(),
+                purpose="bundle",
+                record_id=bundle_id,
+            )
+            _, claim = await self._repository.store_paid_bundle(
+                token_fingerprint=verified.subscription.token_fingerprint,
+                bundle_id=bundle_id,
+                username=username,
+                user_mxid=result.user_mxid,
+                home_server=result.bundle.home_server,
+                server_name=result.server_name,
+                room_id=result.room_id,
+                display_name=request.display_name,
+                bundle_fingerprint=fingerprint_bundle(encoded),
+                notes=request.notes,
+                claim_secret_hash=verified.claim_secret_hash,
+                encrypted_bundle=encrypted_bundle,
+                encryption_key_id=self._secret_cipher.key_id,
+                expires_at=now + self._claim_ttl,
+                now=now,
+            )
+            return claim
+
+        return await self._bundle_service.create_bundle_with_persistence(request, persist)
+
     async def deliver_existing_claim(
         self,
         *,
@@ -187,14 +215,17 @@ class PaidBundleService:
         now: datetime,
     ) -> PaidBundleDelivery:
         """Retry delivery without replaying a Play purchase or Integrity token."""
-        claim = await self._repository.get_bundle_claim_for_entitlement(entitlement_id)
-        if claim is None:
-            raise BundleClaimConflictException("No bundle claim exists")
-        return await self._deliver_existing(
-            claim,
-            claim_secret=claim_secret,
-            now=now,
-        )
+        async with self._provisioning_locks[self._lock_index(entitlement_id)]:
+            claim = await self._repository.get_bundle_claim_for_entitlement(entitlement_id)
+            if claim is None:
+                raise BundleClaimConflictException("No bundle claim exists")
+            await self._authorize_claim_secret(claim, claim_secret)
+            subscription = await self._repository.get_current_subscription(entitlement_id)
+            if subscription is None or not _grants_access(subscription, now=now):
+                raise GooglePlayVerificationException(
+                    "Subscription does not currently grant SYNC access"
+                )
+            return await self._deliver_authorized(claim, claim_secret=claim_secret, now=now)
 
     async def _deliver_existing(
         self,
@@ -203,12 +234,24 @@ class PaidBundleService:
         claim_secret: str,
         now: datetime,
     ) -> PaidBundleDelivery:
+        await self._authorize_claim_secret(claim, claim_secret)
+        return await self._deliver_authorized(claim, claim_secret=claim_secret, now=now)
+
+    async def _authorize_claim_secret(self, claim: BundleClaim, claim_secret: str) -> None:
         if not await asyncio.to_thread(
             self._secret_hasher.verify,
             claim_secret,
             claim.claim_secret_hash,
         ):
             raise BundleClaimConflictException("Invalid bundle claim secret")
+
+    async def _deliver_authorized(
+        self,
+        claim: BundleClaim,
+        *,
+        claim_secret: str,
+        now: datetime,
+    ) -> PaidBundleDelivery:
         if now >= claim.expires_at or claim.encrypted_bundle is None:
             raise BundleClaimConflictException("Bundle claim is expired or already destroyed")
         bundle = self._secret_cipher.decrypt(
@@ -223,6 +266,11 @@ class PaidBundleService:
             bundle=bundle,
             expires_at=claim.expires_at,
             rotation_challenge=rotation_challenge(claim_secret, claim.bundle_id),
+        )
+
+    def _lock_index(self, entitlement_id: str) -> int:
+        return int(hashlib.sha256(entitlement_id.encode()).hexdigest(), 16) % len(
+            self._provisioning_locks
         )
 
     @staticmethod
@@ -240,3 +288,9 @@ def rotation_challenge(claim_secret: str, bundle_id: str) -> str:
         hashlib.sha256,
     ).digest()
     return base64.urlsafe_b64encode(digest).rstrip(b"=").decode()
+
+
+def _grants_access(subscription, *, now: datetime) -> bool:
+    return subscription.entitlement_state in _ACCESS_STATES and (
+        subscription.current_period_end is None or now < subscription.current_period_end
+    )

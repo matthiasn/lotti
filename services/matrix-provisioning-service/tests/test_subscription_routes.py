@@ -339,6 +339,10 @@ def test_delivery_retry_authenticates_entitlement_without_replaying_purchase(cli
     assert response.json()["bundle_id"] == "bundle-one"
     identity = services[SERVICE_SUBSCRIPTION_IDENTITY]
     assert identity.auth_calls == [("entitlement-one", AUTH_SECRET)]
+    access = services[SERVICE_SUBSCRIPTION_ACCESS_SERVICE]
+    subscription = services[SERVICE_SUBSCRIPTION_REPOSITORY].subscription
+    assert len(access.calls) == 1
+    assert access.calls[0][0] is subscription
     assert services[SERVICE_PAID_BUNDLE_SERVICE].delivery_calls[0]["claim_secret"] == CLAIM_SECRET
 
 
@@ -353,6 +357,22 @@ def test_delivery_retry_fails_closed_when_current_subscription_is_missing(client
 
     assert response.status_code == 409
     assert response.json()["detail"] == "Subscription is missing"
+    assert services[SERVICE_PAID_BUNDLE_SERVICE].delivery_calls == []
+
+
+def test_delivery_retry_maps_inactive_subscription(client, services):
+    services[SERVICE_PAID_BUNDLE_SERVICE].failure = GooglePlayVerificationException(
+        "Subscription does not currently grant SYNC access"
+    )
+
+    response = client.post(
+        "/api/v1/client/subscriptions/bundle-claims/deliver",
+        headers={"Authorization": f"Bearer {AUTH_SECRET}"},
+        json={"entitlement_id": "entitlement-one", "claim_secret": CLAIM_SECRET},
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "Subscription does not currently grant SYNC access"
 
 
 def test_rotation_confirmation_has_no_response_body(client, services):

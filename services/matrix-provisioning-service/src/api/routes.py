@@ -198,22 +198,29 @@ async def deliver_paid_bundle(
             request.entitlement_id,
             _bearer_secret(authorization),
         )
-        delivery = await container.get_paid_bundle_service().deliver_existing_claim(
-            entitlement_id=request.entitlement_id,
-            claim_secret=request.claim_secret,
-            now=datetime.now(timezone.utc),
-        )
+        now = datetime.now(timezone.utc)
         subscription = await container.get_subscription_repository().get_current_subscription(
             request.entitlement_id
         )
         if subscription is None:
             raise BundleClaimConflictException("Subscription is missing")
+        await container.get_subscription_access_service().enforce(subscription, now=now)
+        delivery = await container.get_paid_bundle_service().deliver_existing_claim(
+            entitlement_id=request.entitlement_id,
+            claim_secret=request.claim_secret,
+            now=now,
+        )
         return PaidBundleResponse(
             **delivery.__dict__,
             entitlement_state=subscription.entitlement_state.value,
         )
     except EntitlementAuthenticationException as exc:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
+    except GooglePlayVerificationException as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=str(exc),
+        ) from exc
     except BundleClaimConflictException as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
 

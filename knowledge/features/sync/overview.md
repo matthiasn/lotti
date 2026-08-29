@@ -139,7 +139,9 @@ The Play-configured three-day grace deadline arrives as the line item's extended
 `expiryTime`. Lotti uses that timestamp directly and never adds another local
 grace window. Loss of entitlement suspends the Matrix user reversibly, while a
 renewal or payment recovery unsuspends it without discarding device or E2EE
-state.
+state. Each enforcement reloads the current purchase token while holding the
+entitlement's serialization stripe, so an older refresh cannot suspend the
+account after a replacement refresh restored it.
 
 ```mermaid
 stateDiagram-v2
@@ -160,11 +162,18 @@ authorized by the entitlement and claim secret, but escrow is destroyed only
 after the bound Matrix user publishes the server-derived rotation challenge in
 the provisioned room and the bootstrap password no longer authenticates. The
 claim reaper deactivates an account that never reaches that proof before its
-24-hour TTL. Failed reaper attempts receive a separate bounded retry time so
-one broken account cannot starve later claims; this never extends the escrow
-TTL. A later verified payment may detach an abandoned, revoked claim and
-provision a fresh Matrix account, while confirmed claims always recover the
-existing account without recreating bootstrap credentials.
+24-hour TTL. Rotation verification and reaping first acquire mutually exclusive
+tokenized database leases; failed or crashed workers release or age out their
+lease, and a late worker cannot clear a newer owner's lease. Failed reaper
+attempts receive a separate bounded retry time so one broken account cannot
+starve later claims; this never extends the escrow TTL. A linked replacement
+purchase reauthorizes still-pending escrow with its verified claim secret. A
+later verified payment may detach an abandoned, revoked claim and provision a
+fresh Matrix account, retrying with a suffixed localpart if the deterministic
+name survived an earlier rollback. Confirmed claims always recover the existing
+account without recreating bootstrap credentials. Lost-response delivery retries
+reload the current subscription and reject non-granting state or an elapsed
+authoritative expiry before decrypting escrow.
 
 # Pairing a new device
 

@@ -9,11 +9,13 @@ looks plausible and is wrong.
 
 from __future__ import annotations
 
+import json
+
 import httpx
 import pytest
 from tests.conftest import register_synapse_account, synapse_handler
 
-from shared.matrix import ProvisioningError, SynapseAdminClient
+from shared.matrix import AdminCredentials, ProvisioningError, SynapseAdminClient
 from shared.matrix.admin_client import MEDIA_PAGE_SIZE
 
 pytestmark = pytest.mark.anyio
@@ -236,6 +238,9 @@ async def test_bootstrap_password_check_distinguishes_rejection_from_success(
         if request.url.path == "/_matrix/client/v3/login":
             requests.append(request)
             return httpx.Response(status_code, json={"access_token": "token"})
+        if request.url.path == "/_matrix/client/v3/logout":
+            requests.append(request)
+            return httpx.Response(200, json={})
         return synapse_handler(request)
 
     client = SynapseAdminClient(credentials, transport=httpx.MockTransport(handler))
@@ -244,6 +249,55 @@ async def test_bootstrap_password_check_distinguishes_rejection_from_success(
 
     assert result is expected
     assert b"bootstrap-password" in requests[0].read()
+
+
+async def test_bootstrap_password_check_reuses_device_and_logs_out(credentials):
+    requests = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        if request.url.path == "/_matrix/client/v3/login":
+            return httpx.Response(200, json={"access_token": f"token-{len(requests)}"})
+        if request.url.path == "/_matrix/client/v3/logout":
+            return httpx.Response(200, json={})
+        return synapse_handler(request)
+
+    client = SynapseAdminClient(credentials, transport=httpx.MockTransport(handler))
+
+    assert await client.password_authenticates(USER, "bootstrap-password") is True
+    assert await client.password_authenticates(USER, "bootstrap-password") is True
+
+    logins = [request for request in requests if request.url.path.endswith("/login")]
+    logouts = [request for request in requests if request.url.path.endswith("/logout")]
+    assert len(logins) == len(logouts) == 2
+    assert {json.loads(request.content)["device_id"] for request in logins} == {
+        "LOTTI_PROVISIONING_PASSWORD_CHECK"
+    }
+    assert [request.headers["Authorization"] for request in logouts] == [
+        "Bearer token-1",
+        "Bearer token-3",
+    ]
+
+
+@pytest.mark.parametrize("payload", [{}, []])
+async def test_bootstrap_password_check_requires_login_token(credentials, payload):
+    transport = httpx.MockTransport(lambda _: httpx.Response(200, json=payload))
+    client = SynapseAdminClient(credentials, transport=transport)
+
+    with pytest.raises(ProvisioningError, match="did not return a login token"):
+        await client.password_authenticates(USER, "bootstrap-password")
+
+
+async def test_bootstrap_password_check_requires_successful_logout(credentials):
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/login"):
+            return httpx.Response(200, json={"access_token": "password-check-token"})
+        return httpx.Response(503, json={})
+
+    client = SynapseAdminClient(credentials, transport=httpx.MockTransport(handler))
+
+    with pytest.raises(ProvisioningError, match="Could not clean up password check"):
+        await client.password_authenticates(USER, "bootstrap-password")
 
 
 async def test_bootstrap_password_check_does_not_treat_outage_as_rotation(credentials):
@@ -292,6 +346,7 @@ async def test_rotation_state_is_read_with_short_lived_user_token(credentials, m
     ("login_payload", "state_payload", "message"),
     [
         ({}, {"challenge": "proof"}, "did not return a login token"),
+        ([], {"challenge": "proof"}, "did not return a login token"),
         ({"access_token": "user-token"}, ["not", "state"], "invalid room state"),
     ],
 )
@@ -407,8 +462,6 @@ async def test_a_configured_admin_token_is_used_without_a_login_round_trip(
     tracking_transport,
 ):
     """Password login on every call would hammer the homeserver during a sweep."""
-    from shared.matrix import AdminCredentials
-
     transport, requests = tracking_transport
     client = SynapseAdminClient(
         AdminCredentials(
@@ -424,3 +477,26 @@ async def test_a_configured_admin_token_is_used_without_a_login_round_trip(
     assert [r for r in requests if r.url.path.endswith("/login")] == []
     assert requests[0].headers["Authorization"] == "Bearer tok"
     await client.aclose()
+
+
+@pytest.mark.parametrize(
+    "homeserver",
+    ["", "http://matrix.example.com", "ftp://matrix.example.com", "matrix.example.com"],
+)
+def test_admin_credentials_reject_non_https_homeservers(homeserver):
+    with pytest.raises(ValueError, match="HTTPS"):
+        AdminCredentials(
+            homeserver=homeserver,
+            admin_token="token",  # noqa: S106 - fixture credential
+        )
+
+
+def test_synapse_client_disables_redirects(credentials):
+    client = SynapseAdminClient(credentials)
+
+    assert client._client().follow_redirects is False
+
+
+def test_admin_credentials_require_an_authentication_method():
+    with pytest.raises(ValueError, match="either admin_token"):
+        AdminCredentials(homeserver="https://matrix.example.com")

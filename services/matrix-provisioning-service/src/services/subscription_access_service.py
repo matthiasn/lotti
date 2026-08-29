@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+import hashlib
 from datetime import datetime
 
 from shared.matrix import SynapseAdminClient
@@ -27,12 +29,30 @@ class SubscriptionAccessService:
     ):
         self._repository = repository
         self._admin_client = admin_client
+        self._enforcement_locks = tuple(asyncio.Lock() for _ in range(64))
 
     async def enforce(self, subscription: StoredSubscription, *, now: datetime) -> bool | None:
         """Converge one provisioned account and return its desired suspension.
 
         ``None`` means no Matrix account has been provisioned yet.
         """
+        lock_index = int(
+            hashlib.sha256(subscription.entitlement_id.encode()).hexdigest(),
+            16,
+        ) % len(self._enforcement_locks)
+        async with self._enforcement_locks[lock_index]:
+            current = await self._repository.get_current_subscription(subscription.entitlement_id)
+            if current is None:
+                return None
+            return await self._enforce_current(current, now=now)
+
+    async def _enforce_current(
+        self,
+        subscription: StoredSubscription,
+        *,
+        now: datetime,
+    ) -> bool | None:
+        """Converge the authoritative row while its entitlement stripe is held."""
         if subscription.bundle_id is None:
             return None
         user = await self._repository.get(subscription.bundle_id)
