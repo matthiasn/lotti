@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
-import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test/flutter_test.dart'
+    hide isLinux, isMacOS, isWindows;
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -63,6 +64,24 @@ void main() {
   });
 
   setUp(() {
+    final wasDesktop = isDesktop;
+    final wasMobile = isMobile;
+    final wasWindows = isWindows;
+    final wasLinux = isLinux;
+    final wasMacOS = isMacOS;
+    isDesktop = true;
+    isMobile = false;
+    isWindows = true;
+    isLinux = false;
+    isMacOS = false;
+    addTearDown(() {
+      isDesktop = wasDesktop;
+      isMobile = wasMobile;
+      isWindows = wasWindows;
+      isLinux = wasLinux;
+      isMacOS = wasMacOS;
+    });
+
     mockMatrixService = MockMatrixService();
     mockLoggingService = MockLoggingService();
     mockOnboardingSyncService = MockOnboardingSyncService();

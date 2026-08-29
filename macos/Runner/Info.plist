@@ -55,7 +55,7 @@
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Record audio notes</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Allow camera access to attach photos to journal entries</string>
+	<string>Allow camera access to scan sync QR codes and attach photos to journal entries</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Import photos and videos</string>
 	<key>NSPrincipalClass</key>

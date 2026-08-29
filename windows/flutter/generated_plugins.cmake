@@ -5,6 +5,7 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   audio_decoder
   audioplayers_windows
+  camera_desktop
   connectivity_plus
   file_selector_windows
   flutter_onnxruntime

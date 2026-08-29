@@ -18,6 +18,7 @@ void main() {
   late MockMatrixClient mockClient;
 
   setUp(() {
+    scannerPreviewOverride = (context, side) => const SizedBox.shrink();
     mockMatrixService = MockMatrixService();
     mockClient = MockMatrixClient();
 
@@ -33,6 +34,8 @@ void main() {
       ),
     );
   });
+
+  tearDown(() => scannerPreviewOverride = null);
 
   Future<void> pumpEmptyState(WidgetTester tester) {
     return tester.pumpWidget(
