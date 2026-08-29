@@ -28,6 +28,8 @@ from ..core.exceptions import (
     PurchaseIntentExpiredException,
     PurchaseIntentNotFoundException,
     PurchaseIntentReplayException,
+    PurchaseTokenConflictException,
+    SubscriptionLineageException,
     SynapseUnavailableException,
     UsernameAlreadyProvisionedException,
 )
@@ -174,7 +176,12 @@ async def verify_subscription_purchase(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
     except PurchaseIntentExpiredException as exc:
         raise HTTPException(status_code=status.HTTP_410_GONE, detail=str(exc)) from exc
-    except (PurchaseIntentNotFoundException, PurchaseIntentReplayException) as exc:
+    except (
+        PurchaseIntentNotFoundException,
+        PurchaseIntentReplayException,
+        PurchaseTokenConflictException,
+        SubscriptionLineageException,
+    ) as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
     except (
         GooglePlayVerificationException,

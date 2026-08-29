@@ -591,6 +591,15 @@ class SubscriptionRepository(ProvisioningRepository):
                 raise PurchaseTokenConflictException(
                     "Purchase token is already bound to another entitlement"
                 )
+            existing_last_verified_at = (
+                _parse(existing["last_verified_at"]) if existing is not None else None
+            )
+            if (
+                existing_last_verified_at is not None
+                and snapshot.last_verified_at < existing_last_verified_at
+            ):
+                conn.rollback()
+                return self._row_to_subscription(existing)
 
             predecessor_fingerprint = (
                 snapshot.linked_token_fingerprint or snapshot.out_of_app_expired_token_fingerprint

@@ -131,7 +131,9 @@ Google's authoritative line-item `expiryTime` as the exact boundary. Configure
 the Play Console grace period to **three days**; the service does not add a
 second local grace interval. Enforcement is serialized per entitlement and
 reloads its current token while holding that stripe, preventing a retired token
-from overwriting a replacement token's access decision.
+from overwriting a replacement token's access decision. Same-token writes also
+compare Google's verification timestamp inside the SQLite transaction, so a
+slower older response cannot roll back a newer subscription state.
 
 ## Configuration
 

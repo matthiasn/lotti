@@ -32,6 +32,8 @@ from src.core.exceptions import (
     PurchaseIntentExpiredException,
     PurchaseIntentNotFoundException,
     PurchaseIntentReplayException,
+    PurchaseTokenConflictException,
+    SubscriptionLineageException,
 )
 from src.core.subscriptions import (
     EntitlementCredentials,
@@ -465,6 +467,8 @@ def test_purchase_intent_maps_domain_failures(client, services, failure, expecte
         (PurchaseIntentReplayException("replayed"), 409),
         (GooglePlayVerificationException("invalid"), 422),
         (InvalidSubscriptionProductException("bad plan"), 422),
+        (PurchaseTokenConflictException("owned elsewhere"), 409),
+        (SubscriptionLineageException("invalid replacement"), 409),
         (GooglePlayUnavailableException("offline"), 503),
         (BundleClaimConflictException("claimed"), 409),
     ],

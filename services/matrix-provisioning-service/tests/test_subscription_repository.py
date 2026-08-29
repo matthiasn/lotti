@@ -329,6 +329,7 @@ async def test_same_token_updates_in_place_for_idempotent_rtdn(subscription_repo
         original,
         current_period_end=NOW + timedelta(days=60),
         acknowledgement_state=AcknowledgementState.ACKNOWLEDGED,
+        last_verified_at=NOW + timedelta(minutes=1),
         next_reconciliation_at=NOW + timedelta(hours=12),
     )
 
@@ -342,6 +343,40 @@ async def test_same_token_updates_in_place_for_idempotent_rtdn(subscription_repo
     assert second.updated_at == NOW + timedelta(minutes=1)
     assert second.current_period_end == NOW + timedelta(days=60)
     assert second.acknowledgement_state is AcknowledgementState.ACKNOWLEDGED
+
+
+async def test_older_same_token_snapshot_cannot_overwrite_newer_google_state(
+    subscription_repository,
+):
+    entitlement = await create_entitlement(subscription_repository)
+    original = verified_subscription(entitlement.entitlement_id, "fingerprint-one")
+    await subscription_repository.store_verified_subscription(original, now=NOW)
+    newer = replace(
+        original,
+        google_state=GoogleSubscriptionState.ON_HOLD,
+        entitlement_state=EntitlementState.SUSPENDED,
+        last_verified_at=NOW + timedelta(minutes=2),
+    )
+    stored_newer = await subscription_repository.store_verified_subscription(
+        newer,
+        now=NOW + timedelta(minutes=2),
+    )
+    stale = replace(
+        original,
+        current_period_end=NOW + timedelta(days=60),
+        last_verified_at=NOW + timedelta(minutes=1),
+    )
+
+    stale_result = await subscription_repository.store_verified_subscription(
+        stale,
+        now=NOW + timedelta(minutes=3),
+    )
+
+    persisted = await subscription_repository.get_subscription_by_token("fingerprint-one")
+    assert stale_result == stored_newer
+    assert persisted == stored_newer
+    assert persisted.entitlement_state is EntitlementState.SUSPENDED
+    assert persisted.updated_at == NOW + timedelta(minutes=2)
 
 
 async def test_purchase_token_cannot_be_rebound_to_another_entitlement(
