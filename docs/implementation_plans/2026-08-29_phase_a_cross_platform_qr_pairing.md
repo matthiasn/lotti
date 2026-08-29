@@ -1,6 +1,7 @@
 # Phase A — cross-platform QR pairing
 
-**Status:** implemented; physical-camera acceptance pending
+**Status:** implemented; macOS and Linux webcam scanning confirmed, remaining
+packaging and edge-case acceptance pending
 **Date:** 2026-08-29
 
 ## Codebase findings
@@ -116,8 +117,10 @@ Automated:
 
 Hardware acceptance before calling Phase A complete:
 
-- macOS: grant, deny, retry, scan from phone, and scan from tablet.
-- Linux native: V4L2 webcam scan and no-camera fallback.
+- macOS: webcam scanning confirmed on 2026-08-29; grant denial, retry, and both
+  phone/tablet source coverage remain to be recorded.
+- Linux: webcam scanning confirmed on 2026-08-29; native no-camera fallback and
+  the exact packaging path remain to be recorded.
 - Linux Flatpak: portal grant/deny, PipeWire preview, scan, and relaunch after a
   remembered permission decision.
 - Android phone and tablet: generate a code, keep the whole QR visible without
