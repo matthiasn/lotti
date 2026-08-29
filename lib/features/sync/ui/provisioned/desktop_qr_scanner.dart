@@ -176,16 +176,7 @@ class _DesktopQrScannerState extends State<DesktopQrScanner> {
     final failedCamera = _camera;
     _camera = null;
     if (failedCamera != null) {
-      try {
-        await failedCamera.dispose();
-      } on Exception catch (disposeError, disposeStackTrace) {
-        DevLogger.error(
-          name: 'DesktopQrScanner',
-          message: 'Failed to dispose desktop camera after camera error',
-          error: disposeError,
-          stackTrace: disposeStackTrace,
-        );
-      }
+      await _disposeCamera(failedCamera);
     }
     DevLogger.error(
       name: 'DesktopQrScanner',
@@ -195,6 +186,19 @@ class _DesktopQrScannerState extends State<DesktopQrScanner> {
     );
     if (mounted) setState(() => _unavailable = true);
     _handlingCameraFailure = false;
+  }
+
+  Future<void> _disposeCamera(DesktopQrCamera camera) async {
+    try {
+      await camera.dispose();
+    } on Exception catch (error, stackTrace) {
+      DevLogger.error(
+        name: 'DesktopQrScanner',
+        message: 'Failed to dispose desktop camera',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
   }
 
   bool _shouldCaptureFrame() {
@@ -241,7 +245,7 @@ class _DesktopQrScannerState extends State<DesktopQrScanner> {
   void dispose() {
     final camera = _camera;
     _camera = null;
-    if (camera != null) unawaited(camera.dispose());
+    if (camera != null) unawaited(_disposeCamera(camera));
     super.dispose();
   }
 

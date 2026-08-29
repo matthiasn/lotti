@@ -250,7 +250,10 @@ class _BundleImportWidgetState extends ConsumerState<BundleImportWidget> {
           _lastScannedCode = null;
           _errorText = null;
           _textController.clear();
-          _manualEntry = !_scannerSupported;
+          // A reset clears the submitted code, not the input mode the user
+          // explicitly selected. Unsupported platforms still require manual
+          // entry, while scanner-capable platforms preserve camera/manual.
+          if (!_scannerSupported) _manualEntry = true;
         });
       }
     });

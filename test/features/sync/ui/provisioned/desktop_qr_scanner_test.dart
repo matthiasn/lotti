@@ -274,6 +274,30 @@ void main() {
 
       expect(camera.disposed, isTrue);
     });
+
+    testWidgets('contains camera disposal failures when removed', (
+      tester,
+    ) async {
+      final camera = _FakeDesktopQrCamera(
+        disposeError: const FormatException('release failed'),
+      );
+      desktopQrCameraFactoryOverride = () async => camera;
+
+      await tester.pumpWidget(
+        makeTestableWidget2(
+          DesktopQrScanner(
+            onDetect: (_) {},
+            unavailableBuilder: (_) => const Text('Camera unavailable'),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+
+      expect(camera.disposed, isTrue);
+      expect(tester.takeException(), isNull);
+    });
   });
 
   group('production camera adapter', () {
