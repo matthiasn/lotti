@@ -64,34 +64,50 @@ void main() {
   });
 
   group('DesktopQrScanner', () {
-    testWidgets('shows a preview and emits the decoded payload once', (
-      tester,
-    ) async {
-      final camera = _FakeDesktopQrCamera();
-      desktopQrCameraFactoryOverride = () async => camera;
-      final detected = <String>[];
+    testWidgets(
+      'copies one frame in five and continues after a different payload',
+      (tester) async {
+        final camera = _FakeDesktopQrCamera();
+        desktopQrCameraFactoryOverride = () async => camera;
+        final detected = <String>[];
+        var decodeCount = 0;
 
-      await tester.pumpWidget(
-        makeTestableWidget2(
-          DesktopQrScanner(
-            onDetect: detected.add,
-            unavailableBuilder: (_) => const Text('Camera unavailable'),
-            decoder: (_) async => 'pairing-code',
+        await tester.pumpWidget(
+          makeTestableWidget2(
+            DesktopQrScanner(
+              onDetect: detected.add,
+              unavailableBuilder: (_) => const Text('Camera unavailable'),
+              decoder: (_) async {
+                decodeCount++;
+                return decodeCount == 1 ? 'not-a-bundle' : 'pairing-code';
+              },
+            ),
           ),
-        ),
-      );
-      await tester.pump();
+        );
+        await tester.pump();
 
-      expect(find.byKey(const Key('desktop_camera_preview')), findsOneWidget);
-      expect(camera.started, isTrue);
+        expect(find.byKey(const Key('desktop_camera_preview')), findsOneWidget);
+        expect(camera.started, isTrue);
 
-      camera.emit(_blankFrame());
-      await tester.pump();
-      camera.emit(_blankFrame());
-      await tester.pump();
+        camera.emit(_blankFrame());
+        await tester.pump();
+        for (var i = 0; i < 4; i++) {
+          camera.emit(_blankFrame());
+        }
+        camera.emit(_blankFrame());
+        await tester.pump();
+        for (var i = 0; i < 4; i++) {
+          camera.emit(_blankFrame());
+        }
+        camera.emit(_blankFrame());
+        await tester.pump();
 
-      expect(detected, ['pairing-code']);
-    });
+        expect(detected, ['not-a-bundle', 'pairing-code']);
+        expect(camera.emittedFrames, 11);
+        expect(camera.capturedFrames, 3);
+        expect(decodeCount, 3);
+      },
+    );
 
     testWidgets('shows the fallback when camera initialization fails', (
       tester,
@@ -182,9 +198,12 @@ DesktopQrFrame _qrFrame(
 }
 
 class _FakeDesktopQrCamera implements DesktopQrCamera {
+  bool Function()? _shouldCaptureFrame;
   ValueChanged<DesktopQrFrame>? _onFrame;
   bool started = false;
   bool disposed = false;
+  int emittedFrames = 0;
+  int capturedFrames = 0;
 
   @override
   Widget buildPreview() => const ColoredBox(
@@ -192,17 +211,27 @@ class _FakeDesktopQrCamera implements DesktopQrCamera {
     color: Colors.green,
   );
 
-  void emit(DesktopQrFrame frame) => _onFrame?.call(frame);
+  void emit(DesktopQrFrame frame) {
+    emittedFrames++;
+    if (!(_shouldCaptureFrame?.call() ?? false)) return;
+    capturedFrames++;
+    _onFrame?.call(frame);
+  }
 
   @override
-  Future<void> start(ValueChanged<DesktopQrFrame> onFrame) async {
+  Future<void> start({
+    required bool Function() shouldCaptureFrame,
+    required ValueChanged<DesktopQrFrame> onFrame,
+  }) async {
     started = true;
+    _shouldCaptureFrame = shouldCaptureFrame;
     _onFrame = onFrame;
   }
 
   @override
   Future<void> dispose() async {
     disposed = true;
+    _shouldCaptureFrame = null;
     _onFrame = null;
   }
 }

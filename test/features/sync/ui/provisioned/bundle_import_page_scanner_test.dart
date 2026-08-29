@@ -852,7 +852,10 @@ class _FakeDesktopCamera implements DesktopQrCamera {
   Future<void> dispose() async {}
 
   @override
-  Future<void> start(ValueChanged<DesktopQrFrame> onFrame) async {
+  Future<void> start({
+    required bool Function() shouldCaptureFrame,
+    required ValueChanged<DesktopQrFrame> onFrame,
+  }) async {
     started = true;
   }
 }

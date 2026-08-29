@@ -110,7 +110,12 @@ class DesktopQrScanner extends StatefulWidget {
 abstract interface class DesktopQrCamera {
   Widget buildPreview();
 
-  Future<void> start(ValueChanged<DesktopQrFrame> onFrame);
+  /// Starts the stream, consulting [shouldCaptureFrame] before copying a
+  /// native camera buffer into a Dart-owned [DesktopQrFrame].
+  Future<void> start({
+    required bool Function() shouldCaptureFrame,
+    required ValueChanged<DesktopQrFrame> onFrame,
+  });
 
   Future<void> dispose();
 }
@@ -125,7 +130,7 @@ class _DesktopQrScannerState extends State<DesktopQrScanner> {
   DesktopQrCamera? _camera;
   bool _unavailable = false;
   bool _decoding = false;
-  bool _detected = false;
+  String? _lastDetectedPayload;
   int _framesToSkip = 0;
 
   @override
@@ -144,7 +149,10 @@ class _DesktopQrScannerState extends State<DesktopQrScanner> {
         return;
       }
       setState(() => _camera = camera);
-      await camera.start(_onFrame);
+      await camera.start(
+        shouldCaptureFrame: _shouldCaptureFrame,
+        onFrame: _onFrame,
+      );
     } on Exception catch (error, stackTrace) {
       DevLogger.error(
         name: 'DesktopQrScanner',
@@ -156,24 +164,33 @@ class _DesktopQrScannerState extends State<DesktopQrScanner> {
     }
   }
 
-  void _onFrame(DesktopQrFrame frame) {
-    if (_detected || _decoding) return;
+  bool _shouldCaptureFrame() {
+    if (_decoding) return false;
     if (_framesToSkip > 0) {
       _framesToSkip--;
-      return;
+      return false;
     }
     // Decode roughly every fifth delivered frame. This is deterministic,
     // needs no Timer, and keeps backpressure independent of decoder latency.
     _framesToSkip = 4;
     _decoding = true;
+    return true;
+  }
+
+  void _onFrame(DesktopQrFrame frame) {
     unawaited(_decode(frame));
   }
 
   Future<void> _decode(DesktopQrFrame frame) async {
     try {
       final payload = await widget.decoder(frame);
-      if (!mounted || payload == null || payload.isEmpty || _detected) return;
-      _detected = true;
+      if (!mounted ||
+          payload == null ||
+          payload.isEmpty ||
+          payload == _lastDetectedPayload) {
+        return;
+      }
+      _lastDetectedPayload = payload;
       widget.onDetect(payload);
     } on Exception catch (error, stackTrace) {
       DevLogger.error(
@@ -235,9 +252,12 @@ class _CameraDesktopQrCamera implements DesktopQrCamera {
   Widget buildPreview() => CameraPreview(_controller);
 
   @override
-  Future<void> start(ValueChanged<DesktopQrFrame> onFrame) {
+  Future<void> start({
+    required bool Function() shouldCaptureFrame,
+    required ValueChanged<DesktopQrFrame> onFrame,
+  }) {
     return _controller.startImageStream((image) {
-      if (image.planes.isEmpty) return;
+      if (image.planes.isEmpty || !shouldCaptureFrame()) return;
       final plane = image.planes.first;
       onFrame(
         DesktopQrFrame(

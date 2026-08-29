@@ -61,7 +61,7 @@ Create `lib/features/sync/ui/provisioned/desktop_qr_scanner.dart`. It will:
 3. sample frames with deterministic backpressure (never decode two frames at
    once);
 4. convert padded RGBA/BGRA rows to the ARGB pixels ZXing expects;
-5. decode off the UI isolate and emit a payload at most once; and
+5. decode off the UI isolate and emit each distinct payload at most once; and
 6. dispose the stream/controller on every exit path.
 
 Lotti already installs the GStreamer development/runtime packages this plugin
@@ -107,7 +107,7 @@ Automated:
 - Pure frame-decoder tests for BGRA, RGBA, row padding, malformed frames, no QR,
   and a valid QR payload.
 - Widget tests for macOS/Linux scanner-first behavior, Windows manual fallback,
-  scanner-to-manual switching, retry, one-shot delivery, and disposal.
+  scanner-to-manual switching, retry, distinct-payload delivery, and disposal.
 - Existing bundle import/controller tests to prove scanned and pasted payloads
   still share the same validation and pairing confirmation.
 - Targeted analyzer and Flutter tests only for touched source mirrors.
