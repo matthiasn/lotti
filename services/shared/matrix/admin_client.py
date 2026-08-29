@@ -8,6 +8,7 @@ activity and media usage.
 from __future__ import annotations
 
 import logging
+import re
 from collections.abc import Mapping
 from dataclasses import dataclass
 from time import time_ns
@@ -40,6 +41,10 @@ LOGIN_AS_USER_TOKEN_TTL_MS = 60_000
 # Reusing one explicit device prevents password-validation logins from creating
 # an unbounded device list if a response is lost before logout completes.
 PASSWORD_CHECK_DEVICE_ID = "LOTTI_PROVISIONING_PASSWORD_CHECK"  # noqa: S105 - not a secret
+
+# The suspension Admin API shipped as part two of MSC3823 in Synapse 1.110.0.
+MIN_ACCOUNT_SUSPENSION_VERSION = (1, 110, 0)
+_SYNAPSE_VERSION_PATTERN = re.compile(r"^(\d+)\.(\d+)\.(\d+)(?=$|[ .+])")
 
 
 @dataclass(frozen=True)
@@ -123,6 +128,7 @@ class SynapseAdminClient(SynapseClientBase):
 
     _cached_headers: dict | None = None
     _shared_client: httpx.AsyncClient | None = None
+    _account_suspension_version_checked = False
 
     def _client(self) -> httpx.AsyncClient:
         """Return the shared client, opening it on first use."""
@@ -390,6 +396,7 @@ class SynapseAdminClient(SynapseClientBase):
         encoded = encode_mxid_for_path(user_mxid)
         client = self._client()
         headers = await self._auth_headers(client)
+        await self._require_account_suspension_version(client, headers)
         resp = await client.put(
             f"/_synapse/admin/v1/suspend/{encoded}",
             headers=headers,
@@ -398,6 +405,35 @@ class SynapseAdminClient(SynapseClientBase):
         if not resp.is_success:
             action = "suspend" if suspended else "unsuspend"
             raise ProvisioningError(f"Failed to {action} {user_mxid} (HTTP {resp.status_code})")
+
+    async def _require_account_suspension_version(
+        self,
+        client: httpx.AsyncClient,
+        headers: dict,
+    ) -> None:
+        if self._account_suspension_version_checked:
+            return
+        response = await client.get(
+            "/_synapse/admin/v1/server_version",
+            headers=headers,
+        )
+        if not response.is_success:
+            raise ProvisioningError(
+                "Could not verify Synapse account-suspension compatibility "
+                f"(HTTP {response.status_code})"
+            )
+        try:
+            payload = response.json()
+        except ValueError as exc:
+            raise ProvisioningError("Synapse returned an invalid server version") from exc
+        version = payload.get("server_version") if isinstance(payload, Mapping) else None
+        match = _SYNAPSE_VERSION_PATTERN.match(version) if isinstance(version, str) else None
+        if match is None:
+            raise ProvisioningError("Synapse returned an invalid server version")
+        parsed = tuple(int(part) for part in match.groups())
+        if parsed < MIN_ACCOUNT_SUSPENSION_VERSION:
+            raise ProvisioningError("Account suspension requires Synapse 1.110.0 or newer")
+        self._account_suspension_version_checked = True
 
     async def password_authenticates(self, user_mxid: str, password: str) -> bool:
         """Whether the supplied bootstrap password can still log in.
@@ -478,6 +514,8 @@ class SynapseAdminClient(SynapseClientBase):
             f"/_matrix/client/v3/rooms/{encoded_room}/state/{encoded_type}/{encoded_state_key}",
             headers={"Authorization": f"Bearer {token}"},
         )
+        if response.status_code == httpx.codes.NOT_FOUND:
+            return {}
         response.raise_for_status()
         payload = response.json()
         if not isinstance(payload, dict):

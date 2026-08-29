@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import base64
 import json
+from datetime import timedelta
 
 import pytest
 from src.container import Container, GoogleAccessTokenProvider, build_admin_credentials
@@ -190,6 +191,19 @@ def test_container_builds_complete_play_subscription_graph(env, monkeypatch):
     assert isinstance(container.get_subscription_reconciler(), SubscriptionReconciler)
     assert isinstance(container.get_bundle_claim_reaper(), BundleClaimReaper)
     assert container.existing("google_play_client") is container.get_google_play_client()
+
+
+def test_claim_reaper_schedule_and_entitlement_quota_are_configurable(env):
+    configure_play(env)
+    env.setenv("BUNDLE_CLAIM_REAPER_STARTUP_DELAY_SECONDS", "42")
+    env.setenv("ENTITLEMENT_ISSUANCE_LIMIT", "7")
+    env.setenv("ENTITLEMENT_ISSUANCE_WINDOW_SECONDS", "1800")
+    container = Container()
+
+    assert container.get_bundle_claim_reaper()._startup_delay_seconds == 42
+    identity = container.get_subscription_identity_service()
+    assert identity._entitlement_issuance_limit == 7
+    assert identity._entitlement_issuance_window == timedelta(minutes=30)
 
 
 @pytest.mark.parametrize(

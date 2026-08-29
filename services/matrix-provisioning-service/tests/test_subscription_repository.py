@@ -517,8 +517,19 @@ async def test_due_reconciliation_excludes_retired_and_future_rows(
 
 
 async def store_paid_bundle(repository, token_fingerprint, **overrides):
+    subscription = await repository.get_subscription_by_token(token_fingerprint)
+    provisioning_token = overrides.pop("provisioning_token", "test-provisioning-operation")
+    if overrides.pop("reserve", True):
+        await repository.reserve_paid_bundle_provisioning(
+            subscription.entitlement_id,
+            token_fingerprint=token_fingerprint,
+            operation_token=provisioning_token,
+            now=overrides.get("now", NOW),
+            stale_before=overrides.get("now", NOW) - timedelta(minutes=5),
+        )
     values = {
         "token_fingerprint": token_fingerprint,
+        "provisioning_token": provisioning_token,
         "bundle_id": "bundle-paid",
         "username": "sync_paid",
         "user_mxid": "@sync_paid:example.com",
@@ -558,6 +569,139 @@ async def test_paid_bundle_account_claim_and_subscription_link_commit_together(
     assert (
         await subscription_repository.get_bundle_claim_for_entitlement(entitlement.entitlement_id)
         == claim
+    )
+
+
+async def test_paid_provisioning_reservation_is_exclusive_owned_and_recoverable(
+    subscription_repository,
+):
+    entitlement = await create_entitlement(subscription_repository)
+    await subscription_repository.store_verified_subscription(
+        verified_subscription(entitlement.entitlement_id, "paid-token"),
+        now=NOW,
+    )
+
+    assert await subscription_repository.reserve_paid_bundle_provisioning(
+        entitlement.entitlement_id,
+        token_fingerprint="paid-token",
+        operation_token="owner-one",
+        now=NOW,
+        stale_before=NOW - timedelta(minutes=5),
+    )
+    assert await subscription_repository.reserve_paid_bundle_provisioning(
+        entitlement.entitlement_id,
+        token_fingerprint="paid-token",
+        operation_token="owner-one",
+        now=NOW,
+        stale_before=NOW - timedelta(minutes=5),
+    )
+    assert not await subscription_repository.reserve_paid_bundle_provisioning(
+        entitlement.entitlement_id,
+        token_fingerprint="paid-token",
+        operation_token="owner-two",
+        now=NOW + timedelta(minutes=1),
+        stale_before=NOW - timedelta(minutes=4),
+    )
+    assert not await subscription_repository.release_paid_bundle_provisioning(
+        entitlement.entitlement_id,
+        operation_token="wrong-owner",
+    )
+    assert await subscription_repository.reserve_paid_bundle_provisioning(
+        entitlement.entitlement_id,
+        token_fingerprint="paid-token",
+        operation_token="owner-two",
+        now=NOW + timedelta(minutes=5),
+        stale_before=NOW,
+    )
+    assert not await subscription_repository.release_paid_bundle_provisioning(
+        entitlement.entitlement_id,
+        operation_token="owner-one",
+    )
+    assert await subscription_repository.release_paid_bundle_provisioning(
+        entitlement.entitlement_id,
+        operation_token="owner-two",
+    )
+
+
+async def test_paid_bundle_store_requires_the_reservation_owner(subscription_repository):
+    entitlement = await create_entitlement(subscription_repository)
+    await subscription_repository.store_verified_subscription(
+        verified_subscription(entitlement.entitlement_id, "paid-token"),
+        now=NOW,
+    )
+
+    with pytest.raises(BundleClaimConflictException, match="reservation was lost"):
+        await store_paid_bundle(
+            subscription_repository,
+            "paid-token",
+            provisioning_token="not-an-owner",
+            reserve=False,
+        )
+
+
+async def test_subscription_timestamps_are_normalized_to_utc_and_reject_naive_values(
+    subscription_repository,
+):
+    local_time = datetime(2026, 8, 29, 14, tzinfo=timezone(timedelta(hours=2)))
+
+    stored = await subscription_repository.create_entitlement(
+        entitlement_id="localized-entitlement",
+        obfuscated_account_id="localized-obfuscated",
+        auth_secret_hash="auth-hash",
+        now=local_time,
+    )
+
+    assert stored.created_at == NOW
+    with pytest.raises(ValueError, match="timezone-aware"):
+        await subscription_repository.create_entitlement(
+            entitlement_id="naive-entitlement",
+            obfuscated_account_id="naive-obfuscated",
+            auth_secret_hash="auth-hash",
+            now=datetime(2026, 8, 29, 12),
+        )
+
+
+async def test_quota_and_reservation_roll_back_after_invalid_naive_timestamps(
+    subscription_repository,
+):
+    entitlement = await create_entitlement(subscription_repository)
+    await subscription_repository.store_verified_subscription(
+        verified_subscription(entitlement.entitlement_id, "paid-token"),
+        now=NOW,
+    )
+    naive = datetime(2026, 8, 29, 12)
+
+    with pytest.raises(ValueError, match="timezone-aware"):
+        await subscription_repository.consume_entitlement_issuance_quota(
+            "client-key",
+            now=naive,
+            window=timedelta(hours=1),
+            max_requests=1,
+        )
+    assert (
+        await subscription_repository.consume_entitlement_issuance_quota(
+            "client-key",
+            now=NOW,
+            window=timedelta(hours=1),
+            max_requests=1,
+        )
+        is None
+    )
+
+    with pytest.raises(ValueError, match="timezone-aware"):
+        await subscription_repository.reserve_paid_bundle_provisioning(
+            entitlement.entitlement_id,
+            token_fingerprint="paid-token",
+            operation_token="naive-operation",
+            now=naive,
+            stale_before=NOW - timedelta(minutes=5),
+        )
+    assert await subscription_repository.reserve_paid_bundle_provisioning(
+        entitlement.entitlement_id,
+        token_fingerprint="paid-token",
+        operation_token="valid-operation",
+        now=NOW,
+        stale_before=NOW - timedelta(minutes=5),
     )
 
 

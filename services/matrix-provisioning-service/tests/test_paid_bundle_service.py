@@ -364,6 +364,100 @@ async def test_overlapping_retries_share_one_provisioned_bundle(
     assert len(bundle_service.calls) == 1
 
 
+async def test_separate_service_instances_share_one_durable_provisioning_reservation(
+    repository,
+    google_client,
+    cipher,
+):
+    bundle_service = FakeBundleService(block_first=True)
+    second_repository = SubscriptionRepository(repository.db_path)
+    second_waiting = asyncio.Event()
+    allow_second_retry = asyncio.Event()
+
+    async def wait_for_first_provisioning(_seconds):
+        second_waiting.set()
+        await allow_second_retry.wait()
+
+    first_service = PaidBundleService(bundle_service, repository, google_client, cipher)
+    second_service = PaidBundleService(
+        bundle_service,
+        second_repository,
+        google_client,
+        cipher,
+        provisioning_waiter=wait_for_first_provisioning,
+    )
+    verified = await verified_purchase(repository)
+
+    first = asyncio.create_task(first_service.provision_or_deliver(verified, submission(), now=NOW))
+    await bundle_service.first_started.wait()
+    second = asyncio.create_task(
+        second_service.provision_or_deliver(verified, submission(), now=NOW)
+    )
+    await second_waiting.wait()
+    bundle_service.release_first.set()
+    first_delivery = await first
+    allow_second_retry.set()
+    second_delivery = await second
+
+    assert first_delivery.bundle_id == second_delivery.bundle_id
+    assert first_delivery.bundle == second_delivery.bundle
+    assert len(bundle_service.calls) == 1
+
+
+async def test_busy_cross_process_reservation_returns_retryable_conflict_without_provisioning(
+    repository,
+    google_client,
+    cipher,
+):
+    bundle_service = FakeBundleService()
+    verified = await verified_purchase(repository)
+    assert await repository.reserve_paid_bundle_provisioning(
+        "entitlement-one",
+        token_fingerprint=verified.subscription.token_fingerprint,
+        operation_token="other-process",
+        now=NOW,
+        stale_before=NOW - timedelta(minutes=5),
+    )
+    service = PaidBundleService(
+        bundle_service,
+        repository,
+        google_client,
+        cipher,
+        provisioning_wait_seconds=0,
+    )
+
+    with pytest.raises(BundleClaimConflictException, match="already in progress"):
+        await service.provision_or_deliver(verified, submission(), now=NOW)
+
+    assert bundle_service.calls == []
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "message"),
+    [
+        ({"provisioning_wait_seconds": -1}, "wait"),
+        ({"provisioning_poll_seconds": 0}, "poll interval"),
+        ({"provisioning_operation_timeout": timedelta(0)}, "operation timeout"),
+    ],
+)
+def test_paid_provisioning_timing_configuration_is_validated(
+    bundle_service,
+    repository,
+    google_client,
+    cipher,
+    kwargs,
+    message,
+):
+    with pytest.raises(ValueError, match=message):
+        PaidBundleService(
+            bundle_service,
+            repository,
+            google_client,
+            cipher,
+            **kwargs,
+        )
+
+
 async def test_abandoned_claim_is_replaced_by_fresh_bundle(
     service,
     repository,
@@ -591,6 +685,11 @@ async def test_delivery_retry_rejects_current_subscription_without_access(
 def test_paid_username_is_deterministic_safe_and_bounded():
     username = PaidBundleService._username("ABC-def_123" * 20)
 
+    retry = PaidBundleService._username("ABC-def_123" * 20, retry_suffix="deadbeef")
+
     assert username.startswith("sync_abcdef123")
     assert len(username) == 64
     assert username.replace("_", "").isalnum()
+    assert len(retry) == 64
+    assert retry.endswith("deadbeef")
+    assert retry != username

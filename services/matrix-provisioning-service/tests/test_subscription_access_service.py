@@ -74,8 +74,17 @@ async def setup_subscription(repository, *, state, period_end=None, with_bundle=
     )
     if not with_bundle:
         return stored
+    provisioning_token = "access-service-test"  # noqa: S105 - fixture lease token
+    assert await repository.reserve_paid_bundle_provisioning(
+        stored.entitlement_id,
+        token_fingerprint=stored.token_fingerprint,
+        operation_token=provisioning_token,
+        now=NOW,
+        stale_before=NOW - timedelta(minutes=5),
+    )
     await repository.store_paid_bundle(
         token_fingerprint=stored.token_fingerprint,
+        provisioning_token=provisioning_token,
         bundle_id="bundle-one",
         username="sync_one",
         user_mxid="@sync_one:example.com",

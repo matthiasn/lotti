@@ -100,6 +100,13 @@ have to match before the service stores the subscription or provisions Matrix.
 The purchase is acknowledged only after the entitlement and encrypted bundle
 claim are durable.
 
+Entitlement bootstrap is public by necessity, so issuance is protected by a
+durable per-client fixed-window quota before an entitlement row or secret is
+created. The client address is HMAC-derived with the account-binding key before
+storage; raw IP addresses are not persisted. Keep the reverse-proxy rate limit
+as the outer layer, but do not rely on it as the only database-exhaustion
+control.
+
 Paid bundle delivery differs deliberately from admin provisioning. A network
 failure may retry the same authenticated claim for 24 hours, so the credential
 is held in AES-256-GCM escrow instead of being lost after one response. The
@@ -108,7 +115,12 @@ challenge in the Matrix room and proof that the bootstrap password no longer
 authenticates. Rotation validation and expiry cleanup take mutually exclusive,
 recoverable database leases before touching Matrix, so cleanup cannot revoke an
 account whose proof is already being checked. Expired unconfirmed claims
-deactivate the abandoned account and destroy the escrow.
+deactivate the abandoned account and destroy the escrow. Before the first
+Matrix call, paid provisioning also takes a token-owned SQLite reservation by
+entitlement. Separate service objects and processes therefore wait for or reuse
+one durable claim instead of provisioning a suffixed orphan account. A dead
+owner ages out after five minutes; an HTTP request waits only a bounded interval
+and then asks the client to retry.
 
 RTDN is a wake-up signal, never entitlement evidence. The push route verifies
 Google's OIDC token, resolves only an already-bound purchase token, re-queries
@@ -139,6 +151,8 @@ from overwriting a replacement token's access decision.
 | `POLL_BATCH_SIZE` | No | `50` | Accounts checked per sweep |
 | `ENABLE_REDEMPTION_POLLING` | No | `true` | Disable for tests or a read-only replica |
 | `ENABLE_PLAY_SUBSCRIPTIONS` | No | `false` | Enables purchase routes, reconciliation and claim cleanup |
+| `ENTITLEMENT_ISSUANCE_LIMIT` | No | `5` | Anonymous entitlement creations allowed per client and window |
+| `ENTITLEMENT_ISSUANCE_WINDOW_SECONDS` | No | `3600` | Durable entitlement-creation quota window |
 | `SUBSCRIPTION_ENCRYPTION_KEY_ID` | When enabled | — | Identifier for the active AES-256-GCM write key |
 | `SUBSCRIPTION_ENCRYPTION_KEY_BASE64` | When enabled | — | Base64 for exactly 32 random bytes; encrypts tokens and pending bundles |
 | `SUBSCRIPTION_DECRYPTION_KEYS_JSON` | No | `{}` | JSON string map of retired key IDs to Base64 keys retained for decryption during rotation |
@@ -150,7 +164,11 @@ from overwriting a replacement token's access decision.
 | `PLAY_RTDN_SERVICE_ACCOUNT_EMAIL` | When enabled | — | Exact service-account identity allowed to push RTDN |
 | `SUBSCRIPTION_RECONCILE_INTERVAL_SECONDS` | No | `60` | Authoritative Google refresh interval |
 | `SUBSCRIPTION_RECONCILE_BATCH_SIZE` | No | `50` | Due subscriptions handled per reconciliation pass |
+| `PAID_PROVISIONING_WAIT_SECONDS` | No | `30` | Maximum request wait for another paid provisioner |
+| `PAID_PROVISIONING_POLL_SECONDS` | No | `0.1` | Poll interval while another process owns the entitlement reservation |
+| `PAID_PROVISIONING_OPERATION_TIMEOUT_SECONDS` | No | `300` | Age after which a crashed paid-provisioning reservation is recoverable |
 | `BUNDLE_CLAIM_REAPER_INTERVAL_SECONDS` | No | `300` | Expired paid-claim cleanup interval |
+| `BUNDLE_CLAIM_REAPER_STARTUP_DELAY_SECONDS` | No | `60` | Delay before the first destructive claim cleanup |
 | `BUNDLE_CLAIM_REAPER_BATCH_SIZE` | No | `50` | Expired claims handled per cleanup pass |
 | `CORS_ALLOWED_ORIGINS` | No | `http://localhost:5174` | Comma-separated origins |
 | `PORT` | No | `8003` | Listen port |
@@ -234,19 +252,24 @@ escrow.
 ## Production deployment requirements
 
 - Run exactly one service instance while `DB_PATH` points at SQLite. WAL,
-  foreign keys, explicit write transactions and uniqueness constraints protect
-  concurrent tasks inside that deployment, but SQLite cannot coordinate
-  duplicate RTDN or provisioning work across hosts. Move the repository to a
-  shared transactional database before adding replicas.
+  foreign keys, explicit write transactions, quotas, leases and uniqueness
+  constraints protect concurrent tasks and processes sharing that file. SQLite
+  cannot coordinate hosts that do not share the same database volume. Move the
+  repository to a shared transactional database before adding such replicas.
 - Do not expose Uvicorn directly. Terminate TLS at a trusted reverse proxy and
-  enforce body-size limits, per-IP/per-entitlement rate limits and request
-  timeouts there, especially on entitlement creation and Play verification.
+  enforce body-size limits, additional per-IP/per-entitlement rate limits and
+  request timeouts there, especially on entitlement creation and Play
+  verification. Configure proxy trust so Uvicorn's parsed client address is the
+  real peer used by the in-service quota; never trust arbitrary forwarded
+  headers from the public internet.
 - Configure a dedicated least-privilege Play service account and a dedicated
   Pub/Sub push service account. The latter must match both
   `PLAY_RTDN_AUDIENCE` and `PLAY_RTDN_SERVICE_ACCOUNT_EMAIL` exactly.
-- Verify the deployed Synapse exposes `PUT /_synapse/admin/v1/suspend/{user_id}`
-  before enabling subscriptions. Suspension is intentionally reversible;
-  deactivation would destroy device and encryption state needed after renewal.
+- Run Synapse 1.110.0 or newer and enable the MSC3823 account-suspension feature
+  before enabling subscriptions. The client verifies the server version before
+  calling `PUT /_synapse/admin/v1/suspend/{user_id}` and fails closed if the
+  endpoint is unavailable. Suspension is intentionally reversible; deactivation
+  would destroy device and encryption state needed after renewal.
 - Configure the three-day grace period in Play Console and monitor
   reconciliation errors, unacknowledged purchases, RTDN delivery age, stale
   claims, and failed suspend/unsuspend operations.

@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 
 from ..core.exceptions import (
     EntitlementAuthenticationException,
+    EntitlementRateLimitException,
     InvalidSubscriptionProductException,
 )
 from ..core.subscriptions import (
@@ -30,18 +31,45 @@ class SubscriptionIdentityService:
         account_binding_key: bytes,
         allowed_products: dict[str, frozenset[str]],
         intent_ttl: timedelta = timedelta(minutes=15),
+        entitlement_issuance_limit: int = 5,
+        entitlement_issuance_window: timedelta = timedelta(hours=1),
         secret_hasher: SecretHasher | None = None,
     ):
         if intent_ttl <= timedelta(0):
             raise ValueError("Purchase intent TTL must be positive")
+        if entitlement_issuance_limit <= 0:
+            raise ValueError("Entitlement issuance limit must be positive")
+        if entitlement_issuance_window <= timedelta(0):
+            raise ValueError("Entitlement issuance window must be positive")
         self._repository = repository
         self._account_binding_key = account_binding_key
         self._allowed_products = allowed_products
         self._intent_ttl = intent_ttl
+        self._entitlement_issuance_limit = entitlement_issuance_limit
+        self._entitlement_issuance_window = entitlement_issuance_window
         self._secret_hasher = secret_hasher or SecretHasher()
 
-    async def create_entitlement(self, *, now: datetime) -> EntitlementCredentials:
+    async def create_entitlement(
+        self,
+        *,
+        client_identifier: str,
+        now: datetime,
+    ) -> EntitlementCredentials:
         """Create a stable anonymous identity and return its secret exactly once."""
+        if not client_identifier:
+            raise ValueError("Client identifier must not be empty")
+        client_key_hash = derive_obfuscated_account_id(
+            self._account_binding_key,
+            f"entitlement-rate-v1\0{client_identifier}",
+        )
+        retry_after = await self._repository.consume_entitlement_issuance_quota(
+            client_key_hash,
+            now=now,
+            window=self._entitlement_issuance_window,
+            max_requests=self._entitlement_issuance_limit,
+        )
+        if retry_after is not None:
+            raise EntitlementRateLimitException(retry_after_seconds=retry_after)
         entitlement_id = str(uuid.uuid4())
         auth_secret = secrets.token_urlsafe(32)
         obfuscated_account_id = derive_obfuscated_account_id(

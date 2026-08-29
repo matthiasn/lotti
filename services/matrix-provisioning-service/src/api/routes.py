@@ -6,7 +6,7 @@ import logging
 import os
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Header, HTTPException, Query, status
+from fastapi import APIRouter, Header, HTTPException, Query, Request, status
 
 from ..container import container
 from ..core.constants import (
@@ -19,6 +19,7 @@ from ..core.exceptions import (
     BundleClaimConflictException,
     BundleNotFoundException,
     EntitlementAuthenticationException,
+    EntitlementRateLimitException,
     GooglePlayUnavailableException,
     GooglePlayVerificationException,
     InvalidBundleStateException,
@@ -89,13 +90,21 @@ def _require_subscriptions_enabled() -> None:
     status_code=status.HTTP_201_CREATED,
     tags=["subscriptions"],
 )
-async def create_sync_entitlement() -> EntitlementCredentialsResponse:
+async def create_sync_entitlement(request: Request) -> EntitlementCredentialsResponse:
     """Issue the stable app identity that purchases are attributed to."""
     _require_subscriptions_enabled()
-    credentials = await container.get_subscription_identity_service().create_entitlement(
-        now=datetime.now(timezone.utc)
-    )
-    return EntitlementCredentialsResponse(**credentials.__dict__)
+    try:
+        credentials = await container.get_subscription_identity_service().create_entitlement(
+            client_identifier=request.client.host if request.client is not None else "unknown",
+            now=datetime.now(timezone.utc),
+        )
+        return EntitlementCredentialsResponse(**credentials.__dict__)
+    except EntitlementRateLimitException as exc:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=str(exc),
+            headers={"Retry-After": str(exc.retry_after_seconds)},
+        ) from exc
 
 
 @router.post(

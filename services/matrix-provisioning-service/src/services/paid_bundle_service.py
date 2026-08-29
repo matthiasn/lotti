@@ -7,7 +7,9 @@ import base64
 import hashlib
 import hmac
 import uuid
+from collections.abc import Awaitable, Callable
 from datetime import datetime, timedelta
+from time import monotonic
 
 from ..core.exceptions import (
     BundleClaimConflictException,
@@ -47,13 +49,27 @@ class PaidBundleService:
         secret_cipher: SecretCipher,
         *,
         claim_ttl: timedelta = timedelta(hours=24),
+        provisioning_wait_seconds: float = 30,
+        provisioning_poll_seconds: float = 0.1,
+        provisioning_operation_timeout: timedelta = timedelta(minutes=5),
+        provisioning_waiter: Callable[[float], Awaitable[None]] = asyncio.sleep,
         secret_hasher: SecretHasher | None = None,
     ):
+        if provisioning_wait_seconds < 0:
+            raise ValueError("Paid provisioning wait must not be negative")
+        if provisioning_poll_seconds <= 0:
+            raise ValueError("Paid provisioning poll interval must be positive")
+        if provisioning_operation_timeout <= timedelta(0):
+            raise ValueError("Paid provisioning operation timeout must be positive")
         self._bundle_service = bundle_service
         self._repository = repository
         self._google_play_client = google_play_client
         self._secret_cipher = secret_cipher
         self._claim_ttl = claim_ttl
+        self._provisioning_wait_seconds = provisioning_wait_seconds
+        self._provisioning_poll_seconds = provisioning_poll_seconds
+        self._provisioning_operation_timeout = provisioning_operation_timeout
+        self._provisioning_waiter = provisioning_waiter
         self._secret_hasher = secret_hasher or SecretHasher()
         self._provisioning_locks = tuple(asyncio.Lock() for _ in range(64))
 
@@ -89,15 +105,7 @@ class PaidBundleService:
     ) -> PaidBundleDelivery:
         """Provision or reuse escrow while the entitlement stripe is held."""
 
-        current = await self._repository.get_current_subscription(
-            verified.subscription.entitlement_id
-        )
-        if current is None or current.token_fingerprint != verified.subscription.token_fingerprint:
-            raise GooglePlayVerificationException("Verified purchase is no longer current")
-        if not _grants_access(current, now=now):
-            raise GooglePlayVerificationException(
-                "Subscription does not currently grant SYNC access"
-            )
+        current = await self._load_current_subscription(verified, now=now)
         existing = await self._repository.get_bundle_claim_for_entitlement(
             verified.subscription.entitlement_id
         )
@@ -138,31 +146,51 @@ class PaidBundleService:
                     now=now,
                 )
         else:
-            initial_username = self._username(
-                verified.subscription.entitlement_id,
-                retry_suffix=(uuid.uuid4().hex[:8] if reprovisioning else None),
-            )
-            try:
-                claim = await self._provision_claim(
-                    verified,
-                    username=initial_username,
-                    now=now,
-                )
-            except UsernameAlreadyProvisionedException:
-                claim = await self._provision_claim(
-                    verified,
-                    username=self._username(
-                        verified.subscription.entitlement_id,
-                        retry_suffix=uuid.uuid4().hex[:8],
-                    ),
-                    now=now,
-                )
-            delivery = await self._deliver_existing(
-                claim,
-                claim_secret=submission.claim_secret,
+            provisioning_token, raced_claim = await self._acquire_provisioning_reservation(
+                verified,
                 now=now,
             )
+            if raced_claim is not None:
+                delivery = await self._deliver_existing(
+                    raced_claim,
+                    claim_secret=submission.claim_secret,
+                    now=now,
+                )
+            else:
+                try:
+                    initial_username = self._username(
+                        verified.subscription.entitlement_id,
+                        retry_suffix=(uuid.uuid4().hex[:8] if reprovisioning else None),
+                    )
+                    try:
+                        claim = await self._provision_claim(
+                            verified,
+                            provisioning_token=provisioning_token,
+                            username=initial_username,
+                            now=now,
+                        )
+                    except UsernameAlreadyProvisionedException:
+                        claim = await self._provision_claim(
+                            verified,
+                            provisioning_token=provisioning_token,
+                            username=self._username(
+                                verified.subscription.entitlement_id,
+                                retry_suffix=uuid.uuid4().hex[:8],
+                            ),
+                            now=now,
+                        )
+                    delivery = await self._deliver_existing(
+                        claim,
+                        claim_secret=submission.claim_secret,
+                        now=now,
+                    )
+                finally:
+                    await self._repository.release_paid_bundle_provisioning(
+                        verified.subscription.entitlement_id,
+                        operation_token=provisioning_token,
+                    )
 
+        current = await self._load_current_subscription(verified, now=now)
         if current.acknowledgement_state is AcknowledgementState.PENDING:
             await self._google_play_client.acknowledge_subscription(
                 submission.package_name,
@@ -175,10 +203,59 @@ class PaidBundleService:
             )
         return delivery
 
+    async def _load_current_subscription(
+        self,
+        verified: VerifiedPurchaseResult,
+        *,
+        now: datetime,
+    ):
+        current = await self._repository.get_current_subscription(
+            verified.subscription.entitlement_id
+        )
+        if current is None or current.token_fingerprint != verified.subscription.token_fingerprint:
+            raise GooglePlayVerificationException("Verified purchase is no longer current")
+        if not _grants_access(current, now=now):
+            raise GooglePlayVerificationException(
+                "Subscription does not currently grant SYNC access"
+            )
+        return current
+
+    async def _acquire_provisioning_reservation(
+        self,
+        verified: VerifiedPurchaseResult,
+        *,
+        now: datetime,
+    ) -> tuple[str, BundleClaim | None]:
+        entitlement_id = verified.subscription.entitlement_id
+        operation_token = str(uuid.uuid4())
+        started = monotonic()
+        while True:
+            elapsed = monotonic() - started
+            attempt_now = now + timedelta(seconds=elapsed)
+            acquired = await self._repository.reserve_paid_bundle_provisioning(
+                entitlement_id,
+                token_fingerprint=verified.subscription.token_fingerprint,
+                operation_token=operation_token,
+                now=attempt_now,
+                stale_before=attempt_now - self._provisioning_operation_timeout,
+            )
+            if acquired:
+                return operation_token, None
+            existing = await self._repository.get_bundle_claim_for_entitlement(entitlement_id)
+            if existing is not None:
+                return operation_token, existing
+            await self._load_current_subscription(verified, now=attempt_now)
+            if elapsed >= self._provisioning_wait_seconds:
+                raise BundleClaimConflictException(
+                    "Paid bundle provisioning is already in progress"
+                )
+            await self._provisioning_waiter(self._provisioning_poll_seconds)
+
     async def _provision_claim(
         self,
         verified: VerifiedPurchaseResult,
         *,
+        provisioning_token: str,
         username: str,
         now: datetime,
     ) -> BundleClaim:
@@ -198,6 +275,7 @@ class PaidBundleService:
             )
             _, claim = await self._repository.store_paid_bundle(
                 token_fingerprint=verified.subscription.token_fingerprint,
+                provisioning_token=provisioning_token,
                 bundle_id=bundle_id,
                 username=username,
                 user_mxid=result.user_mxid,
@@ -285,9 +363,14 @@ class PaidBundleService:
 
     @staticmethod
     def _username(entitlement_id: str, *, retry_suffix: str | None = None) -> str:
-        source = entitlement_id if retry_suffix is None else f"{entitlement_id}_{retry_suffix}"
-        compact = "".join(character for character in source if character.isalnum())
-        return f"sync_{compact.lower()}"[:64]
+        compact = "".join(character for character in entitlement_id.lower() if character.isalnum())
+        if retry_suffix is None:
+            return f"sync_{compact}"[:64]
+        suffix = "".join(character for character in retry_suffix.lower() if character.isalnum())[
+            -59:
+        ]
+        prefix_length = 64 - len("sync_") - len(suffix)
+        return f"sync_{compact[:prefix_length]}{suffix}"
 
 
 def rotation_challenge(claim_secret: str, bundle_id: str) -> str:

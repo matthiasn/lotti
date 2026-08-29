@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import asyncio
+import math
 import sqlite3
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 from ..core.constants import BUSY_TIMEOUT_SECONDS, DEFAULT_DB_PATH
 from ..core.exceptions import (
@@ -37,6 +38,15 @@ CREATE TABLE IF NOT EXISTS sync_entitlements (
     created_at             TEXT NOT NULL,
     disabled_at            TEXT
 );
+
+CREATE TABLE IF NOT EXISTS entitlement_issuance_limits (
+    client_key_hash   TEXT PRIMARY KEY,
+    window_started_at TEXT NOT NULL,
+    request_count     INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_entitlement_issuance_window
+    ON entitlement_issuance_limits (window_started_at);
 
 CREATE TABLE IF NOT EXISTS play_subscriptions (
     subscription_id                       TEXT PRIMARY KEY,
@@ -122,11 +132,23 @@ CREATE TABLE IF NOT EXISTS bundle_claims (
     FOREIGN KEY (bundle_id) REFERENCES provisioned_users (bundle_id) ON DELETE CASCADE,
     FOREIGN KEY (subscription_id) REFERENCES play_subscriptions (subscription_id)
 );
+
+CREATE TABLE IF NOT EXISTS paid_bundle_provisioning (
+    entitlement_id   TEXT PRIMARY KEY,
+    token_fingerprint TEXT NOT NULL,
+    operation_token  TEXT NOT NULL UNIQUE,
+    started_at       TEXT NOT NULL,
+    FOREIGN KEY (entitlement_id) REFERENCES sync_entitlements (entitlement_id)
+);
 """
 
 
 def _iso(value: datetime | None) -> str | None:
-    return value.isoformat() if value else None
+    if value is None:
+        return None
+    if value.tzinfo is None or value.utcoffset() is None:
+        raise ValueError("Subscription timestamps must be timezone-aware")
+    return value.astimezone(timezone.utc).isoformat()
 
 
 def _parse(value: str | None) -> datetime | None:
@@ -292,6 +314,72 @@ class SubscriptionRepository(ProvisioningRepository):
             obfuscated_account_id,
             auth_secret_hash,
             now,
+        )
+
+    def _consume_entitlement_issuance_quota_sync(
+        self,
+        client_key_hash: str,
+        now: datetime,
+        window: timedelta,
+        max_requests: int,
+    ) -> int | None:
+        conn = self._connect()
+        try:
+            conn.execute("BEGIN IMMEDIATE")
+            row = conn.execute(
+                "SELECT window_started_at, request_count "
+                "FROM entitlement_issuance_limits WHERE client_key_hash = ?",
+                (client_key_hash,),
+            ).fetchone()
+            window_started_at = _parse(row["window_started_at"]) if row else None
+            if window_started_at is None or now >= window_started_at + window:
+                conn.execute(
+                    "INSERT INTO entitlement_issuance_limits ("
+                    "client_key_hash, window_started_at, request_count"
+                    ") VALUES (?, ?, 1) ON CONFLICT(client_key_hash) DO UPDATE SET "
+                    "window_started_at = excluded.window_started_at, request_count = 1",
+                    (client_key_hash, _iso(now)),
+                )
+            elif row["request_count"] >= max_requests:
+                conn.rollback()
+                return max(
+                    1,
+                    math.ceil((window_started_at + window - now).total_seconds()),
+                )
+            else:
+                conn.execute(
+                    "UPDATE entitlement_issuance_limits SET request_count = request_count + 1 "
+                    "WHERE client_key_hash = ?",
+                    (client_key_hash,),
+                )
+            conn.execute(
+                "DELETE FROM entitlement_issuance_limits "
+                "WHERE client_key_hash <> ? AND window_started_at <= ?",
+                (client_key_hash, _iso(now - window)),
+            )
+            conn.commit()
+            return None
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
+    async def consume_entitlement_issuance_quota(
+        self,
+        client_key_hash: str,
+        *,
+        now: datetime,
+        window: timedelta,
+        max_requests: int,
+    ) -> int | None:
+        """Consume one durable anonymous-issuance slot or return retry seconds."""
+        return await asyncio.to_thread(
+            self._consume_entitlement_issuance_quota_sync,
+            client_key_hash,
+            now,
+            window,
+            max_requests,
         )
 
     def _get_entitlement_sync(self, entitlement_id: str) -> SyncEntitlement | None:
@@ -689,10 +777,103 @@ class SubscriptionRepository(ProvisioningRepository):
         """List current subscriptions whose Google state must be refreshed."""
         return await asyncio.to_thread(self._list_due_reconciliation_sync, now, limit)
 
+    def _reserve_paid_bundle_provisioning_sync(
+        self,
+        entitlement_id: str,
+        token_fingerprint: str,
+        operation_token: str,
+        now: datetime,
+        stale_before: datetime,
+    ) -> bool:
+        conn = self._connect()
+        try:
+            conn.execute("BEGIN IMMEDIATE")
+            subscription = conn.execute(
+                "SELECT bundle_id FROM play_subscriptions "
+                "WHERE entitlement_id = ? AND token_fingerprint = ? AND is_current = 1",
+                (entitlement_id, token_fingerprint),
+            ).fetchone()
+            if subscription is None or subscription["bundle_id"] is not None:
+                conn.rollback()
+                return False
+            existing = conn.execute(
+                "SELECT operation_token, started_at FROM paid_bundle_provisioning "
+                "WHERE entitlement_id = ?",
+                (entitlement_id,),
+            ).fetchone()
+            if existing is not None and _parse(existing["started_at"]) > stale_before:
+                conn.rollback()
+                return existing["operation_token"] == operation_token
+            conn.execute(
+                "INSERT INTO paid_bundle_provisioning ("
+                "entitlement_id, token_fingerprint, operation_token, started_at"
+                ") VALUES (?, ?, ?, ?) ON CONFLICT(entitlement_id) DO UPDATE SET "
+                "token_fingerprint = excluded.token_fingerprint, "
+                "operation_token = excluded.operation_token, started_at = excluded.started_at",
+                (entitlement_id, token_fingerprint, operation_token, _iso(now)),
+            )
+            conn.commit()
+            return True
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
+    async def reserve_paid_bundle_provisioning(
+        self,
+        entitlement_id: str,
+        *,
+        token_fingerprint: str,
+        operation_token: str,
+        now: datetime,
+        stale_before: datetime,
+    ) -> bool:
+        """Take the cross-process reservation before creating a Matrix account."""
+        return await asyncio.to_thread(
+            self._reserve_paid_bundle_provisioning_sync,
+            entitlement_id,
+            token_fingerprint,
+            operation_token,
+            now,
+            stale_before,
+        )
+
+    def _release_paid_bundle_provisioning_sync(
+        self,
+        entitlement_id: str,
+        operation_token: str,
+    ) -> bool:
+        conn = self._connect()
+        try:
+            cursor = conn.execute(
+                "DELETE FROM paid_bundle_provisioning "
+                "WHERE entitlement_id = ? AND operation_token = ?",
+                (entitlement_id, operation_token),
+            )
+            conn.commit()
+            return cursor.rowcount == 1
+        finally:
+            conn.close()
+
+    async def release_paid_bundle_provisioning(
+        self,
+        entitlement_id: str,
+        *,
+        operation_token: str,
+    ) -> bool:
+        """Release only the caller's paid-provisioning reservation."""
+        return await asyncio.to_thread(
+            self._release_paid_bundle_provisioning_sync,
+            entitlement_id,
+            operation_token,
+        )
+
     def _store_paid_bundle_sync(
         self,
         *,
         token_fingerprint: str,
+        provisioning_token: str,
         bundle_id: str,
         username: str,
         user_mxid: str,
@@ -719,6 +900,17 @@ class SubscriptionRepository(ProvisioningRepository):
                 raise BundleClaimConflictException(
                     "Subscription is unknown, retired, or already has a bundle"
                 )
+            reservation = conn.execute(
+                "SELECT operation_token, token_fingerprint "
+                "FROM paid_bundle_provisioning WHERE entitlement_id = ?",
+                (subscription["entitlement_id"],),
+            ).fetchone()
+            if (
+                reservation is None
+                or reservation["operation_token"] != provisioning_token
+                or reservation["token_fingerprint"] != token_fingerprint
+            ):
+                raise BundleClaimConflictException("Paid provisioning reservation was lost")
             conn.execute(
                 "INSERT INTO provisioned_users ("
                 "bundle_id, username, user_mxid, home_server, server_name, room_id, "
@@ -765,6 +957,11 @@ class SubscriptionRepository(ProvisioningRepository):
                 "WHERE subscription_id = ?",
                 (bundle_id, _iso(now), subscription["subscription_id"]),
             )
+            conn.execute(
+                "DELETE FROM paid_bundle_provisioning "
+                "WHERE entitlement_id = ? AND operation_token = ?",
+                (subscription["entitlement_id"], provisioning_token),
+            )
             conn.commit()
             user_row = conn.execute(
                 "SELECT * FROM provisioned_users WHERE bundle_id = ?", (bundle_id,)
@@ -788,6 +985,7 @@ class SubscriptionRepository(ProvisioningRepository):
         self,
         *,
         token_fingerprint: str,
+        provisioning_token: str,
         bundle_id: str,
         username: str,
         user_mxid: str,
@@ -807,6 +1005,7 @@ class SubscriptionRepository(ProvisioningRepository):
         return await asyncio.to_thread(
             self._store_paid_bundle_sync,
             token_fingerprint=token_fingerprint,
+            provisioning_token=provisioning_token,
             bundle_id=bundle_id,
             username=username,
             user_mxid=user_mxid,

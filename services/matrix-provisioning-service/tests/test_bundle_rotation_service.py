@@ -57,7 +57,10 @@ class FakeAdminClient:
 
 
 async def setup_claim(repository, identity_service, cipher, *, expires_at=None):
-    entitlement = await identity_service.create_entitlement(now=NOW)
+    entitlement = await identity_service.create_entitlement(
+        client_identifier="203.0.113.1",
+        now=NOW,
+    )
     subscription = await repository.store_verified_subscription(
         VerifiedSubscription(
             entitlement_id=entitlement.entitlement_id,
@@ -88,8 +91,17 @@ async def setup_claim(repository, identity_service, cipher, *, expires_at=None):
         room_id="!paid:example.com",
         kind=BundleKind.PROVISIONED,
     ).encode()
+    provisioning_token = "rotation-service-test"  # noqa: S105 - fixture lease token
+    assert await repository.reserve_paid_bundle_provisioning(
+        entitlement.entitlement_id,
+        token_fingerprint=subscription.token_fingerprint,
+        operation_token=provisioning_token,
+        now=NOW,
+        stale_before=NOW - timedelta(minutes=5),
+    )
     _, claim = await repository.store_paid_bundle(
         token_fingerprint=subscription.token_fingerprint,
+        provisioning_token=provisioning_token,
         bundle_id=bundle_id,
         username="sync_paid",
         user_mxid="@sync_paid:example.com",

@@ -5,8 +5,8 @@ description: Single-user multi-device replication over end-to-end encrypted Matr
 resource: ../../../lib/features/sync
 tags: [sync, matrix, replication, outbox, queue]
 status: stable
-generated: { by: codex/gpt-5, at: 2026-08-29T16:00:00Z }
-stale_after: 2026-11-02
+generated: { by: codex/gpt-5, at: 2026-08-29T22:10:20Z }
+stale_after: 2026-11-03
 sources:
   - id: sync-src
     resource: ../../../lib/features/sync
@@ -35,7 +35,7 @@ sources:
   - id: subscription-provisioner
     resource: ../../../services/matrix-provisioning-service/src/services
     title: Google Play subscription verification and Matrix provisioning services
-    last_modified: 2026-08-29
+    last_modified: 2026-08-30
 ---
 
 Sync replicates **one user's data across that user's own devices** over Matrix.
@@ -132,6 +132,14 @@ unsuspends the existing Matrix account before responding; it never recreates
 the bootstrap credential. The Android Billing client is not wired yet, so this
 backend path is dormant while the feature flag remains off.
 
+The anonymous entitlement endpoint consumes a durable, HMAC-pseudonymized
+per-client quota before it creates any identity row. Paid provisioning then
+takes a separate token-owned SQLite reservation keyed by entitlement before it
+touches Matrix. Requests in another service object or process wait for the
+owner's durable claim and reuse it; a killed owner becomes recoverable after
+five minutes. These are database invariants, with reverse-proxy throttling kept
+as an additional outer boundary.
+
 Play RTDN is only a refresh signal. An authenticated Pub/Sub push resolves an
 already-known token and causes a new `purchases.subscriptionsv2.get`; a periodic
 reconciler performs the same authoritative refresh when notifications are lost.
@@ -139,7 +147,10 @@ The Play-configured three-day grace deadline arrives as the line item's extended
 `expiryTime`. Lotti uses that timestamp directly and never adds another local
 grace window. Loss of entitlement suspends the Matrix user reversibly, while a
 renewal or payment recovery unsuspends it without discarding device or E2EE
-state. Each enforcement reloads the current purchase token while holding the
+state. Suspension requires Synapse 1.110.0 or newer with MSC3823 enabled; the
+admin client validates the server version before its first suspension call and
+fails closed if compatibility cannot be proved. Each enforcement reloads the
+current purchase token while holding the
 entitlement's serialization stripe, so an older refresh cannot suspend the
 account after a replacement refresh restored it.
 
@@ -162,7 +173,8 @@ authorized by the entitlement and claim secret, but escrow is destroyed only
 after the bound Matrix user publishes the server-derived rotation challenge in
 the provisioned room and the bootstrap password no longer authenticates. The
 claim reaper deactivates an account that never reaches that proof before its
-24-hour TTL. Rotation verification and reaping first acquire mutually exclusive
+24-hour TTL. Its first destructive batch waits for an operator-configurable
+startup delay. Rotation verification and reaping first acquire mutually exclusive
 tokenized database leases; failed or crashed workers release or age out their
 lease, and a late worker cannot clear a newer owner's lease. Failed reaper
 attempts receive a separate bounded retry time so one broken account cannot

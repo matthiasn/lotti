@@ -226,6 +226,84 @@ async def test_suspension_failure_is_not_silently_accepted(credentials):
         await client.set_user_suspended(USER, suspended=True)
 
 
+@pytest.mark.parametrize(
+    ("server_version", "message"),
+    [
+        ("1.109.0", "requires Synapse 1.110.0 or newer"),
+        ("not-a-version", "invalid server version"),
+    ],
+)
+async def test_suspension_rejects_unsupported_or_invalid_synapse_versions(
+    credentials,
+    server_version,
+    message,
+):
+    requests = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        if request.url.path == "/_matrix/client/v3/login":
+            return httpx.Response(200, json={"access_token": "admin-token"})
+        if request.url.path == "/_synapse/admin/v1/server_version":
+            return httpx.Response(200, json={"server_version": server_version})
+        if "/_synapse/admin/v1/suspend/" in request.url.path:
+            return httpx.Response(200, json={})
+        return synapse_handler(request)
+
+    client = SynapseAdminClient(credentials, transport=httpx.MockTransport(handler))
+
+    with pytest.raises(ProvisioningError, match=message):
+        await client.set_user_suspended(USER, suspended=True)
+
+    assert not any("/_synapse/admin/v1/suspend/" in request.url.path for request in requests)
+
+
+async def test_suspension_version_check_is_cached(credentials):
+    version_requests = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/_matrix/client/v3/login":
+            return httpx.Response(200, json={"access_token": "admin-token"})
+        if request.url.path == "/_synapse/admin/v1/server_version":
+            version_requests.append(request)
+            return httpx.Response(200, json={"server_version": "1.110.0"})
+        if "/_synapse/admin/v1/suspend/" in request.url.path:
+            return httpx.Response(200, json={})
+        return synapse_handler(request)
+
+    client = SynapseAdminClient(credentials, transport=httpx.MockTransport(handler))
+
+    await client.set_user_suspended(USER, suspended=True)
+    await client.set_user_suspended(USER, suspended=False)
+
+    assert len(version_requests) == 1
+
+
+@pytest.mark.parametrize(
+    ("version_response", "message"),
+    [
+        (httpx.Response(503, json={}), "Could not verify"),
+        (httpx.Response(200, content=b"not-json"), "invalid server version"),
+    ],
+)
+async def test_suspension_fails_closed_when_version_probe_is_inconclusive(
+    credentials,
+    version_response,
+    message,
+):
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/_matrix/client/v3/login":
+            return httpx.Response(200, json={"access_token": "admin-token"})
+        if request.url.path == "/_synapse/admin/v1/server_version":
+            return version_response
+        return synapse_handler(request)
+
+    client = SynapseAdminClient(credentials, transport=httpx.MockTransport(handler))
+
+    with pytest.raises(ProvisioningError, match=message):
+        await client.set_user_suspended(USER, suspended=True)
+
+
 @pytest.mark.parametrize(("status_code", "expected"), [(200, True), (403, False)])
 async def test_bootstrap_password_check_distinguishes_rejection_from_success(
     credentials,
@@ -374,6 +452,27 @@ async def test_rotation_state_is_read_with_short_lived_user_token(credentials, m
     state_request = requests[-1]
     assert state_request.headers["Authorization"] == "Bearer user-token"
     assert state_request.url.path.endswith("/state/com.lotti.sync.provisioning.rotation/bundle-id")
+
+
+async def test_missing_rotation_state_returns_empty_mapping(credentials):
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/_matrix/client/v3/login":
+            return httpx.Response(200, json={"access_token": "admin-token"})
+        if request.url.path.endswith("/login"):
+            return httpx.Response(200, json={"access_token": "user-token"})
+        if "/state/" in request.url.path:
+            return httpx.Response(404, json={"errcode": "M_NOT_FOUND"})
+        return synapse_handler(request)
+
+    client = SynapseAdminClient(credentials, transport=httpx.MockTransport(handler))
+
+    state = await client.get_room_state_as_user(
+        USER,
+        "!paid:example.com",
+        "com.lotti.sync.provisioning.rotation",
+    )
+
+    assert state == {}
 
 
 @pytest.mark.parametrize(

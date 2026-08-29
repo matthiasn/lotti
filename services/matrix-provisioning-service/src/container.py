@@ -6,17 +6,24 @@ import base64
 import binascii
 import json
 import os
+from datetime import timedelta
 from typing import Any, Callable, Dict, cast
 
 from shared.matrix import AdminCredentials, SynapseAdminClient, SynapseProvisioner
 
 from .core.constants import (
+    BUNDLE_CLAIM_REAPER_STARTUP_DELAY_SECONDS,
     DEFAULT_DB_PATH,
+    DEFAULT_ENTITLEMENT_ISSUANCE_LIMIT,
+    DEFAULT_ENTITLEMENT_ISSUANCE_WINDOW_SECONDS,
+    DEFAULT_PAID_PROVISIONING_POLL_SECONDS,
+    DEFAULT_PAID_PROVISIONING_WAIT_SECONDS,
     DEFAULT_PLAY_BASE_PLAN_IDS,
     DEFAULT_POLL_BATCH_SIZE,
     DEFAULT_POLL_INTERVAL_SECONDS,
     DEFAULT_RETENTION_DAYS,
     DEFAULT_RETENTION_SWEEP_HOURS,
+    PAID_PROVISIONING_OPERATION_TIMEOUT_SECONDS,
     PLAY_PACKAGE_NAME,
     PLAY_SUBSCRIPTION_PRODUCT_ID,
     SERVICE_ADMIN_CLIENT,
@@ -216,6 +223,20 @@ class Container:
             self.get_subscription_repository(),
             account_binding_key=_base64_secret("PLAY_ACCOUNT_BINDING_KEY_BASE64"),
             allowed_products=_allowed_products(),
+            entitlement_issuance_limit=int(
+                os.getenv(
+                    "ENTITLEMENT_ISSUANCE_LIMIT",
+                    str(DEFAULT_ENTITLEMENT_ISSUANCE_LIMIT),
+                )
+            ),
+            entitlement_issuance_window=timedelta(
+                seconds=float(
+                    os.getenv(
+                        "ENTITLEMENT_ISSUANCE_WINDOW_SECONDS",
+                        str(DEFAULT_ENTITLEMENT_ISSUANCE_WINDOW_SECONDS),
+                    )
+                )
+            ),
         )
 
     def _create_subscription_service(self) -> SubscriptionService:
@@ -242,6 +263,26 @@ class Container:
             self.get_subscription_repository(),
             self.get_google_play_client(),
             self.get_secret_cipher(),
+            provisioning_wait_seconds=float(
+                os.getenv(
+                    "PAID_PROVISIONING_WAIT_SECONDS",
+                    str(DEFAULT_PAID_PROVISIONING_WAIT_SECONDS),
+                )
+            ),
+            provisioning_poll_seconds=float(
+                os.getenv(
+                    "PAID_PROVISIONING_POLL_SECONDS",
+                    str(DEFAULT_PAID_PROVISIONING_POLL_SECONDS),
+                )
+            ),
+            provisioning_operation_timeout=timedelta(
+                seconds=float(
+                    os.getenv(
+                        "PAID_PROVISIONING_OPERATION_TIMEOUT_SECONDS",
+                        str(PAID_PROVISIONING_OPERATION_TIMEOUT_SECONDS),
+                    )
+                )
+            ),
         )
 
     def _create_bundle_rotation_service(self) -> BundleRotationService:
@@ -286,6 +327,12 @@ class Container:
             self.get_subscription_repository(),
             self.get_admin_client(),
             interval_seconds=float(os.getenv("BUNDLE_CLAIM_REAPER_INTERVAL_SECONDS", "300")),
+            startup_delay_seconds=float(
+                os.getenv(
+                    "BUNDLE_CLAIM_REAPER_STARTUP_DELAY_SECONDS",
+                    str(BUNDLE_CLAIM_REAPER_STARTUP_DELAY_SECONDS),
+                )
+            ),
             batch_size=int(os.getenv("BUNDLE_CLAIM_REAPER_BATCH_SIZE", "50")),
         )
 

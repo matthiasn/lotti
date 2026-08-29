@@ -24,6 +24,7 @@ from src.core.constants import (
 from src.core.exceptions import (
     BundleClaimConflictException,
     EntitlementAuthenticationException,
+    EntitlementRateLimitException,
     GooglePlayUnavailableException,
     GooglePlayVerificationException,
     InvalidSubscriptionProductException,
@@ -52,8 +53,12 @@ class FakeIdentityService:
         self.intent_calls = []
         self.auth_calls = []
         self.failure = None
+        self.entitlement_calls = []
 
-    async def create_entitlement(self, *, now):
+    async def create_entitlement(self, *, client_identifier, now):
+        if self.failure:
+            raise self.failure
+        self.entitlement_calls.append((client_identifier, now))
         return EntitlementCredentials(
             entitlement_id="entitlement-one",
             auth_secret=AUTH_SECRET,
@@ -153,8 +158,10 @@ class FakeNotificationService:
 class FakeSubscriptionRepository:
     def __init__(self):
         self.subscription = SimpleNamespace(entitlement_state=EntitlementState.ACTIVE)
+        self.lookups = []
 
-    async def get_current_subscription(self, _entitlement_id):
+    async def get_current_subscription(self, entitlement_id):
+        self.lookups.append(entitlement_id)
         return self.subscription
 
 
@@ -217,7 +224,7 @@ def purchase_payload():
     }
 
 
-def test_entitlement_bootstrap_is_public_and_returns_one_time_secret(client):
+def test_entitlement_bootstrap_is_public_and_returns_one_time_secret(client, services):
     response = client.post("/api/v1/client/subscriptions/entitlements")
 
     assert response.status_code == 201
@@ -226,6 +233,20 @@ def test_entitlement_bootstrap_is_public_and_returns_one_time_secret(client):
         "auth_secret": AUTH_SECRET,
         "obfuscated_account_id": "obfuscated-one",
     }
+    identifier, _ = services[SERVICE_SUBSCRIPTION_IDENTITY].entitlement_calls[0]
+    assert identifier == "testclient"
+
+
+def test_entitlement_bootstrap_maps_per_client_rate_limit(client, services):
+    services[SERVICE_SUBSCRIPTION_IDENTITY].failure = EntitlementRateLimitException(
+        retry_after_seconds=37
+    )
+
+    response = client.post("/api/v1/client/subscriptions/entitlements")
+
+    assert response.status_code == 429
+    assert response.headers["retry-after"] == "37"
+    assert response.json()["detail"] == "Entitlement creation rate limit exceeded"
 
 
 def test_subscription_routes_fail_closed_when_feature_is_disabled(client, monkeypatch):
@@ -286,6 +307,7 @@ def test_verified_purchase_returns_paid_bundle_and_rotation_challenge(client, se
     access_calls = services[SERVICE_SUBSCRIPTION_ACCESS_SERVICE].calls
     assert access_calls[0][0] is services[SERVICE_SUBSCRIPTION_REPOSITORY].subscription
     assert len(access_calls) == 1
+    assert services[SERVICE_SUBSCRIPTION_REPOSITORY].lookups == ["entitlement-one"]
 
 
 def test_verified_replacement_purchase_returns_account_recovery_result(client, services):
@@ -344,6 +366,7 @@ def test_delivery_retry_authenticates_entitlement_without_replaying_purchase(cli
     assert len(access.calls) == 1
     assert access.calls[0][0] is subscription
     assert services[SERVICE_PAID_BUNDLE_SERVICE].delivery_calls[0]["claim_secret"] == CLAIM_SECRET
+    assert services[SERVICE_SUBSCRIPTION_REPOSITORY].lookups == ["entitlement-one"]
 
 
 def test_delivery_retry_fails_closed_when_current_subscription_is_missing(client, services):

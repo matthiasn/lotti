@@ -97,7 +97,10 @@ def service(repository, identity_service, google_client, cipher):
 
 
 async def purchase_context(identity_service, google_client, **submission_overrides):
-    entitlement = await identity_service.create_entitlement(now=NOW)
+    entitlement = await identity_service.create_entitlement(
+        client_identifier="203.0.113.1",
+        now=NOW,
+    )
     intent = await identity_service.create_purchase_intent(
         entitlement_id=entitlement.entitlement_id,
         auth_secret=entitlement.auth_secret,
@@ -516,8 +519,17 @@ async def test_authoritative_refresh_recovers_pending_acknowledgement_after_prov
         entitlement_auth_secret=entitlement.auth_secret,
         now=NOW,
     )
+    provisioning_token = "subscription-service-test"
+    assert await repository.reserve_paid_bundle_provisioning(
+        entitlement.entitlement_id,
+        token_fingerprint=original.subscription.token_fingerprint,
+        operation_token=provisioning_token,
+        now=NOW,
+        stale_before=NOW - timedelta(minutes=5),
+    )
     await repository.store_paid_bundle(
         token_fingerprint=original.subscription.token_fingerprint,
+        provisioning_token=provisioning_token,
         bundle_id="paid-bundle",
         username="sync_paid",
         user_mxid="@sync_paid:example.com",

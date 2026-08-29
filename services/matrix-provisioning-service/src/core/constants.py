@@ -39,6 +39,21 @@ DEFAULT_POLL_BATCH_SIZE = 50
 DEFAULT_SUBSCRIPTION_RECONCILE_INTERVAL_SECONDS = 60
 DEFAULT_SUBSCRIPTION_RECONCILE_BATCH_SIZE = 50
 
+# Anonymous entitlement issuance must remain possible for a fresh install, but
+# an unauthenticated caller must not be able to grow the SQLite database without
+# bound. The HMAC-keyed quota is shared by every worker using the database.
+DEFAULT_ENTITLEMENT_ISSUANCE_LIMIT = 5
+DEFAULT_ENTITLEMENT_ISSUANCE_WINDOW_SECONDS = 3600
+
+# Paid provisioning and cleanup both cross the SQLite/Synapse boundary. The
+# reservation survives process boundaries; the request wait is deliberately
+# shorter so a dead worker produces a retryable conflict instead of pinning an
+# HTTP connection until the stale lease can be recovered.
+DEFAULT_PAID_PROVISIONING_WAIT_SECONDS = 30.0
+DEFAULT_PAID_PROVISIONING_POLL_SECONDS = 0.1
+PAID_PROVISIONING_OPERATION_TIMEOUT_SECONDS = 300.0
+BUNDLE_CLAIM_REAPER_STARTUP_DELAY_SECONDS = 60.0
+
 # History retention. A reconnecting device catches up by walking the room
 # timeline first, and only escalates still-missing counters to peer-to-peer
 # backfill. So this window is the bound on how long a device can be offline and

@@ -9,6 +9,7 @@ from datetime import datetime, timedelta, timezone
 
 from shared.matrix import SynapseAdminClient
 
+from ..core.constants import BUNDLE_CLAIM_REAPER_STARTUP_DELAY_SECONDS
 from .periodic_task import PeriodicTask
 from .subscription_repository import SubscriptionRepository
 
@@ -24,12 +25,17 @@ class BundleClaimReaper(PeriodicTask):
         admin_client: SynapseAdminClient,
         *,
         interval_seconds: float = 300,
+        startup_delay_seconds: float = BUNDLE_CLAIM_REAPER_STARTUP_DELAY_SECONDS,
         batch_size: int = 50,
         now_provider: Callable[[], datetime] | None = None,
         failure_retry_delay: timedelta = timedelta(minutes=5),
         operation_timeout: timedelta = timedelta(minutes=5),
     ):
-        super().__init__(name="Paid bundle claim reaper", interval_seconds=interval_seconds)
+        super().__init__(
+            name="Paid bundle claim reaper",
+            interval_seconds=interval_seconds,
+            startup_delay_seconds=startup_delay_seconds,
+        )
         self._repository = repository
         self._admin_client = admin_client
         self._batch_size = batch_size

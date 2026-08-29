@@ -32,6 +32,12 @@ class FakeAdminClient:
         self.deactivated.append(user_mxid)
 
 
+def test_destructive_reaper_delays_its_first_run():
+    reaper = BundleClaimReaper(object(), FakeAdminClient())
+
+    assert reaper._startup_delay_seconds == 60
+
+
 async def setup_claim(repository, suffix, expires_at):
     entitlement_id = f"entitlement-{suffix}"
     token = f"token-{suffix}"
@@ -63,8 +69,17 @@ async def setup_claim(repository, suffix, expires_at):
         ),
         now=NOW - timedelta(days=1),
     )
+    provisioning_token = f"reaper-test-{suffix}"
+    assert await repository.reserve_paid_bundle_provisioning(
+        entitlement_id,
+        token_fingerprint=token,
+        operation_token=provisioning_token,
+        now=NOW - timedelta(days=1),
+        stale_before=NOW - timedelta(days=1, minutes=5),
+    )
     _, claim = await repository.store_paid_bundle(
         token_fingerprint=token,
+        provisioning_token=provisioning_token,
         bundle_id=f"bundle-{suffix}",
         username=f"sync_{suffix}",
         user_mxid=f"@sync_{suffix}:example.com",
