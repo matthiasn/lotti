@@ -252,6 +252,30 @@ async def test_repeated_valid_confirmation_is_idempotent_without_matrix_calls(
     assert admin_client.password_calls == 1
 
 
+async def test_reaped_claim_cannot_be_confirmed_as_successful(dependencies):
+    repository, identity_service, admin_client, cipher, service = dependencies
+    entitlement, claim = await setup_claim(repository, identity_service, cipher)
+    await repository.revoke(claim.bundle_id, "claim expired")
+    abandoned = await repository.abandon_bundle_claim(
+        claim.bundle_id,
+        now=claim.expires_at,
+    )
+
+    with pytest.raises(BundleClaimConflictException, match="abandoned"):
+        await service.confirm_rotation(
+            entitlement_id=entitlement.entitlement_id,
+            entitlement_auth_secret=entitlement.auth_secret,
+            bundle_id=claim.bundle_id,
+            claim_secret="claim-secret",
+            now=claim.expires_at + timedelta(minutes=1),
+        )
+
+    assert abandoned.destroyed_at == claim.expires_at
+    assert abandoned.confirmed_at is None
+    assert admin_client.state_calls == 0
+    assert admin_client.password_calls == 0
+
+
 async def test_wrong_claim_secret_is_rejected_before_matrix_lookup(dependencies):
     repository, identity_service, admin_client, cipher, service = dependencies
     entitlement, claim = await setup_claim(repository, identity_service, cipher)

@@ -45,6 +45,8 @@ services:
       - 'SUBSCRIPTION_DECRYPTION_KEYS_JSON=${SUBSCRIPTION_DECRYPTION_KEYS_JSON:-{}}'
       - PLAY_ACCOUNT_BINDING_KEY_BASE64=${PLAY_ACCOUNT_BINDING_KEY_BASE64:-}
       - PLAY_BASE_PLAN_IDS=${PLAY_BASE_PLAN_IDS:-monthly,annual}
+      - PURCHASE_INTENT_ISSUANCE_LIMIT=${PURCHASE_INTENT_ISSUANCE_LIMIT:-10}
+      - PURCHASE_INTENT_ISSUANCE_WINDOW_SECONDS=${PURCHASE_INTENT_ISSUANCE_WINDOW_SECONDS:-900}
       - PLAY_SIGNING_CERTIFICATE_SHA256=${PLAY_SIGNING_CERTIFICATE_SHA256:-}
       - PLAY_ALLOW_TEST_PURCHASES=${PLAY_ALLOW_TEST_PURCHASES:-false}
       - PLAY_RTDN_AUDIENCE=${PLAY_RTDN_AUDIENCE:-}
@@ -56,11 +58,15 @@ services:
       - GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS:-}
       - LOG_LEVEL=INFO
       - PORT=8003
+      # Trust only the nginx container's fixed address. Direct clients on the
+      # published service port cannot forge X-Forwarded-For.
+      - FORWARDED_ALLOW_IPS=${FORWARDED_ALLOW_IPS:-172.28.0.10}
       - CORS_ALLOWED_ORIGINS=http://localhost:5174
     volumes:
       - provisioning-data:/app/data
     networks:
-      - matrix-admin-network
+      matrix-admin-network:
+        ipv4_address: 172.28.0.11
     restart: unless-stopped
 
   matrix-admin:
@@ -78,7 +84,8 @@ services:
     depends_on:
       - matrix-provisioning-service
     networks:
-      - matrix-admin-network
+      matrix-admin-network:
+        ipv4_address: 172.28.0.10
 
 volumes:
   provisioning-data:
@@ -87,3 +94,6 @@ volumes:
 networks:
   matrix-admin-network:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/24

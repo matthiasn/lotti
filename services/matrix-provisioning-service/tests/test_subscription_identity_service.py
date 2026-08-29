@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sqlite3
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -9,6 +10,7 @@ from src.core.exceptions import (
     EntitlementAuthenticationException,
     EntitlementRateLimitException,
     InvalidSubscriptionProductException,
+    PurchaseIntentRateLimitException,
 )
 from src.services.subscription_identity_service import SubscriptionIdentityService
 from src.services.subscription_repository import SubscriptionRepository
@@ -86,6 +88,57 @@ async def test_purchase_intent_is_short_lived_and_bound_to_entitlement_and_plan(
     assert stored.base_plan_id == "annual"
     assert issued.intent_secret not in stored.intent_secret_hash
     assert SecretHasher().verify(issued.intent_secret, stored.intent_secret_hash)
+
+
+async def test_purchase_intent_issuance_is_bounded_and_prunes_expired_replay_state(
+    repository,
+):
+    service = SubscriptionIdentityService(
+        repository,
+        account_binding_key=bytes(range(32)),
+        allowed_products={"lotti_sync": frozenset({"monthly"})},
+        purchase_intent_issuance_limit=2,
+        purchase_intent_issuance_window=timedelta(minutes=15),
+    )
+    credentials = await service.create_entitlement(
+        client_identifier="203.0.113.1",
+        now=NOW,
+    )
+    values = {
+        "entitlement_id": credentials.entitlement_id,
+        "auth_secret": credentials.auth_secret,
+        "product_id": "lotti_sync",
+        "base_plan_id": "monthly",
+    }
+    first = await service.create_purchase_intent(**values, now=NOW)
+    await service.create_purchase_intent(**values, now=NOW + timedelta(seconds=1))
+    await repository.consume_purchase_intent(
+        intent_id=first.intent_id,
+        entitlement_id=credentials.entitlement_id,
+        expected_request_hash="request-hash",
+        token_fingerprint="token-fingerprint",  # noqa: S106 - fixture fingerprint
+        integrity_token_fingerprint="integrity-fingerprint",  # noqa: S106 - fixture
+        now=NOW + timedelta(minutes=1),
+    )
+
+    with pytest.raises(PurchaseIntentRateLimitException) as error:
+        await service.create_purchase_intent(**values, now=NOW + timedelta(minutes=1))
+
+    assert error.value.retry_after_seconds == 840
+    after_window = await service.create_purchase_intent(
+        **values,
+        now=NOW + timedelta(minutes=15),
+    )
+    assert after_window.intent_id != first.intent_id
+    assert await repository.get_purchase_intent(first.intent_id) is None
+    connection = sqlite3.connect(repository.db_path)
+    try:
+        replay_count = connection.execute("SELECT COUNT(*) FROM play_integrity_replays").fetchone()[
+            0
+        ]
+    finally:
+        connection.close()
+    assert replay_count == 0
 
 
 @pytest.mark.parametrize(
@@ -171,4 +224,27 @@ def test_entitlement_rate_limit_configuration_must_be_positive(
             allowed_products={},
             entitlement_issuance_limit=limit,
             entitlement_issuance_window=window,
+        )
+
+
+@pytest.mark.parametrize(
+    ("limit", "window", "message"),
+    [
+        (0, timedelta(minutes=15), "Purchase intent issuance limit"),
+        (1, timedelta(0), "Purchase intent issuance window"),
+    ],
+)
+def test_purchase_intent_rate_limit_configuration_must_be_positive(
+    repository,
+    limit,
+    window,
+    message,
+):
+    with pytest.raises(ValueError, match=message):
+        SubscriptionIdentityService(
+            repository,
+            account_binding_key=bytes(range(32)),
+            allowed_products={},
+            purchase_intent_issuance_limit=limit,
+            purchase_intent_issuance_window=window,
         )

@@ -45,6 +45,13 @@ DEFAULT_SUBSCRIPTION_RECONCILE_BATCH_SIZE = 50
 DEFAULT_ENTITLEMENT_ISSUANCE_LIMIT = 5
 DEFAULT_ENTITLEMENT_ISSUANCE_WINDOW_SECONDS = 3600
 
+# An authenticated entitlement can issue only a small number of one-time
+# Billing authorizations per window. Expired intents are pruned while this
+# durable quota is consumed, bounding both expensive secret hashing and SQLite
+# growth even when a valid app credential is abused.
+DEFAULT_PURCHASE_INTENT_ISSUANCE_LIMIT = 10
+DEFAULT_PURCHASE_INTENT_ISSUANCE_WINDOW_SECONDS = 900
+
 # Paid provisioning and cleanup both cross the SQLite/Synapse boundary. The
 # reservation survives process boundaries; the request wait is deliberately
 # shorter so a dead worker produces a retryable conflict instead of pinning an

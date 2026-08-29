@@ -66,7 +66,9 @@ class BundleRotationService:
         if claim is None or claim.bundle_id != bundle_id or not valid_claim_secret:
             raise BundleClaimConflictException("Invalid bundle claim credentials")
         if claim.destroyed_at is not None:
-            return claim
+            if claim.confirmed_at is not None:
+                return claim
+            raise BundleClaimConflictException("Bundle claim was abandoned")
         if now >= claim.expires_at or claim.encrypted_bundle is None:
             raise BundleClaimConflictException("Bundle claim has expired")
 

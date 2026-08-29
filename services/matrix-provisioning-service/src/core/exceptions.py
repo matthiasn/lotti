@@ -87,6 +87,14 @@ class EntitlementRateLimitException(ProvisioningServiceException):
         self.retry_after_seconds = retry_after_seconds
 
 
+class PurchaseIntentRateLimitException(ProvisioningServiceException):
+    """Raised when one entitlement creates too many purchase intents."""
+
+    def __init__(self, *, retry_after_seconds: int):
+        super().__init__("Purchase intent creation rate limit exceeded")
+        self.retry_after_seconds = retry_after_seconds
+
+
 class InvalidSubscriptionProductException(ProvisioningServiceException):
     """Raised when a product or base plan is not configured for SYNC."""
 

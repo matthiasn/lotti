@@ -31,6 +31,7 @@ from src.core.exceptions import (
     PubSubAuthenticationException,
     PurchaseIntentExpiredException,
     PurchaseIntentNotFoundException,
+    PurchaseIntentRateLimitException,
     PurchaseIntentReplayException,
     PurchaseTokenConflictException,
     SubscriptionLineageException,
@@ -290,6 +291,26 @@ def test_purchase_intent_passes_entitlement_secret_to_service(client, services):
     call = services[SERVICE_SUBSCRIPTION_IDENTITY].intent_calls[0]
     assert call["auth_secret"] == AUTH_SECRET
     assert call["base_plan_id"] == "monthly"
+
+
+def test_purchase_intent_maps_per_entitlement_rate_limit(client, services):
+    services[SERVICE_SUBSCRIPTION_IDENTITY].failure = PurchaseIntentRateLimitException(
+        retry_after_seconds=91
+    )
+
+    response = client.post(
+        "/api/v1/client/subscriptions/purchase-intents",
+        headers={"Authorization": f"Bearer {AUTH_SECRET}"},
+        json={
+            "entitlement_id": "entitlement-one",
+            "product_id": "lotti_sync",
+            "base_plan_id": "monthly",
+        },
+    )
+
+    assert response.status_code == 429
+    assert response.headers["retry-after"] == "91"
+    assert response.json()["detail"] == "Purchase intent creation rate limit exceeded"
 
 
 def test_verified_purchase_returns_paid_bundle_and_rotation_challenge(client, services):

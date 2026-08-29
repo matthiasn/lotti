@@ -5,7 +5,7 @@ description: Single-user multi-device replication over end-to-end encrypted Matr
 resource: ../../../lib/features/sync
 tags: [sync, matrix, replication, outbox, queue]
 status: stable
-generated: { by: codex/gpt-5, at: 2026-08-29T22:18:03Z }
+generated: { by: codex/gpt-5, at: 2026-08-29T22:28:45Z }
 stale_after: 2026-11-03
 sources:
   - id: sync-src
@@ -133,12 +133,17 @@ the bootstrap credential. The Android Billing client is not wired yet, so this
 backend path is dormant while the feature flag remains off.
 
 The anonymous entitlement endpoint consumes a durable, HMAC-pseudonymized
-per-client quota before it creates any identity row. Paid provisioning then
-takes a separate token-owned SQLite reservation keyed by entitlement before it
-touches Matrix. Requests in another service object or process wait for the
-owner's durable claim and reuse it; a killed owner becomes recoverable after
-five minutes. These are database invariants, with reverse-proxy throttling kept
-as an additional outer boundary.
+per-client quota before it creates any identity row. Authenticated purchase
+intent issuance consumes a separate durable per-entitlement quota before
+hashing and storing another one-time secret; the same transaction prunes
+expired intents and their Integrity replay markers. Paid provisioning then
+takes a token-owned SQLite reservation keyed by entitlement before it touches
+Matrix. Requests in another service object or process wait for the owner's
+durable claim and reuse it; a killed owner becomes recoverable after five
+minutes. These are database invariants, with reverse-proxy throttling kept as
+an additional outer boundary. The bundled nginx forwards the original client
+chain and Uvicorn trusts only nginx's fixed Compose address, so direct callers
+cannot forge the quota identity through `X-Forwarded-For`.
 
 Play RTDN is only a refresh signal. An authenticated Pub/Sub push resolves an
 already-known token and causes a new `purchases.subscriptionsv2.get`; a periodic
@@ -185,10 +190,12 @@ purchase reauthorizes still-pending escrow with its verified claim secret only
 while that purchase token remains current. A later verified payment may detach
 an abandoned, revoked claim and provision a
 fresh Matrix account, retrying with a suffixed localpart if the deterministic
-name survived an earlier rollback. Confirmed claims always recover the existing
-account without recreating bootstrap credentials. Lost-response delivery retries
-reload the current subscription and reject non-granting state or an elapsed
-authoritative expiry before decrypting escrow.
+name survived an earlier rollback. A rotation confirmation is idempotent only
+when the claim has a real `confirmed_at`; a late request cannot turn a
+reaper-destroyed claim into apparent success. Confirmed claims always recover
+the existing account without recreating bootstrap credentials. Lost-response
+delivery retries reload the current subscription and reject non-granting state
+or an elapsed authoritative expiry before decrypting escrow.
 
 # Pairing a new device
 

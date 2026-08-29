@@ -105,7 +105,10 @@ durable per-client fixed-window quota before an entitlement row or secret is
 created. The client address is HMAC-derived with the account-binding key before
 storage; raw IP addresses are not persisted. Keep the reverse-proxy rate limit
 as the outer layer, but do not rely on it as the only database-exhaustion
-control.
+control. Authenticated purchase-intent issuance has its own durable
+per-entitlement fixed-window quota. Consuming that quota also removes expired
+intents and their Integrity replay markers, bounding both secret-hashing work
+and retained authorization state.
 
 Paid bundle delivery differs deliberately from admin provisioning. A network
 failure may retry the same authenticated claim for 24 hours, so the credential
@@ -155,6 +158,8 @@ slower older response cannot roll back a newer subscription state.
 | `ENABLE_PLAY_SUBSCRIPTIONS` | No | `false` | Enables purchase routes, reconciliation and claim cleanup |
 | `ENTITLEMENT_ISSUANCE_LIMIT` | No | `5` | Anonymous entitlement creations allowed per client and window |
 | `ENTITLEMENT_ISSUANCE_WINDOW_SECONDS` | No | `3600` | Durable entitlement-creation quota window |
+| `PURCHASE_INTENT_ISSUANCE_LIMIT` | No | `10` | Purchase intents allowed per entitlement and window |
+| `PURCHASE_INTENT_ISSUANCE_WINDOW_SECONDS` | No | `900` | Durable purchase-intent quota and cleanup window |
 | `SUBSCRIPTION_ENCRYPTION_KEY_ID` | When enabled | — | Identifier for the active AES-256-GCM write key |
 | `SUBSCRIPTION_ENCRYPTION_KEY_BASE64` | When enabled | — | Base64 for exactly 32 random bytes; encrypts tokens and pending bundles |
 | `SUBSCRIPTION_DECRYPTION_KEYS_JSON` | No | `{}` | JSON string map of retired key IDs to Base64 keys retained for decryption during rotation |
@@ -173,6 +178,7 @@ slower older response cannot roll back a newer subscription state.
 | `BUNDLE_CLAIM_REAPER_STARTUP_DELAY_SECONDS` | No | `60` | Delay before the first destructive claim cleanup |
 | `BUNDLE_CLAIM_REAPER_BATCH_SIZE` | No | `50` | Expired claims handled per cleanup pass |
 | `CORS_ALLOWED_ORIGINS` | No | `http://localhost:5174` | Comma-separated origins |
+| `FORWARDED_ALLOW_IPS` | No | `127.0.0.1` | Exact trusted reverse-proxy peers for Uvicorn forwarded headers; bundled Compose sets only its fixed nginx address |
 | `PORT` | No | `8003` | Listen port |
 
 Prefer `MATRIX_ADMIN_TOKEN`: it keeps no password at rest, is revocable
@@ -263,7 +269,10 @@ escrow.
   request timeouts there, especially on entitlement creation and Play
   verification. Configure proxy trust so Uvicorn's parsed client address is the
   real peer used by the in-service quota; never trust arbitrary forwarded
-  headers from the public internet.
+  headers from the public internet. The bundled Compose network pins nginx to
+  `172.28.0.10`, forwards `X-Forwarded-For`, and configures that exact address
+  as Uvicorn's sole trusted proxy; adjust the subnet and trust value together
+  if it conflicts with deployment networking.
 - Configure a dedicated least-privilege Play service account and a dedicated
   Pub/Sub push service account. The latter must match both
   `PLAY_RTDN_AUDIENCE` and `PLAY_RTDN_SERVICE_ACCOUNT_EMAIL` exactly.

@@ -21,6 +21,8 @@ from .core.constants import (
     DEFAULT_PLAY_BASE_PLAN_IDS,
     DEFAULT_POLL_BATCH_SIZE,
     DEFAULT_POLL_INTERVAL_SECONDS,
+    DEFAULT_PURCHASE_INTENT_ISSUANCE_LIMIT,
+    DEFAULT_PURCHASE_INTENT_ISSUANCE_WINDOW_SECONDS,
     DEFAULT_RETENTION_DAYS,
     DEFAULT_RETENTION_SWEEP_HOURS,
     PAID_PROVISIONING_OPERATION_TIMEOUT_SECONDS,
@@ -234,6 +236,20 @@ class Container:
                     os.getenv(
                         "ENTITLEMENT_ISSUANCE_WINDOW_SECONDS",
                         str(DEFAULT_ENTITLEMENT_ISSUANCE_WINDOW_SECONDS),
+                    )
+                )
+            ),
+            purchase_intent_issuance_limit=int(
+                os.getenv(
+                    "PURCHASE_INTENT_ISSUANCE_LIMIT",
+                    str(DEFAULT_PURCHASE_INTENT_ISSUANCE_LIMIT),
+                )
+            ),
+            purchase_intent_issuance_window=timedelta(
+                seconds=float(
+                    os.getenv(
+                        "PURCHASE_INTENT_ISSUANCE_WINDOW_SECONDS",
+                        str(DEFAULT_PURCHASE_INTENT_ISSUANCE_WINDOW_SECONDS),
                     )
                 )
             ),

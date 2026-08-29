@@ -11,6 +11,7 @@ from ..core.exceptions import (
     EntitlementAuthenticationException,
     EntitlementRateLimitException,
     InvalidSubscriptionProductException,
+    PurchaseIntentRateLimitException,
 )
 from ..core.subscriptions import (
     EntitlementCredentials,
@@ -33,6 +34,8 @@ class SubscriptionIdentityService:
         intent_ttl: timedelta = timedelta(minutes=15),
         entitlement_issuance_limit: int = 5,
         entitlement_issuance_window: timedelta = timedelta(hours=1),
+        purchase_intent_issuance_limit: int = 10,
+        purchase_intent_issuance_window: timedelta = timedelta(minutes=15),
         secret_hasher: SecretHasher | None = None,
     ):
         if intent_ttl <= timedelta(0):
@@ -41,12 +44,18 @@ class SubscriptionIdentityService:
             raise ValueError("Entitlement issuance limit must be positive")
         if entitlement_issuance_window <= timedelta(0):
             raise ValueError("Entitlement issuance window must be positive")
+        if purchase_intent_issuance_limit <= 0:
+            raise ValueError("Purchase intent issuance limit must be positive")
+        if purchase_intent_issuance_window <= timedelta(0):
+            raise ValueError("Purchase intent issuance window must be positive")
         self._repository = repository
         self._account_binding_key = account_binding_key
         self._allowed_products = allowed_products
         self._intent_ttl = intent_ttl
         self._entitlement_issuance_limit = entitlement_issuance_limit
         self._entitlement_issuance_window = entitlement_issuance_window
+        self._purchase_intent_issuance_limit = purchase_intent_issuance_limit
+        self._purchase_intent_issuance_window = purchase_intent_issuance_window
         self._secret_hasher = secret_hasher or SecretHasher()
 
     async def create_entitlement(
@@ -119,6 +128,14 @@ class SubscriptionIdentityService:
             raise InvalidSubscriptionProductException(
                 "Subscription product or base plan is not enabled"
             )
+        retry_after = await self._repository.consume_purchase_intent_issuance_quota(
+            entitlement.entitlement_id,
+            now=now,
+            window=self._purchase_intent_issuance_window,
+            max_requests=self._purchase_intent_issuance_limit,
+        )
+        if retry_after is not None:
+            raise PurchaseIntentRateLimitException(retry_after_seconds=retry_after)
 
         intent_id = str(uuid.uuid4())
         intent_secret = secrets.token_urlsafe(32)
