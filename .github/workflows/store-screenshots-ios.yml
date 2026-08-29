@@ -1,0 +1,99 @@
+name: Store screenshots (iOS)
+
+# Captures the App Store listing screenshots on iOS simulators and publishes
+# them as a workflow artifact — the iOS half of store-screenshots-android.yml.
+# Manual, or on a pull request that touches the capture itself; the listing
+# changes rarely enough that a run per push would be noise, and a simulator
+# build of the app is one of the slowest things we do.
+
+on:
+  workflow_dispatch:
+    inputs:
+      locale:
+        description: Fixture locale (see MANUAL_LOCALES in the Makefile)
+        default: en
+      themes:
+        description: Space-separated themes to capture
+        default: dark light
+      devices:
+        description: Simulator names, ';'-separated (must exist on the runner's Xcode)
+        default: iPhone 17 Pro Max;iPad Pro 13-inch (M5)
+  pull_request:
+    paths:
+      - integration_test/store_screenshots_test.dart
+      - integration_test/tutorial/tutorial_harness.dart
+      - test_driver/manual_screenshots_driver.dart
+      - tool/store_screenshots/**
+      - .github/workflows/store-screenshots-ios.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  capture:
+    name: Capture on simulators
+    # macos-26 to stay aligned with flutter-ios-testflight.yml (Xcode 26 / iOS
+    # 26 SDK), whose simulator roster carries the default device names above.
+    runs-on: macos-26
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Show Xcode + simulators
+        run: |
+          xcodebuild -version
+          xcrun simctl list devices available | grep -E '^\s+(iPhone|iPad)' || true
+
+      - name: Setup Rust toolchain
+        # flutter_vodozemac builds its Rust bindings via cargokit during `pod
+        # install`; a simulator build needs the simulator targets in place so
+        # cargokit's `rustup target add` is a no-op (see the TestFlight lane).
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          targets: aarch64-apple-ios,aarch64-apple-ios-sim,x86_64-apple-ios
+
+      - uses: kuhnroyal/flutter-fvm-config-action@v2
+        id: fvm-config-action
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ steps.fvm-config-action.outputs.FLUTTER_VERSION }}
+          channel: ${{ steps.fvm-config-action.outputs.FLUTTER_CHANNEL }}
+          cache: true
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      # Build before any simulator boots: the Rust crates and CocoaPods take
+      # longer than the capture itself, a build failure then fails the job
+      # without a simulator log to wade through, and `flutter drive` reuses
+      # the warm caches.
+      - name: Build the simulator app
+        run: >-
+          flutter build ios --simulator --debug
+          --target integration_test/store_screenshots_test.dart
+
+      # Dispatch inputs reach the shell as environment variables, never as
+      # text spliced into the script: a value with a quote in it must not be
+      # able to end an assignment and run a command.
+      - name: Capture
+        env:
+          FLUTTER: flutter
+          LOTTI_IOS_DEVICES: ${{ inputs.devices || 'iPhone 17 Pro Max;iPad Pro 13-inch (M5)' }}
+          LOTTI_MANUAL_LOCALE: ${{ inputs.locale || 'en' }}
+          LOTTI_STORE_THEMES: ${{ inputs.themes || 'dark light' }}
+          LOTTI_SCREENSHOT_DIR: ${{ github.workspace }}/build/store_screenshots/ios
+        run: ./tool/store_screenshots/ios.sh
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: store-screenshots-ios-${{ inputs.locale || 'en' }}
+          path: build/store_screenshots/ios/**/*.png
+          if-no-files-found: error

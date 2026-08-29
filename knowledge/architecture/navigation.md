@@ -8,6 +8,10 @@ status: stable
 generated: { by: codex/gpt-5, at: 2026-08-25T14:10:00Z }
 stale_after: 2027-02-05
 sources:
+  - id: route-mirror
+    resource: ../../lib/beamer/locations/route_state_mirror.dart
+    title: Route mirrors deferred past the frame
+    last_modified: 2026-08-28
   - id: beamer-app
     resource: ../../lib/beamer/beamer_app.dart
     title: MyBeamerApp and AppScreen
@@ -299,6 +303,19 @@ Matching is per-delegate and mostly substring-based, which is a trap the
 `path == '/events' || path.startsWith('/events/')` so that `/settings/events`
 and `/prevents` do not get routed into the events tab. New delegates should
 follow that root-path form rather than `contains`.
+
+## Route mirrors defer past the frame
+
+`CalendarLocation` and `DashboardsLocation` mirror the route into
+`NavService.desktopShowTimeAnalysis` / `desktopShowAiImpact`, whose listeners
+are the desktop sidebar's sub-entries — siblings of the Beamer delegate, not
+descendants. Beamer calls `buildPages` from the delegate's `build`, so a
+synchronous write there is a `setState() called during build`. Both go through
+`mirrorRouteState` (`lib/beamer/locations/route_state_mirror.dart`), which
+defers the write to the end of the frame when called inside one and applies it
+at once otherwise. The `desktopSelected*` mirrors stay synchronous: their
+listeners are the split-pane pages inside the delegate's navigator, and the
+settings tree's URL sync defers on its own side.
 
 # A pop walks one URI segment
 

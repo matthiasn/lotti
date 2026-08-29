@@ -1,7 +1,7 @@
 ---
 type: Convention
 title: Screenshots
-description: How generated screenshots leave this repository for R2, and why a UI pull request carries an immutable before/after pair rather than one picture of the new thing.
+description: How generated screenshots leave this repository for R2, how the store listings are captured on a device, and why a UI pull request carries an immutable before/after pair rather than one picture of the new thing.
 resource: ../../test/test_utils/screenshot_harness.dart
 tags: [convention, screenshots, review, pull-request, r2]
 status: stable
@@ -28,10 +28,14 @@ sources:
     resource: ../../tool/store_screenshots/android.sh
     title: Play Store listing capture on an Android emulator
     last_modified: 2026-08-26
+  - id: store-capture-ios
+    resource: ../../tool/store_screenshots/ios.sh
+    title: App Store listing capture on iOS simulators
+    last_modified: 2026-08-28
   - id: store-test
     resource: ../../integration_test/store_screenshots_test.dart
     title: The screens the store listing shows, driven on the device
-    last_modified: 2026-08-26
+    last_modified: 2026-08-28
 ---
 
 # Images do not live in this repository
@@ -104,30 +108,65 @@ make manual_screenshots_shard MANUAL_LOCALE=de
 
 # Store listing screenshots come from a phone
 
-The Play Store listing is the one place a screenshot must come from the
-platform it advertises: a widget-test capture at a phone size is the right
-shape but not the real thing — no device fonts, no device image decoding, no
-platform text input. `integration_test/store_screenshots_test.dart` therefore
-runs on an Android emulator under `flutter drive`, booting the production app
+The store listings — Play Store and App Store — are the one place a screenshot
+must come from the platform it advertises: a widget-test capture at a phone size
+is the right shape but not the real thing — no device fonts, no device image
+decoding, no platform text input. `integration_test/store_screenshots_test.dart`
+therefore runs on a device under `flutter drive`, booting the production app
 shell on the tutorial harness with the penguin world seeded in full (habits,
 time records, notes, links) and *no demo-mode banner*, then walks the screens
-that say what the app is. `tool/store_screenshots/android.sh` — `make
-store_screenshots_android` — boots the emulator if needed, runs the test once
-per theme, and collects the PNGs the driver writes; CI runs the same script in
-`store-screenshots-android.yml` on manual dispatch and uploads an artifact.
+that say what the app is. One driven test, two drivers:
 
-Two device facts shape the script:
+| Platform | Script | Where it runs | What the script does that the test cannot |
+|----------|--------|---------------|--------------------------------------------|
+| Android | `tool/store_screenshots/android.sh` (`make store_screenshots_android`) | an emulator, booted from `LOTTI_AVD` if none is attached; CI in `store-screenshots-android.yml` | pins the window to 1080×1920 and turns Private DNS off (below) |
+| iOS | `tool/store_screenshots/ios.sh` (`make store_screenshots_ios`) | the simulators named in `LOTTI_IOS_DEVICES`, booted if they are not; CI in `store-screenshots-ios.yml` | dresses the status bar to Apple's 9:41 / full battery / full signal convention, takes every PNG itself with `simctl` (below) and clears the status bar afterwards |
+
+Both run the test once per theme. On Android the driver writes the PNGs the
+device captured; on iOS the script writes them, one whole-screen `simctl`
+capture per marker, split per device under `build/store_screenshots/ios/<slug>/`.
+Both CI lanes run on manual dispatch or on a pull request touching the capture,
+and upload the PNGs as an artifact.
+
+Device facts that shape the two scripts:
 
 - **Play rejects a screenshot whose long side is more than twice its short
-  side**, and the stock Pixel profiles are 20:9. The script pins the emulator
-  window to 1080×1920 (9:16, which Play also asks for when it features a
-  listing) with `adb shell wm size` and resets it afterwards.
+  side**, and the stock Pixel profiles are 20:9. The Android script pins the
+  emulator window to 1080×1920 (9:16, which Play also asks for when it features
+  a listing) with `adb shell wm size` and resets it afterwards.
+- **App Store Connect's listing sizes are device sizes**, so the iOS script pins
+  nothing: the 6.9" iPhone slot takes 1320×2868, which is what an iPhone 17 Pro
+  Max simulator renders, and the 13" iPad slot takes 2064×2752, which is what an
+  iPad Pro 13-inch renders. The default `LOTTI_IOS_DEVICES` names exactly those
+  two — the app is universal (`TARGETED_DEVICE_FAMILY = 1,2`), so the iPad set
+  is required, not optional.
 - **The test runs on the device, whose environment is not the host's.** Theme
   and locale arrive as `--dart-define`s, not environment variables; the
   driver, which does run on the host, still writes to `LOTTI_SCREENSHOT_DIR`.
   And there is no `curl` on a phone, so the fixture media comes down through
   `package:http` instead of the widget-test downloader.
-- **The emulator's DNS fails silently under Private DNS.** Android's
+- **Android renders Flutter into a `SurfaceView`, which a screenshot cannot
+  read**; the test swaps in an `ImageView` for the run
+  (`convertFlutterSurfaceToImage`).
+- **The iOS plugin's screenshot is the Flutter view alone** — no status bar,
+  a blank band under the notch — and its bytes reach the driver only after the
+  run, in a batch, so nothing host-side can be timed off them. On a simulator
+  the test therefore announces each capture point on stdout
+  (`LOTTI_STORE_CAPTURE <name> <ack-dir>`) and **waits** — the script streams
+  the drive output, takes the whole screen with `simctl io screenshot` on the
+  marker (status bar and its override included), flattens it, then touches
+  `<ack-dir>/<name>.done`, and only then does the test move on. The ack
+  directory is inside the app's sandbox, which on a simulator is a plain host
+  directory. A handshake rather than a fixed hold, because a cold CI runner
+  took over ten seconds per frame and every capture drifted one screen late.
+  The driver, told the UDID through `LOTTI_SIMULATOR_UDID`, leaves the
+  device-side bytes unwritten and fails the run if the host's file is missing.
+- **App Store Connect rejects a PNG with an alpha channel**, and says so with
+  the same "dimensions should be …" message it uses for a wrong size.
+  `simctl` always writes RGBA, so the script flattens each capture to opaque
+  RGB with `tool/store_screenshots/strip_alpha.py` (standard library only, so
+  a stock runner needs no pip step; the sRGB profile chunk is kept).
+- **The Android emulator's DNS fails silently under Private DNS.** Android's
   opportunistic DNS-over-TLS "validates" against the emulator's virtual
   resolver at 10.0.2.3 and then answers nothing: ICMP works, no hostname
   resolves, and the fixture media never arrives. The script turns
@@ -135,7 +174,7 @@ Two device facts shape the script:
   same resolver is fine.
 
 The output is a listing asset, not review evidence: it is uploaded to the
-Play Console by hand and does not go to R2.
+Play Console and App Store Connect by hand and does not go to R2.
 
 # A UI pull request shows before *and* after
 

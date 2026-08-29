@@ -18,8 +18,12 @@ on:
     paths:
       - integration_test/store_screenshots_test.dart
       - integration_test/tutorial/tutorial_harness.dart
+      - test_driver/manual_screenshots_driver.dart
       - tool/store_screenshots/**
       - .github/workflows/store-screenshots-android.yml
+
+permissions:
+  contents: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -88,8 +92,17 @@ jobs:
           --target-platform android-x64
           --target integration_test/store_screenshots_test.dart
 
+      # Dispatch inputs reach the script as environment variables, never as
+      # text spliced into it: a value with a quote in it must not be able to
+      # end an assignment and run a command.
       - name: Capture
         uses: reactivecircus/android-emulator-runner@v2
+        env:
+          FLUTTER: flutter
+          LOTTI_ANDROID_DEVICE: emulator-5554
+          LOTTI_MANUAL_LOCALE: ${{ inputs.locale || 'en' }}
+          LOTTI_STORE_THEMES: ${{ inputs.themes || 'dark light' }}
+          LOTTI_SCREENSHOT_DIR: ${{ github.workspace }}/build/store_screenshots/android
         with:
           api-level: 34
           arch: x86_64
@@ -97,13 +110,7 @@ jobs:
           profile: pixel_6
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
-          script: >-
-            FLUTTER=flutter
-            LOTTI_ANDROID_DEVICE=emulator-5554
-            LOTTI_MANUAL_LOCALE="${{ inputs.locale || 'en' }}"
-            LOTTI_STORE_THEMES="${{ inputs.themes || 'dark light' }}"
-            LOTTI_SCREENSHOT_DIR="$GITHUB_WORKSPACE/build/store_screenshots/android"
-            ./tool/store_screenshots/android.sh
+          script: ./tool/store_screenshots/android.sh
 
       - name: Upload screenshots
         if: always()
