@@ -172,9 +172,13 @@ class DayMarkCell extends StatelessWidget {
     // so Material's overlay drew a phantom button bulging around the cell.
     // The cell is a data readout — hover answers with the styled tooltip
     // naming the day and its outcome, not with a fill on the data itself.
+    // `excludeSemantics` drops the ink well's own node, so the activation
+    // action has to be published here or the button a reader hears has
+    // nothing to activate.
     return Semantics(
       label: label,
       button: true,
+      onTap: onTap,
       excludeSemantics: true,
       child: DsTooltip(
         title: tooltipDay,

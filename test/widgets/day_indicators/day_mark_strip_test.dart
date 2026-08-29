@@ -18,6 +18,7 @@ void main() {
 
   testWidgets('compact strip reports the number of successful days once in '
       'semantics', (tester) async {
+    final handle = tester.ensureSemantics();
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         DayMarkStrip(
@@ -42,6 +43,7 @@ void main() {
       ),
       findsOneWidget,
     );
+    handle.dispose();
   });
 
   testWidgets('compact strip outlines the last cell as today when short', (
@@ -66,6 +68,7 @@ void main() {
 
   testWidgets('a read-only strip announces its verdicts and marks non-met '
       'days with a shape', (tester) async {
+    final handle = tester.ensureSemantics();
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         DayMarkStrip(
@@ -100,10 +103,12 @@ void main() {
       find.byIcon(dayVerdictGlyph(DayVerdict.missed)),
       findsOneWidget,
     );
+    handle.dispose();
   });
 
   testWidgets('a tappable strip reports the day each cell stands for, '
       'counting back from the last', (tester) async {
+    final handle = tester.ensureSemantics();
     final tapped = <DateTime>[];
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
@@ -146,10 +151,12 @@ void main() {
       find.bySemanticsLabel(cell(4, 'done · target not met yet')),
       findsOneWidget,
     );
+    handle.dispose();
   });
 
   testWidgets('a recorded verdict outranks the measured state, and each '
       'verdict has its own colour', (tester) async {
+    final handle = tester.ensureSemantics();
     final week = List.filled(7, DayMarkState.none);
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
@@ -246,6 +253,7 @@ void main() {
       verdicts,
       isNot(contains(dayMarkStateFill(tokens, DayMarkState.none))),
     );
+    handle.dispose();
   });
 
   testWidgets('a read-only strip hugs its cells while a tappable one spans '
@@ -527,6 +535,31 @@ void main() {
       ),
     );
     expect(scroller.reverse, isTrue);
+  });
+
+  testWidgets('a dateless span longer than a week is measured with its gaps, '
+      'so a fit never overflows the card', (tester) async {
+    // 12 undated cells: on the Row branch each cell is padded and the cells
+    // are gapped, so `pitch * count` underestimates the row; at this width
+    // that underestimate used to declare a fit and overflow by ~11 gaps.
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Align(
+          alignment: Alignment.topLeft,
+          child: SizedBox(
+            width: 300,
+            child: DayMarkStrip(
+              marks: goalDayMarks(states: List.filled(12, DayMarkState.none)),
+            ),
+          ),
+        ),
+      ),
+    );
+    expect(tester.takeException(), isNull);
+    expect(find.byType(DayTrack), findsNothing, reason: 'undated → Row');
+    // The honest measure says it does not fit, so the row pans instead of
+    // being handed back unwrapped to overflow the card.
+    expect(find.byType(LinkedDayTrackScroller), findsOneWidget);
   });
 
   testWidgets('an empty strip renders nothing', (tester) async {

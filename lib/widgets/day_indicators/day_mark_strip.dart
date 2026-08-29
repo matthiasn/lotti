@@ -197,7 +197,15 @@ class DayMarkStrip extends StatelessWidget {
       // opened it with its first days cut off the left edge.
       child: availableWidth != null
           ? fitOrScrollDayTrack(
-              contentWidth: metrics.pitch * marks.length,
+              // The dateless Row is not on the track: each cell carries its
+              // own step1 padding and the cells are separated by step1, so
+              // its width has to be measured from that geometry or a span
+              // that "fits" overflows the card by a gap per cell.
+              contentWidth: dated
+                  ? metrics.pitch * marks.length
+                  : marks.length *
+                            (resolvedCellSize + 2 * tokens.spacing.step1) +
+                        (marks.length - 1) * tokens.spacing.step1,
               availableWidth: availableWidth,
               group: scrollGroup,
               child: row,

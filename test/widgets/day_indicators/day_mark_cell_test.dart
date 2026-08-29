@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
 import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
@@ -149,6 +150,17 @@ void main() {
     expect(tooltip.message, 'done');
     await tester.tap(find.bySemanticsLabel('Mon, Aug 10: done'));
     expect(taps, 1);
+    // The ink well's own node is excluded, so the activation action has to
+    // be published on the labelled button itself.
+    final node = tester.getSemantics(
+      find.bySemanticsLabel('Mon, Aug 10: done'),
+    );
+    expect(node.getSemanticsData().hasAction(SemanticsAction.tap), isTrue);
+    tester.binding.rootPipelineOwner.semanticsOwner!.performAction(
+      node.id,
+      SemanticsAction.tap,
+    );
+    expect(taps, 2);
     handle.dispose();
   });
 
