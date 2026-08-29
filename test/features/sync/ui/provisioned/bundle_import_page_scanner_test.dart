@@ -225,6 +225,42 @@ void main() {
       expect(camera.started, isTrue);
     });
 
+    testWidgets(
+      'Linux camera failure keeps retry and manual recovery visible',
+      (
+        tester,
+      ) async {
+        desktopQrCameraFactoryOverride = () async =>
+            throw const FormatException('no camera');
+        isWindows = false;
+        isLinux = true;
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            SingleChildScrollView(
+              child: BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+            ),
+            overrides: defaultOverrides(),
+          ),
+        );
+        await tester.pump();
+
+        final context = tester.element(find.byType(BundleImportWidget));
+        expect(
+          find.text(context.messages.syncPairCameraDenied),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const Key('bundle_import_camera_retry')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const Key('bundle_import_enter_manually')),
+          findsOneWidget,
+        );
+      },
+    );
+
     testWidgets('hides import form after successful import', (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(

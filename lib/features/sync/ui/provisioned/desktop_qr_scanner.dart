@@ -126,6 +126,11 @@ typedef DesktopQrCameraFactory = Future<DesktopQrCamera> Function();
 @visibleForTesting
 DesktopQrCameraFactory? desktopQrCameraFactoryOverride;
 
+/// Creates the production Linux camera adapter through a testable seam.
+@visibleForTesting
+Future<DesktopQrCamera> createDesktopQrCamera() =>
+    _CameraDesktopQrCamera.create();
+
 class _DesktopQrScannerState extends State<DesktopQrScanner> {
   DesktopQrCamera? _camera;
   bool _unavailable = false;
@@ -143,7 +148,7 @@ class _DesktopQrScannerState extends State<DesktopQrScanner> {
     try {
       final camera =
           await (desktopQrCameraFactoryOverride?.call() ??
-              _CameraDesktopQrCamera.create());
+              createDesktopQrCamera());
       if (!mounted) {
         await camera.dispose();
         return;

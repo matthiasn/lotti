@@ -154,6 +154,7 @@ dev_dependencies:
   arb_utils: ^0.11.0
   archive: ^4.0.7
   build_runner: ^2.5.4
+  camera_platform_interface: any
   cross_file: any
   dart_style: ^3.0.1
   drift_dev: ^2.16.0
