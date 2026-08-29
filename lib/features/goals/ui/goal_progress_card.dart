@@ -1827,29 +1827,13 @@ class _ProgressDayCell extends StatelessWidget {
         child: cell,
       );
     }
-    // The ring is drawn INSIDE the square, one step in from its edge, so it
-    // reads as a mark on the cell rather than a rumour straddling the fill's
-    // edge — and the cell keeps its footprint, which a read-only track sizes
-    // to exactly the square.
     final decoratedCell = !today || hit
         ? cell
-        : Stack(
-            children: [
-              cell,
-              Positioned.fill(
-                child: IgnorePointer(
-                  child: Padding(
-                    padding: EdgeInsets.all(tokens.spacing.step1),
-                    child: DsDashedBorder(
-                      color: todayRingInk(tokens),
-                      strokeWidth: BorderWidths.emphasis,
-                      radius: dayCellRadius(tokens),
-                      child: const SizedBox.expand(),
-                    ),
-                  ),
-                ),
-              ),
-            ],
+        : DsDashedBorder(
+            color: todayRingInk(tokens),
+            strokeWidth: BorderWidths.emphasis,
+            radius: dayCellRadius(tokens),
+            child: cell,
           );
     final locale = Localizations.localeOf(context).toLanguageTag();
     final date = DateFormat.yMMMd(locale).format(day.day);
