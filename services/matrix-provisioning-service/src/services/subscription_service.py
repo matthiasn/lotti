@@ -14,6 +14,7 @@ from ..core.exceptions import (
     PurchaseIntentExpiredException,
     PurchaseIntentNotFoundException,
     PurchaseVerificationRateLimitException,
+    UnknownPurchaseTokenException,
 )
 from ..core.subscriptions import (
     AcknowledgementState,
@@ -217,7 +218,7 @@ class SubscriptionService:
         token_fingerprint = fingerprint(purchase_token)
         existing = await self._repository.get_subscription_by_token(token_fingerprint)
         if existing is None:
-            raise GooglePlayVerificationException(
+            raise UnknownPurchaseTokenException(
                 "Notification purchase token is not bound to an entitlement"
             )
         entitlement = await self._repository.get_entitlement(existing.entitlement_id)

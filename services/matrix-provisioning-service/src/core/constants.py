@@ -60,6 +60,10 @@ DEFAULT_PURCHASE_INTENT_ISSUANCE_WINDOW_SECONDS = 900
 # separate pre-authentication quota bounds both local work and Google usage.
 DEFAULT_PURCHASE_VERIFICATION_ATTEMPT_LIMIT = 10
 DEFAULT_PURCHASE_VERIFICATION_ATTEMPT_WINDOW_SECONDS = 900
+# Delivery and rotation both perform entitlement and claim-secret scrypt work;
+# one shared escrow quota bounds both public retry surfaces.
+DEFAULT_BUNDLE_CLAIM_ATTEMPT_LIMIT = 10
+DEFAULT_BUNDLE_CLAIM_ATTEMPT_WINDOW_SECONDS = 900
 
 # Paid provisioning and cleanup both cross the SQLite/Synapse boundary. The
 # reservation survives process boundaries; the request wait is deliberately

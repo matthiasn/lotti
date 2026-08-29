@@ -128,18 +128,24 @@ Matrix call, paid provisioning also takes a token-owned SQLite reservation by
 entitlement. Separate service objects and processes therefore wait for or reuse
 one durable claim instead of provisioning a suffixed orphan account. A dead
 owner ages out after five minutes; an HTTP request waits only a bounded interval
-and then asks the client to retry. Every authenticated escrow response also
-takes a fresh claim lease before secret verification. Delivery completion owns
+and then asks the client to retry. Delivery and rotation share a durable
+per-entitlement attempt quota that is consumed before either entitlement or
+claim-secret scrypt work, bounding invalid-auth CPU usage across both public
+escrow endpoints. Every authenticated escrow response also takes a fresh claim
+lease before secret verification. Delivery completion owns
 that lease atomically, so expiry cleanup cannot revoke the account or destroy
 ciphertext while credentials are being assembled.
 
 RTDN is a wake-up signal, never entitlement evidence. The push route verifies
 Google's OIDC token, resolves only an already-bound purchase token, re-queries
-Google, and then converges Matrix access. Authenticated Play
-`testNotification` connectivity probes are acknowledged without attempting a
-subscription refresh. A periodic reconciler covers missed or delayed
-notifications. When Play reports an access-granting state the Matrix account is
-unsuspended; otherwise it is suspended reversibly. The service uses Google's
+Google, and then converges Matrix access. An authenticated notification for an
+unbound token is logged without the token and acknowledged: it may predate the
+client verification that establishes the binding, which re-queries Google
+authoritatively. Authenticated Play `testNotification` connectivity probes are
+also acknowledged without attempting a subscription refresh. A periodic
+reconciler covers missed or delayed notifications. When Play reports an
+access-granting state the Matrix account is unsuspended; otherwise it is
+suspended reversibly. The service uses Google's
 authoritative line-item `expiryTime` as the exact boundary. Configure
 the Play Console grace period to **three days**; the service does not add a
 second local grace interval. Enforcement is serialized per entitlement and
@@ -175,6 +181,8 @@ authoritative observation wins.
 | `PURCHASE_INTENT_ISSUANCE_WINDOW_SECONDS` | No | `900` | Durable purchase-intent quota and cleanup window |
 | `PURCHASE_VERIFICATION_ATTEMPT_LIMIT` | No | `10` | Purchase verifications allowed per entitlement before secret checks and Google calls |
 | `PURCHASE_VERIFICATION_ATTEMPT_WINDOW_SECONDS` | No | `900` | Durable pre-verification attempt window |
+| `BUNDLE_CLAIM_ATTEMPT_LIMIT` | No | `10` | Combined delivery and rotation attempts allowed per entitlement before secret checks |
+| `BUNDLE_CLAIM_ATTEMPT_WINDOW_SECONDS` | No | `900` | Durable paid-escrow attempt window |
 | `SUBSCRIPTION_ENCRYPTION_KEY_ID` | When enabled | — | Identifier for the active AES-256-GCM write key |
 | `SUBSCRIPTION_ENCRYPTION_KEY_BASE64` | When enabled | — | Base64 for exactly 32 random bytes; encrypts tokens and pending bundles |
 | `SUBSCRIPTION_DECRYPTION_KEYS_JSON` | No | `{}` | JSON string map of retired key IDs to Base64 keys retained for decryption during rotation |

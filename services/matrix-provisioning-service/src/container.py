@@ -13,6 +13,8 @@ from shared.matrix import AdminCredentials, SynapseAdminClient, SynapseProvision
 
 from .core.constants import (
     BUNDLE_CLAIM_REAPER_STARTUP_DELAY_SECONDS,
+    DEFAULT_BUNDLE_CLAIM_ATTEMPT_LIMIT,
+    DEFAULT_BUNDLE_CLAIM_ATTEMPT_WINDOW_SECONDS,
     DEFAULT_DB_PATH,
     DEFAULT_ENTITLEMENT_ISSUANCE_LIMIT,
     DEFAULT_ENTITLEMENT_ISSUANCE_WINDOW_SECONDS,
@@ -268,6 +270,20 @@ class Container:
                     os.getenv(
                         "PURCHASE_INTENT_ISSUANCE_WINDOW_SECONDS",
                         str(DEFAULT_PURCHASE_INTENT_ISSUANCE_WINDOW_SECONDS),
+                    )
+                )
+            ),
+            bundle_claim_attempt_limit=int(
+                os.getenv(
+                    "BUNDLE_CLAIM_ATTEMPT_LIMIT",
+                    str(DEFAULT_BUNDLE_CLAIM_ATTEMPT_LIMIT),
+                )
+            ),
+            bundle_claim_attempt_window=timedelta(
+                seconds=float(
+                    os.getenv(
+                        "BUNDLE_CLAIM_ATTEMPT_WINDOW_SECONDS",
+                        str(DEFAULT_BUNDLE_CLAIM_ATTEMPT_WINDOW_SECONDS),
                     )
                 )
             ),

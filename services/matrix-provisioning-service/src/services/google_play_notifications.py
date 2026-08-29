@@ -6,6 +6,7 @@ import asyncio
 import base64
 import binascii
 import json
+import logging
 from datetime import datetime, timezone
 from typing import Any, Callable
 
@@ -15,6 +16,7 @@ from google.oauth2 import id_token
 from ..core.exceptions import (
     GooglePlayVerificationException,
     PubSubAuthenticationException,
+    UnknownPurchaseTokenException,
 )
 from ..core.subscriptions import (
     RealtimeDeveloperNotification,
@@ -24,6 +26,8 @@ from ..core.subscriptions import (
 from .subscription_access_service import SubscriptionAccessService
 from .subscription_repository import SubscriptionRepository
 from .subscription_service import SubscriptionService
+
+logger = logging.getLogger(__name__)
 
 
 def _verify_google_token(token: str, audience: str) -> dict[str, Any]:
@@ -150,10 +154,14 @@ class GooglePlayNotificationService:
             raise GooglePlayVerificationException("RTDN package name does not match")
         if isinstance(notification, RealtimeDeveloperTestNotification):
             return None
-        subscription = await self._subscription_service.refresh_known_purchase(
-            notification.purchase_token,
-            now=now,
-        )
+        try:
+            subscription = await self._subscription_service.refresh_known_purchase(
+                notification.purchase_token,
+                now=now,
+            )
+        except UnknownPurchaseTokenException:
+            logger.info("Acknowledging RTDN for an unbound purchase token")
+            return None
         current = await self._repository.get_current_subscription(subscription.entitlement_id)
         if current is not None:
             await self._access_service.enforce(current, now=now)

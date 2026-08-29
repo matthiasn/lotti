@@ -7,6 +7,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 from src.core.exceptions import (
+    BundleClaimRateLimitException,
     EntitlementAuthenticationException,
     EntitlementRateLimitException,
     InvalidSubscriptionProductException,
@@ -267,6 +268,91 @@ async def test_purchase_intent_wrong_secret_consumes_attempt_without_issuing(
     assert issuance_count == 0
 
 
+async def test_bundle_claim_attempt_limit_rejects_before_secret_verification(
+    repository,
+):
+    hasher = CountingHasher()
+    service = SubscriptionIdentityService(
+        repository,
+        account_binding_key=bytes(range(32)),
+        allowed_products={"lotti_sync": frozenset({"monthly"})},
+        bundle_claim_attempt_limit=2,
+        bundle_claim_attempt_window=timedelta(minutes=15),
+        secret_hasher=hasher,
+    )
+    credentials = await service.create_entitlement(
+        client_identifier="203.0.113.1",
+        now=NOW,
+    )
+
+    await service.authenticate_bundle_claim_operation(
+        credentials.entitlement_id,
+        credentials.auth_secret,
+        now=NOW,
+    )
+    await service.authenticate_bundle_claim_operation(
+        credentials.entitlement_id,
+        credentials.auth_secret,
+        now=NOW + timedelta(seconds=1),
+    )
+    with pytest.raises(BundleClaimRateLimitException) as error:
+        await service.authenticate_bundle_claim_operation(
+            credentials.entitlement_id,
+            credentials.auth_secret,
+            now=NOW + timedelta(seconds=2),
+        )
+
+    assert error.value.retry_after_seconds == 898
+    assert hasher.verify_calls == 2
+    connection = sqlite3.connect(repository.db_path)
+    try:
+        operation_kind, request_count = connection.execute(
+            "SELECT operation_kind, request_count FROM subscription_attempt_limits "
+            "WHERE entitlement_id = ?",
+            (credentials.entitlement_id,),
+        ).fetchone()
+    finally:
+        connection.close()
+    assert operation_kind == "bundle_claim"
+    assert request_count == 2
+
+    await service.authenticate_bundle_claim_operation(
+        credentials.entitlement_id,
+        credentials.auth_secret,
+        now=NOW + timedelta(minutes=15),
+    )
+    assert hasher.verify_calls == 3
+
+
+async def test_bundle_claim_attempt_limit_does_not_track_unknown_entitlements(
+    repository,
+):
+    hasher = CountingHasher()
+    service = SubscriptionIdentityService(
+        repository,
+        account_binding_key=bytes(range(32)),
+        allowed_products={},
+        secret_hasher=hasher,
+    )
+
+    with pytest.raises(EntitlementAuthenticationException):
+        await service.authenticate_bundle_claim_operation(
+            "unknown-entitlement",
+            "unknown-secret",  # noqa: S106 - invalid test credential
+            now=NOW,
+        )
+
+    assert hasher.verify_calls == 0
+    connection = sqlite3.connect(repository.db_path)
+    try:
+        attempt_count = connection.execute(
+            "SELECT COUNT(*) FROM subscription_attempt_limits"
+        ).fetchone()[0]
+    finally:
+        connection.close()
+    assert attempt_count == 0
+
+
 @pytest.mark.parametrize(
     ("product_id", "base_plan_id"),
     [("other_product", "monthly"), ("lotti_sync", "weekly")],
@@ -396,4 +482,27 @@ def test_purchase_intent_attempt_limit_configuration_must_be_positive(
             allowed_products={},
             purchase_intent_attempt_limit=limit,
             purchase_intent_attempt_window=window,
+        )
+
+
+@pytest.mark.parametrize(
+    ("limit", "window", "message"),
+    [
+        (0, timedelta(minutes=15), "Bundle claim attempt limit"),
+        (1, timedelta(0), "Bundle claim attempt window"),
+    ],
+)
+def test_bundle_claim_attempt_limit_configuration_must_be_positive(
+    repository,
+    limit,
+    window,
+    message,
+):
+    with pytest.raises(ValueError, match=message):
+        SubscriptionIdentityService(
+            repository,
+            account_binding_key=bytes(range(32)),
+            allowed_products={},
+            bundle_claim_attempt_limit=limit,
+            bundle_claim_attempt_window=window,
         )

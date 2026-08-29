@@ -8,6 +8,7 @@ import uuid
 from datetime import datetime, timedelta
 
 from ..core.exceptions import (
+    BundleClaimRateLimitException,
     EntitlementAuthenticationException,
     EntitlementRateLimitException,
     InvalidSubscriptionProductException,
@@ -19,6 +20,7 @@ from ..core.subscriptions import (
     SyncEntitlement,
 )
 from .subscription_repository import (
+    ATTEMPT_KIND_BUNDLE_CLAIM,
     ATTEMPT_KIND_PURCHASE_INTENT,
     SubscriptionRepository,
 )
@@ -41,6 +43,8 @@ class SubscriptionIdentityService:
         purchase_intent_attempt_window: timedelta = timedelta(minutes=15),
         purchase_intent_issuance_limit: int = 10,
         purchase_intent_issuance_window: timedelta = timedelta(minutes=15),
+        bundle_claim_attempt_limit: int = 10,
+        bundle_claim_attempt_window: timedelta = timedelta(minutes=15),
         secret_hasher: SecretHasher | None = None,
     ):
         if intent_ttl <= timedelta(0):
@@ -57,6 +61,10 @@ class SubscriptionIdentityService:
             raise ValueError("Purchase intent issuance limit must be positive")
         if purchase_intent_issuance_window <= timedelta(0):
             raise ValueError("Purchase intent issuance window must be positive")
+        if bundle_claim_attempt_limit <= 0:
+            raise ValueError("Bundle claim attempt limit must be positive")
+        if bundle_claim_attempt_window <= timedelta(0):
+            raise ValueError("Bundle claim attempt window must be positive")
         self._repository = repository
         self._account_binding_key = account_binding_key
         self._allowed_products = allowed_products
@@ -67,6 +75,8 @@ class SubscriptionIdentityService:
         self._purchase_intent_attempt_window = purchase_intent_attempt_window
         self._purchase_intent_issuance_limit = purchase_intent_issuance_limit
         self._purchase_intent_issuance_window = purchase_intent_issuance_window
+        self._bundle_claim_attempt_limit = bundle_claim_attempt_limit
+        self._bundle_claim_attempt_window = bundle_claim_attempt_window
         self._secret_hasher = secret_hasher or SecretHasher()
 
     async def create_entitlement(
@@ -113,6 +123,29 @@ class SubscriptionIdentityService:
         entitlement = await self._repository.get_entitlement(entitlement_id)
         if entitlement is None or entitlement.disabled_at is not None:
             raise EntitlementAuthenticationException("Invalid entitlement credentials")
+        await self._verify_entitlement_secret(entitlement, auth_secret)
+        return entitlement
+
+    async def authenticate_bundle_claim_operation(
+        self,
+        entitlement_id: str,
+        auth_secret: str,
+        *,
+        now: datetime,
+    ) -> SyncEntitlement:
+        """Authenticate paid-escrow work behind a cheap durable attempt quota."""
+        entitlement = await self._repository.get_entitlement(entitlement_id)
+        if entitlement is None or entitlement.disabled_at is not None:
+            raise EntitlementAuthenticationException("Invalid entitlement credentials")
+        retry_after = await self._repository.consume_subscription_attempt_quota(
+            entitlement.entitlement_id,
+            ATTEMPT_KIND_BUNDLE_CLAIM,
+            now=now,
+            window=self._bundle_claim_attempt_window,
+            max_requests=self._bundle_claim_attempt_limit,
+        )
+        if retry_after is not None:
+            raise BundleClaimRateLimitException(retry_after_seconds=retry_after)
         await self._verify_entitlement_secret(entitlement, auth_secret)
         return entitlement
 

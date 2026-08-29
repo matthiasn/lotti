@@ -17,6 +17,7 @@ from ..core.constants import (
 )
 from ..core.exceptions import (
     BundleClaimConflictException,
+    BundleClaimRateLimitException,
     BundleNotFoundException,
     EntitlementAuthenticationException,
     EntitlementRateLimitException,
@@ -224,11 +225,12 @@ async def deliver_paid_bundle(
     """Retry a lost paid-bundle response without replaying a purchase proof."""
     _require_subscriptions_enabled()
     try:
-        await container.get_subscription_identity_service().authenticate(
+        now = datetime.now(timezone.utc)
+        await container.get_subscription_identity_service().authenticate_bundle_claim_operation(
             request.entitlement_id,
             _bearer_secret(authorization),
+            now=now,
         )
-        now = datetime.now(timezone.utc)
         subscription = await container.get_subscription_repository().get_current_subscription(
             request.entitlement_id
         )
@@ -246,6 +248,12 @@ async def deliver_paid_bundle(
         )
     except EntitlementAuthenticationException as exc:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
+    except BundleClaimRateLimitException as exc:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=str(exc),
+            headers={"Retry-After": str(exc.retry_after_seconds)},
+        ) from exc
     except GooglePlayVerificationException as exc:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
@@ -276,6 +284,12 @@ async def confirm_paid_bundle_rotation(
         )
     except EntitlementAuthenticationException as exc:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
+    except BundleClaimRateLimitException as exc:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=str(exc),
+            headers={"Retry-After": str(exc.retry_after_seconds)},
+        ) from exc
     except BundleClaimConflictException as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
 

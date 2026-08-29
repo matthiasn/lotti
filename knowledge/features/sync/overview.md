@@ -5,7 +5,7 @@ description: Single-user multi-device replication over end-to-end encrypted Matr
 resource: ../../../lib/features/sync
 tags: [sync, matrix, replication, outbox, queue]
 status: stable
-generated: { by: codex/gpt-5, at: 2026-08-29T23:27:45Z }
+generated: { by: codex/gpt-5, at: 2026-08-29T23:44:10Z }
 stale_after: 2026-11-03
 sources:
   - id: sync-src
@@ -139,7 +139,9 @@ app-held secret, followed by a separate post-authentication issuance quota
 before hashing and storing another one-time secret; the latter transaction
 also prunes expired intents and their Integrity replay markers. Purchase
 verification has its own durable attempt scope, consumed before entitlement or
-intent scrypt checks and before either Google API call. Paid provisioning then
+intent scrypt checks and before either Google API call. Paid-bundle delivery and
+rotation share another durable attempt scope, consumed before entitlement or
+claim-secret scrypt work. Paid provisioning then
 takes a token-owned SQLite reservation keyed by entitlement before it touches
 Matrix. Pending escrow records the purchase-token fingerprint that authorized
 their current claim secret: only a verified replacement token can rebind it,
@@ -154,8 +156,12 @@ cannot forge the quota identity through `X-Forwarded-For`.
 Play RTDN is only a refresh signal. An authenticated Pub/Sub push resolves an
 already-known token and causes a new `purchases.subscriptionsv2.get`; a periodic
 reconciler performs the same authoritative refresh when notifications are lost.
-Authenticated Play `testNotification` probes are acknowledged without looking
-up a purchase token or mutating subscription state.
+Authenticated notifications for unbound tokens are acknowledged without a
+Google query or state mutation because they may arrive before client
+verification establishes the binding; that later verification is itself an
+authoritative Google query. Authenticated Play `testNotification` probes are
+also acknowledged without looking up a purchase token or mutating subscription
+state.
 The Play-configured three-day grace deadline arrives as the line item's extended
 `expiryTime`. Lotti uses that timestamp directly and never adds another local
 grace window. Loss of entitlement suspends the Matrix user reversibly, while a
@@ -184,10 +190,12 @@ stateDiagram-v2
   Suspended --> Expired: Google reports expired
 ```
 
-A paid bundle claim has a separate security boundary: delivery retries are
-authorized by the entitlement and claim secret, but escrow is destroyed only
-after the bound Matrix user publishes the server-derived rotation challenge in
-the provisioned room and the bootstrap password no longer authenticates. The
+A paid bundle claim has a separate security boundary: delivery retries and
+rotation confirmations share a pre-authentication attempt quota, and successful
+requests are authorized by the entitlement and claim secret. Escrow is
+destroyed only after the bound Matrix user publishes the server-derived rotation
+challenge in the provisioned room and the bootstrap password no longer
+authenticates. The
 claim reaper deactivates an account that never reaches that proof before its
 24-hour TTL. Its first destructive batch waits for an operator-configurable
 startup delay. Rotation verification and reaping first acquire mutually exclusive

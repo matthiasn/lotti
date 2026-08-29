@@ -18,6 +18,7 @@ from src.core.exceptions import (
     PurchaseIntentNotFoundException,
     PurchaseIntentReplayException,
     PurchaseVerificationRateLimitException,
+    UnknownPurchaseTokenException,
 )
 from src.core.subscriptions import (
     AcknowledgementState,
@@ -733,7 +734,7 @@ async def test_unknown_rtdn_token_cannot_create_or_rebind_entitlement(
     service,
     google_client,
 ):
-    with pytest.raises(GooglePlayVerificationException, match="not bound"):
+    with pytest.raises(UnknownPurchaseTokenException, match="not bound"):
         await service.refresh_known_purchase("unknown-token", now=NOW)
 
     assert google_client.queried_tokens == []

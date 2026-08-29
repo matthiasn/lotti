@@ -30,6 +30,7 @@ from ..core.subscriptions import (
 )
 from .provisioning_repository import ProvisioningRepository
 
+ATTEMPT_KIND_BUNDLE_CLAIM = "bundle_claim"
 ATTEMPT_KIND_PURCHASE_INTENT = "purchase_intent"
 ATTEMPT_KIND_PURCHASE_VERIFICATION = "purchase_verification"
 

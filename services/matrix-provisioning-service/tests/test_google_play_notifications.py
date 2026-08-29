@@ -13,6 +13,7 @@ import pytest
 from src.core.exceptions import (
     GooglePlayVerificationException,
     PubSubAuthenticationException,
+    UnknownPurchaseTokenException,
 )
 from src.services.google_play_notifications import (
     GooglePlayNotificationService,
@@ -189,9 +190,12 @@ class FakeSubscriptionService:
             entitlement_id="entitlement-one",
             is_current=True,
         )
+        self.failure = None
 
     async def refresh_known_purchase(self, purchase_token, *, now):
         self.calls.append((purchase_token, now))
+        if self.failure:
+            raise self.failure
         return self.subscription
 
 
@@ -261,6 +265,33 @@ async def test_authenticated_test_notification_is_acknowledged_without_refresh()
     assert result is None
     assert authenticator.headers == ["Bearer signed-jwt"]
     assert subscriptions.calls == []
+    assert access.calls == []
+    assert repository.calls == []
+
+
+async def test_unbound_purchase_token_is_acknowledged_without_google_or_access_work():
+    subscriptions = FakeSubscriptionService()
+    subscriptions.failure = UnknownPurchaseTokenException(
+        "Notification purchase token is not bound to an entitlement"
+    )
+    access = FakeAccessService()
+    repository = FakeRepository()
+    service = GooglePlayNotificationService(
+        FakeAuthenticator(),
+        subscriptions,
+        access,
+        repository,
+        package_name="com.matthiasn.lotti",
+    )
+
+    result = await service.handle(
+        envelope(),
+        authorization="Bearer signed-jwt",
+        now=NOW,
+    )
+
+    assert result is None
+    assert subscriptions.calls == [("purchase-token", NOW)]
     assert access.calls == []
     assert repository.calls == []
 

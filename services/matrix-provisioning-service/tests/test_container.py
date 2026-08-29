@@ -208,6 +208,8 @@ def test_claim_reaper_schedule_and_entitlement_quota_are_configurable(env):
     env.setenv("PURCHASE_INTENT_ISSUANCE_WINDOW_SECONDS", "600")
     env.setenv("PURCHASE_INTENT_ATTEMPT_LIMIT", "6")
     env.setenv("PURCHASE_INTENT_ATTEMPT_WINDOW_SECONDS", "300")
+    env.setenv("BUNDLE_CLAIM_ATTEMPT_LIMIT", "3")
+    env.setenv("BUNDLE_CLAIM_ATTEMPT_WINDOW_SECONDS", "240")
     container = Container()
 
     assert container.get_bundle_claim_reaper()._startup_delay_seconds == 42
@@ -218,6 +220,8 @@ def test_claim_reaper_schedule_and_entitlement_quota_are_configurable(env):
     assert identity._purchase_intent_issuance_window == timedelta(minutes=10)
     assert identity._purchase_intent_attempt_limit == 6
     assert identity._purchase_intent_attempt_window == timedelta(minutes=5)
+    assert identity._bundle_claim_attempt_limit == 3
+    assert identity._bundle_claim_attempt_window == timedelta(minutes=4)
 
 
 @pytest.mark.parametrize(

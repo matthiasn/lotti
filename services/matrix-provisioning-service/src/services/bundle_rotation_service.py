@@ -49,9 +49,10 @@ class BundleRotationService:
         now: datetime,
     ) -> BundleClaim:
         """Validate the exact Matrix proof and confirm idempotently."""
-        await self._identity_service.authenticate(
+        await self._identity_service.authenticate_bundle_claim_operation(
             entitlement_id,
             entitlement_auth_secret,
+            now=now,
         )
         claim = await self._repository.get_bundle_claim_for_entitlement(entitlement_id)
         valid_claim_secret = (

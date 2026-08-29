@@ -24,6 +24,7 @@ from src.core.constants import (
 )
 from src.core.exceptions import (
     BundleClaimConflictException,
+    BundleClaimRateLimitException,
     EntitlementAuthenticationException,
     EntitlementRateLimitException,
     GooglePlayUnavailableException,
@@ -59,6 +60,7 @@ class FakeIdentityService:
         self.auth_calls = []
         self.failure = None
         self.entitlement_calls = []
+        self.bundle_claim_auth_calls = []
 
     async def create_entitlement(self, *, client_identifier, now):
         if self.failure:
@@ -88,6 +90,16 @@ class FakeIdentityService:
             raise self.failure
         self.auth_calls.append((entitlement_id, auth_secret))
         return object()
+
+    async def authenticate_bundle_claim_operation(
+        self,
+        entitlement_id,
+        auth_secret,
+        *,
+        now,
+    ):
+        self.bundle_claim_auth_calls.append((entitlement_id, auth_secret, now))
+        return await self.authenticate(entitlement_id, auth_secret)
 
 
 class FakeSubscriptionService:
@@ -428,6 +440,7 @@ def test_delivery_retry_authenticates_entitlement_without_replaying_purchase(
     assert response.json()["bundle_id"] == "bundle-one"
     identity = services[SERVICE_SUBSCRIPTION_IDENTITY]
     assert identity.auth_calls == [("entitlement-one", AUTH_SECRET)]
+    assert identity.bundle_claim_auth_calls == [("entitlement-one", AUTH_SECRET, NOW)]
     access = services[SERVICE_SUBSCRIPTION_ACCESS_SERVICE]
     subscription = services[SERVICE_SUBSCRIPTION_REPOSITORY].subscription
     assert len(access.calls) == 1
@@ -587,6 +600,22 @@ def test_delivery_retry_maps_auth_and_claim_failures(
     assert response.status_code == expected_status
 
 
+def test_delivery_retry_maps_bundle_claim_attempt_limit(client, services):
+    services[SERVICE_SUBSCRIPTION_IDENTITY].failure = BundleClaimRateLimitException(
+        retry_after_seconds=47
+    )
+
+    response = client.post(
+        "/api/v1/client/subscriptions/bundle-claims/deliver",
+        headers={"Authorization": f"Bearer {AUTH_SECRET}"},
+        json={"entitlement_id": "entitlement-one", "claim_secret": CLAIM_SECRET},
+    )
+
+    assert response.status_code == 429
+    assert response.headers["retry-after"] == "47"
+    assert response.json()["detail"] == "Bundle claim operation rate limit exceeded"
+
+
 @pytest.mark.parametrize(
     ("failure", "expected_status"),
     [
@@ -613,6 +642,26 @@ def test_rotation_confirmation_maps_proof_failures(
     )
 
     assert response.status_code == expected_status
+
+
+def test_rotation_confirmation_maps_bundle_claim_attempt_limit(client, services):
+    services[SERVICE_BUNDLE_ROTATION_SERVICE].failure = BundleClaimRateLimitException(
+        retry_after_seconds=53
+    )
+
+    response = client.post(
+        "/api/v1/client/subscriptions/bundle-claims/confirm-rotation",
+        headers={"Authorization": f"Bearer {AUTH_SECRET}"},
+        json={
+            "entitlement_id": "entitlement-one",
+            "bundle_id": "bundle-one",
+            "claim_secret": CLAIM_SECRET,
+        },
+    )
+
+    assert response.status_code == 429
+    assert response.headers["retry-after"] == "53"
+    assert response.json()["detail"] == "Bundle claim operation rate limit exceeded"
 
 
 @pytest.mark.parametrize(
