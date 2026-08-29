@@ -325,6 +325,7 @@ void main() {
       await camera.start(
         shouldCaptureFrame: () => admitFrame,
         onFrame: decodedFrames.add,
+        onError: (_) {},
       );
 
       expect(platform.streaming, isTrue);
@@ -364,6 +365,7 @@ void main() {
       await camera.start(
         shouldCaptureFrame: () => false,
         onFrame: (_) {},
+        onError: (_) {},
       );
       expect(platform.streaming, isTrue);
 
@@ -371,6 +373,34 @@ void main() {
 
       expect(platform.streamCancelled, isTrue);
       expect(platform.disposedCameraIds, [7]);
+    });
+
+    testWidgets('shows the fallback after a running camera reports an error', (
+      tester,
+    ) async {
+      final platform = _FakeCameraPlatform();
+      CameraPlatform.instance = platform;
+
+      await tester.pumpWidget(
+        makeTestableWidget2(
+          DesktopQrScanner(
+            onDetect: (_) {},
+            unavailableBuilder: (_) => const Text('Camera disconnected'),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(platform.streaming, isTrue);
+      expect(find.byType(CameraPreview), findsOneWidget);
+
+      platform.emitError('camera disconnected');
+      await tester.pump();
+
+      expect(platform.streamCancelled, isTrue);
+      expect(platform.disposedCameraIds, [7]);
+      expect(find.text('Camera disconnected'), findsOneWidget);
+      expect(find.byType(CameraPreview), findsNothing);
     });
   });
 }
@@ -477,6 +507,7 @@ class _FakeDesktopQrCamera implements DesktopQrCamera {
   Future<void> start({
     required bool Function() shouldCaptureFrame,
     required ValueChanged<DesktopQrFrame> onFrame,
+    required ValueChanged<Object> onError,
   }) async {
     started = true;
     final error = startError;
@@ -538,6 +569,9 @@ class _FakeCameraPlatform extends CameraPlatform {
   final disposedCameraIds = <int>[];
 
   void emit(CameraImageData image) => _frames.add(image);
+
+  void emitError(String description) =>
+      _errors.add(CameraErrorEvent(7, description));
 
   @override
   Future<List<CameraDescription>> availableCameras() async => cameras;

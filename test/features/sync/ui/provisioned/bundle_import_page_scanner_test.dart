@@ -891,6 +891,7 @@ class _FakeDesktopCamera implements DesktopQrCamera {
   Future<void> start({
     required bool Function() shouldCaptureFrame,
     required ValueChanged<DesktopQrFrame> onFrame,
+    required ValueChanged<Object> onError,
   }) async {
     started = true;
   }

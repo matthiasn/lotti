@@ -115,6 +115,7 @@ abstract interface class DesktopQrCamera {
   Future<void> start({
     required bool Function() shouldCaptureFrame,
     required ValueChanged<DesktopQrFrame> onFrame,
+    required ValueChanged<Object> onError,
   });
 
   Future<void> dispose();
@@ -135,6 +136,7 @@ class _DesktopQrScannerState extends State<DesktopQrScanner> {
   DesktopQrCamera? _camera;
   bool _unavailable = false;
   bool _decoding = false;
+  bool _handlingCameraFailure = false;
   String? _lastDetectedPayload;
   int _framesToSkip = 0;
 
@@ -157,30 +159,42 @@ class _DesktopQrScannerState extends State<DesktopQrScanner> {
       await camera.start(
         shouldCaptureFrame: _shouldCaptureFrame,
         onFrame: _onFrame,
+        onError: _onCameraError,
       );
     } on Exception catch (error, stackTrace) {
-      final failedCamera = _camera;
-      _camera = null;
-      if (failedCamera != null) {
-        try {
-          await failedCamera.dispose();
-        } on Exception catch (disposeError, disposeStackTrace) {
-          DevLogger.error(
-            name: 'DesktopQrScanner',
-            message: 'Failed to dispose desktop camera after startup error',
-            error: disposeError,
-            stackTrace: disposeStackTrace,
-          );
-        }
-      }
-      DevLogger.error(
-        name: 'DesktopQrScanner',
-        message: 'Desktop camera initialization failed',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      if (mounted) setState(() => _unavailable = true);
+      await _handleCameraFailure(error, stackTrace);
     }
+  }
+
+  void _onCameraError(Object error) {
+    unawaited(_handleCameraFailure(error, StackTrace.current));
+  }
+
+  Future<void> _handleCameraFailure(Object error, StackTrace stackTrace) async {
+    if (_handlingCameraFailure || _unavailable) return;
+    _handlingCameraFailure = true;
+    final failedCamera = _camera;
+    _camera = null;
+    if (failedCamera != null) {
+      try {
+        await failedCamera.dispose();
+      } on Exception catch (disposeError, disposeStackTrace) {
+        DevLogger.error(
+          name: 'DesktopQrScanner',
+          message: 'Failed to dispose desktop camera after camera error',
+          error: disposeError,
+          stackTrace: disposeStackTrace,
+        );
+      }
+    }
+    DevLogger.error(
+      name: 'DesktopQrScanner',
+      message: 'Desktop camera failed',
+      error: error,
+      stackTrace: stackTrace,
+    );
+    if (mounted) setState(() => _unavailable = true);
+    _handlingCameraFailure = false;
   }
 
   bool _shouldCaptureFrame() {
@@ -246,6 +260,7 @@ class _CameraDesktopQrCamera implements DesktopQrCamera {
   _CameraDesktopQrCamera(this._controller);
 
   final CameraController _controller;
+  VoidCallback? _cameraErrorListener;
 
   static Future<_CameraDesktopQrCamera> create() async {
     final cameras = await availableCameras();
@@ -274,27 +289,48 @@ class _CameraDesktopQrCamera implements DesktopQrCamera {
   Future<void> start({
     required bool Function() shouldCaptureFrame,
     required ValueChanged<DesktopQrFrame> onFrame,
-  }) {
-    return _controller.startImageStream((image) {
-      if (image.planes.isEmpty || !shouldCaptureFrame()) return;
-      final plane = image.planes.first;
-      onFrame(
-        DesktopQrFrame(
-          // The native buffer is reused, so decoding must own a copy.
-          bytes: Uint8List.fromList(plane.bytes),
-          width: image.width,
-          height: image.height,
-          bytesPerRow: plane.bytesPerRow,
-          channelOrder: image.format.raw == 'RGBA'
-              ? DesktopQrChannelOrder.rgba
-              : DesktopQrChannelOrder.bgra,
-        ),
-      );
-    });
+    required ValueChanged<Object> onError,
+  }) async {
+    void cameraErrorListener() {
+      final description = _controller.value.errorDescription;
+      if (description != null) {
+        onError(CameraException('camera_error', description));
+      }
+    }
+
+    _cameraErrorListener = cameraErrorListener;
+    _controller.addListener(cameraErrorListener);
+    try {
+      await _controller.startImageStream((image) {
+        if (image.planes.isEmpty || !shouldCaptureFrame()) return;
+        final plane = image.planes.first;
+        onFrame(
+          DesktopQrFrame(
+            // The native buffer is reused, so decoding must own a copy.
+            bytes: Uint8List.fromList(plane.bytes),
+            width: image.width,
+            height: image.height,
+            bytesPerRow: plane.bytesPerRow,
+            channelOrder: image.format.raw == 'RGBA'
+                ? DesktopQrChannelOrder.rgba
+                : DesktopQrChannelOrder.bgra,
+          ),
+        );
+      });
+    } on Exception {
+      _controller.removeListener(cameraErrorListener);
+      _cameraErrorListener = null;
+      rethrow;
+    }
   }
 
   @override
   Future<void> dispose() async {
+    final cameraErrorListener = _cameraErrorListener;
+    if (cameraErrorListener != null) {
+      _controller.removeListener(cameraErrorListener);
+      _cameraErrorListener = null;
+    }
     if (_controller.value.isStreamingImages) {
       try {
         await _controller.stopImageStream();
