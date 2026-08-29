@@ -223,7 +223,7 @@ void main() {
         final strip = tester.widget<MeasurableChoiceStrip>(
           find.byType(MeasurableChoiceStrip),
         );
-        expect(strip.days, hasLength(30));
+        expect(strip.days, hasLength(31));
         expect(strip.days[2].choiceId, hydrationClear.id);
         expect(strip.days.where((d) => d.choiceId != null), hasLength(1));
       },
