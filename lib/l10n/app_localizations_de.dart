@@ -7390,10 +7390,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get habitEditorRuleEnergy => 'Energie';
 
   @override
-  String get habitEditorRuleTotalAtLeast => 'Summe ≥';
+  String get habitEditorRuleTotalAtLeast => 'Mindestens';
 
   @override
-  String get habitEditorRuleTotalAtMost => 'Summe ≤';
+  String get habitEditorRuleTotalAtMost => 'Höchstens';
 
   @override
   String get habitEditorSectionSettings => 'Einstellungen';

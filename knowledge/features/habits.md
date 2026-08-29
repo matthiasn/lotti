@@ -150,15 +150,27 @@ How it is reached depends on the window. `openHabitEditor`
 (`ui/pages/habit_editor_launcher.dart`) is the one doorway the FAB, the row
 long-press and the sheet's pencil use: on a phone it beams to the route above;
 on desktop (`isDesktopLayout`) it opens the same page **embedded in a
-right-anchored side panel** (`SizedWoltSideSheetType`, up to
-`kHabitEditorPanelWidth` = 800px) over the list, with a scrim — a form the user
-closes in a moment should not navigate them away from the list. Embedded
-(`HabitEditorPage.onClose`) the page renders no scaffold or app bar; back,
-save and delete close the panel instead of beaming, and the create wizard's
-signals step carries its own *Back*. At desktop widths the signals step lays
-identity + signals and Settings + Options out as two columns
-(`habit-editor-columns`), so two phone-width columns show the whole form
-without scrolling; the create wizard's name step stays a single narrow column.
+right-anchored side panel** (`SizedWoltSideSheetType` at
+`kHabitEditorPanelWidth`, 800px, pushed on the root navigator) over the list,
+with a scrim — a form the user closes in a moment should not navigate them
+away from the list. Embedded (`HabitEditorPage.onClose`) the page renders no
+scaffold or app bar; it takes the panel's height with the form scrolling in
+the middle only when the window is shorter than it and the action row pinned
+at the foot under a hairline; back, save and delete close the panel, and the
+wizard's signals step carries its own *Back*.
+
+The panel's layout came out of a design-review-panel loop (baseline 5.0 →
+7.2). On the edit path at desktop widths the form is two columns weighted
+3:2 (`habit-editor-columns`): the habit's story on the left — name,
+description, the "How do we know it's done?" section and its signals card,
+whose last row is the *Notify on auto-completion* switch (shown only once a
+signal exists) — and the administrative column on the right: Settings (with
+*Show from* / *Show alert at* paired on one row), Options, then a
+danger-styled Delete. The create wizard stays a single column on both steps;
+a short signals card and Settings alone are not two columns' worth. All
+three sections share `SettingsFormSection`'s title grammar, the signals card
+the settings cards' bordered recipe, the measurable rule's unit rides inline
+beside its number, and the rule controls align to the row title's edge.
 Deep links and Settings › Habits still mount the full route on any width.
 
 The definition itself stays in `HabitSettingsController` (`FormBuilder` for

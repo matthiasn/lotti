@@ -6,7 +6,6 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/layout/detail_content_width.dart';
-import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
@@ -34,6 +33,7 @@ import 'package:lotti/widgets/modal/modal_sheet_action.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:lotti/widgets/settings/settings_date_time_field.dart';
 import 'package:lotti/widgets/settings/settings_form_section.dart';
+import 'package:lotti/widgets/settings/settings_switch_row.dart';
 
 /// Where the habit definition is written: a two-step wizard for a new
 /// habit (name it, then say how it completes), one flat page when editing.
@@ -297,6 +297,7 @@ class HabitEditorPageState extends ConsumerState<HabitEditorPage> {
       daily: (d) => d.alertAtTime,
     );
     final onSignalsStep = !widget.isCreate || _step == _Step.signals;
+    final desktopLayout = isDesktopLayout(context);
 
     final primary = DesignSystemButton(
       key: const ValueKey('habit-editor-primary'),
@@ -315,52 +316,73 @@ class HabitEditorPageState extends ConsumerState<HabitEditorPage> {
         ? messages.habitEditorCreateTitle
         : messages.habitEditorEditTitle;
 
-    // The two halves of the signals step. On a phone they stack; on desktop
-    // they sit side by side, because the form clamped to the phone column
-    // scrolled a window that could show all of it at once.
-    final identityAndSignals = <Widget>[
-      // The name step stays mounted (offstage) on the
-      // signals step so the form keeps its values.
-      Offstage(
-        offstage: widget.isCreate && onSignalsStep,
-        child: _NameSection(
-          item: item,
-          isCreate: widget.isCreate,
-          onExample: (example) => _applyExample(state, example),
-        ),
+    // The pieces of the signals step. On a phone they stack in reading
+    // order; on desktop they sit in two columns weighted by what they are:
+    // the habit itself — name, how we know it's done, and its own switches —
+    // carries the wider column, the schedule settings the narrower one.
+    final identity = Offstage(
+      // The name step stays mounted (offstage) on the signals step so the
+      // form keeps its values.
+      offstage: widget.isCreate && onSignalsStep,
+      child: _NameSection(
+        item: item,
+        isCreate: widget.isCreate,
+        onExample: (example) => _applyExample(state, example),
       ),
-      if (onSignalsStep) ...[
-        if (widget.isCreate) ...[
-          Text(
-            messages.habitEditorSignalsHeading,
-            style: tokens.typography.styles.heading.heading2.copyWith(
-              color: tokens.colors.text.highEmphasis,
-            ),
-          ),
-          SizedBox(height: tokens.spacing.step2),
-          Text(
-            messages.habitEditorSignalsSubtitle,
-            style: tokens.typography.styles.body.bodyMedium.copyWith(
-              color: tokens.colors.text.mediumEmphasis,
-            ),
-          ),
-        ] else
-          SettingsFormSection(
-            title: messages.habitEditorSignalsHeading,
-            children: const [],
-          ),
-        SizedBox(height: tokens.spacing.step4),
-        HabitSignalCard(
-          form: signals,
-          measurablesById: measurablesById,
-          onChanged: _setSignals,
-          onAddSignal: () => _openPicker(state),
-          onChangeComposite: () => _openComposite(state),
-        ),
-      ],
+    );
+    // The question's heading, in the same section grammar as Settings and
+    // Options on both paths: the step title ("New habit") and the panel
+    // title are the only top-tier headings, and the deck rides as the
+    // section's description.
+    final signalsHeading = <Widget>[
+      SettingsFormSection(
+        title: messages.habitEditorSignalsHeading,
+        description: messages.habitEditorSignalsSubtitle,
+        children: const [],
+      ),
     ];
-    final settingsAndOptions = <Widget>[
-      if (onSignalsStep) ...[
+    // The notify choice belongs to the signals it describes — "one
+    // notification per day when signals complete it" — not to the schedule
+    // fields, where its scent pointed at the other column.
+    // The notify choice is the signals' own foot: it only means anything
+    // once a signal can complete the habit, and inside the card it cannot
+    // read as a third signal that fell out of the box.
+    final notifyFoot = signals.signals.isEmpty
+        ? null
+        // A switch, like the Options rows — a setting, not a signal. As a
+        // check it wore the same square the signal rows use to mean
+        // "remove this", and one glyph cannot carry two verbs in one card.
+        // On the card's rails: the signal rows' title edge on the left
+        // (card gutter + icon column + gap), the card gutter on the right so
+        // the switch sits where the signal checks sit.
+        : Padding(
+            padding: EdgeInsetsDirectional.fromSTEB(
+              tokens.spacing.step4 +
+                  tokens.spacing.step6 +
+                  tokens.spacing.step3,
+              tokens.spacing.step2,
+              tokens.spacing.step4,
+              tokens.spacing.step2,
+            ),
+            child: SettingsSwitchRow(
+              key: const ValueKey('habit-editor-notify'),
+              title: messages.habitEditorNotifyTitle,
+              subtitle: messages.habitEditorNotifyCaption,
+              value: item.autoCompleteNotify,
+              onChanged: (notify) =>
+                  _controller.setAutoCompleteNotify(notify: notify),
+            ),
+          );
+    final signalsCard = HabitSignalCard(
+      form: signals,
+      measurablesById: measurablesById,
+      onChanged: _setSignals,
+      onAddSignal: () => _openPicker(state),
+      onChangeComposite: () => _openComposite(state),
+      foot: notifyFoot,
+    );
+    final settings = <Widget>[
+      if (onSignalsStep)
         SettingsFormSection(
           title: messages.habitEditorSectionSettings,
           children: [
@@ -375,37 +397,54 @@ class HabitEditorPageState extends ConsumerState<HabitEditorPage> {
             ),
             // Only a daily schedule has a show-from and alert time; the setters
             // would turn a weekly or monthly habit into a daily one.
-            if (item.habitSchedule is DailyHabitSchedule) ...[
-              SettingsDateTimeField(
-                dateTime: showFrom,
-                labelText: messages.habitShowFromLabel,
-                setDateTime: _controller.setShowFrom,
-                mode: CupertinoDatePickerMode.time,
-              ),
-              SettingsDateTimeField(
-                dateTime: alertAtTime,
-                labelText: messages.habitShowAlertAtLabel,
-                setDateTime: _controller.setAlertAtTime,
-                clear: _controller.clearAlertAtTime,
-                mode: CupertinoDatePickerMode.time,
-              ),
-            ],
-            DesignSystemSelectionRow(
-              key: const ValueKey(
-                'habit-editor-notify',
-              ),
-              title: messages.habitEditorNotifyTitle,
-              subtitle: messages.habitEditorNotifyCaption,
-              type: DesignSystemSelectionRowType.multiSelect,
-              selected: item.autoCompleteNotify,
-              showSelectedBackground: false,
-              onTap: () => _controller.setAutoCompleteNotify(
-                notify: !item.autoCompleteNotify,
-              ),
-            ),
+            if (item.habitSchedule is DailyHabitSchedule)
+              // Two times on one row where there is room — the schedule
+              // card was the tall one, and these two are a pair.
+              if (desktopLayout)
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: SettingsDateTimeField(
+                        dateTime: showFrom,
+                        labelText: messages.habitShowFromLabel,
+                        setDateTime: _controller.setShowFrom,
+                        mode: CupertinoDatePickerMode.time,
+                      ),
+                    ),
+                    SizedBox(width: tokens.spacing.step3),
+                    Expanded(
+                      child: SettingsDateTimeField(
+                        dateTime: alertAtTime,
+                        labelText: messages.habitShowAlertAtLabel,
+                        setDateTime: _controller.setAlertAtTime,
+                        clear: _controller.clearAlertAtTime,
+                        mode: CupertinoDatePickerMode.time,
+                      ),
+                    ),
+                  ],
+                )
+              else ...[
+                SettingsDateTimeField(
+                  dateTime: showFrom,
+                  labelText: messages.habitShowFromLabel,
+                  setDateTime: _controller.setShowFrom,
+                  mode: CupertinoDatePickerMode.time,
+                ),
+                SettingsDateTimeField(
+                  dateTime: alertAtTime,
+                  labelText: messages.habitShowAlertAtLabel,
+                  setDateTime: _controller.setAlertAtTime,
+                  clear: _controller.clearAlertAtTime,
+                  mode: CupertinoDatePickerMode.time,
+                ),
+              ],
           ],
         ),
-        if (!widget.isCreate) ...[
+    ];
+    final options = <Widget>[
+      if (onSignalsStep)
+        if (!widget.isCreate)
           SettingsFormSection(
             title: messages.habitSectionOptionsTitle,
             children: [
@@ -415,14 +454,12 @@ class HabitEditorPageState extends ConsumerState<HabitEditorPage> {
                 semanticsLabel: messages.favoriteLabel,
                 initialValue: item.priority,
                 title: messages.favoriteLabel,
-                icon: LottiIcons.star,
               ),
               FormSwitch(
                 name: 'private',
                 initialValue: item.private,
                 title: messages.privateLabel,
                 subtitle: messages.privateSwitchDescription,
-                icon: LottiIcons.lock,
               ),
               FormSwitch(
                 name: 'active',
@@ -430,23 +467,29 @@ class HabitEditorPageState extends ConsumerState<HabitEditorPage> {
                 initialValue: item.active,
                 title: messages.activeLabel,
                 subtitle: messages.habitActiveSwitchDescription,
-                icon: LottiIcons.visible,
               ),
             ],
           ),
-          SizedBox(height: tokens.spacing.step4),
-          DesignSystemButton(
-            key: const ValueKey('habit-editor-delete'),
-            label: messages.deleteButton,
-            onPressed: _delete,
-            variant: DesignSystemButtonVariant.tertiary,
-            leadingIcon: LottiIcons.delete,
-            fullWidth: true,
-          ),
-        ],
-      ],
     ];
-    final desktop = isDesktopLayout(context) && onSignalsStep;
+    final deleteAction = <Widget>[
+      if (onSignalsStep && !widget.isCreate)
+        DesignSystemButton(
+          key: const ValueKey('habit-editor-delete'),
+          label: messages.deleteButton,
+          onPressed: _delete,
+          // Destructive, and dressed as such: in the tertiary mint it
+          // read as one more helpful link beside "Add a signal".
+          variant: DesignSystemButtonVariant.dangerSecondary,
+          leadingIcon: LottiIcons.delete,
+          fullWidth: true,
+        ),
+    ];
+
+    // Two columns only where there is a second column's worth: the edit
+    // path's Settings, Options and Delete. The wizard's step has a short
+    // signals card and Settings alone, and split it left the primary column
+    // a void with the eye landing on Settings.
+    final desktop = desktopLayout && onSignalsStep && !widget.isCreate;
     final formChildren = desktop
         ? [
             Row(
@@ -454,25 +497,52 @@ class HabitEditorPageState extends ConsumerState<HabitEditorPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
+                  flex: 3,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: identityAndSignals,
+                    // The habit's story: what it is and how we know it's
+                    // done. The question stays with the card it heads on
+                    // both paths, so Settings never reads as its answer.
+                    children: [
+                      identity,
+                      ...signalsHeading,
+                      signalsCard,
+                    ],
                   ),
                 ),
                 SizedBox(width: tokens.spacing.step6),
                 Expanded(
+                  flex: 2,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: settingsAndOptions,
+                    // The administrative column: schedule, switches, and
+                    // Delete last — so both columns end near the same
+                    // height and nothing hides under Save at 1280×800.
+                    children: [
+                      ...settings,
+                      ...options,
+                      // The Options section already ends with its section
+                      // gap, which is Delete's distance from it.
+                      ...deleteAction,
+                    ],
                   ),
                 ),
               ],
             ),
           ]
         : [
-            ...identityAndSignals,
-            if (onSignalsStep) SizedBox(height: tokens.spacing.step5),
-            ...settingsAndOptions,
+            identity,
+            if (onSignalsStep) ...[
+              ...signalsHeading,
+              signalsCard,
+              SizedBox(height: tokens.spacing.step5),
+              ...settings,
+              ...options,
+              if (deleteAction.isNotEmpty) ...[
+                SizedBox(height: tokens.spacing.step4),
+                ...deleteAction,
+              ],
+            ],
           ];
 
     if (widget.embedded) {
@@ -529,29 +599,38 @@ class HabitEditorPageState extends ConsumerState<HabitEditorPage> {
                   ),
                 ),
               ),
-              Padding(
-                padding: EdgeInsets.fromLTRB(
-                  tokens.spacing.step4,
-                  tokens.spacing.step3,
-                  tokens.spacing.step4,
-                  tokens.spacing.step4,
+              // The foot is a distinct band: the header's hairline above
+              // it, so a form that scrolls under it is clearly under it.
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  border: Border(
+                    top: BorderSide(color: tokens.colors.decorative.level01),
+                  ),
                 ),
-                child: Row(
-                  children: [
-                    // The wizard's way back to the name step; the route
-                    // version has the app bar's back button for this.
-                    if (widget.isCreate && onSignalsStep) ...[
-                      DesignSystemButton(
-                        key: const ValueKey('habit-editor-back'),
-                        label: messages.habitEditorBack,
-                        onPressed: () => setState(() => _step = _Step.name),
-                        variant: DesignSystemButtonVariant.tertiary,
-                        size: DesignSystemButtonSize.large,
-                      ),
-                      SizedBox(width: tokens.spacing.step3),
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    tokens.spacing.step4,
+                    tokens.spacing.step3,
+                    tokens.spacing.step4,
+                    tokens.spacing.step4,
+                  ),
+                  child: Row(
+                    children: [
+                      // The wizard's way back to the name step; the route
+                      // version has the app bar's back button for this.
+                      if (widget.isCreate && onSignalsStep) ...[
+                        DesignSystemButton(
+                          key: const ValueKey('habit-editor-back'),
+                          label: messages.habitEditorBack,
+                          onPressed: () => setState(() => _step = _Step.name),
+                          variant: DesignSystemButtonVariant.tertiary,
+                          size: DesignSystemButtonSize.large,
+                        ),
+                        SizedBox(width: tokens.spacing.step3),
+                      ],
+                      Expanded(child: primary),
                     ],
-                    Expanded(child: primary),
-                  ],
+                  ),
                 ),
               ),
             ],
@@ -716,6 +795,7 @@ class _NameSection extends StatelessWidget {
           semanticsLabel: messages.settingsHabitsNameLabel,
           autofocus: isCreate,
         ),
+        SizedBox(height: tokens.spacing.step4),
         SettingsFormTextField(
           key: const Key('habit_description_field'),
           initialValue: item.description,

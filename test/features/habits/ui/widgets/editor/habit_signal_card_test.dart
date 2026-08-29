@@ -82,7 +82,7 @@ void main() {
         findsNothing,
       );
 
-      await tester.tap(find.text('Total ≥').first);
+      await tester.tap(find.text('At least').first);
       await tester.pump();
       expect(changes.last.signals.single.mode, HabitSignalMode.atLeast);
 
@@ -223,7 +223,7 @@ void main() {
         threshold: 1000,
       );
       await pump(tester, HabitSignalsForm(signals: [bounded]));
-      await tester.tap(find.text('Total ≤').first);
+      await tester.tap(find.text('At most').first);
       await tester.pump();
       final switched = changes.last.signals.single;
       expect(switched.mode, HabitSignalMode.atMost);

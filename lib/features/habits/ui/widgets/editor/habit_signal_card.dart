@@ -3,7 +3,6 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/habits/model/habit_form_mapping.dart';
 import 'package:lotti/features/habits/ui/widgets/editor/habit_composite_picker.dart';
 import 'package:lotti/features/habits/ui/widgets/editor/habit_signal_presentation.dart';
@@ -23,6 +22,7 @@ class HabitSignalCard extends StatelessWidget {
     required this.onChanged,
     required this.onAddSignal,
     required this.onChangeComposite,
+    this.foot,
     super.key,
   });
 
@@ -31,6 +31,10 @@ class HabitSignalCard extends StatelessWidget {
   final ValueChanged<HabitSignalsForm> onChanged;
   final VoidCallback onAddSignal;
   final VoidCallback onChangeComposite;
+
+  /// An optional last row inside the card, under "Add a signal" — a setting
+  /// that belongs to the signals as a group, such as the notify choice.
+  final Widget? foot;
 
   void _replace(int index, HabitSignalForm signal) {
     final signals = [...form.signals]..[index] = signal;
@@ -113,15 +117,20 @@ class HabitSignalCard extends StatelessWidget {
                       color: tokens.colors.interactive.enabled,
                     ),
                     SizedBox(width: tokens.spacing.step3),
+                    // An inline affordance, not a call to action: the
+                    // accent stays on the glyph, the label reads as body so
+                    // Save remains the one loud element on the page.
                     Text(
                       messages.habitEditorAddSignal,
-                      style: tokens.typography.styles.subtitle.subtitle2
-                          .copyWith(color: tokens.colors.interactive.enabled),
+                      style: tokens.typography.styles.body.bodyMedium.copyWith(
+                        color: tokens.colors.text.mediumEmphasis,
+                      ),
                     ),
                   ],
                 ),
               ),
             ),
+            if (foot case final foot?) ...[divider, foot],
           ],
         ),
         if (form.signals.length >= 2) ...[
@@ -201,10 +210,16 @@ class _Card extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    // The same card recipe as the settings sections around it — one card
+    // grammar on the page, so the signals read as a group and not as rows
+    // floating on the panel background.
     return Material(
-      color: dsCardSurface(context),
-      borderRadius: BorderRadius.circular(tokens.radii.m),
+      color: tokens.colors.background.level02,
       clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(tokens.radii.m),
+        side: BorderSide(color: tokens.colors.decorative.level01),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: children,
@@ -298,8 +313,12 @@ class _Row extends StatelessWidget {
           ),
           if (child != null) ...[
             SizedBox(height: tokens.spacing.step3),
+            // Aligned to the title's left edge — the icon column plus its
+            // gap — so the rule reads as the row's own detail.
             Padding(
-              padding: EdgeInsets.only(left: tokens.spacing.step8),
+              padding: EdgeInsets.only(
+                left: tokens.spacing.step6 + tokens.spacing.step3,
+              ),
               child: child,
             ),
           ],
@@ -486,27 +505,49 @@ class _RuleEditorState extends State<_RuleEditor> {
             ),
           ],
           SizedBox(height: tokens.spacing.step3),
-          DesignSystemTextInput(
-            key: ValueKey(
-              'habit-signal-threshold-${signal.kind.name}-${signal.id}',
-            ),
-            controller: _threshold,
-            size: DesignSystemTextInputSize.small,
-            helperText: widget.unit.isEmpty ? null : widget.unit,
-            // A bounded mode without a number would save as "any entry";
-            // say so until there is one.
-            errorText: signal.threshold == null
-                ? messages.habitEditorThresholdRequired
-                : null,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            onChanged: (raw) {
-              final value = num.tryParse(raw.trim().replaceAll(',', '.'));
-              widget.onChanged(
-                value == null
-                    ? signal.copyWith(clearThreshold: true)
-                    : signal.copyWith(threshold: value),
-              );
-            },
+          // The unit rides beside the number it qualifies — "1000 ml" —
+          // rather than as helper text under the field, where it read as a
+          // stray word.
+          Row(
+            children: [
+              Expanded(
+                child: DesignSystemTextInput(
+                  key: ValueKey(
+                    'habit-signal-threshold-${signal.kind.name}-${signal.id}',
+                  ),
+                  controller: _threshold,
+                  size: DesignSystemTextInputSize.small,
+                  // A bounded mode without a number would save as "any entry";
+                  // say so until there is one.
+                  errorText: signal.threshold == null
+                      ? messages.habitEditorThresholdRequired
+                      : null,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  onChanged: (raw) {
+                    final value = num.tryParse(raw.trim().replaceAll(',', '.'));
+                    widget.onChanged(
+                      value == null
+                          ? signal.copyWith(clearThreshold: true)
+                          : signal.copyWith(threshold: value),
+                    );
+                  },
+                ),
+              ),
+              if (widget.unit.isNotEmpty) ...[
+                SizedBox(width: tokens.spacing.step2),
+                Text(
+                  widget.unit,
+                  key: ValueKey(
+                    'habit-signal-unit-${signal.kind.name}-${signal.id}',
+                  ),
+                  style: tokens.typography.styles.body.bodyMedium.copyWith(
+                    color: tokens.colors.text.mediumEmphasis,
+                  ),
+                ),
+              ],
+            ],
           ),
         ],
       ],

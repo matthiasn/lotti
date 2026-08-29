@@ -155,13 +155,11 @@ void main() {
       await tester.enterText(find.byType(TextField).first, 'Floss');
       await tester.tap(find.text('Continue'));
       await tester.pump(const Duration(milliseconds: 300));
-      expect(
-        find.byKey(const ValueKey('habit-editor-columns')),
-        findsOneWidget,
-      );
+      expect(find.text('Step 2 of 2'), findsOneWidget);
+      expect(find.byKey(const ValueKey('habit-editor-back')), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('habit-editor-back')));
       await tester.pump(const Duration(milliseconds: 300));
-      expect(find.byKey(const ValueKey('habit-editor-columns')), findsNothing);
+      expect(find.byKey(const ValueKey('habit-editor-back')), findsNothing);
       expect(find.text('Step 1 of 2'), findsOneWidget);
     });
     testWidgets('opened from inside a nested navigator, the panel still '

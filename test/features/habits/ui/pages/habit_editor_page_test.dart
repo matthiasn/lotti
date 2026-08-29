@@ -12,6 +12,7 @@ import 'package:lotti/features/habits/ui/widgets/editor/habit_signal_card.dart';
 import 'package:lotti/features/habits/ui/widgets/editor/habit_signal_picker.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
+import 'package:lotti/features/keyboard/ui/app_command_controller.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurables_page.dart';
 import 'package:lotti/get_it.dart';
@@ -526,10 +527,22 @@ void main() {
         ),
         findsOneWidget,
       );
+      // The habit's story on the left; the administrative column — schedule
+      // settings, switches, Delete last — on the right.
       expect(
         find.descendant(
           of: find.byWidget(row.children.last),
           matching: find.byKey(const Key('habit_active')),
+        ),
+        findsOneWidget,
+      );
+      // A manual-only habit has nothing to notify about, so the signals
+      // card carries no notify foot.
+      expect(find.byKey(const ValueKey('habit-editor-notify')), findsNothing);
+      expect(
+        find.descendant(
+          of: find.byWidget(row.children.last),
+          matching: find.byKey(const ValueKey('habit-editor-delete')),
         ),
         findsOneWidget,
       );
@@ -551,17 +564,17 @@ void main() {
       expect(find.byType(HabitSignalCard), findsOneWidget);
     });
 
-    testWidgets("the create wizard's name step stays a narrow column even on "
-        'desktop', (tester) async {
+    testWidgets('the create wizard stays a single column on desktop, on both '
+        'steps', (tester) async {
       await pumpEditor(tester);
       expect(find.byKey(const ValueKey('habit-editor-columns')), findsNothing);
       await tester.enterText(find.byType(TextField).first, 'Floss');
       await tester.tap(find.text('Continue'));
       await tester.pump(const Duration(milliseconds: 300));
-      expect(
-        find.byKey(const ValueKey('habit-editor-columns')),
-        findsOneWidget,
-      );
+      // A short signals card and Settings alone are not two columns' worth;
+      // split, the primary column was a void with the eye on Settings.
+      expect(find.byKey(const ValueKey('habit-editor-columns')), findsNothing);
+      expect(find.byType(HabitSignalCard), findsOneWidget);
     });
     testWidgets('embedded in a panel, a habit still loading shows a bounded '
         'placeholder rather than a page-filling shell', (tester) async {
@@ -591,6 +604,60 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
       expect(find.byType(Scaffold), findsNothing);
       expect(tester.takeException(), isNull);
+    });
+    testWidgets('embedded in a panel, the save shortcut saves and closes it', (
+      tester,
+    ) async {
+      var closed = 0;
+      tester.view.physicalSize = const Size(1200, 1800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          AppCommandHost(
+            handlers: const <AppCommandId, AppCommandHandler>{},
+            platform: TargetPlatform.windows,
+            child: Material(
+              child: SingleChildScrollView(
+                child: HabitEditorPage(
+                  habitId: habitFlossing.id,
+                  onClose: () => closed++,
+                ),
+              ),
+            ),
+          ),
+          mediaQueryData: const MediaQueryData(size: Size(1200, 1800)),
+          overrides: [
+            measurableDataTypesStreamProvider.overrideWith(
+              (ref) => Stream.value([water]),
+            ),
+            workoutTypesProvider.overrideWith((ref) async => ['running']),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      final inEditor = tester.element(
+        find.byKey(const ValueKey('habit-editor-primary')),
+      );
+      final controller = AppCommandControllerProvider.of(inEditor);
+      expect(controller.isAvailable(inEditor, AppCommandId.save), isTrue);
+      await controller.invoke(inEditor, AppCommandId.save);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(savedHabit().id, habitFlossing.id);
+      expect(closed, 1);
+    });
+    testWidgets('a habit with a signal carries the notify choice as the '
+        "signals card's own foot", (tester) async {
+      await pumpEditor(tester, habitId: ruledHabit.id);
+      final notify = find.byKey(const ValueKey('habit-editor-notify'));
+      expect(notify, findsOneWidget);
+      expect(
+        find.ancestor(of: notify, matching: find.byType(HabitSignalCard)),
+        findsOneWidget,
+      );
     });
   });
 }

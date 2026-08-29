@@ -7337,10 +7337,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get habitEditorRuleEnergy => 'Energi';
 
   @override
-  String get habitEditorRuleTotalAtLeast => 'I alt ≥';
+  String get habitEditorRuleTotalAtLeast => 'Mindst';
 
   @override
-  String get habitEditorRuleTotalAtMost => 'I alt ≤';
+  String get habitEditorRuleTotalAtMost => 'Højst';
 
   @override
   String get habitEditorSectionSettings => 'Indstillinger';

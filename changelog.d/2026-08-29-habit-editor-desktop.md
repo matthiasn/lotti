@@ -9,5 +9,5 @@
 
 ### Fixed
 
-- The edit page's "How do we know it's done?" heading no longer draws an empty
-  bordered box under itself.
+- **The edit page's "How do we know it's done?" heading no longer draws an empty
+  bordered box under itself.**

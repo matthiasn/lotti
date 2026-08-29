@@ -7416,10 +7416,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get habitEditorRuleEnergy => 'Energie';
 
   @override
-  String get habitEditorRuleTotalAtLeast => 'Celkem ≥';
+  String get habitEditorRuleTotalAtLeast => 'Alespoň';
 
   @override
-  String get habitEditorRuleTotalAtMost => 'Celkem ≤';
+  String get habitEditorRuleTotalAtMost => 'Nejvýše';
 
   @override
   String get habitEditorSectionSettings => 'Nastavení';
