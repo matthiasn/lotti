@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 
@@ -37,6 +38,14 @@ pytestmark = pytest.mark.anyio
 NOW = datetime(2026, 8, 29, 12, tzinfo=timezone.utc)
 PACKAGE = "com.matthiasn.lotti"
 CERTIFICATE_DIGEST = "release-certificate-sha256"
+
+
+class MutableClock:
+    def __init__(self, value):
+        self.value = value
+
+    def __call__(self):
+        return self.value
 
 
 class FakeGooglePlayClient:
@@ -84,7 +93,12 @@ def cipher():
 
 
 @pytest.fixture
-def service(repository, identity_service, google_client, cipher):
+def clock():
+    return MutableClock(NOW)
+
+
+@pytest.fixture
+def service(repository, identity_service, google_client, cipher, clock):
     return SubscriptionService(
         repository,
         identity_service,
@@ -93,6 +107,7 @@ def service(repository, identity_service, google_client, cipher):
         package_name=PACKAGE,
         allowed_products={"lotti_sync": frozenset({"monthly", "annual"})},
         certificate_sha256_digests=frozenset({CERTIFICATE_DIGEST}),
+        now_provider=clock,
     )
 
 
@@ -437,6 +452,7 @@ async def test_known_rtdn_token_is_requeried_and_updates_authoritative_state(
     identity_service,
     google_client,
     repository,
+    clock,
 ):
     entitlement, initial = await purchase_context(identity_service, google_client)
     await service.verify_purchase(
@@ -449,6 +465,7 @@ async def test_known_rtdn_token_is_requeried_and_updates_authoritative_state(
         google_client.snapshot,
         state=GoogleSubscriptionState.ON_HOLD,
     )
+    clock.value = NOW + timedelta(hours=1)
 
     refreshed = await service.refresh_known_purchase(
         initial.purchase_token,
@@ -467,6 +484,7 @@ async def test_authoritative_refresh_reencrypts_token_with_active_key(
     google_client,
     repository,
     cipher,
+    clock,
 ):
     entitlement, initial = await purchase_context(identity_service, google_client)
     original = await service.verify_purchase(
@@ -487,7 +505,9 @@ async def test_authoritative_refresh_reencrypts_token_with_active_key(
         package_name=PACKAGE,
         allowed_products={"lotti_sync": frozenset({"monthly", "annual"})},
         certificate_sha256_digests=frozenset({CERTIFICATE_DIGEST}),
+        now_provider=clock,
     )
+    clock.value = NOW + timedelta(hours=1)
 
     refreshed = await rotated_service.refresh_known_purchase(
         initial.purchase_token,
@@ -512,6 +532,7 @@ async def test_authoritative_refresh_recovers_pending_acknowledgement_after_prov
     identity_service,
     google_client,
     repository,
+    clock,
 ):
     entitlement, initial = await purchase_context(identity_service, google_client)
     original = await service.verify_purchase(
@@ -545,6 +566,7 @@ async def test_authoritative_refresh_recovers_pending_acknowledgement_after_prov
         expires_at=NOW + timedelta(hours=24),
         now=NOW,
     )
+    clock.value = NOW + timedelta(minutes=1)
 
     refreshed = await service.refresh_known_purchase(
         initial.purchase_token,
@@ -554,6 +576,60 @@ async def test_authoritative_refresh_recovers_pending_acknowledgement_after_prov
     assert google_client.acknowledgements == [(PACKAGE, "lotti_sync", initial.purchase_token)]
     assert refreshed.acknowledgement_state is AcknowledgementState.ACKNOWLEDGED
     assert refreshed.acknowledged_at == NOW + timedelta(minutes=1)
+
+
+async def test_later_google_response_wins_even_when_its_request_started_first(
+    service,
+    identity_service,
+    google_client,
+    repository,
+    clock,
+    monkeypatch,
+):
+    entitlement, initial = await purchase_context(identity_service, google_client)
+    original = await service.verify_purchase(
+        initial,
+        entitlement_auth_secret=entitlement.auth_secret,
+        now=NOW,
+    )
+    active = google_client.snapshot
+    on_hold = replace(active, state=GoogleSubscriptionState.ON_HOLD)
+    first_started = asyncio.Event()
+    release_first = asyncio.Event()
+    response_count = 0
+
+    async def racing_get_subscription(_package_name, _purchase_token):
+        nonlocal response_count
+        response_count += 1
+        if response_count == 1:
+            first_started.set()
+            await release_first.wait()
+            clock.value = NOW + timedelta(minutes=3)
+            return active
+        clock.value = NOW + timedelta(minutes=2)
+        return on_hold
+
+    monkeypatch.setattr(google_client, "get_subscription", racing_get_subscription)
+    slower_first_request = asyncio.create_task(
+        service.refresh_known_purchase(
+            initial.purchase_token,
+            now=NOW + timedelta(minutes=1),
+        )
+    )
+    await first_started.wait()
+
+    faster_second_request = await service.refresh_known_purchase(
+        initial.purchase_token,
+        now=NOW + timedelta(minutes=2),
+    )
+    release_first.set()
+    later_response = await slower_first_request
+    stored = await repository.get_subscription_by_token(original.subscription.token_fingerprint)
+
+    assert faster_second_request.entitlement_state is EntitlementState.SUSPENDED
+    assert later_response.entitlement_state is EntitlementState.ACTIVE
+    assert stored.entitlement_state is EntitlementState.ACTIVE
+    assert stored.last_verified_at == NOW + timedelta(minutes=3)
 
 
 async def test_unknown_rtdn_token_cannot_create_or_rebind_entitlement(

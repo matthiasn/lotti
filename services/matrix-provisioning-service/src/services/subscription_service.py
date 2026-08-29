@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
-from typing import Any
+from typing import Any, Callable
 
 from ..core.exceptions import (
     GooglePlayVerificationException,
@@ -53,6 +53,7 @@ class SubscriptionService:
         integrity_future_skew: timedelta = timedelta(seconds=30),
         reconciliation_interval: timedelta = timedelta(hours=6),
         secret_hasher: SecretHasher | None = None,
+        now_provider: Callable[[], datetime] | None = None,
     ):
         if not certificate_sha256_digests:
             raise ValueError("At least one Play signing certificate digest is required")
@@ -68,6 +69,7 @@ class SubscriptionService:
         self._integrity_future_skew = integrity_future_skew
         self._reconciliation_interval = reconciliation_interval
         self._secret_hasher = secret_hasher or SecretHasher()
+        self._now_provider = now_provider or (lambda: datetime.now(timezone.utc))
 
     async def verify_purchase(
         self,
@@ -117,12 +119,17 @@ class SubscriptionService:
             submission.package_name,
             submission.integrity_token,
         )
-        self._validate_integrity(integrity_payload, request_hash=request_hash, now=now)
+        self._validate_integrity(
+            integrity_payload,
+            request_hash=request_hash,
+            now=max(now, self._now_provider()),
+        )
 
         google_snapshot = await self._google_play_client.get_subscription(
             submission.package_name,
             submission.purchase_token,
         )
+        verified_at = max(now, self._now_provider())
         line_item = self._select_line_item(
             google_snapshot,
             product_id=submission.product_id,
@@ -162,9 +169,9 @@ class SubscriptionService:
                 package_name=submission.package_name,
                 product_id=submission.product_id,
                 base_plan_id=submission.base_plan_id,
-                now=now,
+                now=verified_at,
             ),
-            now=now,
+            now=verified_at,
         )
         return VerifiedPurchaseResult(
             subscription=stored,
@@ -196,6 +203,7 @@ class SubscriptionService:
             existing.package_name,
             purchase_token,
         )
+        verified_at = max(now, self._now_provider())
         line_item = self._select_line_item(
             snapshot,
             product_id=existing.product_id,
@@ -228,7 +236,7 @@ class SubscriptionService:
                 snapshot,
                 acknowledgement_state=AcknowledgementState.ACKNOWLEDGED,
             )
-            acknowledged_at = now
+            acknowledged_at = max(verified_at, self._now_provider())
         encrypted_token = self._secret_cipher.encrypt(
             purchase_token.encode(),
             purpose="purchase-token",
@@ -244,13 +252,13 @@ class SubscriptionService:
             package_name=existing.package_name,
             product_id=existing.product_id,
             base_plan_id=existing.base_plan_id,
-            now=now,
+            now=verified_at,
             bundle_id=existing.bundle_id,
             acknowledged_at=acknowledged_at,
             suspended_at=existing.suspended_at,
             unsuspended_at=existing.unsuspended_at,
         )
-        return await self._repository.store_verified_subscription(verified, now=now)
+        return await self._repository.store_verified_subscription(verified, now=verified_at)
 
     def _build_verified_subscription(
         self,

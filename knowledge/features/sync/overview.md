@@ -5,7 +5,7 @@ description: Single-user multi-device replication over end-to-end encrypted Matr
 resource: ../../../lib/features/sync
 tags: [sync, matrix, replication, outbox, queue]
 status: stable
-generated: { by: codex/gpt-5, at: 2026-08-29T22:28:45Z }
+generated: { by: codex/gpt-5, at: 2026-08-29T22:34:56Z }
 stale_after: 2026-11-03
 sources:
   - id: sync-src
@@ -158,8 +158,9 @@ fails closed if compatibility cannot be proved. Each enforcement reloads the
 current purchase token while holding the
 entitlement's serialization stripe, so an older refresh cannot suspend the
 account after a replacement refresh restored it. Same-token persistence rejects
-snapshots older than the row's Google verification timestamp, preventing an
-earlier in-flight response from rolling newer access state back.
+snapshots whose Publisher-response observation timestamp is older than the
+stored row. The timestamp is captured after Google responds, so a request that
+started earlier but returned later with newer evidence is not discarded.
 
 ```mermaid
 stateDiagram-v2
