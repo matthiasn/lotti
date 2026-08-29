@@ -197,6 +197,14 @@ Matching filenames on both sides are what make the pair readable — a reviewer
 should be able to flip between two images of the same name and see only the
 change.
 
+**Fixtures are never the user's own data.** A capture harness populates its
+surface from `test/test_data` and the penguin demo world — never from a habit,
+task, goal, note or description seen in a maintainer's own app, database or bug
+screenshot. Everything captured here is published to a public bucket and
+embedded in a public pull request, so a real entry in a fixture is a real entry
+on the internet. Read every string in a scratch harness before running it, and
+every image before publishing it.
+
 **Capture `before/` first, from the base commit**, before the change exists.
 Reconstructing it afterwards means stashing work and re-running the harness, which
 is the step people skip; that is why the pairs go missing.
