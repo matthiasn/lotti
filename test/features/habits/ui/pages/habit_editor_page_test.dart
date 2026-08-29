@@ -563,5 +563,34 @@ void main() {
         findsOneWidget,
       );
     });
+    testWidgets('embedded in a panel, a habit still loading shows a bounded '
+        'placeholder rather than a page-filling shell', (tester) async {
+      when(
+        () => mocks.journalDb.getHabitById('slow'),
+      ).thenAnswer((_) => Completer<HabitDefinition?>().future);
+      tester.view.physicalSize = const Size(1200, 1800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          // Unbounded height, as inside a shrink-wrapping sheet page.
+          SingleChildScrollView(
+            child: HabitEditorPage(habitId: 'slow', onClose: () {}),
+          ),
+          mediaQueryData: const MediaQueryData(size: Size(1200, 1800)),
+          overrides: [
+            measurableDataTypesStreamProvider.overrideWith(
+              (ref) => Stream.value(const []),
+            ),
+            workoutTypesProvider.overrideWith((ref) async => const []),
+          ],
+        ),
+      );
+      await tester.pump();
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(Scaffold), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
   });
 }

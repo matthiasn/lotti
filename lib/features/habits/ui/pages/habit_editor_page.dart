@@ -15,7 +15,6 @@ import 'package:lotti/features/goals/model/goal_health_data_types.dart';
 import 'package:lotti/features/habits/model/habit_form_mapping.dart';
 import 'package:lotti/features/habits/state/habit_editor_providers.dart';
 import 'package:lotti/features/habits/state/habit_settings_controller.dart';
-import 'package:lotti/features/habits/ui/pages/habit_editor_launcher.dart';
 import 'package:lotti/features/habits/ui/widgets/editor/habit_composite_picker.dart';
 import 'package:lotti/features/habits/ui/widgets/editor/habit_signal_card.dart';
 import 'package:lotti/features/habits/ui/widgets/editor/habit_signal_picker.dart';
@@ -482,8 +481,13 @@ class HabitEditorPageState extends ConsumerState<HabitEditorPage> {
       // the primary action stays pinned at the foot — a Save the user has to
       // scroll to find was the complaint that moved the editor off its own
       // route in the first place.
+      // The sheet's nav bar is `spacing.step10` tall (ModalUtils' default);
+      // one step of slack under that keeps the foot clear of the sheet edge
+      // without ever overshooting into an overflow.
       final height =
-          MediaQuery.sizeOf(context).height - kHabitEditorPanelChromeHeight;
+          MediaQuery.sizeOf(context).height -
+          tokens.spacing.step10 -
+          tokens.spacing.step4;
       return AppCommandScope(
         handlers: {
           AppCommandId.save: AppCommandHandler(

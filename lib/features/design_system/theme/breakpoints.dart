@@ -68,3 +68,9 @@ const kRowInlineControlMinWidth = 496.0;
 /// five-digit value plus its unit label, narrow enough to leave the row's
 /// title its measure.
 const kInlineTargetInputWidth = 320.0;
+
+/// The habit editor's desktop side panel: two phone-width columns
+/// (`kActionListContentMaxWidth` each, less the gutter between them) so the
+/// whole form is on screen without scrolling. Like [kGoalChatDrawerWidth], a
+/// reviewed layout width rather than a token — a panel is not a component.
+const kHabitEditorPanelWidth = 800.0;

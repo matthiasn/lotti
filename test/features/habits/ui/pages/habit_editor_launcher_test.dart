@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/habits/state/habit_editor_providers.dart';
 import 'package:lotti/features/habits/ui/pages/habit_editor_launcher.dart';
 import 'package:lotti/features/habits/ui/pages/habit_editor_page.dart';
@@ -162,6 +163,64 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
       expect(find.byKey(const ValueKey('habit-editor-columns')), findsNothing);
       expect(find.text('Step 1 of 2'), findsOneWidget);
+    });
+    testWidgets('opened from inside a nested navigator, the panel still '
+        'covers the window and closes without popping the tab', (
+      tester,
+    ) async {
+      const size = Size(1400, 900);
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          // The desktop tabs each run their own Navigator (Beamer); the
+          // launcher must not push the sheet onto it, or the tab's own
+          // route is what a close pops.
+          Navigator(
+            key: const ValueKey('tab-navigator'),
+            onGenerateRoute: (_) => MaterialPageRoute<void>(
+              builder: (context) => Scaffold(
+                body: TextButton(
+                  key: const ValueKey('open-edit'),
+                  onPressed: () =>
+                      openHabitEditor(context, habitId: habitFlossing.id),
+                  child: const Text('tab route'),
+                ),
+              ),
+            ),
+          ),
+          mediaQueryData: const MediaQueryData(size: size),
+          overrides: [
+            measurableDataTypesStreamProvider.overrideWith(
+              (ref) => Stream.value(const []),
+            ),
+            workoutTypesProvider.overrideWith((ref) async => const []),
+          ],
+        ),
+      );
+      await tester.tap(find.byKey(const ValueKey('open-edit')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.byType(HabitEditorPage), findsOneWidget);
+      // On the root navigator: the panel spans the window height and the
+      // scrim is not clipped to the tab.
+      expect(
+        tester.getSize(find.byType(HabitEditorPage)).height,
+        greaterThan(700),
+      );
+
+      final primary = find.byKey(const ValueKey('habit-editor-primary'));
+      await tester.tap(primary);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.byType(HabitEditorPage), findsNothing);
+      expect(
+        find.text('tab route'),
+        findsOneWidget,
+        reason: 'the tab route survived',
+      );
     });
   });
 }

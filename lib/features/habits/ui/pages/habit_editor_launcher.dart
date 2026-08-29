@@ -7,17 +7,6 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:lotti/widgets/modal/sized_wolt_side_sheet_type.dart';
 
-/// The width the editor panel aims for on desktop: two phone-width columns
-/// side by side, so the whole form is on screen without scrolling.
-const kHabitEditorPanelWidth = 800.0;
-
-/// The vertical room the side sheet's own chrome takes above the editor's
-/// content — its top bar with the title and close button. The embedded
-/// editor sizes itself to the window minus this, so its action row sits at
-/// the panel's foot. Measured against the sheet as configured here; a
-/// slight undershoot only leaves a little air, an overshoot would overflow.
-const kHabitEditorPanelChromeHeight = 80.0;
-
 /// Opens the habit editor — for [habitId], or a new habit when null.
 ///
 /// On a phone the editor is its own route, reached and left through the
@@ -35,21 +24,28 @@ void openHabitEditor(BuildContext context, {String? habitId}) {
     return;
   }
   final messages = context.messages;
+  // The navigator the sheet is pushed on — resolved here, from the same
+  // context Wolt resolves it from, so a close pops exactly that route.
+  // Re-deriving it inside the sheet found a different navigator on the
+  // desktop tabs, which each run a nested one.
+  final navigator = Navigator.of(context, rootNavigator: true);
   ModalUtils.showSinglePageModal<void>(
     context: context,
+    // On the root navigator, explicitly: the desktop tabs each run a nested
+    // Beamer navigator, and a sheet pushed there dims only the tab. The
+    // scrim is meant to cover the whole window, and [navigator] above is
+    // the same root, so the close pops the sheet and nothing else.
+    useRootNavigator: true,
     title: habitId == null
         ? messages.habitEditorCreateTitle
         : messages.habitEditorEditTitle,
+    // One reviewed width (see [kHabitEditorPanelWidth]), clamped to the
+    // window by the sheet type on narrow desktops.
     modalTypeBuilderOverride: (_) => const SizedWoltSideSheetType(
-      widthFraction: 0.6,
-      minWidth: 560,
+      widthFraction: 1,
+      minWidth: kHabitEditorPanelWidth,
       maxWidth: kHabitEditorPanelWidth,
     ),
-    builder: (sheetContext) => HabitEditorPage(
-      habitId: habitId,
-      // The sheet nests a navigator of its own for its pages; the panel
-      // itself is a route on the navigator it was shown from.
-      onClose: () => Navigator.of(sheetContext, rootNavigator: true).pop(),
-    ),
+    builder: (_) => HabitEditorPage(habitId: habitId, onClose: navigator.pop),
   );
 }
