@@ -156,7 +156,10 @@ void main() {
       find.bySemanticsLabel('Mon, Aug 10: done'),
     );
     expect(node.getSemanticsData().hasAction(SemanticsAction.tap), isTrue);
-    tester.binding.rootPipelineOwner.semanticsOwner!.performAction(
+    // The test binding's semantics owner still lives on the legacy
+    // pipeline owner; the root owner has none in widget tests.
+    // ignore: deprecated_member_use
+    tester.binding.pipelineOwner.semanticsOwner!.performAction(
       node.id,
       SemanticsAction.tap,
     );
