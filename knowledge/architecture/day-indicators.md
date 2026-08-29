@@ -168,19 +168,22 @@ knows the day: reflecting on a backfilled day judges that day, not today. The
 reflection sheet itself stays the goal's — it needs the goal's spec, progress
 view and history — so the habit only contributes the day.
 
-# The legend, and where it rides
+# The legend keys only what is on the strip
 
-`DayMarkLegend` keys the measured fills always, and opts into the rest:
-`showAgesOut` (only the goal detail's rolling windows draw that ring),
-`showOutcomes` (the skip dash and missed cross a habit square can carry) and
-`showVerdicts` (the four verdict hues and glyphs). One key per surface, placed
-where a reader meets the squares it explains:
+`DayMarkLegend` takes the states and verdicts *present* on the strip it sits
+under and keys only what a reader cannot get from the mark itself: the
+colour-only states (done, done-but-target-still-building with its dot, no
+entry), the two rings where the strip draws them, and the verdict hues a
+judged day wears. It never lists the outcome glyphs — the skip dash and the
+missed cross name themselves, and every cell answers hover with its day and
+outcome — and it renders nothing when nothing needs keying.
 
-| Surface | Legend |
-| --- | --- |
-| Goal detail, first habit card | outcomes + verdicts + ages-out |
-| Goal detail, a goal with no habit cards | under the whole-goal strip on the week card: verdicts, no ages-out |
-| A dashboard with habit items | once, after the items: outcomes + verdicts |
+It rides in exactly one place: inside the goal detail's first habit card,
+derived from that habit's days (`goalProgressDayMarkState`) and its
+per-dimension verdicts. Dashboards and the whole-goal week card carry no key.
+A design-review panel rated the earlier eleven-entry wrap under a dashboard
+at 3.6/10: more legend than data, listing states that were not on screen,
+and two red crosses with different names.
 
 # Cell sizing is a decision, not a gap
 

@@ -90,10 +90,14 @@ void main() {
     );
     expect(find.text('4 / 6 weeks'), findsOneWidget);
     expect(find.textContaining('%'), findsNothing);
-    expect(find.text('done · target met'), findsOneWidget);
-    expect(find.text('done · target not met yet'), findsOneWidget);
-    expect(find.text('ages out tonight'), findsOneWidget);
-    expect(find.text('today'), findsOneWidget);
+    // The key lists what the strip shows: done days are on it, no partial
+    // day is.
+    expect(find.text('Done · target met'), findsOneWidget);
+    expect(find.text('Done · target not met yet'), findsNothing);
+    // This habit's oldest success does not age out tonight, so the key does
+    // not name a ring the strip is not drawing.
+    expect(find.text('Ages out tonight'), findsNothing);
+    expect(find.text('Today'), findsOneWidget);
   });
 
   testWidgets('an authored rolling window is named in the corner reading', (
@@ -731,8 +735,9 @@ void main() {
     // a key printed after everything it keys; on the page background between
     // two cards it read as annotating the chart below, which it does not
     // explain at all.
-    expect(find.text('done · target met'), findsOneWidget);
-    final legend = tester.getRect(find.text('done · target met'));
+    // Every day here is empty, so the key names that one state (and today).
+    expect(find.text('No entry'), findsOneWidget);
+    final legend = tester.getRect(find.text('No entry'));
     final cards = find.byType(DesignSystemSectionCard);
     final firstHabitCard = tester.getRect(cards.first);
     expect(legend.top, greaterThan(firstHabitCard.top));
@@ -745,20 +750,44 @@ void main() {
     );
   });
 
-  testWidgets("the first habit card's key names the outcome glyphs and the "
-      'verdict hues its squares can wear', (tester) async {
+  testWidgets("the first habit card's key lists only the colour-only states "
+      'and verdicts its squares actually wear', (tester) async {
+    final judged = today.subtract(const Duration(days: 1));
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         GoalProgressCard(
+          specVersionId: 'spec-1',
+          assessments: [
+            GoalAssessmentRecord(
+              id: 'r',
+              day: judged,
+              specVersionId: 'spec-1',
+              rating: DayVerdict.mixed,
+              createdAt: DateTime(2026, 8, 10, 22),
+              provenance: DayVerdictProvenance.ratedByUser,
+              dimensionRatings: const {'c-gym': DayVerdict.improving},
+            ),
+          ],
           progress: GoalProgressView(
             today: today,
             habits: [
               GoalHabitProgressView(
                 habitId: 'gym',
+                criterionId: 'c-gym',
                 name: 'Gym',
                 targetCount: 3,
                 days: [
-                  for (var offset = 6; offset >= 0; offset--) day(offset, 0),
+                  day(6, 1),
+                  day(5, 0),
+                  GoalProgressDay(
+                    day: today.subtract(const Duration(days: 4)),
+                    value: 0,
+                    habitCompletionType: HabitCompletionType.fail,
+                  ),
+                  day(3, 0),
+                  day(2, 0),
+                  day(1, 0),
+                  day(0, 0),
                 ],
                 successfulWeeks: 0,
               ),
@@ -767,46 +796,28 @@ void main() {
         ),
       ),
     );
-    for (final label in [
-      'Skip',
-      'Missed',
-      'judged Met',
-      'judged Improving',
-      'judged Mixed',
-      'judged Missed',
-    ]) {
-      expect(find.text(label), findsOneWidget, reason: label);
-    }
-    expect(find.textContaining('ages out'), findsOneWidget);
+    // Done and no-entry days are on the strip; a partial day is not.
+    expect(find.text('Done · target met'), findsOneWidget);
+    expect(find.text('No entry'), findsOneWidget);
+    expect(find.text('Done · target not met yet'), findsNothing);
+    // The miss carries its own cross; the key does not repeat it.
+    expect(find.text('Missed'), findsNothing);
+    expect(find.text('Skip'), findsNothing);
+    // The one verdict present, and none of the other three.
+    expect(find.text('Judged Improving'), findsOneWidget);
+    expect(find.text('Judged Met'), findsNothing);
+    expect(find.text('Today'), findsOneWidget);
   });
 
-  testWidgets('a goal without habit cards keys its verdict strip on the '
-      'week card, and a goal with them does not', (tester) async {
-    Future<void> pump(GoalProgressView progress) => tester.pumpWidget(
+  testWidgets('the week card carries no key — its cells answer hover', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         GoalThisWeekCard(
-          progress: progress,
+          progress: GoalProgressView(today: today),
           onReflectDay: (_) {},
         ),
-      ),
-    );
-    await pump(GoalProgressView(today: today));
-    expect(find.byType(DayMarkLegend), findsOneWidget);
-    expect(find.text('judged Improving'), findsOneWidget);
-    expect(find.textContaining('ages out'), findsNothing);
-
-    await pump(
-      GoalProgressView(
-        today: today,
-        habits: [
-          GoalHabitProgressView(
-            habitId: 'gym',
-            name: 'Gym',
-            targetCount: 3,
-            days: [for (var offset = 6; offset >= 0; offset--) day(offset, 0)],
-            successfulWeeks: 0,
-          ),
-        ],
       ),
     );
     expect(find.byType(DayMarkLegend), findsNothing);
@@ -949,10 +960,10 @@ void main() {
 
     expect(find.text('Daily steps'), findsOneWidget);
     expect(find.byType(FractionallySizedBox), findsNWidgets(7));
-    expect(find.text('done · target met'), findsNothing);
-    expect(find.text('done · target not met yet'), findsNothing);
-    expect(find.text('ages out tonight'), findsNothing);
-    expect(find.text('today'), findsNothing);
+    expect(find.text('Done · target met'), findsNothing);
+    expect(find.text('Done · target not met yet'), findsNothing);
+    expect(find.text('Ages out tonight'), findsNothing);
+    expect(find.text('Today'), findsNothing);
   });
 
   testWidgets('a point-sample health header quotes the latest reading, not '
@@ -4189,16 +4200,15 @@ void main() {
       ),
     );
 
-    // The shared day-cell key centers as card-level annotation.
+    // The day-cell key starts under the first square it explains: centred
+    // across a wide card it floated as a footer tied to nothing.
     final legendWrap = tester.widget<Wrap>(
-      find
-          .ancestor(
-            of: find.text('done · target met'),
-            matching: find.byType(Wrap),
-          )
-          .first,
+      find.descendant(
+        of: find.byType(DayMarkLegend),
+        matching: find.byType(Wrap),
+      ),
     );
-    expect(legendWrap.alignment, WrapAlignment.center);
+    expect(legendWrap.alignment, WrapAlignment.start);
     // So does the chart legend on the signal card…
     final chartLegend = tester.widget<DashboardChartLegend>(
       find.byType(DashboardChartLegend),

@@ -106,6 +106,41 @@ class GoalProgressCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final verdictsByHabit = [
+      for (final habit in progress.habits)
+        latestDimensionRatingsByDay(
+          assessments,
+          criterionId: habit.criterionId,
+          specVersionId: specVersionId,
+        ),
+    ];
+    // Only what the page's squares actually wear: a key to states that are
+    // not on any strip is noise, and the outcome glyphs name themselves.
+    final legend = DayMarkLegend(
+      // Today's square is keyed by its ring; its fill only counts when it
+      // is not the plain empty one, or the key would list a grey the reader
+      // cannot find on any other square.
+      states: {
+        for (final habit in progress.habits)
+          for (final day in habit.days)
+            if (!DateUtils.isSameDay(day.day, progress.today) ||
+                goalProgressDayMarkState(day) != DayMarkState.none)
+              goalProgressDayMarkState(day),
+      },
+      verdicts: {
+        for (var index = 0; index < progress.habits.length; index++)
+          for (final day in progress.habits[index].days)
+            ?verdictsByHabit[index][DateTime.utc(
+              day.day.year,
+              day.day.month,
+              day.day.day,
+            )],
+      },
+      showAgesOut: progress.habits.any((h) => h.oldestSuccessAgesOutTonight),
+      showToday: progress.habits.any(
+        (h) => h.days.any((d) => DateUtils.isSameDay(d.day, progress.today)),
+      ),
+    );
     final patternMetrics = progress.metrics.where(
       (metric) =>
           metric.kind == GoalDimensionKind.categoryTime &&
@@ -148,11 +183,11 @@ class GoalProgressCard extends StatelessWidget {
             onHabitOutcomeSelected: onHabitOutcomeSelected,
             showLegend: index == 0,
             scrollGroup: scrollGroup,
-            verdictsByDay: latestDimensionRatingsByDay(
-              assessments,
-              criterionId: progress.habits[index].criterionId,
-              specVersionId: specVersionId,
-            ),
+            verdictsByDay: verdictsByHabit[index],
+            // The first card's key is the GOAL's key: every square on the
+            // page, not only its own, or a state on the third card would
+            // go unkeyed.
+            legend: index == 0 ? legend : null,
           ),
           SizedBox(height: tokens.spacing.step3),
         ],
@@ -331,14 +366,6 @@ class GoalThisWeekCard extends StatelessWidget {
           // one dimension, so a leaf goal gets the strip without the tally.
           // Centered under the strip it closes, like every legend and summary
           // line on the cards below it.
-          // A goal without habit cards has no card to carry the day-cell
-          // key, yet its strip still wears the four verdict hues — so the
-          // key rides here, under the only squares such a goal draws. A goal
-          // WITH habit cards keys them once, inside its first habit card.
-          if (progress.habits.isEmpty) ...[
-            SizedBox(height: tokens.spacing.step3),
-            const DayMarkLegend(showAgesOut: false, showVerdicts: true),
-          ],
           if (progress.compositeRule != null) ...[
             SizedBox(height: tokens.spacing.step2),
             SizedBox(
@@ -493,7 +520,11 @@ class _HabitDimensionCard extends StatelessWidget {
     required this.showLegend,
     this.scrollGroup,
     this.verdictsByDay = const {},
+    this.legend,
   });
+
+  /// The goal's day-cell key, handed to the first habit card only.
+  final DayMarkLegend? legend;
 
   final LinkedScrollGroup? scrollGroup;
 
@@ -585,16 +616,12 @@ class _HabitDimensionCard extends StatelessWidget {
           // annotating the chart below — which it does not explain at all.
           // Once per goal, not once per habit: it is the same key.
           if (showLegend) ...[
-            // No rule above the key. The legend is already set apart by
-            // being centered under a leading-aligned stack, and it closes
-            // the card — so the line had nothing to divide it FROM except
-            // the card's own bottom edge, and read as the card being cut in
-            // two.
+            // No rule above the key. The key is set apart by its caption
+            // size and quiet ink, and it closes the card — so a line had
+            // nothing to divide it FROM except the card's own bottom edge,
+            // and read as the card being cut in two.
             SizedBox(height: tokens.spacing.step2),
-            // Everything a habit square on this page can wear: the three
-            // measured fills, the outcome glyphs, the ages-out and today
-            // rings, and the verdict a reflection stamps on a day.
-            const DayMarkLegend(showOutcomes: true, showVerdicts: true),
+            ?legend,
           ],
         ],
       ),
@@ -1764,15 +1791,7 @@ class _ProgressDayCell extends StatelessWidget {
     // A completed day is a partial success (lighter wash) while the habit's
     // own window target was not yet met as of that day; a null verdict from
     // older projections keeps the established full-strength rendering.
-    final dayState = missed
-        ? DayMarkState.missed
-        : skipped
-        ? DayMarkState.skipped
-        : !hit
-        ? DayMarkState.none
-        : (day.targetSatisfied ?? true)
-        ? DayMarkState.full
-        : DayMarkState.partial;
+    final dayState = goalProgressDayMarkState(day);
     // The square's own edge; the interactive slot around it is larger.
     final visualDimension = size;
     final glyphSize = math.min(IconSizes.xs, visualDimension * 0.6);
@@ -1866,13 +1885,29 @@ class _ProgressDayCell extends StatelessWidget {
         child: cell,
       );
     }
+    // The ring is drawn INSIDE the square, one step in from its edge, so it
+    // reads as a mark on the cell rather than a rumour straddling the fill's
+    // edge — and the cell keeps its footprint, which a read-only track sizes
+    // to exactly the square.
     final decoratedCell = !today || hit
         ? cell
-        : DsDashedBorder(
-            color: todayRingInk(tokens),
-            strokeWidth: BorderWidths.emphasis,
-            radius: dayCellRadius(tokens),
-            child: cell,
+        : Stack(
+            children: [
+              cell,
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: Padding(
+                    padding: EdgeInsets.all(tokens.spacing.step1),
+                    child: DsDashedBorder(
+                      color: todayRingInk(tokens),
+                      strokeWidth: BorderWidths.emphasis,
+                      radius: dayCellRadius(tokens),
+                      child: const SizedBox.expand(),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           );
     final locale = Localizations.localeOf(context).toLanguageTag();
     final date = DateFormat.yMMMd(locale).format(day.day);
@@ -2845,3 +2880,17 @@ class _CategoryPatternCard extends StatelessWidget {
     );
   }
 }
+
+/// The measured day-mark state a habit's [GoalProgressDay] renders as: a
+/// recorded miss or skip first, then whether the day was hit, then whether
+/// the habit's own window target was met as of that day — a completed day
+/// while the target was still building is the lighter wash; a null verdict
+/// from older projections keeps the established full-strength rendering.
+DayMarkState goalProgressDayMarkState(GoalProgressDay day) =>
+    switch (day.habitCompletionType) {
+      HabitCompletionType.fail => DayMarkState.missed,
+      HabitCompletionType.skip => DayMarkState.skipped,
+      _ when !day.hasValue => DayMarkState.none,
+      _ when day.targetSatisfied ?? true => DayMarkState.full,
+      _ => DayMarkState.partial,
+    };

@@ -7,6 +7,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/widgets/charts/habits/dashboard_habits_chart.dart';
+import 'package:lotti/widgets/day_indicators/day_mark_legend.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -186,72 +187,42 @@ void main() {
       },
     );
 
-    group('day-square key', () {
-      DashboardDefinition dashboard(String id, List<DashboardItem> items) =>
-          DashboardDefinition(
-            id: id,
-            name: 'Dashboard',
-            description: '',
-            items: items,
-            createdAt: DateTime(2024, 3, 15),
-            updatedAt: DateTime(2024, 3, 15),
-            vectorClock: null,
-            private: false,
-            version: '',
-            lastReviewed: DateTime(2024, 3, 15),
-            active: true,
-          );
-      Future<void> pump(
-        WidgetTester tester,
-        String id,
-        List<DashboardItem> items,
-      ) async {
-        when(() => mockCache.getHabitById(any())).thenReturn(null);
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            DashboardWidget(
-              dashboardId: id,
-              rangeStart: rangeStart,
-              rangeEnd: rangeEnd,
-            ),
-            overrides: [
-              dashboardByIdProvider(
-                id,
-              ).overrideWith((ref) => dashboard(id, items)),
-            ],
-          ),
-        );
-        await tester.pump();
-      }
-
-      testWidgets('a dashboard with habit items carries one key after them, '
-          'keyed for outcomes and verdicts', (tester) async {
-        await pump(tester, 'with-habits', const [
+    testWidgets('a dashboard with habit items carries no day-square key — '
+        "the squares' glyphs and tooltips carry the meaning", (tester) async {
+      when(() => mockCache.getHabitById(any())).thenReturn(null);
+      final dashboard = DashboardDefinition(
+        id: 'with-habits',
+        name: 'Dashboard',
+        description: '',
+        items: const [
           DashboardItem.habitChart(habitId: 'habit-1'),
           DashboardItem.habitChart(habitId: 'habit-2'),
-        ]);
-        final legend = find.byKey(const ValueKey('dashboard-habit-legend'));
-        expect(legend, findsOneWidget, reason: 'once, not per habit');
-        expect(find.text('judged Improving'), findsOneWidget);
-        expect(find.text('Skip'), findsOneWidget);
-        expect(find.textContaining('ages out'), findsNothing);
-        expect(
-          tester.getRect(legend).top,
-          greaterThanOrEqualTo(
-            tester.getRect(find.byType(DashboardHabitsChart).last).top,
+        ],
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        vectorClock: null,
+        private: false,
+        version: '',
+        lastReviewed: DateTime(2024, 3, 15),
+        active: true,
+      );
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          DashboardWidget(
+            dashboardId: 'with-habits',
+            rangeStart: rangeStart,
+            rangeEnd: rangeEnd,
           ),
-        );
-      });
-
-      testWidgets('a dashboard without habit items carries no key', (
-        tester,
-      ) async {
-        await pump(tester, 'no-habits', const []);
-        expect(
-          find.byKey(const ValueKey('dashboard-habit-legend')),
-          findsNothing,
-        );
-      });
+          overrides: [
+            dashboardByIdProvider(
+              'with-habits',
+            ).overrideWith((ref) => dashboard),
+          ],
+        ),
+      );
+      await tester.pump();
+      expect(find.byType(DayMarkLegend), findsNothing);
+      expect(find.textContaining('udged'), findsNothing);
     });
 
     testWidgets(

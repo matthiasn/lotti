@@ -55,7 +55,6 @@ import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_exposure_tracker.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/charts/habits/habit_completion_rate_chart.dart';
-import 'package:lotti/widgets/day_indicators/day_mark_legend.dart';
 import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -180,16 +179,7 @@ void main() {
     // the detail surface never displays a percentage.
     expect(find.text('At risk'), findsOneWidget);
     expect(find.text('Trending up'), findsOneWidget);
-    // The header's arrow — and, since this metric-only goal keys its verdict
-    // strip on the week card, the legend's "judged Improving" glyph.
-    expect(find.byIcon(LottiIcons.trendingUp), findsNWidgets(2));
-    expect(
-      find.descendant(
-        of: find.byType(DayMarkLegend),
-        matching: find.byIcon(LottiIcons.trendingUp),
-      ),
-      findsOneWidget,
-    );
+    expect(find.byIcon(LottiIcons.trendingUp), findsOneWidget);
     expect(find.textContaining('% of target'), findsNothing);
     // The metric card (the §4b Signals section) carries the dimension name
     // under its section heading; the old Watching list is gone.
