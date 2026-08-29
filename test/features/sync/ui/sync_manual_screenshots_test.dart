@@ -500,6 +500,7 @@ class _ManualSyncMaintenanceController extends SyncMaintenanceController {
 
 enum _SyncSurface {
   hub,
+  scanner,
   provisioned,
   addDevice,
   paired,
@@ -518,6 +519,7 @@ enum _SyncSurface {
 extension on _SyncSurface {
   String get id => switch (this) {
     _SyncSurface.hub => 'hub',
+    _SyncSurface.scanner => 'scanner',
     _SyncSurface.provisioned => 'provisioned',
     _SyncSurface.addDevice => 'add_device',
     _SyncSurface.paired => 'paired',
@@ -535,6 +537,7 @@ extension on _SyncSurface {
 
   String get route => switch (this) {
     _SyncSurface.hub => '/settings/sync',
+    _SyncSurface.scanner => '/settings/sync/provisioned',
     _SyncSurface.provisioned => '/settings/sync/provisioned',
     _SyncSurface.addDevice => '/settings/sync/provisioned',
     _SyncSurface.paired => '/settings/sync/provisioned',
@@ -558,6 +561,7 @@ extension on _SyncSurface {
 
   Widget mobilePage() => switch (this) {
     _SyncSurface.hub => const SettingsMobileBranchPage(branchId: 'sync'),
+    _SyncSurface.scanner => const ProvisionedSyncPage(),
     _SyncSurface.provisioned => const ProvisionedSyncPage(),
     _SyncSurface.addDevice => const ProvisionedSyncPage(),
     _SyncSurface.paired => const ProvisionedSyncPage(),
@@ -944,6 +948,9 @@ void main() {
     _SyncSurface surface,
   ) async {
     switch (surface) {
+      case _SyncSurface.scanner:
+        await tester.tap(find.byKey(const Key('sync_setup_cta')));
+        await settleFrames(tester, 10);
       case _SyncSurface.provisioned:
         await openBundleImport(tester);
         await settleFrames(tester, 8);
@@ -1039,6 +1046,13 @@ void main() {
       case _SyncSurface.hub:
         expect(find.text(messages.provisionedSyncTitle), findsWidgets);
         expect(find.text(messages.settingsMaintenanceTitle), findsWidgets);
+      case _SyncSurface.scanner:
+        expect(find.byType(BundleImportWidget), findsOneWidget);
+        expect(find.text(messages.syncPairScanTitle), findsOneWidget);
+        expect(
+          find.byKey(const Key('bundle_import_enter_manually')),
+          findsOneWidget,
+        );
       case _SyncSurface.provisioned:
         // A fresh CLI bundle establishes this account's first device. With no
         // peer available for comparison, it skips the check-code review and

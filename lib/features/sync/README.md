@@ -38,8 +38,9 @@ merge of two users' work.
   and it says plainly that it unlocks the account — it can also be copied as
   text, so it is treated as a credential throughout: let your own new device
   scan it, but never keep a screenshot or send it through chat or email. The
-  joining device opens straight into the camera, with manual entry as the
-  fallback, and finishes on a screen naming what is still outstanding: the
+  joining device opens straight into the camera on Android, iOS, macOS, and
+  Linux, with manual entry as the fallback (and the primary path on Windows),
+  then finishes on a screen naming what is still outstanding: the
   emoji ceremony, plus the settings and message-history pushes that only the
   other device can send. Both transfers stay beside the pairing code and remain
   disabled until that exact new device's Matrix verification ceremony succeeds

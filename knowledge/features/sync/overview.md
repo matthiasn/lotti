@@ -146,7 +146,8 @@ stateDiagram-v2
     Ready --> SendingMessages: Send message history (opens ReSyncModal)
   }
   state "New device" as New {
-    [*] --> Scanning: mobile opens the camera
+    [*] --> Scanning: Android, iOS, macOS, or Linux opens the camera
+    [*] --> Manual: Windows opens manual entry
     Scanning --> Manual: enter code manually
     Manual --> Scanning: scan with camera
     Scanning --> Decoded: handover barcode decodes
@@ -172,11 +173,17 @@ Five properties are deliberate:
   that sheet is open — it used to render unconditionally at the bottom of the
   status page on desktop. It is hidden until revealed, and the sheet states
   that the code unlocks the account. "Never ambient" is about *display*, not
-  secrecy: *Copy pairing code* puts it on the clipboard by design, because a
-  desktop joining a desktop has no camera. See the check-code bullet below for
-  what that means for the threat model.
+  secrecy: *Copy pairing code* puts it on the clipboard by design, both as a
+  fallback when camera access is unavailable and as the primary Windows path.
+  See the check-code bullet below for what that means for the threat model.
 - **Add device is not platform-gated.** Any paired device can present a code,
   so a surviving phone can onboard a replacement for a dead desktop.
+- **Camera scanning follows platform capability.** Android, iOS, and macOS use
+  `mobile_scanner`; Linux streams webcam frames through the standard camera API
+  backed by `camera_desktop` and decodes QR payloads in a worker isolate with
+  `zxing2`. Only one Linux frame is decoded at a time and intervening frames are
+  skipped to keep the UI responsive. Camera denial or absence leaves manual
+  entry available, and Windows stays manual-only until it gets a scanner.
 - **Both devices warn, and the warning touches the credential.** The inviting
   side keeps a lock-badged `DesignSystemInlineCallout` (the design-system
   component the sync-local callout was promoted into) glued directly under

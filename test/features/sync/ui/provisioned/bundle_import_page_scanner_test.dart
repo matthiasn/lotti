@@ -4,11 +4,13 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/misc.dart';
-import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test/flutter_test.dart'
+    hide isLinux, isMacOS, isWindows;
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/ui/provisioned/bundle_import_page.dart';
+import 'package:lotti/features/sync/ui/provisioned/desktop_qr_scanner.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/platform.dart';
@@ -46,6 +48,24 @@ void main() {
   });
 
   setUp(() {
+    final wasDesktop = isDesktop;
+    final wasMobile = isMobile;
+    final wasWindows = isWindows;
+    final wasLinux = isLinux;
+    final wasMacOS = isMacOS;
+    isDesktop = true;
+    isMobile = false;
+    isWindows = true;
+    isLinux = false;
+    isMacOS = false;
+    addTearDown(() {
+      isDesktop = wasDesktop;
+      isMobile = wasMobile;
+      isWindows = wasWindows;
+      isLinux = wasLinux;
+      isMacOS = wasMacOS;
+    });
+
     mockMatrixService = MockMatrixService();
     mockLoggingService = MockLoggingService();
     pageIndexNotifier = ValueNotifier(0);
@@ -84,6 +104,7 @@ void main() {
   });
 
   tearDown(() async {
+    desktopQrCameraFactoryOverride = null;
     pageIndexNotifier.dispose();
     await tearDownTestGetIt();
   });
@@ -141,18 +162,9 @@ void main() {
       );
     });
 
-    testWidgets('desktop stays on manual entry with no camera', (
+    testWidgets('Windows stays on manual entry until its scanner is added', (
       tester,
     ) async {
-      final wasDesktop = isDesktop;
-      final wasMobile = isMobile;
-      isDesktop = true;
-      isMobile = false;
-      addTearDown(() {
-        isDesktop = wasDesktop;
-        isMobile = wasMobile;
-      });
-
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           SingleChildScrollView(
@@ -166,6 +178,51 @@ void main() {
       expect(find.byIcon(LottiIcons.scanQr), findsNothing);
       expect(find.byType(MobileScanner), findsNothing);
       expect(find.byType(TextField), findsOneWidget);
+    });
+
+    testWidgets('macOS opens the existing mobile scanner immediately', (
+      tester,
+    ) async {
+      setUpMacOsScanner();
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          SingleChildScrollView(
+            child: BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+          ),
+          overrides: defaultOverrides(),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(MobileScanner), findsOneWidget);
+      expect(find.byType(TextField), findsNothing);
+      final context = tester.element(find.byType(BundleImportWidget));
+      expect(find.text(context.messages.syncPairScanTitle), findsOneWidget);
+    });
+
+    testWidgets('Linux opens the desktop camera scanner immediately', (
+      tester,
+    ) async {
+      final camera = _FakeDesktopCamera();
+      desktopQrCameraFactoryOverride = () async => camera;
+      isWindows = false;
+      isLinux = true;
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          SingleChildScrollView(
+            child: BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+          ),
+          overrides: defaultOverrides(),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(DesktopQrScanner), findsOneWidget);
+      expect(find.byType(MobileScanner), findsNothing);
+      expect(find.byType(TextField), findsNothing);
+      expect(camera.started, isTrue);
     });
 
     testWidgets('hides import form after successful import', (tester) async {
@@ -782,5 +839,20 @@ class _GatedStartScanner extends FakeMethodChannelMobileScanner {
     started = true;
     await gate.future;
     return super.start(startOptions);
+  }
+}
+
+class _FakeDesktopCamera implements DesktopQrCamera {
+  bool started = false;
+
+  @override
+  Widget buildPreview() => const ColoredBox(color: Colors.green);
+
+  @override
+  Future<void> dispose() async {}
+
+  @override
+  Future<void> start(ValueChanged<DesktopQrFrame> onFrame) async {
+    started = true;
   }
 }

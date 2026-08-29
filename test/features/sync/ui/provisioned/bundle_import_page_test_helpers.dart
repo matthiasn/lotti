@@ -1,7 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test/flutter_test.dart'
+    hide isLinux, isMacOS, isWindows;
 import 'package:lotti/utils/platform.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:mobile_scanner/src/method_channel/mobile_scanner_method_channel.dart';
@@ -61,14 +62,31 @@ class FakeMethodChannelMobileScanner extends MethodChannelMobileScanner {
 void setUpMobileScanner() {
   final wasDesktop = isDesktop;
   final wasMobile = isMobile;
+  final wasWindows = isWindows;
+  final wasLinux = isLinux;
+  final wasMacOS = isMacOS;
   isDesktop = false;
   isMobile = true;
+  isWindows = false;
+  isLinux = false;
+  isMacOS = false;
   addTearDown(() {
     isDesktop = wasDesktop;
     isMobile = wasMobile;
+    isWindows = wasWindows;
+    isLinux = wasLinux;
+    isMacOS = wasMacOS;
   });
 
   final fakePlatform = FakeMethodChannelMobileScanner();
   MobileScannerPlatform.instance = fakePlatform;
   addTearDown(fakePlatform.disposeControllers);
+}
+
+/// Pins the platform flags to macOS while reusing the mobile_scanner fake.
+void setUpMacOsScanner() {
+  setUpMobileScanner();
+  isDesktop = true;
+  isMobile = false;
+  isMacOS = true;
 }

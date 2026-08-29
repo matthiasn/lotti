@@ -14,6 +14,7 @@ import 'package:lotti/features/settings/state/manual_language_controller.dart';
 import 'package:lotti/features/sync/models/pairing_check_code.dart';
 import 'package:lotti/features/sync/state/bundle_decode_error.dart';
 import 'package:lotti/features/sync/state/provisioning_controller.dart';
+import 'package:lotti/features/sync/ui/provisioned/desktop_qr_scanner.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/pairing_check_code_view.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_well.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_wizard_progress_track.dart';
@@ -57,10 +58,13 @@ class _BundleImportWidgetState extends ConsumerState<BundleImportWidget> {
   String? _errorText;
   SyncProvisioningBundle? _decodedBundle;
 
-  /// Mobile opens straight into the camera: scanning is the path a new phone
-  /// is actually here for, and a base64 field is a poor first impression.
-  /// Desktop has no usable camera, so it starts on the manual field.
-  late bool _manualEntry = isDesktop;
+  /// Every platform with a supported camera backend opens straight into the
+  /// scanner. Windows stays on manual entry until its camera path is added.
+  late bool _manualEntry = !_scannerSupported;
+
+  bool get _scannerSupported => isMobile || isMacOS || isLinux;
+
+  bool get _usesLinuxScanner => !isMobile && isLinux;
 
   /// Payloads the user explicitly declined. The rejected QR is usually still
   /// on the other device's screen, so without this the very next camera frame
@@ -167,7 +171,10 @@ class _BundleImportWidgetState extends ConsumerState<BundleImportWidget> {
   }
 
   void _handleBarcode(BarcodeCapture barcodes) {
-    final code = barcodes.barcodes.firstOrNull?.rawValue;
+    _handleScannedCode(barcodes.barcodes.firstOrNull?.rawValue);
+  }
+
+  void _handleScannedCode(String? code) {
     if (code == null || code.isEmpty || code == _lastScannedCode) return;
     if (_rejectedCodes.contains(code)) {
       // Silently ignoring it left the camera looking alive and permanently
@@ -243,7 +250,7 @@ class _BundleImportWidgetState extends ConsumerState<BundleImportWidget> {
           _lastScannedCode = null;
           _errorText = null;
           _textController.clear();
-          if (isDesktop) _manualEntry = true;
+          _manualEntry = !_scannerSupported;
         });
       }
     });
@@ -296,7 +303,7 @@ class _BundleImportWidgetState extends ConsumerState<BundleImportWidget> {
                         onImport: () =>
                             _importBundle(_textController.text.trim()),
                         onPaste: _pasteFromClipboard,
-                        onUseCamera: isMobile
+                        onUseCamera: _scannerSupported
                             ? () => _setManualEntry(manual: false)
                             : null,
                       )
@@ -305,6 +312,8 @@ class _BundleImportWidgetState extends ConsumerState<BundleImportWidget> {
                         key: ValueKey('scanner_$_scannerGeneration'),
                         controller: _ensureScannerController(),
                         onDetect: _handleBarcode,
+                        onDesktopDetect: _handleScannedCode,
+                        usesLinuxScanner: _usesLinuxScanner,
                         errorText: _errorText,
                         onEnterManually: () => _setManualEntry(manual: true),
                         onRetryCamera: _restartScanner,
@@ -456,15 +465,19 @@ class _ScannerView extends StatefulWidget {
   const _ScannerView({
     required this.controller,
     required this.onDetect,
+    required this.onDesktopDetect,
     required this.onEnterManually,
     required this.onRetryCamera,
+    required this.usesLinuxScanner,
     super.key,
     this.errorText,
   });
 
   final MobileScannerController controller;
   final void Function(BarcodeCapture) onDetect;
+  final ValueChanged<String> onDesktopDetect;
   final VoidCallback onEnterManually;
+  final bool usesLinuxScanner;
 
   /// Rebuilds the scanner after the user grants permission out of band —
   /// without it, "Allow it in system settings" is an instruction with no way
@@ -481,7 +494,7 @@ class _ScannerViewState extends State<_ScannerView> {
   void initState() {
     super.initState();
     // Nothing to start when the preview is a stand-in.
-    if (scannerPreviewOverride == null) {
+    if (scannerPreviewOverride == null && !widget.usesLinuxScanner) {
       // After the first frame, not during initState: `MobileScanner` is a
       // child, so it has not mounted or called `attach()` yet. Starting here
       // would leave the controller waiting on its attachment timeout instead
@@ -495,7 +508,7 @@ class _ScannerViewState extends State<_ScannerView> {
   @override
   void dispose() {
     // Best effort: the controller belongs to the page, which disposes it.
-    if (scannerPreviewOverride == null) {
+    if (scannerPreviewOverride == null && !widget.usesLinuxScanner) {
       unawaited(widget.controller.stop().catchError((Object _) {}));
     }
     super.dispose();
@@ -554,15 +567,24 @@ class _ScannerViewState extends State<_ScannerView> {
                     fit: StackFit.expand,
                     children: [
                       scannerPreviewOverride?.call(context, side) ??
-                          MobileScanner(
-                            controller: widget.controller,
-                            onDetect: widget.onDetect,
-                            errorBuilder: (context, error) =>
-                                _CameraUnavailable(
-                                  message: messages.syncPairCameraDenied,
-                                  onRetry: widget.onRetryCamera,
-                                ),
-                          ),
+                          (widget.usesLinuxScanner
+                              ? DesktopQrScanner(
+                                  onDetect: widget.onDesktopDetect,
+                                  unavailableBuilder: (context) =>
+                                      _CameraUnavailable(
+                                        message: messages.syncPairCameraDenied,
+                                        onRetry: widget.onRetryCamera,
+                                      ),
+                                )
+                              : MobileScanner(
+                                  controller: widget.controller,
+                                  onDetect: widget.onDetect,
+                                  errorBuilder: (context, error) =>
+                                      _CameraUnavailable(
+                                        message: messages.syncPairCameraDenied,
+                                        onRetry: widget.onRetryCamera,
+                                      ),
+                                )),
                       // The pairing moment's frame: accent corner brackets
                       // marking where the code should land. Decorative and
                       // input-transparent.

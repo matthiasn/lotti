@@ -23,6 +23,8 @@ dependencies:
   audio_decoder: ^0.8.1
   beamer: ^1.5.2
   cached_network_image: ^3.2.0
+  camera: ^0.11.3
+  camera_desktop: ^1.2.1
   clock: ^1.1.1
   collection: ^1.18.0
   connectivity_plus: ^7.0.0
@@ -126,6 +128,7 @@ dependencies:
   widgetbook: ^3.7.1
   window_manager: ^0.5.0
   wolt_modal_sheet: ^0.11.0
+  zxing2: ^0.2.4
 
 dependency_overrides:
   # json_serializable >=6.13.2 requires analyzer >=10, while
