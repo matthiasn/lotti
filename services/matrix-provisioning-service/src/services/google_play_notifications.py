@@ -16,7 +16,11 @@ from ..core.exceptions import (
     GooglePlayVerificationException,
     PubSubAuthenticationException,
 )
-from ..core.subscriptions import RealtimeDeveloperNotification, StoredSubscription
+from ..core.subscriptions import (
+    RealtimeDeveloperNotification,
+    RealtimeDeveloperTestNotification,
+    StoredSubscription,
+)
 from .subscription_access_service import SubscriptionAccessService
 from .subscription_repository import SubscriptionRepository
 from .subscription_service import SubscriptionService
@@ -63,23 +67,41 @@ class PubSubAuthenticator:
         return claims
 
 
-def parse_rtdn_envelope(envelope: dict[str, Any]) -> RealtimeDeveloperNotification:
+def parse_rtdn_envelope(
+    envelope: dict[str, Any],
+) -> RealtimeDeveloperNotification | RealtimeDeveloperTestNotification:
     """Decode a Pub/Sub envelope without trusting its lifecycle state."""
     try:
         encoded = envelope["message"]["data"]
         raw = base64.b64decode(encoded, validate=True)
         payload = json.loads(raw)
-        notification = payload["subscriptionNotification"]
+        if not isinstance(payload, dict):
+            raise TypeError("RTDN payload must be an object")
         event_time = datetime.fromtimestamp(
             int(payload["eventTimeMillis"]) / 1000,
             tz=timezone.utc,
         )
-        result = RealtimeDeveloperNotification(
-            package_name=payload["packageName"],
-            purchase_token=notification["purchaseToken"],
-            notification_type=int(notification["notificationType"]),
-            event_time=event_time,
-        )
+        package_name = payload["packageName"]
+        is_test = "testNotification" in payload
+        has_subscription = "subscriptionNotification" in payload
+        if is_test == has_subscription:
+            raise ValueError("RTDN must contain exactly one notification")
+        if is_test:
+            test_notification = payload["testNotification"]
+            if not isinstance(test_notification, dict) or not test_notification.get("version"):
+                raise ValueError("Malformed test notification")
+            result = RealtimeDeveloperTestNotification(
+                package_name=package_name,
+                event_time=event_time,
+            )
+        else:
+            notification = payload["subscriptionNotification"]
+            result = RealtimeDeveloperNotification(
+                package_name=package_name,
+                purchase_token=notification["purchaseToken"],
+                notification_type=int(notification["notificationType"]),
+                event_time=event_time,
+            )
     except (
         KeyError,
         TypeError,
@@ -89,7 +111,9 @@ def parse_rtdn_envelope(envelope: dict[str, Any]) -> RealtimeDeveloperNotificati
         json.JSONDecodeError,
     ) as exc:
         raise GooglePlayVerificationException("Malformed RTDN envelope") from exc
-    if not result.package_name or not result.purchase_token:
+    if not result.package_name or (
+        isinstance(result, RealtimeDeveloperNotification) and not result.purchase_token
+    ):
         raise GooglePlayVerificationException("Malformed RTDN envelope")
     return result
 
@@ -118,12 +142,14 @@ class GooglePlayNotificationService:
         *,
         authorization: str,
         now: datetime,
-    ) -> StoredSubscription:
-        """Authenticate, decode, re-query Google, then converge Matrix access."""
+    ) -> StoredSubscription | None:
+        """Authenticate, acknowledge tests, or re-query and converge access."""
         await self._authenticator.authenticate(authorization)
         notification = parse_rtdn_envelope(envelope)
         if notification.package_name != self._package_name:
             raise GooglePlayVerificationException("RTDN package name does not match")
+        if isinstance(notification, RealtimeDeveloperTestNotification):
+            return None
         subscription = await self._subscription_service.refresh_known_purchase(
             notification.purchase_token,
             now=now,

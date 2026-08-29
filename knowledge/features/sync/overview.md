@@ -5,7 +5,7 @@ description: Single-user multi-device replication over end-to-end encrypted Matr
 resource: ../../../lib/features/sync
 tags: [sync, matrix, replication, outbox, queue]
 status: stable
-generated: { by: codex/gpt-5, at: 2026-08-29T22:34:56Z }
+generated: { by: codex/gpt-5, at: 2026-08-29T22:48:56Z }
 stale_after: 2026-11-03
 sources:
   - id: sync-src
@@ -148,6 +148,8 @@ cannot forge the quota identity through `X-Forwarded-For`.
 Play RTDN is only a refresh signal. An authenticated Pub/Sub push resolves an
 already-known token and causes a new `purchases.subscriptionsv2.get`; a periodic
 reconciler performs the same authoritative refresh when notifications are lost.
+Authenticated Play `testNotification` probes are acknowledged without looking
+up a purchase token or mutating subscription state.
 The Play-configured three-day grace deadline arrives as the line item's extended
 `expiryTime`. Lotti uses that timestamp directly and never adds another local
 grace window. Loss of entitlement suspends the Matrix user reversibly, while a
@@ -186,10 +188,13 @@ startup delay. Rotation verification and reaping first acquire mutually exclusiv
 tokenized database leases; failed or crashed workers release or age out their
 lease, and a late worker cannot clear a newer owner's lease. Failed reaper
 attempts receive a separate bounded retry time so one broken account cannot
-starve later claims; this never extends the escrow TTL. A linked replacement
-purchase reauthorizes still-pending escrow with its verified claim secret only
-while that purchase token remains current. A later verified payment may detach
-an abandoned, revoked claim and provision a
+starve later claims; this never extends the escrow TTL. Authenticated delivery
+retries acquire the same mutually exclusive operation lease before claim-secret
+verification and complete the delivery stamp only while retaining ownership,
+so the reaper cannot revoke the account behind an in-flight response. A linked
+replacement purchase reauthorizes still-pending escrow with its verified claim
+secret only while that purchase token remains current. A later verified payment
+may detach an abandoned, revoked claim and provision a
 fresh Matrix account, retrying with a suffixed localpart if the deterministic
 name survived an earlier rollback. A rotation confirmation is idempotent only
 when the claim has a real `confirmed_at`; a late request cannot turn a

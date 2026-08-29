@@ -220,6 +220,14 @@ class RealtimeDeveloperNotification:
 
 
 @dataclass(frozen=True)
+class RealtimeDeveloperTestNotification:
+    """Authenticated Google Play Pub/Sub connectivity test signal."""
+
+    package_name: str
+    event_time: datetime
+
+
+@dataclass(frozen=True)
 class NormalizedEntitlement:
     """Result of interpreting an authoritative Google subscription snapshot."""
 

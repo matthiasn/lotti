@@ -60,6 +60,23 @@ def envelope(**overrides):
     }
 
 
+def play_test_envelope(**overrides):
+    payload = {
+        "version": "1.0",
+        "packageName": "com.matthiasn.lotti",
+        "eventTimeMillis": str(int(NOW.timestamp() * 1000)),
+        "testNotification": {"version": "1.0"},
+    }
+    payload.update(overrides)
+    return {
+        "message": {
+            "messageId": "test-message-one",
+            "data": base64.b64encode(json.dumps(payload).encode()).decode(),
+        },
+        "subscription": "projects/project/subscriptions/play-rtdn",
+    }
+
+
 async def test_pubsub_authenticator_passes_exact_token_and_audience_to_google():
     calls = []
 
@@ -144,9 +161,12 @@ def test_default_google_token_verifier_passes_exact_audience(monkeypatch):
         {"message": {}},
         {"message": {"data": "not base64!!"}},
         {"message": {"data": base64.b64encode(b"not json").decode()}},
+        {"message": {"data": base64.b64encode(b"[]").decode()}},
         envelope(subscriptionNotification={}),
         envelope(packageName=""),
         envelope(subscriptionNotification={"notificationType": 6, "purchaseToken": ""}),
+        play_test_envelope(testNotification={}),
+        envelope(testNotification={"version": "1.0"}),
     ],
 )
 def test_rtdn_parser_rejects_malformed_envelope(invalid):
@@ -219,6 +239,32 @@ async def test_notification_requeries_google_then_enforces_returned_state():
     assert repository.calls == ["entitlement-one"]
 
 
+async def test_authenticated_test_notification_is_acknowledged_without_refresh():
+    authenticator = FakeAuthenticator()
+    subscriptions = FakeSubscriptionService()
+    access = FakeAccessService()
+    repository = FakeRepository()
+    service = GooglePlayNotificationService(
+        authenticator,
+        subscriptions,
+        access,
+        repository,
+        package_name="com.matthiasn.lotti",
+    )
+
+    result = await service.handle(
+        play_test_envelope(),
+        authorization="Bearer signed-jwt",
+        now=NOW,
+    )
+
+    assert result is None
+    assert authenticator.headers == ["Bearer signed-jwt"]
+    assert subscriptions.calls == []
+    assert access.calls == []
+    assert repository.calls == []
+
+
 async def test_wrong_package_never_requeries_purchase_token():
     subscriptions = FakeSubscriptionService()
     service = GooglePlayNotificationService(
@@ -232,6 +278,26 @@ async def test_wrong_package_never_requeries_purchase_token():
     with pytest.raises(GooglePlayVerificationException, match="package"):
         await service.handle(
             envelope(packageName="attacker.package"),
+            authorization="Bearer signed-jwt",
+            now=NOW,
+        )
+
+    assert subscriptions.calls == []
+
+
+async def test_wrong_package_test_notification_is_not_acknowledged():
+    subscriptions = FakeSubscriptionService()
+    service = GooglePlayNotificationService(
+        FakeAuthenticator(),
+        subscriptions,
+        FakeAccessService(),
+        FakeRepository(),
+        package_name="com.matthiasn.lotti",
+    )
+
+    with pytest.raises(GooglePlayVerificationException, match="package"):
+        await service.handle(
+            play_test_envelope(packageName="attacker.package"),
             authorization="Bearer signed-jwt",
             now=NOW,
         )

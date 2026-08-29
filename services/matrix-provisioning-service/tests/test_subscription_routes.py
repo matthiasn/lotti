@@ -373,7 +373,20 @@ def test_purchase_verification_fails_closed_when_persisted_subscription_is_missi
     assert services[SERVICE_SUBSCRIPTION_ACCESS_SERVICE].calls == []
 
 
-def test_delivery_retry_authenticates_entitlement_without_replaying_purchase(client, services):
+def test_delivery_retry_authenticates_entitlement_without_replaying_purchase(
+    client,
+    services,
+    monkeypatch,
+):
+    route_times = iter((NOW, NOW + timedelta(seconds=1)))
+
+    class FakeDatetime:
+        @classmethod
+        def now(cls, _timezone):
+            return next(route_times)
+
+    monkeypatch.setattr("src.api.routes.datetime", FakeDatetime)
+
     response = client.post(
         "/api/v1/client/subscriptions/bundle-claims/deliver",
         headers={"Authorization": f"Bearer {AUTH_SECRET}"},
@@ -388,7 +401,10 @@ def test_delivery_retry_authenticates_entitlement_without_replaying_purchase(cli
     subscription = services[SERVICE_SUBSCRIPTION_REPOSITORY].subscription
     assert len(access.calls) == 1
     assert access.calls[0][0] is subscription
-    assert services[SERVICE_PAID_BUNDLE_SERVICE].delivery_calls[0]["claim_secret"] == CLAIM_SECRET
+    assert access.calls[0][1] == NOW
+    delivery_call = services[SERVICE_PAID_BUNDLE_SERVICE].delivery_calls[0]
+    assert delivery_call["claim_secret"] == CLAIM_SECRET
+    assert delivery_call["now"] == NOW + timedelta(seconds=1)
     assert services[SERVICE_SUBSCRIPTION_REPOSITORY].lookups == ["entitlement-one"]
 
 

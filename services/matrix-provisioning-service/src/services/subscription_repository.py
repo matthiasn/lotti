@@ -1180,6 +1180,7 @@ class SubscriptionRepository(ProvisioningRepository):
         now: datetime,
         stale_before: datetime,
         require_expired: bool,
+        require_unexpired: bool,
     ) -> BundleClaim | None:
         conn = self._connect()
         try:
@@ -1194,6 +1195,9 @@ class SubscriptionRepository(ProvisioningRepository):
                 conn.rollback()
                 return None
             if require_expired and _parse(row["expires_at"]) > now:
+                conn.rollback()
+                return None
+            if require_unexpired and _parse(row["expires_at"]) <= now:
                 conn.rollback()
                 return None
             cursor = conn.execute(
@@ -1241,6 +1245,7 @@ class SubscriptionRepository(ProvisioningRepository):
             now=now,
             stale_before=stale_before,
             require_expired=False,
+            require_unexpired=True,
         )
         if claim is None:
             raise BundleClaimConflictException("Bundle claim is already being processed")
@@ -1263,8 +1268,34 @@ class SubscriptionRepository(ProvisioningRepository):
             now=now,
             stale_before=stale_before,
             require_expired=True,
+            require_unexpired=False,
         )
         return claim is not None
+
+    async def reserve_bundle_delivery(
+        self,
+        bundle_id: str,
+        *,
+        operation_token: str,
+        now: datetime,
+        stale_before: datetime,
+    ) -> BundleClaim:
+        """Lease fresh escrow while one authenticated response is assembled."""
+        claim = await asyncio.to_thread(
+            self._reserve_bundle_claim_operation_sync,
+            bundle_id,
+            operation_token=operation_token,
+            operation_kind="delivery",
+            now=now,
+            stale_before=stale_before,
+            require_expired=False,
+            require_unexpired=True,
+        )
+        if claim is None:
+            raise BundleClaimConflictException(
+                "Bundle claim is expired, terminal, or already being processed"
+            )
+        return claim
 
     def _release_bundle_claim_operation_sync(
         self,
@@ -1350,27 +1381,51 @@ class SubscriptionRepository(ProvisioningRepository):
             claim_secret_hash,
         )
 
-    def _mark_bundle_delivered_sync(self, bundle_id: str, now: datetime) -> BundleClaim:
+    def _complete_bundle_delivery_sync(
+        self,
+        bundle_id: str,
+        operation_token: str,
+        now: datetime,
+    ) -> BundleClaim:
         conn = self._connect()
         try:
-            conn.execute(
+            conn.execute("BEGIN IMMEDIATE")
+            cursor = conn.execute(
                 "UPDATE bundle_claims SET first_delivered_at = "
-                "COALESCE(first_delivered_at, ?) WHERE bundle_id = ?",
-                (_iso(now), bundle_id),
+                "COALESCE(first_delivered_at, ?), operation_token = NULL, "
+                "operation_kind = NULL, operation_started_at = NULL "
+                "WHERE bundle_id = ? AND operation_kind = 'delivery' "
+                "AND operation_token = ? AND destroyed_at IS NULL "
+                "AND confirmed_at IS NULL AND encrypted_bundle IS NOT NULL",
+                (_iso(now), bundle_id, operation_token),
             )
+            if cursor.rowcount != 1:
+                raise BundleClaimConflictException("Bundle delivery lease was lost")
             conn.commit()
             row = conn.execute(
                 "SELECT * FROM bundle_claims WHERE bundle_id = ?", (bundle_id,)
             ).fetchone()
-            if row is None:
-                raise BundleClaimConflictException("Unknown bundle claim")
             return self._row_to_bundle_claim(row)
+        except Exception:
+            conn.rollback()
+            raise
         finally:
             conn.close()
 
-    async def mark_bundle_delivered(self, bundle_id: str, *, now: datetime) -> BundleClaim:
-        """Stamp the first successful delivery without moving it on retries."""
-        return await asyncio.to_thread(self._mark_bundle_delivered_sync, bundle_id, now)
+    async def complete_bundle_delivery(
+        self,
+        bundle_id: str,
+        *,
+        operation_token: str,
+        now: datetime,
+    ) -> BundleClaim:
+        """Stamp delivery and release only the caller's escrow lease."""
+        return await asyncio.to_thread(
+            self._complete_bundle_delivery_sync,
+            bundle_id,
+            operation_token,
+            now,
+        )
 
     def _destroy_bundle_claim_sync(self, bundle_id: str, now: datetime) -> BundleClaim:
         conn = self._connect()

@@ -123,14 +123,19 @@ Matrix call, paid provisioning also takes a token-owned SQLite reservation by
 entitlement. Separate service objects and processes therefore wait for or reuse
 one durable claim instead of provisioning a suffixed orphan account. A dead
 owner ages out after five minutes; an HTTP request waits only a bounded interval
-and then asks the client to retry.
+and then asks the client to retry. Every authenticated escrow response also
+takes a fresh claim lease before secret verification. Delivery completion owns
+that lease atomically, so expiry cleanup cannot revoke the account or destroy
+ciphertext while credentials are being assembled.
 
 RTDN is a wake-up signal, never entitlement evidence. The push route verifies
 Google's OIDC token, resolves only an already-bound purchase token, re-queries
-Google, and then converges Matrix access. A periodic reconciler covers missed
-or delayed notifications. When Play reports an access-granting state the Matrix
-account is unsuspended; otherwise it is suspended reversibly. The service uses
-Google's authoritative line-item `expiryTime` as the exact boundary. Configure
+Google, and then converges Matrix access. Authenticated Play
+`testNotification` connectivity probes are acknowledged without attempting a
+subscription refresh. A periodic reconciler covers missed or delayed
+notifications. When Play reports an access-granting state the Matrix account is
+unsuspended; otherwise it is suspended reversibly. The service uses Google's
+authoritative line-item `expiryTime` as the exact boundary. Configure
 the Play Console grace period to **three days**; the service does not add a
 second local grace interval. Enforcement is serialized per entitlement and
 reloads its current token while holding that stripe, preventing a retired token

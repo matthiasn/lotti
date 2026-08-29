@@ -231,7 +231,7 @@ async def deliver_paid_bundle(
         delivery = await container.get_paid_bundle_service().deliver_existing_claim(
             entitlement_id=request.entitlement_id,
             claim_secret=request.claim_secret,
-            now=now,
+            now=datetime.now(timezone.utc),
         )
         return PaidBundleResponse(
             **delivery.__dict__,

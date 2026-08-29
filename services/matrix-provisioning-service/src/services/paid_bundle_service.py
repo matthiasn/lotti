@@ -307,13 +307,12 @@ class PaidBundleService:
             claim = await self._repository.get_bundle_claim_for_entitlement(entitlement_id)
             if claim is None:
                 raise BundleClaimConflictException("No bundle claim exists")
-            await self._authorize_claim_secret(claim, claim_secret)
-            subscription = await self._repository.get_current_subscription(entitlement_id)
-            if subscription is None or not _grants_access(subscription, now=now):
-                raise GooglePlayVerificationException(
-                    "Subscription does not currently grant SYNC access"
-                )
-            return await self._deliver_authorized(claim, claim_secret=claim_secret, now=now)
+            return await self._deliver_existing(
+                claim,
+                claim_secret=claim_secret,
+                now=now,
+                entitlement_id=entitlement_id,
+            )
 
     async def _deliver_existing(
         self,
@@ -321,9 +320,38 @@ class PaidBundleService:
         *,
         claim_secret: str,
         now: datetime,
+        entitlement_id: str | None = None,
     ) -> PaidBundleDelivery:
-        await self._authorize_claim_secret(claim, claim_secret)
-        return await self._deliver_authorized(claim, claim_secret=claim_secret, now=now)
+        operation_token = str(uuid.uuid4())
+        reserved = await self._repository.reserve_bundle_delivery(
+            claim.bundle_id,
+            operation_token=operation_token,
+            now=now,
+            stale_before=now - self._provisioning_operation_timeout,
+        )
+        completed = False
+        try:
+            await self._authorize_claim_secret(reserved, claim_secret)
+            if entitlement_id is not None:
+                subscription = await self._repository.get_current_subscription(entitlement_id)
+                if subscription is None or not _grants_access(subscription, now=now):
+                    raise GooglePlayVerificationException(
+                        "Subscription does not currently grant SYNC access"
+                    )
+            delivery = await self._deliver_authorized(
+                reserved,
+                claim_secret=claim_secret,
+                operation_token=operation_token,
+                now=now,
+            )
+            completed = True
+            return delivery
+        finally:
+            if not completed:
+                await self._repository.release_bundle_claim_operation(
+                    claim.bundle_id,
+                    operation_token=operation_token,
+                )
 
     async def _authorize_claim_secret(self, claim: BundleClaim, claim_secret: str) -> None:
         if not await asyncio.to_thread(
@@ -338,6 +366,7 @@ class PaidBundleService:
         claim: BundleClaim,
         *,
         claim_secret: str,
+        operation_token: str,
         now: datetime,
     ) -> PaidBundleDelivery:
         if now >= claim.expires_at or claim.encrypted_bundle is None:
@@ -348,12 +377,16 @@ class PaidBundleService:
             record_id=claim.bundle_id,
             key_id=claim.encryption_key_id,
         ).decode()
-        await self._repository.mark_bundle_delivered(claim.bundle_id, now=now)
+        delivered = await self._repository.complete_bundle_delivery(
+            claim.bundle_id,
+            operation_token=operation_token,
+            now=now,
+        )
         return PaidBundleDelivery(
-            bundle_id=claim.bundle_id,
+            bundle_id=delivered.bundle_id,
             bundle=bundle,
-            expires_at=claim.expires_at,
-            rotation_challenge=rotation_challenge(claim_secret, claim.bundle_id),
+            expires_at=delivered.expires_at,
+            rotation_challenge=rotation_challenge(claim_secret, delivered.bundle_id),
         )
 
     def _lock_index(self, entitlement_id: str) -> int:

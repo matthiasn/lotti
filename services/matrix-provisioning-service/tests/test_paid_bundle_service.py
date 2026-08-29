@@ -22,6 +22,7 @@ from src.core.subscriptions import (
     VerifiedPurchaseResult,
     VerifiedSubscription,
 )
+from src.services.bundle_claim_reaper import BundleClaimReaper
 from src.services.paid_bundle_service import PaidBundleService
 from src.services.secret_cipher import SecretCipher
 from src.services.subscription_repository import SubscriptionRepository
@@ -74,6 +75,14 @@ class FakeGooglePlayClient:
         if self.failure:
             raise self.failure
         self.acknowledgements.append((package_name, product_id, purchase_token))
+
+
+class FakeReaperAdmin:
+    def __init__(self):
+        self.deactivated = []
+
+    async def deactivate_user(self, user_mxid):
+        self.deactivated.append(user_mxid)
 
 
 @pytest.fixture
@@ -634,6 +643,52 @@ async def test_delivery_retry_rejects_expired_claim(service, repository):
         )
 
 
+async def test_delivery_retry_lease_blocks_reaper_during_secret_verification(
+    service,
+    repository,
+    monkeypatch,
+):
+    verified = await verified_purchase(repository)
+    first = await service.provision_or_deliver(verified, submission(), now=NOW)
+    claim = await repository.get_bundle_claim_for_entitlement("entitlement-one")
+    authorization_started = asyncio.Event()
+    release_authorization = asyncio.Event()
+    authorize = service._authorize_claim_secret
+
+    async def blocking_authorize(current_claim, claim_secret):
+        authorization_started.set()
+        await release_authorization.wait()
+        await authorize(current_claim, claim_secret)
+
+    monkeypatch.setattr(service, "_authorize_claim_secret", blocking_authorize)
+    delivery = asyncio.create_task(
+        service.deliver_existing_claim(
+            entitlement_id="entitlement-one",
+            claim_secret="claim-secret",
+            now=claim.expires_at - timedelta(seconds=1),
+        )
+    )
+    await authorization_started.wait()
+
+    reaper_admin = FakeReaperAdmin()
+    reaper = BundleClaimReaper(
+        repository,
+        reaper_admin,
+        now_provider=lambda: claim.expires_at,
+    )
+    reaped = await reaper.reap_once()
+    release_authorization.set()
+    retried = await delivery
+
+    assert reaped == 0
+    assert reaper_admin.deactivated == []
+    assert retried.bundle_id == first.bundle_id
+    assert retried.bundle == first.bundle
+    assert (
+        await repository.get_bundle_claim_for_entitlement("entitlement-one")
+    ).encrypted_bundle is not None
+
+
 async def test_delivery_retry_rejects_wrong_claim_secret(service, repository):
     verified = await verified_purchase(repository)
     await service.provision_or_deliver(verified, submission(), now=NOW)
@@ -642,6 +697,28 @@ async def test_delivery_retry_rejects_wrong_claim_secret(service, repository):
         await service.deliver_existing_claim(
             entitlement_id="entitlement-one",
             claim_secret="attacker-secret",
+            now=NOW + timedelta(minutes=1),
+        )
+
+
+async def test_delivery_retry_rejects_reserved_claim_without_ciphertext(
+    service,
+    repository,
+    monkeypatch,
+):
+    verified = await verified_purchase(repository)
+    await service.provision_or_deliver(verified, submission(), now=NOW)
+    claim = await repository.get_bundle_claim_for_entitlement("entitlement-one")
+
+    async def missing_ciphertext(*_args, **_kwargs):
+        return replace(claim, encrypted_bundle=None)
+
+    monkeypatch.setattr(repository, "reserve_bundle_delivery", missing_ciphertext)
+
+    with pytest.raises(BundleClaimConflictException, match="already destroyed"):
+        await service.deliver_existing_claim(
+            entitlement_id="entitlement-one",
+            claim_secret="claim-secret",
             now=NOW + timedelta(minutes=1),
         )
 

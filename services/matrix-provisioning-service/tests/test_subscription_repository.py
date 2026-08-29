@@ -825,15 +825,31 @@ async def test_bundle_delivery_timestamp_is_idempotent(subscription_repository):
     )
     _, claim = await store_paid_bundle(subscription_repository, "paid-token")
 
-    first = await subscription_repository.mark_bundle_delivered(
+    first_lease = await subscription_repository.reserve_bundle_delivery(
         claim.bundle_id,
+        operation_token="delivery-one",
+        now=NOW + timedelta(minutes=1),
+        stale_before=NOW - timedelta(minutes=4),
+    )
+    first = await subscription_repository.complete_bundle_delivery(
+        claim.bundle_id,
+        operation_token="delivery-one",
         now=NOW + timedelta(minutes=1),
     )
-    retry = await subscription_repository.mark_bundle_delivered(
+    retry_lease = await subscription_repository.reserve_bundle_delivery(
         claim.bundle_id,
+        operation_token="delivery-two",
+        now=NOW + timedelta(minutes=2),
+        stale_before=NOW - timedelta(minutes=3),
+    )
+    retry = await subscription_repository.complete_bundle_delivery(
+        claim.bundle_id,
+        operation_token="delivery-two",
         now=NOW + timedelta(minutes=2),
     )
 
+    assert first_lease.bundle_id == claim.bundle_id
+    assert retry_lease.bundle_id == claim.bundle_id
     assert retry.first_delivered_at == first.first_delivered_at
 
 
@@ -960,6 +976,14 @@ async def test_terminal_and_unknown_claims_cannot_be_reserved(subscription_repos
         now=NOW,
     )
     _, claim = await store_paid_bundle(subscription_repository, "paid-token")
+
+    with pytest.raises(BundleClaimConflictException, match="expired"):
+        await subscription_repository.reserve_bundle_delivery(
+            claim.bundle_id,
+            operation_token="late-delivery",
+            now=claim.expires_at,
+            stale_before=NOW,
+        )
     await subscription_repository.destroy_bundle_claim(claim.bundle_id, now=NOW)
 
     assert not await subscription_repository.reserve_bundle_reap(
@@ -1037,7 +1061,11 @@ async def test_same_token_refresh_does_not_clear_existing_bundle(
 @pytest.mark.parametrize(
     "operation",
     [
-        lambda repository: repository.mark_bundle_delivered("unknown", now=NOW),
+        lambda repository: repository.complete_bundle_delivery(
+            "unknown",
+            operation_token="delivery-operation",
+            now=NOW,
+        ),
         lambda repository: repository.destroy_bundle_claim("unknown", now=NOW),
         lambda repository: repository.abandon_bundle_claim("unknown", now=NOW),
         lambda repository: repository.reschedule_bundle_claim_reap(
