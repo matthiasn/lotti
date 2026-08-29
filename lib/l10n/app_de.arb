@@ -2255,6 +2255,7 @@
   "dashboardRemoveChartLabel": "Diagramm entfernen",
   "dashboardReorderChartLabel": "Diagramm neu anordnen",
   "dashboardTakeSurveyTooltip": "Umfrage ausfüllen",
+  "dayMarkLegendJudged": "beurteilt als {verdict}",
   "defaultLanguage": "Standardsprache",
   "deleteButton": "Löschen",
   "deleteDeviceLabel": "Aus Sync entfernen",

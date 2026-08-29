@@ -331,6 +331,14 @@ class GoalThisWeekCard extends StatelessWidget {
           // one dimension, so a leaf goal gets the strip without the tally.
           // Centered under the strip it closes, like every legend and summary
           // line on the cards below it.
+          // A goal without habit cards has no card to carry the day-cell
+          // key, yet its strip still wears the four verdict hues — so the
+          // key rides here, under the only squares such a goal draws. A goal
+          // WITH habit cards keys them once, inside its first habit card.
+          if (progress.habits.isEmpty) ...[
+            SizedBox(height: tokens.spacing.step3),
+            const DayMarkLegend(showAgesOut: false, showVerdicts: true),
+          ],
           if (progress.compositeRule != null) ...[
             SizedBox(height: tokens.spacing.step2),
             SizedBox(
@@ -583,7 +591,10 @@ class _HabitDimensionCard extends StatelessWidget {
             // the card's own bottom edge, and read as the card being cut in
             // two.
             SizedBox(height: tokens.spacing.step2),
-            const DayMarkLegend(),
+            // Everything a habit square on this page can wear: the three
+            // measured fills, the outcome glyphs, the ages-out and today
+            // rings, and the verdict a reflection stamps on a day.
+            const DayMarkLegend(showOutcomes: true, showVerdicts: true),
           ],
         ],
       ),

@@ -65,4 +65,71 @@ void main() {
       isTrue,
     );
   });
+  testWidgets("outcome and verdict entries are opt-in, keyed with the cells' "
+      'own glyphs and inks', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const DayMarkLegend(
+          showAgesOut: false,
+          showOutcomes: true,
+          showVerdicts: true,
+        ),
+      ),
+    );
+    final tokens = tester.element(find.byType(DayMarkLegend)).designTokens;
+    expect(find.textContaining('ages out'), findsNothing);
+    for (final label in [
+      'Skip',
+      'Missed',
+      'judged Met',
+      'judged Improving',
+      'judged Mixed',
+      'judged Missed',
+    ]) {
+      expect(find.text(label), findsOneWidget, reason: label);
+    }
+    Icon iconBeside(String label) {
+      // The legend row whose label is [label]; scanning rows sidesteps a
+      // Text ancestor lookup that a Wrap re-parents between frames.
+      final rows = tester.widgetList<Row>(find.byType(Row));
+      for (final row in rows) {
+        final texts = find.descendant(
+          of: find.byWidget(row),
+          matching: find.text(label),
+        );
+        if (texts.evaluate().isEmpty) continue;
+        return tester.widget<Icon>(
+          find.descendant(of: find.byWidget(row), matching: find.byType(Icon)),
+        );
+      }
+      throw StateError('no legend row labelled $label');
+    }
+
+    expect(iconBeside('Skip').icon, dayMarkStateGlyph(DayMarkState.skipped));
+    expect(
+      iconBeside('judged Improving').icon,
+      dayVerdictGlyph(DayVerdict.improving),
+    );
+    expect(
+      iconBeside('judged Improving').color,
+      dayVerdictInk(tokens, DayVerdict.improving),
+    );
+    expect(
+      iconBeside('judged Missed').icon,
+      dayVerdictGlyph(DayVerdict.missed),
+    );
+    expect(
+      iconBeside('judged Missed').color,
+      dayVerdictInk(tokens, DayVerdict.missed),
+    );
+  });
+
+  testWidgets('the default legend keys only the measured states and rings', (
+    tester,
+  ) async {
+    await tester.pumpWidget(makeTestableWidgetNoScroll(const DayMarkLegend()));
+    expect(find.byType(Icon), findsNothing);
+    expect(find.textContaining('judged'), findsNothing);
+    expect(find.text('Skip'), findsNothing);
+  });
 }

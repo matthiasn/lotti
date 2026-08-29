@@ -5258,6 +5258,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dashboardTakeSurveyTooltip => 'Completați chestionarul';
 
   @override
+  String dayMarkLegendJudged(String verdict) {
+    return 'evaluat ca $verdict';
+  }
+
+  @override
   String get defaultLanguage => 'Limbă implicită';
 
   @override

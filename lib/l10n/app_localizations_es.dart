@@ -5238,6 +5238,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dashboardTakeSurveyTooltip => 'Responder encuesta';
 
   @override
+  String dayMarkLegendJudged(String verdict) {
+    return 'valorado como $verdict';
+  }
+
+  @override
   String get defaultLanguage => 'Idioma predeterminado';
 
   @override

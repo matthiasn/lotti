@@ -5206,6 +5206,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dashboardTakeSurveyTooltip => 'Umfrage ausfüllen';
 
   @override
+  String dayMarkLegendJudged(String verdict) {
+    return 'beurteilt als $verdict';
+  }
+
+  @override
   String get defaultLanguage => 'Standardsprache';
 
   @override

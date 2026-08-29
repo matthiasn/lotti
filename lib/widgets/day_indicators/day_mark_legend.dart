@@ -10,7 +10,23 @@ import 'package:lotti/widgets/day_indicators/day_mark_styles.dart';
 /// carry the cells' shape and non-color cues — the partial dot, the dashed
 /// today ring — because a key to a mark that is not on the map is no key.
 class DayMarkLegend extends StatelessWidget {
-  const DayMarkLegend({super.key});
+  const DayMarkLegend({
+    this.showAgesOut = true,
+    this.showOutcomes = false,
+    this.showVerdicts = false,
+    super.key,
+  });
+
+  /// Whether to key the quiet "ages out tonight" outline. Only surfaces
+  /// whose cells can draw it — the goal detail's rolling windows — name it.
+  final bool showAgesOut;
+
+  /// Whether to key the recorded habit outcomes a cell can carry: the skip
+  /// dash and the missed cross.
+  final bool showOutcomes;
+
+  /// Whether to key the four verdict hues and glyphs a judged day wears.
+  final bool showVerdicts;
 
   @override
   Widget build(BuildContext context) {
@@ -21,6 +37,8 @@ class DayMarkLegend extends StatelessWidget {
       bool outlined = false,
       bool dotted = false,
       bool dashed = false,
+      IconData? glyph,
+      Color? glyphInk,
     }) {
       Widget swatch = Container(
         width: IconSizes.xs,
@@ -36,6 +54,10 @@ class DayMarkLegend extends StatelessWidget {
         // cells it keys — at `radii.xs` it was a different shape from both.
         child: dotted
             ? Center(child: partialDayDot(tokens, tokens.spacing.step1))
+            : glyph != null
+            ? Center(
+                child: Icon(glyph, size: IconSizes.xs * 0.75, color: glyphInk),
+              )
             : null,
       );
       if (dashed) {
@@ -94,17 +116,42 @@ class DayMarkLegend extends StatelessWidget {
           ),
           // Quiet outline, matching the ring the cells actually draw — an
           // on-track row must not wear the alarm hue in its key either.
-          item(
-            tokens.colors.text.lowEmphasis,
-            context.messages.goalProgressAgesOut,
-            outlined: true,
-          ),
+          if (showAgesOut)
+            item(
+              tokens.colors.text.lowEmphasis,
+              context.messages.goalProgressAgesOut,
+              outlined: true,
+            ),
           // Dashed, exactly like the today cell — the key must match the map.
           item(
             todayRingInk(tokens),
             context.messages.goalProgressToday,
             dashed: true,
           ),
+          // The outcome glyphs, in the same ink the cells draw them.
+          if (showOutcomes)
+            for (final state in [DayMarkState.skipped, DayMarkState.missed])
+              item(
+                dayMarkStateFill(tokens, state),
+                dayMarkStateLabel(context, state),
+                glyph: dayMarkStateGlyph(state),
+                glyphInk: dayMarkStateGlyphInk(tokens, state),
+              ),
+          // A judged day: its own hue and shape, through the same helpers
+          // the cells use — four fills a reader must be able to tell apart.
+          // "judged Missed" beside "Missed": a recorded outcome and a
+          // verdict can share a name, and the key must not list one word
+          // twice with two different swatches.
+          if (showVerdicts)
+            for (final verdict in DayVerdict.values)
+              item(
+                dayVerdictFill(tokens, verdict),
+                context.messages.dayMarkLegendJudged(
+                  dayVerdictLabel(context, verdict),
+                ),
+                glyph: dayVerdictGlyph(verdict),
+                glyphInk: dayVerdictInk(tokens, verdict),
+              ),
         ],
       ),
     );

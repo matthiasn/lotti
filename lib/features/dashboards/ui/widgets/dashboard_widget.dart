@@ -9,6 +9,7 @@ import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_survey_cha
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_workout_chart.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/charts/habits/dashboard_habits_chart.dart';
+import 'package:lotti/widgets/day_indicators/day_mark_legend.dart';
 
 /// Renders a dashboard's ordered list of items as a vertical stack of chart
 /// cards over the shared `[rangeStart, rangeEnd]` window.
@@ -116,6 +117,18 @@ class DashboardWidget extends ConsumerWidget {
             SizedBox(height: tokens.spacing.cardItemSpacing),
             items.whereType<Widget>(),
           ),
+          // One key per dashboard for the habit chains above, not one per
+          // habit: the squares share a vocabulary, and a repeated key would
+          // be more legend than data.
+          if (dashboard.items.any((item) => item is DashboardHabitItem)) ...[
+            SizedBox(height: tokens.spacing.step3),
+            const DayMarkLegend(
+              key: ValueKey('dashboard-habit-legend'),
+              showAgesOut: false,
+              showOutcomes: true,
+              showVerdicts: true,
+            ),
+          ],
           if (dashboard.description.isNotEmpty)
             Padding(
               padding: EdgeInsets.only(top: tokens.spacing.step4),

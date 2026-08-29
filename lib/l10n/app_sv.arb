@@ -2502,6 +2502,7 @@
   "dashboardRemoveChartLabel": "Ta bort diagram",
   "dashboardReorderChartLabel": "Omordning diagram",
   "dashboardTakeSurveyTooltip": "Gör en undersökning",
+  "dayMarkLegendJudged": "bedömd som {verdict}",
   "defaultLanguage": "Standardspråk",
   "deleteButton": "Radera",
   "deleteDeviceLabel": "Ta bort från synkronisering",

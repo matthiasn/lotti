@@ -28,8 +28,10 @@ import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/goal_progress_card.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/widgets/day_indicators/day_mark.dart';
+import 'package:lotti/widgets/day_indicators/day_mark_legend.dart';
 import 'package:lotti/widgets/day_indicators/day_mark_strip.dart';
 import 'package:lotti/widgets/day_indicators/day_mark_styles.dart';
+import 'package:lotti/widgets/day_indicators/day_track.dart';
 import 'package:lotti/widgets/misc/linked_scroll_group.dart';
 
 import '../../../widget_test_utils.dart';
@@ -741,6 +743,73 @@ void main() {
       legend.bottom,
       lessThan(tester.getRect(cards.at(1)).top),
     );
+  });
+
+  testWidgets("the first habit card's key names the outcome glyphs and the "
+      'verdict hues its squares can wear', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            habits: [
+              GoalHabitProgressView(
+                habitId: 'gym',
+                name: 'Gym',
+                targetCount: 3,
+                days: [
+                  for (var offset = 6; offset >= 0; offset--) day(offset, 0),
+                ],
+                successfulWeeks: 0,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    for (final label in [
+      'Skip',
+      'Missed',
+      'judged Met',
+      'judged Improving',
+      'judged Mixed',
+      'judged Missed',
+    ]) {
+      expect(find.text(label), findsOneWidget, reason: label);
+    }
+    expect(find.textContaining('ages out'), findsOneWidget);
+  });
+
+  testWidgets('a goal without habit cards keys its verdict strip on the '
+      'week card, and a goal with them does not', (tester) async {
+    Future<void> pump(GoalProgressView progress) => tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalThisWeekCard(
+          progress: progress,
+          onReflectDay: (_) {},
+        ),
+      ),
+    );
+    await pump(GoalProgressView(today: today));
+    expect(find.byType(DayMarkLegend), findsOneWidget);
+    expect(find.text('judged Improving'), findsOneWidget);
+    expect(find.textContaining('ages out'), findsNothing);
+
+    await pump(
+      GoalProgressView(
+        today: today,
+        habits: [
+          GoalHabitProgressView(
+            habitId: 'gym',
+            name: 'Gym',
+            targetCount: 3,
+            days: [for (var offset = 6; offset >= 0; offset--) day(offset, 0)],
+            successfulWeeks: 0,
+          ),
+        ],
+      ),
+    );
+    expect(find.byType(DayMarkLegend), findsNothing);
   });
 
   testWidgets('a goal with no composite rule still gets a reflectable week', (
@@ -2497,9 +2566,21 @@ void main() {
     await tester.tap(dayFinder);
     await tester.pumpAndSettle();
     expect(find.byType(DesignSystemContextMenu), findsOneWidget);
-    expect(find.text('Success'), findsOneWidget);
-    expect(find.text('Skip'), findsOneWidget);
-    expect(find.text('Missed'), findsOneWidget);
+    // Scoped to the menu: the first habit card's key names Skip and Missed
+    // too.
+    final menu = find.byType(DesignSystemContextMenu);
+    expect(
+      find.descendant(of: menu, matching: find.text('Success')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: menu, matching: find.text('Skip')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: menu, matching: find.text('Missed')),
+      findsOneWidget,
+    );
     expect(
       find.descendant(
         of: find.byType(DesignSystemContextMenu),
@@ -2507,9 +2588,27 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
-    expect(find.byIcon(LottiIcons.remove), findsOneWidget);
-    expect(find.byIcon(LottiIcons.close), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(DesignSystemContextMenu),
+        matching: find.byIcon(LottiIcons.confirm),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(DayTrack),
+        matching: find.byIcon(LottiIcons.remove),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(DesignSystemContextMenu),
+        matching: find.byIcon(LottiIcons.close),
+      ),
+      findsOneWidget,
+    );
     expect(find.byIcon(LottiIcons.radioUnselected), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('goal-habit-day-missed')));
     await tester.pump();
@@ -2624,7 +2723,13 @@ void main() {
       (cell.decoration! as BoxDecoration).color,
       tokens.colors.background.level03,
     );
-    expect(find.byIcon(LottiIcons.remove), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(DayTrack),
+        matching: find.byIcon(LottiIcons.remove),
+      ),
+      findsOneWidget,
+    );
     expect(
       find.bySemanticsLabel('Aug 11, 2026: Skip'),
       findsOneWidget,
@@ -3293,7 +3398,13 @@ void main() {
       findsOneWidget,
     );
     // The measured miss no longer shows its cross — the ruling replaced it.
-    expect(find.byIcon(LottiIcons.close), findsNothing);
+    expect(
+      find.descendant(
+        of: find.byType(DayTrack),
+        matching: find.byIcon(LottiIcons.close),
+      ),
+      findsNothing,
+    );
     expect(
       find.bySemanticsLabel(RegExp('Aug 10, 2026: Improving')),
       findsOneWidget,
@@ -3339,7 +3450,13 @@ void main() {
       find.byKey(const ValueKey('goal-day-missed-walk-2026-08-10')),
       findsOneWidget,
     );
-    expect(find.byIcon(LottiIcons.close), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(DayTrack),
+        matching: find.byIcon(LottiIcons.close),
+      ),
+      findsOneWidget,
+    );
     // The missed cross OWNS the cell: at the compact size a corner letter
     // collides with the glyph, so the letter yields and the neighbouring
     // plain cells carry the axis.

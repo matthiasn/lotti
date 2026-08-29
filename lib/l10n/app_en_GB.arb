@@ -63,6 +63,7 @@
   "dashboardNameLabel": "Dashboard name",
   "dashboardNotFound": "Dashboard not found",
   "dashboardPrivateLabel": "Private",
+  "dayMarkLegendJudged": "judged {verdict}",
   "doneButton": "Done",
   "editMenuTitle": "Edit",
   "editorPlaceholder": "Enter notes...",

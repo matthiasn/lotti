@@ -5141,6 +5141,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboardTakeSurveyTooltip => 'Take survey';
 
   @override
+  String dayMarkLegendJudged(String verdict) {
+    return 'judged $verdict';
+  }
+
+  @override
   String get defaultLanguage => 'Default Language';
 
   @override
@@ -14193,6 +14198,11 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String get dashboardPrivateLabel => 'Private';
+
+  @override
+  String dayMarkLegendJudged(String verdict) {
+    return 'judged $verdict';
+  }
 
   @override
   String get doneButton => 'Done';

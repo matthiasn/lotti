@@ -5224,6 +5224,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dashboardTakeSurveyTooltip => 'Vyplnit dotazník';
 
   @override
+  String dayMarkLegendJudged(String verdict) {
+    return 'hodnoceno jako $verdict';
+  }
+
+  @override
   String get defaultLanguage => 'Výchozí jazyk';
 
   @override
