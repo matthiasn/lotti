@@ -176,6 +176,19 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     _snapshotSignalGroups();
   }
 
+  /// Drops numeric goal targets whose measurable has since been converted to
+  /// choices. Keeping one would compare the choice occurrence marker (`1`)
+  /// with an old quantity, and filtering the definition alone would leave an
+  /// invisible target that the edit silently saved again.
+  void _removeChoiceMeasurableTargets(Set<String> choiceIds) {
+    for (final id in choiceIds) {
+      _measurableTargets.remove(id);
+      _targetErrors.remove('measurable:$id');
+      _chosenSignalOrder.remove('measurable:$id');
+      _suggestedSignalOrder.remove('measurable:$id');
+    }
+  }
+
   num? _parseLocalizedTarget(String raw) {
     final text = raw.trim();
     if (text.isEmpty) return null;
@@ -997,9 +1010,14 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       _knownHabits = loaded;
     }
     final habits = habitsAsync.value ?? _knownHabits;
+    var choiceMeasurableIds = const <String>{};
     if (measurablesAsync.value case final loaded?) {
       // A goal criterion on a measurable is a numeric target; a choice
       // measurable has no quantity to target, so it is not on offer here.
+      choiceMeasurableIds = {
+        for (final measurable in loaded)
+          if (measurable.isChoice) measurable.id,
+      };
       _knownMeasurables = [
         for (final measurable in loaded)
           if (!measurable.isChoice) measurable,
@@ -1063,6 +1081,8 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
         );
       }
     }
+
+    _removeChoiceMeasurableTargets(choiceMeasurableIds);
 
     final pageTitle = _editing
         ? messages.goalFormEditTitle

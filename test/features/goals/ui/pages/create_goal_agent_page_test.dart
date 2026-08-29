@@ -122,6 +122,23 @@ GoalSpecVersionEntity _spec({
         )
         as GoalSpecVersionEntity;
 
+Iterable<GoalCriterion> _criterionLeaves(GoalCriterion criterion) sync* {
+  switch (criterion) {
+    case GoalCriterionMetric() ||
+        GoalCriterionHabit() ||
+        GoalCriterionMeasurable() ||
+        GoalCriterionCategoryTime() ||
+        GoalCriterionLabelTime():
+      yield criterion;
+    case GoalCriterionAllOf(criteria: final children) ||
+        GoalCriterionAnyOf(criteria: final children) ||
+        GoalCriterionAtLeastCount(criteria: final children):
+      for (final child in children) {
+        yield* _criterionLeaves(child);
+      }
+  }
+}
+
 final _identity =
     AgentDomainEntity.agent(
           id: 'goal-1',
@@ -2228,6 +2245,107 @@ void main() {
     expect(find.text('Medication doses'), findsOneWidget);
     expect(find.text('Hydration'), findsNothing);
   });
+
+  testWidgets(
+    'editing removes a numeric target whose measurable became a choice',
+    (tester) async {
+      tester.view.physicalSize = const Size(900, 2200);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      const criteria = GoalCriterion.allOf(
+        criterionId: 'routine',
+        criteria: [
+          GoalCriterion.habit(
+            criterionId: 'habit-gym',
+            habitId: 'gym',
+            window: GoalWindow.rollingDays(count: 7),
+            targetCount: 2,
+          ),
+          GoalCriterion.measurable(
+            criterionId: 'measurable-hydration',
+            dataTypeId: 'hydration',
+            window: GoalWindow.rollingDays(count: 7),
+            aggregation: GoalAggregation.sum,
+            target: 3,
+          ),
+        ],
+      );
+      final current = _spec(criteria: criteria);
+      final revised = _spec(
+        version: 4,
+        criteria: const GoalCriterion.habit(
+          criterionId: 'habit-gym',
+          habitId: 'gym',
+          window: GoalWindow.rollingDays(count: 7),
+          targetCount: 2,
+        ),
+      );
+      when(
+        () => revisionService.reviseFromOwner(
+          agentId: 'goal-1',
+          baseVersionId: any(named: 'baseVersionId'),
+          displayName: any(named: 'displayName'),
+          title: any(named: 'title'),
+          statement: any(named: 'statement'),
+          criteria: any(named: 'criteria'),
+        ),
+      ).thenAnswer(
+        (_) async => GoalSpecRevisionMinted(
+          version: revised,
+          changeSummaries: const ['removed obsolete measurable target'],
+        ),
+      );
+      when(
+        () => agentService.refreshAfterRevision(
+          agentId: 'goal-1',
+          criteria: any(named: 'criteria'),
+        ),
+      ).thenReturn(null);
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const CreateGoalAgentPage(agentId: 'goal-1'),
+          overrides: [
+            ...overrides(editSpec: current),
+            measurableDataTypesStreamProvider.overrideWith(
+              (ref) => Stream.value([
+                measurableHydration.copyWith(id: 'hydration'),
+              ]),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(
+          const ValueKey('goal-form-measurable-card-hydration'),
+        ),
+        findsNothing,
+      );
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Save new version'));
+      await tester.pump();
+
+      final saved = verify(
+        () => revisionService.reviseFromOwner(
+          agentId: 'goal-1',
+          baseVersionId: current.id,
+          displayName: any(named: 'displayName'),
+          title: any(named: 'title'),
+          statement: any(named: 'statement'),
+          criteria: captureAny(named: 'criteria'),
+        ),
+      ).captured.single;
+      final leaves = _criterionLeaves(saved as GoalCriterion).toList();
+      expect(leaves.whereType<GoalCriterionMeasurable>(), isEmpty);
+      expect(
+        leaves.whereType<GoalCriterionHabit>().map((leaf) => leaf.habitId),
+        ['gym'],
+      );
+    },
+  );
 
   testWidgets('clearing a selected measurable target blocks confirmation', (
     tester,

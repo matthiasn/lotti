@@ -1,5 +1,6 @@
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/notifications/scheduler/notification_scheduler.dart';
 import 'package:lotti/features/notifications/scheduler/notification_startup_reconcile.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
@@ -19,6 +20,9 @@ class PersistenceDefinitionOps extends PersistenceCollaboratorBase {
   Future<int> upsertEntityDefinitionImpl(
     EntityDefinition entityDefinition,
   ) async {
+    final previousMeasurable = entityDefinition is MeasurableDataType
+        ? await journalDb.getMeasurableDataTypeById(entityDefinition.id)
+        : null;
     final linesAffected = await journalDb.upsertEntityDefinition(
       entityDefinition,
     );
@@ -30,6 +34,13 @@ class PersistenceDefinitionOps extends PersistenceCollaboratorBase {
       LabelDefinition() => labelsNotification,
     };
     updateNotifications.notify({entityDefinition.id, typeNotification});
+    if (entityDefinition is MeasurableDataType &&
+        measurementDefinitionAffectsFts(
+          previousMeasurable,
+          entityDefinition,
+        )) {
+      await _reindexMeasurements(entityDefinition);
+    }
     await outboxService.enqueueMessage(
       SyncMessage.entityDefinition(
         entityDefinition: entityDefinition,
@@ -37,6 +48,27 @@ class PersistenceDefinitionOps extends PersistenceCollaboratorBase {
       ),
     );
     return linesAffected;
+  }
+
+  Future<void> _reindexMeasurements(MeasurableDataType dataType) async {
+    try {
+      final entries = await journalDb.getMeasurementsByType(
+        type: dataType.id,
+        rangeStart: DateTime(1),
+        rangeEnd: DateTime(9999, 12, 31, 23, 59, 59, 999),
+      );
+      await getIt<Fts5Db>().reindexMeasurements(dataType, entries);
+    } catch (exception, stackTrace) {
+      // FTS is derived and can be rebuilt from the journal. A failed reindex
+      // must not turn an already-persisted definition edit into a failed save
+      // or prevent it from syncing.
+      loggingService.error(
+        LogDomain.persistence,
+        exception,
+        stackTrace: stackTrace,
+        subDomain: 'upsertEntityDefinition.reindexMeasurements',
+      );
+    }
   }
 
   Future<int> upsertDashboardDefinitionImpl(

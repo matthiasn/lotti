@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:drift/drift.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/common.dart';
 import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
@@ -11,6 +12,27 @@ import 'package:lotti/services/entities_cache_service.dart';
 part 'fts5_db.g.dart';
 
 const fts5DbFileName = 'fts5_db.sqlite';
+
+/// Whether replacing [previous] with [next] changes measurement search text.
+bool measurementDefinitionAffectsFts(
+  MeasurableDataType? previous,
+  MeasurableDataType next,
+) {
+  if (previous == null ||
+      previous.displayName != next.displayName ||
+      previous.unitName != next.unitName) {
+    return true;
+  }
+  return _choiceTitleSignature(previous) != _choiceTitleSignature(next);
+}
+
+String _choiceTitleSignature(MeasurableDataType dataType) {
+  final titles = [
+    for (final choice in dataType.choices ?? const <MeasurableChoice>[])
+      '${choice.id}\u0000${choice.title}',
+  ]..sort();
+  return titles.join('\u0001');
+}
 
 @DriftDatabase(include: {'fts5_db.drift'})
 class Fts5Db extends _$Fts5Db {
@@ -39,6 +61,7 @@ class Fts5Db extends _$Fts5Db {
   Future<void> insertText(
     JournalEntity entry, {
     bool removePrevious = false,
+    MeasurableDataType? measurementDataType,
   }) async {
     final uuid = entry.meta.id;
 
@@ -58,9 +81,9 @@ class Fts5Db extends _$Fts5Db {
         // Resolved lazily so non-measurement indexing (incl. seeding a
         // non-active world through WorldHandle) never touches the active
         // generation's cache.
-        final dataType = getIt<EntitiesCacheService>().getDataTypeById(
-          m.data.dataTypeId,
-        );
+        final dataType =
+            measurementDataType ??
+            getIt<EntitiesCacheService>().getDataTypeById(m.data.dataTypeId);
         // A choice recording indexes the choice's title, so searching for
         // "clear" finds the hydration entry; a number keeps value and unit.
         final value = dataType == null
@@ -93,6 +116,29 @@ class Fts5Db extends _$Fts5Db {
         summary,
         '',
         uuid,
+      );
+    }
+  }
+
+  /// Rebuilds the derived FTS rows for every measurement of [dataType].
+  ///
+  /// Choice titles, measurable names, and numeric units live on the
+  /// definition rather than the journal entry. When one changes, historical
+  /// entries need to be indexed again so search reflects what the journal
+  /// currently displays. Passing [dataType] directly avoids racing the
+  /// asynchronously refreshed definition cache.
+  Future<void> reindexMeasurements(
+    MeasurableDataType dataType,
+    Iterable<JournalEntity> entries,
+  ) async {
+    for (final entry in entries) {
+      if (entry is! MeasurementEntry || entry.data.dataTypeId != dataType.id) {
+        continue;
+      }
+      await insertText(
+        entry,
+        removePrevious: true,
+        measurementDataType: dataType,
       );
     }
   }

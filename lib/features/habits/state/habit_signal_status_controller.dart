@@ -99,15 +99,21 @@ class HabitSignalStatusController extends AsyncNotifier<HabitSignalStatus?> {
 
   Future<HabitSignalStatus> _load(AutoCompleteRule rule) async {
     final now = clock.now();
+    final cache = getIt<EntitiesCacheService>();
+    final normalizedRule = normalizeChoiceMeasurableBounds(
+      rule,
+      isChoice: (dataTypeId) =>
+          cache.getDataTypeById(dataTypeId)?.isChoice ?? false,
+    );
     final reader = SignalReader(journalDb: getIt<JournalDb>());
-    final window = await reader.read(rule: rule, reference: now);
+    final window = await reader.read(rule: normalizedRule, reference: now);
     final verdict = const HabitRuleEvaluator().evaluate(
-      rule: rule,
+      rule: normalizedRule,
       window: window,
       day: now,
     );
     return HabitSignalStatus(
-      rule: rule,
+      rule: normalizedRule,
       window: window,
       verdict: verdict,
       today: signalDayKey(now),

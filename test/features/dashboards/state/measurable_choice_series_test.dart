@@ -6,8 +6,8 @@ import '../../../test_data/test_data.dart';
 
 void main() {
   final rangeStart = DateTime(2022, 7, 5);
-  // Half-open like the numeric aggregators: four days, Jul 5 – Jul 8.
-  final rangeEnd = DateTime(2022, 7, 9);
+  // The dashboard range ends late on the final calendar day.
+  final rangeEnd = DateTime(2022, 7, 8, 23, 59, 59);
 
   MeasurementEntry recording(
     String id,
@@ -59,6 +59,23 @@ void main() {
     );
     expect(days[1].choiceId, hydrationDark.id);
     expect(days[2].choiceId, hydrationDark.id);
+  });
+
+  test('includes a recording on the partial final calendar day', () {
+    final days = choiceDaySeries(
+      [
+        recording(
+          'today',
+          DateTime(2022, 7, 8, 18),
+          choiceId: hydrationClear.id,
+        ),
+      ],
+      rangeStart: rangeStart,
+      rangeEnd: rangeEnd,
+    );
+
+    expect(days.last.day, DateTime(2022, 7, 8));
+    expect(days.last.choiceId, hydrationClear.id);
   });
 
   test('numeric entries and other entry types never colour a day', () {

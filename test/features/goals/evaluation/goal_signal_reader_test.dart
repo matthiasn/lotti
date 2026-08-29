@@ -51,7 +51,7 @@ void main() {
         ),
       );
 
-  JournalEntity measurement(DateTime at, num value) =>
+  JournalEntity measurement(DateTime at, num value, {String? choiceId}) =>
       JournalEntity.measurement(
         meta: meta(at),
         data: MeasurementData(
@@ -59,6 +59,7 @@ void main() {
           dateTo: at,
           value: value,
           dataTypeId: 'water-id',
+          choiceId: choiceId,
         ),
       );
 
@@ -428,6 +429,43 @@ void main() {
       1200,
     );
   });
+
+  test(
+    'choice occurrence markers do not satisfy an old numeric goal',
+    () async {
+      const water = GoalCriterion.measurable(
+        criterionId: 'water',
+        dataTypeId: 'water-id',
+        window: GoalWindow.day(),
+        aggregation: GoalAggregation.sum,
+        target: 2000,
+      );
+      when(
+        () => journalDb.getMeasurementsByType(
+          type: 'water-id',
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer(
+        (_) async => [
+          measurement(DateTime(2026, 8, 8, 9), 500),
+          measurement(
+            DateTime(2026, 8, 8, 13),
+            1,
+            choiceId: 'clear',
+          ),
+        ],
+      );
+
+      final window = await reader.read(criteria: water, reference: reference);
+
+      expect(
+        window.measurableDailySums['water-id']![DateTime.utc(2026, 8, 8)],
+        500,
+      );
+      expect(window.measurableEntryDaysById, hasLength(1));
+    },
+  );
 
   test(
     'the query range covers the widest window plus a prior period',

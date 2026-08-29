@@ -97,6 +97,11 @@ the recording surfaces while entries that recorded it keep resolving to its
 title; an archived choice can be restored. The list order is the user's
 display order, and the only structure the set has.
 
+Measurement full-text rows are derived from the current measurable name, unit,
+and choice title. Applying a local or synced definition reindexes its
+historical measurements when any of those searchable labels change; archive
+state and choice ordering alone do not rewrite the index.
+
 **The data decides, not the definition.** `measurementValueLabel`
 (`lib/features/journal/util/entry_tools.dart`) reads a measurement as a choice
 recording iff `choiceId` is set: a number recorded before the measurable was

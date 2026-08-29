@@ -3,6 +3,69 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/logic/signals/signal_day_buckets.dart';
 import 'package:lotti/logic/signals/signal_window.dart';
 
+/// Clears numeric bounds from measurable leaves whose definitions now record
+/// choices.
+///
+/// A choice measurement stores `value: 1` as an occurrence marker. Applying a
+/// bound authored while the measurable was numeric would compare that marker
+/// with the old quantity and make the runtime disagree with the editor's
+/// choice-only "any entry" rule. The tree shape, titles, and every other leaf
+/// remain unchanged.
+AutoCompleteRule normalizeChoiceMeasurableBounds(
+  AutoCompleteRule rule, {
+  required bool Function(String dataTypeId) isChoice,
+}) {
+  switch (rule) {
+    case final AutoCompleteRuleMeasurable measurable:
+      if (!isChoice(measurable.dataTypeId) ||
+          (measurable.minimum == null && measurable.maximum == null)) {
+        return rule;
+      }
+      return measurable.copyWith(minimum: null, maximum: null);
+    case final AutoCompleteRuleAnd composite:
+      final originalRules = composite.rules;
+      final rules = _normalizeChoiceChildren(originalRules, isChoice);
+      return identical(rules, originalRules)
+          ? rule
+          : composite.copyWith(rules: rules);
+    case final AutoCompleteRuleOr composite:
+      final originalRules = composite.rules;
+      final rules = _normalizeChoiceChildren(originalRules, isChoice);
+      return identical(rules, originalRules)
+          ? rule
+          : composite.copyWith(rules: rules);
+    case final AutoCompleteRuleMultiple composite:
+      final originalRules = composite.rules;
+      final rules = _normalizeChoiceChildren(originalRules, isChoice);
+      return identical(rules, originalRules)
+          ? rule
+          : composite.copyWith(rules: rules);
+    case AutoCompleteRuleHealth() ||
+        AutoCompleteRuleWorkout() ||
+        AutoCompleteRuleHabit():
+      return rule;
+  }
+}
+
+List<AutoCompleteRule> _normalizeChoiceChildren(
+  List<AutoCompleteRule> rules,
+  bool Function(String dataTypeId) isChoice,
+) {
+  var changed = false;
+  final normalized = [
+    for (final rule in rules)
+      () {
+        final next = normalizeChoiceMeasurableBounds(
+          rule,
+          isChoice: isChoice,
+        );
+        changed = changed || !identical(next, rule);
+        return next;
+      }(),
+  ];
+  return changed ? normalized : rules;
+}
+
 /// What one leaf of an [AutoCompleteRule] tree saw on the evaluated day.
 ///
 /// [value] is the day's aggregate the thresholds were compared against — a

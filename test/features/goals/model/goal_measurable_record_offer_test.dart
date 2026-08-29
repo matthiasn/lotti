@@ -114,6 +114,31 @@ void main() {
     );
   });
 
+  test(
+    'does not offer numeric capture after the measurable became a choice',
+    () {
+      final offer = parseGoalMeasurableRecordOffer(
+        message: AgentChatMessage(
+          id: 'message-choice',
+          role: AgentChatRole.user,
+          text: 'I read 20 pages today.',
+          createdAt: now,
+        ),
+        criteria: linked,
+        measurables: [
+          pages.copyWith(
+            valueKind: MeasurableValueKind.choice,
+            choices: const [MeasurableChoice(id: 'some', title: 'Some')],
+          ),
+        ],
+        reference: now,
+        recentDayLabels: const {},
+      );
+
+      expect(offer, isNull);
+    },
+  );
+
   test('declines two quantities for the same measurable', () {
     final offer = parseGoalMeasurableRecordOffer(
       message: AgentChatMessage(

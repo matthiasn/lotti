@@ -429,7 +429,7 @@ void main() {
     test('archived is absent from JSON when unset and reads back null', () {
       const choice = MeasurableChoice(id: 'choice-1', title: 'Clear');
       final json = choice.toJson();
-      expect(json['archived'], isNull);
+      expect(json, isNot(contains('archived')));
       expect(MeasurableChoice.fromJson(json).archived, isNull);
     });
   });
@@ -500,8 +500,14 @@ void main() {
     });
 
     test('isChoice is true only for the choice kind', () {
-      expect(measurable(valueKind: MeasurableValueKind.choice).isChoice, isTrue);
-      expect(measurable(valueKind: MeasurableValueKind.number).isChoice, isFalse);
+      expect(
+        measurable(valueKind: MeasurableValueKind.choice).isChoice,
+        isTrue,
+      );
+      expect(
+        measurable(valueKind: MeasurableValueKind.number).isChoice,
+        isFalse,
+      );
     });
 
     test('activeChoices keeps order and drops only archived == true', () {

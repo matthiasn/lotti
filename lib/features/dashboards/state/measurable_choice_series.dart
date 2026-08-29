@@ -31,9 +31,9 @@ List<ChoiceDay> choiceDaySeries(
     }
   }
 
-  final dayStrings = getDayStrings(
-    rangeEnd.difference(rangeStart).inDays,
-    rangeStart,
+  final dayStrings = daysInRange(
+    rangeStart: rangeStart,
+    rangeEnd: rangeEnd,
   );
   return [
     for (final dayString in dayStrings)

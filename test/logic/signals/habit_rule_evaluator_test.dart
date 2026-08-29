@@ -30,6 +30,70 @@ void main() {
   HabitRuleVerdict eval(AutoCompleteRule rule, SignalWindow w) =>
       evaluator.evaluate(rule: rule, window: w, day: today);
 
+  group('choice measurable normalization', () {
+    test('clears stale bounds recursively and preserves every other rule', () {
+      const numeric = AutoCompleteRule.measurable(
+        dataTypeId: 'water',
+        minimum: 500,
+        title: 'Water',
+      );
+      const choice = AutoCompleteRule.measurable(
+        dataTypeId: 'hydration',
+        minimum: 2,
+        maximum: 4,
+        title: 'Hydration',
+      );
+      const rule = AutoCompleteRule.and(
+        rules: [
+          numeric,
+          AutoCompleteRule.or(
+            rules: [
+              choice,
+              AutoCompleteRule.health(
+                dataType: 'cumulative_step_count',
+                minimum: 5000,
+              ),
+            ],
+          ),
+        ],
+      );
+      final originalNested =
+          (rule as AutoCompleteRuleAnd).rules.last as AutoCompleteRuleOr;
+
+      final normalized =
+          normalizeChoiceMeasurableBounds(
+                rule,
+                isChoice: (id) => id == 'hydration',
+              )
+              as AutoCompleteRuleAnd;
+      expect(normalized.rules.first, same(numeric));
+      final nested = normalized.rules.last as AutoCompleteRuleOr;
+      expect(
+        nested.rules.first,
+        const AutoCompleteRule.measurable(
+          dataTypeId: 'hydration',
+          title: 'Hydration',
+        ),
+      );
+      expect(
+        nested.rules.last,
+        same(originalNested.rules.last),
+      );
+    });
+
+    test('returns the original tree when no choice bound needs changing', () {
+      const rule = AutoCompleteRule.multiple(
+        rules: [AutoCompleteRule.measurable(dataTypeId: 'water')],
+        successes: 1,
+      );
+
+      expect(
+        normalizeChoiceMeasurableBounds(rule, isChoice: (_) => true),
+        same(rule),
+      );
+    });
+  });
+
   group('measurable leaf', () {
     const anyEntry = AutoCompleteRule.measurable(dataTypeId: 'water');
     const atLeast = AutoCompleteRule.measurable(

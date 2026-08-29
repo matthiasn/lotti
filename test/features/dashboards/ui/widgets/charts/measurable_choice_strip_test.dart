@@ -160,6 +160,20 @@ void main() {
       },
     );
 
+    testWidgets('moving the pointer off the strip removes its tooltip', (
+      tester,
+    ) async {
+      await pumpStrip(tester);
+      final gesture = await hoverDay(tester, index: 0, n: days.length);
+      expect(find.byKey(tooltipKey), findsOneWidget);
+
+      final box = tester.getRect(find.byKey(stripKey));
+      await gesture.moveTo(box.bottomRight + const Offset(20, 20));
+      await tester.pump();
+
+      expect(find.byKey(tooltipKey), findsNothing);
+    });
+
     testWidgets('a touch on a day words the tooltip for that day too', (
       tester,
     ) async {

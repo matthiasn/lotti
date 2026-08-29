@@ -92,6 +92,26 @@ void main() {
     expect(status.verdict.leaves.single.value, 250);
   });
 
+  test(
+    'a converted choice measurable ignores its stale numeric bound',
+    () async {
+      when(() => cache.getDataTypeById('water')).thenReturn(
+        measurableHydration.copyWith(id: 'water'),
+      );
+      measurements = {DateTime(2026, 8, 8, 9): 1};
+
+      final status = await withClock(
+        Clock.fixed(now),
+        () => container.read(habitSignalStatusProvider(habit.id).future),
+      );
+
+      final rule = status!.rule as AutoCompleteRuleMeasurable;
+      expect(rule.minimum, isNull);
+      expect(rule.maximum, isNull);
+      expect(status.verdict.satisfied, isTrue);
+    },
+  );
+
   test('a write to the measurable refreshes in place, never via loading', () {
     withClock(Clock.fixed(now), () {
       fakeAsync((async) {

@@ -139,6 +139,7 @@ class GoalSignalReader {
       for (final entity in entities) {
         entity.maybeMap(
           measurement: (measurement) {
+            if (measurement.data.choiceId != null) return;
             measurableEntryDaysById[measurement.meta.id] = GoalWindow.dayUtc(
               measurement.data.dateFrom,
             );
@@ -146,7 +147,16 @@ class GoalSignalReader {
           orElse: () {},
         );
       }
-      measurables[dataTypeId] = bucketMeasurableTotalsByDay(entities);
+      measurables[dataTypeId] = bucketMeasurableTotalsByDay(
+        entities
+            .where(
+              (entity) => entity.maybeMap(
+                measurement: (measurement) => measurement.data.choiceId == null,
+                orElse: () => false,
+              ),
+            )
+            .toList(),
+      );
     }
 
     final categoryTime = <String, Map<DateTime, num>>{};

@@ -216,6 +216,41 @@ void main() {
       );
 
       test(
+        'reindexing replaces an old choice title with its current one',
+        () async {
+          when(
+            () => entitiesCacheService.getDataTypeById(measurableHydration.id),
+          ).thenReturn(measurableHydration);
+          await db.insertText(testMeasurementHydrationEntry);
+          final renamed = measurableHydration.copyWith(
+            choices: [
+              for (final choice in measurableHydration.choices!)
+                if (choice.id == hydrationClear.id)
+                  choice.copyWith(title: 'Transparent')
+                else
+                  choice,
+            ],
+          );
+
+          await db.reindexMeasurements(renamed, [
+            testMeasurementHydrationEntry,
+          ]);
+
+          final byNewTitle = await db
+              .watchFullTextMatches('"Hydration Transparent"')
+              .first;
+          expect(byNewTitle, contains(testMeasurementHydrationEntry.meta.id));
+          final byOldTitle = await db
+              .watchFullTextMatches('"Hydration Clear"')
+              .first;
+          expect(
+            byOldTitle,
+            isNot(contains(testMeasurementHydrationEntry.meta.id)),
+          );
+        },
+      );
+
+      test(
         'a measurement whose definition is gone still indexes its number',
         () async {
           when(

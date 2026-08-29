@@ -35,7 +35,7 @@ Map<String, dynamic> _$MeasurableChoiceToJson(_MeasurableChoice instance) =>
     <String, dynamic>{
       'id': instance.id,
       'title': instance.title,
-      'archived': instance.archived,
+      'archived': ?instance.archived,
     };
 
 DailyHabitSchedule _$DailyHabitScheduleFromJson(Map<String, dynamic> json) =>

@@ -566,6 +566,51 @@ void main() {
     verify(() => journalDb.upsertEntityDefinition(measurableWater)).called(1);
   });
 
+  test('a synced choice rename reindexes historical measurements', () async {
+    final fts5Db = MockFts5Db();
+    final renamed = measurableHydration.copyWith(
+      choices: [
+        for (final choice in measurableHydration.choices!)
+          if (choice.id == hydrationClear.id)
+            choice.copyWith(title: 'Transparent')
+          else
+            choice,
+      ],
+    );
+    final entries = [testMeasurementHydrationEntry];
+    processor = SyncEventProcessor(
+      loggingService: loggingService,
+      updateNotifications: updateNotifications,
+      aiConfigRepository: aiConfigRepository,
+      savedTaskFiltersRepository: savedTaskFiltersRepository,
+      settingsDb: settingsDb,
+      journalEntityLoader: journalEntityLoader,
+      fts5Db: fts5Db,
+    );
+    when(
+      () => journalDb.getMeasurableDataTypeById(renamed.id),
+    ).thenAnswer((_) async => measurableHydration);
+    when(
+      () => journalDb.getMeasurementsByType(
+        type: renamed.id,
+        rangeStart: any(named: 'rangeStart'),
+        rangeEnd: any(named: 'rangeEnd'),
+      ),
+    ).thenAnswer((_) async => entries);
+    when(
+      () => fts5Db.reindexMeasurements(renamed, entries),
+    ).thenAnswer((_) async {});
+    final message = SyncMessage.entityDefinition(
+      entityDefinition: renamed,
+      status: SyncEntryStatus.update,
+    );
+    when(() => event.text).thenReturn(encodeMessage(message));
+
+    await processor.process(event: event, journalDb: journalDb);
+
+    verify(() => fts5Db.reindexMeasurements(renamed, entries)).called(1);
+  });
+
   test('processes ai config messages', () async {
     final message = SyncMessage.aiConfig(
       aiConfig: fallbackAiConfig,

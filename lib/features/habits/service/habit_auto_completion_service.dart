@@ -212,7 +212,11 @@ class HabitAutoCompletionService {
     DateTime day,
     DateTime now,
   ) async {
-    final rule = habit.autoCompleteRule!;
+    final rule = normalizeChoiceMeasurableBounds(
+      habit.autoCompleteRule!,
+      isChoice: (dataTypeId) =>
+          _entitiesCache.getDataTypeById(dataTypeId)?.isChoice ?? false,
+    );
     final dayStart = DateTime(day.year, day.month, day.day);
     final dayEnd = DateTime(day.year, day.month, day.day + 1);
     // Anything already recorded for the day — manual, skip, or an earlier

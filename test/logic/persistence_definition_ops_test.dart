@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/notifications/scheduler/notification_scheduler.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
@@ -13,6 +14,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../helpers/fallbacks.dart';
 import '../mocks/mocks.dart';
+import '../test_data/test_data.dart';
 import '../widget_test_utils.dart';
 
 /// Mirror test for [PersistenceDefinitionOps].
@@ -26,6 +28,7 @@ void main() {
   late MockNotificationService notificationService;
   late MockNotificationScheduler notificationScheduler;
   late MockOutboxService outboxService;
+  late MockFts5Db fts5Db;
   late PersistenceDefinitionOps ops;
   late TestGetItMocks mocks;
 
@@ -50,10 +53,12 @@ void main() {
     notificationService = MockNotificationService();
     notificationScheduler = MockNotificationScheduler();
     outboxService = MockOutboxService();
+    fts5Db = MockFts5Db();
     mocks = await setUpTestGetIt(
       additionalSetup: () {
         getIt
           ..registerSingleton<OutboxService>(outboxService)
+          ..registerSingleton<Fts5Db>(fts5Db)
           ..registerSingleton<NotificationService>(notificationService)
           ..registerSingleton<NotificationScheduler>(notificationScheduler);
       },
@@ -72,6 +77,80 @@ void main() {
   });
 
   tearDown(tearDownTestGetIt);
+
+  test('renaming a choice reindexes historical measurements', () async {
+    final previous = measurableHydration;
+    final renamed = previous.copyWith(
+      choices: [
+        for (final choice in previous.choices!)
+          if (choice.id == hydrationClear.id)
+            choice.copyWith(title: 'Transparent')
+          else
+            choice,
+      ],
+    );
+    final entries = [testMeasurementHydrationEntry];
+    when(
+      () => mocks.journalDb.getMeasurableDataTypeById(previous.id),
+    ).thenAnswer((_) async => previous);
+    when(
+      () => mocks.journalDb.upsertEntityDefinition(renamed),
+    ).thenAnswer((_) async => 1);
+    when(
+      () => mocks.journalDb.getMeasurementsByType(
+        type: previous.id,
+        rangeStart: any(named: 'rangeStart'),
+        rangeEnd: any(named: 'rangeEnd'),
+      ),
+    ).thenAnswer((_) async => entries);
+    when(
+      () => fts5Db.reindexMeasurements(renamed, entries),
+    ).thenAnswer((_) async {});
+
+    final affected = await ops.upsertEntityDefinitionImpl(renamed);
+
+    expect(affected, 1);
+    verify(() => fts5Db.reindexMeasurements(renamed, entries)).called(1);
+    verify(
+      () => mocks.updateNotifications.notify({
+        renamed.id,
+        measurablesNotification,
+      }),
+    ).called(1);
+    verify(() => outboxService.enqueueMessage(any())).called(1);
+  });
+
+  test(
+    'archiving or reordering choices does not rebuild unchanged text',
+    () async {
+      final previous = measurableHydration;
+      final reordered = previous.copyWith(
+        choices: [
+          ...previous.choices!.reversed.map(
+            (choice) =>
+                choice.copyWith(archived: choice.id == hydrationClear.id),
+          ),
+        ],
+      );
+      when(
+        () => mocks.journalDb.getMeasurableDataTypeById(previous.id),
+      ).thenAnswer((_) async => previous);
+      when(
+        () => mocks.journalDb.upsertEntityDefinition(reordered),
+      ).thenAnswer((_) async => 1);
+
+      await ops.upsertEntityDefinitionImpl(reordered);
+
+      verifyNoMoreInteractions(fts5Db);
+      verifyNever(
+        () => mocks.journalDb.getMeasurementsByType(
+          type: any(named: 'type'),
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      );
+    },
+  );
 
   test(
     'upsertDashboardDefinitionImpl notifies and enqueues a sync update',

@@ -74,7 +74,8 @@ header.
 numbers.** `MeasurablesBarChart` branches on `MeasurableDataType.isChoice`
 before any aggregation is resolved: its raw entries for the range are reduced
 by `choiceDaySeries` (`state/measurable_choice_series.dart`) to one choice per
-calendar day — the day's **latest** recording, by time then entry id, so two
+calendar day, including both calendar dates touched by a partial-day range —
+the day's **latest** recording, by time then entry id, so two
 replicas agree — and drawn by `MeasurableChoiceStrip` as one cell per day under
 the same `kChartLeftAxisWidth` inset every other card uses, so the shared date
 axis reads across it. The cells are **painted** (`ChoiceStripPainter`), not
@@ -87,7 +88,8 @@ token stepped from `background.level03` to `interactive.enabled` across the
 definition's choice list in the user's order (archived choices keep their
 step, an unknown id draws in `decorative.level02`), which reads the list as
 the ordinal scale it is without a categorical palette the token set does not
-have. A recorded day names its date and choice in a tooltip; the footer is a
+have. A recorded day names its date and choice in a tooltip; leaving the strip
+clears the hover tooltip. The footer is a
 `MeasurableChoiceLegend` of the active choices plus any archived one still
 colouring a day. The dashboard editor neither names nor edits an aggregation
 for such an item, and the measurable picker adds it with `AggregationType.none`.

@@ -74,7 +74,7 @@ abstract class MeasurableChoice with _$MeasurableChoice {
   const factory MeasurableChoice({
     required String id,
     required String title,
-    bool? archived,
+    @JsonKey(includeIfNull: false) bool? archived,
   }) = _MeasurableChoice;
 
   factory MeasurableChoice.fromJson(Map<String, dynamic> json) =>

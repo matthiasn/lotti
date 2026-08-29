@@ -12055,7 +12055,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get settingsMeasurablesEmptyStateHint =>
-      'Mätbara är värden du följer över tid — vikt, vatten, steg eller ett val som hur utvilad du känner dig.';
+      'Mätvärden är sådant du följer över tid — vikt, vatten, steg eller ett val för hur utvilad du känner dig.';
 
   @override
   String get settingsMeasurablesErrorLoading => 'Fellastningsmätbara';

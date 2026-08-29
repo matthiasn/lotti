@@ -4696,7 +4696,7 @@
   "settingsMeasurableSaveLabel": "Guardar",
   "settingsMeasurablesCreateTitle": "Crear valor medible",
   "settingsMeasurablesEmptyState": "Aún no hay valores medibles",
-  "settingsMeasurablesEmptyStateHint": "Los valores medibles son valores que sigues a lo largo del tiempo: peso, agua, pasos o una opción como lo descansado que te sientes.",
+  "settingsMeasurablesEmptyStateHint": "Los valores medibles son datos que sigues a lo largo del tiempo: peso, agua, pasos o una opción como lo descansado que te sientes.",
   "settingsMeasurablesErrorLoading": "Error al cargar valores medibles",
   "settingsMeasurablesNoMatchQuery": "Ningún valor medible coincide con \"{query}\"",
   "@settingsMeasurablesNoMatchQuery": {

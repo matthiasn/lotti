@@ -290,7 +290,7 @@ as DateTime?,
 /// @nodoc
 mixin _$MeasurableChoice {
 
- String get id; String get title; bool? get archived;
+ String get id; String get title;@JsonKey(includeIfNull: false) bool? get archived;
 /// Create a copy of MeasurableChoice
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -323,7 +323,7 @@ abstract mixin class $MeasurableChoiceCopyWith<$Res>  {
   factory $MeasurableChoiceCopyWith(MeasurableChoice value, $Res Function(MeasurableChoice) _then) = _$MeasurableChoiceCopyWithImpl;
 @useResult
 $Res call({
- String id, String title, bool? archived
+ String id, String title,@JsonKey(includeIfNull: false) bool? archived
 });
 
 
@@ -430,7 +430,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String title,  bool? archived)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String title, @JsonKey(includeIfNull: false)  bool? archived)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _MeasurableChoice() when $default != null:
 return $default(_that.id,_that.title,_that.archived);case _:
@@ -451,7 +451,7 @@ return $default(_that.id,_that.title,_that.archived);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String title,  bool? archived)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String title, @JsonKey(includeIfNull: false)  bool? archived)  $default,) {final _that = this;
 switch (_that) {
 case _MeasurableChoice():
 return $default(_that.id,_that.title,_that.archived);case _:
@@ -471,7 +471,7 @@ return $default(_that.id,_that.title,_that.archived);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String title,  bool? archived)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String title, @JsonKey(includeIfNull: false)  bool? archived)?  $default,) {final _that = this;
 switch (_that) {
 case _MeasurableChoice() when $default != null:
 return $default(_that.id,_that.title,_that.archived);case _:
@@ -486,12 +486,12 @@ return $default(_that.id,_that.title,_that.archived);case _:
 @JsonSerializable()
 
 class _MeasurableChoice implements MeasurableChoice {
-  const _MeasurableChoice({required this.id, required this.title, this.archived});
+  const _MeasurableChoice({required this.id, required this.title, @JsonKey(includeIfNull: false) this.archived});
   factory _MeasurableChoice.fromJson(Map<String, dynamic> json) => _$MeasurableChoiceFromJson(json);
 
 @override final  String id;
 @override final  String title;
-@override final  bool? archived;
+@override@JsonKey(includeIfNull: false) final  bool? archived;
 
 /// Create a copy of MeasurableChoice
 /// with the given fields replaced by the non-null parameter values.
@@ -526,7 +526,7 @@ abstract mixin class _$MeasurableChoiceCopyWith<$Res> implements $MeasurableChoi
   factory _$MeasurableChoiceCopyWith(_MeasurableChoice value, $Res Function(_MeasurableChoice) _then) = __$MeasurableChoiceCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String title, bool? archived
+ String id, String title,@JsonKey(includeIfNull: false) bool? archived
 });
 
 

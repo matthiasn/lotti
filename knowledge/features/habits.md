@@ -172,7 +172,11 @@ Each row's rule is a segmented mode — *Any entry / Total ≥ / Total ≤* for 
 measurable, *Any reading / Daily ≥ / Daily ≤* for a health type, *Any
 workout / Duration ≥ / Distance ≥ / Energy ≥* for a workout — with a
 threshold in the signal's unit. Steps default to *Daily ≥ 6,000*; everything
-else defaults to the record-based "any" mode.
+else defaults to the record-based "any" mode. If a measurable definition is
+later changed from numeric to choice, evaluation normalizes any older stored
+minimum or maximum away recursively before reading the signal. The choice's
+occurrence marker therefore keeps the same "any entry" semantics immediately,
+even before the habit is opened and saved again.
 
 # The data model is more ambitious than the schedule surface
 

@@ -74,6 +74,7 @@ Future<String? Function()> _registerMatrixSyncStack({
     notificationsDb: notificationsDb,
     notificationScheduler: notificationScheduler,
     syncNodeProfileRepository: syncNodeProfileRepository,
+    fts5Db: getIt<Fts5Db>(),
   )..consumptionRepository = consumptionRepository;
 
   final collectSyncMetrics = await journalDb.getConfigFlag(enableLoggingFlag);

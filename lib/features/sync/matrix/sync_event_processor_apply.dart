@@ -44,7 +44,35 @@ extension SyncEventProcessorApply on SyncEventProcessor {
           journalDb: journalDb,
         );
       case SyncEntityDefinition(:final entityDefinition):
+        final measurable = entityDefinition is MeasurableDataType
+            ? entityDefinition
+            : null;
+        final fts5Db = _fts5Db;
+        final previousMeasurable = measurable != null && fts5Db != null
+            ? await journalDb.getMeasurableDataTypeById(measurable.id)
+            : null;
         await journalDb.upsertEntityDefinition(entityDefinition);
+        if (measurable != null &&
+            fts5Db != null &&
+            measurementDefinitionAffectsFts(previousMeasurable, measurable)) {
+          try {
+            final entries = await journalDb.getMeasurementsByType(
+              type: measurable.id,
+              rangeStart: DateTime(1),
+              rangeEnd: DateTime(9999, 12, 31, 23, 59, 59, 999),
+            );
+            await fts5Db.reindexMeasurements(measurable, entries);
+          } catch (exception, stackTrace) {
+            // Search rows are derived. Keep the synced definition even if its
+            // local index cannot be refreshed right now.
+            _loggingService.error(
+              LogDomain.sync,
+              exception,
+              stackTrace: stackTrace,
+              subDomain: 'processor.apply.entityDefinition.reindex',
+            );
+          }
+        }
         final typeNotification = switch (entityDefinition) {
           CategoryDefinition() => categoriesNotification,
           HabitDefinition() => habitsNotification,

@@ -94,24 +94,28 @@ class _MeasurableChoiceStripState extends State<MeasurableChoiceStrip> {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final width = constraints.maxWidth;
-          final strip = Listener(
-            onPointerHover: (event) =>
-                _trackPointer(event.localPosition, width),
-            onPointerDown: (event) => _trackPointer(event.localPosition, width),
-            child: CustomPaint(
-              key: const ValueKey('measurable-choice-strip'),
-              painter: ChoiceStripPainter(
-                colors: [
-                  for (final day in days)
-                    if (day.choiceId case final choiceId?)
-                      colors[choiceId] ?? tokens.colors.decorative.level02
-                    else
-                      tokens.colors.background.level03,
-                ],
-                gap: tokens.spacing.step1,
-                radius: tokens.radii.xs,
+          final strip = MouseRegion(
+            onExit: (_) => setState(() => _pointerIndex = null),
+            child: Listener(
+              onPointerHover: (event) =>
+                  _trackPointer(event.localPosition, width),
+              onPointerDown: (event) =>
+                  _trackPointer(event.localPosition, width),
+              child: CustomPaint(
+                key: const ValueKey('measurable-choice-strip'),
+                painter: ChoiceStripPainter(
+                  colors: [
+                    for (final day in days)
+                      if (day.choiceId case final choiceId?)
+                        colors[choiceId] ?? tokens.colors.decorative.level02
+                      else
+                        tokens.colors.background.level03,
+                  ],
+                  gap: tokens.spacing.step1,
+                  radius: tokens.radii.xs,
+                ),
+                child: const SizedBox.expand(),
               ),
-              child: const SizedBox.expand(),
             ),
           );
           // One tooltip for the whole strip, worded for the day under the

@@ -221,6 +221,10 @@ state and flip the same `dirty` flag; a save with the choice kind refuses a
 blank title or an empty list and calls the rows out instead. What a choice is,
 and why it is an id with a title rather than an enum, is in
 [entity definitions](../domain/entity-definitions.md#measurabledatatype-records-a-number-or-a-choice).
+Changing a numeric measurable to choices also changes the valid downstream
+contract: habit evaluation treats any stored numeric bounds as obsolete, and
+the goal editor drops a stored numeric criterion for that measurable when the
+goal is next edited.
 
 Dashboards and measurables save through `PersistenceLogic`; habits save through
 `habit_settings_controller.dart`, **which also schedules notifications**.

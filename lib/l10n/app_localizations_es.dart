@@ -12208,7 +12208,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get settingsMeasurablesEmptyStateHint =>
-      'Los valores medibles son valores que sigues a lo largo del tiempo: peso, agua, pasos o una opción como lo descansado que te sientes.';
+      'Los valores medibles son datos que sigues a lo largo del tiempo: peso, agua, pasos o una opción como lo descansado que te sientes.';
 
   @override
   String get settingsMeasurablesErrorLoading =>

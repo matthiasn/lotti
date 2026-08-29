@@ -182,6 +182,25 @@ void main() {
       expect(emitted, isEmpty);
     });
 
+    test('a converted choice measurable ignores its stale numeric bound', () {
+      when(() => entitiesCache.getDataTypeById('water')).thenReturn(
+        measurableHydration.copyWith(id: 'water'),
+      );
+      stubHabits([waterHabit]);
+      final entry =
+          measurementEntity(DateTime(2026, 8, 8, 9), 1) as MeasurementEntry;
+      stubMeasurements([
+        entry.copyWith(
+          data: entry.data.copyWith(choiceId: hydrationClear.id),
+        ),
+      ]);
+
+      run((async) => service.start());
+
+      expect(written, hasLength(1));
+      expect(written.single.autoCompleteReason, 'Hydration');
+    });
+
     test('inactive habits and habits without a rule are not candidates', () {
       stubHabits([
         waterHabit.copyWith(active: false),

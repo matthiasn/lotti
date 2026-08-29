@@ -5242,7 +5242,7 @@
   "settingsMeasurableSaveLabel": "Spara",
   "settingsMeasurablesCreateTitle": "Skapa mätbart",
   "settingsMeasurablesEmptyState": "Inga mätbara faktorer än",
-  "settingsMeasurablesEmptyStateHint": "Mätbara är värden du följer över tid — vikt, vatten, steg eller ett val som hur utvilad du känner dig.",
+  "settingsMeasurablesEmptyStateHint": "Mätvärden är sådant du följer över tid — vikt, vatten, steg eller ett val för hur utvilad du känner dig.",
   "settingsMeasurablesErrorLoading": "Fellastningsmätbara",
   "settingsMeasurablesNoMatchQuery": "Inga mätbara värden matchar \"{query}\"",
   "@settingsMeasurablesNoMatchQuery": {
