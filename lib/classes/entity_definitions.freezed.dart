@@ -2709,7 +2709,7 @@ mixin _$MeasurementData {
 /// for [MeasurableValueKind.choice]; [value] is then `1` — one occurrence
 /// — so every consumer that sums measurements per day counts recordings
 /// instead of breaking on a missing number.
- String? get choiceId;
+@JsonKey(includeIfNull: false) String? get choiceId;
 /// Create a copy of MeasurementData
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -2742,7 +2742,7 @@ abstract mixin class $MeasurementDataCopyWith<$Res>  {
   factory $MeasurementDataCopyWith(MeasurementData value, $Res Function(MeasurementData) _then) = _$MeasurementDataCopyWithImpl;
 @useResult
 $Res call({
- DateTime dateFrom, DateTime dateTo, num value, String dataTypeId, String? choiceId
+ DateTime dateFrom, DateTime dateTo, num value, String dataTypeId,@JsonKey(includeIfNull: false) String? choiceId
 });
 
 
@@ -2851,7 +2851,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( DateTime dateFrom,  DateTime dateTo,  num value,  String dataTypeId,  String? choiceId)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( DateTime dateFrom,  DateTime dateTo,  num value,  String dataTypeId, @JsonKey(includeIfNull: false)  String? choiceId)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _MeasurementData() when $default != null:
 return $default(_that.dateFrom,_that.dateTo,_that.value,_that.dataTypeId,_that.choiceId);case _:
@@ -2872,7 +2872,7 @@ return $default(_that.dateFrom,_that.dateTo,_that.value,_that.dataTypeId,_that.c
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( DateTime dateFrom,  DateTime dateTo,  num value,  String dataTypeId,  String? choiceId)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( DateTime dateFrom,  DateTime dateTo,  num value,  String dataTypeId, @JsonKey(includeIfNull: false)  String? choiceId)  $default,) {final _that = this;
 switch (_that) {
 case _MeasurementData():
 return $default(_that.dateFrom,_that.dateTo,_that.value,_that.dataTypeId,_that.choiceId);case _:
@@ -2892,7 +2892,7 @@ return $default(_that.dateFrom,_that.dateTo,_that.value,_that.dataTypeId,_that.c
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( DateTime dateFrom,  DateTime dateTo,  num value,  String dataTypeId,  String? choiceId)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( DateTime dateFrom,  DateTime dateTo,  num value,  String dataTypeId, @JsonKey(includeIfNull: false)  String? choiceId)?  $default,) {final _that = this;
 switch (_that) {
 case _MeasurementData() when $default != null:
 return $default(_that.dateFrom,_that.dateTo,_that.value,_that.dataTypeId,_that.choiceId);case _:
@@ -2907,7 +2907,7 @@ return $default(_that.dateFrom,_that.dateTo,_that.value,_that.dataTypeId,_that.c
 @JsonSerializable()
 
 class _MeasurementData implements MeasurementData {
-  const _MeasurementData({required this.dateFrom, required this.dateTo, required this.value, required this.dataTypeId, this.choiceId});
+  const _MeasurementData({required this.dateFrom, required this.dateTo, required this.value, required this.dataTypeId, @JsonKey(includeIfNull: false) this.choiceId});
   factory _MeasurementData.fromJson(Map<String, dynamic> json) => _$MeasurementDataFromJson(json);
 
 @override final  DateTime dateFrom;
@@ -2918,7 +2918,7 @@ class _MeasurementData implements MeasurementData {
 /// for [MeasurableValueKind.choice]; [value] is then `1` — one occurrence
 /// — so every consumer that sums measurements per day counts recordings
 /// instead of breaking on a missing number.
-@override final  String? choiceId;
+@override@JsonKey(includeIfNull: false) final  String? choiceId;
 
 /// Create a copy of MeasurementData
 /// with the given fields replaced by the non-null parameter values.
@@ -2953,7 +2953,7 @@ abstract mixin class _$MeasurementDataCopyWith<$Res> implements $MeasurementData
   factory _$MeasurementDataCopyWith(_MeasurementData value, $Res Function(_MeasurementData) _then) = __$MeasurementDataCopyWithImpl;
 @override @useResult
 $Res call({
- DateTime dateFrom, DateTime dateTo, num value, String dataTypeId, String? choiceId
+ DateTime dateFrom, DateTime dateTo, num value, String dataTypeId,@JsonKey(includeIfNull: false) String? choiceId
 });
 
 

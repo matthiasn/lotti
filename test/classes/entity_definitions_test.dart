@@ -540,7 +540,7 @@ void main() {
         dataTypeId: 'water',
       );
       final json = data.toJson();
-      expect(json['choiceId'], isNull);
+      expect(json, isNot(contains('choiceId')));
       expect(MeasurementData.fromJson(json).choiceId, isNull);
     });
 

@@ -517,7 +517,7 @@ Map<String, dynamic> _$MeasurementDataToJson(_MeasurementData instance) =>
       'dateTo': instance.dateTo.toIso8601String(),
       'value': instance.value,
       'dataTypeId': instance.dataTypeId,
-      'choiceId': instance.choiceId,
+      'choiceId': ?instance.choiceId,
     };
 
 _AiResponseData _$AiResponseDataFromJson(Map<String, dynamic> json) =>

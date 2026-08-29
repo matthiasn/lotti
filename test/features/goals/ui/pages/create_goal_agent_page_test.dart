@@ -2247,7 +2247,8 @@ void main() {
   });
 
   testWidgets(
-    'editing removes a numeric target whose measurable became a choice',
+    'editing waits for measurable definitions before removing a numeric '
+    'target that became a choice',
     (tester) async {
       tester.view.physicalSize = const Size(900, 2200);
       tester.view.devicePixelRatio = 1;
@@ -2301,6 +2302,8 @@ void main() {
           criteria: any(named: 'criteria'),
         ),
       ).thenReturn(null);
+      final measurables = StreamController<List<MeasurableDataType>>();
+      addTearDown(measurables.close);
 
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(
@@ -2308,9 +2311,7 @@ void main() {
           overrides: [
             ...overrides(editSpec: current),
             measurableDataTypesStreamProvider.overrideWith(
-              (ref) => Stream.value([
-                measurableHydration.copyWith(id: 'hydration'),
-              ]),
+              (ref) => measurables.stream,
             ),
           ],
         ),
@@ -2327,6 +2328,21 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Save new version'));
       await tester.pump();
+      verifyNever(
+        () => revisionService.reviseFromOwner(
+          agentId: any(named: 'agentId'),
+          baseVersionId: any(named: 'baseVersionId'),
+          displayName: any(named: 'displayName'),
+          title: any(named: 'title'),
+          statement: any(named: 'statement'),
+          criteria: any(named: 'criteria'),
+        ),
+      );
+
+      measurables.add([
+        measurableHydration.copyWith(id: 'hydration'),
+      ]);
+      await tester.pumpAndSettle();
 
       final saved = verify(
         () => revisionService.reviseFromOwner(

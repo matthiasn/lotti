@@ -346,7 +346,7 @@ abstract class MeasurementData with _$MeasurementData {
     /// for [MeasurableValueKind.choice]; [value] is then `1` — one occurrence
     /// — so every consumer that sums measurements per day counts recordings
     /// instead of breaking on a missing number.
-    String? choiceId,
+    @JsonKey(includeIfNull: false) String? choiceId,
   }) = _MeasurementData;
 
   factory MeasurementData.fromJson(Map<String, dynamic> json) =>

@@ -653,9 +653,10 @@ flowchart TD
   the memory and restores its default target. The same rule already governs
   category- and label-time matches, so no back-edit of the statement can silently
   resurrect a signal the user removed.
-  When an edited goal references a measurable that is now choice-based, the
-  editor removes that obsolete numeric leaf and target before saving; the
-  measurable is also excluded from numeric record offers.
+  When an edited goal references a measurable that is now choice-based, save
+  waits for the current measurable definitions and removes that obsolete
+  numeric leaf and target before rebuilding criteria; the measurable is also
+  excluded from numeric record offers.
   Signals added through the picker likewise stay on the card as unchecked rows
   once unticked, until the step is re-entered and the row order is re-frozen —
   deselecting is never a deletion the user has to undo through the picker. Saving validates
