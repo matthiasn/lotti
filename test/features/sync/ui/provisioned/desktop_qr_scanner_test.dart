@@ -375,6 +375,35 @@ void main() {
       expect(platform.disposedCameraIds, [7]);
     });
 
+    test('removes its error listener when stream startup fails', () async {
+      final platform = _FakeCameraPlatform(throwOnStreamListen: true);
+      CameraPlatform.instance = platform;
+      final errors = <Object>[];
+
+      final camera = await createDesktopQrCamera();
+      await expectLater(
+        camera.start(
+          shouldCaptureFrame: () => false,
+          onFrame: (_) {},
+          onError: errors.add,
+        ),
+        throwsA(
+          isA<CameraException>().having(
+            (error) => error.code,
+            'code',
+            'stream_start_failed',
+          ),
+        ),
+      );
+
+      platform.emitError('late camera error');
+      await Future<void>.value();
+      expect(errors, isEmpty);
+
+      await camera.dispose();
+      expect(platform.disposedCameraIds, [7]);
+    });
+
     testWidgets('shows the fallback after a running camera reports an error', (
       tester,
     ) async {
@@ -536,6 +565,7 @@ class _FakeCameraPlatform extends CameraPlatform {
       ),
     ],
     this.throwOnInitialize = false,
+    this.throwOnStreamListen = false,
     this.throwOnStreamCancel = false,
   }) {
     _frames = StreamController<CameraImageData>(
@@ -553,6 +583,7 @@ class _FakeCameraPlatform extends CameraPlatform {
 
   final List<CameraDescription> cameras;
   final bool throwOnInitialize;
+  final bool throwOnStreamListen;
   final bool throwOnStreamCancel;
   final _initialized = StreamController<CameraInitializedEvent>.broadcast(
     sync: true,
@@ -627,7 +658,12 @@ class _FakeCameraPlatform extends CameraPlatform {
   Stream<CameraImageData> onStreamedFrameAvailable(
     int cameraId, {
     CameraImageStreamOptions? options,
-  }) => _frames.stream;
+  }) {
+    if (throwOnStreamListen) {
+      throw PlatformException(code: 'stream_start_failed');
+    }
+    return _frames.stream;
+  }
 
   @override
   Widget buildPreview(int cameraId) => const ColoredBox(
