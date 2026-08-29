@@ -3214,7 +3214,7 @@
   "habitLogOtherDayHint": "Tenere per registrare un altro giorno",
   "habitNotRecordedLabel": "Non registrato",
   "habitPriorityLabel": "Priorità",
-  "habitReflectInGoal": "Rifletti su questo giorno in {goal}",
+  "habitReflectInGoal": "Rifletti su questo giorno per l'obiettivo {goal}",
   "habitsAboveGoal": "Sulla pista",
   "habitsActiveHabitsCount": "{count, plural, one{1 abitudine attiva} other{{count} abitudini attive}}",
   "@habitsActiveHabitsCount": {

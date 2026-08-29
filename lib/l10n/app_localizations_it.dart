@@ -7517,7 +7517,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String habitReflectInGoal(String goal) {
-    return 'Rifletti su questo giorno in $goal';
+    return 'Rifletti su questo giorno per l\'obiettivo $goal';
   }
 
   @override
