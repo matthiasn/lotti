@@ -406,6 +406,16 @@ class SynapseAdminClient(SynapseClientBase):
             action = "suspend" if suspended else "unsuspend"
             raise ProvisioningError(f"Failed to {action} {user_mxid} (HTTP {resp.status_code})")
 
+    async def require_account_suspension_support(self) -> None:
+        """Fail unless the authenticated homeserver supports account suspension.
+
+        Subscription-enabled services call this during startup so they never
+        accept a purchase that they cannot later enforce.
+        """
+        client = self._client()
+        headers = await self._auth_headers(client)
+        await self._require_account_suspension_version(client, headers)
+
     async def _require_account_suspension_version(
         self,
         client: httpx.AsyncClient,

@@ -5,7 +5,7 @@ description: Single-user multi-device replication over end-to-end encrypted Matr
 resource: ../../../lib/features/sync
 tags: [sync, matrix, replication, outbox, queue]
 status: stable
-generated: { by: codex/gpt-5, at: 2026-08-29T22:48:56Z }
+generated: { by: codex/gpt-5, at: 2026-08-29T23:12:31Z }
 stale_after: 2026-11-03
 sources:
   - id: sync-src
@@ -133,17 +133,19 @@ the bootstrap credential. The Android Billing client is not wired yet, so this
 backend path is dormant while the feature flag remains off.
 
 The anonymous entitlement endpoint consumes a durable, HMAC-pseudonymized
-per-client quota before it creates any identity row. Authenticated purchase
-intent issuance consumes a separate durable per-entitlement quota before
-hashing and storing another one-time secret; the same transaction prunes
-expired intents and their Integrity replay markers. Paid provisioning then
-takes a token-owned SQLite reservation keyed by entitlement before it touches
-Matrix. Requests in another service object or process wait for the owner's
-durable claim and reuse it; a killed owner becomes recoverable after five
-minutes. These are database invariants, with reverse-proxy throttling kept as
-an additional outer boundary. The bundled nginx forwards the original client
-chain and Uvicorn trusts only nginx's fixed Compose address, so direct callers
-cannot forge the quota identity through `X-Forwarded-For`.
+per-client quota before it creates any identity row. Purchase-intent requests
+consume a durable per-entitlement attempt quota before scrypt verifies the
+app-held secret, followed by a separate post-authentication issuance quota
+before hashing and storing another one-time secret; the latter transaction
+also prunes expired intents and their Integrity replay markers. Paid
+provisioning then takes a token-owned SQLite reservation keyed by entitlement
+before it touches Matrix. Requests in another service object or process wait
+for the owner's durable claim and reuse it; a killed owner becomes recoverable
+after five minutes. These are database invariants, with reverse-proxy
+throttling kept as an additional outer boundary. The bundled nginx forwards
+the original client chain and Uvicorn trusts only nginx's fixed Compose
+address, so direct callers cannot forge the quota identity through
+`X-Forwarded-For`.
 
 Play RTDN is only a refresh signal. An authenticated Pub/Sub push resolves an
 already-known token and causes a new `purchases.subscriptionsv2.get`; a periodic
@@ -154,15 +156,15 @@ The Play-configured three-day grace deadline arrives as the line item's extended
 `expiryTime`. Lotti uses that timestamp directly and never adds another local
 grace window. Loss of entitlement suspends the Matrix user reversibly, while a
 renewal or payment recovery unsuspends it without discarding device or E2EE
-state. Suspension requires Synapse 1.110.0 or newer with MSC3823 enabled; the
-admin client validates the server version before its first suspension call and
-fails closed if compatibility cannot be proved. Each enforcement reloads the
-current purchase token while holding the
-entitlement's serialization stripe, so an older refresh cannot suspend the
-account after a replacement refresh restored it. Same-token persistence rejects
-snapshots whose Publisher-response observation timestamp is older than the
-stored row. The timestamp is captured after Google responds, so a request that
-started earlier but returned later with newer evidence is not discarded.
+state. Suspension requires Synapse 1.110.0 or newer with MSC3823 enabled; when
+subscriptions are enabled, startup authenticates to Synapse and validates that
+version before workers start or purchase traffic is accepted. Each enforcement
+reloads the current purchase token while holding the entitlement's
+serialization stripe, so an older refresh cannot suspend the account after a
+replacement refresh restored it. Same-token persistence rejects snapshots
+whose Publisher-response observation timestamp is older than the stored row.
+The timestamp is captured after Google responds, so a request that started
+earlier but returned later with newer evidence is not discarded.
 
 ```mermaid
 stateDiagram-v2

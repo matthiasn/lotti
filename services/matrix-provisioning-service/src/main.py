@@ -34,6 +34,26 @@ async def lifespan(app: FastAPI):
     # misconfigured data volume fails at startup rather than on first request.
     container.get_repository()
 
+    subscription_reconciler = None
+    bundle_claim_reaper = None
+    if _enabled("ENABLE_PLAY_SUBSCRIPTIONS", "false"):
+        # Resolve and actively verify every security-critical dependency before
+        # starting any worker or accepting a purchase. In particular, a server
+        # that cannot suspend expired accounts must never enter paid mode.
+        try:
+            container.get_subscription_identity_service()
+            container.get_subscription_service()
+            container.get_google_play_notifications()
+            await container.get_admin_client().require_account_suspension_support()
+            subscription_reconciler = container.get_subscription_reconciler()
+            bundle_claim_reaper = container.get_bundle_claim_reaper()
+        except Exception:
+            await container.get_admin_client().aclose()
+            google_play_client = container.existing(SERVICE_GOOGLE_PLAY_CLIENT)
+            if google_play_client is not None:
+                await google_play_client.aclose()
+            raise
+
     poller = None
     if _enabled("ENABLE_REDEMPTION_POLLING"):
         poller = container.get_redemption_poller()
@@ -56,18 +76,9 @@ async def lifespan(app: FastAPI):
     else:
         logger.info("Retention sweep disabled by configuration")
 
-    subscription_reconciler = None
-    bundle_claim_reaper = None
-    if _enabled("ENABLE_PLAY_SUBSCRIPTIONS", "false"):
-        # Resolve every security-critical dependency at startup. Missing ADC,
-        # signing digests, encryption keys, or RTDN identity must fail the
-        # deployment before a purchase can be accepted.
-        container.get_subscription_identity_service()
-        container.get_subscription_service()
-        container.get_google_play_notifications()
-        subscription_reconciler = container.get_subscription_reconciler()
+    if subscription_reconciler is not None:
         subscription_reconciler.start()
-        bundle_claim_reaper = container.get_bundle_claim_reaper()
+        assert bundle_claim_reaper is not None
         bundle_claim_reaper.start()
         logger.info("Google Play SYNC subscriptions enabled")
     else:

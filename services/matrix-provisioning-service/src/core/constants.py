@@ -45,6 +45,11 @@ DEFAULT_SUBSCRIPTION_RECONCILE_BATCH_SIZE = 50
 DEFAULT_ENTITLEMENT_ISSUANCE_LIMIT = 5
 DEFAULT_ENTITLEMENT_ISSUANCE_WINDOW_SECONDS = 3600
 
+# Attempts are counted before entitlement-secret verification. Keeping the
+# default aligned with the post-authentication issuance quota means requests
+# beyond the normal Billing-launch allowance never reach scrypt.
+DEFAULT_PURCHASE_INTENT_ATTEMPT_LIMIT = 10
+DEFAULT_PURCHASE_INTENT_ATTEMPT_WINDOW_SECONDS = 900
 # An authenticated entitlement can issue only a small number of one-time
 # Billing authorizations per window. Expired intents are pruned while this
 # durable quota is consumed, bounding both expensive secret hashing and SQLite

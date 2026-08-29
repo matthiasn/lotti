@@ -34,6 +34,8 @@ class SubscriptionIdentityService:
         intent_ttl: timedelta = timedelta(minutes=15),
         entitlement_issuance_limit: int = 5,
         entitlement_issuance_window: timedelta = timedelta(hours=1),
+        purchase_intent_attempt_limit: int = 10,
+        purchase_intent_attempt_window: timedelta = timedelta(minutes=15),
         purchase_intent_issuance_limit: int = 10,
         purchase_intent_issuance_window: timedelta = timedelta(minutes=15),
         secret_hasher: SecretHasher | None = None,
@@ -44,6 +46,10 @@ class SubscriptionIdentityService:
             raise ValueError("Entitlement issuance limit must be positive")
         if entitlement_issuance_window <= timedelta(0):
             raise ValueError("Entitlement issuance window must be positive")
+        if purchase_intent_attempt_limit <= 0:
+            raise ValueError("Purchase intent attempt limit must be positive")
+        if purchase_intent_attempt_window <= timedelta(0):
+            raise ValueError("Purchase intent attempt window must be positive")
         if purchase_intent_issuance_limit <= 0:
             raise ValueError("Purchase intent issuance limit must be positive")
         if purchase_intent_issuance_window <= timedelta(0):
@@ -54,6 +60,8 @@ class SubscriptionIdentityService:
         self._intent_ttl = intent_ttl
         self._entitlement_issuance_limit = entitlement_issuance_limit
         self._entitlement_issuance_window = entitlement_issuance_window
+        self._purchase_intent_attempt_limit = purchase_intent_attempt_limit
+        self._purchase_intent_attempt_window = purchase_intent_attempt_window
         self._purchase_intent_issuance_limit = purchase_intent_issuance_limit
         self._purchase_intent_issuance_window = purchase_intent_issuance_window
         self._secret_hasher = secret_hasher or SecretHasher()
@@ -100,18 +108,23 @@ class SubscriptionIdentityService:
     async def authenticate(self, entitlement_id: str, auth_secret: str) -> SyncEntitlement:
         """Authenticate with the app-held high-entropy entitlement secret."""
         entitlement = await self._repository.get_entitlement(entitlement_id)
-        valid_secret = (
-            False
-            if entitlement is None
-            else await asyncio.to_thread(
-                self._secret_hasher.verify,
-                auth_secret,
-                entitlement.auth_secret_hash,
-            )
-        )
-        if entitlement is None or entitlement.disabled_at is not None or not valid_secret:
+        if entitlement is None or entitlement.disabled_at is not None:
             raise EntitlementAuthenticationException("Invalid entitlement credentials")
+        await self._verify_entitlement_secret(entitlement, auth_secret)
         return entitlement
+
+    async def _verify_entitlement_secret(
+        self,
+        entitlement: SyncEntitlement,
+        auth_secret: str,
+    ) -> None:
+        valid_secret = await asyncio.to_thread(
+            self._secret_hasher.verify,
+            auth_secret,
+            entitlement.auth_secret_hash,
+        )
+        if not valid_secret:
+            raise EntitlementAuthenticationException("Invalid entitlement credentials")
 
     async def create_purchase_intent(
         self,
@@ -123,7 +136,18 @@ class SubscriptionIdentityService:
         now: datetime,
     ) -> PurchaseIntentCredentials:
         """Authorize one Billing launch for an authenticated entitlement."""
-        entitlement = await self.authenticate(entitlement_id, auth_secret)
+        entitlement = await self._repository.get_entitlement(entitlement_id)
+        if entitlement is None or entitlement.disabled_at is not None:
+            raise EntitlementAuthenticationException("Invalid entitlement credentials")
+        retry_after = await self._repository.consume_purchase_intent_attempt_quota(
+            entitlement.entitlement_id,
+            now=now,
+            window=self._purchase_intent_attempt_window,
+            max_requests=self._purchase_intent_attempt_limit,
+        )
+        if retry_after is not None:
+            raise PurchaseIntentRateLimitException(retry_after_seconds=retry_after)
+        await self._verify_entitlement_secret(entitlement, auth_secret)
         if base_plan_id not in self._allowed_products.get(product_id, frozenset()):
             raise InvalidSubscriptionProductException(
                 "Subscription product or base plan is not enabled"

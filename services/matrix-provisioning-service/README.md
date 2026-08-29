@@ -88,8 +88,9 @@ The Play subscription backend is present but **disabled by default**. Set
 `ENABLE_PLAY_SUBSCRIPTIONS=true` only after the Play Console, Google service
 account, Pub/Sub push identity, encryption keys, reverse proxy and Synapse
 suspension endpoint have all been configured. Startup resolves every required
-security dependency and fails rather than accepting a purchase with partial
-configuration.
+security dependency, authenticates to Synapse, probes the minimum account-
+suspension version, and fails rather than accepting a purchase with partial or
+unenforceable configuration.
 
 The paid path does not trust a client purchase status. It creates a stable,
 anonymous server entitlement and a one-time purchase intent, validates a fresh
@@ -164,6 +165,8 @@ authoritative observation wins.
 | `ENABLE_PLAY_SUBSCRIPTIONS` | No | `false` | Enables purchase routes, reconciliation and claim cleanup |
 | `ENTITLEMENT_ISSUANCE_LIMIT` | No | `5` | Anonymous entitlement creations allowed per client and window |
 | `ENTITLEMENT_ISSUANCE_WINDOW_SECONDS` | No | `3600` | Durable entitlement-creation quota window |
+| `PURCHASE_INTENT_ATTEMPT_LIMIT` | No | `10` | Purchase-intent attempts allowed before entitlement-secret verification |
+| `PURCHASE_INTENT_ATTEMPT_WINDOW_SECONDS` | No | `900` | Durable pre-authentication attempt window |
 | `PURCHASE_INTENT_ISSUANCE_LIMIT` | No | `10` | Purchase intents allowed per entitlement and window |
 | `PURCHASE_INTENT_ISSUANCE_WINDOW_SECONDS` | No | `900` | Durable purchase-intent quota and cleanup window |
 | `SUBSCRIPTION_ENCRYPTION_KEY_ID` | When enabled | — | Identifier for the active AES-256-GCM write key |
@@ -283,10 +286,11 @@ escrow.
   Pub/Sub push service account. The latter must match both
   `PLAY_RTDN_AUDIENCE` and `PLAY_RTDN_SERVICE_ACCOUNT_EMAIL` exactly.
 - Run Synapse 1.110.0 or newer and enable the MSC3823 account-suspension feature
-  before enabling subscriptions. The client verifies the server version before
-  calling `PUT /_synapse/admin/v1/suspend/{user_id}` and fails closed if the
-  endpoint is unavailable. Suspension is intentionally reversible; deactivation
-  would destroy device and encryption state needed after renewal.
+  before enabling subscriptions. Startup authenticates to Synapse and verifies
+  the server version before starting subscription workers or accepting traffic;
+  suspension calls still fail closed if the endpoint later becomes unavailable.
+  Suspension is intentionally reversible; deactivation would destroy device and
+  encryption state needed after renewal.
 - Configure the three-day grace period in Play Console and monitor
   reconciliation errors, unacknowledged purchases, RTDN delivery age, stale
   claims, and failed suspend/unsuspend operations.

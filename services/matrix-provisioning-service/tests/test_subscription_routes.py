@@ -11,6 +11,7 @@ import pytest
 from fastapi.testclient import TestClient
 from src.container import container
 from src.core.constants import (
+    SERVICE_ADMIN_CLIENT,
     SERVICE_BUNDLE_CLAIM_REAPER,
     SERVICE_BUNDLE_ROTATION_SERVICE,
     SERVICE_GOOGLE_PLAY_NOTIFICATIONS,
@@ -185,10 +186,22 @@ class FakeReconciler:
         pass
 
 
+class FakeAdminClient:
+    def __init__(self):
+        self.suspension_checks = 0
+
+    async def require_account_suspension_support(self):
+        self.suspension_checks += 1
+
+    async def aclose(self):
+        pass
+
+
 @pytest.fixture
 def services(repository, monkeypatch):
     monkeypatch.setenv("ENABLE_PLAY_SUBSCRIPTIONS", "true")
     instances = {
+        SERVICE_ADMIN_CLIENT: FakeAdminClient(),
         SERVICE_SUBSCRIPTION_IDENTITY: FakeIdentityService(),
         SERVICE_SUBSCRIPTION_ACCESS_SERVICE: FakeSubscriptionAccessService(),
         SERVICE_SUBSCRIPTION_SERVICE: FakeSubscriptionService(),
@@ -238,6 +251,7 @@ def test_entitlement_bootstrap_is_public_and_returns_one_time_secret(client, ser
     }
     identifier, _ = services[SERVICE_SUBSCRIPTION_IDENTITY].entitlement_calls[0]
     assert identifier == "testclient"
+    assert services[SERVICE_ADMIN_CLIENT].suspension_checks == 1
 
 
 def test_entitlement_bootstrap_maps_per_client_rate_limit(client, services):

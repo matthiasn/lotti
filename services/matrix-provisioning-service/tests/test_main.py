@@ -24,8 +24,15 @@ class FakePeriodicTask:
 
 
 class FakeCloseable:
-    def __init__(self):
+    def __init__(self, *, suspension_error=None):
         self.closed = False
+        self.suspension_checks = 0
+        self.suspension_error = suspension_error
+
+    async def require_account_suspension_support(self):
+        self.suspension_checks += 1
+        if self.suspension_error is not None:
+            raise self.suspension_error
 
     async def aclose(self):
         self.closed = True
@@ -58,6 +65,7 @@ async def test_lifespan_starts_and_stops_every_enabled_worker(monkeypatch):
 
     async with main.lifespan(main.app):
         assert resolved == ["repository", "identity", "subscription", "notifications"]
+        assert admin.suspension_checks == 1
         assert all(task.started for task in (poller, retention, reconciler, reaper))
         assert not admin.closed
         assert not google.closed
@@ -65,3 +73,34 @@ async def test_lifespan_starts_and_stops_every_enabled_worker(monkeypatch):
     assert all(task.stopped for task in (poller, retention, reconciler, reaper))
     assert admin.closed
     assert google.closed
+
+
+async def test_lifespan_rejects_subscriptions_without_suspension_support(monkeypatch):
+    reconciler = FakePeriodicTask()
+    reaper = FakePeriodicTask()
+    admin = FakeCloseable(suspension_error=RuntimeError("unsupported Synapse"))
+    google = FakeCloseable()
+    fake_container = SimpleNamespace(
+        get_repository=lambda: None,
+        get_subscription_identity_service=lambda: None,
+        get_subscription_service=lambda: None,
+        get_google_play_notifications=lambda: None,
+        get_subscription_reconciler=lambda: reconciler,
+        get_bundle_claim_reaper=lambda: reaper,
+        get_admin_client=lambda: admin,
+        existing=lambda name: google if name == SERVICE_GOOGLE_PLAY_CLIENT else None,
+    )
+    monkeypatch.setattr(main, "container", fake_container)
+    monkeypatch.setenv("ENABLE_REDEMPTION_POLLING", "false")
+    monkeypatch.setenv("ENABLE_RETENTION_SWEEP", "false")
+    monkeypatch.setenv("ENABLE_PLAY_SUBSCRIPTIONS", "true")
+
+    with pytest.raises(RuntimeError, match="unsupported Synapse"):
+        async with main.lifespan(main.app):
+            pytest.fail("Startup must fail before accepting subscription traffic")
+
+    assert admin.suspension_checks == 1
+    assert reconciler.started is False
+    assert reaper.started is False
+    assert admin.closed is True
+    assert google.closed is True

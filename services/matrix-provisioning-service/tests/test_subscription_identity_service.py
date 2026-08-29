@@ -21,6 +21,18 @@ pytestmark = pytest.mark.anyio
 NOW = datetime(2026, 8, 29, 12, tzinfo=timezone.utc)
 
 
+class CountingHasher:
+    def __init__(self):
+        self.verify_calls = 0
+
+    def hash(self, secret):
+        return f"test-hash:{secret}"
+
+    def verify(self, secret, encoded_hash):
+        self.verify_calls += 1
+        return encoded_hash == f"test-hash:{secret}"
+
+
 @pytest.fixture
 def repository(tmp_path):
     return SubscriptionRepository(str(tmp_path / "subscriptions.db"))
@@ -141,6 +153,119 @@ async def test_purchase_intent_issuance_is_bounded_and_prunes_expired_replay_sta
     assert replay_count == 0
 
 
+async def test_purchase_intent_attempt_limit_rejects_before_secret_verification(
+    repository,
+):
+    hasher = CountingHasher()
+    service = SubscriptionIdentityService(
+        repository,
+        account_binding_key=bytes(range(32)),
+        allowed_products={"lotti_sync": frozenset({"monthly"})},
+        purchase_intent_attempt_limit=2,
+        purchase_intent_attempt_window=timedelta(minutes=15),
+        purchase_intent_issuance_limit=10,
+        secret_hasher=hasher,
+    )
+    credentials = await service.create_entitlement(
+        client_identifier="203.0.113.1",
+        now=NOW,
+    )
+    values = {
+        "entitlement_id": credentials.entitlement_id,
+        "auth_secret": credentials.auth_secret,
+        "product_id": "lotti_sync",
+        "base_plan_id": "monthly",
+    }
+
+    await service.create_purchase_intent(**values, now=NOW)
+    await service.create_purchase_intent(**values, now=NOW + timedelta(seconds=1))
+    with pytest.raises(PurchaseIntentRateLimitException) as error:
+        await service.create_purchase_intent(**values, now=NOW + timedelta(seconds=2))
+
+    assert error.value.retry_after_seconds == 898
+    assert hasher.verify_calls == 2
+
+    await service.create_purchase_intent(
+        **values,
+        now=NOW + timedelta(minutes=15),
+    )
+    assert hasher.verify_calls == 3
+
+
+async def test_purchase_intent_attempt_limit_does_not_track_unknown_entitlements(
+    repository,
+):
+    hasher = CountingHasher()
+    service = SubscriptionIdentityService(
+        repository,
+        account_binding_key=bytes(range(32)),
+        allowed_products={"lotti_sync": frozenset({"monthly"})},
+        secret_hasher=hasher,
+    )
+
+    with pytest.raises(EntitlementAuthenticationException):
+        await service.create_purchase_intent(
+            entitlement_id="unknown-entitlement",
+            auth_secret="unknown-secret",  # noqa: S106 - invalid test credential
+            product_id="lotti_sync",
+            base_plan_id="monthly",
+            now=NOW,
+        )
+
+    assert hasher.verify_calls == 0
+    connection = sqlite3.connect(repository.db_path)
+    try:
+        attempt_count = connection.execute(
+            "SELECT COUNT(*) FROM purchase_intent_attempt_limits"
+        ).fetchone()[0]
+    finally:
+        connection.close()
+    assert attempt_count == 0
+
+
+async def test_purchase_intent_wrong_secret_consumes_attempt_without_issuing(
+    repository,
+):
+    hasher = CountingHasher()
+    service = SubscriptionIdentityService(
+        repository,
+        account_binding_key=bytes(range(32)),
+        allowed_products={"lotti_sync": frozenset({"monthly"})},
+        secret_hasher=hasher,
+    )
+    credentials = await service.create_entitlement(
+        client_identifier="203.0.113.1",
+        now=NOW,
+    )
+
+    with pytest.raises(EntitlementAuthenticationException):
+        await service.create_purchase_intent(
+            entitlement_id=credentials.entitlement_id,
+            auth_secret="wrong-secret",  # noqa: S106 - invalid test credential
+            product_id="lotti_sync",
+            base_plan_id="monthly",
+            now=NOW,
+        )
+
+    assert hasher.verify_calls == 1
+    connection = sqlite3.connect(repository.db_path)
+    try:
+        attempt_query = (
+            "SELECT request_count FROM purchase_intent_attempt_limits " "WHERE entitlement_id = ?"
+        )
+        attempt_count = connection.execute(
+            attempt_query,
+            (credentials.entitlement_id,),
+        ).fetchone()[0]
+        issuance_count = connection.execute(
+            "SELECT COUNT(*) FROM purchase_intent_issuance_limits"
+        ).fetchone()[0]
+    finally:
+        connection.close()
+    assert attempt_count == 1
+    assert issuance_count == 0
+
+
 @pytest.mark.parametrize(
     ("product_id", "base_plan_id"),
     [("other_product", "monthly"), ("lotti_sync", "weekly")],
@@ -247,4 +372,27 @@ def test_purchase_intent_rate_limit_configuration_must_be_positive(
             allowed_products={},
             purchase_intent_issuance_limit=limit,
             purchase_intent_issuance_window=window,
+        )
+
+
+@pytest.mark.parametrize(
+    ("limit", "window", "message"),
+    [
+        (0, timedelta(minutes=15), "Purchase intent attempt limit"),
+        (1, timedelta(0), "Purchase intent attempt window"),
+    ],
+)
+def test_purchase_intent_attempt_limit_configuration_must_be_positive(
+    repository,
+    limit,
+    window,
+    message,
+):
+    with pytest.raises(ValueError, match=message):
+        SubscriptionIdentityService(
+            repository,
+            account_binding_key=bytes(range(32)),
+            allowed_products={},
+            purchase_intent_attempt_limit=limit,
+            purchase_intent_attempt_window=window,
         )

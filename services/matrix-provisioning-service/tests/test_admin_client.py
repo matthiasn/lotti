@@ -273,6 +273,7 @@ async def test_suspension_version_check_is_cached(credentials):
 
     client = SynapseAdminClient(credentials, transport=httpx.MockTransport(handler))
 
+    await client.require_account_suspension_support()
     await client.set_user_suspended(USER, suspended=True)
     await client.set_user_suspended(USER, suspended=False)
 

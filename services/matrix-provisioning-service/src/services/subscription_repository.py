@@ -107,6 +107,16 @@ CREATE TABLE IF NOT EXISTS purchase_intents (
 CREATE INDEX IF NOT EXISTS idx_purchase_intents_entitlement
     ON purchase_intents (entitlement_id, created_at);
 
+CREATE TABLE IF NOT EXISTS purchase_intent_attempt_limits (
+    entitlement_id    TEXT PRIMARY KEY,
+    window_started_at TEXT NOT NULL,
+    request_count     INTEGER NOT NULL,
+    FOREIGN KEY (entitlement_id) REFERENCES sync_entitlements (entitlement_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_purchase_intent_attempt_window
+    ON purchase_intent_attempt_limits (window_started_at);
+
 CREATE TABLE IF NOT EXISTS purchase_intent_issuance_limits (
     entitlement_id   TEXT PRIMARY KEY,
     window_started_at TEXT NOT NULL,
@@ -406,6 +416,72 @@ class SubscriptionRepository(ProvisioningRepository):
     async def get_entitlement(self, entitlement_id: str) -> SyncEntitlement | None:
         """Fetch a stable entitlement identity by its opaque ID."""
         return await asyncio.to_thread(self._get_entitlement_sync, entitlement_id)
+
+    def _consume_purchase_intent_attempt_quota_sync(
+        self,
+        entitlement_id: str,
+        now: datetime,
+        window: timedelta,
+        max_requests: int,
+    ) -> int | None:
+        conn = self._connect()
+        try:
+            conn.execute("BEGIN IMMEDIATE")
+            row = conn.execute(
+                "SELECT window_started_at, request_count "
+                "FROM purchase_intent_attempt_limits WHERE entitlement_id = ?",
+                (entitlement_id,),
+            ).fetchone()
+            window_started_at = _parse(row["window_started_at"]) if row else None
+            retry_after = None
+            if window_started_at is None or now >= window_started_at + window:
+                conn.execute(
+                    "INSERT INTO purchase_intent_attempt_limits ("
+                    "entitlement_id, window_started_at, request_count"
+                    ") VALUES (?, ?, 1) ON CONFLICT(entitlement_id) DO UPDATE SET "
+                    "window_started_at = excluded.window_started_at, request_count = 1",
+                    (entitlement_id, _iso(now)),
+                )
+            elif row["request_count"] >= max_requests:
+                retry_after = max(
+                    1,
+                    math.ceil((window_started_at + window - now).total_seconds()),
+                )
+            else:
+                conn.execute(
+                    "UPDATE purchase_intent_attempt_limits "
+                    "SET request_count = request_count + 1 WHERE entitlement_id = ?",
+                    (entitlement_id,),
+                )
+            conn.execute(
+                "DELETE FROM purchase_intent_attempt_limits "
+                "WHERE entitlement_id <> ? AND window_started_at <= ?",
+                (entitlement_id, _iso(now - window)),
+            )
+            conn.commit()
+            return retry_after
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
+    async def consume_purchase_intent_attempt_quota(
+        self,
+        entitlement_id: str,
+        *,
+        now: datetime,
+        window: timedelta,
+        max_requests: int,
+    ) -> int | None:
+        """Consume one cheap, durable slot before entitlement-secret hashing."""
+        return await asyncio.to_thread(
+            self._consume_purchase_intent_attempt_quota_sync,
+            entitlement_id,
+            now,
+            window,
+            max_requests,
+        )
 
     def _consume_purchase_intent_issuance_quota_sync(
         self,

@@ -189,6 +189,39 @@ async def test_purchase_intent_quota_rolls_back_and_closes_on_database_failure(
     assert connection.close_called is True
 
 
+async def test_purchase_intent_attempt_quota_rolls_back_and_closes_on_database_failure(
+    subscription_repository,
+    monkeypatch,
+):
+    class FailingConnection:
+        def __init__(self):
+            self.rollback_called = False
+            self.close_called = False
+
+        def execute(self, _query, _parameters=()):
+            raise sqlite3.OperationalError("injected attempt quota failure")
+
+        def rollback(self):
+            self.rollback_called = True
+
+        def close(self):
+            self.close_called = True
+
+    connection = FailingConnection()
+    monkeypatch.setattr(subscription_repository, "_connect", lambda: connection)
+
+    with pytest.raises(sqlite3.OperationalError, match="injected attempt quota failure"):
+        await subscription_repository.consume_purchase_intent_attempt_quota(
+            "entitlement-one",
+            now=NOW,
+            window=timedelta(minutes=15),
+            max_requests=10,
+        )
+
+    assert connection.rollback_called is True
+    assert connection.close_called is True
+
+
 async def test_duplicate_purchase_intent_id_is_rejected(subscription_repository):
     entitlement = await create_entitlement(subscription_repository)
     await create_intent(subscription_repository, entitlement)
