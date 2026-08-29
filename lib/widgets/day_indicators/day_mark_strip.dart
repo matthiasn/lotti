@@ -92,7 +92,7 @@ class DayMarkStrip extends StatelessWidget {
       final mark = marks[index];
       final day = mark.day;
       final letter = day == null ? null : letterFormat.format(day);
-      if (onDaySelected == null || day == null) {
+      if (day == null) {
         return DayMarkCell(
           mark: mark,
           size: resolvedCellSize,
@@ -100,12 +100,23 @@ class DayMarkStrip extends StatelessWidget {
         );
       }
       final dayName = dayFormat.format(day);
+      final outcome = outcomeOf(mark);
+      if (onDaySelected == null) {
+        // Read-only, but still dated: hover names the day and its outcome,
+        // because the corner letter cannot tell one Tuesday from the next.
+        return DayMarkCell(
+          mark: mark,
+          size: resolvedCellSize,
+          weekdayLetter: letter,
+          tooltipDay: dayName,
+          tooltipOutcome: outcome,
+        );
+      }
       // Colour and an inner dot are the only thing separating these cells,
       // and neither reaches a screen reader. Each day therefore announces its
       // own state, not just its date — the strip's summary gives a count and
       // cannot say WHICH days went well, which is exactly what a reader needs
       // once every cell is individually actionable.
-      final outcome = outcomeOf(mark);
       return DayMarkCell(
         mark: mark,
         size: resolvedCellSize,

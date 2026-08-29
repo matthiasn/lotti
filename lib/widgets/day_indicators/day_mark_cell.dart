@@ -61,7 +61,9 @@ class DayMarkCell extends StatelessWidget {
   final String? label;
 
   /// The same fact split for the hover tooltip: the day names the subject,
-  /// the outcome describes it. Both null exactly when [label] is.
+  /// the outcome describes it. A read-only cell still answers hover with
+  /// them — the corner letter cannot tell one Tuesday from the next, and the
+  /// tooltip is where a dated cell reveals which day it stands for.
   final String? tooltipDay;
   final String? tooltipOutcome;
 
@@ -152,7 +154,16 @@ class DayMarkCell extends StatelessWidget {
           )
         : padded;
     final onTap = this.onTap;
-    if (onTap == null) return decorated;
+    if (onTap == null) {
+      final tooltipDay = this.tooltipDay;
+      if (tooltipDay == null) return decorated;
+      return DsTooltip(
+        title: tooltipDay,
+        message: tooltipOutcome ?? '',
+        preferBelow: false,
+        child: decorated,
+      );
+    }
     // The square keeps its size; the hit slot around it takes the full height
     // of the touch floor and whatever width the row can spare. Growing the
     // square itself to 48px would make the strip shout over the habit rows it

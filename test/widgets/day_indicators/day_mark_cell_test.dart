@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
+import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/components/tooltips/ds_tooltip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/day_indicators/day_mark.dart';
@@ -149,6 +150,38 @@ void main() {
     await tester.tap(find.bySemanticsLabel('Mon, Aug 10: done'));
     expect(taps, 1);
     handle.dispose();
+  });
+
+  testWidgets('a read-only dated cell still answers hover with its day and '
+      'outcome, without becoming a button', (tester) async {
+    final handle = tester.ensureSemantics();
+    await pump(
+      tester,
+      const DayMarkCell(
+        mark: DayMark(state: DayMarkState.full),
+        size: 20,
+        tooltipDay: 'Tue, Aug 11',
+        tooltipOutcome: 'done',
+      ),
+    );
+    final tooltip = tester.widget<DsTooltip>(find.byType(DsTooltip));
+    expect(tooltip.title, 'Tue, Aug 11');
+    expect(tooltip.message, 'done');
+    expect(find.byType(DsQuietInk), findsNothing);
+    expect(
+      find.bySemanticsLabel('Tue, Aug 11: done'),
+      findsNothing,
+      reason: 'a read-only cell is not a button; the strip summarises it',
+    );
+    handle.dispose();
+  });
+
+  testWidgets('an undated read-only cell carries no tooltip', (tester) async {
+    await pump(
+      tester,
+      const DayMarkCell(mark: DayMark(state: DayMarkState.full), size: 20),
+    );
+    expect(find.byType(DsTooltip), findsNothing);
   });
 
   testWidgets('a placeholder cell is a dashed outline at the cell size', (

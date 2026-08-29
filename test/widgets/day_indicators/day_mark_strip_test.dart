@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
+import 'package:lotti/features/design_system/components/tooltips/ds_tooltip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/ui/goal_day_marks.dart';
 import 'package:lotti/widgets/day_indicators/day_mark.dart';
@@ -416,6 +417,32 @@ void main() {
       findsOneWidget,
     );
     handle.dispose();
+  });
+
+  testWidgets('a read-only dated strip names each day on hover', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        DayMarkStrip(
+          marks: goalDayMarks(
+            states: const [DayMarkState.full, DayMarkState.skipped],
+            lastDay: today,
+          ),
+        ),
+      ),
+    );
+    final tooltips = tester
+        .widgetList<DsTooltip>(find.byType(DsTooltip))
+        .map((t) => '${t.title}: ${t.message}')
+        .toList();
+    final yesterday = DateFormat.MMMEd().format(
+      today.subtract(const Duration(days: 1)),
+    );
+    expect(tooltips, [
+      '$yesterday: done · target met',
+      '${DateFormat.MMMEd().format(today)}: Skip',
+    ]);
   });
 
   testWidgets('an explicit today flag places the ring, not the last slot', (

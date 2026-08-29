@@ -62,9 +62,11 @@ void main() {
     ]) {
       expect(dayMarkStateGlyph(state), isNull);
     }
+    // On the saturated error fill the cross takes the on-alert ink; the
+    // family's own ink is ~1.4:1 against its own hue.
     expect(
       dayMarkStateGlyphInk(t, DayMarkState.missed),
-      t.colors.alert.error.ink,
+      t.colors.text.onInteractiveAlert,
     );
     expect(
       dayMarkStateGlyphInk(t, DayMarkState.skipped),

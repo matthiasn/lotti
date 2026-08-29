@@ -65,9 +65,14 @@ IconData? dayMarkStateGlyph(DayMarkState state) => switch (state) {
 };
 
 /// The ink a state glyph is drawn in, on top of that state's own fill.
+///
+/// The missed cross sits on the saturated error fill, so it takes the
+/// design system's on-alert ink — the family's own `ink` is tuned for a
+/// neutral surface and all but vanishes on its own hue. The skip dash sits
+/// on a neutral fill and keeps the medium-emphasis text ink.
 Color dayMarkStateGlyphInk(DsTokens tokens, DayMarkState state) =>
     switch (state) {
-      DayMarkState.missed => tokens.colors.alert.error.ink,
+      DayMarkState.missed => tokens.colors.text.onInteractiveAlert,
       DayMarkState.none ||
       DayMarkState.partial ||
       DayMarkState.full ||
