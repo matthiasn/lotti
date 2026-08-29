@@ -800,6 +800,7 @@ void main() {
     expect(find.text('Done · target met'), findsOneWidget);
     expect(find.text('No entry'), findsOneWidget);
     expect(find.text('Done · target not met yet'), findsNothing);
+
     // The miss carries its own cross; the key does not repeat it.
     expect(find.text('Missed'), findsNothing);
     expect(find.text('Skip'), findsNothing);
@@ -807,6 +808,54 @@ void main() {
     expect(find.text('Judged Improving'), findsOneWidget);
     expect(find.text('Judged Met'), findsNothing);
     expect(find.text('Today'), findsOneWidget);
+  });
+
+  testWidgets('a judged day contributes its verdict to the key, not the '
+      'measured fill it no longer shows', (tester) async {
+    final judged = today.subtract(const Duration(days: 1));
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          specVersionId: 'spec-1',
+          assessments: [
+            GoalAssessmentRecord(
+              id: 'r',
+              day: judged,
+              specVersionId: 'spec-1',
+              rating: DayVerdict.met,
+              createdAt: DateTime(2026, 8, 10, 22),
+              provenance: DayVerdictProvenance.ratedByUser,
+              dimensionRatings: const {'c-gym': DayVerdict.met},
+            ),
+          ],
+          progress: GoalProgressView(
+            today: today,
+            habits: [
+              GoalHabitProgressView(
+                habitId: 'gym',
+                criterionId: 'c-gym',
+                name: 'Gym',
+                targetCount: 3,
+                // The only done day is the judged one.
+                days: [
+                  for (var offset = 6; offset >= 2; offset--) day(offset, 0),
+                  day(1, 1),
+                  day(0, 0),
+                ],
+                successfulWeeks: 0,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    expect(find.text('Judged Met'), findsOneWidget);
+    expect(
+      find.text('Done · target met'),
+      findsNothing,
+      reason: 'the green fill is under the verdict, not on the strip',
+    );
+    expect(find.text('No entry'), findsOneWidget);
   });
 
   testWidgets('the week card carries no key — its cells answer hover', (

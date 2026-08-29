@@ -120,12 +120,20 @@ class GoalProgressCard extends StatelessWidget {
       // Today's square is keyed by its ring; its fill only counts when it
       // is not the plain empty one, or the key would list a grey the reader
       // cannot find on any other square.
+      // A judged day wears its verdict, not its measured fill, so it
+      // contributes the verdict below and not a state the reader cannot see.
       states: {
-        for (final habit in progress.habits)
-          for (final day in habit.days)
-            if (!DateUtils.isSameDay(day.day, progress.today) ||
-                goalProgressDayMarkState(day) != DayMarkState.none)
-              goalProgressDayMarkState(day),
+        for (var index = 0; index < progress.habits.length; index++)
+          for (final day in progress.habits[index].days)
+            if (verdictsByHabit[index][DateTime.utc(
+                  day.day.year,
+                  day.day.month,
+                  day.day.day,
+                )] ==
+                null)
+              if (!DateUtils.isSameDay(day.day, progress.today) ||
+                  goalProgressDayMarkState(day) != DayMarkState.none)
+                goalProgressDayMarkState(day),
       },
       verdicts: {
         for (var index = 0; index < progress.habits.length; index++)

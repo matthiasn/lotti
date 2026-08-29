@@ -178,9 +178,12 @@ judged day wears. It never lists the outcome glyphs — the skip dash and the
 missed cross name themselves, and every cell answers hover with its day and
 outcome — and it renders nothing when nothing needs keying.
 
-It rides in exactly one place: inside the goal detail's first habit card,
-derived from that habit's days (`goalProgressDayMarkState`) and its
-per-dimension verdicts. Dashboards and the whole-goal week card carry no key.
+It rides in exactly one place — inside the goal detail's first habit card —
+but it is the **goal's** key: `GoalProgressCard` unions the states
+(`goalProgressDayMarkState`), the per-dimension verdicts and the rings across
+every habit card on the page, so a state on the third card is keyed on the
+first. A day that wears a verdict contributes the verdict, not its hidden
+measured fill. Dashboards and the whole-goal week card carry no key.
 A design-review panel rated the earlier eleven-entry wrap under a dashboard
 at 3.6/10: more legend than data, listing states that were not on screen,
 and two red crosses with different names.
