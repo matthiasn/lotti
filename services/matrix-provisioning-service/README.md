@@ -14,10 +14,15 @@ src/
 ├── core/
 │   ├── models.py       # Pydantic models, bundle/payment state enums
 │   ├── constants.py    # DI names, retention and polling defaults
+│   ├── subscriptions.py # Google and internal entitlement state models
 │   └── exceptions.py   # Domain exceptions
 ├── services/
-│   ├── provisioning_repository.py  # SQLite persistence (data/provisioning.db)
+│   ├── provisioning_repository.py  # Base SQLite persistence
+│   ├── subscription_repository.py  # Play state, lineage, intents and escrow
 │   ├── bundle_service.py           # Provision + persist, with rollback
+│   ├── subscription_service.py     # Integrity + Publisher verification
+│   ├── paid_bundle_service.py      # Idempotent encrypted bundle delivery
+│   ├── subscription_reconciler.py  # Missed-RTDN repair and deadline checks
 │   ├── redemption_poller.py        # Infers redemption from Synapse activity
 │   └── retention_service.py        # Sync-room history purging
 ├── api/routes.py       # FastAPI routes
@@ -77,6 +82,41 @@ Redemption is detected two ways:
   `docs/implementation_plans/2026-08-07_matrix_provisioning_platform.md` §4 for
   the two ways to close this.
 
+## Google Play SYNC subscriptions
+
+The Play subscription backend is present but **disabled by default**. Set
+`ENABLE_PLAY_SUBSCRIPTIONS=true` only after the Play Console, Google service
+account, Pub/Sub push identity, encryption keys, reverse proxy and Synapse
+suspension endpoint have all been configured. Startup resolves every required
+security dependency and fails rather than accepting a purchase with partial
+configuration.
+
+The paid path does not trust a client purchase status. It creates a stable,
+anonymous server entitlement and a one-time purchase intent, validates a fresh
+Play Integrity verdict bound to the exact request, then queries
+`purchases.subscriptionsv2.get`. Product, base plan, package, release
+certificate, account binding, token lineage and production/test status all
+have to match before the service stores the subscription or provisions Matrix.
+The purchase is acknowledged only after the entitlement and encrypted bundle
+claim are durable.
+
+Paid bundle delivery differs deliberately from admin provisioning. A network
+failure may retry the same authenticated claim for 24 hours, so the credential
+is held in AES-256-GCM escrow instead of being lost after one response. The
+server destroys that ciphertext only after it observes both the claim-bound
+challenge in the Matrix room and proof that the bootstrap password no longer
+authenticates. Expired unconfirmed claims deactivate the abandoned account and
+destroy the escrow.
+
+RTDN is a wake-up signal, never entitlement evidence. The push route verifies
+Google's OIDC token, resolves only an already-bound purchase token, re-queries
+Google, and then converges Matrix access. A periodic reconciler covers missed
+or delayed notifications. When Play reports an access-granting state the Matrix
+account is unsuspended; otherwise it is suspended reversibly. The service uses
+Google's authoritative line-item `expiryTime` as the exact boundary. Configure
+the Play Console grace period to **three days**; the service does not add a
+second local grace interval.
+
 ## Configuration
 
 | Variable | Required | Default | Description |
@@ -94,6 +134,20 @@ Redemption is detected two ways:
 | `POLL_INTERVAL_SECONDS` | No | `300` | Redemption poll interval |
 | `POLL_BATCH_SIZE` | No | `50` | Accounts checked per sweep |
 | `ENABLE_REDEMPTION_POLLING` | No | `true` | Disable for tests or a read-only replica |
+| `ENABLE_PLAY_SUBSCRIPTIONS` | No | `false` | Enables purchase routes, reconciliation and claim cleanup |
+| `SUBSCRIPTION_ENCRYPTION_KEY_ID` | When enabled | — | Identifier for the active AES-256-GCM write key |
+| `SUBSCRIPTION_ENCRYPTION_KEY_BASE64` | When enabled | — | Base64 for exactly 32 random bytes; encrypts tokens and pending bundles |
+| `SUBSCRIPTION_DECRYPTION_KEYS_JSON` | No | `{}` | JSON string map of retired key IDs to Base64 keys retained for decryption during rotation |
+| `PLAY_ACCOUNT_BINDING_KEY_BASE64` | When enabled | — | Base64 for at least 32 random bytes; HMAC key for stable obfuscated Play account IDs |
+| `PLAY_BASE_PLAN_IDS` | No | `monthly,annual` | Comma-separated base plans accepted for `lotti_sync` |
+| `PLAY_SIGNING_CERTIFICATE_SHA256` | When enabled | — | Comma-separated Play app signing certificate SHA-256 digests |
+| `PLAY_ALLOW_TEST_PURCHASES` | No | `false` | Accept Play license-tester purchases; never enable in production |
+| `PLAY_RTDN_AUDIENCE` | When enabled | — | Exact OIDC audience configured on the Pub/Sub push subscription |
+| `PLAY_RTDN_SERVICE_ACCOUNT_EMAIL` | When enabled | — | Exact service-account identity allowed to push RTDN |
+| `SUBSCRIPTION_RECONCILE_INTERVAL_SECONDS` | No | `60` | Authoritative Google refresh interval |
+| `SUBSCRIPTION_RECONCILE_BATCH_SIZE` | No | `50` | Due subscriptions handled per reconciliation pass |
+| `BUNDLE_CLAIM_REAPER_INTERVAL_SECONDS` | No | `300` | Expired paid-claim cleanup interval |
+| `BUNDLE_CLAIM_REAPER_BATCH_SIZE` | No | `50` | Expired claims handled per cleanup pass |
 | `CORS_ALLOWED_ORIGINS` | No | `http://localhost:5174` | Comma-separated origins |
 | `PORT` | No | `8003` | Listen port |
 
@@ -101,10 +155,28 @@ Prefer `MATRIX_ADMIN_TOKEN`: it keeps no password at rest, is revocable
 independently, and skips the login round trip. A blank value falls back to
 password login rather than authenticating with an empty string.
 
+Google authentication uses Application Default Credentials with the Android
+Publisher and Play Integrity scopes. Prefer workload identity or a Secret Manager-mounted
+credential; if a local JSON credential is unavoidable, point
+`GOOGLE_APPLICATION_CREDENTIALS` at the mounted file and never bake it into the
+image. Generate the two application secrets independently, for example with
+`openssl rand -base64 32`.
+
+For envelope-key rotation, deploy the new ID and key as the active pair and add
+the previous pair to `SUBSCRIPTION_DECRYPTION_KEYS_JSON`. New rows immediately
+use only the active key; authoritative subscription refreshes lazily re-encrypt
+stored tokens, while pending escrow remains readable by its recorded key ID
+until rotation or the 24-hour claim expiry destroys it. Remove a retired key
+only after no non-null ciphertext refers to it and no backup that may be
+restored depends on it.
+
 ## API
 
-All paths are prefixed `/api/v1`. Everything requires an **admin** key except
-`/client/*`, which takes a regular key. `/health` is unauthenticated.
+All paths are prefixed `/api/v1`. Existing `/client/*` paths take a regular API
+key and all admin paths take an admin key. Subscription paths use their own
+short-lived or entitlement-scoped bearer credentials and therefore never
+expose the service-wide client key to the app. The RTDN path uses an
+authenticated Pub/Sub OIDC bearer token. `/health` is unauthenticated.
 
 That default is enforced, not just documented: the auth middleware is configured
 with the client prefix rather than a list of admin prefixes, so a route added
@@ -122,10 +194,41 @@ no `Authorization` header — are answered rather than rejected.
 | `GET` | `/bundles/{id}/usage` | Live device/media figures from Synapse |
 | `POST` | `/bundles/{id}/revoke` | Revoke; optionally deactivate the account |
 | `POST` | `/client/bundles/{id}/rotated` | Client confirms rotation (regular key) |
+| `POST` | `/client/subscriptions/entitlements` | Create stable anonymous purchase identity |
+| `POST` | `/client/subscriptions/purchase-intents` | Authorize one Play Billing launch |
+| `POST` | `/client/subscriptions/purchases/verify` | Verify Integrity + Publisher state and provision/deliver |
+| `POST` | `/client/subscriptions/bundle-claims/deliver` | Retry an authenticated lost bundle response |
+| `POST` | `/client/subscriptions/bundle-claims/confirm-rotation` | Validate Matrix proof and destroy escrow |
+| `POST` | `/google-play/rtdn` | Authenticated Pub/Sub notification signal |
 | `GET` | `/stats` | Dashboard aggregates |
 | `POST` | `/bundles/{id}/purge` | Purge one room's old history |
 | `POST` | `/purges` | Purge every redeemed, non-revoked room |
 | `GET` | `/purges`, `/purges/{purge_id}` | List / poll purge runs |
+
+## Production deployment requirements
+
+- Run exactly one service instance while `DB_PATH` points at SQLite. WAL,
+  foreign keys, explicit write transactions and uniqueness constraints protect
+  concurrent tasks inside that deployment, but SQLite cannot coordinate
+  duplicate RTDN or provisioning work across hosts. Move the repository to a
+  shared transactional database before adding replicas.
+- Do not expose Uvicorn directly. Terminate TLS at a trusted reverse proxy and
+  enforce body-size limits, per-IP/per-entitlement rate limits and request
+  timeouts there, especially on entitlement creation and Play verification.
+- Configure a dedicated least-privilege Play service account and a dedicated
+  Pub/Sub push service account. The latter must match both
+  `PLAY_RTDN_AUDIENCE` and `PLAY_RTDN_SERVICE_ACCOUNT_EMAIL` exactly.
+- Verify the deployed Synapse exposes `PUT /_synapse/admin/v1/suspend/{user_id}`
+  before enabling subscriptions. Suspension is intentionally reversible;
+  deactivation would destroy device and encryption state needed after renewal.
+- Configure the three-day grace period in Play Console and monitor
+  reconciliation errors, unacknowledged purchases, RTDN delivery age, stale
+  claims, and failed suspend/unsuspend operations.
+- Back up the SQLite subscription and audit data, restrict filesystem access to
+  the service user, and test restores with every still-required envelope key.
+  Never include ciphertext columns in routine support exports or log raw
+  purchase tokens, bearer secrets, Integrity tokens, bundles, or Google
+  credentials.
 
 ## Retention
 

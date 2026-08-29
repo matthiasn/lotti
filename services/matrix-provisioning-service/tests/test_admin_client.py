@@ -13,7 +13,7 @@ import httpx
 import pytest
 from tests.conftest import register_synapse_account, synapse_handler
 
-from shared.matrix import SynapseAdminClient
+from shared.matrix import ProvisioningError, SynapseAdminClient
 from shared.matrix.admin_client import MEDIA_PAGE_SIZE
 
 pytestmark = pytest.mark.anyio
@@ -173,6 +173,154 @@ async def test_closing_twice_is_harmless(credentials, mock_transport):
 
     await client.aclose()
     await client.aclose()
+
+
+async def test_user_activity_reports_suspension(credentials):
+    register_synapse_account(USER)
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/@heavy_user:example.com"):
+            return httpx.Response(200, json={"deactivated": False, "suspended": True})
+        return synapse_handler(request)
+
+    client = SynapseAdminClient(credentials, transport=httpx.MockTransport(handler))
+
+    activity = await client.get_user_activity(USER)
+
+    assert activity.suspended is True
+    assert activity.deactivated is False
+
+
+@pytest.mark.parametrize("suspended", [True, False])
+async def test_subscription_enforcement_uses_reversible_suspension(
+    credentials,
+    suspended,
+):
+    requests = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if "/_synapse/admin/v1/suspend/" in request.url.path:
+            requests.append(request)
+            return httpx.Response(200, json={})
+        return synapse_handler(request)
+
+    client = SynapseAdminClient(credentials, transport=httpx.MockTransport(handler))
+
+    await client.set_user_suspended(USER, suspended=suspended)
+
+    assert requests[0].url.path.endswith("/@heavy_user:example.com")
+    assert requests[0].read().decode() == ('{"suspend":true}' if suspended else '{"suspend":false}')
+
+
+async def test_suspension_failure_is_not_silently_accepted(credentials):
+    def handler(request: httpx.Request) -> httpx.Response:
+        if "/_synapse/admin/v1/suspend/" in request.url.path:
+            return httpx.Response(503, json={})
+        return synapse_handler(request)
+
+    client = SynapseAdminClient(credentials, transport=httpx.MockTransport(handler))
+
+    with pytest.raises(ProvisioningError, match="Failed to suspend"):
+        await client.set_user_suspended(USER, suspended=True)
+
+
+@pytest.mark.parametrize(("status_code", "expected"), [(200, True), (403, False)])
+async def test_bootstrap_password_check_distinguishes_rejection_from_success(
+    credentials,
+    status_code,
+    expected,
+):
+    requests = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/_matrix/client/v3/login":
+            requests.append(request)
+            return httpx.Response(status_code, json={"access_token": "token"})
+        return synapse_handler(request)
+
+    client = SynapseAdminClient(credentials, transport=httpx.MockTransport(handler))
+
+    result = await client.password_authenticates(USER, "bootstrap-password")
+
+    assert result is expected
+    assert b"bootstrap-password" in requests[0].read()
+
+
+async def test_bootstrap_password_check_does_not_treat_outage_as_rotation(credentials):
+    transport = httpx.MockTransport(lambda _: httpx.Response(503, json={}))
+    client = SynapseAdminClient(credentials, transport=transport)
+
+    with pytest.raises(ProvisioningError, match="Could not verify"):
+        await client.password_authenticates(USER, "bootstrap-password")
+
+
+async def test_rotation_state_is_read_with_short_lived_user_token(credentials, monkeypatch):
+    requests = []
+    monkeypatch.setattr("shared.matrix.admin_client.time_ns", lambda: 1_700_000_000_000_000_000)
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        if request.url.path == "/_matrix/client/v3/login":
+            return httpx.Response(
+                200,
+                json={"access_token": "admin-token", "user_id": "@admin:example.com"},
+            )
+        if request.url.path.endswith("/login"):
+            return httpx.Response(200, json={"access_token": "user-token"})
+        if "/state/" in request.url.path:
+            return httpx.Response(200, json={"challenge": "proof"})
+        return synapse_handler(request)
+
+    client = SynapseAdminClient(credentials, transport=httpx.MockTransport(handler))
+
+    state = await client.get_room_state_as_user(
+        USER,
+        "!paid:example.com",
+        "com.lotti.sync.provisioning.rotation",
+        state_key="bundle-id",
+    )
+
+    assert state == {"challenge": "proof"}
+    login_as_user_request = requests[-2]
+    assert login_as_user_request.read().decode() == '{"valid_until_ms":1700000060000}'
+    state_request = requests[-1]
+    assert state_request.headers["Authorization"] == "Bearer user-token"
+    assert state_request.url.path.endswith("/state/com.lotti.sync.provisioning.rotation/bundle-id")
+
+
+@pytest.mark.parametrize(
+    ("login_payload", "state_payload", "message"),
+    [
+        ({}, {"challenge": "proof"}, "did not return a login token"),
+        ({"access_token": "user-token"}, ["not", "state"], "invalid room state"),
+    ],
+)
+async def test_rotation_state_rejects_inconclusive_synapse_responses(
+    credentials,
+    login_payload,
+    state_payload,
+    message,
+):
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/_matrix/client/v3/login":
+            return httpx.Response(
+                200,
+                json={"access_token": "admin-token", "user_id": "@admin:example.com"},
+            )
+        if request.url.path.endswith("/login"):
+            return httpx.Response(200, json=login_payload)
+        if "/state/" in request.url.path:
+            return httpx.Response(200, json=state_payload)
+        return synapse_handler(request)
+
+    client = SynapseAdminClient(credentials, transport=httpx.MockTransport(handler))
+
+    with pytest.raises(ProvisioningError, match=message):
+        await client.get_room_state_as_user(
+            USER,
+            "!paid:example.com",
+            "com.lotti.sync.provisioning.rotation",
+        )
 
 
 async def test_paging_gives_up_on_a_homeserver_that_never_advances(

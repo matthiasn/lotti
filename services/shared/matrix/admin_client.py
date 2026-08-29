@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
+from time import time_ns
 
 import httpx
 
@@ -31,6 +32,10 @@ MEDIA_PAGE_SIZE = 100
 #: cursor would otherwise loop forever).
 MAX_MEDIA_PAGES = 10_000
 
+# Login-as-user tokens are needed for one state read only. Synapse otherwise
+# makes these impersonation tokens non-expiring by default.
+LOGIN_AS_USER_TOKEN_TTL_MS = 60_000
+
 
 @dataclass(frozen=True)
 class UserActivity:
@@ -40,6 +45,7 @@ class UserActivity:
     device_count: int
     last_seen_ts: int | None
     deactivated: bool
+    suspended: bool
 
     @property
     def has_signed_in(self) -> bool:
@@ -171,6 +177,7 @@ class SynapseAdminClient(SynapseClientBase):
         resp = await client.get(f"/_synapse/admin/v2/users/{encoded}", headers=headers)
         resp.raise_for_status()
         deactivated = bool(resp.json().get("deactivated", False))
+        suspended = bool(resp.json().get("suspended", False))
 
         resp = await client.get(f"/_synapse/admin/v2/users/{encoded}/devices", headers=headers)
         resp.raise_for_status()
@@ -182,6 +189,7 @@ class SynapseAdminClient(SynapseClientBase):
             device_count=len(devices),
             last_seen_ts=max(seen) if seen else None,
             deactivated=deactivated,
+            suspended=suspended,
         )
 
     async def get_media_usage(self, user_mxid: str) -> UserMediaUsage:
@@ -341,7 +349,7 @@ class SynapseAdminClient(SynapseClientBase):
         client = self._client()
         headers = await self._auth_headers(client)
         resp = await client.get(
-            f"/_synapse/admin/v1/purge_history_status/" f"{encode_room_id_for_path(purge_id)}",
+            f"/_synapse/admin/v1/purge_history_status/{encode_room_id_for_path(purge_id)}",
             headers=headers,
         )
         resp.raise_for_status()
@@ -363,3 +371,85 @@ class SynapseAdminClient(SynapseClientBase):
         )
         if not resp.is_success:
             raise ProvisioningError(f"Failed to deactivate {user_mxid} (HTTP {resp.status_code})")
+
+    async def set_user_suspended(self, user_mxid: str, *, suspended: bool) -> None:
+        """Reversibly suspend or restore a Matrix account.
+
+        Suspension blocks sync-event sends and other mutations while retaining
+        devices, encryption keys, room membership, and account data. It is the
+        subscription enforcement primitive; deactivation is intentionally not.
+
+        Raises:
+            ProvisioningError: If Synapse rejects the state change.
+        """
+        encoded = encode_mxid_for_path(user_mxid)
+        client = self._client()
+        headers = await self._auth_headers(client)
+        resp = await client.put(
+            f"/_synapse/admin/v1/suspend/{encoded}",
+            headers=headers,
+            json={"suspend": suspended},
+        )
+        if not resp.is_success:
+            action = "suspend" if suspended else "unsuspend"
+            raise ProvisioningError(f"Failed to {action} {user_mxid} (HTTP {resp.status_code})")
+
+    async def password_authenticates(self, user_mxid: str, password: str) -> bool:
+        """Whether the supplied bootstrap password can still log in.
+
+        A normal Matrix authentication rejection is ``False``; transport and
+        homeserver failures remain errors so rotation is never confirmed from
+        an inconclusive check.
+        """
+        client = self._client()
+        resp = await client.post(
+            "/_matrix/client/v3/login",
+            json={
+                "type": "m.login.password",
+                "identifier": {"type": "m.id.user", "user": user_mxid},
+                "password": password,
+            },
+        )
+        if resp.is_success:
+            return True
+        if resp.status_code in (httpx.codes.UNAUTHORIZED, httpx.codes.FORBIDDEN):
+            return False
+        raise ProvisioningError(
+            f"Could not verify password rotation for {user_mxid} (HTTP {resp.status_code})"
+        )
+
+    async def get_room_state_as_user(
+        self,
+        user_mxid: str,
+        room_id: str,
+        event_type: str,
+        *,
+        state_key: str = "",
+    ) -> dict:
+        """Read a room state event through a short-lived login-as-user token."""
+        encoded_user = encode_mxid_for_path(user_mxid)
+        encoded_room = encode_room_id_for_path(room_id)
+        client = self._client()
+        admin_headers = await self._auth_headers(client)
+        token_response = await client.post(
+            f"/_synapse/admin/v1/users/{encoded_user}/login",
+            headers=admin_headers,
+            json={
+                "valid_until_ms": time_ns() // 1_000_000 + LOGIN_AS_USER_TOKEN_TTL_MS,
+            },
+        )
+        token_response.raise_for_status()
+        token = token_response.json().get("access_token")
+        if not token:
+            raise ProvisioningError(f"Synapse did not return a login token for {user_mxid}")
+        encoded_type = encode_room_id_for_path(event_type)
+        encoded_state_key = encode_room_id_for_path(state_key)
+        response = await client.get(
+            f"/_matrix/client/v3/rooms/{encoded_room}/state/{encoded_type}/{encoded_state_key}",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        response.raise_for_status()
+        payload = response.json()
+        if not isinstance(payload, dict):
+            raise ProvisioningError("Synapse returned invalid room state")
+        return payload

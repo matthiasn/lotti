@@ -235,3 +235,72 @@ class StatsResponse(BaseModel):
     signups_by_day: dict[str, int] = Field(
         default_factory=dict, description="ISO date → count of accounts provisioned"
     )
+
+
+# ---------------------------------------------------------------------------
+# Google Play SYNC subscription API
+# ---------------------------------------------------------------------------
+
+
+class EntitlementCredentialsResponse(BaseModel):
+    """One-time stable identity credential returned to the Android app."""
+
+    entitlement_id: str
+    auth_secret: str
+    obfuscated_account_id: str
+
+
+class CreatePurchaseIntentRequest(BaseModel):
+    """Request to authorize one Play Billing launch."""
+
+    entitlement_id: str = Field(..., min_length=1, max_length=128)
+    product_id: str = Field(..., min_length=1, max_length=128)
+    base_plan_id: str = Field(..., min_length=1, max_length=128)
+
+
+class PurchaseIntentResponse(BaseModel):
+    """One-time purchase intent and Billing attribution fields."""
+
+    intent_id: str
+    intent_secret: str
+    product_id: str
+    base_plan_id: str
+    obfuscated_account_id: str
+    expires_at: datetime
+
+
+class VerifyPurchaseRequest(BaseModel):
+    """Play purchase, delivery secret, and signed Integrity proof."""
+
+    package_name: str = Field(..., min_length=1, max_length=255)
+    product_id: str = Field(..., min_length=1, max_length=128)
+    base_plan_id: str = Field(..., min_length=1, max_length=128)
+    entitlement_id: str = Field(..., min_length=1, max_length=128)
+    purchase_intent_id: str = Field(..., min_length=1, max_length=128)
+    purchase_token: str = Field(..., min_length=1, max_length=8192)
+    intent_secret: str = Field(..., min_length=32, max_length=256)
+    claim_secret: str = Field(..., min_length=32, max_length=256)
+    integrity_token: str = Field(..., min_length=1, max_length=32768)
+
+
+class BundleDeliveryRequest(BaseModel):
+    """Authenticated retry of an already-created paid bundle claim."""
+
+    entitlement_id: str = Field(..., min_length=1, max_length=128)
+    claim_secret: str = Field(..., min_length=32, max_length=256)
+
+
+class ConfirmPaidRotationRequest(BundleDeliveryRequest):
+    """Request to validate Matrix proof and destroy paid bundle escrow."""
+
+    bundle_id: str = Field(..., min_length=1, max_length=128)
+
+
+class PaidBundleResponse(BaseModel):
+    """Encrypted-at-rest bundle delivery returned after verified purchase."""
+
+    bundle_id: str
+    bundle: str
+    expires_at: datetime
+    rotation_challenge: str
+    entitlement_state: str

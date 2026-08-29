@@ -4,11 +4,14 @@ from __future__ import annotations
 
 import hashlib
 import logging
+from collections.abc import Awaitable, Callable
+from typing import TypeVar
 
 import httpx
 
 from shared.matrix import (
     ProvisioningError,
+    ProvisionResult,
     SynapseAdminClient,
     SynapseProvisioner,
     UserAlreadyExistsError,
@@ -26,6 +29,8 @@ from ..core.models import (
 from .provisioning_repository import ProvisioningRepository
 
 logger = logging.getLogger(__name__)
+
+T = TypeVar("T")
 
 
 def fingerprint_bundle(encoded_bundle: str) -> str:
@@ -70,6 +75,23 @@ class BundleService:
                 either in our own records or already on the homeserver.
             SynapseUnavailableException: If the homeserver rejects the request.
         """
+
+        async def persist(result: ProvisionResult, encoded: str) -> CreateBundleResponse:
+            return await self._persist_standard_bundle(request, result, encoded)
+
+        return await self.create_bundle_with_persistence(request, persist)
+
+    async def create_bundle_with_persistence(
+        self,
+        request: CreateBundleRequest,
+        persist: Callable[[ProvisionResult, str], Awaitable[T]],
+    ) -> T:
+        """Provision once and let the caller atomically persist its delivery form.
+
+        Paid provisioning uses this seam to commit the account row, encrypted
+        bundle escrow, and subscription link together. Any persistence failure
+        triggers the same orphan-account rollback as ordinary admin bundles.
+        """
         # Fail before touching Synapse when we already know the name is taken,
         # so the common case does not leave an account to roll back. The unique
         # index is still the authority for the concurrent case.
@@ -92,11 +114,15 @@ class BundleService:
             )
 
         try:
-            return await self._provision_claimed(request)
+            return await self._provision_claimed(request, persist)
         finally:
             await self._repository.release_username(request.username)
 
-    async def _provision_claimed(self, request: CreateBundleRequest) -> CreateBundleResponse:
+    async def _provision_claimed(
+        self,
+        request: CreateBundleRequest,
+        persist: Callable[[ProvisionResult, str], Awaitable[T]],
+    ) -> T:
         """Provision and record an account whose name this run already holds.
 
         Split out so the claim is released on every exit path, including the
@@ -123,19 +149,8 @@ class BundleService:
                 f"Could not reach Synapse to provision {request.username}: {exc}"
             ) from exc
 
-        encoded = result.encoded_bundle
-
         try:
-            user = await self._repository.create(
-                username=request.username,
-                user_mxid=result.user_mxid,
-                home_server=result.bundle.home_server,
-                server_name=result.server_name,
-                room_id=result.room_id,
-                display_name=request.display_name,
-                bundle_fingerprint=fingerprint_bundle(encoded),
-                notes=request.notes,
-            )
+            return await persist(result, result.encoded_bundle)
         except Exception:
             # The account exists on Synapse but we cannot record it. An
             # untracked live account is worse than none, so roll it back.
@@ -152,6 +167,23 @@ class BundleService:
                 )
             raise
 
+    async def _persist_standard_bundle(
+        self,
+        request: CreateBundleRequest,
+        result: ProvisionResult,
+        encoded: str,
+    ) -> CreateBundleResponse:
+        """Persist the existing admin-created, return-once bundle form."""
+        user = await self._repository.create(
+            username=request.username,
+            user_mxid=result.user_mxid,
+            home_server=result.bundle.home_server,
+            server_name=result.server_name,
+            room_id=result.room_id,
+            display_name=request.display_name,
+            bundle_fingerprint=fingerprint_bundle(encoded),
+            notes=request.notes,
+        )
         return CreateBundleResponse(bundle=encoded, user=user)
 
     async def confirm_rotation(self, bundle_id: str) -> ProvisionedUser:

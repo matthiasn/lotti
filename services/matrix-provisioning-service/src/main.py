@@ -11,6 +11,7 @@ from shared.auth import APIKeyAuthMiddleware
 
 from .api.routes import router
 from .container import container
+from .core.constants import SERVICE_GOOGLE_PLAY_CLIENT
 
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO"),
@@ -55,6 +56,23 @@ async def lifespan(app: FastAPI):
     else:
         logger.info("Retention sweep disabled by configuration")
 
+    subscription_reconciler = None
+    bundle_claim_reaper = None
+    if _enabled("ENABLE_PLAY_SUBSCRIPTIONS", "false"):
+        # Resolve every security-critical dependency at startup. Missing ADC,
+        # signing digests, encryption keys, or RTDN identity must fail the
+        # deployment before a purchase can be accepted.
+        container.get_subscription_identity_service()
+        container.get_subscription_service()
+        container.get_google_play_notifications()
+        subscription_reconciler = container.get_subscription_reconciler()
+        subscription_reconciler.start()
+        bundle_claim_reaper = container.get_bundle_claim_reaper()
+        bundle_claim_reaper.start()
+        logger.info("Google Play SYNC subscriptions enabled")
+    else:
+        logger.info("Google Play SYNC subscriptions disabled by configuration")
+
     logger.info("Matrix Provisioning Service started successfully")
 
     yield
@@ -64,9 +82,16 @@ async def lifespan(app: FastAPI):
         await poller.stop()
     if scheduler is not None:
         await scheduler.stop()
+    if subscription_reconciler is not None:
+        await subscription_reconciler.stop()
+    if bundle_claim_reaper is not None:
+        await bundle_claim_reaper.stop()
     # After the background loops, so nothing is mid-request when the shared
     # connection pool goes away.
     await container.get_admin_client().aclose()
+    google_play_client = container.existing(SERVICE_GOOGLE_PLAY_CLIENT)
+    if google_play_client is not None:
+        await google_play_client.aclose()
     logger.info("Matrix Provisioning Service shutdown complete")
 
 
@@ -95,6 +120,18 @@ cors_origins = [origin.strip() for origin in cors_origins_str.split(",") if orig
 # later is protected unless someone deliberately opens it.
 app.add_middleware(
     APIKeyAuthMiddleware,
+    exempt_paths=[
+        "/health",
+        "/docs",
+        "/openapi.json",
+        "/redoc",
+        "/api/v1/client/subscriptions/entitlements",
+        "/api/v1/client/subscriptions/purchase-intents",
+        "/api/v1/client/subscriptions/purchases/verify",
+        "/api/v1/client/subscriptions/bundle-claims/deliver",
+        "/api/v1/client/subscriptions/bundle-claims/confirm-rotation",
+        "/api/v1/google-play/rtdn",
+    ],
     client_path_prefixes=["/api/v1/client"],
 )
 

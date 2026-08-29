@@ -8,6 +8,17 @@ SERVICE_ADMIN_CLIENT = "admin_client"
 SERVICE_REDEMPTION_POLLER = "redemption_poller"
 SERVICE_RETENTION_SERVICE = "retention_service"
 SERVICE_RETENTION_SCHEDULER = "retention_scheduler"
+SERVICE_SUBSCRIPTION_REPOSITORY = "subscription_repository"
+SERVICE_SECRET_CIPHER = "secret_cipher"
+SERVICE_GOOGLE_PLAY_CLIENT = "google_play_client"
+SERVICE_SUBSCRIPTION_IDENTITY = "subscription_identity"
+SERVICE_SUBSCRIPTION_SERVICE = "subscription_service"
+SERVICE_PAID_BUNDLE_SERVICE = "paid_bundle_service"
+SERVICE_BUNDLE_ROTATION_SERVICE = "bundle_rotation_service"
+SERVICE_SUBSCRIPTION_ACCESS_SERVICE = "subscription_access_service"
+SERVICE_GOOGLE_PLAY_NOTIFICATIONS = "google_play_notifications"
+SERVICE_SUBSCRIPTION_RECONCILER = "subscription_reconciler"
+SERVICE_BUNDLE_CLAIM_REAPER = "bundle_claim_reaper"
 
 # Default SQLite location, mirroring the credits-service convention of a
 # `data/` directory mounted as a volume in Docker.
@@ -22,6 +33,11 @@ BUSY_TIMEOUT_SECONDS = 15.0
 # Redemption polling
 DEFAULT_POLL_INTERVAL_SECONDS = 300
 DEFAULT_POLL_BATCH_SIZE = 50
+
+# Subscription reconciliation catches missed RTDNs and enforces exact stored
+# deadlines. It is intentionally much more frequent than bundle redemption.
+DEFAULT_SUBSCRIPTION_RECONCILE_INTERVAL_SECONDS = 60
+DEFAULT_SUBSCRIPTION_RECONCILE_BATCH_SIZE = 50
 
 # History retention. A reconnecting device catches up by walking the room
 # timeline first, and only escalates still-missing counters to peer-to-peer
@@ -61,3 +77,9 @@ MAX_EVENT_LIMIT = 1000
 # Synapse localpart rules: lowercase alphanumerics plus ._=-/+ — we deliberately
 # apply a stricter subset so provisioned usernames stay readable and shell-safe.
 USERNAME_PATTERN = r"^[a-z0-9][a-z0-9._-]{2,63}$"
+
+# Google Play product contract. Prices remain Play Console configuration; the
+# backend authorizes stable identifiers only.
+PLAY_PACKAGE_NAME = "com.matthiasn.lotti"
+PLAY_SUBSCRIPTION_PRODUCT_ID = "lotti_sync"
+DEFAULT_PLAY_BASE_PLAN_IDS = frozenset({"monthly", "annual"})

@@ -5,7 +5,7 @@ description: Single-user multi-device replication over end-to-end encrypted Matr
 resource: ../../../lib/features/sync
 tags: [sync, matrix, replication, outbox, queue]
 status: stable
-generated: { by: codex/gpt-5, at: 2026-08-05T00:00:00Z }
+generated: { by: codex/gpt-5, at: 2026-08-29T16:00:00Z }
 stale_after: 2026-11-02
 sources:
   - id: sync-src
@@ -32,6 +32,10 @@ sources:
     resource: ../../../lib/services/domain_logging.dart
     title: DomainLogger counted sampling
     last_modified: 2026-08-01
+  - id: subscription-provisioner
+    resource: ../../../services/matrix-provisioning-service/src/services
+    title: Google Play subscription verification and Matrix provisioning services
+    last_modified: 2026-08-29
 ---
 
 Sync replicates **one user's data across that user's own devices** over Matrix.
@@ -115,13 +119,53 @@ full journal, agent or attachment payloads.
 | `state/`, `ui/` | Riverpod controllers and the settings, stats, diagnostics, provisioning and maintenance screens |
 | `services/`, `repository/` | Node capability probe, profile broadcaster, node-profile persistence, maintenance repository, synced-audio inference listener and dispatcher |
 
+# Provisioned access and subscription state
+
+The Matrix provisioning service has two credential-delivery modes. Admin and
+CLI provisioning return a credential once and retain only its fingerprint. The
+Google Play path, gated by `ENABLE_PLAY_SUBSCRIPTIONS`, binds a verified purchase
+to a stable anonymous entitlement and retains the paid bundle in short-lived
+authenticated encryption so a lost HTTP response can return the same bundle
+rather than create a second Matrix account. The Android Billing client is not
+wired yet, so this backend path is dormant while the feature flag remains off.
+
+Play RTDN is only a refresh signal. An authenticated Pub/Sub push resolves an
+already-known token and causes a new `purchases.subscriptionsv2.get`; a periodic
+reconciler performs the same authoritative refresh when notifications are lost.
+The Play-configured three-day grace deadline arrives as the line item's extended
+`expiryTime`. Lotti uses that timestamp directly and never adds another local
+grace window. Loss of entitlement suspends the Matrix user reversibly, while a
+renewal or payment recovery unsuspends it without discarding device or E2EE
+state.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Pending: verified purchase is pending
+  Pending --> Active: Google grants access
+  Active --> Grace: renewal payment fails within Play grace
+  Active --> CanceledActive: canceled before expiryTime
+  Grace --> Active: payment recovers
+  Grace --> Suspended: Google removes access or expiryTime reached
+  CanceledActive --> Expired: expiryTime reached
+  Active --> Suspended: paused, on hold, revoked, or expired
+  Suspended --> Active: renewal or recovery verified
+  Suspended --> Expired: Google reports expired
+```
+
+A paid bundle claim has a separate security boundary: delivery retries are
+authorized by the entitlement and claim secret, but escrow is destroyed only
+after the bound Matrix user publishes the server-derived rotation challenge in
+the provisioned room and the bootstrap password no longer authenticates. The
+claim reaper deactivates an account that never reaches that proof before its
+24-hour TTL.
+
 # Pairing a new device
 
 Pairing moves a **handover bundle** — homeserver, MXID, live password, room id,
 Base64url-encoded — from a device that already syncs to one that does not.
 `SyncBundleKind` decides what consuming it does: a `provisioned` bundle (minted
-by the provisioning service / admin UI, or by the CLI) rotates the account
-password and persists the new one; a `handover`
+by the provisioning service through admin or verified-subscription flows, or
+by the CLI) rotates the account password and persists the new one; a `handover`
 bundle (minted by a peer) joins without rotating, so every peer shares one live
 credential. The controller's state transitions expose that distinction directly:
 a rotating bundle enters `rotatingPassword`, while a handover bundle proceeds

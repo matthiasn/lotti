@@ -3,4 +3,6 @@ fastapi==0.121.3
 uvicorn[standard]==0.34.0
 pydantic==2.10.3
 httpx==0.28.1
+google-auth[requests]==2.57.0
+cryptography==50.0.1
 python-dotenv==1.2.2
