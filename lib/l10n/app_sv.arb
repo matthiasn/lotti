@@ -3275,6 +3275,7 @@
   "habitSignalStatusNotYet": "{target} · inte än",
   "habitSignalStatusSoFar": "{target} · {value} hittills",
   "habitSignalToday": "idag: {value}",
+  "habitSignalTodayLogged": "idag: registrerat",
   "habitSignalTodayNone": "idag: —",
   "habitsLaggardHint": "{habit} — behöll {kept} av {active}",
   "@habitsLaggardHint": {
@@ -3933,9 +3934,19 @@
   "matrixStatsSignals": "Signaler",
   "matrixStatsSignalsConnectivity": "Signaler (anslutning)",
   "matrixStatsTopKpis": "Topp-KPI:er",
+  "measurableChoiceNotFound": "Borttaget val",
   "measurableDeleteConfirm": "Ja, radera detta mätvärde",
   "measurableDeleteQuestion": "Vill du ta bort denna mätbara datatyp?",
   "measurableNotFound": "Mätbar inte hittad",
+  "measurementChoicePrompt": "Välj ett",
+  "measurementChoiceSelectSemantic": "Välj {title}",
+  "@measurementChoiceSelectSemantic": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "measurementCommentHint": "Lägg till en anteckning (valfritt)",
   "measurementCommentSemantic": "Kommentar, valfritt",
   "measurementObservedAtChangeSemantic": "Observerad vid {dateTime}. Ändra datum och tid.",
@@ -5180,6 +5191,38 @@
   "settingsMatrixVerifyLabel": "Verifiera",
   "settingsMeasurableAggregationHelper": "Hur dagens poster kombineras på diagram",
   "settingsMeasurableAggregationLabel": "Standardaggregeringstyp",
+  "settingsMeasurableChoiceAdd": "Lägg till val",
+  "settingsMeasurableChoiceArchive": "Arkivera {title}",
+  "@settingsMeasurableChoiceArchive": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsMeasurableChoiceNameHint": "Namn på valet",
+  "settingsMeasurableChoiceNameRequired": "Ge det här valet ett namn",
+  "settingsMeasurableChoiceReorder": "Flytta {title}",
+  "@settingsMeasurableChoiceReorder": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsMeasurableChoiceRestore": "Återställ {title}",
+  "@settingsMeasurableChoiceRestore": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsMeasurableChoicesArchivedDescription": "Dolda vid registrering; poster som använde dem visar fortfarande sitt namn.",
+  "settingsMeasurableChoicesArchivedTitle": "Arkiverade val",
+  "settingsMeasurableChoicesDescription": "När du registrerar väljer du ett av dem. Byt namn eller ordning när som helst – redan registrerade poster behåller sitt val.",
+  "settingsMeasurableChoicesRequired": "Lägg till minst ett val",
+  "settingsMeasurableChoicesTitle": "Valmöjligheter",
   "settingsMeasurableDeleteTooltip": "Ta bort mätbar typ",
   "settingsMeasurableDescriptionLabel": "Beskrivning (valfritt)",
   "settingsMeasurableDetailsLabel": "Redigering mätbar",
@@ -5188,7 +5231,7 @@
   "settingsMeasurableSaveLabel": "Spara",
   "settingsMeasurablesCreateTitle": "Skapa mätbart",
   "settingsMeasurablesEmptyState": "Inga mätbara faktorer än",
-  "settingsMeasurablesEmptyStateHint": "Mätbara är siffror du följer över tid — vikt, vatten, steg.",
+  "settingsMeasurablesEmptyStateHint": "Mätvärden är sådant du följer över tid — vikt, vatten, steg eller ett val för hur utvilad du känner dig.",
   "settingsMeasurablesErrorLoading": "Fellastningsmätbara",
   "settingsMeasurablesNoMatchQuery": "Inga mätbara värden matchar \"{query}\"",
   "@settingsMeasurablesNoMatchQuery": {
@@ -5202,6 +5245,10 @@
   "settingsMeasurablesSubtitle": "Konfigurera mätbara datatyper",
   "settingsMeasurablesTitle": "Mätbara egenskaper",
   "settingsMeasurableUnitLabel": "Enhetsförkortning (valfritt)",
+  "settingsMeasurableValueKindChoice": "Val",
+  "settingsMeasurableValueKindHelper": "Ett tal med enhet, eller ett av de val du själv definierar",
+  "settingsMeasurableValueKindLabel": "Registreras som",
+  "settingsMeasurableValueKindNumber": "Tal",
   "settingsOnboardingActionSubtitle": "Öppna välkomstflödet igen – koppla upp din AI-hjärna och skapa en uppgift",
   "settingsOnboardingMetricsSubtitle": "FTUE-tratten — installation, aktivering, retention (felsökning)",
   "settingsOnboardingMetricsTitle": "Onboarding-mått",

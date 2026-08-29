@@ -75,7 +75,7 @@ GoalMeasurableRecordOffer? parseGoalMeasurableRecordOffer({
   final text = message.text.toLowerCase();
   final candidates = <({MeasurableDataType measurable, RegExpMatch match})>[];
   for (final measurable in measurables) {
-    if (!linkedIds.contains(measurable.id)) continue;
+    if (!linkedIds.contains(measurable.id) || measurable.isChoice) continue;
     final unit = measurable.unitName.trim();
     if (unit.isEmpty) continue;
     final unitPattern = _unitPattern(unit);

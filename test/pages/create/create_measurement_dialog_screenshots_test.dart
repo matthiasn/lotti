@@ -57,6 +57,49 @@ final MeasurableDataType _sardinesConsumed = MeasurableDataType(
   favorite: true,
 );
 
+const _hydrationId = 'manual-hydration-check';
+
+final MeasurableDataType _hydrationCheck = MeasurableDataType(
+  id: _hydrationId,
+  displayName: _t('Hydration check', 'Hydrationscheck'),
+  description: _t('Urine colour, first thing.', 'Urinfarbe, gleich morgens.'),
+  unitName: '',
+  createdAt: manualDemoNow.subtract(const Duration(days: 60)),
+  updatedAt: manualDemoNow,
+  vectorClock: null,
+  version: 1,
+  valueKind: MeasurableValueKind.choice,
+  choices: [
+    MeasurableChoice(id: 'hyd-clear', title: _t('Clear', 'Klar')),
+    MeasurableChoice(id: 'hyd-pale', title: _t('Pale yellow', 'Hellgelb')),
+    MeasurableChoice(id: 'hyd-dark', title: _t('Dark yellow', 'Dunkelgelb')),
+  ],
+);
+
+/// A recording most days of the range, cycling through the choices.
+List<MeasurementEntry> _hydrationRecordings() => [
+  for (var day = 0; day < 30; day++)
+    if (day % 7 != 3)
+      MeasurementEntry(
+        meta: Metadata(
+          id: 'hydration-$day',
+          createdAt: _rangeStart.add(Duration(days: day, hours: 8)),
+          dateFrom: _rangeStart.add(Duration(days: day, hours: 8)),
+          dateTo: _rangeStart.add(Duration(days: day, hours: 8)),
+          updatedAt: _rangeStart.add(Duration(days: day, hours: 8)),
+          starred: false,
+          private: false,
+        ),
+        data: MeasurementData(
+          value: 1,
+          dataTypeId: _hydrationId,
+          choiceId: ['hyd-clear', 'hyd-pale', 'hyd-clear', 'hyd-dark'][day % 4],
+          dateFrom: _rangeStart.add(Duration(days: day, hours: 8)),
+          dateTo: _rangeStart.add(Duration(days: day, hours: 8)),
+        ),
+      ),
+];
+
 List<Observation> _dashboardObservations() => [
   for (var day = 0; day < 30; day++)
     Observation(
@@ -106,12 +149,21 @@ List<Override> _chartOverrides() => [
     rangeEnd: _rangeEnd,
     dashboardDefinedAggregationType: AggregationType.dailySum,
   )).overrideWithBuild((ref, notifier) => _dashboardObservations()),
+  measurableDataTypeControllerProvider(_hydrationId).overrideWithBuild(
+    (ref, notifier) => _hydrationCheck,
+  ),
+  measurableChartDataControllerProvider((
+    measurableDataTypeId: _hydrationId,
+    rangeStart: _rangeStart,
+    rangeEnd: _rangeEnd,
+  )).overrideWithBuild((ref, notifier) => _hydrationRecordings()),
 ];
 
 Future<void> _pumpDashboard(
   WidgetTester tester, {
   required ScreenshotDevice device,
   required Brightness brightness,
+  String measurableId = _measurableId,
 }) async {
   applyScreenshotDevice(tester, device);
   await tester.pumpWidget(
@@ -141,7 +193,7 @@ Future<void> _pumpDashboard(
                   child: SingleChildScrollView(
                     padding: EdgeInsets.all(tokens.spacing.step5),
                     child: MeasurablesBarChart(
-                      measurableDataTypeId: _measurableId,
+                      measurableDataTypeId: measurableId,
                       rangeStart: _rangeStart,
                       rangeEnd: _rangeEnd,
                       enableCreate: true,
@@ -171,7 +223,10 @@ void main() {
   setUpAll(loadScreenshotFonts);
 
   setUp(() async {
-    final journalDb = mockJournalDbWithMeasurableTypes([_sardinesConsumed]);
+    final journalDb = mockJournalDbWithMeasurableTypes([
+      _sardinesConsumed,
+      _hydrationCheck,
+    ]);
     await setUpTestGetIt(
       additionalSetup: () {
         getIt
@@ -272,6 +327,61 @@ void main() {
         await captureScreenshot(
           tester,
           'measurement_capture_time_${viewport}_$theme',
+          subdir: 'manual',
+        );
+      });
+    }
+  }
+  for (final device in [miniDevice, desktopDevice]) {
+    final viewport = device.isPhone ? 'mobile' : 'desktop';
+    for (final brightness in [Brightness.light, Brightness.dark]) {
+      final theme = brightness.name;
+      testWidgets('$viewport choice measurement capture — $theme', (
+        tester,
+      ) async {
+        await _pumpDashboard(
+          tester,
+          device: device,
+          brightness: brightness,
+          measurableId: _hydrationId,
+        );
+        expect(
+          find.text(_t('Hydration check', 'Hydrationscheck')),
+          findsOneWidget,
+        );
+        await captureScreenshot(
+          tester,
+          'dashboard_choice_strip_${viewport}_$theme',
+          subdir: 'manual',
+        );
+
+        await withClock(Clock.fixed(manualDemoNow), () async {
+          await tester.tap(find.byIcon(LottiIcons.add));
+          await settleFrames(tester, 10);
+        });
+        expect(
+          find.text(_messages(tester).measurementChoicePrompt),
+          findsOneWidget,
+        );
+
+        await tester.tap(
+          find.byKey(const ValueKey('measurement-choice-hyd-pale')),
+        );
+        await settleFrames(tester, 4);
+        final comment = _t(
+          'Before the morning briefing',
+          'Vor dem Morgenbriefing',
+        );
+        await tester.enterText(
+          find.byKey(const Key('measurement_comment_field')),
+          comment,
+        );
+        FocusManager.instance.primaryFocus?.unfocus();
+        await settleFrames(tester, 4);
+        expect(find.text(comment), findsOneWidget);
+        await captureScreenshot(
+          tester,
+          'measurement_capture_choice_${viewport}_$theme',
           subdir: 'manual',
         );
       });

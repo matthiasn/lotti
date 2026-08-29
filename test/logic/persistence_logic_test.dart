@@ -2535,6 +2535,11 @@ void main() {
       test(
         'upsertEntityDefinition emits $expectedNotification for $description',
         () async {
+          if (definition case final MeasurableDataType measurable) {
+            when(
+              () => journalDb.getMeasurableDataTypeById(measurable.id),
+            ).thenAnswer((_) async => measurable);
+          }
           when(
             () => journalDb.upsertEntityDefinition(any<EntityDefinition>()),
           ).thenAnswer((_) async => 1);

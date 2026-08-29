@@ -120,9 +120,12 @@ class MeasurableItemCard extends StatelessWidget {
             // Fall back to the id when the referenced measurable type is
             // missing (e.g. deleted) so the row isn't visually blank.
             var title = measurement.id;
+            // A choice measurable is charted as a day strip: there is no
+            // aggregation to name or to edit.
+            final isChoice = matches.isNotEmpty && matches.first.isChoice;
             if (matches.isNotEmpty) {
               final aggregationType = measurement.aggregationType;
-              final aggregationSuffix = aggregationType != null
+              final aggregationSuffix = aggregationType != null && !isChoice
                   ? ' — ${aggregationTypeLabel(context.messages, aggregationType)}'
                   : '';
               title = '${matches.first.displayName}$aggregationSuffix';
@@ -132,25 +135,28 @@ class MeasurableItemCard extends StatelessWidget {
               title: title,
               reorderIndex: index,
               onRemove: onRemove,
-              editSemanticsLabel:
-                  context.messages.dashboardEditAggregationLabel,
-              onTap: () {
-                ModalUtils.showSinglePageModal<void>(
-                  context: context,
-                  title: context.messages.dashboardAggregationTitle,
-                  padding: EdgeInsets.all(
-                    context.designTokens.spacing.cardPadding,
-                  ),
-                  builder: (BuildContext context) {
-                    return DashboardItemModal(
-                      item: measurement,
-                      updateItemFn: updateItemFn,
-                      index: index,
-                      chartTitle: title,
-                    );
-                  },
-                );
-              },
+              editSemanticsLabel: isChoice
+                  ? null
+                  : context.messages.dashboardEditAggregationLabel,
+              onTap: isChoice
+                  ? null
+                  : () {
+                      ModalUtils.showSinglePageModal<void>(
+                        context: context,
+                        title: context.messages.dashboardAggregationTitle,
+                        padding: EdgeInsets.all(
+                          context.designTokens.spacing.cardPadding,
+                        ),
+                        builder: (BuildContext context) {
+                          return DashboardItemModal(
+                            item: measurement,
+                            updateItemFn: updateItemFn,
+                            index: index,
+                            chartTitle: title,
+                          );
+                        },
+                      );
+                    },
             );
           },
     );

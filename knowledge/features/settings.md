@@ -11,7 +11,7 @@ sources:
   - id: settings
     resource: ../../lib/features/settings
     title: Settings feature source
-    last_modified: 2026-07-26
+    last_modified: 2026-08-28
   - id: tree
     resource: ../../lib/features/settings_v2/domain/settings_tree_data.dart
     title: buildSettingsTree — the single source of truth
@@ -178,8 +178,8 @@ reuse one pattern:
    button), and the create affordance — a bottom-nav-cleared FAB on mobile, a
    header button on desktop.
 3. Rows lead with one shared 36 px rounded-square chip and keep a **stable
-   subtitle semantic per page** — counts for categories and labels, unit for
-   measurables, description for habits and dashboards.
+   subtitle semantic per page** — counts for categories and labels,
+   description for measurables, habits and dashboards.
 4. Tapping a row beams to the detail editor; the desktop split pane dispatches
    the same URLs inline.
 5. Saving or deleting goes through shared persistence or a feature-specific
@@ -210,6 +210,21 @@ subtitles. Aggregation types always render **localized names, never raw enum
 identifiers**.
 
 ## The persistence split
+
+The measurable editor carries one field the kit has no widget for: a
+*Recorded as* switch (number / choice) that decides whether the unit and
+aggregation fields are shown at all, and for the choice kind a
+`MeasurableChoicesEditor` — a reorderable list of the definition's choices,
+each renamed in place and archived rather than deleted, with an archived
+section to restore from. Both live beside the `FormBuilder` as plain widget
+state and flip the same `dirty` flag; a save with the choice kind refuses a
+blank title or an empty list and calls the rows out instead. What a choice is,
+and why it is an id with a title rather than an enum, is in
+[entity definitions](../domain/entity-definitions.md#measurabledatatype-records-a-number-or-a-choice).
+Changing a numeric measurable to choices also changes the valid downstream
+contract: habit evaluation treats any stored numeric bounds as obsolete, and
+the goal editor drops a stored numeric criterion for that measurable when the
+goal is next edited.
 
 Dashboards and measurables save through `PersistenceLogic`; habits save through
 `habit_settings_controller.dart`, **which also schedules notifications**.

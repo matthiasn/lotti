@@ -460,20 +460,22 @@ class _EntryCardContent extends StatelessWidget {
       m.data.dataTypeId,
     );
     final name = dataType?.displayName ?? context.messages.measurableNotFound;
-    final unit = dataType?.unitName ?? '';
-    final value = nf.format(m.data.value);
+    // Without its definition the value can only be the raw number; with it,
+    // the shared formatter reads a choice recording as the choice's title.
+    final value = dataType == null
+        ? nf.format(m.data.value)
+        : measurementValueLabel(
+            m.data,
+            dataType,
+            removedChoiceLabel: context.messages.measurableChoiceNotFound,
+          );
 
     return _scaffold(
       context,
       icon: LottiIcons.measure,
       iconColor: _categoryColor(context, item),
       title: _titleText(context, name),
-      metaChips: [
-        _metricChip(
-          context,
-          label: unit.isEmpty ? value : '$value $unit',
-        ),
-      ],
+      metaChips: [_metricChip(context, label: value)],
       secondary: _notePreview(context, m.entryText),
     );
   }

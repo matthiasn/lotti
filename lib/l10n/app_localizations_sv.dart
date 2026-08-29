@@ -7557,6 +7557,9 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get habitSignalTodayLogged => 'idag: registrerat';
+
+  @override
   String get habitSignalTodayNone => 'idag: —';
 
   @override
@@ -9201,6 +9204,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get matrixStatsTopKpis => 'Topp-KPI:er';
 
   @override
+  String get measurableChoiceNotFound => 'Borttaget val';
+
+  @override
   String get measurableDeleteConfirm => 'Ja, radera detta mätvärde';
 
   @override
@@ -9209,6 +9215,14 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get measurableNotFound => 'Mätbar inte hittad';
+
+  @override
+  String get measurementChoicePrompt => 'Välj ett';
+
+  @override
+  String measurementChoiceSelectSemantic(String title) {
+    return 'Välj $title';
+  }
 
   @override
   String get measurementCommentHint => 'Lägg till en anteckning (valfritt)';
@@ -11969,6 +11983,48 @@ class AppLocalizationsSv extends AppLocalizations {
   String get settingsMeasurableAggregationLabel => 'Standardaggregeringstyp';
 
   @override
+  String get settingsMeasurableChoiceAdd => 'Lägg till val';
+
+  @override
+  String settingsMeasurableChoiceArchive(String title) {
+    return 'Arkivera $title';
+  }
+
+  @override
+  String get settingsMeasurableChoiceNameHint => 'Namn på valet';
+
+  @override
+  String get settingsMeasurableChoiceNameRequired =>
+      'Ge det här valet ett namn';
+
+  @override
+  String settingsMeasurableChoiceReorder(String title) {
+    return 'Flytta $title';
+  }
+
+  @override
+  String settingsMeasurableChoiceRestore(String title) {
+    return 'Återställ $title';
+  }
+
+  @override
+  String get settingsMeasurableChoicesArchivedDescription =>
+      'Dolda vid registrering; poster som använde dem visar fortfarande sitt namn.';
+
+  @override
+  String get settingsMeasurableChoicesArchivedTitle => 'Arkiverade val';
+
+  @override
+  String get settingsMeasurableChoicesDescription =>
+      'När du registrerar väljer du ett av dem. Byt namn eller ordning när som helst – redan registrerade poster behåller sitt val.';
+
+  @override
+  String get settingsMeasurableChoicesRequired => 'Lägg till minst ett val';
+
+  @override
+  String get settingsMeasurableChoicesTitle => 'Valmöjligheter';
+
+  @override
   String get settingsMeasurableDeleteTooltip => 'Ta bort mätbar typ';
 
   @override
@@ -11994,7 +12050,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get settingsMeasurablesEmptyStateHint =>
-      'Mätbara är siffror du följer över tid — vikt, vatten, steg.';
+      'Mätvärden är sådant du följer över tid — vikt, vatten, steg eller ett val för hur utvilad du känner dig.';
 
   @override
   String get settingsMeasurablesErrorLoading => 'Fellastningsmätbara';
@@ -12015,6 +12071,19 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get settingsMeasurableUnitLabel => 'Enhetsförkortning (valfritt)';
+
+  @override
+  String get settingsMeasurableValueKindChoice => 'Val';
+
+  @override
+  String get settingsMeasurableValueKindHelper =>
+      'Ett tal med enhet, eller ett av de val du själv definierar';
+
+  @override
+  String get settingsMeasurableValueKindLabel => 'Registreras som';
+
+  @override
+  String get settingsMeasurableValueKindNumber => 'Tal';
 
   @override
   String get settingsOnboardingActionSubtitle =>

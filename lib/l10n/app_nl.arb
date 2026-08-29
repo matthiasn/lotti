@@ -3274,6 +3274,7 @@
   "habitSignalStatusNotYet": "{target} · nog niet",
   "habitSignalStatusSoFar": "{target} · {value} tot nu toe",
   "habitSignalToday": "vandaag: {value}",
+  "habitSignalTodayLogged": "vandaag: vastgelegd",
   "habitSignalTodayNone": "vandaag: —",
   "habitsLaggardHint": "{habit}  — kept  {kept} van {active}",
   "@habitsLaggardHint": {
@@ -3932,9 +3933,19 @@
   "matrixStatsSignals": "Signalen",
   "matrixStatsSignalsConnectivity": "Signalen (connectiviteit)",
   "matrixStatsTopKpis": "Top KPI's",
+  "measurableChoiceNotFound": "Verwijderde keuze",
   "measurableDeleteConfirm": "Ja, verwijder dit meetbare gegevenstype",
   "measurableDeleteQuestion": "Wilt u dit meetbare gegevenstype verwijderen?",
   "measurableNotFound": "Maattabel niet gevonden",
+  "measurementChoicePrompt": "Kies er een",
+  "measurementChoiceSelectSemantic": "{title} selecteren",
+  "@measurementChoiceSelectSemantic": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "measurementCommentHint": "Nota toevoegen (facultatief)",
   "measurementCommentSemantic": "Opmerking, facultatief",
   "measurementObservedAtChangeSemantic": "Waargenomen bij {dateTime}. Wijziging datum en tijd.",
@@ -5179,6 +5190,38 @@
   "settingsMatrixVerifyLabel": "Verifiëren",
   "settingsMeasurableAggregationHelper": "Hoe een dag inzendingen combineren op grafieken",
   "settingsMeasurableAggregationLabel": "Standaard aggregatietype",
+  "settingsMeasurableChoiceAdd": "Keuze toevoegen",
+  "settingsMeasurableChoiceArchive": "{title} archiveren",
+  "@settingsMeasurableChoiceArchive": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsMeasurableChoiceNameHint": "Naam van de keuze",
+  "settingsMeasurableChoiceNameRequired": "Geef deze keuze een naam",
+  "settingsMeasurableChoiceReorder": "{title} verplaatsen",
+  "@settingsMeasurableChoiceReorder": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsMeasurableChoiceRestore": "{title} terugzetten",
+  "@settingsMeasurableChoiceRestore": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsMeasurableChoicesArchivedDescription": "Verborgen bij het vastleggen; items die ze gebruikten tonen nog steeds hun naam.",
+  "settingsMeasurableChoicesArchivedTitle": "Gearchiveerde keuzes",
+  "settingsMeasurableChoicesDescription": "Bij het vastleggen kies je er een. Je kunt ze altijd hernoemen of herschikken – al vastgelegde items houden hun keuze.",
+  "settingsMeasurableChoicesRequired": "Voeg minstens één keuze toe",
+  "settingsMeasurableChoicesTitle": "Keuzes",
   "settingsMeasurableDeleteTooltip": "Meetbaar type verwijderen",
   "settingsMeasurableDescriptionLabel": "Beschrijving (facultatief)",
   "settingsMeasurableDetailsLabel": "Meetbaar bewerken",
@@ -5187,7 +5230,7 @@
   "settingsMeasurableSaveLabel": "Opslaan",
   "settingsMeasurablesCreateTitle": "Meetbaar maken",
   "settingsMeasurablesEmptyState": "Nog geen meetbare waarden",
-  "settingsMeasurablesEmptyStateHint": "Measurables zijn nummers die je volgt in de tijd .. gewicht, water, stappen.",
+  "settingsMeasurablesEmptyStateHint": "Meetwaarden zijn waarden die je in de tijd volgt — gewicht, water, stappen, of een keuze zoals hoe uitgerust je je voelt.",
   "settingsMeasurablesErrorLoading": "Fout bij laden van meetbare gegevens",
   "settingsMeasurablesNoMatchQuery": "Geen meetbare overeenkomst \"{query}\"",
   "@settingsMeasurablesNoMatchQuery": {
@@ -5201,6 +5244,10 @@
   "settingsMeasurablesSubtitle": "Meetbare gegevenstypen configureren",
   "settingsMeasurablesTitle": "Meetbare",
   "settingsMeasurableUnitLabel": "Eenheidsafkorting (facultatief)",
+  "settingsMeasurableValueKindChoice": "Keuze",
+  "settingsMeasurableValueKindHelper": "Een getal met eenheid, of een van de keuzes die je zelf bepaalt",
+  "settingsMeasurableValueKindLabel": "Vastgelegd als",
+  "settingsMeasurableValueKindNumber": "Getal",
   "settingsOnboardingActionSubtitle": "Open de welkomststroom . . Sluit uw AI-hersenen en maak een taak",
   "settingsOnboardingMetricsSubtitle": "FTUE trechter",
   "settingsOnboardingMetricsTitle": "Metrics aan boord",

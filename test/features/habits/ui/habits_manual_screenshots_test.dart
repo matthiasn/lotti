@@ -96,6 +96,23 @@ final _krillRations = MeasurableDataType(
   aggregationType: AggregationType.dailySum,
 );
 
+final _hydrationCheck = MeasurableDataType(
+  id: 'hydration-check',
+  displayName: _t('Hydration check', 'Hydrationscheck'),
+  description: '',
+  unitName: '',
+  version: 1,
+  createdAt: DateTime(2026),
+  updatedAt: _today,
+  vectorClock: null,
+  valueKind: MeasurableValueKind.choice,
+  choices: [
+    MeasurableChoice(id: 'hyd-clear', title: _t('Clear', 'Klar')),
+    MeasurableChoice(id: 'hyd-pale', title: _t('Pale yellow', 'Hellgelb')),
+    MeasurableChoice(id: 'hyd-dark', title: _t('Dark yellow', 'Dunkelgelb')),
+  ],
+);
+
 final HabitDefinition _inspectHabitatSeals =
     _habit(
       id: 'inspect-habitat-seals',
@@ -108,6 +125,7 @@ final HabitDefinition _inspectHabitatSeals =
       autoCompleteRule: AutoCompleteRule.and(
         rules: [
           AutoCompleteRule.measurable(dataTypeId: _krillRations.id, minimum: 3),
+          AutoCompleteRule.measurable(dataTypeId: _hydrationCheck.id),
           const AutoCompleteRule.health(
             dataType: 'cumulative_step_count',
             minimum: 6000,
@@ -130,6 +148,7 @@ class _FixedSignalStatus extends HabitSignalStatusController {
   Future<HabitSignalStatus?> build() async {
     final rule = _inspectHabitatSeals.autoCompleteRule!;
     final krill = <DateTime, num>{};
+    final hydration = <DateTime, num>{};
     final steps = <DateTime, num>{};
     const krillByOffset = [2, 4, 3, null, 5, 3, 4, 2, null, 4, 3, 5, 4, 2];
     const stepsByOffset = [
@@ -151,12 +170,17 @@ class _FixedSignalStatus extends HabitSignalStatusController {
     for (var i = 0; i < 14; i++) {
       final day = _todayKey.subtract(Duration(days: 13 - i));
       if (krillByOffset[i] != null) krill[day] = krillByOffset[i]!;
+      // Checked most mornings, not yet today.
+      if (i % 5 != 2 && i != 13) hydration[day] = 1;
       steps[day] = stepsByOffset[i];
     }
     final window = SignalWindow(
       start: _todayKey.subtract(const Duration(days: 13)),
       end: _todayKey,
-      measurableTotalsByDay: {_krillRations.id: krill},
+      measurableTotalsByDay: {
+        _krillRations.id: krill,
+        _hydrationCheck.id: hydration,
+      },
       quantitativeByDay: {'cumulative_step_count': steps},
     );
     return HabitSignalStatus(
@@ -240,6 +264,7 @@ void main() {
           )
           ..categoriesById[_penguinOps.id] = _penguinOps
           ..dataTypesById[_krillRations.id] = _krillRations
+          ..dataTypesById[_hydrationCheck.id] = _hydrationCheck
           ..habitsById.addEntries(
             _habits.map((habit) => MapEntry(habit.id, habit)),
           );
@@ -343,7 +368,7 @@ void main() {
           findsNWidgets(2),
         );
         expect(find.byKey(const Key('habit_save')), findsOneWidget);
-        expect(find.byType(HabitSignalRow), findsNWidgets(2));
+        expect(find.byType(HabitSignalRow), findsNWidgets(3));
         await captureScreenshot(
           tester,
           'habits_record_${viewport}_$theme',
@@ -548,7 +573,7 @@ Future<void> _pumpHabitEditor(
     ProviderScope(
       overrides: [
         measurableDataTypesStreamProvider.overrideWith(
-          (ref) => Stream.value([_krillRations]),
+          (ref) => Stream.value([_krillRations, _hydrationCheck]),
         ),
         workoutTypesProvider.overrideWith(
           (ref) async => ['functionalStrengthTraining', 'running'],

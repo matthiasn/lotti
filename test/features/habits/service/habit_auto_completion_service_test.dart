@@ -182,6 +182,25 @@ void main() {
       expect(emitted, isEmpty);
     });
 
+    test('a converted choice measurable ignores its stale numeric bound', () {
+      when(() => entitiesCache.getDataTypeById('water')).thenReturn(
+        measurableHydration.copyWith(id: 'water'),
+      );
+      stubHabits([waterHabit]);
+      final entry =
+          measurementEntity(DateTime(2026, 8, 8, 9), 1) as MeasurementEntry;
+      stubMeasurements([
+        entry.copyWith(
+          data: entry.data.copyWith(choiceId: hydrationClear.id),
+        ),
+      ]);
+
+      run((async) => service.start());
+
+      expect(written, hasLength(1));
+      expect(written.single.autoCompleteReason, 'Hydration');
+    });
+
     test('inactive habits and habits without a rule are not candidates', () {
       stubHabits([
         waterHabit.copyWith(active: false),
@@ -406,6 +425,29 @@ void main() {
         ],
       );
       expect(service.describeReason(verdict), 'Floss · habit-gone');
+    });
+
+    test('a choice measurable is named without its occurrence count', () {
+      when(
+        () => entitiesCache.getDataTypeById('hydration'),
+      ).thenReturn(measurableHydration.copyWith(id: 'hydration'));
+      final verdict = HabitRuleVerdict(
+        satisfied: true,
+        leaves: [
+          leaf(
+            const AutoCompleteRule.measurable(dataTypeId: 'hydration'),
+            value: 1,
+          ),
+          leaf(
+            const AutoCompleteRule.measurable(
+              dataTypeId: 'hydration',
+              title: 'Pee check',
+            ),
+            value: 2,
+          ),
+        ],
+      );
+      expect(service.describeReason(verdict), 'Hydration · Pee check');
     });
 
     test('an authored title wins over the resolved name', () {

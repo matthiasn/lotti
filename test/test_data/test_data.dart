@@ -94,6 +94,30 @@ final measurablePullUps = MeasurableDataType(
   aggregationType: AggregationType.dailyMax,
 );
 
+/// The choices of [measurableHydration]; [hydrationBrown] is archived.
+const hydrationClear = MeasurableChoice(id: 'hydration-clear', title: 'Clear');
+const hydrationPale = MeasurableChoice(id: 'hydration-pale', title: 'Pale');
+const hydrationDark = MeasurableChoice(id: 'hydration-dark', title: 'Dark');
+const hydrationBrown = MeasurableChoice(
+  id: 'hydration-brown',
+  title: 'Brown',
+  archived: true,
+);
+
+/// A choice-kind measurable: recorded as one of its choices, not a number.
+final measurableHydration = MeasurableDataType(
+  id: '0c1c2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d',
+  displayName: 'Hydration',
+  description: 'Urine colour check',
+  unitName: '',
+  createdAt: testEpochDateTime,
+  updatedAt: testEpochDateTime,
+  vectorClock: null,
+  version: 1,
+  valueKind: MeasurableValueKind.choice,
+  choices: const [hydrationClear, hydrationPale, hydrationDark, hydrationBrown],
+);
+
 final measurableChocolate = MeasurableDataType(
   id: 'f8f55c10-e30b-4bf5-990d-d569ce4867fb',
   displayName: 'Chocolate',
@@ -408,6 +432,26 @@ final testMeasurementChocolateEntry = MeasurementEntry(
     dataTypeId: measurableChocolate.id,
     dateTo: DateTime(2022, 7, 7, 17),
     dateFrom: DateTime(2022, 7, 7, 17),
+  ),
+);
+
+/// A choice recording of [measurableHydration]: "Clear", one occurrence.
+final testMeasurementHydrationEntry = MeasurementEntry(
+  meta: Metadata(
+    id: 'a7b1c2d3-e4f5-4a6b-9c8d-0e1f2a3b4c5d',
+    createdAt: DateTime(2022, 7, 7, 8),
+    dateFrom: DateTime(2022, 7, 7, 8),
+    dateTo: DateTime(2022, 7, 7, 8),
+    updatedAt: DateTime(2022, 7, 7, 8),
+    starred: false,
+    private: false,
+  ),
+  data: MeasurementData(
+    value: 1,
+    dataTypeId: measurableHydration.id,
+    choiceId: hydrationClear.id,
+    dateTo: DateTime(2022, 7, 7, 8),
+    dateFrom: DateTime(2022, 7, 7, 8),
   ),
 );
 

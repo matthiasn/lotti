@@ -7627,6 +7627,9 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get habitSignalTodayLogged => 'dnes: zaznamenáno';
+
+  @override
   String get habitSignalTodayNone => 'dnes: —';
 
   @override
@@ -9312,6 +9315,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get matrixStatsTopKpis => 'Hlavní ukazatele';
 
   @override
+  String get measurableChoiceNotFound => 'Odstraněná volba';
+
+  @override
   String get measurableDeleteConfirm => 'Ano, smazat tuto měřitelnou veličinu';
 
   @override
@@ -9320,6 +9326,14 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get measurableNotFound => 'Měřitelný typ nenalezen';
+
+  @override
+  String get measurementChoicePrompt => 'Vyber jednu';
+
+  @override
+  String measurementChoiceSelectSemantic(String title) {
+    return 'Vybrat $title';
+  }
 
   @override
   String get measurementCommentHint => 'Přidat poznámku (volitelné)';
@@ -12103,6 +12117,47 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsMeasurableAggregationLabel => 'Výchozí agregace';
 
   @override
+  String get settingsMeasurableChoiceAdd => 'Přidat volbu';
+
+  @override
+  String settingsMeasurableChoiceArchive(String title) {
+    return 'Archivovat $title';
+  }
+
+  @override
+  String get settingsMeasurableChoiceNameHint => 'Název volby';
+
+  @override
+  String get settingsMeasurableChoiceNameRequired => 'Pojmenuj tuto volbu';
+
+  @override
+  String settingsMeasurableChoiceReorder(String title) {
+    return 'Přesunout $title';
+  }
+
+  @override
+  String settingsMeasurableChoiceRestore(String title) {
+    return 'Obnovit $title';
+  }
+
+  @override
+  String get settingsMeasurableChoicesArchivedDescription =>
+      'Při zaznamenávání skryté; položky, které je použily, dál ukazují jejich název.';
+
+  @override
+  String get settingsMeasurableChoicesArchivedTitle => 'Archivované volby';
+
+  @override
+  String get settingsMeasurableChoicesDescription =>
+      'Při zaznamenávání si jednu vybereš. Kdykoli je můžeš přejmenovat nebo přeuspořádat – už zaznamenané položky si svou volbu ponechají.';
+
+  @override
+  String get settingsMeasurableChoicesRequired => 'Přidej alespoň jednu volbu';
+
+  @override
+  String get settingsMeasurableChoicesTitle => 'Volby';
+
+  @override
   String get settingsMeasurableDeleteTooltip => 'Smazat měřitelný typ';
 
   @override
@@ -12128,7 +12183,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsMeasurablesEmptyStateHint =>
-      'Měřitelné typy jsou čísla sledovaná v čase — váha, voda, kroky.';
+      'Měřitelné typy jsou hodnoty sledované v čase — váha, voda, kroky nebo volba jako to, jak odpočatě se cítíš.';
 
   @override
   String get settingsMeasurablesErrorLoading =>
@@ -12151,6 +12206,19 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsMeasurableUnitLabel => 'Zkratka jednotky (volitelné)';
+
+  @override
+  String get settingsMeasurableValueKindChoice => 'Volba';
+
+  @override
+  String get settingsMeasurableValueKindHelper =>
+      'Číslo s jednotkou, nebo jedna z voleb, které si nastavíš';
+
+  @override
+  String get settingsMeasurableValueKindLabel => 'Zaznamenává se jako';
+
+  @override
+  String get settingsMeasurableValueKindNumber => 'Číslo';
 
   @override
   String get settingsOnboardingActionSubtitle =>

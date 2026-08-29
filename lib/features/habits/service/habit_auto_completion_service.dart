@@ -212,7 +212,11 @@ class HabitAutoCompletionService {
     DateTime day,
     DateTime now,
   ) async {
-    final rule = habit.autoCompleteRule!;
+    final rule = normalizeChoiceMeasurableBounds(
+      habit.autoCompleteRule!,
+      isChoice: (dataTypeId) =>
+          _entitiesCache.getDataTypeById(dataTypeId)?.isChoice ?? false,
+    );
     final dayStart = DateTime(day.year, day.month, day.day);
     final dayEnd = DateTime(day.year, day.month, day.day + 1);
     // Anything already recorded for the day — manual, skip, or an earlier
@@ -275,11 +279,18 @@ class HabitAutoCompletionService {
   String describeReason(HabitRuleVerdict verdict) {
     final parts = <String>[];
     for (final leaf in verdict.satisfiedLeaves) {
+      final measurable = switch (leaf.rule) {
+        AutoCompleteRuleMeasurable(:final dataTypeId) =>
+          _entitiesCache.getDataTypeById(dataTypeId),
+        _ => null,
+      };
+      // A choice measurable's day value is an occurrence count, not something
+      // the user would recognise as "what checked it off"; its name alone is
+      // the reason.
+      final showValue = !(measurable?.isChoice ?? false);
       final name = switch (leaf.rule) {
         AutoCompleteRuleMeasurable(:final dataTypeId, :final title) =>
-          title ??
-              _entitiesCache.getDataTypeById(dataTypeId)?.displayName ??
-              dataTypeId,
+          title ?? measurable?.displayName ?? dataTypeId,
         AutoCompleteRuleHealth(:final dataType, :final title) =>
           title ?? healthTypes[dataType]?.displayName ?? dataType,
         AutoCompleteRuleWorkout(:final dataType, :final title) =>
@@ -292,7 +303,9 @@ class HabitAutoCompletionService {
       };
       if (name == null) continue;
       final value = leaf.value;
-      parts.add(value == null ? name : '$name · ${_formatValue(value)}');
+      parts.add(
+        value == null || !showValue ? name : '$name · ${_formatValue(value)}',
+      );
     }
     return parts.join(' · ');
   }

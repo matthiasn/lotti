@@ -49,6 +49,43 @@ void main() {
       expect(find.textContaining('Coverage: 55%'), findsOneWidget);
     });
 
+    testWidgets('a choice recording reads as name: choice title', (
+      tester,
+    ) async {
+      when(
+        () => mockEntitiesCacheService.getDataTypeById(measurableHydration.id),
+      ).thenAnswer((_) => measurableHydration);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          MeasurementSummary(testMeasurementHydrationEntry),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Hydration: Clear'), findsOneWidget);
+      // Never the occurrence count that backs the value.
+      expect(find.textContaining('Hydration: 1'), findsNothing);
+    });
+
+    testWidgets('a choice no longer on the definition reads as removed', (
+      tester,
+    ) async {
+      when(
+        () => mockEntitiesCacheService.getDataTypeById(measurableHydration.id),
+      ).thenAnswer((_) => measurableHydration);
+      final orphan = testMeasurementHydrationEntry.copyWith(
+        data: testMeasurementHydrationEntry.data.copyWith(choiceId: 'gone'),
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(MeasurementSummary(orphan)),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Hydration: Removed choice'), findsOneWidget);
+    });
+
     testWidgets('does not duplicate the note — summary shows only the value', (
       tester,
     ) async {

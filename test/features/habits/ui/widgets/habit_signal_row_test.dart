@@ -36,6 +36,9 @@ void main() {
   setUp(() async {
     cache = MockEntitiesCacheService();
     when(() => cache.getDataTypeById('water')).thenReturn(water);
+    when(
+      () => cache.getDataTypeById('hydration'),
+    ).thenReturn(measurableHydration.copyWith(id: 'hydration'));
     when(() => cache.getHabitById(any())).thenReturn(null);
     await setUpTestGetIt(
       additionalSetup: () =>
@@ -68,14 +71,14 @@ void main() {
     workoutsByDay: workouts,
   );
 
-  final recorded = <(String, num)>[];
+  final recorded = <(String, MeasurableQuickValue)>[];
   final more = <String>[];
 
   Future<void> pump(
     WidgetTester tester,
     AutoCompleteRule rule,
     SignalWindow w, {
-    num? recordedValue,
+    MeasurableQuickValue? recordedValue,
   }) {
     recorded.clear();
     more.clear();
@@ -145,12 +148,56 @@ void main() {
     });
 
     testWidgets('chips record through the row callbacks', (tester) async {
-      await pump(tester, anyEntry, window(), recordedValue: 500);
+      await pump(
+        tester,
+        anyEntry,
+        window(),
+        recordedValue: (value: 500, choiceId: null),
+      );
       await tester.pump();
       await tester.tap(find.text('250 ml'));
-      expect(recorded, [('water', 250)]);
+      expect(recorded, [('water', (value: 250, choiceId: null))]);
       await tester.tap(find.text('Other'));
       expect(more, ['water']);
+    });
+
+    testWidgets(
+      'a choice measurable shows no unit, says "logged" for today, and '
+      'records the tapped choice',
+      (tester) async {
+        const rule = AutoCompleteRule.measurable(dataTypeId: 'hydration');
+        await pump(
+          tester,
+          rule,
+          window(
+            measurables: {
+              'hydration': {todayKey: 1},
+            },
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('Hydration'), findsOneWidget);
+        expect(find.text('any entry · done'), findsOneWidget);
+        // Never the occurrence count that backs the day value.
+        expect(find.text('today: logged'), findsOneWidget);
+        expect(find.textContaining('today: 1'), findsNothing);
+
+        await tester.tap(find.text('Pale'));
+        expect(recorded, [
+          ('hydration', (value: 1, choiceId: hydrationPale.id)),
+        ]);
+      },
+    );
+
+    testWidgets('a choice measurable with nothing today says so', (
+      tester,
+    ) async {
+      const rule = AutoCompleteRule.measurable(dataTypeId: 'hydration');
+      await pump(tester, rule, window());
+      await tester.pump();
+      expect(find.text('any entry · not yet'), findsOneWidget);
+      expect(find.text('today: —'), findsOneWidget);
     });
 
     testWidgets('the sparkline carries one value per window day', (

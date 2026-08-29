@@ -15,6 +15,7 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/notification_entity.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/journal_update_result.dart';
 import 'package:lotti/database/notifications_db.dart';
 import 'package:lotti/database/settings_db.dart';
@@ -132,6 +133,7 @@ class SyncEventProcessor {
     this._notificationsDb,
     this._notificationScheduler,
     this._syncNodeProfileRepository,
+    this._fts5Db,
   }) : _documentsDirectory =
            journalEntityLoader?.documentsDirectory ?? documentsDirectory,
        _journalEntityLoader =
@@ -171,6 +173,7 @@ class SyncEventProcessor {
   // `SyncSyncNodeProfile` messages are still acknowledged but the directory
   // upsert is skipped.
   final SyncNodeProfileRepository? _syncNodeProfileRepository;
+  final Fts5Db? _fts5Db;
 
   // Cached local host id. Resolved lazily on the first event that carries
   // an `originatingHostId`. Vector-clock host ids are stable for the life

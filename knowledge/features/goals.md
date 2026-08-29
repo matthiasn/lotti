@@ -303,6 +303,9 @@ flowchart TD
   follow the habits UI's latest-completion-per-day collapse with
   success-only counting, measurable leaves reuse their authored data-type ids,
   and category time reuses the same category-attributed timer rows as Insights.
+  Choice occurrence markers are excluded from numeric measurable evidence, so
+  changing a measurable to choices cannot accidentally satisfy an older numeric
+  goal with the stored marker value of one.
   A category-time leaf can enforce an `atLeast` or `atMost` number of hours and
   can clip every local day to an optional time band; a crossing band such as
   `21:30 → 07:00` spans midnight. Evaluation clips the current day at the
@@ -650,6 +653,10 @@ flowchart TD
   the memory and restores its default target. The same rule already governs
   category- and label-time matches, so no back-edit of the statement can silently
   resurrect a signal the user removed.
+  When an edited goal references a measurable that is now choice-based, save
+  waits for the current measurable definitions and removes that obsolete
+  numeric leaf and target before rebuilding criteria; the measurable is also
+  excluded from numeric record offers.
   Signals added through the picker likewise stay on the card as unchecked rows
   once unticked, until the step is re-entered and the row order is re-frozen —
   deselecting is never a deletion the user has to undo through the picker. Saving validates

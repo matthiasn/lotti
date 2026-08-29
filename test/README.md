@@ -842,3 +842,22 @@ This codebase is in the process of migrating all tests to fake time. See:
 - [fake_async package](https://pub.dev/packages/fake_async)
 - [Flutter testing guide](https://docs.flutter.dev/cookbook/testing)
 - Migration plan: `docs/implementation_plans/2025-11-01_tests_fake_async_migration.md`
+
+## Rows inside a `ReorderableListView` merge their semantics
+
+`ReorderableListView` wraps every item in `MergeSemantics` (that is how its
+"move up / move down" custom actions work), so a `Semantics(label:)` on a
+drag handle or a per-row button is folded into one node whose label is not
+what you wrote — `find.bySemanticsLabel` will not find it. Give the handle a
+`Tooltip` and assert with `find.byTooltip` instead (that is also the hover
+text a pointer user gets). Example: `measurable_choices_editor.dart` and its
+test.
+
+## Re-pumping the same host widget keeps its `State`
+
+A test helper that pumps `_Host(initial: …)` twice with different data gets
+the *first* list both times: the same widget type in the same slot reuses its
+`State`, and a `late` field seeded from `widget.initial` is not re-run. Give
+the host a fresh `key: UniqueKey()` per pump (see
+`measurable_choices_editor_test.dart`), or drive the change through the
+host's own state.

@@ -185,13 +185,46 @@ String entryTextForWorkout(
 
 /// Renders a measurement as `name: value unit` using the measurable type's
 /// display name and unit.
+/// "Weight: 94.49 kg", or "Hydration: Clear" for a choice recording.
+///
+/// [removedChoiceLabel] stands in for a choice the definition no longer
+/// lists; see [measurementValueLabel].
 String entryTextForMeasurable(
   MeasurementData data,
-  MeasurableDataType dataType,
-) {
+  MeasurableDataType dataType, {
+  String? removedChoiceLabel,
+}) {
+  final value = measurementValueLabel(
+    data,
+    dataType,
+    removedChoiceLabel: removedChoiceLabel,
+  );
+  return '${dataType.displayName}: $value';
+}
+
+/// The recorded value as a user reads it.
+///
+/// A measurement that carries a [MeasurementData.choiceId] is a choice
+/// recording and reads as that choice's current title — the data, not the
+/// definition's kind, decides, so a numeric entry recorded before a
+/// measurable was switched to choices still reads as its number. A choice
+/// the definition no longer lists at all reads as [removedChoiceLabel], or
+/// nothing when none is given (the search index has no words to spare for
+/// it).
+///
+/// Numbers keep conventional formatting: no space before a percent sign
+/// ("55%"), a space before word units ("94.49 kg"), the bare number without
+/// a unit.
+String measurementValueLabel(
+  MeasurementData data,
+  MeasurableDataType dataType, {
+  String? removedChoiceLabel,
+}) {
+  final choiceId = data.choiceId;
+  if (choiceId != null) {
+    return dataType.choiceById(choiceId)?.title ?? removedChoiceLabel ?? '';
+  }
   final unit = dataType.unitName;
-  // No space before a percent sign ("55%"), a thin space before word units
-  // ("94.49 kg") — matches conventional numeric formatting.
-  final separator = unit == '%' ? '' : ' ';
-  return '${dataType.displayName}: ${nf.format(data.value)}$separator$unit';
+  final separator = unit == '%' || unit.isEmpty ? '' : ' ';
+  return '${nf.format(data.value)}$separator$unit';
 }

@@ -7546,6 +7546,9 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String get habitSignalTodayLogged => 'i dag: registreret';
+
+  @override
   String get habitSignalTodayNone => 'i dag: —';
 
   @override
@@ -9190,6 +9193,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get matrixStatsTopKpis => 'Top KPI\'er';
 
   @override
+  String get measurableChoiceNotFound => 'Fjernet valg';
+
+  @override
   String get measurableDeleteConfirm => 'Ja, slet denne målbare værdi';
 
   @override
@@ -9198,6 +9204,14 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get measurableNotFound => 'Målbar ikke fundet';
+
+  @override
+  String get measurementChoicePrompt => 'Vælg ét';
+
+  @override
+  String measurementChoiceSelectSemantic(String title) {
+    return 'Vælg $title';
+  }
 
   @override
   String get measurementCommentHint => 'Tilføj en note (valgfrit)';
@@ -11957,6 +11971,47 @@ class AppLocalizationsDa extends AppLocalizations {
   String get settingsMeasurableAggregationLabel => 'Standard aggregeringstype';
 
   @override
+  String get settingsMeasurableChoiceAdd => 'Tilføj valg';
+
+  @override
+  String settingsMeasurableChoiceArchive(String title) {
+    return 'Arkivér $title';
+  }
+
+  @override
+  String get settingsMeasurableChoiceNameHint => 'Navn på valg';
+
+  @override
+  String get settingsMeasurableChoiceNameRequired => 'Giv dette valg et navn';
+
+  @override
+  String settingsMeasurableChoiceReorder(String title) {
+    return 'Flyt $title';
+  }
+
+  @override
+  String settingsMeasurableChoiceRestore(String title) {
+    return 'Gendan $title';
+  }
+
+  @override
+  String get settingsMeasurableChoicesArchivedDescription =>
+      'Skjult ved registrering; poster, der brugte dem, viser stadig deres navn.';
+
+  @override
+  String get settingsMeasurableChoicesArchivedTitle => 'Arkiverede valg';
+
+  @override
+  String get settingsMeasurableChoicesDescription =>
+      'Når du registrerer, vælger du ét af dem. Omdøb eller omarranger dem når som helst – allerede registrerede poster beholder deres valg.';
+
+  @override
+  String get settingsMeasurableChoicesRequired => 'Tilføj mindst ét valg';
+
+  @override
+  String get settingsMeasurableChoicesTitle => 'Valgmuligheder';
+
+  @override
   String get settingsMeasurableDeleteTooltip => 'Slet målbar type';
 
   @override
@@ -11982,7 +12037,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get settingsMeasurablesEmptyStateHint =>
-      'Målbare tal er tal, du følger over tid — vægt, vand, skridt.';
+      'Målbare er værdier, du følger over tid — vægt, vand, skridt eller et valg som hvor udhvilet du føler dig.';
 
   @override
   String get settingsMeasurablesErrorLoading => 'Fejlindlæsning af målbare';
@@ -12003,6 +12058,19 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get settingsMeasurableUnitLabel => 'Enhedsforkortelse (valgfrit)';
+
+  @override
+  String get settingsMeasurableValueKindChoice => 'Valg';
+
+  @override
+  String get settingsMeasurableValueKindHelper =>
+      'Et tal med enhed, eller et af de valg, du selv definerer';
+
+  @override
+  String get settingsMeasurableValueKindLabel => 'Registreres som';
+
+  @override
+  String get settingsMeasurableValueKindNumber => 'Tal';
 
   @override
   String get settingsOnboardingActionSubtitle =>

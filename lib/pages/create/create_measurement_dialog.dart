@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/calendar_pickers/design_system_date_picker_modal.dart';
+import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/components/time_pickers/design_system_picker_wheels.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -24,6 +25,10 @@ import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 /// draft-bearing objects live for the route lifetime because Wolt disposes an
 /// inactive page after pagination; returning from the picker therefore keeps
 /// the entered value and comment without reopening the keyboard.
+///
+/// A choice measurable swaps the number field and quick-value chips for one
+/// chip per active choice; the rest of the sheet — observed-at, comment,
+/// save — is the same route.
 abstract final class MeasurementCaptureModal {
   static Future<void> show({
     required BuildContext context,
@@ -140,6 +145,10 @@ class _MeasurementCaptureDraft {
   );
   final ValueNotifier<DateTime> measurementDateTime;
   final ValueNotifier<DateTime> pickerDateTime;
+
+  /// The choice picked so far on a choice measurable; always null on a
+  /// numeric one.
+  final ValueNotifier<String?> selectedChoiceId = ValueNotifier(null);
   final ValueNotifier<int> pageIndexNotifier = ValueNotifier(0);
   final ValueNotifier<_MeasurementSaveState> saveState = ValueNotifier(
     (isSaving: false, error: null),
@@ -170,8 +179,12 @@ class _MeasurementCaptureDraft {
     return num.tryParse(normalized);
   }
 
-  bool get canSave =>
-      parseValue() != null && !saveState.value.isSaving && !_disposed;
+  bool get isChoice => dataType.isChoice;
+
+  bool get _hasValue =>
+      isChoice ? selectedChoiceId.value != null : parseValue() != null;
+
+  bool get canSave => _hasValue && !saveState.value.isSaving && !_disposed;
 
   DateTime now() => routeClock.now();
 
@@ -196,21 +209,39 @@ class _MeasurementCaptureDraft {
     pageIndexNotifier.value = 0;
   }
 
+  /// Persists the draft. A numeric measurable saves [value] or the typed
+  /// value; a choice measurable saves the selected choice as one occurrence
+  /// (`value: 1`, see [MeasurementData.choiceId]).
   Future<void> save(BuildContext modalContext, {num? value}) async {
-    final resolved = value ?? parseValue();
-    if (resolved == null || saveState.value.isSaving || _disposed) return;
+    if (saveState.value.isSaving || _disposed) return;
+    final MeasurementData Function(DateTime observedAt) buildData;
+    if (isChoice) {
+      final choiceId = selectedChoiceId.value;
+      if (choiceId == null) return;
+      buildData = (observedAt) => MeasurementData(
+        dataTypeId: dataType.id,
+        dateTo: observedAt,
+        dateFrom: observedAt,
+        value: 1,
+        choiceId: choiceId,
+      );
+    } else {
+      final resolved = value ?? parseValue();
+      if (resolved == null) return;
+      buildData = (observedAt) => MeasurementData(
+        dataTypeId: dataType.id,
+        dateTo: observedAt,
+        dateFrom: observedAt,
+        value: resolved,
+      );
+    }
 
     final errorMessage = modalContext.messages.measurementSaveError;
     saveState.value = (isSaving: true, error: null);
     final observedAt = measurementDateTime.value;
     try {
       final savedEntry = await getIt<PersistenceLogic>().createMeasurementEntry(
-        data: MeasurementData(
-          dataTypeId: dataType.id,
-          dateTo: observedAt,
-          dateFrom: observedAt,
-          value: resolved,
-        ),
+        data: buildData(observedAt),
         comment: commentController.text,
         private: dataType.private ?? false,
       );
@@ -248,6 +279,7 @@ class _MeasurementCaptureDraft {
     observedAtFocusNode.dispose();
     measurementDateTime.dispose();
     pickerDateTime.dispose();
+    selectedChoiceId.dispose();
     pageIndexNotifier.dispose();
     saveState.dispose();
   }
@@ -374,6 +406,7 @@ class _MeasurementEditorPageState extends State<_MeasurementEditorPage> {
       .takeObservedAtFocusRestore();
   late final Listenable _editorState = Listenable.merge([
     widget.draft.valueController,
+    widget.draft.selectedChoiceId,
     widget.draft.measurementDateTime,
     widget.draft.saveState,
   ]);
@@ -411,21 +444,30 @@ class _MeasurementEditorPageState extends State<_MeasurementEditorPage> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _ValueHeroField(
-              controller: draft.valueController,
-              focusNode: draft.valueFocusNode,
-              unit: unit,
-              autofocus: _autofocusValue,
-              semanticsLabel: context.messages.measurementValueSemantic(
-                measurableLabel,
+            if (draft.isChoice)
+              _ChoiceField(
+                choices: dataType.activeChoices,
+                selectedId: draft.selectedChoiceId.value,
+                enabled: !saveState.isSaving,
+                onSelect: (id) => draft.selectedChoiceId.value = id,
+              )
+            else ...[
+              _ValueHeroField(
+                controller: draft.valueController,
+                focusNode: draft.valueFocusNode,
+                unit: unit,
+                autofocus: _autofocusValue,
+                semanticsLabel: context.messages.measurementValueSemantic(
+                  measurableLabel,
+                ),
+                onSubmitted: () => unawaited(draft.save(context)),
               ),
-              onSubmitted: () => unawaited(draft.save(context)),
-            ),
-            MeasurementSuggestions(
-              measurableDataType: dataType,
-              enabled: !saveState.isSaving,
-              onSelect: (value) => draft.save(context, value: value),
-            ),
+              MeasurementSuggestions(
+                measurableDataType: dataType,
+                enabled: !saveState.isSaving,
+                onSelect: (value) => draft.save(context, value: value),
+              ),
+            ],
             SizedBox(height: tokens.spacing.sectionGap),
             _LabeledField(
               label: context.messages.addMeasurementDateLabel,
@@ -493,7 +535,11 @@ class _MeasurementSaveFooter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: Listenable.merge([draft.valueController, draft.saveState]),
+      listenable: Listenable.merge([
+        draft.valueController,
+        draft.selectedChoiceId,
+        draft.saveState,
+      ]),
       builder: (context, _) {
         final state = draft.saveState.value;
         return DesignSystemGlassActionFooter(
@@ -922,6 +968,51 @@ class _ValueHeroField extends StatelessWidget {
               ),
             ),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+/// The choice measurable's hero: one touch-size chip per active choice under
+/// a "Pick one" label. Tapping selects — the sheet still has a date and a
+/// comment to offer, so the save stays with the footer button rather than
+/// firing on the tap.
+class _ChoiceField extends StatelessWidget {
+  const _ChoiceField({
+    required this.choices,
+    required this.selectedId,
+    required this.enabled,
+    required this.onSelect,
+  });
+
+  final List<MeasurableChoice> choices;
+  final String? selectedId;
+  final bool enabled;
+  final ValueChanged<String> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    return _LabeledField(
+      label: messages.measurementChoicePrompt,
+      child: Wrap(
+        key: const Key('measurement_choice_field'),
+        spacing: tokens.spacing.step2,
+        runSpacing: tokens.spacing.step2,
+        children: [
+          for (final choice in choices)
+            DesignSystemChip(
+              key: ValueKey('measurement-choice-${choice.id}'),
+              label: choice.title,
+              size: DesignSystemChipSize.touch,
+              selected: choice.id == selectedId,
+              semanticsLabel: messages.measurementChoiceSelectSemantic(
+                choice.title,
+              ),
+              onPressed: enabled ? () => onSelect(choice.id) : null,
+            ),
         ],
       ),
     );

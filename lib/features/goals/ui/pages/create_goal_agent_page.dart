@@ -81,8 +81,10 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
   final _suppressedHealthTypes = <String>{};
   List<HabitDefinition> _knownHabits = const [];
   List<MeasurableDataType> _knownMeasurables = const [];
+  final _knownChoiceMeasurableIds = <String>{};
   List<CategoryDefinition> _knownCategories = const [];
   List<LabelDefinition> _knownLabels = const [];
+  var _measurableDefinitionsLoaded = false;
   var _watchesSteps = false;
   GoalFormCompositeRule _compositeRule = GoalFormCompositeRule.all;
   var _requiredSuccesses = 1;
@@ -174,6 +176,38 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     // Editing lands directly on the mapping page, so the signal-row order
     // that creation freezes on step entry is frozen here instead.
     _snapshotSignalGroups();
+  }
+
+  /// Drops numeric goal targets whose measurable has since been converted to
+  /// choices. Keeping one would compare the choice occurrence marker (`1`)
+  /// with an old quantity, and filtering the definition alone would leave an
+  /// invisible target that the edit silently saved again.
+  void _removeChoiceMeasurableTargets(Set<String> choiceIds) {
+    for (final id in choiceIds) {
+      _measurableTargets.remove(id);
+      _targetErrors.remove('measurable:$id');
+      _chosenSignalOrder.remove('measurable:$id');
+      _suggestedSignalOrder.remove('measurable:$id');
+    }
+  }
+
+  void _rememberMeasurableDefinitions(
+    List<MeasurableDataType> measurables,
+  ) {
+    _knownMeasurables = [
+      for (final measurable in measurables)
+        if (!measurable.isChoice) measurable,
+    ];
+    _knownChoiceMeasurableIds
+      ..clear()
+      ..addAll(
+        measurables
+            .where((measurable) => measurable.isChoice)
+            .map(
+              (measurable) => measurable.id,
+            ),
+      );
+    _measurableDefinitionsLoaded = true;
   }
 
   num? _parseLocalizedTarget(String raw) {
@@ -676,6 +710,16 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     return confirmedHabits;
   }
 
+  Future<void> _reconcileMeasurableTargetsForSave() async {
+    if (_measurableTargets.isEmpty) return;
+    if (!_measurableDefinitionsLoaded) {
+      _rememberMeasurableDefinitions(
+        await ref.read(measurableDataTypesStreamProvider.future),
+      );
+    }
+    _removeChoiceMeasurableTargets(_knownChoiceMeasurableIds);
+  }
+
   void _invalidateGoalViews(ProviderContainer container, String agentId) {
     container
       ..invalidate(agentIdentityProvider(agentId))
@@ -789,6 +833,8 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       confirmedHabits = await _reconcileHabitTargetsForSave();
       if (!mounted) return;
       confirmedCategories = await _reconcileCategoryTimeTargetsForSave();
+      if (!mounted) return;
+      await _reconcileMeasurableTargetsForSave();
     } on Object {
       if (mounted) {
         setState(() {
@@ -998,9 +1044,11 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     }
     final habits = habitsAsync.value ?? _knownHabits;
     if (measurablesAsync.value case final loaded?) {
-      _knownMeasurables = loaded;
+      // A goal criterion on a measurable is a numeric target; a choice
+      // measurable has no quantity to target, so it is not on offer here.
+      _rememberMeasurableDefinitions(loaded);
     }
-    final measurables = measurablesAsync.value ?? _knownMeasurables;
+    final measurables = _knownMeasurables;
     if (categoriesAsync.value case final loaded?) {
       _knownCategories = [
         for (final category in loaded)
@@ -1058,6 +1106,8 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
         );
       }
     }
+
+    _removeChoiceMeasurableTargets(_knownChoiceMeasurableIds);
 
     final pageTitle = _editing
         ? messages.goalFormEditTitle

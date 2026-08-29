@@ -3,11 +3,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
 import 'package:lotti/features/design_system/components/glass_action_bar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
+import 'package:lotti/features/settings/ui/pages/measurables/measurable_choices_editor.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurable_details_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -135,6 +137,9 @@ void main() {
         expect(saved.description, 'H₂O, with or without bubbles');
         expect(saved.unitName, 'ml');
         expect(saved.aggregationType, AggregationType.dailySum);
+        // A numeric measurable does not gain an empty choices list.
+        expect(saved.valueKind, MeasurableValueKind.number);
+        expect(saved.choices, isNull);
         expect(beamedTo, '/settings/measurables');
       },
     );
@@ -396,6 +401,179 @@ void main() {
 
         expect(find.text('Measurable not found'), findsOneWidget);
         expect(find.byType(DsGlassPill), findsNothing);
+      },
+    );
+  });
+
+  group('MeasurableDetailsPage value kind', () {
+    MeasurableValueKind selectedKind(WidgetTester tester) => tester
+        .widget<DsSegmentedToggle<MeasurableValueKind>>(
+          find.byKey(const Key('measurable_value_kind_field')),
+        )
+        .selected;
+
+    Finder titleField(String id) =>
+        find.byKey(ValueKey('measurable-choice-title-$id'));
+
+    testWidgets(
+      'a numeric measurable seeds Number, shows unit and aggregation, and '
+      'no choices editor',
+      (tester) async {
+        await pumpPage(
+          tester,
+          MeasurableDetailsPage(dataType: measurableWater),
+        );
+
+        expect(selectedKind(tester), MeasurableValueKind.number);
+        expect(find.text('ml'), findsOneWidget);
+        expect(
+          find.byKey(const Key('measurable_aggregation_field')),
+          findsOneWidget,
+        );
+        expect(find.byType(MeasurableChoicesEditor), findsNothing);
+        expect(saveAction(tester).enabled, isFalse);
+      },
+    );
+
+    testWidgets(
+      'switching to Choice hides the numeric fields, shows the editor and '
+      'dirties the form; Save without a choice is refused with the hint in '
+      'error ink',
+      (tester) async {
+        await pumpPage(
+          tester,
+          MeasurableDetailsPage(dataType: measurableWater),
+        );
+
+        await tester.tap(find.text('Choice').last);
+        await tester.pump();
+
+        expect(selectedKind(tester), MeasurableValueKind.choice);
+        expect(find.text('ml'), findsNothing);
+        expect(
+          find.byKey(const Key('measurable_aggregation_field')),
+          findsNothing,
+        );
+        expect(find.byType(MeasurableChoicesEditor), findsOneWidget);
+        expect(saveAction(tester).enabled, isTrue);
+
+        await tester.tap(find.widgetWithText(DsGlassPill, 'Save'));
+        await tester.pump();
+
+        verifyNever(() => mockPersistenceLogic.upsertEntityDefinition(any()));
+        expect(beamedTo, isNull);
+        final hint = tester.widget<Text>(
+          find.byKey(const ValueKey('measurable-choices-empty')),
+        );
+        final tokens = tester
+            .element(find.byType(MeasurableDetailsPage))
+            .designTokens;
+        expect(hint.style?.color, tokens.colors.alert.error.ink);
+      },
+    );
+
+    testWidgets(
+      'a converted measurable saves the choice kind and its choices while '
+      'keeping the unit and aggregation it had',
+      (tester) async {
+        await pumpPage(
+          tester,
+          MeasurableDetailsPage(dataType: measurableWater),
+        );
+
+        await tester.tap(find.text('Choice').last);
+        await tester.pump();
+        await tester.tap(find.byKey(const ValueKey('measurable-choice-add')));
+        await tester.pump();
+
+        final field = find.byType(MeasurableChoicesEditor);
+        final newId = tester
+            .widget<MeasurableChoicesEditor>(field)
+            .choices
+            .single
+            .id;
+        await tester.enterText(titleField(newId), '  Sparkling  ');
+        await tester.pump();
+
+        await tester.tap(find.widgetWithText(DsGlassPill, 'Save'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        final saved = capturedUpsert();
+        expect(saved.valueKind, MeasurableValueKind.choice);
+        expect(saved.choices, [
+          MeasurableChoice(id: newId, title: 'Sparkling'),
+        ]);
+        expect(saved.unitName, 'ml');
+        expect(saved.aggregationType, AggregationType.dailySum);
+        expect(beamedTo, '/settings/measurables');
+      },
+    );
+
+    testWidgets(
+      'a choice measurable seeds Choice with its choices, refuses a blank '
+      'title on save, then persists trimmed titles with the archived tail',
+      (tester) async {
+        await pumpPage(
+          tester,
+          MeasurableDetailsPage(dataType: measurableHydration),
+        );
+
+        expect(selectedKind(tester), MeasurableValueKind.choice);
+        expect(find.text('Unit abbreviation (optional)'), findsNothing);
+        expect(titleField(hydrationClear.id), findsOneWidget);
+        expect(titleField(hydrationPale.id), findsOneWidget);
+        expect(titleField(hydrationDark.id), findsOneWidget);
+        expect(find.text('Brown'), findsOneWidget);
+
+        await tester.enterText(titleField(hydrationPale.id), '   ');
+        await tester.pump();
+        await tester.tap(find.widgetWithText(DsGlassPill, 'Save'));
+        await tester.pump();
+
+        verifyNever(() => mockPersistenceLogic.upsertEntityDefinition(any()));
+        expect(find.text('Give this choice a name'), findsOneWidget);
+
+        await tester.enterText(titleField(hydrationPale.id), ' Pale yellow ');
+        await tester.pump();
+        await tester.tap(find.widgetWithText(DsGlassPill, 'Save'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        final saved = capturedUpsert();
+        expect(saved.valueKind, MeasurableValueKind.choice);
+        expect(saved.choices, const [
+          hydrationClear,
+          MeasurableChoice(id: 'hydration-pale', title: 'Pale yellow'),
+          hydrationDark,
+          hydrationBrown,
+        ]);
+        expect(saved.unitName, '');
+      },
+    );
+
+    testWidgets(
+      'switching a choice measurable back to Number saves the number kind '
+      'and keeps the choices for a later switch back',
+      (tester) async {
+        await pumpPage(
+          tester,
+          MeasurableDetailsPage(dataType: measurableHydration),
+        );
+
+        await tester.tap(find.text('Number').last);
+        await tester.pump();
+
+        expect(find.byType(MeasurableChoicesEditor), findsNothing);
+        expect(find.text('Unit abbreviation (optional)'), findsOneWidget);
+
+        await tester.tap(find.widgetWithText(DsGlassPill, 'Save'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        final saved = capturedUpsert();
+        expect(saved.valueKind, MeasurableValueKind.number);
+        expect(saved.choices, measurableHydration.choices);
       },
     );
   });

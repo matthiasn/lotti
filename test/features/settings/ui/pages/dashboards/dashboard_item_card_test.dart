@@ -6,9 +6,11 @@ import 'package:lotti/features/settings/ui/pages/dashboards/dashboard_item_card.
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/widgets/charts/dashboard_item_modal.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../mocks/mocks.dart';
+import '../../../../../test_data/test_data.dart';
 import '../../../../../test_helper.dart';
 
 void main() {
@@ -104,6 +106,74 @@ void main() {
         expect(updatedItem, isNull);
         expect(updatedIndex, isNull);
       });
+
+      testWidgets(
+        'tapping a numeric measurement card opens the aggregation editor '
+        'for that chart',
+        (tester) async {
+          const measurementItem = DashboardItem.measurement(
+            id: 'water-id',
+            aggregationType: AggregationType.dailySum,
+          );
+          when(() => mockJournalDb.getAllMeasurableDataTypes()).thenAnswer(
+            (_) async => [measurableWater.copyWith(id: 'water-id')],
+          );
+
+          await tester.pumpWidget(
+            WidgetTestBench(
+              child: DashboardItemCard(
+                index: 0,
+                item: measurementItem,
+                updateItemFn: (item, index) {},
+              ),
+            ),
+          );
+          await tester.pump();
+
+          tester.widget<ItemCard>(find.byType(ItemCard)).onTap!();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 400));
+
+          expect(find.text('Aggregation type'), findsOneWidget);
+          final modal = tester.widget<DashboardItemModal>(
+            find.byType(DashboardItemModal),
+          );
+          expect(modal.item, measurementItem);
+          expect(modal.index, 0);
+          expect(modal.chartTitle, 'Water — Daily sum');
+        },
+      );
+
+      testWidgets(
+        'a choice measurable names itself without an aggregation and opens '
+        'no aggregation editor',
+        (tester) async {
+          const measurementItem = DashboardItem.measurement(
+            id: 'hydration-id',
+            aggregationType: AggregationType.dailySum,
+          );
+          when(() => mockJournalDb.getAllMeasurableDataTypes()).thenAnswer(
+            (_) async => [measurableHydration.copyWith(id: 'hydration-id')],
+          );
+
+          await tester.pumpWidget(
+            WidgetTestBench(
+              child: DashboardItemCard(
+                index: 0,
+                item: measurementItem,
+                updateItemFn: (item, index) {},
+              ),
+            ),
+          );
+          await tester.pump();
+
+          expect(find.text('Hydration'), findsOneWidget);
+          expect(find.textContaining('Daily sum'), findsNothing);
+          final itemCard = tester.widget<ItemCard>(find.byType(ItemCard));
+          expect(itemCard.onTap, isNull);
+          expect(itemCard.editSemanticsLabel, isNull);
+        },
+      );
 
       testWidgets('should handle measurement item without aggregation type', (
         tester,

@@ -10,6 +10,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/dashboards/state/measurables_controller.dart';
+import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/habits/state/habit_signal_status_controller.dart';
 import 'package:lotti/features/habits/ui/sheets/habit_completion_sheet.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_signal_row.dart';
@@ -67,6 +68,34 @@ class _FakeStatus extends HabitSignalStatusController {
   Future<void> refresh() async => state = AsyncData(_status());
 }
 
+/// Like [_FakeStatus], for the hydration habit's any-entry choice rule.
+class _ChoiceStatus extends HabitSignalStatusController {
+  _ChoiceStatus(super.habitId, this.windowOf);
+  final SignalWindow Function() windowOf;
+
+  static const rule = AutoCompleteRule.measurable(dataTypeId: 'hydration');
+
+  HabitSignalStatus _status() {
+    final window = windowOf();
+    return HabitSignalStatus(
+      rule: rule,
+      window: window,
+      verdict: const HabitRuleEvaluator().evaluate(
+        rule: rule,
+        window: window,
+        day: window.end,
+      ),
+      today: window.end,
+    );
+  }
+
+  @override
+  Future<HabitSignalStatus?> build() async => _status();
+
+  @override
+  Future<void> refresh() async => state = AsyncData(_status());
+}
+
 /// [testWidgets] under the fixed sheet clock.
 void clockedWidgets(
   String description,
@@ -95,12 +124,22 @@ void main() {
     name: 'Drink water',
     autoCompleteRule: _FakeStatus.rule,
   );
+  final hydration = measurableHydration.copyWith(id: 'hydration');
+  final hydrationHabit = habitFlossing.copyWith(
+    id: 'hydration-habit',
+    name: 'Check hydration',
+    autoCompleteRule: _ChoiceStatus.rule,
+  );
   var waterToday = <DateTime, num>{};
+  var hydrationToday = <DateTime, num>{};
 
   SignalWindow window() => SignalWindow(
     start: todayKey.subtract(const Duration(days: 13)),
     end: todayKey,
-    measurableTotalsByDay: {'water': Map.of(waterToday)},
+    measurableTotalsByDay: {
+      'water': Map.of(waterToday),
+      'hydration': Map.of(hydrationToday),
+    },
   );
 
   setUpAll(registerAllFallbackValues);
@@ -109,8 +148,13 @@ void main() {
     persistence = MockPersistenceLogic();
     cache = MockEntitiesCacheService();
     waterToday = {};
+    hydrationToday = {};
     when(() => cache.getHabitById(habitFlossing.id)).thenReturn(habitFlossing);
     when(() => cache.getHabitById(waterHabit.id)).thenReturn(waterHabit);
+    when(
+      () => cache.getHabitById(hydrationHabit.id),
+    ).thenReturn(hydrationHabit);
+    when(() => cache.getDataTypeById('hydration')).thenReturn(hydration);
     when(() => cache.getHabitById('missing')).thenReturn(null);
     when(() => cache.getDataTypeById('water')).thenReturn(water);
     when(
@@ -196,6 +240,9 @@ void main() {
           habitSignalStatusProvider(
             waterHabit.id,
           ).overrideWith(() => _FakeStatus(waterHabit.id, window)),
+          habitSignalStatusProvider(
+            hydrationHabit.id,
+          ).overrideWith(() => _ChoiceStatus(hydrationHabit.id, window)),
         ],
       ),
     );
@@ -458,6 +505,45 @@ void main() {
         await tester.tap(find.byKey(const Key('habit_save')));
         await tester.pump(const Duration(milliseconds: 300));
         expect(captured().completionType, HabitCompletionType.success);
+      },
+    );
+
+    clockedWidgets(
+      'a choice chip records one occurrence of the choice, marks the row '
+      'done and the chip selected',
+      (tester) async {
+        MeasurementData? saved;
+        when(
+          () => persistence.createMeasurementEntry(
+            data: any(named: 'data'),
+            private: any(named: 'private'),
+          ),
+        ).thenAnswer((invocation) async {
+          saved = invocation.namedArguments[#data] as MeasurementData;
+          hydrationToday[todayKey] = (hydrationToday[todayKey] ?? 0) + 1;
+          return testMeasurementHydrationEntry;
+        });
+
+        await pumpSheet(tester, habitId: hydrationHabit.id);
+        expect(find.text('any entry · not yet'), findsOneWidget);
+        expect(find.text('Pale'), findsOneWidget);
+        expect(find.text('Brown'), findsNothing);
+
+        await tester.tap(find.text('Pale'));
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(saved, isNotNull);
+        expect(saved!.dataTypeId, 'hydration');
+        expect(saved!.choiceId, hydrationPale.id);
+        expect(saved!.value, 1);
+        expect(find.text('any entry · done'), findsOneWidget);
+        expect(find.text('today: logged'), findsOneWidget);
+        final paleChip = tester.widget<DsPill>(
+          find.byKey(
+            const ValueKey('habit-quick-record-hydration-hydration-pale'),
+          ),
+        );
+        expect(paleChip.selected, isTrue);
       },
     );
 

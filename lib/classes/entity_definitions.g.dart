@@ -24,6 +24,20 @@ Map<String, dynamic> _$ChecklistCorrectionExampleToJson(
   'capturedAt': instance.capturedAt?.toIso8601String(),
 };
 
+_MeasurableChoice _$MeasurableChoiceFromJson(Map<String, dynamic> json) =>
+    _MeasurableChoice(
+      id: json['id'] as String,
+      title: json['title'] as String,
+      archived: json['archived'] as bool?,
+    );
+
+Map<String, dynamic> _$MeasurableChoiceToJson(_MeasurableChoice instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'title': instance.title,
+      'archived': ?instance.archived,
+    };
+
 DailyHabitSchedule _$DailyHabitScheduleFromJson(Map<String, dynamic> json) =>
     DailyHabitSchedule(
       requiredCompletions: (json['requiredCompletions'] as num).toInt(),
@@ -234,6 +248,14 @@ MeasurableDataType _$MeasurableDataTypeFromJson(Map<String, dynamic> json) =>
         _$AggregationTypeEnumMap,
         json['aggregationType'],
       ),
+      valueKind: $enumDecodeNullable(
+        _$MeasurableValueKindEnumMap,
+        json['valueKind'],
+        unknownValue: MeasurableValueKind.number,
+      ),
+      choices: (json['choices'] as List<dynamic>?)
+          ?.map((e) => MeasurableChoice.fromJson(e as Map<String, dynamic>))
+          .toList(),
       $type: json['runtimeType'] as String?,
     );
 
@@ -252,6 +274,8 @@ Map<String, dynamic> _$MeasurableDataTypeToJson(MeasurableDataType instance) =>
       'favorite': instance.favorite,
       'categoryId': instance.categoryId,
       'aggregationType': _$AggregationTypeEnumMap[instance.aggregationType],
+      'valueKind': _$MeasurableValueKindEnumMap[instance.valueKind],
+      'choices': instance.choices,
       'runtimeType': instance.$type,
     };
 
@@ -261,6 +285,11 @@ const _$AggregationTypeEnumMap = {
   AggregationType.dailyMax: 'dailyMax',
   AggregationType.dailyAvg: 'dailyAvg',
   AggregationType.hourlySum: 'hourlySum',
+};
+
+const _$MeasurableValueKindEnumMap = {
+  MeasurableValueKind.number: 'number',
+  MeasurableValueKind.choice: 'choice',
 };
 
 CategoryDefinition _$CategoryDefinitionFromJson(Map<String, dynamic> json) =>
@@ -479,6 +508,7 @@ _MeasurementData _$MeasurementDataFromJson(Map<String, dynamic> json) =>
       dateTo: DateTime.parse(json['dateTo'] as String),
       value: json['value'] as num,
       dataTypeId: json['dataTypeId'] as String,
+      choiceId: json['choiceId'] as String?,
     );
 
 Map<String, dynamic> _$MeasurementDataToJson(_MeasurementData instance) =>
@@ -487,6 +517,7 @@ Map<String, dynamic> _$MeasurementDataToJson(_MeasurementData instance) =>
       'dateTo': instance.dateTo.toIso8601String(),
       'value': instance.value,
       'dataTypeId': instance.dataTypeId,
+      'choiceId': ?instance.choiceId,
     };
 
 _AiResponseData _$AiResponseDataFromJson(Map<String, dynamic> json) =>

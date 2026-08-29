@@ -412,4 +412,152 @@ void main() {
   // -------------------------------------------------------------------------
   // EntityDefinition — all 5 variants
   // -------------------------------------------------------------------------
+
+  group('MeasurableChoice', () {
+    test('round-trips id, title and archived through JSON', () {
+      const choice = MeasurableChoice(
+        id: 'choice-1',
+        title: 'Clear',
+        archived: true,
+      );
+      final decoded = MeasurableChoice.fromJson(
+        jsonDecode(jsonEncode(choice.toJson())) as Map<String, dynamic>,
+      );
+      expect(decoded, choice);
+    });
+
+    test('archived is absent from JSON when unset and reads back null', () {
+      const choice = MeasurableChoice(id: 'choice-1', title: 'Clear');
+      final json = choice.toJson();
+      expect(json, isNot(contains('archived')));
+      expect(MeasurableChoice.fromJson(json).archived, isNull);
+    });
+  });
+
+  group('MeasurableDataType value kind', () {
+    MeasurableDataType measurable({
+      MeasurableValueKind? valueKind,
+      List<MeasurableChoice>? choices,
+    }) => MeasurableDataType(
+      id: 'hydration',
+      displayName: 'Hydration',
+      description: '',
+      unitName: '',
+      version: 1,
+      createdAt: DateTime(2026, 8, 28),
+      updatedAt: DateTime(2026, 8, 28),
+      vectorClock: null,
+      valueKind: valueKind,
+      choices: choices,
+    );
+
+    const clear = MeasurableChoice(id: 'c-clear', title: 'Clear');
+    const pale = MeasurableChoice(id: 'c-pale', title: 'Pale');
+    const dark = MeasurableChoice(id: 'c-dark', title: 'Dark', archived: true);
+    const brown = MeasurableChoice(
+      id: 'c-brown',
+      title: 'Brown',
+      archived: false,
+    );
+
+    test('a definition without valueKind is a number measurable', () {
+      // Every measurable persisted before the choice kind existed has no
+      // valueKind key at all; that must keep reading as the numeric kind.
+      final legacyJson = measurable().toJson()
+        ..remove('valueKind')
+        ..remove('choices');
+      final decoded = EntityDefinition.fromJson(legacyJson);
+      expect(decoded, isA<MeasurableDataType>());
+      final dataType = decoded as MeasurableDataType;
+      expect(dataType.valueKind, isNull);
+      expect(dataType.isChoice, isFalse);
+      expect(dataType.activeChoices, isEmpty);
+      expect(dataType.archivedChoices, isEmpty);
+      expect(dataType.choiceById('c-clear'), isNull);
+    });
+
+    test('a valueKind this build does not know reads as number', () {
+      final json = measurable().toJson()..['valueKind'] = 'colourWheel';
+      final decoded = EntityDefinition.fromJson(json) as MeasurableDataType;
+      expect(decoded.valueKind, MeasurableValueKind.number);
+      expect(decoded.isChoice, isFalse);
+    });
+
+    test('valueKind and choices survive a JSON round trip in order', () {
+      final original = measurable(
+        valueKind: MeasurableValueKind.choice,
+        choices: const [clear, dark, pale],
+      );
+      final decoded =
+          EntityDefinition.fromJson(
+                jsonDecode(jsonEncode(original.toJson()))
+                    as Map<String, dynamic>,
+              )
+              as MeasurableDataType;
+      expect(decoded.valueKind, MeasurableValueKind.choice);
+      expect(decoded.choices, const [clear, dark, pale]);
+      expect(decoded, original);
+    });
+
+    test('isChoice is true only for the choice kind', () {
+      expect(
+        measurable(valueKind: MeasurableValueKind.choice).isChoice,
+        isTrue,
+      );
+      expect(
+        measurable(valueKind: MeasurableValueKind.number).isChoice,
+        isFalse,
+      );
+    });
+
+    test('activeChoices keeps order and drops only archived == true', () {
+      final dataType = measurable(
+        valueKind: MeasurableValueKind.choice,
+        choices: const [pale, dark, clear, brown],
+      );
+      expect(dataType.activeChoices, const [pale, clear, brown]);
+      expect(dataType.archivedChoices, const [dark]);
+    });
+
+    test('choiceById resolves archived choices too, and null for a miss', () {
+      final dataType = measurable(
+        valueKind: MeasurableValueKind.choice,
+        choices: const [clear, dark],
+      );
+      expect(dataType.choiceById('c-dark'), dark);
+      expect(dataType.choiceById('c-clear'), clear);
+      expect(dataType.choiceById('c-missing'), isNull);
+      expect(dataType.choiceById(null), isNull);
+    });
+  });
+
+  group('MeasurementData choiceId', () {
+    test('is absent for a numeric measurement and reads back null', () {
+      final data = MeasurementData(
+        dateFrom: DateTime(2026, 8, 28, 9),
+        dateTo: DateTime(2026, 8, 28, 9),
+        value: 750,
+        dataTypeId: 'water',
+      );
+      final json = data.toJson();
+      expect(json, isNot(contains('choiceId')));
+      expect(MeasurementData.fromJson(json).choiceId, isNull);
+    });
+
+    test('round-trips alongside the occurrence value', () {
+      final data = MeasurementData(
+        dateFrom: DateTime(2026, 8, 28, 9),
+        dateTo: DateTime(2026, 8, 28, 9),
+        value: 1,
+        dataTypeId: 'hydration',
+        choiceId: 'c-clear',
+      );
+      final decoded = MeasurementData.fromJson(
+        jsonDecode(jsonEncode(data.toJson())) as Map<String, dynamic>,
+      );
+      expect(decoded.choiceId, 'c-clear');
+      expect(decoded.value, 1);
+      expect(decoded, data);
+    });
+  });
 }

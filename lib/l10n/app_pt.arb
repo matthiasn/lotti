@@ -3274,6 +3274,7 @@
   "habitSignalStatusNotYet": "{target} · ainda não",
   "habitSignalStatusSoFar": "{target} · {value} até agora",
   "habitSignalToday": "hoje: {value}",
+  "habitSignalTodayLogged": "hoje: registrado",
   "habitSignalTodayNone": "hoje: —",
   "habitsLaggardHint": "{habit} — mantido {kept} de {active}",
   "@habitsLaggardHint": {
@@ -3932,9 +3933,19 @@
   "matrixStatsSignals": "Sinais",
   "matrixStatsSignalsConnectivity": "Sinais (conectividade)",
   "matrixStatsTopKpis": "Principais KPIs",
+  "measurableChoiceNotFound": "Opção removida",
   "measurableDeleteConfirm": "Sim, excluir este mensurável",
   "measurableDeleteQuestion": "Deseja excluir este tipo de dados mensuráveis?",
   "measurableNotFound": "Mensurável não encontrado",
+  "measurementChoicePrompt": "Escolha uma",
+  "measurementChoiceSelectSemantic": "Selecionar {title}",
+  "@measurementChoiceSelectSemantic": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "measurementCommentHint": "Adicione uma nota (opcional)",
   "measurementCommentSemantic": "Comentário, opcional",
   "measurementObservedAtChangeSemantic": "Observado em {dateTime}. Alterar data e hora.",
@@ -5179,6 +5190,38 @@
   "settingsMatrixVerifyLabel": "Verifique",
   "settingsMeasurableAggregationHelper": "Como as entradas de um dia se combinam nos gráficos",
   "settingsMeasurableAggregationLabel": "Tipo de agregação padrão",
+  "settingsMeasurableChoiceAdd": "Adicionar opção",
+  "settingsMeasurableChoiceArchive": "Arquivar {title}",
+  "@settingsMeasurableChoiceArchive": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsMeasurableChoiceNameHint": "Nome da opção",
+  "settingsMeasurableChoiceNameRequired": "Dê um nome a esta opção",
+  "settingsMeasurableChoiceReorder": "Mover {title}",
+  "@settingsMeasurableChoiceReorder": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsMeasurableChoiceRestore": "Restaurar {title}",
+  "@settingsMeasurableChoiceRestore": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsMeasurableChoicesArchivedDescription": "Ocultas ao registrar; as entradas que as usaram continuam mostrando o nome.",
+  "settingsMeasurableChoicesArchivedTitle": "Opções arquivadas",
+  "settingsMeasurableChoicesDescription": "Ao registrar, você escolhe uma delas. Renomeie ou reordene quando quiser – as entradas já registradas mantêm a opção.",
+  "settingsMeasurableChoicesRequired": "Adicione pelo menos uma opção",
+  "settingsMeasurableChoicesTitle": "Opções",
   "settingsMeasurableDeleteTooltip": "Excluir tipo mensurável",
   "settingsMeasurableDescriptionLabel": "Descrição (opcional)",
   "settingsMeasurableDetailsLabel": "Editar mensurável",
@@ -5187,7 +5230,7 @@
   "settingsMeasurableSaveLabel": "Salvar",
   "settingsMeasurablesCreateTitle": "Crie mensuráveis",
   "settingsMeasurablesEmptyState": "Ainda não há mensuráveis",
-  "settingsMeasurablesEmptyStateHint": "Mensuráveis são números que você acompanha ao longo do tempo – peso, água, passos.",
+  "settingsMeasurablesEmptyStateHint": "Mensuráveis são valores que você acompanha ao longo do tempo – peso, água, passos ou uma opção como o quanto você se sente descansado.",
   "settingsMeasurablesErrorLoading": "Erro ao carregar mensuráveis",
   "settingsMeasurablesNoMatchQuery": "Nenhum mensurável corresponde a \"{query}\"",
   "@settingsMeasurablesNoMatchQuery": {
@@ -5201,6 +5244,10 @@
   "settingsMeasurablesSubtitle": "Configurar tipos de dados mensuráveis",
   "settingsMeasurablesTitle": "Mensuráveis",
   "settingsMeasurableUnitLabel": "Abreviatura da unidade (opcional)",
+  "settingsMeasurableValueKindChoice": "Opção",
+  "settingsMeasurableValueKindHelper": "Um número com unidade, ou uma das opções que você define",
+  "settingsMeasurableValueKindLabel": "Registrado como",
+  "settingsMeasurableValueKindNumber": "Número",
   "settingsOnboardingActionSubtitle": "Reabra o fluxo de boas-vindas – conecte seu cérebro de IA e crie uma tarefa",
   "settingsOnboardingMetricsSubtitle": "Funil FTUE – instalação, ativação, retenção (depuração)",
   "settingsOnboardingMetricsTitle": "Métricas de integração",

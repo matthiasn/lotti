@@ -117,6 +117,36 @@ class HabitSignalsForm {
     requiredCount: requiredCount ?? this.requiredCount,
   );
 
+  /// The form with every signal on a choice measurable reduced to *any
+  /// entry*, or this very instance when none needed it.
+  ///
+  /// A choice measurable's day value is an occurrence count, so a bound set
+  /// while it was numeric — or on a device that has not yet learnt the kind —
+  /// would compare that count against a quantity and never fire, while the
+  /// editor, which offers no threshold for such a signal, says "any entry".
+  /// The saved rule must be the one on screen.
+  HabitSignalsForm unboundedForChoices(
+    Map<String, MeasurableDataType> measurablesById,
+  ) {
+    var changed = false;
+    final unbounded = [
+      for (final signal in signals)
+        if (signal.kind == HabitSignalKind.measurable &&
+            signal.mode != HabitSignalMode.any &&
+            (measurablesById[signal.id]?.isChoice ?? false))
+          () {
+            changed = true;
+            return signal.copyWith(
+              mode: HabitSignalMode.any,
+              clearThreshold: true,
+            );
+          }()
+        else
+          signal,
+    ];
+    return changed ? copyWith(signals: unbounded) : this;
+  }
+
   /// The form as the rule tree would give it back: a single signal has no
   /// composite, and an at-least count is clamped to what exists.
   HabitSignalsForm normalized() {

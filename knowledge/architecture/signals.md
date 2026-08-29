@@ -11,7 +11,7 @@ sources:
   - id: src
     resource: ../../lib/logic/signals
     title: Signals package source
-    last_modified: 2026-08-27
+    last_modified: 2026-08-28
   - id: goal-reader
     resource: ../../lib/features/goals/evaluation/goal_signal_reader.dart
     title: GoalSignalReader — the first delegating consumer
@@ -71,7 +71,9 @@ Per-series semantics, all inherited from the surfaces the user already sees:
   whole percentages.
 - **Measurables** are summed per day. A recorded zero is *present*; a day
   with no entry is absent from the map. That distinction is the whole meaning
-  of an "any entry" rule.
+  of an "any entry" rule. A choice measurable records `value: 1` per entry,
+  so its day total is an occurrence count — enough for "any entry", and the
+  reason the habit editor offers no threshold for one.
 - **Workouts** keep the `WorkoutData` list per day so thresholds can be applied
   later; `workoutSignalValue` reports minutes, kilometres (stored metres ÷
   1000) or kcal — the units the workout chart labels. They are loaded through

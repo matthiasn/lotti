@@ -2970,6 +2970,7 @@
   "habitSignalStatusNotYet": "{target} · pas encore",
   "habitSignalStatusSoFar": "{target} · {value} pour l’instant",
   "habitSignalToday": "aujourd’hui : {value}",
+  "habitSignalTodayLogged": "aujourd'hui : enregistré",
   "habitSignalTodayNone": "aujourd’hui : —",
   "habitsLaggardHint": "{habit} — {kept} sur {active} réussis",
   "habitsOpenHeader": "Dues maintenant",
@@ -3550,9 +3551,19 @@
   "matrixStatsSignals": "Signaux",
   "matrixStatsSignalsConnectivity": "Signaux (connectivité)",
   "matrixStatsTopKpis": "Indicateurs clés",
+  "measurableChoiceNotFound": "Choix supprimé",
   "measurableDeleteConfirm": "Oui, supprimer cet élément mesurable",
   "measurableDeleteQuestion": "Veux-tu supprimer ce type de données mesurables ?",
   "measurableNotFound": "Élément mesurable introuvable",
+  "measurementChoicePrompt": "Choisis-en un",
+  "measurementChoiceSelectSemantic": "Sélectionner {title}",
+  "@measurementChoiceSelectSemantic": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "measurementCommentHint": "Ajoute une note (facultatif)",
   "measurementCommentSemantic": "Commentaire, facultatif",
   "measurementObservedAtChangeSemantic": "Observé le {dateTime}. Modifier la date et l’heure.",
@@ -4644,6 +4655,38 @@
   "settingsMatrixVerifyLabel": "Vérifier",
   "settingsMeasurableAggregationHelper": "Comment les entrées d'une journée sont combinées dans les graphiques",
   "settingsMeasurableAggregationLabel": "Agrégation par défaut",
+  "settingsMeasurableChoiceAdd": "Ajouter un choix",
+  "settingsMeasurableChoiceArchive": "Archiver {title}",
+  "@settingsMeasurableChoiceArchive": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsMeasurableChoiceNameHint": "Nom du choix",
+  "settingsMeasurableChoiceNameRequired": "Donne un nom à ce choix",
+  "settingsMeasurableChoiceReorder": "Déplacer {title}",
+  "@settingsMeasurableChoiceReorder": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsMeasurableChoiceRestore": "Restaurer {title}",
+  "@settingsMeasurableChoiceRestore": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsMeasurableChoicesArchivedDescription": "Masqués à l'enregistrement ; les entrées qui les ont utilisés affichent toujours leur nom.",
+  "settingsMeasurableChoicesArchivedTitle": "Choix archivés",
+  "settingsMeasurableChoicesDescription": "Tu en choisis un à chaque enregistrement. Renomme-les ou réordonne-les quand tu veux : les entrées déjà enregistrées gardent leur choix.",
+  "settingsMeasurableChoicesRequired": "Ajoute au moins un choix",
+  "settingsMeasurableChoicesTitle": "Choix",
   "settingsMeasurableDeleteTooltip": "Supprimer type mesurable",
   "settingsMeasurableDescriptionLabel": "Description",
   "settingsMeasurableDetailsLabel": "Modifier l'élément mesurable",
@@ -4652,7 +4695,7 @@
   "settingsMeasurableSaveLabel": "Enregistrer",
   "settingsMeasurablesCreateTitle": "Créer un élément mesurable",
   "settingsMeasurablesEmptyState": "Aucun élément mesurable pour le moment",
-  "settingsMeasurablesEmptyStateHint": "Les éléments mesurables sont des chiffres que tu suis dans le temps — poids, eau, pas.",
+  "settingsMeasurablesEmptyStateHint": "Les éléments mesurables sont des valeurs que tu suis dans le temps — poids, eau, pas, ou un choix comme ton niveau de repos.",
   "settingsMeasurablesErrorLoading": "Erreur lors du chargement des éléments mesurables",
   "settingsMeasurablesNoMatchQuery": "Aucun élément mesurable ne correspond à \"{query}\"",
   "@settingsMeasurablesNoMatchQuery": {
@@ -4666,6 +4709,10 @@
   "settingsMeasurablesSubtitle": "Configurer les types de données mesurables",
   "settingsMeasurablesTitle": "Éléments mesurables",
   "settingsMeasurableUnitLabel": "Abréviation d'unité",
+  "settingsMeasurableValueKindChoice": "Choix",
+  "settingsMeasurableValueKindHelper": "Un nombre avec une unité, ou l'un des choix que tu définis",
+  "settingsMeasurableValueKindLabel": "Enregistré comme",
+  "settingsMeasurableValueKindNumber": "Nombre",
   "settingsOnboardingActionSubtitle": "Rouvre le parcours de bienvenue — connecte ton cerveau IA et crée une tâche",
   "settingsOnboardingMetricsSubtitle": "Entonnoir FTUE — installation, activation, rétention (débogage)",
   "settingsOnboardingMetricsTitle": "Métriques d'intégration",

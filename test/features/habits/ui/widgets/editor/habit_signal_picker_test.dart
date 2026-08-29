@@ -26,7 +26,10 @@ void main() {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
         HabitSignalPicker(
-          measurables: [water],
+          measurables: [
+            water,
+            measurableHydration.copyWith(id: 'hydration'),
+          ],
           workoutTypes: const ['running', 'swimming'],
           selected: selected,
           onToggle: (kind, id, {required selected}) =>
@@ -97,6 +100,21 @@ void main() {
     await tester.pump();
     expect(find.text('Nothing matches'), findsOneWidget);
   });
+
+  testWidgets(
+    'a choice measurable lists its active choices as its subtitle and is '
+    'found by any of them',
+    (tester) async {
+      await pump(tester);
+      expect(find.text('Clear · Pale · Dark'), findsOneWidget);
+      expect(find.textContaining('Brown'), findsNothing);
+
+      await tester.enterText(find.byType(TextField), 'pale');
+      await tester.pump();
+      expect(find.text('Hydration'), findsOneWidget);
+      expect(find.text('Water'), findsNothing);
+    },
+  );
 
   testWidgets('dashboard-only health keys are not offered', (tester) async {
     await pump(tester);

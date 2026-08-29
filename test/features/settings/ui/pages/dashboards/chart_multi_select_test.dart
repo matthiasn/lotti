@@ -386,6 +386,53 @@ void main() {
     });
 
     testWidgets(
+      'a choice measurable is added without an aggregation picker',
+      (tester) async {
+        List<DashboardMeasurementItem>? confirmedItems;
+        await tester.pumpWidget(
+          WidgetTestBench(
+            child: MeasurementChartMultiSelect(
+              items: [measurableWater, measurableHydration],
+              onConfirm: (items) => confirmedItems = items,
+              title: 'Measurement Charts',
+              buttonText: 'Measurement Charts',
+              semanticsLabel: 'Measurement Charts',
+              iconData: LottiIcons.insights,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Measurement Charts'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text(measurableHydration.displayName));
+        await tester.pumpAndSettle();
+        // No chart-mode control appears for it…
+        expect(find.text('Daily sum'), findsNothing);
+        expect(find.text('None'), findsNothing);
+
+        // …while a numeric measurable still gets one.
+        await tester.tap(find.text(measurableWater.displayName));
+        await tester.pumpAndSettle();
+        expect(find.text('Daily sum'), findsOneWidget);
+
+        final addButton = find.widgetWithText(
+          DesignSystemButton,
+          'Add 2 charts',
+        );
+        await tester.ensureVisible(addButton);
+        await tester.pumpAndSettle();
+        await tester.tap(addButton);
+        await tester.pumpAndSettle();
+
+        final hydrationItem = confirmedItems!.singleWhere(
+          (item) => item.id == measurableHydration.id,
+        );
+        expect(hydrationItem.aggregationType, AggregationType.none);
+      },
+    );
+
+    testWidgets(
       'search shows the measurement empty state when no item matches',
       (
         tester,

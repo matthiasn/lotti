@@ -7687,6 +7687,9 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get habitSignalTodayLogged => 'azi: înregistrat';
+
+  @override
   String get habitSignalTodayNone => 'azi: —';
 
   @override
@@ -9378,6 +9381,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get matrixStatsTopKpis => 'Indicatori principali';
 
   @override
+  String get measurableChoiceNotFound => 'Opțiune eliminată';
+
+  @override
   String get measurableDeleteConfirm => 'Da, ștergeți acest tip de măsurătoare';
 
   @override
@@ -9386,6 +9392,14 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get measurableNotFound => 'Masuratoarea nu a fost gasita';
+
+  @override
+  String get measurementChoicePrompt => 'Alegeți una';
+
+  @override
+  String measurementChoiceSelectSemantic(String title) {
+    return 'Selectați $title';
+  }
 
   @override
   String get measurementCommentHint => 'Adăugați o notă (opțional)';
@@ -12185,6 +12199,49 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsMeasurableAggregationLabel => 'Agregare implicită';
 
   @override
+  String get settingsMeasurableChoiceAdd => 'Adăugați o opțiune';
+
+  @override
+  String settingsMeasurableChoiceArchive(String title) {
+    return 'Arhivați $title';
+  }
+
+  @override
+  String get settingsMeasurableChoiceNameHint => 'Numele opțiunii';
+
+  @override
+  String get settingsMeasurableChoiceNameRequired =>
+      'Dați un nume acestei opțiuni';
+
+  @override
+  String settingsMeasurableChoiceReorder(String title) {
+    return 'Mutați $title';
+  }
+
+  @override
+  String settingsMeasurableChoiceRestore(String title) {
+    return 'Restaurați $title';
+  }
+
+  @override
+  String get settingsMeasurableChoicesArchivedDescription =>
+      'Ascunse la înregistrare; intrările care le-au folosit își afișează în continuare numele.';
+
+  @override
+  String get settingsMeasurableChoicesArchivedTitle => 'Opțiuni arhivate';
+
+  @override
+  String get settingsMeasurableChoicesDescription =>
+      'La înregistrare alegeți una dintre ele. Le puteți redenumi sau reordona oricând – intrările deja înregistrate își păstrează opțiunea.';
+
+  @override
+  String get settingsMeasurableChoicesRequired =>
+      'Adăugați cel puțin o opțiune';
+
+  @override
+  String get settingsMeasurableChoicesTitle => 'Opțiuni';
+
+  @override
   String get settingsMeasurableDeleteTooltip => 'Ștergeți tipul măsurătorii';
 
   @override
@@ -12210,7 +12267,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsMeasurablesEmptyStateHint =>
-      'Măsurătorile sunt valori urmărite în timp — greutate, apă, pași.';
+      'Măsurătorile sunt valori urmărite în timp — greutate, apă, pași sau o opțiune precum cât de odihnit vă simțiți.';
 
   @override
   String get settingsMeasurablesErrorLoading =>
@@ -12233,6 +12290,19 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsMeasurableUnitLabel => 'Unitatea abrevierii';
+
+  @override
+  String get settingsMeasurableValueKindChoice => 'Opțiune';
+
+  @override
+  String get settingsMeasurableValueKindHelper =>
+      'Un număr cu unitate sau una dintre opțiunile pe care le definiți';
+
+  @override
+  String get settingsMeasurableValueKindLabel => 'Se înregistrează ca';
+
+  @override
+  String get settingsMeasurableValueKindNumber => 'Număr';
 
   @override
   String get settingsOnboardingActionSubtitle =>

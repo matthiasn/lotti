@@ -11,7 +11,7 @@ sources:
   - id: src
     resource: ../../lib/features/habits
     title: Habits feature source
-    last_modified: 2026-08-16
+    last_modified: 2026-08-28
   - id: definitions
     resource: ../../lib/classes/entity_definitions.dart
     title: HabitDefinition
@@ -172,7 +172,11 @@ Each row's rule is a segmented mode — *Any entry / Total ≥ / Total ≤* for 
 measurable, *Any reading / Daily ≥ / Daily ≤* for a health type, *Any
 workout / Duration ≥ / Distance ≥ / Energy ≥* for a workout — with a
 threshold in the signal's unit. Steps default to *Daily ≥ 6,000*; everything
-else defaults to the record-based "any" mode.
+else defaults to the record-based "any" mode. If a measurable definition is
+later changed from numeric to choice, evaluation normalizes any older stored
+minimum or maximum away recursively before reading the signal. The choice's
+occurrence marker therefore keeps the same "any entry" semantics immediately,
+even before the habit is opened and saved again.
 
 # The data model is more ambitious than the schedule surface
 
@@ -247,7 +251,9 @@ the current instant.
 The `autoCompleteReason` stored on the entry names the satisfied leaves —
 `Water · 750`, `Steps · 7412`, `running` — resolving measurable names through
 `EntitiesCacheService` and health types through the dashboard health config,
-so the habit row can say what checked it off without another read.
+so the habit row can say what checked it off without another read. A choice
+measurable is named without its value: its day total is an occurrence count,
+not something the user recorded.
 
 Consumers: the `completions` stream and `autoCompletedToday`, which
 `HabitsSummaryCard` consults so a day the engine finished does not play the
@@ -302,7 +308,12 @@ the old dialog that embedded a whole linked dashboard. It renders **one
 measurable (its three most-logged values, from the same ranking the
 measurement dialog uses, plus *Other* for the full capture), and a two-week
 `SignalSparkline` — above the unchanged form (date, comment, Success / Skip /
-Missed, Record).
+Missed, Record). A **choice measurable** offers every active choice as a chip
+instead of suggestions — the set is the vocabulary, not a ranking — records
+one occurrence of the tapped choice (`MeasurableQuickValue`, the number-or-
+choice shape the chips, row and sheet pass around), reports today as *logged*
+rather than as a count, and in the editor its only rule is *any entry*: the
+threshold modes are numeric and are not shown for it.
 
 ```mermaid
 flowchart LR

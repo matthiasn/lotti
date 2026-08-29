@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/habits/model/habit_form_mapping.dart';
+import '../../../test_data/test_data.dart';
 
 void main() {
   const water = HabitSignalForm(
@@ -274,6 +275,48 @@ void main() {
       expect(cleared, anyRun);
       expect(cleared.toString(), contains('running'));
       expect(cleared.hashCode, anyRun.hashCode);
+    });
+  });
+  group('unboundedForChoices', () {
+    final hydration = measurableHydration.copyWith(id: 'hydration');
+    final byId = {'hydration': hydration, 'water': measurableWater};
+    const boundedChoice = HabitSignalForm(
+      kind: HabitSignalKind.measurable,
+      id: 'hydration',
+      mode: HabitSignalMode.atLeast,
+      threshold: 500,
+    );
+    const boundedWater = HabitSignalForm(
+      kind: HabitSignalKind.measurable,
+      id: 'water',
+      mode: HabitSignalMode.atMost,
+      threshold: 2,
+    );
+
+    test('drops a bound on a choice measurable and keeps every other', () {
+      const form = HabitSignalsForm(
+        signals: [boundedChoice, boundedWater],
+        composite: HabitCompositeRule.all,
+      );
+      final result = form.unboundedForChoices(byId);
+      expect(result.signals, const [
+        HabitSignalForm(kind: HabitSignalKind.measurable, id: 'hydration'),
+        boundedWater,
+      ]);
+      expect(result.composite, HabitCompositeRule.all);
+    });
+
+    test('returns the same instance when nothing needs changing', () {
+      const form = HabitSignalsForm(
+        signals: [
+          HabitSignalForm(kind: HabitSignalKind.measurable, id: 'hydration'),
+          boundedWater,
+        ],
+      );
+      expect(identical(form.unboundedForChoices(byId), form), isTrue);
+      // An unknown measurable is left alone: its kind is not known either.
+      const unknown = HabitSignalsForm(signals: [boundedChoice]);
+      expect(identical(unknown.unboundedForChoices(const {}), unknown), isTrue);
     });
   });
 }

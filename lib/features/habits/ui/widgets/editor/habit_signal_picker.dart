@@ -57,8 +57,13 @@ class _HabitSignalPickerState extends State<HabitSignalPicker> {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
+    // A choice measurable is found by any of its choices' titles, the way a
+    // numeric one is found by its unit.
     final measurables = widget.measurables.where(
-      (m) => _matches(m.displayName) || _matches(m.unitName),
+      (m) =>
+          _matches(m.displayName) ||
+          _matches(m.unitName) ||
+          m.activeChoices.any((choice) => _matches(choice.title)),
     );
     final health = [
       for (final key in evaluableHealthDataTypes)
@@ -133,7 +138,7 @@ class _HabitSignalPickerState extends State<HabitSignalPicker> {
                       HabitSignalKind.measurable,
                       m.id,
                       m.displayName,
-                      m.unitName.isEmpty ? null : m.unitName,
+                      habitMeasurableSubtitle(m),
                     ),
                   if (health.isNotEmpty)
                     section(messages.habitEditorPickerHealth),
