@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/beamer/locations/habits_location.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -10,6 +9,7 @@ import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
 import 'package:lotti/features/habits/state/heatmap/habit_heatmap_controller.dart';
+import 'package:lotti/features/habits/ui/pages/habit_editor_launcher.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_action_row.dart';
 import 'package:lotti/features/habits/ui/widgets/habits_chart_card.dart';
 import 'package:lotti/features/habits/ui/widgets/habits_header.dart';
@@ -23,7 +23,6 @@ import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
 /// Top-level habits tab: a dashboard on the calm [dsPageSurface] canvas, driven
@@ -271,7 +270,7 @@ class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
           child: DesignSystemFloatingActionButton(
             key: const ValueKey('habits-create-fab'),
             semanticLabel: messages.habitEditorCreateTitle,
-            onPressed: () => beamToNamed(HabitsLocation.createPath),
+            onPressed: () => openHabitEditor(context),
           ),
         ),
         backgroundColor: dsPageSurface(context),

@@ -3136,6 +3136,7 @@
   "habitDeleteConfirm": "Ja, slet denne vane",
   "habitDeleteQuestion": "Vil du slette denne vane?",
   "habitEditorAddSignal": "Tilføj et signal",
+  "habitEditorBack": "Tilbage",
   "habitEditorCompositeAll": "Alle signaler",
   "habitEditorCompositeAny": "Et hvilket som helst signal",
   "habitEditorCompositeAtLeast": "Mindst {count} af {total}",

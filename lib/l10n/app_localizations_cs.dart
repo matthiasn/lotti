@@ -7296,6 +7296,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get habitEditorAddSignal => 'Přidat signál';
 
   @override
+  String get habitEditorBack => 'Zpět';
+
+  @override
   String get habitEditorCompositeAll => 'Všechny signály';
 
   @override

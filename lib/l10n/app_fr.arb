@@ -2872,6 +2872,7 @@
   "habitDeleteConfirm": "Oui, supprimer cette habitude",
   "habitDeleteQuestion": "Veux-tu supprimer cette habitude ?",
   "habitEditorAddSignal": "Ajouter un signal",
+  "habitEditorBack": "Retour",
   "habitEditorCompositeAll": "Tous les signaux",
   "habitEditorCompositeAny": "N’importe quel signal",
   "habitEditorCompositeAtLeast": "Au moins {count} sur {total}",

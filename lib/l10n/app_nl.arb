@@ -3135,6 +3135,7 @@
   "habitDeleteConfirm": "Ja, verwijder deze gewoonte",
   "habitDeleteQuestion": "Wilt u deze gewoonte verwijderen?",
   "habitEditorAddSignal": "Signaal toevoegen",
+  "habitEditorBack": "Terug",
   "habitEditorCompositeAll": "Alle signalen",
   "habitEditorCompositeAny": "Eén van de signalen",
   "habitEditorCompositeAtLeast": "Minstens {count} van {total}",

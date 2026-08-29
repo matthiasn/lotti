@@ -7231,6 +7231,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get habitEditorAddSignal => 'Signaal toevoegen';
 
   @override
+  String get habitEditorBack => 'Terug';
+
+  @override
   String get habitEditorCompositeAll => 'Alle signalen';
 
   @override

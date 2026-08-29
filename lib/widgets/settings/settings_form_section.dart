@@ -31,7 +31,11 @@ class SettingsFormSection extends StatelessWidget {
     final spacing = tokens.spacing;
 
     return Padding(
-      padding: EdgeInsets.only(bottom: spacing.sectionGap),
+      // A title-only section labels whatever follows it, so it keeps only
+      // the heading's own spacing rather than a whole section gap.
+      padding: EdgeInsets.only(
+        bottom: children.isEmpty ? 0 : spacing.sectionGap,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -68,25 +72,29 @@ class SettingsFormSection extends StatelessWidget {
               ],
             ),
           ),
-          DecoratedBox(
-            decoration: BoxDecoration(
-              color: tokens.colors.background.level02,
-              borderRadius: BorderRadius.circular(tokens.radii.m),
-              border: Border.all(color: tokens.colors.decorative.level01),
-            ),
-            child: Padding(
-              padding: EdgeInsets.all(spacing.cardPadding),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  for (var i = 0; i < children.length; i++) ...[
-                    if (i > 0) SizedBox(height: spacing.cardItemSpacing),
-                    children[i],
+          // A section with nothing to hold is a heading, not an empty
+          // bordered card: the habit editor titles its signal card this way,
+          // and an empty frame under the title read as a broken control.
+          if (children.isNotEmpty)
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: tokens.colors.background.level02,
+                borderRadius: BorderRadius.circular(tokens.radii.m),
+                border: Border.all(color: tokens.colors.decorative.level01),
+              ),
+              child: Padding(
+                padding: EdgeInsets.all(spacing.cardPadding),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (var i = 0; i < children.length; i++) ...[
+                      if (i > 0) SizedBox(height: spacing.cardItemSpacing),
+                      children[i],
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
-          ),
         ],
       ),
     );

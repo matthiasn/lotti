@@ -2872,6 +2872,7 @@
   "habitDeleteConfirm": "Ja, diese Gewohnheit löschen",
   "habitDeleteQuestion": "Möchtest du diese Gewohnheit löschen?",
   "habitEditorAddSignal": "Signal hinzufügen",
+  "habitEditorBack": "Zurück",
   "habitEditorCompositeAll": "Alle Signale",
   "habitEditorCompositeAny": "Ein beliebiges Signal",
   "habitEditorCompositeAtLeast": "Mindestens {count} von {total}",

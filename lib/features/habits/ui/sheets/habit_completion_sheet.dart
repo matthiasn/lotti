@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_linkify/flutter_linkify.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/beamer/locations/habits_location.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
@@ -16,6 +15,7 @@ import 'package:lotti/features/goals/state/goal_habit_watchers.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/goal_assessment_widgets.dart';
 import 'package:lotti/features/habits/state/habit_signal_status_controller.dart';
+import 'package:lotti/features/habits/ui/pages/habit_editor_launcher.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_signal_row.dart';
 import 'package:lotti/features/habits/ui/widgets/measurable_quick_record_chips.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
@@ -29,7 +29,6 @@ import 'package:lotti/pages/create/create_measurement_dialog.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/utils/platform.dart';
@@ -281,8 +280,11 @@ class _HabitCompletionSheetState extends ConsumerState<HabitCompletionSheet> {
       }),
       onClose: () => Navigator.pop(context),
       onEdit: () {
+        // The sheet is gone once popped, so the editor opens on the root
+        // navigator's context — which is where the desktop panel lives.
+        final root = Navigator.of(context, rootNavigator: true).context;
         Navigator.pop(context);
-        beamToNamed(HabitsLocation.editPath(widget.habitId));
+        openHabitEditor(root, habitId: widget.habitId);
       },
       onRecord: _save,
     );

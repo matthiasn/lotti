@@ -7192,6 +7192,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get habitEditorAddSignal => 'Add a signal';
 
   @override
+  String get habitEditorBack => 'Back';
+
+  @override
   String get habitEditorCompositeAll => 'All signals';
 
   @override
@@ -14311,6 +14314,9 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String get habitDeleteQuestion => 'Do you want to delete this habit?';
+
+  @override
+  String get habitEditorBack => 'Back';
 
   @override
   String get habitPriorityLabel => 'Priority';

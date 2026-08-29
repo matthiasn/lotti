@@ -12210,6 +12210,12 @@ abstract class AppLocalizations {
   /// **'Add a signal'**
   String get habitEditorAddSignal;
 
+  /// Returns the create-habit wizard from the signals step to the name step when the editor is hosted in a desktop panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get habitEditorBack;
+
   /// No description provided for @habitEditorCompositeAll.
   ///
   /// In en, this message translates to:

@@ -3135,6 +3135,7 @@
   "habitDeleteConfirm": "Sim, excluir este hábito",
   "habitDeleteQuestion": "Quer eliminar esse hábito?",
   "habitEditorAddSignal": "Adicionar um sinal",
+  "habitEditorBack": "Voltar",
   "habitEditorCompositeAll": "Todos os sinais",
   "habitEditorCompositeAny": "Qualquer sinal",
   "habitEditorCompositeAtLeast": "Pelo menos {count} de {total}",

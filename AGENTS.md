@@ -36,7 +36,7 @@
 ## Commit & Pull Request Guidelines
 - Use Conventional Commits (e.g., `feat:`, `fix:`, `chore:`, `ci:`). Keep subjects concise and imperative.
 - PRs must pass `make analyze` and `make test`; include a clear description and linked issues.
-- **UI changes need a before/after screenshot pair per surface**, captured with the harness (see the `app-screenshots` skill). Capture `before/` from the base commit *first* — it cannot be reconstructed once the change is in. **Never commit images to any repo.** Publish the pair to the R2 bucket with `make pr_screenshots_publish` and link the printed public URLs from the PR body. The staging layout, the naming rules and the publish command are in [knowledge/conventions/screenshots.md](knowledge/conventions/screenshots.md).
+- **UI changes need a before/after screenshot pair per surface**, captured with the harness (see the `app-screenshots` skill). Capture `before/` from the base commit *first* — it cannot be reconstructed once the change is in. **Fixtures come from `test/test_data` and the penguin demo world only — never from a user's own habits, tasks, notes or bug screenshots**; a capture is published to a public bucket and a public PR. **Never commit images to any repo.** Publish the pair to the R2 bucket with `make pr_screenshots_publish` and link the printed public URLs from the PR body. The staging layout, the naming rules and the publish command are in [knowledge/conventions/screenshots.md](knowledge/conventions/screenshots.md).
 - Update docs and localization as needed (run `make l10n`).
 
 ## Security & Configuration Tips

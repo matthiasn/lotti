@@ -7226,6 +7226,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get habitEditorAddSignal => 'Lägg till en signal';
 
   @override
+  String get habitEditorBack => 'Tillbaka';
+
+  @override
   String get habitEditorCompositeAll => 'Alla signaler';
 
   @override

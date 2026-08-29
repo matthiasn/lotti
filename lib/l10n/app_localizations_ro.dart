@@ -7346,6 +7346,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get habitEditorAddSignal => 'Adăugați un semnal';
 
   @override
+  String get habitEditorBack => 'Înapoi';
+
+  @override
   String get habitEditorCompositeAll => 'Toate semnalele';
 
   @override

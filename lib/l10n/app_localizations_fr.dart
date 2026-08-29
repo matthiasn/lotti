@@ -7328,6 +7328,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get habitEditorAddSignal => 'Ajouter un signal';
 
   @override
+  String get habitEditorBack => 'Retour';
+
+  @override
   String get habitEditorCompositeAll => 'Tous les signaux';
 
   @override

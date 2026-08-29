@@ -101,6 +101,7 @@
   "habitCategoryHint": "Select a category",
   "habitCategoryLabel": "Category",
   "habitDeleteQuestion": "Do you want to delete this habit?",
+  "habitEditorBack": "Back",
   "habitPriorityLabel": "Priority",
   "habitReflectInGoal": "Reflect on this day in {goal}",
   "habitsCompletedHeader": "Completed",

@@ -3136,6 +3136,7 @@
   "habitDeleteConfirm": "Sì, elimina questa abitudine",
   "habitDeleteQuestion": "Vuoi eliminare questa abitudine?",
   "habitEditorAddSignal": "Aggiungi un segnale",
+  "habitEditorBack": "Indietro",
   "habitEditorCompositeAll": "Tutti i segnali",
   "habitEditorCompositeAny": "Un segnale qualsiasi",
   "habitEditorCompositeAtLeast": "Almeno {count} su {total}",
