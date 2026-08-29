@@ -159,6 +159,20 @@ class _DesktopQrScannerState extends State<DesktopQrScanner> {
         onFrame: _onFrame,
       );
     } on Exception catch (error, stackTrace) {
+      final failedCamera = _camera;
+      _camera = null;
+      if (failedCamera != null) {
+        try {
+          await failedCamera.dispose();
+        } on Exception catch (disposeError, disposeStackTrace) {
+          DevLogger.error(
+            name: 'DesktopQrScanner',
+            message: 'Failed to dispose desktop camera after startup error',
+            error: disposeError,
+            stackTrace: disposeStackTrace,
+          );
+        }
+      }
       DevLogger.error(
         name: 'DesktopQrScanner',
         message: 'Desktop camera initialization failed',

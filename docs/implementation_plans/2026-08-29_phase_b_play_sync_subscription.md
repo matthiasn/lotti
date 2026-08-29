@@ -13,7 +13,9 @@ background-task patterns (`RedemptionPoller`, `RetentionScheduler`), audit
 events, admin/client API-key separation, and Synapse admin operations.
 
 The Android application id is `com.matthiasn.lotti`. There is currently no Play
-Billing client or user-account identity layer in the Flutter app.
+Billing client or user-account identity layer in the Flutter app. A stable
+server-side entitlement identity is therefore a launch prerequisite, not
+something a purchase token or claim secret may substitute.
 
 ## Purchase and provisioning flow
 
@@ -35,35 +37,54 @@ a dedicated Pub/Sub topic and authenticated push subscription.
 Add the Flutter `in_app_purchase` plugin behind a small sync-subscription
 repository. The client:
 
-1. queries the two base plans and launches the Play purchase flow;
-2. sends `purchaseToken`, product id, package name, and a client-generated
-   idempotency/claim secret to the provisioner over TLS;
-3. never treats the local `PurchaseDetails` state as entitlement;
-4. waits for the server to verify and provision, then imports the returned v2
+1. creates an authenticated purchase intent bound to a stable Lotti account or
+   server-issued entitlement identity before opening Play Billing;
+2. attaches the server-derived obfuscated account/profile identifier to the
+   Billing flow, then sends `purchaseToken`, product id, package name, purchase
+   intent, and a client-generated delivery/claim secret over TLS;
+3. obtains a Play Integrity verdict whose `requestHash` covers a canonical
+   serialization of the purchase-token fingerprint, product/base-plan,
+   entitlement id, purchase-intent id, and claim-secret hash;
+4. never treats the local `PurchaseDetails` state as entitlement;
+5. waits for the server to verify and provision, then imports the returned v2
    bundle through the existing `ProvisioningController`; and
-5. completes the Play purchase only after the server confirms it has granted
+6. completes the Play purchase only after the server confirms it has granted
    entitlement.
 
 The app must not contain the service's current shared `API_KEYS` value. The
 purchase token is a high-entropy proof presented only over TLS, and the server
-must additionally validate it with Google. Add Play Integrity binding before
-public launch if the endpoint is exposed without an authenticated Lotti account.
+must additionally validate it with Google. The claim secret authorizes delivery
+retries only; it does not prove who owns the purchase. If Lotti still has no
+authenticated account at launch, the provisioner must issue and retain a stable
+entitlement identity plus one-time purchase intent, require its server-derived
+obfuscated identifier in the Play purchase, and validate a Play Integrity
+verdict bound to the exact submission through `requestHash` (or a server nonce
+for the classic API). A public token-plus-claim-secret endpoint is not
+acceptable.
 
 ### Server verification
 
 Add a `GooglePlayClient` service using Google service-account credentials and
 the Android Publisher scope. For every client submission and RTDN:
 
-1. call `purchases.subscriptionsv2.get` for `com.matthiasn.lotti` and the token;
-2. require an allowed product/base-plan line item and a grantable subscription
-   state (`ACTIVE` or `IN_GRACE_PERIOD`);
-3. reject pending, paused, on-hold, expired, revoked, unknown-product, test (in
-   production), and package-mismatch results;
-4. verify `externalAccountIdentifiers` when the client supplied an obfuscated
-   account/profile id;
-5. follow `linkedPurchaseToken` on upgrades, downgrades, and re-signups so one
-   entitlement cannot provision two Matrix accounts; and
-6. acknowledge a new, verified token server-side after the entitlement and
+1. verify the authenticated account/purchase intent and the Play Integrity
+   verdict, including exact `requestHash`/nonce matching and replay controls;
+2. call `purchases.subscriptionsv2.get` for `com.matthiasn.lotti` and the token;
+3. require an allowed product/base-plan line item and a grantable state:
+   `ACTIVE`, `IN_GRACE_PERIOD`, or `CANCELED` only while the authoritative
+   line-item `expiryTime` is still in the future;
+4. reject pending, paused, on-hold, expired, revoked, canceled-at-or-after-
+   expiry, unknown-product, test (in production), and package-mismatch results;
+5. require `externalAccountIdentifiers` to match the server-derived obfuscated
+   identifier for the bound entitlement; a missing or mismatched binding cannot
+   create or move an entitlement;
+6. follow `linkedPurchaseToken` on upgrades, downgrades, and non-lapsed
+   re-signups. For a post-expiry resubscription with no linked token, process
+   `outOfAppPurchaseContext.expiredPurchaseToken` and expired external account
+   identifiers when present, but still require the stable entitlement binding;
+7. atomically attach the new token to that entitlement and mark every linked or
+   replaced token non-grantable before any bundle can be provisioned; and
+8. acknowledge a new, verified token server-side after the entitlement and
    bundle claim are durably recorded. Renewals do not need acknowledgement.
 
 Never trust RTDN state directly. Verify the Pub/Sub push JWT/audience, decode
@@ -78,15 +99,20 @@ credential. Keep the plaintext prohibition, but add short-lived encrypted
 escrow for paid provisioning:
 
 - The client generates a random claim secret and sends only its hash for the
-  server record.
+  server record. This secret protects delivery, never purchase ownership.
 - Store the raw Play token encrypted with a KMS/envelope key and a separate
   SHA-256 token fingerprint for uniqueness/lookups.
-- Store the generated bundle encrypted until the client confirms successful
+- Store the generated bundle encrypted until the server validates successful
   import/password rotation, with a strict TTL and audit trail.
 - Idempotent retries with the same purchase token and claim proof return the
   same pending claim; they never create a second Matrix user.
-- Delete escrow ciphertext immediately after rotation confirmation, or revoke
-  an abandoned unrotated account after the claim TTL.
+- Do not trust a bare `bundle_id` rotation callback. After import, issue a
+  one-time rotation challenge; require the bound Matrix user to publish it in
+  the provisioned non-federated room and verify that the escrowed bootstrap
+  password no longer authenticates before recording rotation.
+- Delete escrow ciphertext only after that proof succeeds. A pre-import
+  confirmation leaves escrow intact, repeated valid confirmations are
+  idempotent, and an abandoned unrotated account is revoked after the claim TTL.
 
 This requires replacing the currently unusable
 `/client/bundles/{bundle_id}/rotated` address with a purchase/claim-scoped
@@ -98,12 +124,14 @@ Add repository migrations and models for:
 
 ### `play_subscriptions`
 
+- stable entitlement id and server-derived obfuscated account/profile id
 - token fingerprint (unique), encrypted token, package name
 - product id, base plan id, latest order id (audit only, never the primary key)
 - verified Play state and normalized entitlement state
 - purchase/start time, current period end, grace deadline
 - acknowledgement state/time
 - linked/replaced token fingerprint
+- out-of-app expired token fingerprint and binding-verification result
 - provisioned `bundle_id` foreign key
 - suspended/unsuspended timestamps
 - last verified time, next reconciliation time, last error
@@ -114,6 +142,13 @@ Add repository migrations and models for:
 - `bundle_id` (unique), claim-secret hash
 - encrypted bundle ciphertext and KMS key metadata
 - expires, first delivered, confirmed, and destroyed timestamps
+
+### `purchase_intents`
+
+- opaque intent id, stable entitlement id, one-time secret hash, requested
+  product/base plan, expiry, consumed timestamp, and replay metadata
+- expected Play Integrity request hash/nonce and the server-derived obfuscated
+  account/profile identifier used to launch Billing
 
 ### Events
 
@@ -139,7 +174,10 @@ pending -> active -> grace -> suspended -> active
 active  -> canceled_active -> suspended/expired at entitlement end
 ```
 
-- `ACTIVE`, including voluntary cancellation before period end: keep sync.
+- `ACTIVE`: keep sync.
+- `CANCELED` with a future authoritative `expiryTime`: keep sync as
+  `canceled_active`; suspend when that timestamp is reached. A canceled result
+  whose `expiryTime` is already past loses entitlement immediately.
 - `IN_GRACE_PERIOD`: keep sync through the Play-configured three-day deadline.
 - `ON_HOLD`, `PAUSED`, `EXPIRED`, or revoked: remove entitlement immediately
   once the authoritative Google response says access is no longer valid.
@@ -192,6 +230,9 @@ Expected additions/changes:
 - TLS only, strict request sizes, schema validation, rate limits, replay-safe
   idempotency, redacted structured logs, and no permissive CORS on client APIs.
 - Authenticated Pub/Sub push with issuer/audience/email verification.
+- Mandatory stable account/entitlement binding for purchase submission and
+  restoration; Play Integrity `requestHash`/nonce validation must bind every
+  security-relevant request field and reject replays.
 - Least-privilege Google Play and Synapse service accounts.
 - Constant-time claim-secret verification and encryption key separation.
 - Metrics/alerts for verification failures, unacknowledged purchases nearing
@@ -202,15 +243,23 @@ Expected additions/changes:
 
 ## Testing
 
-- Pure state-table tests for every Play state, cancellation, grace boundary,
-  recovery, linked tokens, out-of-order/duplicate RTDN, and exact UTC deadlines.
+- Pure state-table tests for every Play state, cancellation before and after
+  `expiryTime`, grace boundary, recovery, linked tokens, out-of-order/duplicate
+  RTDN, and exact UTC deadlines.
 - Mocked Android Publisher tests for verification, acknowledgement, retryable
   errors, invalid product/package, and token replay.
 - Repository migration/transaction/concurrency tests with unique-token races.
 - Route tests for Pub/Sub JWT failures, malformed notifications, idempotent
-  purchase submission, lost-response retry, and claim authorization.
+  purchase submission, lost-response retry, claim authorization, stolen-token
+  rebinding attempts, mismatched Integrity request hashes/nonces, and replayed
+  purchase intents.
+- Token-lineage tests for cancellation before expiry and post-expiry
+  resubscription without `linkedPurchaseToken`, including
+  `outOfAppPurchaseContext`, stable entitlement reuse, and atomic retirement of
+  the replaced token.
 - Bundle lifecycle tests proving a network retry provisions exactly one account
-  and confirmed rotation destroys escrow.
+  and only server-validated rotation destroys escrow; cover pre-import and
+  repeated rotation confirmations explicitly.
 - Synapse integration tests proving suspend blocks sync sends and unsuspend
   restores them without replacing devices/room membership.
 - Google Play license-tester scenarios for initial purchase, pending payment,
@@ -219,3 +268,15 @@ Expected additions/changes:
 
 No Phase B code should be merged until Phase A's macOS/Linux camera acceptance
 is complete.
+
+## Primary references
+
+- Google Play Billing security and purchase attribution:
+  <https://developer.android.com/google/play/billing/security>
+- Subscription cancellation, expiry, and entitlement lifecycle:
+  <https://developer.android.com/google/play/billing/lifecycle/subscriptions>
+- `purchases.subscriptionsv2`, including external identifiers and
+  `outOfAppPurchaseContext`:
+  <https://developers.google.com/android-publisher/api-ref/rest/v3/purchases.subscriptionsv2>
+- Play Integrity request content binding:
+  <https://developer.android.com/google/play/integrity/standard>

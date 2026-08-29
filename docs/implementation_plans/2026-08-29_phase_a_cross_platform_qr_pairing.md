@@ -42,9 +42,11 @@ Reuse `mobile_scanner` 7.x. It officially supports macOS and is already the
 production Android/iOS scanner, so it preserves identical barcode handling,
 deduplication, bundle validation, and pairing-code confirmation.
 
-The macOS runner already has `com.apple.security.device.camera` in debug and
-release entitlements and `NSCameraUsageDescription` in `Info.plist`. Update the
-usage description so it names QR pairing as well as journal photos.
+The macOS runner already has `com.apple.security.device.camera` in its dedicated
+debug and release entitlements and `NSCameraUsageDescription` in `Info.plist`.
+Add the same capability to `DebugProfile.entitlements`, which signs Profile
+builds, and update the usage description so it names QR pairing as well as
+journal photos.
 
 ### 3. Linux scanner
 

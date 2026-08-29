@@ -150,6 +150,54 @@ void main() {
       expect(find.text('Camera unavailable'), findsOneWidget);
     });
 
+    testWidgets('disposes the camera before reporting stream start failure', (
+      tester,
+    ) async {
+      final camera = _FakeDesktopQrCamera(
+        startError: const FormatException('stream unavailable'),
+      );
+      desktopQrCameraFactoryOverride = () async => camera;
+
+      await tester.pumpWidget(
+        makeTestableWidget2(
+          DesktopQrScanner(
+            onDetect: (_) {},
+            unavailableBuilder: (_) => const Text('Camera unavailable'),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(camera.started, isTrue);
+      expect(camera.disposed, isTrue);
+      expect(find.text('Camera unavailable'), findsOneWidget);
+      expect(find.byKey(const Key('desktop_camera_preview')), findsNothing);
+    });
+
+    testWidgets('keeps fallback usable when failed camera disposal throws', (
+      tester,
+    ) async {
+      final camera = _FakeDesktopQrCamera(
+        startError: const FormatException('stream unavailable'),
+        disposeError: const FormatException('dispose failed'),
+      );
+      desktopQrCameraFactoryOverride = () async => camera;
+
+      await tester.pumpWidget(
+        makeTestableWidget2(
+          DesktopQrScanner(
+            onDetect: (_) {},
+            unavailableBuilder: (_) => const Text('Camera unavailable'),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+      expect(camera.disposed, isTrue);
+      expect(find.text('Camera unavailable'), findsOneWidget);
+    });
+
     testWidgets('disposes a camera created after the scanner is removed', (
       tester,
     ) async {
@@ -401,6 +449,10 @@ DesktopQrFrame _qrFrame(
 }
 
 class _FakeDesktopQrCamera implements DesktopQrCamera {
+  _FakeDesktopQrCamera({this.startError, this.disposeError});
+
+  final Exception? startError;
+  final Exception? disposeError;
   bool Function()? _shouldCaptureFrame;
   ValueChanged<DesktopQrFrame>? _onFrame;
   bool started = false;
@@ -427,6 +479,8 @@ class _FakeDesktopQrCamera implements DesktopQrCamera {
     required ValueChanged<DesktopQrFrame> onFrame,
   }) async {
     started = true;
+    final error = startError;
+    if (error != null) throw error;
     _shouldCaptureFrame = shouldCaptureFrame;
     _onFrame = onFrame;
   }
@@ -436,6 +490,8 @@ class _FakeDesktopQrCamera implements DesktopQrCamera {
     disposed = true;
     _shouldCaptureFrame = null;
     _onFrame = null;
+    final error = disposeError;
+    if (error != null) throw error;
   }
 }
 
