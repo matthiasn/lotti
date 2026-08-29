@@ -20,6 +20,7 @@ import 'package:lotti/features/design_system/components/callouts/design_system_i
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
+import 'package:lotti/features/design_system/components/tooltips/ds_tooltip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
 import 'package:lotti/features/goals/model/goal_assessment.dart';
@@ -28,6 +29,7 @@ import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/goal_progress_card.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/widgets/day_indicators/day_mark.dart';
+import 'package:lotti/widgets/day_indicators/day_mark_cell.dart';
 import 'package:lotti/widgets/day_indicators/day_mark_strip.dart';
 import 'package:lotti/widgets/day_indicators/day_mark_styles.dart';
 import 'package:lotti/widgets/day_indicators/day_track.dart';
@@ -37,10 +39,12 @@ import '../../../widget_test_utils.dart';
 
 void main() {
   final today = DateTime.utc(2026, 8, 11);
-  GoalProgressDay day(int offset, num value) => GoalProgressDay(
-    day: today.subtract(Duration(days: offset)),
-    value: value,
-  );
+  GoalProgressDay day(int offset, num value, {HabitCompletionType? type}) =>
+      GoalProgressDay(
+        day: today.subtract(Duration(days: offset)),
+        value: value,
+        habitCompletionType: type,
+      );
 
   /// The `yyyy-MM-dd` fragment the day-cell keys are built from.
   String dayKey(int offset) =>
@@ -450,16 +454,26 @@ void main() {
           ),
         )
         .firstWhere((container) => container.decoration is BoxDecoration);
+    // Today itself is the dashed open square on both tracks; yesterday is a
+    // filled one, so it is the one to compare decorations on.
     final habitCell = tester.widget<Container>(
-      find.byKey(ValueKey('goal-habit-day-visual-walk-${dayKey(0)}')),
+      find.byKey(ValueKey('goal-habit-day-visual-walk-${dayKey(1)}')),
     );
     final stripRect = tester.getRect(
       find.byWidget(stripCell),
     );
     final habitRect = tester.getRect(
-      find.byKey(ValueKey('goal-habit-day-visual-walk-${dayKey(0)}')),
+      find.byKey(ValueKey('goal-habit-day-visual-walk-${dayKey(1)}')),
     );
     expect(stripRect.size, habitRect.size);
+    expect(
+      find.descendant(
+        of: find.byKey(ValueKey('goal-habit-day-visual-walk-${dayKey(0)}')),
+        matching: find.byType(DsDashedBorder),
+      ),
+      findsOneWidget,
+      reason: 'today, still open, is the dashed square',
+    );
     expect(
       (habitCell.decoration! as BoxDecoration).borderRadius,
       (stripCell.decoration! as BoxDecoration).borderRadius,
@@ -528,21 +542,23 @@ void main() {
     expect(find.text('Improving'), findsOneWidget);
   });
 
-  testWidgets('the today ring is drawn in one ink and one stroke on every '
-      'surface that draws one', (
-    tester,
-  ) async {
-    // Each ring-producing surface has to be MOUNTED, or the test grades an
-    // empty set: the whole-goal strip lives on GoalThisWeekCard, not on
-    // GoalProgressCard, and the strip's cell only draws its ring on a day
-    // with no recorded verdict of its own.
+  testWidgets('no square draws a ring, glyph or letter: today, the window '
+      'start and the outcomes are said, not drawn', (tester) async {
     final habit = GoalHabitProgressView(
       habitId: 'gym',
       name: 'Gym',
-      targetCount: 3,
-      days: [for (var offset = 6; offset >= 0; offset--) day(offset, 0)],
+      // At its rate with the one success on the window's first day, so that
+      // success ages out tonight.
+      targetCount: 1,
+      days: [
+        day(6, 1, type: HabitCompletionType.success),
+        day(5, 0, type: HabitCompletionType.fail),
+        day(4, 0, type: HabitCompletionType.skip),
+        for (var offset = 3; offset >= 0; offset--) day(offset, 0),
+      ],
       successfulWeeks: 0,
     );
+    expect(habit.oldestSuccessAgesOutTonight, isTrue);
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         SingleChildScrollView(
@@ -564,31 +580,55 @@ void main() {
         ),
       ),
     );
-
-    final tokens = tester.element(find.byType(GoalProgressCard)).designTokens;
-    Iterable<DsDashedBorder> ringsIn(Finder host) =>
-        tester.widgetList<DsDashedBorder>(
-          find.descendant(of: host, matching: find.byType(DsDashedBorder)),
-        );
-
-    // Named per surface rather than swept as one bag: a bare
-    // `byType(DsDashedBorder)` passed while the strip was never mounted at
-    // all, and would keep passing if it stopped being mounted again.
-    final stripRings = ringsIn(find.byType(DayMarkStrip));
-    final cardRings = ringsIn(find.byType(GoalProgressCard));
-    expect(stripRings, hasLength(1), reason: 'the strip marks today once');
+    // The only outline anywhere is today's open square, once per track.
+    expect(find.byType(DsDashedBorder), findsNWidgets(2));
+    // The tappable whole-goal strip names each day above its square and
+    // draws nothing else; the read-only habit track draws the bare squares.
     expect(
-      cardRings,
-      hasLength(1),
-      reason: "the habit card's today cell, drawn inside the square",
+      find.descendant(
+        of: find.byType(DayMarkStrip),
+        matching: find.byType(Icon),
+      ),
+      findsNothing,
     );
-
-    // A hairline in the low-emphasis ink is a rumour on a dark screen.
-    for (final ring in [...stripRings, ...cardRings]) {
-      expect(ring.color, todayRingInk(tokens));
-      expect(ring.strokeWidth, BorderWidths.emphasis);
-    }
-    expect(todayRingInk(tokens), tokens.colors.text.mediumEmphasis);
+    expect(
+      find.descendant(
+        of: find.byType(DayMarkStrip),
+        matching: find.byType(Text),
+      ),
+      findsNWidgets(7),
+    );
+    final habitTrack = find.descendant(
+      of: find.byType(GoalProgressCard),
+      matching: find.byType(DayTrack),
+    );
+    expect(
+      find.descendant(of: habitTrack, matching: find.byType(Icon)),
+      findsNothing,
+    );
+    expect(
+      find.descendant(of: habitTrack, matching: find.byType(Text)),
+      findsNothing,
+    );
+    final tokens = tester.element(find.byType(GoalProgressCard)).designTokens;
+    final visual = tester.widget<Container>(
+      find.byKey(ValueKey('goal-habit-day-visual-gym-${dayKey(6)}')),
+    );
+    final decoration = visual.decoration! as BoxDecoration;
+    expect(decoration.border, isNull);
+    expect(decoration.borderRadius, BorderRadius.circular(tokens.radii.xs));
+    expect(
+      tester.getSize(find.byWidget(visual)),
+      const Size.square(kDaySquareSize),
+    );
+    // The ages-out fact rides the tooltip and the semantics instead.
+    final tooltip = tester.widget<DsTooltip>(
+      find.ancestor(
+        of: find.byWidget(visual),
+        matching: find.byType(DsTooltip),
+      ),
+    );
+    expect(tooltip.message, 'Success · ages out tonight');
   });
 
   testWidgets('a card closing on a check-off callout keeps its full foot, '
@@ -745,9 +785,8 @@ void main() {
       reason: 'dead space sits between the day targets',
     );
 
-    // The square itself matches the habit day squares below it — the whole
-    // goal used to render at IconSizes.xs against their iconChipCompact,
-    // less than half the size, on the same screen.
+    // The square itself is the one handover square, the same on the
+    // whole-goal strip and on the habit rows below it.
     final square = tester.widget<Container>(
       find
           .descendant(
@@ -756,10 +795,7 @@ void main() {
           )
           .first,
     );
-    expect(
-      square.constraints!.maxWidth,
-      ControlSizes.iconChipCompact,
-    );
+    expect(square.constraints!.maxWidth, kDaySquareSize);
   });
 
   testWidgets('metric card renders seven bars in the same rolling frame', (
@@ -789,6 +825,67 @@ void main() {
     expect(find.text('Done · target not met yet'), findsNothing);
     expect(find.text('Ages out tonight'), findsNothing);
     expect(find.text('Today'), findsNothing);
+  });
+
+  testWidgets('a raised text scale gives the metric bars full weekday '
+      'captions on a pitch widened to hold them', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        MediaQuery(
+          data: const MediaQueryData(textScaler: TextScaler.linear(1.01)),
+          child: SingleChildScrollView(
+            child: GoalProgressCard(
+              progress: GoalProgressView(
+                today: today,
+                metric: GoalMetricProgressView(
+                  name: 'Daily steps',
+                  target: 8000,
+                  days: [
+                    for (var index = 0; index < 7; index++)
+                      day(6 - index, 9000),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    // Wide enough for "Tue", so the one-letter fallback is not used.
+    expect(find.text('Tue'), findsOneWidget);
+    expect(find.text('T'), findsNothing);
+  });
+
+  testWidgets('a today recorded as open, not merely empty, is still the '
+      'dashed open square', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            habits: [
+              GoalHabitProgressView(
+                habitId: 'walk',
+                name: 'Walk',
+                targetCount: 3,
+                days: [
+                  for (var offset = 6; offset >= 1; offset--) day(offset, 0),
+                  day(0, 0, type: HabitCompletionType.open),
+                ],
+                successfulWeeks: 0,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(ValueKey('goal-habit-day-visual-walk-${dayKey(0)}')),
+        matching: find.byType(DsDashedBorder),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('a point-sample health header quotes the latest reading, not '
@@ -2128,36 +2225,22 @@ void main() {
     expect(find.text('2× · calendar month'), findsNothing);
     expect(find.textContaining('· calendar month'), findsOneWidget);
     expect(find.textContaining('/ 6'), findsNothing);
-    // A month of days narrows its columns to fit rather than panning, so the
-    // first of the month is on screen with the last.
-    expect(
-      find.byWidgetPredicate(
-        (widget) =>
-            widget is SingleChildScrollView &&
-            widget.scrollDirection == Axis.horizontal,
-      ),
-      findsNothing,
-    );
+    // Every day of the month is on the track, first to last; the square
+    // never shrinks, so a month wider than the card pans, anchored on today.
     expect(
       find.byKey(const ValueKey('goal-habit-day-walk-2026-08-01')),
       findsOneWidget,
     );
-
-    const todayKey = ValueKey('goal-habit-day-walk-2026-08-11');
     const finalDayKey = ValueKey('goal-habit-day-walk-2026-08-31');
+    // Only today's open square is dashed; the month's remaining days are
+    // plain empty squares, not "not yet".
+    expect(find.byType(DsDashedBorder), findsOneWidget);
     expect(
       find.descendant(
-        of: find.byKey(todayKey),
+        of: find.byKey(const ValueKey('goal-habit-day-walk-2026-08-11')),
         matching: find.byType(DsDashedBorder),
       ),
       findsOneWidget,
-    );
-    expect(
-      find.descendant(
-        of: find.byKey(finalDayKey),
-        matching: find.byType(DsDashedBorder),
-      ),
-      findsNothing,
     );
     await tester.ensureVisible(find.byKey(finalDayKey));
     await tester.tap(find.byKey(finalDayKey));
@@ -2270,7 +2353,7 @@ void main() {
       tester
           .getSize(find.byKey(const ValueKey('goal-metric-bar-2026-08-11')))
           .width,
-      ControlSizes.iconChipCompact,
+      kDaySquareSize,
     );
   });
 
@@ -2558,12 +2641,10 @@ void main() {
       (cell.decoration! as BoxDecoration).color,
       tokens.colors.background.level03,
     );
+    // Nothing is drawn inside the square; the skip is said, not shown.
     expect(
-      find.descendant(
-        of: find.byType(DayTrack),
-        matching: find.byIcon(LottiIcons.remove),
-      ),
-      findsOneWidget,
+      find.descendant(of: find.byType(DayTrack), matching: find.byType(Icon)),
+      findsNothing,
     );
     expect(
       find.bySemanticsLabel('Aug 11, 2026: Skip'),
@@ -2661,17 +2742,15 @@ void main() {
     final fullCell = tester.widget<Container>(
       find.byKey(const ValueKey('goal-habit-day-visual-walk-2026-08-08')),
     );
-    // Day states wear the success family — the interactive teal is
-    // reserved for tappable controls.
+    // The handover's interactive square for a kept day, a wash of it for
+    // a day that was kept while the window target was still building.
     expect(
       (partialCell.decoration! as BoxDecoration).color,
-      tokens.colors.alert.success.defaultColor.withValues(
-        alpha: SurfaceAlphas.muted,
-      ),
+      tokens.colors.interactive.enabled.withValues(alpha: SurfaceAlphas.muted),
     );
     expect(
       (fullCell.decoration! as BoxDecoration).color,
-      tokens.colors.alert.success.defaultColor,
+      tokens.colors.interactive.enabled,
     );
   });
 
@@ -2755,8 +2834,8 @@ void main() {
   });
 
   testWidgets(
-    'weekday initials nest inside the day cells on the compact interactive '
-    'grid — no separate label row',
+    'the day squares sit on the shared pitch with no label row and nothing '
+    'inside them',
     (
       tester,
     ) async {
@@ -2784,12 +2863,12 @@ void main() {
         ),
       );
 
-      // The full-word label row above the squares is gone; the axis is the
-      // one-letter initial nested inside each cell.
+      // No full-word label row above the squares; a tappable square carries
+      // its weekday initial above it, inside its own slot.
       expect(find.text('Wed'), findsNothing);
       final letterFormat = DateFormat.EEEEE('en');
       final tokens = tester.element(find.byType(GoalProgressCard)).designTokens;
-      final expectedPitch = ControlSizes.iconChipCompact + tokens.spacing.step2;
+      final expectedPitch = kDaySquareSize + tokens.spacing.step2;
       double? previousCenter;
       for (var offset = 6; offset >= 0; offset--) {
         final date = today.subtract(Duration(days: offset));
@@ -2798,10 +2877,7 @@ void main() {
         final visualCell = find.byKey(
           ValueKey('goal-habit-day-visual-walk-$key'),
         );
-        expect(
-          tester.getSize(visualCell),
-          const Size.square(ControlSizes.iconChipCompact),
-        );
+        expect(tester.getSize(visualCell), const Size.square(kDaySquareSize));
         // The interactive slot fills the track pitch horizontally and
         // meets the design system's touch floor vertically.
         expect(
@@ -2812,12 +2888,17 @@ void main() {
           ),
         );
         expect(
+          find.descendant(of: visualCell, matching: find.byType(Text)),
+          findsNothing,
+          reason: '$key draws nothing inside its square',
+        );
+        expect(
           find.descendant(
-            of: visualCell,
+            of: cell,
             matching: find.text(letterFormat.format(date)),
           ),
           findsOneWidget,
-          reason: '$key carries its weekday initial inside the cell',
+          reason: '$key names its weekday above the square',
         );
         final center = tester.getCenter(cell).dx;
         if (previousCenter != null) {
@@ -2875,7 +2956,7 @@ void main() {
       );
 
       final tokens = tester.element(find.byType(GoalProgressCard)).designTokens;
-      final defaultPitch = ControlSizes.iconChipCompact + tokens.spacing.step2;
+      final defaultPitch = kDaySquareSize + tokens.spacing.step2;
       double? previousCellCenter;
       for (var offset = 6; offset >= 0; offset--) {
         final date = today
@@ -3049,7 +3130,7 @@ void main() {
       expect(
         tester.getSize(find.byKey(dayKey)),
         Size(
-          ControlSizes.iconChipCompact +
+          kDaySquareSize +
               tester
                   .element(find.byType(GoalProgressCard))
                   .designTokens
@@ -3226,19 +3307,9 @@ void main() {
         tester.widget<Container>(visual).decoration! as BoxDecoration;
     expect(decoration.color, dayVerdictFill(tokens, DayVerdict.improving));
     expect(
-      find.descendant(
-        of: visual,
-        matching: find.byIcon(dayVerdictGlyph(DayVerdict.improving)),
-      ),
-      findsOneWidget,
-    );
-    // The measured miss no longer shows its cross — the ruling replaced it.
-    expect(
-      find.descendant(
-        of: find.byType(DayTrack),
-        matching: find.byIcon(LottiIcons.close),
-      ),
-      findsNothing,
+      decoration.color,
+      isNot(dayMarkStateFill(tokens, DayMarkState.missed)),
+      reason: 'the ruling replaced the measured miss',
     );
     expect(
       find.bySemanticsLabel(RegExp('Aug 10, 2026: Improving')),
@@ -3247,9 +3318,10 @@ void main() {
     handle.dispose();
   });
 
-  testWidgets('a recorded miss is visibly distinct from an empty day', (
+  testWidgets('a recorded miss is told apart from an empty day', (
     tester,
   ) async {
+    final handle = tester.ensureSemantics();
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         GoalProgressCard(
@@ -3285,26 +3357,18 @@ void main() {
       find.byKey(const ValueKey('goal-day-missed-walk-2026-08-10')),
       findsOneWidget,
     );
+    // A recorded miss and an empty day share the neutral fill — the strip
+    // is a record of what was KEPT — so the difference is said: the missed
+    // day names its outcome in the semantics and the tooltip.
     expect(
-      find.descendant(
-        of: find.byType(DayTrack),
-        matching: find.byIcon(LottiIcons.close),
-      ),
+      find.bySemanticsLabel(RegExp('Aug 10, 2026: Missed')),
       findsOneWidget,
     );
-    // The missed cross OWNS the cell: at the compact size a corner letter
-    // collides with the glyph, so the letter yields and the neighbouring
-    // plain cells carry the axis.
     expect(
-      find.descendant(
-        of: find.byKey(
-          const ValueKey('goal-habit-day-visual-walk-2026-08-10'),
-        ),
-        matching: find.text('M'),
-      ),
-      findsNothing,
-      reason: 'the mark outranks the weekday initial in one small cell',
+      find.bySemanticsLabel(RegExp('Aug 9, 2026: No entry')),
+      findsOneWidget,
     );
+    handle.dispose();
   });
 
   testWidgets('a failed completion save clears the busy state and reports it', (

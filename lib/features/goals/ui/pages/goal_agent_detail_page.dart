@@ -116,7 +116,7 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
   }) {
     if (_rangePicked) return;
     final tokens = context.designTokens;
-    final pitch = dayTrackMetrics(context, dayCount: 1).pitch;
+    final pitch = dayTrackMetrics(context).pitch;
     final contentWidth =
         math.min(
           kUnifiedGoalsContentMaxWidth,

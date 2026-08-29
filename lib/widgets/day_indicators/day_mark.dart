@@ -5,9 +5,10 @@ import 'package:flutter/foundation.dart';
 /// [full] means the requirement held as of that day; [partial] means the user
 /// did everything within their control (the routine was kept) while a window
 /// target was still building — rendered as a lighter wash of the same success
-/// hue. [skipped] and [missed] are recorded outcomes a habit day can carry:
-/// deciding a day was missed and never looking at it are different facts, so
-/// [missed] is never the neutral grey of [none].
+/// hue. [skipped] and [missed] are recorded outcomes a habit day can carry.
+/// A strip records what was KEPT, so they share the neutral fill of [none];
+/// the label and tooltip say which of the three a neutral square stands for
+/// (see `dayMarkStateLabel`).
 enum DayMarkState { none, partial, full, skipped, missed }
 
 /// How a day turned out, in the user's own judgement.
@@ -26,7 +27,7 @@ enum DayVerdict { met, improving, mixed, missed }
 enum DayVerdictProvenance { ratedByUser, suggestedAndAccepted }
 
 /// One day on a day-indicator surface: the measured [state], the user's
-/// [verdict] where one was recorded, and whether the cell stands for today.
+/// [verdict] where one was recorded, and whether the day is still open.
 ///
 /// A recorded verdict outranks the measured state wherever both are shown. The
 /// measurement is evidence about a day; the reflection is the user's ruling on
@@ -50,7 +51,15 @@ class DayMark {
   final DayMarkState state;
   final DayVerdict? verdict;
   final DayVerdictProvenance? verdictProvenance;
+
+  /// Whether the mark stands for the current day. An empty today is drawn as
+  /// "not yet" — the dashed unresolved outline — rather than as the neutral
+  /// fill a past day nobody kept wears, so a streak that is alive does not
+  /// look broken at its last square.
   final bool isToday;
+
+  /// An empty current day: nothing recorded, nothing ruled, still open.
+  bool get pending => isToday && state == DayMarkState.none && verdict == null;
 
   /// Whether the day counts toward a "successful days" tally: a verdict of
   /// [DayVerdict.met] where one exists, otherwise any measured state that is

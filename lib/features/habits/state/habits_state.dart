@@ -7,6 +7,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/habits/model/habit_completion_record.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/charts/utils.dart';
+import 'package:lotti/widgets/day_indicators/day_mark.dart';
 
 part 'habits_state.freezed.dart';
 
@@ -240,6 +241,36 @@ List<String> getHabitDays(int timeSpanDays, {DateTime? now}) {
     rangeEnd: currentTime,
   )..sort();
   return days;
+}
+
+/// The last [count] of [HabitsState.days] as day marks for one habit — the
+/// dated history strip under a habit row, read straight off the per-day
+/// completion sets the page already holds. A day the habit was kept is
+/// `full`; a recorded skip or miss keeps its own state so the square can name
+/// it; a day with no record is `none`.
+List<DayMark> habitHistoryMarks(
+  HabitsState state,
+  String habitId, {
+  int count = DateTime.daysPerWeek,
+}) {
+  final days = state.days;
+  final start = max(0, days.length - count);
+  // The state's span ends on the day it was built for, which is today.
+  final today = days.isEmpty ? null : days.last;
+  return [
+    for (final ymd in days.sublist(start))
+      DayMark(
+        day: DateTime.parse(ymd),
+        isToday: ymd == today,
+        state: state.successfulByDay[ymd]?.contains(habitId) ?? false
+            ? DayMarkState.full
+            : state.skippedByDay[ymd]?.contains(habitId) ?? false
+            ? DayMarkState.skipped
+            : state.failedByDay[ymd]?.contains(habitId) ?? false
+            ? DayMarkState.missed
+            : DayMarkState.none,
+      ),
+  ];
 }
 
 extension HabitsStateAutoCompletion on HabitsState {

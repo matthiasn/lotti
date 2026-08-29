@@ -118,10 +118,10 @@ only pan when even the narrowest column overflows, so a fortnight no longer
 opens with its first days cut off the left edge. A leading gutter is reserved
 only where a value axis is actually drawn.
 A completed day whose window target was not yet met renders as a lighter
-partial-success wash with a full-strength inner dot (day states wear the
-success family; the interactive teal stays tap-only), each square carries its
-concrete date in tooltip and outcome-menu header, and a blank habit day with
-a name-matching data observation recorded today offers a one-tap check-off.
+wash of the kept fill; nothing is drawn inside a square. Each tappable square
+carries its weekday initial above it and its concrete date in tooltip and
+outcome-menu header, and a blank habit day with a name-matching data
+observation recorded today offers a one-tap check-off.
 On the detail page the banner CTA opens a one-tap logging sheet
 (`GoalLogTodaySheet`) instead of navigating to the page it is on.
 On phones a goal's own pages — detail, chat, and the create and edit wizards —

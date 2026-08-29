@@ -2,7 +2,6 @@ import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/goals/state/goal_habit_watchers.dart';
 import 'package:lotti/features/habits/state/habit_completion_controller.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_action_row.dart';
 import 'package:lotti/get_it.dart';
@@ -10,7 +9,6 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/charts/habits/dashboard_habits_data.dart';
 import 'package:lotti/widgets/day_indicators/day_mark.dart';
-import 'package:lotti/widgets/day_indicators/day_mark_strip.dart';
 
 /// A habit row that carries its own per-day completion history strip — used by
 /// the dashboard habit chart, where seeing the chain over the dashboard's range
@@ -18,9 +16,9 @@ import 'package:lotti/widgets/day_indicators/day_mark_strip.dart';
 ///
 /// Wraps the shared [HabitActionRow] (swipe + quick-complete + dialog), adding
 /// the range-keyed [habitCompletionControllerProvider] watch that feeds the
-/// [_HistoryStrip] and derives the done-state from the latest in-range result.
-/// The habits tab does NOT use this card — it renders [HabitActionRow] directly
-/// (history lives in the consistency heatmap).
+/// row's history squares and derives the done-state from the latest in-range
+/// result. The habits tab does NOT use this card — it renders [HabitActionRow]
+/// directly with the week read off `HabitsState`.
 class HabitCompletionCard extends ConsumerStatefulWidget {
   const HabitCompletionCard({
     required this.habitId,
@@ -90,57 +88,47 @@ class _HabitCompletionCardState extends ConsumerState<HabitCompletionCard> {
           HabitCompletionType.skip,
         }.contains(results.last.completionType);
 
-    // A day the user judged in a watching goal's reflection wears that
-    // verdict here too: the strip shows the user's ruling, not only the
-    // measurement. Empty until the goals resolve, and empty for a habit no
-    // goal watches — the strip is complete either way.
-    final verdicts =
-        ref.watch(habitDayVerdictsProvider(habitDefinition.id)).value ??
-        const <DateTime, DayVerdict>{};
-
     return HabitActionRow(
       habitId: habitDefinition.id,
       completedToday: completedToday,
-      history: _HistoryStrip(results: results, verdictsByDay: verdicts),
+      currentStreak: _currentStreak(results),
+      history: _historyMarks(results),
     );
   }
 }
 
-/// The per-day completion history strip — a compact "don't break the chain"
-/// calendar drawn with the shared day-indicator cells, so a habit's chain here
-/// wears exactly the language a goal's habit dimension does: the success fill,
-/// the skip dash and missed cross as non-color cues, the dashed ring on today.
-///
-/// The strip is read-only: it's a glanceable record, not a control. Tapping
-/// anywhere on the row (or the complete button) opens the dialog, where any
-/// past day can be backfilled via the date field — so the strip needs no tiny,
-/// swipe-conflicting per-cell tap targets. A range longer than the width can
-/// hold pans, anchored on today, like every other day track.
-class _HistoryStrip extends StatelessWidget {
-  const _HistoryStrip({required this.results, this.verdictsByDay = const {}});
+/// The dashboard range as day marks, oldest first, for the row's history
+/// strip. The strip is read-only: tapping anywhere on the row (or the complete
+/// button) opens the dialog, where any past day can be backfilled via the date
+/// field, so the squares need no tiny, swipe-conflicting tap targets.
+List<DayMark> _historyMarks(List<HabitResult> results) {
+  final today = clock.now().ymd;
+  return [
+    for (final result in results)
+      DayMark(
+        day: DateTime.parse(result.dayString),
+        state: habitCompletionDayMarkState(result.completionType),
+        isToday: result.dayString == today,
+      ),
+  ];
+}
 
-  final List<HabitResult> results;
-
-  /// The user's verdicts on this habit's days, keyed by UTC day.
-  final Map<DateTime, DayVerdict> verdictsByDay;
-
-  @override
-  Widget build(BuildContext context) {
-    final today = clock.now().ymd;
-    return DayMarkStrip(
-      marks: [
-        for (final result in results)
-          if (DateTime.parse(result.dayString) case final day)
-            DayMark(
-              day: day,
-              state: habitCompletionDayMarkState(result.completionType),
-              verdict:
-                  verdictsByDay[DateTime.utc(day.year, day.month, day.day)],
-              isToday: result.dayString == today,
-            ),
-      ],
-    );
+/// The current unbroken run of kept days at the end of [results]: today
+/// still open does not break it, any other non-success day does.
+int _currentStreak(List<HabitResult> results) {
+  var streak = 0;
+  var index = results.length - 1;
+  if (index >= 0 &&
+      results[index].completionType == HabitCompletionType.open &&
+      results[index].dayString == clock.now().ymd) {
+    index--;
   }
+  while (index >= 0 &&
+      results[index].completionType == HabitCompletionType.success) {
+    streak++;
+    index--;
+  }
+  return streak;
 }
 
 /// The shared day-mark state a recorded habit outcome renders as.

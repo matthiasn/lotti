@@ -17,7 +17,6 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/components/callouts/design_system_inline_callout.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
-import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
 import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/components/tooltips/ds_tooltip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -31,6 +30,7 @@ import 'package:lotti/features/goals/ui/goal_day_marks.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:lotti/widgets/day_indicators/day_mark.dart';
+import 'package:lotti/widgets/day_indicators/day_mark_cell.dart';
 import 'package:lotti/widgets/day_indicators/day_mark_strip.dart';
 import 'package:lotti/widgets/day_indicators/day_mark_styles.dart';
 import 'package:lotti/widgets/day_indicators/day_track.dart';
@@ -314,8 +314,10 @@ class GoalThisWeekCard extends StatelessWidget {
           ),
           // step1: the date line labels the strip directly beneath it, the
           // same pairing the habit cards use. A step3 gap made it read as
-          // floating between the strip and the title row above.
-          SizedBox(height: tokens.spacing.step1),
+          // floating between the strip and the title row above. A tappable
+          // strip brings its own air: its touch-floor slot is taller than
+          // the squares it centres.
+          if (onReflectDay == null) SizedBox(height: tokens.spacing.step1),
           // On the card's own rail. It used to be inset by a chart's y-axis
           // gutter so it would line up with plots on other cards — but this
           // card draws no plot, so the gutter was 52px of nothing between the
@@ -1345,7 +1347,7 @@ class _WeekdayTrack extends StatelessWidget {
               'goal-habit-weekday-$trackId-'
               '${day.day.toIso8601String().substring(0, 10)}',
             ),
-            width: metrics.cellSize,
+            width: kDaySquareSize,
             child: OverflowBox(
               maxWidth: double.infinity,
               child: Text(
@@ -1476,8 +1478,6 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
     final noteStyle = tokens.typography.styles.others.caption.copyWith(
       color: tokens.colors.text.mediumEmphasis,
     );
-    // Weekday initials live INSIDE the squares (see [dayCellLetter]);
-    // the separate label row above the track is gone.
     final letterFormat = DateFormat.EEEEE(
       Localizations.localeOf(context).toLanguageTag(),
     );
@@ -1487,7 +1487,7 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
       // slot meets TapTargets.minimum vertically; read-only rows keep the
       // compact height.
       final trackHeight = widget.onOutcomeSelected == null
-          ? metrics.cellSize
+          ? kDaySquareSize
           : TapTargets.minimum;
       return DayTrack(
         height: trackHeight,
@@ -1497,21 +1497,22 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
             _ProgressDayCell(
               day: activeDays[index],
               habitId: habit.habitId,
-              size: metrics.cellSize,
+              today: DateUtils.isSameDay(
+                activeDays[index].day,
+                widget.today,
+              ),
+              weekdayLetter: widget.onOutcomeSelected == null
+                  ? null
+                  : letterFormat.format(activeDays[index].day),
               verdict:
                   widget.verdictsByDay[DateTime.utc(
                     activeDays[index].day.year,
                     activeDays[index].day.month,
                     activeDays[index].day.day,
                   )],
-              weekdayLetter: letterFormat.format(activeDays[index].day),
-              today: DateUtils.isSameDay(
-                activeDays[index].day,
-                widget.today,
-              ),
-              // The ring marks the WINDOW's first day — with the page's
-              // shared span rendering extra history, the list head can be a
-              // blank day weeks before the window.
+              // The WINDOW's first day — with the page's shared span
+              // rendering extra history, the list head can be a blank day
+              // weeks before the window.
               agingOut:
                   index == _windowStartIndex(habit, activeDays) &&
                   habit.oldestSuccessAgesOutTonight,
@@ -1528,19 +1529,12 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
       );
     }
 
-    // Just the squares: their weekday initials ride inside the cells.
+    // The squares alone; the date axis is the tooltip on each of them.
     Widget track(DayTrackMetrics metrics) => cells(metrics);
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        // The track is sized to the width it actually has, so a fortnight of
-        // days fits the card instead of opening scrolled past its own first
-        // day.
-        final metrics = dayTrackMetrics(
-          context,
-          dayCount: activeDays.length,
-          availableWidth: constraints.maxWidth,
-        );
+        final metrics = dayTrackMetrics(context);
         final contentWidth = metrics.pitch * activeDays.length;
         final periodLine = _periodLabel(context, activeDays);
         // The deficit note shares the period line whenever everything on it
@@ -1630,8 +1624,11 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
                   ),
                   // step1, not step2: the window line LABELS the squares, so
                   // it has to read as attached to them rather than floating
-                  // midway between them and the header block above.
-                  SizedBox(height: tokens.spacing.step1),
+                  // midway between them and the header block above. A
+                  // tappable track brings its own air: its touch-floor slot
+                  // is taller than the square it centres.
+                  if (widget.onOutcomeSelected == null)
+                    SizedBox(height: tokens.spacing.step1),
                   // Labels and squares pan as one unit, and only where even
                   // the narrowest column overflows.
                   fitOrScrollDayTrack(
@@ -1692,12 +1689,11 @@ class _ProgressDayCell extends StatelessWidget {
   const _ProgressDayCell({
     required this.day,
     required this.habitId,
-    required this.today,
     required this.agingOut,
     required this.saving,
     required this.enabled,
     required this.onOutcomeSelected,
-    this.size = ControlSizes.iconChipCompact,
+    required this.today,
     this.weekdayLetter,
     this.verdict,
   });
@@ -1705,20 +1701,20 @@ class _ProgressDayCell extends StatelessWidget {
   final GoalProgressDay day;
   final String habitId;
 
-  /// The user's verdict on this habit for this day, when they recorded one
-  /// in the reflection sheet. It decides the fill and the glyph; the measured
-  /// outcome is only what the app observed.
-  final DayVerdict? verdict;
+  /// Whether this is the current day. Empty and unjudged, it draws as the
+  /// dashed unresolved outline rather than a past day's neutral fill.
+  final bool today;
 
-  /// One-letter weekday initial nested in the square — the day axis, now
-  /// that the label row above the track is gone. Outranked by the stronger
-  /// marks (missed cross, skipped dash, partial dot).
+  /// The weekday initial drawn above a tappable square, inside its slot.
   final String? weekdayLetter;
 
-  /// Edge of the square. Shrinks with the track's column pitch so a long span
-  /// fits the card instead of scrolling past its own first day.
-  final double size;
-  final bool today;
+  /// The user's verdict on this habit for this day, when they recorded one
+  /// in the reflection sheet. It decides the fill; the measured outcome is
+  /// only what the app observed.
+  final DayVerdict? verdict;
+
+  /// Whether this is the window's oldest kept day and it ages out tonight.
+  /// Said in the tooltip and the semantics, not drawn on the square.
   final bool agingOut;
   final bool saving;
   final bool enabled;
@@ -1727,114 +1723,49 @@ class _ProgressDayCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final hit = day.hasValue;
     final completionType = day.habitCompletionType;
     final missed = completionType == HabitCompletionType.fail;
     // A completed day is a partial success (lighter wash) while the habit's
     // own window target was not yet met as of that day; a null verdict from
     // older projections keeps the established full-strength rendering.
     final dayState = goalProgressDayMarkState(day);
-    // The square's own edge; the interactive slot around it is larger.
-    final visualDimension = size;
-    final glyphSize = math.min(IconSizes.xs, visualDimension * 0.6);
-    // Ages-out is a quiet outline, not the page's alarm hue: an on-track
-    // habit must never wear warning orange. Today-and-done rings in the
-    // success family — the cell is data, not a control.
-    final border = agingOut
-        ? Border.all(
-            color: tokens.colors.text.lowEmphasis,
-            width: BorderWidths.emphasis,
-          )
-        : today && hit
-        ? Border.all(
-            color: tokens.colors.alert.success.defaultColor,
-            width: BorderWidths.emphasis,
-          )
-        : null;
-    // The glyph scales with the square it sits in, so a squeezed column
-    // does not paint a 12px cross onto a 14px cell.
-    // A recorded verdict outranks the measured outcome for fill and glyph,
-    // exactly as on the whole-goal strip: the measurement is evidence, the
+    // A recorded verdict outranks the measured outcome for the fill, exactly
+    // as on the whole-goal strip: the measurement is evidence, the
     // reflection is the user's ruling on the day.
     final verdict = this.verdict;
-    final stateGlyph = verdict == null ? dayMarkStateGlyph(dayState) : null;
-    final Widget? centerMark = verdict != null
-        ? Center(
-            child: Icon(
-              dayVerdictGlyph(verdict),
-              size: glyphSize,
-              color: dayVerdictInk(tokens, verdict),
-            ),
+    final dayKey = day.day.toIso8601String().substring(0, 10);
+    final pending =
+        today &&
+        verdict == null &&
+        dayState == DayMarkState.none &&
+        (completionType == null || completionType == HabitCompletionType.open);
+    Widget cell = pending
+        ? PlaceholderDayCell(
+            key: ValueKey('goal-habit-day-visual-$habitId-$dayKey'),
           )
-        : stateGlyph != null
-        ? Center(
-            child: Icon(
-              stateGlyph,
-              size: glyphSize,
-              color: dayMarkStateGlyphInk(tokens, dayState),
+        : Container(
+            key: ValueKey('goal-habit-day-visual-$habitId-$dayKey'),
+            width: kDaySquareSize,
+            height: kDaySquareSize,
+            decoration: BoxDecoration(
+              color: verdict == null
+                  ? dayMarkStateFill(tokens, dayState)
+                  : dayVerdictFill(tokens, verdict),
+              borderRadius: BorderRadius.circular(tokens.radii.xs),
             ),
-          )
-        : dayState == DayMarkState.partial
-        ? Center(child: partialDayDot(tokens, tokens.spacing.step2))
-        : null;
-    // The corner weekday tag renders only when the center is empty: at the
-    // compact cell size a cross, dash or dot and a corner letter collide,
-    // and the mark is the rarer, more meaningful of the two — neighbouring
-    // plain cells keep carrying the axis.
-    final letterTag = centerMark != null
-        ? null
-        : dayCellLetter(
-            tokens,
-            letter: weekdayLetter,
-            cellSize: visualDimension,
-            filled: verdict != null || dayState == DayMarkState.full,
           );
-    Widget cell = Container(
-      key: ValueKey(
-        'goal-habit-day-visual-$habitId-'
-        '${day.day.toIso8601String().substring(0, 10)}',
-      ),
-      width: visualDimension,
-      height: visualDimension,
-      decoration: BoxDecoration(
-        color: verdict == null
-            ? dayMarkStateFill(tokens, dayState)
-            : dayVerdictFill(tokens, verdict),
-        borderRadius: BorderRadius.circular(dayCellRadius(tokens)),
-        border: border,
-      ),
-      child: centerMark == null && letterTag == null
-          ? null
-          : Stack(
-              children: [?centerMark, ?letterTag],
-            ),
-    );
     if (dayState == DayMarkState.partial) {
       cell = KeyedSubtree(
-        key: ValueKey(
-          'goal-day-partial-$habitId-'
-          '${day.day.toIso8601String().substring(0, 10)}',
-        ),
+        key: ValueKey('goal-day-partial-$habitId-$dayKey'),
         child: cell,
       );
     }
     if (missed) {
       cell = KeyedSubtree(
-        key: ValueKey(
-          'goal-day-missed-$habitId-'
-          '${day.day.toIso8601String().substring(0, 10)}',
-        ),
+        key: ValueKey('goal-day-missed-$habitId-$dayKey'),
         child: cell,
       );
     }
-    final decoratedCell = !today || hit
-        ? cell
-        : DsDashedBorder(
-            color: todayRingInk(tokens),
-            strokeWidth: BorderWidths.emphasis,
-            radius: dayCellRadius(tokens),
-            child: cell,
-          );
     final locale = Localizations.localeOf(context).toLanguageTag();
     final date = DateFormat.yMMMd(locale).format(day.day);
     final menuDate = DateFormat.MMMEd(locale).format(day.day);
@@ -1847,10 +1778,15 @@ class _ProgressDayCell extends StatelessWidget {
       null => context.messages.goalProgressHabitDayNoEntry,
     };
     // Spoken and hovered as the verdict where one stands, the measurement
-    // otherwise — the cell must say what it shows.
-    final outcome = verdict == null
+    // otherwise — the cell must say what it shows. The ages-out fact rides
+    // along: the square has no room to draw it.
+    final ruling = verdict == null
         ? measured
         : dayVerdictLabel(context, verdict);
+    final outcome = [
+      ruling,
+      if (agingOut) context.messages.goalProgressAgesOut,
+    ].join(' · ');
     final semanticLabel = context.messages.goalProgressHabitDaySemantics(
       date,
       outcome,
@@ -1864,7 +1800,7 @@ class _ProgressDayCell extends StatelessWidget {
           title: menuDate,
           message: outcome,
           preferBelow: false,
-          child: decoratedCell,
+          child: cell,
         ),
       );
     }
@@ -1873,35 +1809,32 @@ class _ProgressDayCell extends StatelessWidget {
       button: true,
       enabled: enabled && !saving,
       excludeSemantics: true,
-      // The visual stays at the compact chip size; the hit slot meets the
-      // design system's touch floor vertically and fills the track pitch
-      // horizontally — invisible ergonomics, unchanged rhythm.
+      // The square stays small; the hit slot meets the design system's touch
+      // floor vertically and fills the track pitch horizontally — invisible
+      // ergonomics, unchanged rhythm.
       child: SizedBox.expand(
-        key: ValueKey(
-          'goal-habit-day-$habitId-'
-          '${day.day.toIso8601String().substring(0, 10)}',
-        ),
+        key: ValueKey('goal-habit-day-$habitId-$dayKey'),
         child: _HabitDayOutcomeMenu(
           enabled: enabled && !saving,
           currentOutcome: completionType,
-          headerKey: ValueKey(
-            'goal-habit-day-date-$habitId-'
-            '${day.day.toIso8601String().substring(0, 10)}',
-          ),
+          headerKey: ValueKey('goal-habit-day-date-$habitId-$dayKey'),
           menuDate: menuDate,
           outcomeLabel: outcome,
           semanticLabel: semanticLabel,
           onSelected: callback,
           child: Center(
-            child: saving
-                ? SizedBox.square(
-                    dimension: visualDimension,
-                    child: Padding(
-                      padding: EdgeInsets.all(tokens.spacing.step2),
-                      child: const CircularProgressIndicator(),
-                    ),
-                  )
-                : decoratedCell,
+            child: dayCellWithCaption(
+              tokens,
+              saving
+                  ? const SizedBox.square(
+                      dimension: kDaySquareSize,
+                      child: CircularProgressIndicator(
+                        strokeWidth: BorderWidths.emphasis,
+                      ),
+                    )
+                  : cell,
+              weekdayLetter,
+            ),
           ),
         ),
       ),
@@ -2282,11 +2215,7 @@ class _MetricProgressSeries extends StatelessWidget {
           constraints.maxWidth - kChartLeftAxisWidth,
           0,
         );
-        final metrics = dayTrackMetrics(
-          context,
-          dayCount: metric.days.length,
-          availableWidth: plotWidth,
-        );
+        final metrics = dayTrackMetrics(context);
         final contentWidth = metrics.pitch * metric.days.length;
         final track = _track(context, axis.max, metrics);
         return Column(
@@ -2419,7 +2348,7 @@ class _MetricProgressSeries extends StatelessWidget {
           // whose Stack expands against its parent, so it needs bounded
           // dimensions or every bar collapses to zero — an invisible chart.
           SizedBox(
-            width: metrics.cellSize,
+            width: kDaySquareSize,
             height: height,
             child: _bar(context, day, maxValue, chrome),
           ),
@@ -2686,9 +2615,7 @@ class _CategoryBandSeries extends StatelessWidget {
                           color: _startsInBand(session.dateFrom, range)
                               ? tokens.colors.alert.warning.defaultColor
                               : tokens.colors.interactive.enabled,
-                          borderRadius: BorderRadius.circular(
-                            dayCellRadius(tokens),
-                          ),
+                          borderRadius: BorderRadius.circular(tokens.radii.xs),
                         ),
                       ),
                     ),

@@ -15,59 +15,115 @@ import '../../widget_test_utils.dart';
 
 void main() {
   final today = DateTime.utc(2026, 8, 11);
+  const week = [
+    DayMarkState.full,
+    DayMarkState.none,
+    DayMarkState.partial,
+    DayMarkState.none,
+    DayMarkState.none,
+    DayMarkState.full,
+    DayMarkState.none,
+  ];
 
-  testWidgets('compact strip reports the number of successful days once in '
-      'semantics', (tester) async {
+  String cell(int daysBack, String outcome) =>
+      '${DateFormat.MMMEd().format(today.subtract(Duration(days: daysBack)))}'
+      ': $outcome';
+
+  Finder squares() => find.descendant(
+    of: find.byType(DayMarkCell),
+    matching: find.byType(Container),
+  );
+
+  Color fillAt(WidgetTester tester, int index) =>
+      (tester.widget<Container>(squares().at(index)).decoration!
+              as BoxDecoration)
+          .color!;
+
+  testWidgets('a read-only strip reports the number of successful days once '
+      'in semantics and draws nothing but the squares', (tester) async {
     final handle = tester.ensureSemantics();
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
-        DayMarkStrip(
-          marks: goalDayMarks(
-            states: const [
-              DayMarkState.full,
-              DayMarkState.none,
-              DayMarkState.partial,
-              DayMarkState.none,
-              DayMarkState.none,
-              DayMarkState.full,
-              DayMarkState.none,
-            ],
-          ),
-        ),
+        DayMarkStrip(marks: goalDayMarks(states: week)),
       ),
     );
-
     expect(
       find.bySemanticsLabel(
         '3 successful days in the trailing seven-day window',
       ),
       findsOneWidget,
     );
+    expect(find.byType(DayMarkCell), findsNWidgets(7));
+    expect(find.byType(Icon), findsNothing);
+    expect(find.byType(Text), findsNothing);
+    // The last mark is today and it is empty: "not yet", the dashed
+    // unresolved outline, never a past day's grey.
+    expect(find.byType(DsDashedBorder), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(DayMarkCell).last,
+        matching: find.byType(DsDashedBorder),
+      ),
+      findsOneWidget,
+    );
     handle.dispose();
   });
 
-  testWidgets('compact strip outlines the last cell as today when short', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      makeTestableWidgetNoScroll(
-        DayMarkStrip(
-          marks: goalDayMarks(
-            states: const [
-              DayMarkState.none,
-              DayMarkState.full,
-              DayMarkState.none,
+  testWidgets('today is dashed only while it is still open', (tester) async {
+    for (final (state, verdict, dashed) in [
+      (DayMarkState.none, null, true),
+      (DayMarkState.full, null, false),
+      (DayMarkState.skipped, null, false),
+      (DayMarkState.none, DayVerdict.missed, false),
+    ]) {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          DayMarkStrip(
+            marks: [
+              DayMark(
+                day: today,
+                state: state,
+                verdict: verdict,
+                isToday: true,
+              ),
             ],
           ),
         ),
-      ),
-    );
-
-    expect(find.byType(DsDashedBorder), findsOneWidget);
+      );
+      expect(
+        find.byType(DsDashedBorder),
+        dashed ? findsOneWidget : findsNothing,
+        reason: '$state / $verdict',
+      );
+    }
   });
 
-  testWidgets('a read-only strip announces its verdicts and marks non-met '
-      'days with a shape', (tester) async {
+  testWidgets('the squares sit on the shared column pitch with one step of '
+      'air between them', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Align(
+          alignment: Alignment.topLeft,
+          child: DayMarkStrip(marks: goalDayMarks(states: week)),
+        ),
+      ),
+    );
+    final tokens = tester.element(find.byType(DayMarkStrip)).designTokens;
+    final pitch = kDaySquareSize + tokens.spacing.step2;
+    for (var index = 0; index < 7; index++) {
+      final rect = tester.getRect(find.byType(DayMarkCell).at(index));
+      expect(rect.size, const Size.square(kDaySquareSize), reason: '$index');
+      expect(rect.center.dx, pitch * index + pitch / 2, reason: '$index');
+    }
+    expect(
+      tester.getSize(find.byType(DayTrack)),
+      Size(pitch * 7, kDaySquareSize),
+    );
+  });
+
+  testWidgets('a read-only strip announces its verdicts in the summary', (
+    tester,
+  ) async {
     final handle = tester.ensureSemantics();
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
@@ -83,26 +139,22 @@ void main() {
         ),
       ),
     );
-
     // A read-only strip publishes one summary rather than seven nodes, so the
     // verdicts have to reach it there — otherwise the list announced a
     // measured day count while showing four verdict hues.
-    final label = tester.getSemantics(find.byType(DayMarkStrip)).label;
-    expect(label, contains('Met'));
-    expect(label, contains('Missed'));
-
-    // Each verdict keeps its OWN shape even on the list's 12px cells.
-    // Collapsing the three non-met verdicts into one dot left Improving,
-    // Mixed and Missed separable by hue alone, which is the single thing the
-    // shapes exist to prevent.
-    expect(
-      find.byIcon(dayVerdictGlyph(DayVerdict.met)),
-      findsOneWidget,
-    );
-    expect(
-      find.byIcon(dayVerdictGlyph(DayVerdict.missed)),
-      findsOneWidget,
-    );
+    final label = tester
+        .getSemantics(
+          find
+              .descendant(
+                of: find.byType(DayMarkStrip),
+                matching: find.byType(Semantics),
+              )
+              .first,
+        )
+        .label;
+    expect(label, startsWith('1 successful day'));
+    expect(label, contains(cell(2, 'Met')));
+    expect(label, contains(cell(1, 'Missed')));
     handle.dispose();
   });
 
@@ -113,56 +165,42 @@ void main() {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         DayMarkStrip(
-          marks: goalDayMarks(
-            states: const [
-              DayMarkState.full,
-              DayMarkState.none,
-              DayMarkState.partial,
-              DayMarkState.none,
-              DayMarkState.none,
-              DayMarkState.full,
-              DayMarkState.none,
-            ],
-            lastDay: today,
-          ),
+          marks: goalDayMarks(states: week, lastDay: today),
           onDaySelected: tapped.add,
         ),
       ),
     );
-
     // The oldest cell is six days back and the last one is today. Tapping a
     // *past* day is the point: before this, the only way to reflect on a day
-    // was the "Reflect on today" row, so a day could never be closed off
-    // once it had passed.
-    String cell(int daysBack, String outcome) =>
-        '${DateFormat.MMMEd().format(today.subtract(Duration(days: daysBack)))}'
-        ': $outcome';
-
+    // was the "Reflect on today" row.
     await tester.tap(find.bySemanticsLabel(cell(6, 'done · target met')));
     await tester.tap(find.bySemanticsLabel(cell(0, 'No entry')));
-
     expect(tapped, [today.subtract(const Duration(days: 6)), today]);
-
-    // Colour and an inner dot are the only visual difference between these
-    // cells, and neither reaches a screen reader. Each day names its own
-    // state; the strip's summary only gives a count and cannot say which
-    // days went well.
+    // Colour is the only visual difference between these cells, and it does
+    // not reach a screen reader. Each day names its own state.
     expect(
       find.bySemanticsLabel(cell(4, 'done · target not met yet')),
       findsOneWidget,
     );
+    // An action says which day it acts on: a weekday initial rides above
+    // every tappable square, inside its slot.
+    for (var daysBack = 6; daysBack >= 0; daysBack--) {
+      final letter = DateFormat.EEEEE().format(
+        today.subtract(Duration(days: daysBack)),
+      );
+      expect(find.text(letter), findsWidgets, reason: letter);
+    }
+    expect(find.byType(Text), findsNWidgets(7));
     handle.dispose();
   });
 
   testWidgets('a recorded verdict outranks the measured state, and each '
       'verdict has its own colour', (tester) async {
-    final handle = tester.ensureSemantics();
-    final week = List.filled(7, DayMarkState.none);
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         DayMarkStrip(
           marks: goalDayMarks(
-            states: week,
+            states: List.filled(7, DayMarkState.none),
             lastDay: today,
             verdictsByDay: {
               today.subtract(const Duration(days: 3)): DayVerdict.met,
@@ -175,107 +213,30 @@ void main() {
         ),
       ),
     );
-
     final tokens = tester.element(find.byType(DayMarkStrip)).designTokens;
-    final cells = find.descendant(
-      of: find.byType(DayMarkStrip),
-      matching: find.byType(Container),
-    );
-    Color fillAt(int index) =>
-        (tester.widget<Container>(cells.at(index)).decoration! as BoxDecoration)
-            .color!;
-
-    // Every measured day here is `none` — grey. The user's own verdict is what
-    // decides the colour, because the measurement is evidence about a day and
-    // the reflection is their ruling on it.
-    expect(fillAt(0), dayMarkStateFill(tokens, DayMarkState.none));
-    expect(
-      fillAt(3),
-      dayVerdictFill(tokens, DayVerdict.met),
-    );
-    expect(
-      fillAt(4),
-      dayVerdictFill(tokens, DayVerdict.improving),
-    );
-    expect(
-      fillAt(5),
-      dayVerdictFill(tokens, DayVerdict.mixed),
-    );
-    expect(
-      fillAt(6),
-      dayVerdictFill(tokens, DayVerdict.missed),
-    );
-
-    // The verdict is what a screen reader hears too, not just what the eye
-    // sees — the colour is the only visual difference between these cells.
-    expect(
-      find.bySemanticsLabel(
-        '${DateFormat.MMMEd().format(
-          today.subtract(const Duration(days: 2)),
-        )}: Improving',
-      ),
-      findsOneWidget,
-    );
-
-    // Colour alone is not enough: four fills that differ only by hue are four
-    // fills a red-green deficiency cannot separate, and reading the week at a
-    // glance is the strip's entire job. Each verdict wears a shape too.
-    for (final rating in DayVerdict.values) {
-      expect(
-        find.byIcon(dayVerdictGlyph(rating)),
-        findsOneWidget,
-        reason: '${rating.name} has no shape of its own',
-      );
-      // Two inks per verdict, for two backgrounds. On its own saturated fill
-      // the glyph takes the on-alert ink; on a plain card — the reflect row —
-      // it takes its family's ink, because the on-alert ink is near-invisible
-      // there by design.
-      expect(
-        dayVerdictSurfaceInk(tokens, rating),
-        isNot(dayVerdictInk(tokens, rating)),
-        reason: '${rating.name} uses one ink for both surfaces',
-      );
-    }
-    expect(
-      {
-        for (final rating in DayVerdict.values) dayVerdictGlyph(rating),
-      },
-      hasLength(DayVerdict.values.length),
-      reason: 'two verdicts share a glyph',
-    );
-
+    expect(fillAt(tester, 0), dayMarkStateFill(tokens, DayMarkState.none));
+    expect(fillAt(tester, 3), dayVerdictFill(tokens, DayVerdict.met));
+    expect(fillAt(tester, 4), dayVerdictFill(tokens, DayVerdict.improving));
+    expect(fillAt(tester, 5), dayVerdictFill(tokens, DayVerdict.mixed));
+    expect(fillAt(tester, 6), dayVerdictFill(tokens, DayVerdict.missed));
     // All four are distinguishable, and none of them is the grey of a day
-    // nobody looked at — "I decided this was missed" and "no data" are
-    // different facts and the strip has to be able to say which.
-    final verdicts = {fillAt(3), fillAt(4), fillAt(5), fillAt(6)};
+    // nobody looked at.
+    final verdicts = {for (var i = 3; i < 7; i++) fillAt(tester, i)};
     expect(verdicts, hasLength(4));
-    expect(
-      verdicts,
-      isNot(contains(dayMarkStateFill(tokens, DayMarkState.none))),
-    );
-    handle.dispose();
+    expect(verdicts, isNot(contains(fillAt(tester, 0))));
   });
 
-  testWidgets('a read-only strip hugs its cells while a tappable one spans '
-      'the measure', (tester) async {
-    const week = [
-      DayMarkState.full,
-      DayMarkState.none,
-      DayMarkState.partial,
-      DayMarkState.none,
-      DayMarkState.none,
-      DayMarkState.full,
-      DayMarkState.none,
-    ];
+  testWidgets('tapping does not change the pitch, only the slot height', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         SizedBox(
           width: 400,
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              DayMarkStrip(
-                marks: goalDayMarks(states: week),
-              ),
+              DayMarkStrip(marks: goalDayMarks(states: week)),
               DayMarkStrip(
                 marks: goalDayMarks(states: week, lastDay: today),
                 onDaySelected: (_) {},
@@ -285,29 +246,19 @@ void main() {
         ),
       ),
     );
-
-    final cells = find.descendant(
+    final tracks = tester.widgetList<DayTrack>(find.byType(DayTrack)).toList();
+    expect(tracks[0].pitch, tracks[1].pitch);
+    expect(tracks[0].height, kDaySquareSize);
+    expect(tracks[1].height, TapTargets.minimum);
+    final slots = find.descendant(
       of: find.byType(DayMarkStrip).at(1),
       matching: find.byType(InkWell),
     );
-    var covered = 0.0;
-    for (var index = 0; index < 7; index++) {
-      covered += tester.getSize(cells.at(index)).width;
-    }
-    // Both strips sit on the page's shared seven-column track now, so the
-    // week lines up with the habit squares and the metric bars rather than
-    // being a third grid. Tapping does not change the pitch: the cells are
-    // the same width either way, and the span is seven of them.
-    final readOnlyCells = find.descendant(
-      of: find.byType(DayMarkStrip).at(0),
-      matching: find.byType(Padding),
-    );
+    expect(tester.getSize(slots.first).width, tracks[1].pitch);
     expect(
-      tester.getSize(cells.at(0)).width,
-      moreOrLessEquals(covered / 7, epsilon: 1),
-      reason: 'the tappable cells do not sit on an even pitch',
+      tester.getSize(slots.first).height,
+      greaterThanOrEqualTo(TapTargets.minimum),
     );
-    expect(readOnlyCells, findsWidgets);
   });
 
   testWidgets('a placeholder strip keeps the silhouette without borrowing the '
@@ -315,80 +266,21 @@ void main() {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         DayMarkStrip(
-          marks: goalDayMarks(
-            states: const [
-              DayMarkState.none,
-              DayMarkState.none,
-              DayMarkState.none,
-            ],
-          ),
+          marks: goalDayMarks(states: List.filled(3, DayMarkState.none)),
           placeholder: true,
         ),
       ),
     );
-
-    // Dashed outlines, never the filled grey a genuinely-empty week wears:
-    // "no data yet" and "nothing happened" must not share an encoding.
     expect(find.byType(DsDashedBorder), findsNWidgets(3));
-    final outlined = tester.getSize(
-      find
-          .descendant(
-            of: find.byType(DsDashedBorder).first,
-            matching: find.byType(SizedBox),
-          )
-          .first,
+    expect(find.byType(DayMarkCell), findsNothing);
+    expect(
+      tester.getSize(find.byType(PlaceholderDayCell).first),
+      const Size.square(kDaySquareSize),
     );
-    expect(outlined.width, ControlSizes.iconChipCompact);
-    expect(outlined.height, ControlSizes.iconChipCompact);
   });
 
-  testWidgets('the partial-day dot scales with the square it marks', (
-    tester,
-  ) async {
-    // The square's size is derived from the width the track has to fit into,
-    // so a squeezed strip is how a small cell is produced.
-    Future<double> dotWidth({
-      required double width,
-      required int dayCount,
-    }) async {
-      await tester.pumpWidget(
-        makeTestableWidgetNoScroll(
-          Align(
-            alignment: Alignment.topLeft,
-            child: SizedBox(
-              width: width,
-              child: DayMarkStrip(
-                marks: goalDayMarks(
-                  states: List.filled(dayCount, DayMarkState.partial),
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-      // The dot is the innermost Container inside the cell.
-      return tester
-          .getSize(
-            find
-                .descendant(
-                  of: find.byType(DayMarkStrip),
-                  matching: find.byType(Container),
-                )
-                .last,
-          )
-          .width;
-    }
-
-    final compact = await dotWidth(width: 200, dayCount: 30);
-    final large = await dotWidth(width: 760, dayCount: 8);
-    // A dot fixed at the compact size vanishes inside the 28px square the
-    // detail page uses, and the partial state is the one that has no colour
-    // of its own to fall back on.
-    expect(large, greaterThan(compact));
-  });
-
-  testWidgets('a habit-outcome strip draws the skip dash and missed cross, '
-      'names each state, and counts only the kept days', (tester) async {
+  testWidgets('a habit-outcome strip names each state and counts only the '
+      'kept days', (tester) async {
     final handle = tester.ensureSemantics();
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
@@ -406,18 +298,12 @@ void main() {
               day: today.subtract(const Duration(days: 1)),
               state: DayMarkState.missed,
             ),
-            DayMark(day: today, state: DayMarkState.none, isToday: true),
+            DayMark(day: today, state: DayMarkState.none),
           ],
           onDaySelected: (_) {},
         ),
       ),
     );
-
-    expect(find.byIcon(LottiIcons.remove), findsOneWidget);
-    expect(find.byIcon(LottiIcons.close), findsOneWidget);
-    String cell(int daysBack, String outcome) =>
-        '${DateFormat.MMMEd().format(today.subtract(Duration(days: daysBack)))}'
-        ': $outcome';
     expect(find.bySemanticsLabel(cell(2, 'Skip')), findsOneWidget);
     expect(find.bySemanticsLabel(cell(1, 'Missed')), findsOneWidget);
     expect(
@@ -444,50 +330,80 @@ void main() {
         .widgetList<DsTooltip>(find.byType(DsTooltip))
         .map((t) => '${t.title}: ${t.message}')
         .toList();
-    final yesterday = DateFormat.MMMEd().format(
-      today.subtract(const Duration(days: 1)),
-    );
-    expect(tooltips, [
-      '$yesterday: done · target met',
-      '${DateFormat.MMMEd().format(today)}: Skip',
-    ]);
+    expect(tooltips, [cell(1, 'done · target met'), cell(0, 'Skip')]);
   });
 
-  testWidgets('an explicit today flag places the ring, not the last slot', (
-    tester,
-  ) async {
+  testWidgets('a streak draws the flame and the exact count after the '
+      'squares, and is announced as a streak', (tester) async {
+    final handle = tester.ensureSemantics();
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
-        DayMarkStrip(
-          marks: [
-            DayMark(
-              day: today.subtract(const Duration(days: 1)),
-              state: DayMarkState.full,
-              isToday: true,
-            ),
-            DayMark(day: today, state: DayMarkState.none),
-          ],
+        Align(
+          alignment: Alignment.topLeft,
+          child: DayMarkStrip(
+            marks: List.filled(5, const DayMark(state: DayMarkState.full)),
+            streak: 12,
+          ),
         ),
       ),
     );
-    final ringed = find.ancestor(
-      of: find.byType(DayMarkCell).first,
-      matching: find.byType(DsDashedBorder),
-    );
-    expect(find.byType(DsDashedBorder), findsOneWidget);
-    expect(ringed, findsNothing, reason: 'the ring is inside the cell');
+    final tokens = tester.element(find.byType(DayMarkStrip)).designTokens;
+    expect(find.byIcon(LottiIcons.streak), findsOneWidget);
+    // Flame and count in the handover's medium-emphasis ink: a flame in
+    // the kept hue read as one more kept day.
     expect(
-      tester.widget<DayMarkCell>(find.byType(DayMarkCell).first).mark.isToday,
-      isTrue,
+      tester.widget<Icon>(find.byIcon(LottiIcons.streak)).color,
+      tokens.colors.text.mediumEmphasis,
+    );
+    expect(find.text('12'), findsOneWidget);
+    final count = tester.widget<Text>(find.text('12')).style;
+    expect(count?.color, tokens.colors.text.mediumEmphasis);
+    expect(
+      count?.fontSize,
+      tokens.typography.styles.body.bodySmall.fontSize,
+      reason: 'the count is text, not fine print',
+    );
+    // Tail after the last square, in reading order.
+    expect(
+      tester.getTopLeft(find.byIcon(LottiIcons.streak)).dx,
+      greaterThan(tester.getTopRight(find.byType(DayMarkCell).last).dx),
     );
     expect(
-      tester.widget<DayMarkCell>(find.byType(DayMarkCell).last).mark.isToday,
-      isFalse,
+      tester.getTopLeft(find.text('12')).dx,
+      greaterThan(tester.getTopRight(find.byIcon(LottiIcons.streak)).dx),
     );
+    // step2 after the last column, which itself ends in half the pitch's
+    // air — text-grade separation from the chain, not one more cell gap.
+    final pitch = dayTrackMetrics(
+      tester.element(find.byType(DayMarkStrip)),
+    ).pitch;
+    expect(
+      tester.getTopLeft(find.byIcon(LottiIcons.streak)).dx -
+          tester.getTopRight(find.byType(DayMarkCell).last).dx,
+      tokens.spacing.step2 + (pitch - kDaySquareSize) / 2,
+    );
+    expect(
+      tester.widget<Icon>(find.byIcon(LottiIcons.streak)).size,
+      kDaySquareSize,
+    );
+    expect(find.bySemanticsLabel('12-day streak'), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp('successful day')), findsNothing);
+    handle.dispose();
   });
 
-  testWidgets('a span longer than a week fits its width and shrinks the '
-      'cells rather than scrolling', (tester) async {
+  testWidgets('a zero streak draws no tail', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        DayMarkStrip(marks: goalDayMarks(states: week), streak: 0),
+      ),
+    );
+    expect(find.byIcon(LottiIcons.streak), findsNothing);
+    expect(find.byType(Text), findsNothing);
+  });
+
+  testWidgets('a fortnight fits a phone card without scrolling', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         Align(
@@ -505,13 +421,13 @@ void main() {
       ),
     );
     expect(find.byType(LinkedDayTrackScroller), findsNothing);
-    expect(find.byType(DayTrack), findsOneWidget);
     expect(tester.getSize(find.byType(DayTrack)).width, lessThanOrEqualTo(320));
     expect(find.byType(DayMarkCell), findsNWidgets(14));
   });
 
-  testWidgets('a span that cannot fit even at the narrowest pitch pans, '
-      'anchored on today', (tester) async {
+  testWidgets('a span wider than its measure pans, anchored on today', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         Align(
@@ -535,31 +451,7 @@ void main() {
       ),
     );
     expect(scroller.reverse, isTrue);
-  });
-
-  testWidgets('a dateless span longer than a week is measured with its gaps, '
-      'so a fit never overflows the card', (tester) async {
-    // 12 undated cells: on the Row branch each cell is padded and the cells
-    // are gapped, so `pitch * count` underestimates the row; at this width
-    // that underestimate used to declare a fit and overflow by ~11 gaps.
-    await tester.pumpWidget(
-      makeTestableWidgetNoScroll(
-        Align(
-          alignment: Alignment.topLeft,
-          child: SizedBox(
-            width: 300,
-            child: DayMarkStrip(
-              marks: goalDayMarks(states: List.filled(12, DayMarkState.none)),
-            ),
-          ),
-        ),
-      ),
-    );
     expect(tester.takeException(), isNull);
-    expect(find.byType(DayTrack), findsNothing, reason: 'undated → Row');
-    // The honest measure says it does not fit, so the row pans instead of
-    // being handed back unwrapped to overflow the card.
-    expect(find.byType(LinkedDayTrackScroller), findsOneWidget);
   });
 
   testWidgets('an empty strip renders nothing', (tester) async {

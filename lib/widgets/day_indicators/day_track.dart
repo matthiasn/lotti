@@ -3,17 +3,17 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/widgets/day_indicators/day_mark_cell.dart';
 import 'package:lotti/widgets/misc/linked_scroll_group.dart';
 
-/// The geometry one day track draws on: the column pitch, the square inside
-/// each column, whether the weekday captions still fit at full length, and
-/// how tall a caption row has to be.
+/// The geometry one day track draws on: the column pitch, whether the weekday
+/// captions still fit at full length, and how tall a caption row has to be.
+/// The square inside each column is always [kDaySquareSize].
 ///
 /// The caption height rides along so a caption track does not re-measure
 /// the same seven strings the pitch was already derived from.
 typedef DayTrackMetrics = ({
   double pitch,
-  double cellSize,
   bool narrowLabels,
   double labelHeight,
 });
@@ -48,12 +48,9 @@ typedef DayTrackMetrics = ({
   return (width: width, height: height);
 }
 
-/// The narrowest column a day is still legible in — a 12px square with a
-/// hairline of air either side. Below this a track scrolls instead of
-/// shrinking further.
-double _minimumDayPitch(DsTokens tokens) => IconSizes.xs + tokens.spacing.step2;
-
-/// The column pitch every day row on a page shares.
+/// The column pitch every day row on a page shares: one day square and
+/// `step2` of air — the handover's 3px gap on an 11px square, at the nearest
+/// tokens.
 ///
 /// One pitch, one origin, one width: the whole-goal verdict strip, the habit
 /// squares and the metric bars all draw the SAME week, and drawn on three
@@ -61,51 +58,26 @@ double _minimumDayPitch(DsTokens tokens) => IconSizes.xs + tokens.spacing.step2;
 /// scroll. A reader cannot follow a day across the page unless the columns
 /// line up.
 ///
-/// Wide enough for the weekday label at raised text scales, which is what
-/// makes the axis readable rather than merely aligned — and, when
-/// [availableWidth] is known, narrow enough that a span longer than a week
-/// still FITS. A fourteen-day track at the authored pitch is wider than a
-/// phone card, and the trailing-edge scroller that resulted opened with the
-/// first days of the span cut in half off the left edge.
-DayTrackMetrics dayTrackMetrics(
-  BuildContext context, {
-  required int dayCount,
-  double? availableWidth,
-}) {
+/// The square never changes size — the handover draws one square — so a span
+/// that does not fit its width scrolls (see [fitOrScrollDayTrack]) rather
+/// than shrinking. At raised text scales the pitch widens to hold the weekday
+/// caption, which is what keeps the axis readable rather than merely aligned.
+DayTrackMetrics dayTrackMetrics(BuildContext context) {
   final tokens = context.designTokens;
-  final defaultPitch = ControlSizes.iconChipCompact + tokens.spacing.step2;
+  final defaultPitch = kDaySquareSize + tokens.spacing.step2;
   final label = _weekdayLabelMetrics(context);
   final labelWidth = label.width;
-  final expandedPitch = labelWidth + tokens.spacing.step1;
+  final expandedPitch = labelWidth + tokens.spacing.step2;
   final textScaledUp = MediaQuery.textScalerOf(context).scale(1) > 1;
-  var pitch = textScaledUp && expandedPitch > defaultPitch
+  final pitch = textScaledUp && expandedPitch > defaultPitch
       ? expandedPitch
       : defaultPitch;
-  if (availableWidth != null && availableWidth > 0 && dayCount > 0) {
-    // Floored, so `pitch * days` can never round up past the width it was
-    // derived from and reintroduce a one-pixel scroller.
-    final fitted = (availableWidth / dayCount).floorToDouble();
-    if (fitted < pitch) {
-      pitch = math.max(fitted, _minimumDayPitch(tokens));
-    }
-  }
   return (
     pitch: pitch,
     labelHeight: math.max(IconSizes.s, label.height),
-    // The square shrinks with its column, or neighbouring cells would touch
-    // and the track would read as one bar — but it never GROWS past the
-    // authored chip size: spreading the span means wider gutters between
-    // same-sized nodes, not inflated squares.
-    cellSize: math.min(
-      ControlSizes.iconChipCompact,
-      math.max(IconSizes.xs, pitch - tokens.spacing.step2),
-    ),
-    // "Mon" needs its own width; a SQUEEZED column takes the one-letter form
-    // rather than letting neighbouring captions overlap into mush. Only a
-    // squeezed one: at the authored pitch the captions are centered and
-    // overhang their cell into the gap by design, which is the established
-    // rendering and stays untouched.
-    narrowLabels: pitch < defaultPitch && pitch < labelWidth,
+    // "Mon" does not fit a 16px column; the captions take the one-letter
+    // form unless the pitch has been widened past the full caption.
+    narrowLabels: pitch < labelWidth,
   );
 }
 

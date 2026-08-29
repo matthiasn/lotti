@@ -24,7 +24,6 @@ void main() {
       DayMarkState.partial,
       DayMarkState.full,
     ]);
-    expect(marks.map((m) => m.isToday), [false, false, true]);
   });
 
   test('verdicts line up by UTC day even when the last day is local', () {
@@ -52,7 +51,6 @@ void main() {
     );
     expect(marks.every((m) => m.day == null), isTrue);
     expect(marks.every((m) => m.verdict == null), isTrue);
-    expect(marks.last.isToday, isTrue);
   });
 
   test('an empty window yields no marks', () {

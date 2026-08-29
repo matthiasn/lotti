@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/widgets/day_indicators/day_mark_cell.dart';
 import 'package:lotti/widgets/day_indicators/day_track.dart';
 import 'package:lotti/widgets/misc/linked_scroll_group.dart';
 
@@ -43,44 +44,24 @@ void main() {
     expect(tester.getSize(find.byType(DayTrack)), Size.zero);
   });
 
-  testWidgets('metrics keep the authored pitch when the span fits and shrink '
-      'toward the floor when it does not', (tester) async {
-    late DayTrackMetrics roomy;
-    late DayTrackMetrics squeezed;
-    late DayTrackMetrics floored;
+  testWidgets('metrics are one square and step2 of air, with one-letter '
+      'captions, at every span', (tester) async {
+    late DayTrackMetrics metrics;
     late DsTokens tokens;
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         Builder(
           builder: (context) {
             tokens = context.designTokens;
-            roomy = dayTrackMetrics(context, dayCount: 7, availableWidth: 1000);
-            squeezed = dayTrackMetrics(
-              context,
-              dayCount: 14,
-              availableWidth: 320,
-            );
-            floored = dayTrackMetrics(
-              context,
-              dayCount: 90,
-              availableWidth: 320,
-            );
+            metrics = dayTrackMetrics(context);
             return const SizedBox.shrink();
           },
         ),
       ),
     );
-    final authored = ControlSizes.iconChipCompact + tokens.spacing.step2;
-    expect(roomy.pitch, authored);
-    expect(roomy.cellSize, ControlSizes.iconChipCompact);
-    expect(roomy.narrowLabels, isFalse);
-    expect(squeezed.pitch, lessThan(authored));
-    expect(squeezed.pitch * 14, lessThanOrEqualTo(320));
-    expect(squeezed.cellSize, squeezed.pitch - tokens.spacing.step2);
-    expect(floored.pitch, IconSizes.xs + tokens.spacing.step2);
-    expect(floored.cellSize, IconSizes.xs);
-    expect(floored.narrowLabels, isTrue);
-    expect(roomy.labelHeight, greaterThanOrEqualTo(IconSizes.s));
+    expect(metrics.pitch, kDaySquareSize + tokens.spacing.step2);
+    expect(metrics.narrowLabels, isTrue, reason: '"Mon" does not fit 16px');
+    expect(metrics.labelHeight, greaterThanOrEqualTo(IconSizes.s));
   });
 
   testWidgets('a raised text scale widens the pitch to hold the caption', (
@@ -92,14 +73,14 @@ void main() {
       makeTestableWidgetNoScroll(
         Builder(
           builder: (context) {
-            normal = dayTrackMetrics(context, dayCount: 7);
+            normal = dayTrackMetrics(context);
             return MediaQuery(
               data: MediaQuery.of(
                 context,
               ).copyWith(textScaler: const TextScaler.linear(2.5)),
               child: Builder(
                 builder: (context) {
-                  scaled = dayTrackMetrics(context, dayCount: 7);
+                  scaled = dayTrackMetrics(context);
                   return const SizedBox.shrink();
                 },
               ),
