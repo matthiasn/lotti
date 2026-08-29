@@ -2937,6 +2937,7 @@
   "habitLogOtherDayHint": "Țineți apăsat pentru a înregistra altă zi",
   "habitNotRecordedLabel": "Neînregistrat",
   "habitPriorityLabel": "Prioritate",
+  "habitReflectInGoal": "Reflectați asupra acestei zile în {goal}",
   "habitsAboveGoal": "Conform planului",
   "habitsActiveHabitsCount": "{count, plural, one{1 obicei activ} few{{count} obiceiuri active} other{{count} de obiceiuri active}}",
   "habitsAllDoneToday": "Tot finalizat azi",

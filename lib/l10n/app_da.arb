@@ -3214,6 +3214,7 @@
   "habitLogOtherDayHint": "Hold for at logge en anden dag",
   "habitNotRecordedLabel": "Ikke registreret",
   "habitPriorityLabel": "Prioritet",
+  "habitReflectInGoal": "Reflektér over denne dag i {goal}",
   "habitsAboveGoal": "På banen",
   "habitsActiveHabitsCount": "{count, plural, one{1 aktiv vane} other{{count} aktive vaner}}",
   "@habitsActiveHabitsCount": {

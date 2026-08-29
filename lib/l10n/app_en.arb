@@ -4417,6 +4417,15 @@
   "habitLogOtherDayHint": "Hold to log another day",
   "habitNotRecordedLabel": "Not recorded",
   "habitPriorityLabel": "Priority",
+  "habitReflectInGoal": "Reflect on this day in {goal}",
+  "@habitReflectInGoal": {
+    "description": "Action in the habit completion sheet that opens the day's reflection for a goal watching this habit.",
+    "placeholders": {
+      "goal": {
+        "type": "String"
+      }
+    }
+  },
   "habitsAboveGoal": "On track",
   "habitsActiveHabitsCount": "{count, plural, one{1 active habit} other{{count} active habits}}",
   "@habitsActiveHabitsCount": {

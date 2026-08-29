@@ -23,7 +23,9 @@ import 'package:lotti/features/design_system/components/tooltips/ds_tooltip.dart
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/logic/goal_aggregate_rounding.dart';
 import 'package:lotti/features/goals/logic/goal_metric_series.dart';
+import 'package:lotti/features/goals/model/goal_assessment.dart';
 import 'package:lotti/features/goals/model/goal_health_data_types.dart';
+import 'package:lotti/features/goals/state/goal_assessment_state.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/goal_day_marks.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -75,11 +77,22 @@ class GoalProgressCard extends StatelessWidget {
     this.onHabitOutcomeSelected,
     this.habitsHeadingTrailing,
     this.scrollGroup,
+    this.assessments = const [],
+    this.specVersionId,
     super.key,
   });
 
   final GoalProgressView progress;
   final GoalHabitOutcomeSelected? onHabitOutcomeSelected;
+
+  /// The goal's reflection history. A habit day the user judged in the
+  /// reflection sheet wears that verdict on its square, outranking the
+  /// measured outcome — the same rule the whole-goal strip follows.
+  final List<GoalAssessmentRecord> assessments;
+
+  /// The spec version in force, scoping [assessments]: a judgement passed
+  /// under retired criteria must not colour a day under the current ones.
+  final String? specVersionId;
 
   /// Trailing control on the FIRST evidence heading — Habits when the goal
   /// has habit rows, otherwise Signals — where the detail page rides its
@@ -135,6 +148,11 @@ class GoalProgressCard extends StatelessWidget {
             onHabitOutcomeSelected: onHabitOutcomeSelected,
             showLegend: index == 0,
             scrollGroup: scrollGroup,
+            verdictsByDay: latestDimensionRatingsByDay(
+              assessments,
+              criterionId: progress.habits[index].criterionId,
+              specVersionId: specVersionId,
+            ),
           ),
           SizedBox(height: tokens.spacing.step3),
         ],
@@ -466,9 +484,13 @@ class _HabitDimensionCard extends StatelessWidget {
     required this.onHabitOutcomeSelected,
     required this.showLegend,
     this.scrollGroup,
+    this.verdictsByDay = const {},
   });
 
   final LinkedScrollGroup? scrollGroup;
+
+  /// The user's per-day verdicts on this habit, keyed by UTC day.
+  final Map<DateTime, DayVerdict> verdictsByDay;
   final GoalHabitProgressView habit;
   final DateTime today;
   final GoalHabitOutcomeSelected? onHabitOutcomeSelected;
@@ -543,6 +565,7 @@ class _HabitDimensionCard extends StatelessWidget {
             habit: habit,
             today: today,
             onOutcomeSelected: onHabitOutcomeSelected,
+            verdictsByDay: verdictsByDay,
             scrollGroup: scrollGroup,
             // The six-week tail rides the window line above the squares
             // rather than taking a row under them: both facts describe the
@@ -1398,9 +1421,11 @@ class _HabitProgressRow extends StatefulWidget {
     required this.onOutcomeSelected,
     this.successfulWeeks,
     this.scrollGroup,
+    this.verdictsByDay = const {},
   });
 
   final LinkedScrollGroup? scrollGroup;
+  final Map<DateTime, DayVerdict> verdictsByDay;
 
   /// The rolling-week reliability tail, drawn on the trailing edge of the
   /// window line. Null for habits whose window is not a rolling week — the
@@ -1492,6 +1517,12 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
               day: activeDays[index],
               habitId: habit.habitId,
               size: metrics.cellSize,
+              verdict:
+                  widget.verdictsByDay[DateTime.utc(
+                    activeDays[index].day.year,
+                    activeDays[index].day.month,
+                    activeDays[index].day.day,
+                  )],
               weekdayLetter: letterFormat.format(activeDays[index].day),
               today: DateUtils.isSameDay(
                 activeDays[index].day,
@@ -1687,10 +1718,16 @@ class _ProgressDayCell extends StatelessWidget {
     required this.onOutcomeSelected,
     this.size = ControlSizes.iconChipCompact,
     this.weekdayLetter,
+    this.verdict,
   });
 
   final GoalProgressDay day;
   final String habitId;
+
+  /// The user's verdict on this habit for this day, when they recorded one
+  /// in the reflection sheet. It decides the fill and the glyph; the measured
+  /// outcome is only what the app observed.
+  final DayVerdict? verdict;
 
   /// One-letter weekday initial nested in the square — the day axis, now
   /// that the label row above the track is gone. Outranked by the stronger
@@ -1744,8 +1781,20 @@ class _ProgressDayCell extends StatelessWidget {
         : null;
     // The glyph scales with the square it sits in, so a squeezed column
     // does not paint a 12px cross onto a 14px cell.
-    final stateGlyph = dayMarkStateGlyph(dayState);
-    final Widget? centerMark = stateGlyph != null
+    // A recorded verdict outranks the measured outcome for fill and glyph,
+    // exactly as on the whole-goal strip: the measurement is evidence, the
+    // reflection is the user's ruling on the day.
+    final verdict = this.verdict;
+    final stateGlyph = verdict == null ? dayMarkStateGlyph(dayState) : null;
+    final Widget? centerMark = verdict != null
+        ? Center(
+            child: Icon(
+              dayVerdictGlyph(verdict),
+              size: glyphSize,
+              color: dayVerdictInk(tokens, verdict),
+            ),
+          )
+        : stateGlyph != null
         ? Center(
             child: Icon(
               stateGlyph,
@@ -1766,7 +1815,7 @@ class _ProgressDayCell extends StatelessWidget {
             tokens,
             letter: weekdayLetter,
             cellSize: visualDimension,
-            filled: dayState == DayMarkState.full,
+            filled: verdict != null || dayState == DayMarkState.full,
           );
     Widget cell = Container(
       key: ValueKey(
@@ -1776,7 +1825,9 @@ class _ProgressDayCell extends StatelessWidget {
       width: visualDimension,
       height: visualDimension,
       decoration: BoxDecoration(
-        color: dayMarkStateFill(tokens, dayState),
+        color: verdict == null
+            ? dayMarkStateFill(tokens, dayState)
+            : dayVerdictFill(tokens, verdict),
         borderRadius: BorderRadius.circular(dayCellRadius(tokens)),
         border: border,
       ),
@@ -1815,7 +1866,7 @@ class _ProgressDayCell extends StatelessWidget {
     final locale = Localizations.localeOf(context).toLanguageTag();
     final date = DateFormat.yMMMd(locale).format(day.day);
     final menuDate = DateFormat.MMMEd(locale).format(day.day);
-    final outcome = switch (completionType) {
+    final measured = switch (completionType) {
       HabitCompletionType.success =>
         context.messages.completeHabitSuccessButton,
       HabitCompletionType.skip => context.messages.completeHabitSkipButton,
@@ -1823,6 +1874,11 @@ class _ProgressDayCell extends StatelessWidget {
       HabitCompletionType.open ||
       null => context.messages.goalProgressHabitDayNoEntry,
     };
+    // Spoken and hovered as the verdict where one stands, the measurement
+    // otherwise — the cell must say what it shows.
+    final outcome = verdict == null
+        ? measured
+        : dayVerdictLabel(context, verdict);
     final semanticLabel = context.messages.goalProgressHabitDaySemantics(
       date,
       outcome,

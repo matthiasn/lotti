@@ -137,9 +137,40 @@ flowchart LR
   read generically ("3 successful days in the trailing seven-day window") and
   renaming them would touch every catalogue for no user-visible change.
 
+# Verdicts reach the habit side
+
+A verdict is always a goal's: `GoalAssessmentRecord.dimensionRatings` files
+the user's per-dimension ruling under the goal's criterion id. Habits reach
+those rulings through `lib/features/goals/state/goal_habit_watchers.dart`:
+
+- `goalsWatchingHabitProvider(habitId)` — the active goals whose current spec
+  names the habit, each with the criterion id the habit is filed under.
+- `habitDayVerdictsProvider(habitId)` — the verdict standing for each of the
+  habit's days across every watching goal, keyed by UTC day; when two goals
+  judged one day, the most recently recorded judgement wins.
+- `latestDimensionRatingsByDay` in `goal_assessment_state.dart` is the
+  per-dimension sibling of `latestRatingsByDay`, and what the goal detail
+  page feeds its own habit cells.
+
+```mermaid
+flowchart LR
+  A["GoalAssessmentRecord.dimensionRatings[criterionId]"] --> D["latestDimensionRatingsByDay"]
+  D --> P["_ProgressDayCell(verdict:)<br/>goal detail habit card"]
+  W["goalsWatchingHabitProvider(habitId)"] --> V["habitDayVerdictsProvider(habitId)"]
+  A --> V
+  V --> H["HabitCompletionCard strip<br/>DayMark(verdict:)"]
+  W --> S["HabitCompletionSheet<br/>Reflect on this day in ‹goal›"]
+  S --> R["showGoalDayAssessmentSheet(day: the sheet's day)"]
+```
+
+The habit sheet is the reflect doorway on the habit side because it already
+knows the day: reflecting on a backfilled day judges that day, not today. The
+reflection sheet itself stays the goal's — it needs the goal's spec, progress
+view and history — so the habit only contributes the day.
+
 # Not yet shared
 
-The issue that created this package (lotti3-co1) also asks for habit day
-verdicts with the reflect sheet reachable from habit surfaces, a complete
-legend including the verdict hues on habit surfaces, and longer spans on the
-habits page. Those build on this module and are separate changes.
+The remaining item from lotti3-co1 (step 4): a complete legend including the
+verdict hues on habit surfaces, longer spans on the habits page, and the
+explicit decision on proportional cell sizing. Those build on this module and
+are a separate change.

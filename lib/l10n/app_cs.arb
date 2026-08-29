@@ -2944,6 +2944,7 @@
   "habitLogOtherDayHint": "Podržením zaznamenáš jiný den",
   "habitNotRecordedLabel": "Nezaznamenáno",
   "habitPriorityLabel": "Priorita",
+  "habitReflectInGoal": "Zamysli se nad tímto dnem v cíli {goal}",
   "habitsAboveGoal": "Podle plánu",
   "habitsActiveHabitsCount": "{count, plural, one{1 aktivní návyk} few{{count} aktivní návyky} other{{count} aktivních návyků}}",
   "habitsAllDoneToday": "Dnes hotovo vše",

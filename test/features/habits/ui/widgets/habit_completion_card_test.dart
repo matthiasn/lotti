@@ -4,6 +4,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/goals/state/goal_habit_watchers.dart';
 import 'package:lotti/features/habits/state/habit_completion_controller.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_action_row.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_completion_card.dart';
@@ -85,6 +86,7 @@ void main() {
   Future<void> pumpCard(
     WidgetTester tester, {
     HabitDefinition? habit,
+    Map<DateTime, DayVerdict> verdicts = const {},
   }) async {
     final definition = habit ?? habitFlossing;
     await tester.pumpWidget(
@@ -98,6 +100,9 @@ void main() {
           habitCompletionControllerProvider.overrideWith2(
             (_) => _FakeController(),
           ),
+          habitDayVerdictsProvider(
+            definition.id,
+          ).overrideWith((ref) async => verdicts),
         ],
       ),
     );
@@ -227,6 +232,35 @@ void main() {
         return pumpCard(tester);
       });
       expect(find.byType(DsDashedBorder), findsNothing);
+    });
+  });
+
+  group('goal verdicts on the strip', () {
+    testWidgets('a day a watching goal judged wears that verdict, the rest '
+        'keep their measured state', (tester) async {
+      _results = [
+        _result(DateTime(2024, 3, 13), HabitCompletionType.fail),
+        _result(DateTime(2024, 3, 14), HabitCompletionType.success),
+        _result(_rangeEnd, HabitCompletionType.open),
+      ];
+      await pumpCard(
+        tester,
+        verdicts: {DateTime.utc(2024, 3, 13): DayVerdict.improving},
+      );
+      // One extra frame: the verdicts resolve after the results.
+      await tester.pump();
+      final marks = tester
+          .widgetList<DayMarkCell>(find.byType(DayMarkCell))
+          .map((cell) => (cell.mark.state, cell.mark.verdict))
+          .toList();
+      expect(marks, [
+        (DayMarkState.missed, DayVerdict.improving),
+        (DayMarkState.full, null),
+        (DayMarkState.none, null),
+      ]);
+      // The ruling replaces the measured cross with its own glyph.
+      expect(find.byIcon(LottiIcons.close), findsNothing);
+      expect(find.byIcon(LottiIcons.trendingUp), findsOneWidget);
     });
   });
 

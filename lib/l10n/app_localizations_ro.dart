@@ -7563,6 +7563,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get habitPriorityLabel => 'Prioritate';
 
   @override
+  String habitReflectInGoal(String goal) {
+    return 'Reflectați asupra acestei zile în $goal';
+  }
+
+  @override
   String get habitsAboveGoal => 'Conform planului';
 
   @override

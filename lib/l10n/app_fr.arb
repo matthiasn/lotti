@@ -2937,6 +2937,7 @@
   "habitLogOtherDayHint": "Maintiens appuyé pour enregistrer un autre jour",
   "habitNotRecordedLabel": "Non enregistré",
   "habitPriorityLabel": "Priorité",
+  "habitReflectInGoal": "Réfléchir à cette journée dans {goal}",
   "habitsAboveGoal": "Dans les clous",
   "habitsActiveHabitsCount": "{count, plural, one{1 habitude active} other{{count} habitudes actives}}",
   "habitsAllDoneToday": "Tout est fait aujourd'hui",

@@ -5,12 +5,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_linkify/flutter_linkify.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/goal_criterion.dart';
+import 'package:lotti/classes/goal_enums.dart';
+import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/dashboards/state/measurables_controller.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/goals/state/goal_assessment_state.dart';
+import 'package:lotti/features/goals/state/goal_habit_watchers.dart';
+import 'package:lotti/features/goals/state/goal_progress_view.dart';
+import 'package:lotti/features/goals/ui/goal_assessment_widgets.dart';
 import 'package:lotti/features/habits/state/habit_signal_status_controller.dart';
 import 'package:lotti/features/habits/ui/sheets/habit_completion_sheet.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_signal_row.dart';
@@ -203,6 +215,7 @@ void main() {
     WidgetTester tester, {
     String? habitId,
     String? dateString,
+    List<Override> overrides = const [],
   }) async {
     tester.view.physicalSize = const Size(800, 1400);
     tester.view.devicePixelRatio = 1.0;
@@ -243,6 +256,7 @@ void main() {
           habitSignalStatusProvider(
             hydrationHabit.id,
           ).overrideWith(() => _ChoiceStatus(hydrationHabit.id, window)),
+          ...overrides,
         ],
       ),
     );
@@ -651,6 +665,156 @@ void main() {
         returnsNormally,
       );
       verifyNever(() => mockUrlLauncher.launchUrl(any(), any()));
+    });
+  });
+  group('reflecting in a watching goal', () {
+    GoalHabitWatcher watcher(String agentId) => (
+      identity:
+          AgentDomainEntity.agent(
+                id: agentId,
+                agentId: agentId,
+                kind: AgentKinds.goalAgent,
+                displayName: 'Fitness',
+                lifecycle: AgentLifecycle.active,
+                mode: AgentInteractionMode.autonomous,
+                allowedCategoryIds: const {},
+                currentStateId: '$agentId:state',
+                config: const AgentConfig(),
+                createdAt: DateTime(2026),
+                updatedAt: DateTime(2026),
+                vectorClock: null,
+              )
+              as AgentIdentityEntity,
+      spec:
+          AgentDomainEntity.goalSpecVersion(
+                id: '$agentId:spec',
+                agentId: agentId,
+                version: 1,
+                status: GoalSpecVersionStatus.active,
+                authoredBy: 'user',
+                title: 'Fitness',
+                statement: 'Floss daily.',
+                criteria: GoalCriterion.habit(
+                  criterionId: 'c-floss',
+                  habitId: habitFlossing.id,
+                  window: const GoalWindow.rollingDays(count: 7),
+                  targetCount: 4,
+                ),
+                createdAt: DateTime(2026),
+                vectorClock: null,
+              )
+              as GoalSpecVersionEntity,
+      criterionId: 'c-floss',
+    );
+
+    GoalProgressView progress() => GoalProgressView(
+      today: todayKey,
+      habits: [
+        GoalHabitProgressView(
+          habitId: habitFlossing.id,
+          criterionId: 'c-floss',
+          name: habitFlossing.name,
+          targetCount: 4,
+          successfulWeeks: 0,
+          days: [
+            for (var offset = 6; offset >= 0; offset--)
+              GoalProgressDay(
+                day: todayKey.subtract(Duration(days: offset)),
+                value: 0,
+              ),
+          ],
+        ),
+      ],
+    );
+
+    clockedWidgets('a habit no goal watches offers no reflection', (
+      tester,
+    ) async {
+      await pumpSheet(
+        tester,
+        overrides: [
+          goalsWatchingHabitProvider(
+            habitFlossing.id,
+          ).overrideWith((ref) async => const []),
+        ],
+      );
+      expect(
+        find.byKey(const ValueKey('habit-sheet-reflections')),
+        findsNothing,
+      );
+    });
+
+    clockedWidgets("one action per watching goal opens that goal's "
+        'reflection for the day being recorded', (tester) async {
+      await pumpSheet(
+        tester,
+        dateString: '2026-08-06',
+        overrides: [
+          goalsWatchingHabitProvider(
+            habitFlossing.id,
+          ).overrideWith((ref) async => [watcher('g1')]),
+          // The sheet asks for a span reaching the picked day (2 days back
+          // → the seven-day floor).
+          goalAgentProgressViewForSpanProvider((
+            agentId: 'g1',
+            historyDays: 7,
+          )).overrideWith((ref) async => progress()),
+          goalAssessmentHistoryProvider(
+            'g1',
+          ).overrideWith((ref) async => const []),
+        ],
+      );
+      await tester.pump();
+      expect(find.text('Reflect on this day in Fitness'), findsOneWidget);
+
+      await tester.tap(find.byKey(const ValueKey('habit-reflect-g1')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      final sheet = tester.widget<GoalDayAssessmentSheet>(
+        find.byType(GoalDayAssessmentSheet),
+      );
+      expect(sheet.agentId, 'g1');
+      expect(sheet.specVersionId, 'g1:spec');
+      // The day the habit sheet was opened for — a backfilled day judges
+      // that day, not today.
+      expect(DateUtils.dateOnly(sheet.day), DateTime(2026, 8, 6));
+    });
+    clockedWidgets('a backfilled day far back asks for a projection that '
+        'reaches it', (tester) async {
+      await pumpSheet(
+        tester,
+        dateString: '2026-07-20',
+        overrides: [
+          goalsWatchingHabitProvider(
+            habitFlossing.id,
+          ).overrideWith((ref) async => [watcher('g1')]),
+          // 19 days back plus the day itself.
+          goalAgentProgressViewForSpanProvider((
+            agentId: 'g1',
+            historyDays: 20,
+          )).overrideWith((ref) async => progress()),
+          goalAssessmentHistoryProvider(
+            'g1',
+          ).overrideWith((ref) async => const []),
+        ],
+      );
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('habit-reflect-g1')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.byType(GoalDayAssessmentSheet), findsOneWidget);
+    });
+
+    test('reflectionSpanDays covers the day and never drops below a week', () {
+      final today = DateTime(2026, 8, 8, 14);
+      expect(reflectionSpanDays(from: today, today: today), 7);
+      expect(
+        reflectionSpanDays(from: DateTime(2026, 8, 6, 23), today: today),
+        7,
+      );
+      expect(reflectionSpanDays(from: DateTime(2026, 8), today: today), 8);
+      expect(reflectionSpanDays(from: DateTime(2026, 7, 20), today: today), 20);
     });
   });
 }

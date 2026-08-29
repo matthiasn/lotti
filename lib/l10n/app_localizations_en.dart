@@ -7399,6 +7399,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get habitPriorityLabel => 'Priority';
 
   @override
+  String habitReflectInGoal(String goal) {
+    return 'Reflect on this day in $goal';
+  }
+
+  @override
   String get habitsAboveGoal => 'On track';
 
   @override
@@ -14309,6 +14314,11 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String get habitPriorityLabel => 'Priority';
+
+  @override
+  String habitReflectInGoal(String goal) {
+    return 'Reflect on this day in $goal';
+  }
 
   @override
   String get habitsCompletedHeader => 'Completed';

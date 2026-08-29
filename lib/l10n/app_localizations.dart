@@ -12600,6 +12600,12 @@ abstract class AppLocalizations {
   /// **'Priority'**
   String get habitPriorityLabel;
 
+  /// Action in the habit completion sheet that opens the day's reflection for a goal watching this habit.
+  ///
+  /// In en, this message translates to:
+  /// **'Reflect on this day in {goal}'**
+  String habitReflectInGoal(String goal);
+
   /// No description provided for @habitsAboveGoal.
   ///
   /// In en, this message translates to:

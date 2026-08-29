@@ -7516,6 +7516,11 @@ class AppLocalizationsIt extends AppLocalizations {
   String get habitPriorityLabel => 'Priorità';
 
   @override
+  String habitReflectInGoal(String goal) {
+    return 'Rifletti su questo giorno per l\'obiettivo $goal';
+  }
+
+  @override
   String get habitsAboveGoal => 'Sulla pista';
 
   @override

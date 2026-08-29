@@ -2,6 +2,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/goals/state/goal_habit_watchers.dart';
 import 'package:lotti/features/habits/state/habit_completion_controller.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_action_row.dart';
 import 'package:lotti/get_it.dart';
@@ -89,10 +90,18 @@ class _HabitCompletionCardState extends ConsumerState<HabitCompletionCard> {
           HabitCompletionType.skip,
         }.contains(results.last.completionType);
 
+    // A day the user judged in a watching goal's reflection wears that
+    // verdict here too: the strip shows the user's ruling, not only the
+    // measurement. Empty until the goals resolve, and empty for a habit no
+    // goal watches — the strip is complete either way.
+    final verdicts =
+        ref.watch(habitDayVerdictsProvider(habitDefinition.id)).value ??
+        const <DateTime, DayVerdict>{};
+
     return HabitActionRow(
       habitId: habitDefinition.id,
       completedToday: completedToday,
-      history: _HistoryStrip(results: results),
+      history: _HistoryStrip(results: results, verdictsByDay: verdicts),
     );
   }
 }
@@ -108,9 +117,12 @@ class _HabitCompletionCardState extends ConsumerState<HabitCompletionCard> {
 /// swipe-conflicting per-cell tap targets. A range longer than the width can
 /// hold pans, anchored on today, like every other day track.
 class _HistoryStrip extends StatelessWidget {
-  const _HistoryStrip({required this.results});
+  const _HistoryStrip({required this.results, this.verdictsByDay = const {}});
 
   final List<HabitResult> results;
+
+  /// The user's verdicts on this habit's days, keyed by UTC day.
+  final Map<DateTime, DayVerdict> verdictsByDay;
 
   @override
   Widget build(BuildContext context) {
@@ -118,11 +130,14 @@ class _HistoryStrip extends StatelessWidget {
     return DayMarkStrip(
       marks: [
         for (final result in results)
-          DayMark(
-            day: DateTime.parse(result.dayString),
-            state: habitCompletionDayMarkState(result.completionType),
-            isToday: result.dayString == today,
-          ),
+          if (DateTime.parse(result.dayString) case final day)
+            DayMark(
+              day: day,
+              state: habitCompletionDayMarkState(result.completionType),
+              verdict:
+                  verdictsByDay[DateTime.utc(day.year, day.month, day.day)],
+              isToday: result.dayString == today,
+            ),
       ],
     );
   }
