@@ -267,6 +267,7 @@ class Container:
             PubSubAuthenticator(audience=audience, service_account_email=email),
             self.get_subscription_service(),
             self.get_subscription_access_service(),
+            self.get_subscription_repository(),
             package_name=PLAY_PACKAGE_NAME,
         )
 

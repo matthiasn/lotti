@@ -100,19 +100,19 @@ def setup(tmp_path):
 
 async def test_due_encrypted_token_is_refreshed_then_enforced(setup):
     repository, cipher, subscriptions, access, reconciler = setup
-    await add_due(repository, cipher, "entitlement-one", "raw-purchase-token")
+    stored = await add_due(repository, cipher, "entitlement-one", "raw-purchase-token")
 
     count = await reconciler.reconcile_once()
 
     assert count == 1
     assert subscriptions.calls == [("raw-purchase-token", NOW)]
-    assert access.calls == [("raw-purchase-token", NOW)]
+    assert access.calls == [(stored, NOW)]
 
 
 async def test_one_failed_token_does_not_block_rest_of_batch(setup):
     repository, cipher, subscriptions, access, reconciler = setup
     failed = await add_due(repository, cipher, "entitlement-one", "failed-token")
-    await add_due(repository, cipher, "entitlement-two", "healthy-token")
+    healthy = await add_due(repository, cipher, "entitlement-two", "healthy-token")
     subscriptions.failure_tokens.add("failed-token")
 
     count = await reconciler.reconcile_once()
@@ -120,9 +120,10 @@ async def test_one_failed_token_does_not_block_rest_of_batch(setup):
     assert count == 1
     assert ("healthy-token", NOW) in subscriptions.calls
     assert (failed, NOW) in access.calls
-    assert ("healthy-token", NOW) in access.calls
+    assert (healthy, NOW) in access.calls
     failed_after = await repository.get_subscription_by_token(failed.token_fingerprint)
     assert failed_after.last_error == "cannot refresh failed-token"
+    assert failed_after.next_reconciliation_at == NOW + timedelta(minutes=5)
 
 
 async def test_unknown_encryption_key_is_recorded_without_decrypting(setup):
@@ -159,12 +160,40 @@ async def test_future_subscription_is_not_reconciled(setup):
 
 async def test_periodic_entrypoint_runs_one_reconciliation_batch(setup):
     repository, cipher, subscriptions, access, reconciler = setup
-    await add_due(repository, cipher, "entitlement-one", "raw-purchase-token")
+    stored = await add_due(repository, cipher, "entitlement-one", "raw-purchase-token")
 
     await reconciler.run_once()
 
     assert subscriptions.calls == [("raw-purchase-token", NOW)]
-    assert access.calls == [("raw-purchase-token", NOW)]
+    assert access.calls == [(stored, NOW)]
+
+
+async def test_failed_batch_head_is_rescheduled_so_later_rows_run(setup):
+    repository, cipher, subscriptions, access, _ = setup
+    failed = await add_due(
+        repository,
+        cipher,
+        "entitlement-one",
+        "failed-token",
+        next_reconciliation_at=NOW - timedelta(minutes=1),
+    )
+    healthy = await add_due(repository, cipher, "entitlement-two", "healthy-token")
+    subscriptions.failure_tokens.add("failed-token")
+    reconciler = SubscriptionReconciler(
+        repository,
+        subscriptions,
+        access,
+        cipher,
+        batch_size=1,
+        now_provider=lambda: NOW,
+    )
+
+    assert await reconciler.reconcile_once() == 0
+    assert await reconciler.reconcile_once() == 1
+
+    failed_after = await repository.get_subscription_by_token(failed.token_fingerprint)
+    assert failed_after.next_reconciliation_at == NOW + timedelta(minutes=5)
+    assert access.calls == [(failed, NOW), (healthy, NOW)]
 
 
 async def test_refresh_and_stored_state_enforcement_failures_are_both_recorded(setup):

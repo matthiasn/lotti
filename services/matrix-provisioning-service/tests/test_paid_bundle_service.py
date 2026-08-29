@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 
@@ -40,11 +41,17 @@ ENCODED_BUNDLE = SyncBundle(
 
 
 class FakeBundleService:
-    def __init__(self):
+    def __init__(self, *, block_first=False):
         self.calls = []
+        self.block_first = block_first
+        self.first_started = asyncio.Event()
+        self.release_first = asyncio.Event()
 
     async def create_bundle_with_persistence(self, request, persist):
         self.calls.append(request)
+        if self.block_first and len(self.calls) == 1:
+            self.first_started.set()
+            await self.release_first.wait()
         result = ProvisionResult(
             bundle=SyncBundle.decode(ENCODED_BUNDLE),
             user_mxid="@sync_entitlementone:example.com",
@@ -300,6 +307,27 @@ async def test_confirmed_claim_recovers_replacement_purchase_without_redelivery(
         "lotti_sync",
         "replacement-token",
     )
+
+
+async def test_overlapping_retries_share_one_provisioned_bundle(
+    repository,
+    google_client,
+    cipher,
+):
+    bundle_service = FakeBundleService(block_first=True)
+    service = PaidBundleService(bundle_service, repository, google_client, cipher)
+    verified = await verified_purchase(repository)
+
+    first = asyncio.create_task(service.provision_or_deliver(verified, submission(), now=NOW))
+    await bundle_service.first_started.wait()
+    second = asyncio.create_task(service.provision_or_deliver(verified, submission(), now=NOW))
+    asyncio.get_running_loop().call_soon(bundle_service.release_first.set)
+
+    first_delivery, second_delivery = await asyncio.gather(first, second)
+
+    assert first_delivery.bundle_id == second_delivery.bundle_id
+    assert first_delivery.bundle == second_delivery.bundle
+    assert len(bundle_service.calls) == 1
 
 
 async def test_delivery_retry_rejects_missing_claim(service):

@@ -53,6 +53,7 @@ class PaidBundleService:
         self._secret_cipher = secret_cipher
         self._claim_ttl = claim_ttl
         self._secret_hasher = secret_hasher or SecretHasher()
+        self._provisioning_locks = tuple(asyncio.Lock() for _ in range(64))
 
     async def provision_or_deliver(
         self,
@@ -72,6 +73,22 @@ class PaidBundleService:
             verified.claim_secret_hash,
         ):
             raise BundleClaimConflictException("Invalid bundle claim secret")
+
+        lock_index = int(
+            hashlib.sha256(verified.subscription.entitlement_id.encode()).hexdigest(),
+            16,
+        ) % len(self._provisioning_locks)
+        async with self._provisioning_locks[lock_index]:
+            return await self._provision_or_deliver_locked(verified, submission, now=now)
+
+    async def _provision_or_deliver_locked(
+        self,
+        verified: VerifiedPurchaseResult,
+        submission: PurchaseSubmission,
+        *,
+        now: datetime,
+    ) -> PaidBundleDelivery:
+        """Provision or reuse escrow while the entitlement stripe is held."""
 
         existing = await self._repository.get_bundle_claim_for_entitlement(
             verified.subscription.entitlement_id

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from ..core.constants import (
     DEFAULT_SUBSCRIPTION_RECONCILE_BATCH_SIZE,
@@ -32,6 +32,7 @@ class SubscriptionReconciler(PeriodicTask):
         interval_seconds: float = DEFAULT_SUBSCRIPTION_RECONCILE_INTERVAL_SECONDS,
         batch_size: int = DEFAULT_SUBSCRIPTION_RECONCILE_BATCH_SIZE,
         now_provider: Callable[[], datetime] | None = None,
+        failure_retry_delay: timedelta = timedelta(minutes=5),
     ):
         super().__init__(
             name="Google Play subscription reconciler",
@@ -43,6 +44,7 @@ class SubscriptionReconciler(PeriodicTask):
         self._secret_cipher = secret_cipher
         self._batch_size = batch_size
         self._now_provider = now_provider or (lambda: datetime.now(timezone.utc))
+        self._failure_retry_delay = failure_retry_delay
 
     async def run_once(self) -> None:
         """Run one reconciliation batch for the periodic loop."""
@@ -64,11 +66,13 @@ class SubscriptionReconciler(PeriodicTask):
                     record_id=stored.token_fingerprint,
                     key_id=stored.encryption_key_id,
                 ).decode()
-                refreshed = await self._subscription_service.refresh_known_purchase(
+                await self._subscription_service.refresh_known_purchase(
                     token,
                     now=now,
                 )
-                await self._access_service.enforce(refreshed, now=now)
+                current = await self._repository.get_current_subscription(stored.entitlement_id)
+                if current is not None:
+                    await self._access_service.enforce(current, now=now)
                 reconciled += 1
             except Exception as exc:  # noqa: BLE001 - one token must not stop the batch
                 error = str(exc)
@@ -88,5 +92,6 @@ class SubscriptionReconciler(PeriodicTask):
                     stored.token_fingerprint,
                     last_error=error,
                     now=now,
+                    next_reconciliation_at=now + self._failure_retry_delay,
                 )
         return reconciled

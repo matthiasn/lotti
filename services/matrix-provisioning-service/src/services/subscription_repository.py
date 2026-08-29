@@ -1063,14 +1063,19 @@ class SubscriptionRepository(ProvisioningRepository):
         )
 
     def _record_subscription_error_sync(
-        self, token_fingerprint: str, last_error: str, now: datetime
+        self,
+        token_fingerprint: str,
+        last_error: str,
+        now: datetime,
+        next_reconciliation_at: datetime | None,
     ) -> StoredSubscription:
         conn = self._connect()
         try:
             conn.execute(
-                "UPDATE play_subscriptions SET last_error = ?, updated_at = ? "
+                "UPDATE play_subscriptions SET last_error = ?, updated_at = ?, "
+                "next_reconciliation_at = COALESCE(?, next_reconciliation_at) "
                 "WHERE token_fingerprint = ?",
-                (last_error, _iso(now), token_fingerprint),
+                (last_error, _iso(now), _iso(next_reconciliation_at), token_fingerprint),
             )
             conn.commit()
             row = conn.execute(
@@ -1084,7 +1089,12 @@ class SubscriptionRepository(ProvisioningRepository):
             conn.close()
 
     async def record_subscription_error(
-        self, token_fingerprint: str, *, last_error: str, now: datetime
+        self,
+        token_fingerprint: str,
+        *,
+        last_error: str,
+        now: datetime,
+        next_reconciliation_at: datetime | None = None,
     ) -> StoredSubscription:
         """Record a failed reconciliation without claiming enforcement changed."""
         return await asyncio.to_thread(
@@ -1092,4 +1102,5 @@ class SubscriptionRepository(ProvisioningRepository):
             token_fingerprint,
             last_error,
             now,
+            next_reconciliation_at,
         )

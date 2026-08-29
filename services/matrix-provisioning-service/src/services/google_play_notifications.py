@@ -18,6 +18,7 @@ from ..core.exceptions import (
 )
 from ..core.subscriptions import RealtimeDeveloperNotification, StoredSubscription
 from .subscription_access_service import SubscriptionAccessService
+from .subscription_repository import SubscriptionRepository
 from .subscription_service import SubscriptionService
 
 
@@ -101,12 +102,14 @@ class GooglePlayNotificationService:
         authenticator: PubSubAuthenticator,
         subscription_service: SubscriptionService,
         access_service: SubscriptionAccessService,
+        repository: SubscriptionRepository,
         *,
         package_name: str,
     ):
         self._authenticator = authenticator
         self._subscription_service = subscription_service
         self._access_service = access_service
+        self._repository = repository
         self._package_name = package_name
 
     async def handle(
@@ -125,6 +128,7 @@ class GooglePlayNotificationService:
             notification.purchase_token,
             now=now,
         )
-        if subscription.is_current:
-            await self._access_service.enforce(subscription, now=now)
+        current = await self._repository.get_current_subscription(subscription.entitlement_id)
+        if current is not None:
+            await self._access_service.enforce(current, now=now)
         return subscription

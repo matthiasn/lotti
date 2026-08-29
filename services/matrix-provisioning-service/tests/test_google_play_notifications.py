@@ -165,7 +165,10 @@ class FakeAuthenticator:
 class FakeSubscriptionService:
     def __init__(self):
         self.calls = []
-        self.subscription = SimpleNamespace(is_current=True)
+        self.subscription = SimpleNamespace(
+            entitlement_id="entitlement-one",
+            is_current=True,
+        )
 
     async def refresh_known_purchase(self, purchase_token, *, now):
         self.calls.append((purchase_token, now))
@@ -180,14 +183,26 @@ class FakeAccessService:
         self.calls.append((subscription, now))
 
 
+class FakeRepository:
+    def __init__(self, current=None):
+        self.current = current
+        self.calls = []
+
+    async def get_current_subscription(self, entitlement_id):
+        self.calls.append(entitlement_id)
+        return self.current
+
+
 async def test_notification_requeries_google_then_enforces_returned_state():
     authenticator = FakeAuthenticator()
     subscriptions = FakeSubscriptionService()
     access = FakeAccessService()
+    repository = FakeRepository(subscriptions.subscription)
     service = GooglePlayNotificationService(
         authenticator,
         subscriptions,
         access,
+        repository,
         package_name="com.matthiasn.lotti",
     )
 
@@ -201,6 +216,7 @@ async def test_notification_requeries_google_then_enforces_returned_state():
     assert authenticator.headers == ["Bearer signed-jwt"]
     assert subscriptions.calls == [("purchase-token", NOW)]
     assert access.calls == [(subscriptions.subscription, NOW)]
+    assert repository.calls == ["entitlement-one"]
 
 
 async def test_wrong_package_never_requeries_purchase_token():
@@ -209,6 +225,7 @@ async def test_wrong_package_never_requeries_purchase_token():
         FakeAuthenticator(),
         subscriptions,
         FakeAccessService(),
+        FakeRepository(),
         package_name="com.matthiasn.lotti",
     )
 
@@ -224,12 +241,17 @@ async def test_wrong_package_never_requeries_purchase_token():
 
 async def test_late_notification_for_retired_token_cannot_change_matrix_access():
     subscriptions = FakeSubscriptionService()
-    subscriptions.subscription = SimpleNamespace(is_current=False)
+    subscriptions.subscription = SimpleNamespace(
+        entitlement_id="entitlement-one",
+        is_current=False,
+    )
     access = FakeAccessService()
+    current = SimpleNamespace(entitlement_id="entitlement-one", is_current=True)
     service = GooglePlayNotificationService(
         FakeAuthenticator(),
         subscriptions,
         access,
+        FakeRepository(current),
         package_name="com.matthiasn.lotti",
     )
 
@@ -241,4 +263,4 @@ async def test_late_notification_for_retired_token_cannot_change_matrix_access()
 
     assert result.is_current is False
     assert subscriptions.calls == [("purchase-token", NOW)]
-    assert access.calls == []
+    assert access.calls == [(current, NOW)]
