@@ -5,7 +5,7 @@ description: Single-user multi-device replication over end-to-end encrypted Matr
 resource: ../../../lib/features/sync
 tags: [sync, matrix, replication, outbox, queue]
 status: stable
-generated: { by: codex/gpt-5, at: 2026-08-29T23:44:10Z }
+generated: { by: codex/gpt-5, at: 2026-08-29T23:51:47Z }
 stale_after: 2026-11-03
 sources:
   - id: sync-src
@@ -166,7 +166,9 @@ The Play-configured three-day grace deadline arrives as the line item's extended
 `expiryTime`. Lotti uses that timestamp directly and never adds another local
 grace window. Loss of entitlement suspends the Matrix user reversibly, while a
 renewal or payment recovery unsuspends it without discarding device or E2EE
-state. Suspension requires Synapse 1.110.0 or newer with MSC3823 enabled; when
+state. Client verification enforces the newly persisted current state before
+attempting bundle delivery, including when that state denies access. Suspension
+requires Synapse 1.110.0 or newer with MSC3823 enabled; when
 subscriptions are enabled, startup authenticates to Synapse and validates that
 version before workers start or purchase traffic is accepted. Each enforcement
 reloads the current purchase token while holding the entitlement's

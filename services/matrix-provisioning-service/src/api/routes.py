@@ -166,17 +166,17 @@ async def verify_subscription_purchase(
             entitlement_auth_secret=_bearer_secret(authorization),
             now=now,
         )
-        delivery = await container.get_paid_bundle_service().provision_or_deliver(
-            verified,
-            submission,
-            now=now,
-        )
         current = await container.get_subscription_repository().get_current_subscription(
             verified.subscription.entitlement_id
         )
         if current is None:
             raise BundleClaimConflictException("Verified subscription is missing")
         await container.get_subscription_access_service().enforce(current, now=now)
+        delivery = await container.get_paid_bundle_service().provision_or_deliver(
+            verified,
+            submission,
+            now=now,
+        )
         return PaidBundleResponse(
             **delivery.__dict__,
             entitlement_state=current.entitlement_state.value,

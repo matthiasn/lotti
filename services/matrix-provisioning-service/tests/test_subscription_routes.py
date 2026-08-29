@@ -376,6 +376,28 @@ def test_purchase_verification_maps_attempt_rate_limit(client, services):
     assert response.json()["detail"] == "Purchase verification rate limit exceeded"
 
 
+def test_inactive_verified_purchase_is_enforced_before_delivery_rejection(
+    client,
+    services,
+):
+    subscription = services[SERVICE_SUBSCRIPTION_REPOSITORY].subscription
+    subscription.entitlement_state = EntitlementState.SUSPENDED
+    services[SERVICE_PAID_BUNDLE_SERVICE].failure = GooglePlayVerificationException(
+        "Subscription does not currently grant SYNC access"
+    )
+
+    response = client.post(
+        "/api/v1/client/subscriptions/purchases/verify",
+        headers={"Authorization": f"Bearer {AUTH_SECRET}"},
+        json=purchase_payload(),
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "Subscription does not currently grant SYNC access"
+    assert services[SERVICE_SUBSCRIPTION_REPOSITORY].lookups == ["entitlement-one"]
+    assert services[SERVICE_SUBSCRIPTION_ACCESS_SERVICE].calls[0][0] is subscription
+
+
 def test_verified_replacement_purchase_returns_account_recovery_result(client, services):
     services[SERVICE_PAID_BUNDLE_SERVICE].delivery = PaidBundleDelivery(
         bundle_id="bundle-one",
