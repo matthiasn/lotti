@@ -1,8 +1,8 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/goals/model/goal_assessment.dart';
 import 'package:lotti/features/goals/service/goal_assessment_service.dart';
+import 'package:lotti/widgets/day_indicators/day_mark.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -30,13 +30,13 @@ void main() {
           agentId: 'goal-1',
           day: DateTime.utc(2026, 8, 11),
           specVersionId: 'goal-1:spec-v4',
-          rating: GoalAssessmentRating.mixed,
+          rating: DayVerdict.mixed,
           dimensionRatings: const {
-            'reading': GoalAssessmentRating.met,
-            'sleep': GoalAssessmentRating.missed,
+            'reading': DayVerdict.met,
+            'sleep': DayVerdict.missed,
           },
           note: 'Good reading, short sleep.',
-          provenance: GoalAssessmentProvenance.suggestedAndAccepted,
+          provenance: DayVerdictProvenance.suggestedAndAccepted,
           suggestedBy: 'Juno',
         ),
       );
@@ -83,10 +83,10 @@ void main() {
           agentId: 'goal-1',
           day: DateTime.utc(2026, 8, 11),
           specVersionId: 'goal-1:spec-v4',
-          rating: GoalAssessmentRating.improving,
+          rating: DayVerdict.improving,
           dimensionRatings: const {
-            'reading': GoalAssessmentRating.improving,
-            'sleep': GoalAssessmentRating.met,
+            'reading': DayVerdict.improving,
+            'sleep': DayVerdict.met,
           },
           note: 'Short sleep but trending up.',
         ),
@@ -127,8 +127,8 @@ void main() {
         agentId: 'goal-1',
         day: DateTime.utc(2026, 8, 11),
         specVersionId: 'goal-1:spec-v4',
-        rating: GoalAssessmentRating.met,
-        dimensionRatings: const {'reading': GoalAssessmentRating.met},
+        rating: DayVerdict.met,
+        dimensionRatings: const {'reading': DayVerdict.met},
       ),
     );
 

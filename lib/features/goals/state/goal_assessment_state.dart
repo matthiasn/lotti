@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/goals/model/goal_assessment.dart';
 import 'package:lotti/features/goals/service/goal_assessment_service.dart';
+import 'package:lotti/widgets/day_indicators/day_mark.dart';
 
 final goalAssessmentServiceProvider = Provider<GoalAssessmentService>(
   (ref) => GoalAssessmentService(ref.watch(agentSyncServiceProvider)),
@@ -64,7 +65,7 @@ goalAssessmentHistoryProvider = FutureProvider.autoDispose
           }
           final rawDimensions =
               content['dimensionRatingsV2'] ?? content['dimensionRatings'];
-          final dimensionRatings = <String, GoalAssessmentRating>{};
+          final dimensionRatings = <String, DayVerdict>{};
           if (rawDimensions is Map) {
             for (final entry in rawDimensions.entries) {
               if (entry.key is! String || entry.value is! String) continue;
@@ -82,10 +83,10 @@ goalAssessmentHistoryProvider = FutureProvider.autoDispose
               dimensionRatings: dimensionRatings,
               createdAt: action.createdAt,
               provenance:
-                  GoalAssessmentProvenance.values
+                  DayVerdictProvenance.values
                       .where((value) => value.name == content['provenance'])
                       .firstOrNull ??
-                  GoalAssessmentProvenance.ratedByUser,
+                  DayVerdictProvenance.ratedByUser,
               suggestedBy: content['suggestedBy'] as String?,
             ),
           );
@@ -104,17 +105,15 @@ goalAssessmentHistoryProvider = FutureProvider.autoDispose
 /// A record whose rating cannot be read is skipped entirely by the caller, so
 /// an unknown name would make the whole day's reflection — note, per-dimension
 /// verdicts and all — vanish from a device running an older build. A value
-/// this build does not know is therefore read as [GoalAssessmentRating.mixed],
+/// this build does not know is therefore read as [DayVerdict.mixed],
 /// the honest middle: the day was reflected on and it was not a clean sweep.
 ///
 /// Returns null only for a value that is not a string at all, which is
 /// corruption rather than a version skew.
-GoalAssessmentRating? _decodeRating(Object? raw) {
+DayVerdict? _decodeRating(Object? raw) {
   if (raw is! String) return null;
-  return GoalAssessmentRating.values
-          .where((value) => value.name == raw)
-          .firstOrNull ??
-      GoalAssessmentRating.mixed;
+  return DayVerdict.values.where((value) => value.name == raw).firstOrNull ??
+      DayVerdict.mixed;
 }
 
 /// The record that stands for each day, keyed by UTC day.
@@ -155,7 +154,7 @@ Map<DateTime, GoalAssessmentRecord> latestAssessmentsByDay(
 }
 
 /// The verdict standing for each day, for surfaces that only need the colour.
-Map<DateTime, GoalAssessmentRating> latestRatingsByDay(
+Map<DateTime, DayVerdict> latestRatingsByDay(
   Iterable<GoalAssessmentRecord> records, {
   String? specVersionId,
 }) => {

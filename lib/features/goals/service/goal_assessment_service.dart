@@ -3,7 +3,7 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
-import 'package:lotti/features/goals/model/goal_assessment.dart';
+import 'package:lotti/widgets/day_indicators/day_mark.dart';
 import 'package:uuid/uuid.dart';
 
 abstract final class GoalAssessmentToolNames {
@@ -21,10 +21,10 @@ class GoalAssessmentService {
     required String agentId,
     required DateTime day,
     required String specVersionId,
-    required GoalAssessmentRating rating,
-    required Map<String, GoalAssessmentRating> dimensionRatings,
+    required DayVerdict rating,
+    required Map<String, DayVerdict> dimensionRatings,
     String? note,
-    GoalAssessmentProvenance provenance = GoalAssessmentProvenance.ratedByUser,
+    DayVerdictProvenance provenance = DayVerdictProvenance.ratedByUser,
     String? suggestedBy,
   }) async {
     final now = clock.now();
@@ -86,16 +86,13 @@ class GoalAssessmentService {
   }
 }
 
-/// The nearest verdict a client predating [GoalAssessmentRating.improving]
+/// The nearest verdict a client predating [DayVerdict.improving]
 /// can decode.
 ///
 /// "Some of it was missed, but the day moved the right way" collapses to
 /// `mixed` there, which is the honest reading: it was not a clean sweep. Every
 /// other verdict is its own legacy form.
-GoalAssessmentRating _legacyRating(GoalAssessmentRating rating) =>
-    rating == GoalAssessmentRating.improving
-    ? GoalAssessmentRating.mixed
-    : rating;
+DayVerdict _legacyRating(DayVerdict rating) =>
+    rating == DayVerdict.improving ? DayVerdict.mixed : rating;
 
-String _legacyRatingName(GoalAssessmentRating rating) =>
-    _legacyRating(rating).name;
+String _legacyRatingName(DayVerdict rating) => _legacyRating(rating).name;

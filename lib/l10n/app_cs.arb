@@ -2876,7 +2876,6 @@
   "habitCompletionStatusFailed": "Nezdařeno",
   "habitCompletionStatusOpen": "Otevřeno",
   "habitCompletionStatusSkipped": "Přeskočeno",
-  "habitDayStatusSemantic": "{habit}, {status}",
   "habitDeleteConfirm": "Ano, smazat tento návyk",
   "habitDeleteQuestion": "Chceš tento návyk smazat?",
   "habitEditorAddSignal": "Přidat signál",

@@ -10,6 +10,7 @@ import 'package:lotti/features/goals/service/goal_assessment_service.dart';
 import 'package:lotti/features/goals/state/goal_assessment_state.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/goal_assessment_widgets.dart';
+import 'package:lotti/widgets/day_indicators/day_mark.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../widget_test_utils.dart';
@@ -19,8 +20,8 @@ class _MockGoalAssessmentService extends Mock
 
 void main() {
   setUpAll(() {
-    registerFallbackValue(GoalAssessmentRating.met);
-    registerFallbackValue(GoalAssessmentProvenance.ratedByUser);
+    registerFallbackValue(DayVerdict.met);
+    registerFallbackValue(DayVerdictProvenance.ratedByUser);
     registerFallbackValue(DateTime(2026));
   });
 
@@ -130,7 +131,7 @@ void main() {
     // above it already owns.
     expect(find.text('Steps · 7-day average'), findsOneWidget);
     expect(
-      find.byType(DsSegmentedToggle<GoalAssessmentRating>),
+      find.byType(DsSegmentedToggle<DayVerdict>),
       // The day's own verdict plus exactly one per-dimension control.
       findsNWidgets(2),
     );
@@ -182,7 +183,7 @@ void main() {
     await tester.pumpAndSettle();
 
     final label = find.text('Measure Blood Pressure 🫀').last;
-    final toggle = find.byType(DsSegmentedToggle<GoalAssessmentRating>).last;
+    final toggle = find.byType(DsSegmentedToggle<DayVerdict>).last;
     final labelRect = tester.getRect(label);
     final toggleRect = tester.getRect(toggle);
 
@@ -208,7 +209,7 @@ void main() {
         agentId: 'goal-1',
         day: day,
         specVersionId: 'goal-1:spec-v1',
-        rating: GoalAssessmentRating.met,
+        rating: DayVerdict.met,
         dimensionRatings: const {},
         note: 'Felt manageable',
       ),
@@ -251,7 +252,7 @@ void main() {
         agentId: 'goal-1',
         day: day,
         specVersionId: 'goal-1:spec-v1',
-        rating: GoalAssessmentRating.met,
+        rating: DayVerdict.met,
         dimensionRatings: const {},
         note: 'Felt manageable',
       ),
@@ -267,9 +268,9 @@ void main() {
           agentId: 'goal-1',
           day: day,
           specVersionId: 'goal-1:spec-v2',
-          rating: GoalAssessmentRating.mixed,
+          rating: DayVerdict.mixed,
           dimensionRatings: const {
-            'walk': GoalAssessmentRating.missed,
+            'walk': DayVerdict.missed,
           },
           note: 'Hard weather',
         ),
@@ -345,19 +346,19 @@ void main() {
       expect(find.byIcon(LottiIcons.radioUnselected), findsOneWidget);
 
       tester
-          .widget<DsSegmentedToggle<GoalAssessmentRating>>(
-            find.byType(DsSegmentedToggle<GoalAssessmentRating>).first,
+          .widget<DsSegmentedToggle<DayVerdict>>(
+            find.byType(DsSegmentedToggle<DayVerdict>).first,
           )
-          .onChanged(GoalAssessmentRating.mixed);
+          .onChanged(DayVerdict.mixed);
       await tester.pump();
       await tester.tap(find.text('Rate individual dimensions (optional)'));
       await tester.pumpAndSettle();
       final toggles = tester
-          .widgetList<DsSegmentedToggle<GoalAssessmentRating>>(
-            find.byType(DsSegmentedToggle<GoalAssessmentRating>),
+          .widgetList<DsSegmentedToggle<DayVerdict>>(
+            find.byType(DsSegmentedToggle<DayVerdict>),
           )
           .toList();
-      toggles[1].onChanged(GoalAssessmentRating.missed);
+      toggles[1].onChanged(DayVerdict.missed);
       await tester.enterText(find.byType(EditableText), '  Hard weather  ');
       final recordButton = find.widgetWithText(
         DesignSystemButton,
@@ -372,9 +373,9 @@ void main() {
           agentId: 'goal-1',
           day: day,
           specVersionId: 'goal-1:spec-v2',
-          rating: GoalAssessmentRating.mixed,
+          rating: DayVerdict.mixed,
           dimensionRatings: const {
-            'walk': GoalAssessmentRating.missed,
+            'walk': DayVerdict.missed,
           },
           note: 'Hard weather',
         ),
@@ -406,10 +407,10 @@ void main() {
               id: 'record-1',
               day: day,
               specVersionId: 'goal-1:spec-v1',
-              rating: GoalAssessmentRating.missed,
+              rating: DayVerdict.missed,
               note: 'Travelled all day.',
               createdAt: DateTime.utc(2026, 8, 11, 21),
-              provenance: GoalAssessmentProvenance.ratedByUser,
+              provenance: DayVerdictProvenance.ratedByUser,
             ),
           ),
         ),
@@ -427,10 +428,10 @@ void main() {
       tester.widget<EditableText>(find.byType(EditableText)).controller.text,
       'Travelled all day.',
     );
-    final toggle = tester.widget<DsSegmentedToggle<GoalAssessmentRating>>(
-      find.byType(DsSegmentedToggle<GoalAssessmentRating>).first,
+    final toggle = tester.widget<DsSegmentedToggle<DayVerdict>>(
+      find.byType(DsSegmentedToggle<DayVerdict>).first,
     );
-    expect(toggle.selected, GoalAssessmentRating.missed);
+    expect(toggle.selected, DayVerdict.missed);
   });
 
   testWidgets('a day with no reflection yet still opens on Met', (
@@ -456,10 +457,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final toggle = tester.widget<DsSegmentedToggle<GoalAssessmentRating>>(
-      find.byType(DsSegmentedToggle<GoalAssessmentRating>).first,
+    final toggle = tester.widget<DsSegmentedToggle<DayVerdict>>(
+      find.byType(DsSegmentedToggle<DayVerdict>).first,
     );
-    expect(toggle.selected, GoalAssessmentRating.met);
+    expect(toggle.selected, DayVerdict.met);
     expect(
       tester.widget<EditableText>(find.byType(EditableText)).controller.text,
       isEmpty,
@@ -552,10 +553,10 @@ void main() {
 
     // Everything was logged and nothing met its target. Opening on Met — as
     // it always did — contradicted the numbers printed directly above.
-    final toggle = tester.widget<DsSegmentedToggle<GoalAssessmentRating>>(
-      find.byType(DsSegmentedToggle<GoalAssessmentRating>).first,
+    final toggle = tester.widget<DsSegmentedToggle<DayVerdict>>(
+      find.byType(DsSegmentedToggle<DayVerdict>).first,
     );
-    expect(toggle.selected, GoalAssessmentRating.missed);
+    expect(toggle.selected, DayVerdict.missed);
     expect(
       find.text(
         'Suggested from what was measured — change it if you disagree.',
@@ -578,11 +579,11 @@ void main() {
         agentId: 'goal-1',
         day: day,
         specVersionId: 'goal-1:spec-v1',
-        rating: GoalAssessmentRating.missed,
+        rating: DayVerdict.missed,
         dimensionRatings: any(named: 'dimensionRatings'),
         // ignore: avoid_redundant_argument_values
         note: null,
-        provenance: GoalAssessmentProvenance.suggestedAndAccepted,
+        provenance: DayVerdictProvenance.suggestedAndAccepted,
       ),
     ).called(1);
   });
@@ -673,10 +674,10 @@ void main() {
     // choice as "suggested and accepted" credits the agent for the user's
     // own call.
     tester
-        .widget<DsSegmentedToggle<GoalAssessmentRating>>(
-          find.byType(DsSegmentedToggle<GoalAssessmentRating>).first,
+        .widget<DsSegmentedToggle<DayVerdict>>(
+          find.byType(DsSegmentedToggle<DayVerdict>).first,
         )
-        .onChanged(GoalAssessmentRating.missed);
+        .onChanged(DayVerdict.missed);
     await tester.pumpAndSettle();
     expect(
       find.text(

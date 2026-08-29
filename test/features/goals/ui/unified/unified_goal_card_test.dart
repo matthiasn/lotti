@@ -13,12 +13,12 @@ import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_assessment_state.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/goal_health_direction.dart';
-import 'package:lotti/features/goals/ui/goal_progress_card.dart';
 import 'package:lotti/features/goals/ui/unified/unified_goal_card.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_action_row.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/widgets/day_indicators/day_mark_strip.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -336,7 +336,7 @@ void main() {
     // trailing it on the same row.
     final titleRect = tester.getRect(find.text('Fitness'));
     final stripRect = tester.getRect(
-      find.byType(GoalCompactWindowStrip).first,
+      find.byType(DayMarkStrip).first,
     );
     expect(stripRect.top, greaterThan(titleRect.bottom - 1));
   });

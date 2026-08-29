@@ -19,6 +19,7 @@ import 'package:lotti/features/goals/ui/checkins/goal_checkin_composer.dart';
 import 'package:lotti/features/goals/ui/goal_assessment_widgets.dart';
 import 'package:lotti/features/goals/ui/pages/goal_timeline_page.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/widgets/day_indicators/day_mark.dart';
 
 import '../../../../widget_test_utils.dart';
 
@@ -148,9 +149,9 @@ void main() {
       id: 'r1',
       day: DateTime.utc(2026, 8, 17),
       specVersionId: 'agent-1:spec-v1',
-      rating: GoalAssessmentRating.met,
+      rating: DayVerdict.met,
       createdAt: DateTime(2026, 8, 17, 21),
-      provenance: GoalAssessmentProvenance.ratedByUser,
+      provenance: DayVerdictProvenance.ratedByUser,
     );
     await withClock(
       Clock.fixed(now),

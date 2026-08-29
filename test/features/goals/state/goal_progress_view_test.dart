@@ -12,6 +12,7 @@ import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_measurable_capture_state.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
+import 'package:lotti/widgets/day_indicators/day_mark.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -199,15 +200,15 @@ void main() {
     expect(habit.oldestSuccessAgesOutTonight, isFalse);
     expect(habit.successfulWeeks, 2);
     expect(view.compactWindow, [
-      GoalCompactDayState.full,
-      GoalCompactDayState.none,
-      GoalCompactDayState.none,
-      GoalCompactDayState.full,
-      GoalCompactDayState.none,
-      GoalCompactDayState.none,
+      DayMarkState.full,
+      DayMarkState.none,
+      DayMarkState.none,
+      DayMarkState.full,
+      DayMarkState.none,
+      DayMarkState.none,
       // Completed today, but only three of four successes in the window:
       // a partial success, not a full one.
-      GoalCompactDayState.partial,
+      DayMarkState.partial,
     ]);
   });
 
@@ -279,13 +280,13 @@ void main() {
     // average of the observed days clears 8,000 — a strip cell is a
     // statement about that day's own number.
     expect(view.compactWindow, [
-      GoalCompactDayState.full,
-      GoalCompactDayState.none,
-      GoalCompactDayState.none,
-      GoalCompactDayState.none,
-      GoalCompactDayState.full,
-      GoalCompactDayState.none,
-      GoalCompactDayState.none,
+      DayMarkState.full,
+      DayMarkState.none,
+      DayMarkState.none,
+      DayMarkState.none,
+      DayMarkState.full,
+      DayMarkState.none,
+      DayMarkState.none,
     ]);
   });
 
@@ -310,10 +311,10 @@ void main() {
     expect(view.metric?.direction, GoalDirection.atMost);
     expect(
       view.compactWindow.take(5),
-      everyElement(GoalCompactDayState.none),
+      everyElement(DayMarkState.none),
     );
-    expect(view.compactWindow.last, GoalCompactDayState.none);
-    expect(view.compactWindow[5], GoalCompactDayState.none);
+    expect(view.compactWindow.last, DayMarkState.none);
+    expect(view.compactWindow[5], DayMarkState.none);
   });
 
   test('a health metric with a bounded improving trend is on track', () {
@@ -406,13 +407,13 @@ void main() {
     expect(
       view.compactWindow,
       [
-        GoalCompactDayState.full,
-        GoalCompactDayState.full,
-        GoalCompactDayState.full,
-        GoalCompactDayState.full,
-        GoalCompactDayState.full,
-        GoalCompactDayState.none,
-        GoalCompactDayState.none,
+        DayMarkState.full,
+        DayMarkState.full,
+        DayMarkState.full,
+        DayMarkState.full,
+        DayMarkState.full,
+        DayMarkState.none,
+        DayMarkState.none,
       ],
       reason: 'a late session keeps the rolling at-most-zero window failed',
     );
@@ -507,19 +508,19 @@ void main() {
 
     expect(sum.metric?.aggregation, GoalAggregation.sum);
     expect(sum.compactWindow, [
-      GoalCompactDayState.none,
-      GoalCompactDayState.none,
-      GoalCompactDayState.none,
-      GoalCompactDayState.none,
-      GoalCompactDayState.full,
+      DayMarkState.none,
+      DayMarkState.none,
+      DayMarkState.none,
+      DayMarkState.none,
+      DayMarkState.full,
     ]);
     expect(count.metric?.aggregation, GoalAggregation.count);
     expect(count.compactWindow, [
-      GoalCompactDayState.none,
-      GoalCompactDayState.none,
-      GoalCompactDayState.none,
-      GoalCompactDayState.none,
-      GoalCompactDayState.full,
+      DayMarkState.none,
+      DayMarkState.none,
+      DayMarkState.none,
+      DayMarkState.none,
+      DayMarkState.full,
     ]);
   });
 
@@ -587,7 +588,7 @@ void main() {
 
     expect(dayView.metric?.days, hasLength(1));
     expect(dayView.metric?.window, const GoalWindow.day());
-    expect(dayView.compactWindow, [GoalCompactDayState.full]);
+    expect(dayView.compactWindow, [DayMarkState.full]);
     expect(monthView.metric?.days, hasLength(11));
     expect(monthView.metric?.days.first.day, DateTime.utc(2026, 8));
     expect(monthView.metric?.days.last.day, today);
@@ -628,13 +629,13 @@ void main() {
     );
 
     expect(view.compactWindow, [
-      GoalCompactDayState.none,
-      GoalCompactDayState.none,
-      GoalCompactDayState.none,
-      GoalCompactDayState.none,
-      GoalCompactDayState.none,
-      GoalCompactDayState.none,
-      GoalCompactDayState.full,
+      DayMarkState.none,
+      DayMarkState.none,
+      DayMarkState.none,
+      DayMarkState.none,
+      DayMarkState.none,
+      DayMarkState.none,
+      DayMarkState.full,
     ]);
   });
 
@@ -693,8 +694,8 @@ void main() {
     expect(view.metrics.last.days.last.value, 81);
     // Completed via the habit leaf while no leaf's window target held yet:
     // the accomplishment shows as a partial success.
-    expect(view.compactWindow[5], GoalCompactDayState.partial);
-    expect(view.compactWindow.last, GoalCompactDayState.full);
+    expect(view.compactWindow[5], DayMarkState.partial);
+    expect(view.compactWindow.last, DayMarkState.full);
   });
 
   test('composite strip rewards a fully completed day independently of the '
@@ -726,8 +727,8 @@ void main() {
       reference: today,
     );
 
-    expect(view.compactWindow[5], GoalCompactDayState.partial);
-    expect(view.compactWindow.last, GoalCompactDayState.none);
+    expect(view.compactWindow[5], DayMarkState.partial);
+    expect(view.compactWindow.last, DayMarkState.none);
   });
 
   test('composite strip stays green when the rolling quota is met', () {
@@ -758,7 +759,7 @@ void main() {
       reference: today,
     );
 
-    expect(view.compactWindow.last, GoalCompactDayState.full);
+    expect(view.compactWindow.last, DayMarkState.full);
   });
 
   test('composite progress preserves every metric leaf', () {
@@ -830,8 +831,8 @@ void main() {
       reference: today,
     );
 
-    expect(view.compactWindow[5], GoalCompactDayState.none);
-    expect(view.compactWindow.last, GoalCompactDayState.full);
+    expect(view.compactWindow[5], DayMarkState.none);
+    expect(view.compactWindow.last, DayMarkState.full);
   });
 
   test('habit days carry the as-of-day window verdict so completed days can '

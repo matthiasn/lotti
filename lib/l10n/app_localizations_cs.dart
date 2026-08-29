@@ -7287,11 +7287,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get habitCompletionStatusSkipped => 'Přeskočeno';
 
   @override
-  String habitDayStatusSemantic(String habit, String status) {
-    return '$habit, $status';
-  }
-
-  @override
   String get habitDeleteConfirm => 'Ano, smazat tento návyk';
 
   @override

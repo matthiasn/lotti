@@ -283,7 +283,10 @@ action content stays a comfortable column.
 
 Tab rows are lean **action rows**: icon, name, swipe, one-tap complete — **no
 per-row history**. Per-day history reads from the heatmap instead. The older
-per-row history strip survives only inside the dashboard habit chart. A row
+per-row history strip survives only inside the dashboard habit chart, drawn
+with the shared day-indicator cells ([day
+indicators](../architecture/day-indicators.md)) so it matches a goal's habit
+squares: success fill, skip dash, missed cross, dashed ring on today. A row
 whose completion today came from the engine wears an **auto** pill and a
 caption naming the signal and the time (`HabitsState.autoCompletedToday` and
 `autoCompletedAt`); tapping it still opens the sheet, because a manual entry
