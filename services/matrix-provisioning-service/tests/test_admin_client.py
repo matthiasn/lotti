@@ -237,7 +237,12 @@ async def test_bootstrap_password_check_distinguishes_rejection_from_success(
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.path == "/_matrix/client/v3/login":
             requests.append(request)
-            return httpx.Response(status_code, json={"access_token": "token"})
+            payload = (
+                {"access_token": "token"}
+                if status_code == 200
+                else {"errcode": "M_FORBIDDEN", "error": "Invalid username or password"}
+            )
+            return httpx.Response(status_code, json=payload)
         if request.url.path == "/_matrix/client/v3/logout":
             requests.append(request)
             return httpx.Response(200, json={})
@@ -305,6 +310,35 @@ async def test_bootstrap_password_check_does_not_treat_outage_as_rotation(creden
     client = SynapseAdminClient(credentials, transport=transport)
 
     with pytest.raises(ProvisioningError, match="Could not verify"):
+        await client.password_authenticates(USER, "bootstrap-password")
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"errcode": "M_FORBIDDEN", "error": "User account is suspended"},
+        {"errcode": "M_USER_DEACTIVATED", "error": "This account has been deactivated"},
+        {"errcode": "M_FORBIDDEN"},
+    ],
+)
+async def test_bootstrap_password_check_treats_account_state_as_inconclusive(
+    credentials,
+    payload,
+):
+    transport = httpx.MockTransport(lambda _: httpx.Response(403, json=payload))
+    client = SynapseAdminClient(credentials, transport=transport)
+
+    with pytest.raises(ProvisioningError, match="Could not verify password rotation"):
+        await client.password_authenticates(USER, "bootstrap-password")
+
+
+async def test_bootstrap_password_check_rejects_malformed_auth_failure(credentials):
+    transport = httpx.MockTransport(
+        lambda _: httpx.Response(403, content=b"not-json", headers={"content-type": "text/plain"})
+    )
+    client = SynapseAdminClient(credentials, transport=transport)
+
+    with pytest.raises(ProvisioningError, match="Could not verify password rotation"):
         await client.password_authenticates(USER, "bootstrap-password")
 
 

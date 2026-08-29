@@ -229,6 +229,30 @@ async def test_non_grantable_purchase_never_provisions(service, repository, bund
     assert bundle_service.calls == []
 
 
+async def test_purchase_that_loses_access_before_stripe_never_provisions(
+    service,
+    repository,
+    bundle_service,
+):
+    verified = await verified_purchase(repository)
+    await repository.store_verified_subscription(
+        refreshed_snapshot(
+            verified.subscription,
+            entitlement_state=EntitlementState.SUSPENDED,
+        ),
+        now=NOW + timedelta(minutes=1),
+    )
+
+    with pytest.raises(GooglePlayVerificationException, match="does not currently grant"):
+        await service.provision_or_deliver(
+            verified,
+            submission(),
+            now=NOW + timedelta(minutes=1),
+        )
+
+    assert bundle_service.calls == []
+
+
 async def test_acknowledgement_failure_leaves_bundle_available_for_retry(
     service,
     repository,
@@ -425,6 +449,56 @@ async def test_replacement_purchase_reauthorizes_pending_escrow(
             claim_secret="claim-secret",
             now=NOW + timedelta(minutes=30),
         )
+
+
+async def test_stale_predecessor_cannot_rebind_replacement_escrow(
+    service,
+    repository,
+):
+    predecessor = await verified_purchase(repository)
+    first = await service.provision_or_deliver(predecessor, submission(), now=NOW)
+    replacement = await repository.store_verified_subscription(
+        refreshed_snapshot(
+            predecessor.subscription,
+            token_fingerprint="replacement-token-fingerprint",
+            encrypted_purchase_token=b"encrypted-replacement-token",
+            base_plan_id="annual",
+            latest_order_id="GPA.5678",
+            acknowledgement_state=AcknowledgementState.PENDING,
+            acknowledged_at=None,
+            linked_token_fingerprint=predecessor.subscription.token_fingerprint,
+            bundle_id=None,
+        ),
+        now=NOW + timedelta(minutes=1),
+    )
+    replacement_verified = VerifiedPurchaseResult(
+        subscription=replacement,
+        request_hash="replacement-request-hash",
+        claim_secret_hash=SecretHasher().hash("replacement-claim-secret"),
+    )
+    await service.provision_or_deliver(
+        replacement_verified,
+        submission(
+            base_plan_id="annual",
+            purchase_token="replacement-token",
+            claim_secret="replacement-claim-secret",
+        ),
+        now=NOW + timedelta(minutes=1),
+    )
+
+    with pytest.raises(GooglePlayVerificationException, match="no longer current"):
+        await service.provision_or_deliver(
+            predecessor,
+            submission(),
+            now=NOW + timedelta(minutes=2),
+        )
+
+    recovered = await service.deliver_existing_claim(
+        entitlement_id="entitlement-one",
+        claim_secret="replacement-claim-secret",
+        now=NOW + timedelta(minutes=2),
+    )
+    assert recovered.bundle_id == first.bundle_id
 
 
 async def test_occupied_deterministic_username_retries_with_fresh_localpart(

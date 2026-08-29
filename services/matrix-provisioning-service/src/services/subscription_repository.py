@@ -1005,6 +1005,7 @@ class SubscriptionRepository(ProvisioningRepository):
     def _reauthorize_pending_bundle_claim_sync(
         self,
         entitlement_id: str,
+        token_fingerprint: str,
         claim_secret_hash: str,
     ) -> BundleClaim:
         conn = self._connect()
@@ -1013,8 +1014,8 @@ class SubscriptionRepository(ProvisioningRepository):
             row = conn.execute(
                 "SELECT c.* FROM bundle_claims c "
                 "JOIN play_subscriptions s ON s.subscription_id = c.subscription_id "
-                "WHERE s.entitlement_id = ? AND s.is_current = 1",
-                (entitlement_id,),
+                "WHERE s.entitlement_id = ? AND s.token_fingerprint = ? AND s.is_current = 1",
+                (entitlement_id, token_fingerprint),
             ).fetchone()
             if (
                 row is None
@@ -1044,12 +1045,14 @@ class SubscriptionRepository(ProvisioningRepository):
         self,
         entitlement_id: str,
         *,
+        token_fingerprint: str,
         claim_secret_hash: str,
     ) -> BundleClaim:
         """Bind inherited pending escrow to a fully verified replacement secret."""
         return await asyncio.to_thread(
             self._reauthorize_pending_bundle_claim_sync,
             entitlement_id,
+            token_fingerprint,
             claim_secret_hash,
         )
 

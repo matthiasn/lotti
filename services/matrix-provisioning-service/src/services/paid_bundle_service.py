@@ -89,6 +89,15 @@ class PaidBundleService:
     ) -> PaidBundleDelivery:
         """Provision or reuse escrow while the entitlement stripe is held."""
 
+        current = await self._repository.get_current_subscription(
+            verified.subscription.entitlement_id
+        )
+        if current is None or current.token_fingerprint != verified.subscription.token_fingerprint:
+            raise GooglePlayVerificationException("Verified purchase is no longer current")
+        if not _grants_access(current, now=now):
+            raise GooglePlayVerificationException(
+                "Subscription does not currently grant SYNC access"
+            )
         existing = await self._repository.get_bundle_claim_for_entitlement(
             verified.subscription.entitlement_id
         )
@@ -120,6 +129,7 @@ class PaidBundleService:
                 if existing.claim_secret_hash != verified.claim_secret_hash:
                     existing = await self._repository.reauthorize_pending_bundle_claim(
                         verified.subscription.entitlement_id,
+                        token_fingerprint=current.token_fingerprint,
                         claim_secret_hash=verified.claim_secret_hash,
                     )
                 delivery = await self._deliver_existing(
@@ -153,14 +163,14 @@ class PaidBundleService:
                 now=now,
             )
 
-        if verified.subscription.acknowledgement_state is AcknowledgementState.PENDING:
+        if current.acknowledgement_state is AcknowledgementState.PENDING:
             await self._google_play_client.acknowledge_subscription(
                 submission.package_name,
                 submission.product_id,
                 submission.purchase_token,
             )
             await self._repository.mark_subscription_acknowledged(
-                verified.subscription.token_fingerprint,
+                current.token_fingerprint,
                 now=now,
             )
         return delivery

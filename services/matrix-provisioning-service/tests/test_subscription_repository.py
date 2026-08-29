@@ -788,6 +788,7 @@ async def test_pending_claim_reauthorization_rejects_active_operation(
     with pytest.raises(BundleClaimConflictException, match="cannot be reauthorized"):
         await subscription_repository.reauthorize_pending_bundle_claim(
             entitlement.entitlement_id,
+            token_fingerprint="paid-token",
             claim_secret_hash="replacement-secret-hash",
         )
     with pytest.raises(BundleClaimConflictException, match="rotation lease was lost"):

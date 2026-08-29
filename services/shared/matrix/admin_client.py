@@ -434,7 +434,15 @@ class SynapseAdminClient(SynapseClientBase):
                 )
             return True
         if resp.status_code in (httpx.codes.UNAUTHORIZED, httpx.codes.FORBIDDEN):
-            return False
+            try:
+                error_payload = resp.json()
+            except ValueError:
+                error_payload = None
+            if isinstance(error_payload, Mapping) and (
+                error_payload.get("errcode") == "M_FORBIDDEN"
+                and error_payload.get("error") == "Invalid username or password"
+            ):
+                return False
         raise ProvisioningError(
             f"Could not verify password rotation for {user_mxid} (HTTP {resp.status_code})"
         )

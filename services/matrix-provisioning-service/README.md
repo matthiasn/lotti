@@ -160,7 +160,9 @@ independently, and skips the login round trip. A blank value falls back to
 password login rather than authenticating with an empty string. Bootstrap
 password validation reuses one dedicated Matrix device and logs out its access
 token after every successful check, preventing rotation proofs from accumulating
-live validation sessions.
+live validation sessions. Only Synapse's exact invalid-username-or-password
+response proves the bootstrap credential is retired; suspension, deactivation,
+or malformed authentication failures remain inconclusive.
 
 Google authentication uses Application Default Credentials with the Android
 Publisher and Play Integrity scopes. Prefer workload identity or a Secret Manager-mounted
@@ -222,8 +224,9 @@ the reaper revokes that account, and a later verified payment provisions a new
 account instead. Failed reaper attempts use a separate five-minute retry time;
 they do not extend the claim's credential-delivery TTL or block newer claims. A
 linked replacement that arrives before rotation atomically rebinds the pending
-escrow to its newly verified claim secret. If a deterministic Matrix localpart
-survives an earlier rollback, provisioning retries once with a random suffix.
+escrow to its newly verified claim secret, but only while that verified purchase
+token remains current. If a deterministic Matrix localpart survives an earlier
+rollback, provisioning retries once with a random suffix.
 Every retry reloads the current subscription, converges Matrix suspension, and
 rejects non-granting states or an elapsed authoritative expiry before decrypting
 escrow.

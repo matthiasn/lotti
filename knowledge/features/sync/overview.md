@@ -167,8 +167,9 @@ tokenized database leases; failed or crashed workers release or age out their
 lease, and a late worker cannot clear a newer owner's lease. Failed reaper
 attempts receive a separate bounded retry time so one broken account cannot
 starve later claims; this never extends the escrow TTL. A linked replacement
-purchase reauthorizes still-pending escrow with its verified claim secret. A
-later verified payment may detach an abandoned, revoked claim and provision a
+purchase reauthorizes still-pending escrow with its verified claim secret only
+while that purchase token remains current. A later verified payment may detach
+an abandoned, revoked claim and provision a
 fresh Matrix account, retrying with a suffixed localpart if the deterministic
 name survived an earlier rollback. Confirmed claims always recover the existing
 account without recreating bootstrap credentials. Lost-response delivery retries
