@@ -366,7 +366,7 @@ void main() {
       handle.dispose();
     });
   });
-  testWidgets('the rule controls start on the row title\'s own rail', (
+  testWidgets("the rule controls start on the row title's own rail", (
     tester,
   ) async {
     await tester.pumpWidget(
