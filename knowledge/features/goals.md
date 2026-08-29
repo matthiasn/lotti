@@ -412,6 +412,14 @@ flowchart TD
   judgement of retired criteria colour a day under the current ones. Ties on
   `createdAt` break by record id so two devices cannot disagree.
 
+  The same ruling reaches the habit cells. `latestDimensionRatingsByDay`
+  reads a habit's own row (`dimensionRatings[criterionId]`) out of the
+  latest record per day, and the detail page hands `GoalProgressCard` the
+  history plus the spec id so each habit square wears its verdict over the
+  measured outcome. Habits outside the goal pages get there through
+  `goal_habit_watchers.dart` (see [day
+  indicators](../architecture/day-indicators.md)).
+
   `improving` is the verdict a three-way split could not express — some of it
   missed, but the day moved the right way. It is newer than the shipped wire
   format, so `rating` carries the nearest legacy-decodable verdict (`mixed`)

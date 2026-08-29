@@ -659,6 +659,8 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
             key: _progressSectionKey,
             child: GoalProgressCard(
               progress: progress,
+              assessments: assessments,
+              specVersionId: spec?.id,
               scrollGroup: _trackScrollGroup,
               // The page-wide range picker rides the first evidence
               // heading — one control for every day track and the chart.

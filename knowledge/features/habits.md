@@ -292,11 +292,19 @@ per-row history**. Per-day history reads from the heatmap instead. The older
 per-row history strip survives only inside the dashboard habit chart, drawn
 with the shared day-indicator cells ([day
 indicators](../architecture/day-indicators.md)) so it matches a goal's habit
-squares: success fill, skip dash, missed cross, dashed ring on today. A row
+squares: success fill, skip dash, missed cross, dashed ring on today — and,
+for a day a watching goal's reflection judged, that verdict's fill and glyph
+(`habitDayVerdictsProvider`). A row
 whose completion today came from the engine wears an **auto** pill and a
 caption naming the signal and the time (`HabitsState.autoCompletedToday` and
 `autoCompletedAt`); tapping it still opens the sheet, because a manual entry
 always overrides.
+
+The completion sheet is also where a habit reaches its goals' reflections:
+for every active goal whose spec names the habit
+(`goalsWatchingHabitProvider`), it offers *Reflect on this day in ‹goal›*,
+opening that goal's reflection sheet for the day being recorded — a
+backfilled day judges that day, not today.
 
 # The completion sheet shows the habit's own signals
 

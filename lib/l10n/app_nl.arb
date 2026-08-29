@@ -3213,6 +3213,7 @@
   "habitLogOtherDayHint": "Wacht om een andere dag in te loggen",
   "habitNotRecordedLabel": "Niet geregistreerd",
   "habitPriorityLabel": "Prioriteit",
+  "habitReflectInGoal": "Reflecteer op deze dag in {goal}",
   "habitsAboveGoal": "Op het spoor",
   "habitsActiveHabitsCount": "{count, plural, one{1 actieve gewoonte} other{{count} actieve gewoonten}}",
   "@habitsActiveHabitsCount": {

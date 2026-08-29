@@ -22,6 +22,7 @@ import 'package:lotti/features/design_system/components/context_menus/design_sys
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
+import 'package:lotti/features/goals/model/goal_assessment.dart';
 import 'package:lotti/features/goals/model/goal_health_data_types.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/goal_progress_card.dart';
@@ -3209,6 +3210,95 @@ void main() {
     );
     await gesture.moveTo(Offset.zero);
     await tester.pumpAndSettle();
+  });
+
+  testWidgets('a habit day the user judged in the reflection wears that '
+      'verdict on its square, outranking the measured outcome', (tester) async {
+    final handle = tester.ensureSemantics();
+    final judged = today.subtract(const Duration(days: 1));
+    GoalAssessmentRecord record({
+      required String id,
+      required String specVersionId,
+      required DayVerdict verdict,
+      required DateTime createdAt,
+    }) => GoalAssessmentRecord(
+      id: id,
+      day: judged,
+      specVersionId: specVersionId,
+      rating: DayVerdict.mixed,
+      createdAt: createdAt,
+      provenance: DayVerdictProvenance.ratedByUser,
+      dimensionRatings: {'c-walk': verdict},
+    );
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          specVersionId: 'spec-2',
+          assessments: [
+            // Under the retired spec the day was filed as met; under the
+            // current one as improving. Only the current one may colour it.
+            record(
+              id: 'retired',
+              specVersionId: 'spec-1',
+              verdict: DayVerdict.met,
+              createdAt: DateTime(2026, 8, 10, 23),
+            ),
+            record(
+              id: 'current',
+              specVersionId: 'spec-2',
+              verdict: DayVerdict.improving,
+              createdAt: DateTime(2026, 8, 10, 22),
+            ),
+          ],
+          progress: GoalProgressView(
+            today: today,
+            habits: [
+              GoalHabitProgressView(
+                habitId: 'walk',
+                criterionId: 'c-walk',
+                name: 'Walk',
+                targetCount: 3,
+                days: [
+                  day(6, 0),
+                  day(5, 0),
+                  day(4, 0),
+                  day(3, 0),
+                  day(2, 0),
+                  GoalProgressDay(
+                    day: judged,
+                    value: 0,
+                    habitCompletionType: HabitCompletionType.fail,
+                  ),
+                  day(0, 0),
+                ],
+                successfulWeeks: 2,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    final tokens = tester.element(find.byType(GoalProgressCard)).designTokens;
+    final visual = find.byKey(
+      const ValueKey('goal-habit-day-visual-walk-2026-08-10'),
+    );
+    final decoration =
+        tester.widget<Container>(visual).decoration! as BoxDecoration;
+    expect(decoration.color, dayVerdictFill(tokens, DayVerdict.improving));
+    expect(
+      find.descendant(
+        of: visual,
+        matching: find.byIcon(dayVerdictGlyph(DayVerdict.improving)),
+      ),
+      findsOneWidget,
+    );
+    // The measured miss no longer shows its cross — the ruling replaced it.
+    expect(find.byIcon(LottiIcons.close), findsNothing);
+    expect(
+      find.bySemanticsLabel(RegExp('Aug 10, 2026: Improving')),
+      findsOneWidget,
+    );
+    handle.dispose();
   });
 
   testWidgets('a recorded miss is visibly distinct from an empty day', (

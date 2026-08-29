@@ -340,4 +340,87 @@ void main() {
       expect(standing?.rating, DayVerdict.improving);
     });
   });
+  group('latestDimensionRatingsByDay', () {
+    final day = DateTime.utc(2026, 8, 10);
+    GoalAssessmentRecord record({
+      required String id,
+      required DateTime createdAt,
+      String specVersionId = 'spec-1',
+      DateTime? on,
+      Map<String, DayVerdict> dimensions = const {},
+    }) => GoalAssessmentRecord(
+      id: id,
+      day: on ?? day,
+      specVersionId: specVersionId,
+      rating: DayVerdict.mixed,
+      createdAt: createdAt,
+      provenance: DayVerdictProvenance.ratedByUser,
+      dimensionRatings: dimensions,
+    );
+
+    test('the latest record decides, and an unrated dimension is absent', () {
+      final verdicts = latestDimensionRatingsByDay(
+        [
+          record(
+            id: 'first',
+            createdAt: DateTime(2026, 8, 10, 20),
+            dimensions: {'c1': DayVerdict.missed, 'c2': DayVerdict.met},
+          ),
+          record(
+            id: 'revision',
+            createdAt: DateTime(2026, 8, 10, 21),
+            dimensions: {'c1': DayVerdict.improving},
+          ),
+          record(
+            id: 'other-day',
+            on: day.subtract(const Duration(days: 1)),
+            createdAt: DateTime(2026, 8, 9, 21),
+            dimensions: {'c1': DayVerdict.met},
+          ),
+        ],
+        criterionId: 'c1',
+      );
+      expect(verdicts, {
+        day: DayVerdict.improving,
+        day.subtract(const Duration(days: 1)): DayVerdict.met,
+      });
+      // c2 was rated only in the superseded record: the revision is the
+      // day's word, and it did not rate c2.
+      expect(
+        latestDimensionRatingsByDay(
+          [
+            record(
+              id: 'first',
+              createdAt: DateTime(2026, 8, 10, 20),
+              dimensions: {'c2': DayVerdict.met},
+            ),
+            record(id: 'revision', createdAt: DateTime(2026, 8, 10, 21)),
+          ],
+          criterionId: 'c2',
+        ),
+        isEmpty,
+      );
+    });
+
+    test('a spec version scope drops judgements of retired criteria', () {
+      final verdicts = latestDimensionRatingsByDay(
+        [
+          record(
+            id: 'retired',
+            specVersionId: 'spec-0',
+            createdAt: DateTime(2026, 8, 10, 22),
+            dimensions: {'c1': DayVerdict.missed},
+          ),
+          record(
+            id: 'current',
+            createdAt: DateTime(2026, 8, 10, 20),
+            dimensions: {'c1': DayVerdict.met},
+          ),
+        ],
+        criterionId: 'c1',
+        specVersionId: 'spec-1',
+      );
+      expect(verdicts, {day: DayVerdict.met});
+    });
+  });
 }

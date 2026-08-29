@@ -9,6 +9,10 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
+import 'package:lotti/features/goals/state/goal_assessment_state.dart';
+import 'package:lotti/features/goals/state/goal_habit_watchers.dart';
+import 'package:lotti/features/goals/state/goal_progress_view.dart';
+import 'package:lotti/features/goals/ui/goal_assessment_widgets.dart';
 import 'package:lotti/features/habits/state/habit_signal_status_controller.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_signal_row.dart';
 import 'package:lotti/features/habits/ui/widgets/measurable_quick_record_chips.dart';
@@ -119,6 +123,32 @@ class _HabitCompletionSheetState extends ConsumerState<HabitCompletionSheet> {
     _started = forToday ? clock.now() : endOfDay();
   }
 
+  /// Opens the day's reflection for one of the goals watching this habit.
+  ///
+  /// The reflection is the goal's: it needs the goal's spec, its progress
+  /// view (the sheet lists every dimension's evidence) and its history (so a
+  /// judged day reopens showing what was recorded). The habit sheet only
+  /// contributes the day — the one the user picked here, so reflecting on a
+  /// backfilled day judges that day, not today.
+  Future<void> _reflect(GoalHabitWatcher watcher) async {
+    final agentId = watcher.identity.agentId;
+    final progress = await ref.read(
+      goalAgentProgressViewProvider(agentId).future,
+    );
+    final assessments = await ref.read(
+      goalAssessmentHistoryProvider(agentId).future,
+    );
+    if (!mounted || progress == null) return;
+    showGoalDayAssessmentSheet(
+      context,
+      agentId: agentId,
+      spec: watcher.spec,
+      progress: progress,
+      assessments: assessments,
+      day: _started,
+    );
+  }
+
   Future<void> _save() async {
     _formKey.currentState!.save();
     Navigator.pop(context);
@@ -216,6 +246,21 @@ class _HabitCompletionSheetState extends ConsumerState<HabitCompletionSheet> {
                   ),
                 ),
             ],
+      reflections: [
+        for (final watcher
+            in ref.watch(goalsWatchingHabitProvider(widget.habitId)).value ??
+                const <GoalHabitWatcher>[])
+          DesignSystemButton(
+            key: ValueKey('habit-reflect-${watcher.identity.agentId}'),
+            label: context.messages.habitReflectInGoal(
+              watcher.spec.title,
+            ),
+            leadingIcon: LottiIcons.note,
+            variant: DesignSystemButtonVariant.tertiary,
+            size: DesignSystemButtonSize.dense,
+            onPressed: () => _reflect(watcher),
+          ),
+      ],
       onOutcomeChanged: (value) => setState(() {
         _outcome = value;
         _outcomeChosen = true;
@@ -275,6 +320,7 @@ class _CompletionForm extends StatelessWidget {
     required this.outcome,
     required this.autoSatisfied,
     required this.signals,
+    required this.reflections,
     required this.onOutcomeChanged,
     required this.onPickDate,
     required this.onClose,
@@ -288,6 +334,11 @@ class _CompletionForm extends StatelessWidget {
   final HabitCompletionType outcome;
   final bool autoSatisfied;
   final List<Widget> signals;
+
+  /// One action per goal watching this habit, opening that goal's
+  /// reflection for the day being recorded. Empty for a habit no goal
+  /// watches, and the row is then not rendered at all.
+  final List<Widget> reflections;
   final ValueChanged<HabitCompletionType> onOutcomeChanged;
   final ValueChanged<DateTime> onPickDate;
   final VoidCallback onClose;
@@ -359,6 +410,18 @@ class _CompletionForm extends StatelessWidget {
                 for (final signal in signals) ...[
                   SizedBox(height: tokens.spacing.step3),
                   signal,
+                ],
+                if (reflections.isNotEmpty) ...[
+                  SizedBox(height: tokens.spacing.step3),
+                  // The goals' own judgement of this day, reachable from the
+                  // habit: the day squares wear those verdicts, so the place
+                  // that records them has to be one tap from here.
+                  Wrap(
+                    key: const ValueKey('habit-sheet-reflections'),
+                    spacing: tokens.spacing.step2,
+                    runSpacing: tokens.spacing.step1,
+                    children: reflections,
+                  ),
                 ],
                 if (autoSatisfied) ...[
                   SizedBox(height: tokens.spacing.step3),

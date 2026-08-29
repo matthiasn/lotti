@@ -164,3 +164,23 @@ Map<DateTime, DayVerdict> latestRatingsByDay(
   ).entries)
     entry.key: entry.value.rating,
 };
+
+/// The verdict standing for one dimension on each day — a habit's or a
+/// metric's own row in the reflection sheet, keyed by its criterion id.
+///
+/// Built on the same latest-record-per-day rule as [latestRatingsByDay], so
+/// the dimension's colour on a habit card can never disagree with the day it
+/// belongs to. Days whose latest record did not rate this dimension are
+/// absent, not defaulted: the sheet only writes the rows the user touched,
+/// and an untouched row is no verdict rather than a met one.
+Map<DateTime, DayVerdict> latestDimensionRatingsByDay(
+  Iterable<GoalAssessmentRecord> records, {
+  required String criterionId,
+  String? specVersionId,
+}) => {
+  for (final entry in latestAssessmentsByDay(
+    records,
+    specVersionId: specVersionId,
+  ).entries)
+    entry.key: ?entry.value.dimensionRatings[criterionId],
+};

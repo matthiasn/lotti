@@ -3214,6 +3214,7 @@
   "habitLogOtherDayHint": "Håll kvar för att logga en annan dag",
   "habitNotRecordedLabel": "Ej inspelat",
   "habitPriorityLabel": "Prioritet",
+  "habitReflectInGoal": "Reflektera över den här dagen i {goal}",
   "habitsAboveGoal": "På banan",
   "habitsActiveHabitsCount": "{count, plural, one{1 aktiv vana} other{{count} aktiva vanor}}",
   "@habitsActiveHabitsCount": {

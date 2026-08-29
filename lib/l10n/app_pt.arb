@@ -3213,6 +3213,7 @@
   "habitLogOtherDayHint": "Segure para registrar outro dia",
   "habitNotRecordedLabel": "Não registrado",
   "habitPriorityLabel": "Prioridade",
+  "habitReflectInGoal": "Refletir sobre este dia em {goal}",
   "habitsAboveGoal": "No caminho certo",
   "habitsActiveHabitsCount": "{count, plural, one{1 hábito ativo} other{{count} hábitos ativos}}",
   "@habitsActiveHabitsCount": {
