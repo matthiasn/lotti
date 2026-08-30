@@ -221,6 +221,7 @@ void main() {
     when(
       () => persistence.createMeasurementEntry(
         data: any(named: 'data'),
+        comment: any(named: 'comment'),
         private: any(named: 'private'),
       ),
     ).thenAnswer((invocation) async {
@@ -730,6 +731,36 @@ void main() {
       expect(find.text('Water'), findsWidgets);
       expect(tester.takeException(), isNull);
     });
+
+    clockedWidgets(
+      'a value saved through Other counts like a chip tap: the row shows it '
+      'recorded and a rule it meets flips the outcome',
+      (tester) async {
+        await pumpSheet(tester, habitId: waterHabit.id);
+        await tester.tap(find.text('Other'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 450));
+        await tester.enterText(
+          find.byKey(const Key('measurement_value_field')),
+          '600',
+        );
+        await tester.pump();
+        await tester.tap(find.byKey(const Key('measurement_save')));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 450));
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.byKey(const Key('measurement_value_field')), findsNothing);
+        expect(find.text('≥ 500 ml · done'), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('habit-sheet-auto-banner')),
+          findsOneWidget,
+        );
+        await tester.tap(find.byKey(const Key('habit_save')));
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(captured().completionType, HabitCompletionType.success);
+      },
+    );
 
     clockedWidgets('a past day shows no signal rows', (tester) async {
       await pumpSheet(tester, habitId: waterHabit.id, dateString: '2024-01-15');

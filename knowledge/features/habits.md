@@ -341,7 +341,9 @@ the old dialog that embedded a whole linked dashboard. It renders **one
 `HabitSignalRow` per leaf of the habit's `autoCompleteRule`** — status pill
 ("≥ 500 ml · 250 so far", "any workout · done"), quick-record chips for a
 measurable (its three most-logged values, from the same ranking the
-measurement dialog uses, plus *Other* for the full capture), and a two-week
+measurement dialog uses, plus *Other* for the full capture — whose saved
+entry, when it is for today, counts exactly like a chip tap: the row shows it
+recorded and a rule it meets flips the outcome), and a two-week
 `SignalSparkline` — above the unchanged form (date, comment, Success / Skip /
 Missed, Record). The rows are cards one elevation step above the sheet
 (`dsCardSurface` on `dsPageSurface`), as the handover draws them. On a

@@ -30,7 +30,11 @@ import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 /// chip per active choice; the rest of the sheet — observed-at, comment,
 /// save — is the same route.
 abstract final class MeasurementCaptureModal {
-  static Future<void> show({
+  /// Opens the capture flow for [measurableDataType] and resolves to the
+  /// measurement that was saved, or null when the flow was dismissed — so a
+  /// host that offered the flow as its "other value" path can treat the
+  /// entry exactly like one of its own quick values.
+  static Future<MeasurementData?> show({
     required BuildContext context,
     required MeasurableDataType measurableDataType,
   }) async {
@@ -53,7 +57,7 @@ abstract final class MeasurementCaptureModal {
     }
 
     try {
-      await ModalUtils.showMultiPageModal<void>(
+      return await ModalUtils.showMultiPageModal<MeasurementData>(
         context: context,
         pageIndexNotifier: draft.pageIndexNotifier,
         modalDecorator: decorateFlow,
@@ -238,10 +242,10 @@ class _MeasurementCaptureDraft {
 
     final errorMessage = modalContext.messages.measurementSaveError;
     saveState.value = (isSaving: true, error: null);
-    final observedAt = measurementDateTime.value;
+    final data = buildData(measurementDateTime.value);
     try {
       final savedEntry = await getIt<PersistenceLogic>().createMeasurementEntry(
-        data: buildData(observedAt),
+        data: data,
         comment: commentController.text,
         private: dataType.private ?? false,
       );
@@ -250,7 +254,7 @@ class _MeasurementCaptureDraft {
         return;
       }
       if (modalContext.mounted) {
-        Navigator.of(modalContext).pop('Saved');
+        Navigator.of(modalContext).pop(data);
       }
     } catch (error, stackTrace) {
       DevLogger.error(
