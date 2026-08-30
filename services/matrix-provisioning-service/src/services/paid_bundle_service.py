@@ -124,6 +124,7 @@ class PaidBundleService:
             existing is not None
             and existing.confirmed_at is None
             and existing.destroyed_at is not None
+            and existing.abandoned_at is not None
         ):
             await self._repository.release_abandoned_bundle_claim(
                 verified.subscription.entitlement_id,

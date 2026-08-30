@@ -590,6 +590,30 @@ async def test_abandoned_claim_is_replaced_by_fresh_bundle(
     assert (await repository.get(abandoned.bundle_id)).status.value == "revoked"
 
 
+async def test_admin_revoked_claim_cannot_be_reprovisioned(
+    service,
+    repository,
+    bundle_service,
+):
+    verified = await verified_purchase(repository)
+    revoked = await service.provision_or_deliver(verified, submission(), now=NOW)
+    await repository.revoke(revoked.bundle_id, "revoked by administrator")
+
+    with pytest.raises(BundleClaimConflictException, match="terminal"):
+        await service.provision_or_deliver(
+            verified,
+            submission(),
+            now=NOW + timedelta(minutes=1),
+        )
+
+    claim = await repository.get_bundle_claim_for_entitlement("entitlement-one")
+    current = await repository.get_current_subscription("entitlement-one")
+    assert claim.bundle_id == revoked.bundle_id
+    assert claim.destroyed_at is not None
+    assert current.bundle_id == revoked.bundle_id
+    assert len(bundle_service.calls) == 1
+
+
 async def test_replacement_purchase_reauthorizes_pending_escrow(
     service,
     repository,

@@ -156,7 +156,10 @@ Requests in another service object or process wait for the owner's durable
 claim and reuse it; a killed owner becomes recoverable after five minutes.
 Admin bundle revocation destroys any paid bootstrap escrow in the same SQLite
 transaction and clears its operation lease, so later and in-flight delivery
-cannot return credentials after revocation wins the transaction order.
+cannot return credentials after revocation wins the transaction order. Only a
+claim revoked by the expiry reaper receives the durable abandonment marker that
+permits a later verified purchase to detach it and create a replacement account;
+an administrator-revoked claim remains linked and terminal.
 These are database invariants, with reverse-proxy throttling kept as an
 additional outer boundary. The bundled nginx forwards the original client
 chain and Uvicorn trusts only nginx's fixed Compose address, so direct callers
@@ -232,7 +235,9 @@ when the claim has a real `confirmed_at`; a late request cannot turn a
 reaper-destroyed claim into apparent success. Confirmed claims always recover
 the existing account without recreating bootstrap credentials. Lost-response
 delivery retries reload the current subscription and reject non-granting state
-or an elapsed authoritative expiry before decrypting escrow.
+or an elapsed authoritative expiry before decrypting escrow. The route reloads
+the current row once more after delivery so a concurrent replacement purchase's
+entitlement state, rather than its predecessor's stale state, is returned.
 
 # Pairing a new device
 

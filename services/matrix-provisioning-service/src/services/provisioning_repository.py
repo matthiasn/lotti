@@ -419,6 +419,7 @@ class ProvisioningRepository:
         conn: sqlite3.Connection,
         bundle_id: str,
         revoked_at: datetime,
+        allow_paid_reprovisioning: bool,
     ) -> None:
         """Extend the bundle revocation transaction for repository subclasses."""
 
@@ -427,6 +428,7 @@ class ProvisioningRepository:
         bundle_id: str,
         reason: str,
         now: datetime | None,
+        allow_paid_reprovisioning: bool,
     ) -> ProvisionedUser:
         conn = self._connect()
         try:
@@ -442,7 +444,12 @@ class ProvisioningRepository:
                 "UPDATE provisioned_users SET status = ?, revoked_at = ? WHERE bundle_id = ?",
                 (BundleStatus.REVOKED.value, _iso(revoked_at), bundle_id),
             )
-            self._terminalize_related_state_on_revoke_sync(conn, bundle_id, revoked_at)
+            self._terminalize_related_state_on_revoke_sync(
+                conn,
+                bundle_id,
+                revoked_at,
+                allow_paid_reprovisioning,
+            )
             self._record_event_sync(
                 conn, bundle_id, BundleEventType.REVOKED, reason or "Revoked by admin"
             )
@@ -463,13 +470,22 @@ class ProvisioningRepository:
         reason: str = "",
         *,
         now: datetime | None = None,
+        allow_paid_reprovisioning: bool = False,
     ) -> ProvisionedUser:
         """Mark a bundle revoked without touching the Matrix account.
 
         ``now`` lets deterministic maintenance work stamp the revocation and
         any subclass-owned terminal state with the same authoritative time.
+        ``allow_paid_reprovisioning`` is reserved for the paid-claim reaper;
+        administrative revocation remains terminal by default.
         """
-        return await asyncio.to_thread(self._revoke_sync, bundle_id, reason, now)
+        return await asyncio.to_thread(
+            self._revoke_sync,
+            bundle_id,
+            reason,
+            now,
+            allow_paid_reprovisioning,
+        )
 
     def _update_sync(
         self,

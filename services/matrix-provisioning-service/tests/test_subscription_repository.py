@@ -65,6 +65,7 @@ def test_existing_bundle_claim_schema_is_migrated(tmp_path):
         "operation_kind",
         "operation_started_at",
         "authorized_token_fingerprint",
+        "abandoned_at",
     } <= columns
 
 
@@ -1210,6 +1211,28 @@ async def test_unknown_bundle_claim_mutations_are_rejected(
 async def test_only_revoked_abandoned_claim_can_be_released(subscription_repository):
     with pytest.raises(BundleClaimConflictException, match="not abandoned"):
         await subscription_repository.release_abandoned_bundle_claim("unknown", now=NOW)
+
+    entitlement = await create_entitlement(subscription_repository)
+    await subscription_repository.store_verified_subscription(
+        verified_subscription(entitlement.entitlement_id, "paid-token"),
+        now=NOW,
+    )
+    user, claim = await store_paid_bundle(subscription_repository, "paid-token")
+    await subscription_repository.revoke(user.bundle_id, "revoked by administrator", now=NOW)
+
+    with pytest.raises(BundleClaimConflictException, match="not abandoned"):
+        await subscription_repository.release_abandoned_bundle_claim(
+            entitlement.entitlement_id,
+            now=NOW,
+        )
+
+    current = await subscription_repository.get_current_subscription(entitlement.entitlement_id)
+    stored_claim = await subscription_repository.get_bundle_claim_for_entitlement(
+        entitlement.entitlement_id
+    )
+    assert current.bundle_id == user.bundle_id
+    assert stored_claim.bundle_id == claim.bundle_id
+    assert stored_claim.abandoned_at is None
 
 
 @pytest.mark.parametrize(

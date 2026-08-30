@@ -597,7 +597,49 @@ def test_delivery_retry_authenticates_entitlement_without_replaying_purchase(
     delivery_call = services[SERVICE_PAID_BUNDLE_SERVICE].delivery_calls[0]
     assert delivery_call["claim_secret"] == CLAIM_SECRET
     assert delivery_call["now"] == NOW + timedelta(seconds=1)
-    assert services[SERVICE_SUBSCRIPTION_REPOSITORY].lookups == ["entitlement-one"]
+    assert services[SERVICE_SUBSCRIPTION_REPOSITORY].lookups == [
+        "entitlement-one",
+        "entitlement-one",
+    ]
+
+
+def test_delivery_retry_reports_concurrently_replaced_subscription_state(client, services):
+    predecessor = SimpleNamespace(entitlement_state=EntitlementState.EXPIRED)
+    replacement = SimpleNamespace(entitlement_state=EntitlementState.ACTIVE)
+    repository = services[SERVICE_SUBSCRIPTION_REPOSITORY]
+    repository.results = [predecessor, replacement]
+
+    response = client.post(
+        "/api/v1/client/subscriptions/bundle-claims/deliver",
+        headers={"Authorization": f"Bearer {AUTH_SECRET}"},
+        json={"entitlement_id": "entitlement-one", "claim_secret": CLAIM_SECRET},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["entitlement_state"] == "active"
+    assert repository.lookups == ["entitlement-one", "entitlement-one"]
+    access_calls = services[SERVICE_SUBSCRIPTION_ACCESS_SERVICE].calls
+    assert len(access_calls) == 1
+    assert access_calls[0][0] is predecessor
+
+
+def test_delivery_retry_fails_closed_if_subscription_disappears_after_delivery(
+    client,
+    services,
+):
+    repository = services[SERVICE_SUBSCRIPTION_REPOSITORY]
+    repository.results = [repository.subscription, None]
+
+    response = client.post(
+        "/api/v1/client/subscriptions/bundle-claims/deliver",
+        headers={"Authorization": f"Bearer {AUTH_SECRET}"},
+        json={"entitlement_id": "entitlement-one", "claim_secret": CLAIM_SECRET},
+    )
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "Subscription is missing"
+    assert len(services[SERVICE_PAID_BUNDLE_SERVICE].delivery_calls) == 1
+    assert repository.lookups == ["entitlement-one", "entitlement-one"]
 
 
 def test_delivery_retry_fails_closed_when_current_subscription_is_missing(client, services):

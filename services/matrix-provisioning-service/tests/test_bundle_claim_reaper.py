@@ -123,6 +123,7 @@ async def test_expired_claim_deactivates_revokes_and_destroys_escrow(setup):
     assert destroyed.encrypted_bundle is None
     assert destroyed.confirmed_at is None
     assert destroyed.destroyed_at == NOW
+    assert destroyed.abandoned_at == NOW
 
 
 async def test_future_claim_is_not_touched(setup):

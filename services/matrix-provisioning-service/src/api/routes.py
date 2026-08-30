@@ -275,6 +275,11 @@ async def deliver_paid_bundle(
             claim_secret=request.claim_secret,
             now=datetime.now(timezone.utc),
         )
+        subscription = await container.get_subscription_repository().get_current_subscription(
+            request.entitlement_id
+        )
+        if subscription is None:
+            raise BundleClaimConflictException("Subscription is missing")
         return PaidBundleResponse(
             **delivery.__dict__,
             entitlement_state=subscription.entitlement_state.value,

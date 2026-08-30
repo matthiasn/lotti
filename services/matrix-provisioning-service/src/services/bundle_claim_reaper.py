@@ -81,6 +81,7 @@ class BundleClaimReaper(PeriodicTask):
                     claim.bundle_id,
                     "Paid bundle claim expired before validated rotation",
                     now=now,
+                    allow_paid_reprovisioning=True,
                 )
                 reaped += 1
             except Exception:  # noqa: BLE001 - isolate and retry one claim later

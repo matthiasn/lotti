@@ -151,6 +151,7 @@ CREATE TABLE IF NOT EXISTS bundle_claims (
     first_delivered_at   TEXT,
     confirmed_at         TEXT,
     destroyed_at         TEXT,
+    abandoned_at         TEXT,
     next_reap_at         TEXT,
     operation_token      TEXT,
     operation_kind       TEXT,
@@ -204,6 +205,8 @@ class SubscriptionRepository(ProvisioningRepository):
             }
             if "next_reap_at" not in columns:
                 conn.execute("ALTER TABLE bundle_claims ADD COLUMN next_reap_at TEXT")
+            if "abandoned_at" not in columns:
+                conn.execute("ALTER TABLE bundle_claims ADD COLUMN abandoned_at TEXT")
             if "operation_token" not in columns:
                 conn.execute("ALTER TABLE bundle_claims ADD COLUMN operation_token TEXT")
             if "operation_kind" not in columns:
@@ -300,6 +303,7 @@ class SubscriptionRepository(ProvisioningRepository):
             first_delivered_at=_parse(row["first_delivered_at"]),
             confirmed_at=_parse(row["confirmed_at"]),
             destroyed_at=_parse(row["destroyed_at"]),
+            abandoned_at=_parse(row["abandoned_at"]),
             created_at=_parse(row["created_at"]),
         )
 
@@ -1537,13 +1541,21 @@ class SubscriptionRepository(ProvisioningRepository):
         conn: sqlite3.Connection,
         bundle_id: str,
         revoked_at: datetime,
+        allow_paid_reprovisioning: bool,
     ) -> None:
         """Destroy paid bootstrap escrow in the bundle revocation transaction."""
         conn.execute(
             "UPDATE bundle_claims SET encrypted_bundle = NULL, "
             "destroyed_at = COALESCE(destroyed_at, ?), operation_token = NULL, "
-            "operation_kind = NULL, operation_started_at = NULL WHERE bundle_id = ?",
-            (_iso(revoked_at), bundle_id),
+            "operation_kind = NULL, operation_started_at = NULL, "
+            "abandoned_at = CASE WHEN ? THEN COALESCE(abandoned_at, ?) "
+            "ELSE abandoned_at END WHERE bundle_id = ?",
+            (
+                _iso(revoked_at),
+                allow_paid_reprovisioning,
+                _iso(revoked_at),
+                bundle_id,
+            ),
         )
 
     def _destroy_bundle_claim_sync(self, bundle_id: str, now: datetime) -> BundleClaim:
@@ -1579,10 +1591,11 @@ class SubscriptionRepository(ProvisioningRepository):
         try:
             query = (
                 "UPDATE bundle_claims SET encrypted_bundle = NULL, "
-                "destroyed_at = COALESCE(destroyed_at, ?), operation_token = NULL, "
+                "destroyed_at = COALESCE(destroyed_at, ?), "
+                "abandoned_at = COALESCE(abandoned_at, ?), operation_token = NULL, "
                 "operation_kind = NULL, operation_started_at = NULL WHERE bundle_id = ?"
             )
-            parameters = [_iso(now), bundle_id]
+            parameters = [_iso(now), _iso(now), bundle_id]
             if operation_token is not None:
                 query += " AND operation_kind = 'reap' AND operation_token = ?"
                 parameters.append(operation_token)
@@ -1656,7 +1669,8 @@ class SubscriptionRepository(ProvisioningRepository):
         try:
             conn.execute("BEGIN IMMEDIATE")
             row = conn.execute(
-                "SELECT c.bundle_id, c.confirmed_at, c.destroyed_at, u.status "
+                "SELECT c.bundle_id, c.confirmed_at, c.destroyed_at, "
+                "c.abandoned_at, u.status "
                 "FROM bundle_claims c "
                 "JOIN play_subscriptions s ON s.subscription_id = c.subscription_id "
                 "JOIN provisioned_users u ON u.bundle_id = c.bundle_id "
@@ -1667,6 +1681,7 @@ class SubscriptionRepository(ProvisioningRepository):
                 row is None
                 or row["confirmed_at"] is not None
                 or row["destroyed_at"] is None
+                or row["abandoned_at"] is None
                 or BundleStatus(row["status"]) is not BundleStatus.REVOKED
             ):
                 raise BundleClaimConflictException("Bundle claim is not abandoned")

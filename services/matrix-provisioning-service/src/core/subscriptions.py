@@ -127,6 +127,7 @@ class BundleClaim:
     first_delivered_at: datetime | None
     confirmed_at: datetime | None
     destroyed_at: datetime | None
+    abandoned_at: datetime | None
     created_at: datetime
 
 
