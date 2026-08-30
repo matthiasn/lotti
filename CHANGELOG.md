@@ -4,6 +4,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.22]
+### Added
+- **Habit signals can use today's value, the seven-day average, or either.**
+  Threshold-based auto-completion can now reward a strong day, sustained
+  progress, or whichever reaches the target first.
+
+### Changed
+- **Goal cards now match the framed habit cards on the overview.** Their
+  background, subtle border, and rounded corners are consistent in light and
+  dark mode.
+- **Opening Habits now refreshes health data its completion signals watch.**
+  Automatic check-offs can catch up from the device health store without
+  waiting for another screen to trigger an import.
+
+### Fixed
+- **Event photos now stay current and behave consistently everywhere.** Event
+  cards refresh when photos are linked locally or arrive through sync, photos
+  can be unlinked from an event without deleting them, and the full-screen
+  viewer now downloads the current photo, shows its date, hides its controls on
+  tap, and no longer rotates during pinch gestures.
+- **Skipped habit days are visible and no longer keep streaks alive.** Habit
+  strips now show a clear orange dash for a skip, distinct from both an
+  untouched day and a stronger red missed-day cross. Both outcomes retain a
+  clearly bounded rounded cell, and streaks advance only on successful
+  completions.
+
 ## [1.0.21]
 ### Fixed
 - **Editing a checklist item on desktop no longer shows the correction toast
