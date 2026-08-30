@@ -181,11 +181,12 @@ class GoalMetricProgressView {
 
   /// Whether [day]'s OWN value clears the target.
   ///
-  /// Distinct from [meetsTarget] on purpose. Anywhere a single day's number
-  /// is shown beside a met/missed mark, the mark has to be about that number:
-  /// the reflection sheet printed "122" against a 125 ceiling and crossed it
-  /// out, because the rolling average behind it was still over — contradicting
-  /// the report one card above, which read "today's 122 helps".
+  /// Distinct from [meetsTarget] on purpose: a day that clears the target on
+  /// its own number is met whatever the window says. The reflection sheet
+  /// once printed "122" against a 125 ceiling and crossed it out, because the
+  /// rolling average behind it was still over — contradicting the report one
+  /// card above, which read "today's 122 helps". [dayMark] is the policy the
+  /// surfaces read; this is one of its two doors.
   bool valueMeetsTarget(GoalProgressDay day) =>
       day.isObserved && _meetsTarget(day.value, target, direction);
 
@@ -197,16 +198,36 @@ class GoalMetricProgressView {
     _ => true,
   };
 
+  /// Whether the window verdict as of a day is a second way for that day to
+  /// be met: only for the rolling average, whose verdict says the days
+  /// around it averaged to target. A `max` verdict says one day somewhere
+  /// in the window reached the target, which is no statement about the
+  /// others — letting it through would paint every later short day met.
+  bool get windowVerdictMeetsDay =>
+      aggregation == GoalAggregation.dailySumThenAverage;
+
   /// THE per-day met/missed policy, shared by every surface that marks a
   /// single day (bars, strip cells, the reflection sheet, the composite
-  /// tally): the day's own value where the target is a per-day quantity, the
-  /// evaluator's window verdict where the target belongs to the period.
+  /// tally).
+  ///
+  /// Where the target is a per-day quantity, the day's own value clearing
+  /// the target meets it. For the rolling average there is a second door
+  /// ([windowVerdictMeetsDay]): the goal's requirement holding as of that
+  /// day — the average at or above target. Each day thus has a winnable
+  /// condition even while the average is still recovering (a 12,400-step
+  /// day inside a weak week is a met day), and a short day inside a week
+  /// that is comfortably on target is not painted as a failure. The GOAL's
+  /// status stays average-driven: day-state and goal-state are deliberately
+  /// different layers. Where the target belongs to the whole period, only
+  /// the evaluator's window verdict can judge a day, because a single day's
+  /// contribution cannot be read against a period total.
   ///
   /// One policy, or the surfaces contradict each other — a 12,400-step day
   /// inside a weak week rendered muted while the reflection sheet it opens
   /// suggested "met" for the same day.
-  bool dayMark(GoalProgressDay day) =>
-      targetIsPerDay ? valueMeetsTarget(day) : meetsTarget(day);
+  bool dayMark(GoalProgressDay day) => targetIsPerDay
+      ? valueMeetsTarget(day) || (windowVerdictMeetsDay && meetsTarget(day))
+      : meetsTarget(day);
 }
 
 class GoalProgressDay {

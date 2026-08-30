@@ -276,9 +276,11 @@ void main() {
 
     expect(view.metric?.days, hasLength(7));
     expect(view.metric?.aggregation, GoalAggregation.dailySumThenAverage);
-    // Per-day policy: the 7,999 day is not full even though the rolling
-    // average of the observed days clears 8,000 — a strip cell is a
-    // statement about that day's own number.
+    // Per-day policy: the 7,999 day is met all the same, because the rolling
+    // average of the observed days (8,333) clears 8,000 as of that day — a
+    // short day inside an on-target week has its winnable condition in the
+    // window verdict. The unobserved days between stay empty: no evidence,
+    // no mark, whatever the average says.
     expect(view.compactWindow, [
       DayMarkState.full,
       DayMarkState.none,
@@ -286,7 +288,7 @@ void main() {
       DayMarkState.none,
       DayMarkState.full,
       DayMarkState.none,
-      DayMarkState.none,
+      DayMarkState.full,
     ]);
   });
 
@@ -1114,8 +1116,8 @@ void main() {
     expect(habit.deficit, 1);
   });
 
-  test('dayMark uses the day value for per-day targets and the window '
-      'verdict for period totals', () {
+  test('dayMark meets a per-day target by the day value OR the window '
+      'verdict, and a period total by the window verdict alone', () {
     final perDay = GoalMetricProgressView(
       name: 'Steps',
       target: 10000,
@@ -1129,6 +1131,72 @@ void main() {
     );
     expect(perDay.dayMark(perDay.days.single), isTrue);
     expect(perDay.targetIsPerDay, isTrue);
+
+    // The other door: a short day inside a week whose rolling average holds
+    // is met by the window verdict as of that day. Day-state, not goal-state.
+    final shortDayGoodWeek = GoalMetricProgressView(
+      name: 'Steps',
+      target: 10000,
+      days: [
+        GoalProgressDay(
+          day: DateTime.utc(2026, 8, 10),
+          value: 8000,
+          targetSatisfied: true,
+        ),
+      ],
+    );
+    expect(
+      shortDayGoodWeek.valueMeetsTarget(shortDayGoodWeek.days.single),
+      isFalse,
+    );
+    expect(shortDayGoodWeek.dayMark(shortDayGoodWeek.days.single), isTrue);
+
+    // Neither door: short day, short week.
+    final shortDayShortWeek = GoalMetricProgressView(
+      name: 'Steps',
+      target: 10000,
+      days: [
+        GoalProgressDay(
+          day: DateTime.utc(2026, 8, 10),
+          value: 8000,
+          targetSatisfied: false,
+        ),
+      ],
+    );
+    expect(shortDayShortWeek.dayMark(shortDayShortWeek.days.single), isFalse);
+
+    // A `max` verdict only says SOME day in the window reached the target,
+    // so it opens no door for the others: a short day stays short.
+    final maxShortDay = GoalMetricProgressView(
+      name: 'Longest walk',
+      target: 10000,
+      aggregation: GoalAggregation.max,
+      days: [
+        GoalProgressDay(
+          day: DateTime.utc(2026, 8, 10),
+          value: 8000,
+          targetSatisfied: true,
+        ),
+      ],
+    );
+    expect(maxShortDay.targetIsPerDay, isTrue);
+    expect(maxShortDay.windowVerdictMeetsDay, isFalse);
+    expect(maxShortDay.dayMark(maxShortDay.days.single), isFalse);
+
+    // An unobserved day is never met, whatever the window says.
+    final unobserved = GoalMetricProgressView(
+      name: 'Steps',
+      target: 10000,
+      days: [
+        GoalProgressDay(
+          day: DateTime.utc(2026, 8, 10),
+          value: 0,
+          isObserved: false,
+          targetSatisfied: true,
+        ),
+      ],
+    );
+    expect(unobserved.dayMark(unobserved.days.single), isFalse);
 
     final periodTotal = GoalMetricProgressView(
       name: 'Deep work',
