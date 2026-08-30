@@ -113,7 +113,9 @@ for an already-bound token remain durable so Matrix suspension can be enforced.
 The purchase is acknowledged only after the entitlement and encrypted bundle
 claim are durable. Google reports acknowledgement state but not the service's
 local acknowledgement time, so same-token snapshot upserts retain an existing
-`acknowledged_at` marker when a later verified response has no timestamp.
+`acknowledged_at` marker when a later verified response has no timestamp and
+stamp the first authoritative acknowledged observation when a prior local write
+was lost.
 Every material subscription transition is appended to a dedicated audit table
 in the same SQLite transaction before the current snapshot is replaced. Initial
 verification, acknowledgement, renewal, grace entry, suspension, recovery and
@@ -121,7 +123,8 @@ expiry retain their before/after states and period boundary. A replacement uses
 its retired predecessor as the before-state, so a recovered replacement records
 recovery instead of an unrelated initial verification, including out-of-app
 resubscription after expiry and access restored by a canceled-but-unexpired
-purchase. Database triggers reject event updates and deletes. Audit rows contain
+purchase. A pending purchase that later grants access is recorded as recovery
+as well. Database triggers reject event updates and deletes. Audit rows contain
 only token fingerprints and lifecycle metadata, never purchase tokens,
 credentials or bundle plaintext.
 

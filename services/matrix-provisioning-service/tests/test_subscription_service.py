@@ -281,6 +281,65 @@ async def test_idempotent_verification_preserves_local_acknowledgement_time(
     assert retried.subscription.acknowledged_at == acknowledged.acknowledged_at
 
 
+async def test_idempotent_verification_stamps_acknowledgement_after_partial_success(
+    service,
+    identity_service,
+    google_client,
+    clock,
+):
+    entitlement, submission = await purchase_context(identity_service, google_client)
+    original = await service.verify_purchase(
+        submission,
+        entitlement_auth_secret=entitlement.auth_secret,
+        now=NOW,
+    )
+    assert original.subscription.acknowledged_at is None
+    retry_time = NOW + timedelta(minutes=1)
+    retry_intent = await identity_service.create_purchase_intent(
+        entitlement_id=entitlement.entitlement_id,
+        auth_secret=entitlement.auth_secret,
+        product_id="lotti_sync",
+        base_plan_id="monthly",
+        now=retry_time,
+    )
+    retry = replace(
+        submission,
+        purchase_intent_id=retry_intent.intent_id,
+        intent_secret=retry_intent.intent_secret,
+        integrity_token="retry-integrity-token",
+    )
+    request_hash = canonical_purchase_request_hash(
+        package_name=retry.package_name,
+        product_id=retry.product_id,
+        base_plan_id=retry.base_plan_id,
+        entitlement_id=retry.entitlement_id,
+        purchase_intent_id=retry.purchase_intent_id,
+        purchase_token=retry.purchase_token,
+        intent_secret=retry.intent_secret,
+        claim_secret=retry.claim_secret,
+    )
+    google_client.integrity_payload["tokenPayloadExternal"]["requestDetails"].update(
+        {
+            "requestHash": request_hash,
+            "timestampMillis": str(int(retry_time.timestamp() * 1000)),
+        }
+    )
+    google_client.snapshot = replace(
+        google_client.snapshot,
+        acknowledgement_state=AcknowledgementState.ACKNOWLEDGED,
+    )
+    clock.value = retry_time
+
+    retried = await service.verify_purchase(
+        retry,
+        entitlement_auth_secret=entitlement.auth_secret,
+        now=retry_time,
+    )
+
+    assert retried.subscription.acknowledgement_state is AcknowledgementState.ACKNOWLEDGED
+    assert retried.subscription.acknowledged_at == retry_time
+
+
 async def test_purchase_intent_expiring_during_google_verification_is_not_consumed(
     service,
     identity_service,
@@ -767,6 +826,37 @@ async def test_authoritative_refresh_recovers_pending_acknowledgement_after_prov
     assert google_client.acknowledgements == [(PACKAGE, "lotti_sync", initial.purchase_token)]
     assert refreshed.acknowledgement_state is AcknowledgementState.ACKNOWLEDGED
     assert refreshed.acknowledged_at == NOW + timedelta(minutes=1)
+
+
+async def test_authoritative_refresh_stamps_acknowledgement_observed_after_partial_success(
+    service,
+    identity_service,
+    google_client,
+    repository,
+    clock,
+):
+    entitlement, initial = await purchase_context(identity_service, google_client)
+    original = await service.verify_purchase(
+        initial,
+        entitlement_auth_secret=entitlement.auth_secret,
+        now=NOW,
+    )
+    assert original.subscription.acknowledged_at is None
+    google_client.snapshot = replace(
+        google_client.snapshot,
+        acknowledgement_state=AcknowledgementState.ACKNOWLEDGED,
+    )
+    observed_at = NOW + timedelta(minutes=1)
+    clock.value = observed_at
+
+    refreshed = await service.refresh_known_purchase(
+        initial.purchase_token,
+        now=observed_at,
+    )
+
+    assert google_client.acknowledgements == []
+    assert refreshed.acknowledgement_state is AcknowledgementState.ACKNOWLEDGED
+    assert refreshed.acknowledged_at == observed_at
 
 
 async def test_later_google_response_wins_even_when_its_request_started_first(

@@ -634,6 +634,42 @@ async def test_replacement_audit_uses_predecessor_as_recovery_before_state(
     assert events[0].to_entitlement_state is EntitlementState.ACTIVE
 
 
+async def test_pending_purchase_activation_records_recovery_event(
+    subscription_repository,
+):
+    entitlement = await create_entitlement(subscription_repository)
+    pending = verified_subscription(
+        entitlement.entitlement_id,
+        "fingerprint-one",
+        google_state=GoogleSubscriptionState.PENDING,
+        entitlement_state=EntitlementState.PENDING,
+        current_period_end=None,
+    )
+    await subscription_repository.store_verified_subscription(pending, now=NOW)
+    activated_at = NOW + timedelta(minutes=1)
+    await subscription_repository.store_verified_subscription(
+        replace(
+            pending,
+            google_state=GoogleSubscriptionState.ACTIVE,
+            entitlement_state=EntitlementState.ACTIVE,
+            current_period_end=NOW + timedelta(days=30),
+            last_verified_at=activated_at,
+        ),
+        now=activated_at,
+    )
+
+    events = await subscription_repository.list_subscription_events("fingerprint-one")
+
+    assert [event.event_type for event in events] == [
+        SubscriptionEventType.VERIFIED,
+        SubscriptionEventType.RECOVERED,
+    ]
+    assert events[1].from_google_state is GoogleSubscriptionState.PENDING
+    assert events[1].to_google_state is GoogleSubscriptionState.ACTIVE
+    assert events[1].from_entitlement_state is EntitlementState.PENDING
+    assert events[1].to_entitlement_state is EntitlementState.ACTIVE
+
+
 async def test_out_of_app_replacement_audit_recovers_from_expired_predecessor(
     subscription_repository,
 ):

@@ -254,7 +254,8 @@ Material lifecycle changes are also inserted into an append-only subscription
 audit table before the snapshot upsert commits. The event and snapshot therefore
 succeed or roll back together; SQLite triggers reject later event updates and
 deletes, and audit rows retain only token fingerprints plus before/after state
-rather than purchase secrets.
+rather than purchase secrets. The transition from a pending purchase to granted
+access is recorded as recovery, preserving the point at which SYNC was enabled.
 
 ```mermaid
 stateDiagram-v2
@@ -306,7 +307,9 @@ delivery is also revalidated immediately before return: its account must remain
 non-revoked and its claim current, nonterminal, encrypted, and within TTL even if
 Google acknowledgement was slow. The local acknowledgement timestamp is
 monotonic metadata: same-token verification and reconciliation upserts preserve
-it when Google's acknowledged snapshot supplies state but no local time. Lost-response
+it when Google's acknowledged snapshot supplies state but no local time, and
+the first authoritative acknowledged observation stamps it when the original
+local marker write was lost. Lost-response
 delivery retries reload the current subscription and reject non-granting state
 or an elapsed authoritative expiry before decrypting escrow. The retry route
 refreshes its clock after entitlement authentication and stops before claim

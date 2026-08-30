@@ -897,6 +897,7 @@ class SubscriptionRepository(ProvisioningRepository):
             EntitlementState.ACTIVE,
             EntitlementState.CANCELED_ACTIVE,
         } and previous_entitlement in {
+            EntitlementState.PENDING,
             EntitlementState.EXPIRED,
             EntitlementState.GRACE,
             EntitlementState.SUSPENDED,
@@ -1096,8 +1097,8 @@ class SubscriptionRepository(ProvisioningRepository):
                 "current_period_end=excluded.current_period_end, "
                 "grace_deadline=excluded.grace_deadline, "
                 "acknowledgement_state=excluded.acknowledgement_state, "
-                "acknowledged_at=COALESCE(excluded.acknowledged_at, "
-                "play_subscriptions.acknowledged_at), "
+                "acknowledged_at=COALESCE(play_subscriptions.acknowledged_at, "
+                "excluded.acknowledged_at), "
                 "out_of_app_expired_token_fingerprint="
                 "excluded.out_of_app_expired_token_fingerprint, "
                 "binding_verified=excluded.binding_verified, bundle_id=excluded.bundle_id, "

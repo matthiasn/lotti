@@ -309,6 +309,13 @@ class SubscriptionService:
             expiry_time=line_item.expiry_time,
             now=now,
         )
+        if (
+            snapshot.acknowledgement_state is AcknowledgementState.ACKNOWLEDGED
+            and acknowledged_at is None
+        ):
+            # Google exposes acknowledgement state but not its timestamp. The
+            # first authoritative observation repairs a lost local marker.
+            acknowledged_at = now
         next_reconciliation = now + self._reconciliation_interval
         if normalized.access_deadline is not None:
             next_reconciliation = min(next_reconciliation, normalized.access_deadline)
