@@ -16,6 +16,34 @@ void main() {
     });
   });
 
+  group('trailingAverageOn', () {
+    test('averages recorded values in the inclusive seven-day window', () {
+      final values = {
+        day.subtract(const Duration(days: 7)): 100,
+        day.subtract(const Duration(days: 6)): 20,
+        day.subtract(const Duration(days: 3)): 40,
+        day: 60,
+        day.add(const Duration(days: 1)): 1000,
+      };
+
+      expect(trailingAverageOn(values, day: day), 40);
+    });
+
+    test('missing days are gaps and an empty window has no average', () {
+      expect(
+        trailingAverageOn({day.subtract(const Duration(days: 2)): 0}, day: day),
+        0,
+      );
+      expect(
+        trailingAverageOn(
+          {day.subtract(const Duration(days: 7)): 100},
+          day: day,
+        ),
+        isNull,
+      );
+    });
+  });
+
   group('bucketQuantitativeByDay', () {
     test('cumulative counters keep the day peak, not the sum', () {
       final byDay = bucketQuantitativeByDay([

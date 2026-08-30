@@ -17,6 +17,32 @@ import 'package:lotti/features/dashboards/state/health_data.dart';
 /// Calendar-date key of [instant]: its local date as midnight UTC.
 DateTime signalDayKey(DateTime instant) => GoalWindow.dayUtc(instant);
 
+/// The mean of the recorded daily values in the trailing [days]-day window
+/// ending on [day]. Missing days are gaps, not zeroes; an entirely empty
+/// window has no average.
+///
+/// This is the shared primitive behind the goal detail's seven-day reading and
+/// habit signal evaluation, so the chart-adjacent value and auto-completion do
+/// not disagree about sparse data.
+num? trailingAverageOn(
+  Map<DateTime, num> valuesByDay, {
+  required DateTime day,
+  int days = DateTime.daysPerWeek,
+}) {
+  assert(days > 0, 'a trailing average covers at least one day');
+  final target = signalDayKey(day);
+  final start = target.subtract(Duration(days: days - 1));
+  num sum = 0;
+  var count = 0;
+  for (final entry in valuesByDay.entries) {
+    final key = signalDayKey(entry.key);
+    if (key.isBefore(start) || key.isAfter(target)) continue;
+    sum += entry.value;
+    count++;
+  }
+  return count == 0 ? null : sum / count;
+}
+
 /// One deterministic value per day for a quantitative (health) data type,
 /// honouring the health config's per-type aggregation so a signal never
 /// disagrees with the chart the user is looking at:

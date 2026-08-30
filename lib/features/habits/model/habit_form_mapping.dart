@@ -28,6 +28,7 @@ class HabitSignalForm {
     required this.id,
     this.mode = HabitSignalMode.any,
     this.threshold,
+    this.valueBasis = HabitSignalValueBasis.today,
     this.workoutValueType,
     this.title,
   });
@@ -38,6 +39,7 @@ class HabitSignalForm {
   final String id;
   final HabitSignalMode mode;
   final num? threshold;
+  final HabitSignalValueBasis valueBasis;
 
   /// For workouts: which dimension the threshold applies to; `null` with
   /// [HabitSignalMode.any] means any workout of the type.
@@ -47,6 +49,7 @@ class HabitSignalForm {
   HabitSignalForm copyWith({
     HabitSignalMode? mode,
     num? threshold,
+    HabitSignalValueBasis? valueBasis,
     WorkoutValueType? workoutValueType,
     bool clearThreshold = false,
     bool clearWorkoutValueType = false,
@@ -55,6 +58,7 @@ class HabitSignalForm {
     id: id,
     mode: mode ?? this.mode,
     threshold: clearThreshold ? null : (threshold ?? this.threshold),
+    valueBasis: valueBasis ?? this.valueBasis,
     workoutValueType: clearWorkoutValueType
         ? null
         : (workoutValueType ?? this.workoutValueType),
@@ -68,16 +72,24 @@ class HabitSignalForm {
       other.id == id &&
       other.mode == mode &&
       other.threshold == threshold &&
+      other.valueBasis == valueBasis &&
       other.workoutValueType == workoutValueType &&
       other.title == title;
 
   @override
-  int get hashCode =>
-      Object.hash(kind, id, mode, threshold, workoutValueType, title);
+  int get hashCode => Object.hash(
+    kind,
+    id,
+    mode,
+    threshold,
+    valueBasis,
+    workoutValueType,
+    title,
+  );
 
   @override
   String toString() =>
-      'HabitSignalForm($kind $id $mode ${threshold ?? ''} '
+      'HabitSignalForm($kind $id $mode ${threshold ?? ''} $valueBasis '
       '${workoutValueType?.name ?? ''})';
 }
 
@@ -199,6 +211,7 @@ class HabitFormMapping {
           :final dataTypeId,
           :final minimum,
           :final maximum,
+          :final valueBasis,
           :final title,
         ):
           leaves.add(
@@ -207,6 +220,7 @@ class HabitFormMapping {
               dataTypeId,
               minimum,
               maximum,
+              valueBasis,
               title,
             ),
           );
@@ -214,16 +228,25 @@ class HabitFormMapping {
           :final dataType,
           :final minimum,
           :final maximum,
+          :final valueBasis,
           :final title,
         ):
           leaves.add(
-            _leaf(HabitSignalKind.health, dataType, minimum, maximum, title),
+            _leaf(
+              HabitSignalKind.health,
+              dataType,
+              minimum,
+              maximum,
+              valueBasis,
+              title,
+            ),
           );
         case AutoCompleteRuleWorkout(
           :final dataType,
           :final minimum,
           :final maximum,
           :final valueType,
+          :final valueBasis,
           :final title,
         ):
           final base = _leaf(
@@ -231,6 +254,7 @@ class HabitFormMapping {
             dataType,
             minimum,
             maximum,
+            valueBasis,
             title,
           );
           leaves.add(
@@ -241,6 +265,7 @@ class HabitFormMapping {
               // reads as "any workout" so the card shows something honest.
               mode: valueType == null ? HabitSignalMode.any : base.mode,
               threshold: valueType == null ? null : base.threshold,
+              valueBasis: base.valueBasis,
               workoutValueType: valueType,
               title: title,
             ),
@@ -289,6 +314,7 @@ class HabitFormMapping {
     String id,
     num? minimum,
     num? maximum,
+    HabitSignalValueBasis valueBasis,
     String? title,
   ) => HabitSignalForm(
     kind: kind,
@@ -299,6 +325,7 @@ class HabitFormMapping {
         ? HabitSignalMode.atMost
         : HabitSignalMode.any,
     threshold: minimum ?? maximum,
+    valueBasis: valueBasis,
     title: title,
   );
 
@@ -314,12 +341,14 @@ class HabitFormMapping {
         dataTypeId: signal.id,
         minimum: minimum,
         maximum: maximum,
+        valueBasis: signal.valueBasis,
         title: signal.title,
       ),
       HabitSignalKind.health => AutoCompleteRule.health(
         dataType: signal.id,
         minimum: minimum,
         maximum: maximum,
+        valueBasis: signal.valueBasis,
         title: signal.title,
       ),
       HabitSignalKind.workout => AutoCompleteRule.workout(
@@ -329,6 +358,7 @@ class HabitFormMapping {
         valueType: signal.mode == HabitSignalMode.any
             ? null
             : signal.workoutValueType,
+        valueBasis: signal.valueBasis,
         title: signal.title,
       ),
     };

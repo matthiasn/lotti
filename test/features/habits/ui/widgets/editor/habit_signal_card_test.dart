@@ -144,6 +144,35 @@ void main() {
     expect(changes.last.signals.single.mode, HabitSignalMode.atMost);
   });
 
+  testWidgets('a bounded signal selects today, 7-day average, or either', (
+    tester,
+  ) async {
+    await pump(tester, const HabitSignalsForm(signals: [steps]));
+    expect(find.text('Compare the threshold with'), findsOneWidget);
+    expect(
+      find.byKey(
+        const ValueKey('habit-signal-value-basis-cumulative_step_count'),
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(
+      find
+          .ancestor(
+            of: find.text('7-day average').first,
+            matching: find.byType(InkWell),
+          )
+          .first,
+    );
+    await tester.pump();
+    expect(
+      changes.last.signals.single.valueBasis,
+      HabitSignalValueBasis.sevenDayAverage,
+    );
+
+    await pump(tester, const HabitSignalsForm(signals: [waterAny]));
+    expect(find.text('Compare the threshold with'), findsNothing);
+  });
+
   testWidgets('a workout row picks a dimension, or any session', (
     tester,
   ) async {

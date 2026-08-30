@@ -236,7 +236,7 @@ class HabitAutoCompletionService {
     final window = await _signalReader.read(
       rule: rule,
       reference: reference,
-      days: 1,
+      days: DateTime.daysPerWeek,
     );
     final verdict = evaluator.evaluate(rule: rule, window: window, day: day);
     // Re-checked after every await: a profile switch or shutdown that

@@ -199,6 +199,84 @@ void main() {
       expect(verdict.leaves.single.value, 4120);
       expect(verdict.leaves.single.present, isTrue);
     });
+
+    test('today basis checks only today even when the weekly mean passes', () {
+      final verdict = eval(
+        steps,
+        window(
+          quantitative: {
+            'cumulative_step_count': {
+              for (var offset = 6; offset >= 1; offset--)
+                todayKey.subtract(Duration(days: offset)): 7000,
+              todayKey: 4000,
+            },
+          },
+        ),
+      );
+      expect(verdict.satisfied, isFalse);
+      expect(verdict.leaves.single.value, 4000);
+      expect(verdict.leaves.single.sevenDayAverage, greaterThan(6000));
+    });
+
+    test('7-day average basis can pass while today is below the threshold', () {
+      const averageSteps = AutoCompleteRule.health(
+        dataType: 'cumulative_step_count',
+        minimum: 6000,
+        valueBasis: HabitSignalValueBasis.sevenDayAverage,
+      );
+      final verdict = eval(
+        averageSteps,
+        window(
+          quantitative: {
+            'cumulative_step_count': {
+              for (var offset = 6; offset >= 1; offset--)
+                todayKey.subtract(Duration(days: offset)): 7000,
+              todayKey: 4000,
+            },
+          },
+        ),
+      );
+      expect(verdict.satisfied, isTrue);
+      expect(verdict.leaves.single.todayValue, 4000);
+      expect(verdict.leaves.single.value, closeTo(6571.43, 0.01));
+    });
+
+    test('either basis passes when today or the rolling average passes', () {
+      const eitherSteps = AutoCompleteRule.health(
+        dataType: 'cumulative_step_count',
+        minimum: 6000,
+        valueBasis: HabitSignalValueBasis.todayOrSevenDayAverage,
+      );
+      final averageOnly = eval(
+        eitherSteps,
+        window(
+          quantitative: {
+            'cumulative_step_count': {
+              for (var offset = 6; offset >= 1; offset--)
+                todayKey.subtract(Duration(days: offset)): 7000,
+              todayKey: 4000,
+            },
+          },
+        ),
+      );
+      final todayOnly = eval(
+        eitherSteps,
+        window(
+          quantitative: {
+            'cumulative_step_count': {
+              for (var offset = 6; offset >= 1; offset--)
+                todayKey.subtract(Duration(days: offset)): 1000,
+              todayKey: 7000,
+            },
+          },
+        ),
+      );
+
+      expect(averageOnly.satisfied, isTrue);
+      expect(averageOnly.leaves.single.value, closeTo(6571.43, 0.01));
+      expect(todayOnly.satisfied, isTrue);
+      expect(todayOnly.leaves.single.value, 7000);
+    });
   });
 
   group('workout leaf', () {

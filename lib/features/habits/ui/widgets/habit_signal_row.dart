@@ -78,7 +78,9 @@ class HabitSignalRow extends StatelessWidget {
     );
     // A choice measurable's day value is an occurrence count, which is not
     // what the user recorded; the row says only that something was logged.
-    final todayValue = leaf.value;
+    final todayValue =
+        leaf.todayValue ??
+        (_valueBasis(rule) == HabitSignalValueBasis.today ? leaf.value : null);
     final todayText = todayValue == null
         ? messages.habitSignalTodayNone
         : isChoice
@@ -279,4 +281,12 @@ class HabitSignalRow extends StatelessWidget {
     AutoCompleteRuleHabit(:final habitId) => habitId,
     _ => 'composite',
   };
+
+  static HabitSignalValueBasis _valueBasis(AutoCompleteRule rule) =>
+      switch (rule) {
+        AutoCompleteRuleMeasurable(:final valueBasis) ||
+        AutoCompleteRuleHealth(:final valueBasis) ||
+        AutoCompleteRuleWorkout(:final valueBasis) => valueBasis,
+        _ => HabitSignalValueBasis.today,
+      };
 }

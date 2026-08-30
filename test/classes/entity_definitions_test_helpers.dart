@@ -72,6 +72,8 @@ class GeneratedAutoCompleteRule {
       dataType: 'HealthDataType.$dataSlot',
       minimum: hOptionalNum(minimumSlot),
       maximum: hOptionalNum(maximumSlot),
+      valueBasis: HabitSignalValueBasis
+          .values[dataSlot % HabitSignalValueBasis.values.length],
       title: hOptionalText(titleSlot, 'Health'),
     ),
     GeneratedAutoCompleteRuleKind.workout => AutoCompleteRule.workout(
@@ -82,12 +84,16 @@ class GeneratedAutoCompleteRule {
       valueType: titleSlot == 0
           ? null
           : WorkoutValueType.values[titleSlot % WorkoutValueType.values.length],
+      valueBasis: HabitSignalValueBasis
+          .values[dataSlot % HabitSignalValueBasis.values.length],
       title: hOptionalText(titleSlot, 'Workout'),
     ),
     GeneratedAutoCompleteRuleKind.measurable => AutoCompleteRule.measurable(
       dataTypeId: 'measurable-$dataSlot',
       minimum: hOptionalNum(minimumSlot),
       maximum: hOptionalNum(maximumSlot),
+      valueBasis: HabitSignalValueBasis
+          .values[dataSlot % HabitSignalValueBasis.values.length],
       title: hOptionalText(titleSlot, 'Measurable'),
     ),
     GeneratedAutoCompleteRuleKind.habit => AutoCompleteRule.habit(
@@ -192,18 +198,24 @@ AutoCompleteRule hLeafRule(int slot) {
       dataType: 'HealthDataType.child$slot',
       minimum: hOptionalNum(slot),
       maximum: hOptionalNum(slot + 1),
+      valueBasis: HabitSignalValueBasis
+          .values[slot % HabitSignalValueBasis.values.length],
       title: hOptionalText(slot, 'Child health'),
     ),
     1 => AutoCompleteRule.workout(
       dataType: 'WorkoutType.child$slot',
       minimum: hOptionalNum(slot),
       maximum: hOptionalNum(slot + 1),
+      valueBasis: HabitSignalValueBasis
+          .values[slot % HabitSignalValueBasis.values.length],
       title: hOptionalText(slot, 'Child workout'),
     ),
     2 => AutoCompleteRule.measurable(
       dataTypeId: 'child-measurable-$slot',
       minimum: hOptionalNum(slot),
       maximum: hOptionalNum(slot + 1),
+      valueBasis: HabitSignalValueBasis
+          .values[slot % HabitSignalValueBasis.values.length],
       title: hOptionalText(slot, 'Child measurable'),
     ),
     _ => AutoCompleteRule.habit(

@@ -1205,12 +1205,12 @@ return multiple(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String dataType,  num? minimum,  num? maximum,  String? title)?  health,TResult Function( String dataType,  num? minimum,  num? maximum, @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)  WorkoutValueType? valueType,  String? title)?  workout,TResult Function( String dataTypeId,  num? minimum,  num? maximum,  String? title)?  measurable,TResult Function( String habitId,  String? title)?  habit,TResult Function( List<AutoCompleteRule> rules,  String? title)?  and,TResult Function( List<AutoCompleteRule> rules,  String? title)?  or,TResult Function( List<AutoCompleteRule> rules,  int successes,  String? title)?  multiple,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String dataType,  num? minimum,  num? maximum, @JsonKey(unknownEnumValue: HabitSignalValueBasis.today)  HabitSignalValueBasis valueBasis,  String? title)?  health,TResult Function( String dataType,  num? minimum,  num? maximum, @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)  WorkoutValueType? valueType, @JsonKey(unknownEnumValue: HabitSignalValueBasis.today)  HabitSignalValueBasis valueBasis,  String? title)?  workout,TResult Function( String dataTypeId,  num? minimum,  num? maximum, @JsonKey(unknownEnumValue: HabitSignalValueBasis.today)  HabitSignalValueBasis valueBasis,  String? title)?  measurable,TResult Function( String habitId,  String? title)?  habit,TResult Function( List<AutoCompleteRule> rules,  String? title)?  and,TResult Function( List<AutoCompleteRule> rules,  String? title)?  or,TResult Function( List<AutoCompleteRule> rules,  int successes,  String? title)?  multiple,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case AutoCompleteRuleHealth() when health != null:
-return health(_that.dataType,_that.minimum,_that.maximum,_that.title);case AutoCompleteRuleWorkout() when workout != null:
-return workout(_that.dataType,_that.minimum,_that.maximum,_that.valueType,_that.title);case AutoCompleteRuleMeasurable() when measurable != null:
-return measurable(_that.dataTypeId,_that.minimum,_that.maximum,_that.title);case AutoCompleteRuleHabit() when habit != null:
+return health(_that.dataType,_that.minimum,_that.maximum,_that.valueBasis,_that.title);case AutoCompleteRuleWorkout() when workout != null:
+return workout(_that.dataType,_that.minimum,_that.maximum,_that.valueType,_that.valueBasis,_that.title);case AutoCompleteRuleMeasurable() when measurable != null:
+return measurable(_that.dataTypeId,_that.minimum,_that.maximum,_that.valueBasis,_that.title);case AutoCompleteRuleHabit() when habit != null:
 return habit(_that.habitId,_that.title);case AutoCompleteRuleAnd() when and != null:
 return and(_that.rules,_that.title);case AutoCompleteRuleOr() when or != null:
 return or(_that.rules,_that.title);case AutoCompleteRuleMultiple() when multiple != null:
@@ -1232,12 +1232,12 @@ return multiple(_that.rules,_that.successes,_that.title);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String dataType,  num? minimum,  num? maximum,  String? title)  health,required TResult Function( String dataType,  num? minimum,  num? maximum, @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)  WorkoutValueType? valueType,  String? title)  workout,required TResult Function( String dataTypeId,  num? minimum,  num? maximum,  String? title)  measurable,required TResult Function( String habitId,  String? title)  habit,required TResult Function( List<AutoCompleteRule> rules,  String? title)  and,required TResult Function( List<AutoCompleteRule> rules,  String? title)  or,required TResult Function( List<AutoCompleteRule> rules,  int successes,  String? title)  multiple,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String dataType,  num? minimum,  num? maximum, @JsonKey(unknownEnumValue: HabitSignalValueBasis.today)  HabitSignalValueBasis valueBasis,  String? title)  health,required TResult Function( String dataType,  num? minimum,  num? maximum, @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)  WorkoutValueType? valueType, @JsonKey(unknownEnumValue: HabitSignalValueBasis.today)  HabitSignalValueBasis valueBasis,  String? title)  workout,required TResult Function( String dataTypeId,  num? minimum,  num? maximum, @JsonKey(unknownEnumValue: HabitSignalValueBasis.today)  HabitSignalValueBasis valueBasis,  String? title)  measurable,required TResult Function( String habitId,  String? title)  habit,required TResult Function( List<AutoCompleteRule> rules,  String? title)  and,required TResult Function( List<AutoCompleteRule> rules,  String? title)  or,required TResult Function( List<AutoCompleteRule> rules,  int successes,  String? title)  multiple,}) {final _that = this;
 switch (_that) {
 case AutoCompleteRuleHealth():
-return health(_that.dataType,_that.minimum,_that.maximum,_that.title);case AutoCompleteRuleWorkout():
-return workout(_that.dataType,_that.minimum,_that.maximum,_that.valueType,_that.title);case AutoCompleteRuleMeasurable():
-return measurable(_that.dataTypeId,_that.minimum,_that.maximum,_that.title);case AutoCompleteRuleHabit():
+return health(_that.dataType,_that.minimum,_that.maximum,_that.valueBasis,_that.title);case AutoCompleteRuleWorkout():
+return workout(_that.dataType,_that.minimum,_that.maximum,_that.valueType,_that.valueBasis,_that.title);case AutoCompleteRuleMeasurable():
+return measurable(_that.dataTypeId,_that.minimum,_that.maximum,_that.valueBasis,_that.title);case AutoCompleteRuleHabit():
 return habit(_that.habitId,_that.title);case AutoCompleteRuleAnd():
 return and(_that.rules,_that.title);case AutoCompleteRuleOr():
 return or(_that.rules,_that.title);case AutoCompleteRuleMultiple():
@@ -1255,12 +1255,12 @@ return multiple(_that.rules,_that.successes,_that.title);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String dataType,  num? minimum,  num? maximum,  String? title)?  health,TResult? Function( String dataType,  num? minimum,  num? maximum, @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)  WorkoutValueType? valueType,  String? title)?  workout,TResult? Function( String dataTypeId,  num? minimum,  num? maximum,  String? title)?  measurable,TResult? Function( String habitId,  String? title)?  habit,TResult? Function( List<AutoCompleteRule> rules,  String? title)?  and,TResult? Function( List<AutoCompleteRule> rules,  String? title)?  or,TResult? Function( List<AutoCompleteRule> rules,  int successes,  String? title)?  multiple,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String dataType,  num? minimum,  num? maximum, @JsonKey(unknownEnumValue: HabitSignalValueBasis.today)  HabitSignalValueBasis valueBasis,  String? title)?  health,TResult? Function( String dataType,  num? minimum,  num? maximum, @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)  WorkoutValueType? valueType, @JsonKey(unknownEnumValue: HabitSignalValueBasis.today)  HabitSignalValueBasis valueBasis,  String? title)?  workout,TResult? Function( String dataTypeId,  num? minimum,  num? maximum, @JsonKey(unknownEnumValue: HabitSignalValueBasis.today)  HabitSignalValueBasis valueBasis,  String? title)?  measurable,TResult? Function( String habitId,  String? title)?  habit,TResult? Function( List<AutoCompleteRule> rules,  String? title)?  and,TResult? Function( List<AutoCompleteRule> rules,  String? title)?  or,TResult? Function( List<AutoCompleteRule> rules,  int successes,  String? title)?  multiple,}) {final _that = this;
 switch (_that) {
 case AutoCompleteRuleHealth() when health != null:
-return health(_that.dataType,_that.minimum,_that.maximum,_that.title);case AutoCompleteRuleWorkout() when workout != null:
-return workout(_that.dataType,_that.minimum,_that.maximum,_that.valueType,_that.title);case AutoCompleteRuleMeasurable() when measurable != null:
-return measurable(_that.dataTypeId,_that.minimum,_that.maximum,_that.title);case AutoCompleteRuleHabit() when habit != null:
+return health(_that.dataType,_that.minimum,_that.maximum,_that.valueBasis,_that.title);case AutoCompleteRuleWorkout() when workout != null:
+return workout(_that.dataType,_that.minimum,_that.maximum,_that.valueType,_that.valueBasis,_that.title);case AutoCompleteRuleMeasurable() when measurable != null:
+return measurable(_that.dataTypeId,_that.minimum,_that.maximum,_that.valueBasis,_that.title);case AutoCompleteRuleHabit() when habit != null:
 return habit(_that.habitId,_that.title);case AutoCompleteRuleAnd() when and != null:
 return and(_that.rules,_that.title);case AutoCompleteRuleOr() when or != null:
 return or(_that.rules,_that.title);case AutoCompleteRuleMultiple() when multiple != null:
@@ -1276,12 +1276,13 @@ return multiple(_that.rules,_that.successes,_that.title);case _:
 @JsonSerializable()
 
 class AutoCompleteRuleHealth implements AutoCompleteRule {
-  const AutoCompleteRuleHealth({required this.dataType, this.minimum, this.maximum, this.title, final  String? $type}): $type = $type ?? 'health';
+  const AutoCompleteRuleHealth({required this.dataType, this.minimum, this.maximum, @JsonKey(unknownEnumValue: HabitSignalValueBasis.today) this.valueBasis = HabitSignalValueBasis.today, this.title, final  String? $type}): $type = $type ?? 'health';
   factory AutoCompleteRuleHealth.fromJson(Map<String, dynamic> json) => _$AutoCompleteRuleHealthFromJson(json);
 
  final  String dataType;
  final  num? minimum;
  final  num? maximum;
+@JsonKey(unknownEnumValue: HabitSignalValueBasis.today) final  HabitSignalValueBasis valueBasis;
 @override final  String? title;
 
 @JsonKey(name: 'runtimeType')
@@ -1301,16 +1302,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AutoCompleteRuleHealth&&(identical(other.dataType, dataType) || other.dataType == dataType)&&(identical(other.minimum, minimum) || other.minimum == minimum)&&(identical(other.maximum, maximum) || other.maximum == maximum)&&(identical(other.title, title) || other.title == title));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AutoCompleteRuleHealth&&(identical(other.dataType, dataType) || other.dataType == dataType)&&(identical(other.minimum, minimum) || other.minimum == minimum)&&(identical(other.maximum, maximum) || other.maximum == maximum)&&(identical(other.valueBasis, valueBasis) || other.valueBasis == valueBasis)&&(identical(other.title, title) || other.title == title));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,dataType,minimum,maximum,title);
+int get hashCode => Object.hash(runtimeType,dataType,minimum,maximum,valueBasis,title);
 
 @override
 String toString() {
-  return 'AutoCompleteRule.health(dataType: $dataType, minimum: $minimum, maximum: $maximum, title: $title)';
+  return 'AutoCompleteRule.health(dataType: $dataType, minimum: $minimum, maximum: $maximum, valueBasis: $valueBasis, title: $title)';
 }
 
 
@@ -1321,7 +1322,7 @@ abstract mixin class $AutoCompleteRuleHealthCopyWith<$Res> implements $AutoCompl
   factory $AutoCompleteRuleHealthCopyWith(AutoCompleteRuleHealth value, $Res Function(AutoCompleteRuleHealth) _then) = _$AutoCompleteRuleHealthCopyWithImpl;
 @override @useResult
 $Res call({
- String dataType, num? minimum, num? maximum, String? title
+ String dataType, num? minimum, num? maximum,@JsonKey(unknownEnumValue: HabitSignalValueBasis.today) HabitSignalValueBasis valueBasis, String? title
 });
 
 
@@ -1338,12 +1339,13 @@ class _$AutoCompleteRuleHealthCopyWithImpl<$Res>
 
 /// Create a copy of AutoCompleteRule
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? dataType = null,Object? minimum = freezed,Object? maximum = freezed,Object? title = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? dataType = null,Object? minimum = freezed,Object? maximum = freezed,Object? valueBasis = null,Object? title = freezed,}) {
   return _then(AutoCompleteRuleHealth(
 dataType: null == dataType ? _self.dataType : dataType // ignore: cast_nullable_to_non_nullable
 as String,minimum: freezed == minimum ? _self.minimum : minimum // ignore: cast_nullable_to_non_nullable
 as num?,maximum: freezed == maximum ? _self.maximum : maximum // ignore: cast_nullable_to_non_nullable
-as num?,title: freezed == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
+as num?,valueBasis: null == valueBasis ? _self.valueBasis : valueBasis // ignore: cast_nullable_to_non_nullable
+as HabitSignalValueBasis,title: freezed == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
@@ -1355,13 +1357,14 @@ as String?,
 @JsonSerializable()
 
 class AutoCompleteRuleWorkout implements AutoCompleteRule {
-  const AutoCompleteRuleWorkout({required this.dataType, this.minimum, this.maximum, @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue) this.valueType, this.title, final  String? $type}): $type = $type ?? 'workout';
+  const AutoCompleteRuleWorkout({required this.dataType, this.minimum, this.maximum, @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue) this.valueType, @JsonKey(unknownEnumValue: HabitSignalValueBasis.today) this.valueBasis = HabitSignalValueBasis.today, this.title, final  String? $type}): $type = $type ?? 'workout';
   factory AutoCompleteRuleWorkout.fromJson(Map<String, dynamic> json) => _$AutoCompleteRuleWorkoutFromJson(json);
 
  final  String dataType;
  final  num? minimum;
  final  num? maximum;
 @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue) final  WorkoutValueType? valueType;
+@JsonKey(unknownEnumValue: HabitSignalValueBasis.today) final  HabitSignalValueBasis valueBasis;
 @override final  String? title;
 
 @JsonKey(name: 'runtimeType')
@@ -1381,16 +1384,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AutoCompleteRuleWorkout&&(identical(other.dataType, dataType) || other.dataType == dataType)&&(identical(other.minimum, minimum) || other.minimum == minimum)&&(identical(other.maximum, maximum) || other.maximum == maximum)&&(identical(other.valueType, valueType) || other.valueType == valueType)&&(identical(other.title, title) || other.title == title));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AutoCompleteRuleWorkout&&(identical(other.dataType, dataType) || other.dataType == dataType)&&(identical(other.minimum, minimum) || other.minimum == minimum)&&(identical(other.maximum, maximum) || other.maximum == maximum)&&(identical(other.valueType, valueType) || other.valueType == valueType)&&(identical(other.valueBasis, valueBasis) || other.valueBasis == valueBasis)&&(identical(other.title, title) || other.title == title));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,dataType,minimum,maximum,valueType,title);
+int get hashCode => Object.hash(runtimeType,dataType,minimum,maximum,valueType,valueBasis,title);
 
 @override
 String toString() {
-  return 'AutoCompleteRule.workout(dataType: $dataType, minimum: $minimum, maximum: $maximum, valueType: $valueType, title: $title)';
+  return 'AutoCompleteRule.workout(dataType: $dataType, minimum: $minimum, maximum: $maximum, valueType: $valueType, valueBasis: $valueBasis, title: $title)';
 }
 
 
@@ -1401,7 +1404,7 @@ abstract mixin class $AutoCompleteRuleWorkoutCopyWith<$Res> implements $AutoComp
   factory $AutoCompleteRuleWorkoutCopyWith(AutoCompleteRuleWorkout value, $Res Function(AutoCompleteRuleWorkout) _then) = _$AutoCompleteRuleWorkoutCopyWithImpl;
 @override @useResult
 $Res call({
- String dataType, num? minimum, num? maximum,@JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue) WorkoutValueType? valueType, String? title
+ String dataType, num? minimum, num? maximum,@JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue) WorkoutValueType? valueType,@JsonKey(unknownEnumValue: HabitSignalValueBasis.today) HabitSignalValueBasis valueBasis, String? title
 });
 
 
@@ -1418,13 +1421,14 @@ class _$AutoCompleteRuleWorkoutCopyWithImpl<$Res>
 
 /// Create a copy of AutoCompleteRule
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? dataType = null,Object? minimum = freezed,Object? maximum = freezed,Object? valueType = freezed,Object? title = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? dataType = null,Object? minimum = freezed,Object? maximum = freezed,Object? valueType = freezed,Object? valueBasis = null,Object? title = freezed,}) {
   return _then(AutoCompleteRuleWorkout(
 dataType: null == dataType ? _self.dataType : dataType // ignore: cast_nullable_to_non_nullable
 as String,minimum: freezed == minimum ? _self.minimum : minimum // ignore: cast_nullable_to_non_nullable
 as num?,maximum: freezed == maximum ? _self.maximum : maximum // ignore: cast_nullable_to_non_nullable
 as num?,valueType: freezed == valueType ? _self.valueType : valueType // ignore: cast_nullable_to_non_nullable
-as WorkoutValueType?,title: freezed == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
+as WorkoutValueType?,valueBasis: null == valueBasis ? _self.valueBasis : valueBasis // ignore: cast_nullable_to_non_nullable
+as HabitSignalValueBasis,title: freezed == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
@@ -1436,12 +1440,13 @@ as String?,
 @JsonSerializable()
 
 class AutoCompleteRuleMeasurable implements AutoCompleteRule {
-  const AutoCompleteRuleMeasurable({required this.dataTypeId, this.minimum, this.maximum, this.title, final  String? $type}): $type = $type ?? 'measurable';
+  const AutoCompleteRuleMeasurable({required this.dataTypeId, this.minimum, this.maximum, @JsonKey(unknownEnumValue: HabitSignalValueBasis.today) this.valueBasis = HabitSignalValueBasis.today, this.title, final  String? $type}): $type = $type ?? 'measurable';
   factory AutoCompleteRuleMeasurable.fromJson(Map<String, dynamic> json) => _$AutoCompleteRuleMeasurableFromJson(json);
 
  final  String dataTypeId;
  final  num? minimum;
  final  num? maximum;
+@JsonKey(unknownEnumValue: HabitSignalValueBasis.today) final  HabitSignalValueBasis valueBasis;
 @override final  String? title;
 
 @JsonKey(name: 'runtimeType')
@@ -1461,16 +1466,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AutoCompleteRuleMeasurable&&(identical(other.dataTypeId, dataTypeId) || other.dataTypeId == dataTypeId)&&(identical(other.minimum, minimum) || other.minimum == minimum)&&(identical(other.maximum, maximum) || other.maximum == maximum)&&(identical(other.title, title) || other.title == title));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AutoCompleteRuleMeasurable&&(identical(other.dataTypeId, dataTypeId) || other.dataTypeId == dataTypeId)&&(identical(other.minimum, minimum) || other.minimum == minimum)&&(identical(other.maximum, maximum) || other.maximum == maximum)&&(identical(other.valueBasis, valueBasis) || other.valueBasis == valueBasis)&&(identical(other.title, title) || other.title == title));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,dataTypeId,minimum,maximum,title);
+int get hashCode => Object.hash(runtimeType,dataTypeId,minimum,maximum,valueBasis,title);
 
 @override
 String toString() {
-  return 'AutoCompleteRule.measurable(dataTypeId: $dataTypeId, minimum: $minimum, maximum: $maximum, title: $title)';
+  return 'AutoCompleteRule.measurable(dataTypeId: $dataTypeId, minimum: $minimum, maximum: $maximum, valueBasis: $valueBasis, title: $title)';
 }
 
 
@@ -1481,7 +1486,7 @@ abstract mixin class $AutoCompleteRuleMeasurableCopyWith<$Res> implements $AutoC
   factory $AutoCompleteRuleMeasurableCopyWith(AutoCompleteRuleMeasurable value, $Res Function(AutoCompleteRuleMeasurable) _then) = _$AutoCompleteRuleMeasurableCopyWithImpl;
 @override @useResult
 $Res call({
- String dataTypeId, num? minimum, num? maximum, String? title
+ String dataTypeId, num? minimum, num? maximum,@JsonKey(unknownEnumValue: HabitSignalValueBasis.today) HabitSignalValueBasis valueBasis, String? title
 });
 
 
@@ -1498,12 +1503,13 @@ class _$AutoCompleteRuleMeasurableCopyWithImpl<$Res>
 
 /// Create a copy of AutoCompleteRule
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? dataTypeId = null,Object? minimum = freezed,Object? maximum = freezed,Object? title = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? dataTypeId = null,Object? minimum = freezed,Object? maximum = freezed,Object? valueBasis = null,Object? title = freezed,}) {
   return _then(AutoCompleteRuleMeasurable(
 dataTypeId: null == dataTypeId ? _self.dataTypeId : dataTypeId // ignore: cast_nullable_to_non_nullable
 as String,minimum: freezed == minimum ? _self.minimum : minimum // ignore: cast_nullable_to_non_nullable
 as num?,maximum: freezed == maximum ? _self.maximum : maximum // ignore: cast_nullable_to_non_nullable
-as num?,title: freezed == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
+as num?,valueBasis: null == valueBasis ? _self.valueBasis : valueBasis // ignore: cast_nullable_to_non_nullable
+as HabitSignalValueBasis,title: freezed == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }

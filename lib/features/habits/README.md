@@ -23,8 +23,9 @@ derived from combining the two.
   breakdowns.
 - **Reminds at the right time.** A habit can carry a time it becomes visible and a
   time to be alerted, scheduled as a notification.
-- **Groups by area**, and knows which signals complete it, both set in the
-  habit editor on the Habits page.
+- **Groups by area**, and knows which signals complete it from today's value,
+  a seven-day average, or either, all set in the habit editor on the Habits
+  page.
 
 ## What it owns
 

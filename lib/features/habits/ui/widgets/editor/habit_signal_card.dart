@@ -506,6 +506,35 @@ class _RuleEditorState extends State<_RuleEditor> {
             ),
           ],
           SizedBox(height: tokens.spacing.step3),
+          Text(
+            messages.habitEditorValueBasisLabel,
+            style: tokens.typography.styles.body.bodySmall.copyWith(
+              color: tokens.colors.text.mediumEmphasis,
+            ),
+          ),
+          SizedBox(height: tokens.spacing.step2),
+          DsSegmentedToggle<HabitSignalValueBasis>(
+            key: ValueKey('habit-signal-value-basis-${signal.id}'),
+            expand: true,
+            selected: signal.valueBasis,
+            onChanged: (valueBasis) =>
+                widget.onChanged(signal.copyWith(valueBasis: valueBasis)),
+            segments: [
+              DsSegment(
+                HabitSignalValueBasis.today,
+                messages.habitEditorValueBasisToday,
+              ),
+              DsSegment(
+                HabitSignalValueBasis.sevenDayAverage,
+                messages.habitEditorValueBasisSevenDayAverage,
+              ),
+              DsSegment(
+                HabitSignalValueBasis.todayOrSevenDayAverage,
+                messages.habitEditorValueBasisEither,
+              ),
+            ],
+          ),
+          SizedBox(height: tokens.spacing.step3),
           // The unit rides beside the number it qualifies — "1000 ml" —
           // rather than as helper text under the field, where it read as a
           // stray word.

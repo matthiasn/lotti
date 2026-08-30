@@ -11,7 +11,7 @@ sources:
   - id: src
     resource: ../../lib/logic/signals
     title: Signals package source
-    last_modified: 2026-08-28
+    last_modified: 2026-08-30
   - id: goal-reader
     resource: ../../lib/features/goals/evaluation/goal_signal_reader.dart
     title: GoalSignalReader — the first delegating consumer
@@ -19,7 +19,7 @@ sources:
   - id: definitions
     resource: ../../lib/classes/entity_definitions.dart
     title: AutoCompleteRule and WorkoutValueType
-    last_modified: 2026-08-27
+    last_modified: 2026-08-30
 ---
 
 `lib/logic/signals/` exists so that **goals and habits can read the journal
@@ -45,7 +45,7 @@ flowchart LR
 
 | File | Role |
 |------|------|
-| `signal_day_buckets.dart` | Pure functions: `signalDayKey`, `bucketQuantitativeByDay`, `bucketMeasurableTotalsByDay`, `bucketWorkoutsByDay`, `workoutSignalValue`, `habitSuccessDays`. No I/O, no feature imports. |
+| `signal_day_buckets.dart` | Pure functions: `signalDayKey`, `trailingAverageOn`, `bucketQuantitativeByDay`, `bucketMeasurableTotalsByDay`, `bucketWorkoutsByDay`, `workoutSignalValue`, `habitSuccessDays`. No I/O, no feature imports. |
 | `signal_window.dart` | `SignalWindow` — an immutable value of day-keyed series with deep equality, so providers and tests compare by content. |
 | `signal_needs.dart` | `SignalNeeds.of(rule)` — the distinct series an `AutoCompleteRule` tree references, so each is queried once. |
 | `signal_reader.dart` | `SignalReader` — the only thing here that touches `JournalDb`. |
@@ -97,12 +97,17 @@ Leaf rules:
 
 | Leaf | Satisfied when |
 |------|----------------|
-| measurable / health | the day has a value **and** it is within `minimum` / `maximum`; with no bounds, any entry |
+| measurable / health | the selected basis — today's daily aggregate, its trailing seven-day average, or either — is within `minimum` / `maximum`; with no bounds, any entry today |
 | workout, `valueType == null` | any workout of that type that day (no numeric value reported) |
-| workout, `valueType` set | the day's summed dimension is within the bounds |
+| workout, `valueType` set | the selected basis of the summed daily dimension is within the bounds |
 | habit | the referenced habit's latest completion that day is a success |
 
 A `maximum`-only rule still requires an entry: silence is not "≤ 2 coffees".
+`trailingAverageOn` uses the recorded daily values in the inclusive seven-day
+window; missing days are gaps rather than invented zeroes. The auto-completion
+service reads seven days ending on each day it evaluates. Older or unknown
+`HabitSignalValueBasis` values safely resolve to `today`, and unbounded rules
+ignore the basis so *Any reading* keeps its original meaning.
 
 # Gotchas
 

@@ -7421,6 +7421,18 @@ class AppLocalizationsDe extends AppLocalizations {
       'Gib einen Wert für diese Regel ein';
 
   @override
+  String get habitEditorValueBasisEither => 'Einen der beiden Werte';
+
+  @override
+  String get habitEditorValueBasisLabel => 'Schwellenwert vergleichen mit';
+
+  @override
+  String get habitEditorValueBasisSevenDayAverage => '7-Tage-Durchschnitt';
+
+  @override
+  String get habitEditorValueBasisToday => 'Heute';
+
+  @override
   String get habitHealthBloodPressureDiastolic => 'Diastolischer Blutdruck';
 
   @override

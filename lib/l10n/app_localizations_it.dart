@@ -7458,6 +7458,18 @@ class AppLocalizationsIt extends AppLocalizations {
       'Inserisci un valore per questa regola';
 
   @override
+  String get habitEditorValueBasisEither => 'Uno dei due';
+
+  @override
+  String get habitEditorValueBasisLabel => 'Confronta la soglia con';
+
+  @override
+  String get habitEditorValueBasisSevenDayAverage => 'Media di 7 giorni';
+
+  @override
+  String get habitEditorValueBasisToday => 'Oggi';
+
+  @override
   String get habitHealthBloodPressureDiastolic => 'Pressione diastolica';
 
   @override

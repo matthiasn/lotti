@@ -4396,6 +4396,10 @@
     }
   },
   "habitEditorThresholdRequired": "Enter a value for this rule",
+  "habitEditorValueBasisEither": "Either",
+  "habitEditorValueBasisLabel": "Compare the threshold with",
+  "habitEditorValueBasisSevenDayAverage": "7-day average",
+  "habitEditorValueBasisToday": "Today",
   "habitHealthBloodPressureDiastolic": "Diastolic blood pressure",
   "habitHealthBloodPressureSystolic": "Systolic blood pressure",
   "habitHealthBodyFat": "Body fat",

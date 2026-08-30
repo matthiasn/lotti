@@ -7377,6 +7377,18 @@ class AppLocalizationsSv extends AppLocalizations {
       'Ange ett värde för den här regeln';
 
   @override
+  String get habitEditorValueBasisEither => 'Något av dem';
+
+  @override
+  String get habitEditorValueBasisLabel => 'Jämför gränsen med';
+
+  @override
+  String get habitEditorValueBasisSevenDayAverage => '7-dagarsgenomsnittet';
+
+  @override
+  String get habitEditorValueBasisToday => 'I dag';
+
+  @override
   String get habitHealthBloodPressureDiastolic => 'Diastoliskt blodtryck';
 
   @override

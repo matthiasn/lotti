@@ -7445,6 +7445,18 @@ class AppLocalizationsCs extends AppLocalizations {
   String get habitEditorThresholdRequired => 'Zadej hodnotu pro toto pravidlo';
 
   @override
+  String get habitEditorValueBasisEither => 'Kteroukoli hodnotou';
+
+  @override
+  String get habitEditorValueBasisLabel => 'Porovnat hranici s';
+
+  @override
+  String get habitEditorValueBasisSevenDayAverage => '7denním průměrem';
+
+  @override
+  String get habitEditorValueBasisToday => 'Dneškem';
+
+  @override
   String get habitHealthBloodPressureDiastolic => 'Diastolický tlak';
 
   @override

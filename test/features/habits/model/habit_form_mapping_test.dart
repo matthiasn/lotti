@@ -68,6 +68,26 @@ void main() {
       );
     });
 
+    test('the selected value basis survives form and rule mapping', () {
+      const form = HabitSignalsForm(
+        signals: [
+          HabitSignalForm(
+            kind: HabitSignalKind.health,
+            id: 'cumulative_step_count',
+            mode: HabitSignalMode.atLeast,
+            threshold: 6000,
+            valueBasis: HabitSignalValueBasis.todayOrSevenDayAverage,
+          ),
+        ],
+      );
+      final rule = HabitFormMapping.toRule(form)! as AutoCompleteRuleHealth;
+      expect(
+        rule.valueBasis,
+        HabitSignalValueBasis.todayOrSevenDayAverage,
+      );
+      expect(HabitFormMapping.fromRule(rule), form);
+    });
+
     test('composites become or / and / multiple with a clamped count', () {
       const two = [water, steps];
       expect(
@@ -170,6 +190,8 @@ void main() {
         id: '${kind.name}-$idSlot',
         mode: mode,
         threshold: mode == HabitSignalMode.any ? null : 10 + idSlot,
+        valueBasis: HabitSignalValueBasis
+            .values[idSlot % HabitSignalValueBasis.values.length],
         workoutValueType:
             kind == HabitSignalKind.workout && mode != HabitSignalMode.any
             ? WorkoutValueType.values[idSlot % WorkoutValueType.values.length]

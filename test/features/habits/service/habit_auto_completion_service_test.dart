@@ -214,6 +214,77 @@ void main() {
     });
   });
 
+  group('value basis', () {
+    List<JournalEntity> week({required num today, required num prior}) => [
+      for (var offset = 6; offset >= 1; offset--)
+        measurementEntity(
+          DateTime(2026, 8, 8 - offset, 9),
+          prior,
+        ),
+      measurementEntity(DateTime(2026, 8, 8, 9), today),
+    ];
+
+    test("today completes from today's actual value", () {
+      stubHabits([waterHabit]);
+      stubMeasurements(week(today: 750, prior: 100));
+
+      run((async) => service.start());
+
+      expect(written, hasLength(1));
+      expect(written.single.dateFrom, now);
+      expect(written.single.autoCompleteReason, 'Water · 750');
+    });
+
+    test('the 7-day average completes while today remains below target', () {
+      final averageHabit = waterHabit.copyWith(
+        autoCompleteRule: const AutoCompleteRule.measurable(
+          dataTypeId: 'water',
+          minimum: 500,
+          valueBasis: HabitSignalValueBasis.sevenDayAverage,
+        ),
+      );
+      stubHabits([averageHabit]);
+      stubMeasurements(week(today: 200, prior: 600));
+      stored['habit-water'] = {
+        yesterdayKey: habitCompletionEntity(
+          DateTime(2026, 8, 7, 7),
+          HabitCompletionType.skip,
+          habitId: 'habit-water',
+        ),
+      };
+
+      run((async) => service.start());
+
+      expect(written, hasLength(1));
+      expect(written.single.dateFrom, now);
+      expect(written.single.autoCompleteReason, contains('Water · 542'));
+    });
+
+    test('either basis completes when the average is the passing value', () {
+      final eitherHabit = waterHabit.copyWith(
+        autoCompleteRule: const AutoCompleteRule.measurable(
+          dataTypeId: 'water',
+          minimum: 500,
+          valueBasis: HabitSignalValueBasis.todayOrSevenDayAverage,
+        ),
+      );
+      stubHabits([eitherHabit]);
+      stubMeasurements(week(today: 200, prior: 600));
+      stored['habit-water'] = {
+        yesterdayKey: habitCompletionEntity(
+          DateTime(2026, 8, 7, 7),
+          HabitCompletionType.skip,
+          habitId: 'habit-water',
+        ),
+      };
+
+      run((async) => service.start());
+
+      expect(written, hasLength(1));
+      expect(written.single.dateFrom, now);
+    });
+  });
+
   group('the existing-entry guard', () {
     test(
       'a day with a manual skip is left alone even when the data says done',
@@ -526,7 +597,7 @@ void main() {
     expect(written.single.autoCompleteReason, 'Water · 600');
   });
 
-  test('the evaluator receives a one-day window for the evaluated day', () {
+  test('the evaluator receives a seven-day window ending on each day', () {
     // Sanity check on the reader contract the engine relies on.
     stubHabits([waterHabit]);
     run((async) => service.start());
@@ -538,9 +609,9 @@ void main() {
       ),
     ).captured;
     expect(captured, [
-      DateTime(2026, 8, 7),
+      DateTime(2026, 8),
       DateTime(2026, 8, 8),
-      DateTime(2026, 8, 8),
+      DateTime(2026, 8, 2),
       DateTime(2026, 8, 9),
     ]);
   });
