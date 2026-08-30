@@ -132,7 +132,8 @@ void main() {
       );
       await tester.pump();
       expect(find.text('≥ 1,000 ml · 750 so far'), findsOneWidget);
-      expect(find.text('today: 750 ml'), findsOneWidget);
+      // The pill already states the reading; the caption would repeat it.
+      expect(find.textContaining('today:'), findsNothing);
 
       await pump(
         tester,

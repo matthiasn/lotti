@@ -87,6 +87,10 @@ class HabitSignalRow extends StatelessWidget {
             '${_format(todayValue, locale)} $unit'.trim(),
           );
 
+    // A pill that already reads "N so far" carries today's value; the
+    // caption would only repeat the same number one line lower.
+    final showToday = !_pillCarriesValue(leaf);
+
     return Container(
       key: ValueKey('habit-signal-row-${_leafKey(rule)}'),
       decoration: BoxDecoration(
@@ -118,19 +122,23 @@ class HabitSignalRow extends StatelessWidget {
                 ),
               ),
               SizedBox(width: tokens.spacing.step2),
-              DsPill(
-                key: ValueKey('habit-signal-pill-${_leafKey(rule)}'),
-                variant: DsPillVariant.tinted,
-                shape: DsPillShape.tag,
-                color: pillColor,
-                leading: leaf.satisfied
-                    ? Icon(
-                        LottiIcons.confirm,
-                        size: IconSizes.xs,
-                        color: pillColor,
-                      )
-                    : null,
-                label: _ruleStatus(messages, leaf, unit, locale),
+              // Flexible, so a long localized status at a raised text scale
+              // ellipsizes inside the pill instead of overflowing the row.
+              Flexible(
+                child: DsPill(
+                  key: ValueKey('habit-signal-pill-${_leafKey(rule)}'),
+                  variant: DsPillVariant.tinted,
+                  shape: DsPillShape.tag,
+                  color: pillColor,
+                  leading: leaf.satisfied
+                      ? Icon(
+                          LottiIcons.confirm,
+                          size: IconSizes.xs,
+                          color: pillColor,
+                        )
+                      : null,
+                  label: _ruleStatus(messages, leaf, unit, locale),
+                ),
               ),
             ],
           ),
@@ -147,13 +155,20 @@ class HabitSignalRow extends StatelessWidget {
                     onMore: () => onMoreMeasurable(measurable),
                   ),
                 ),
-                SizedBox(width: tokens.spacing.step3),
-                Text(todayText, style: captionStyle),
+                if (showToday) ...[
+                  SizedBox(width: tokens.spacing.step3),
+                  Text(todayText, style: captionStyle),
+                ],
               ],
             ),
-          ] else ...[
+          ] else if (showToday) ...[
+            // The same slot as beside the chips — trailing — so the today
+            // value sits in one place in every row, chips or not.
             SizedBox(height: tokens.spacing.step2),
-            Text(todayText, style: captionStyle),
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: Text(todayText, style: captionStyle),
+            ),
           ],
           SizedBox(height: tokens.spacing.step3),
           SignalSparkline(values: _series()),
@@ -198,6 +213,21 @@ class HabitSignalRow extends StatelessWidget {
       };
 
   /// "any entry · done", "6,000 steps · 4,120 so far", "any workout · not yet".
+  /// Whether the status pill states today's value itself — the "so far"
+  /// wording of an unmet threshold rule with a reading.
+  bool _pillCarriesValue(HabitLeafVerdict leaf) {
+    if (leaf.satisfied || leaf.value == null) return false;
+    return switch (leaf.rule) {
+      AutoCompleteRuleMeasurable(:final minimum, :final maximum) ||
+      AutoCompleteRuleHealth(:final minimum, :final maximum) ||
+      AutoCompleteRuleWorkout(
+        :final minimum,
+        :final maximum,
+      ) => minimum != null || maximum != null,
+      _ => false,
+    };
+  }
+
   String _ruleStatus(
     AppLocalizations messages,
     HabitLeafVerdict leaf,

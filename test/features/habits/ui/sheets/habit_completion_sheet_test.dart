@@ -19,6 +19,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/dashboards/state/measurables_controller.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/goals/state/goal_assessment_state.dart';
 import 'package:lotti/features/goals/state/goal_habit_watchers.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
@@ -108,6 +109,41 @@ class _ChoiceStatus extends HabitSignalStatusController {
   Future<void> refresh() async => state = AsyncData(_status());
 }
 
+/// A status for a three-leaf rule — the handover's threshold for the
+/// desktop sheet to lay its signal rows out two abreast.
+class _TripleStatus extends HabitSignalStatusController {
+  _TripleStatus(super.habitId, this.windowOf);
+  final SignalWindow Function() windowOf;
+
+  static const rule = AutoCompleteRule.and(
+    rules: [
+      AutoCompleteRule.measurable(dataTypeId: 'water', minimum: 500),
+      AutoCompleteRule.measurable(dataTypeId: 'hydration'),
+      AutoCompleteRule.measurable(dataTypeId: 'water', minimum: 250),
+    ],
+  );
+
+  HabitSignalStatus _status() {
+    final window = windowOf();
+    return HabitSignalStatus(
+      rule: rule,
+      window: window,
+      verdict: const HabitRuleEvaluator().evaluate(
+        rule: rule,
+        window: window,
+        day: window.end,
+      ),
+      today: window.end,
+    );
+  }
+
+  @override
+  Future<HabitSignalStatus?> build() async => _status();
+
+  @override
+  Future<void> refresh() async => state = AsyncData(_status());
+}
+
 /// [testWidgets] under the fixed sheet clock.
 void clockedWidgets(
   String description,
@@ -142,6 +178,11 @@ void main() {
     name: 'Check hydration',
     autoCompleteRule: _ChoiceStatus.rule,
   );
+  final tripleHabit = habitFlossing.copyWith(
+    id: 'triple-habit',
+    name: 'Three signals',
+    autoCompleteRule: _TripleStatus.rule,
+  );
   var waterToday = <DateTime, num>{};
   var hydrationToday = <DateTime, num>{};
 
@@ -167,6 +208,7 @@ void main() {
       () => cache.getHabitById(hydrationHabit.id),
     ).thenReturn(hydrationHabit);
     when(() => cache.getDataTypeById('hydration')).thenReturn(hydration);
+    when(() => cache.getHabitById(tripleHabit.id)).thenReturn(tripleHabit);
     when(() => cache.getHabitById('missing')).thenReturn(null);
     when(() => cache.getDataTypeById('water')).thenReturn(water);
     when(
@@ -216,8 +258,10 @@ void main() {
     String? habitId,
     String? dateString,
     List<Override> overrides = const [],
+    Size viewport = const Size(800, 1400),
+    double textScale = 1,
   }) async {
-    tester.view.physicalSize = const Size(800, 1400);
+    tester.view.physicalSize = viewport;
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
@@ -246,6 +290,10 @@ void main() {
             ),
           ),
         ),
+        mediaQueryData: MediaQueryData(
+          size: viewport,
+          textScaler: TextScaler.linear(textScale),
+        ),
         overrides: [
           measurableSuggestionsControllerProvider(
             'water',
@@ -256,6 +304,9 @@ void main() {
           habitSignalStatusProvider(
             hydrationHabit.id,
           ).overrideWith(() => _ChoiceStatus(hydrationHabit.id, window)),
+          habitSignalStatusProvider(
+            tripleHabit.id,
+          ).overrideWith(() => _TripleStatus(tripleHabit.id, window)),
           ...overrides,
         ],
       ),
@@ -445,6 +496,84 @@ void main() {
   });
 
   group('signals', () {
+    const columnsKey = ValueKey('habit-sheet-signal-columns');
+    List<Rect> signalRects(WidgetTester tester) => [
+      for (final element in find.byType(HabitSignalRow).evaluate())
+        tester.getRect(find.byWidget(element.widget)),
+    ];
+
+    clockedWidgets(
+      'three signals on a desktop window go two abreast in a wider card, '
+      'the unpaired last row spanning both',
+      (tester) async {
+        await pumpSheet(
+          tester,
+          habitId: tripleHabit.id,
+          viewport: const Size(kDesktopBreakpoint, 1400),
+        );
+        expect(find.byKey(columnsKey), findsOneWidget);
+        expect(find.byType(HabitSignalRow), findsNWidgets(3));
+        final rows = signalRects(tester);
+        expect(rows[0].top, rows[1].top, reason: 'first pair shares a line');
+        expect(rows[1].left, greaterThan(rows[0].right));
+        expect(rows[2].top, greaterThan(rows[0].bottom));
+        expect(rows[2].left, rows[0].left);
+        expect(rows[2].right, rows[1].right, reason: 'odd row spans both');
+        expect(
+          tester.getSize(find.byType(Card)).width,
+          kHabitCompletionSheetWideWidth,
+        );
+      },
+    );
+
+    clockedWidgets('three signals on a phone-width window stay stacked', (
+      tester,
+    ) async {
+      await pumpSheet(tester, habitId: tripleHabit.id);
+      expect(find.byKey(columnsKey), findsNothing);
+      final rows = signalRects(tester);
+      expect(rows[1].top, greaterThan(rows[0].bottom));
+      expect(rows[2].top, greaterThan(rows[1].bottom));
+      expect(
+        tester.getSize(find.byType(Card)).width,
+        kHabitCompletionSheetWidth,
+      );
+    });
+
+    clockedWidgets(
+      'a raised text scale keeps three signals stacked on a desktop window: '
+      'a half-width cell cannot hold a title beside a doubled status pill',
+      (tester) async {
+        await pumpSheet(
+          tester,
+          habitId: tripleHabit.id,
+          viewport: const Size(kDesktopBreakpoint, 2400),
+          textScale: 2,
+        );
+        expect(find.byKey(columnsKey), findsNothing);
+        expect(
+          tester.getSize(find.byType(Card)).width,
+          kHabitCompletionSheetWidth,
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    clockedWidgets('one signal on a desktop window keeps the narrow card', (
+      tester,
+    ) async {
+      await pumpSheet(
+        tester,
+        habitId: waterHabit.id,
+        viewport: const Size(kDesktopBreakpoint, 1400),
+      );
+      expect(find.byKey(columnsKey), findsNothing);
+      expect(
+        tester.getSize(find.byType(Card)).width,
+        kHabitCompletionSheetWidth,
+      );
+    });
+
     clockedWidgets('a habit without a rule shows no signal rows', (
       tester,
     ) async {

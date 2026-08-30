@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/goals/state/goal_assessment_state.dart';
@@ -34,8 +35,20 @@ import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/date_time/datetime_field.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
-import 'package:tinycolor2/tinycolor2.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+/// The reviewed width of the completion sheet's card.
+const kHabitCompletionSheetWidth = 500.0;
+
+/// The card's width once the signal rows go two abreast: two of the single
+/// column's signal measures side by side, so each row keeps the chip and
+/// sparkline room it has in the narrow card.
+const kHabitCompletionSheetWideWidth = 900.0;
+
+/// The number of signals from which a desktop sheet lays the rows out in
+/// two columns instead of one — the handover's threshold, where a single
+/// column would stack three sparkline cards above the form.
+const kHabitCompletionSheetTwoColumnSignals = 3;
 
 /// The compact completion sheet: the habit's own signals in view, then the
 /// outcome and Record.
@@ -321,6 +334,40 @@ class _HabitCompletionSheetState extends ConsumerState<HabitCompletionSheet> {
       };
 }
 
+/// The signal rows two abreast, paired top to bottom in reading order. An
+/// unpaired last row spans both columns: a half-width orphan beside an empty
+/// cell read as a hole in the sheet, and a full-width row keeps the grid
+/// reading as rows, so the pairing order is the reading order.
+class _SignalColumns extends StatelessWidget {
+  const _SignalColumns({required this.signals});
+
+  final List<Widget> signals;
+
+  @override
+  Widget build(BuildContext context) {
+    final gap = context.designTokens.spacing.step3;
+    return Column(
+      key: const ValueKey('habit-sheet-signal-columns'),
+      children: [
+        for (var index = 0; index < signals.length; index += 2) ...[
+          if (index > 0) SizedBox(height: gap),
+          if (index + 1 < signals.length)
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: signals[index]),
+                SizedBox(width: gap),
+                Expanded(child: signals[index + 1]),
+              ],
+            )
+          else
+            signals[index],
+        ],
+      ],
+    );
+  }
+}
+
 /// The completion-capture card: habit name, optional description, the
 /// signal rows, the date being recorded, an optional note, the outcome
 /// segmented picker and the primary Record action.
@@ -361,11 +408,22 @@ class _CompletionForm extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
+    // Desktop with three or more signals: two columns, so the signals stay
+    // in view above the form instead of pushing it below the fold. A phone
+    // never has the width; two signals do not earn the wider card; and a
+    // raised text scale keeps the single column — a half-width cell has no
+    // room for a title beside a status pill grown to twice its size.
+    final twoColumns =
+        isDesktopLayout(context) &&
+        signals.length >= kHabitCompletionSheetTwoColumnSignals &&
+        MediaQuery.textScalerOf(context).scale(1) <= 1;
 
     return Card(
       margin: EdgeInsets.zero,
       elevation: 0,
-      color: dsCardSurface(context),
+      // The canvas step, as the handover draws the sheet: the signal rows
+      // sit on it as cards, and are only visible as cells because of it.
+      color: dsPageSurface(context),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(tokens.radii.xl),
@@ -374,12 +432,16 @@ class _CompletionForm extends StatelessWidget {
       ),
       child: ConstrainedBox(
         constraints: BoxConstraints(
-          maxWidth: 500,
+          maxWidth: twoColumns
+              ? kHabitCompletionSheetWideWidth
+              : kHabitCompletionSheetWidth,
           minWidth: isMobile ? MediaQuery.of(context).size.width : 250,
         ),
         child: SingleChildScrollView(
+          // One horizontal inset, the same the signal cards use inside,
+          // so the grid, the fields and Record share their margins.
           padding: EdgeInsets.fromLTRB(
-            tokens.spacing.step6,
+            tokens.spacing.step4,
             tokens.spacing.step4,
             tokens.spacing.step4,
             tokens.spacing.step5,
@@ -419,10 +481,16 @@ class _CompletionForm extends StatelessWidget {
                 ),
                 if (habitDefinition.description.isNotEmpty)
                   HabitDescription(habitDefinition),
-                for (final signal in signals) ...[
-                  SizedBox(height: tokens.spacing.step3),
-                  signal,
-                ],
+                if (twoColumns) ...[
+                  // A section gap on each side of the grid: the signals are
+                  // one tier, the completion record below them the next.
+                  SizedBox(height: tokens.spacing.step4),
+                  _SignalColumns(signals: signals),
+                ] else
+                  for (final signal in signals) ...[
+                    SizedBox(height: tokens.spacing.step3),
+                    signal,
+                  ],
                 if (reflections.isNotEmpty) ...[
                   SizedBox(height: tokens.spacing.step3),
                   // The goals' own judgement of this day, reachable from the
@@ -555,15 +623,18 @@ class HabitDescription extends StatelessWidget {
       }
     }
 
+    final tokens = context.designTokens;
+    final style = tokens.typography.styles.body.bodyMedium.copyWith(
+      color: tokens.colors.text.mediumEmphasis,
+    );
     return Padding(
-      padding: EdgeInsets.only(top: context.designTokens.spacing.step2),
+      padding: EdgeInsets.only(top: tokens.spacing.step2),
       child: Linkify(
         onOpen: onOpen,
         text: '${habitDefinition?.description}',
-        style: habitCompletionHeaderStyle.copyWith(fontSize: fontSizeMedium),
-        linkStyle: habitCompletionHeaderStyle.copyWith(
-          fontSize: fontSizeMedium,
-          color: Theme.of(context).primaryColor.darken(25),
+        style: style,
+        linkStyle: style.copyWith(
+          color: tokens.colors.interactive.enabled,
           decoration: TextDecoration.none,
         ),
       ),
