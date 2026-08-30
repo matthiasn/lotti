@@ -58,6 +58,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **The journal list formats a measurement's value exactly like the entry's
   own summary.** A percentage measurement showed as `55 %` in the list and
   `55%` on the entry; both now read `55%`.
+- **The desktop completion sheet lays three or more signals out in two
+  columns.** The quick-record chips and sparklines stay in view above the
+  form instead of pushing it below the fold; phones keep the single column.
+  Signal rows now read as cards on the sheet, and a row whose status already
+  says "N so far" no longer repeats the number in a "today:" caption.
+- **A goal day counts as met when either the day's own number reaches the
+  target or the rolling average does.** A 10,000-step day inside a weak week
+  is a met day, and an 8,000-step day inside a week averaging above target is
+  no longer painted as a miss. The goal's overall status is unchanged — it
+  still follows the rolling average.
 
 ### Fixed
 - **Accepting all of an agent's suggestions no longer sends the task page
@@ -74,6 +84,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   rather than vanishing in a single frame.
 - **The habit edit page's "How do we know it's done?" heading no longer draws
   an empty bordered box under itself.**
+- **A value entered through "Other" in the habit completion sheet now counts
+  like a quick-record chip.** The row shows it as recorded and, when it meets
+  the habit's rule and you have not picked an outcome yourself, the outcome
+  flips to Success — previously only the chips did. The sheet also validates
+  its form before closing rather than after.
+- **A goal coach can now name a habit or measurable criterion that has no
+  title.** Older or hand-written goals whose criterion was created without a
+  title reach the coach under the name of the habit or measurable it tracks,
+  instead of only "the habit".
 
 ## [1.0.18]
 ### Added
