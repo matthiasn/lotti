@@ -47,7 +47,7 @@ String dayMarkWeekdayLabel(String locale, DateTime day) =>
 /// neighbour's day. The glyphs are the reflections history's own
 /// (`dayVerdictGlyph`), so an outcome is drawn the same way wherever it is
 /// shown. A recorded miss shares the neutral fill with an empty day, and the
-/// cross is what tells them apart.
+/// cross — in the error family's surface ink — is what tells them apart.
 ///
 /// Null for an undated, unresolved square — a streak chain has nothing to
 /// say inside its cells.
@@ -87,10 +87,14 @@ Widget? dayMarkSquareContent(
         color: tokens.colors.interactive.enabled,
       );
     case DayMarkState.missed:
+      // The one touch of the error family a habit square gets: the cross
+      // in the family's surface ink, on the neutral fill. A miss should
+      // sting a little, and a bad week should still not be a wall of red —
+      // the mark carries the hue, the square does not.
       return Icon(
         dayVerdictGlyph(DayVerdict.missed),
         size: glyphSize,
-        color: tokens.colors.text.mediumEmphasis,
+        color: dayVerdictSurfaceInk(tokens, DayVerdict.missed),
       );
     case DayMarkState.none:
     case DayMarkState.skipped:

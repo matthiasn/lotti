@@ -9,8 +9,8 @@ import 'package:lotti/widgets/day_indicators/day_mark.dart';
 /// surface for anything else. A skipped or missed day is not painted in an
 /// alert hue: the strip is a record of what was kept, and a struggling habit
 /// is never a wall of red. A recorded miss is told apart from a day nobody
-/// looked at by the cross drawn inside the grey (`dayMarkSquareContent`),
-/// not by its fill; a skip keeps its weekday, and is named by the
+/// looked at by the cross drawn inside the grey in the error family's
+/// surface ink (`dayMarkSquareContent`), not by its fill; a skip keeps its weekday, and is named by the
 /// tooltip and semantics. A partial day, kept too, draws the tick in the
 /// kept hue on its wash.
 /// `SurfaceAlphas.muted` is the sanctioned "reduced-strength accent" alpha, so
