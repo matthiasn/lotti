@@ -2,6 +2,7 @@ import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/goals/model/goal_health_data_types.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
+import 'package:lotti/logic/signals/signal_day_buckets.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 /// The day-series maths a goal metric is drawn and reported from.
@@ -112,20 +113,15 @@ num? goalMetricSevenDayAverageOn(
   required DateTime day,
 }) {
   final target = GoalWindow.dayUtc(day);
-  final windowStart = target.subtract(const Duration(days: 6));
   DateTime? first;
   var seenTarget = false;
-  num sum = 0;
-  var count = 0;
+  final valuesByDay = <DateTime, num>{};
   for (final entry in metric.days) {
     final key = GoalWindow.dayUtc(entry.day);
     if (key.isAfter(target)) continue;
     if (first == null || key.isBefore(first)) first = key;
     if (key == target) seenTarget = true;
-    if (entry.isObserved && !key.isBefore(windowStart)) {
-      sum += entry.value;
-      count++;
-    }
+    if (entry.isObserved) valuesByDay[key] = entry.value;
   }
   // The SAME run-up the series consumes, under the SAME filter — entries
   // strictly BEFORE the first rendered day, which is why this pass has to
@@ -140,18 +136,15 @@ num? goalMetricSevenDayAverageOn(
     final key = GoalWindow.dayUtc(entry.key);
     if (first == null || !key.isBefore(first)) continue;
     hasRunUp = true;
-    if (!key.isBefore(windowStart)) {
-      sum += entry.value;
-      count++;
-    }
+    valuesByDay[key] = entry.value;
   }
   // The same conditions the series itself applies: the day has to be one of
   // the rendered days, the window has to hold at least one real observation,
   // and — only where no run-up is available — it needs a full week of
   // rendered history behind it.
-  if (!seenTarget || count == 0) return null;
+  if (!seenTarget) return null;
   if (!hasRunUp && (first == null || target.difference(first).inDays < 6)) {
     return null;
   }
-  return sum / count;
+  return trailingAverageOn(valuesByDay, day: target);
 }

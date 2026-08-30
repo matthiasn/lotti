@@ -7481,6 +7481,18 @@ class AppLocalizationsFr extends AppLocalizations {
       'Saisis une valeur pour cette règle';
 
   @override
+  String get habitEditorValueBasisEither => 'L’un ou l’autre';
+
+  @override
+  String get habitEditorValueBasisLabel => 'Compare le seuil à';
+
+  @override
+  String get habitEditorValueBasisSevenDayAverage => 'Moyenne sur 7 jours';
+
+  @override
+  String get habitEditorValueBasisToday => 'Aujourd’hui';
+
+  @override
   String get habitHealthBloodPressureDiastolic => 'Tension diastolique';
 
   @override
@@ -7661,6 +7673,11 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get habitSignalRecordOther => 'Autre';
+
+  @override
+  String habitSignalSevenDayAverage(String value) {
+    return 'Moyenne sur 7 jours : $value';
+  }
 
   @override
   String habitSignalStatusDone(String target) {

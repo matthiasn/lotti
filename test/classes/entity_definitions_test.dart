@@ -166,6 +166,65 @@ void main() {
     );
   });
 
+  group('AutoCompleteRule value basis', () {
+    test('payloads written before the field existed default to today', () {
+      final payloads = <Map<String, dynamic>>[
+        {
+          'dataType': 'cumulative_step_count',
+          'minimum': 6000,
+          'runtimeType': 'health',
+        },
+        {
+          'dataTypeId': 'water',
+          'minimum': 500,
+          'runtimeType': 'measurable',
+        },
+        {
+          'dataType': 'running',
+          'minimum': 30,
+          'valueType': 'duration',
+          'runtimeType': 'workout',
+        },
+      ];
+
+      for (final payload in payloads) {
+        final decoded = AutoCompleteRule.fromJson(payload);
+        final basis = switch (decoded) {
+          AutoCompleteRuleHealth(:final valueBasis) ||
+          AutoCompleteRuleMeasurable(:final valueBasis) ||
+          AutoCompleteRuleWorkout(:final valueBasis) => valueBasis,
+          _ => throw StateError('expected a numeric leaf'),
+        };
+        expect(basis, HabitSignalValueBasis.today, reason: '$payload');
+      }
+    });
+
+    test('a stored basis round-trips and an unknown one falls back safely', () {
+      const rule = AutoCompleteRule.health(
+        dataType: 'cumulative_step_count',
+        minimum: 6000,
+        valueBasis: HabitSignalValueBasis.todayOrSevenDayAverage,
+      );
+      expect(
+        AutoCompleteRule.fromJson(
+          jsonDecode(jsonEncode(rule.toJson())) as Map<String, dynamic>,
+        ),
+        rule,
+      );
+
+      final decoded = AutoCompleteRule.fromJson({
+        'dataType': 'cumulative_step_count',
+        'minimum': 6000,
+        'valueBasis': 'monthlyMedian',
+        'runtimeType': 'health',
+      });
+      expect(
+        (decoded as AutoCompleteRuleHealth).valueBasis,
+        HabitSignalValueBasis.today,
+      );
+    });
+  });
+
   group('HabitDefinition.autoCompleteNotify', () {
     Map<String, dynamic> habitJson({bool? notify}) => {
       'id': 'habit-1',

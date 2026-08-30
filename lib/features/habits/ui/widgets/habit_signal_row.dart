@@ -78,7 +78,9 @@ class HabitSignalRow extends StatelessWidget {
     );
     // A choice measurable's day value is an occurrence count, which is not
     // what the user recorded; the row says only that something was logged.
-    final todayValue = leaf.value;
+    final todayValue =
+        leaf.todayValue ??
+        (_valueBasis(rule) == HabitSignalValueBasis.today ? leaf.value : null);
     final todayText = todayValue == null
         ? messages.habitSignalTodayNone
         : isChoice
@@ -90,6 +92,18 @@ class HabitSignalRow extends StatelessWidget {
     // A pill that already reads "N so far" carries today's value; the
     // caption would only repeat the same number one line lower.
     final showToday = !_pillCarriesValue(leaf);
+    final basis = _valueBasis(rule);
+    final showAverage =
+        _isBounded(rule) && basis != HabitSignalValueBasis.today;
+    final averageText = messages.habitSignalSevenDayAverage(
+      leaf.sevenDayAverage == null
+          ? '—'
+          : '${_format(leaf.sevenDayAverage!, locale)} $unit'.trim(),
+    );
+    final captions = [
+      if (showToday) todayText,
+      if (showAverage) averageText,
+    ];
 
     return Container(
       key: ValueKey('habit-signal-row-${_leafKey(rule)}'),
@@ -155,19 +169,31 @@ class HabitSignalRow extends StatelessWidget {
                     onMore: () => onMoreMeasurable(measurable),
                   ),
                 ),
-                if (showToday) ...[
+                if (captions.isNotEmpty) ...[
                   SizedBox(width: tokens.spacing.step3),
-                  Text(todayText, style: captionStyle),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      for (final caption in captions)
+                        Text(caption, style: captionStyle),
+                    ],
+                  ),
                 ],
               ],
             ),
-          ] else if (showToday) ...[
+          ] else if (captions.isNotEmpty) ...[
             // The same slot as beside the chips — trailing — so the today
-            // value sits in one place in every row, chips or not.
+            // and rolling values sit in one place in every row, chips or not.
             SizedBox(height: tokens.spacing.step2),
             Align(
               alignment: AlignmentDirectional.centerEnd,
-              child: Text(todayText, style: captionStyle),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  for (final caption in captions)
+                    Text(caption, style: captionStyle),
+                ],
+              ),
             ),
           ],
           SizedBox(height: tokens.spacing.step3),
@@ -217,6 +243,7 @@ class HabitSignalRow extends StatelessWidget {
   /// wording of an unmet threshold rule with a reading.
   bool _pillCarriesValue(HabitLeafVerdict leaf) {
     if (leaf.satisfied || leaf.value == null) return false;
+    if (_valueBasis(leaf.rule) != HabitSignalValueBasis.today) return false;
     return switch (leaf.rule) {
       AutoCompleteRuleMeasurable(:final minimum, :final maximum) ||
       AutoCompleteRuleHealth(:final minimum, :final maximum) ||
@@ -278,5 +305,23 @@ class HabitSignalRow extends StatelessWidget {
     AutoCompleteRuleWorkout(:final dataType) => dataType,
     AutoCompleteRuleHabit(:final habitId) => habitId,
     _ => 'composite',
+  };
+
+  static HabitSignalValueBasis _valueBasis(AutoCompleteRule rule) =>
+      switch (rule) {
+        AutoCompleteRuleMeasurable(:final valueBasis) ||
+        AutoCompleteRuleHealth(:final valueBasis) ||
+        AutoCompleteRuleWorkout(:final valueBasis) => valueBasis,
+        _ => HabitSignalValueBasis.today,
+      };
+
+  static bool _isBounded(AutoCompleteRule rule) => switch (rule) {
+    AutoCompleteRuleMeasurable(:final minimum, :final maximum) ||
+    AutoCompleteRuleHealth(:final minimum, :final maximum) ||
+    AutoCompleteRuleWorkout(
+      :final minimum,
+      :final maximum,
+    ) => minimum != null || maximum != null,
+    _ => false,
   };
 }

@@ -11,7 +11,7 @@ sources:
   - id: goals-src
     resource: ../../lib/features/goals
     title: Goals feature source
-    last_modified: 2026-08-16
+    last_modified: 2026-08-30
   - id: phase-a
     resource: ../../lib/features/goals/runtime/goal_agent_phase_a.dart
     title: GoalAgentPhaseA — the deterministic tick
@@ -1386,6 +1386,8 @@ flowchart TD
   the Habits page's visual language (Done-today card, due/later/done/all
   filter tabs, consistency heatmap, completion-rate chart) with one
   header-only card per goal (`ui/unified/unified_goal_card.dart`). Cards
+  use the same `dsCardSurface`, medium radius and subtle decorative border as
+  the habit rows below them in both light and dark themes. They
   carry a four-pill status vocabulary
   (`ui/unified/unified_goal_status.dart`: On track / At risk / Behind /
   No data, collapsed from `GoalTrackStatus`; `recovering` reads as At

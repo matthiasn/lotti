@@ -7498,6 +7498,18 @@ class AppLocalizationsRo extends AppLocalizations {
       'Introduceți o valoare pentru această regulă';
 
   @override
+  String get habitEditorValueBasisEither => 'Oricare dintre ele';
+
+  @override
+  String get habitEditorValueBasisLabel => 'Comparați pragul cu';
+
+  @override
+  String get habitEditorValueBasisSevenDayAverage => 'Media pe 7 zile';
+
+  @override
+  String get habitEditorValueBasisToday => 'Astăzi';
+
+  @override
   String get habitHealthBloodPressureDiastolic => 'Tensiune diastolică';
 
   @override
@@ -7678,6 +7690,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get habitSignalRecordOther => 'Altă valoare';
+
+  @override
+  String habitSignalSevenDayAverage(String value) {
+    return 'Media pe 7 zile: $value';
+  }
 
   @override
   String habitSignalStatusDone(String target) {

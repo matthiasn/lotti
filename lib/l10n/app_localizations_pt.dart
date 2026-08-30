@@ -7440,6 +7440,18 @@ class AppLocalizationsPt extends AppLocalizations {
       'Introduz um valor para esta regra';
 
   @override
+  String get habitEditorValueBasisEither => 'Qualquer um';
+
+  @override
+  String get habitEditorValueBasisLabel => 'Compara o limite com';
+
+  @override
+  String get habitEditorValueBasisSevenDayAverage => 'Média de 7 dias';
+
+  @override
+  String get habitEditorValueBasisToday => 'Hoje';
+
+  @override
   String get habitHealthBloodPressureDiastolic => 'Tensão diastólica';
 
   @override
@@ -7612,6 +7624,11 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get habitSignalRecordOther => 'Outro';
+
+  @override
+  String habitSignalSevenDayAverage(String value) {
+    return 'Média de 7 dias: $value';
+  }
 
   @override
   String habitSignalStatusDone(String target) {

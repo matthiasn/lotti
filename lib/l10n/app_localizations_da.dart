@@ -7366,6 +7366,18 @@ class AppLocalizationsDa extends AppLocalizations {
   String get habitEditorThresholdRequired => 'Indtast en værdi for denne regel';
 
   @override
+  String get habitEditorValueBasisEither => 'En af delene';
+
+  @override
+  String get habitEditorValueBasisLabel => 'Sammenlign grænsen med';
+
+  @override
+  String get habitEditorValueBasisSevenDayAverage => '7-dages gennemsnittet';
+
+  @override
+  String get habitEditorValueBasisToday => 'I dag';
+
+  @override
   String get habitHealthBloodPressureDiastolic => 'Diastolisk blodtryk';
 
   @override
@@ -7537,6 +7549,11 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get habitSignalRecordOther => 'Andet';
+
+  @override
+  String habitSignalSevenDayAverage(String value) {
+    return '7-dages gennemsnit: $value';
+  }
 
   @override
   String habitSignalStatusDone(String target) {

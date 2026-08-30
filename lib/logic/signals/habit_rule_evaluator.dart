@@ -68,11 +68,11 @@ List<AutoCompleteRule> _normalizeChoiceChildren(
 
 /// What one leaf of an [AutoCompleteRule] tree saw on the evaluated day.
 ///
-/// [value] is the day's aggregate the thresholds were compared against — a
-/// measurable total, a health reading, a workout dimension in display units,
-/// or `null` when nothing was recorded (or the leaf has no numeric value, as
-/// for "any workout" and habit leaves). [present] says whether the day has
-/// any entry at all, which is what "any entry" rules are about.
+/// [value] is the aggregate that the thresholds were compared against — the
+/// day's value or its trailing seven-day average, according to the rule. It is
+/// `null` when the selected basis has no data (or the leaf has no numeric
+/// value, as for "any workout" and habit leaves). [present] says whether the
+/// evaluated day itself has an entry, which is what "any entry" rules use.
 @immutable
 class HabitLeafVerdict {
   const HabitLeafVerdict({
@@ -80,6 +80,8 @@ class HabitLeafVerdict {
     required this.satisfied,
     required this.present,
     this.value,
+    this.todayValue,
+    this.sevenDayAverage,
   });
 
   final AutoCompleteRule rule;
@@ -87,21 +89,36 @@ class HabitLeafVerdict {
   final bool present;
   final num? value;
 
+  /// The evaluated calendar day's own aggregate, independent of [value].
+  final num? todayValue;
+
+  /// The trailing seven-day mean ending on the evaluated day.
+  final num? sevenDayAverage;
+
   @override
   bool operator ==(Object other) =>
       other is HabitLeafVerdict &&
       other.rule == rule &&
       other.satisfied == satisfied &&
       other.present == present &&
-      other.value == value;
+      other.value == value &&
+      other.todayValue == todayValue &&
+      other.sevenDayAverage == sevenDayAverage;
 
   @override
-  int get hashCode => Object.hash(rule, satisfied, present, value);
+  int get hashCode => Object.hash(
+    rule,
+    satisfied,
+    present,
+    value,
+    todayValue,
+    sevenDayAverage,
+  );
 
   @override
   String toString() =>
       'HabitLeafVerdict($rule, satisfied: $satisfied, present: $present, '
-      'value: $value)';
+      'value: $value, today: $todayValue, average: $sevenDayAverage)';
 }
 
 /// The outcome of evaluating a whole rule tree for one day.
@@ -157,21 +174,40 @@ class HabitRuleEvaluator {
         :final dataTypeId,
         :final minimum,
         :final maximum,
+        :final valueBasis,
       ):
-        final value = window.measurableTotalsByDay[dataTypeId]?[day];
-        return _leaf(rule, value, minimum, maximum, leaves);
+        final values = window.measurableTotalsByDay[dataTypeId] ?? const {};
+        return _numericLeaf(
+          rule,
+          values,
+          day,
+          minimum,
+          maximum,
+          valueBasis,
+          leaves,
+        );
       case AutoCompleteRuleHealth(
         :final dataType,
         :final minimum,
         :final maximum,
+        :final valueBasis,
       ):
-        final value = window.quantitativeByDay[dataType]?[day];
-        return _leaf(rule, value, minimum, maximum, leaves);
+        final values = window.quantitativeByDay[dataType] ?? const {};
+        return _numericLeaf(
+          rule,
+          values,
+          day,
+          minimum,
+          maximum,
+          valueBasis,
+          leaves,
+        );
       case AutoCompleteRuleWorkout(
         :final dataType,
         :final minimum,
         :final maximum,
         :final valueType,
+        :final valueBasis,
       ):
         final workouts = window.workoutsByDay[dataType]?[day] ?? const [];
         if (valueType == null) {
@@ -181,12 +217,23 @@ class HabitRuleEvaluator {
           );
           return present;
         }
-        final value = workouts.isEmpty
-            ? null
-            : workouts
+        final values = <DateTime, num>{
+          for (final entry
+              in (window.workoutsByDay[dataType] ?? const {}).entries)
+            if (entry.value.isNotEmpty)
+              entry.key: entry.value
                   .map((workout) => workoutSignalValue(workout, valueType))
-                  .fold<num>(0, (sum, value) => sum + value);
-        return _leaf(rule, value, minimum, maximum, leaves);
+                  .fold<num>(0, (sum, value) => sum + value),
+        };
+        return _numericLeaf(
+          rule,
+          values,
+          day,
+          minimum,
+          maximum,
+          valueBasis,
+          leaves,
+        );
       case AutoCompleteRuleHabit(:final habitId):
         final done = window.habitSuccessDays[habitId]?.contains(day) ?? false;
         leaves.add(
@@ -213,26 +260,58 @@ class HabitRuleEvaluator {
     }
   }
 
-  bool _leaf(
+  bool _numericLeaf(
     AutoCompleteRule rule,
-    num? value,
+    Map<DateTime, num> valuesByDay,
+    DateTime day,
     num? minimum,
     num? maximum,
+    HabitSignalValueBasis valueBasis,
     List<HabitLeafVerdict> leaves,
   ) {
-    final present = value != null;
-    final satisfied =
-        present &&
-        (minimum == null || value >= minimum) &&
-        (maximum == null || value <= maximum);
+    final todayValue = valuesByDay[day];
+    // "Any reading" remains today's presence check. A stored basis only
+    // affects bounded rules, so older behavior cannot change invisibly when a
+    // threshold is removed.
+    if (minimum == null && maximum == null) {
+      final present = todayValue != null;
+      leaves.add(
+        HabitLeafVerdict(
+          rule: rule,
+          satisfied: present,
+          present: present,
+          value: todayValue,
+          todayValue: todayValue,
+        ),
+      );
+      return present;
+    }
+
+    final average = trailingAverageOn(valuesByDay, day: day);
+    final todaySatisfied = _within(todayValue, minimum, maximum);
+    final averageSatisfied = _within(average, minimum, maximum);
+    final (satisfied, value) = switch (valueBasis) {
+      HabitSignalValueBasis.today => (todaySatisfied, todayValue),
+      HabitSignalValueBasis.sevenDayAverage => (averageSatisfied, average),
+      HabitSignalValueBasis.todayOrSevenDayAverage =>
+        todaySatisfied ? (true, todayValue) : (averageSatisfied, average),
+    };
+    final present = todayValue != null;
     leaves.add(
       HabitLeafVerdict(
         rule: rule,
         satisfied: satisfied,
         present: present,
         value: value,
+        todayValue: todayValue,
+        sevenDayAverage: average,
       ),
     );
     return satisfied;
   }
+
+  bool _within(num? value, num? minimum, num? maximum) =>
+      value != null &&
+      (minimum == null || value >= minimum) &&
+      (maximum == null || value <= maximum);
 }

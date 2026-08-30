@@ -236,7 +236,7 @@ class HabitAutoCompletionService {
     final window = await _signalReader.read(
       rule: rule,
       reference: reference,
-      days: 1,
+      days: DateTime.daysPerWeek,
     );
     final verdict = evaluator.evaluate(rule: rule, window: window, day: day);
     // Re-checked after every await: a profile switch or shutdown that
@@ -310,8 +310,9 @@ class HabitAutoCompletionService {
     return parts.join(' · ');
   }
 
-  static String _formatValue(num value) =>
-      value == value.roundToDouble() ? value.round().toString() : '$value';
+  static String _formatValue(num value) => value == value.roundToDouble()
+      ? value.round().toString()
+      : value.toStringAsFixed(2).replaceFirst(RegExp(r'\.?0+$'), '');
 
   void _scheduleMidnightPass() {
     _midnightTimer?.cancel();

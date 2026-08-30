@@ -83,6 +83,21 @@ abstract class MeasurableChoice with _$MeasurableChoice {
 
 enum HabitCompletionType { success, skip, fail, open }
 
+/// Which value a bounded habit completion signal compares with its threshold.
+///
+/// Unbounded "any entry" rules always use today's presence, regardless of
+/// this setting.
+enum HabitSignalValueBasis {
+  /// Compare the current calendar day's aggregate with the threshold.
+  today,
+
+  /// Compare the trailing seven-day mean ending on the evaluated day.
+  sevenDayAverage,
+
+  /// Satisfy the rule when either today's aggregate or the trailing mean does.
+  todayOrSevenDayAverage,
+}
+
 /// Origin of a habit completion entry.
 enum HabitCompletionSource {
   /// Recorded by the user from the habits page or completion sheet.
@@ -118,6 +133,9 @@ sealed class AutoCompleteRule with _$AutoCompleteRule {
     required String dataType,
     num? minimum,
     num? maximum,
+    @Default(HabitSignalValueBasis.today)
+    @JsonKey(unknownEnumValue: HabitSignalValueBasis.today)
+    HabitSignalValueBasis valueBasis,
     String? title,
   }) = AutoCompleteRuleHealth;
 
@@ -131,6 +149,9 @@ sealed class AutoCompleteRule with _$AutoCompleteRule {
     num? maximum,
     @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)
     WorkoutValueType? valueType,
+    @Default(HabitSignalValueBasis.today)
+    @JsonKey(unknownEnumValue: HabitSignalValueBasis.today)
+    HabitSignalValueBasis valueBasis,
     String? title,
   }) = AutoCompleteRuleWorkout;
 
@@ -138,6 +159,9 @@ sealed class AutoCompleteRule with _$AutoCompleteRule {
     required String dataTypeId,
     num? minimum,
     num? maximum,
+    @Default(HabitSignalValueBasis.today)
+    @JsonKey(unknownEnumValue: HabitSignalValueBasis.today)
+    HabitSignalValueBasis valueBasis,
     String? title,
   }) = AutoCompleteRuleMeasurable;
 

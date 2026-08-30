@@ -12486,6 +12486,30 @@ abstract class AppLocalizations {
   /// **'Enter a value for this rule'**
   String get habitEditorThresholdRequired;
 
+  /// No description provided for @habitEditorValueBasisEither.
+  ///
+  /// In en, this message translates to:
+  /// **'Either'**
+  String get habitEditorValueBasisEither;
+
+  /// No description provided for @habitEditorValueBasisLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Compare the threshold with'**
+  String get habitEditorValueBasisLabel;
+
+  /// No description provided for @habitEditorValueBasisSevenDayAverage.
+  ///
+  /// In en, this message translates to:
+  /// **'7-day average'**
+  String get habitEditorValueBasisSevenDayAverage;
+
+  /// No description provided for @habitEditorValueBasisToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get habitEditorValueBasisToday;
+
   /// No description provided for @habitHealthBloodPressureDiastolic.
   ///
   /// In en, this message translates to:
@@ -12791,6 +12815,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Other'**
   String get habitSignalRecordOther;
+
+  /// No description provided for @habitSignalSevenDayAverage.
+  ///
+  /// In en, this message translates to:
+  /// **'7-day average: {value}'**
+  String habitSignalSevenDayAverage(String value);
 
   /// No description provided for @habitSignalStatusDone.
   ///

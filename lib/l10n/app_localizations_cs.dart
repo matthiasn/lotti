@@ -7445,6 +7445,18 @@ class AppLocalizationsCs extends AppLocalizations {
   String get habitEditorThresholdRequired => 'Zadej hodnotu pro toto pravidlo';
 
   @override
+  String get habitEditorValueBasisEither => 'Kteroukoli hodnotou';
+
+  @override
+  String get habitEditorValueBasisLabel => 'Porovnat hranici s';
+
+  @override
+  String get habitEditorValueBasisSevenDayAverage => '7denním průměrem';
+
+  @override
+  String get habitEditorValueBasisToday => 'Dnešní hodnotou';
+
+  @override
   String get habitHealthBloodPressureDiastolic => 'Diastolický tlak';
 
   @override
@@ -7618,6 +7630,11 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get habitSignalRecordOther => 'Jiná hodnota';
+
+  @override
+  String habitSignalSevenDayAverage(String value) {
+    return '7denní průměr: $value';
+  }
 
   @override
   String habitSignalStatusDone(String target) {

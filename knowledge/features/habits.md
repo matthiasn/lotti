@@ -15,7 +15,7 @@ sources:
   - id: definitions
     resource: ../../lib/classes/entity_definitions.dart
     title: HabitDefinition
-    last_modified: 2026-08-27
+    last_modified: 2026-08-30
 ---
 
 Habits sit on top of **two different records**: `HabitDefinition`, describing the
@@ -199,12 +199,17 @@ form → rule → form to the normalised form.
 Each row's rule is a segmented mode — *Any entry / Total ≥ / Total ≤* for a
 measurable, *Any reading / Daily ≥ / Daily ≤* for a health type, *Any
 workout / Duration ≥ / Distance ≥ / Energy ≥* for a workout — with a
-threshold in the signal's unit. Steps default to *Daily ≥ 6,000*; everything
-else defaults to the record-based "any" mode. If a measurable definition is
-later changed from numeric to choice, evaluation normalizes any older stored
-minimum or maximum away recursively before reading the signal. The choice's
-occurrence marker therefore keeps the same "any entry" semantics immediately,
-even before the habit is opened and saved again.
+threshold in the signal's unit. A bounded row also chooses the value the bound
+uses: *Today*, *7-day average*, or *Either*. The rolling average ends on the
+day being evaluated and shares the signals package's averaging primitive with
+the goal chart/detail computation. *Any entry* and the unbounded workout mode
+remain presence checks for the evaluated day, regardless of the stored basis.
+Steps default to *Daily ≥ 6,000*; everything else defaults to the record-based
+"any" mode. Existing rules without a stored basis decode as *Today*. If a
+measurable definition is later changed from numeric to choice, evaluation
+normalizes any older stored minimum or maximum away recursively before reading
+the signal. The choice's occurrence marker therefore keeps the same "any
+entry" semantics immediately, even before the habit is opened and saved again.
 
 # The data model is more ambitious than the schedule surface
 
@@ -227,6 +232,9 @@ signal card (below), evaluated by the engine, and read by
 - `AutoCompleteRule.workout.valueType` (`WorkoutValueType?`) chooses which
   workout value a threshold applies to; `null` means "any workout of that
   type". An unknown value from a newer peer decodes to `null`.
+- `AutoCompleteRule.health` / `measurable` / `workout` carry a
+  `HabitSignalValueBasis` for bounded rules. Its backward-compatible and
+  unknown-value fallback is `today`.
 - `HabitDefinition.autoCompleteNotify` (default `true`) gates the
   auto-completion notification.
 - `HabitCompletionData.source` (`manual` | `auto`, default `manual`, unknown
@@ -237,10 +245,15 @@ signal card (below), evaluated by the engine, and read by
 
 `HabitAutoCompletionService` (`service/habit_auto_completion_service.dart`,
 started from `registerSingletons`) checks habits off from recorded data. It
-reads the same journal series the goals runtime does, through the neutral
+reads a seven-day window from the same journal series the goals runtime does,
+through the neutral
 [signals logic](../architecture/signals.md), and writes an ordinary
 `HabitCompletionEntry` through `PersistenceLogic` with
 `source: auto` — so the result syncs, resolves and renders like a manual one.
+When the Habits page opens, it also queues a delta import once for every
+platform-health type watched by an active habit. This matches the Goals
+surface: evaluation still reads journal rows, while the importer catches those
+rows up in the background and their normal notifications refresh the page.
 
 ```mermaid
 stateDiagram-v2

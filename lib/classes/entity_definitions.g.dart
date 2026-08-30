@@ -91,6 +91,13 @@ AutoCompleteRuleHealth _$AutoCompleteRuleHealthFromJson(
   dataType: json['dataType'] as String,
   minimum: json['minimum'] as num?,
   maximum: json['maximum'] as num?,
+  valueBasis:
+      $enumDecodeNullable(
+        _$HabitSignalValueBasisEnumMap,
+        json['valueBasis'],
+        unknownValue: HabitSignalValueBasis.today,
+      ) ??
+      HabitSignalValueBasis.today,
   title: json['title'] as String?,
   $type: json['runtimeType'] as String?,
 );
@@ -101,8 +108,15 @@ Map<String, dynamic> _$AutoCompleteRuleHealthToJson(
   'dataType': instance.dataType,
   'minimum': instance.minimum,
   'maximum': instance.maximum,
+  'valueBasis': _$HabitSignalValueBasisEnumMap[instance.valueBasis]!,
   'title': instance.title,
   'runtimeType': instance.$type,
+};
+
+const _$HabitSignalValueBasisEnumMap = {
+  HabitSignalValueBasis.today: 'today',
+  HabitSignalValueBasis.sevenDayAverage: 'sevenDayAverage',
+  HabitSignalValueBasis.todayOrSevenDayAverage: 'todayOrSevenDayAverage',
 };
 
 AutoCompleteRuleWorkout _$AutoCompleteRuleWorkoutFromJson(
@@ -116,6 +130,13 @@ AutoCompleteRuleWorkout _$AutoCompleteRuleWorkoutFromJson(
     json['valueType'],
     unknownValue: JsonKey.nullForUndefinedEnumValue,
   ),
+  valueBasis:
+      $enumDecodeNullable(
+        _$HabitSignalValueBasisEnumMap,
+        json['valueBasis'],
+        unknownValue: HabitSignalValueBasis.today,
+      ) ??
+      HabitSignalValueBasis.today,
   title: json['title'] as String?,
   $type: json['runtimeType'] as String?,
 );
@@ -127,6 +148,7 @@ Map<String, dynamic> _$AutoCompleteRuleWorkoutToJson(
   'minimum': instance.minimum,
   'maximum': instance.maximum,
   'valueType': _$WorkoutValueTypeEnumMap[instance.valueType],
+  'valueBasis': _$HabitSignalValueBasisEnumMap[instance.valueBasis]!,
   'title': instance.title,
   'runtimeType': instance.$type,
 };
@@ -143,6 +165,13 @@ AutoCompleteRuleMeasurable _$AutoCompleteRuleMeasurableFromJson(
   dataTypeId: json['dataTypeId'] as String,
   minimum: json['minimum'] as num?,
   maximum: json['maximum'] as num?,
+  valueBasis:
+      $enumDecodeNullable(
+        _$HabitSignalValueBasisEnumMap,
+        json['valueBasis'],
+        unknownValue: HabitSignalValueBasis.today,
+      ) ??
+      HabitSignalValueBasis.today,
   title: json['title'] as String?,
   $type: json['runtimeType'] as String?,
 );
@@ -153,6 +182,7 @@ Map<String, dynamic> _$AutoCompleteRuleMeasurableToJson(
   'dataTypeId': instance.dataTypeId,
   'minimum': instance.minimum,
   'maximum': instance.maximum,
+  'valueBasis': _$HabitSignalValueBasisEnumMap[instance.valueBasis]!,
   'title': instance.title,
   'runtimeType': instance.$type,
 };

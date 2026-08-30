@@ -7377,6 +7377,18 @@ class AppLocalizationsSv extends AppLocalizations {
       'Ange ett värde för den här regeln';
 
   @override
+  String get habitEditorValueBasisEither => 'Endera värdet';
+
+  @override
+  String get habitEditorValueBasisLabel => 'Jämför gränsen med';
+
+  @override
+  String get habitEditorValueBasisSevenDayAverage => '7-dagarsgenomsnittet';
+
+  @override
+  String get habitEditorValueBasisToday => 'I dag';
+
+  @override
   String get habitHealthBloodPressureDiastolic => 'Diastoliskt blodtryck';
 
   @override
@@ -7548,6 +7560,11 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get habitSignalRecordOther => 'Annat';
+
+  @override
+  String habitSignalSevenDayAverage(String value) {
+    return '7-dagarsgenomsnitt: $value';
+  }
 
   @override
   String habitSignalStatusDone(String target) {

@@ -7466,6 +7466,18 @@ class AppLocalizationsEs extends AppLocalizations {
       'Introduce un valor para esta regla';
 
   @override
+  String get habitEditorValueBasisEither => 'Cualquiera';
+
+  @override
+  String get habitEditorValueBasisLabel => 'Compara el umbral con';
+
+  @override
+  String get habitEditorValueBasisSevenDayAverage => 'Media de 7 días';
+
+  @override
+  String get habitEditorValueBasisToday => 'Hoy';
+
+  @override
   String get habitHealthBloodPressureDiastolic => 'Tensión diastólica';
 
   @override
@@ -7644,6 +7656,11 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get habitSignalRecordOther => 'Otro';
+
+  @override
+  String habitSignalSevenDayAverage(String value) {
+    return 'Media de 7 días: $value';
+  }
 
   @override
   String habitSignalStatusDone(String target) {

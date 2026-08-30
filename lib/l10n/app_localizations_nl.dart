@@ -7382,6 +7382,18 @@ class AppLocalizationsNl extends AppLocalizations {
       'Vul een waarde in voor deze regel';
 
   @override
+  String get habitEditorValueBasisEither => 'Een van beide';
+
+  @override
+  String get habitEditorValueBasisLabel => 'Vergelijk de drempel met';
+
+  @override
+  String get habitEditorValueBasisSevenDayAverage => '7-daags gemiddelde';
+
+  @override
+  String get habitEditorValueBasisToday => 'Vandaag';
+
+  @override
   String get habitHealthBloodPressureDiastolic => 'Diastolische bloeddruk';
 
   @override
@@ -7553,6 +7565,11 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get habitSignalRecordOther => 'Anders';
+
+  @override
+  String habitSignalSevenDayAverage(String value) {
+    return '7-daags gemiddelde: $value';
+  }
 
   @override
   String habitSignalStatusDone(String target) {
