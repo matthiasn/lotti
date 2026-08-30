@@ -32,6 +32,26 @@ async def test_reaper_interval_must_be_positive(interval_seconds):
         )
 
 
+@pytest.mark.parametrize("startup_delay_seconds", [-0.1, -1])
+def test_reaper_startup_delay_must_be_non_negative(startup_delay_seconds):
+    with pytest.raises(ValueError, match="startup delay must be non-negative"):
+        BundleClaimReaper(
+            object(),
+            object(),
+            startup_delay_seconds=startup_delay_seconds,
+        )
+
+
+def test_reaper_startup_delay_can_be_disabled_explicitly():
+    reaper = BundleClaimReaper(
+        object(),
+        object(),
+        startup_delay_seconds=0,
+    )
+
+    assert reaper._startup_delay_seconds == 0
+
+
 class FakeAdminClient:
     def __init__(self):
         self.deactivated = []

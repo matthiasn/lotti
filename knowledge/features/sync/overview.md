@@ -279,8 +279,9 @@ by a paid claim, so it cannot mark the user rotated while leaving escrow
 unconfirmed and eligible for reaping. The
 claim reaper deactivates an account that never reaches that proof before its
 24-hour TTL. Its first destructive batch waits for an operator-configurable
-startup delay. Rotation verification and reaping first acquire mutually exclusive
-tokenized database leases; failed or crashed workers release or age out their
+non-negative startup delay; a negative configuration fails service startup.
+Rotation verification and reaping first acquire mutually exclusive tokenized
+database leases; failed or crashed workers release or age out their
 lease, and a late worker cannot clear a newer owner's lease. Reaper
 finalization requires the same operation token that reserved the claim, so an
 administrator who revokes the bundle while Synapse deactivation is in flight

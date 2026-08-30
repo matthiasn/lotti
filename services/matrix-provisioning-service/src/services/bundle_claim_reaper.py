@@ -34,6 +34,8 @@ class BundleClaimReaper(PeriodicTask):
     ):
         if interval_seconds <= 0:
             raise ValueError("Bundle claim reaper interval must be positive")
+        if startup_delay_seconds < 0:
+            raise ValueError("Bundle claim reaper startup delay must be non-negative")
         super().__init__(
             name="Paid bundle claim reaper",
             interval_seconds=interval_seconds,

@@ -234,7 +234,7 @@ authoritative observation wins.
 | `PAID_PROVISIONING_POLL_SECONDS` | No | `0.1` | Poll interval while another process owns the entitlement reservation |
 | `PAID_PROVISIONING_OPERATION_TIMEOUT_SECONDS` | No | `300` | Age after which a crashed paid-provisioning reservation is recoverable |
 | `BUNDLE_CLAIM_REAPER_INTERVAL_SECONDS` | No | `300` | Positive expired paid-claim cleanup interval; non-positive values fail startup |
-| `BUNDLE_CLAIM_REAPER_STARTUP_DELAY_SECONDS` | No | `60` | Delay before the first destructive claim cleanup |
+| `BUNDLE_CLAIM_REAPER_STARTUP_DELAY_SECONDS` | No | `60` | Non-negative delay before the first destructive claim cleanup; negative values fail startup |
 | `BUNDLE_CLAIM_REAPER_BATCH_SIZE` | No | `50` | Expired claims handled per cleanup pass |
 | `CORS_ALLOWED_ORIGINS` | No | `http://localhost:5174` | Comma-separated origins |
 | `FORWARDED_ALLOW_IPS` | No | `127.0.0.1` | Exact trusted reverse-proxy peers for Uvicorn forwarded headers; bundled Compose sets only its fixed nginx address |
