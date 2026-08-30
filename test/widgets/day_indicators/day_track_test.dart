@@ -64,6 +64,29 @@ void main() {
     expect(metrics.labelHeight, greaterThanOrEqualTo(IconSizes.s));
   });
 
+  testWidgets('a desktop window keys the pitch to the larger square', (
+    tester,
+  ) async {
+    late DayTrackMetrics metrics;
+    late DsTokens tokens;
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Builder(
+          builder: (context) {
+            tokens = context.designTokens;
+            metrics = dayTrackMetrics(context);
+            return const SizedBox.shrink();
+          },
+        ),
+        mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
+      ),
+    );
+    expect(
+      metrics.pitch,
+      kDaySquareSize + tokens.spacing.step1 + tokens.spacing.step2,
+    );
+  });
+
   testWidgets('a raised text scale widens the pitch to hold the caption', (
     tester,
   ) async {

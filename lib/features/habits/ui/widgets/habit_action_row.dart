@@ -10,6 +10,7 @@ import 'package:lotti/features/design_system/components/celebration/celebration_
 import 'package:lotti/features/design_system/components/celebration/completion_burst.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_glow.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/habits/ui/pages/habit_editor_launcher.dart';
@@ -20,6 +21,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/colors.dart';
+import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/charts/habits/dashboard_habits_data.dart';
 import 'package:lotti/widgets/day_indicators/day_mark.dart';
 import 'package:lotti/widgets/day_indicators/day_mark_strip.dart';
@@ -33,11 +35,26 @@ double? _stageProgress(double c, double start, double end) {
   return (c - start) / (end - start);
 }
 
+/// How many days a habit row's history strip shows on a desktop window.
+///
+/// A phone card has room for the handover's week; a desktop row has several
+/// times that width, and seven squares left most of it empty. Two weeks is
+/// the span the habits chart also opens on.
+const int kHabitHistoryDaysDesktop = 14;
+
+/// The days a habit row's history strip shows in this window: two weeks on a
+/// desktop-width window, the handover's seven otherwise. The rows' callers
+/// pass it to `habitHistoryMarks` so the state slices the same span the row
+/// draws.
+int habitHistoryDays(BuildContext context) =>
+    isDesktopLayout(context) ? kHabitHistoryDaysDesktop : DateTime.daysPerWeek;
+
 /// The shared habit action row used by the habits tab and the dashboard habit
 /// chart: a swipe-to-record row (right = success, left = missed) whose body
 /// opens the completion dialog on tap, with a category icon, an optional
 /// priority star, the habit name, the handover's history strip — one square
-/// per day of [history], then a flame and [currentStreak] — and a trailing
+/// per day of [history], each opening the completion sheet for its own day,
+/// then a flame and [currentStreak] — and a trailing
 /// one-tap complete button.
 ///
 /// The history is the caller's to supply: the habits tab reads its week off
@@ -174,6 +191,13 @@ class _HabitActionRowState extends ConsumerState<HabitActionRow>
       dateString: dateString,
     );
   }
+
+  /// A tap on one of the history squares: the sheet for THAT day, so a
+  /// missed Tuesday is recorded on Tuesday rather than on today with the
+  /// date to be corrected by hand. Every history span ends today — the page
+  /// state's by construction, the dashboard's by its range — so there is no
+  /// square for a day that has not happened.
+  void _onHistoryDaySelected(DateTime day) => onTapAdd(dateString: day.ymd);
 
   /// Records a one-tap completion for *today* with [completionType] and no
   /// comment — the fast path shared by the trailing check button (success) and
@@ -349,6 +373,7 @@ class _HabitActionRowState extends ConsumerState<HabitActionRow>
                 celebrate: celebrate,
                 history: widget.history,
                 onTapAdd: onTapAdd,
+                onHistoryDaySelected: _onHistoryDaySelected,
                 onEdit: () => openHabitEditor(context, habitId: widget.habitId),
                 onQuickComplete: () => _recordQuickCompletion(
                   HabitCompletionType.success,
@@ -417,6 +442,7 @@ class _HabitCardBody extends StatelessWidget {
     required this.doneColor,
     required this.celebrate,
     required this.onTapAdd,
+    required this.onHistoryDaySelected,
     required this.onEdit,
     required this.onQuickComplete,
     required this.history,
@@ -434,6 +460,9 @@ class _HabitCardBody extends StatelessWidget {
   final bool celebrate;
   final List<DayMark> history;
   final void Function({String? dateString}) onTapAdd;
+
+  /// A tap on one of the [history] squares, with that square's day.
+  final ValueChanged<DateTime> onHistoryDaySelected;
   final VoidCallback onEdit;
 
   /// One-tap "mark done today" — the trailing check records a success directly
@@ -531,12 +560,20 @@ class _HabitCardBody extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ],
-                      // The handover's history strip: the week's squares,
+                      // The handover's history strip: the span's squares,
                       // then the flame and the streak. Nothing when there is
-                      // neither history nor a run going.
+                      // neither history nor a run going. Each square is the
+                      // door to its own day's sheet, and a tappable track
+                      // brings its own air — the touch-floor slot with the
+                      // weekday initial and the square centred in it — so
+                      // the gap above it is the small one.
                       if (history.isNotEmpty || currentStreak >= 1) ...[
-                        SizedBox(height: tokens.spacing.step3),
-                        DayMarkStrip(marks: history, streak: currentStreak),
+                        SizedBox(height: tokens.spacing.step1),
+                        DayMarkStrip(
+                          marks: history,
+                          streak: currentStreak,
+                          onDaySelected: onHistoryDaySelected,
+                        ),
                       ],
                     ],
                   ),

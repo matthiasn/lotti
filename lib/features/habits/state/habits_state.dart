@@ -245,7 +245,9 @@ List<String> getHabitDays(int timeSpanDays, {DateTime? now}) {
 
 /// The last [count] of [HabitsState.days] as day marks for one habit — the
 /// dated history strip under a habit row, read straight off the per-day
-/// completion sets the page already holds. A day the habit was kept is
+/// completion sets the page already holds. The rows pass `habitHistoryDays`
+/// for [count] (a week on a phone, two on a desktop window); the default is
+/// the handover's week. A day the habit was kept is
 /// `full`; a recorded skip or miss keeps its own state so the square can name
 /// it; a day with no record is `none`.
 List<DayMark> habitHistoryMarks(

@@ -98,9 +98,9 @@ class _HabitCompletionCardState extends ConsumerState<HabitCompletionCard> {
 }
 
 /// The dashboard range as day marks, oldest first, for the row's history
-/// strip. The strip is read-only: tapping anywhere on the row (or the complete
-/// button) opens the dialog, where any past day can be backfilled via the date
-/// field, so the squares need no tiny, swipe-conflicting tap targets.
+/// strip. Each square opens the completion sheet for its own day; the row
+/// body still opens it for today, and the sheet's date field covers any day
+/// the range does not show.
 List<DayMark> _historyMarks(List<HabitResult> results) {
   final today = clock.now().ymd;
   return [

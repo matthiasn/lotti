@@ -204,6 +204,61 @@ void main() {
       expect(find.byIcon(LottiIcons.streak), findsNothing);
     });
 
+    testWidgets('a square opens the completion sheet for ITS day, and the '
+        'weekday initials say which day each square is', (tester) async {
+      final handle = tester.ensureSemantics();
+      await pumpRow(tester, history: week(List.filled(7, DayMarkState.none)));
+      // Four days back from the last square, on a strip that ends on a
+      // Tuesday: the sheet must open on that Friday, not on today.
+      final friday = today.subtract(const Duration(days: 4));
+      expect(find.text('Fr'), findsOneWidget);
+      expect(find.bySemanticsLabel(RegExp('Fri, Aug 7')), findsOneWidget);
+      await tester.tap(
+        find.byWidgetPredicate(
+          (widget) => widget is DayMarkCell && widget.mark.day == friday,
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      final sheet = tester.widget<HabitCompletionSheet>(
+        find.byType(HabitCompletionSheet),
+      );
+      expect(sheet.habitId, habitFlossing.id);
+      expect(sheet.dateString, '2026-08-07');
+      expect(DateTime.parse(sheet.dateString!), friday);
+      handle.dispose();
+    });
+
+    testWidgets('the strip shows a week on a phone and two on a desktop '
+        'window', (tester) async {
+      late int phoneDays;
+      late int desktopDays;
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Builder(
+            builder: (context) {
+              phoneDays = habitHistoryDays(context);
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Builder(
+            builder: (context) {
+              desktopDays = habitHistoryDays(context);
+              return const SizedBox.shrink();
+            },
+          ),
+          mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
+        ),
+      );
+      expect(phoneDays, 7);
+      expect(desktopDays, kHabitHistoryDaysDesktop);
+      expect(kHabitHistoryDaysDesktop, 14);
+    });
+
     testWidgets('no history and no streak draws no strip', (tester) async {
       await pumpRow(tester);
       expect(find.byType(DayMarkStrip), findsNothing);

@@ -13,6 +13,7 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/widgets/charts/habits/dashboard_habits_data.dart';
 import 'package:lotti/widgets/day_indicators/day_mark.dart';
 import 'package:lotti/widgets/day_indicators/day_mark_cell.dart';
+import 'package:lotti/widgets/day_indicators/day_mark_styles.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -139,7 +140,7 @@ void main() {
 
   group('history strip', () {
     testWidgets('draws every in-range day as a shared day-mark cell, with the '
-        'skip dash and missed cross as non-color cues', (tester) async {
+        'tick and cross as non-color cues', (tester) async {
       final handle = tester.ensureSemantics();
       // The open day precedes the success day so `results.last` is success and
       // the trailing button is the done-circle, not another check glyph.
@@ -161,18 +162,25 @@ void main() {
         DayMarkState.skipped,
         DayMarkState.full,
       ]);
-      // Nothing is drawn inside a square: the state is the fill, the words
-      // are in the summary and the tooltips.
+      // The missed day draws the cross, the kept day the tick; the skipped
+      // and the open day keep their weekday letters, named by the summary
+      // and the tooltips.
+      Finder glyph(int index, IconData icon) => find.descendant(
+        of: find.byType(DayMarkCell).at(index),
+        matching: find.byIcon(icon),
+      );
+      expect(glyph(1, dayVerdictGlyph(DayVerdict.missed)), findsOneWidget);
+      expect(glyph(3, dayVerdictGlyph(DayVerdict.met)), findsOneWidget);
       expect(
         find.descendant(
           of: find.byType(DayMarkCell),
           matching: find.byType(Icon),
         ),
-        findsNothing,
+        findsNWidgets(2),
       );
 
-      // A read-only strip publishes one summary. The range ends on a kept
-      // day, so it is the streak that is announced.
+      // The strip's summary is its container's label. The range ends on a
+      // kept day, so it is the streak that is announced.
       expect(find.bySemanticsLabel(RegExp('1-day streak')), findsOneWidget);
       handle.dispose();
     });

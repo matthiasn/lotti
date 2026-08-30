@@ -12,8 +12,8 @@ import 'package:lotti/widgets/misc/linked_scroll_group.dart';
 
 /// A row of day squares, as the habits handover draws it: one small square
 /// per day on the page's shared column pitch, and — for a habit with a run
-/// going — a flame and the streak count after the last square. The squares
-/// carry no labels of their own; each dated square names its day and outcome
+/// going — a flame and the streak count after the last square. Each square
+/// says its outcome or its weekday inside itself, names its date and outcome
 /// on hover and to a screen reader, and the strip publishes one concise
 /// summary. A tappable strip publishes each day as its own button as well.
 class DayMarkStrip extends StatelessWidget {
@@ -55,7 +55,8 @@ class DayMarkStrip extends StatelessWidget {
     final streak = this.streak ?? 0;
     if (marks.isEmpty && streak <= 0) return const SizedBox.shrink();
     // Always measured: even a seven-square row outgrows a phone card once a
-    // raised text scale widens the shared pitch for the weekday captions.
+    // raised text scale widens the shared pitch for the weekday axis a goal
+    // page draws on it.
     return LayoutBuilder(
       builder: (context, constraints) => _build(
         context,
@@ -76,11 +77,8 @@ class DayMarkStrip extends StatelessWidget {
       'A tappable strip needs dated marks to name the cell that was tapped.',
     );
     final metrics = dayTrackMetrics(context);
+    final squareSize = daySquareSize(context);
     final dayFormat = DateFormat.MMMEd(locale);
-    // A tappable square carries its weekday initial above it, inside the hit
-    // slot: the one surface where a square is an action is the one surface
-    // that has to say which day the action is for before it is tapped.
-    final letterFormat = DateFormat.EEEEE(locale);
 
     String outcomeOf(DayMark mark) => switch (mark.verdict) {
       final verdict? => dayVerdictLabel(context, verdict),
@@ -108,7 +106,6 @@ class DayMarkStrip extends StatelessWidget {
       // every cell is individually actionable.
       return DayMarkCell(
         mark: mark,
-        caption: letterFormat.format(day),
         label: context.messages.goalProgressHabitDaySemantics(
           dayName,
           outcome,
@@ -125,7 +122,7 @@ class DayMarkStrip extends StatelessWidget {
     // those do not fit a phone card — so a tappable slot takes the full pitch
     // horizontally and clears the floor vertically.
     final squares = DayTrack(
-      height: onDaySelected == null ? kDaySquareSize : TapTargets.minimum,
+      height: onDaySelected == null ? squareSize : TapTargets.minimum,
       pitch: metrics.pitch,
       children: [
         for (var index = 0; index < marks.length; index++) cellAt(index),
@@ -141,7 +138,7 @@ class DayMarkStrip extends StatelessWidget {
     final tailWidth = streak <= 0
         ? 0.0
         : tokens.spacing.step2 +
-              kDaySquareSize +
+              squareSize +
               tokens.spacing.step1 +
               _textWidth(context, '$streak', countStyle);
     final fitted = availableWidth == null
@@ -169,7 +166,7 @@ class DayMarkStrip extends StatelessWidget {
               SizedBox(width: tokens.spacing.step2),
               Icon(
                 LottiIcons.streak,
-                size: kDaySquareSize,
+                size: squareSize,
                 color: tokens.colors.text.mediumEmphasis,
               ),
               SizedBox(width: tokens.spacing.step1),
