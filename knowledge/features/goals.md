@@ -1018,11 +1018,13 @@ flowchart TD
   — the bars, the compact strip cells, the reflection sheet's per-dimension
   marks, and the composite card's met-yesterday tally — shares one policy
   (`GoalMetricProgressView.dayMark`): where the target is a per-day quantity
-  (`dailySumThenAverage` and the point samples) the day is met when EITHER
-  its own value clears the target OR the evaluator's verdict for the window
-  ending that day holds — so a 12,400-step day beats a 10,000 target even
-  inside a weak week, and an 8,000-step day inside a week averaging above
-  target is not painted as a miss. Every day has a winnable condition while
+  (`dailySumThenAverage` and the point samples) the day is met by its own
+  value clearing the target — and, for the rolling average only, by the
+  evaluator's verdict for the window ending that day — so a 12,400-step day
+  beats a 10,000 target even inside a weak week, and an 8,000-step day inside
+  a week averaging above target is not painted as a miss. A `max` verdict
+  opens no such door: it says one day in the window reached the target, not
+  that the others did. Every day has a winnable condition while
   the average recovers (recovery-door principle); the goal's own status stays
   average-driven, because day-state and goal-state are deliberately different
   layers. Where the target belongs to the whole period (`sum`, `count`) the

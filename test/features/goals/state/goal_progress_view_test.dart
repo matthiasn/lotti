@@ -1165,6 +1165,24 @@ void main() {
     );
     expect(shortDayShortWeek.dayMark(shortDayShortWeek.days.single), isFalse);
 
+    // A `max` verdict only says SOME day in the window reached the target,
+    // so it opens no door for the others: a short day stays short.
+    final maxShortDay = GoalMetricProgressView(
+      name: 'Longest walk',
+      target: 10000,
+      aggregation: GoalAggregation.max,
+      days: [
+        GoalProgressDay(
+          day: DateTime.utc(2026, 8, 10),
+          value: 8000,
+          targetSatisfied: true,
+        ),
+      ],
+    );
+    expect(maxShortDay.targetIsPerDay, isTrue);
+    expect(maxShortDay.windowVerdictMeetsDay, isFalse);
+    expect(maxShortDay.dayMark(maxShortDay.days.single), isFalse);
+
     // An unobserved day is never met, whatever the window says.
     final unobserved = GoalMetricProgressView(
       name: 'Steps',

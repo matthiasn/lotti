@@ -493,9 +493,10 @@ List<_MeasuredRow> _measuredRows(
             '—',
         met: metric.days
             .where((entry) => DateUtils.isSameDay(entry.day, day))
-            // The shared per-day policy: for a per-day target the mark is
-            // about the number this row prints beside it; for a period-total
-            // criterion it is the evaluator's verdict as of that day, since
+            // The shared per-day policy (`GoalMetricProgressView.dayMark`):
+            // a per-day target is met by the number this row prints beside
+            // it, or for the rolling average by the window verdict as of
+            // that day; a period-total criterion only by that verdict, since
             // one day's hours cannot be judged against a weekly total.
             .map((entry) => entry.isObserved ? metric.dayMark(entry) : null)
             .firstOrNull,
