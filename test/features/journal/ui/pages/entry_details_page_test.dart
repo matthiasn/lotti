@@ -27,6 +27,7 @@ import 'package:lotti/features/journal/ui/widgets/linked_entries_with_timer.dart
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/ui/app_command_controller.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
+import 'package:lotti/features/tasks/ui/checklists/correction_undo_snackbar.dart';
 import 'package:lotti/features/tasks/ui/checklists/linked_from_checklist_widget.dart';
 import 'package:lotti/features/tasks/ui/checklists/linked_from_task_widget.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -221,6 +222,30 @@ void main() {
         AiResponseType.audioSummary,
         AiResponseType.promptGeneration,
       });
+    });
+
+    testWidgets('owns one correction toast listener for editable checklists', (
+      tester,
+    ) async {
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          EntryDetailsPage(itemId: testTextEntry.meta.id),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(
+        find.descendant(
+          of: find.byType(EntryDetailsPage),
+          matching: find.byType(CorrectionCaptureToastListener),
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('save command persists the current text entry', (tester) async {

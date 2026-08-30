@@ -5,6 +5,25 @@ import 'package:lotti/features/tasks/ui/checklists/correction_undo_snackbar.dart
 
 import '../../../../test_helper.dart';
 
+class _FakeCorrectionCaptureNotifier extends CorrectionCaptureNotifier {
+  @override
+  PendingCorrection? build() => null;
+
+  bool cancelCalled = false;
+
+  // ignore: use_setters_to_change_properties
+  void emit(PendingCorrection pending) {
+    state = pending;
+  }
+
+  @override
+  bool cancel() {
+    cancelCalled = true;
+    state = null;
+    return true;
+  }
+}
+
 void main() {
   // A fixed expired date used for tests that don't depend on countdown values.
   final expiredDate = DateTime(2024, 3, 15);
@@ -184,6 +203,169 @@ void main() {
 
       // With an expired date, remainingTime is clamped to zero
       expect(find.textContaining('0'), findsOneWidget);
+    });
+  });
+
+  group('CorrectionCaptureToastListener', () {
+    testWidgets(
+      'shows the correction once through the nearest scoped messenger',
+      (tester) async {
+        final notifier = _FakeCorrectionCaptureNotifier();
+        final detailsMessengerKey = GlobalKey<ScaffoldMessengerState>();
+        const listenerChildKey = ValueKey('listener-child');
+
+        await tester.pumpWidget(
+          WidgetTestBench(
+            overrides: [
+              correctionCaptureProvider.overrideWith(() => notifier),
+            ],
+            child: ScaffoldMessenger(
+              key: detailsMessengerKey,
+              child: const Scaffold(
+                body: CorrectionCaptureToastListener(
+                  child: SizedBox(key: listenerChildKey),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        final listenerContext = tester.element(
+          find.byKey(listenerChildKey),
+        );
+        expect(
+          ScaffoldMessenger.of(listenerContext),
+          same(detailsMessengerKey.currentState),
+        );
+
+        notifier.emit(
+          PendingCorrection(
+            before: 'Buy bred',
+            after: 'Buy bread',
+            createdAt: expiredDate,
+          ),
+        );
+        await tester.pump();
+
+        expect(find.byType(CorrectionUndoSnackbarContent), findsOneWidget);
+        expect(find.textContaining('Buy bred'), findsOneWidget);
+        expect(find.textContaining('Buy bread'), findsOneWidget);
+      },
+    );
+
+    testWidgets('undo cancels the pending correction', (tester) async {
+      final notifier = _FakeCorrectionCaptureNotifier();
+
+      await tester.pumpWidget(
+        WidgetTestBench(
+          overrides: [
+            correctionCaptureProvider.overrideWith(() => notifier),
+          ],
+          child: const ScaffoldMessenger(
+            child: Scaffold(
+              body: CorrectionCaptureToastListener(
+                child: SizedBox.shrink(),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      notifier.emit(
+        PendingCorrection(
+          before: 'wrong',
+          after: 'right',
+          createdAt: expiredDate,
+        ),
+      );
+      await tester.pump();
+
+      final content = tester.widget<CorrectionUndoSnackbarContent>(
+        find.byType(CorrectionUndoSnackbarContent),
+      );
+      content.onUndo();
+      await tester.pump();
+
+      expect(notifier.cancelCalled, isTrue);
+      expect(find.byType(CorrectionUndoSnackbarContent), findsNothing);
+    });
+
+    testWidgets('ignores corrections while its tab is inactive', (
+      tester,
+    ) async {
+      final notifier = _FakeCorrectionCaptureNotifier();
+
+      await tester.pumpWidget(
+        WidgetTestBench(
+          overrides: [
+            correctionCaptureProvider.overrideWith(() => notifier),
+          ],
+          child: const TickerMode(
+            enabled: false,
+            child: ScaffoldMessenger(
+              child: Scaffold(
+                body: CorrectionCaptureToastListener(
+                  child: SizedBox.shrink(),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      notifier.emit(
+        PendingCorrection(
+          before: 'Buy bred',
+          after: 'Buy bread',
+          createdAt: expiredDate,
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(CorrectionUndoSnackbarContent), findsNothing);
+    });
+
+    testWidgets('does not suppress an independent global toast', (
+      tester,
+    ) async {
+      final notifier = _FakeCorrectionCaptureNotifier();
+      final detailsMessengerKey = GlobalKey<ScaffoldMessengerState>();
+
+      await tester.pumpWidget(
+        WidgetTestBench(
+          overrides: [
+            correctionCaptureProvider.overrideWith(() => notifier),
+          ],
+          child: ScaffoldMessenger(
+            key: detailsMessengerKey,
+            child: const Scaffold(
+              body: CorrectionCaptureToastListener(
+                child: SizedBox.shrink(),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      tester
+          .stateList<ScaffoldMessengerState>(
+            find.byType(ScaffoldMessenger),
+          )
+          .singleWhere((state) => state != detailsMessengerKey.currentState)
+          .showSnackBar(
+            const SnackBar(content: Text('Global action succeeded')),
+          );
+      notifier.emit(
+        PendingCorrection(
+          before: 'Buy bred',
+          after: 'Buy bread',
+          createdAt: expiredDate,
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Global action succeeded'), findsOneWidget);
+      expect(find.byType(CorrectionUndoSnackbarContent), findsOneWidget);
     });
   });
 }

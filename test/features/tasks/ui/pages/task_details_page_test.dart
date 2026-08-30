@@ -25,6 +25,7 @@ import 'package:lotti/features/journal/ui/widgets/entry_detail_linked_from.dart'
 import 'package:lotti/features/journal/ui/widgets/linked_entries_with_timer.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
 import 'package:lotti/features/tasks/state/task_link_groups_controller.dart';
+import 'package:lotti/features/tasks/ui/checklists/correction_undo_snackbar.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header_connector.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_tasks_widget.dart';
 import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
@@ -528,6 +529,13 @@ void main() {
           matching: find.byType(ScaffoldMessenger),
         );
         expect(nestedFinder, findsOneWidget);
+        expect(
+          find.descendant(
+            of: nestedFinder,
+            matching: find.byType(CorrectionCaptureToastListener),
+          ),
+          findsOneWidget,
+        );
 
         final nestedMessengerState = tester.state<ScaffoldMessengerState>(
           nestedFinder,

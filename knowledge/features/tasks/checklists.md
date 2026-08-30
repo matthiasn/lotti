@@ -5,13 +5,17 @@ description: The checklist subsystem, its celebration and collapse motion contra
 resource: ../../../lib/features/tasks/ui/checklists
 tags: [tasks, checklists, motion, accessibility]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T01:00:00Z }
+generated: { by: codex/gpt-5, at: 2026-08-30T13:12:58Z }
 stale_after: 2027-01-25
 sources:
   - id: ui
     resource: ../../../lib/features/tasks/ui/checklists
     title: Checklist widgets
-    last_modified: 2026-07-25
+    last_modified: 2026-08-30
+  - id: task-details
+    resource: ../../../lib/features/tasks/ui/pages/task_details_page.dart
+    title: Task details toast scope
+    last_modified: 2026-08-30
   - id: checklist-feature
     resource: ../../../lib/features/checklist
     title: Correction capture and undo
@@ -54,6 +58,18 @@ fire-and-forget `correctionCaptureService.captureCorrection(...)` with the
 before/after title and the item's category, and the rename surfaces an undo
 affordance. **That before→after pair becomes category-scoped AI guidance** — the
 the checklist feature owns the capture and undo logic.
+
+The pending correction is shared UI state, but each editable details surface
+owns exactly one `CorrectionCaptureToastListener`. Task details mounts it
+immediately below its nested `ScaffoldMessenger`; the standalone journal entry
+details page mounts one around its scaffold so checklist edits there retain the
+undo affordance. Individual `ChecklistCardWrapper`s never listen for it.
+
+The app shell keeps inactive tabs mounted with `TickerMode` disabled, so each
+page listener ignores correction updates while its tab is offstage. This keeps
+the active task undo toast inside the detail pane on desktop, above the sticky
+action bar on every platform, without letting an offstage journal page dispatch
+the same provider update through the app-wide messenger.
 
 # The sorting state machine
 
