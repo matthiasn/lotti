@@ -173,7 +173,9 @@ Google query or state mutation because they may arrive before client
 verification establishes the binding; that later verification is itself an
 authoritative Google query. Authenticated Play `testNotification` probes are
 also acknowledged without looking up a purchase token or mutating subscription
-state.
+state. RTDN handling refreshes its wall clock after the Google query before
+enforcing the current durable state, so work done during that refresh cannot
+extend access past the authoritative expiry.
 The Play-configured three-day grace deadline arrives as the line item's extended
 `expiryTime`. Lotti uses that timestamp directly and never adds another local
 grace window. Loss of entitlement suspends the Matrix user reversibly, while a

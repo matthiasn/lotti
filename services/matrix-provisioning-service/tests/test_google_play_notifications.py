@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import base64
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 
 import pytest
@@ -228,6 +228,7 @@ async def test_notification_requeries_google_then_enforces_returned_state():
         access,
         repository,
         package_name="com.matthiasn.lotti",
+        now_provider=lambda: NOW,
     )
 
     result = await service.handle(
@@ -241,6 +242,29 @@ async def test_notification_requeries_google_then_enforces_returned_state():
     assert subscriptions.calls == [("purchase-token", NOW)]
     assert access.calls == [(subscriptions.subscription, NOW)]
     assert repository.calls == ["entitlement-one"]
+
+
+async def test_notification_refreshes_clock_before_enforcing_access():
+    enforcement_now = NOW + timedelta(seconds=1)
+    subscriptions = FakeSubscriptionService()
+    access = FakeAccessService()
+    service = GooglePlayNotificationService(
+        FakeAuthenticator(),
+        subscriptions,
+        access,
+        FakeRepository(subscriptions.subscription),
+        package_name="com.matthiasn.lotti",
+        now_provider=lambda: enforcement_now,
+    )
+
+    await service.handle(
+        envelope(),
+        authorization="Bearer signed-jwt",
+        now=NOW,
+    )
+
+    assert subscriptions.calls == [("purchase-token", NOW)]
+    assert access.calls == [(subscriptions.subscription, enforcement_now)]
 
 
 async def test_authenticated_test_notification_is_acknowledged_without_refresh():
@@ -350,6 +374,7 @@ async def test_late_notification_for_retired_token_cannot_change_matrix_access()
         access,
         FakeRepository(current),
         package_name="com.matthiasn.lotti",
+        now_provider=lambda: NOW,
     )
 
     result = await service.handle(

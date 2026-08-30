@@ -133,12 +133,14 @@ class GooglePlayNotificationService:
         repository: SubscriptionRepository,
         *,
         package_name: str,
+        now_provider: Callable[[], datetime] | None = None,
     ):
         self._authenticator = authenticator
         self._subscription_service = subscription_service
         self._access_service = access_service
         self._repository = repository
         self._package_name = package_name
+        self._now_provider = now_provider or (lambda: datetime.now(timezone.utc))
 
     async def handle(
         self,
@@ -164,5 +166,5 @@ class GooglePlayNotificationService:
             return None
         current = await self._repository.get_current_subscription(subscription.entitlement_id)
         if current is not None:
-            await self._access_service.enforce(current, now=now)
+            await self._access_service.enforce(current, now=self._now_provider())
         return subscription
