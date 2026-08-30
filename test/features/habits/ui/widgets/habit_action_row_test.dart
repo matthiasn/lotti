@@ -1,4 +1,3 @@
-import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -227,51 +226,6 @@ void main() {
       expect(sheet.habitId, habitFlossing.id);
       expect(sheet.dateString, '2026-08-07');
       expect(DateTime.parse(sheet.dateString!), friday);
-      handle.dispose();
-    });
-
-    testWidgets('a square for a day after today is not a button at all', (
-      tester,
-    ) async {
-      final handle = tester.ensureSemantics();
-      await withClock(Clock.fixed(today), () async {
-        final tomorrow = today.add(const Duration(days: 1));
-        await pumpRow(
-          tester,
-          history: [
-            DayMark(day: today, state: DayMarkState.none, isToday: true),
-            DayMark(day: tomorrow, state: DayMarkState.none),
-          ],
-        );
-        // Read-only: no activation callback, no semantic button, no ink.
-        final future = find.byWidgetPredicate(
-          (widget) => widget is DayMarkCell && widget.mark.day == tomorrow,
-        );
-        expect(tester.widget<DayMarkCell>(future).onTap, isNull);
-        expect(find.bySemanticsLabel(RegExp('Wed, Aug 12')), findsNothing);
-        expect(
-          find.descendant(of: future, matching: find.byType(InkWell)),
-          findsNothing,
-        );
-        // And a tap on it does not fall through to the row body, which
-        // would open TODAY's sheet under a square that says Wednesday.
-        await tester.tap(future);
-        await tester.pump(const Duration(milliseconds: 300));
-        expect(find.byType(HabitCompletionSheet), findsNothing);
-        await tester.tap(
-          find.byWidgetPredicate(
-            (widget) => widget is DayMarkCell && widget.mark.day == today,
-          ),
-        );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-        expect(
-          tester
-              .widget<HabitCompletionSheet>(find.byType(HabitCompletionSheet))
-              .dateString,
-          '2026-08-11',
-        );
-      });
       handle.dispose();
     });
 

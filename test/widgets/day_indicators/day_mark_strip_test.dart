@@ -251,40 +251,6 @@ void main() {
     expect(verdicts, isNot(contains(fillAt(tester, 0))));
   });
 
-  testWidgets('a day the caller declines is drawn read-only inside a '
-      'tappable strip', (tester) async {
-    final handle = tester.ensureSemantics();
-    final tapped = <DateTime>[];
-    await tester.pumpWidget(
-      makeTestableWidgetNoScroll(
-        DayMarkStrip(
-          marks: goalDayMarks(states: week, lastDay: today),
-          onDaySelected: tapped.add,
-          isDaySelectable: (day) => day != today,
-        ),
-      ),
-    );
-    expect(find.bySemanticsLabel(cell(0, 'No entry')), findsNothing);
-    expect(find.bySemanticsLabel(cell(1, 'done · target met')), findsOneWidget);
-    final todayCell = find.byWidgetPredicate(
-      (widget) => widget is DayMarkCell && widget.mark.day == today,
-    );
-    expect(tester.widget<DayMarkCell>(todayCell).onTap, isNull);
-    expect(
-      tester
-          .widget<DsTooltip>(
-            find.descendant(of: todayCell, matching: find.byType(DsTooltip)),
-          )
-          .title,
-      DateFormat.MMMEd().format(today),
-      reason: 'hover still names the day',
-    );
-    await tester.tap(todayCell, warnIfMissed: false);
-    await tester.tap(find.bySemanticsLabel(cell(1, 'done · target met')));
-    expect(tapped, [today.subtract(const Duration(days: 1))]);
-    handle.dispose();
-  });
-
   testWidgets('tapping does not change the pitch, only the slot height', (
     tester,
   ) async {

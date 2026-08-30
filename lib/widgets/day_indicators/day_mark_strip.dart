@@ -22,7 +22,6 @@ class DayMarkStrip extends StatelessWidget {
     this.placeholder = false,
     this.streak,
     this.onDaySelected,
-    this.isDaySelectable,
     this.scrollGroup,
     super.key,
   });
@@ -46,12 +45,6 @@ class DayMarkStrip extends StatelessWidget {
   /// Opens the day's reflection. Null leaves the strip a read-only figure —
   /// which is what the list rows want, since a tap there navigates.
   final ValueChanged<DateTime>? onDaySelected;
-
-  /// Which days a tappable strip actually offers as buttons. A day it
-  /// declines is drawn as a read-only cell — hover still names it, but it is
-  /// no button, no keyboard stop and no click cursor — rather than as a
-  /// button whose tap does nothing. Null offers every dated day.
-  final bool Function(DateTime day)? isDaySelectable;
 
   /// Joins the page's unison day-track scrolling when the strip renders a
   /// span longer than a week.
@@ -99,22 +92,11 @@ class DayMarkStrip extends StatelessWidget {
       if (day == null) return DayMarkCell(mark: mark);
       final dayName = dayFormat.format(day);
       final outcome = outcomeOf(mark);
-      final readOnly = DayMarkCell(
-        mark: mark,
-        tooltipDay: dayName,
-        tooltipOutcome: outcome,
-      );
-      if (onDaySelected == null) return readOnly;
-      if (isDaySelectable?.call(day) == false) {
-        // Declined, not merely inert: a tap on it must not fall through to
-        // whatever the strip sits in — a habit row's body opens today's
-        // sheet, and a tap on Wednesday's square that opened today's sheet
-        // is the confusion the dated squares exist to end. The detector
-        // swallows the tap; hover still reaches the tooltip.
-        return GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: () {},
-          child: readOnly,
+      if (onDaySelected == null) {
+        return DayMarkCell(
+          mark: mark,
+          tooltipDay: dayName,
+          tooltipOutcome: outcome,
         );
       }
       // Colour is the only thing separating these squares, and it does not
