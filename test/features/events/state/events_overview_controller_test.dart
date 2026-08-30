@@ -253,6 +253,44 @@ void main() {
     },
   );
 
+  test('unrelated link notifications do not reload event covers', () async {
+    final event = _event('e1');
+    final master = [event];
+    stubPaged(master);
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    await container.read(eventsOverviewControllerProvider.future);
+
+    master.insert(0, _event('new'));
+    updates.add({'unrelated-from', 'unrelated-to', linkNotification});
+    await pumpEventQueue();
+    expect(
+      container
+          .read(eventsOverviewControllerProvider)
+          .value!
+          .events
+          .first
+          .event
+          .meta
+          .id,
+      event.meta.id,
+    );
+
+    updates.add({event.meta.id, 'photo-1', linkNotification});
+    await pumpEventQueue();
+    expect(
+      container
+          .read(eventsOverviewControllerProvider)
+          .value!
+          .events
+          .first
+          .event
+          .meta
+          .id,
+      'new',
+    );
+  });
+
   test(
     'refresh reloads the full window when the loaded page is full',
     () async {

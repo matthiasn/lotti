@@ -30,10 +30,12 @@ void main() {
 
   late FakeJournalPageController fakeController;
   late ValueNotifier<String?> selectedEntryId;
+  late ValueNotifier<String?> selectedEntryLinkedFromId;
   late MockNavService mockNavService;
 
   setUp(() async {
     selectedEntryId = ValueNotifier<String?>(null);
+    selectedEntryLinkedFromId = ValueNotifier<String?>(null);
     mockNavService = MockNavService();
     await setUpTestGetIt(
       additionalSetup: () {
@@ -61,6 +63,9 @@ void main() {
         when(
           () => mockNavService.desktopSelectedEntryId,
         ).thenReturn(selectedEntryId);
+        when(
+          () => mockNavService.desktopSelectedEntryLinkedFromId,
+        ).thenReturn(selectedEntryLinkedFromId);
         // Feed rows render through ModernJournalCard, whose task variant
         // resolves the recording indicator through TimeService.
         final mockTimeService = MockTimeService();
@@ -83,6 +88,7 @@ void main() {
   tearDown(() async {
     await tearDownTestGetIt();
     selectedEntryId.dispose();
+    selectedEntryLinkedFromId.dispose();
   });
 
   JournalPageState state() => const JournalPageState();
@@ -162,6 +168,23 @@ void main() {
     expect(detailsPage.showBackButton, isFalse);
 
     // Dispose the tree and flush pending animation timers.
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('desktop detail receives the selected link source', (
+    tester,
+  ) async {
+    selectedEntryLinkedFromId.value = 'event-7';
+    selectedEntryId.value = 'entry-42';
+    await pumpRootPage(tester, size: desktop);
+
+    final detailsPage = tester.widget<EntryDetailsPage>(
+      find.byType(EntryDetailsPage),
+    );
+    expect(detailsPage.itemId, 'entry-42');
+    expect(detailsPage.linkedFromId, 'event-7');
+
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pumpAndSettle();
   });

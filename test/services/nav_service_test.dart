@@ -591,7 +591,11 @@ void main() {
     group('desktop selected entry id', () {
       test('starts unselected and notifies logbook listeners on change', () {
         final navService = getIt<NavService>();
-        addTearDown(() => navService.desktopSelectedEntryId.value = null);
+        addTearDown(() {
+          navService
+            ..desktopSelectedEntryId.value = null
+            ..desktopSelectedEntryLinkedFromId.value = null;
+        });
         expect(navService.desktopSelectedEntryId.value, isNull);
 
         final seen = <String?>[];
@@ -606,13 +610,30 @@ void main() {
         expect(seen, ['entry-1', null]);
       });
 
+      test('tracks the link source independently from the selected row', () {
+        final navService = getIt<NavService>();
+        addTearDown(() {
+          navService
+            ..desktopSelectedEntryId.value = null
+            ..desktopSelectedEntryLinkedFromId.value = null;
+        });
+
+        navService
+          ..desktopSelectedEntryId.value = 'photo-1'
+          ..desktopSelectedEntryLinkedFromId.value = 'event-1';
+
+        expect(navService.desktopSelectedEntryId.value, 'photo-1');
+        expect(navService.desktopSelectedEntryLinkedFromId.value, 'event-1');
+      });
+
       test('is independent of the task detail selection', () {
         final navService = getIt<NavService>()
           ..resetDesktopTaskDetail('task-a');
         addTearDown(() {
           navService
             ..resetDesktopTaskDetail(null)
-            ..desktopSelectedEntryId.value = null;
+            ..desktopSelectedEntryId.value = null
+            ..desktopSelectedEntryLinkedFromId.value = null;
         });
 
         navService.desktopSelectedEntryId.value = 'entry-1';

@@ -82,56 +82,61 @@ class JournalRootPage extends ConsumerWidget {
             child: ValueListenableBuilder<String?>(
               valueListenable: getIt<NavService>().desktopSelectedEntryId,
               builder: (context, selectedEntryId, _) {
-                final child = selectedEntryId != null
-                    ? EntryDetailsPage(
-                        key: ValueKey(selectedEntryId),
-                        itemId: selectedEntryId,
-                        // The list stays on screen beside the details, so
-                        // there is nothing to go back to. The details keep
-                        // their own FAB: it creates a linked entry, which the
-                        // list pane's standalone-entry FAB cannot.
-                        showBackButton: false,
-                      )
-                    // Reachable only when the feed itself is empty (or holds
-                    // only tasks/events): the list pane already carries the
-                    // "logbook is empty" message and the create CTA, so this
-                    // pane defers with a quiet forward-pointing hint instead
-                    // of echoing the same title at equal weight.
-                    : Padding(
-                        key: const ValueKey<String>(
-                          'journal-root-empty-detail',
-                        ),
-                        // The list pane's zero-state centers in the viewport
-                        // BELOW its header band; this pane has no header, so
-                        // an equivalent top offset keeps both empty blocks on
-                        // one optical horizon across the split.
-                        padding: EdgeInsets.only(
-                          top:
-                              context.designTokens.spacing.step11 +
-                              context.designTokens.spacing.step6,
-                        ),
-                        child: DesignSystemEmptyState(
-                          icon: LottiIcons.book,
-                          hint: context.messages.logbookNewEntriesHint,
-                        ),
-                      );
+                return ValueListenableBuilder<String?>(
+                  valueListenable:
+                      getIt<NavService>().desktopSelectedEntryLinkedFromId,
+                  builder: (context, linkedFromId, _) {
+                    final child = selectedEntryId != null
+                        ? EntryDetailsPage(
+                            key: ValueKey((selectedEntryId, linkedFromId)),
+                            itemId: selectedEntryId,
+                            linkedFromId: linkedFromId,
+                            // The list stays on screen beside the details, so
+                            // there is nothing to go back to. The details keep
+                            // their own FAB: it creates a linked entry, which
+                            // the list pane's standalone-entry FAB cannot.
+                            showBackButton: false,
+                          )
+                        // Reachable only when the feed itself is empty (or
+                        // holds only tasks/events): the list pane already
+                        // carries the "logbook is empty" message and create
+                        // CTA, so this pane defers with a quiet hint.
+                        : Padding(
+                            key: const ValueKey<String>(
+                              'journal-root-empty-detail',
+                            ),
+                            // The list pane's zero-state centers below its
+                            // header band; this equivalent offset keeps both
+                            // empty blocks on one optical horizon.
+                            padding: EdgeInsets.only(
+                              top:
+                                  context.designTokens.spacing.step11 +
+                                  context.designTokens.spacing.step6,
+                            ),
+                            child: DesignSystemEmptyState(
+                              icon: LottiIcons.book,
+                              hint: context.messages.logbookNewEntriesHint,
+                            ),
+                          );
 
-                return AnimatedSwitcher(
-                  duration: journalDetailSwitchDuration,
-                  switchInCurve: Curves.easeInOutCubic,
-                  switchOutCurve: Curves.easeInOutCubic,
-                  layoutBuilder: (currentChild, previousChildren) {
-                    return Stack(
-                      fit: StackFit.expand,
-                      children: <Widget>[
-                        ...previousChildren.map(
-                          (child) => ExcludeFocus(child: child),
-                        ),
-                        ?currentChild,
-                      ],
+                    return AnimatedSwitcher(
+                      duration: journalDetailSwitchDuration,
+                      switchInCurve: Curves.easeInOutCubic,
+                      switchOutCurve: Curves.easeInOutCubic,
+                      layoutBuilder: (currentChild, previousChildren) {
+                        return Stack(
+                          fit: StackFit.expand,
+                          children: <Widget>[
+                            ...previousChildren.map(
+                              (child) => ExcludeFocus(child: child),
+                            ),
+                            ?currentChild,
+                          ],
+                        );
+                      },
+                      child: child,
                     );
                   },
-                  child: child,
                 );
               },
             ),

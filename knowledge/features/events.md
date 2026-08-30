@@ -94,15 +94,19 @@ all chrome on a single tap, and keeps pinch zoom/pan while rotation is disabled.
 It participates in the shared mobile image-viewer orientation lifecycle described
 in [shared widgets](../architecture/shared-widgets.md).
 
-The overview controller refreshes its loaded window for both event entity
-notifications and `LINK_CHANGED`. Photo links are separate rows from the event,
-so listening only for `EVENT` leaves fallback covers stale after local linking or
-sync. The merged update stream carries both origins.
+The overview controller refreshes its loaded window for event entity
+notifications and for `LINK_CHANGED` notifications whose endpoint ids include
+an event currently loaded in the overview. Photo links are separate rows from
+the event, so listening only for `EVENT` leaves fallback covers stale after
+local linking or sync; gating by endpoint avoids reloading covers for unrelated
+task and journal links.
 
-Opening a timeline source preserves the event id as `linkedFromId`. The
-standalone journal detail resolves that exact live link and exposes the existing
-confirmed unlink action; once removed, the link notification updates the event
-timeline, gallery, and overview cover without deleting the photo entry.
+Opening a timeline source preserves the event id as `linkedFromId`. Mobile
+passes it into the pushed detail page; desktop mirrors it beside the selected
+entry id into the split pane. The journal detail resolves that exact live link
+and exposes the existing confirmed unlink action; once removed, the link
+notification updates the event timeline, gallery, and overview cover without
+deleting the photo entry.
 
 *Add task* mirrors the linked-tasks flow — create the task linked from the event
 (so the event surfaces under the task's "Linked from"), auto-assign the category's

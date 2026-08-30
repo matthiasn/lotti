@@ -258,6 +258,14 @@ class NavService {
     null,
   );
 
+  /// Source entry whose link opened [desktopSelectedEntryId], when present.
+  ///
+  /// Journal routes carry this separately from the selected entry so the
+  /// desktop detail pane can expose link-scoped actions such as unlinking a
+  /// photo from an event without changing row-selection behavior.
+  final ValueNotifier<String?> desktopSelectedEntryLinkedFromId =
+      ValueNotifier<String?>(null);
+
   /// Whether the full-screen Time Analysis surface is active. Written
   /// exclusively by `CalendarLocation` from the URL (`/calendar/time`) —
   /// the URL is the single source of truth; the Daily OS sidebar
@@ -907,6 +915,7 @@ class NavService {
     desktopSelectedProjectId.dispose();
     desktopSelectedDashboardId.dispose();
     desktopSelectedEntryId.dispose();
+    desktopSelectedEntryLinkedFromId.dispose();
     desktopShowTimeAnalysis.dispose();
     desktopShowAiImpact.dispose();
     desktopSelectedSettingsRoute.dispose();

@@ -37,6 +37,9 @@ class JournalLocation extends BeamLocation<BeamState> {
       scheduleMicrotask(() {
         if (getIt.isRegistered<NavService>() &&
             identical(getIt<NavService>(), navService)) {
+          navService.desktopSelectedEntryLinkedFromId.value = entryId == null
+              ? null
+              : linkedFromId;
           navService.desktopSelectedEntryId.value = entryId;
         }
       });
