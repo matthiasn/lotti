@@ -11,6 +11,7 @@ from datetime import datetime, timedelta, timezone
 import pytest
 from src.core.exceptions import (
     BundleClaimConflictException,
+    GooglePlayVerificationException,
     InvalidBundleStateException,
     PurchaseIntentExpiredException,
     PurchaseIntentNotFoundException,
@@ -597,6 +598,42 @@ async def test_same_token_lifecycle_transitions_append_immutable_audit_events(
     assert expired.created_at == expired_time
 
 
+async def test_replacement_audit_uses_predecessor_as_recovery_before_state(
+    subscription_repository,
+):
+    entitlement = await create_entitlement(subscription_repository)
+    original = verified_subscription(entitlement.entitlement_id, "original-token")
+    await subscription_repository.store_verified_subscription(original, now=NOW)
+    suspended_time = NOW + timedelta(minutes=1)
+    suspended = await subscription_repository.store_verified_subscription(
+        replace(
+            original,
+            google_state=GoogleSubscriptionState.ON_HOLD,
+            entitlement_state=EntitlementState.SUSPENDED,
+            last_verified_at=suspended_time,
+        ),
+        now=suspended_time,
+    )
+    replacement_time = NOW + timedelta(minutes=2)
+    replacement = await subscription_repository.store_verified_subscription(
+        verified_subscription(
+            entitlement.entitlement_id,
+            "replacement-token",
+            linked_token_fingerprint=suspended.token_fingerprint,
+            last_verified_at=replacement_time,
+        ),
+        now=replacement_time,
+    )
+
+    events = await subscription_repository.list_subscription_events(replacement.token_fingerprint)
+
+    assert [event.event_type for event in events] == [SubscriptionEventType.RECOVERED]
+    assert events[0].from_google_state is GoogleSubscriptionState.ON_HOLD
+    assert events[0].to_google_state is GoogleSubscriptionState.ACTIVE
+    assert events[0].from_entitlement_state is EntitlementState.SUSPENDED
+    assert events[0].to_entitlement_state is EntitlementState.ACTIVE
+
+
 async def test_subscription_event_insert_failure_rolls_back_snapshot_update(
     subscription_repository,
 ):
@@ -821,6 +858,37 @@ async def test_delayed_replacement_cannot_retire_a_newer_current_token(
 
     current = await subscription_repository.get_current_subscription(entitlement.entitlement_id)
     assert current.token_fingerprint == "current-token"
+
+
+async def test_non_granting_replacement_does_not_retire_current_token(
+    subscription_repository,
+):
+    entitlement = await create_entitlement(subscription_repository)
+    current = await subscription_repository.store_verified_subscription(
+        verified_subscription(entitlement.entitlement_id, "current-token"),
+        now=NOW,
+    )
+    replacement = verified_subscription(
+        entitlement.entitlement_id,
+        "replacement-token",
+        linked_token_fingerprint=current.token_fingerprint,
+        google_state=GoogleSubscriptionState.ON_HOLD,
+        entitlement_state=EntitlementState.SUSPENDED,
+        last_verified_at=NOW + timedelta(minutes=1),
+    )
+
+    with pytest.raises(GooglePlayVerificationException, match="does not grant"):
+        await subscription_repository.store_verified_subscription(
+            replacement,
+            now=NOW + timedelta(minutes=1),
+        )
+
+    stored_current = await subscription_repository.get_current_subscription(
+        entitlement.entitlement_id
+    )
+    assert stored_current.token_fingerprint == current.token_fingerprint
+    assert stored_current.is_current is True
+    assert await subscription_repository.get_subscription_by_token("replacement-token") is None
 
 
 async def test_linked_token_owned_by_someone_else_is_rejected(subscription_repository):
@@ -1066,8 +1134,6 @@ async def test_stale_token_enforcement_records_actual_state_on_current_replaceme
         verified_subscription(
             entitlement.entitlement_id,
             "new-token",
-            google_state=GoogleSubscriptionState.ON_HOLD,
-            entitlement_state=EntitlementState.SUSPENDED,
             linked_token_fingerprint="old-token",
             last_verified_at=replacement_time,
             next_reconciliation_at=replacement_time + timedelta(hours=6),
@@ -1086,7 +1152,7 @@ async def test_stale_token_enforcement_records_actual_state_on_current_replaceme
     assert current.token_fingerprint == "new-token"
     assert current.matrix_suspended is False
     due = await subscription_repository.list_due_reconciliation(replacement_time, limit=10)
-    assert [row.token_fingerprint for row in due] == ["new-token"]
+    assert due == []
 
 
 async def test_enforcement_rejects_entitlement_without_current_token(

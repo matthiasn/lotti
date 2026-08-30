@@ -154,6 +154,11 @@ before it touches Matrix. Pending escrow records the purchase-token fingerprint
 that authorized their current claim secret: only a verified replacement token
 can rebind it, while a second request for the same token must prove the existing
 secret.
+A linked replacement must grant access before the repository can store it or
+retire the current token. First observations and the same-token path still
+persist denial state so reconciliation can suspend Matrix. Replacement audit
+events use the retired predecessor as their before-state, preserving recovery
+and other lifecycle transitions across token rotation.
 Requests in another service object or process wait for the owner's durable
 claim and reuse it; a killed owner becomes recoverable after five minutes. A
 replacement that takes over a stale paid-provisioning reservation receives a

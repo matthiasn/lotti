@@ -12,6 +12,7 @@ from datetime import datetime, timedelta, timezone
 from ..core.constants import BUSY_TIMEOUT_SECONDS, DEFAULT_DB_PATH
 from ..core.exceptions import (
     BundleClaimConflictException,
+    GooglePlayVerificationException,
     InvalidBundleStateException,
     PurchaseIntentExpiredException,
     PurchaseIntentNotFoundException,
@@ -992,6 +993,13 @@ class SubscriptionRepository(ProvisioningRepository):
                     raise SubscriptionLineageException(
                         "Replacement token does not descend from the current token"
                     )
+                if (
+                    current is not None
+                    and snapshot.entitlement_state not in ACCESS_ENTITLEMENT_STATES
+                ):
+                    raise GooglePlayVerificationException(
+                        "A replacement subscription token does not grant SYNC access"
+                    )
                 inherited_bundle_id = (
                     snapshot.bundle_id
                     if snapshot.bundle_id is not None
@@ -1021,12 +1029,13 @@ class SubscriptionRepository(ProvisioningRepository):
                 else current["matrix_suspended"] if current is not None else None
             )
 
-            for event_type in self._subscription_transition_events(existing, snapshot):
+            transition_source = existing if existing is not None else current
+            for event_type in self._subscription_transition_events(transition_source, snapshot):
                 self._record_subscription_event_sync(
                     conn,
                     subscription_id=subscription_id,
                     snapshot=snapshot,
-                    existing=existing,
+                    existing=transition_source,
                     event_type=event_type,
                     now=now,
                 )
