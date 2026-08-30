@@ -172,10 +172,14 @@ class _HabitCompletionSheetState extends ConsumerState<HabitCompletionSheet> {
   }
 
   Future<void> _save() async {
-    _formKey.currentState!.save();
+    // Validate before the sheet goes: a form that fails stays on screen
+    // with its errors painted, rather than closing with nothing written.
+    final form = _formKey.currentState;
+    if (form == null) return;
+    if (!form.validate()) return;
+    form.save();
+    final formData = form.value;
     Navigator.pop(context);
-    if (!(_formKey.currentState?.validate() ?? false)) return;
-    final formData = _formKey.currentState?.value;
     final habitDefinition = getIt<EntitiesCacheService>().getHabitById(
       widget.habitId,
     );
@@ -186,9 +190,31 @@ class _HabitCompletionSheetState extends ConsumerState<HabitCompletionSheet> {
         dateFrom: _started,
         completionType: _outcome,
       ),
-      comment: formData!['comment'] as String,
+      comment: formData['comment'] as String,
       habitDefinition: habitDefinition,
     );
+  }
+
+  /// The "other value" path: the full capture flow, whose saved entry then
+  /// counts exactly like a chip tap — the row shows it as recorded and a
+  /// rule it satisfies flips the outcome — as long as it was entered for
+  /// the day being recorded.
+  Future<void> _captureMeasurable(MeasurableDataType dataType) async {
+    final saved = await MeasurementCaptureModal.show(
+      context: context,
+      measurableDataType: dataType,
+    );
+    if (saved == null || !mounted) return;
+    if (saved.dateFrom.ymd != clock.now().ymd) return;
+    setState(
+      () => _recorded[dataType.id] = (
+        value: saved.value,
+        choiceId: saved.choiceId,
+      ),
+    );
+    await ref
+        .read(habitSignalStatusProvider(widget.habitId).notifier)
+        .refresh();
   }
 
   Future<void> _recordMeasurable(
@@ -262,10 +288,7 @@ class _HabitCompletionSheetState extends ConsumerState<HabitCompletionSheet> {
                   status: status,
                   recordedValue: _recordedFor(leaf),
                   onRecordMeasurable: _recordMeasurable,
-                  onMoreMeasurable: (dataType) => MeasurementCaptureModal.show(
-                    context: context,
-                    measurableDataType: dataType,
-                  ),
+                  onMoreMeasurable: _captureMeasurable,
                 ),
             ],
       reflections: [

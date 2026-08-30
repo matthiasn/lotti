@@ -77,6 +77,11 @@ void main() {
 
   tearDown(tearDownTestGetIt);
 
+  // What the last opened capture flow resolved to: the saved measurement,
+  // or null when the flow was dismissed.
+  MeasurementData? flowResult;
+  var flowResolved = false;
+
   Future<void> pumpLauncher(
     WidgetTester tester, {
     DateTime? now,
@@ -100,6 +105,7 @@ void main() {
                 key: _openKey,
                 label: 'Open measurement capture',
                 onPressed: () {
+                  flowResolved = false;
                   unawaited(
                     withClock(
                       Clock.fixed(now ?? _fixedNow),
@@ -107,7 +113,10 @@ void main() {
                         context: context,
                         measurableDataType: dataType ?? measurableWater,
                       ),
-                    ),
+                    ).then((result) {
+                      flowResult = result;
+                      flowResolved = true;
+                    }),
                   );
                 },
               ),
@@ -311,6 +320,9 @@ void main() {
       expect(savedComment, 'After the long run');
       expect(savedPrivate, isFalse);
       expect(find.byKey(_valueKey), findsNothing);
+      // The flow resolves to what it saved, so a host can count the entry.
+      expect(flowResolved, isTrue);
+      expect(flowResult, savedData);
     },
   );
 
