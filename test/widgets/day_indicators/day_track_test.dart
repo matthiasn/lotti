@@ -81,7 +81,10 @@ void main() {
         mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
       ),
     );
-    expect(metrics.pitch, kDaySquareSizeDesktop + tokens.spacing.step2);
+    expect(
+      metrics.pitch,
+      kDaySquareSize + tokens.spacing.step1 + tokens.spacing.step2,
+    );
   });
 
   testWidgets('a raised text scale widens the pitch to hold the caption', (

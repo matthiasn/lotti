@@ -31,9 +31,9 @@ habit's own history strip are **two views of the same day**, and for a while
 they drew it two ways — different fills, different corner radii, one with a
 today ring and one without. The package draws the square the habits design
 handover specifies — an `--interactive` square at radius 3 in a 3px-gap row,
-rendered at `radii.xs` and `spacing.step2` — one icon size larger than the
-handover's 11px so a two-letter weekday fits inside it (`IconSizes.s` on a phone,
-`IconSizes.m` on a desktop window; `daySquareSize`), and both features
+rendered at `radii.xs` and `spacing.step2` — larger than the handover's 11px
+so a two-letter weekday sits inside it (`IconSizes.m` on a phone, one
+`spacing.step1` more on a desktop window; `daySquareSize`), and both features
 consume it. It imports neither `features/goals` nor `features/habits`; each
 feature adapts its own state into the shared model.
 

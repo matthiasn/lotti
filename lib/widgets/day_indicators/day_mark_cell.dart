@@ -8,24 +8,25 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/day_indicators/day_mark.dart';
 import 'package:lotti/widgets/day_indicators/day_mark_styles.dart';
 
-/// The edge of a day square on a phone: the smallest square a weekday
-/// letter is still legible in. Every day square on a page is this size or
-/// the desktop size, never anything in between — see [daySquareSize].
-const double kDaySquareSize = IconSizes.s;
+/// The edge of a day square on a phone: the control-glyph tier, the
+/// smallest square two weekday letters sit inside at a comfortable size.
+/// Every day square on a page is this size or the desktop size, never
+/// anything in between — see [daySquareSize].
+const double kDaySquareSize = IconSizes.m;
 
-/// The edge of a day square on a desktop window: one icon size up.
+/// The edge of every day square on this page: [kDaySquareSize] on a phone,
+/// one spacing step more on a desktop-width window. One size per page, so
+/// the whole-goal strip, the habit squares and the metric bars keep sharing
+/// one column pitch (see `dayTrackMetrics`).
 ///
 /// A desktop row has several times a phone card's width and shows twice the
 /// days; a square sized for the phone reads as a speck there and is a
-/// smaller thing to aim a pointer at than it needs to be.
-const double kDaySquareSizeDesktop = IconSizes.m;
-
-/// The edge of every day square on this page: [kDaySquareSizeDesktop] on a
-/// desktop-width window, [kDaySquareSize] otherwise. One size per page, so
-/// the whole-goal strip, the habit squares and the metric bars keep sharing
-/// one column pitch (see `dayTrackMetrics`).
-double daySquareSize(BuildContext context) =>
-    isDesktopLayout(context) ? kDaySquareSizeDesktop : kDaySquareSize;
+/// smaller thing to aim a pointer at than it needs to be. There is no icon
+/// tier between `m` and `l`, and `l` is a callout glyph, so the desktop
+/// square is the phone square plus the smallest step rather than a tier up.
+double daySquareSize(BuildContext context) => isDesktopLayout(context)
+    ? kDaySquareSize + context.designTokens.spacing.step1
+    : kDaySquareSize;
 
 /// The weekday a day square names: the first two characters of the locale's
 /// abbreviated weekday, so Tuesday and Thursday, Saturday and Sunday can be
@@ -58,9 +59,10 @@ Widget? dayMarkSquareContent(
   required double size,
 }) {
   final tokens = context.designTokens;
-  // The glyph is inset by one spacing step so it sits inside the square
-  // rather than on its edge.
-  final glyphSize = size - tokens.spacing.step1;
+  // The content is inset by two spacing steps so it sits inside the square
+  // rather than filling it: at one step, two caption letters filled the
+  // square edge to edge and read larger than the square they were in.
+  final glyphSize = size - tokens.spacing.step2;
   if (verdict != null) {
     return Icon(
       dayVerdictGlyph(verdict),

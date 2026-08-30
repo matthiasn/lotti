@@ -53,7 +53,7 @@ void main() {
         final icon = tester.widget<Icon>(find.byType(Icon));
         expect(icon.icon, dayVerdictGlyph(DayVerdict.missed));
         expect(icon.color, tokens.colors.text.mediumEmphasis);
-        expect(icon.size, kDaySquareSize - tokens.spacing.step1);
+        expect(icon.size, kDaySquareSize - tokens.spacing.step2);
       } else if (state == DayMarkState.full || state == DayMarkState.partial) {
         expect(
           tester.widget<Icon>(find.byType(Icon)).icon,
@@ -84,7 +84,7 @@ void main() {
   });
 
   testWidgets('on a desktop window the square and the placeholder are one '
-      'icon size up', (tester) async {
+      'spacing step up', (tester) async {
     for (final cell in [
       const DayMarkCell(mark: DayMark(state: DayMarkState.full)),
       const PlaceholderDayCell(),
@@ -95,13 +95,13 @@ void main() {
           mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
         ),
       );
+      final tokens = tester.element(find.byWidget(cell)).designTokens;
       expect(
         tester.getSize(find.byWidget(cell)),
-        const Size.square(kDaySquareSizeDesktop),
+        Size.square(kDaySquareSize + tokens.spacing.step1),
         reason: '$cell',
       );
     }
-    expect(kDaySquareSizeDesktop, greaterThan(kDaySquareSize));
   });
 
   testWidgets('the measured state decides the fill', (tester) async {
