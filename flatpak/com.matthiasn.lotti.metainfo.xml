@@ -40,6 +40,12 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="1.0.20" date="2026-08-30">
+      <description>
+        <p>Changed: the day squares under each habit now say which day they are, and open that day. Every square carries its weekday (Tu, Th, Sa, Su - in your language) until something is recorded for it, then a tick for a kept day or a red cross for a missed one - so a missed day no longer looks like a day you never looked at. The square itself stays grey, so a rough week is a few red marks rather than a red row: enough to sting, not enough to shout. Tapping a square opens the completion sheet for that day rather than for today, which is what makes catching up on Tuesday from Thursday a one-tap job. The squares are a size larger everywhere, and on a desktop window a row shows the last fourteen days instead of seven.</p>
+        <p>Fixed: on a narrow goal card, the "N successful days needed to recover" note wrapped beside empty space, and the status caption sat on a line of its own. The note now takes its whole row, and the status ("Needs attention", "On track") sits at the end of the reading's own line whenever the two fit together.</p>
+      </description>
+    </release>
     <release version="1.0.19" date="2026-08-30">
       <description>
         <p>Added: measurables can now record a choice instead of a number. Not everything worth tracking is a quantity: how hydrated you are reads off a colour, how rested you feel is a word, not a value. A measurable's Recorded as switch now offers Choice next to Number, and a choice measurable carries its own list of choices - clear, pale, dark; very rested, somewhat, not at all; emojis if you like - which you can rename and reorder at any time without touching what you already recorded, because each choice keeps its identity behind the name. Retiring a choice archives it: it leaves the picker but every entry that recorded it still shows its name, and it can be restored. Recording picks a chip instead of typing a number, in the measurement sheet and in a habit's completion sheet alike; the journal shows the choice by name; searching for a choice's name finds its entries; and on a dashboard a choice measurable draws a day strip - one cell per day, shaded by the choice you ended the day on, with a legend - instead of a bar chart.</p>

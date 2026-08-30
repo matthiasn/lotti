@@ -48,11 +48,14 @@ void main() {
       expect(decoration(tester).border, isNull, reason: '$state');
       if (state == DayMarkState.missed) {
         // A recorded miss and an empty day share the grey; the cross is
-        // what tells them apart. The reflections history's own glyph, in
-        // the quiet ink, inset one step so it sits inside the square.
+        // what tells them apart. The reflections history's own glyph in the
+        // error family's surface ink — the square itself stays neutral, so
+        // a bad week is a few red marks, never a wall of red.
         final icon = tester.widget<Icon>(find.byType(Icon));
         expect(icon.icon, dayVerdictGlyph(DayVerdict.missed));
-        expect(icon.color, tokens.colors.text.mediumEmphasis);
+        expect(icon.color, dayVerdictSurfaceInk(tokens, DayVerdict.missed));
+        expect(icon.color, tokens.colors.alert.error.ink);
+        expect(decoration(tester).color, tokens.colors.background.level03);
         expect(icon.size, kDaySquareSize - tokens.spacing.step2);
       } else if (state == DayMarkState.full || state == DayMarkState.partial) {
         expect(

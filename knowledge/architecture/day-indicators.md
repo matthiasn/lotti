@@ -122,12 +122,14 @@ flowchart LR
 
 - **Two fills for a measured day.** A kept day is `interactive.enabled` —
   the handover's `--interactive` square — a partial day its `muted` wash, and
-  everything else `background.level03`. No alert hue on a habit square: a
-  struggling habit is never a wall of red.
+  everything else `background.level03`. No alert hue on a habit square's
+  FILL: a struggling habit is never a wall of red; the missed cross alone
+  wears the error ink.
 - **A square says one thing inside itself, and nothing around it.** A
   judged day draws its verdict's glyph; a kept day (partial included) the tick, a recorded miss
-  the cross (which is what tells a miss from the empty day it shares a fill
-  with); any other dated day its weekday — the first two characters of the
+  the cross in the error family's surface ink (`dayVerdictSurfaceInk`) — the
+  one touch of that family a habit square gets, on a fill that stays neutral,
+  which is what tells a miss from the empty day it shares the fill with; any other dated day its weekday — the first two characters of the
   locale's abbreviation (`dayMarkWeekdayLabel`: `Tu Th Sa Su`, `Di Do Sa
   So`), quiet on the fill. No
   ring, no dot, no caption row above the track. The full date, the outcome's
