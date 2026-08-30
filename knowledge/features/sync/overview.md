@@ -145,11 +145,13 @@ also prunes expired intents and their Integrity replay markers. Purchase
 verification has its own durable attempt scope, consumed before entitlement or
 intent scrypt checks and before either Google API call. Paid-bundle delivery and
 rotation share another durable attempt scope, consumed before entitlement or
-claim-secret scrypt work. Paid provisioning then
-takes a token-owned SQLite reservation keyed by entitlement before it touches
-Matrix. Pending escrow records the purchase-token fingerprint that authorized
-their current claim secret: only a verified replacement token can rebind it,
-while a second request for the same token must prove the existing secret.
+claim-secret scrypt work. Expired-attempt cleanup stays within the current
+operation because those scopes can have independently configured windows. Paid
+provisioning then takes a token-owned SQLite reservation keyed by entitlement
+before it touches Matrix. Pending escrow records the purchase-token fingerprint
+that authorized their current claim secret: only a verified replacement token
+can rebind it, while a second request for the same token must prove the existing
+secret.
 Requests in another service object or process wait for the owner's durable
 claim and reuse it; a killed owner becomes recoverable after five minutes.
 These are database invariants, with reverse-proxy throttling kept as an

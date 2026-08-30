@@ -23,7 +23,11 @@ from src.core.subscriptions import (
     GoogleSubscriptionState,
     VerifiedSubscription,
 )
-from src.services.subscription_repository import SubscriptionRepository
+from src.services.subscription_repository import (
+    ATTEMPT_KIND_PURCHASE_INTENT,
+    ATTEMPT_KIND_PURCHASE_VERIFICATION,
+    SubscriptionRepository,
+)
 from tests.conftest import seed_user
 
 pytestmark = pytest.mark.anyio
@@ -222,6 +226,44 @@ async def test_purchase_intent_attempt_quota_rolls_back_and_closes_on_database_f
 
     assert connection.rollback_called is True
     assert connection.close_called is True
+
+
+async def test_attempt_quota_cleanup_preserves_other_operation_windows(
+    subscription_repository,
+):
+    entitlement = await create_entitlement(subscription_repository)
+
+    assert (
+        await subscription_repository.consume_subscription_attempt_quota(
+            entitlement.entitlement_id,
+            ATTEMPT_KIND_PURCHASE_VERIFICATION,
+            now=NOW,
+            window=timedelta(minutes=15),
+            max_requests=1,
+        )
+        is None
+    )
+
+    assert (
+        await subscription_repository.consume_subscription_attempt_quota(
+            entitlement.entitlement_id,
+            ATTEMPT_KIND_PURCHASE_INTENT,
+            now=NOW + timedelta(minutes=2),
+            window=timedelta(minutes=1),
+            max_requests=1,
+        )
+        is None
+    )
+
+    retry_after = await subscription_repository.consume_subscription_attempt_quota(
+        entitlement.entitlement_id,
+        ATTEMPT_KIND_PURCHASE_VERIFICATION,
+        now=NOW + timedelta(minutes=2),
+        window=timedelta(minutes=15),
+        max_requests=1,
+    )
+
+    assert retry_after == 13 * 60
 
 
 async def test_duplicate_purchase_intent_id_is_rejected(subscription_repository):

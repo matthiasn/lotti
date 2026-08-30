@@ -476,9 +476,9 @@ class SubscriptionRepository(ProvisioningRepository):
                 )
             conn.execute(
                 "DELETE FROM subscription_attempt_limits "
-                "WHERE (entitlement_id <> ? OR operation_kind <> ?) "
+                "WHERE operation_kind = ? AND entitlement_id <> ? "
                 "AND window_started_at <= ?",
-                (entitlement_id, operation_kind, _iso(now - window)),
+                (operation_kind, entitlement_id, _iso(now - window)),
             )
             conn.commit()
             return retry_after
