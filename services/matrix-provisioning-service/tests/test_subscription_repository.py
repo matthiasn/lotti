@@ -1015,38 +1015,46 @@ async def test_paid_provisioning_reservation_is_exclusive_owned_and_recoverable(
         now=NOW,
     )
 
-    assert await subscription_repository.reserve_paid_bundle_provisioning(
+    initial = await subscription_repository.reserve_paid_bundle_provisioning(
         entitlement.entitlement_id,
         token_fingerprint="paid-token",
         operation_token="owner-one",
         now=NOW,
         stale_before=NOW - timedelta(minutes=5),
     )
-    assert await subscription_repository.reserve_paid_bundle_provisioning(
+    assert initial
+    assert initial.took_over_stale_owner is False
+    same_owner = await subscription_repository.reserve_paid_bundle_provisioning(
         entitlement.entitlement_id,
         token_fingerprint="paid-token",
         operation_token="owner-one",
         now=NOW,
         stale_before=NOW - timedelta(minutes=5),
     )
-    assert not await subscription_repository.reserve_paid_bundle_provisioning(
+    assert same_owner
+    assert same_owner.took_over_stale_owner is False
+    busy = await subscription_repository.reserve_paid_bundle_provisioning(
         entitlement.entitlement_id,
         token_fingerprint="paid-token",
         operation_token="owner-two",
         now=NOW + timedelta(minutes=1),
         stale_before=NOW - timedelta(minutes=4),
     )
+    assert not busy
+    assert busy.took_over_stale_owner is False
     assert not await subscription_repository.release_paid_bundle_provisioning(
         entitlement.entitlement_id,
         operation_token="wrong-owner",
     )
-    assert await subscription_repository.reserve_paid_bundle_provisioning(
+    takeover = await subscription_repository.reserve_paid_bundle_provisioning(
         entitlement.entitlement_id,
         token_fingerprint="paid-token",
         operation_token="owner-two",
         now=NOW + timedelta(minutes=5),
         stale_before=NOW,
     )
+    assert takeover
+    assert takeover.took_over_stale_owner is True
     assert not await subscription_repository.release_paid_bundle_provisioning(
         entitlement.entitlement_id,
         operation_token="owner-one",

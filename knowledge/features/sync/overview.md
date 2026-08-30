@@ -153,7 +153,12 @@ that authorized their current claim secret: only a verified replacement token
 can rebind it, while a second request for the same token must prove the existing
 secret.
 Requests in another service object or process wait for the owner's durable
-claim and reuse it; a killed owner becomes recoverable after five minutes.
+claim and reuse it; a killed owner becomes recoverable after five minutes. A
+replacement that takes over a stale paid-provisioning reservation receives a
+fresh suffixed Matrix localpart. This fences it from the late owner: if the
+late Synapse call eventually returns and its database write loses ownership,
+orphan cleanup deactivates only the late owner's account and cannot deactivate
+the replacement's winning account.
 Admin bundle revocation destroys any paid bootstrap escrow in the same SQLite
 transaction and clears its operation lease, so later and in-flight delivery
 cannot return credentials after revocation wins the transaction order. Only a
@@ -209,6 +214,9 @@ is bounded and retried instead of looping indefinitely. The resulting observed
 state is recorded on the current entitlement row even if its purchase token
 changed during the request, so a late stale mutation remains visibly due for
 correction.
+Subscription reconciliation and paid-claim cleanup reject zero or negative
+worker intervals during startup, preventing a configuration error from creating
+a tight retry loop.
 Suspension
 requires Synapse 1.110.0 or newer with MSC3823 enabled; when
 subscriptions are enabled, startup authenticates to Synapse and validates that

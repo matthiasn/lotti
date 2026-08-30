@@ -166,10 +166,11 @@ class PaidBundleService:
                     entitlement_id=verified.subscription.entitlement_id,
                 )
         else:
-            provisioning_token, raced_claim = await self._acquire_provisioning_reservation(
-                verified,
-                now=now,
-            )
+            (
+                provisioning_token,
+                raced_claim,
+                took_over_stale_owner,
+            ) = await self._acquire_provisioning_reservation(verified, now=now)
             if raced_claim is not None:
                 delivery = await self._deliver_existing(
                     raced_claim,
@@ -181,7 +182,11 @@ class PaidBundleService:
                 try:
                     initial_username = self._username(
                         verified.subscription.entitlement_id,
-                        retry_suffix=(uuid.uuid4().hex[:8] if reprovisioning else None),
+                        retry_suffix=(
+                            uuid.uuid4().hex[:8]
+                            if reprovisioning or took_over_stale_owner
+                            else None
+                        ),
                     )
                     try:
                         claim = await self._provision_claim(
@@ -286,25 +291,25 @@ class PaidBundleService:
         verified: VerifiedPurchaseResult,
         *,
         now: datetime,
-    ) -> tuple[str, BundleClaim | None]:
+    ) -> tuple[str, BundleClaim | None, bool]:
         entitlement_id = verified.subscription.entitlement_id
         operation_token = str(uuid.uuid4())
         started = monotonic()
         while True:
             elapsed = monotonic() - started
             attempt_now = self._current_time(now + timedelta(seconds=elapsed))
-            acquired = await self._repository.reserve_paid_bundle_provisioning(
+            reservation = await self._repository.reserve_paid_bundle_provisioning(
                 entitlement_id,
                 token_fingerprint=verified.subscription.token_fingerprint,
                 operation_token=operation_token,
                 now=attempt_now,
                 stale_before=attempt_now - self._provisioning_operation_timeout,
             )
-            if acquired:
-                return operation_token, None
+            if reservation:
+                return operation_token, None, reservation.took_over_stale_owner
             existing = await self._repository.get_bundle_claim_for_entitlement(entitlement_id)
             if existing is not None:
-                return operation_token, existing
+                return operation_token, existing, False
             await self._load_current_subscription(verified, now=attempt_now)
             if elapsed >= self._provisioning_wait_seconds:
                 raise BundleClaimConflictException(

@@ -23,6 +23,18 @@ pytestmark = pytest.mark.anyio
 NOW = datetime(2026, 8, 29, 12, tzinfo=timezone.utc)
 
 
+@pytest.mark.parametrize("interval_seconds", [0, -1])
+async def test_reconciliation_interval_must_be_positive(interval_seconds):
+    with pytest.raises(ValueError, match="interval must be positive"):
+        SubscriptionReconciler(
+            object(),
+            object(),
+            object(),
+            object(),
+            interval_seconds=interval_seconds,
+        )
+
+
 class FakeSubscriptionService:
     def __init__(self):
         self.calls = []

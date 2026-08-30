@@ -34,6 +34,8 @@ class SubscriptionReconciler(PeriodicTask):
         now_provider: Callable[[], datetime] | None = None,
         failure_retry_delay: timedelta = timedelta(minutes=5),
     ):
+        if interval_seconds <= 0:
+            raise ValueError("Subscription reconciliation interval must be positive")
         super().__init__(
             name="Google Play subscription reconciler",
             interval_seconds=interval_seconds,

@@ -22,6 +22,16 @@ pytestmark = pytest.mark.anyio
 NOW = datetime(2026, 8, 29, 12, tzinfo=timezone.utc)
 
 
+@pytest.mark.parametrize("interval_seconds", [0, -1])
+async def test_reaper_interval_must_be_positive(interval_seconds):
+    with pytest.raises(ValueError, match="interval must be positive"):
+        BundleClaimReaper(
+            object(),
+            object(),
+            interval_seconds=interval_seconds,
+        )
+
+
 class FakeAdminClient:
     def __init__(self):
         self.deactivated = []

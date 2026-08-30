@@ -128,7 +128,9 @@ Matrix call, paid provisioning also takes a token-owned SQLite reservation by
 entitlement. Separate service objects and processes therefore wait for or reuse
 one durable claim instead of provisioning a suffixed orphan account. A dead
 owner ages out after five minutes; an HTTP request waits only a bounded interval
-and then asks the client to retry. Delivery and rotation share a durable
+and then asks the client to retry. A stale-reservation takeover uses a fresh
+suffixed Matrix localpart, so cleanup by the late owner cannot deactivate the
+replacement's account. Delivery and rotation share a durable
 per-entitlement attempt quota that is consumed before either entitlement or
 claim-secret scrypt work, bounding invalid-auth CPU usage across both public
 escrow endpoints. Every authenticated escrow response also takes a fresh claim
@@ -194,12 +196,12 @@ authoritative observation wins.
 | `PLAY_ALLOW_TEST_PURCHASES` | No | `false` | Accept Play license-tester purchases; never enable in production |
 | `PLAY_RTDN_AUDIENCE` | When enabled | — | Exact OIDC audience configured on the Pub/Sub push subscription |
 | `PLAY_RTDN_SERVICE_ACCOUNT_EMAIL` | When enabled | — | Exact service-account identity allowed to push RTDN |
-| `SUBSCRIPTION_RECONCILE_INTERVAL_SECONDS` | No | `60` | Authoritative Google refresh interval |
+| `SUBSCRIPTION_RECONCILE_INTERVAL_SECONDS` | No | `60` | Positive authoritative Google refresh interval; non-positive values fail startup |
 | `SUBSCRIPTION_RECONCILE_BATCH_SIZE` | No | `50` | Due subscriptions handled per reconciliation pass |
 | `PAID_PROVISIONING_WAIT_SECONDS` | No | `30` | Maximum request wait for another paid provisioner |
 | `PAID_PROVISIONING_POLL_SECONDS` | No | `0.1` | Poll interval while another process owns the entitlement reservation |
 | `PAID_PROVISIONING_OPERATION_TIMEOUT_SECONDS` | No | `300` | Age after which a crashed paid-provisioning reservation is recoverable |
-| `BUNDLE_CLAIM_REAPER_INTERVAL_SECONDS` | No | `300` | Expired paid-claim cleanup interval |
+| `BUNDLE_CLAIM_REAPER_INTERVAL_SECONDS` | No | `300` | Positive expired paid-claim cleanup interval; non-positive values fail startup |
 | `BUNDLE_CLAIM_REAPER_STARTUP_DELAY_SECONDS` | No | `60` | Delay before the first destructive claim cleanup |
 | `BUNDLE_CLAIM_REAPER_BATCH_SIZE` | No | `50` | Expired claims handled per cleanup pass |
 | `CORS_ALLOWED_ORIGINS` | No | `http://localhost:5174` | Comma-separated origins |

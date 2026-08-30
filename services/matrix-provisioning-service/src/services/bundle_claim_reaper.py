@@ -32,6 +32,8 @@ class BundleClaimReaper(PeriodicTask):
         failure_retry_delay: timedelta = timedelta(minutes=5),
         operation_timeout: timedelta = timedelta(minutes=5),
     ):
+        if interval_seconds <= 0:
+            raise ValueError("Bundle claim reaper interval must be positive")
         super().__init__(
             name="Paid bundle claim reaper",
             interval_seconds=interval_seconds,

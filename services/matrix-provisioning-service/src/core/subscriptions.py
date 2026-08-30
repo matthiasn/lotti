@@ -141,6 +141,17 @@ class BundleClaim:
 
 
 @dataclass(frozen=True)
+class PaidProvisioningReservation:
+    """Outcome of acquiring the cross-process paid provisioning lease."""
+
+    acquired: bool
+    took_over_stale_owner: bool = False
+
+    def __bool__(self) -> bool:
+        return self.acquired
+
+
+@dataclass(frozen=True)
 class PaidBundleDelivery:
     """Paid provisioning outcome, with credentials only when import is needed."""
 

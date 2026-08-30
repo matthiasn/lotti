@@ -23,6 +23,7 @@ from src.core.subscriptions import (
     VerifiedSubscription,
 )
 from src.services.bundle_claim_reaper import BundleClaimReaper
+from src.services.bundle_service import BundleService
 from src.services.paid_bundle_service import PaidBundleService
 from src.services.secret_cipher import SecretCipher
 from src.services.subscription_repository import SubscriptionRepository
@@ -679,6 +680,94 @@ async def test_separate_service_instances_share_one_durable_provisioning_reserva
     assert first_delivery.bundle_id == second_delivery.bundle_id
     assert first_delivery.bundle == second_delivery.bundle
     assert len(bundle_service.calls) == 1
+
+
+async def test_stale_provisioning_takeover_uses_fenced_matrix_localpart(
+    repository,
+    google_client,
+    cipher,
+):
+    class BlockingProvisioner:
+        def __init__(self):
+            self.calls = []
+            self.first_started = asyncio.Event()
+            self.release_first = asyncio.Event()
+
+        async def provision(self, *, username, display_name):
+            self.calls.append(username)
+            if len(self.calls) == 1:
+                self.first_started.set()
+                await self.release_first.wait()
+            encoded = SyncBundle(
+                home_server="https://matrix.example.com",
+                user=f"@{username}:example.com",
+                password=f"password-{username}",
+                room_id=f"!{username}:example.com",
+                kind=BundleKind.PROVISIONED,
+            ).encode()
+            return ProvisionResult(
+                bundle=SyncBundle.decode(encoded),
+                user_mxid=f"@{username}:example.com",
+                room_id=f"!{username}:example.com",
+                server_name="example.com",
+            )
+
+    provisioner = BlockingProvisioner()
+    admin_client = FakeReaperAdmin()
+    bundle_service = BundleService(provisioner, repository, admin_client)
+    current_time = NOW
+    first_service = PaidBundleService(
+        bundle_service,
+        repository,
+        google_client,
+        cipher,
+        now_provider=lambda: current_time,
+    )
+    second_service = PaidBundleService(
+        bundle_service,
+        SubscriptionRepository(repository.db_path),
+        google_client,
+        cipher,
+        now_provider=lambda: current_time,
+    )
+    verified = await verified_purchase(repository)
+    first = asyncio.create_task(first_service.provision_or_deliver(verified, submission(), now=NOW))
+    await provisioner.first_started.wait()
+
+    # The paid reservation and the lower-level username claim have the same
+    # production TTL. Model both expiring while the first Synapse call is still
+    # in flight, which is the window where an unfenced replacement can reuse
+    # the same Matrix account and have the stale worker deactivate it.
+    conn = repository._connect()
+    try:
+        conn.execute(
+            "UPDATE provisioning_claims SET claimed_at = ? WHERE username = ?",
+            ((NOW - timedelta(days=1)).isoformat(), "sync_entitlementone"),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+    current_time = NOW + timedelta(minutes=5)
+    winner = await second_service.provision_or_deliver(
+        verified,
+        submission(),
+        now=current_time,
+    )
+    provisioner.release_first.set()
+
+    with pytest.raises(BundleClaimConflictException):
+        await first
+
+    first_username, winner_username = provisioner.calls
+    assert first_username == "sync_entitlementone"
+    assert winner_username.startswith(first_username)
+    assert winner_username != first_username
+    assert SyncBundle.decode(winner.bundle).user == f"@{winner_username}:example.com"
+    stored_user = await repository.get(winner.bundle_id)
+    assert stored_user.user_mxid == f"@{winner_username}:example.com"
+    assert admin_client.deactivated == [f"@{first_username}:example.com"]
+    assert stored_user.user_mxid not in admin_client.deactivated
 
 
 async def test_busy_cross_process_reservation_returns_retryable_conflict_without_provisioning(

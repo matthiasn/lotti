@@ -25,6 +25,7 @@ from ..core.subscriptions import (
     BundleClaim,
     EntitlementState,
     GoogleSubscriptionState,
+    PaidProvisioningReservation,
     PurchaseIntent,
     StoredSubscription,
     SyncEntitlement,
@@ -1035,7 +1036,7 @@ class SubscriptionRepository(ProvisioningRepository):
         operation_token: str,
         now: datetime,
         stale_before: datetime,
-    ) -> bool:
+    ) -> PaidProvisioningReservation:
         conn = self._connect()
         try:
             conn.execute("BEGIN IMMEDIATE")
@@ -1046,7 +1047,7 @@ class SubscriptionRepository(ProvisioningRepository):
             ).fetchone()
             if subscription is None or subscription["bundle_id"] is not None:
                 conn.rollback()
-                return False
+                return PaidProvisioningReservation(acquired=False)
             existing = conn.execute(
                 "SELECT operation_token, started_at FROM paid_bundle_provisioning "
                 "WHERE entitlement_id = ?",
@@ -1054,7 +1055,12 @@ class SubscriptionRepository(ProvisioningRepository):
             ).fetchone()
             if existing is not None and _parse(existing["started_at"]) > stale_before:
                 conn.rollback()
-                return existing["operation_token"] == operation_token
+                return PaidProvisioningReservation(
+                    acquired=existing["operation_token"] == operation_token
+                )
+            took_over_stale_owner = (
+                existing is not None and existing["operation_token"] != operation_token
+            )
             conn.execute(
                 "INSERT INTO paid_bundle_provisioning ("
                 "entitlement_id, token_fingerprint, operation_token, started_at"
@@ -1064,7 +1070,10 @@ class SubscriptionRepository(ProvisioningRepository):
                 (entitlement_id, token_fingerprint, operation_token, _iso(now)),
             )
             conn.commit()
-            return True
+            return PaidProvisioningReservation(
+                acquired=True,
+                took_over_stale_owner=took_over_stale_owner,
+            )
         except Exception:
             conn.rollback()
             raise
@@ -1079,8 +1088,8 @@ class SubscriptionRepository(ProvisioningRepository):
         operation_token: str,
         now: datetime,
         stale_before: datetime,
-    ) -> bool:
-        """Take the cross-process reservation before creating a Matrix account."""
+    ) -> PaidProvisioningReservation:
+        """Take the cross-process reservation and report stale-owner takeover."""
         return await asyncio.to_thread(
             self._reserve_paid_bundle_provisioning_sync,
             entitlement_id,
