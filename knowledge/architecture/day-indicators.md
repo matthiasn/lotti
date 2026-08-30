@@ -76,9 +76,9 @@ classDiagram
 - **`DayMarkState` is what the app measured.** `full` means the requirement
   held as of that day; `partial` means the routine was kept while a window
   target was still building (a wash of the kept fill); `skipped` and
-  `missed` are recorded habit outcomes. They share `none`'s neutral fill, but
-  a skipped day carries an orange warning cross and a missed day a red error
-  cross, leaving only an untouched day to carry its weekday.
+  `missed` are recorded habit outcomes. They use the neutral level-02 outcome
+  fill: a skipped day carries an orange warning dash and a missed day a red
+  error cross, leaving only an untouched level-03 day to carry its weekday.
 - **`DayVerdict` is the user's ruling**, and a recorded verdict outranks the
   measurement wherever both are shown. The enum is persisted by `name` in
   goal assessment records (see [goals](../features/goals.md)), so the names
@@ -119,17 +119,17 @@ flowchart LR
 
 # Invariants
 
-- **Two fills for a measured day.** A kept day is `interactive.enabled` —
+- **Three fills for a measured day.** A kept day is `interactive.enabled` —
   the handover's `--interactive` square — a partial day its `muted` wash, and
-  everything else `background.level03`. No alert hue on a habit square's
-  FILL: a struggling habit is never a wall of red or orange; the skip and miss
-  crosses alone wear their warning and error inks.
+  an untouched day `background.level03`; recorded skip and miss outcomes use
+  `background.level02`. No alert hue on a habit square's FILL: a struggling
+  habit is never a wall of red or orange; only the outcome glyph wears it.
 - **A square says one thing inside itself, and nothing around it.** A
   judged day draws its verdict's glyph; a kept day (partial included) the tick,
-  a skip an orange cross (`alert.warning.glyphOnLevel03`), and a recorded miss
-  a red cross (`alert.error.glyphOnLevel03`). Those ramp steps guarantee the
-  3:1 graphical floor on the `level03` fill in both themes; the surface ink
-  lands at 2.9:1 there in dark. The fill stays neutral while the glyph tells
+  a skip an orange dash (`alert.warning.defaultColor`), and a recorded miss
+  a red cross (`alert.error.defaultColor`). Those saturated ramp steps clear
+  the 3:1 graphical floor on the quieter `level02` fill in both themes. The
+  fill stays neutral while the glyph tells
   both recorded non-success outcomes from an empty day; an empty dated day
   carries its weekday — the first two characters of the
   locale's abbreviation (`dayMarkWeekdayLabel`: `Tu Th Sa Su`, `Di Do Sa

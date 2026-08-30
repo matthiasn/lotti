@@ -139,8 +139,8 @@ void main() {
   });
 
   group('history strip', () {
-    testWidgets('draws every in-range day as a shared day-mark cell, with the '
-        'tick and cross as non-color cues', (tester) async {
+    testWidgets('draws every in-range day as a shared day-mark cell, with '
+        'distinct tick, dash and cross cues', (tester) async {
       final handle = tester.ensureSemantics();
       // The open day precedes the success day so `results.last` is success and
       // the trailing button is the done-circle, not another check glyph.
@@ -162,14 +162,14 @@ void main() {
         DayMarkState.skipped,
         DayMarkState.full,
       ]);
-      // The missed and skipped days draw crosses in their semantic hues, the
-      // kept day the tick; only the open day keeps its weekday letter.
+      // The missed day draws a red cross, the skipped day an orange dash, and
+      // the kept day a tick; only the open day keeps its weekday letter.
       Finder glyph(int index, IconData icon) => find.descendant(
         of: find.byType(DayMarkCell).at(index),
         matching: find.byIcon(icon),
       );
       expect(glyph(1, dayVerdictGlyph(DayVerdict.missed)), findsOneWidget);
-      expect(glyph(2, dayVerdictGlyph(DayVerdict.missed)), findsOneWidget);
+      expect(glyph(2, LottiIcons.remove), findsOneWidget);
       expect(glyph(3, dayVerdictGlyph(DayVerdict.met)), findsOneWidget);
       expect(
         find.descendant(

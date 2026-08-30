@@ -22,8 +22,8 @@ void main() {
     return tokens;
   }
 
-  testWidgets('state fills: the interactive hue for a kept day, a wash of it '
-      'for a partial one, the neutral surface for everything else', (
+  testWidgets('state fills separate kept, partial, untouched and recorded '
+      'outcome days without alert-colored fills', (
     tester,
   ) async {
     final t = await tokens(tester);
@@ -33,14 +33,14 @@ void main() {
       dayMarkStateFill(t, DayMarkState.partial),
       kept.withValues(alpha: SurfaceAlphas.muted),
     );
-    for (final state in [
-      DayMarkState.missed,
-      DayMarkState.skipped,
-      DayMarkState.none,
-    ]) {
+    expect(
+      dayMarkStateFill(t, DayMarkState.none),
+      t.colors.background.level03,
+    );
+    for (final state in [DayMarkState.missed, DayMarkState.skipped]) {
       expect(
         dayMarkStateFill(t, state),
-        t.colors.background.level03,
+        t.colors.background.level02,
         reason: '$state is not painted in an alert hue',
       );
     }

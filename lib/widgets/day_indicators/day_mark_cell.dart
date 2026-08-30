@@ -46,8 +46,8 @@ String dayMarkWeekdayLabel(String locale, DateTime day) =>
 /// tick or a cross beside a lettered neighbour is read against that
 /// neighbour's day. The glyphs are the reflections history's own
 /// (`dayVerdictGlyph`), so an outcome is drawn the same way wherever it is
-/// shown. A recorded miss shares the neutral fill with an empty day, and the
-/// red cross is what tells them apart.
+/// shown. Recorded misses and skips use a quieter neutral fill than empty
+/// days; a saturated red cross and orange dash tell the two outcomes apart.
 ///
 /// Null for an undated, unresolved square — a streak chain has nothing to
 /// say inside its cells.
@@ -87,25 +87,21 @@ Widget? dayMarkSquareContent(
         color: tokens.colors.interactive.enabled,
       );
     case DayMarkState.missed:
-      // The one touch of the error family a habit square gets: the cross
-      // in red, on the neutral fill. A miss should sting a little, and a bad
-      // week should still not be a wall of red — the mark carries the hue,
-      // the square does not. `glyphOnLevel03`, not the surface ink: the
-      // fill is `level03`, the mid grey the ink was never tuned for (2.9:1
-      // there in dark), and that step is the ramp's guarantee of 3:1 on it.
+      // The one touch of the error family a habit square gets: a saturated
+      // red cross on the neutral outcome fill. The mark carries the hue so a
+      // bad week still does not become a wall of red.
       return Icon(
         dayVerdictGlyph(DayVerdict.missed),
         size: glyphSize,
-        color: tokens.colors.alert.error.glyphOnLevel03,
+        color: tokens.colors.alert.error.defaultColor,
       );
     case DayMarkState.skipped:
-      // A skip is an explicit outcome, not an untouched day. It keeps the
-      // same quiet neutral fill as a miss, but uses the warning family so it
-      // cannot be confused with either an empty weekday cell or the red miss.
+      // A skip is an explicit outcome, not an untouched day or a miss. The
+      // warning-colored dash distinguishes it by shape as well as hue.
       return Icon(
-        dayVerdictGlyph(DayVerdict.missed),
+        LottiIcons.remove,
         size: glyphSize,
-        color: tokens.colors.alert.warning.glyphOnLevel03,
+        color: tokens.colors.alert.warning.defaultColor,
       );
     case DayMarkState.none:
       if (day == null) return null;

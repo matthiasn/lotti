@@ -48,18 +48,22 @@ void main() {
       );
       expect(decoration(tester).border, isNull, reason: '$state');
       if (state == DayMarkState.missed || state == DayMarkState.skipped) {
-        // Recorded skips, misses and empty days share the grey; the cross is
-        // what tells an outcome apart. Warning orange distinguishes a skip
-        // from an error red miss without turning the square into an alert fill.
+        // Recorded skips and misses share a neutral outcome fill. Shape and
+        // saturated alert hue distinguish the orange dash from the red cross.
         final icon = tester.widget<Icon>(find.byType(Icon));
-        expect(icon.icon, dayVerdictGlyph(DayVerdict.missed));
+        expect(
+          icon.icon,
+          state == DayMarkState.skipped
+              ? LottiIcons.remove
+              : dayVerdictGlyph(DayVerdict.missed),
+        );
         expect(
           icon.color,
           state == DayMarkState.skipped
-              ? tokens.colors.alert.warning.glyphOnLevel03
-              : tokens.colors.alert.error.glyphOnLevel03,
+              ? tokens.colors.alert.warning.defaultColor
+              : tokens.colors.alert.error.defaultColor,
         );
-        expect(decoration(tester).color, tokens.colors.background.level03);
+        expect(decoration(tester).color, tokens.colors.background.level02);
         expect(icon.size, kDaySquareSize - tokens.spacing.step2);
       } else if (state == DayMarkState.full || state == DayMarkState.partial) {
         expect(
@@ -75,8 +79,8 @@ void main() {
     }
   });
 
-  testWidgets('the skip and missed crosses clear the 3:1 graphical floor on '
-      'the grey square in both themes', (tester) async {
+  testWidgets('the skip dash and missed cross clear the 3:1 graphical floor '
+      'on the neutral outcome square in both themes', (tester) async {
     for (final brightness in Brightness.values) {
       for (final state in [DayMarkState.skipped, DayMarkState.missed]) {
         await tester.pumpWidget(
@@ -93,13 +97,13 @@ void main() {
         expect(
           contrastRatio(icon.color!, decoration(tester).color!),
           greaterThanOrEqualTo(3),
-          reason: '$brightness $state: the cross must read against level03',
+          reason: '$brightness $state: the mark must read against level02',
         );
         expect(
           icon.color,
           state == DayMarkState.skipped
-              ? tokens.colors.alert.warning.glyphOnLevel03
-              : tokens.colors.alert.error.glyphOnLevel03,
+              ? tokens.colors.alert.warning.defaultColor
+              : tokens.colors.alert.error.defaultColor,
         );
       }
     }

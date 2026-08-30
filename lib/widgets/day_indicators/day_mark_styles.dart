@@ -6,13 +6,12 @@ import 'package:lotti/widgets/day_indicators/day_mark.dart';
 /// Shared fill for a measured day: the interactive hue when the day was
 /// kept — the handover's `--interactive` square — a wash of it for a partial
 /// success (routine kept, target still building), and the neutral level-03
-/// surface for anything else. A skipped or missed day is not painted in an
+/// surface for an untouched day. A skipped or missed day is not painted in an
 /// alert hue: the strip is a record of what was kept, and a struggling habit
-/// is never a wall of red. A recorded miss is told apart from a day nobody
-/// looked at by the red cross drawn inside the grey (`dayMarkSquareContent`,
-/// in the error ramp's `glyphOnLevel03` step — its 3:1 guarantee on that
-/// fill), not by its fill; a skip uses the same cross in the warning hue. A
-/// partial day, kept too, draws the tick in the kept hue on its wash.
+/// is never a wall of red. Both use the quieter level-02 neutral fill so the
+/// saturated default alert colors remain crisp: a red cross for miss, an
+/// orange dash for skip. A partial day, kept too, draws the tick in the kept
+/// hue on its wash.
 /// `SurfaceAlphas.muted` is the sanctioned "reduced-strength accent" alpha, so
 /// no new color token is introduced.
 Color dayMarkStateFill(DsTokens tokens, DayMarkState state) => switch (state) {
@@ -20,9 +19,9 @@ Color dayMarkStateFill(DsTokens tokens, DayMarkState state) => switch (state) {
   DayMarkState.partial => tokens.colors.interactive.enabled.withValues(
     alpha: SurfaceAlphas.muted,
   ),
-  DayMarkState.none ||
+  DayMarkState.none => tokens.colors.background.level03,
   DayMarkState.skipped ||
-  DayMarkState.missed => tokens.colors.background.level03,
+  DayMarkState.missed => tokens.colors.background.level02,
 };
 
 /// The localized name of a measured state, shared by every day cell's

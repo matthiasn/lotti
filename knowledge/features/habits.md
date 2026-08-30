@@ -318,7 +318,7 @@ action content stays a comfortable column.
 Tab rows are **action rows**: icon, name, the handover's history strip —
 the last seven days on a phone and fourteen on a desktop window as squares
 (`habitHistoryMarks` with `habitHistoryDays`, read off the state's per-day
-completion sets), a tick on a successful day, an orange cross on a skip, a red
+completion sets), a tick on a successful day, an orange dash on a skip, a red
 cross on a recorded miss, the two-letter weekday on an empty day, each naming
 its date and outcome on hover, and
 each opening the completion sheet **for its own day** on tap; then the flame

@@ -2676,7 +2676,7 @@ void main() {
     );
     expect(
       (cell.decoration! as BoxDecoration).color,
-      tokens.colors.background.level03,
+      tokens.colors.background.level02,
     );
     final icon = tester.widget<Icon>(
       find.descendant(
@@ -2686,8 +2686,8 @@ void main() {
         matching: find.byType(Icon),
       ),
     );
-    expect(icon.icon, dayVerdictGlyph(DayVerdict.missed));
-    expect(icon.color, tokens.colors.alert.warning.glyphOnLevel03);
+    expect(icon.icon, LottiIcons.remove);
+    expect(icon.color, tokens.colors.alert.warning.defaultColor);
     expect(
       find.bySemanticsLabel('Aug 11, 2026: Skip'),
       findsOneWidget,
