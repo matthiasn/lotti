@@ -184,7 +184,11 @@ refreshes wall-clock time after Google verification and again before returning;
 paid provisioning also refreshes time at every access boundary, including after
 Matrix account creation and claim-secret verification. If access expires during
 either operation, credential delivery fails closed and the route runs one final
-enforcement pass so an existing Matrix account does not remain unsuspended.
+enforcement pass against the freshly reloaded subscription before returning
+credentials, so a concurrently suspended purchase cannot leak escrow and an
+existing Matrix account does not remain unsuspended. Reconciliation failure
+handling also refreshes its clock before enforcing the durable snapshot and
+scheduling its retry, so time spent waiting on Google cannot extend access.
 Suspension
 requires Synapse 1.110.0 or newer with MSC3823 enabled; when
 subscriptions are enabled, startup authenticates to Synapse and validates that
@@ -220,7 +224,11 @@ claim reaper deactivates an account that never reaches that proof before its
 24-hour TTL. Its first destructive batch waits for an operator-configurable
 startup delay. Rotation verification and reaping first acquire mutually exclusive
 tokenized database leases; failed or crashed workers release or age out their
-lease, and a late worker cannot clear a newer owner's lease. Failed reaper
+lease, and a late worker cannot clear a newer owner's lease. Reaper
+finalization requires the same operation token that reserved the claim, so an
+administrator who revokes the bundle while Synapse deactivation is in flight
+wins permanently instead of having the worker relabel the claim as abandoned.
+Failed reaper
 attempts receive a separate bounded retry time so one broken account cannot
 starve later claims; this never extends the escrow TTL. Authenticated delivery
 retries acquire the same mutually exclusive operation lease before claim-secret
@@ -236,8 +244,9 @@ reaper-destroyed claim into apparent success. Confirmed claims always recover
 the existing account without recreating bootstrap credentials. Lost-response
 delivery retries reload the current subscription and reject non-granting state
 or an elapsed authoritative expiry before decrypting escrow. The route reloads
-the current row once more after delivery so a concurrent replacement purchase's
-entitlement state, rather than its predecessor's stale state, is returned.
+and re-enforces the current row once more after delivery so a concurrent
+replacement purchase's entitlement state, rather than its predecessor's stale
+state, is returned only when it still grants access.
 
 # Pairing a new device
 

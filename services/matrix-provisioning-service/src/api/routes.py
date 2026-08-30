@@ -280,6 +280,14 @@ async def deliver_paid_bundle(
         )
         if subscription is None:
             raise BundleClaimConflictException("Subscription is missing")
+        suspended = await container.get_subscription_access_service().enforce(
+            subscription,
+            now=datetime.now(timezone.utc),
+        )
+        if suspended is True:
+            raise GooglePlayVerificationException(
+                "Subscription does not currently grant SYNC access"
+            )
         return PaidBundleResponse(
             **delivery.__dict__,
             entitlement_state=subscription.entitlement_state.value,

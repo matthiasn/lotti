@@ -10,6 +10,7 @@ from datetime import datetime, timedelta, timezone
 from shared.matrix import SynapseAdminClient
 
 from ..core.constants import BUNDLE_CLAIM_REAPER_STARTUP_DELAY_SECONDS
+from ..core.exceptions import BundleClaimConflictException
 from .periodic_task import PeriodicTask
 from .subscription_repository import SubscriptionRepository
 
@@ -81,14 +82,20 @@ class BundleClaimReaper(PeriodicTask):
                     claim.bundle_id,
                     "Paid bundle claim expired before validated rotation",
                     now=now,
-                    allow_paid_reprovisioning=True,
+                    reap_operation_token=operation_token,
                 )
                 reaped += 1
             except Exception:  # noqa: BLE001 - isolate and retry one claim later
                 logger.exception("Could not reap expired paid bundle %s", claim.bundle_id)
-                await self._repository.reschedule_bundle_claim_reap(
-                    claim.bundle_id,
-                    next_reap_at=now + self._failure_retry_delay,
-                    operation_token=operation_token,
-                )
+                try:
+                    await self._repository.reschedule_bundle_claim_reap(
+                        claim.bundle_id,
+                        next_reap_at=now + self._failure_retry_delay,
+                        operation_token=operation_token,
+                    )
+                except BundleClaimConflictException:
+                    logger.info(
+                        "Bundle claim %s changed owner while reaping",
+                        claim.bundle_id,
+                    )
         return reaped

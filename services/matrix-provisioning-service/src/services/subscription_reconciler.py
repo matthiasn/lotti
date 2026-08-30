@@ -72,17 +72,21 @@ class SubscriptionReconciler(PeriodicTask):
                 )
                 current = await self._repository.get_current_subscription(stored.entitlement_id)
                 if current is not None:
-                    await self._access_service.enforce(current, now=now)
+                    await self._access_service.enforce(
+                        current,
+                        now=max(now, self._now_provider()),
+                    )
                 reconciled += 1
             except Exception as exc:  # noqa: BLE001 - one token must not stop the batch
                 error = str(exc)
+                enforcement_now = max(now, self._now_provider())
                 try:
                     # A Google outage must not extend a previously verified
                     # expiry/grace deadline. Converge from the durable snapshot
                     # and reschedule the authoritative refresh below.
                     current = await self._repository.get_current_subscription(stored.entitlement_id)
                     if current is not None:
-                        await self._access_service.enforce(current, now=now)
+                        await self._access_service.enforce(current, now=enforcement_now)
                 except Exception as enforcement_exc:  # noqa: BLE001 - record both failures
                     error = f"{error}; stored-state enforcement failed: {enforcement_exc}"
                 logger.warning(
@@ -90,10 +94,11 @@ class SubscriptionReconciler(PeriodicTask):
                     stored.token_fingerprint,
                     error,
                 )
+                retry_now = max(enforcement_now, self._now_provider())
                 await self._repository.record_subscription_error(
                     stored.token_fingerprint,
                     last_error=error,
-                    now=now,
-                    next_reconciliation_at=now + self._failure_retry_delay,
+                    now=retry_now,
+                    next_reconciliation_at=retry_now + self._failure_retry_delay,
                 )
         return reconciled

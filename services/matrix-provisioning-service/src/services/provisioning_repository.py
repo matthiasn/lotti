@@ -419,7 +419,7 @@ class ProvisioningRepository:
         conn: sqlite3.Connection,
         bundle_id: str,
         revoked_at: datetime,
-        allow_paid_reprovisioning: bool,
+        reap_operation_token: str | None,
     ) -> None:
         """Extend the bundle revocation transaction for repository subclasses."""
 
@@ -428,7 +428,7 @@ class ProvisioningRepository:
         bundle_id: str,
         reason: str,
         now: datetime | None,
-        allow_paid_reprovisioning: bool,
+        reap_operation_token: str | None,
     ) -> ProvisionedUser:
         conn = self._connect()
         try:
@@ -448,7 +448,7 @@ class ProvisioningRepository:
                 conn,
                 bundle_id,
                 revoked_at,
-                allow_paid_reprovisioning,
+                reap_operation_token,
             )
             self._record_event_sync(
                 conn, bundle_id, BundleEventType.REVOKED, reason or "Revoked by admin"
@@ -470,21 +470,22 @@ class ProvisioningRepository:
         reason: str = "",
         *,
         now: datetime | None = None,
-        allow_paid_reprovisioning: bool = False,
+        reap_operation_token: str | None = None,
     ) -> ProvisionedUser:
         """Mark a bundle revoked without touching the Matrix account.
 
         ``now`` lets deterministic maintenance work stamp the revocation and
         any subclass-owned terminal state with the same authoritative time.
-        ``allow_paid_reprovisioning`` is reserved for the paid-claim reaper;
-        administrative revocation remains terminal by default.
+        ``reap_operation_token`` lets the paid-claim reaper finalize only while
+        it still owns the claim lease; administrative revocation remains
+        terminal by default.
         """
         return await asyncio.to_thread(
             self._revoke_sync,
             bundle_id,
             reason,
             now,
-            allow_paid_reprovisioning,
+            reap_operation_token,
         )
 
     def _update_sync(

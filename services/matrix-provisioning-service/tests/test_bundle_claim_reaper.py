@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -124,6 +125,34 @@ async def test_expired_claim_deactivates_revokes_and_destroys_escrow(setup):
     assert destroyed.confirmed_at is None
     assert destroyed.destroyed_at == NOW
     assert destroyed.abandoned_at == NOW
+
+
+async def test_admin_revocation_wins_while_reaper_waits_for_synapse(tmp_path):
+    repository = SubscriptionRepository(str(tmp_path / "subscriptions.db"))
+    entitlement_id, claim = await setup_claim(repository, "admin-race", NOW)
+    deactivation_started = asyncio.Event()
+    release_deactivation = asyncio.Event()
+
+    class BlockingAdmin(FakeAdminClient):
+        async def deactivate_user(self, user_mxid):
+            deactivation_started.set()
+            await release_deactivation.wait()
+            await super().deactivate_user(user_mxid)
+
+    admin = BlockingAdmin()
+    reaper = BundleClaimReaper(repository, admin, now_provider=lambda: NOW)
+    reaping = asyncio.create_task(reaper.reap_once())
+    await deactivation_started.wait()
+
+    await repository.revoke(claim.bundle_id, "revoked by administrator", now=NOW)
+    release_deactivation.set()
+
+    assert await reaping == 0
+    user = await repository.get(claim.bundle_id)
+    stored = await repository.get_bundle_claim_for_entitlement(entitlement_id)
+    assert user.status.value == "revoked"
+    assert stored.destroyed_at == NOW
+    assert stored.abandoned_at is None
 
 
 async def test_future_claim_is_not_touched(setup):

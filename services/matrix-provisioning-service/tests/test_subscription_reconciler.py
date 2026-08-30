@@ -129,6 +129,43 @@ async def test_one_failed_token_does_not_block_rest_of_batch(setup):
     assert failed_after.next_reconciliation_at == NOW + timedelta(minutes=5)
 
 
+async def test_failed_refresh_uses_fresh_time_for_enforcement_and_retry(
+    tmp_path,
+):
+    repository = SubscriptionRepository(str(tmp_path / "subscriptions.db"))
+    cipher = SecretCipher(key_id="key-v1", key=bytes(range(32)))
+    subscriptions = FakeSubscriptionService()
+    access = FakeAccessService()
+    current_time = NOW
+    stored = await add_due(
+        repository,
+        cipher,
+        "entitlement-one",
+        "failed-token",
+        current_period_end=NOW + timedelta(seconds=30),
+    )
+    subscriptions.failure_tokens.add("failed-token")
+
+    async def advance_clock():
+        nonlocal current_time
+        current_time = NOW + timedelta(minutes=1)
+
+    subscriptions.failure_callback = advance_clock
+    reconciler = SubscriptionReconciler(
+        repository,
+        subscriptions,
+        access,
+        cipher,
+        now_provider=lambda: current_time,
+    )
+
+    assert await reconciler.reconcile_once() == 0
+
+    failed_after = await repository.get_subscription_by_token(stored.token_fingerprint)
+    assert access.calls == [(stored, NOW + timedelta(minutes=1))]
+    assert failed_after.next_reconciliation_at == NOW + timedelta(minutes=6)
+
+
 async def test_unknown_encryption_key_is_recorded_without_decrypting(setup):
     repository, cipher, subscriptions, access, reconciler = setup
     stored = await add_due(

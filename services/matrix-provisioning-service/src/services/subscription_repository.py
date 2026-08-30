@@ -1541,21 +1541,33 @@ class SubscriptionRepository(ProvisioningRepository):
         conn: sqlite3.Connection,
         bundle_id: str,
         revoked_at: datetime,
-        allow_paid_reprovisioning: bool,
+        reap_operation_token: str | None,
     ) -> None:
         """Destroy paid bootstrap escrow in the bundle revocation transaction."""
+        if reap_operation_token is not None:
+            cursor = conn.execute(
+                "UPDATE bundle_claims SET encrypted_bundle = NULL, "
+                "destroyed_at = COALESCE(destroyed_at, ?), "
+                "abandoned_at = COALESCE(abandoned_at, ?), operation_token = NULL, "
+                "operation_kind = NULL, operation_started_at = NULL "
+                "WHERE bundle_id = ? AND operation_kind = 'reap' "
+                "AND operation_token = ? AND destroyed_at IS NULL "
+                "AND confirmed_at IS NULL",
+                (
+                    _iso(revoked_at),
+                    _iso(revoked_at),
+                    bundle_id,
+                    reap_operation_token,
+                ),
+            )
+            if cursor.rowcount != 1:
+                raise BundleClaimConflictException("Bundle claim reap lease was lost")
+            return
         conn.execute(
             "UPDATE bundle_claims SET encrypted_bundle = NULL, "
             "destroyed_at = COALESCE(destroyed_at, ?), operation_token = NULL, "
-            "operation_kind = NULL, operation_started_at = NULL, "
-            "abandoned_at = CASE WHEN ? THEN COALESCE(abandoned_at, ?) "
-            "ELSE abandoned_at END WHERE bundle_id = ?",
-            (
-                _iso(revoked_at),
-                allow_paid_reprovisioning,
-                _iso(revoked_at),
-                bundle_id,
-            ),
+            "operation_kind = NULL, operation_started_at = NULL WHERE bundle_id = ?",
+            (_iso(revoked_at), bundle_id),
         )
 
     def _destroy_bundle_claim_sync(self, bundle_id: str, now: datetime) -> BundleClaim:
