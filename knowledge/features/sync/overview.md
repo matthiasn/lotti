@@ -184,11 +184,12 @@ state. Client verification enforces the newly persisted current state before
 attempting bundle delivery, including when that state denies access. The route
 refreshes wall-clock time after Google verification and again before returning;
 paid provisioning also refreshes time at every access boundary, including after
-Matrix account creation and claim-secret verification. If access expires during
-either operation, credential delivery fails closed and the route runs one final
-enforcement pass against the freshly reloaded subscription before returning
-credentials, so a concurrently suspended purchase cannot leak escrow and an
-existing Matrix account does not remain unsuspended. Reconciliation failure
+Matrix account creation, after claim-secret verification, and immediately before
+decrypting escrow. If access expires during either operation, credential delivery
+fails closed and the route runs one final enforcement pass against the freshly
+reloaded subscription before returning credentials, so a concurrently suspended
+purchase cannot leak escrow and an existing Matrix account does not remain
+unsuspended. Reconciliation failure
 handling also refreshes its clock before enforcing the durable snapshot and
 scheduling its retry, so time spent waiting on Google cannot extend access.
 The repository records the last observed Matrix suspension state separately
@@ -268,7 +269,10 @@ name survived an earlier rollback. A rotation confirmation is idempotent only
 when the claim has a real `confirmed_at`; a late request cannot turn a
 reaper-destroyed claim into apparent success. Confirmed claims recover only a
 still-non-revoked account, checked both before and after the purchase
-acknowledgement path, without recreating bootstrap credentials. Lost-response
+acknowledgement path, without recreating bootstrap credentials. Pending plaintext
+delivery is also revalidated immediately before return: its account must remain
+non-revoked and its claim current, nonterminal, encrypted, and within TTL even if
+Google acknowledgement was slow. Lost-response
 delivery retries reload the current subscription and reject non-granting state
 or an elapsed authoritative expiry before decrypting escrow. The retry route
 refreshes its clock after entitlement authentication and stops before claim

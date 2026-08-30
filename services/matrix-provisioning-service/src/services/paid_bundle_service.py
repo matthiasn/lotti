@@ -120,7 +120,6 @@ class PaidBundleService:
             verified.subscription.entitlement_id
         )
         reprovisioning = False
-        confirmed_recovery_bundle_id = None
         if (
             existing is not None
             and existing.confirmed_at is None
@@ -139,7 +138,6 @@ class PaidBundleService:
                 # Replacement purchases restore access to it; the destroyed
                 # bootstrap credential must never be recreated or redelivered.
                 await self._require_recoverable_confirmed_claim(existing.bundle_id)
-                confirmed_recovery_bundle_id = existing.bundle_id
                 delivery = PaidBundleDelivery(
                     bundle_id=existing.bundle_id,
                     bundle=None,
@@ -232,13 +230,38 @@ class PaidBundleService:
             verified,
             now=self._current_time(now),
         )
-        if confirmed_recovery_bundle_id is not None:
-            await self._require_recoverable_confirmed_claim(confirmed_recovery_bundle_id)
+        await self._require_returnable_delivery(
+            delivery,
+            entitlement_id=verified.subscription.entitlement_id,
+            now=self._current_time(now),
+        )
         return delivery
 
     async def _require_recoverable_confirmed_claim(self, bundle_id: str) -> None:
         provisioned_user = await self._repository.get(bundle_id)
         if provisioned_user is None or provisioned_user.status is BundleStatus.REVOKED:
+            raise BundleClaimConflictException("Bundle claim is terminal")
+
+    async def _require_returnable_delivery(
+        self,
+        delivery: PaidBundleDelivery,
+        *,
+        entitlement_id: str,
+        now: datetime,
+    ) -> None:
+        await self._require_recoverable_confirmed_claim(delivery.bundle_id)
+        if delivery.bundle is None:
+            return
+        claim = await self._repository.get_bundle_claim_for_entitlement(entitlement_id)
+        validation_now = self._current_time(now)
+        if (
+            claim is None
+            or claim.bundle_id != delivery.bundle_id
+            or claim.confirmed_at is not None
+            or claim.destroyed_at is not None
+            or claim.encrypted_bundle is None
+            or validation_now >= claim.expires_at
+        ):
             raise BundleClaimConflictException("Bundle claim is terminal")
 
     async def _load_current_subscription(
@@ -414,7 +437,8 @@ class PaidBundleService:
         operation_token: str,
         now: datetime,
     ) -> PaidBundleDelivery:
-        if now >= claim.expires_at or claim.encrypted_bundle is None:
+        operation_now = self._current_time(now)
+        if operation_now >= claim.expires_at or claim.encrypted_bundle is None:
             raise BundleClaimConflictException("Bundle claim is expired or already destroyed")
         bundle = self._secret_cipher.decrypt(
             claim.encrypted_bundle,
@@ -425,7 +449,7 @@ class PaidBundleService:
         delivered = await self._repository.complete_bundle_delivery(
             claim.bundle_id,
             operation_token=operation_token,
-            now=now,
+            now=operation_now,
         )
         return PaidBundleDelivery(
             bundle_id=delivered.bundle_id,

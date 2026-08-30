@@ -384,6 +384,88 @@ async def test_acknowledgement_failure_leaves_bundle_available_for_retry(
     assert len(bundle_service.calls) == 1
 
 
+async def test_admin_revocation_during_acknowledgement_blocks_plaintext_return(
+    service,
+    repository,
+    google_client,
+    bundle_service,
+    monkeypatch,
+):
+    verified = await verified_purchase(repository)
+    acknowledgement_started = asyncio.Event()
+    release_acknowledgement = asyncio.Event()
+    acknowledge = google_client.acknowledge_subscription
+
+    async def blocking_acknowledgement(package_name, product_id, purchase_token):
+        acknowledgement_started.set()
+        await release_acknowledgement.wait()
+        await acknowledge(package_name, product_id, purchase_token)
+
+    monkeypatch.setattr(
+        google_client,
+        "acknowledge_subscription",
+        blocking_acknowledgement,
+    )
+    provisioning = asyncio.create_task(
+        service.provision_or_deliver(verified, submission(), now=NOW)
+    )
+    await acknowledgement_started.wait()
+    claim = await repository.get_bundle_claim_for_entitlement("entitlement-one")
+    await repository.revoke(
+        claim.bundle_id,
+        "revoked during acknowledgement",
+        now=NOW + timedelta(seconds=1),
+    )
+    release_acknowledgement.set()
+
+    with pytest.raises(BundleClaimConflictException, match="terminal"):
+        await provisioning
+
+    destroyed = await repository.get_bundle_claim_for_entitlement("entitlement-one")
+    assert destroyed.encrypted_bundle is None
+    assert destroyed.destroyed_at == NOW + timedelta(seconds=1)
+    assert len(bundle_service.calls) == 1
+
+
+async def test_acknowledgement_crossing_claim_expiry_blocks_plaintext_return(
+    service,
+    repository,
+    google_client,
+    monkeypatch,
+):
+    verified = await verified_purchase(repository)
+    current_time = NOW
+    service._now_provider = lambda: current_time
+    acknowledgement_started = asyncio.Event()
+    release_acknowledgement = asyncio.Event()
+    acknowledge = google_client.acknowledge_subscription
+
+    async def blocking_acknowledgement(package_name, product_id, purchase_token):
+        acknowledgement_started.set()
+        await release_acknowledgement.wait()
+        await acknowledge(package_name, product_id, purchase_token)
+
+    monkeypatch.setattr(
+        google_client,
+        "acknowledge_subscription",
+        blocking_acknowledgement,
+    )
+    provisioning = asyncio.create_task(
+        service.provision_or_deliver(verified, submission(), now=NOW)
+    )
+    await acknowledgement_started.wait()
+    claim = await repository.get_bundle_claim_for_entitlement("entitlement-one")
+    current_time = claim.expires_at
+    release_acknowledgement.set()
+
+    with pytest.raises(BundleClaimConflictException, match="terminal"):
+        await provisioning
+
+    retained = await repository.get_bundle_claim_for_entitlement("entitlement-one")
+    assert retained.encrypted_bundle is not None
+    assert retained.destroyed_at is None
+
+
 async def test_confirmed_claim_recovers_replacement_purchase_without_redelivery(
     service,
     repository,
@@ -951,8 +1033,10 @@ async def test_delivery_retry_lease_blocks_reaper_during_secret_verification(
     monkeypatch,
 ):
     verified = await verified_purchase(repository)
-    first = await service.provision_or_deliver(verified, submission(), now=NOW)
+    await service.provision_or_deliver(verified, submission(), now=NOW)
     claim = await repository.get_bundle_claim_for_entitlement("entitlement-one")
+    current_time = claim.expires_at - timedelta(seconds=1)
+    service._now_provider = lambda: current_time
     authorization_started = asyncio.Event()
     release_authorization = asyncio.Event()
     authorize = service._authorize_claim_secret
@@ -979,13 +1063,13 @@ async def test_delivery_retry_lease_blocks_reaper_during_secret_verification(
         now_provider=lambda: claim.expires_at,
     )
     reaped = await reaper.reap_once()
+    current_time = claim.expires_at
     release_authorization.set()
-    retried = await delivery
 
     assert reaped == 0
     assert reaper_admin.deactivated == []
-    assert retried.bundle_id == first.bundle_id
-    assert retried.bundle == first.bundle
+    with pytest.raises(BundleClaimConflictException, match="expired"):
+        await delivery
     assert (
         await repository.get_bundle_claim_for_entitlement("entitlement-one")
     ).encrypted_bundle is not None
