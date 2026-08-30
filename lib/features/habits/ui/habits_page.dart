@@ -308,6 +308,10 @@ class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
         ),
         backgroundColor: dsPageSurface(context),
         body: SafeArea(
+          // The navigation bar's occupied height already includes the system
+          // bottom inset. Leave that edge to the chart footer so the inset is
+          // reserved exactly once.
+          bottom: false,
           child: CustomScrollView(
             controller: _scrollController,
             slivers: <Widget>[

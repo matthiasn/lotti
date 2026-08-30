@@ -335,7 +335,10 @@ The chart's final sliver adds
 `DesignSystemBottomNavigationBar.occupiedHeight(context)` beneath its ordinary
 spacing token on mobile, so at the end of the scroll the chart clears the
 floating navigation bar and any recording indicators above it. Desktop gets
-zero from that helper because its sidebar replaces the bottom bar.
+zero from that helper because its sidebar replaces the bottom bar. The page's
+outer `SafeArea` leaves its bottom disabled because `occupiedHeight` already
+includes the system inset; consuming both would create a second home-indicator
+gap.
 
 Tab rows are **action rows**: icon, name, the handover's history strip —
 the last seven days on a phone and fourteen on a desktop window as squares

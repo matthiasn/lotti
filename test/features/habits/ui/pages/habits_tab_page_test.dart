@@ -284,16 +284,30 @@ void main() {
     testWidgets('bottom chart clears the docked navigation bar', (
       tester,
     ) async {
+      const mediaQueryData = MediaQueryData(
+        size: Size(400, 800),
+        padding: EdgeInsets.only(bottom: 34),
+      );
       final testState = HabitsState.initial().copyWith(
         habitDefinitions: [habitFlossing],
         openNow: [habitFlossing],
       );
 
-      await pump(tester, testState);
+      await pump(tester, testState, mediaQueryData: mediaQueryData);
 
       final context = tester.element(find.byType(HabitsTabPage));
       final occupied = DesignSystemBottomNavigationBar.occupiedHeight(context);
       expect(occupied, greaterThan(0));
+
+      final safeArea = tester.widget<SafeArea>(
+        find
+            .ancestor(
+              of: find.byType(CustomScrollView),
+              matching: find.byType(SafeArea),
+            )
+            .first,
+      );
+      expect(safeArea.bottom, isFalse);
 
       final chartPadding = tester.widget<SliverPadding>(
         find
