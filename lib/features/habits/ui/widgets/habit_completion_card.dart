@@ -113,7 +113,7 @@ List<DayMark> _historyMarks(List<HabitResult> results) {
   ];
 }
 
-/// The current unbroken run of kept days at the end of [results]: today
+/// The current unbroken run of successful days at the end of [results]: today
 /// still open does not break it, any other non-success day does.
 int _currentStreak(List<HabitResult> results) {
   var streak = 0;

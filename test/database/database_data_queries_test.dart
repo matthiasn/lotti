@@ -285,8 +285,8 @@ void main() {
         () async {
           // Forward compatibility: a newer peer can sync a completion type
           // this build does not know. Decoding to null keeps it in the same
-          // bucket as a legacy entry — recorded and streak-extending, but not
-          // counted as a success — rather than throwing and taking out the
+          // bucket as a legacy entry — recorded, but not counted as a success
+          // or streak day — rather than throwing and taking out the
           // whole heatmap for one unrecognised row.
           const serialized =
               '{"data":{"habitId":"habit-future",'

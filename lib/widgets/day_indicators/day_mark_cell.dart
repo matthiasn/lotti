@@ -98,8 +98,16 @@ Widget? dayMarkSquareContent(
         size: glyphSize,
         color: tokens.colors.alert.error.glyphOnLevel03,
       );
-    case DayMarkState.none:
     case DayMarkState.skipped:
+      // A skip is an explicit outcome, not an untouched day. It keeps the
+      // same quiet neutral fill as a miss, but uses the warning family so it
+      // cannot be confused with either an empty weekday cell or the red miss.
+      return Icon(
+        dayVerdictGlyph(DayVerdict.missed),
+        size: glyphSize,
+        color: tokens.colors.alert.warning.glyphOnLevel03,
+      );
+    case DayMarkState.none:
       if (day == null) return null;
       final locale = Localizations.localeOf(context).toLanguageTag();
       // Scaled down into the same inset the glyphs keep, never wrapped or

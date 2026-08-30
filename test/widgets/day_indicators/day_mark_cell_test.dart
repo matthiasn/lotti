@@ -32,7 +32,7 @@ void main() {
       square(tester).decoration! as BoxDecoration;
 
   testWidgets('an undated square is one size at the xs radius, with a glyph '
-      'inside it only for a kept or missed day', (tester) async {
+      'inside it for every recorded outcome', (tester) async {
     for (final state in DayMarkState.values) {
       await pump(tester, DayMarkCell(mark: DayMark(state: state)));
       final tokens = tester.element(find.byType(DayMarkCell)).designTokens;
@@ -47,14 +47,18 @@ void main() {
         reason: '$state',
       );
       expect(decoration(tester).border, isNull, reason: '$state');
-      if (state == DayMarkState.missed) {
-        // A recorded miss and an empty day share the grey; the cross is
-        // what tells them apart. The reflections history's own glyph, in
-        // red — the square itself stays neutral, so a bad week is a few red
-        // marks, never a wall of red.
+      if (state == DayMarkState.missed || state == DayMarkState.skipped) {
+        // Recorded skips, misses and empty days share the grey; the cross is
+        // what tells an outcome apart. Warning orange distinguishes a skip
+        // from an error red miss without turning the square into an alert fill.
         final icon = tester.widget<Icon>(find.byType(Icon));
         expect(icon.icon, dayVerdictGlyph(DayVerdict.missed));
-        expect(icon.color, tokens.colors.alert.error.glyphOnLevel03);
+        expect(
+          icon.color,
+          state == DayMarkState.skipped
+              ? tokens.colors.alert.warning.glyphOnLevel03
+              : tokens.colors.alert.error.glyphOnLevel03,
+        );
         expect(decoration(tester).color, tokens.colors.background.level03);
         expect(icon.size, kDaySquareSize - tokens.spacing.step2);
       } else if (state == DayMarkState.full || state == DayMarkState.partial) {
@@ -71,28 +75,33 @@ void main() {
     }
   });
 
-  testWidgets('the missed cross clears the 3:1 graphical floor on the grey '
-      'square in both themes', (tester) async {
+  testWidgets('the skip and missed crosses clear the 3:1 graphical floor on '
+      'the grey square in both themes', (tester) async {
     for (final brightness in Brightness.values) {
-      await tester.pumpWidget(
-        makeTestableWidgetNoScroll(
-          const Align(
-            alignment: Alignment.topLeft,
-            child: DayMarkCell(mark: DayMark(state: DayMarkState.missed)),
+      for (final state in [DayMarkState.skipped, DayMarkState.missed]) {
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            Align(
+              alignment: Alignment.topLeft,
+              child: DayMarkCell(mark: DayMark(state: state)),
+            ),
+            theme: ThemeData(brightness: brightness, useMaterial3: true),
           ),
-          theme: ThemeData(brightness: brightness, useMaterial3: true),
-        ),
-      );
-      final tokens = tester.element(find.byType(DayMarkCell)).designTokens;
-      final icon = tester.widget<Icon>(find.byType(Icon));
-      expect(
-        contrastRatio(icon.color!, decoration(tester).color!),
-        greaterThanOrEqualTo(3),
-        reason: '$brightness: the cross must read against level03',
-      );
-      // Still red: the error ramp's own step for this fill, not a neutral
-      // ink and not an interaction state borrowed for its contrast.
-      expect(icon.color, tokens.colors.alert.error.glyphOnLevel03);
+        );
+        final tokens = tester.element(find.byType(DayMarkCell)).designTokens;
+        final icon = tester.widget<Icon>(find.byType(Icon));
+        expect(
+          contrastRatio(icon.color!, decoration(tester).color!),
+          greaterThanOrEqualTo(3),
+          reason: '$brightness $state: the cross must read against level03',
+        );
+        expect(
+          icon.color,
+          state == DayMarkState.skipped
+              ? tokens.colors.alert.warning.glyphOnLevel03
+              : tokens.colors.alert.error.glyphOnLevel03,
+        );
+      }
     }
   });
 
@@ -242,31 +251,27 @@ void main() {
       'inside itself, quiet on the neutral fill; an undated one carries '
       'nothing', (tester) async {
     final monday = DateTime.utc(2026, 8, 10);
-    for (final state in [DayMarkState.none, DayMarkState.skipped]) {
-      await pump(
-        tester,
-        DayMarkCell(
-          mark: DayMark(state: state, day: monday),
-        ),
-      );
-      final tokens = tester.element(find.byType(DayMarkCell)).designTokens;
-      final letter = find.descendant(
-        of: find.byType(Container),
-        matching: find.text('Mo'),
-      );
-      expect(letter, findsOneWidget, reason: '$state');
-      expect(find.byType(Icon), findsNothing, reason: '$state');
-      expect(
-        tester.widget<Text>(letter).style?.color,
-        tokens.colors.text.lowEmphasis,
-        reason: '$state',
-      );
-      expect(
-        tester.getCenter(letter),
-        tester.getCenter(find.byType(Container)),
-        reason: '$state sits centred in its square',
-      );
-    }
+    await pump(
+      tester,
+      DayMarkCell(
+        mark: DayMark(state: DayMarkState.none, day: monday),
+      ),
+    );
+    final tokens = tester.element(find.byType(DayMarkCell)).designTokens;
+    final letter = find.descendant(
+      of: find.byType(Container),
+      matching: find.text('Mo'),
+    );
+    expect(letter, findsOneWidget);
+    expect(find.byType(Icon), findsNothing);
+    expect(
+      tester.widget<Text>(letter).style?.color,
+      tokens.colors.text.lowEmphasis,
+    );
+    expect(
+      tester.getCenter(letter),
+      tester.getCenter(find.byType(Container)),
+    );
     await pump(
       tester,
       const DayMarkCell(mark: DayMark(state: DayMarkState.none)),

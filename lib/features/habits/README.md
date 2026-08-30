@@ -15,7 +15,8 @@ derived from combining the two.
   there when the completion needs detail or a different result.
 - **Shows momentum honestly.** A daily summary with a done count, a "to go"
   caption, and streak badges — where a streak requires *every* day in the window,
-  and only an explicit failure or a missing day breaks it.
+  and only successful completions maintain it; skips, failures and missing past
+  days break it.
 - **Shows the long view.** A full-width consistency heatmap of per-day completion
   intensity across all habits, going back years.
 - **Charts completion rates** over selectable time spans, with day-level

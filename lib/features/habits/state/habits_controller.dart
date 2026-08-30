@@ -229,9 +229,7 @@ class HabitsController extends Notifier<HabitsState> {
 
     for (final item in _habitCompletions) {
       if (_habitDefinitionsMap.containsKey(item.habitId) &&
-          (item.completionType == HabitCompletionType.success ||
-              item.completionType == HabitCompletionType.skip ||
-              item.completionType == null)) {
+          item.completionType == HabitCompletionType.success) {
         final day = item.dateFrom.ymd;
         habitSuccessDays.putIfAbsent(item.habitId, () => <String>{}).add(day);
       }

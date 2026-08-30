@@ -201,6 +201,13 @@ void main() {
       expect(fillAt(1), tokens.colors.background.level03);
       expect(fillAt(2), tokens.colors.background.level03);
       expect(fillAt(3), tokens.colors.background.level03);
+      expect(
+        find.descendant(
+          of: squares().at(3),
+          matching: find.byIcon(LottiIcons.close),
+        ),
+        findsOneWidget,
+      );
       expect(find.byIcon(LottiIcons.streak), findsNothing);
     });
 

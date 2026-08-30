@@ -76,10 +76,9 @@ classDiagram
 - **`DayMarkState` is what the app measured.** `full` means the requirement
   held as of that day; `partial` means the routine was kept while a window
   target was still building (a wash of the kept fill); `skipped` and
-  `missed` are recorded habit outcomes. The strip is a record of what was
-  KEPT, so `skipped`, `missed` and `none` share the neutral fill — which of
-  the three a grey square stands for is said in its tooltip and semantics,
-  never drawn.
+  `missed` are recorded habit outcomes. They share `none`'s neutral fill, but
+  a skipped day carries an orange warning cross and a missed day a red error
+  cross, leaving only an untouched day to carry its weekday.
 - **`DayVerdict` is the user's ruling**, and a recorded verdict outranks the
   measurement wherever both are shown. The enum is persisted by `name` in
   goal assessment records (see [goals](../features/goals.md)), so the names
@@ -123,15 +122,16 @@ flowchart LR
 - **Two fills for a measured day.** A kept day is `interactive.enabled` —
   the handover's `--interactive` square — a partial day its `muted` wash, and
   everything else `background.level03`. No alert hue on a habit square's
-  FILL: a struggling habit is never a wall of red; the missed cross alone
-  wears the error ink.
+  FILL: a struggling habit is never a wall of red or orange; the skip and miss
+  crosses alone wear their warning and error inks.
 - **A square says one thing inside itself, and nothing around it.** A
-  judged day draws its verdict's glyph; a kept day (partial included) the tick, a recorded miss
-  a red cross (`alert.error.glyphOnLevel03` — the ramp step that guarantees
-  the 3:1 graphical floor on the `level03` fill in both themes; the surface
-  ink lands at 2.9:1 there in dark) — the one touch of that family a habit
-  square gets, on a fill that stays neutral, which is what tells a miss from
-  the empty day it shares the fill with; any other dated day its weekday — the first two characters of the
+  judged day draws its verdict's glyph; a kept day (partial included) the tick,
+  a skip an orange cross (`alert.warning.glyphOnLevel03`), and a recorded miss
+  a red cross (`alert.error.glyphOnLevel03`). Those ramp steps guarantee the
+  3:1 graphical floor on the `level03` fill in both themes; the surface ink
+  lands at 2.9:1 there in dark. The fill stays neutral while the glyph tells
+  both recorded non-success outcomes from an empty day; an empty dated day
+  carries its weekday — the first two characters of the
   locale's abbreviation (`dayMarkWeekdayLabel`: `Tu Th Sa Su`, `Di Do Sa
   So`), quiet on the fill. No
   ring, no dot, no caption row above the track. The full date, the outcome's
@@ -206,9 +206,9 @@ view and history — so the habit only contributes the day.
 
 # There is no key
 
-The squares carry their own meaning — kept or not, at a glance — and every
-dated square answers hover or long-press with its day and its outcome or
-verdict. A static key was tried twice — an eleven-entry wrap under
+The squares carry their own meaning — success, skip, miss or empty, at a glance
+— and every dated square answers hover or long-press with its day and its
+outcome or verdict. A static key was tried twice — an eleven-entry wrap under
 a dashboard, then a present-states-only line under the goal's habit squares —
 and a design-review panel rated both as more legend than data. Do not
 reintroduce one; if a mark needs explaining, give the mark a better cue or a

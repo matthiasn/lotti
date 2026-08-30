@@ -11,9 +11,8 @@ import 'package:lotti/widgets/day_indicators/day_mark.dart';
 /// is never a wall of red. A recorded miss is told apart from a day nobody
 /// looked at by the red cross drawn inside the grey (`dayMarkSquareContent`,
 /// in the error ramp's `glyphOnLevel03` step — its 3:1 guarantee on that
-/// fill), not by its fill; a skip keeps its weekday, and is named by the
-/// tooltip and semantics. A partial day, kept too, draws the tick in the
-/// kept hue on its wash.
+/// fill), not by its fill; a skip uses the same cross in the warning hue. A
+/// partial day, kept too, draws the tick in the kept hue on its wash.
 /// `SurfaceAlphas.muted` is the sanctioned "reduced-strength accent" alpha, so
 /// no new color token is introduced.
 Color dayMarkStateFill(DsTokens tokens, DayMarkState state) => switch (state) {

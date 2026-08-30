@@ -11,7 +11,7 @@ sources:
   - id: src
     resource: ../../lib/features/habits
     title: Habits feature source
-    last_modified: 2026-08-28
+    last_modified: 2026-08-30
   - id: definitions
     resource: ../../lib/classes/entity_definitions.dart
     title: HabitDefinition
@@ -111,12 +111,11 @@ An unrecognised `completionType` decodes to `null` rather than throwing, so one
 completion type synced from a newer peer cannot take out the whole heatmap.
 
 **`null` is not a synonym for success.** It is the value legacy entries already
-carry, and the consumers treat it as *recorded and streak-extending, but not a
-success*: it counts in `allByDay`, `habitSuccessDays` and the heatmap
-denominator, while staying out of `successfulByDay`, `successfulToday` and the
-heatmap's success numerator. So an unknown type closes the habit for that day
-without contributing to its success rate. That asymmetry predates the
-projection; it is how legacy `null`s have always behaved.
+carry, and consumers treat it as *recorded, but not successful*: it counts in
+`allByDay` and the heatmap denominator, while staying out of streaks,
+`successfulByDay`, `successfulToday` and the heatmap's success numerator. So an
+unknown type closes the habit for that day without contributing to either its
+success rate or its streak.
 
 # What the tab controller derives
 
@@ -126,10 +125,12 @@ From active definitions plus completions in range: `completedToday`,
 `shortStreakCount` (trailing 3 days), `longStreakCount` (trailing 7 days), plus
 chart labels and `minY`.
 
-**Streaks require every day in the window.** `countHabitsWithStreak` counts
-habits whose success-day set covers *every* day — a single missing day
-disqualifies. **Skips and `null`-type completions count toward a streak the same
-as explicit successes; only an explicit `fail`, or a missing day, breaks it.**
+**Streaks require success on every day in the window.**
+`countHabitsWithStreak` counts habits whose explicit success-day set covers
+*every* day — a skip, failure, legacy `null`, or missing day disqualifies it.
+The deep-history current streak follows the same rule, except an open current
+day leaves yesterday's run visible until today resolves. Manual and
+auto-completions are both ordinary `success` records and maintain the streak.
 
 **The controller filters to `habit.active == true` immediately.** Archived habits
 still exist in settings and storage, but the main tab derives only from active
@@ -317,8 +318,9 @@ action content stays a comfortable column.
 Tab rows are **action rows**: icon, name, the handover's history strip —
 the last seven days on a phone and fourteen on a desktop window as squares
 (`habitHistoryMarks` with `habitHistoryDays`, read off the state's per-day
-completion sets), a tick on a kept day, a cross on a recorded miss, the
-two-letter weekday on any other, each naming its date and outcome on hover, and
+completion sets), a tick on a successful day, an orange cross on a skip, a red
+cross on a recorded miss, the two-letter weekday on an empty day, each naming
+its date and outcome on hover, and
 each opening the completion sheet **for its own day** on tap; then the flame
 and the current streak — swipe, and one-tap complete. The dashboard habit
 chart draws the same strip over its own range. Both go through the shared
