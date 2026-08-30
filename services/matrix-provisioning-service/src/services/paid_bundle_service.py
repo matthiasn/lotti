@@ -23,6 +23,7 @@ from ..core.subscriptions import (
     EntitlementState,
     PaidBundleDelivery,
     PurchaseSubmission,
+    StoredSubscription,
     VerifiedPurchaseResult,
 )
 from .bundle_service import BundleService, fingerprint_bundle
@@ -253,12 +254,23 @@ class PaidBundleService:
         *,
         entitlement_id: str,
         now: datetime,
-    ) -> None:
-        await self._require_recoverable_confirmed_claim(delivery.bundle_id)
-        if delivery.bundle is None:
-            return
-        claim = await self._repository.get_bundle_claim_for_entitlement(entitlement_id)
+    ) -> StoredSubscription:
+        subscription, claim, provisioned_user = (
+            await self._repository.get_returnable_paid_delivery_state(entitlement_id)
+        )
         validation_now = self._current_time(now)
+        if subscription is None or not _grants_access(subscription, now=validation_now):
+            raise GooglePlayVerificationException(
+                "Subscription does not currently grant SYNC access"
+            )
+        if (
+            provisioned_user is None
+            or provisioned_user.bundle_id != delivery.bundle_id
+            or provisioned_user.status is BundleStatus.REVOKED
+        ):
+            raise BundleClaimConflictException("Bundle claim is terminal")
+        if delivery.bundle is None:
+            return subscription
         if (
             claim is None
             or claim.bundle_id != delivery.bundle_id
@@ -268,6 +280,7 @@ class PaidBundleService:
             or validation_now >= claim.expires_at
         ):
             raise BundleClaimConflictException("Bundle claim is terminal")
+        return subscription
 
     async def require_returnable_delivery(
         self,
@@ -275,9 +288,9 @@ class PaidBundleService:
         *,
         entitlement_id: str,
         now: datetime,
-    ) -> None:
+    ) -> StoredSubscription:
         """Fail closed if a cached plaintext delivery became terminal."""
-        await self._require_returnable_delivery(
+        return await self._require_returnable_delivery(
             delivery,
             entitlement_id=entitlement_id,
             now=self._current_time(now),

@@ -1485,6 +1485,53 @@ class SubscriptionRepository(ProvisioningRepository):
             entitlement_id,
         )
 
+    def _get_returnable_paid_delivery_state_sync(
+        self,
+        entitlement_id: str,
+    ) -> tuple[StoredSubscription | None, BundleClaim | None, ProvisionedUser | None]:
+        conn = self._connect()
+        try:
+            conn.execute("BEGIN")
+            subscription_row = conn.execute(
+                "SELECT * FROM play_subscriptions WHERE entitlement_id = ? AND is_current = 1",
+                (entitlement_id,),
+            ).fetchone()
+            claim_row = conn.execute(
+                "SELECT c.* FROM bundle_claims c "
+                "JOIN play_subscriptions s ON s.subscription_id = c.subscription_id "
+                "WHERE s.entitlement_id = ? AND s.is_current = 1",
+                (entitlement_id,),
+            ).fetchone()
+            user_row = (
+                conn.execute(
+                    "SELECT * FROM provisioned_users WHERE bundle_id = ?",
+                    (claim_row["bundle_id"],),
+                ).fetchone()
+                if claim_row is not None
+                else None
+            )
+            conn.commit()
+            return (
+                self._row_to_subscription(subscription_row) if subscription_row else None,
+                self._row_to_bundle_claim(claim_row) if claim_row else None,
+                self._row_to_user(user_row) if user_row else None,
+            )
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
+    async def get_returnable_paid_delivery_state(
+        self,
+        entitlement_id: str,
+    ) -> tuple[StoredSubscription | None, BundleClaim | None, ProvisionedUser | None]:
+        """Read subscription, claim, and account from one SQLite snapshot."""
+        return await asyncio.to_thread(
+            self._get_returnable_paid_delivery_state_sync,
+            entitlement_id,
+        )
+
     def _list_expired_bundle_claims_sync(
         self,
         now: datetime,

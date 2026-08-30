@@ -1101,6 +1101,32 @@ async def test_delivery_retry_final_check_rejects_revocation_after_decryption(
         )
 
 
+async def test_delivery_retry_final_check_rejects_newly_expired_subscription(
+    service,
+    repository,
+):
+    verified = await verified_purchase(repository)
+    delivery = await service.provision_or_deliver(verified, submission(), now=NOW)
+    expired_at = NOW + timedelta(minutes=1)
+    await repository.store_verified_subscription(
+        replace(
+            verified.subscription,
+            google_state=GoogleSubscriptionState.EXPIRED,
+            entitlement_state=EntitlementState.EXPIRED,
+            current_period_end=expired_at,
+            last_verified_at=expired_at,
+        ),
+        now=expired_at,
+    )
+
+    with pytest.raises(GooglePlayVerificationException, match="does not currently grant"):
+        await service.require_returnable_delivery(
+            delivery,
+            entitlement_id="entitlement-one",
+            now=expired_at,
+        )
+
+
 async def test_admin_revocation_wins_against_inflight_paid_delivery(
     service,
     repository,

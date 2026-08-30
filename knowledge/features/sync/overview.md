@@ -296,10 +296,12 @@ the current row once more after delivery so a concurrent
 replacement purchase's entitlement state, rather than its predecessor's stale
 state, is returned only when it still grants access. Both this retry path and the
 purchase-verification path revalidate the cached plaintext delivery against the
-current account status and nonterminal claim immediately after their final Matrix
-enforcement and before building the response, with no intervening await. An
-administrator revocation that wins after the delivery lease is released therefore
-cannot return destroyed bootstrap credentials. Rotation refreshes its wall clock
+current subscription, account status and nonterminal claim from one SQLite read
+snapshot immediately after their final Matrix enforcement. The fresh entitlement
+state and deadline are checked before building the response, with no intervening
+await. An administrator revocation or entitlement loss that wins after the
+delivery lease is released therefore cannot return bootstrap credentials.
+Rotation refreshes its wall clock
 after entitlement and claim-secret authentication and rejects an exact-TTL expiry
 before reserving the claim, so authentication time cannot extend the escrow
 window or exclude the reaper after expiry.

@@ -127,6 +127,7 @@ class FakePaidBundleService:
         self.provision_calls = []
         self.delivery_calls = []
         self.returnable_delivery_checks = []
+        self.returnable_subscription = SimpleNamespace(entitlement_state=EntitlementState.ACTIVE)
         self.failure = None
         self.delivery = None
 
@@ -154,6 +155,7 @@ class FakePaidBundleService:
         if self.failure:
             raise self.failure
         self.returnable_delivery_checks.append((delivery, values))
+        return self.returnable_subscription
 
 
 class FakeRotationService:
@@ -368,6 +370,9 @@ def test_verified_purchase_returns_paid_bundle_and_rotation_challenge(
             return next(route_times)
 
     monkeypatch.setattr("src.api.routes.datetime", FakeDatetime)
+    services[SERVICE_PAID_BUNDLE_SERVICE].returnable_subscription = SimpleNamespace(
+        entitlement_state=EntitlementState.GRACE
+    )
 
     response = client.post(
         "/api/v1/client/subscriptions/purchases/verify",
@@ -379,7 +384,7 @@ def test_verified_purchase_returns_paid_bundle_and_rotation_challenge(
     assert response.json()["bundle"] == "encoded-bundle"
     assert response.json()["rotation_challenge"] == "rotation-proof"
     assert response.json()["bundle_import_required"] is True
-    assert response.json()["entitlement_state"] == "active"
+    assert response.json()["entitlement_state"] == "grace"
     _, values = services[SERVICE_SUBSCRIPTION_SERVICE].calls[0]
     assert values["entitlement_auth_secret"] == AUTH_SECRET
     access_calls = services[SERVICE_SUBSCRIPTION_ACCESS_SERVICE].calls
@@ -617,6 +622,9 @@ def test_delivery_retry_authenticates_entitlement_without_replaying_purchase(
             return next(route_times)
 
     monkeypatch.setattr("src.api.routes.datetime", FakeDatetime)
+    services[SERVICE_PAID_BUNDLE_SERVICE].returnable_subscription = SimpleNamespace(
+        entitlement_state=EntitlementState.GRACE
+    )
 
     response = client.post(
         "/api/v1/client/subscriptions/bundle-claims/deliver",
@@ -626,6 +634,7 @@ def test_delivery_retry_authenticates_entitlement_without_replaying_purchase(
 
     assert response.status_code == 200
     assert response.json()["bundle_id"] == "bundle-one"
+    assert response.json()["entitlement_state"] == "grace"
     identity = services[SERVICE_SUBSCRIPTION_IDENTITY]
     assert identity.auth_calls == [("entitlement-one", AUTH_SECRET)]
     assert identity.bundle_claim_auth_calls == [("entitlement-one", AUTH_SECRET, NOW)]

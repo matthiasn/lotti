@@ -1131,6 +1131,9 @@ async def test_paid_bundle_account_claim_and_subscription_link_commit_together(
 
     user, claim = await store_paid_bundle(subscription_repository, "paid-token")
     linked = await subscription_repository.get_subscription_by_token("paid-token")
+    returnable_state = await subscription_repository.get_returnable_paid_delivery_state(
+        entitlement.entitlement_id
+    )
 
     assert user.bundle_id == "bundle-paid"
     assert user.payment_status.value == "paying"
@@ -1138,10 +1141,45 @@ async def test_paid_bundle_account_claim_and_subscription_link_commit_together(
     assert claim.authorized_token_fingerprint == "paid-token"
     assert claim.encrypted_bundle == b"encrypted-bundle"
     assert linked.bundle_id == "bundle-paid"
+    assert returnable_state == (linked, claim, user)
     assert (
         await subscription_repository.get_bundle_claim_for_entitlement(entitlement.entitlement_id)
         == claim
     )
+
+
+async def test_returnable_paid_delivery_state_handles_missing_rows_and_database_failure(
+    subscription_repository,
+    monkeypatch,
+):
+    assert await subscription_repository.get_returnable_paid_delivery_state("unknown") == (
+        None,
+        None,
+        None,
+    )
+
+    class FailingConnection:
+        def __init__(self):
+            self.rollback_called = False
+            self.close_called = False
+
+        def execute(self, _query, _parameters=()):
+            raise sqlite3.OperationalError("injected delivery snapshot failure")
+
+        def rollback(self):
+            self.rollback_called = True
+
+        def close(self):
+            self.close_called = True
+
+    connection = FailingConnection()
+    monkeypatch.setattr(subscription_repository, "_connect", lambda: connection)
+
+    with pytest.raises(sqlite3.OperationalError, match="injected delivery snapshot failure"):
+        await subscription_repository.get_returnable_paid_delivery_state("unknown")
+
+    assert connection.rollback_called is True
+    assert connection.close_called is True
 
 
 async def test_legacy_rotation_rejects_paid_bundle_claim(subscription_repository):

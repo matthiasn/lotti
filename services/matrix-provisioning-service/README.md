@@ -144,9 +144,11 @@ escrow endpoints. Every authenticated escrow response also takes a fresh claim
 lease before secret verification. Delivery completion owns
 that lease atomically, so expiry cleanup cannot revoke the account or destroy
 ciphertext while credentials are being assembled. The purchase-verification and
-retry endpoints revalidate cached plaintext against the current account and claim
-immediately before constructing their responses, after final subscription
-enforcement, so a revocation that wins after lease release fails closed.
+retry endpoints revalidate cached plaintext against the current subscription,
+account and claim from one SQLite read snapshot immediately before constructing
+their responses, after final subscription enforcement. They check the fresh
+access deadline without another await, so either revocation or entitlement loss
+that wins after lease release fails closed.
 Rotation refreshes wall-clock time after claim-secret verification and cannot
 reserve escrow at or beyond its exact TTL.
 
