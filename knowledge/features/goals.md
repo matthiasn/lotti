@@ -1018,11 +1018,17 @@ flowchart TD
   — the bars, the compact strip cells, the reflection sheet's per-dimension
   marks, and the composite card's met-yesterday tally — shares one policy
   (`GoalMetricProgressView.dayMark`): where the target is a per-day quantity
-  (`dailySumThenAverage` and the point samples) the day's own value decides
-  the mark, so a 12,400-step day beats a 10,000 target even inside a weak
-  week; where the target belongs to the whole period (`sum`, `count`) the
-  mark is the evaluator's verdict for the window ending that day, because a
-  single day's contribution cannot be judged against a period total.
+  (`dailySumThenAverage` and the point samples) the day is met when EITHER
+  its own value clears the target OR the evaluator's verdict for the window
+  ending that day holds — so a 12,400-step day beats a 10,000 target even
+  inside a weak week, and an 8,000-step day inside a week averaging above
+  target is not painted as a miss. Every day has a winnable condition while
+  the average recovers (recovery-door principle); the goal's own status stays
+  average-driven, because day-state and goal-state are deliberately different
+  layers. Where the target belongs to the whole period (`sum`, `count`) the
+  mark is the evaluator's verdict for the window ending that day alone,
+  because a single day's contribution cannot be judged against a period
+  total.
   Composite detail keeps every metric and measurable
   leaf instead of silently collapsing the evidence to the first one. The compact
   strip combines that per-day policy with daily accomplishment: a metric cell

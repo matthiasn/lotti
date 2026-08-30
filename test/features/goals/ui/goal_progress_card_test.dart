@@ -2291,13 +2291,18 @@ void main() {
             metric: GoalMetricProgressView(
               name: 'Steps',
               target: 10000,
-              // `targetSatisfied` deliberately contradicts each day's own
-              // value: production always populates it with the evaluator's
-              // ROLLING verdict, and this test exists to prove a per-day
-              // target bar ignores that verdict in favour of the day's own
-              // number. Without it, both days took the null-fallback branch
-              // and the test passed against either policy.
+              // `targetSatisfied` is the evaluator's ROLLING verdict as of
+              // each day, set here to pin the per-day policy: a bar is met
+              // by the day's own number OR by that verdict, and short only
+              // when neither holds. Without explicit verdicts every day took
+              // the null-fallback branch and the test passed against any
+              // policy.
               days: [
+                GoalProgressDay(
+                  day: today.subtract(const Duration(days: 2)),
+                  value: 6100,
+                  targetSatisfied: false,
+                ),
                 GoalProgressDay(
                   day: today.subtract(const Duration(days: 1)),
                   value: 12400,
@@ -2335,10 +2340,17 @@ void main() {
     // success family instead — three states, three fills.
     expect(
       barColor('2026-08-11'),
+      dayMarkStateFill(tokens, DayMarkState.full),
+      reason:
+          '5,262 steps fell short of the day target, but the rolling week '
+          'ending that day holds — the other winnable condition',
+    );
+    expect(
+      barColor('2026-08-09'),
       dayMarkStateFill(tokens, DayMarkState.partial),
       reason:
-          '5,262 steps fell short but were still logged — the passing '
-          'rolling verdict must not paint the day green',
+          '6,100 steps fell short on both counts but were still logged — '
+          'measured, not absent, so the muted wash rather than the neutral',
     );
 
     // Seven bars filling a full-width card rendered ~40px slabs. Each one now

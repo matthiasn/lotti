@@ -2367,10 +2367,12 @@ class _MetricProgressSeries extends StatelessWidget {
     final date = chrome.dateFormat.format(day.day);
     final number = chrome.number;
     // The shared per-day policy: a bar drawn against a per-day target rule
-    // is judged by the day's own value, so a 12,400-step day beats a 10,000
-    // target even when the trailing week's average is still short. Only a
-    // period-total criterion keeps the evaluator's window verdict, because
-    // no single bar can be read against a whole-period target.
+    // is met by the day's own value OR by the window verdict as of that
+    // day, so a 12,400-step day beats a 10,000 target even when the trailing
+    // week's average is still short, and a short day inside an on-target
+    // week is not a failure. Only a period-total criterion keeps the window
+    // verdict alone, because no single bar can be read against a
+    // whole-period target.
     final met = metric.dayMark(day);
     final status = !day.isObserved
         ? 'missing'

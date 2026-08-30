@@ -199,14 +199,25 @@ class GoalMetricProgressView {
 
   /// THE per-day met/missed policy, shared by every surface that marks a
   /// single day (bars, strip cells, the reflection sheet, the composite
-  /// tally): the day's own value where the target is a per-day quantity, the
-  /// evaluator's window verdict where the target belongs to the period.
+  /// tally).
+  ///
+  /// Where the target is a per-day quantity, the day is met when EITHER its
+  /// own value clears the target OR the goal's requirement held as of that
+  /// day — the rolling average at or above target. Each day thus has a
+  /// winnable condition even while the average is still recovering (a
+  /// 12,400-step day inside a weak week is a met day), and a short day inside
+  /// a week that is comfortably on target is not painted as a failure. The
+  /// GOAL's status stays average-driven: day-state and goal-state are
+  /// deliberately different layers. Where the target belongs to the whole
+  /// period, only the evaluator's window verdict can judge a day, because a
+  /// single day's contribution cannot be read against a period total.
   ///
   /// One policy, or the surfaces contradict each other — a 12,400-step day
   /// inside a weak week rendered muted while the reflection sheet it opens
   /// suggested "met" for the same day.
-  bool dayMark(GoalProgressDay day) =>
-      targetIsPerDay ? valueMeetsTarget(day) : meetsTarget(day);
+  bool dayMark(GoalProgressDay day) => targetIsPerDay
+      ? valueMeetsTarget(day) || meetsTarget(day)
+      : meetsTarget(day);
 }
 
 class GoalProgressDay {
