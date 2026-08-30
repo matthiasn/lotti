@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import logging
+import os
+from datetime import datetime, timezone
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, Header, HTTPException, Query, Request, status
 
 from ..container import container
 from ..core.constants import (
@@ -14,26 +16,376 @@ from ..core.constants import (
     MAX_PAGE_SIZE,
 )
 from ..core.exceptions import (
+    BundleClaimConflictException,
+    BundleClaimRateLimitException,
     BundleNotFoundException,
+    EntitlementAuthenticationException,
+    EntitlementRateLimitException,
+    GooglePlayUnavailableException,
+    GooglePlayVerificationException,
     InvalidBundleStateException,
+    InvalidSubscriptionProductException,
+    PubSubAuthenticationException,
+    PurchaseIntentExpiredException,
+    PurchaseIntentNotFoundException,
+    PurchaseIntentRateLimitException,
+    PurchaseIntentReplayException,
+    PurchaseTokenConflictException,
+    PurchaseVerificationRateLimitException,
+    SubscriptionLineageException,
     SynapseUnavailableException,
     UsernameAlreadyProvisionedException,
 )
 from ..core.models import (
+    BundleDeliveryRequest,
     BundleEvent,
     BundleStatus,
+    ConfirmPaidRotationRequest,
     CreateBundleRequest,
     CreateBundleResponse,
+    CreatePurchaseIntentRequest,
+    EntitlementCredentialsResponse,
+    PaidBundleResponse,
     PaymentStatus,
     ProvisionedUser,
     ProvisionedUserListResponse,
+    PurchaseIntentResponse,
     StatsResponse,
     UpdateUserRequest,
+    VerifyPurchaseRequest,
 )
+from ..core.subscriptions import PurchaseSubmission
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+def _bearer_secret(authorization: str) -> str:
+    parts = authorization.split()
+    if len(parts) != 2 or parts[0].lower() != "bearer":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Entitlement bearer credential required",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return parts[1]
+
+
+def _require_subscriptions_enabled() -> None:
+    if os.getenv("ENABLE_PLAY_SUBSCRIPTIONS", "false").lower() not in (
+        "1",
+        "true",
+        "yes",
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Google Play SYNC subscriptions are disabled",
+        )
+
+
+# ---------------------------------------------------------------------------
+# Google Play SYNC subscriptions
+# ---------------------------------------------------------------------------
+
+
+@router.post(
+    "/client/subscriptions/entitlements",
+    response_model=EntitlementCredentialsResponse,
+    status_code=status.HTTP_201_CREATED,
+    tags=["subscriptions"],
+)
+async def create_sync_entitlement(request: Request) -> EntitlementCredentialsResponse:
+    """Issue the stable app identity that purchases are attributed to."""
+    _require_subscriptions_enabled()
+    try:
+        credentials = await container.get_subscription_identity_service().create_entitlement(
+            client_identifier=(request.client.host if request.client is not None else "unknown"),
+            now=datetime.now(timezone.utc),
+        )
+        return EntitlementCredentialsResponse(**credentials.__dict__)
+    except EntitlementRateLimitException as exc:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=str(exc),
+            headers={"Retry-After": str(exc.retry_after_seconds)},
+        ) from exc
+
+
+@router.post(
+    "/client/subscriptions/purchase-intents",
+    response_model=PurchaseIntentResponse,
+    status_code=status.HTTP_201_CREATED,
+    tags=["subscriptions"],
+)
+async def create_purchase_intent(
+    request: CreatePurchaseIntentRequest,
+    authorization: str = Header(default=""),
+) -> PurchaseIntentResponse:
+    """Authorize one Billing launch for an authenticated entitlement."""
+    _require_subscriptions_enabled()
+    try:
+        intent = await container.get_subscription_identity_service().create_purchase_intent(
+            entitlement_id=request.entitlement_id,
+            auth_secret=_bearer_secret(authorization),
+            product_id=request.product_id,
+            base_plan_id=request.base_plan_id,
+            now=datetime.now(timezone.utc),
+        )
+        return PurchaseIntentResponse(**intent.__dict__)
+    except EntitlementAuthenticationException as exc:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
+    except InvalidSubscriptionProductException as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)
+        ) from exc
+    except PurchaseIntentRateLimitException as exc:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=str(exc),
+            headers={"Retry-After": str(exc.retry_after_seconds)},
+        ) from exc
+
+
+@router.post(
+    "/client/subscriptions/purchases/verify",
+    response_model=PaidBundleResponse,
+    tags=["subscriptions"],
+)
+async def verify_subscription_purchase(
+    request: VerifyPurchaseRequest,
+    authorization: str = Header(default=""),
+) -> PaidBundleResponse:
+    """Verify with Google, persist entitlement, and deliver one paid bundle."""
+    _require_subscriptions_enabled()
+    submission = PurchaseSubmission(**request.model_dump())
+    request_started_at = datetime.now(timezone.utc)
+    try:
+        verified = await container.get_subscription_service().verify_purchase(
+            submission,
+            entitlement_auth_secret=_bearer_secret(authorization),
+            now=request_started_at,
+        )
+        enforcement_now = datetime.now(timezone.utc)
+        current = await container.get_subscription_repository().get_current_subscription(
+            verified.subscription.entitlement_id
+        )
+        if current is None:
+            raise BundleClaimConflictException("Verified subscription is missing")
+        suspended = await container.get_subscription_access_service().enforce(
+            current,
+            now=enforcement_now,
+        )
+        if suspended is True:
+            raise GooglePlayVerificationException(
+                "Subscription does not currently grant SYNC access"
+            )
+        paid_bundle_service = container.get_paid_bundle_service()
+        try:
+            delivery = await paid_bundle_service.provision_or_deliver(
+                verified,
+                submission,
+                now=enforcement_now,
+            )
+        except GooglePlayVerificationException:
+            current = await container.get_subscription_repository().get_current_subscription(
+                verified.subscription.entitlement_id
+            )
+            if current is not None:
+                await container.get_subscription_access_service().enforce(
+                    current,
+                    now=datetime.now(timezone.utc),
+                )
+            raise
+        response_now = datetime.now(timezone.utc)
+        current = await container.get_subscription_repository().get_current_subscription(
+            verified.subscription.entitlement_id
+        )
+        if current is None:
+            raise BundleClaimConflictException("Verified subscription is missing")
+        suspended = await container.get_subscription_access_service().enforce(
+            current,
+            now=response_now,
+        )
+        if suspended is True:
+            raise GooglePlayVerificationException(
+                "Subscription does not currently grant SYNC access"
+            )
+        current = await paid_bundle_service.require_returnable_delivery(
+            delivery,
+            entitlement_id=verified.subscription.entitlement_id,
+            now=datetime.now(timezone.utc),
+        )
+        return PaidBundleResponse(
+            **delivery.__dict__,
+            entitlement_state=current.entitlement_state.value,
+        )
+    except EntitlementAuthenticationException as exc:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
+    except PurchaseIntentExpiredException as exc:
+        raise HTTPException(status_code=status.HTTP_410_GONE, detail=str(exc)) from exc
+    except (
+        PurchaseIntentNotFoundException,
+        PurchaseIntentReplayException,
+        PurchaseTokenConflictException,
+        SubscriptionLineageException,
+    ) as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    except (
+        GooglePlayVerificationException,
+        InvalidSubscriptionProductException,
+    ) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)
+        ) from exc
+    except GooglePlayUnavailableException as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)
+        ) from exc
+    except PurchaseVerificationRateLimitException as exc:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=str(exc),
+            headers={"Retry-After": str(exc.retry_after_seconds)},
+        ) from exc
+    except BundleClaimConflictException as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+
+
+@router.post(
+    "/client/subscriptions/bundle-claims/deliver",
+    response_model=PaidBundleResponse,
+    tags=["subscriptions"],
+)
+async def deliver_paid_bundle(
+    request: BundleDeliveryRequest,
+    authorization: str = Header(default=""),
+) -> PaidBundleResponse:
+    """Retry a lost paid-bundle response without replaying a purchase proof."""
+    _require_subscriptions_enabled()
+    try:
+        now = datetime.now(timezone.utc)
+        await container.get_subscription_identity_service().authenticate_bundle_claim_operation(
+            request.entitlement_id,
+            _bearer_secret(authorization),
+            now=now,
+        )
+        subscription = await container.get_subscription_repository().get_current_subscription(
+            request.entitlement_id
+        )
+        if subscription is None:
+            raise BundleClaimConflictException("Subscription is missing")
+        suspended = await container.get_subscription_access_service().enforce(
+            subscription,
+            now=datetime.now(timezone.utc),
+        )
+        if suspended is True:
+            raise GooglePlayVerificationException(
+                "Subscription does not currently grant SYNC access"
+            )
+        paid_bundle_service = container.get_paid_bundle_service()
+        delivery = await paid_bundle_service.deliver_existing_claim(
+            entitlement_id=request.entitlement_id,
+            claim_secret=request.claim_secret,
+            now=datetime.now(timezone.utc),
+        )
+        subscription = await container.get_subscription_repository().get_current_subscription(
+            request.entitlement_id
+        )
+        if subscription is None:
+            raise BundleClaimConflictException("Subscription is missing")
+        suspended = await container.get_subscription_access_service().enforce(
+            subscription,
+            now=datetime.now(timezone.utc),
+        )
+        if suspended is True:
+            raise GooglePlayVerificationException(
+                "Subscription does not currently grant SYNC access"
+            )
+        subscription = await paid_bundle_service.require_returnable_delivery(
+            delivery,
+            entitlement_id=request.entitlement_id,
+            now=datetime.now(timezone.utc),
+        )
+        return PaidBundleResponse(
+            **delivery.__dict__,
+            entitlement_state=subscription.entitlement_state.value,
+        )
+    except EntitlementAuthenticationException as exc:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
+    except BundleClaimRateLimitException as exc:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=str(exc),
+            headers={"Retry-After": str(exc.retry_after_seconds)},
+        ) from exc
+    except GooglePlayVerificationException as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=str(exc),
+        ) from exc
+    except BundleClaimConflictException as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+
+
+@router.post(
+    "/client/subscriptions/bundle-claims/confirm-rotation",
+    status_code=status.HTTP_204_NO_CONTENT,
+    tags=["subscriptions"],
+)
+async def confirm_paid_bundle_rotation(
+    request: ConfirmPaidRotationRequest,
+    authorization: str = Header(default=""),
+) -> None:
+    """Destroy escrow only after server-observed Matrix rotation proof."""
+    _require_subscriptions_enabled()
+    try:
+        await container.get_bundle_rotation_service().confirm_rotation(
+            entitlement_id=request.entitlement_id,
+            entitlement_auth_secret=_bearer_secret(authorization),
+            bundle_id=request.bundle_id,
+            claim_secret=request.claim_secret,
+            now=datetime.now(timezone.utc),
+        )
+    except EntitlementAuthenticationException as exc:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
+    except BundleClaimRateLimitException as exc:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=str(exc),
+            headers={"Retry-After": str(exc.retry_after_seconds)},
+        ) from exc
+    except BundleClaimConflictException as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+
+
+@router.post(
+    "/google-play/rtdn",
+    status_code=status.HTTP_204_NO_CONTENT,
+    tags=["subscriptions"],
+)
+async def receive_google_play_notification(
+    envelope: dict,
+    authorization: str = Header(default=""),
+) -> None:
+    """Authenticate Pub/Sub and re-query the notification's known Play token."""
+    _require_subscriptions_enabled()
+    try:
+        await container.get_google_play_notifications().handle(
+            envelope,
+            authorization=authorization,
+            now=datetime.now(timezone.utc),
+        )
+    except PubSubAuthenticationException as exc:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
+    except GooglePlayVerificationException as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)
+        ) from exc
+    except GooglePlayUnavailableException as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)
+        ) from exc
 
 
 # ---------------------------------------------------------------------------
@@ -135,7 +487,8 @@ async def confirm_rotation(bundle_id: str) -> ProvisionedUser:
     """Confirm that the client rotated the temporary password (Phase 2).
 
     Called by the Lotti client after a successful rotation. Idempotent, so a
-    retry after a dropped response is safe.
+    retry after a dropped response is safe. Paid subscription bundles are
+    rejected here because their separate callback requires claim-scoped proof.
 
     Deliberately namespaced under ``/client/`` rather than ``/bundles/`` so the
     auth middleware's prefix matching leaves it on the regular API key. The
@@ -178,7 +531,9 @@ async def revoke_bundle(
 
 
 @router.get("/stats", response_model=StatsResponse, tags=["stats"])
-async def get_stats(signup_history_days: int = Query(90, ge=1, le=730)) -> StatsResponse:
+async def get_stats(
+    signup_history_days: int = Query(90, ge=1, le=730),
+) -> StatsResponse:
     """Aggregate counts for the admin dashboard."""
     return await container.get_repository().get_stats(signup_history_days)
 

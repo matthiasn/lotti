@@ -1,6 +1,6 @@
 # Phase B — Google Play SYNC subscription provisioning
 
-**Status:** plan only; blocked on Phase A acceptance
+**Status:** backend implemented; Android Billing client and production rollout pending
 **Date:** 2026-08-29
 
 ## Existing service to extend
@@ -16,6 +16,15 @@ The Android application id is `com.matthiasn.lotti`. There is currently no Play
 Billing client or user-account identity layer in the Flutter app. A stable
 server-side entitlement identity is therefore a launch prerequisite, not
 something a purchase token or claim secret may substitute.
+
+The backend portion now lives in this service behind
+`ENABLE_PLAY_SUBSCRIPTIONS=false`: stable anonymous entitlements, one-time
+purchase intents, Play Integrity and Android Publisher verification, encrypted
+token and bundle persistence, RTDN, reconciliation, reversible Matrix
+suspension and abandoned-claim cleanup are implemented. The remaining Phase B
+work is the Android Billing/Integrity client, production Play/Google/Synapse
+configuration, and end-to-end license-tester validation; the feature flag must
+remain off until those are complete.
 
 ## Purchase and provisioning flow
 
@@ -118,6 +127,10 @@ escrow for paid provisioning:
   import/password rotation, with a strict TTL and audit trail.
 - Idempotent retries with the same purchase token and claim proof return the
   same pending claim; they never create a second Matrix user.
+- Once rotation is confirmed and escrow is destroyed, a linked replacement
+  purchase returns an explicit recovery result with no bundle payload, then
+  restores Matrix access before the verification response succeeds. Bootstrap
+  credentials are never recreated for an established account.
 - Do not trust a bare `bundle_id` rotation callback. After import, issue a
   one-time rotation challenge; require the bound Matrix user to publish it in
   the provisioned non-federated room and verify that the escrowed bootstrap
@@ -164,10 +177,13 @@ Add repository migrations and models for:
 
 ### Events
 
-Extend `BundleEventType` (or add a subscription event table) for verified,
-acknowledged, renewed, grace-entered, suspended, recovered, expired, revoked,
-claim-delivered, and claim-destroyed transitions. Do not store tokens, bundle
-plaintext, authorization headers, or Google credentials in event detail/logs.
+The dedicated append-only `subscription_events` table records verified,
+acknowledged, renewed, grace-entered, suspended, recovered, and expired
+transitions before the current snapshot is replaced in the same transaction.
+Database triggers reject event updates and deletes. Bundle audit events continue
+to cover revocation, while claim timestamps durably record delivery and
+destruction. Neither audit path stores purchase tokens, bundle plaintext,
+authorization headers, or Google credentials.
 
 SQLite remains acceptable only for the current single-instance deployment:
 enable WAL, foreign keys, busy timeout, explicit transactions, and unique
@@ -225,10 +241,11 @@ Expected additions/changes:
 - `services/matrix-provisioning-service/src/core/models.py`
 - `services/matrix-provisioning-service/src/core/constants.py`
 - `services/matrix-provisioning-service/src/api/routes.py`
-- `services/matrix-provisioning-service/src/services/provisioning_repository.py`
+- `services/matrix-provisioning-service/src/services/subscription_repository.py`
 - `services/matrix-provisioning-service/src/services/bundle_service.py`
 - new `google_play_client.py`, `subscription_service.py`,
-  `subscription_reconciler.py`, and `bundle_claim_service.py`
+  `subscription_reconciler.py`, `paid_bundle_service.py`,
+  `bundle_rotation_service.py`, and `bundle_claim_reaper.py`
 - `services/matrix-provisioning-service/src/container.py`, `src/main.py`
 - `services/shared/matrix/admin_client.py`
 - dependency/configuration/Docker/README updates

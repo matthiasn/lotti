@@ -14,10 +14,15 @@ src/
 ├── core/
 │   ├── models.py       # Pydantic models, bundle/payment state enums
 │   ├── constants.py    # DI names, retention and polling defaults
+│   ├── subscriptions.py # Google and internal entitlement state models
 │   └── exceptions.py   # Domain exceptions
 ├── services/
-│   ├── provisioning_repository.py  # SQLite persistence (data/provisioning.db)
+│   ├── provisioning_repository.py  # Base SQLite persistence
+│   ├── subscription_repository.py  # Play state, lineage, intents and escrow
 │   ├── bundle_service.py           # Provision + persist, with rollback
+│   ├── subscription_service.py     # Integrity + Publisher verification
+│   ├── paid_bundle_service.py      # Idempotent encrypted bundle delivery
+│   ├── subscription_reconciler.py  # Missed-RTDN repair and deadline checks
 │   ├── redemption_poller.py        # Infers redemption from Synapse activity
 │   └── retention_service.py        # Sync-room history purging
 ├── api/routes.py       # FastAPI routes
@@ -44,6 +49,15 @@ password no longer works. The primary key is the lock, so it holds across
 processes, not just within one. Claims are released on every exit path, and a
 claim older than `PROVISIONING_CLAIM_TTL_SECONDS` (5 minutes) can be taken over,
 so a process killed mid-run does not strand the name.
+
+Once Synapse has created an account, request cancellation is held until the
+SQLite persistence task reaches a terminal outcome. A `to_thread` database
+write continues after its awaiter is cancelled, so deactivating immediately
+could destroy an account whose bundle record or paid escrow subsequently
+commits. The service keeps draining the shielded task through repeated
+cancellation, deactivates only after persistence is known to have failed, and
+keeps a committed record's Matrix account even though the cancelled request
+does not receive the bundle.
 
 ## The bundle is shown once and never stored
 
@@ -77,11 +91,115 @@ Redemption is detected two ways:
   `docs/implementation_plans/2026-08-07_matrix_provisioning_platform.md` §4 for
   the two ways to close this.
 
+## Google Play SYNC subscriptions
+
+The Play subscription backend is present but **disabled by default**. Set
+`ENABLE_PLAY_SUBSCRIPTIONS=true` only after the Play Console, Google service
+account, Pub/Sub push identity, encryption keys, reverse proxy and Synapse
+suspension endpoint have all been configured. Startup resolves every required
+security dependency, authenticates to Synapse, probes the minimum account-
+suspension version, and fails rather than accepting a purchase with partial or
+unenforceable configuration.
+
+The paid path does not trust a client purchase status. It creates a stable,
+anonymous server entitlement and a one-time purchase intent, validates a fresh
+Play Integrity verdict bound to the exact request, then queries
+`purchases.subscriptionsv2.get`. Product, base plan, package, release
+certificate, account binding, token lineage and production/test status all
+have to match before the service stores the subscription or provisions Matrix.
+The repository rejects a linked replacement token that does not grant access
+before changing the current token; first observations and denial transitions
+for an already-bound token remain durable so Matrix suspension can be enforced.
+The purchase is acknowledged only after the entitlement and encrypted bundle
+claim are durable. Google reports acknowledgement state but not the service's
+local acknowledgement time, so same-token snapshot upserts retain an existing
+`acknowledged_at` marker when a later verified response has no timestamp and
+stamp the first authoritative acknowledged observation when a prior local write
+was lost.
+Every material subscription transition is appended to a dedicated audit table
+in the same SQLite transaction before the current snapshot is replaced. Initial
+verification, acknowledgement, renewal, grace entry, suspension, recovery and
+expiry retain their before/after states and period boundary. A replacement uses
+its retired predecessor as the before-state, so a recovered replacement records
+recovery instead of an unrelated initial verification, including out-of-app
+resubscription after expiry and access restored by a canceled-but-unexpired
+purchase. A pending purchase that later grants access is recorded as recovery
+as well. Database triggers reject event updates and deletes. Audit rows contain
+only token fingerprints and lifecycle metadata, never purchase tokens,
+credentials or bundle plaintext.
+
+Entitlement bootstrap is public by necessity, so issuance is protected by a
+durable per-client fixed-window quota before an entitlement row or secret is
+created. The client address is HMAC-derived with the account-binding key before
+storage; raw IP addresses are not persisted. Keep the reverse-proxy rate limit
+as the outer layer, but do not rely on it as the only database-exhaustion
+control. Authenticated purchase-intent issuance has its own durable
+per-entitlement fixed-window quota, preceded by a separate attempt window that
+runs before entitlement-secret verification. Consuming the issuance quota also
+removes expired intents and their Integrity replay markers, bounding both
+secret-hashing work and retained authorization state. Purchase verification
+uses an independent durable attempt scope before either scrypt check or Google
+API call, so replay traffic cannot consume the shared thread pool or Google
+quota without bound. Intent consumption uses the fresh post-Google verification
+time, preventing scrypt and network latency from extending the authorization TTL.
+
+Paid bundle delivery differs deliberately from admin provisioning. A network
+failure may retry the same authenticated claim for 24 hours, so the credential
+is held in AES-256-GCM escrow instead of being lost after one response. The
+server destroys that ciphertext only after it observes both the claim-bound
+challenge in the Matrix room and proof that the bootstrap password no longer
+authenticates. Rotation validation and expiry cleanup take mutually exclusive,
+recoverable database leases before touching Matrix, so cleanup cannot revoke an
+account whose proof is already being checked. Expired unconfirmed claims
+deactivate the abandoned account and destroy the escrow. Before the first
+Matrix call, paid provisioning also takes a token-owned SQLite reservation by
+entitlement. Separate service objects and processes therefore wait for or reuse
+one durable claim instead of provisioning a suffixed orphan account. A dead
+owner ages out after five minutes; an HTTP request waits only a bounded interval
+and then asks the client to retry. A stale-reservation takeover uses a fresh
+suffixed Matrix localpart, so cleanup by the late owner cannot deactivate the
+replacement's account. Delivery and rotation share a durable
+per-entitlement attempt quota that is consumed before either entitlement or
+claim-secret scrypt work, bounding invalid-auth CPU usage across both public
+escrow endpoints. Every authenticated escrow response also takes a fresh claim
+lease before secret verification. Delivery completion owns
+that lease atomically, so expiry cleanup cannot revoke the account or destroy
+ciphertext while credentials are being assembled. The purchase-verification and
+retry endpoints revalidate cached plaintext against the current subscription,
+account and claim from one SQLite read snapshot immediately before constructing
+their responses, after final subscription enforcement. They check the fresh
+access deadline without another await, so either revocation or entitlement loss
+that wins after lease release fails closed.
+Rotation refreshes wall-clock time after claim-secret verification and cannot
+reserve escrow at or beyond its exact TTL.
+
+RTDN is a wake-up signal, never entitlement evidence. The push route verifies
+Google's OIDC token, resolves only an already-bound purchase token, re-queries
+Google, and then converges Matrix access. An authenticated notification for an
+unbound token is logged without the token and acknowledged: it may predate the
+client verification that establishes the binding, which re-queries Google
+authoritatively. Authenticated Play `testNotification` connectivity probes are
+also acknowledged without attempting a subscription refresh. A periodic
+reconciler covers missed or delayed notifications. The configured reconciliation
+interval controls both the worker wake cadence and each successful snapshot's
+next authoritative refresh deadline. When Play reports an access-granting state
+the Matrix account is unsuspended; otherwise it is suspended reversibly. Client
+verification enforces the newly persisted current state before attempting bundle
+delivery, so a denied delivery cannot postpone suspension. The service uses Google's
+authoritative line-item `expiryTime` as the exact boundary. Configure
+the Play Console grace period to **three days**; the service does not add a
+second local grace interval. Enforcement is serialized per entitlement and
+reloads its current token while holding that stripe, preventing a retired token
+from overwriting a replacement token's access decision. Same-token writes also
+compare a timestamp captured immediately after each Publisher response inside
+the SQLite transaction, so response order—not request start order—decides which
+authoritative observation wins.
+
 ## Configuration
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `MATRIX_HOMESERVER` | Yes | — | Homeserver URL |
+| `MATRIX_HOMESERVER` | Yes | — | Non-empty HTTPS homeserver URL; redirects are never followed |
 | `MATRIX_ADMIN_TOKEN` | Preferred | — | Long-lived Synapse admin access token |
 | `MATRIX_ADMIN_USER` / `MATRIX_ADMIN_PASSWORD` | Fallback | — | Used only when no token is set |
 | `API_KEYS` | Yes | — | Comma-separated client keys (rotation callback) |
@@ -94,17 +212,76 @@ Redemption is detected two ways:
 | `POLL_INTERVAL_SECONDS` | No | `300` | Redemption poll interval |
 | `POLL_BATCH_SIZE` | No | `50` | Accounts checked per sweep |
 | `ENABLE_REDEMPTION_POLLING` | No | `true` | Disable for tests or a read-only replica |
+| `ENABLE_PLAY_SUBSCRIPTIONS` | No | `false` | Enables purchase routes, reconciliation and claim cleanup |
+| `ENTITLEMENT_ISSUANCE_LIMIT` | No | `5` | Anonymous entitlement creations allowed per client and window |
+| `ENTITLEMENT_ISSUANCE_WINDOW_SECONDS` | No | `3600` | Durable entitlement-creation quota window |
+| `PURCHASE_INTENT_ATTEMPT_LIMIT` | No | `10` | Purchase-intent attempts allowed before entitlement-secret verification |
+| `PURCHASE_INTENT_ATTEMPT_WINDOW_SECONDS` | No | `900` | Durable pre-authentication attempt window |
+| `PURCHASE_INTENT_ISSUANCE_LIMIT` | No | `10` | Purchase intents allowed per entitlement and window |
+| `PURCHASE_INTENT_ISSUANCE_WINDOW_SECONDS` | No | `900` | Durable purchase-intent quota and cleanup window |
+| `PURCHASE_VERIFICATION_ATTEMPT_LIMIT` | No | `10` | Purchase verifications allowed per entitlement before secret checks and Google calls |
+| `PURCHASE_VERIFICATION_ATTEMPT_WINDOW_SECONDS` | No | `900` | Durable pre-verification attempt window |
+| `BUNDLE_CLAIM_ATTEMPT_LIMIT` | No | `10` | Combined delivery and rotation attempts allowed per entitlement before secret checks |
+| `BUNDLE_CLAIM_ATTEMPT_WINDOW_SECONDS` | No | `900` | Durable paid-escrow attempt window |
+| `SUBSCRIPTION_ENCRYPTION_KEY_ID` | When enabled | — | Identifier for the active AES-256-GCM write key |
+| `SUBSCRIPTION_ENCRYPTION_KEY_BASE64` | When enabled | — | Base64 for exactly 32 random bytes; encrypts tokens and pending bundles |
+| `SUBSCRIPTION_DECRYPTION_KEYS_JSON` | No | `{}` | JSON string map of retired key IDs to Base64 keys retained for decryption during rotation |
+| `PLAY_ACCOUNT_BINDING_KEY_BASE64` | When enabled | — | Base64 for at least 32 random bytes; HMAC key for stable obfuscated Play account IDs |
+| `PLAY_BASE_PLAN_IDS` | No | `monthly,annual` | Comma-separated base plans accepted for `lotti_sync` |
+| `PLAY_SIGNING_CERTIFICATE_SHA256` | When enabled | — | Comma-separated Play app signing certificate SHA-256 digests |
+| `PLAY_ALLOW_TEST_PURCHASES` | No | `false` | Accept Play license-tester purchases; never enable in production |
+| `PLAY_RTDN_AUDIENCE` | When enabled | — | Exact OIDC audience configured on the Pub/Sub push subscription |
+| `PLAY_RTDN_SERVICE_ACCOUNT_EMAIL` | When enabled | — | Exact service-account identity allowed to push RTDN |
+| `SUBSCRIPTION_RECONCILE_INTERVAL_SECONDS` | No | `60` | Positive authoritative Google refresh interval; non-positive values fail startup |
+| `SUBSCRIPTION_RECONCILE_BATCH_SIZE` | No | `50` | Due subscriptions handled per reconciliation pass |
+| `PAID_PROVISIONING_WAIT_SECONDS` | No | `30` | Maximum request wait for another paid provisioner |
+| `PAID_PROVISIONING_POLL_SECONDS` | No | `0.1` | Poll interval while another process owns the entitlement reservation |
+| `PAID_PROVISIONING_OPERATION_TIMEOUT_SECONDS` | No | `300` | Age after which a crashed paid-provisioning reservation is recoverable |
+| `BUNDLE_CLAIM_REAPER_INTERVAL_SECONDS` | No | `300` | Positive expired paid-claim cleanup interval; non-positive values fail startup |
+| `BUNDLE_CLAIM_REAPER_STARTUP_DELAY_SECONDS` | No | `60` | Non-negative delay before the first destructive claim cleanup; negative values fail startup |
+| `BUNDLE_CLAIM_REAPER_BATCH_SIZE` | No | `50` | Expired claims handled per cleanup pass |
 | `CORS_ALLOWED_ORIGINS` | No | `http://localhost:5174` | Comma-separated origins |
+| `FORWARDED_ALLOW_IPS` | No | `127.0.0.1` | Exact trusted reverse-proxy peers for Uvicorn forwarded headers; bundled Compose sets only its fixed nginx address |
 | `PORT` | No | `8003` | Listen port |
 
 Prefer `MATRIX_ADMIN_TOKEN`: it keeps no password at rest, is revocable
 independently, and skips the login round trip. A blank value falls back to
-password login rather than authenticating with an empty string.
+password login rather than authenticating with an empty string. Bootstrap
+password validation reuses one dedicated Matrix device and logs out its access
+token after every successful check, preventing rotation proofs from accumulating
+live validation sessions. Only Synapse's exact invalid-username-or-password
+response proves the bootstrap credential is retired; suspension, deactivation,
+or malformed authentication failures remain inconclusive.
+
+Google authentication uses Application Default Credentials with the Android
+Publisher and Play Integrity scopes. Prefer workload identity or a Secret Manager-mounted
+credential; if a local JSON credential is unavoidable, point
+`GOOGLE_APPLICATION_CREDENTIALS` at the mounted file and never bake it into the
+image. Generate the two application secrets independently, for example with
+`openssl rand -base64 32`.
+
+The bundled Compose stack accepts `GOOGLE_APPLICATION_CREDENTIALS` as an
+absolute **host** path. It mounts that file read-only at
+`/run/secrets/google-application-credentials.json` and points the service's
+Application Default Credentials lookup at the container path. With Play
+subscriptions disabled, an unset host path mounts `/dev/null`; enabling the
+feature without a valid credential still fails startup closed.
+
+For envelope-key rotation, deploy the new ID and key as the active pair and add
+the previous pair to `SUBSCRIPTION_DECRYPTION_KEYS_JSON`. New rows immediately
+use only the active key; authoritative subscription refreshes lazily re-encrypt
+stored tokens, while pending escrow remains readable by its recorded key ID
+until rotation or the 24-hour claim expiry destroys it. Remove a retired key
+only after no non-null ciphertext refers to it and no backup that may be
+restored depends on it.
 
 ## API
 
-All paths are prefixed `/api/v1`. Everything requires an **admin** key except
-`/client/*`, which takes a regular key. `/health` is unauthenticated.
+All paths are prefixed `/api/v1`. Existing `/client/*` paths take a regular API
+key and all admin paths take an admin key. Subscription paths use their own
+short-lived or entitlement-scoped bearer credentials and therefore never
+expose the service-wide client key to the app. The RTDN path uses an
+authenticated Pub/Sub OIDC bearer token. `/health` is unauthenticated.
 
 That default is enforced, not just documented: the auth middleware is configured
 with the client prefix rather than a list of admin prefixes, so a route added
@@ -122,10 +299,70 @@ no `Authorization` header — are answered rather than rejected.
 | `GET` | `/bundles/{id}/usage` | Live device/media figures from Synapse |
 | `POST` | `/bundles/{id}/revoke` | Revoke; optionally deactivate the account |
 | `POST` | `/client/bundles/{id}/rotated` | Client confirms rotation (regular key) |
+| `POST` | `/client/subscriptions/entitlements` | Create stable anonymous purchase identity |
+| `POST` | `/client/subscriptions/purchase-intents` | Authorize one Play Billing launch |
+| `POST` | `/client/subscriptions/purchases/verify` | Verify Integrity + Publisher state and provision/deliver |
+| `POST` | `/client/subscriptions/bundle-claims/deliver` | Retry an authenticated lost bundle response |
+| `POST` | `/client/subscriptions/bundle-claims/confirm-rotation` | Validate Matrix proof and destroy escrow |
+| `POST` | `/google-play/rtdn` | Authenticated Pub/Sub notification signal |
 | `GET` | `/stats` | Dashboard aggregates |
 | `POST` | `/bundles/{id}/purge` | Purge one room's old history |
 | `POST` | `/purges` | Purge every redeemed, non-revoked room |
 | `GET` | `/purges`, `/purges/{purge_id}` | List / poll purge runs |
+
+Purchase verification returns `bundle_import_required=true` with the
+short-lived bundle fields for first provisioning. When a linked replacement
+purchase recovers an account whose rotation was already confirmed, it returns
+`bundle_import_required=false` with those fields set to `null` and restores the
+existing Matrix account before responding. Destroyed bootstrap credentials are
+never regenerated. An expired claim that never completed rotation is different:
+the reaper revokes that account, and a later verified payment provisions a new
+account instead. Failed reaper attempts use a separate five-minute retry time;
+they do not extend the claim's credential-delivery TTL or block newer claims. A
+linked replacement that arrives before rotation atomically rebinds the pending
+escrow to its newly verified claim secret, but only while that verified purchase
+token remains current and differs from the token that authorized the existing
+secret. A second request for the same token must prove the existing claim secret
+and cannot invalidate another client's delivery. If a deterministic Matrix
+localpart survives an earlier rollback, provisioning retries once with a random
+suffix.
+Every retry reloads the current subscription, converges Matrix suspension, and
+rejects non-granting states or an elapsed authoritative expiry before decrypting
+escrow.
+
+## Production deployment requirements
+
+- Run exactly one service instance while `DB_PATH` points at SQLite. WAL,
+  foreign keys, explicit write transactions, quotas, leases and uniqueness
+  constraints protect concurrent tasks and processes sharing that file. SQLite
+  cannot coordinate hosts that do not share the same database volume. Move the
+  repository to a shared transactional database before adding such replicas.
+- Do not expose Uvicorn directly. Terminate TLS at a trusted reverse proxy and
+  enforce body-size limits, additional per-IP/per-entitlement rate limits and
+  request timeouts there, especially on entitlement creation and Play
+  verification. Configure proxy trust so Uvicorn's parsed client address is the
+  real peer used by the in-service quota; never trust arbitrary forwarded
+  headers from the public internet. The bundled Compose network pins nginx to
+  `172.28.0.10`, forwards `X-Forwarded-For`, and configures that exact address
+  as Uvicorn's sole trusted proxy; adjust the subnet and trust value together
+  if it conflicts with deployment networking.
+- Configure a dedicated least-privilege Play service account and a dedicated
+  Pub/Sub push service account. The latter must match both
+  `PLAY_RTDN_AUDIENCE` and `PLAY_RTDN_SERVICE_ACCOUNT_EMAIL` exactly.
+- Run Synapse 1.110.0 or newer and enable the MSC3823 account-suspension feature
+  before enabling subscriptions. Startup authenticates to Synapse and verifies
+  the server version before starting subscription workers or accepting traffic;
+  suspension calls still fail closed if the endpoint later becomes unavailable.
+  Suspension is intentionally reversible; deactivation would destroy device and
+  encryption state needed after renewal.
+- Configure the three-day grace period in Play Console and monitor
+  reconciliation errors, unacknowledged purchases, RTDN delivery age, stale
+  claims, and failed suspend/unsuspend operations.
+- Back up the SQLite subscription and audit data, restrict filesystem access to
+  the service user, and test restores with every still-required envelope key.
+  Never include ciphertext columns in routine support exports or log raw
+  purchase tokens, bearer secrets, Integrity tokens, bundles, or Google
+  credentials.
 
 ## Retention
 

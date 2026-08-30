@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import threading
 
 import httpx
 import pytest
@@ -163,6 +164,120 @@ async def test_persistence_failure_deactivates_the_orphan_account(
     assert deactivations, "expected a rollback deactivation call"
 
 
+async def test_repeated_cancellation_waits_for_commit_without_deactivating_account(
+    repository,
+    credentials,
+    tracking_transport,
+    monkeypatch,
+):
+    transport, requests = tracking_transport
+    service = _service(repository, credentials, transport)
+    write_started = asyncio.Event()
+    allow_write = threading.Event()
+    loop = asyncio.get_running_loop()
+    original_create = repository._create_sync
+
+    def blocked_create(**kwargs):
+        loop.call_soon_threadsafe(write_started.set)
+        allow_write.wait()
+        return original_create(**kwargs)
+
+    monkeypatch.setattr(repository, "_create_sync", blocked_create)
+
+    task = asyncio.create_task(
+        service.create_bundle(CreateBundleRequest(username="cancelled_user"))
+    )
+    await write_started.wait()
+    task.cancel()
+    second_cancellation_delivered = asyncio.Event()
+
+    def cancel_again():
+        task.cancel()
+        second_cancellation_delivered.set()
+
+    loop.call_soon(cancel_again)
+    await second_cancellation_delivered.wait()
+    allow_write.set()
+
+    with pytest.raises(asyncio.CancelledError):
+        await task
+
+    deactivations = [
+        request
+        for request in requests
+        if request.method == "PUT"
+        and "/_synapse/admin/v2/users/" in str(request.url)
+        and json.loads(request.content).get("deactivated") is True
+    ]
+    assert deactivations == []
+    assert await repository.find_by_username("cancelled_user") is not None
+    assert await repository.claim_username("cancelled_user") is True
+
+
+async def test_cancellation_deactivates_after_persistence_confirms_failure(
+    repository,
+    credentials,
+    tracking_transport,
+):
+    transport, requests = tracking_transport
+    service = _service(repository, credentials, transport)
+    persist_started = asyncio.Event()
+    finish_persisting = asyncio.Event()
+
+    async def persist(_result, _encoded):
+        persist_started.set()
+        await finish_persisting.wait()
+        raise RuntimeError("disk full")
+
+    task = asyncio.create_task(
+        service.create_bundle_with_persistence(
+            CreateBundleRequest(username="cancelled_user"),
+            persist,
+        )
+    )
+    await persist_started.wait()
+    task.cancel()
+    finish_persisting.set()
+
+    with pytest.raises(asyncio.CancelledError):
+        await task
+
+    deactivations = [
+        request
+        for request in requests
+        if request.method == "PUT"
+        and "/_synapse/admin/v2/users/" in str(request.url)
+        and json.loads(request.content).get("deactivated") is True
+    ]
+    assert len(deactivations) == 1
+    assert await repository.find_by_username("cancelled_user") is None
+    assert await repository.claim_username("cancelled_user") is True
+
+
+async def test_orphan_cleanup_failure_preserves_persistence_error(
+    repository,
+    credentials,
+    monkeypatch,
+    caplog,
+):
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "PUT" and json.loads(request.content).get("deactivated") is True:
+            return httpx.Response(503, json={})
+        return synapse_handler(request)
+
+    service = _service(repository, credentials, httpx.MockTransport(handler))
+
+    async def exploding_create(**_kwargs):
+        raise RuntimeError("disk full")
+
+    monkeypatch.setattr(repository, "create", exploding_create)
+
+    with pytest.raises(RuntimeError, match="disk full"):
+        await service.create_bundle(CreateBundleRequest(username="orphaned_user"))
+
+    assert "needs manual cleanup" in caplog.text
+
+
 async def test_confirm_rotation_marks_the_record_rotated(repository, credentials, mock_transport):
     service = _service(repository, credentials, mock_transport)
     response = await service.create_bundle(CreateBundleRequest(username="lotti_user"))
@@ -314,22 +429,31 @@ async def test_a_held_claim_stops_a_second_run_before_it_reaches_synapse(
 
 
 async def test_two_concurrent_requests_for_one_name_create_a_single_account(
-    repository, credentials, tracking_transport
+    repository, credentials, tracking_transport, monkeypatch
 ):
     """End to end: one caller wins, and the loser never touches the homeserver."""
     transport, requests = tracking_transport
     service = _service(repository, credentials, transport)
+    provisioning_started = asyncio.Event()
+    release_provisioning = asyncio.Event()
+    provision = service._provisioner.provision
 
-    results = await asyncio.gather(
-        service.create_bundle(CreateBundleRequest(username="racer")),
-        service.create_bundle(CreateBundleRequest(username="racer")),
-        return_exceptions=True,
-    )
+    async def blocking_provision(**values):
+        provisioning_started.set()
+        await release_provisioning.wait()
+        return await provision(**values)
 
-    succeeded = [r for r in results if not isinstance(r, Exception)]
-    refused = [r for r in results if isinstance(r, UsernameAlreadyProvisionedException)]
-    assert len(succeeded) == 1
-    assert len(refused) == 1
+    monkeypatch.setattr(service._provisioner, "provision", blocking_provision)
+    winner = asyncio.create_task(service.create_bundle(CreateBundleRequest(username="racer")))
+    await provisioning_started.wait()
+    try:
+        with pytest.raises(UsernameAlreadyProvisionedException):
+            await service.create_bundle(CreateBundleRequest(username="racer"))
+    finally:
+        release_provisioning.set()
+    response = await winner
+
+    assert response.user.username == "racer"
 
     # Exactly one existence check: the refused run stopped at the claim rather
     # than racing to the homeserver and being caught there.

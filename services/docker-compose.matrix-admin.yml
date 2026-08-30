@@ -10,6 +10,9 @@
 #   MATRIX_ADMIN_USER + MATRIX_ADMIN_PASSWORD as a fallback
 #   API_KEY             regular client key, e.g. `openssl rand -hex 32`
 #   ADMIN_API_KEY       admin key guarding provisioning, revocation and purging
+#   GOOGLE_APPLICATION_CREDENTIALS
+#                       absolute host path to the Google service-account JSON
+#                       when Play subscriptions are enabled
 #
 # The two keys have no defaults on purpose. A checked-in default is a published
 # credential: this file is public, so anyone who could reach the port would hold
@@ -38,13 +41,51 @@ services:
       - RETENTION_SWEEP_MEDIA=${RETENTION_SWEEP_MEDIA:-true}
       - POLL_INTERVAL_SECONDS=${POLL_INTERVAL_SECONDS:-300}
       - ENABLE_REDEMPTION_POLLING=${ENABLE_REDEMPTION_POLLING:-true}
+      # Play subscriptions stay fail-closed until every credential below is set.
+      - ENABLE_PLAY_SUBSCRIPTIONS=${ENABLE_PLAY_SUBSCRIPTIONS:-false}
+      - ENTITLEMENT_ISSUANCE_LIMIT=${ENTITLEMENT_ISSUANCE_LIMIT:-5}
+      - ENTITLEMENT_ISSUANCE_WINDOW_SECONDS=${ENTITLEMENT_ISSUANCE_WINDOW_SECONDS:-3600}
+      - SUBSCRIPTION_ENCRYPTION_KEY_ID=${SUBSCRIPTION_ENCRYPTION_KEY_ID:-}
+      - SUBSCRIPTION_ENCRYPTION_KEY_BASE64=${SUBSCRIPTION_ENCRYPTION_KEY_BASE64:-}
+      - 'SUBSCRIPTION_DECRYPTION_KEYS_JSON=${SUBSCRIPTION_DECRYPTION_KEYS_JSON:-{}}'
+      - PLAY_ACCOUNT_BINDING_KEY_BASE64=${PLAY_ACCOUNT_BINDING_KEY_BASE64:-}
+      - PLAY_BASE_PLAN_IDS=${PLAY_BASE_PLAN_IDS:-monthly,annual}
+      - PURCHASE_INTENT_ATTEMPT_LIMIT=${PURCHASE_INTENT_ATTEMPT_LIMIT:-10}
+      - PURCHASE_INTENT_ATTEMPT_WINDOW_SECONDS=${PURCHASE_INTENT_ATTEMPT_WINDOW_SECONDS:-900}
+      - PURCHASE_INTENT_ISSUANCE_LIMIT=${PURCHASE_INTENT_ISSUANCE_LIMIT:-10}
+      - PURCHASE_INTENT_ISSUANCE_WINDOW_SECONDS=${PURCHASE_INTENT_ISSUANCE_WINDOW_SECONDS:-900}
+      - PURCHASE_VERIFICATION_ATTEMPT_LIMIT=${PURCHASE_VERIFICATION_ATTEMPT_LIMIT:-10}
+      - PURCHASE_VERIFICATION_ATTEMPT_WINDOW_SECONDS=${PURCHASE_VERIFICATION_ATTEMPT_WINDOW_SECONDS:-900}
+      - BUNDLE_CLAIM_ATTEMPT_LIMIT=${BUNDLE_CLAIM_ATTEMPT_LIMIT:-10}
+      - BUNDLE_CLAIM_ATTEMPT_WINDOW_SECONDS=${BUNDLE_CLAIM_ATTEMPT_WINDOW_SECONDS:-900}
+      - PLAY_SIGNING_CERTIFICATE_SHA256=${PLAY_SIGNING_CERTIFICATE_SHA256:-}
+      - PLAY_ALLOW_TEST_PURCHASES=${PLAY_ALLOW_TEST_PURCHASES:-false}
+      - PLAY_RTDN_AUDIENCE=${PLAY_RTDN_AUDIENCE:-}
+      - PLAY_RTDN_SERVICE_ACCOUNT_EMAIL=${PLAY_RTDN_SERVICE_ACCOUNT_EMAIL:-}
+      - SUBSCRIPTION_RECONCILE_INTERVAL_SECONDS=${SUBSCRIPTION_RECONCILE_INTERVAL_SECONDS:-60}
+      - SUBSCRIPTION_RECONCILE_BATCH_SIZE=${SUBSCRIPTION_RECONCILE_BATCH_SIZE:-50}
+      - PAID_PROVISIONING_WAIT_SECONDS=${PAID_PROVISIONING_WAIT_SECONDS:-30}
+      - PAID_PROVISIONING_POLL_SECONDS=${PAID_PROVISIONING_POLL_SECONDS:-0.1}
+      - PAID_PROVISIONING_OPERATION_TIMEOUT_SECONDS=${PAID_PROVISIONING_OPERATION_TIMEOUT_SECONDS:-300}
+      - BUNDLE_CLAIM_REAPER_STARTUP_DELAY_SECONDS=${BUNDLE_CLAIM_REAPER_STARTUP_DELAY_SECONDS:-60}
+      - BUNDLE_CLAIM_REAPER_INTERVAL_SECONDS=${BUNDLE_CLAIM_REAPER_INTERVAL_SECONDS:-300}
+      - BUNDLE_CLAIM_REAPER_BATCH_SIZE=${BUNDLE_CLAIM_REAPER_BATCH_SIZE:-50}
+      - GOOGLE_APPLICATION_CREDENTIALS=/run/secrets/google-application-credentials.json
       - LOG_LEVEL=INFO
       - PORT=8003
+      # Trust only the nginx container's fixed address. Direct clients on the
+      # published service port cannot forge X-Forwarded-For.
+      - FORWARDED_ALLOW_IPS=${FORWARDED_ALLOW_IPS:-172.28.0.10}
       - CORS_ALLOWED_ORIGINS=http://localhost:5174
     volumes:
       - provisioning-data:/app/data
+      # The /dev/null fallback keeps the subscription-disabled stack runnable
+      # without credentials. Subscription startup still fails closed when the
+      # feature is enabled without a valid host credential file.
+      - "${GOOGLE_APPLICATION_CREDENTIALS:-/dev/null}:/run/secrets/google-application-credentials.json:ro"
     networks:
-      - matrix-admin-network
+      matrix-admin-network:
+        ipv4_address: 172.28.0.11
     restart: unless-stopped
 
   matrix-admin:
@@ -62,7 +103,8 @@ services:
     depends_on:
       - matrix-provisioning-service
     networks:
-      - matrix-admin-network
+      matrix-admin-network:
+        ipv4_address: 172.28.0.10
 
 volumes:
   provisioning-data:
@@ -71,3 +113,6 @@ volumes:
 networks:
   matrix-admin-network:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/24

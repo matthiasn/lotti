@@ -41,4 +41,5 @@ EXPOSE 8003
 # literal string and the container would ignore the documented PORT setting,
 # binding 8003 whatever the deployment asked for. `exec` keeps uvicorn as PID 1
 # so it still receives SIGTERM on shutdown.
-CMD exec uvicorn src.main:app --host 0.0.0.0 --port "${PORT:-8003}"
+CMD exec uvicorn src.main:app --host 0.0.0.0 --port "${PORT:-8003}" \
+    --forwarded-allow-ips "${FORWARDED_ALLOW_IPS:-127.0.0.1}"

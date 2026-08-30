@@ -10,7 +10,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from typing import Callable
-from urllib.parse import quote
+from urllib.parse import quote, urlsplit
 
 import httpx
 
@@ -65,8 +65,9 @@ class AdminCredentials:
     admin_password: str | None = None
 
     def __post_init__(self) -> None:
-        if not self.homeserver:
-            raise ValueError("homeserver is required")
+        parsed = urlsplit(self.homeserver)
+        if parsed.scheme.lower() != "https" or not parsed.netloc:
+            raise ValueError("homeserver must be a non-empty HTTPS URL")
         if not self.admin_token and not (self.admin_user and self.admin_password):
             raise ValueError("Provide either admin_token, or both admin_user and admin_password")
 
@@ -106,6 +107,7 @@ class SynapseClientBase:
         kwargs: dict = {
             "base_url": self._credentials.base_url,
             "timeout": self._timeout,
+            "follow_redirects": False,
         }
         if self._transport is not None:
             kwargs["transport"] = self._transport

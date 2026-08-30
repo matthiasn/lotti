@@ -87,6 +87,9 @@ def synapse_handler(request: httpx.Request) -> httpx.Response:
     if path.startswith("/_synapse/admin/v1/users/") and path.endswith("/login"):
         return httpx.Response(200, json={"access_token": "user_tok"})
 
+    if path == "/_synapse/admin/v1/server_version":
+        return httpx.Response(200, json={"server_version": "1.110.0"})
+
     if path.startswith("/_synapse/admin/v1/users/") and path.endswith("/media"):
         # Tracked per user, not globally: a sweep purges several accounts in a
         # row, and shared state would let one user's deletion mask the next

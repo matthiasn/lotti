@@ -2,13 +2,17 @@
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import logging
+from collections.abc import Awaitable, Callable
+from typing import TypeVar
 
 import httpx
 
 from shared.matrix import (
     ProvisioningError,
+    ProvisionResult,
     SynapseAdminClient,
     SynapseProvisioner,
     UserAlreadyExistsError,
@@ -26,6 +30,8 @@ from ..core.models import (
 from .provisioning_repository import ProvisioningRepository
 
 logger = logging.getLogger(__name__)
+
+T = TypeVar("T")
 
 
 def fingerprint_bundle(encoded_bundle: str) -> str:
@@ -70,6 +76,23 @@ class BundleService:
                 either in our own records or already on the homeserver.
             SynapseUnavailableException: If the homeserver rejects the request.
         """
+
+        async def persist(result: ProvisionResult, encoded: str) -> CreateBundleResponse:
+            return await self._persist_standard_bundle(request, result, encoded)
+
+        return await self.create_bundle_with_persistence(request, persist)
+
+    async def create_bundle_with_persistence(
+        self,
+        request: CreateBundleRequest,
+        persist: Callable[[ProvisionResult, str], Awaitable[T]],
+    ) -> T:
+        """Provision once and let the caller atomically persist its delivery form.
+
+        Paid provisioning uses this seam to commit the account row, encrypted
+        bundle escrow, and subscription link together. Any persistence failure
+        triggers the same orphan-account rollback as ordinary admin bundles.
+        """
         # Fail before touching Synapse when we already know the name is taken,
         # so the common case does not leave an account to roll back. The unique
         # index is still the authority for the concurrent case.
@@ -92,11 +115,15 @@ class BundleService:
             )
 
         try:
-            return await self._provision_claimed(request)
+            return await self._provision_claimed(request, persist)
         finally:
             await self._repository.release_username(request.username)
 
-    async def _provision_claimed(self, request: CreateBundleRequest) -> CreateBundleResponse:
+    async def _provision_claimed(
+        self,
+        request: CreateBundleRequest,
+        persist: Callable[[ProvisionResult, str], Awaitable[T]],
+    ) -> T:
         """Provision and record an account whose name this run already holds.
 
         Split out so the claim is released on every exit path, including the
@@ -123,19 +150,31 @@ class BundleService:
                 f"Could not reach Synapse to provision {request.username}: {exc}"
             ) from exc
 
-        encoded = result.encoded_bundle
-
+        persistence_task = asyncio.ensure_future(persist(result, result.encoded_bundle))
         try:
-            user = await self._repository.create(
-                username=request.username,
-                user_mxid=result.user_mxid,
-                home_server=result.bundle.home_server,
-                server_name=result.server_name,
-                room_id=result.room_id,
-                display_name=request.display_name,
-                bundle_fingerprint=fingerprint_bundle(encoded),
-                notes=request.notes,
-            )
+            # SQLite work delegated with ``to_thread`` keeps running if its
+            # awaiting coroutine is cancelled. Shield the persistence task so
+            # cancellation cannot make us deactivate an account whose durable
+            # record is still about to commit.
+            return await asyncio.shield(persistence_task)
+        except asyncio.CancelledError:
+            # A task may receive another cancellation while the first one is
+            # being handled (for example, disconnect followed by shutdown).
+            # Keep shielding until the underlying write itself has settled.
+            while not persistence_task.done():
+                try:
+                    await asyncio.shield(persistence_task)
+                except asyncio.CancelledError:
+                    continue
+                except Exception:
+                    break
+            try:
+                persistence_task.result()
+            except (asyncio.CancelledError, Exception):
+                # Persistence has now reached a terminal unsuccessful outcome,
+                # so this really is an orphan rather than a committed account.
+                await self._deactivate_orphan(result.user_mxid)
+            raise
         except Exception:
             # The account exists on Synapse but we cannot record it. An
             # untracked live account is worse than none, so roll it back.
@@ -143,15 +182,36 @@ class BundleService:
                 "Failed to persist %s after provisioning; deactivating the account",
                 result.user_mxid,
             )
-            try:
-                await self._admin_client.deactivate_user(result.user_mxid)
-            except Exception:  # noqa: BLE001 - rollback is best-effort
-                logger.exception(
-                    "Could not deactivate orphan account %s — needs manual cleanup",
-                    result.user_mxid,
-                )
+            await self._deactivate_orphan(result.user_mxid)
             raise
 
+    async def _deactivate_orphan(self, user_mxid: str) -> None:
+        """Best-effort rollback for a provisioned account that was not persisted."""
+        try:
+            await self._admin_client.deactivate_user(user_mxid)
+        except Exception:  # noqa: BLE001 - rollback is best-effort
+            logger.exception(
+                "Could not deactivate orphan account %s — needs manual cleanup",
+                user_mxid,
+            )
+
+    async def _persist_standard_bundle(
+        self,
+        request: CreateBundleRequest,
+        result: ProvisionResult,
+        encoded: str,
+    ) -> CreateBundleResponse:
+        """Persist the existing admin-created, return-once bundle form."""
+        user = await self._repository.create(
+            username=request.username,
+            user_mxid=result.user_mxid,
+            home_server=result.bundle.home_server,
+            server_name=result.server_name,
+            room_id=result.room_id,
+            display_name=request.display_name,
+            bundle_fingerprint=fingerprint_bundle(encoded),
+            notes=request.notes,
+        )
         return CreateBundleResponse(bundle=encoded, user=user)
 
     async def confirm_rotation(self, bundle_id: str) -> ProvisionedUser:
