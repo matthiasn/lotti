@@ -1210,19 +1210,43 @@ class _DimensionHeader extends StatelessWidget {
       );
     }
 
-    Widget block({required bool alignEnd, required bool inline}) => Column(
-      crossAxisAlignment: alignEnd
-          ? CrossAxisAlignment.end
-          : CrossAxisAlignment.start,
-      children: [
-        readingLine(alignEnd: alignEnd, inline: inline),
-        Text(
-          statusLabel,
-          textAlign: alignEnd ? TextAlign.end : TextAlign.start,
-          style: captionStyle.copyWith(color: statusColor),
-        ),
-      ],
-    );
+    final statusStyle = captionStyle.copyWith(color: statusColor);
+    Widget block({
+      required bool alignEnd,
+      required bool inline,
+      bool statusTrailing = false,
+    }) {
+      final status = Text(
+        statusLabel,
+        textAlign: alignEnd ? TextAlign.end : TextAlign.start,
+        style: statusStyle,
+      );
+      final reading = readingLine(alignEnd: alignEnd, inline: inline);
+      if (statusTrailing) {
+        // Off the corner, the block has the card's whole width, and a verdict
+        // stacked under a reading that fills a fraction of it read as a line
+        // of its own, unattached. On the reading's own row, at the trailing
+        // edge, it sits where the corner puts it — under the figure it
+        // judges — just turned sideways.
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            // Expanded, not Flexible beside a Spacer: two flex children split
+            // the row in half and ellipsized a reading that had room.
+            Expanded(child: reading),
+            SizedBox(width: tokens.spacing.step4),
+            status,
+          ],
+        );
+      }
+      return Column(
+        crossAxisAlignment: alignEnd
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.start,
+        children: [reading, status],
+      );
+    }
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -1302,6 +1326,11 @@ class _DimensionHeader extends StatelessWidget {
             block(
               alignEnd: false,
               inline: inlineWidth <= constraints.maxWidth,
+              statusTrailing:
+                  math.min(inlineWidth, math.max(valueWidth, meanWidth)) +
+                      tokens.spacing.step4 +
+                      goalTextWidth(context, statusLabel, statusStyle) <=
+                  constraints.maxWidth,
             ),
           ],
         );
@@ -1560,24 +1589,13 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // The stacked fallback: the note flush to the trailing edge under
-            // the corner block it qualifies; bounded so it wraps rather than
-            // overflowing a narrow card.
+            // the corner block it qualifies, with the whole row to itself —
+            // it wraps only when the card is narrower than the sentence, not
+            // at an arbitrary fraction of a row nothing else shares.
             if (note != null && !noteSharesLine) ...[
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Spacer(),
-                  ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxWidth: constraints.maxWidth * 0.6,
-                    ),
-                    child: Text(
-                      note,
-                      textAlign: TextAlign.end,
-                      style: noteStyle,
-                    ),
-                  ),
-                ],
+              Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: Text(note, textAlign: TextAlign.end, style: noteStyle),
               ),
               SizedBox(height: tokens.spacing.step2),
             ],

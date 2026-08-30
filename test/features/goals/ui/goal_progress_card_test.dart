@@ -4190,6 +4190,45 @@ void main() {
       lessThanOrEqualTo(stackedPeriod.top),
       reason: 'a narrow card keeps the note on its own line above the period',
     );
+
+    // Measured, not guessed (test glyphs are a full em wide): at 556 the
+    // corner block no longer fits beside the identity and drops below the
+    // title row, while the reading and the status caption still fit one
+    // row, and the note has its own row but not the period line.
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Center(child: SizedBox(width: 556, child: card())),
+      ),
+    );
+    final roomyPeriod = tester.getRect(find.text(periodText));
+    final roomyNote = tester.getRect(find.text(noteText));
+    expect(roomyNote.bottom, lessThanOrEqualTo(roomyPeriod.top));
+    // With the row to itself the note takes the row: it used to be capped
+    // at a fraction of the card and wrapped beside empty space.
+    expect(
+      roomyNote.height,
+      closeTo(roomyPeriod.height, 1),
+      reason: 'one line, not wrapped',
+    );
+    // And the status caption, its corner gone, sits on the reading's own
+    // row at the trailing edge rather than on a line of its own, without
+    // costing the reading any of its width.
+    final readingFinder = find.textContaining('rolling 7 days');
+    final reading = tester.getRect(readingFinder);
+    final readingText = tester.widget<Text>(readingFinder);
+    final readingInk = goalTextWidth(
+      tester.element(readingFinder),
+      readingText.data!,
+      readingText.style!,
+    );
+    final status = tester.getRect(find.text('Needs attention'));
+    expect(status.top, closeTo(reading.top, reading.height));
+    expect(status.left, greaterThan(reading.left + readingInk));
+    expect(
+      reading.width,
+      greaterThanOrEqualTo(readingInk),
+      reason: 'the reading is not ellipsized to make room for the status',
+    );
   });
 
   testWidgets('a reflect label too long to share the title row drops to its '

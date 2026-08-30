@@ -892,7 +892,11 @@ flowchart TD
   onto a second line, and the block leaves the title row altogether, only
   when the reading is MEASURED not to fit (`goalTextWidth`) — a fixed
   breakpoint stacked the corner away on every phone while the figures
-  occupied a third of the row. The legend entry naming that series wears the hue too
+  occupied a third of the row. Off the title row, the status caption sits on
+  the reading's own row at the trailing edge whenever the two are measured
+  to fit, and drops beneath only when they do not; the habit row's deficit
+  note likewise takes its whole fallback row rather than a capped fraction
+  of it. The legend entry naming that series wears the hue too
   (`DashboardLegendEntry.labelWearsSeriesColor`), since colour is the only
   thing resolving the symbol to a mark on the chart. The target stays in the
   keyed legend entry ("Goal ≤ 88", or a compact "Goal 10K" for steps) rather
