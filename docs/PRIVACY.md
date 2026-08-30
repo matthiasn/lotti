@@ -54,6 +54,12 @@ profiling, or other purposes. Optional end-to-end encrypted synchronization
 does not give the developer access to readable content, and optional AI
 requests go only to the provider you choose.
 
+## Open Source Transparency
+
+Lotti's source code is publicly available on
+[GitHub](https://github.com/matthiasn/lotti), allowing its data-handling
+implementation to be independently inspected.
+
 ## Changes to This Policy
 
 This policy may be updated if Lotti's features or data-handling practices
