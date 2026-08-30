@@ -102,27 +102,51 @@ const _uiComponent = 3.0;
 /// The four alert families, flattened — the generated classes are siblings
 /// with no common supertype, so the ramp has to be projected into records to
 /// be iterated over.
-List<({String name, Color defaultColor, Color ink})> _alertFamilies(
-  DsTokens tokens,
-) {
+List<
+  ({
+    String name,
+    Color defaultColor,
+    Color hover,
+    Color pressed,
+    Color ink,
+    Color glyphOnLevel03,
+  })
+>
+_alertFamilies(DsTokens tokens) {
   final alert = tokens.colors.alert;
   return [
     (
       name: 'error',
       defaultColor: alert.error.defaultColor,
+      hover: alert.error.hover,
+      pressed: alert.error.pressed,
       ink: alert.error.ink,
+      glyphOnLevel03: alert.error.glyphOnLevel03,
     ),
     (
       name: 'success',
       defaultColor: alert.success.defaultColor,
+      hover: alert.success.hover,
+      pressed: alert.success.pressed,
       ink: alert.success.ink,
+      glyphOnLevel03: alert.success.glyphOnLevel03,
     ),
     (
       name: 'warning',
       defaultColor: alert.warning.defaultColor,
+      hover: alert.warning.hover,
+      pressed: alert.warning.pressed,
       ink: alert.warning.ink,
+      glyphOnLevel03: alert.warning.glyphOnLevel03,
     ),
-    (name: 'info', defaultColor: alert.info.defaultColor, ink: alert.info.ink),
+    (
+      name: 'info',
+      defaultColor: alert.info.defaultColor,
+      hover: alert.info.hover,
+      pressed: alert.info.pressed,
+      ink: alert.info.ink,
+      glyphOnLevel03: alert.info.glyphOnLevel03,
+    ),
   ];
 }
 
@@ -145,6 +169,40 @@ void main() {
   // the 1.4.11 floor (warning at 2.15:1 on level02) and stayed there until a
   // reviewer read the token file by hand. These assertions are the check that
   // was missing.
+  // `level03` is the surface the ramp above deliberately leaves out: no
+  // error step reaches AA on it in dark, and the surface ink stops at 2.9:1.
+  // A static glyph there — the missed-day cross on a habit square — has its
+  // own step, guaranteed here rather than borrowed from an interaction state.
+  group('alert glyphOnLevel03', () {
+    const themes = [
+      (name: 'light', tokens: dsTokensLight),
+      (name: 'dark', tokens: dsTokensDark),
+    ];
+    for (final theme in themes) {
+      final level03 = theme.tokens.colors.background.level03;
+      for (final family in _alertFamilies(theme.tokens)) {
+        final label = '${theme.name} alert.${family.name}.glyphOnLevel03';
+        test('$label clears the non-text floor on level03', () {
+          final ratio = contrastRatio(family.glyphOnLevel03, level03);
+          expect(
+            ratio,
+            greaterThanOrEqualTo(_uiComponent),
+            reason:
+                '$label ${family.glyphOnLevel03} measures '
+                '${ratio.toStringAsFixed(2)}:1 on level03, below '
+                '$_uiComponent:1',
+          );
+        });
+        test('$label is a step of its own ramp, not a fifth hue', () {
+          expect(
+            family.glyphOnLevel03,
+            isIn([family.defaultColor, family.hover, family.pressed]),
+          );
+        });
+      }
+    }
+  });
+
   group('alert palette contrast', () {
     const themes = [
       (name: 'light', tokens: dsTokensLight),

@@ -142,12 +142,18 @@ call site binds is **a contrast decision, not a taste one**:
 | `defaultColor` | Fills, dots, borders, glyphs, chart series | ≥ 3:1 on `background.level01`/`level02` (WCAG SC 1.4.11) |
 | `hover` / `pressed` | Interaction states of a control already using the tone | Inherits the control's |
 | `ink` | **Any alert-toned text**, and the glyph paired with it | ≥ 4.5:1 (SC 1.4.3) |
+| `glyphOnLevel03` | A static alert-toned glyph on the `background.level03` fill — the mid-grey chip and square fill none of the above is tuned for | ≥ 3:1 on `background.level03` (SC 1.4.11) |
 
 **`ink` is not a fifth hue.** It resolves per brightness to the least-extreme step
 of the same ramp that clears AA — `pressed` in light for success/warning/info,
 `hover` in light and dark for error, `defaultColor` in dark for the rest. Widgets
 used to make that pick by hand with `brightness` branches; **that is now the
-token's job.**
+token's job.** `glyphOnLevel03` is the same idea for the one surface `ink` does
+not cover: `level03` is the mid grey on which no error step reaches AA in dark
+and even the surface ink stops at 2.9:1, so a glyph there (the missed-day
+cross on a habit square) binds this step rather than borrowing `pressed` for
+its contrast — an interaction-state token can be retuned for button feedback
+without anyone thinking of a static indicator.
 
 Two consequences worth stating plainly:
 
