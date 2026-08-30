@@ -40,6 +40,15 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="1.0.22" date="2026-08-31">
+      <description>
+        <p>Added: habit signals can use today's value, the seven-day average, or either. Threshold-based auto-completion can now reward a strong day, sustained progress, or whichever reaches the target first.</p>
+        <p>Changed: goal cards now match the framed habit cards on the overview. Their background, subtle border, and rounded corners are consistent in light and dark mode.</p>
+        <p>Changed: opening Habits now refreshes health data its completion signals watch. Automatic check-offs can catch up from the device health store without waiting for another screen to trigger an import.</p>
+        <p>Fixed: event photos now stay current and behave consistently everywhere. Event cards refresh when photos are linked locally or arrive through sync, photos can be unlinked from an event without deleting them, and the full-screen viewer now downloads the current photo, shows its date, hides its controls on tap, and no longer rotates during pinch gestures.</p>
+        <p>Fixed: skipped habit days are visible and no longer keep streaks alive. Habit strips now show a clear orange dash for a skip, distinct from both an untouched day and a stronger red missed-day cross. Both outcomes retain a clearly bounded rounded cell, and streaks advance only on successful completions.</p>
+      </description>
+    </release>
     <release version="1.0.21" date="2026-08-30">
       <description>
         <p>Fixed: editing a checklist item on desktop no longer shows the correction toast twice. The undo toast now appears only inside the task details pane while page-level notifications continue to work normally.</p>

@@ -60,10 +60,12 @@ grep -m1 '^version:' pubspec.yaml     # e.g. version: 1.0.13+4352
   its notes to the current top changelog section and metainfo release block; it
   must not create a duplicate `## [1.0.21]` heading or `<release
   version="1.0.21">` block.
-- **User-facing additions or changes:** increment the minor version, reset the
-  patch component to zero, and increment the build number (`1.0.21+4362` →
-  `1.1.0+4363`). Any publishable `Added`, `Changed`, `Deprecated`, or `Removed`
-  entry makes this a user-facing release. Do not use patch-version bumps.
+- **User-facing additions or changes:** increment the patch version and the
+  build number (`1.0.21+4362` → `1.0.22+4363`). Any publishable `Added`,
+  `Changed`, `Deprecated`, or `Removed` entry makes this a user-facing release.
+- **Explicit minor release:** increment the minor version and reset the patch
+  component to zero only when the user explicitly requests a minor release
+  (`1.0.21+4362` → `1.1.0+4363`). The build number still increments normally.
 - **Build number:** always previous + 1. It only has to be unique and increasing
   per tag — every release lane triggers on tag push, not on merges to `main` —
   so it moves once per release, not once per pull request.
@@ -77,7 +79,7 @@ For a user-facing release, insert one new section at the top of `CHANGELOG.md`,
 directly under the Keep a Changelog preamble and above the previous version:
 
 ```markdown
-## [1.1.0]
+## [1.0.22]
 ### Added
 - **...**
 
@@ -109,7 +111,7 @@ For a user-facing release, add one `<release>` to
 `<releases>` — newest first:
 
 ```xml
-<release version="1.1.0" date="2026-08-25">
+<release version="1.0.22" date="2026-08-25">
   <description>
     <p>Fixed: ...</p>
   </description>
@@ -154,7 +156,7 @@ The `date` is the day the release is cut, `YYYY-MM-DD`.
 One line in `pubspec.yaml`:
 
 ```yaml
-version: 1.1.0+4363
+version: 1.0.22+4363
 ```
 
 ## 6. Delete the fragments you consumed
@@ -187,7 +189,7 @@ than it is written.
 Use the semantic version in the title for a user-facing release:
 
 ```
-chore(release): 1.1.0
+chore(release): 1.0.22
 ```
 
 Use the full version and build for a fix-only release so it is distinguishable
@@ -207,7 +209,7 @@ nothing visual changed.
 
 ```bash
 git checkout main && git pull
-make tag_push        # tags 1.1.0+4363 from pubspec.yaml and pushes it
+make tag_push        # tags 1.0.22+4363 from pubspec.yaml and pushes it
 ```
 
 `make tag_push` reads the version with `yq`; install it (`brew install yq`) or tag
