@@ -176,7 +176,13 @@ The Play-configured three-day grace deadline arrives as the line item's extended
 grace window. Loss of entitlement suspends the Matrix user reversibly, while a
 renewal or payment recovery unsuspends it without discarding device or E2EE
 state. Client verification enforces the newly persisted current state before
-attempting bundle delivery, including when that state denies access. Suspension
+attempting bundle delivery, including when that state denies access. The route
+refreshes wall-clock time after Google verification and again before returning;
+paid provisioning also refreshes time at every access boundary, including after
+Matrix account creation and claim-secret verification. If access expires during
+either operation, credential delivery fails closed and the route runs one final
+enforcement pass so an existing Matrix account does not remain unsuspended.
+Suspension
 requires Synapse 1.110.0 or newer with MSC3823 enabled; when
 subscriptions are enabled, startup authenticates to Synapse and validates that
 version before workers start or purchase traffic is accepted. Each enforcement

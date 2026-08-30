@@ -176,19 +176,21 @@ class FakeSubscriptionRepository:
     def __init__(self):
         self.subscription = SimpleNamespace(entitlement_state=EntitlementState.ACTIVE)
         self.lookups = []
+        self.results = []
 
     async def get_current_subscription(self, entitlement_id):
         self.lookups.append(entitlement_id)
-        return self.subscription
+        return self.results.pop(0) if self.results else self.subscription
 
 
 class FakeSubscriptionAccessService:
     def __init__(self):
         self.calls = []
+        self.results = []
 
     async def enforce(self, subscription, *, now):
         self.calls.append((subscription, now))
-        return False
+        return self.results.pop(0) if self.results else False
 
 
 class FakeReconciler:
@@ -356,8 +358,89 @@ def test_verified_purchase_returns_paid_bundle_and_rotation_challenge(client, se
     assert values["entitlement_auth_secret"] == AUTH_SECRET
     access_calls = services[SERVICE_SUBSCRIPTION_ACCESS_SERVICE].calls
     assert access_calls[0][0] is services[SERVICE_SUBSCRIPTION_REPOSITORY].subscription
-    assert len(access_calls) == 1
-    assert services[SERVICE_SUBSCRIPTION_REPOSITORY].lookups == ["entitlement-one"]
+    assert len(access_calls) == 2
+    assert services[SERVICE_SUBSCRIPTION_REPOSITORY].lookups == [
+        "entitlement-one",
+        "entitlement-one",
+    ]
+
+
+def test_purchase_verification_rechecks_access_after_slow_provisioning(
+    client,
+    services,
+    monkeypatch,
+):
+    route_times = iter(
+        (
+            NOW,
+            NOW + timedelta(seconds=30),
+            NOW + timedelta(minutes=1),
+        )
+    )
+
+    class FakeDatetime:
+        @classmethod
+        def now(cls, _timezone):
+            return next(route_times)
+
+    monkeypatch.setattr("src.api.routes.datetime", FakeDatetime)
+    access = services[SERVICE_SUBSCRIPTION_ACCESS_SERVICE]
+    access.results = [False, True]
+
+    response = client.post(
+        "/api/v1/client/subscriptions/purchases/verify",
+        headers={"Authorization": f"Bearer {AUTH_SECRET}"},
+        json=purchase_payload(),
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "Subscription does not currently grant SYNC access"
+    assert [call[1] for call in access.calls] == [
+        NOW + timedelta(seconds=30),
+        NOW + timedelta(minutes=1),
+    ]
+    assert services[SERVICE_PAID_BUNDLE_SERVICE].provision_calls[0][2] == NOW + timedelta(
+        seconds=30
+    )
+
+
+def test_purchase_verification_stops_before_delivery_when_enforcement_suspends(
+    client,
+    services,
+):
+    services[SERVICE_SUBSCRIPTION_ACCESS_SERVICE].results = [True]
+
+    response = client.post(
+        "/api/v1/client/subscriptions/purchases/verify",
+        headers={"Authorization": f"Bearer {AUTH_SECRET}"},
+        json=purchase_payload(),
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "Subscription does not currently grant SYNC access"
+    assert services[SERVICE_PAID_BUNDLE_SERVICE].provision_calls == []
+
+
+def test_purchase_verification_fails_closed_if_subscription_disappears_after_delivery(
+    client,
+    services,
+):
+    subscription_repository = services[SERVICE_SUBSCRIPTION_REPOSITORY]
+    subscription_repository.results = [subscription_repository.subscription, None]
+
+    response = client.post(
+        "/api/v1/client/subscriptions/purchases/verify",
+        headers={"Authorization": f"Bearer {AUTH_SECRET}"},
+        json=purchase_payload(),
+    )
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "Verified subscription is missing"
+    paid_service = services[SERVICE_PAID_BUNDLE_SERVICE]
+    assert len(paid_service.provision_calls) == 1
+    assert services[SERVICE_SUBSCRIPTION_ACCESS_SERVICE].calls == [
+        (subscription_repository.subscription, paid_service.provision_calls[0][2])
+    ]
 
 
 def test_purchase_verification_maps_attempt_rate_limit(client, services):
@@ -374,6 +457,45 @@ def test_purchase_verification_maps_attempt_rate_limit(client, services):
     assert response.status_code == 429
     assert response.headers["retry-after"] == "73"
     assert response.json()["detail"] == "Purchase verification rate limit exceeded"
+
+
+def test_purchase_verification_enforces_expiry_after_delivery_rejects(
+    client,
+    services,
+    monkeypatch,
+):
+    route_times = iter(
+        (
+            NOW,
+            NOW + timedelta(seconds=30),
+            NOW + timedelta(minutes=1),
+        )
+    )
+
+    class FakeDatetime:
+        @classmethod
+        def now(cls, _timezone):
+            return next(route_times)
+
+    monkeypatch.setattr("src.api.routes.datetime", FakeDatetime)
+    access = services[SERVICE_SUBSCRIPTION_ACCESS_SERVICE]
+    access.results = [False, True]
+    services[SERVICE_PAID_BUNDLE_SERVICE].failure = GooglePlayVerificationException(
+        "Subscription does not currently grant SYNC access"
+    )
+
+    response = client.post(
+        "/api/v1/client/subscriptions/purchases/verify",
+        headers={"Authorization": f"Bearer {AUTH_SECRET}"},
+        json=purchase_payload(),
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "Subscription does not currently grant SYNC access"
+    assert [call[1] for call in access.calls] == [
+        NOW + timedelta(seconds=30),
+        NOW + timedelta(minutes=1),
+    ]
 
 
 def test_inactive_verified_purchase_is_enforced_before_delivery_rejection(
@@ -394,8 +516,12 @@ def test_inactive_verified_purchase_is_enforced_before_delivery_rejection(
 
     assert response.status_code == 422
     assert response.json()["detail"] == "Subscription does not currently grant SYNC access"
-    assert services[SERVICE_SUBSCRIPTION_REPOSITORY].lookups == ["entitlement-one"]
-    assert services[SERVICE_SUBSCRIPTION_ACCESS_SERVICE].calls[0][0] is subscription
+    assert services[SERVICE_SUBSCRIPTION_REPOSITORY].lookups == [
+        "entitlement-one",
+        "entitlement-one",
+    ]
+    access_calls = services[SERVICE_SUBSCRIPTION_ACCESS_SERVICE].calls
+    assert [call[0] for call in access_calls] == [subscription, subscription]
 
 
 def test_verified_replacement_purchase_returns_account_recovery_result(client, services):

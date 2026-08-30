@@ -100,7 +100,7 @@ async def create_sync_entitlement(request: Request) -> EntitlementCredentialsRes
     _require_subscriptions_enabled()
     try:
         credentials = await container.get_subscription_identity_service().create_entitlement(
-            client_identifier=request.client.host if request.client is not None else "unknown",
+            client_identifier=(request.client.host if request.client is not None else "unknown"),
             now=datetime.now(timezone.utc),
         )
         return EntitlementCredentialsResponse(**credentials.__dict__)
@@ -159,24 +159,57 @@ async def verify_subscription_purchase(
     """Verify with Google, persist entitlement, and deliver one paid bundle."""
     _require_subscriptions_enabled()
     submission = PurchaseSubmission(**request.model_dump())
-    now = datetime.now(timezone.utc)
+    request_started_at = datetime.now(timezone.utc)
     try:
         verified = await container.get_subscription_service().verify_purchase(
             submission,
             entitlement_auth_secret=_bearer_secret(authorization),
-            now=now,
+            now=request_started_at,
         )
+        enforcement_now = datetime.now(timezone.utc)
         current = await container.get_subscription_repository().get_current_subscription(
             verified.subscription.entitlement_id
         )
         if current is None:
             raise BundleClaimConflictException("Verified subscription is missing")
-        await container.get_subscription_access_service().enforce(current, now=now)
-        delivery = await container.get_paid_bundle_service().provision_or_deliver(
-            verified,
-            submission,
-            now=now,
+        suspended = await container.get_subscription_access_service().enforce(
+            current,
+            now=enforcement_now,
         )
+        if suspended is True:
+            raise GooglePlayVerificationException(
+                "Subscription does not currently grant SYNC access"
+            )
+        try:
+            delivery = await container.get_paid_bundle_service().provision_or_deliver(
+                verified,
+                submission,
+                now=enforcement_now,
+            )
+        except GooglePlayVerificationException:
+            current = await container.get_subscription_repository().get_current_subscription(
+                verified.subscription.entitlement_id
+            )
+            if current is not None:
+                await container.get_subscription_access_service().enforce(
+                    current,
+                    now=datetime.now(timezone.utc),
+                )
+            raise
+        response_now = datetime.now(timezone.utc)
+        current = await container.get_subscription_repository().get_current_subscription(
+            verified.subscription.entitlement_id
+        )
+        if current is None:
+            raise BundleClaimConflictException("Verified subscription is missing")
+        suspended = await container.get_subscription_access_service().enforce(
+            current,
+            now=response_now,
+        )
+        if suspended is True:
+            raise GooglePlayVerificationException(
+                "Subscription does not currently grant SYNC access"
+            )
         return PaidBundleResponse(
             **delivery.__dict__,
             entitlement_state=current.entitlement_state.value,

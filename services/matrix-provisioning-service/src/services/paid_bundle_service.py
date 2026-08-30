@@ -8,7 +8,7 @@ import hashlib
 import hmac
 import uuid
 from collections.abc import Awaitable, Callable
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from time import monotonic
 
 from ..core.exceptions import (
@@ -54,6 +54,7 @@ class PaidBundleService:
         provisioning_operation_timeout: timedelta = timedelta(minutes=5),
         provisioning_waiter: Callable[[float], Awaitable[None]] = asyncio.sleep,
         secret_hasher: SecretHasher | None = None,
+        now_provider: Callable[[], datetime] | None = None,
     ):
         if provisioning_wait_seconds < 0:
             raise ValueError("Paid provisioning wait must not be negative")
@@ -71,6 +72,7 @@ class PaidBundleService:
         self._provisioning_operation_timeout = provisioning_operation_timeout
         self._provisioning_waiter = provisioning_waiter
         self._secret_hasher = secret_hasher or SecretHasher()
+        self._now_provider = now_provider or (lambda: datetime.now(timezone.utc))
         self._provisioning_locks = tuple(asyncio.Lock() for _ in range(64))
 
     async def provision_or_deliver(
@@ -81,7 +83,8 @@ class PaidBundleService:
         now: datetime,
     ) -> PaidBundleDelivery:
         """Return the same escrowed bundle across network retries."""
-        if not _grants_access(verified.subscription, now=now):
+        operation_now = self._current_time(now)
+        if not _grants_access(verified.subscription, now=operation_now):
             raise GooglePlayVerificationException(
                 "Subscription does not currently grant SYNC access"
             )
@@ -94,7 +97,11 @@ class PaidBundleService:
 
         lock_index = self._lock_index(verified.subscription.entitlement_id)
         async with self._provisioning_locks[lock_index]:
-            return await self._provision_or_deliver_locked(verified, submission, now=now)
+            return await self._provision_or_deliver_locked(
+                verified,
+                submission,
+                now=self._current_time(operation_now),
+            )
 
     async def _provision_or_deliver_locked(
         self,
@@ -105,7 +112,10 @@ class PaidBundleService:
     ) -> PaidBundleDelivery:
         """Provision or reuse escrow while the entitlement stripe is held."""
 
-        current = await self._load_current_subscription(verified, now=now)
+        current = await self._load_current_subscription(
+            verified,
+            now=self._current_time(now),
+        )
         existing = await self._repository.get_bundle_claim_for_entitlement(
             verified.subscription.entitlement_id
         )
@@ -150,7 +160,8 @@ class PaidBundleService:
                 delivery = await self._deliver_existing(
                     existing,
                     claim_secret=submission.claim_secret,
-                    now=now,
+                    now=self._current_time(now),
+                    entitlement_id=verified.subscription.entitlement_id,
                 )
         else:
             provisioning_token, raced_claim = await self._acquire_provisioning_reservation(
@@ -161,7 +172,8 @@ class PaidBundleService:
                 delivery = await self._deliver_existing(
                     raced_claim,
                     claim_secret=submission.claim_secret,
-                    now=now,
+                    now=self._current_time(now),
+                    entitlement_id=verified.subscription.entitlement_id,
                 )
             else:
                 try:
@@ -189,7 +201,8 @@ class PaidBundleService:
                     delivery = await self._deliver_existing(
                         claim,
                         claim_secret=submission.claim_secret,
-                        now=now,
+                        now=self._current_time(now),
+                        entitlement_id=verified.subscription.entitlement_id,
                     )
                 finally:
                     await self._repository.release_paid_bundle_provisioning(
@@ -197,7 +210,10 @@ class PaidBundleService:
                         operation_token=provisioning_token,
                     )
 
-        current = await self._load_current_subscription(verified, now=now)
+        current = await self._load_current_subscription(
+            verified,
+            now=self._current_time(now),
+        )
         if current.acknowledgement_state is AcknowledgementState.PENDING:
             await self._google_play_client.acknowledge_subscription(
                 submission.package_name,
@@ -206,8 +222,12 @@ class PaidBundleService:
             )
             await self._repository.mark_subscription_acknowledged(
                 current.token_fingerprint,
-                now=now,
+                now=self._current_time(now),
             )
+        await self._load_current_subscription(
+            verified,
+            now=self._current_time(now),
+        )
         return delivery
 
     async def _load_current_subscription(
@@ -238,7 +258,7 @@ class PaidBundleService:
         started = monotonic()
         while True:
             elapsed = monotonic() - started
-            attempt_now = now + timedelta(seconds=elapsed)
+            attempt_now = self._current_time(now + timedelta(seconds=elapsed))
             acquired = await self._repository.reserve_paid_bundle_provisioning(
                 entitlement_id,
                 token_fingerprint=verified.subscription.token_fingerprint,
@@ -274,6 +294,8 @@ class PaidBundleService:
         )
 
         async def persist(result, encoded):
+            persist_now = self._current_time(now)
+            await self._load_current_subscription(verified, now=persist_now)
             bundle_id = str(uuid.uuid4())
             encrypted_bundle = self._secret_cipher.encrypt(
                 encoded.encode(),
@@ -295,8 +317,8 @@ class PaidBundleService:
                 claim_secret_hash=verified.claim_secret_hash,
                 encrypted_bundle=encrypted_bundle,
                 encryption_key_id=self._secret_cipher.key_id,
-                expires_at=now + self._claim_ttl,
-                now=now,
+                expires_at=persist_now + self._claim_ttl,
+                now=persist_now,
             )
             return claim
 
@@ -317,7 +339,7 @@ class PaidBundleService:
             return await self._deliver_existing(
                 claim,
                 claim_secret=claim_secret,
-                now=now,
+                now=self._current_time(now),
                 entitlement_id=entitlement_id,
             )
 
@@ -329,19 +351,24 @@ class PaidBundleService:
         now: datetime,
         entitlement_id: str | None = None,
     ) -> PaidBundleDelivery:
+        operation_now = self._current_time(now)
         operation_token = str(uuid.uuid4())
         reserved = await self._repository.reserve_bundle_delivery(
             claim.bundle_id,
             operation_token=operation_token,
-            now=now,
-            stale_before=now - self._provisioning_operation_timeout,
+            now=operation_now,
+            stale_before=operation_now - self._provisioning_operation_timeout,
         )
         completed = False
         try:
             await self._authorize_claim_secret(reserved, claim_secret)
             if entitlement_id is not None:
                 subscription = await self._repository.get_current_subscription(entitlement_id)
-                if subscription is None or not _grants_access(subscription, now=now):
+                operation_now = self._current_time(operation_now)
+                if subscription is None or not _grants_access(
+                    subscription,
+                    now=operation_now,
+                ):
                     raise GooglePlayVerificationException(
                         "Subscription does not currently grant SYNC access"
                     )
@@ -349,7 +376,7 @@ class PaidBundleService:
                 reserved,
                 claim_secret=claim_secret,
                 operation_token=operation_token,
-                now=now,
+                now=operation_now,
             )
             completed = True
             return delivery
@@ -400,6 +427,10 @@ class PaidBundleService:
         return int(hashlib.sha256(entitlement_id.encode()).hexdigest(), 16) % len(
             self._provisioning_locks
         )
+
+    def _current_time(self, not_before: datetime) -> datetime:
+        """Return a fresh wall-clock value without moving backward in one request."""
+        return max(not_before, self._now_provider())
 
     @staticmethod
     def _username(entitlement_id: str, *, retry_suffix: str | None = None) -> str:

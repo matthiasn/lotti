@@ -107,7 +107,13 @@ def cipher():
 
 @pytest.fixture
 def service(bundle_service, repository, google_client, cipher):
-    return PaidBundleService(bundle_service, repository, google_client, cipher)
+    return PaidBundleService(
+        bundle_service,
+        repository,
+        google_client,
+        cipher,
+        now_provider=lambda: NOW,
+    )
 
 
 async def verified_purchase(repository, *, state=EntitlementState.ACTIVE):
@@ -192,6 +198,79 @@ async def test_first_delivery_provisions_once_escrows_and_acknowledges(
     ]
     assert stored.acknowledgement_state is AcknowledgementState.ACKNOWLEDGED
     assert stored.acknowledged_at == NOW
+
+
+async def test_provisioning_rechecks_access_after_matrix_account_creation(
+    repository,
+    google_client,
+    cipher,
+):
+    bundle_service = FakeBundleService(block_first=True)
+    current_time = NOW
+    service = PaidBundleService(
+        bundle_service,
+        repository,
+        google_client,
+        cipher,
+        now_provider=lambda: current_time,
+    )
+    verified = await verified_purchase(repository)
+    expiring = replace(
+        verified,
+        subscription=await repository.store_verified_subscription(
+            refreshed_snapshot(
+                verified.subscription,
+                current_period_end=NOW + timedelta(minutes=1),
+            ),
+            now=NOW,
+        ),
+    )
+
+    provisioning = asyncio.create_task(
+        service.provision_or_deliver(expiring, submission(), now=NOW)
+    )
+    await bundle_service.first_started.wait()
+    current_time = NOW + timedelta(minutes=1)
+    bundle_service.release_first.set()
+
+    with pytest.raises(GooglePlayVerificationException, match="does not currently grant"):
+        await provisioning
+
+    assert await repository.get_bundle_claim_for_entitlement("entitlement-one") is None
+    assert google_client.acknowledgements == []
+
+
+async def test_default_clock_rejects_purchase_that_expired_after_request_started(
+    repository,
+    bundle_service,
+    google_client,
+    cipher,
+    monkeypatch,
+):
+    class FakeDatetime:
+        @classmethod
+        def now(cls, _timezone):
+            return NOW + timedelta(minutes=1)
+
+    monkeypatch.setattr("src.services.paid_bundle_service.datetime", FakeDatetime)
+    service = PaidBundleService(bundle_service, repository, google_client, cipher)
+    verified = await verified_purchase(repository)
+    expiring = replace(
+        verified,
+        subscription=await repository.store_verified_subscription(
+            refreshed_snapshot(
+                verified.subscription,
+                current_period_end=NOW + timedelta(minutes=1),
+            ),
+            now=NOW,
+        ),
+    )
+
+    with pytest.raises(GooglePlayVerificationException, match="does not currently grant"):
+        await service.provision_or_deliver(expiring, submission(), now=NOW)
+
+    assert bundle_service.calls == []
+    assert await repository.get_bundle_claim_for_entitlement("entitlement-one") is None
 
 
 async def test_lost_response_retry_returns_same_bundle_without_second_account(
@@ -358,7 +437,13 @@ async def test_overlapping_retries_share_one_provisioned_bundle(
     cipher,
 ):
     bundle_service = FakeBundleService(block_first=True)
-    service = PaidBundleService(bundle_service, repository, google_client, cipher)
+    service = PaidBundleService(
+        bundle_service,
+        repository,
+        google_client,
+        cipher,
+        now_provider=lambda: NOW,
+    )
     verified = await verified_purchase(repository)
 
     first = asyncio.create_task(service.provision_or_deliver(verified, submission(), now=NOW))
@@ -387,13 +472,20 @@ async def test_separate_service_instances_share_one_durable_provisioning_reserva
         second_waiting.set()
         await allow_second_retry.wait()
 
-    first_service = PaidBundleService(bundle_service, repository, google_client, cipher)
+    first_service = PaidBundleService(
+        bundle_service,
+        repository,
+        google_client,
+        cipher,
+        now_provider=lambda: NOW,
+    )
     second_service = PaidBundleService(
         bundle_service,
         second_repository,
         google_client,
         cipher,
         provisioning_waiter=wait_for_first_provisioning,
+        now_provider=lambda: NOW,
     )
     verified = await verified_purchase(repository)
 
@@ -433,6 +525,7 @@ async def test_busy_cross_process_reservation_returns_retryable_conflict_without
         google_client,
         cipher,
         provisioning_wait_seconds=0,
+        now_provider=lambda: NOW,
     )
 
     with pytest.raises(BundleClaimConflictException, match="already in progress"):
@@ -640,7 +733,13 @@ async def test_occupied_deterministic_username_retries_with_fresh_localpart(
     cipher,
 ):
     bundle_service = FakeBundleService(reject_first_username=True)
-    service = PaidBundleService(bundle_service, repository, google_client, cipher)
+    service = PaidBundleService(
+        bundle_service,
+        repository,
+        google_client,
+        cipher,
+        now_provider=lambda: NOW,
+    )
     verified = await verified_purchase(repository)
 
     delivered = await service.provision_or_deliver(verified, submission(), now=NOW)
