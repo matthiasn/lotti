@@ -158,7 +158,8 @@ A linked replacement must grant access before the repository can store it or
 retire the current token. First observations and the same-token path still
 persist denial state so reconciliation can suspend Matrix. Replacement audit
 events use the retired predecessor as their before-state, preserving recovery
-and other lifecycle transitions across token rotation.
+and other lifecycle transitions across token rotation, including active
+out-of-app resubscription after expiry.
 Requests in another service object or process wait for the owner's durable
 claim and reuse it; a killed owner becomes recoverable after five minutes. A
 replacement that takes over a stale paid-provisioning reservation receives a

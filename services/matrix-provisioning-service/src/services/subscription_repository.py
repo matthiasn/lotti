@@ -894,6 +894,7 @@ class SubscriptionRepository(ProvisioningRepository):
         ):
             events.append(SubscriptionEventType.SUSPENDED)
         if snapshot.entitlement_state is EntitlementState.ACTIVE and previous_entitlement in {
+            EntitlementState.EXPIRED,
             EntitlementState.GRACE,
             EntitlementState.SUSPENDED,
         }:

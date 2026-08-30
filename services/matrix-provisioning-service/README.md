@@ -119,9 +119,10 @@ in the same SQLite transaction before the current snapshot is replaced. Initial
 verification, acknowledgement, renewal, grace entry, suspension, recovery and
 expiry retain their before/after states and period boundary. A replacement uses
 its retired predecessor as the before-state, so a recovered replacement records
-recovery instead of an unrelated initial verification. Database triggers reject
-event updates and deletes. Audit rows contain only token fingerprints and
-lifecycle metadata, never purchase tokens, credentials or bundle plaintext.
+recovery instead of an unrelated initial verification, including out-of-app
+resubscription after expiry. Database triggers reject event updates and deletes.
+Audit rows contain only token fingerprints and lifecycle metadata, never
+purchase tokens, credentials or bundle plaintext.
 
 Entitlement bootstrap is public by necessity, so issuance is protected by a
 durable per-client fixed-window quota before an entitlement row or secret is

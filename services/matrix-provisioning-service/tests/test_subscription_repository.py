@@ -634,6 +634,42 @@ async def test_replacement_audit_uses_predecessor_as_recovery_before_state(
     assert events[0].to_entitlement_state is EntitlementState.ACTIVE
 
 
+async def test_out_of_app_replacement_audit_recovers_from_expired_predecessor(
+    subscription_repository,
+):
+    entitlement = await create_entitlement(subscription_repository)
+    original = verified_subscription(entitlement.entitlement_id, "original-token")
+    await subscription_repository.store_verified_subscription(original, now=NOW)
+    expired_time = NOW + timedelta(minutes=1)
+    expired = await subscription_repository.store_verified_subscription(
+        replace(
+            original,
+            google_state=GoogleSubscriptionState.EXPIRED,
+            entitlement_state=EntitlementState.EXPIRED,
+            last_verified_at=expired_time,
+        ),
+        now=expired_time,
+    )
+    replacement_time = NOW + timedelta(minutes=2)
+    replacement = await subscription_repository.store_verified_subscription(
+        verified_subscription(
+            entitlement.entitlement_id,
+            "replacement-token",
+            out_of_app_expired_token_fingerprint=expired.token_fingerprint,
+            last_verified_at=replacement_time,
+        ),
+        now=replacement_time,
+    )
+
+    events = await subscription_repository.list_subscription_events(replacement.token_fingerprint)
+
+    assert [event.event_type for event in events] == [SubscriptionEventType.RECOVERED]
+    assert events[0].from_google_state is GoogleSubscriptionState.EXPIRED
+    assert events[0].to_google_state is GoogleSubscriptionState.ACTIVE
+    assert events[0].from_entitlement_state is EntitlementState.EXPIRED
+    assert events[0].to_entitlement_state is EntitlementState.ACTIVE
+
+
 async def test_subscription_event_insert_failure_rolls_back_snapshot_update(
     subscription_repository,
 ):
