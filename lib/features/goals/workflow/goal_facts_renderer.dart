@@ -70,6 +70,7 @@ class GoalFactsRenderer {
     List<String> unansweredUserMessages = const [],
     List<Map<String, Object>> recentDialogue = const [],
     List<Map<String, Object?>> userVoice = const [],
+    Map<String, String> criterionNames = const {},
   }) {
     final now = clock.now();
     final active = nudges.where((n) => n.status == NudgeStatus.active).toList();
@@ -141,7 +142,7 @@ class GoalFactsRenderer {
       'goal': {
         'id': version.agentId,
         'statement': version.statement,
-        'criteria': criterionJson(version.criteria),
+        'criteria': criterionJson(version.criteria, names: criterionNames),
       },
       'evaluation': {
         'referenceIsCurrentDay': _isToday(evaluationReference, now),
@@ -784,86 +785,99 @@ String truncateGoalEvidenceText(String text, int tokenBudget) {
 /// A JSON rendering of the criteria tree, mirroring the eval fixtures'
 /// vocabulary: leaves carry their window/target/direction, composites
 /// nest their children under the combinator name.
-Map<String, Object?> criterionJson(GoalCriterion criterion) =>
-    switch (criterion) {
-      GoalCriterionMetric() => {
-        'criterionId': criterion.criterionId,
-        if (criterion.title != null) 'title': criterion.title,
-        'metric': criterion.dataType,
-        'aggregation': criterion.aggregation.name,
-        'window': _windowLabel(criterion.window),
-        'target': criterion.target,
-        'direction': criterion.direction.name,
+///
+/// [names] maps habit ids and measurable data-type ids to display names. A
+/// habit or measurable criterion without a title of its own is titled after
+/// its entity from there, so the model always has a readable name for it —
+/// the raw ids never reach the payload either way.
+Map<String, Object?> criterionJson(
+  GoalCriterion criterion, {
+  Map<String, String> names = const {},
+}) => switch (criterion) {
+  GoalCriterionMetric() => {
+    'criterionId': criterion.criterionId,
+    if (criterion.title != null) 'title': criterion.title,
+    'metric': criterion.dataType,
+    'aggregation': criterion.aggregation.name,
+    'window': _windowLabel(criterion.window),
+    'target': criterion.target,
+    'direction': criterion.direction.name,
+  },
+  GoalCriterionHabit() => {
+    'criterionId': criterion.criterionId,
+    'title': ?(criterion.title ?? names[criterion.habitId]),
+    // No `habit: <habitId>` here, and none below for the measurable's
+    // data type: both are UUIDs in production, `title` already names the
+    // thing, and every tool call references `criterionId` instead. The
+    // evals never surfaced the duplication because their fixtures use
+    // readable slugs ('habit-measure-bp') where the app has UUIDs.
+    'window': _windowLabel(criterion.window),
+    'targetCount': criterion.targetCount,
+  },
+  GoalCriterionMeasurable() => {
+    'criterionId': criterion.criterionId,
+    'title': ?(criterion.title ?? names[criterion.dataTypeId]),
+    'aggregation': criterion.aggregation.name,
+    'window': _windowLabel(criterion.window),
+    'target': criterion.target,
+    'direction': criterion.direction.name,
+  },
+  GoalCriterionCategoryTime() => {
+    'criterionId': criterion.criterionId,
+    if (criterion.title != null) 'title': criterion.title,
+    'categoryTime': criterion.categoryId,
+    'aggregation': criterion.aggregation.name,
+    'window': _windowLabel(criterion.window),
+    'targetHours': criterion.targetHours,
+    'direction': criterion.direction.name,
+    if (criterion.dailyTimeRange case final range?)
+      'dailyTimeRange': {
+        'startMinute': range.startMinute,
+        'endMinute': range.endMinute,
       },
-      GoalCriterionHabit() => {
-        'criterionId': criterion.criterionId,
-        if (criterion.title != null) 'title': criterion.title,
-        // No `habit: <habitId>` here, and none below for the measurable's
-        // data type: both are UUIDs in production, `title` already names the
-        // thing, and every tool call references `criterionId` instead. The
-        // evals never surfaced the duplication because their fixtures use
-        // readable slugs ('habit-measure-bp') where the app has UUIDs.
-        'window': _windowLabel(criterion.window),
-        'targetCount': criterion.targetCount,
+    'evidence': 'tracked Lotti time entries only',
+  },
+  GoalCriterionLabelTime() => {
+    'criterionId': criterion.criterionId,
+    if (criterion.title != null) 'title': criterion.title,
+    'labelTime': criterion.labelId,
+    if (criterion.categoryId != null) 'categoryId': criterion.categoryId,
+    'aggregation': criterion.aggregation.name,
+    'window': _windowLabel(criterion.window),
+    'targetHours': criterion.targetHours,
+    'direction': criterion.direction.name,
+    if (criterion.dailyTimeRange case final range?)
+      'dailyTimeRange': {
+        'startMinute': range.startMinute,
+        'endMinute': range.endMinute,
       },
-      GoalCriterionMeasurable() => {
-        'criterionId': criterion.criterionId,
-        if (criterion.title != null) 'title': criterion.title,
-        'aggregation': criterion.aggregation.name,
-        'window': _windowLabel(criterion.window),
-        'target': criterion.target,
-        'direction': criterion.direction.name,
-      },
-      GoalCriterionCategoryTime() => {
-        'criterionId': criterion.criterionId,
-        if (criterion.title != null) 'title': criterion.title,
-        'categoryTime': criterion.categoryId,
-        'aggregation': criterion.aggregation.name,
-        'window': _windowLabel(criterion.window),
-        'targetHours': criterion.targetHours,
-        'direction': criterion.direction.name,
-        if (criterion.dailyTimeRange case final range?)
-          'dailyTimeRange': {
-            'startMinute': range.startMinute,
-            'endMinute': range.endMinute,
-          },
-        'evidence': 'tracked Lotti time entries only',
-      },
-      GoalCriterionLabelTime() => {
-        'criterionId': criterion.criterionId,
-        if (criterion.title != null) 'title': criterion.title,
-        'labelTime': criterion.labelId,
-        if (criterion.categoryId != null) 'categoryId': criterion.categoryId,
-        'aggregation': criterion.aggregation.name,
-        'window': _windowLabel(criterion.window),
-        'targetHours': criterion.targetHours,
-        'direction': criterion.direction.name,
-        if (criterion.dailyTimeRange case final range?)
-          'dailyTimeRange': {
-            'startMinute': range.startMinute,
-            'endMinute': range.endMinute,
-          },
-        'evidence':
-            'tracked Lotti time entries carrying this label; '
-            'matching entry markdown is supplied in signals',
-      },
-      GoalCriterionAllOf() => {
-        'criterionId': criterion.criterionId,
-        if (criterion.title != null) 'title': criterion.title,
-        'allOf': [for (final c in criterion.criteria) criterionJson(c)],
-      },
-      GoalCriterionAnyOf() => {
-        'criterionId': criterion.criterionId,
-        if (criterion.title != null) 'title': criterion.title,
-        'anyOf': [for (final c in criterion.criteria) criterionJson(c)],
-      },
-      GoalCriterionAtLeastCount() => {
-        'criterionId': criterion.criterionId,
-        if (criterion.title != null) 'title': criterion.title,
-        'atLeast': criterion.successes,
-        'of': [for (final c in criterion.criteria) criterionJson(c)],
-      },
-    };
+    'evidence':
+        'tracked Lotti time entries carrying this label; '
+        'matching entry markdown is supplied in signals',
+  },
+  GoalCriterionAllOf() => {
+    'criterionId': criterion.criterionId,
+    if (criterion.title != null) 'title': criterion.title,
+    'allOf': [
+      for (final c in criterion.criteria) criterionJson(c, names: names),
+    ],
+  },
+  GoalCriterionAnyOf() => {
+    'criterionId': criterion.criterionId,
+    if (criterion.title != null) 'title': criterion.title,
+    'anyOf': [
+      for (final c in criterion.criteria) criterionJson(c, names: names),
+    ],
+  },
+  GoalCriterionAtLeastCount() => {
+    'criterionId': criterion.criterionId,
+    if (criterion.title != null) 'title': criterion.title,
+    'atLeast': criterion.successes,
+    'of': [
+      for (final c in criterion.criteria) criterionJson(c, names: names),
+    ],
+  },
+};
 
 String _windowLabel(GoalWindow window) => switch (window) {
   GoalWindowDay() => 'day',

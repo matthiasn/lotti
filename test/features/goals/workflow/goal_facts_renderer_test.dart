@@ -133,6 +133,7 @@ void main() {
     List<GoalObservationFact> observations = const [],
     List<String> unansweredUserMessages = const [],
     List<Map<String, Object>> recentDialogue = const [],
+    Map<String, String> criterionNames = const {},
   }) {
     final text = withClock(
       fixedClock,
@@ -145,6 +146,7 @@ void main() {
         observations: observations,
         unansweredUserMessages: unansweredUserMessages,
         recentDialogue: recentDialogue,
+        criterionNames: criterionNames,
       ),
     );
     expect(
@@ -1038,6 +1040,56 @@ void main() {
     expect(renderer.trendWorsening(0.5, [0.6]), isFalse);
     expect(renderer.trendWorsening(0.7, [0.6, 0.7]), isFalse);
     expect(renderer.trendWorsening(0.5, [0.5, 0.7]), isFalse);
+  });
+
+  test('an untitled habit or measurable criterion is titled after its entity '
+      'from the names map; a title of its own wins; the ids stay out', () {
+    const habitId = '71ca84b0-1f1e-4f5d-9c2e-6b4a1d0c9e01';
+    const dataTypeId = '0d2f9b6a-3c4e-4a1b-8e7d-5f6a7b8c9d0e';
+    const names = {habitId: 'Measure blood pressure', dataTypeId: 'Water'};
+    const tree = GoalCriterion.allOf(
+      criterionId: 'all',
+      criteria: [
+        GoalCriterion.habit(
+          criterionId: 'bp',
+          habitId: habitId,
+          window: GoalWindow.rollingDays(count: 7),
+          targetCount: 5,
+        ),
+        GoalCriterion.measurable(
+          criterionId: 'water',
+          dataTypeId: dataTypeId,
+          window: GoalWindow.day(),
+          aggregation: GoalAggregation.sum,
+          target: 2000,
+        ),
+        GoalCriterion.habit(
+          criterionId: 'bp-titled',
+          habitId: habitId,
+          title: 'BP check',
+          window: GoalWindow.day(),
+          targetCount: 1,
+        ),
+      ],
+    );
+
+    final children = (criterionJson(tree, names: names)['allOf']! as List)
+        .cast<Map<String, dynamic>>();
+    expect(children[0]['title'], 'Measure blood pressure');
+    expect(children[1]['title'], 'Water');
+    expect(children[2]['title'], 'BP check', reason: 'own title outranks');
+    expect(criterionJson(tree).toString(), isNot(contains(habitId)));
+    expect(criterionJson(tree).toString(), isNot(contains(dataTypeId)));
+    // Without a map an untitled criterion stays untitled, never id-named.
+    final bare = (criterionJson(tree)['allOf']! as List)
+        .cast<Map<String, dynamic>>();
+    expect(bare[0].containsKey('title'), isFalse);
+
+    // And the same through render, which is what the wake calls.
+    final json = renderedJson(criteria: tree, criterionNames: names);
+    final rendered =
+        ((json['goal'] as Map)['criteria'] as Map)['allOf'] as List;
+    expect((rendered[0] as Map)['title'], 'Measure blood pressure');
   });
 
   test('criterionJson renders every composite variant', () {

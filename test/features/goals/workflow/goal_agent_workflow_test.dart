@@ -29,6 +29,7 @@ import 'package:lotti/features/goals/service/goal_checkin_digest_service.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_strategy.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_workflow.dart';
+import 'package:lotti/features/goals/workflow/goal_criterion_names.dart';
 import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -1116,6 +1117,117 @@ void main() {
     expect(sentFacts, isNot(contains('Skipped the lunch walk.')));
     expect(sentFacts, contains('userVoice'));
     expect(sentFacts, contains('walk after lunch tomorrow'));
+  });
+
+  group('criterion names', () {
+    const habitId = '71ca84b0-1f1e-4f5d-9c2e-6b4a1d0c9e01';
+    const untitled = GoalCriterion.allOf(
+      criterionId: 'all',
+      criteria: [
+        GoalCriterion.metric(
+          criterionId: 'steps',
+          dataType: 'cumulative_step_count',
+          window: GoalWindow.rollingDays(count: 7),
+          aggregation: GoalAggregation.dailySumThenAverage,
+          target: 10000,
+        ),
+        // Authored without a title, as an older spec might be.
+        GoalCriterion.habit(
+          criterionId: 'bp',
+          habitId: habitId,
+          window: GoalWindow.rollingDays(count: 7),
+          targetCount: 5,
+        ),
+      ],
+    );
+
+    Future<String?> factsWith(
+      GoalCriterionNameReader? reader, {
+      GoalCriterion criteria = untitled,
+    }) async {
+      stubSpec(criteria: criteria);
+      stubGlmResolution();
+      _stubBadPrior(repository, agentId, now);
+      workflow = GoalAgentWorkflow(
+        repository: repository,
+        syncService: syncService,
+        phaseA: GoalAgentPhaseA(
+          repository: repository,
+          syncService: syncService,
+          signalReader: _FakeReader(),
+        ),
+        conversationRepository: conversationRepository,
+        cloudInferenceRepository: cloudInferenceRepository,
+        aiConfigRepository: aiConfigRepository,
+        criterionNameReader: reader,
+      );
+      String? sentFacts;
+      conversationRepository.sendMessageDelegate =
+          ({
+            required conversationId,
+            required message,
+            required model,
+            required provider,
+            required inferenceRepo,
+            tools,
+            toolChoice,
+            temperature = 0.7,
+            strategy,
+          }) async {
+            sentFacts ??= message;
+            return const InferenceUsage(inputTokens: 10, outputTokens: 5);
+          };
+      await workflow.execute(
+        agentIdentity: identity,
+        runKey: 'run-names',
+        triggerTokens: const {'goal-escalation:2026-08-11'},
+        threadId: 'thread-names',
+      );
+      return sentFacts;
+    }
+
+    test('an untitled criterion reaches the model named after its habit, '
+        'with the id itself kept out of FACTS', () async {
+      GoalCriterionEntityIds? asked;
+      final facts = await factsWith((ids) async {
+        asked = ids;
+        return {habitId: 'Measure blood pressure'};
+      });
+      expect(asked?.habitIds, {habitId});
+      expect(asked?.dataTypeIds, isEmpty);
+      expect(facts, contains('"title": "Measure blood pressure"'));
+      expect(facts, isNot(contains(habitId)));
+    });
+
+    test('a failing name read leaves the criterion unnamed and the wake '
+        'intact', () async {
+      final facts = await factsWith((_) async => throw StateError('db gone'));
+      expect(facts, isNotNull);
+      expect(facts, contains('"criterionId": "bp"'));
+      expect(facts, isNot(contains(habitId)));
+    });
+
+    test(
+      'a spec with no user-defined entities never asks the reader',
+      () async {
+        var asked = false;
+        final facts = await factsWith(
+          (_) async {
+            asked = true;
+            return {};
+          },
+          criteria: const GoalCriterion.metric(
+            criterionId: 'steps',
+            dataType: 'cumulative_step_count',
+            window: GoalWindow.rollingDays(count: 7),
+            aggregation: GoalAggregation.dailySumThenAverage,
+            target: 10000,
+          ),
+        );
+        expect(facts, isNotNull);
+        expect(asked, isFalse);
+      },
+    );
   });
 
   group('hierarchical user voice', () {

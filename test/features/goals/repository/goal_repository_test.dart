@@ -10,6 +10,7 @@ import 'package:lotti/features/goals/repository/goal_repository.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../../test_data/test_data.dart';
 
 void main() {
   final testDate = DateTime(2026, 8, 18, 10, 30);
@@ -122,6 +123,40 @@ void main() {
       // Scoped to the goal: the snapshots ride the subtype index, so an
       // unscoped read would return every goal's history.
       verify(() => mockDb.getSpecSnapshotsForGoal('goal-1')).called(1);
+    });
+  });
+
+  group('criterionNames', () {
+    test('names the habits and measurables it can find and leaves the rest '
+        'out', () async {
+      when(
+        () => mockDb.getHabitById(habitFlossing.id),
+      ).thenAnswer((_) async => habitFlossing);
+      when(
+        () => mockDb.getHabitById('missing-habit'),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockDb.getMeasurableDataTypeById(measurableWater.id),
+      ).thenAnswer((_) async => measurableWater);
+
+      final names = await repository.criterionNames((
+        habitIds: {habitFlossing.id, 'missing-habit'},
+        dataTypeIds: {measurableWater.id},
+      ));
+
+      expect(names, {
+        habitFlossing.id: habitFlossing.name,
+        measurableWater.id: measurableWater.displayName,
+      });
+    });
+
+    test('empty id sets touch the database not at all', () async {
+      expect(
+        await repository.criterionNames((habitIds: {}, dataTypeIds: {})),
+        isEmpty,
+      );
+      verifyNever(() => mockDb.getHabitById(any()));
+      verifyNever(() => mockDb.getMeasurableDataTypeById(any()));
     });
   });
 
