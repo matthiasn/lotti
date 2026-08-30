@@ -478,6 +478,32 @@ async def test_same_token_updates_in_place_for_idempotent_rtdn(subscription_repo
     assert second.acknowledgement_state is AcknowledgementState.ACKNOWLEDGED
 
 
+async def test_acknowledged_snapshot_without_timestamp_preserves_local_marker(
+    subscription_repository,
+):
+    entitlement = await create_entitlement(subscription_repository)
+    original = verified_subscription(entitlement.entitlement_id, "fingerprint-one")
+    await subscription_repository.store_verified_subscription(original, now=NOW)
+    acknowledged = await subscription_repository.mark_subscription_acknowledged(
+        original.token_fingerprint,
+        now=NOW + timedelta(minutes=1),
+    )
+    retried = replace(
+        original,
+        acknowledgement_state=AcknowledgementState.ACKNOWLEDGED,
+        acknowledged_at=None,
+        last_verified_at=NOW + timedelta(minutes=2),
+    )
+
+    stored = await subscription_repository.store_verified_subscription(
+        retried,
+        now=NOW + timedelta(minutes=2),
+    )
+
+    assert stored.acknowledgement_state is AcknowledgementState.ACKNOWLEDGED
+    assert stored.acknowledged_at == acknowledged.acknowledged_at
+
+
 async def test_same_token_lifecycle_transitions_append_immutable_audit_events(
     subscription_repository,
 ):

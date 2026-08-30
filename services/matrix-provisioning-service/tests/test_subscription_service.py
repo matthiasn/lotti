@@ -223,6 +223,64 @@ async def test_valid_purchase_is_bound_and_stored_with_encrypted_token(
     assert google_client.queried_tokens == [(PACKAGE, "purchase-token")]
 
 
+async def test_idempotent_verification_preserves_local_acknowledgement_time(
+    service,
+    identity_service,
+    google_client,
+    repository,
+):
+    entitlement, submission = await purchase_context(identity_service, google_client)
+    original = await service.verify_purchase(
+        submission,
+        entitlement_auth_secret=entitlement.auth_secret,
+        now=NOW,
+    )
+    acknowledged = await repository.mark_subscription_acknowledged(
+        original.subscription.token_fingerprint,
+        now=NOW + timedelta(minutes=1),
+    )
+    retry_time = NOW + timedelta(minutes=2)
+    retry_intent = await identity_service.create_purchase_intent(
+        entitlement_id=entitlement.entitlement_id,
+        auth_secret=entitlement.auth_secret,
+        product_id="lotti_sync",
+        base_plan_id="monthly",
+        now=retry_time,
+    )
+    retry = replace(
+        submission,
+        purchase_intent_id=retry_intent.intent_id,
+        intent_secret=retry_intent.intent_secret,
+        integrity_token="retry-integrity-token",
+    )
+    retry_hash = canonical_purchase_request_hash(
+        package_name=retry.package_name,
+        product_id=retry.product_id,
+        base_plan_id=retry.base_plan_id,
+        entitlement_id=retry.entitlement_id,
+        purchase_intent_id=retry.purchase_intent_id,
+        purchase_token=retry.purchase_token,
+        intent_secret=retry.intent_secret,
+        claim_secret=retry.claim_secret,
+    )
+    google_client.integrity_payload["tokenPayloadExternal"]["requestDetails"][
+        "requestHash"
+    ] = retry_hash
+    google_client.snapshot = replace(
+        google_client.snapshot,
+        acknowledgement_state=AcknowledgementState.ACKNOWLEDGED,
+    )
+
+    retried = await service.verify_purchase(
+        retry,
+        entitlement_auth_secret=entitlement.auth_secret,
+        now=retry_time,
+    )
+
+    assert retried.subscription.acknowledgement_state is AcknowledgementState.ACKNOWLEDGED
+    assert retried.subscription.acknowledged_at == acknowledged.acknowledged_at
+
+
 async def test_purchase_intent_expiring_during_google_verification_is_not_consumed(
     service,
     identity_service,

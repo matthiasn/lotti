@@ -108,7 +108,9 @@ Play Integrity verdict bound to the exact request, then queries
 certificate, account binding, token lineage and production/test status all
 have to match before the service stores the subscription or provisions Matrix.
 The purchase is acknowledged only after the entitlement and encrypted bundle
-claim are durable.
+claim are durable. Google reports acknowledgement state but not the service's
+local acknowledgement time, so same-token snapshot upserts retain an existing
+`acknowledged_at` marker when a later verified response has no timestamp.
 Every material subscription transition is appended to a dedicated audit table
 in the same SQLite transaction before the current snapshot is replaced. Initial
 verification, acknowledgement, renewal, grace entry, suspension, recovery and

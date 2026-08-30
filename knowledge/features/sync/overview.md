@@ -293,7 +293,9 @@ still-non-revoked account, checked both before and after the purchase
 acknowledgement path, without recreating bootstrap credentials. Pending plaintext
 delivery is also revalidated immediately before return: its account must remain
 non-revoked and its claim current, nonterminal, encrypted, and within TTL even if
-Google acknowledgement was slow. Lost-response
+Google acknowledgement was slow. The local acknowledgement timestamp is
+monotonic metadata: same-token verification and reconciliation upserts preserve
+it when Google's acknowledged snapshot supplies state but no local time. Lost-response
 delivery retries reload the current subscription and reject non-granting state
 or an elapsed authoritative expiry before decrypting escrow. The retry route
 refreshes its clock after entitlement authentication and stops before claim
