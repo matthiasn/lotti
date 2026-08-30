@@ -287,7 +287,14 @@ refreshes its clock after entitlement authentication and stops before claim
 delivery when enforcement suspends the account. It then reloads and re-enforces
 the current row once more after delivery so a concurrent
 replacement purchase's entitlement state, rather than its predecessor's stale
-state, is returned only when it still grants access.
+state, is returned only when it still grants access. Immediately before building
+the response, with no intervening await, it also revalidates the cached plaintext
+delivery against the current account status and nonterminal claim. An
+administrator revocation that wins after the delivery lease is released therefore
+cannot return destroyed bootstrap credentials. Rotation refreshes its wall clock
+after entitlement and claim-secret authentication and rejects an exact-TTL expiry
+before reserving the claim, so authentication time cannot extend the escrow
+window or exclude the reaper after expiry.
 
 # Pairing a new device
 

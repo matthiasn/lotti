@@ -277,7 +277,8 @@ async def deliver_paid_bundle(
             raise GooglePlayVerificationException(
                 "Subscription does not currently grant SYNC access"
             )
-        delivery = await container.get_paid_bundle_service().deliver_existing_claim(
+        paid_bundle_service = container.get_paid_bundle_service()
+        delivery = await paid_bundle_service.deliver_existing_claim(
             entitlement_id=request.entitlement_id,
             claim_secret=request.claim_secret,
             now=datetime.now(timezone.utc),
@@ -295,6 +296,11 @@ async def deliver_paid_bundle(
             raise GooglePlayVerificationException(
                 "Subscription does not currently grant SYNC access"
             )
+        await paid_bundle_service.require_returnable_delivery(
+            delivery,
+            entitlement_id=request.entitlement_id,
+            now=datetime.now(timezone.utc),
+        )
         return PaidBundleResponse(
             **delivery.__dict__,
             entitlement_state=subscription.entitlement_state.value,

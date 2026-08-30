@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import asyncio
 import uuid
-from datetime import datetime, timedelta
+from collections.abc import Callable
+from datetime import datetime, timedelta, timezone
 
 from shared.matrix import SynapseAdminClient, SyncBundle
 
@@ -31,6 +32,7 @@ class BundleRotationService:
         *,
         secret_hasher: SecretHasher | None = None,
         operation_timeout: timedelta = timedelta(minutes=5),
+        now_provider: Callable[[], datetime] | None = None,
     ):
         self._repository = repository
         self._identity_service = identity_service
@@ -38,6 +40,7 @@ class BundleRotationService:
         self._secret_cipher = secret_cipher
         self._secret_hasher = secret_hasher or SecretHasher()
         self._operation_timeout = operation_timeout
+        self._now_provider = now_provider or (lambda: datetime.now(timezone.utc))
 
     async def confirm_rotation(
         self,
@@ -70,15 +73,16 @@ class BundleRotationService:
             if claim.confirmed_at is not None:
                 return claim
             raise BundleClaimConflictException("Bundle claim was abandoned")
-        if now >= claim.expires_at or claim.encrypted_bundle is None:
+        operation_now = self._current_time(now)
+        if operation_now >= claim.expires_at or claim.encrypted_bundle is None:
             raise BundleClaimConflictException("Bundle claim has expired")
 
         operation_token = str(uuid.uuid4())
         claim = await self._repository.reserve_bundle_rotation(
             bundle_id,
             operation_token=operation_token,
-            now=now,
-            stale_before=now - self._operation_timeout,
+            now=operation_now,
+            stale_before=operation_now - self._operation_timeout,
         )
         completed = False
         try:
@@ -110,7 +114,7 @@ class BundleRotationService:
 
             _, confirmed = await self._repository.confirm_paid_bundle_rotation(
                 bundle_id,
-                now=now,
+                now=self._current_time(operation_now),
                 operation_token=operation_token,
             )
             completed = True
@@ -121,3 +125,7 @@ class BundleRotationService:
                     bundle_id,
                     operation_token=operation_token,
                 )
+
+    def _current_time(self, not_before: datetime) -> datetime:
+        """Return a fresh wall-clock value without moving backward in one request."""
+        return max(not_before, self._now_provider())

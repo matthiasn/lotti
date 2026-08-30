@@ -1079,6 +1079,28 @@ async def test_delivery_retry_rejects_admin_revoked_paid_claim(service, reposito
     assert claim.destroyed_at is not None
 
 
+async def test_delivery_retry_final_check_rejects_revocation_after_decryption(
+    service,
+    repository,
+):
+    verified = await verified_purchase(repository)
+    first = await service.provision_or_deliver(verified, submission(), now=NOW)
+    delivery = await service.deliver_existing_claim(
+        entitlement_id="entitlement-one",
+        claim_secret="claim-secret",
+        now=NOW + timedelta(minutes=1),
+    )
+
+    await repository.revoke(first.bundle_id, "leaked")
+
+    with pytest.raises(BundleClaimConflictException, match="terminal"):
+        await service.require_returnable_delivery(
+            delivery,
+            entitlement_id="entitlement-one",
+            now=NOW + timedelta(minutes=2),
+        )
+
+
 async def test_admin_revocation_wins_against_inflight_paid_delivery(
     service,
     repository,

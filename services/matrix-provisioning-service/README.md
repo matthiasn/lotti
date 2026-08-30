@@ -136,7 +136,11 @@ claim-secret scrypt work, bounding invalid-auth CPU usage across both public
 escrow endpoints. Every authenticated escrow response also takes a fresh claim
 lease before secret verification. Delivery completion owns
 that lease atomically, so expiry cleanup cannot revoke the account or destroy
-ciphertext while credentials are being assembled.
+ciphertext while credentials are being assembled. The retry endpoint revalidates
+the cached plaintext against the current account and claim immediately before
+constructing its response, after subscription enforcement, so a revocation that
+wins after lease release fails closed. Rotation refreshes wall-clock time after
+claim-secret verification and cannot reserve escrow at or beyond its exact TTL.
 
 RTDN is a wake-up signal, never entitlement evidence. The push route verifies
 Google's OIDC token, resolves only an already-bound purchase token, re-queries

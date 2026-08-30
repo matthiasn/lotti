@@ -126,6 +126,7 @@ class FakePaidBundleService:
     def __init__(self):
         self.provision_calls = []
         self.delivery_calls = []
+        self.returnable_delivery_checks = []
         self.failure = None
         self.delivery = None
 
@@ -148,6 +149,11 @@ class FakePaidBundleService:
             raise self.failure
         self.delivery_calls.append(values)
         return self._delivery()
+
+    async def require_returnable_delivery(self, delivery, **values):
+        if self.failure:
+            raise self.failure
+        self.returnable_delivery_checks.append((delivery, values))
 
 
 class FakeRotationService:
@@ -575,6 +581,7 @@ def test_delivery_retry_authenticates_entitlement_without_replaying_purchase(
             NOW + timedelta(seconds=1),
             NOW + timedelta(seconds=2),
             NOW + timedelta(seconds=3),
+            NOW + timedelta(seconds=4),
         )
     )
 
@@ -610,6 +617,12 @@ def test_delivery_retry_authenticates_entitlement_without_replaying_purchase(
         "entitlement-one",
         "entitlement-one",
     ]
+    final_check = services[SERVICE_PAID_BUNDLE_SERVICE].returnable_delivery_checks[0]
+    assert final_check[0].bundle_id == "bundle-one"
+    assert final_check[1] == {
+        "entitlement_id": "entitlement-one",
+        "now": NOW + timedelta(seconds=4),
+    }
 
 
 def test_delivery_retry_stops_before_claim_delivery_when_enforcement_suspends(

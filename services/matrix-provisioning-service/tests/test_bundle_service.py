@@ -375,22 +375,31 @@ async def test_a_held_claim_stops_a_second_run_before_it_reaches_synapse(
 
 
 async def test_two_concurrent_requests_for_one_name_create_a_single_account(
-    repository, credentials, tracking_transport
+    repository, credentials, tracking_transport, monkeypatch
 ):
     """End to end: one caller wins, and the loser never touches the homeserver."""
     transport, requests = tracking_transport
     service = _service(repository, credentials, transport)
+    provisioning_started = asyncio.Event()
+    release_provisioning = asyncio.Event()
+    provision = service._provisioner.provision
 
-    results = await asyncio.gather(
-        service.create_bundle(CreateBundleRequest(username="racer")),
-        service.create_bundle(CreateBundleRequest(username="racer")),
-        return_exceptions=True,
-    )
+    async def blocking_provision(**values):
+        provisioning_started.set()
+        await release_provisioning.wait()
+        return await provision(**values)
 
-    succeeded = [r for r in results if not isinstance(r, Exception)]
-    refused = [r for r in results if isinstance(r, UsernameAlreadyProvisionedException)]
-    assert len(succeeded) == 1
-    assert len(refused) == 1
+    monkeypatch.setattr(service._provisioner, "provision", blocking_provision)
+    winner = asyncio.create_task(service.create_bundle(CreateBundleRequest(username="racer")))
+    await provisioning_started.wait()
+    try:
+        with pytest.raises(UsernameAlreadyProvisionedException):
+            await service.create_bundle(CreateBundleRequest(username="racer"))
+    finally:
+        release_provisioning.set()
+    response = await winner
+
+    assert response.user.username == "racer"
 
     # Exactly one existence check: the refused run stopped at the claim rather
     # than racing to the homeserver and being caught there.

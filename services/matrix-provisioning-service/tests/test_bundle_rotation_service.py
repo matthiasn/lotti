@@ -135,6 +135,7 @@ def dependencies(tmp_path):
         identity_service,
         admin_client,
         cipher,
+        now_provider=lambda: NOW,
     )
     return repository, identity_service, admin_client, cipher, service
 
@@ -305,6 +306,34 @@ async def test_expired_claim_is_rejected_before_matrix_lookup(dependencies):
             bundle_id=claim.bundle_id,
             claim_secret="claim-secret",
             now=claim.expires_at,
+        )
+
+    assert admin_client.state_calls == 0
+
+
+async def test_claim_expiring_during_secret_verification_is_rejected_before_reservation(
+    dependencies,
+    monkeypatch,
+):
+    repository, identity_service, admin_client, cipher, service = dependencies
+    entitlement, claim = await setup_claim(repository, identity_service, cipher)
+    current_time = claim.expires_at - timedelta(seconds=1)
+    service._now_provider = lambda: current_time
+
+    def verify_and_advance_clock(claim_secret, claim_secret_hash):
+        nonlocal current_time
+        current_time = claim.expires_at
+        return True
+
+    monkeypatch.setattr(service._secret_hasher, "verify", verify_and_advance_clock)
+
+    with pytest.raises(BundleClaimConflictException, match="expired"):
+        await service.confirm_rotation(
+            entitlement_id=entitlement.entitlement_id,
+            entitlement_auth_secret=entitlement.auth_secret,
+            bundle_id=claim.bundle_id,
+            claim_secret="claim-secret",
+            now=claim.expires_at - timedelta(seconds=1),
         )
 
     assert admin_client.state_calls == 0

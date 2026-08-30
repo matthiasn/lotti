@@ -269,6 +269,20 @@ class PaidBundleService:
         ):
             raise BundleClaimConflictException("Bundle claim is terminal")
 
+    async def require_returnable_delivery(
+        self,
+        delivery: PaidBundleDelivery,
+        *,
+        entitlement_id: str,
+        now: datetime,
+    ) -> None:
+        """Fail closed if a cached plaintext delivery became terminal."""
+        await self._require_returnable_delivery(
+            delivery,
+            entitlement_id=entitlement_id,
+            now=self._current_time(now),
+        )
+
     async def _load_current_subscription(
         self,
         verified: VerifiedPurchaseResult,
