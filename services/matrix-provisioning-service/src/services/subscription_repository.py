@@ -6,6 +6,7 @@ import asyncio
 import math
 import sqlite3
 import uuid
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 
 from ..core.constants import BUSY_TIMEOUT_SECONDS, DEFAULT_DB_PATH
@@ -28,6 +29,8 @@ from ..core.subscriptions import (
     PaidProvisioningReservation,
     PurchaseIntent,
     StoredSubscription,
+    SubscriptionEvent,
+    SubscriptionEventType,
     SyncEntitlement,
     VerifiedSubscription,
 )
@@ -95,6 +98,39 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_play_current_entitlement
     ON play_subscriptions (entitlement_id) WHERE is_current = 1;
 CREATE INDEX IF NOT EXISTS idx_play_reconciliation
     ON play_subscriptions (is_current, next_reconciliation_at);
+
+CREATE TABLE IF NOT EXISTS subscription_events (
+    event_id                       INTEGER PRIMARY KEY AUTOINCREMENT,
+    subscription_id               TEXT NOT NULL,
+    entitlement_id                TEXT NOT NULL,
+    token_fingerprint              TEXT NOT NULL,
+    event_type                     TEXT NOT NULL,
+    from_google_state              TEXT,
+    to_google_state                TEXT NOT NULL,
+    from_entitlement_state         TEXT,
+    to_entitlement_state           TEXT NOT NULL,
+    from_acknowledgement_state     TEXT,
+    to_acknowledgement_state       TEXT NOT NULL,
+    from_period_end                TEXT,
+    to_period_end                  TEXT,
+    created_at                     TEXT NOT NULL,
+    FOREIGN KEY (entitlement_id) REFERENCES sync_entitlements (entitlement_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_subscription_events_token
+    ON subscription_events (token_fingerprint, event_id);
+
+CREATE TRIGGER IF NOT EXISTS subscription_events_no_update
+BEFORE UPDATE ON subscription_events
+BEGIN
+    SELECT RAISE(ABORT, 'subscription events are immutable');
+END;
+
+CREATE TRIGGER IF NOT EXISTS subscription_events_no_delete
+BEFORE DELETE ON subscription_events
+BEGIN
+    SELECT RAISE(ABORT, 'subscription events are immutable');
+END;
 
 CREATE TABLE IF NOT EXISTS purchase_intents (
     intent_id                    TEXT PRIMARY KEY,
@@ -297,6 +333,37 @@ class SubscriptionRepository(ProvisioningRepository):
             subscription_id=row["subscription_id"],
             created_at=_parse(row["created_at"]),
             updated_at=_parse(row["updated_at"]),
+        )
+
+    @staticmethod
+    def _row_to_subscription_event(row: sqlite3.Row) -> SubscriptionEvent:
+        return SubscriptionEvent(
+            event_id=row["event_id"],
+            subscription_id=row["subscription_id"],
+            entitlement_id=row["entitlement_id"],
+            token_fingerprint=row["token_fingerprint"],
+            event_type=SubscriptionEventType(row["event_type"]),
+            from_google_state=(
+                GoogleSubscriptionState(row["from_google_state"])
+                if row["from_google_state"]
+                else None
+            ),
+            to_google_state=GoogleSubscriptionState(row["to_google_state"]),
+            from_entitlement_state=(
+                EntitlementState(row["from_entitlement_state"])
+                if row["from_entitlement_state"]
+                else None
+            ),
+            to_entitlement_state=EntitlementState(row["to_entitlement_state"]),
+            from_acknowledgement_state=(
+                AcknowledgementState(row["from_acknowledgement_state"])
+                if row["from_acknowledgement_state"]
+                else None
+            ),
+            to_acknowledgement_state=AcknowledgementState(row["to_acknowledgement_state"]),
+            from_period_end=_parse(row["from_period_end"]),
+            to_period_end=_parse(row["to_period_end"]),
+            created_at=_parse(row["created_at"]),
         )
 
     @staticmethod
@@ -756,7 +823,7 @@ class SubscriptionRepository(ProvisioningRepository):
                     expected_request_hash,
                     token_fingerprint,
                     integrity_token_fingerprint,
-                    _iso(now) if intent.consumed_at is None else _iso(intent.consumed_at),
+                    (_iso(now) if intent.consumed_at is None else _iso(intent.consumed_at)),
                     intent_id,
                 ),
             )
@@ -790,6 +857,85 @@ class SubscriptionRepository(ProvisioningRepository):
             token_fingerprint=token_fingerprint,
             integrity_token_fingerprint=integrity_token_fingerprint,
             now=now,
+        )
+
+    @staticmethod
+    def _subscription_transition_events(
+        existing: sqlite3.Row | None,
+        snapshot: VerifiedSubscription,
+    ) -> tuple[SubscriptionEventType, ...]:
+        if existing is None:
+            return (SubscriptionEventType.VERIFIED,)
+
+        events: list[SubscriptionEventType] = []
+        previous_acknowledgement = AcknowledgementState(existing["acknowledgement_state"])
+        previous_entitlement = EntitlementState(existing["entitlement_state"])
+        previous_period_end = _parse(existing["current_period_end"])
+        if (
+            previous_acknowledgement is AcknowledgementState.PENDING
+            and snapshot.acknowledgement_state is AcknowledgementState.ACKNOWLEDGED
+        ):
+            events.append(SubscriptionEventType.ACKNOWLEDGED)
+        if (
+            previous_period_end is not None
+            and snapshot.current_period_end is not None
+            and snapshot.current_period_end > previous_period_end
+        ):
+            events.append(SubscriptionEventType.RENEWED)
+        if (
+            snapshot.entitlement_state is EntitlementState.GRACE
+            and previous_entitlement is not EntitlementState.GRACE
+        ):
+            events.append(SubscriptionEventType.GRACE_ENTERED)
+        if (
+            snapshot.entitlement_state is EntitlementState.SUSPENDED
+            and previous_entitlement is not EntitlementState.SUSPENDED
+        ):
+            events.append(SubscriptionEventType.SUSPENDED)
+        if snapshot.entitlement_state is EntitlementState.ACTIVE and previous_entitlement in {
+            EntitlementState.GRACE,
+            EntitlementState.SUSPENDED,
+        }:
+            events.append(SubscriptionEventType.RECOVERED)
+        if (
+            snapshot.entitlement_state is EntitlementState.EXPIRED
+            and previous_entitlement is not EntitlementState.EXPIRED
+        ):
+            events.append(SubscriptionEventType.EXPIRED)
+        return tuple(events)
+
+    @staticmethod
+    def _record_subscription_event_sync(
+        conn: sqlite3.Connection,
+        *,
+        subscription_id: str,
+        snapshot: VerifiedSubscription,
+        existing: sqlite3.Row | None,
+        event_type: SubscriptionEventType,
+        now: datetime,
+    ) -> None:
+        conn.execute(
+            "INSERT INTO subscription_events ("
+            "subscription_id, entitlement_id, token_fingerprint, event_type, "
+            "from_google_state, to_google_state, from_entitlement_state, "
+            "to_entitlement_state, from_acknowledgement_state, "
+            "to_acknowledgement_state, from_period_end, to_period_end, created_at"
+            ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                subscription_id,
+                snapshot.entitlement_id,
+                snapshot.token_fingerprint,
+                event_type.value,
+                existing["google_state"] if existing is not None else None,
+                snapshot.google_state.value,
+                existing["entitlement_state"] if existing is not None else None,
+                snapshot.entitlement_state.value,
+                existing["acknowledgement_state"] if existing is not None else None,
+                snapshot.acknowledgement_state.value,
+                existing["current_period_end"] if existing is not None else None,
+                _iso(snapshot.current_period_end),
+                _iso(now),
+            ),
         )
 
     def _store_verified_subscription_sync(
@@ -874,6 +1020,16 @@ class SubscriptionRepository(ProvisioningRepository):
                 if existing is not None
                 else current["matrix_suspended"] if current is not None else None
             )
+
+            for event_type in self._subscription_transition_events(existing, snapshot):
+                self._record_subscription_event_sync(
+                    conn,
+                    subscription_id=subscription_id,
+                    snapshot=snapshot,
+                    existing=existing,
+                    event_type=event_type,
+                    now=now,
+                )
 
             values = (
                 subscription_id,
@@ -978,6 +1134,31 @@ class SubscriptionRepository(ProvisioningRepository):
     async def get_subscription_by_token(self, token_fingerprint: str) -> StoredSubscription | None:
         """Resolve an RTDN or client token fingerprint to its stored binding."""
         return await asyncio.to_thread(self._get_subscription_by_token_sync, token_fingerprint)
+
+    def _list_subscription_events_sync(
+        self,
+        token_fingerprint: str,
+    ) -> list[SubscriptionEvent]:
+        conn = self._connect()
+        try:
+            rows = conn.execute(
+                "SELECT * FROM subscription_events WHERE token_fingerprint = ? "
+                "ORDER BY event_id ASC",
+                (token_fingerprint,),
+            ).fetchall()
+            return [self._row_to_subscription_event(row) for row in rows]
+        finally:
+            conn.close()
+
+    async def list_subscription_events(
+        self,
+        token_fingerprint: str,
+    ) -> list[SubscriptionEvent]:
+        """Return the immutable audit history for one token fingerprint."""
+        return await asyncio.to_thread(
+            self._list_subscription_events_sync,
+            token_fingerprint,
+        )
 
     def _get_current_subscription_sync(self, entitlement_id: str) -> StoredSubscription | None:
         conn = self._connect()
@@ -1841,6 +2022,27 @@ class SubscriptionRepository(ProvisioningRepository):
     ) -> StoredSubscription:
         conn = self._connect()
         try:
+            conn.execute("BEGIN IMMEDIATE")
+            row = conn.execute(
+                "SELECT * FROM play_subscriptions WHERE token_fingerprint = ?",
+                (token_fingerprint,),
+            ).fetchone()
+            if row is None:
+                raise PurchaseTokenConflictException("Unknown purchase token")
+            existing = self._row_to_subscription(row)
+            if existing.acknowledgement_state is AcknowledgementState.PENDING:
+                self._record_subscription_event_sync(
+                    conn,
+                    subscription_id=existing.subscription_id,
+                    snapshot=replace(
+                        existing,
+                        acknowledgement_state=AcknowledgementState.ACKNOWLEDGED,
+                        acknowledged_at=existing.acknowledged_at or now,
+                    ),
+                    existing=row,
+                    event_type=SubscriptionEventType.ACKNOWLEDGED,
+                    now=now,
+                )
             conn.execute(
                 "UPDATE play_subscriptions SET acknowledgement_state = ?, "
                 "acknowledged_at = COALESCE(acknowledged_at, ?), updated_at = ? "
@@ -1857,9 +2059,10 @@ class SubscriptionRepository(ProvisioningRepository):
                 "SELECT * FROM play_subscriptions WHERE token_fingerprint = ?",
                 (token_fingerprint,),
             ).fetchone()
-            if row is None:
-                raise PurchaseTokenConflictException("Unknown purchase token")
             return self._row_to_subscription(row)
+        except Exception:
+            conn.rollback()
+            raise
         finally:
             conn.close()
 
@@ -1893,7 +2096,13 @@ class SubscriptionRepository(ProvisioningRepository):
                 f"UPDATE play_subscriptions SET {timestamp_column} = ?, "
                 "matrix_suspended = ?, last_error = ?, updated_at = ? "
                 "WHERE entitlement_id = ? AND is_current = 1",
-                (_iso(now), int(suspended), last_error, _iso(now), source["entitlement_id"]),
+                (
+                    _iso(now),
+                    int(suspended),
+                    last_error,
+                    _iso(now),
+                    source["entitlement_id"],
+                ),
             )
             conn.commit()
             row = conn.execute(
@@ -1936,7 +2145,12 @@ class SubscriptionRepository(ProvisioningRepository):
                 "UPDATE play_subscriptions SET last_error = ?, updated_at = ?, "
                 "next_reconciliation_at = COALESCE(?, next_reconciliation_at) "
                 "WHERE token_fingerprint = ?",
-                (last_error, _iso(now), _iso(next_reconciliation_at), token_fingerprint),
+                (
+                    last_error,
+                    _iso(now),
+                    _iso(next_reconciliation_at),
+                    token_fingerprint,
+                ),
             )
             conn.commit()
             row = conn.execute(

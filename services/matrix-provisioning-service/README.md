@@ -100,6 +100,12 @@ certificate, account binding, token lineage and production/test status all
 have to match before the service stores the subscription or provisions Matrix.
 The purchase is acknowledged only after the entitlement and encrypted bundle
 claim are durable.
+Every material subscription transition is appended to a dedicated audit table
+in the same SQLite transaction before the current snapshot is replaced. Initial
+verification, acknowledgement, renewal, grace entry, suspension, recovery and
+expiry retain their before/after states and period boundary; database triggers
+reject event updates and deletes. Audit rows contain only token fingerprints
+and lifecycle metadata, never purchase tokens, credentials or bundle plaintext.
 
 Entitlement bootstrap is public by necessity, so issuance is protected by a
 durable per-client fixed-window quota before an entitlement row or secret is

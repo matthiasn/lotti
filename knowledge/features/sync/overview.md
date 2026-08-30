@@ -234,6 +234,11 @@ replacement refresh restored it. Same-token persistence rejects snapshots
 whose Publisher-response observation timestamp is older than the stored row.
 The timestamp is captured after Google responds, so a request that started
 earlier but returned later with newer evidence is not discarded.
+Material lifecycle changes are also inserted into an append-only subscription
+audit table before the snapshot upsert commits. The event and snapshot therefore
+succeed or roll back together; SQLite triggers reject later event updates and
+deletes, and audit rows retain only token fingerprints plus before/after state
+rather than purchase secrets.
 
 ```mermaid
 stateDiagram-v2

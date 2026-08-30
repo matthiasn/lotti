@@ -48,6 +48,18 @@ class AcknowledgementState(str, Enum):
     ACKNOWLEDGED = "ACKNOWLEDGEMENT_STATE_ACKNOWLEDGED"
 
 
+class SubscriptionEventType(str, Enum):
+    """Immutable audit event types for a Play subscription lifecycle."""
+
+    VERIFIED = "verified"
+    ACKNOWLEDGED = "acknowledged"
+    RENEWED = "renewed"
+    GRACE_ENTERED = "grace_entered"
+    SUSPENDED = "suspended"
+    RECOVERED = "recovered"
+    EXPIRED = "expired"
+
+
 @dataclass(frozen=True)
 class SyncEntitlement:
     """Stable server identity to which Play purchases are attributed."""
@@ -203,6 +215,26 @@ class StoredSubscription(VerifiedSubscription):
     retired_at: datetime | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
+
+
+@dataclass(frozen=True)
+class SubscriptionEvent:
+    """Immutable before/after record for a material subscription transition."""
+
+    event_id: int
+    subscription_id: str
+    entitlement_id: str
+    token_fingerprint: str
+    event_type: SubscriptionEventType
+    from_google_state: GoogleSubscriptionState | None
+    to_google_state: GoogleSubscriptionState
+    from_entitlement_state: EntitlementState | None
+    to_entitlement_state: EntitlementState
+    from_acknowledgement_state: AcknowledgementState | None
+    to_acknowledgement_state: AcknowledgementState
+    from_period_end: datetime | None
+    to_period_end: datetime | None
+    created_at: datetime
 
 
 @dataclass(frozen=True)

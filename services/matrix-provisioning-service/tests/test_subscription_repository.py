@@ -23,6 +23,7 @@ from src.core.subscriptions import (
     AcknowledgementState,
     EntitlementState,
     GoogleSubscriptionState,
+    SubscriptionEventType,
     VerifiedSubscription,
 )
 from src.services.subscription_repository import (
@@ -475,6 +476,172 @@ async def test_same_token_updates_in_place_for_idempotent_rtdn(subscription_repo
     assert second.updated_at == NOW + timedelta(minutes=1)
     assert second.current_period_end == NOW + timedelta(days=60)
     assert second.acknowledgement_state is AcknowledgementState.ACKNOWLEDGED
+
+
+async def test_same_token_lifecycle_transitions_append_immutable_audit_events(
+    subscription_repository,
+):
+    entitlement = await create_entitlement(subscription_repository)
+    original = verified_subscription(entitlement.entitlement_id, "fingerprint-one")
+    await subscription_repository.store_verified_subscription(original, now=NOW)
+
+    grace_time = NOW + timedelta(minutes=1)
+    grace_deadline = NOW + timedelta(days=32)
+    grace = replace(
+        original,
+        google_state=GoogleSubscriptionState.IN_GRACE_PERIOD,
+        entitlement_state=EntitlementState.GRACE,
+        current_period_end=grace_deadline,
+        grace_deadline=grace_deadline,
+        acknowledgement_state=AcknowledgementState.ACKNOWLEDGED,
+        acknowledged_at=grace_time,
+        last_verified_at=grace_time,
+    )
+    await subscription_repository.store_verified_subscription(grace, now=grace_time)
+
+    suspended_time = NOW + timedelta(minutes=2)
+    suspended = replace(
+        grace,
+        google_state=GoogleSubscriptionState.ON_HOLD,
+        entitlement_state=EntitlementState.SUSPENDED,
+        grace_deadline=None,
+        last_verified_at=suspended_time,
+    )
+    await subscription_repository.store_verified_subscription(
+        suspended,
+        now=suspended_time,
+    )
+
+    recovered_time = NOW + timedelta(minutes=3)
+    recovered = replace(
+        suspended,
+        google_state=GoogleSubscriptionState.ACTIVE,
+        entitlement_state=EntitlementState.ACTIVE,
+        last_verified_at=recovered_time,
+    )
+    await subscription_repository.store_verified_subscription(
+        recovered,
+        now=recovered_time,
+    )
+
+    expired_time = NOW + timedelta(minutes=4)
+    await subscription_repository.store_verified_subscription(
+        replace(
+            recovered,
+            google_state=GoogleSubscriptionState.EXPIRED,
+            entitlement_state=EntitlementState.EXPIRED,
+            last_verified_at=expired_time,
+        ),
+        now=expired_time,
+    )
+
+    events = await subscription_repository.list_subscription_events("fingerprint-one")
+
+    assert [event.event_type for event in events] == [
+        SubscriptionEventType.VERIFIED,
+        SubscriptionEventType.ACKNOWLEDGED,
+        SubscriptionEventType.RENEWED,
+        SubscriptionEventType.GRACE_ENTERED,
+        SubscriptionEventType.SUSPENDED,
+        SubscriptionEventType.RECOVERED,
+        SubscriptionEventType.EXPIRED,
+    ]
+    (
+        verified,
+        acknowledged,
+        renewed,
+        grace_entered,
+        suspended_event,
+        recovered_event,
+        expired,
+    ) = events
+    assert verified.subscription_id == expired.subscription_id
+    assert verified.from_google_state is None
+    assert verified.to_google_state is GoogleSubscriptionState.ACTIVE
+    assert acknowledged.from_acknowledgement_state is AcknowledgementState.PENDING
+    assert acknowledged.to_acknowledgement_state is AcknowledgementState.ACKNOWLEDGED
+    assert renewed.from_period_end == original.current_period_end
+    assert renewed.to_period_end == grace_deadline
+    assert grace_entered.from_entitlement_state is EntitlementState.ACTIVE
+    assert grace_entered.to_entitlement_state is EntitlementState.GRACE
+    assert suspended_event.to_entitlement_state is EntitlementState.SUSPENDED
+    assert recovered_event.from_entitlement_state is EntitlementState.SUSPENDED
+    assert recovered_event.to_entitlement_state is EntitlementState.ACTIVE
+    assert expired.to_entitlement_state is EntitlementState.EXPIRED
+    assert expired.created_at == expired_time
+
+
+async def test_subscription_event_insert_failure_rolls_back_snapshot_update(
+    subscription_repository,
+):
+    entitlement = await create_entitlement(subscription_repository)
+    original = verified_subscription(entitlement.entitlement_id, "fingerprint-one")
+    stored = await subscription_repository.store_verified_subscription(original, now=NOW)
+    connection = sqlite3.connect(subscription_repository.db_path)
+    connection.execute(
+        "CREATE TRIGGER reject_renewal_event BEFORE INSERT ON subscription_events "
+        "WHEN NEW.event_type = 'renewed' BEGIN "
+        "SELECT RAISE(ABORT, 'injected audit failure'); END"
+    )
+    connection.close()
+    renewed = replace(
+        original,
+        current_period_end=NOW + timedelta(days=60),
+        last_verified_at=NOW + timedelta(minutes=1),
+    )
+
+    with pytest.raises(sqlite3.IntegrityError, match="injected audit failure"):
+        await subscription_repository.store_verified_subscription(
+            renewed,
+            now=NOW + timedelta(minutes=1),
+        )
+
+    assert await subscription_repository.get_subscription_by_token("fingerprint-one") == stored
+    events = await subscription_repository.list_subscription_events("fingerprint-one")
+    assert [event.event_type for event in events] == [SubscriptionEventType.VERIFIED]
+
+
+async def test_acknowledgement_write_records_transition_once(subscription_repository):
+    entitlement = await create_entitlement(subscription_repository)
+    original = verified_subscription(entitlement.entitlement_id, "fingerprint-one")
+    await subscription_repository.store_verified_subscription(original, now=NOW)
+
+    acknowledged = await subscription_repository.mark_subscription_acknowledged(
+        "fingerprint-one",
+        now=NOW + timedelta(minutes=1),
+    )
+    retry = await subscription_repository.mark_subscription_acknowledged(
+        "fingerprint-one",
+        now=NOW + timedelta(minutes=2),
+    )
+
+    assert acknowledged.acknowledged_at == NOW + timedelta(minutes=1)
+    assert retry.acknowledged_at == acknowledged.acknowledged_at
+    events = await subscription_repository.list_subscription_events("fingerprint-one")
+    assert [event.event_type for event in events] == [
+        SubscriptionEventType.VERIFIED,
+        SubscriptionEventType.ACKNOWLEDGED,
+    ]
+
+
+async def test_subscription_events_reject_update_and_delete(subscription_repository):
+    entitlement = await create_entitlement(subscription_repository)
+    await subscription_repository.store_verified_subscription(
+        verified_subscription(entitlement.entitlement_id, "fingerprint-one"),
+        now=NOW,
+    )
+    connection = sqlite3.connect(subscription_repository.db_path)
+
+    with pytest.raises(sqlite3.IntegrityError, match="subscription events are immutable"):
+        connection.execute(
+            "UPDATE subscription_events SET event_type = 'expired' WHERE event_id = 1"
+        )
+    with pytest.raises(sqlite3.IntegrityError, match="subscription events are immutable"):
+        connection.execute("DELETE FROM subscription_events WHERE event_id = 1")
+
+    connection.close()
+    events = await subscription_repository.list_subscription_events("fingerprint-one")
+    assert [event.event_type for event in events] == [SubscriptionEventType.VERIFIED]
 
 
 async def test_older_same_token_snapshot_cannot_overwrite_newer_google_state(
@@ -1065,7 +1232,9 @@ async def test_paid_provisioning_reservation_is_exclusive_owned_and_recoverable(
     )
 
 
-async def test_paid_bundle_store_requires_the_reservation_owner(subscription_repository):
+async def test_paid_bundle_store_requires_the_reservation_owner(
+    subscription_repository,
+):
     entitlement = await create_entitlement(subscription_repository)
     await subscription_repository.store_verified_subscription(
         verified_subscription(entitlement.entitlement_id, "paid-token"),

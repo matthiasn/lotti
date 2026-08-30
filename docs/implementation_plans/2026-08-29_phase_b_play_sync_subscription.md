@@ -177,10 +177,13 @@ Add repository migrations and models for:
 
 ### Events
 
-Extend `BundleEventType` (or add a subscription event table) for verified,
-acknowledged, renewed, grace-entered, suspended, recovered, expired, revoked,
-claim-delivered, and claim-destroyed transitions. Do not store tokens, bundle
-plaintext, authorization headers, or Google credentials in event detail/logs.
+The dedicated append-only `subscription_events` table records verified,
+acknowledged, renewed, grace-entered, suspended, recovered, and expired
+transitions before the current snapshot is replaced in the same transaction.
+Database triggers reject event updates and deletes. Bundle audit events continue
+to cover revocation, while claim timestamps durably record delivery and
+destruction. Neither audit path stores purchase tokens, bundle plaintext,
+authorization headers, or Google credentials.
 
 SQLite remains acceptable only for the current single-instance deployment:
 enable WAL, foreign keys, busy timeout, explicit transactions, and unique
