@@ -20,6 +20,7 @@ from ..core.exceptions import (
 )
 from ..core.models import BundleEventType, BundleStatus, PaymentStatus, ProvisionedUser
 from ..core.subscriptions import (
+    ACCESS_ENTITLEMENT_STATES,
     AcknowledgementState,
     BundleClaim,
     EntitlementState,
@@ -79,6 +80,7 @@ CREATE TABLE IF NOT EXISTS play_subscriptions (
     retired_at                            TEXT,
     suspended_at                          TEXT,
     unsuspended_at                        TEXT,
+    matrix_suspended                      INTEGER,
     last_verified_at                      TEXT NOT NULL,
     next_reconciliation_at                TEXT NOT NULL,
     last_error                            TEXT,
@@ -239,6 +241,11 @@ class SubscriptionRepository(ProvisioningRepository):
                     "WHERE s.bundle_id = bundle_claims.bundle_id "
                     "ORDER BY s.created_at ASC LIMIT 1)"
                 )
+            subscription_columns = {
+                row[1] for row in conn.execute("PRAGMA table_info(play_subscriptions)").fetchall()
+            }
+            if "matrix_suspended" not in subscription_columns:
+                conn.execute("ALTER TABLE play_subscriptions ADD COLUMN matrix_suspended INTEGER")
             conn.commit()
         finally:
             conn.close()
@@ -280,6 +287,9 @@ class SubscriptionRepository(ProvisioningRepository):
             retired_at=_parse(row["retired_at"]),
             suspended_at=_parse(row["suspended_at"]),
             unsuspended_at=_parse(row["unsuspended_at"]),
+            matrix_suspended=(
+                bool(row["matrix_suspended"]) if row["matrix_suspended"] is not None else None
+            ),
             last_verified_at=_parse(row["last_verified_at"]),
             next_reconciliation_at=_parse(row["next_reconciliation_at"]),
             last_error=row["last_error"],
@@ -811,6 +821,7 @@ class SubscriptionRepository(ProvisioningRepository):
                 snapshot.linked_token_fingerprint or snapshot.out_of_app_expired_token_fingerprint
             )
             predecessor = None
+            current = None
             if predecessor_fingerprint:
                 predecessor = conn.execute(
                     "SELECT * FROM play_subscriptions WHERE token_fingerprint = ?",
@@ -857,6 +868,12 @@ class SubscriptionRepository(ProvisioningRepository):
                 created_at = _parse(existing["created_at"])
                 inherited_bundle_id = snapshot.bundle_id or existing["bundle_id"]
 
+            matrix_suspended = (
+                existing["matrix_suspended"]
+                if existing is not None
+                else current["matrix_suspended"] if current is not None else None
+            )
+
             values = (
                 subscription_id,
                 snapshot.entitlement_id,
@@ -880,6 +897,7 @@ class SubscriptionRepository(ProvisioningRepository):
                 inherited_bundle_id,
                 _iso(snapshot.suspended_at),
                 _iso(snapshot.unsuspended_at),
+                matrix_suspended,
                 _iso(snapshot.last_verified_at),
                 _iso(snapshot.next_reconciliation_at),
                 snapshot.last_error,
@@ -894,9 +912,10 @@ class SubscriptionRepository(ProvisioningRepository):
                 "start_time, current_period_end, grace_deadline, acknowledgement_state, "
                 "acknowledged_at, linked_token_fingerprint, "
                 "out_of_app_expired_token_fingerprint, binding_verified, bundle_id, "
-                "suspended_at, unsuspended_at, last_verified_at, next_reconciliation_at, "
+                "suspended_at, unsuspended_at, matrix_suspended, last_verified_at, "
+                "next_reconciliation_at, "
                 "last_error, created_at, updated_at"
-                ") VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) "
+                ") VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) "
                 "ON CONFLICT(token_fingerprint) DO UPDATE SET "
                 "encrypted_purchase_token=excluded.encrypted_purchase_token, "
                 "encryption_key_id=excluded.encryption_key_id, "
@@ -912,6 +931,7 @@ class SubscriptionRepository(ProvisioningRepository):
                 "excluded.out_of_app_expired_token_fingerprint, "
                 "binding_verified=excluded.binding_verified, bundle_id=excluded.bundle_id, "
                 "suspended_at=excluded.suspended_at, unsuspended_at=excluded.unsuspended_at, "
+                "matrix_suspended=excluded.matrix_suspended, "
                 "last_verified_at=excluded.last_verified_at, "
                 "next_reconciliation_at=excluded.next_reconciliation_at, "
                 "last_error=excluded.last_error, updated_at=excluded.updated_at",
@@ -976,11 +996,26 @@ class SubscriptionRepository(ProvisioningRepository):
     def _list_due_reconciliation_sync(self, now: datetime, limit: int) -> list[StoredSubscription]:
         conn = self._connect()
         try:
+            access_states = tuple(state.value for state in ACCESS_ENTITLEMENT_STATES)
+            now_iso = _iso(now)
             rows = conn.execute(
-                "SELECT * FROM play_subscriptions "
-                "WHERE is_current = 1 AND next_reconciliation_at <= ? "
-                "ORDER BY next_reconciliation_at ASC LIMIT ?",
-                (_iso(now), max(1, limit)),
+                "WITH current_subscriptions AS (SELECT *, CASE WHEN "
+                "entitlement_state IN (?,?,?) AND "
+                "(current_period_end IS NULL OR current_period_end > ?) "
+                "THEN 0 ELSE 1 END AS desired_suspended "
+                "FROM play_subscriptions WHERE is_current = 1) "
+                "SELECT * FROM current_subscriptions WHERE next_reconciliation_at <= ? OR ("
+                "bundle_id IS NOT NULL AND (matrix_suspended IS NULL OR "
+                "matrix_suspended != desired_suspended)) "
+                "ORDER BY CASE WHEN bundle_id IS NOT NULL AND (matrix_suspended IS NULL OR "
+                "matrix_suspended != desired_suspended) THEN 0 ELSE 1 END, "
+                "next_reconciliation_at ASC LIMIT ?",
+                (
+                    *access_states,
+                    now_iso,
+                    now_iso,
+                    max(1, limit),
+                ),
             ).fetchall()
             return [self._row_to_subscription(row) for row in rows]
         finally:
@@ -989,7 +1024,7 @@ class SubscriptionRepository(ProvisioningRepository):
     async def list_due_reconciliation(
         self, now: datetime, *, limit: int
     ) -> list[StoredSubscription]:
-        """List current subscriptions whose Google state must be refreshed."""
+        """List current subscriptions due for Google refresh or Matrix enforcement."""
         return await asyncio.to_thread(self._list_due_reconciliation_sync, now, limit)
 
     def _reserve_paid_bundle_provisioning_sync(
@@ -1860,16 +1895,23 @@ class SubscriptionRepository(ProvisioningRepository):
     ) -> StoredSubscription:
         conn = self._connect()
         try:
+            source = conn.execute(
+                "SELECT entitlement_id FROM play_subscriptions WHERE token_fingerprint = ?",
+                (token_fingerprint,),
+            ).fetchone()
+            if source is None:
+                raise PurchaseTokenConflictException("Unknown purchase token")
             timestamp_column = "suspended_at" if suspended else "unsuspended_at"
             conn.execute(
                 f"UPDATE play_subscriptions SET {timestamp_column} = ?, "
-                "last_error = ?, updated_at = ? WHERE token_fingerprint = ?",
-                (_iso(now), last_error, _iso(now), token_fingerprint),
+                "matrix_suspended = ?, last_error = ?, updated_at = ? "
+                "WHERE entitlement_id = ? AND is_current = 1",
+                (_iso(now), int(suspended), last_error, _iso(now), source["entitlement_id"]),
             )
             conn.commit()
             row = conn.execute(
-                "SELECT * FROM play_subscriptions WHERE token_fingerprint = ?",
-                (token_fingerprint,),
+                "SELECT * FROM play_subscriptions WHERE entitlement_id = ? AND is_current = 1",
+                (source["entitlement_id"],),
             ).fetchone()
             if row is None:
                 raise PurchaseTokenConflictException("Unknown purchase token")
@@ -1885,7 +1927,7 @@ class SubscriptionRepository(ProvisioningRepository):
         now: datetime,
         last_error: str | None = None,
     ) -> StoredSubscription:
-        """Record observed Matrix enforcement state and its latest error."""
+        """Record observed Matrix state on the entitlement's current token."""
         return await asyncio.to_thread(
             self._record_subscription_enforcement_sync,
             token_fingerprint,

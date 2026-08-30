@@ -9,14 +9,8 @@ from datetime import datetime
 from shared.matrix import SynapseAdminClient
 
 from ..core.exceptions import BundleClaimConflictException
-from ..core.subscriptions import EntitlementState, StoredSubscription
+from ..core.subscriptions import ACCESS_ENTITLEMENT_STATES, StoredSubscription
 from .subscription_repository import SubscriptionRepository
-
-_ACCESS_STATES = {
-    EntitlementState.ACTIVE,
-    EntitlementState.GRACE,
-    EntitlementState.CANCELED_ACTIVE,
-}
 
 
 class SubscriptionAccessService:
@@ -59,32 +53,48 @@ class SubscriptionAccessService:
         if user is None:
             raise BundleClaimConflictException("Subscription references a missing Matrix bundle")
 
-        access_granted = subscription.entitlement_state in _ACCESS_STATES
+        error_token_fingerprint = subscription.token_fingerprint
+        try:
+            activity = await self._admin_client.get_user_activity(user.user_mxid)
+            current = await self._repository.get_current_subscription(subscription.entitlement_id)
+            if current is None or current.bundle_id is None:
+                return None
+            error_token_fingerprint = current.token_fingerprint
+            current_user = await self._repository.get(current.bundle_id)
+            if current_user is None:
+                raise BundleClaimConflictException(
+                    "Subscription references a missing Matrix bundle"
+                )
+            if current_user.user_mxid != user.user_mxid:
+                activity = await self._admin_client.get_user_activity(current_user.user_mxid)
+            desired_suspended = self._desired_suspension(current, now=now)
+            if activity.suspended != desired_suspended:
+                await self._admin_client.set_user_suspended(
+                    current_user.user_mxid,
+                    suspended=desired_suspended,
+                )
+            await self._repository.record_subscription_enforcement(
+                current.token_fingerprint,
+                suspended=desired_suspended,
+                now=now,
+            )
+        except Exception as exc:
+            await self._repository.record_subscription_error(
+                error_token_fingerprint,
+                last_error=str(exc),
+                now=now,
+            )
+            raise
+        return desired_suspended
+
+    @staticmethod
+    def _desired_suspension(subscription: StoredSubscription, *, now: datetime) -> bool:
+        """Return the Matrix suspension required by the verified snapshot."""
+        access_granted = subscription.entitlement_state in ACCESS_ENTITLEMENT_STATES
         if (
             access_granted
             and subscription.current_period_end is not None
             and now >= subscription.current_period_end
         ):
             access_granted = False
-        desired_suspended = not access_granted
-
-        try:
-            activity = await self._admin_client.get_user_activity(user.user_mxid)
-            if activity.suspended != desired_suspended:
-                await self._admin_client.set_user_suspended(
-                    user.user_mxid,
-                    suspended=desired_suspended,
-                )
-            await self._repository.record_subscription_enforcement(
-                subscription.token_fingerprint,
-                suspended=desired_suspended,
-                now=now,
-            )
-        except Exception as exc:
-            await self._repository.record_subscription_error(
-                subscription.token_fingerprint,
-                last_error=str(exc),
-                now=now,
-            )
-            raise
-        return desired_suspended
+        return not access_granted

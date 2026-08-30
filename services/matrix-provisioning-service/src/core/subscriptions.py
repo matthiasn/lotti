@@ -32,6 +32,15 @@ class EntitlementState(str, Enum):
     EXPIRED = "expired"
 
 
+ACCESS_ENTITLEMENT_STATES = frozenset(
+    {
+        EntitlementState.ACTIVE,
+        EntitlementState.GRACE,
+        EntitlementState.CANCELED_ACTIVE,
+    }
+)
+
+
 class AcknowledgementState(str, Enum):
     """Acknowledgement state returned by Google Play."""
 
@@ -178,6 +187,7 @@ class StoredSubscription(VerifiedSubscription):
 
     subscription_id: str = ""
     is_current: bool = True
+    matrix_suspended: bool | None = None
     replaced_by_token_fingerprint: str | None = None
     retired_at: datetime | None = None
     created_at: datetime | None = None

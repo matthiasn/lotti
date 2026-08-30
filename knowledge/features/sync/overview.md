@@ -191,6 +191,14 @@ credentials, so a concurrently suspended purchase cannot leak escrow and an
 existing Matrix account does not remain unsuspended. Reconciliation failure
 handling also refreshes its clock before enforcing the durable snapshot and
 scheduling its retry, so time spent waiting on Google cannot extend access.
+The repository records the last observed Matrix suspension state separately
+from Google's next refresh deadline. Any provisioned subscription whose desired
+state differs remains due for reconciliation until successful enforcement is
+recorded, including after a restart or after an access deadline passes. Access
+enforcement reloads the authoritative subscription after the Synapse activity
+lookup and before mutation; the resulting observed state is recorded on the
+current entitlement row even if its purchase token changed during the request,
+so a late stale mutation remains visibly due for correction.
 Suspension
 requires Synapse 1.110.0 or newer with MSC3823 enabled; when
 subscriptions are enabled, startup authenticates to Synapse and validates that

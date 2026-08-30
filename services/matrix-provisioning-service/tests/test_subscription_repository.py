@@ -71,6 +71,22 @@ def test_existing_bundle_claim_schema_is_migrated(tmp_path):
     } <= columns
 
 
+def test_existing_subscription_schema_is_migrated_with_matrix_state(tmp_path):
+    db_path = tmp_path / "legacy-subscriptions.db"
+    SubscriptionRepository(str(db_path))
+    connection = sqlite3.connect(db_path)
+    connection.execute("ALTER TABLE play_subscriptions DROP COLUMN matrix_suspended")
+    connection.commit()
+    connection.close()
+
+    SubscriptionRepository(str(db_path))
+
+    connection = sqlite3.connect(db_path)
+    columns = {row[1] for row in connection.execute("PRAGMA table_info(play_subscriptions)")}
+    connection.close()
+    assert "matrix_suspended" in columns
+
+
 def verified_subscription(
     entitlement_id: str,
     token_fingerprint: str,
@@ -665,6 +681,186 @@ async def test_due_reconciliation_excludes_retired_and_future_rows(
     rows = await subscription_repository.list_due_reconciliation(NOW, limit=10)
 
     assert [row.token_fingerprint for row in rows] == ["due-token"]
+
+
+async def test_state_change_stays_due_until_matrix_enforcement_is_recorded(
+    subscription_repository,
+):
+    entitlement = await create_entitlement(subscription_repository)
+    snapshot = verified_subscription(entitlement.entitlement_id, "paid-token")
+    await subscription_repository.store_verified_subscription(snapshot, now=NOW)
+    await store_paid_bundle(subscription_repository, "paid-token")
+
+    initially_pending = await subscription_repository.list_due_reconciliation(NOW, limit=10)
+
+    assert [row.token_fingerprint for row in initially_pending] == ["paid-token"]
+
+    await subscription_repository.record_subscription_enforcement(
+        "paid-token",
+        suspended=False,
+        now=NOW,
+    )
+    assert await subscription_repository.list_due_reconciliation(NOW, limit=10) == []
+    refresh_time = NOW + timedelta(minutes=1)
+    await subscription_repository.store_verified_subscription(
+        replace(
+            snapshot,
+            google_state=GoogleSubscriptionState.ON_HOLD,
+            entitlement_state=EntitlementState.SUSPENDED,
+            last_verified_at=refresh_time,
+            next_reconciliation_at=refresh_time + timedelta(hours=6),
+        ),
+        now=refresh_time,
+    )
+
+    pending = await subscription_repository.list_due_reconciliation(refresh_time, limit=10)
+
+    assert [row.token_fingerprint for row in pending] == ["paid-token"]
+
+    await subscription_repository.record_subscription_enforcement(
+        "paid-token",
+        suspended=True,
+        now=refresh_time,
+    )
+
+    assert await subscription_repository.list_due_reconciliation(refresh_time, limit=10) == []
+
+
+async def test_elapsed_access_deadline_becomes_due_before_next_google_refresh(
+    subscription_repository,
+):
+    entitlement = await create_entitlement(subscription_repository)
+    deadline = NOW + timedelta(minutes=1)
+    await subscription_repository.store_verified_subscription(
+        verified_subscription(
+            entitlement.entitlement_id,
+            "paid-token",
+            current_period_end=deadline,
+            next_reconciliation_at=NOW + timedelta(hours=6),
+        ),
+        now=NOW,
+    )
+    await store_paid_bundle(subscription_repository, "paid-token")
+    await subscription_repository.record_subscription_enforcement(
+        "paid-token",
+        suspended=False,
+        now=NOW,
+    )
+
+    assert await subscription_repository.list_due_reconciliation(NOW, limit=10) == []
+
+    due = await subscription_repository.list_due_reconciliation(deadline, limit=10)
+
+    assert [row.token_fingerprint for row in due] == ["paid-token"]
+
+
+async def test_pending_matrix_enforcement_precedes_scheduled_google_refresh(
+    subscription_repository,
+):
+    pending_entitlement = await create_entitlement(subscription_repository, "pending")
+    pending_snapshot = verified_subscription(
+        pending_entitlement.entitlement_id,
+        "pending-token",
+    )
+    await subscription_repository.store_verified_subscription(pending_snapshot, now=NOW)
+    await store_paid_bundle(
+        subscription_repository,
+        "pending-token",
+        bundle_id="pending-bundle",
+    )
+    await subscription_repository.record_subscription_enforcement(
+        "pending-token",
+        suspended=False,
+        now=NOW,
+    )
+    refresh_time = NOW + timedelta(minutes=1)
+    await subscription_repository.store_verified_subscription(
+        replace(
+            pending_snapshot,
+            google_state=GoogleSubscriptionState.ON_HOLD,
+            entitlement_state=EntitlementState.SUSPENDED,
+            last_verified_at=refresh_time,
+            next_reconciliation_at=refresh_time + timedelta(hours=6),
+        ),
+        now=refresh_time,
+    )
+    scheduled_entitlement = await create_entitlement(subscription_repository, "scheduled")
+    await subscription_repository.store_verified_subscription(
+        verified_subscription(
+            scheduled_entitlement.entitlement_id,
+            "scheduled-token",
+            next_reconciliation_at=refresh_time,
+        ),
+        now=refresh_time,
+    )
+
+    due = await subscription_repository.list_due_reconciliation(refresh_time, limit=1)
+
+    assert [row.token_fingerprint for row in due] == ["pending-token"]
+
+
+async def test_stale_token_enforcement_records_actual_state_on_current_replacement(
+    subscription_repository,
+):
+    entitlement = await create_entitlement(subscription_repository)
+    original = verified_subscription(entitlement.entitlement_id, "old-token")
+    await subscription_repository.store_verified_subscription(original, now=NOW)
+    await store_paid_bundle(subscription_repository, "old-token")
+    await subscription_repository.record_subscription_enforcement(
+        "old-token",
+        suspended=True,
+        now=NOW,
+    )
+    replacement_time = NOW + timedelta(minutes=1)
+    replacement = await subscription_repository.store_verified_subscription(
+        verified_subscription(
+            entitlement.entitlement_id,
+            "new-token",
+            google_state=GoogleSubscriptionState.ON_HOLD,
+            entitlement_state=EntitlementState.SUSPENDED,
+            linked_token_fingerprint="old-token",
+            last_verified_at=replacement_time,
+            next_reconciliation_at=replacement_time + timedelta(hours=6),
+        ),
+        now=replacement_time,
+    )
+
+    assert replacement.matrix_suspended is True
+
+    current = await subscription_repository.record_subscription_enforcement(
+        "old-token",
+        suspended=False,
+        now=replacement_time,
+    )
+
+    assert current.token_fingerprint == "new-token"
+    assert current.matrix_suspended is False
+    due = await subscription_repository.list_due_reconciliation(replacement_time, limit=10)
+    assert [row.token_fingerprint for row in due] == ["new-token"]
+
+
+async def test_enforcement_rejects_entitlement_without_current_token(
+    subscription_repository,
+):
+    entitlement = await create_entitlement(subscription_repository)
+    await subscription_repository.store_verified_subscription(
+        verified_subscription(entitlement.entitlement_id, "retired-token"),
+        now=NOW,
+    )
+    connection = sqlite3.connect(subscription_repository.db_path)
+    connection.execute(
+        "UPDATE play_subscriptions SET is_current = 0 WHERE token_fingerprint = ?",
+        ("retired-token",),
+    )
+    connection.commit()
+    connection.close()
+
+    with pytest.raises(PurchaseTokenConflictException, match="Unknown purchase token"):
+        await subscription_repository.record_subscription_enforcement(
+            "retired-token",
+            suspended=True,
+            now=NOW,
+        )
 
 
 async def store_paid_bundle(repository, token_fingerprint, **overrides):

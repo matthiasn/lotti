@@ -12,3 +12,12 @@ def test_compose_mounts_google_credentials_read_only_at_container_path():
         "${GOOGLE_APPLICATION_CREDENTIALS:-/dev/null}:"
         f"{_CONTAINER_CREDENTIAL_PATH}:ro" in compose
     )
+
+
+def test_compose_forwards_bundle_claim_reaper_startup_delay():
+    compose = _COMPOSE_FILE.read_text(encoding="utf-8")
+
+    assert (
+        "BUNDLE_CLAIM_REAPER_STARTUP_DELAY_SECONDS="
+        "${BUNDLE_CLAIM_REAPER_STARTUP_DELAY_SECONDS:-60}" in compose
+    )
