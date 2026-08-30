@@ -7454,7 +7454,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get habitEditorValueBasisSevenDayAverage => '7denním průměrem';
 
   @override
-  String get habitEditorValueBasisToday => 'Dneškem';
+  String get habitEditorValueBasisToday => 'Dnešní hodnotou';
 
   @override
   String get habitHealthBloodPressureDiastolic => 'Diastolický tlak';

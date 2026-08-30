@@ -3182,7 +3182,7 @@
   "habitEditorSignalsSubtitle": "Registrerad data kan bocka av den här vanan åt dig.",
   "habitEditorStepProgress": "Steg {step} av {total}",
   "habitEditorThresholdRequired": "Ange ett värde för den här regeln",
-  "habitEditorValueBasisEither": "Något av dem",
+  "habitEditorValueBasisEither": "Endera värdet",
   "habitEditorValueBasisLabel": "Jämför gränsen med",
   "habitEditorValueBasisSevenDayAverage": "7-dagarsgenomsnittet",
   "habitEditorValueBasisToday": "I dag",

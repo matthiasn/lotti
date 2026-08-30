@@ -7377,7 +7377,7 @@ class AppLocalizationsSv extends AppLocalizations {
       'Ange ett värde för den här regeln';
 
   @override
-  String get habitEditorValueBasisEither => 'Något av dem';
+  String get habitEditorValueBasisEither => 'Endera värdet';
 
   @override
   String get habitEditorValueBasisLabel => 'Jämför gränsen med';
