@@ -348,7 +348,27 @@ def test_purchase_intent_maps_per_entitlement_rate_limit(client, services):
     assert response.json()["detail"] == "Purchase intent creation rate limit exceeded"
 
 
-def test_verified_purchase_returns_paid_bundle_and_rotation_challenge(client, services):
+def test_verified_purchase_returns_paid_bundle_and_rotation_challenge(
+    client,
+    services,
+    monkeypatch,
+):
+    route_times = iter(
+        (
+            NOW,
+            NOW + timedelta(seconds=1),
+            NOW + timedelta(seconds=2),
+            NOW + timedelta(seconds=3),
+        )
+    )
+
+    class FakeDatetime:
+        @classmethod
+        def now(cls, _timezone):
+            return next(route_times)
+
+    monkeypatch.setattr("src.api.routes.datetime", FakeDatetime)
+
     response = client.post(
         "/api/v1/client/subscriptions/purchases/verify",
         headers={"Authorization": f"Bearer {AUTH_SECRET}"},
@@ -369,6 +389,12 @@ def test_verified_purchase_returns_paid_bundle_and_rotation_challenge(client, se
         "entitlement-one",
         "entitlement-one",
     ]
+    final_check = services[SERVICE_PAID_BUNDLE_SERVICE].returnable_delivery_checks[0]
+    assert final_check[0].bundle_id == "bundle-one"
+    assert final_check[1] == {
+        "entitlement_id": "entitlement-one",
+        "now": NOW + timedelta(seconds=3),
+    }
 
 
 def test_purchase_verification_rechecks_access_after_slow_provisioning(
