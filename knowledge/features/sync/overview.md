@@ -192,7 +192,10 @@ scheduling its retry, so time spent waiting on Google cannot extend access.
 Suspension
 requires Synapse 1.110.0 or newer with MSC3823 enabled; when
 subscriptions are enabled, startup authenticates to Synapse and validates that
-version before workers start or purchase traffic is accepted. Each enforcement
+version, then probes the configured suspension endpoint with an invalid MXID
+before workers start or purchase traffic is accepted. The expected
+`M_INVALID_PARAM` proves that the route is registered without targeting an
+account; an unrecognized route fails startup. Each enforcement
 reloads the current purchase token while holding the entitlement's
 serialization stripe, so an older refresh cannot suspend the account after a
 replacement refresh restored it. Same-token persistence rejects snapshots

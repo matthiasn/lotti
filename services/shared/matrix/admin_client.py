@@ -129,6 +129,7 @@ class SynapseAdminClient(SynapseClientBase):
     _cached_headers: dict | None = None
     _shared_client: httpx.AsyncClient | None = None
     _account_suspension_version_checked = False
+    _account_suspension_endpoint_checked = False
 
     def _client(self) -> httpx.AsyncClient:
         """Return the shared client, opening it on first use."""
@@ -415,6 +416,35 @@ class SynapseAdminClient(SynapseClientBase):
         client = self._client()
         headers = await self._auth_headers(client)
         await self._require_account_suspension_version(client, headers)
+        await self._require_account_suspension_endpoint(client, headers)
+
+    async def _require_account_suspension_endpoint(
+        self,
+        client: httpx.AsyncClient,
+        headers: dict,
+    ) -> None:
+        """Probe the configured endpoint without targeting a real account."""
+        if self._account_suspension_endpoint_checked:
+            return
+        probe = await client.put(
+            "/_synapse/admin/v1/suspend/not-a-matrix-user-id",
+            headers=headers,
+            json={"suspend": False},
+        )
+        try:
+            error = probe.json()
+        except ValueError:
+            error = None
+        if (
+            probe.status_code == 400
+            and isinstance(error, Mapping)
+            and error.get("errcode") == "M_INVALID_PARAM"
+        ):
+            self._account_suspension_endpoint_checked = True
+            return
+        raise ProvisioningError(
+            f"Synapse account-suspension endpoint is unavailable (HTTP {probe.status_code})"
+        )
 
     async def _require_account_suspension_version(
         self,

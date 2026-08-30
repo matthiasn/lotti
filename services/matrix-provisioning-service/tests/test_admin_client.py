@@ -258,8 +258,9 @@ async def test_suspension_rejects_unsupported_or_invalid_synapse_versions(
     assert not any("/_synapse/admin/v1/suspend/" in request.url.path for request in requests)
 
 
-async def test_suspension_version_check_is_cached(credentials):
+async def test_suspension_support_checks_are_cached(credentials):
     version_requests = []
+    endpoint_probes = []
 
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.path == "/_matrix/client/v3/login":
@@ -267,6 +268,9 @@ async def test_suspension_version_check_is_cached(credentials):
         if request.url.path == "/_synapse/admin/v1/server_version":
             version_requests.append(request)
             return httpx.Response(200, json={"server_version": "1.110.0"})
+        if request.url.path.endswith("/suspend/not-a-matrix-user-id"):
+            endpoint_probes.append(request)
+            return httpx.Response(400, json={"errcode": "M_INVALID_PARAM"})
         if "/_synapse/admin/v1/suspend/" in request.url.path:
             return httpx.Response(200, json={})
         return synapse_handler(request)
@@ -274,10 +278,47 @@ async def test_suspension_version_check_is_cached(credentials):
     client = SynapseAdminClient(credentials, transport=httpx.MockTransport(handler))
 
     await client.require_account_suspension_support()
+    await client.require_account_suspension_support()
     await client.set_user_suspended(USER, suspended=True)
     await client.set_user_suspended(USER, suspended=False)
 
     assert len(version_requests) == 1
+    assert len(endpoint_probes) == 1
+
+
+@pytest.mark.parametrize(
+    "probe_response",
+    [
+        httpx.Response(404, json={"errcode": "M_UNRECOGNIZED"}),
+        httpx.Response(404, content=b"not-json"),
+    ],
+)
+async def test_suspension_support_probe_rejects_disabled_endpoint(
+    credentials,
+    probe_response,
+):
+    requests = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        if request.url.path == "/_matrix/client/v3/login":
+            return httpx.Response(200, json={"access_token": "admin-token"})
+        if request.url.path == "/_synapse/admin/v1/server_version":
+            return httpx.Response(200, json={"server_version": "1.110.0"})
+        if "/_synapse/admin/v1/suspend/" in request.url.path:
+            return probe_response
+        return synapse_handler(request)
+
+    client = SynapseAdminClient(credentials, transport=httpx.MockTransport(handler))
+
+    with pytest.raises(ProvisioningError, match="suspension endpoint is unavailable"):
+        await client.require_account_suspension_support()
+
+    probe = next(
+        request for request in requests if "/_synapse/admin/v1/suspend/" in request.url.path
+    )
+    assert probe.method == "PUT"
+    assert probe.read().decode() == '{"suspend":false}'
 
 
 @pytest.mark.parametrize(
