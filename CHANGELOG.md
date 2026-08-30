@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.21]
+### Fixed
+- **Editing a checklist item on desktop no longer shows the correction toast
+  twice.** The undo toast now appears only inside the task details pane while
+  page-level notifications continue to work normally.
+
 ## [1.0.20]
 ### Changed
 - **The day squares under each habit now say which day they are, and open

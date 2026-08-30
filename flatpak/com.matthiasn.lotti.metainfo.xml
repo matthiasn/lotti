@@ -40,6 +40,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="1.0.21" date="2026-08-30">
+      <description>
+        <p>Fixed: editing a checklist item on desktop no longer shows the correction toast twice. The undo toast now appears only inside the task details pane while page-level notifications continue to work normally.</p>
+      </description>
+    </release>
     <release version="1.0.20" date="2026-08-30">
       <description>
         <p>Changed: the day squares under each habit now say which day they are, and open that day. Every square carries its weekday (Tu, Th, Sa, Su - in your language) until something is recorded for it, then a tick for a kept day or a red cross for a missed one - so a missed day no longer looks like a day you never looked at. The square itself stays grey, so a rough week is a few red marks rather than a red row: enough to sting, not enough to shout. Tapping a square opens the completion sheet for that day rather than for today, which is what makes catching up on Tuesday from Thursday a one-tap job. The squares are a size larger everywhere, and on a desktop window a row shows the last fourteen days instead of seven.</p>
