@@ -10,4 +10,8 @@
   days instead of seven.
 
 ### Fixed
-- **On a narrow goal card, the "N successful days needed to recover" note wrapped beside empty space, and the status caption sat on a line of its own.** The note now takes its whole row, and the status ("Needs attention", "On track") sits at the end of the reading's own line whenever the two fit together.
+- **On a narrow goal card, the "N successful days needed to recover" note
+  wrapped beside empty space, and the status caption sat on a line of its
+  own.** The note now takes its whole row, and the status ("Needs attention",
+  "On track") sits at the end of the reading's own line whenever the two fit
+  together.
