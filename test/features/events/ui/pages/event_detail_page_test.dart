@@ -315,7 +315,12 @@ void main() {
       await tester.tap(find.text('test entry text'));
       await tester.pump();
 
-      expect(beamed, ['/journal/${testTextEntry.meta.id}']);
+      expect(
+        beamed,
+        [
+          '/journal/${testTextEntry.meta.id}?linkedFromId=$_eventId',
+        ],
+      );
     });
 
     testWidgets('the category pill picks a category through the controller', (

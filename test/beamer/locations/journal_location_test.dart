@@ -2,6 +2,7 @@ import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/beamer/locations/journal_location.dart';
+import 'package:lotti/features/demo/seed/demo_ids.dart';
 import 'package:lotti/features/demo/seed/demo_world.dart';
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/journal/ui/pages/journal_root_page.dart';
@@ -17,21 +18,27 @@ void main() {
     late MockBuildContext mockBuildContext;
     late MockNavService mockNavService;
     late ValueNotifier<String?> desktopSelectedEntryId;
+    late ValueNotifier<String?> desktopSelectedEntryLinkedFromId;
 
     setUp(() async {
       mockBuildContext = MockBuildContext();
       mockNavService = MockNavService();
       desktopSelectedEntryId = ValueNotifier<String?>(null);
+      desktopSelectedEntryLinkedFromId = ValueNotifier<String?>(null);
       when(() => mockNavService.isDesktopMode).thenReturn(false);
       when(
         () => mockNavService.desktopSelectedEntryId,
       ).thenReturn(desktopSelectedEntryId);
+      when(
+        () => mockNavService.desktopSelectedEntryLinkedFromId,
+      ).thenReturn(desktopSelectedEntryLinkedFromId);
       await getIt.reset();
       getIt.registerSingleton<NavService>(mockNavService);
     });
 
     tearDown(() async {
       desktopSelectedEntryId.dispose();
+      desktopSelectedEntryLinkedFromId.dispose();
       await getIt.reset();
     });
 
@@ -102,6 +109,29 @@ void main() {
         expect(detailsPage.showBackButton, isTrue);
       });
 
+      test('passes a valid demo linked-from event id into the entry page', () {
+        final entryId = const Uuid().v4();
+        final eventId = demoUuid('event-project-waddle-launch-gala');
+        final pages = buildPagesFor(
+          Uri.parse('/journal/$entryId?linkedFromId=$eventId'),
+          {'entryId': entryId},
+        );
+
+        final detailsPage = pages[1].child as EntryDetailsPage;
+        expect(detailsPage.linkedFromId, eventId);
+      });
+
+      test('drops an invalid linked-from id', () {
+        final entryId = const Uuid().v4();
+        final pages = buildPagesFor(
+          Uri.parse('/journal/$entryId?linkedFromId=not-an-id'),
+          {'entryId': entryId},
+        );
+
+        final detailsPage = pages[1].child as EntryDetailsPage;
+        expect(detailsPage.linkedFromId, isNull);
+      });
+
       test('does not write the desktop selection notifier', () async {
         final entryId = const Uuid().v4();
         buildPagesFor(Uri.parse('/journal/$entryId'), {'entryId': entryId});
@@ -137,13 +167,29 @@ void main() {
         expect(pages[0].child, isA<JournalRootPage>());
         await Future<void>.microtask(() {});
         expect(desktopSelectedEntryId.value, entryId);
+        expect(desktopSelectedEntryLinkedFromId.value, isNull);
+      });
+
+      test('preserves linked-from context in the detail pane', () async {
+        final entryId = const Uuid().v4();
+        final eventId = const Uuid().v4();
+        buildPagesFor(
+          Uri.parse('/journal/$entryId?linkedFromId=$eventId'),
+          {'entryId': entryId},
+        );
+
+        await Future<void>.microtask(() {});
+        expect(desktopSelectedEntryId.value, entryId);
+        expect(desktopSelectedEntryLinkedFromId.value, eventId);
       });
 
       test('root route clears the selection', () async {
         desktopSelectedEntryId.value = const Uuid().v4();
+        desktopSelectedEntryLinkedFromId.value = const Uuid().v4();
         buildPagesFor(Uri.parse('/journal'), {});
         await Future<void>.microtask(() {});
         expect(desktopSelectedEntryId.value, isNull);
+        expect(desktopSelectedEntryLinkedFromId.value, isNull);
       });
 
       test('non-uuid entryId clears the selection', () async {
@@ -169,17 +215,23 @@ void main() {
           // microtask run against the still-registered original.
           final replacement = MockNavService();
           final replacementNotifier = ValueNotifier<String?>(null);
+          final replacementLinkedFromNotifier = ValueNotifier<String?>(null);
           addTearDown(replacementNotifier.dispose);
+          addTearDown(replacementLinkedFromNotifier.dispose);
           when(() => replacement.isDesktopMode).thenReturn(true);
           when(
             () => replacement.desktopSelectedEntryId,
           ).thenReturn(replacementNotifier);
+          when(
+            () => replacement.desktopSelectedEntryLinkedFromId,
+          ).thenReturn(replacementLinkedFromNotifier);
           getIt
             ..unregister<NavService>()
             ..registerSingleton<NavService>(replacement);
 
           await Future<void>.microtask(() {});
           expect(replacementNotifier.value, isNull);
+          expect(replacementLinkedFromNotifier.value, isNull);
           expect(desktopSelectedEntryId.value, isNull);
         },
       );

@@ -37,7 +37,7 @@ flowchart TD
     DB[(JournalDb + EntitiesCacheService)]
 
     subgraph Overview
-      ESP[eventsOverviewControllerProvider<br/>loadResolvedEventsPage paged] -->|ResolvedEvent page| OP[EventsOverviewPage]
+      ESP[eventsOverviewControllerProvider<br/>EVENT + LINK_CHANGED refresh<br/>loadResolvedEventsPage paged] -->|ResolvedEvent page| OP[EventsOverviewPage]
       OP -->|eventCardDataFromEvent<br/>+ groupEventsIntoSections| OV[EventsOverviewView]
       OV --> CARD[EventCard / EventFeatureCard]
     end
@@ -52,7 +52,7 @@ flowchart TD
     DB --> EC
     OV -->|tap card → /events/:id| DP
     OP -->|New event → createEvent → /events/:id| DP
-    DP -->|edit / add → /journal/:id| LEGACY[Entry detail surface]
+    DP -->|timeline open → /journal/:id<br/>?linkedFromId=:eventId| LEGACY[Entry detail surface<br/>confirmed unlink available]
 ```
 
 Presentational widgets render plain view models; **pages own the glue** — they
@@ -89,8 +89,24 @@ linked photos.
 
 Linked photos render as a compact grid and open into a swipeable, zoomable
 full-screen gallery. The gallery contains each image without changing its aspect
-ratio and participates in the shared mobile image-viewer orientation lifecycle
-described in [shared widgets](../architecture/shared-widgets.md).
+ratio, downloads the currently visible file, shows its capture/file date, hides
+all chrome on a single tap, and keeps pinch zoom/pan while rotation is disabled.
+It participates in the shared mobile image-viewer orientation lifecycle described
+in [shared widgets](../architecture/shared-widgets.md).
+
+The overview controller refreshes its loaded window for event entity
+notifications and for `LINK_CHANGED` notifications whose endpoint ids include
+an event currently loaded in the overview. Photo links are separate rows from
+the event, so listening only for `EVENT` leaves fallback covers stale after
+local linking or sync; gating by endpoint avoids reloading covers for unrelated
+task and journal links.
+
+Opening a timeline source preserves the event id as `linkedFromId`. Mobile
+passes it into the pushed detail page; desktop mirrors it beside the selected
+entry id into the split pane. The journal detail resolves that exact live link
+and exposes the existing confirmed unlink action; once removed, the link
+notification updates the event timeline, gallery, and overview cover without
+deleting the photo entry.
 
 *Add task* mirrors the linked-tasks flow — create the task linked from the event
 (so the event surfaces under the task's "Linked from"), auto-assign the category's

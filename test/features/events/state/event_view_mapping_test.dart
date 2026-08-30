@@ -256,17 +256,25 @@ void main() {
     ImageProvider fakeImage(JournalImage image) => const AssetImage('x');
 
     test('maps an image entry to a photo timeline entry', () {
+      final image = testImageEntry.copyWith(
+        data: testImageEntry.data.copyWith(imageFile: 'test.jpg'),
+      );
       final entry = eventTimelineEntryFor(
-        testImageEntry,
+        image,
         timeLabel: '20:15',
         formatTime: fakeClock,
         imageProviderFor: fakeImage,
+        imagePathFor: (image) => '/photos/${image.data.imageFile}',
       );
       expect(entry, isNotNull);
       expect(entry!.kind, EventTimelineKind.photo);
       expect(entry.photos, hasLength(1));
       // Carries the source id so the detail view can open the entry.
-      expect(entry.entryId, testImageEntry.meta.id);
+      expect(entry.entryId, image.meta.id);
+      expect(entry.photos.single.filePath, '/photos/test.jpg');
+      expect(entry.photos.single.capturedAt, image.data.capturedAt);
+      expect(entry.photos.single.fileDate, image.meta.dateFrom);
+      expect(entry.photos.single.displayDate, image.data.capturedAt);
     });
 
     test('maps a point-in-time text entry to a note timeline entry', () {

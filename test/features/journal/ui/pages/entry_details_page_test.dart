@@ -45,6 +45,8 @@ import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
+import '../../../../helpers/fake_entry_controller.dart';
+import '../../../../helpers/fake_linked_entries_controller.dart';
 import '../../../../helpers/fallbacks.dart';
 import '../../../../helpers/path_provider.dart';
 import '../../../../mocks/mocks.dart';
@@ -222,6 +224,57 @@ void main() {
         AiResponseType.audioSummary,
         AiResponseType.promptGeneration,
       });
+    });
+
+    testWidgets('linked route context exposes the unlink action', (
+      tester,
+    ) async {
+      final parent = testTask;
+      final child = testTextEntry;
+      final link = EntryLink.basic(
+        id: 'event-photo-link',
+        fromId: parent.meta.id,
+        toId: child.meta.id,
+        createdAt: DateTime(2026, 5, 12),
+        updatedAt: DateTime(2026, 5, 12),
+        vectorClock: null,
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          EntryDetailsPage(
+            itemId: child.meta.id,
+            linkedFromId: parent.meta.id,
+          ),
+          overrides: [
+            entryControllerProvider(
+              child.meta.id,
+            ).overrideWith(() => FakeEntryController(child)),
+            entryControllerProvider(
+              parent.meta.id,
+            ).overrideWith(() => FakeEntryController(parent)),
+            linkedEntriesControllerProvider(parent.meta.id).overrideWith(
+              () => FakeLinkedEntriesController(
+                links: [link],
+                id: parent.meta.id,
+              ),
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final details = tester
+          .widgetList<EntryDetailsWidget>(find.byType(EntryDetailsWidget))
+          .singleWhere((widget) => widget.itemId == child.meta.id);
+      expect(details.linkedFrom?.meta.id, parent.meta.id);
+      expect(details.link?.id, link.id);
+
+      await tester.tap(find.byIcon(LottiIcons.more));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Unlink'), findsOneWidget);
     });
 
     testWidgets('owns one correction toast listener for editable checklists', (

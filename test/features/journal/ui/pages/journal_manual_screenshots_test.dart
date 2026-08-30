@@ -539,10 +539,15 @@ void main() {
     ).thenReturn(null);
     // Desktop cards watch the split view's selection to paint the active row.
     final desktopSelectedEntryId = ValueNotifier<String?>(null);
+    final desktopSelectedEntryLinkedFromId = ValueNotifier<String?>(null);
     addTearDown(desktopSelectedEntryId.dispose);
+    addTearDown(desktopSelectedEntryLinkedFromId.dispose);
     when(
       () => navService.desktopSelectedEntryId,
     ).thenReturn(desktopSelectedEntryId);
+    when(
+      () => navService.desktopSelectedEntryLinkedFromId,
+    ).thenReturn(desktopSelectedEntryLinkedFromId);
     when(
       () => ratingRepository.getRatingForTargetEntry(rehearsalTimer.id),
     ).thenAnswer((_) async => sessionRating);

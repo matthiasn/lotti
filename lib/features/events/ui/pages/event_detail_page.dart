@@ -87,6 +87,8 @@ class EventDetailPage extends ConsumerWidget {
       imageProviderFor: (image) => FileImage(
         File(getFullImagePath(image, documentsDirectory: documentsDirectory)),
       ),
+      imagePathFor: (image) =>
+          getFullImagePath(image, documentsDirectory: documentsDirectory),
       // A voice memo on an event's timeline now plays where it sits, instead
       // of only naming its duration. The app-wide player means starting one
       // beat stops any other.
@@ -209,7 +211,14 @@ class EventDetailPage extends ConsumerWidget {
       onDelete: confirmDelete,
       onAddToTimeline: addLinkedEntry,
       onAddTask: addTask,
-      onOpenTimelineEntry: (entryId) => beamToNamed('/journal/$entryId'),
+      // Preserve the parent event in the route so the standalone entry menu
+      // can offer the existing confirmed unlink action for this exact link.
+      onOpenTimelineEntry: (entryId) => beamToNamed(
+        Uri(
+          path: '/journal/$entryId',
+          queryParameters: {'linkedFromId': eventId},
+        ).toString(),
+      ),
       onOpenTask: (taskId) => beamToNamed('/tasks/$taskId'),
     );
   }

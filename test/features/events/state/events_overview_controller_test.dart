@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/event_data.dart';
@@ -34,6 +35,33 @@ JournalEvent _event(String id, {String? categoryId = 'cat-1'}) {
     ),
   );
 }
+
+JournalImage _image(String id, DateTime capturedAt) => JournalImage(
+  meta: Metadata(
+    id: id,
+    createdAt: capturedAt,
+    updatedAt: capturedAt,
+    dateFrom: capturedAt,
+    dateTo: capturedAt,
+  ),
+  data: ImageData(
+    capturedAt: capturedAt,
+    imageId: id,
+    imageFile: '$id.jpg',
+    imageDirectory: '/images/2026/',
+  ),
+);
+
+LinkedDbEntry _link(String eventId, String imageId) => LinkedDbEntry(
+  id: 'link-$imageId',
+  fromId: eventId,
+  toId: imageId,
+  type: 'BasicLink',
+  serialized: '{}',
+  hidden: false,
+  createdAt: DateTime(2026, 5, 12),
+  updatedAt: DateTime(2026, 5, 12),
+);
 
 void main() {
   late MockJournalDb db;
@@ -173,6 +201,94 @@ void main() {
     final state = container.read(eventsOverviewControllerProvider).value!;
     expect(state.events.first.event.meta.id, 'new');
     expect(state.events, hasLength(4));
+  });
+
+  test(
+    'link notifications refresh the fallback cover for local and synced photos',
+    () async {
+      final event = _event('e1');
+      final firstPhoto = _image('photo-1', DateTime(2026, 5, 13));
+      final syncedPhoto = _image('photo-2', DateTime(2026, 5, 14));
+      final images = {
+        firstPhoto.meta.id: firstPhoto,
+        syncedPhoto.meta.id: syncedPhoto,
+      };
+      final links = <LinkedDbEntry>[];
+      stubPaged([event]);
+      when(() => db.linksFromIds(any())).thenAnswer(
+        (_) => MockSelectable<LinkedDbEntry>([...links]),
+      );
+      when(() => db.getJournalEntitiesForIds(any())).thenAnswer((
+        invocation,
+      ) async {
+        final ids = invocation.positionalArguments.first as Set<String>;
+        return ids.map((id) => images[id]).whereType<JournalEntity>().toList();
+      });
+
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      var state = await container.read(eventsOverviewControllerProvider.future);
+      expect(state.events.single.coverImage, isNull);
+
+      // Local photo creation writes a link row rather than updating the event.
+      links.add(_link(event.meta.id, firstPhoto.meta.id));
+      updates.add({event.meta.id, firstPhoto.meta.id, linkNotification});
+      await pumpEventQueue();
+      state = container.read(eventsOverviewControllerProvider).value!;
+      expect(
+        (state.events.single.coverImage! as FileImage).file.path,
+        endsWith('photo-1.jpg'),
+      );
+
+      // Sync uses the same merged UI stream and must replace the cover with
+      // the newer linked photo without an EVENT token or app restart.
+      links.add(_link(event.meta.id, syncedPhoto.meta.id));
+      updates.add({event.meta.id, syncedPhoto.meta.id, linkNotification});
+      await pumpEventQueue();
+      state = container.read(eventsOverviewControllerProvider).value!;
+      expect(
+        (state.events.single.coverImage! as FileImage).file.path,
+        endsWith('photo-2.jpg'),
+      );
+    },
+  );
+
+  test('unrelated link notifications do not reload event covers', () async {
+    final event = _event('e1');
+    final master = [event];
+    stubPaged(master);
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    await container.read(eventsOverviewControllerProvider.future);
+
+    master.insert(0, _event('new'));
+    updates.add({'unrelated-from', 'unrelated-to', linkNotification});
+    await pumpEventQueue();
+    expect(
+      container
+          .read(eventsOverviewControllerProvider)
+          .value!
+          .events
+          .first
+          .event
+          .meta
+          .id,
+      event.meta.id,
+    );
+
+    updates.add({event.meta.id, 'photo-1', linkNotification});
+    await pumpEventQueue();
+    expect(
+      container
+          .read(eventsOverviewControllerProvider)
+          .value!
+          .events
+          .first
+          .event
+          .meta
+          .id,
+      'new',
+    );
   });
 
   test(
