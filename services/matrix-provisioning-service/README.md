@@ -54,8 +54,9 @@ Once Synapse has created an account, request cancellation is held until the
 SQLite persistence task reaches a terminal outcome. A `to_thread` database
 write continues after its awaiter is cancelled, so deactivating immediately
 could destroy an account whose bundle record or paid escrow subsequently
-commits. The service deactivates only after persistence is known to have failed;
-a committed record keeps its Matrix account even though the cancelled request
+commits. The service keeps draining the shielded task through repeated
+cancellation, deactivates only after persistence is known to have failed, and
+keeps a committed record's Matrix account even though the cancelled request
 does not receive the bundle.
 
 ## The bundle is shown once and never stored

@@ -158,8 +158,18 @@ class BundleService:
             # record is still about to commit.
             return await asyncio.shield(persistence_task)
         except asyncio.CancelledError:
+            # A task may receive another cancellation while the first one is
+            # being handled (for example, disconnect followed by shutdown).
+            # Keep shielding until the underlying write itself has settled.
+            while not persistence_task.done():
+                try:
+                    await asyncio.shield(persistence_task)
+                except asyncio.CancelledError:
+                    continue
+                except Exception:
+                    break
             try:
-                await persistence_task
+                persistence_task.result()
             except (asyncio.CancelledError, Exception):
                 # Persistence has now reached a terminal unsuccessful outcome,
                 # so this really is an orphan rather than a committed account.

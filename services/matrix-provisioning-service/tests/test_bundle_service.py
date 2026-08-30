@@ -164,7 +164,7 @@ async def test_persistence_failure_deactivates_the_orphan_account(
     assert deactivations, "expected a rollback deactivation call"
 
 
-async def test_cancellation_waits_for_committed_persistence_without_deactivating_account(
+async def test_repeated_cancellation_waits_for_commit_without_deactivating_account(
     repository,
     credentials,
     tracking_transport,
@@ -189,6 +189,14 @@ async def test_cancellation_waits_for_committed_persistence_without_deactivating
     )
     await write_started.wait()
     task.cancel()
+    second_cancellation_delivered = asyncio.Event()
+
+    def cancel_again():
+        task.cancel()
+        second_cancellation_delivered.set()
+
+    loop.call_soon(cancel_again)
+    await second_cancellation_delivered.wait()
     allow_write.set()
 
     with pytest.raises(asyncio.CancelledError):

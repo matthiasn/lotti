@@ -683,7 +683,7 @@ async def test_separate_service_instances_share_one_durable_provisioning_reserva
     assert len(bundle_service.calls) == 1
 
 
-async def test_cancellation_during_paid_bundle_commit_keeps_persisted_account(
+async def test_repeated_cancellation_during_paid_commit_keeps_persisted_account(
     repository,
     google_client,
     cipher,
@@ -724,6 +724,14 @@ async def test_cancellation_during_paid_bundle_commit_keeps_persisted_account(
     )
     await write_started.wait()
     provisioning.cancel()
+    second_cancellation_delivered = asyncio.Event()
+
+    def cancel_again():
+        provisioning.cancel()
+        second_cancellation_delivered.set()
+
+    loop.call_soon(cancel_again)
+    await second_cancellation_delivered.wait()
     allow_write.set()
 
     with pytest.raises(asyncio.CancelledError):
