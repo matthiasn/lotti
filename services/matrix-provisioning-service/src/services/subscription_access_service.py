@@ -13,6 +13,8 @@ from ..core.exceptions import BundleClaimConflictException
 from ..core.subscriptions import ACCESS_ENTITLEMENT_STATES, StoredSubscription
 from .subscription_repository import SubscriptionRepository
 
+_MAX_CONVERGENCE_MUTATIONS = 3
+
 
 class SubscriptionAccessService:
     """Apply reversible suspension without destroying Matrix account state."""
@@ -73,13 +75,47 @@ class SubscriptionAccessService:
                 )
             if current_user.user_mxid != user.user_mxid:
                 activity = await self._admin_client.get_user_activity(current_user.user_mxid)
-            enforcement_now = max(now, self._now_provider())
-            desired_suspended = self._desired_suspension(current, now=enforcement_now)
-            if activity.suspended != desired_suspended:
+            observed_suspended = activity.suspended
+            enforcement_now = now
+            mutation_count = 0
+            while True:
+                enforcement_now = max(enforcement_now, self._now_provider())
+                desired_suspended = self._desired_suspension(
+                    current,
+                    now=enforcement_now,
+                )
+                if observed_suspended == desired_suspended:
+                    break
+                if mutation_count >= _MAX_CONVERGENCE_MUTATIONS:
+                    raise BundleClaimConflictException(
+                        "Subscription changed repeatedly during Matrix enforcement"
+                    )
                 await self._admin_client.set_user_suspended(
                     current_user.user_mxid,
                     suspended=desired_suspended,
                 )
+                mutation_count += 1
+                observed_suspended = desired_suspended
+
+                enforcement_now = max(enforcement_now, self._now_provider())
+                refreshed = await self._repository.get_current_subscription(
+                    subscription.entitlement_id
+                )
+                if refreshed is None or refreshed.bundle_id is None:
+                    return None
+                error_token_fingerprint = refreshed.token_fingerprint
+                refreshed_user = await self._repository.get(refreshed.bundle_id)
+                if refreshed_user is None:
+                    raise BundleClaimConflictException(
+                        "Subscription references a missing Matrix bundle"
+                    )
+                if refreshed_user.user_mxid != current_user.user_mxid:
+                    refreshed_activity = await self._admin_client.get_user_activity(
+                        refreshed_user.user_mxid
+                    )
+                    observed_suspended = refreshed_activity.suspended
+                current = refreshed
+                current_user = refreshed_user
             await self._repository.record_subscription_enforcement(
                 current.token_fingerprint,
                 suspended=desired_suspended,

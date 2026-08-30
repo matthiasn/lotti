@@ -198,6 +198,38 @@ async def test_activity_lookup_refreshes_clock_before_expiry_enforcement(reposit
     assert stored.suspended_at == deadline
 
 
+async def test_unsuspension_crossing_expiry_is_immediately_reconverged(repository):
+    deadline = NOW + timedelta(seconds=1)
+    subscription = await setup_subscription(
+        repository,
+        state=EntitlementState.GRACE,
+        period_end=deadline,
+    )
+    current_time = NOW
+
+    class ExpiringAdminClient(FakeAdminClient):
+        async def set_user_suspended(self, user_mxid, *, suspended):
+            nonlocal current_time
+            await super().set_user_suspended(user_mxid, suspended=suspended)
+            if suspended is False:
+                current_time = deadline
+
+    admin = ExpiringAdminClient(suspended=True)
+    service = access_service(
+        repository,
+        admin,
+        now_provider=lambda: current_time,
+    )
+
+    assert await service.enforce(subscription, now=NOW) is True
+    assert admin.changes == [
+        ("@sync_one:example.com", False),
+        ("@sync_one:example.com", True),
+    ]
+    stored = await repository.get_subscription_by_token("purchase-token")
+    assert stored.suspended_at == deadline
+
+
 async def test_unprovisioned_subscription_has_no_matrix_side_effect(repository):
     subscription = await setup_subscription(
         repository,
@@ -374,6 +406,108 @@ async def test_bundle_detached_during_activity_lookup_stops_enforcement():
     assert admin.changes == []
 
 
+async def test_bundle_detached_after_matrix_mutation_stops_enforcement():
+    subscription = SimpleNamespace(
+        entitlement_id="entitlement-one",
+        token_fingerprint="old-token",
+        bundle_id="old-bundle",
+        entitlement_state=EntitlementState.SUSPENDED,
+        current_period_end=None,
+    )
+    detached = SimpleNamespace(
+        entitlement_id=subscription.entitlement_id,
+        token_fingerprint=subscription.token_fingerprint,
+        bundle_id=None,
+        entitlement_state=subscription.entitlement_state,
+        current_period_end=subscription.current_period_end,
+    )
+
+    class RacingRepository:
+        def __init__(self):
+            self.current_reads = 0
+
+        async def get_current_subscription(self, entitlement_id):
+            assert entitlement_id == subscription.entitlement_id
+            self.current_reads += 1
+            return subscription if self.current_reads <= 2 else detached
+
+        async def get(self, bundle_id):
+            assert bundle_id == "old-bundle"
+            return SimpleNamespace(user_mxid="@old:example.com")
+
+        async def record_subscription_enforcement(self, *_args, **_kwargs):
+            pytest.fail("Detached accounts must not record enforcement")
+
+        async def record_subscription_error(self, *_args, **_kwargs):
+            pytest.fail("A concurrent detach is not an enforcement error")
+
+    admin = FakeAdminClient(suspended=False)
+    service = access_service(RacingRepository(), admin)
+
+    assert await service.enforce(subscription, now=NOW) is None
+    assert admin.changes == [("@old:example.com", True)]
+
+
+async def test_missing_replacement_after_matrix_mutation_is_recorded():
+    subscription = SimpleNamespace(
+        entitlement_id="entitlement-one",
+        token_fingerprint="old-token",
+        bundle_id="old-bundle",
+        entitlement_state=EntitlementState.SUSPENDED,
+        current_period_end=None,
+    )
+    replacement = SimpleNamespace(
+        entitlement_id=subscription.entitlement_id,
+        token_fingerprint="new-token",
+        bundle_id="missing-bundle",
+        entitlement_state=subscription.entitlement_state,
+        current_period_end=subscription.current_period_end,
+    )
+
+    class RacingRepository:
+        def __init__(self):
+            self.current_reads = 0
+            self.errors = []
+
+        async def get_current_subscription(self, entitlement_id):
+            assert entitlement_id == subscription.entitlement_id
+            self.current_reads += 1
+            return subscription if self.current_reads <= 2 else replacement
+
+        async def get(self, bundle_id):
+            if bundle_id == "old-bundle":
+                return SimpleNamespace(user_mxid="@old:example.com")
+            assert bundle_id == "missing-bundle"
+            return None
+
+        async def record_subscription_error(
+            self,
+            token_fingerprint,
+            *,
+            last_error,
+            now,
+            next_reconciliation_at,
+        ):
+            self.errors.append((token_fingerprint, last_error, now, next_reconciliation_at))
+
+    repository = RacingRepository()
+    admin = FakeAdminClient(suspended=False)
+    service = access_service(repository, admin)
+
+    with pytest.raises(BundleClaimConflictException, match="missing Matrix bundle"):
+        await service.enforce(subscription, now=NOW)
+
+    assert admin.changes == [("@old:example.com", True)]
+    assert repository.errors == [
+        (
+            "new-token",
+            "Subscription references a missing Matrix bundle",
+            NOW,
+            NOW + timedelta(minutes=5),
+        )
+    ]
+
+
 async def test_replacement_bundle_is_rechecked_and_mutated_instead_of_stale_user():
     subscription = SimpleNamespace(
         entitlement_id="entitlement-one",
@@ -432,6 +566,142 @@ async def test_replacement_bundle_is_rechecked_and_mutated_instead_of_stale_user
     assert admin.activity_users == ["@old-bundle:example.com", "@new-bundle:example.com"]
     assert admin.changes == [("@new-bundle:example.com", False)]
     assert repository.enforcements == [("new-token", False, NOW)]
+
+
+async def test_replacement_bundle_after_matrix_mutation_is_also_converged():
+    subscription = SimpleNamespace(
+        entitlement_id="entitlement-one",
+        token_fingerprint="old-token",
+        bundle_id="old-bundle",
+        entitlement_state=EntitlementState.SUSPENDED,
+        current_period_end=None,
+    )
+    replacement = SimpleNamespace(
+        entitlement_id=subscription.entitlement_id,
+        token_fingerprint="new-token",
+        bundle_id="new-bundle",
+        entitlement_state=subscription.entitlement_state,
+        current_period_end=subscription.current_period_end,
+    )
+
+    class RacingRepository:
+        def __init__(self):
+            self.current_reads = 0
+            self.enforcements = []
+
+        async def get_current_subscription(self, entitlement_id):
+            assert entitlement_id == subscription.entitlement_id
+            self.current_reads += 1
+            return subscription if self.current_reads <= 2 else replacement
+
+        async def get(self, bundle_id):
+            return SimpleNamespace(user_mxid=f"@{bundle_id}:example.com")
+
+        async def record_subscription_enforcement(
+            self,
+            token_fingerprint,
+            *,
+            suspended,
+            now,
+        ):
+            self.enforcements.append((token_fingerprint, suspended, now))
+
+        async def record_subscription_error(self, *_args, **_kwargs):
+            pytest.fail("Successful replacement enforcement must not record an error")
+
+    class PerUserAdminClient(FakeAdminClient):
+        def __init__(self):
+            super().__init__()
+            self.suspension_by_user = {
+                "@old-bundle:example.com": False,
+                "@new-bundle:example.com": False,
+            }
+
+        async def get_user_activity(self, user_mxid):
+            self.activity_calls += 1
+            return SimpleNamespace(suspended=self.suspension_by_user[user_mxid])
+
+        async def set_user_suspended(self, user_mxid, *, suspended):
+            self.changes.append((user_mxid, suspended))
+            self.suspension_by_user[user_mxid] = suspended
+
+    repository = RacingRepository()
+    admin = PerUserAdminClient()
+    service = access_service(repository, admin)
+
+    assert await service.enforce(subscription, now=NOW) is True
+    assert admin.changes == [
+        ("@old-bundle:example.com", True),
+        ("@new-bundle:example.com", True),
+    ]
+    assert repository.enforcements == [("new-token", True, NOW)]
+
+
+async def test_repeated_state_churn_is_bounded_and_retried():
+    active = SimpleNamespace(
+        entitlement_id="entitlement-one",
+        token_fingerprint="purchase-token",
+        bundle_id="bundle-one",
+        entitlement_state=EntitlementState.ACTIVE,
+        current_period_end=NOW + timedelta(days=1),
+    )
+    suspended = SimpleNamespace(
+        entitlement_id=active.entitlement_id,
+        token_fingerprint=active.token_fingerprint,
+        bundle_id=active.bundle_id,
+        entitlement_state=EntitlementState.SUSPENDED,
+        current_period_end=active.current_period_end,
+    )
+
+    class ChurningRepository:
+        def __init__(self):
+            self.current_reads = 0
+            self.errors = []
+
+        async def get_current_subscription(self, entitlement_id):
+            assert entitlement_id == active.entitlement_id
+            snapshots = [active, active, suspended, active, suspended]
+            snapshot = snapshots[min(self.current_reads, len(snapshots) - 1)]
+            self.current_reads += 1
+            return snapshot
+
+        async def get(self, bundle_id):
+            assert bundle_id == active.bundle_id
+            return SimpleNamespace(user_mxid="@sync:example.com")
+
+        async def record_subscription_enforcement(self, *_args, **_kwargs):
+            pytest.fail("Unstable state must not be recorded as converged")
+
+        async def record_subscription_error(
+            self,
+            token_fingerprint,
+            *,
+            last_error,
+            now,
+            next_reconciliation_at,
+        ):
+            self.errors.append((token_fingerprint, last_error, now, next_reconciliation_at))
+
+    repository = ChurningRepository()
+    admin = FakeAdminClient(suspended=True)
+    service = access_service(repository, admin)
+
+    with pytest.raises(BundleClaimConflictException, match="changed repeatedly"):
+        await service.enforce(active, now=NOW)
+
+    assert admin.changes == [
+        ("@sync:example.com", False),
+        ("@sync:example.com", True),
+        ("@sync:example.com", False),
+    ]
+    assert repository.errors == [
+        (
+            "purchase-token",
+            "Subscription changed repeatedly during Matrix enforcement",
+            NOW,
+            NOW + timedelta(minutes=5),
+        )
+    ]
 
 
 async def test_missing_replacement_bundle_is_recorded_as_enforcement_error():

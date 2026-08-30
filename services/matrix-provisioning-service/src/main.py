@@ -43,6 +43,7 @@ async def lifespan(app: FastAPI):
         try:
             container.get_subscription_identity_service()
             container.get_subscription_service()
+            container.get_paid_bundle_service()
             container.get_google_play_notifications()
             await container.get_admin_client().require_account_suspension_support()
             subscription_reconciler = container.get_subscription_reconciler()

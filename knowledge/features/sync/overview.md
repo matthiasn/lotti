@@ -201,16 +201,22 @@ until then so repeated failures cannot monopolize a reconciliation batch. Access
 enforcement reloads the authoritative subscription after the Synapse activity
 lookup and before mutation, then refreshes its wall clock after the final
 activity lookup before deciding and recording suspension. An expiry crossed
-while Synapse responds therefore fails closed. The resulting observed state is
-recorded on the current entitlement row even if its purchase token changed
-during the request, so a late stale mutation remains visibly due for correction.
+while Synapse responds therefore fails closed. After every suspension mutation,
+enforcement reloads the entitlement and clock and immediately reconverges if
+the account expired during the Synapse request; repeated concurrent state churn
+is bounded and retried instead of looping indefinitely. The resulting observed
+state is recorded on the current entitlement row even if its purchase token
+changed during the request, so a late stale mutation remains visibly due for
+correction.
 Suspension
 requires Synapse 1.110.0 or newer with MSC3823 enabled; when
 subscriptions are enabled, startup authenticates to Synapse and validates that
 version, then probes the configured suspension endpoint with an invalid MXID
 before workers start or purchase traffic is accepted. The expected
 `M_INVALID_PARAM` proves that the route is registered without targeting an
-account; an unrecognized route fails startup. Each enforcement
+account; an unrecognized route fails startup. Startup also constructs the paid
+delivery service eagerly, so invalid provisioning wait, polling, or operation
+timeout settings fail before any purchase intent can be consumed. Each enforcement
 reloads the current purchase token while holding the entitlement's
 serialization stripe, so an older refresh cannot suspend the account after a
 replacement refresh restored it. Same-token persistence rejects snapshots
