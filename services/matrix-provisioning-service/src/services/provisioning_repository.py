@@ -373,6 +373,13 @@ class ProvisioningRepository:
         """
         return await asyncio.to_thread(self._mark_redeemed_sync, bundle_id, last_seen_at)
 
+    def _validate_legacy_rotation_sync(
+        self,
+        conn: sqlite3.Connection,
+        bundle_id: str,
+    ) -> None:
+        """Let repository extensions reject the legacy rotation callback."""
+
     def _mark_rotated_sync(self, bundle_id: str) -> ProvisionedUser:
         conn = self._connect()
         try:
@@ -382,6 +389,7 @@ class ProvisioningRepository:
             if row is None:
                 raise BundleNotFoundException(bundle_id)
 
+            self._validate_legacy_rotation_sync(conn, bundle_id)
             current = BundleStatus(row["status"])
             if current is BundleStatus.REVOKED:
                 raise InvalidBundleStateException(

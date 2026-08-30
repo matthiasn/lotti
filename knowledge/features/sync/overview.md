@@ -222,7 +222,9 @@ rotation confirmations share a pre-authentication attempt quota, and successful
 requests are authorized by the entitlement and claim secret. Escrow is
 destroyed only after the bound Matrix user publishes the server-derived rotation
 challenge in the provisioned room and the bootstrap password no longer
-authenticates. The
+authenticates. The legacy client rotation callback rejects every bundle backed
+by a paid claim, so it cannot mark the user rotated while leaving escrow
+unconfirmed and eligible for reaping. The
 claim reaper deactivates an account that never reaches that proof before its
 24-hour TTL. Its first destructive batch waits for an operator-configurable
 startup delay. Rotation verification and reaping first acquire mutually exclusive

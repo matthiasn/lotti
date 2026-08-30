@@ -11,6 +11,7 @@ from datetime import datetime, timedelta, timezone
 from ..core.constants import BUSY_TIMEOUT_SECONDS, DEFAULT_DB_PATH
 from ..core.exceptions import (
     BundleClaimConflictException,
+    InvalidBundleStateException,
     PurchaseIntentExpiredException,
     PurchaseIntentNotFoundException,
     PurchaseIntentReplayException,
@@ -189,6 +190,21 @@ class SubscriptionRepository(ProvisioningRepository):
     def __init__(self, db_path: str = DEFAULT_DB_PATH):
         super().__init__(db_path)
         self._ensure_subscription_db()
+
+    def _validate_legacy_rotation_sync(
+        self,
+        conn: sqlite3.Connection,
+        bundle_id: str,
+    ) -> None:
+        """Require paid claims to use their challenge-bound confirmation flow."""
+        paid_claim = conn.execute(
+            "SELECT 1 FROM bundle_claims WHERE bundle_id = ?",
+            (bundle_id,),
+        ).fetchone()
+        if paid_claim is not None:
+            raise InvalidBundleStateException(
+                "A paid bundle must use the subscription rotation confirmation endpoint"
+            )
 
     def _ensure_subscription_db(self) -> None:
         # The paid schema deliberately references provisioned_users. Ensure the

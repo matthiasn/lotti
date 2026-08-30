@@ -468,7 +468,8 @@ async def confirm_rotation(bundle_id: str) -> ProvisionedUser:
     """Confirm that the client rotated the temporary password (Phase 2).
 
     Called by the Lotti client after a successful rotation. Idempotent, so a
-    retry after a dropped response is safe.
+    retry after a dropped response is safe. Paid subscription bundles are
+    rejected here because their separate callback requires claim-scoped proof.
 
     Deliberately namespaced under ``/client/`` rather than ``/bundles/`` so the
     auth middleware's prefix matching leaves it on the regular API key. The

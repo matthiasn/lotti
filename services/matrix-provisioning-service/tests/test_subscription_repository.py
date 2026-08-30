@@ -11,12 +11,14 @@ from datetime import datetime, timedelta, timezone
 import pytest
 from src.core.exceptions import (
     BundleClaimConflictException,
+    InvalidBundleStateException,
     PurchaseIntentExpiredException,
     PurchaseIntentNotFoundException,
     PurchaseIntentReplayException,
     PurchaseTokenConflictException,
     SubscriptionLineageException,
 )
+from src.core.models import BundleStatus
 from src.core.subscriptions import (
     AcknowledgementState,
     EntitlementState,
@@ -720,6 +722,35 @@ async def test_paid_bundle_account_claim_and_subscription_link_commit_together(
         await subscription_repository.get_bundle_claim_for_entitlement(entitlement.entitlement_id)
         == claim
     )
+
+
+async def test_legacy_rotation_rejects_paid_bundle_claim(subscription_repository):
+    entitlement = await create_entitlement(subscription_repository)
+    await subscription_repository.store_verified_subscription(
+        verified_subscription(entitlement.entitlement_id, "paid-token"),
+        now=NOW,
+    )
+    user, claim = await store_paid_bundle(subscription_repository, "paid-token")
+
+    with pytest.raises(InvalidBundleStateException, match="paid bundle"):
+        await subscription_repository.mark_rotated(user.bundle_id)
+
+    unchanged_user = await subscription_repository.get(user.bundle_id)
+    unchanged_claim = await subscription_repository.get_bundle_claim_for_entitlement(
+        entitlement.entitlement_id
+    )
+    assert unchanged_user.status is BundleStatus.UNUSED
+    assert unchanged_claim.confirmed_at is None
+    assert unchanged_claim.encrypted_bundle == claim.encrypted_bundle
+
+
+async def test_legacy_rotation_still_accepts_standard_bundle(subscription_repository):
+    user = await seed_user(subscription_repository, "standard_bundle")
+
+    rotated = await subscription_repository.mark_rotated(user.bundle_id)
+
+    assert rotated.status is BundleStatus.ROTATED
+    assert rotated.rotated_at is not None
 
 
 async def test_paid_provisioning_reservation_is_exclusive_owned_and_recoverable(
