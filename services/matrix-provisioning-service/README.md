@@ -107,6 +107,8 @@ Play Integrity verdict bound to the exact request, then queries
 `purchases.subscriptionsv2.get`. Product, base plan, package, release
 certificate, account binding, token lineage and production/test status all
 have to match before the service stores the subscription or provisions Matrix.
+Runtime ADC refresh transport and credential failures are normalized to the
+service's retryable HTTP 503 response rather than exposed as generic failures.
 The repository rejects a linked replacement token that does not grant access
 before changing the current token; first observations and denial transitions
 for an already-bound token remain durable so Matrix suspension can be enforced.
