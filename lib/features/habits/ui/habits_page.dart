@@ -23,6 +23,8 @@ import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/logic/signals/health_signal_refresh_service.dart';
+import 'package:lotti/logic/signals/signal_needs.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
 /// Top-level habits tab: a dashboard on the calm [dsPageSurface] canvas, driven
@@ -49,6 +51,7 @@ class HabitsTabPage extends ConsumerStatefulWidget {
 class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
   final _scrollController = ScrollController();
   final _searchFocusNode = FocusNode(debugLabel: 'habits-search');
+  final Set<String> _refreshedHealthRequests = {};
 
   /// The whole dashboard (header, summary, list, heatmap, chart) is capped at
   /// this width and centred, so on a wide window it reads as one comfortable
@@ -137,6 +140,27 @@ class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
     });
   }
 
+  /// Pulls platform-health signals watched by active habits forward once per
+  /// page visit. Habit evaluation reads journal rows, so without this the page
+  /// could remain behind the phone's current steps until another surface
+  /// happened to import them.
+  void _refreshHealthSignals(Iterable<HabitDefinition> habits) {
+    final pending = HealthSignalRefreshService.importRequestsFor([
+      for (final habit in habits)
+        if (habit.active && habit.deletedAt == null)
+          if (habit.autoCompleteRule case final rule?)
+            ...SignalNeeds.of(rule).quantitativeTypes,
+    ]).difference(_refreshedHealthRequests);
+    if (pending.isEmpty) return;
+    _refreshedHealthRequests.addAll(pending);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final service = ref.read(healthSignalRefreshServiceProvider);
+      if (service == null) return;
+      unawaited(service.refreshRequests(pending));
+    });
+  }
+
   /// Returns the open-section habits in stable order, keeping any lingering
   /// (just-completed) rows pinned in place. A pure projection of the current
   /// state + linger bookkeeping — the transition detection and removal timers
@@ -177,6 +201,8 @@ class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
     final messages = context.messages;
     final state = ref.watch(habitsControllerProvider);
     final streaks = ref.watch(habitHeatmapControllerProvider).streaksByHabit;
+
+    _refreshHealthSignals(state.habitDefinitions);
 
     // Detect the just-completed transition and schedule the linger here, in a
     // listener, so the timer side effect fires once per real change rather than

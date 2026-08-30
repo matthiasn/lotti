@@ -250,6 +250,10 @@ through the neutral
 [signals logic](../architecture/signals.md), and writes an ordinary
 `HabitCompletionEntry` through `PersistenceLogic` with
 `source: auto` — so the result syncs, resolves and renders like a manual one.
+When the Habits page opens, it also queues a delta import once for every
+platform-health type watched by an active habit. This matches the Goals
+surface: evaluation still reads journal rows, while the importer catches those
+rows up in the background and their normal notifications refresh the page.
 
 ```mermaid
 stateDiagram-v2

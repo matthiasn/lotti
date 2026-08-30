@@ -9,3 +9,6 @@
 - **Goal cards now match the framed habit cards on the overview.** Their
   background, subtle border, and rounded corners are consistent in light and
   dark mode.
+- **Opening Habits now refreshes health data its completion signals watch.**
+  Automatic check-offs can catch up from the device health store without
+  waiting for another screen to trigger an import.

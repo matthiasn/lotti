@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -15,6 +16,7 @@ import 'package:lotti/features/habits/ui/widgets/habits_section_header.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/signals/health_signal_refresh_service.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -104,6 +106,7 @@ void main() {
       WidgetTester tester,
       HabitsState state, {
       MediaQueryData? mediaQueryData,
+      HealthSignalRefreshService? healthRefreshService,
     }) async {
       final controller = FakeHabitsController(state);
       await tester.pumpWidget(
@@ -119,6 +122,10 @@ void main() {
               _FakeHeatmapController.new,
             ),
             firstDayOfWeekIndexProvider.overrideWith((ref) => 1),
+            if (healthRefreshService != null)
+              healthSignalRefreshServiceProvider.overrideWithValue(
+                healthRefreshService,
+              ),
           ],
         ),
       );
@@ -157,6 +164,60 @@ void main() {
       await tester.tap(habitCategoryFilterFinder);
       await tester.pump(const Duration(milliseconds: 100));
     });
+
+    testWidgets(
+      'entering Habits refreshes each health signal watched by active habits',
+      (tester) async {
+        final healthImport = MockHealthImport();
+        when(
+          () => healthImport.fetchHealthDataDelta(any()),
+        ).thenAnswer((_) async {});
+        final healthHabit = habitFlossing.copyWith(
+          autoCompleteRule: const AutoCompleteRule.and(
+            rules: [
+              AutoCompleteRule.health(
+                dataType: 'cumulative_step_count',
+                minimum: 6000,
+              ),
+              AutoCompleteRule.health(
+                dataType: 'cumulative_step_count',
+                minimum: 8000,
+              ),
+              AutoCompleteRule.measurable(dataTypeId: 'water'),
+            ],
+          ),
+        );
+        final inactiveHealthHabit = habitFlossingDueLater.copyWith(
+          active: false,
+          autoCompleteRule: const AutoCompleteRule.health(
+            dataType: 'HealthDataType.WEIGHT',
+            minimum: 70,
+          ),
+        );
+        final state = HabitsState.initial().copyWith(
+          habitDefinitions: [healthHabit, inactiveHealthHabit],
+          openNow: [healthHabit],
+        );
+
+        final controller = await pump(
+          tester,
+          state,
+          healthRefreshService: HealthSignalRefreshService(healthImport),
+        );
+
+        verify(
+          () => healthImport.fetchHealthDataDelta('cumulative_step_count'),
+        ).called(1);
+        verifyNever(
+          () => healthImport.fetchHealthDataDelta('HealthDataType.WEIGHT'),
+        );
+        // Provider and controller rebuilds do not request the same import again
+        // during this visit.
+        controller.emit(state.copyWith(searchString: 'f'));
+        await tester.pump();
+        verifyNoMoreInteractions(healthImport);
+      },
+    );
 
     testWidgets('Primary+F reveals the search field and moves focus into it', (
       tester,

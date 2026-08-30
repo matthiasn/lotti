@@ -35,7 +35,8 @@ capture and the compact completion sheet that shows a habit's own signals with
 quick-record chips; the habit editor (create wizard and edit page) with its
 signal card, signal picker and composite picker; the settings state behind it;
 and the auto-completion engine that checks a habit off when its recorded
-signals satisfy its rule.
+signals satisfy its rule. Opening the tab refreshes the platform-health signals
+watched by active habits so those rules evaluate against current imported data.
 
 It does not own every write path — reads go through `HabitsRepository`, while
 definition saves and completion writes both go through shared persistence.

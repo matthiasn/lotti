@@ -50,6 +50,7 @@ flowchart LR
 | `signal_needs.dart` | `SignalNeeds.of(rule)` — the distinct series an `AutoCompleteRule` tree references, so each is queried once. |
 | `signal_reader.dart` | `SignalReader` — the only thing here that touches `JournalDb`. |
 | `habit_rule_evaluator.dart` | `HabitRuleEvaluator` — pure, table-driven "is this tree satisfied today". |
+| `health_signal_refresh_service.dart` | Shared platform-health request mapping, de-duplication and failure containment for goal and habit page-entry refreshes. |
 
 # Day keys and aggregation are borrowed, not invented
 
@@ -114,6 +115,10 @@ ignore the basis so *Any reading* keeps its original meaning.
 - `SignalReader.read` clips every series to entries not after `reference`, so
   a live read and a later re-read for the same instant describe one snapshot
   even when an import lands mid-await.
+- Goal and habit surfaces read journal rows rather than the platform health
+  store directly. On entry they use `HealthSignalRefreshService` to queue each
+  watched health type once; the resulting journal notifications repaint the
+  established page without replacing it with a loading shell.
 - `GoalSignalReader` keeps its own window arithmetic (periods, lookback,
   category and label time); only the leaf loaders and bucketing moved here.
   Its tests did not change when it started delegating, which is the point.
