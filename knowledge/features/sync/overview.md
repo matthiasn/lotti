@@ -199,9 +199,11 @@ observed mismatch is selected ahead of ordinary Google refresh work, while a
 failed Synapse attempt receives a five-minute retry deadline and is excluded
 until then so repeated failures cannot monopolize a reconciliation batch. Access
 enforcement reloads the authoritative subscription after the Synapse activity
-lookup and before mutation; the resulting observed state is recorded on the
-current entitlement row even if its purchase token changed during the request,
-so a late stale mutation remains visibly due for correction.
+lookup and before mutation, then refreshes its wall clock after the final
+activity lookup before deciding and recording suspension. An expiry crossed
+while Synapse responds therefore fails closed. The resulting observed state is
+recorded on the current entitlement row even if its purchase token changed
+during the request, so a late stale mutation remains visibly due for correction.
 Suspension
 requires Synapse 1.110.0 or newer with MSC3823 enabled; when
 subscriptions are enabled, startup authenticates to Synapse and validates that

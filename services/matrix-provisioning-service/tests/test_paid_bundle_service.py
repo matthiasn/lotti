@@ -174,6 +174,22 @@ def refreshed_snapshot(stored, **overrides):
     return VerifiedSubscription(**values)
 
 
+async def confirm_paid_claim(repository, bundle_id, *, now):
+    operation_token = "test-rotation-operation"  # noqa: S105 - fixture lease token
+    await repository.reserve_bundle_rotation(
+        bundle_id,
+        operation_token=operation_token,
+        now=now,
+        stale_before=now - timedelta(minutes=5),
+    )
+    _, claim = await repository.confirm_paid_bundle_rotation(
+        bundle_id,
+        now=now,
+        operation_token=operation_token,
+    )
+    return claim
+
+
 async def test_first_delivery_provisions_once_escrows_and_acknowledges(
     service,
     repository,
@@ -376,7 +392,8 @@ async def test_confirmed_claim_recovers_replacement_purchase_without_redelivery(
 ):
     original = await verified_purchase(repository)
     first_delivery = await service.provision_or_deliver(original, submission(), now=NOW)
-    await repository.destroy_bundle_claim(
+    await confirm_paid_claim(
+        repository,
         first_delivery.bundle_id,
         now=NOW + timedelta(minutes=1),
     )
@@ -438,7 +455,8 @@ async def test_confirmed_claim_cannot_recover_admin_revoked_bundle(
 ):
     verified = await verified_purchase(repository)
     delivered = await service.provision_or_deliver(verified, submission(), now=NOW)
-    await repository.destroy_bundle_claim(
+    await confirm_paid_claim(
+        repository,
         delivered.bundle_id,
         now=NOW + timedelta(minutes=1),
     )
@@ -466,7 +484,8 @@ async def test_admin_revocation_during_confirmed_recovery_wins(
 ):
     verified = await verified_purchase(repository)
     delivered = await service.provision_or_deliver(verified, submission(), now=NOW)
-    await repository.destroy_bundle_claim(
+    await confirm_paid_claim(
+        repository,
         delivered.bundle_id,
         now=NOW + timedelta(minutes=1),
     )

@@ -1622,29 +1622,6 @@ class SubscriptionRepository(ProvisioningRepository):
             (_iso(revoked_at), bundle_id),
         )
 
-    def _destroy_bundle_claim_sync(self, bundle_id: str, now: datetime) -> BundleClaim:
-        conn = self._connect()
-        try:
-            conn.execute(
-                "UPDATE bundle_claims SET encrypted_bundle = NULL, "
-                "confirmed_at = COALESCE(confirmed_at, ?), "
-                "destroyed_at = COALESCE(destroyed_at, ?) WHERE bundle_id = ?",
-                (_iso(now), _iso(now), bundle_id),
-            )
-            conn.commit()
-            row = conn.execute(
-                "SELECT * FROM bundle_claims WHERE bundle_id = ?", (bundle_id,)
-            ).fetchone()
-            if row is None:
-                raise BundleClaimConflictException("Unknown bundle claim")
-            return self._row_to_bundle_claim(row)
-        finally:
-            conn.close()
-
-    async def destroy_bundle_claim(self, bundle_id: str, *, now: datetime) -> BundleClaim:
-        """Irreversibly remove bundle ciphertext after validated rotation proof."""
-        return await asyncio.to_thread(self._destroy_bundle_claim_sync, bundle_id, now)
-
     def _abandon_bundle_claim_sync(
         self,
         bundle_id: str,

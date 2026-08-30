@@ -109,6 +109,14 @@ def repository(tmp_path):
     return SubscriptionRepository(str(tmp_path / "subscriptions.db"))
 
 
+def access_service(repository, admin, *, now_provider=lambda: NOW):
+    return SubscriptionAccessService(
+        repository,
+        admin,
+        now_provider=now_provider,
+    )
+
+
 @pytest.mark.parametrize(
     "state",
     [EntitlementState.SUSPENDED, EntitlementState.EXPIRED, EntitlementState.PENDING],
@@ -116,7 +124,7 @@ def repository(tmp_path):
 async def test_non_grantable_state_suspends_matrix_account(repository, state):
     subscription = await setup_subscription(repository, state=state)
     admin = FakeAdminClient(suspended=False)
-    service = SubscriptionAccessService(repository, admin)
+    service = access_service(repository, admin)
 
     desired = await service.enforce(subscription, now=NOW)
 
@@ -138,7 +146,7 @@ async def test_grantable_state_restores_suspended_matrix_account(repository, sta
         period_end=NOW + timedelta(seconds=1),
     )
     admin = FakeAdminClient(suspended=True)
-    service = SubscriptionAccessService(repository, admin)
+    service = access_service(repository, admin)
 
     desired = await service.enforce(subscription, now=NOW)
 
@@ -155,10 +163,39 @@ async def test_access_is_suspended_exactly_at_authoritative_deadline(repository)
         period_end=NOW,
     )
     admin = FakeAdminClient()
-    service = SubscriptionAccessService(repository, admin)
+    service = access_service(repository, admin)
 
     assert await service.enforce(subscription, now=NOW) is True
     assert admin.changes == [("@sync_one:example.com", True)]
+
+
+async def test_activity_lookup_refreshes_clock_before_expiry_enforcement(repository):
+    deadline = NOW + timedelta(seconds=1)
+    subscription = await setup_subscription(
+        repository,
+        state=EntitlementState.ACTIVE,
+        period_end=deadline,
+    )
+    current_time = NOW
+
+    class ExpiringAdminClient(FakeAdminClient):
+        async def get_user_activity(self, user_mxid):
+            nonlocal current_time
+            activity = await super().get_user_activity(user_mxid)
+            current_time = deadline
+            return activity
+
+    admin = ExpiringAdminClient(suspended=False)
+    service = access_service(
+        repository,
+        admin,
+        now_provider=lambda: current_time,
+    )
+
+    assert await service.enforce(subscription, now=NOW) is True
+    assert admin.changes == [("@sync_one:example.com", True)]
+    stored = await repository.get_subscription_by_token("purchase-token")
+    assert stored.suspended_at == deadline
 
 
 async def test_unprovisioned_subscription_has_no_matrix_side_effect(repository):
@@ -168,7 +205,7 @@ async def test_unprovisioned_subscription_has_no_matrix_side_effect(repository):
         with_bundle=False,
     )
     admin = FakeAdminClient()
-    service = SubscriptionAccessService(repository, admin)
+    service = access_service(repository, admin)
 
     assert await service.enforce(subscription, now=NOW) is None
     assert admin.changes == []
@@ -183,7 +220,7 @@ async def test_retired_entitlement_without_current_subscription_has_no_side_effe
             return None
 
     admin = FakeAdminClient()
-    service = SubscriptionAccessService(Repository(), admin)
+    service = access_service(Repository(), admin)
 
     assert await service.enforce(subscription, now=NOW) is None
     assert admin.activity_calls == 0
@@ -196,7 +233,7 @@ async def test_synapse_failure_is_recorded_and_propagated(repository):
     )
     admin = FakeAdminClient()
     admin.failure = RuntimeError("synapse unavailable")
-    service = SubscriptionAccessService(repository, admin)
+    service = access_service(repository, admin)
 
     with pytest.raises(RuntimeError, match="synapse unavailable"):
         await service.enforce(subscription, now=NOW)
@@ -216,7 +253,7 @@ async def test_subscription_with_dangling_bundle_reference_fails_closed():
             assert bundle_id == "missing-bundle"
             return None
 
-    service = SubscriptionAccessService(Repository(), FakeAdminClient())
+    service = access_service(Repository(), FakeAdminClient())
     subscription = SimpleNamespace(
         entitlement_id="entitlement-one",
         bundle_id="missing-bundle",
@@ -255,7 +292,7 @@ async def test_stale_predecessor_enforces_current_replacement(repository):
         now=NOW,
     )
     admin = FakeAdminClient(suspended=True)
-    service = SubscriptionAccessService(repository, admin)
+    service = access_service(repository, admin)
 
     assert await service.enforce(predecessor, now=NOW) is False
     assert admin.changes == [("@sync_one:example.com", False)]
@@ -290,7 +327,7 @@ async def test_state_is_reloaded_after_activity_lookup_before_matrix_mutation(re
             return activity
 
     admin = RacingAdminClient(suspended=True)
-    service = SubscriptionAccessService(repository, admin)
+    service = access_service(repository, admin)
 
     assert await service.enforce(active, now=NOW + timedelta(seconds=1)) is True
     assert admin.changes == []
@@ -330,7 +367,7 @@ async def test_bundle_detached_during_activity_lookup_stops_enforcement():
             pytest.fail("A concurrent detach is not an enforcement error")
 
     admin = FakeAdminClient(suspended=False)
-    service = SubscriptionAccessService(RacingRepository(), admin)
+    service = access_service(RacingRepository(), admin)
 
     assert await service.enforce(subscription, now=NOW) is None
     assert admin.activity_calls == 1
@@ -389,7 +426,7 @@ async def test_replacement_bundle_is_rechecked_and_mutated_instead_of_stale_user
 
     repository = RacingRepository()
     admin = TrackingAdminClient()
-    service = SubscriptionAccessService(repository, admin)
+    service = access_service(repository, admin)
 
     assert await service.enforce(subscription, now=NOW) is False
     assert admin.activity_users == ["@old-bundle:example.com", "@new-bundle:example.com"]
@@ -436,7 +473,7 @@ async def test_missing_replacement_bundle_is_recorded_as_enforcement_error():
             self.errors.append((token_fingerprint, last_error, now, next_reconciliation_at))
 
     repository = RacingRepository()
-    service = SubscriptionAccessService(repository, FakeAdminClient())
+    service = access_service(repository, FakeAdminClient())
 
     with pytest.raises(BundleClaimConflictException, match="missing Matrix bundle"):
         await service.enforce(subscription, now=NOW)

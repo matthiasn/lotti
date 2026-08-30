@@ -1216,30 +1216,6 @@ async def test_bundle_delivery_timestamp_is_idempotent(subscription_repository):
     assert retry.first_delivered_at == first.first_delivered_at
 
 
-async def test_destroying_claim_removes_only_ciphertext_and_is_idempotent(
-    subscription_repository,
-):
-    entitlement = await create_entitlement(subscription_repository)
-    await subscription_repository.store_verified_subscription(
-        verified_subscription(entitlement.entitlement_id, "paid-token"),
-        now=NOW,
-    )
-    _, claim = await store_paid_bundle(subscription_repository, "paid-token")
-
-    destroyed = await subscription_repository.destroy_bundle_claim(
-        claim.bundle_id,
-        now=NOW + timedelta(minutes=3),
-    )
-    retry = await subscription_repository.destroy_bundle_claim(
-        claim.bundle_id,
-        now=NOW + timedelta(minutes=4),
-    )
-
-    assert destroyed.encrypted_bundle is None
-    assert retry.destroyed_at == destroyed.destroyed_at
-    assert retry.confirmed_at == destroyed.confirmed_at
-
-
 async def test_linked_purchase_inherits_existing_bundle_claim(subscription_repository):
     entitlement = await create_entitlement(subscription_repository)
     await subscription_repository.store_verified_subscription(
@@ -1363,7 +1339,17 @@ async def test_terminal_and_unknown_claims_cannot_be_reserved(subscription_repos
             now=claim.expires_at,
             stale_before=NOW,
         )
-    await subscription_repository.destroy_bundle_claim(claim.bundle_id, now=NOW)
+    await subscription_repository.reserve_bundle_rotation(
+        claim.bundle_id,
+        operation_token="rotation-operation",
+        now=NOW,
+        stale_before=NOW - timedelta(minutes=5),
+    )
+    await subscription_repository.confirm_paid_bundle_rotation(
+        claim.bundle_id,
+        now=NOW,
+        operation_token="rotation-operation",
+    )
 
     assert not await subscription_repository.reserve_bundle_reap(
         claim.bundle_id,
@@ -1470,7 +1456,6 @@ async def test_same_token_refresh_does_not_clear_existing_bundle(
             operation_token="delivery-operation",
             now=NOW,
         ),
-        lambda repository: repository.destroy_bundle_claim("unknown", now=NOW),
         lambda repository: repository.abandon_bundle_claim("unknown", now=NOW),
         lambda repository: repository.reschedule_bundle_claim_reap(
             "unknown",

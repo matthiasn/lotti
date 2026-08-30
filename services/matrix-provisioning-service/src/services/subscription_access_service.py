@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
-from datetime import datetime, timedelta
+from collections.abc import Callable
+from datetime import datetime, timedelta, timezone
 
 from shared.matrix import SynapseAdminClient
 
@@ -22,10 +23,12 @@ class SubscriptionAccessService:
         admin_client: SynapseAdminClient,
         *,
         failure_retry_delay: timedelta = timedelta(minutes=5),
+        now_provider: Callable[[], datetime] | None = None,
     ):
         self._repository = repository
         self._admin_client = admin_client
         self._failure_retry_delay = failure_retry_delay
+        self._now_provider = now_provider or (lambda: datetime.now(timezone.utc))
         self._enforcement_locks = tuple(asyncio.Lock() for _ in range(64))
 
     async def enforce(self, subscription: StoredSubscription, *, now: datetime) -> bool | None:
@@ -70,7 +73,8 @@ class SubscriptionAccessService:
                 )
             if current_user.user_mxid != user.user_mxid:
                 activity = await self._admin_client.get_user_activity(current_user.user_mxid)
-            desired_suspended = self._desired_suspension(current, now=now)
+            enforcement_now = max(now, self._now_provider())
+            desired_suspended = self._desired_suspension(current, now=enforcement_now)
             if activity.suspended != desired_suspended:
                 await self._admin_client.set_user_suspended(
                     current_user.user_mxid,
@@ -79,14 +83,15 @@ class SubscriptionAccessService:
             await self._repository.record_subscription_enforcement(
                 current.token_fingerprint,
                 suspended=desired_suspended,
-                now=now,
+                now=enforcement_now,
             )
         except Exception as exc:
+            failure_now = max(now, self._now_provider())
             await self._repository.record_subscription_error(
                 error_token_fingerprint,
                 last_error=str(exc),
-                now=now,
-                next_reconciliation_at=now + self._failure_retry_delay,
+                now=failure_now,
+                next_reconciliation_at=failure_now + self._failure_retry_delay,
             )
             raise
         return desired_suspended
