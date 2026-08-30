@@ -799,6 +799,63 @@ async def test_pending_matrix_enforcement_precedes_scheduled_google_refresh(
     assert [row.token_fingerprint for row in due] == ["pending-token"]
 
 
+async def test_failed_matrix_enforcement_observes_retry_deadline_and_batch_fairness(
+    subscription_repository,
+):
+    failed_entitlement = await create_entitlement(subscription_repository, "failed")
+    failed_snapshot = verified_subscription(failed_entitlement.entitlement_id, "failed-token")
+    await subscription_repository.store_verified_subscription(failed_snapshot, now=NOW)
+    await store_paid_bundle(
+        subscription_repository,
+        "failed-token",
+        bundle_id="failed-bundle",
+    )
+    await subscription_repository.record_subscription_enforcement(
+        "failed-token",
+        suspended=False,
+        now=NOW,
+    )
+    failure_time = NOW + timedelta(minutes=1)
+    retry_at = failure_time + timedelta(minutes=5)
+    await subscription_repository.store_verified_subscription(
+        replace(
+            failed_snapshot,
+            google_state=GoogleSubscriptionState.ON_HOLD,
+            entitlement_state=EntitlementState.SUSPENDED,
+            last_verified_at=failure_time,
+            next_reconciliation_at=failure_time + timedelta(hours=6),
+        ),
+        now=failure_time,
+    )
+    await subscription_repository.record_subscription_error(
+        "failed-token",
+        last_error="synapse unavailable",
+        now=failure_time,
+        next_reconciliation_at=retry_at,
+    )
+    scheduled_entitlement = await create_entitlement(subscription_repository, "scheduled")
+    await subscription_repository.store_verified_subscription(
+        verified_subscription(
+            scheduled_entitlement.entitlement_id,
+            "scheduled-token",
+            next_reconciliation_at=failure_time,
+        ),
+        now=failure_time,
+    )
+
+    due_during_backoff = await subscription_repository.list_due_reconciliation(
+        failure_time,
+        limit=1,
+    )
+    due_at_retry = await subscription_repository.list_due_reconciliation(retry_at, limit=10)
+
+    assert [row.token_fingerprint for row in due_during_backoff] == ["scheduled-token"]
+    assert {row.token_fingerprint for row in due_at_retry} == {
+        "failed-token",
+        "scheduled-token",
+    }
+
+
 async def test_stale_token_enforcement_records_actual_state_on_current_replacement(
     subscription_repository,
 ):

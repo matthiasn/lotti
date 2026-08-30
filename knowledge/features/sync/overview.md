@@ -194,7 +194,10 @@ scheduling its retry, so time spent waiting on Google cannot extend access.
 The repository records the last observed Matrix suspension state separately
 from Google's next refresh deadline. Any provisioned subscription whose desired
 state differs remains due for reconciliation until successful enforcement is
-recorded, including after a restart or after an access deadline passes. Access
+recorded, including after a restart or after an access deadline passes. A newly
+observed mismatch is selected ahead of ordinary Google refresh work, while a
+failed Synapse attempt receives a five-minute retry deadline and is excluded
+until then so repeated failures cannot monopolize a reconciliation batch. Access
 enforcement reloads the authoritative subscription after the Synapse activity
 lookup and before mutation; the resulting observed state is recorded on the
 current entitlement row even if its purchase token changed during the request,

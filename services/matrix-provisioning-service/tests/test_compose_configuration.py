@@ -21,3 +21,17 @@ def test_compose_forwards_bundle_claim_reaper_startup_delay():
         "BUNDLE_CLAIM_REAPER_STARTUP_DELAY_SECONDS="
         "${BUNDLE_CLAIM_REAPER_STARTUP_DELAY_SECONDS:-60}" in compose
     )
+
+
+def test_compose_forwards_documented_subscription_tunables():
+    compose = _COMPOSE_FILE.read_text(encoding="utf-8")
+    expected_defaults = {
+        "ENTITLEMENT_ISSUANCE_LIMIT": "5",
+        "ENTITLEMENT_ISSUANCE_WINDOW_SECONDS": "3600",
+        "PAID_PROVISIONING_WAIT_SECONDS": "30",
+        "PAID_PROVISIONING_POLL_SECONDS": "0.1",
+        "PAID_PROVISIONING_OPERATION_TIMEOUT_SECONDS": "300",
+    }
+
+    for variable, default in expected_defaults.items():
+        assert f"{variable}=${{{variable}:-{default}}}" in compose

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from shared.matrix import SynapseAdminClient
 
@@ -20,9 +20,12 @@ class SubscriptionAccessService:
         self,
         repository: SubscriptionRepository,
         admin_client: SynapseAdminClient,
+        *,
+        failure_retry_delay: timedelta = timedelta(minutes=5),
     ):
         self._repository = repository
         self._admin_client = admin_client
+        self._failure_retry_delay = failure_retry_delay
         self._enforcement_locks = tuple(asyncio.Lock() for _ in range(64))
 
     async def enforce(self, subscription: StoredSubscription, *, now: datetime) -> bool | None:
@@ -83,6 +86,7 @@ class SubscriptionAccessService:
                 error_token_fingerprint,
                 last_error=str(exc),
                 now=now,
+                next_reconciliation_at=now + self._failure_retry_delay,
             )
             raise
         return desired_suspended

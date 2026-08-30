@@ -203,6 +203,7 @@ async def test_synapse_failure_is_recorded_and_propagated(repository):
 
     stored = await repository.get_subscription_by_token("purchase-token")
     assert stored.last_error == "synapse unavailable"
+    assert stored.next_reconciliation_at == NOW + timedelta(minutes=5)
 
 
 async def test_subscription_with_dangling_bundle_reference_fails_closed():
@@ -430,8 +431,9 @@ async def test_missing_replacement_bundle_is_recorded_as_enforcement_error():
             *,
             last_error,
             now,
+            next_reconciliation_at,
         ):
-            self.errors.append((token_fingerprint, last_error, now))
+            self.errors.append((token_fingerprint, last_error, now, next_reconciliation_at))
 
     repository = RacingRepository()
     service = SubscriptionAccessService(repository, FakeAdminClient())
@@ -440,5 +442,10 @@ async def test_missing_replacement_bundle_is_recorded_as_enforcement_error():
         await service.enforce(subscription, now=NOW)
 
     assert repository.errors == [
-        ("new-token", "Subscription references a missing Matrix bundle", NOW)
+        (
+            "new-token",
+            "Subscription references a missing Matrix bundle",
+            NOW,
+            NOW + timedelta(minutes=5),
+        )
     ]

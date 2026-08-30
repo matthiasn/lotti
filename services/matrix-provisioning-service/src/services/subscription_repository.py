@@ -1005,10 +1005,11 @@ class SubscriptionRepository(ProvisioningRepository):
                 "THEN 0 ELSE 1 END AS desired_suspended "
                 "FROM play_subscriptions WHERE is_current = 1) "
                 "SELECT * FROM current_subscriptions WHERE next_reconciliation_at <= ? OR ("
-                "bundle_id IS NOT NULL AND (matrix_suspended IS NULL OR "
-                "matrix_suspended != desired_suspended)) "
-                "ORDER BY CASE WHEN bundle_id IS NOT NULL AND (matrix_suspended IS NULL OR "
-                "matrix_suspended != desired_suspended) THEN 0 ELSE 1 END, "
+                "bundle_id IS NOT NULL AND last_error IS NULL AND ("
+                "matrix_suspended IS NULL OR matrix_suspended != desired_suspended)) "
+                "ORDER BY CASE WHEN bundle_id IS NOT NULL AND last_error IS NULL AND ("
+                "matrix_suspended IS NULL OR matrix_suspended != desired_suspended) "
+                "THEN 0 ELSE 1 END, "
                 "next_reconciliation_at ASC LIMIT ?",
                 (
                     *access_states,
