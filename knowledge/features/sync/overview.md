@@ -154,6 +154,10 @@ before it touches Matrix. Pending escrow records the purchase-token fingerprint
 that authorized their current claim secret: only a verified replacement token
 can rebind it, while a second request for the same token must prove the existing
 secret.
+Application Default Credentials refresh failures caused by Google transport or
+credential errors are mapped to the same retryable service-unavailable response
+as transient Publisher API failures, so verification and RTDN callers receive
+HTTP 503 rather than an unclassified server error.
 A linked replacement must grant access before the repository can store it or
 retire the current token. First observations and the same-token path still
 persist denial state so reconciliation can suspend Matrix. Replacement audit

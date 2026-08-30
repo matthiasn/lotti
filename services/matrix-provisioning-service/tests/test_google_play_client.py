@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 
 import httpx
 import pytest
+from google.auth.exceptions import RefreshError, TransportError
 from src.core.exceptions import (
     GooglePlayUnavailableException,
     GooglePlayVerificationException,
@@ -227,6 +228,29 @@ async def test_access_token_provider_refreshes_invalid_credentials_once():
     assert await provider.get_token() == "refreshed-token"
     assert await provider.get_token() == "refreshed-token"
     assert credentials.refresh_count == 1
+
+
+@pytest.mark.parametrize(
+    "refresh_error",
+    [
+        pytest.param(TransportError("metadata unavailable"), id="transport"),
+        pytest.param(RefreshError("credential refresh failed"), id="refresh"),
+    ],
+)
+async def test_access_token_provider_maps_refresh_failures_to_unavailable(refresh_error):
+    class Credentials:
+        valid = False
+        token = None
+
+        def refresh(self, _request):
+            raise refresh_error
+
+    provider = GoogleAccessTokenProvider(Credentials())
+
+    with pytest.raises(GooglePlayUnavailableException, match="credentials unavailable") as caught:
+        await provider.get_token()
+
+    assert caught.value.__cause__ is refresh_error
 
 
 def test_application_default_credentials_use_android_publisher_scope(monkeypatch):

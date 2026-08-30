@@ -9,6 +9,7 @@ from urllib.parse import quote
 
 import google.auth
 import httpx
+from google.auth.exceptions import RefreshError, TransportError
 from google.auth.transport.requests import Request
 
 from ..core.exceptions import (
@@ -52,7 +53,10 @@ class GoogleAccessTokenProvider:
         """Return a cached token, refreshing it once when necessary."""
         async with self._lock:
             if not self._credentials.valid:
-                await asyncio.to_thread(self._credentials.refresh, Request())
+                try:
+                    await asyncio.to_thread(self._credentials.refresh, Request())
+                except (TransportError, RefreshError) as exc:
+                    raise GooglePlayUnavailableException("Google credentials unavailable") from exc
             token = self._credentials.token
             if not token:
                 raise GooglePlayUnavailableException(
