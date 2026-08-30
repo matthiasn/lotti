@@ -574,6 +574,7 @@ def test_delivery_retry_authenticates_entitlement_without_replaying_purchase(
             NOW,
             NOW + timedelta(seconds=1),
             NOW + timedelta(seconds=2),
+            NOW + timedelta(seconds=3),
         )
     )
 
@@ -599,16 +600,35 @@ def test_delivery_retry_authenticates_entitlement_without_replaying_purchase(
     subscription = services[SERVICE_SUBSCRIPTION_REPOSITORY].subscription
     assert [call[0] for call in access.calls] == [subscription, subscription]
     assert [call[1] for call in access.calls] == [
-        NOW,
-        NOW + timedelta(seconds=2),
+        NOW + timedelta(seconds=1),
+        NOW + timedelta(seconds=3),
     ]
     delivery_call = services[SERVICE_PAID_BUNDLE_SERVICE].delivery_calls[0]
     assert delivery_call["claim_secret"] == CLAIM_SECRET
-    assert delivery_call["now"] == NOW + timedelta(seconds=1)
+    assert delivery_call["now"] == NOW + timedelta(seconds=2)
     assert services[SERVICE_SUBSCRIPTION_REPOSITORY].lookups == [
         "entitlement-one",
         "entitlement-one",
     ]
+
+
+def test_delivery_retry_stops_before_claim_delivery_when_enforcement_suspends(
+    client,
+    services,
+):
+    access = services[SERVICE_SUBSCRIPTION_ACCESS_SERVICE]
+    access.results = [True]
+
+    response = client.post(
+        "/api/v1/client/subscriptions/bundle-claims/deliver",
+        headers={"Authorization": f"Bearer {AUTH_SECRET}"},
+        json={"entitlement_id": "entitlement-one", "claim_secret": CLAIM_SECRET},
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "Subscription does not currently grant SYNC access"
+    assert len(access.calls) == 1
+    assert services[SERVICE_PAID_BUNDLE_SERVICE].delivery_calls == []
 
 
 def test_delivery_retry_reports_concurrently_replaced_subscription_state(client, services):

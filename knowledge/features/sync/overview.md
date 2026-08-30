@@ -248,8 +248,10 @@ when the claim has a real `confirmed_at`; a late request cannot turn a
 reaper-destroyed claim into apparent success. Confirmed claims always recover
 the existing account without recreating bootstrap credentials. Lost-response
 delivery retries reload the current subscription and reject non-granting state
-or an elapsed authoritative expiry before decrypting escrow. The route reloads
-and re-enforces the current row once more after delivery so a concurrent
+or an elapsed authoritative expiry before decrypting escrow. The retry route
+refreshes its clock after entitlement authentication and stops before claim
+delivery when enforcement suspends the account. It then reloads and re-enforces
+the current row once more after delivery so a concurrent
 replacement purchase's entitlement state, rather than its predecessor's stale
 state, is returned only when it still grants access.
 
