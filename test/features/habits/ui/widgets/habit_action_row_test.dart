@@ -213,8 +213,11 @@ void main() {
       // Tuesday: the sheet must open on that Friday, not on today.
       final friday = today.subtract(const Duration(days: 4));
       expect(find.text('F'), findsOneWidget);
+      expect(find.bySemanticsLabel(RegExp('Fri, Aug 7')), findsOneWidget);
       await tester.tap(
-        find.bySemanticsLabel(RegExp('Fri, Aug 7')),
+        find.byWidgetPredicate(
+          (widget) => widget is DayMarkCell && widget.mark.day == friday,
+        ),
       );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -227,26 +230,34 @@ void main() {
       handle.dispose();
     });
 
-    testWidgets('a square for a day after today opens nothing', (
+    testWidgets('a square for a day after today is not a button at all', (
       tester,
     ) async {
       final handle = tester.ensureSemantics();
       await withClock(Clock.fixed(today), () async {
+        final tomorrow = today.add(const Duration(days: 1));
         await pumpRow(
           tester,
           history: [
             DayMark(day: today, state: DayMarkState.none, isToday: true),
-            DayMark(
-              day: today.add(const Duration(days: 1)),
-              state: DayMarkState.none,
-            ),
+            DayMark(day: tomorrow, state: DayMarkState.none),
           ],
         );
-        await tester.tap(find.bySemanticsLabel(RegExp('Wed, Aug 12')));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-        expect(find.byType(HabitCompletionSheet), findsNothing);
-        await tester.tap(find.bySemanticsLabel(RegExp('Tue, Aug 11')));
+        // Read-only: no activation callback, no semantic button, no ink.
+        final future = find.byWidgetPredicate(
+          (widget) => widget is DayMarkCell && widget.mark.day == tomorrow,
+        );
+        expect(tester.widget<DayMarkCell>(future).onTap, isNull);
+        expect(find.bySemanticsLabel(RegExp('Wed, Aug 12')), findsNothing);
+        expect(
+          find.descendant(of: future, matching: find.byType(InkWell)),
+          findsNothing,
+        );
+        await tester.tap(
+          find.byWidgetPredicate(
+            (widget) => widget is DayMarkCell && widget.mark.day == today,
+          ),
+        );
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
         expect(

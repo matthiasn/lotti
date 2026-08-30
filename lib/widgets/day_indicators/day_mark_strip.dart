@@ -22,6 +22,7 @@ class DayMarkStrip extends StatelessWidget {
     this.placeholder = false,
     this.streak,
     this.onDaySelected,
+    this.isDaySelectable,
     this.scrollGroup,
     super.key,
   });
@@ -45,6 +46,12 @@ class DayMarkStrip extends StatelessWidget {
   /// Opens the day's reflection. Null leaves the strip a read-only figure —
   /// which is what the list rows want, since a tap there navigates.
   final ValueChanged<DateTime>? onDaySelected;
+
+  /// Which days a tappable strip actually offers as buttons. A day it
+  /// declines is drawn as a read-only cell — hover still names it, but it is
+  /// no button, no keyboard stop and no click cursor — rather than as a
+  /// button whose tap does nothing. Null offers every dated day.
+  final bool Function(DateTime day)? isDaySelectable;
 
   /// Joins the page's unison day-track scrolling when the strip renders a
   /// span longer than a week.
@@ -92,7 +99,7 @@ class DayMarkStrip extends StatelessWidget {
       if (day == null) return DayMarkCell(mark: mark);
       final dayName = dayFormat.format(day);
       final outcome = outcomeOf(mark);
-      if (onDaySelected == null) {
+      if (onDaySelected == null || isDaySelectable?.call(day) == false) {
         return DayMarkCell(
           mark: mark,
           tooltipDay: dayName,

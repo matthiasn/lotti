@@ -159,6 +159,9 @@ flowchart LR
   (a `List<DayMark>`) plus `currentStreak`; the row renders one tappable
   `DayMarkStrip(streak:)`, and a tap on a square opens the completion sheet
   for THAT day (`HabitCompletionSheet.show(dateString:)`), never for today.
+  Days after today — a dashboard range can hold them — are declined through
+  `DayMarkStrip.isDaySelectable` and drawn read-only, not as buttons that
+  do nothing.
   The pages slice `habitHistoryDays(context)` days off the state — seven on
   a phone, fourteen on a desktop window. There is no separate streak chain.
 - The habit dashboard strip used to drop its oldest days to fit; it now pans

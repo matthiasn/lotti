@@ -195,14 +195,15 @@ class _HabitActionRowState extends ConsumerState<HabitActionRow>
 
   /// A tap on one of the history squares: the sheet for THAT day, so a
   /// missed Tuesday is recorded on Tuesday rather than on today with the
-  /// date to be corrected by hand. The page state's span ends today; a
-  /// dashboard range can run past it, and there is nothing to record on a
-  /// day that has not happened.
-  void _onHistoryDaySelected(DateTime day) {
-    final ymd = day.ymd;
-    if (ymd.compareTo(clock.now().ymd) > 0) return;
-    onTapAdd(dateString: ymd);
-  }
+  /// date to be corrected by hand.
+  void _onHistoryDaySelected(DateTime day) => onTapAdd(dateString: day.ymd);
+
+  /// The page state's span ends today, but a dashboard range can run past
+  /// it, and there is nothing to record on a day that has not happened —
+  /// those squares stay read-only rather than becoming buttons that do
+  /// nothing.
+  static bool _isHistoryDaySelectable(DateTime day) =>
+      day.ymd.compareTo(clock.now().ymd) <= 0;
 
   /// Records a one-tap completion for *today* with [completionType] and no
   /// comment — the fast path shared by the trailing check button (success) and
@@ -379,6 +380,7 @@ class _HabitActionRowState extends ConsumerState<HabitActionRow>
                 history: widget.history,
                 onTapAdd: onTapAdd,
                 onHistoryDaySelected: _onHistoryDaySelected,
+                isHistoryDaySelectable: _isHistoryDaySelectable,
                 onEdit: () => openHabitEditor(context, habitId: widget.habitId),
                 onQuickComplete: () => _recordQuickCompletion(
                   HabitCompletionType.success,
@@ -448,6 +450,7 @@ class _HabitCardBody extends StatelessWidget {
     required this.celebrate,
     required this.onTapAdd,
     required this.onHistoryDaySelected,
+    required this.isHistoryDaySelectable,
     required this.onEdit,
     required this.onQuickComplete,
     required this.history,
@@ -468,6 +471,9 @@ class _HabitCardBody extends StatelessWidget {
 
   /// A tap on one of the [history] squares, with that square's day.
   final ValueChanged<DateTime> onHistoryDaySelected;
+
+  /// Which [history] squares are offered as buttons at all.
+  final bool Function(DateTime day) isHistoryDaySelectable;
   final VoidCallback onEdit;
 
   /// One-tap "mark done today" — the trailing check records a success directly
@@ -578,6 +584,7 @@ class _HabitCardBody extends StatelessWidget {
                           marks: history,
                           streak: currentStreak,
                           onDaySelected: onHistoryDaySelected,
+                          isDaySelectable: isHistoryDaySelectable,
                         ),
                       ],
                     ],

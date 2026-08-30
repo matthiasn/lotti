@@ -389,14 +389,15 @@ void main() {
       }
     });
 
-    clockedWidgets('a past dateString records at the end of that day', (
-      tester,
-    ) async {
+    clockedWidgets('a past dateString records an instant at the end of that '
+        'day, not a span reaching the moment it was saved', (tester) async {
       await pumpSheet(tester, dateString: '2024-01-15');
       expect(find.text('2024-01-15 23:59'), findsOneWidget);
       await tester.tap(find.byKey(const Key('habit_save')));
       await tester.pump(const Duration(milliseconds: 300));
-      expect(captured().dateFrom, DateTime(2024, 1, 15, 23, 59, 59));
+      final data = captured();
+      expect(data.dateFrom, DateTime(2024, 1, 15, 23, 59, 59));
+      expect(data.dateTo, data.dateFrom);
     });
 
     clockedWidgets('picking a date moves the recorded start', (tester) async {

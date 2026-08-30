@@ -101,6 +101,12 @@ class HabitCompletionSheet extends ConsumerStatefulWidget {
 class _HabitCompletionSheetState extends ConsumerState<HabitCompletionSheet> {
   final _formKey = GlobalKey<FormBuilderState>();
   late DateTime _started;
+
+  /// Whether [_started] was placed on a chosen moment rather than "now" — a
+  /// past day given to the sheet, or a date picked in the field. A reset
+  /// start is saved as an instant (`dateTo == dateFrom`); an un-reset one
+  /// ends when the save happens. A completion backfilled onto Tuesday must
+  /// not span from Tuesday to the moment it was saved on Thursday.
   bool _startReset = false;
 
   /// The outcome the [DsSegmentedToggle] currently selects. Defaults to
@@ -135,6 +141,7 @@ class _HabitCompletionSheetState extends ConsumerState<HabitCompletionSheet> {
     final forToday =
         widget.dateString == null || clock.now().ymd == widget.dateString;
     _started = forToday ? clock.now() : endOfDay();
+    _startReset = !forToday;
   }
 
   /// Opens the day's reflection for one of the goals watching this habit.
