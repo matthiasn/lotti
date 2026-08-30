@@ -2,6 +2,7 @@ import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/beamer/locations/journal_location.dart';
+import 'package:lotti/features/demo/seed/demo_ids.dart';
 import 'package:lotti/features/demo/seed/demo_world.dart';
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/journal/ui/pages/journal_root_page.dart';
@@ -108,9 +109,9 @@ void main() {
         expect(detailsPage.showBackButton, isTrue);
       });
 
-      test('passes a valid linked-from event id into the entry page', () {
+      test('passes a valid demo linked-from event id into the entry page', () {
         final entryId = const Uuid().v4();
-        final eventId = const Uuid().v4();
+        final eventId = demoUuid('event-project-waddle-launch-gala');
         final pages = buildPagesFor(
           Uri.parse('/journal/$entryId?linkedFromId=$eventId'),
           {'entryId': entryId},

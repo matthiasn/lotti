@@ -26,6 +26,7 @@ import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/state/event_agent_providers.dart';
+import 'package:lotti/features/demo/seed/demo_ids.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/events/state/events_controller.dart';
 import 'package:lotti/features/events/state/events_overview_controller.dart';
@@ -51,7 +52,7 @@ import '../../../categories/test_utils.dart';
 import '../../../daily_os_next/screenshot_harness.dart';
 
 const _subdir = 'events';
-const _detailEventId = 'event-project-waddle-launch-gala';
+final String _detailEventId = demoUuid('event-project-waddle-launch-gala');
 String _t(String en, String de) => manualScreenshotText(en: en, de: de);
 
 AppLocalizations _messages(WidgetTester tester) =>
@@ -426,6 +427,7 @@ void main() {
       documentsDirectory: documentsDirectory,
       world: world,
       extents: const [360],
+      includeRawFileImage: true,
     );
     final platform = device.isPhone
         ? TargetPlatform.android
@@ -514,7 +516,7 @@ void main() {
           tester,
           device: device,
           brightness: brightness,
-          home: const EventDetailPage(eventId: _detailEventId),
+          home: EventDetailPage(eventId: _detailEventId),
           overrides: detailOverrides(),
         );
         expect(find.byType(EventDetailView), findsOneWidget);
@@ -555,7 +557,7 @@ void main() {
           tester,
           device: device,
           brightness: brightness,
-          home: const EventDetailPage(eventId: _detailEventId),
+          home: EventDetailPage(eventId: _detailEventId),
           overrides: detailOverrides(),
         );
         final detail = find.byType(EventDetailView);
@@ -591,6 +593,21 @@ void main() {
           ),
           findsOneWidget,
         );
+        final timelineImages = find.byWidgetPredicate(
+          (widget) => widget is Image && widget.image is FileImage,
+        );
+        expect(timelineImages, findsNWidgets(3));
+        for (var index = 0; index < 3; index++) {
+          final rawImage = find.descendant(
+            of: timelineImages.at(index),
+            matching: find.byType(RawImage),
+          );
+          expect(rawImage, findsOneWidget);
+          expect(
+            tester.renderObject<RenderImage>(rawImage).image,
+            isNotNull,
+          );
+        }
         await captureScreenshot(
           tester,
           'events_timeline_${viewport}_$theme',
@@ -604,7 +621,7 @@ void main() {
             tester,
             device: device,
             brightness: brightness,
-            home: const EventDetailPage(eventId: _detailEventId),
+            home: EventDetailPage(eventId: _detailEventId),
             overrides: detailOverrides(),
           );
           final grid = find.byType(EventPhotoGrid);
@@ -623,6 +640,20 @@ void main() {
           );
           await settleFrames(tester, 8);
           expect(find.byType(EventPhotoGalleryViewer), findsOneWidget);
+          expect(find.byType(CircularProgressIndicator), findsNothing);
+          final viewerImages = find.byWidgetPredicate(
+            (widget) => widget is Image && widget.image is FileImage,
+          );
+          expect(viewerImages, findsWidgets);
+          final rawViewerImage = find.descendant(
+            of: viewerImages.first,
+            matching: find.byType(RawImage),
+          );
+          expect(rawViewerImage, findsOneWidget);
+          expect(
+            tester.renderObject<RenderImage>(rawViewerImage).image,
+            isNotNull,
+          );
           await captureScreenshot(
             tester,
             'events_photo_viewer_mobile_light',
