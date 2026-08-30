@@ -222,6 +222,13 @@ credential; if a local JSON credential is unavoidable, point
 image. Generate the two application secrets independently, for example with
 `openssl rand -base64 32`.
 
+The bundled Compose stack accepts `GOOGLE_APPLICATION_CREDENTIALS` as an
+absolute **host** path. It mounts that file read-only at
+`/run/secrets/google-application-credentials.json` and points the service's
+Application Default Credentials lookup at the container path. With Play
+subscriptions disabled, an unset host path mounts `/dev/null`; enabling the
+feature without a valid credential still fails startup closed.
+
 For envelope-key rotation, deploy the new ID and key as the active pair and add
 the previous pair to `SUBSCRIPTION_DECRYPTION_KEYS_JSON`. New rows immediately
 use only the active key; authoritative subscription refreshes lazily re-encrypt

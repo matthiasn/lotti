@@ -10,6 +10,9 @@
 #   MATRIX_ADMIN_USER + MATRIX_ADMIN_PASSWORD as a fallback
 #   API_KEY             regular client key, e.g. `openssl rand -hex 32`
 #   ADMIN_API_KEY       admin key guarding provisioning, revocation and purging
+#   GOOGLE_APPLICATION_CREDENTIALS
+#                       absolute host path to the Google service-account JSON
+#                       when Play subscriptions are enabled
 #
 # The two keys have no defaults on purpose. A checked-in default is a published
 # credential: this file is public, so anyone who could reach the port would hold
@@ -61,7 +64,7 @@ services:
       - SUBSCRIPTION_RECONCILE_BATCH_SIZE=${SUBSCRIPTION_RECONCILE_BATCH_SIZE:-50}
       - BUNDLE_CLAIM_REAPER_INTERVAL_SECONDS=${BUNDLE_CLAIM_REAPER_INTERVAL_SECONDS:-300}
       - BUNDLE_CLAIM_REAPER_BATCH_SIZE=${BUNDLE_CLAIM_REAPER_BATCH_SIZE:-50}
-      - GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS:-}
+      - GOOGLE_APPLICATION_CREDENTIALS=/run/secrets/google-application-credentials.json
       - LOG_LEVEL=INFO
       - PORT=8003
       # Trust only the nginx container's fixed address. Direct clients on the
@@ -70,6 +73,10 @@ services:
       - CORS_ALLOWED_ORIGINS=http://localhost:5174
     volumes:
       - provisioning-data:/app/data
+      # The /dev/null fallback keeps the subscription-disabled stack runnable
+      # without credentials. Subscription startup still fails closed when the
+      # feature is enabled without a valid host credential file.
+      - "${GOOGLE_APPLICATION_CREDENTIALS:-/dev/null}:/run/secrets/google-application-credentials.json:ro"
     networks:
       matrix-admin-network:
         ipv4_address: 172.28.0.11

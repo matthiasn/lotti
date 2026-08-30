@@ -131,6 +131,10 @@ that escrow, a replacement purchase returns a no-import recovery result and
 unsuspends the existing Matrix account before responding; it never recreates
 the bootstrap credential. The Android Billing client is not wired yet, so this
 backend path is dormant while the feature flag remains off.
+For local-JSON deployments, the bundled Compose stack treats
+`GOOGLE_APPLICATION_CREDENTIALS` as a host path and binds it read-only to the
+stable Application Default Credentials path inside the service container; the
+subscription-disabled fallback cannot become usable Google credentials.
 
 The anonymous entitlement endpoint consumes a durable, HMAC-pseudonymized
 per-client quota before it creates any identity row. Purchase-intent requests
