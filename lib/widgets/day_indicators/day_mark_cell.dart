@@ -90,15 +90,13 @@ Widget? dayMarkSquareContent(
       // The one touch of the error family a habit square gets: the cross
       // in red, on the neutral fill. A miss should sting a little, and a bad
       // week should still not be a wall of red — the mark carries the hue,
-      // the square does not. The `pressed` step, not the surface ink: the
-      // fill is `level03`, the mid grey no alert ink was tuned for, and in
-      // dark theme the ink lands at 2.9:1 on it. `pressed` is the ramp's far
-      // step — darkest in light, lightest in dark — and the one that clears
-      // the 3:1 graphical floor on that grey in both themes (4.2:1 dark).
+      // the square does not. `glyphOnLevel03`, not the surface ink: the
+      // fill is `level03`, the mid grey the ink was never tuned for (2.9:1
+      // there in dark), and that step is the ramp's guarantee of 3:1 on it.
       return Icon(
         dayVerdictGlyph(DayVerdict.missed),
         size: glyphSize,
-        color: tokens.colors.alert.error.pressed,
+        color: tokens.colors.alert.error.glyphOnLevel03,
       );
     case DayMarkState.none:
     case DayMarkState.skipped:

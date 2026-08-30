@@ -25,24 +25,28 @@ const DsTokens dsTokensLight = DsTokens(
         hover: Color(0xFFA32B29),
         pressed: Color(0xFF7A1F1F),
         ink: Color(0xFFA32B29),
+        glyphOnLevel03: Color(0xFFCC3633),
       ),
       success: DsColorsAlertSuccess(
         defaultColor: Color(0xFF478556),
         hover: Color(0xFF478556),
         pressed: Color(0xFF366340),
         ink: Color(0xFF366340),
+        glyphOnLevel03: Color(0xFF478556),
       ),
       warning: DsColorsAlertWarning(
         defaultColor: Color(0xFFC87005),
         hover: Color(0xFFC87005),
         pressed: Color(0xFF965402),
         ink: Color(0xFF965402),
+        glyphOnLevel03: Color(0xFF965402),
       ),
       info: DsColorsAlertInfo(
         defaultColor: Color(0xFF1783B5),
         hover: Color(0xFF1783B5),
         pressed: Color(0xFF116288),
         ink: Color(0xFF116288),
+        glyphOnLevel03: Color(0xFF1783B5),
       ),
     ),
     background: DsColorsBackground(
@@ -440,24 +444,28 @@ const DsTokens dsTokensDark = DsTokens(
         hover: Color(0xFFE08684),
         pressed: Color(0xFFEBB0AE),
         ink: Color(0xFFE08684),
+        glyphOnLevel03: Color(0xFFEBB0AE),
       ),
       success: DsColorsAlertSuccess(
         defaultColor: Color(0xFF7AB889),
         hover: Color(0xFF9CC9A6),
         pressed: Color(0xFFBDDBC4),
         ink: Color(0xFF7AB889),
+        glyphOnLevel03: Color(0xFF7AB889),
       ),
       warning: DsColorsAlertWarning(
         defaultColor: Color(0xFFFBA336),
         hover: Color(0xFFFCBA69),
         pressed: Color(0xFFFDD19B),
         ink: Color(0xFFFBA336),
+        glyphOnLevel03: Color(0xFFFBA336),
       ),
       info: DsColorsAlertInfo(
         defaultColor: Color(0xFF4AB6E8),
         hover: Color(0xFF77C8EE),
         pressed: Color(0xFFA4DAF4),
         ink: Color(0xFF4AB6E8),
+        glyphOnLevel03: Color(0xFF4AB6E8),
       ),
     ),
     background: DsColorsBackground(
@@ -970,12 +978,14 @@ class DsColorsAlertError {
   final Color hover;
   final Color pressed;
   final Color ink;
+  final Color glyphOnLevel03;
 
   const DsColorsAlertError({
     required this.defaultColor,
     required this.hover,
     required this.pressed,
     required this.ink,
+    required this.glyphOnLevel03,
   });
 
   DsColorsAlertError copyWith({
@@ -983,12 +993,14 @@ class DsColorsAlertError {
     Color? hover,
     Color? pressed,
     Color? ink,
+    Color? glyphOnLevel03,
   }) {
     return DsColorsAlertError(
       defaultColor: defaultColor ?? this.defaultColor,
       hover: hover ?? this.hover,
       pressed: pressed ?? this.pressed,
       ink: ink ?? this.ink,
+      glyphOnLevel03: glyphOnLevel03 ?? this.glyphOnLevel03,
     );
   }
 
@@ -1002,6 +1014,8 @@ class DsColorsAlertError {
       hover: Color.lerp(hover, other.hover, t) ?? hover,
       pressed: Color.lerp(pressed, other.pressed, t) ?? pressed,
       ink: Color.lerp(ink, other.ink, t) ?? ink,
+      glyphOnLevel03:
+          Color.lerp(glyphOnLevel03, other.glyphOnLevel03, t) ?? glyphOnLevel03,
     );
   }
 
@@ -1014,11 +1028,13 @@ class DsColorsAlertError {
         defaultColor == other.defaultColor &&
         hover == other.hover &&
         pressed == other.pressed &&
-        ink == other.ink;
+        ink == other.ink &&
+        glyphOnLevel03 == other.glyphOnLevel03;
   }
 
   @override
-  int get hashCode => Object.hashAll([defaultColor, hover, pressed, ink]);
+  int get hashCode =>
+      Object.hashAll([defaultColor, hover, pressed, ink, glyphOnLevel03]);
 }
 
 @immutable
@@ -1027,12 +1043,14 @@ class DsColorsAlertSuccess {
   final Color hover;
   final Color pressed;
   final Color ink;
+  final Color glyphOnLevel03;
 
   const DsColorsAlertSuccess({
     required this.defaultColor,
     required this.hover,
     required this.pressed,
     required this.ink,
+    required this.glyphOnLevel03,
   });
 
   DsColorsAlertSuccess copyWith({
@@ -1040,12 +1058,14 @@ class DsColorsAlertSuccess {
     Color? hover,
     Color? pressed,
     Color? ink,
+    Color? glyphOnLevel03,
   }) {
     return DsColorsAlertSuccess(
       defaultColor: defaultColor ?? this.defaultColor,
       hover: hover ?? this.hover,
       pressed: pressed ?? this.pressed,
       ink: ink ?? this.ink,
+      glyphOnLevel03: glyphOnLevel03 ?? this.glyphOnLevel03,
     );
   }
 
@@ -1059,6 +1079,8 @@ class DsColorsAlertSuccess {
       hover: Color.lerp(hover, other.hover, t) ?? hover,
       pressed: Color.lerp(pressed, other.pressed, t) ?? pressed,
       ink: Color.lerp(ink, other.ink, t) ?? ink,
+      glyphOnLevel03:
+          Color.lerp(glyphOnLevel03, other.glyphOnLevel03, t) ?? glyphOnLevel03,
     );
   }
 
@@ -1071,11 +1093,13 @@ class DsColorsAlertSuccess {
         defaultColor == other.defaultColor &&
         hover == other.hover &&
         pressed == other.pressed &&
-        ink == other.ink;
+        ink == other.ink &&
+        glyphOnLevel03 == other.glyphOnLevel03;
   }
 
   @override
-  int get hashCode => Object.hashAll([defaultColor, hover, pressed, ink]);
+  int get hashCode =>
+      Object.hashAll([defaultColor, hover, pressed, ink, glyphOnLevel03]);
 }
 
 @immutable
@@ -1084,12 +1108,14 @@ class DsColorsAlertWarning {
   final Color hover;
   final Color pressed;
   final Color ink;
+  final Color glyphOnLevel03;
 
   const DsColorsAlertWarning({
     required this.defaultColor,
     required this.hover,
     required this.pressed,
     required this.ink,
+    required this.glyphOnLevel03,
   });
 
   DsColorsAlertWarning copyWith({
@@ -1097,12 +1123,14 @@ class DsColorsAlertWarning {
     Color? hover,
     Color? pressed,
     Color? ink,
+    Color? glyphOnLevel03,
   }) {
     return DsColorsAlertWarning(
       defaultColor: defaultColor ?? this.defaultColor,
       hover: hover ?? this.hover,
       pressed: pressed ?? this.pressed,
       ink: ink ?? this.ink,
+      glyphOnLevel03: glyphOnLevel03 ?? this.glyphOnLevel03,
     );
   }
 
@@ -1116,6 +1144,8 @@ class DsColorsAlertWarning {
       hover: Color.lerp(hover, other.hover, t) ?? hover,
       pressed: Color.lerp(pressed, other.pressed, t) ?? pressed,
       ink: Color.lerp(ink, other.ink, t) ?? ink,
+      glyphOnLevel03:
+          Color.lerp(glyphOnLevel03, other.glyphOnLevel03, t) ?? glyphOnLevel03,
     );
   }
 
@@ -1128,11 +1158,13 @@ class DsColorsAlertWarning {
         defaultColor == other.defaultColor &&
         hover == other.hover &&
         pressed == other.pressed &&
-        ink == other.ink;
+        ink == other.ink &&
+        glyphOnLevel03 == other.glyphOnLevel03;
   }
 
   @override
-  int get hashCode => Object.hashAll([defaultColor, hover, pressed, ink]);
+  int get hashCode =>
+      Object.hashAll([defaultColor, hover, pressed, ink, glyphOnLevel03]);
 }
 
 @immutable
@@ -1141,12 +1173,14 @@ class DsColorsAlertInfo {
   final Color hover;
   final Color pressed;
   final Color ink;
+  final Color glyphOnLevel03;
 
   const DsColorsAlertInfo({
     required this.defaultColor,
     required this.hover,
     required this.pressed,
     required this.ink,
+    required this.glyphOnLevel03,
   });
 
   DsColorsAlertInfo copyWith({
@@ -1154,12 +1188,14 @@ class DsColorsAlertInfo {
     Color? hover,
     Color? pressed,
     Color? ink,
+    Color? glyphOnLevel03,
   }) {
     return DsColorsAlertInfo(
       defaultColor: defaultColor ?? this.defaultColor,
       hover: hover ?? this.hover,
       pressed: pressed ?? this.pressed,
       ink: ink ?? this.ink,
+      glyphOnLevel03: glyphOnLevel03 ?? this.glyphOnLevel03,
     );
   }
 
@@ -1173,6 +1209,8 @@ class DsColorsAlertInfo {
       hover: Color.lerp(hover, other.hover, t) ?? hover,
       pressed: Color.lerp(pressed, other.pressed, t) ?? pressed,
       ink: Color.lerp(ink, other.ink, t) ?? ink,
+      glyphOnLevel03:
+          Color.lerp(glyphOnLevel03, other.glyphOnLevel03, t) ?? glyphOnLevel03,
     );
   }
 
@@ -1185,11 +1223,13 @@ class DsColorsAlertInfo {
         defaultColor == other.defaultColor &&
         hover == other.hover &&
         pressed == other.pressed &&
-        ink == other.ink;
+        ink == other.ink &&
+        glyphOnLevel03 == other.glyphOnLevel03;
   }
 
   @override
-  int get hashCode => Object.hashAll([defaultColor, hover, pressed, ink]);
+  int get hashCode =>
+      Object.hashAll([defaultColor, hover, pressed, ink, glyphOnLevel03]);
 }
 
 @immutable

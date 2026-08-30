@@ -54,7 +54,7 @@ void main() {
         // marks, never a wall of red.
         final icon = tester.widget<Icon>(find.byType(Icon));
         expect(icon.icon, dayVerdictGlyph(DayVerdict.missed));
-        expect(icon.color, tokens.colors.alert.error.pressed);
+        expect(icon.color, tokens.colors.alert.error.glyphOnLevel03);
         expect(decoration(tester).color, tokens.colors.background.level03);
         expect(icon.size, kDaySquareSize - tokens.spacing.step2);
       } else if (state == DayMarkState.full || state == DayMarkState.partial) {
@@ -90,8 +90,9 @@ void main() {
         greaterThanOrEqualTo(3),
         reason: '$brightness: the cross must read against level03',
       );
-      // Still red: the far step of the error ramp, not a neutral ink.
-      expect(icon.color, tokens.colors.alert.error.pressed);
+      // Still red: the error ramp's own step for this fill, not a neutral
+      // ink and not an interaction state borrowed for its contrast.
+      expect(icon.color, tokens.colors.alert.error.glyphOnLevel03);
     }
   });
 
