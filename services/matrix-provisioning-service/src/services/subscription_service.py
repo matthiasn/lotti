@@ -176,7 +176,7 @@ class SubscriptionService:
             expected_request_hash=request_hash,
             token_fingerprint=token_fingerprint,
             integrity_token_fingerprint=integrity_fingerprint,
-            now=now,
+            now=verified_at,
         )
 
         encrypted_token = self._secret_cipher.encrypt(

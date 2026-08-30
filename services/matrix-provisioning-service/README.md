@@ -113,7 +113,8 @@ removes expired intents and their Integrity replay markers, bounding both
 secret-hashing work and retained authorization state. Purchase verification
 uses an independent durable attempt scope before either scrypt check or Google
 API call, so replay traffic cannot consume the shared thread pool or Google
-quota without bound.
+quota without bound. Intent consumption uses the fresh post-Google verification
+time, preventing scrypt and network latency from extending the authorization TTL.
 
 Paid bundle delivery differs deliberately from admin provisioning. A network
 failure may retry the same authenticated claim for 24 hours, so the credential

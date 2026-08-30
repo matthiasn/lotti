@@ -143,7 +143,9 @@ app-held secret, followed by a separate post-authentication issuance quota
 before hashing and storing another one-time secret; the latter transaction
 also prunes expired intents and their Integrity replay markers. Purchase
 verification has its own durable attempt scope, consumed before entitlement or
-intent scrypt checks and before either Google API call. Paid-bundle delivery and
+intent scrypt checks and before either Google API call. The purchase intent is
+consumed with the fresh post-Google verification timestamp, so authentication
+and network time cannot extend its exact TTL. Paid-bundle delivery and
 rotation share another durable attempt scope, consumed before entitlement or
 claim-secret scrypt work. Expired-attempt cleanup stays within the current
 operation because those scopes can have independently configured windows. Paid

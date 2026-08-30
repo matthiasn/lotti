@@ -223,6 +223,41 @@ async def test_valid_purchase_is_bound_and_stored_with_encrypted_token(
     assert google_client.queried_tokens == [(PACKAGE, "purchase-token")]
 
 
+async def test_purchase_intent_expiring_during_google_verification_is_not_consumed(
+    service,
+    identity_service,
+    google_client,
+    repository,
+    clock,
+    monkeypatch,
+):
+    entitlement, submission = await purchase_context(identity_service, google_client)
+    intent = await repository.get_purchase_intent(submission.purchase_intent_id)
+    request_time = intent.expires_at - timedelta(seconds=1)
+    clock.value = request_time
+    google_client.integrity_payload["tokenPayloadExternal"]["requestDetails"]["timestampMillis"] = (
+        str(int(request_time.timestamp() * 1000))
+    )
+    get_subscription = google_client.get_subscription
+
+    async def get_subscription_after_expiry(package_name, purchase_token):
+        clock.value = intent.expires_at
+        return await get_subscription(package_name, purchase_token)
+
+    monkeypatch.setattr(google_client, "get_subscription", get_subscription_after_expiry)
+
+    with pytest.raises(PurchaseIntentExpiredException):
+        await service.verify_purchase(
+            submission,
+            entitlement_auth_secret=entitlement.auth_secret,
+            now=request_time,
+        )
+
+    stored_intent = await repository.get_purchase_intent(intent.intent_id)
+    assert stored_intent.consumed_at is None
+    assert await repository.get_subscription_by_token(fingerprint("purchase-token")) is None
+
+
 async def test_purchase_verification_attempt_limit_rejects_replay_before_auth_and_google(
     repository,
     identity_service,
