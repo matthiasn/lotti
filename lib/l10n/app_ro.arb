@@ -2973,6 +2973,7 @@
   "habitSignalAnyWorkout": "orice antrenament",
   "habitSignalHabitDone": "obicei îndeplinit",
   "habitSignalRecordOther": "Altă valoare",
+  "habitSignalSevenDayAverage": "Media pe 7 zile: {value}",
   "habitSignalStatusDone": "{target} · gata",
   "habitSignalStatusNotYet": "{target} · încă nu",
   "habitSignalStatusSoFar": "{target} · {value} până acum",

@@ -4500,6 +4500,14 @@
   "habitSignalAnyWorkout": "any workout",
   "habitSignalHabitDone": "habit done",
   "habitSignalRecordOther": "Other",
+  "habitSignalSevenDayAverage": "7-day average: {value}",
+  "@habitSignalSevenDayAverage": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
   "habitSignalStatusDone": "{target} · done",
   "@habitSignalStatusDone": {
     "placeholders": {

@@ -3277,6 +3277,7 @@
   "habitSignalAnyWorkout": "elke workout",
   "habitSignalHabitDone": "gewoonte gedaan",
   "habitSignalRecordOther": "Anders",
+  "habitSignalSevenDayAverage": "7-daags gemiddelde: {value}",
   "habitSignalStatusDone": "{target} · gedaan",
   "habitSignalStatusNotYet": "{target} · nog niet",
   "habitSignalStatusSoFar": "{target} · {value} tot nu toe",

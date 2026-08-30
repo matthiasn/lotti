@@ -257,7 +257,7 @@ void main() {
 
       expect(written, hasLength(1));
       expect(written.single.dateFrom, now);
-      expect(written.single.autoCompleteReason, contains('Water · 542'));
+      expect(written.single.autoCompleteReason, 'Water · 542.86');
     });
 
     test('either basis completes when the average is the passing value', () {

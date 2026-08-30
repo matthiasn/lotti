@@ -246,6 +246,34 @@ void main() {
       expect(find.byType(MeasurableQuickRecordChips), findsNothing);
     });
 
+    testWidgets('an average-completed signal labels both compared readings', (
+      tester,
+    ) async {
+      const steps = AutoCompleteRule.health(
+        dataType: 'cumulative_step_count',
+        minimum: 6000,
+        valueBasis: HabitSignalValueBasis.sevenDayAverage,
+      );
+      await pump(
+        tester,
+        steps,
+        window(
+          quantitative: {
+            'cumulative_step_count': {
+              for (var offset = 6; offset >= 1; offset--)
+                todayKey.subtract(Duration(days: offset)): 7000,
+              todayKey: 4000,
+            },
+          },
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('≥ 6,000 steps · done'), findsOneWidget);
+      expect(find.text('today: 4,000 steps'), findsOneWidget);
+      expect(find.textContaining('7-day average: 6,571'), findsOneWidget);
+    });
+
     testWidgets('a workout counts sessions, or its dimension with a unit', (
       tester,
     ) async {

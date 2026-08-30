@@ -2980,6 +2980,7 @@
   "habitSignalAnyWorkout": "jakýkoli trénink",
   "habitSignalHabitDone": "návyk splněn",
   "habitSignalRecordOther": "Jiná hodnota",
+  "habitSignalSevenDayAverage": "7denní průměr: {value}",
   "habitSignalStatusDone": "{target} · hotovo",
   "habitSignalStatusNotYet": "{target} · zatím ne",
   "habitSignalStatusSoFar": "{target} · zatím {value}",

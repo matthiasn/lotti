@@ -7632,6 +7632,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get habitSignalRecordOther => 'Jiná hodnota';
 
   @override
+  String habitSignalSevenDayAverage(String value) {
+    return '7denní průměr: $value';
+  }
+
+  @override
   String habitSignalStatusDone(String target) {
     return '$target · hotovo';
   }

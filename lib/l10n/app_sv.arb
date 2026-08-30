@@ -3278,6 +3278,7 @@
   "habitSignalAnyWorkout": "valfritt träningspass",
   "habitSignalHabitDone": "vana klar",
   "habitSignalRecordOther": "Annat",
+  "habitSignalSevenDayAverage": "7-dagarsgenomsnitt: {value}",
   "habitSignalStatusDone": "{target} · klart",
   "habitSignalStatusNotYet": "{target} · inte än",
   "habitSignalStatusSoFar": "{target} · {value} hittills",

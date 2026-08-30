@@ -310,8 +310,9 @@ class HabitAutoCompletionService {
     return parts.join(' · ');
   }
 
-  static String _formatValue(num value) =>
-      value == value.roundToDouble() ? value.round().toString() : '$value';
+  static String _formatValue(num value) => value == value.roundToDouble()
+      ? value.round().toString()
+      : value.toStringAsFixed(2).replaceFirst(RegExp(r'\.?0+$'), '');
 
   void _scheduleMidnightPass() {
     _midnightTimer?.cancel();

@@ -3278,6 +3278,7 @@
   "habitSignalAnyWorkout": "enhver træning",
   "habitSignalHabitDone": "vane gjort",
   "habitSignalRecordOther": "Andet",
+  "habitSignalSevenDayAverage": "7-dages gennemsnit: {value}",
   "habitSignalStatusDone": "{target} · gjort",
   "habitSignalStatusNotYet": "{target} · ikke endnu",
   "habitSignalStatusSoFar": "{target} · {value} indtil videre",

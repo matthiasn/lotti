@@ -7692,6 +7692,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get habitSignalRecordOther => 'Altă valoare';
 
   @override
+  String habitSignalSevenDayAverage(String value) {
+    return 'Media pe 7 zile: $value';
+  }
+
+  @override
   String habitSignalStatusDone(String target) {
     return '$target · gata';
   }

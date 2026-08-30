@@ -7551,6 +7551,11 @@ class AppLocalizationsDa extends AppLocalizations {
   String get habitSignalRecordOther => 'Andet';
 
   @override
+  String habitSignalSevenDayAverage(String value) {
+    return '7-dages gennemsnit: $value';
+  }
+
+  @override
   String habitSignalStatusDone(String target) {
     return '$target · gjort';
   }

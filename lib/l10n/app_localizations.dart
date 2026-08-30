@@ -12816,6 +12816,12 @@ abstract class AppLocalizations {
   /// **'Other'**
   String get habitSignalRecordOther;
 
+  /// No description provided for @habitSignalSevenDayAverage.
+  ///
+  /// In en, this message translates to:
+  /// **'7-day average: {value}'**
+  String habitSignalSevenDayAverage(String value);
+
   /// No description provided for @habitSignalStatusDone.
   ///
   /// In en, this message translates to:

@@ -7675,6 +7675,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get habitSignalRecordOther => 'Autre';
 
   @override
+  String habitSignalSevenDayAverage(String value) {
+    return 'Moyenne sur 7 jours : $value';
+  }
+
+  @override
   String habitSignalStatusDone(String target) {
     return '$target · fait';
   }

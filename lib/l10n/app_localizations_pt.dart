@@ -7626,6 +7626,11 @@ class AppLocalizationsPt extends AppLocalizations {
   String get habitSignalRecordOther => 'Outro';
 
   @override
+  String habitSignalSevenDayAverage(String value) {
+    return 'Média de 7 dias: $value';
+  }
+
+  @override
   String habitSignalStatusDone(String target) {
     return '$target · feito';
   }

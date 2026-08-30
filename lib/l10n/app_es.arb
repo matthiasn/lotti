@@ -2973,6 +2973,7 @@
   "habitSignalAnyWorkout": "cualquier entrenamiento",
   "habitSignalHabitDone": "hábito hecho",
   "habitSignalRecordOther": "Otro",
+  "habitSignalSevenDayAverage": "Media de 7 días: {value}",
   "habitSignalStatusDone": "{target} · hecho",
   "habitSignalStatusNotYet": "{target} · aún no",
   "habitSignalStatusSoFar": "{target} · {value} por ahora",
