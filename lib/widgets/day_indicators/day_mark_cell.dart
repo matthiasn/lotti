@@ -27,12 +27,20 @@ const double kDaySquareSizeDesktop = IconSizes.m;
 double daySquareSize(BuildContext context) =>
     isDesktopLayout(context) ? kDaySquareSizeDesktop : kDaySquareSize;
 
+/// The weekday a day square names: the first two characters of the locale's
+/// abbreviated weekday, so Tuesday and Thursday, Saturday and Sunday can be
+/// told apart — one letter left `T T S S` in English and `D D S S` in German
+/// (`Di Do Sa So`). Locales whose abbreviation is already one character
+/// keep it.
+String dayMarkWeekdayLabel(String locale, DateTime day) =>
+    DateFormat.E(locale).format(day).characters.take(2).toString();
+
 /// What a day square says inside itself: the glyph of a recorded or judged
-/// outcome, or — while the day has none — its weekday initial.
+/// outcome, or — while the day has none — its weekday.
 ///
 /// A row of squares used to say which day was which only on hover, and a
 /// tappable one grew a caption row above itself to say it before the tap.
-/// Drawing the letter inside the unresolved squares answers the question
+/// Drawing the weekday inside the unresolved squares answers the question
 /// where the eye already is, and the resolved squares do not need it: a
 /// tick or a cross beside a lettered neighbour is read against that
 /// neighbour's day. The glyphs are the reflections history's own
@@ -86,16 +94,21 @@ Widget? dayMarkSquareContent(
     case DayMarkState.skipped:
       if (day == null) return null;
       final locale = Localizations.localeOf(context).toLanguageTag();
-      // Scaled down, never wrapped or clipped: the caption size fits the
-      // square at the default text scale, and a raised scale must not push
-      // the letter out of a square that does not grow with it.
-      return FittedBox(
-        fit: BoxFit.scaleDown,
-        child: Text(
-          DateFormat.EEEEE(locale).format(day),
-          maxLines: 1,
-          style: tokens.typography.styles.others.caption.copyWith(
-            color: tokens.colors.text.lowEmphasis,
+      // Scaled down into the same inset the glyphs keep, never wrapped or
+      // clipped: two caption-size letters are wider than the square, and a
+      // raised text scale must not push them out of a square that does not
+      // grow with it. There is no type token below the caption tier, so the
+      // fit is what sets the size.
+      return SizedBox.square(
+        dimension: glyphSize,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            dayMarkWeekdayLabel(locale, day),
+            maxLines: 1,
+            style: tokens.typography.styles.others.caption.copyWith(
+              color: tokens.colors.text.lowEmphasis,
+            ),
           ),
         ),
       );
@@ -105,7 +118,7 @@ Widget? dayMarkSquareContent(
 /// A not-yet-resolved day slot — a loading window, or today while it is
 /// still open: same footprint as a real square, dashed outline instead of a
 /// fill, so the silhouette holds without borrowing the empty-day encoding.
-/// A dated one carries its weekday initial like any unresolved square.
+/// A dated one carries its weekday like any unresolved square.
 class PlaceholderDayCell extends StatelessWidget {
   const PlaceholderDayCell({this.day, super.key});
 
@@ -139,7 +152,7 @@ class PlaceholderDayCell extends StatelessWidget {
 /// level-03 surface otherwise — a recorded verdict paints its own hue, and an
 /// empty TODAY is the dashed unresolved outline, since the day is not over.
 /// Inside it, [dayMarkSquareContent]: the outcome's glyph, or the weekday
-/// initial while there is none. Nothing is drawn around a square; the full
+/// while there is none. Nothing is drawn around a square; the full
 /// date, the outcome's name and a verdict's are answered by the tooltip and
 /// the semantics.
 ///

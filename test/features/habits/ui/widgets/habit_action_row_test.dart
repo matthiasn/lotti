@@ -212,7 +212,7 @@ void main() {
       // Four days back from the last square, on a strip that ends on a
       // Tuesday: the sheet must open on that Friday, not on today.
       final friday = today.subtract(const Duration(days: 4));
-      expect(find.text('F'), findsOneWidget);
+      expect(find.text('Fr'), findsOneWidget);
       expect(find.bySemanticsLabel(RegExp('Fri, Aug 7')), findsOneWidget);
       await tester.tap(
         find.byWidgetPredicate(
@@ -253,6 +253,11 @@ void main() {
           find.descendant(of: future, matching: find.byType(InkWell)),
           findsNothing,
         );
+        // And a tap on it does not fall through to the row body, which
+        // would open TODAY's sheet under a square that says Wednesday.
+        await tester.tap(future);
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.byType(HabitCompletionSheet), findsNothing);
         await tester.tap(
           find.byWidgetPredicate(
             (widget) => widget is DayMarkCell && widget.mark.day == today,

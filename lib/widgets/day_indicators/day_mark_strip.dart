@@ -99,11 +99,22 @@ class DayMarkStrip extends StatelessWidget {
       if (day == null) return DayMarkCell(mark: mark);
       final dayName = dayFormat.format(day);
       final outcome = outcomeOf(mark);
-      if (onDaySelected == null || isDaySelectable?.call(day) == false) {
-        return DayMarkCell(
-          mark: mark,
-          tooltipDay: dayName,
-          tooltipOutcome: outcome,
+      final readOnly = DayMarkCell(
+        mark: mark,
+        tooltipDay: dayName,
+        tooltipOutcome: outcome,
+      );
+      if (onDaySelected == null) return readOnly;
+      if (isDaySelectable?.call(day) == false) {
+        // Declined, not merely inert: a tap on it must not fall through to
+        // whatever the strip sits in — a habit row's body opens today's
+        // sheet, and a tap on Wednesday's square that opened today's sheet
+        // is the confusion the dated squares exist to end. The detector
+        // swallows the tap; hover still reaches the tooltip.
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () {},
+          child: readOnly,
         );
       }
       // Colour is the only thing separating these squares, and it does not

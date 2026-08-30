@@ -199,7 +199,7 @@ void main() {
     // tick instead.
     for (var daysBack = 6; daysBack >= 0; daysBack--) {
       final day = today.subtract(Duration(days: daysBack));
-      final letter = DateFormat.EEEEE().format(day);
+      final letter = dayMarkWeekdayLabel('en', day);
       final cell = find.byWidgetPredicate(
         (widget) => widget is DayMarkCell && widget.mark.day == day,
       );

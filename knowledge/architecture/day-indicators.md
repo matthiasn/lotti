@@ -1,7 +1,7 @@
 ---
 type: Architecture
 title: Day indicators — the shared day-mark model and cells
-description: One model (DayMark, DayMarkState, DayVerdict) and one component set (one square per window size with its outcome glyph or weekday letter inside, the strip, the track geometry) that both goals and habits draw their per-day squares with, so a day looks the same wherever it is judged.
+description: One model (DayMark, DayMarkState, DayVerdict) and one component set (one square per window size with its outcome glyph or weekday inside, the strip, the track geometry) that both goals and habits draw their per-day squares with, so a day looks the same wherever it is judged.
 resource: ../../lib/widgets/day_indicators
 tags: [day-indicators, habits, goals, design-system, accessibility]
 status: draft
@@ -32,7 +32,7 @@ they drew it two ways — different fills, different corner radii, one with a
 today ring and one without. The package draws the square the habits design
 handover specifies — an `--interactive` square at radius 3 in a 3px-gap row,
 rendered at `radii.xs` and `spacing.step2` — one icon size larger than the
-handover's 11px so a weekday letter fits inside it (`IconSizes.s` on a phone,
+handover's 11px so a two-letter weekday fits inside it (`IconSizes.s` on a phone,
 `IconSizes.m` on a desktop window; `daySquareSize`), and both features
 consume it. It imports neither `features/goals` nor `features/habits`; each
 feature adapts its own state into the shared model.
@@ -100,7 +100,7 @@ classDiagram
 | --- | --- | --- |
 | Fills, labels, the verdict scheme | `day_mark_styles.dart` | The ONE mapping from state/verdict to token colors. `dayVerdictGlyph` is drawn inside a judged square and in the reflections history alike; `dayVerdictSurfaceInk` serves the history and the reflect button. |
 | `DayTrack`, `dayTrackMetrics`, `fitOrScrollDayTrack`, `LinkedDayTrackScroller` | `day_track.dart` | Column geometry shared by every day row on a page — one square plus `step2` — and the fit-or-pan policy. |
-| `daySquareSize`, `dayMarkSquareContent`, `DayMarkCell`, `PlaceholderDayCell` | `day_mark_cell.dart` | One square per window size, saying one thing inside itself: the outcome's glyph, or the weekday letter while there is none. Read-only by default; with `onTap` it becomes a labelled button whose hit slot clears the touch floor while the square keeps its size. |
+| `daySquareSize`, `dayMarkSquareContent`, `DayMarkCell`, `PlaceholderDayCell` | `day_mark_cell.dart` | One square per window size, saying one thing inside itself: the outcome's glyph, or the two-letter weekday while there is none. Read-only by default; with `onTap` it becomes a labelled button whose hit slot clears the touch floor while the square keeps its size. |
 | `DayMarkStrip` | `day_mark_strip.dart` | A row of squares on the shared track with one semantic summary, and — with `streak` — the handover's flame and count after the last square. |
 
 ```mermaid
@@ -127,7 +127,9 @@ flowchart LR
 - **A square says one thing inside itself, and nothing around it.** A
   judged day draws its verdict's glyph; a kept day (partial included) the tick, a recorded miss
   the cross (which is what tells a miss from the empty day it shares a fill
-  with); any other dated day its one-letter weekday, quiet on the fill. No
+  with); any other dated day its weekday — the first two characters of the
+  locale's abbreviation (`dayMarkWeekdayLabel`: `Tu Th Sa Su`, `Di Do Sa
+  So`), quiet on the fill. No
   ring, no dot, no caption row above the track. The full date, the outcome's
   name and the ages-out fact live in the `DsTooltip` and the semantics of
   every dated square.
@@ -161,7 +163,8 @@ flowchart LR
   for THAT day (`HabitCompletionSheet.show(dateString:)`), never for today.
   Days after today — a dashboard range can hold them — are declined through
   `DayMarkStrip.isDaySelectable` and drawn read-only, not as buttons that
-  do nothing.
+  do nothing; their taps are swallowed so they cannot fall through to the
+  row body and open today's sheet.
   The pages slice `habitHistoryDays(context)` days off the state — seven on
   a phone, fourteen on a desktop window. There is no separate streak chain.
 - The habit dashboard strip used to drop its oldest days to fit; it now pans

@@ -2902,7 +2902,7 @@ void main() {
       // No full-word label row above the squares; an unresolved square
       // carries its weekday initial inside itself.
       expect(find.text('Wed'), findsNothing);
-      final letterFormat = DateFormat.EEEEE('en');
+      String letterFormat(DateTime day) => dayMarkWeekdayLabel('en', day);
       final tokens = tester.element(find.byType(GoalProgressCard)).designTokens;
       final expectedPitch = kDaySquareSize + tokens.spacing.step2;
       double? previousCenter;
@@ -2925,7 +2925,7 @@ void main() {
         );
         final letter = find.descendant(
           of: visualCell,
-          matching: find.text(letterFormat.format(date)),
+          matching: find.text(letterFormat(date)),
         );
         final glyph = find.descendant(
           of: visualCell,

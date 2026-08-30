@@ -45,7 +45,7 @@ class DayMark {
 
   /// The calendar day, at midnight UTC. Null on an undated strip — a loading
   /// placeholder row, or a figure whose cells carry no dates and therefore no
-  /// weekday letters.
+  /// weekdays.
   final DateTime? day;
 
   final DayMarkState state;

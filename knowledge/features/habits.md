@@ -318,7 +318,7 @@ Tab rows are **action rows**: icon, name, the handover's history strip —
 the last seven days on a phone and fourteen on a desktop window as squares
 (`habitHistoryMarks` with `habitHistoryDays`, read off the state's per-day
 completion sets), a tick on a kept day, a cross on a recorded miss, the
-weekday letter on any other, each naming its date and outcome on hover, and
+two-letter weekday on any other, each naming its date and outcome on hover, and
 each opening the completion sheet **for its own day** on tap; then the flame
 and the current streak — swipe, and one-tap complete. The dashboard habit
 chart draws the same strip over its own range. Both go through the shared

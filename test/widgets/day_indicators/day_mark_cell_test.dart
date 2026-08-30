@@ -210,7 +210,7 @@ void main() {
     handle.dispose();
   });
 
-  testWidgets('an unresolved dated square carries its weekday initial '
+  testWidgets('an unresolved dated square carries its two-letter weekday '
       'inside itself, quiet on the neutral fill; an undated one carries '
       'nothing', (tester) async {
     final monday = DateTime.utc(2026, 8, 10);
@@ -224,7 +224,7 @@ void main() {
       final tokens = tester.element(find.byType(DayMarkCell)).designTokens;
       final letter = find.descendant(
         of: find.byType(Container),
-        matching: find.text('M'),
+        matching: find.text('Mo'),
       );
       expect(letter, findsOneWidget, reason: '$state');
       expect(find.byType(Icon), findsNothing, reason: '$state');
@@ -260,7 +260,7 @@ void main() {
     var icon = tester.widget<Icon>(find.byType(Icon));
     expect(icon.icon, dayVerdictGlyph(DayVerdict.met));
     expect(icon.color, tokens.colors.text.onInteractiveAlert);
-    expect(find.text('M'), findsNothing);
+    expect(find.text('Mo'), findsNothing);
     // A partial day was kept too; its tick wears the kept hue on the wash.
     await pump(
       tester,
@@ -272,7 +272,7 @@ void main() {
     icon = tester.widget<Icon>(find.byType(Icon));
     expect(icon.icon, dayVerdictGlyph(DayVerdict.met));
     expect(icon.color, tokens.colors.interactive.enabled);
-    expect(find.text('M'), findsNothing);
+    expect(find.text('Mo'), findsNothing);
     for (final verdict in DayVerdict.values) {
       await pump(
         tester,
@@ -288,11 +288,38 @@ void main() {
       icon = tester.widget<Icon>(find.byType(Icon));
       expect(icon.icon, dayVerdictGlyph(verdict), reason: '$verdict');
       expect(icon.color, tokens.colors.text.onInteractiveAlert);
-      expect(find.text('M'), findsNothing, reason: '$verdict');
+      expect(find.text('Mo'), findsNothing, reason: '$verdict');
     }
   });
 
-  testWidgets('a dated open today keeps its letter inside the dashed '
+  testWidgets('the weekday is the first two characters of the localized '
+      'abbreviation', (tester) async {
+    final tuesday = DateTime.utc(2026, 8, 11);
+    final thursday = DateTime.utc(2026, 8, 13);
+    final saturday = DateTime.utc(2026, 8, 15);
+    final sunday = DateTime.utc(2026, 8, 16);
+    expect(
+      [
+        tuesday,
+        thursday,
+        saturday,
+        sunday,
+      ].map((day) => dayMarkWeekdayLabel('en', day)).toList(),
+      ['Tu', 'Th', 'Sa', 'Su'],
+    );
+    expect(
+      [
+        tuesday,
+        thursday,
+        saturday,
+        sunday,
+      ].map((day) => dayMarkWeekdayLabel('de', day)).toList(),
+      ['Di', 'Do', 'Sa', 'So'],
+    );
+    expect(dayMarkWeekdayLabel('ja', tuesday), '火');
+  });
+
+  testWidgets('a dated open today keeps its weekday inside the dashed '
       'outline', (tester) async {
     await pump(
       tester,
@@ -307,7 +334,7 @@ void main() {
     expect(
       find.descendant(
         of: find.byType(DsDashedBorder),
-        matching: find.text('M'),
+        matching: find.text('Mo'),
       ),
       findsOneWidget,
     );
