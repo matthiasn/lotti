@@ -176,11 +176,12 @@ unbound token is logged without the token and acknowledged: it may predate the
 client verification that establishes the binding, which re-queries Google
 authoritatively. Authenticated Play `testNotification` connectivity probes are
 also acknowledged without attempting a subscription refresh. A periodic
-reconciler covers missed or delayed notifications. When Play reports an
-access-granting state the Matrix account is unsuspended; otherwise it is
-suspended reversibly. Client verification enforces the newly persisted current
-state before attempting bundle delivery, so a denied delivery cannot postpone
-suspension. The service uses Google's
+reconciler covers missed or delayed notifications. The configured reconciliation
+interval controls both the worker wake cadence and each successful snapshot's
+next authoritative refresh deadline. When Play reports an access-granting state
+the Matrix account is unsuspended; otherwise it is suspended reversibly. Client
+verification enforces the newly persisted current state before attempting bundle
+delivery, so a denied delivery cannot postpone suspension. The service uses Google's
 authoritative line-item `expiryTime` as the exact boundary. Configure
 the Play Console grace period to **three days**; the service does not add a
 second local grace interval. Enforcement is serialized per entitlement and

@@ -31,6 +31,7 @@ from .core.constants import (
     DEFAULT_PURCHASE_VERIFICATION_ATTEMPT_WINDOW_SECONDS,
     DEFAULT_RETENTION_DAYS,
     DEFAULT_RETENTION_SWEEP_HOURS,
+    DEFAULT_SUBSCRIPTION_RECONCILE_INTERVAL_SECONDS,
     PAID_PROVISIONING_OPERATION_TIMEOUT_SECONDS,
     PLAY_PACKAGE_NAME,
     PLAY_SUBSCRIPTION_PRODUCT_ID,
@@ -145,6 +146,17 @@ def _allowed_products() -> dict[str, frozenset[str]]:
     if not plans:
         raise ValueError("PLAY_BASE_PLAN_IDS must contain at least one base plan")
     return {PLAY_SUBSCRIPTION_PRODUCT_ID: plans}
+
+
+def _subscription_reconciliation_interval() -> timedelta:
+    return timedelta(
+        seconds=float(
+            os.getenv(
+                "SUBSCRIPTION_RECONCILE_INTERVAL_SECONDS",
+                str(DEFAULT_SUBSCRIPTION_RECONCILE_INTERVAL_SECONDS),
+            )
+        )
+    )
 
 
 class Container:
@@ -303,6 +315,7 @@ class Container:
             package_name=PLAY_PACKAGE_NAME,
             allowed_products=_allowed_products(),
             certificate_sha256_digests=certificates,
+            reconciliation_interval=_subscription_reconciliation_interval(),
             purchase_verification_attempt_limit=int(
                 os.getenv(
                     "PURCHASE_VERIFICATION_ATTEMPT_LIMIT",
@@ -382,7 +395,7 @@ class Container:
             self.get_subscription_service(),
             self.get_subscription_access_service(),
             self.get_secret_cipher(),
-            interval_seconds=float(os.getenv("SUBSCRIPTION_RECONCILE_INTERVAL_SECONDS", "60")),
+            interval_seconds=_subscription_reconciliation_interval().total_seconds(),
             batch_size=int(os.getenv("SUBSCRIPTION_RECONCILE_BATCH_SIZE", "50")),
         )
 

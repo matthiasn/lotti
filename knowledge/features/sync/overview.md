@@ -187,6 +187,9 @@ cannot forge the quota identity through `X-Forwarded-For`.
 Play RTDN is only a refresh signal. An authenticated Pub/Sub push resolves an
 already-known token and causes a new `purchases.subscriptionsv2.get`; a periodic
 reconciler performs the same authoritative refresh when notifications are lost.
+One configured interval drives both its wake cadence and the
+`next_reconciliation_at` deadline written into successful snapshots, so polling
+frequency and durable scheduling cannot diverge.
 Authenticated notifications for unbound tokens are acknowledged without a
 Google query or state mutation because they may arrive before client
 verification establishes the binding; that later verification is itself an
