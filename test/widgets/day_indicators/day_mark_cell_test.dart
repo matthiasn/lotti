@@ -9,6 +9,7 @@ import 'package:lotti/widgets/day_indicators/day_mark.dart';
 import 'package:lotti/widgets/day_indicators/day_mark_cell.dart';
 import 'package:lotti/widgets/day_indicators/day_mark_styles.dart';
 
+import '../../test_utils/wcag_contrast.dart';
 import '../../widget_test_utils.dart';
 
 void main() {
@@ -48,13 +49,12 @@ void main() {
       expect(decoration(tester).border, isNull, reason: '$state');
       if (state == DayMarkState.missed) {
         // A recorded miss and an empty day share the grey; the cross is
-        // what tells them apart. The reflections history's own glyph in the
-        // error family's surface ink — the square itself stays neutral, so
-        // a bad week is a few red marks, never a wall of red.
+        // what tells them apart. The reflections history's own glyph, in
+        // red — the square itself stays neutral, so a bad week is a few red
+        // marks, never a wall of red.
         final icon = tester.widget<Icon>(find.byType(Icon));
         expect(icon.icon, dayVerdictGlyph(DayVerdict.missed));
-        expect(icon.color, dayVerdictSurfaceInk(tokens, DayVerdict.missed));
-        expect(icon.color, tokens.colors.alert.error.ink);
+        expect(icon.color, tokens.colors.alert.error.pressed);
         expect(decoration(tester).color, tokens.colors.background.level03);
         expect(icon.size, kDaySquareSize - tokens.spacing.step2);
       } else if (state == DayMarkState.full || state == DayMarkState.partial) {
@@ -68,6 +68,30 @@ void main() {
       }
       expect(find.byType(Text), findsNothing, reason: '$state');
       expect(find.byType(DsDashedBorder), findsNothing, reason: '$state');
+    }
+  });
+
+  testWidgets('the missed cross clears the 3:1 graphical floor on the grey '
+      'square in both themes', (tester) async {
+    for (final brightness in Brightness.values) {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const Align(
+            alignment: Alignment.topLeft,
+            child: DayMarkCell(mark: DayMark(state: DayMarkState.missed)),
+          ),
+          theme: ThemeData(brightness: brightness, useMaterial3: true),
+        ),
+      );
+      final tokens = tester.element(find.byType(DayMarkCell)).designTokens;
+      final icon = tester.widget<Icon>(find.byType(Icon));
+      expect(
+        contrastRatio(icon.color!, decoration(tester).color!),
+        greaterThanOrEqualTo(3),
+        reason: '$brightness: the cross must read against level03',
+      );
+      // Still red: the far step of the error ramp, not a neutral ink.
+      expect(icon.color, tokens.colors.alert.error.pressed);
     }
   });
 
