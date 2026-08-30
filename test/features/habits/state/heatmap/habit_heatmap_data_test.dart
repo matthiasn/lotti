@@ -394,7 +394,7 @@ void main() {
           todayYmd: today,
         );
 
-    test('counts consecutive kept days ending today', () {
+    test('counts consecutive successful days ending today', () {
       final result = streaks([
         _completion(habitId: 'h1', date: DateTime(2026, 6, 15)),
         _completion(habitId: 'h1', date: DateTime(2026, 6, 16)),
@@ -421,21 +421,30 @@ void main() {
       expect(result['h1'], 2);
     });
 
-    test('a skip keeps the streak, a fail does not extend it', () {
+    test('a skip breaks a streak between successful days', () {
       final result = streaks([
+        _completion(habitId: 'h1', date: DateTime(2026, 6, 15)),
         _completion(
           habitId: 'h1',
           date: DateTime(2026, 6, 16),
           type: HabitCompletionType.skip,
         ),
+        _completion(habitId: 'h1', date: DateTime(2026, 6, 17)),
+      ]);
+      expect(result['h1'], 1);
+    });
+
+    test('a skip today resets the current streak', () {
+      final result = streaks([
+        _completion(habitId: 'h1', date: DateTime(2026, 6, 15)),
+        _completion(habitId: 'h1', date: DateTime(2026, 6, 16)),
         _completion(
           habitId: 'h1',
           date: DateTime(2026, 6, 17),
-          type: HabitCompletionType.fail,
+          type: HabitCompletionType.skip,
         ),
       ]);
-      // Today is a fail (not kept) → fall back to yesterday's skip → 1.
-      expect(result['h1'], 1);
+      expect(result['h1'], 0);
     });
 
     test('no completions → zero', () {

@@ -6,9 +6,9 @@ import 'package:flutter/foundation.dart';
 /// did everything within their control (the routine was kept) while a window
 /// target was still building — rendered as a lighter wash of the same success
 /// hue. [skipped] and [missed] are recorded outcomes a habit day can carry.
-/// A strip records what was KEPT, so they share the neutral fill of [none];
-/// a [missed] square draws a cross inside that fill, a [skipped] one stays
-/// bare, and the label and tooltip name all three (see `dayMarkStateLabel`).
+/// A strip records what was KEPT, so they stay on a neutral fill rather than
+/// borrowing an alert fill; [skipped] draws an orange dash and [missed] a red
+/// cross, and the label and tooltip name all three (see `dayMarkStateLabel`).
 enum DayMarkState { none, partial, full, skipped, missed }
 
 /// How a day turned out, in the user's own judgement.

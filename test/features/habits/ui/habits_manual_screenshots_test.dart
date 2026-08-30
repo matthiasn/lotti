@@ -552,7 +552,7 @@ HabitHeatmapData _heatmapData() {
     streaksByHabit: {
       _inspectHabitatSeals.id: 6,
       _penguinRollCall.id: 4,
-      _recalibrateFishFeeder.id: 2,
+      _recalibrateFishFeeder.id: 0,
       _reviewSardineInventory.id: 9,
     },
   );

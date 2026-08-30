@@ -199,8 +199,15 @@ void main() {
               .color!;
       expect(fillAt(0), tokens.colors.interactive.enabled);
       expect(fillAt(1), tokens.colors.background.level03);
-      expect(fillAt(2), tokens.colors.background.level03);
-      expect(fillAt(3), tokens.colors.background.level03);
+      expect(fillAt(2), tokens.colors.background.level02);
+      expect(fillAt(3), tokens.colors.background.level02);
+      expect(
+        find.descendant(
+          of: squares().at(3),
+          matching: find.byIcon(LottiIcons.remove),
+        ),
+        findsOneWidget,
+      );
       expect(find.byIcon(LottiIcons.streak), findsNothing);
     });
 

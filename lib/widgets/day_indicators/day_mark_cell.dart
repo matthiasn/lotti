@@ -46,8 +46,8 @@ String dayMarkWeekdayLabel(String locale, DateTime day) =>
 /// tick or a cross beside a lettered neighbour is read against that
 /// neighbour's day. The glyphs are the reflections history's own
 /// (`dayVerdictGlyph`), so an outcome is drawn the same way wherever it is
-/// shown. A recorded miss shares the neutral fill with an empty day, and the
-/// red cross is what tells them apart.
+/// shown. Recorded misses and skips use a quieter neutral fill than empty
+/// days; a saturated red cross and orange dash tell the two outcomes apart.
 ///
 /// Null for an undated, unresolved square — a streak chain has nothing to
 /// say inside its cells.
@@ -87,19 +87,23 @@ Widget? dayMarkSquareContent(
         color: tokens.colors.interactive.enabled,
       );
     case DayMarkState.missed:
-      // The one touch of the error family a habit square gets: the cross
-      // in red, on the neutral fill. A miss should sting a little, and a bad
-      // week should still not be a wall of red — the mark carries the hue,
-      // the square does not. `glyphOnLevel03`, not the surface ink: the
-      // fill is `level03`, the mid grey the ink was never tuned for (2.9:1
-      // there in dark), and that step is the ramp's guarantee of 3:1 on it.
+      // The one touch of the error family a habit square gets: a saturated
+      // red cross on the neutral outcome fill. The mark carries the hue so a
+      // bad week still does not become a wall of red.
       return Icon(
         dayVerdictGlyph(DayVerdict.missed),
         size: glyphSize,
-        color: tokens.colors.alert.error.glyphOnLevel03,
+        color: tokens.colors.alert.error.defaultColor,
+      );
+    case DayMarkState.skipped:
+      // A skip is an explicit outcome, not an untouched day or a miss. The
+      // warning-colored dash distinguishes it by shape as well as hue.
+      return Icon(
+        LottiIcons.remove,
+        size: glyphSize,
+        color: tokens.colors.alert.warning.defaultColor,
       );
     case DayMarkState.none:
-    case DayMarkState.skipped:
       if (day == null) return null;
       final locale = Localizations.localeOf(context).toLanguageTag();
       // Scaled down into the same inset the glyphs keep, never wrapped or
@@ -157,12 +161,13 @@ class PlaceholderDayCell extends StatelessWidget {
 
 /// One day square, as the habits handover draws it: a small rounded square
 /// filled in the interactive hue when the day was kept and in the neutral
-/// level-03 surface otherwise — a recorded verdict paints its own hue, and an
-/// empty TODAY is the dashed unresolved outline, since the day is not over.
+/// level-03 surface otherwise. A skip or miss keeps its quieter level-02 fill
+/// inside a neutral hairline so the rounded square remains visible, a recorded
+/// verdict paints its own hue, and an empty TODAY is the dashed unresolved
+/// outline, since the day is not over.
 /// Inside it, [dayMarkSquareContent]: the outcome's glyph, or the weekday
-/// while there is none. Nothing is drawn around a square; the full
-/// date, the outcome's name and a verdict's are answered by the tooltip and
-/// the semantics.
+/// while there is none. The full date, the outcome's name and a verdict's are
+/// answered by the tooltip and the semantics.
 ///
 /// Read-only by default. With [onTap] the square keeps its size while the
 /// hit slot around it clears the touch floor, and the cell announces itself
@@ -206,6 +211,9 @@ class DayMarkCell extends StatelessWidget {
               color: verdict == null
                   ? dayMarkStateFill(tokens, mark.state)
                   : dayVerdictFill(tokens, verdict),
+              border: verdict == null
+                  ? dayMarkStateBorder(tokens, mark.state)
+                  : null,
               borderRadius: BorderRadius.circular(tokens.radii.xs),
             ),
             child: dayMarkSquareContent(

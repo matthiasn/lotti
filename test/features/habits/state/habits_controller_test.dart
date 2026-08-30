@@ -457,6 +457,35 @@ void main() {
       // Should have at least one short streak (4 days)
       expect(state.shortStreakCount, greaterThanOrEqualTo(1));
     });
+
+    test('a skip prevents a habit from qualifying for a streak', () async {
+      final completions = <JournalEntity>[
+        for (var i = 0; i <= 3; i++)
+          createCompletion(
+            id: 'c$i',
+            habitId: 'habit-1',
+            date: controllerToday.subtract(Duration(days: i)),
+            completionType: i == 1
+                ? HabitCompletionType.skip
+                : HabitCompletionType.success,
+          ),
+      ];
+
+      when(
+        () => mockRepository.getHabitCompletionsInRange(
+          rangeStart: any(named: 'rangeStart'),
+        ),
+      ).thenAnswer((_) async => habitCompletionRecordsFrom(completions));
+
+      container.read(habitsControllerProvider);
+      await pumpEventQueue();
+      definitionsController.add([testHabit1]);
+      await pumpEventQueue();
+
+      final state = container.read(habitsControllerProvider);
+      expect(state.shortStreakCount, 0);
+      expect(state.longStreakCount, 0);
+    });
   });
 
   group('UpdateNotifications stream handling', () {

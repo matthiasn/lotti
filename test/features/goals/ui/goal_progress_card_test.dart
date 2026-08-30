@@ -542,8 +542,8 @@ void main() {
     expect(find.text('Improving'), findsOneWidget);
   });
 
-  testWidgets('no square draws a ring, glyph or letter: today, the window '
-      'start and the outcomes are said, not drawn', (tester) async {
+  testWidgets('each square draws only its outcome glyph or weekday: today and '
+      'the window start are said, not drawn', (tester) async {
     final habit = GoalHabitProgressView(
       habitId: 'gym',
       name: 'Gym',
@@ -597,6 +597,7 @@ void main() {
           cell.mark.verdict != null ||
           cell.mark.state == DayMarkState.full ||
           cell.mark.state == DayMarkState.partial ||
+          cell.mark.state == DayMarkState.skipped ||
           cell.mark.state == DayMarkState.missed;
       expect(
         find.descendant(of: self, matching: find.byType(Icon)),
@@ -2675,13 +2676,18 @@ void main() {
     );
     expect(
       (cell.decoration! as BoxDecoration).color,
-      tokens.colors.background.level03,
+      tokens.colors.background.level02,
     );
-    // Nothing is drawn inside the square; the skip is said, not shown.
-    expect(
-      find.descendant(of: find.byType(DayTrack), matching: find.byType(Icon)),
-      findsNothing,
+    final icon = tester.widget<Icon>(
+      find.descendant(
+        of: find.byKey(
+          const ValueKey('goal-habit-day-visual-walk-2026-08-11'),
+        ),
+        matching: find.byType(Icon),
+      ),
     );
+    expect(icon.icon, LottiIcons.remove);
+    expect(icon.color, tokens.colors.alert.warning.defaultColor);
     expect(
       find.bySemanticsLabel('Aug 11, 2026: Skip'),
       findsOneWidget,

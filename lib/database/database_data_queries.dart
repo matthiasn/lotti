@@ -144,11 +144,11 @@ mixin _JournalDbDataQueries on _$JournalDb, _JournalDbConfigFlags {
   ///
   /// `null` is not a synonym for success. It is the same value legacy entries
   /// written before the field existed already carry, and the consumers treat it
-  /// as **recorded, and streak-extending, but not a success**: it lands in
-  /// `allByDay` and `habitSuccessDays`, and in the heatmap's denominator, while
-  /// staying out of `successfulByDay`, `successfulToday` and the heatmap's
-  /// success numerator. An unknown type therefore closes the habit for the day
-  /// without counting toward its success rate.
+  /// as **recorded, but not a success**: it lands in `allByDay` and the
+  /// heatmap's denominator, while staying out of streaks, `successfulByDay`,
+  /// `successfulToday` and the heatmap's success numerator. An unknown type
+  /// therefore closes the habit for the day without counting toward its
+  /// success rate.
   ///
   /// That split is pre-existing behaviour for legacy `null`s, not something
   /// this projection introduced. Giving unknown types their own sentinel with

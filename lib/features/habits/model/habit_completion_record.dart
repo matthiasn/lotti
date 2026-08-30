@@ -45,10 +45,9 @@ class HabitCompletionRecord {
   /// before the field existed carry it, and so does any completion type synced
   /// from a newer peer that this build cannot decode.
   ///
-  /// The consumers treat it as **recorded and streak-extending, but not a
-  /// success**: it counts in `allByDay`, `habitSuccessDays` and the heatmap
-  /// denominator, but not in `successfulByDay`, `successfulToday` or the
-  /// heatmap's success numerator.
+  /// Consumers treat it as **recorded, but not successful**: it counts in
+  /// `allByDay` and the heatmap denominator, but not in streaks,
+  /// `successfulByDay`, `successfulToday` or the heatmap's success numerator.
   final HabitCompletionType? completionType;
 
   /// `json_extract(serialized, '$.data.source')` — who wrote the completion.

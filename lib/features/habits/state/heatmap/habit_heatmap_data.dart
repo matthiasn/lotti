@@ -153,10 +153,10 @@ int _weekdayRowIndex(String ymd, int firstDayOfWeekIndex) {
 }
 
 /// Per-habit **current streak**: the number of consecutive days, ending today
-/// (or yesterday, if today isn't recorded yet so a still-pending day doesn't
-/// read as a break), on which the habit was *kept* — a `success`, a `skip`, or
-/// an untyped completion, matching the streak rule used elsewhere (an explicit
-/// `fail` or a missing day ends it). Computed over the heatmap's deep history,
+/// (or yesterday, if today is still open), on which the habit was completed
+/// successfully. A skip, failure, legacy null outcome, or past open/missing day
+/// breaks the run; only an absent/open current day may leave yesterday's run
+/// visible while today is pending. Computed over the heatmap's deep history,
 /// so it isn't capped by the tab's short fetch window. Streaks are per habit,
 /// independent of the category filter.
 Map<String, int> currentStreaksByHabit({
@@ -165,39 +165,42 @@ Map<String, int> currentStreaksByHabit({
   required String todayYmd,
 }) {
   final ids = habitDefinitions.map((h) => h.id).toSet();
-  final keptByHabit = <String, Set<String>>{};
+  final outcomesByHabit = <String, Map<String, HabitCompletionType?>>{};
   for (final item in completions) {
     final id = item.habitId;
     if (!ids.contains(id)) {
       continue;
     }
-    final type = item.completionType;
-    if (type == HabitCompletionType.success ||
-        type == HabitCompletionType.skip ||
-        type == null) {
-      keptByHabit.putIfAbsent(id, () => <String>{}).add(item.dateFrom.ymd);
-    }
+    outcomesByHabit.putIfAbsent(
+      id,
+      () => <String, HabitCompletionType?>{},
+    )[item.dateFrom.ymd] = item.completionType;
   }
 
   return {
     for (final habit in habitDefinitions)
-      habit.id: _streakFromKeptDays(
-        keptByHabit[habit.id] ?? const <String>{},
+      habit.id: _streakFromOutcomes(
+        outcomesByHabit[habit.id] ?? const <String, HabitCompletionType?>{},
         todayYmd,
       ),
   };
 }
 
-int _streakFromKeptDays(Set<String> keptDays, String todayYmd) {
+int _streakFromOutcomes(
+  Map<String, HabitCompletionType?> outcomesByDay,
+  String todayYmd,
+) {
   var cursor = DateTime.parse(todayYmd);
-  if (!keptDays.contains(cursor.ymd)) {
+  final todayOutcome = outcomesByDay[cursor.ymd];
+  if (todayOutcome != HabitCompletionType.success) {
+    final todayIsPending =
+        !outcomesByDay.containsKey(cursor.ymd) ||
+        todayOutcome == HabitCompletionType.open;
+    if (!todayIsPending) return 0;
     cursor = DateTime(cursor.year, cursor.month, cursor.day - 1);
-    if (!keptDays.contains(cursor.ymd)) {
-      return 0;
-    }
   }
   var streak = 0;
-  while (keptDays.contains(cursor.ymd)) {
+  while (outcomesByDay[cursor.ymd] == HabitCompletionType.success) {
     streak++;
     cursor = DateTime(cursor.year, cursor.month, cursor.day - 1);
   }
