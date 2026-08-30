@@ -12,6 +12,7 @@ import 'package:lotti/features/habits/state/heatmap/habit_heatmap_controller.dar
 import 'package:lotti/features/habits/state/heatmap/habit_heatmap_data.dart';
 import 'package:lotti/features/habits/ui/habits_page.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_action_row.dart';
+import 'package:lotti/features/habits/ui/widgets/habits_chart_card.dart';
 import 'package:lotti/features/habits/ui/widgets/habits_section_header.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -22,6 +23,7 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/device_region.dart';
 import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
+import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -277,6 +279,39 @@ void main() {
       // overflow at this width; consume it — the point here is that the
       // centred-padding branch is exercised and the page still builds.
       tester.takeException();
+    });
+
+    testWidgets('bottom chart clears the docked navigation bar', (
+      tester,
+    ) async {
+      final testState = HabitsState.initial().copyWith(
+        habitDefinitions: [habitFlossing],
+        openNow: [habitFlossing],
+      );
+
+      await pump(tester, testState);
+
+      final context = tester.element(find.byType(HabitsTabPage));
+      final occupied = DesignSystemBottomNavigationBar.occupiedHeight(context);
+      expect(occupied, greaterThan(0));
+
+      final chartPadding = tester.widget<SliverPadding>(
+        find
+            .ancestor(
+              of: find.byType(HabitsChartCard),
+              matching: find.byType(SliverPadding),
+            )
+            .first,
+      );
+      expect(
+        chartPadding.padding,
+        EdgeInsets.fromLTRB(
+          context.designTokens.spacing.step6,
+          0,
+          context.designTokens.spacing.step6,
+          context.designTokens.spacing.step6 + occupied,
+        ),
+      );
     });
 
     testWidgets('renders an action row for openNow habits', (tester) async {

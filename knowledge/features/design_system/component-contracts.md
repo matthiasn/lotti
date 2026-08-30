@@ -31,7 +31,7 @@ sources:
   - id: navbar
     resource: ../../../lib/widgets/nav_bar/design_system_bottom_navigation_bar.dart
     title: Bottom navigation shell
-    last_modified: 2026-06-12
+    last_modified: 2026-08-31
   - id: measurement-capture
     resource: ../../../lib/pages/create/create_measurement_dialog.dart
     title: Measurement capture sheet — the hero value field and the box that focuses it
@@ -505,6 +505,11 @@ contract:
 - `DesignSystemBottomNavigationFabPadding` is the default wrapper for
   screen-level FABs that need to stay above that shell. **Feature pages should use
   the wrapper rather than inventing local bottom offsets.**
+- Scroll surfaces that can reach the bottom edge add `occupiedHeight(context)`
+  to their tokenized footer padding. Terminal routes with their own pinned
+  bottom action instead ask the app shell to slide the bar away; project, goal,
+  habit, people and settings route helpers keep that decision tied to the
+  router state rather than widget timing.
 - `DesignSystemFiveSlotNavBar.contentHeight(context)` owns the slot-row height
   contract. It **scales caption line height with `MediaQuery.textScalerOf` and
   rounds fractional line boxes up to the logical pixel Flutter renders**, so
