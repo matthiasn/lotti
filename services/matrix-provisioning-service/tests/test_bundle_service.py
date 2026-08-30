@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import threading
 
 import httpx
 import pytest
@@ -163,7 +164,49 @@ async def test_persistence_failure_deactivates_the_orphan_account(
     assert deactivations, "expected a rollback deactivation call"
 
 
-async def test_persistence_cancellation_deactivates_orphan_and_releases_username(
+async def test_cancellation_waits_for_committed_persistence_without_deactivating_account(
+    repository,
+    credentials,
+    tracking_transport,
+    monkeypatch,
+):
+    transport, requests = tracking_transport
+    service = _service(repository, credentials, transport)
+    write_started = asyncio.Event()
+    allow_write = threading.Event()
+    loop = asyncio.get_running_loop()
+    original_create = repository._create_sync
+
+    def blocked_create(**kwargs):
+        loop.call_soon_threadsafe(write_started.set)
+        allow_write.wait()
+        return original_create(**kwargs)
+
+    monkeypatch.setattr(repository, "_create_sync", blocked_create)
+
+    task = asyncio.create_task(
+        service.create_bundle(CreateBundleRequest(username="cancelled_user"))
+    )
+    await write_started.wait()
+    task.cancel()
+    allow_write.set()
+
+    with pytest.raises(asyncio.CancelledError):
+        await task
+
+    deactivations = [
+        request
+        for request in requests
+        if request.method == "PUT"
+        and "/_synapse/admin/v2/users/" in str(request.url)
+        and json.loads(request.content).get("deactivated") is True
+    ]
+    assert deactivations == []
+    assert await repository.find_by_username("cancelled_user") is not None
+    assert await repository.claim_username("cancelled_user") is True
+
+
+async def test_cancellation_deactivates_after_persistence_confirms_failure(
     repository,
     credentials,
     tracking_transport,
@@ -171,11 +214,12 @@ async def test_persistence_cancellation_deactivates_orphan_and_releases_username
     transport, requests = tracking_transport
     service = _service(repository, credentials, transport)
     persist_started = asyncio.Event()
-    keep_persisting = asyncio.Event()
+    finish_persisting = asyncio.Event()
 
     async def persist(_result, _encoded):
         persist_started.set()
-        await keep_persisting.wait()
+        await finish_persisting.wait()
+        raise RuntimeError("disk full")
 
     task = asyncio.create_task(
         service.create_bundle_with_persistence(
@@ -185,6 +229,7 @@ async def test_persistence_cancellation_deactivates_orphan_and_releases_username
     )
     await persist_started.wait()
     task.cancel()
+    finish_persisting.set()
 
     with pytest.raises(asyncio.CancelledError):
         await task
@@ -197,6 +242,7 @@ async def test_persistence_cancellation_deactivates_orphan_and_releases_username
         and json.loads(request.content).get("deactivated") is True
     ]
     assert len(deactivations) == 1
+    assert await repository.find_by_username("cancelled_user") is None
     assert await repository.claim_username("cancelled_user") is True
 
 

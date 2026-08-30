@@ -161,6 +161,12 @@ fresh suffixed Matrix localpart. This fences it from the late owner: if the
 late Synapse call eventually returns and its database write loses ownership,
 orphan cleanup deactivates only the late owner's account and cannot deactivate
 the replacement's winning account.
+Cancellation after Matrix account creation is also fenced from SQLite commit:
+the shared bundle service shields both the standard record write and paid atomic
+escrow write, waits for the persistence outcome, and deactivates only after a
+terminal failure. Cancellation after a successful commit therefore preserves
+the durable account instead of leaving stored credentials for a deactivated
+user.
 Admin bundle revocation destroys any paid bootstrap escrow in the same SQLite
 transaction and clears its operation lease, so later and in-flight delivery
 cannot return credentials after revocation wins the transaction order. Only a

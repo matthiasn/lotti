@@ -150,10 +150,20 @@ class BundleService:
                 f"Could not reach Synapse to provision {request.username}: {exc}"
             ) from exc
 
+        persistence_task = asyncio.ensure_future(persist(result, result.encoded_bundle))
         try:
-            return await persist(result, result.encoded_bundle)
+            # SQLite work delegated with ``to_thread`` keeps running if its
+            # awaiting coroutine is cancelled. Shield the persistence task so
+            # cancellation cannot make us deactivate an account whose durable
+            # record is still about to commit.
+            return await asyncio.shield(persistence_task)
         except asyncio.CancelledError:
-            await self._deactivate_orphan(result.user_mxid)
+            try:
+                await persistence_task
+            except (asyncio.CancelledError, Exception):
+                # Persistence has now reached a terminal unsuccessful outcome,
+                # so this really is an orphan rather than a committed account.
+                await self._deactivate_orphan(result.user_mxid)
             raise
         except Exception:
             # The account exists on Synapse but we cannot record it. An

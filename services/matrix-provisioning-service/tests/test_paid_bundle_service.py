@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import asyncio
+import threading
 from dataclasses import fields, replace
 from datetime import datetime, timedelta, timezone
 
@@ -680,6 +681,58 @@ async def test_separate_service_instances_share_one_durable_provisioning_reserva
     assert first_delivery.bundle_id == second_delivery.bundle_id
     assert first_delivery.bundle == second_delivery.bundle
     assert len(bundle_service.calls) == 1
+
+
+async def test_cancellation_during_paid_bundle_commit_keeps_persisted_account(
+    repository,
+    google_client,
+    cipher,
+    monkeypatch,
+):
+    class Provisioner:
+        async def provision(self, *, username, display_name):
+            return ProvisionResult(
+                bundle=SyncBundle.decode(ENCODED_BUNDLE),
+                user_mxid=f"@{username}:example.com",
+                room_id="!paid:example.com",
+                server_name="example.com",
+            )
+
+    admin_client = FakeReaperAdmin()
+    bundle_service = BundleService(Provisioner(), repository, admin_client)
+    service = PaidBundleService(
+        bundle_service,
+        repository,
+        google_client,
+        cipher,
+        now_provider=lambda: NOW,
+    )
+    verified = await verified_purchase(repository)
+    write_started = asyncio.Event()
+    allow_write = threading.Event()
+    loop = asyncio.get_running_loop()
+    original_store = repository._store_paid_bundle_sync
+
+    def blocked_store(**kwargs):
+        loop.call_soon_threadsafe(write_started.set)
+        allow_write.wait()
+        return original_store(**kwargs)
+
+    monkeypatch.setattr(repository, "_store_paid_bundle_sync", blocked_store)
+    provisioning = asyncio.create_task(
+        service.provision_or_deliver(verified, submission(), now=NOW)
+    )
+    await write_started.wait()
+    provisioning.cancel()
+    allow_write.set()
+
+    with pytest.raises(asyncio.CancelledError):
+        await provisioning
+
+    claim = await repository.get_bundle_claim_for_entitlement("entitlement-one")
+    assert claim is not None
+    assert await repository.get(claim.bundle_id) is not None
+    assert admin_client.deactivated == []
 
 
 async def test_stale_provisioning_takeover_uses_fenced_matrix_localpart(

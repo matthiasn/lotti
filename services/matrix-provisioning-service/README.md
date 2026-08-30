@@ -50,6 +50,14 @@ processes, not just within one. Claims are released on every exit path, and a
 claim older than `PROVISIONING_CLAIM_TTL_SECONDS` (5 minutes) can be taken over,
 so a process killed mid-run does not strand the name.
 
+Once Synapse has created an account, request cancellation is held until the
+SQLite persistence task reaches a terminal outcome. A `to_thread` database
+write continues after its awaiter is cancelled, so deactivating immediately
+could destroy an account whose bundle record or paid escrow subsequently
+commits. The service deactivates only after persistence is known to have failed;
+a committed record keeps its Matrix account even though the cancelled request
+does not receive the bundle.
+
 ## The bundle is shown once and never stored
 
 `POST /bundles` returns the bundle string exactly once. Only a SHA-256
