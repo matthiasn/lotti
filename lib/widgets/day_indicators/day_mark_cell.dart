@@ -67,6 +67,15 @@ Widget? dayMarkSquareContent(
         size: glyphSize,
         color: tokens.colors.text.onInteractiveAlert,
       );
+    case DayMarkState.partial:
+      // Kept too — the routine held while a window target was still
+      // building — so the tick, in the kept hue itself: the on-accent ink
+      // sinks into the muted wash.
+      return Icon(
+        dayVerdictGlyph(DayVerdict.met),
+        size: glyphSize,
+        color: tokens.colors.interactive.enabled,
+      );
     case DayMarkState.missed:
       return Icon(
         dayVerdictGlyph(DayVerdict.missed),
@@ -74,15 +83,9 @@ Widget? dayMarkSquareContent(
         color: tokens.colors.text.mediumEmphasis,
       );
     case DayMarkState.none:
-    case DayMarkState.partial:
     case DayMarkState.skipped:
       if (day == null) return null;
       final locale = Localizations.localeOf(context).toLanguageTag();
-      // Quiet on the neutral fill; a step louder on the partial wash, where
-      // the low-emphasis ink sinks into the tint.
-      final ink = state == DayMarkState.partial
-          ? tokens.colors.text.mediumEmphasis
-          : tokens.colors.text.lowEmphasis;
       // Scaled down, never wrapped or clipped: the caption size fits the
       // square at the default text scale, and a raised scale must not push
       // the letter out of a square that does not grow with it.
@@ -91,7 +94,9 @@ Widget? dayMarkSquareContent(
         child: Text(
           DateFormat.EEEEE(locale).format(day),
           maxLines: 1,
-          style: tokens.typography.styles.others.caption.copyWith(color: ink),
+          style: tokens.typography.styles.others.caption.copyWith(
+            color: tokens.colors.text.lowEmphasis,
+          ),
         ),
       );
   }

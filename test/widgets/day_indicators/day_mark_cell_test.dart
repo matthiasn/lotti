@@ -54,7 +54,7 @@ void main() {
         expect(icon.icon, dayVerdictGlyph(DayVerdict.missed));
         expect(icon.color, tokens.colors.text.mediumEmphasis);
         expect(icon.size, kDaySquareSize - tokens.spacing.step1);
-      } else if (state == DayMarkState.full) {
+      } else if (state == DayMarkState.full || state == DayMarkState.partial) {
         expect(
           tester.widget<Icon>(find.byType(Icon)).icon,
           dayVerdictGlyph(DayVerdict.met),
@@ -211,14 +211,10 @@ void main() {
   });
 
   testWidgets('an unresolved dated square carries its weekday initial '
-      'inside itself, quiet on the neutral fill and a step louder on the '
-      'partial wash; an undated one carries nothing', (tester) async {
+      'inside itself, quiet on the neutral fill; an undated one carries '
+      'nothing', (tester) async {
     final monday = DateTime.utc(2026, 8, 10);
-    for (final state in [
-      DayMarkState.none,
-      DayMarkState.skipped,
-      DayMarkState.partial,
-    ]) {
+    for (final state in [DayMarkState.none, DayMarkState.skipped]) {
       await pump(
         tester,
         DayMarkCell(
@@ -234,9 +230,7 @@ void main() {
       expect(find.byType(Icon), findsNothing, reason: '$state');
       expect(
         tester.widget<Text>(letter).style?.color,
-        state == DayMarkState.partial
-            ? tokens.colors.text.mediumEmphasis
-            : tokens.colors.text.lowEmphasis,
+        tokens.colors.text.lowEmphasis,
         reason: '$state',
       );
       expect(
@@ -266,6 +260,18 @@ void main() {
     var icon = tester.widget<Icon>(find.byType(Icon));
     expect(icon.icon, dayVerdictGlyph(DayVerdict.met));
     expect(icon.color, tokens.colors.text.onInteractiveAlert);
+    expect(find.text('M'), findsNothing);
+    // A partial day was kept too; its tick wears the kept hue on the wash.
+    await pump(
+      tester,
+      DayMarkCell(
+        mark: DayMark(state: DayMarkState.partial, day: monday),
+      ),
+    );
+    tokens = tester.element(find.byType(DayMarkCell)).designTokens;
+    icon = tester.widget<Icon>(find.byType(Icon));
+    expect(icon.icon, dayVerdictGlyph(DayVerdict.met));
+    expect(icon.color, tokens.colors.interactive.enabled);
     expect(find.text('M'), findsNothing);
     for (final verdict in DayVerdict.values) {
       await pump(

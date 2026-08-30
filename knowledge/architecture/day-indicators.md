@@ -125,7 +125,7 @@ flowchart LR
   everything else `background.level03`. No alert hue on a habit square: a
   struggling habit is never a wall of red.
 - **A square says one thing inside itself, and nothing around it.** A
-  judged day draws its verdict's glyph; a kept day the tick, a recorded miss
+  judged day draws its verdict's glyph; a kept day (partial included) the tick, a recorded miss
   the cross (which is what tells a miss from the empty day it shares a fill
   with); any other dated day its one-letter weekday, quiet on the fill. No
   ring, no dot, no caption row above the track. The full date, the outcome's

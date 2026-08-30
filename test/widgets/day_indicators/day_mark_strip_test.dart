@@ -56,9 +56,10 @@ void main() {
       findsOneWidget,
     );
     expect(find.byType(DayMarkCell), findsNWidgets(7));
-    // Undated marks carry no weekday letter; the kept days carry the tick.
+    // Undated marks carry no weekday letter; the kept days — the partial
+    // one included — carry the tick.
     expect(find.byType(Text), findsNothing);
-    expect(find.byType(Icon), findsNWidgets(2));
+    expect(find.byType(Icon), findsNWidgets(3));
     expect(
       find.descendant(
         of: find.byType(DayMarkCell).first,
@@ -194,14 +195,15 @@ void main() {
     );
     // An action says which day it acts on: every square that has no
     // outcome yet carries its weekday initial inside itself; the kept
-    // days (six and one back) carry the tick instead.
+    // days (six, four and one back — four is the partial one) carry the
+    // tick instead.
     for (var daysBack = 6; daysBack >= 0; daysBack--) {
       final day = today.subtract(Duration(days: daysBack));
       final letter = DateFormat.EEEEE().format(day);
       final cell = find.byWidgetPredicate(
         (widget) => widget is DayMarkCell && widget.mark.day == day,
       );
-      final kept = daysBack == 6 || daysBack == 1;
+      final kept = daysBack == 6 || daysBack == 4 || daysBack == 1;
       expect(
         find.descendant(of: cell, matching: find.text(letter)),
         kept ? findsNothing : findsOneWidget,
@@ -213,7 +215,7 @@ void main() {
         reason: letter,
       );
     }
-    expect(find.byType(Text), findsNWidgets(5));
+    expect(find.byType(Text), findsNWidgets(4));
     handle.dispose();
   });
 

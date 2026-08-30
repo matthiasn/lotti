@@ -596,6 +596,7 @@ void main() {
       final resolved =
           cell.mark.verdict != null ||
           cell.mark.state == DayMarkState.full ||
+          cell.mark.state == DayMarkState.partial ||
           cell.mark.state == DayMarkState.missed;
       expect(
         find.descendant(of: self, matching: find.byType(Icon)),
