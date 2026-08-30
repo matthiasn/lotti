@@ -44,6 +44,7 @@ import 'package:lotti/features/goals/service/goal_checkin_compactor.dart';
 import 'package:lotti/features/goals/service/goal_checkin_digest_service.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_strategy.dart';
+import 'package:lotti/features/goals/workflow/goal_criterion_names.dart';
 import 'package:lotti/features/goals/workflow/goal_facts_renderer.dart';
 import 'package:lotti/features/nudges/logic/nudge_banner_snooze.dart';
 import 'package:lotti/features/nudges/model/nudge_entity_view.dart';
@@ -114,6 +115,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
     this._checkInCompactor,
     this._checkInSourceReader,
     this._checkInDigestService,
+    this._criterionNameReader,
     this._domainLogger,
   }) : _chatHistoryService =
            chatHistoryService ?? GoalChatHistoryService(_repository);
@@ -126,6 +128,12 @@ class GoalAgentWorkflow with AgentErrorLogging {
   final AiConfigRepository _aiConfigRepository;
   final GoalChatHistoryService _chatHistoryService;
   final GoalFactsRenderer _factsRenderer;
+
+  /// Names the habits and measurables the criteria refer to, so a criterion
+  /// authored without a title still reaches the model with a readable name.
+  /// Optional: without it such a criterion is named by nothing but its
+  /// `criterionId`, which is where the app stood before the reader existed.
+  final GoalCriterionNameReader? _criterionNameReader;
 
   /// Distills a check-in into the bounded form the agent reads. Optional: the
   /// deterministic tier and the LLM tier both work without it, and a wake with
@@ -465,6 +473,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
           GoalChatHistoryService.toJson(entry),
       ],
       userVoice: userVoice,
+      criterionNames: await _criterionNames(version.criteria),
     );
     var factsBlock = pendingUserMessage == null
         ? renderedFacts
@@ -1220,6 +1229,30 @@ class GoalAgentWorkflow with AgentErrorLogging {
       for (final summary in stored)
         if (live.containsKey(summary.sourceEntryId)) summary,
     ];
+  }
+
+  /// Display names for the entities [criteria] refer to, for the renderer.
+  ///
+  /// Contained like the user voice: names are ADDITIVE context, and a read
+  /// that fails must leave the wake with untitled criteria unnamed, never
+  /// fail the wake itself.
+  Future<Map<String, String>> _criterionNames(GoalCriterion criteria) async {
+    final reader = _criterionNameReader;
+    if (reader == null) return const {};
+    final ids = goalCriterionEntityIds(criteria);
+    if (ids.habitIds.isEmpty && ids.dataTypeIds.isEmpty) return const {};
+    try {
+      return await reader(ids);
+    } catch (error, stackTrace) {
+      _domainLogger?.error(
+        LogDomain.agentWorkflow,
+        error,
+        subDomain: 'goalCriterionNames',
+        message: 'criterion names unavailable; rendering criteria unnamed',
+        stackTrace: stackTrace,
+      );
+      return const {};
+    }
   }
 
   Future<List<Map<String, Object?>>> _userVoiceEntries({

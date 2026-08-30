@@ -4,6 +4,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/goals/model/goal_checkin_source.dart';
 import 'package:lotti/features/goals/model/goal_entry_ids.dart';
+import 'package:lotti/features/goals/workflow/goal_criterion_names.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
 
@@ -54,6 +55,23 @@ class GoalRepository {
   /// The immutable spec snapshots of [goalId], newest version first.
   Future<List<GoalEntry>> getSpecSnapshots(String goalId) =>
       _journalDb.getSpecSnapshotsForGoal(goalId);
+
+  /// Display names for the habits and measurables a goal's criteria refer
+  /// to, keyed by id — the [GoalCriterionNameReader] the agent workflow
+  /// names an untitled criterion with. An id with no definition behind it
+  /// is simply absent from the result.
+  Future<Map<String, String>> criterionNames(GoalCriterionEntityIds ids) async {
+    final names = <String, String>{};
+    for (final habitId in ids.habitIds) {
+      final habit = await _journalDb.getHabitById(habitId);
+      if (habit != null) names[habitId] = habit.name;
+    }
+    for (final dataTypeId in ids.dataTypeIds) {
+      final dataType = await _journalDb.getMeasurableDataTypeById(dataTypeId);
+      if (dataType != null) names[dataTypeId] = dataType.displayName;
+    }
+    return names;
+  }
 
   /// The check-ins linked to [agentId]'s goal that carry words.
   ///

@@ -141,6 +141,7 @@ void main() {
     // quietly grading a different policy row.
     const expectedStatus = {
       'ot_quiet_wake': GoalTrackStatus.onTrack,
+      'ot_untitled_habit_criterion': GoalTrackStatus.onTrack,
       'ot_transition_report': GoalTrackStatus.onTrack,
       'off_track_first_ad': GoalTrackStatus.offTrack,
       'off_track_fresh_ad': GoalTrackStatus.offTrack,
@@ -175,11 +176,28 @@ void main() {
       );
     }
 
+    test('the untitled habit criterion reaches the model named after its '
+        'habit, and its UUID reaches it nowhere', () async {
+      final scenario = goalOutcomeEvalScenarios.singleWhere(
+        (s) => s.id == 'ot_untitled_habit_criterion',
+      );
+      final driven = await drive(scenario);
+      final criteria = (driven.facts['goal']! as Map)['criteria'] as Map;
+      expect(criteria['criterionId'], 'bp-check');
+      expect(criteria['title'], 'Measure blood pressure');
+      expect(
+        jsonEncode(driven.facts),
+        isNot(contains(goalOutcomeEvalUntitledHabitId)),
+        reason: 'a UUID handed to the model ends up in its prose',
+      );
+    });
+
     test('the ad surface is offered only where policy permits one', () async {
       // The production gate, read at the wire rather than mirrored: ad tools
       // ride on eligibility AND the absence of a same-day dismissal.
       const offered = {
         'ot_quiet_wake': false,
+        'ot_untitled_habit_criterion': false,
         'ot_transition_report': false,
         'off_track_first_ad': true,
         'off_track_fresh_ad': true,

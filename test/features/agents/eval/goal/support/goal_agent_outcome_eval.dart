@@ -138,6 +138,7 @@ class GoalOutcomeEvalScenario {
     this.priorRegisters,
     this.pendingUserMessage,
     this.previousAssistantMessage,
+    this.criterionNames = const {},
     this.triggerTokens = const {
       'goal-escalation:$goalOutcomeEvalPeriodKey',
     },
@@ -166,6 +167,11 @@ class GoalOutcomeEvalScenario {
 
   final String? pendingUserMessage;
   final String? previousAssistantMessage;
+
+  /// What the journal would answer for the habits and measurables the
+  /// criteria refer to, keyed by id — the world's definitions, the way the
+  /// production name reader resolves them.
+  final Map<String, String> criterionNames;
   final Set<String> triggerTokens;
 
   final GoalOutcomeExpectation expectation;
@@ -891,6 +897,10 @@ GoalOutcomeEvalBench buildGoalOutcomeEvalBench({
     conversationRepository: conversationRepository,
     cloudInferenceRepository: cloudInferenceRepository,
     aiConfigRepository: aiConfigRepository,
+    criterionNameReader: (ids) async => {
+      for (final id in ids.habitIds.followedBy(ids.dataTypeIds))
+        id: ?scenario.criterionNames[id],
+    },
   );
 
   return (

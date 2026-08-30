@@ -39,6 +39,7 @@ import 'package:lotti/features/goals/sync/goal_signal_sync_dispatcher.dart';
 import 'package:lotti/features/goals/ui/goal_routes.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_workflow.dart';
+import 'package:lotti/features/goals/workflow/goal_criterion_names.dart';
 import 'package:lotti/features/goals/workflow/goal_tool_dispatcher.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/nudges/logic/nudge_banner_snooze.dart';
@@ -186,6 +187,16 @@ final Provider<GoalCheckInSourceReader?> goalCheckInSourceReaderProvider =
       return repository.checkInSources;
     }, name: 'goalCheckInSourceReaderProvider');
 
+/// Names for the entities a goal's criteria refer to, from the journal —
+/// null without a journal stack, in which case untitled criteria stay
+/// unnamed in FACTS rather than the wake failing.
+final Provider<GoalCriterionNameReader?> goalCriterionNameReaderProvider =
+    Provider<GoalCriterionNameReader?>((ref) {
+      final repository = ref.watch(goalRepositoryProvider);
+      if (repository == null) return null;
+      return repository.criterionNames;
+    }, name: 'goalCriterionNameReaderProvider');
+
 final goalAgentWorkflowProvider = Provider<GoalAgentWorkflow>(
   (ref) => GoalAgentWorkflow(
     repository: ref.watch(agentRepositoryProvider),
@@ -198,6 +209,7 @@ final goalAgentWorkflowProvider = Provider<GoalAgentWorkflow>(
     checkInCompactor: ref.watch(goalCheckInCompactorProvider),
     checkInSourceReader: ref.watch(goalCheckInSourceReaderProvider),
     checkInDigestService: ref.watch(goalCheckInDigestServiceProvider),
+    criterionNameReader: ref.watch(goalCriterionNameReaderProvider),
     domainLogger: ref.watch(domainLoggerProvider),
   ),
   name: 'goalAgentWorkflowProvider',

@@ -34,6 +34,29 @@ const goalOutcomeEvalSteps = GoalCriterion.metric(
 
 const _statement = 'Average 10,000 steps per day.';
 
+/// A habit id the way the app has them — a UUID, which the model must never
+/// be handed as a name. The readable slugs the rest of the catalog uses
+/// would hide a leak.
+const goalOutcomeEvalUntitledHabitId = '71ca84b0-1f1e-4f5d-9c2e-6b4a1d0c9e01';
+
+/// A habit criterion authored without a title, as an older or hand-written
+/// spec might be. FACTS has to name it after the habit itself.
+const goalOutcomeEvalUntitledHabit = GoalCriterion.habit(
+  criterionId: 'bp-check',
+  habitId: goalOutcomeEvalUntitledHabitId,
+  window: GoalWindow.rollingDays(count: 7),
+  targetCount: 5,
+);
+
+/// The blood-pressure habit kept on every day of the window.
+final _untitledHabitWindow = GoalSignalWindow(
+  habitSuccessesByDay: {
+    goalOutcomeEvalUntitledHabitId: {
+      for (var day = 3; day <= 9; day++) DateTime.utc(2026, 8, day): 1,
+    },
+  },
+);
+
 /// A uniform seven-day window at [perDay] steps. Attainment is then simply
 /// `perDay / 10000`, so a scenario's intended status is legible from the
 /// number alone — and the offline test asserts the derivation agrees.
@@ -97,6 +120,24 @@ final goalOutcomeEvalScenarios = <GoalOutcomeEvalScenario>[
     criteria: goalOutcomeEvalSteps,
     window: _uniform(11000),
     priorRegisters: _yesterday(GoalTrackStatus.onTrack, 1.1),
+    expectation: const GoalOutcomeExpectation(expectsNoOutcome: true),
+  ),
+
+  // ── Untitled criterion: named after its habit, never by its id ─────────
+  // The same quiet wake, on a habit criterion authored without a title. The
+  // offline test reads the FACTS this builds: the criterion must carry the
+  // habit's display name, and the UUID must appear nowhere in the prompt.
+  GoalOutcomeEvalScenario(
+    id: 'ot_untitled_habit_criterion',
+    policyRuleId: 'P2',
+    title: 'Blood pressure',
+    statement: 'Measure blood pressure on 5 of 7 days.',
+    criteria: goalOutcomeEvalUntitledHabit,
+    window: _untitledHabitWindow,
+    priorRegisters: _yesterday(GoalTrackStatus.onTrack, 1),
+    criterionNames: const {
+      goalOutcomeEvalUntitledHabitId: 'Measure blood pressure',
+    },
     expectation: const GoalOutcomeExpectation(expectsNoOutcome: true),
   ),
 

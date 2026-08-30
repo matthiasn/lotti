@@ -477,6 +477,16 @@ flowchart TD
 - **Phase B re-derives, never trusts.** The workflow calls the same
   `deriveWakeFacts` Phase A used to arm the escalation and renders every
   number into the FACTS block; the prompt forbids the model to recompute.
+  FACTS names a criterion by its `title` and never by the habit or measurable
+  id behind it — those are UUIDs, and a model handed one writes it into prose.
+  A criterion authored without a title (an older or hand-written spec) is
+  titled after its entity at render time: the workflow collects the habit and
+  data-type ids under the tree (`goalCriterionEntityIds`) and resolves them
+  through the injected `GoalCriterionNameReader` (`GoalRepository.criterionNames`
+  via `goalCriterionNameReaderProvider`; null without a journal stack). The
+  read is contained like the user voice: a failure leaves the criterion
+  unnamed, never fails the wake. Backfilling titles onto specs was rejected —
+  it would write a new spec version per goal to fix a presentation gap.
   For supported health criteria, it explicitly distinguishes the rolling
   `actual` from the timestamped `healthSeries` anchored to
   `evaluation.reference`: when the latest reading is on target for that day,
