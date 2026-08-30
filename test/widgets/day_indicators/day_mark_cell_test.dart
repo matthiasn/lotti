@@ -46,10 +46,15 @@ void main() {
         BorderRadius.circular(tokens.radii.xs),
         reason: '$state',
       );
-      expect(decoration(tester).border, isNull, reason: '$state');
+      expect(
+        decoration(tester).border,
+        dayMarkStateBorder(tokens, state),
+        reason: '$state',
+      );
       if (state == DayMarkState.missed || state == DayMarkState.skipped) {
-        // Recorded skips and misses share a neutral outcome fill. Shape and
-        // saturated alert hue distinguish the orange dash from the red cross.
+        // Recorded skips and misses share a neutral outlined outcome square.
+        // Shape and saturated alert hue distinguish the orange dash from the
+        // red cross.
         final icon = tester.widget<Icon>(find.byType(Icon));
         expect(
           icon.icon,
@@ -64,6 +69,14 @@ void main() {
               : tokens.colors.alert.error.defaultColor,
         );
         expect(decoration(tester).color, tokens.colors.background.level02);
+        expect(
+          decoration(tester).border,
+          Border.all(color: tokens.colors.background.level03),
+        );
+        expect(
+          (decoration(tester).border! as Border).top.width,
+          BorderWidths.hairline,
+        );
         expect(icon.size, kDaySquareSize - tokens.spacing.step2);
       } else if (state == DayMarkState.full || state == DayMarkState.partial) {
         expect(
@@ -121,6 +134,11 @@ void main() {
     expect(
       tester.widget<Icon>(find.byType(Icon)).icon,
       dayVerdictGlyph(DayVerdict.met),
+    );
+    expect(
+      decoration(tester).border,
+      isNull,
+      reason: 'the verdict fill replaces the measured outcome treatment',
     );
   });
 

@@ -24,6 +24,22 @@ Color dayMarkStateFill(DsTokens tokens, DayMarkState state) => switch (state) {
   DayMarkState.missed => tokens.colors.background.level02,
 };
 
+/// Neutral outline for a recorded non-success outcome.
+///
+/// The outcome fill deliberately stays at level 02 so the saturated warning
+/// and error glyphs clear their contrast floor. On dark cards that surface can
+/// merge with its surroundings, so a level-03 hairline keeps the rounded cell
+/// visible without turning the whole square into an alert-colored block.
+BoxBorder? dayMarkStateBorder(DsTokens tokens, DayMarkState state) =>
+    switch (state) {
+      DayMarkState.skipped || DayMarkState.missed => Border.fromBorderSide(
+        BorderSide(color: tokens.colors.background.level03).copyWith(
+          width: BorderWidths.hairline,
+        ),
+      ),
+      DayMarkState.full || DayMarkState.partial || DayMarkState.none => null,
+    };
+
 /// The localized name of a measured state, shared by every day cell's
 /// semantics and tooltip so a "done" day is called the same thing everywhere.
 String dayMarkStateLabel(BuildContext context, DayMarkState state) =>

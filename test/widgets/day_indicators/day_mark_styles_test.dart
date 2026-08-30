@@ -46,6 +46,25 @@ void main() {
     }
   });
 
+  testWidgets('only recorded skip and miss states receive an outcome outline', (
+    tester,
+  ) async {
+    final t = await tokens(tester);
+    for (final state in DayMarkState.values) {
+      final border = dayMarkStateBorder(t, state);
+      if (state == DayMarkState.skipped || state == DayMarkState.missed) {
+        expect(
+          border,
+          Border.all(color: t.colors.background.level03),
+          reason: '$state keeps its rounded neutral container visible',
+        );
+        expect((border! as Border).top.width, BorderWidths.hairline);
+      } else {
+        expect(border, isNull, reason: '$state');
+      }
+    }
+  });
+
   testWidgets('every verdict has a distinct fill, shape and surface ink', (
     tester,
   ) async {

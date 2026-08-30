@@ -77,8 +77,9 @@ classDiagram
   held as of that day; `partial` means the routine was kept while a window
   target was still building (a wash of the kept fill); `skipped` and
   `missed` are recorded habit outcomes. They use the neutral level-02 outcome
-  fill: a skipped day carries an orange warning dash and a missed day a red
-  error cross, leaving only an untouched level-03 day to carry its weekday.
+  fill inside a level-03 hairline: a skipped day carries an orange warning
+  dash and a missed day a red error cross, leaving only an untouched level-03
+  day to carry its weekday.
 - **`DayVerdict` is the user's ruling**, and a recorded verdict outranks the
   measurement wherever both are shown. The enum is persisted by `name` in
   goal assessment records (see [goals](../features/goals.md)), so the names
@@ -122,9 +123,11 @@ flowchart LR
 - **Three fills for a measured day.** A kept day is `interactive.enabled` —
   the handover's `--interactive` square — a partial day its `muted` wash, and
   an untouched day `background.level03`; recorded skip and miss outcomes use
-  `background.level02`. No alert hue on a habit square's FILL: a struggling
-  habit is never a wall of red or orange; only the outcome glyph wears it.
-- **A square says one thing inside itself, and nothing around it.** A
+  `background.level02`, framed by a `background.level03` hairline so the
+  rounded container remains visible on dark cards. No alert hue on a habit
+  square's FILL: a struggling habit is never a wall of red or orange; only the
+  outcome glyph wears it.
+- **A square says one thing inside itself, with no external caption.** A
   judged day draws its verdict's glyph; a kept day (partial included) the tick,
   a skip an orange dash (`alert.warning.defaultColor`), and a recorded miss
   a red cross (`alert.error.defaultColor`). Those saturated ramp steps clear

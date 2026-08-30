@@ -161,12 +161,13 @@ class PlaceholderDayCell extends StatelessWidget {
 
 /// One day square, as the habits handover draws it: a small rounded square
 /// filled in the interactive hue when the day was kept and in the neutral
-/// level-03 surface otherwise — a recorded verdict paints its own hue, and an
-/// empty TODAY is the dashed unresolved outline, since the day is not over.
+/// level-03 surface otherwise. A skip or miss keeps its quieter level-02 fill
+/// inside a neutral hairline so the rounded square remains visible, a recorded
+/// verdict paints its own hue, and an empty TODAY is the dashed unresolved
+/// outline, since the day is not over.
 /// Inside it, [dayMarkSquareContent]: the outcome's glyph, or the weekday
-/// while there is none. Nothing is drawn around a square; the full
-/// date, the outcome's name and a verdict's are answered by the tooltip and
-/// the semantics.
+/// while there is none. The full date, the outcome's name and a verdict's are
+/// answered by the tooltip and the semantics.
 ///
 /// Read-only by default. With [onTap] the square keeps its size while the
 /// hit slot around it clears the touch floor, and the cell announces itself
@@ -210,6 +211,9 @@ class DayMarkCell extends StatelessWidget {
               color: verdict == null
                   ? dayMarkStateFill(tokens, mark.state)
                   : dayVerdictFill(tokens, verdict),
+              border: verdict == null
+                  ? dayMarkStateBorder(tokens, mark.state)
+                  : null,
               borderRadius: BorderRadius.circular(tokens.radii.xs),
             ),
             child: dayMarkSquareContent(
