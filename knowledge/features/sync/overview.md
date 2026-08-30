@@ -258,8 +258,9 @@ may detach an abandoned, revoked claim and provision a
 fresh Matrix account, retrying with a suffixed localpart if the deterministic
 name survived an earlier rollback. A rotation confirmation is idempotent only
 when the claim has a real `confirmed_at`; a late request cannot turn a
-reaper-destroyed claim into apparent success. Confirmed claims always recover
-the existing account without recreating bootstrap credentials. Lost-response
+reaper-destroyed claim into apparent success. Confirmed claims recover only a
+still-non-revoked account, checked both before and after the purchase
+acknowledgement path, without recreating bootstrap credentials. Lost-response
 delivery retries reload the current subscription and reject non-granting state
 or an elapsed authoritative expiry before decrypting escrow. The retry route
 refreshes its clock after entitlement authentication and stops before claim

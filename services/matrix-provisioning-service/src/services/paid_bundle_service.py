@@ -16,7 +16,7 @@ from ..core.exceptions import (
     GooglePlayVerificationException,
     UsernameAlreadyProvisionedException,
 )
-from ..core.models import CreateBundleRequest
+from ..core.models import BundleStatus, CreateBundleRequest
 from ..core.subscriptions import (
     AcknowledgementState,
     BundleClaim,
@@ -120,6 +120,7 @@ class PaidBundleService:
             verified.subscription.entitlement_id
         )
         reprovisioning = False
+        confirmed_recovery_bundle_id = None
         if (
             existing is not None
             and existing.confirmed_at is None
@@ -137,6 +138,8 @@ class PaidBundleService:
                 # A rotated Matrix account is already the durable sync identity.
                 # Replacement purchases restore access to it; the destroyed
                 # bootstrap credential must never be recreated or redelivered.
+                await self._require_recoverable_confirmed_claim(existing.bundle_id)
+                confirmed_recovery_bundle_id = existing.bundle_id
                 delivery = PaidBundleDelivery(
                     bundle_id=existing.bundle_id,
                     bundle=None,
@@ -229,7 +232,14 @@ class PaidBundleService:
             verified,
             now=self._current_time(now),
         )
+        if confirmed_recovery_bundle_id is not None:
+            await self._require_recoverable_confirmed_claim(confirmed_recovery_bundle_id)
         return delivery
+
+    async def _require_recoverable_confirmed_claim(self, bundle_id: str) -> None:
+        provisioned_user = await self._repository.get(bundle_id)
+        if provisioned_user is None or provisioned_user.status is BundleStatus.REVOKED:
+            raise BundleClaimConflictException("Bundle claim is terminal")
 
     async def _load_current_subscription(
         self,

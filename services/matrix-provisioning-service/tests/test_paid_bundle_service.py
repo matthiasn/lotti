@@ -431,6 +431,81 @@ async def test_confirmed_claim_recovers_replacement_purchase_without_redelivery(
     )
 
 
+async def test_confirmed_claim_cannot_recover_admin_revoked_bundle(
+    service,
+    repository,
+    bundle_service,
+):
+    verified = await verified_purchase(repository)
+    delivered = await service.provision_or_deliver(verified, submission(), now=NOW)
+    await repository.destroy_bundle_claim(
+        delivered.bundle_id,
+        now=NOW + timedelta(minutes=1),
+    )
+    await repository.revoke(
+        delivered.bundle_id,
+        "revoked by administrator",
+        now=NOW + timedelta(minutes=2),
+    )
+
+    with pytest.raises(BundleClaimConflictException, match="terminal"):
+        await service.provision_or_deliver(
+            verified,
+            submission(),
+            now=NOW + timedelta(minutes=3),
+        )
+
+    assert len(bundle_service.calls) == 1
+
+
+async def test_admin_revocation_during_confirmed_recovery_wins(
+    service,
+    repository,
+    bundle_service,
+    monkeypatch,
+):
+    verified = await verified_purchase(repository)
+    delivered = await service.provision_or_deliver(verified, submission(), now=NOW)
+    await repository.destroy_bundle_claim(
+        delivered.bundle_id,
+        now=NOW + timedelta(minutes=1),
+    )
+    load_subscription = service._load_current_subscription
+    second_load_started = asyncio.Event()
+    release_second_load = asyncio.Event()
+    load_count = 0
+
+    async def blocking_load_subscription(current_verified, *, now):
+        nonlocal load_count
+        current = await load_subscription(current_verified, now=now)
+        load_count += 1
+        if load_count == 2:
+            second_load_started.set()
+            await release_second_load.wait()
+        return current
+
+    monkeypatch.setattr(service, "_load_current_subscription", blocking_load_subscription)
+    recovery = asyncio.create_task(
+        service.provision_or_deliver(
+            verified,
+            submission(),
+            now=NOW + timedelta(minutes=2),
+        )
+    )
+    await second_load_started.wait()
+    await repository.revoke(
+        delivered.bundle_id,
+        "revoked by administrator",
+        now=NOW + timedelta(minutes=3),
+    )
+    release_second_load.set()
+
+    with pytest.raises(BundleClaimConflictException, match="terminal"):
+        await recovery
+
+    assert len(bundle_service.calls) == 1
+
+
 async def test_overlapping_retries_share_one_provisioned_bundle(
     repository,
     google_client,
