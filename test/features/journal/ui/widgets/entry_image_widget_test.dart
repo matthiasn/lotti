@@ -454,6 +454,26 @@ void main() {
       expect(find.byTooltip('Zoom In'), findsOneWidget);
     });
 
+    testWidgets('a cancelled pointer does not toggle chrome and tap recovers', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildWrapper());
+      await tester.pump();
+
+      final canvasPoint = tester.getCenter(find.byType(PhotoView));
+      final gesture = await tester.createGesture();
+      await gesture.down(canvasPoint);
+      await gesture.cancel();
+      await tester.pump(const Duration(milliseconds: 600));
+
+      expect(find.byTooltip('Close'), findsOneWidget);
+
+      await tester.tapAt(canvasPoint);
+      await tester.pump(const Duration(milliseconds: 600));
+
+      expect(find.byTooltip('Close'), findsNothing);
+    });
+
     testWidgets('double tap zoom does not toggle viewer chrome', (
       tester,
     ) async {
