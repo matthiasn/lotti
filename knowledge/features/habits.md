@@ -343,7 +343,15 @@ the old dialog that embedded a whole linked dashboard. It renders **one
 measurable (its three most-logged values, from the same ranking the
 measurement dialog uses, plus *Other* for the full capture), and a two-week
 `SignalSparkline` — above the unchanged form (date, comment, Success / Skip /
-Missed, Record). A **choice measurable** offers every active choice as a chip
+Missed, Record). The rows are cards one elevation step above the sheet
+(`dsCardSurface` on `dsPageSurface`), as the handover draws them. On a
+desktop window a habit with three or more signals lays the rows out **two
+abreast in a wider card** (`kHabitCompletionSheetTwoColumnSignals`,
+`kHabitCompletionSheetWideWidth`), an unpaired last row spanning both
+columns, so the signals stay above the form instead of pushing it below the
+fold; a phone, or fewer signals, keeps the single column. A row whose pill
+already reads "N so far" omits the `today:` caption rather than repeat the
+number. A **choice measurable** offers every active choice as a chip
 instead of suggestions — the set is the vocabulary, not a ranking — records
 one occurrence of the tapped choice (`MeasurableQuickValue`, the number-or-
 choice shape the chips, row and sheet pass around), reports today as *logged*
