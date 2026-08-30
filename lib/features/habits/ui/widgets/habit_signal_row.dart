@@ -122,19 +122,23 @@ class HabitSignalRow extends StatelessWidget {
                 ),
               ),
               SizedBox(width: tokens.spacing.step2),
-              DsPill(
-                key: ValueKey('habit-signal-pill-${_leafKey(rule)}'),
-                variant: DsPillVariant.tinted,
-                shape: DsPillShape.tag,
-                color: pillColor,
-                leading: leaf.satisfied
-                    ? Icon(
-                        LottiIcons.confirm,
-                        size: IconSizes.xs,
-                        color: pillColor,
-                      )
-                    : null,
-                label: _ruleStatus(messages, leaf, unit, locale),
+              // Flexible, so a long localized status at a raised text scale
+              // ellipsizes inside the pill instead of overflowing the row.
+              Flexible(
+                child: DsPill(
+                  key: ValueKey('habit-signal-pill-${_leafKey(rule)}'),
+                  variant: DsPillVariant.tinted,
+                  shape: DsPillShape.tag,
+                  color: pillColor,
+                  leading: leaf.satisfied
+                      ? Icon(
+                          LottiIcons.confirm,
+                          size: IconSizes.xs,
+                          color: pillColor,
+                        )
+                      : null,
+                  label: _ruleStatus(messages, leaf, unit, locale),
+                ),
               ),
             ],
           ),

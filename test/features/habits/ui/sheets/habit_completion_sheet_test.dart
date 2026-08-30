@@ -259,6 +259,7 @@ void main() {
     String? dateString,
     List<Override> overrides = const [],
     Size viewport = const Size(800, 1400),
+    double textScale = 1,
   }) async {
     tester.view.physicalSize = viewport;
     tester.view.devicePixelRatio = 1.0;
@@ -289,7 +290,10 @@ void main() {
             ),
           ),
         ),
-        mediaQueryData: MediaQueryData(size: viewport),
+        mediaQueryData: MediaQueryData(
+          size: viewport,
+          textScaler: TextScaler.linear(textScale),
+        ),
         overrides: [
           measurableSuggestionsControllerProvider(
             'water',
@@ -535,6 +539,25 @@ void main() {
         kHabitCompletionSheetWidth,
       );
     });
+
+    clockedWidgets(
+      'a raised text scale keeps three signals stacked on a desktop window: '
+      'a half-width cell cannot hold a title beside a doubled status pill',
+      (tester) async {
+        await pumpSheet(
+          tester,
+          habitId: tripleHabit.id,
+          viewport: const Size(kDesktopBreakpoint, 2400),
+          textScale: 2,
+        );
+        expect(find.byKey(columnsKey), findsNothing);
+        expect(
+          tester.getSize(find.byType(Card)).width,
+          kHabitCompletionSheetWidth,
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
 
     clockedWidgets('one signal on a desktop window keeps the narrow card', (
       tester,

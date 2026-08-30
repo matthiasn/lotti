@@ -410,10 +410,13 @@ class _CompletionForm extends StatelessWidget {
     final messages = context.messages;
     // Desktop with three or more signals: two columns, so the signals stay
     // in view above the form instead of pushing it below the fold. A phone
-    // never has the width; two signals do not earn the wider card.
+    // never has the width; two signals do not earn the wider card; and a
+    // raised text scale keeps the single column — a half-width cell has no
+    // room for a title beside a status pill grown to twice its size.
     final twoColumns =
         isDesktopLayout(context) &&
-        signals.length >= kHabitCompletionSheetTwoColumnSignals;
+        signals.length >= kHabitCompletionSheetTwoColumnSignals &&
+        MediaQuery.textScalerOf(context).scale(1) <= 1;
 
     return Card(
       margin: EdgeInsets.zero,
