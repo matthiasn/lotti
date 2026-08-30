@@ -80,11 +80,7 @@ class BundleClaimReaper(PeriodicTask):
                 await self._repository.revoke(
                     claim.bundle_id,
                     "Paid bundle claim expired before validated rotation",
-                )
-                await self._repository.abandon_bundle_claim(
-                    claim.bundle_id,
                     now=now,
-                    operation_token=operation_token,
                 )
                 reaped += 1
             except Exception:  # noqa: BLE001 - isolate and retry one claim later

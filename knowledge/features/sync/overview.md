@@ -154,6 +154,9 @@ can rebind it, while a second request for the same token must prove the existing
 secret.
 Requests in another service object or process wait for the owner's durable
 claim and reuse it; a killed owner becomes recoverable after five minutes.
+Admin bundle revocation destroys any paid bootstrap escrow in the same SQLite
+transaction and clears its operation lease, so later and in-flight delivery
+cannot return credentials after revocation wins the transaction order.
 These are database invariants, with reverse-proxy throttling kept as an
 additional outer boundary. The bundled nginx forwards the original client
 chain and Uvicorn trusts only nginx's fixed Compose address, so direct callers

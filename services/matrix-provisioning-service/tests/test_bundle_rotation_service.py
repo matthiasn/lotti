@@ -255,9 +255,9 @@ async def test_repeated_valid_confirmation_is_idempotent_without_matrix_calls(
 async def test_reaped_claim_cannot_be_confirmed_as_successful(dependencies):
     repository, identity_service, admin_client, cipher, service = dependencies
     entitlement, claim = await setup_claim(repository, identity_service, cipher)
-    await repository.revoke(claim.bundle_id, "claim expired")
-    abandoned = await repository.abandon_bundle_claim(
+    abandoned = await repository.revoke(
         claim.bundle_id,
+        "claim expired",
         now=claim.expires_at,
     )
 
@@ -270,8 +270,10 @@ async def test_reaped_claim_cannot_be_confirmed_as_successful(dependencies):
             now=claim.expires_at + timedelta(minutes=1),
         )
 
-    assert abandoned.destroyed_at == claim.expires_at
-    assert abandoned.confirmed_at is None
+    destroyed = await repository.get_bundle_claim_for_entitlement(entitlement.entitlement_id)
+    assert abandoned.revoked_at == claim.expires_at
+    assert destroyed.destroyed_at == claim.expires_at
+    assert destroyed.confirmed_at is None
     assert admin_client.state_calls == 0
     assert admin_client.password_calls == 0
 

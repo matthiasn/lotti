@@ -1532,6 +1532,20 @@ class SubscriptionRepository(ProvisioningRepository):
             now,
         )
 
+    def _terminalize_related_state_on_revoke_sync(
+        self,
+        conn: sqlite3.Connection,
+        bundle_id: str,
+        revoked_at: datetime,
+    ) -> None:
+        """Destroy paid bootstrap escrow in the bundle revocation transaction."""
+        conn.execute(
+            "UPDATE bundle_claims SET encrypted_bundle = NULL, "
+            "destroyed_at = COALESCE(destroyed_at, ?), operation_token = NULL, "
+            "operation_kind = NULL, operation_started_at = NULL WHERE bundle_id = ?",
+            (_iso(revoked_at), bundle_id),
+        )
+
     def _destroy_bundle_claim_sync(self, bundle_id: str, now: datetime) -> BundleClaim:
         conn = self._connect()
         try:

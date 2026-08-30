@@ -673,6 +673,61 @@ async def test_delivery_retry_rejects_expired_claim(service, repository):
         )
 
 
+async def test_delivery_retry_rejects_admin_revoked_paid_claim(service, repository):
+    verified = await verified_purchase(repository)
+    delivered = await service.provision_or_deliver(verified, submission(), now=NOW)
+
+    await repository.revoke(delivered.bundle_id, "leaked")
+
+    with pytest.raises(BundleClaimConflictException, match="terminal"):
+        await service.deliver_existing_claim(
+            entitlement_id="entitlement-one",
+            claim_secret="claim-secret",
+            now=NOW + timedelta(minutes=1),
+        )
+
+    claim = await repository.get_bundle_claim_for_entitlement("entitlement-one")
+    assert claim.encrypted_bundle is None
+    assert claim.destroyed_at is not None
+
+
+async def test_admin_revocation_wins_against_inflight_paid_delivery(
+    service,
+    repository,
+    monkeypatch,
+):
+    verified = await verified_purchase(repository)
+    first = await service.provision_or_deliver(verified, submission(), now=NOW)
+    authorization_started = asyncio.Event()
+    release_authorization = asyncio.Event()
+    authorize = service._authorize_claim_secret
+
+    async def blocking_authorize(claim, claim_secret):
+        authorization_started.set()
+        await release_authorization.wait()
+        await authorize(claim, claim_secret)
+
+    monkeypatch.setattr(service, "_authorize_claim_secret", blocking_authorize)
+    delivery = asyncio.create_task(
+        service.deliver_existing_claim(
+            entitlement_id="entitlement-one",
+            claim_secret="claim-secret",
+            now=NOW + timedelta(minutes=1),
+        )
+    )
+    await authorization_started.wait()
+
+    await repository.revoke(first.bundle_id, "leaked")
+    release_authorization.set()
+
+    with pytest.raises(BundleClaimConflictException, match="lease was lost"):
+        await delivery
+
+    claim = await repository.get_bundle_claim_for_entitlement("entitlement-one")
+    assert claim.encrypted_bundle is None
+    assert claim.destroyed_at is not None
+
+
 async def test_delivery_retry_lease_blocks_reaper_during_secret_verification(
     service,
     repository,

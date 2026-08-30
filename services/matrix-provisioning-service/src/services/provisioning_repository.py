@@ -414,19 +414,35 @@ class ProvisioningRepository:
         """Advance a bundle to ``ROTATED`` on confirmed client rotation."""
         return await asyncio.to_thread(self._mark_rotated_sync, bundle_id)
 
-    def _revoke_sync(self, bundle_id: str, reason: str) -> ProvisionedUser:
+    def _terminalize_related_state_on_revoke_sync(
+        self,
+        conn: sqlite3.Connection,
+        bundle_id: str,
+        revoked_at: datetime,
+    ) -> None:
+        """Extend the bundle revocation transaction for repository subclasses."""
+
+    def _revoke_sync(
+        self,
+        bundle_id: str,
+        reason: str,
+        now: datetime | None,
+    ) -> ProvisionedUser:
         conn = self._connect()
         try:
+            conn.execute("BEGIN IMMEDIATE")
             row = conn.execute(
                 "SELECT * FROM provisioned_users WHERE bundle_id = ?", (bundle_id,)
             ).fetchone()
             if row is None:
                 raise BundleNotFoundException(bundle_id)
 
+            revoked_at = now or _now()
             conn.execute(
                 "UPDATE provisioned_users SET status = ?, revoked_at = ? WHERE bundle_id = ?",
-                (BundleStatus.REVOKED.value, _iso(_now()), bundle_id),
+                (BundleStatus.REVOKED.value, _iso(revoked_at), bundle_id),
             )
+            self._terminalize_related_state_on_revoke_sync(conn, bundle_id, revoked_at)
             self._record_event_sync(
                 conn, bundle_id, BundleEventType.REVOKED, reason or "Revoked by admin"
             )
@@ -435,12 +451,25 @@ class ProvisioningRepository:
                 "SELECT * FROM provisioned_users WHERE bundle_id = ?", (bundle_id,)
             ).fetchone()
             return self._row_to_user(row)
+        except Exception:
+            conn.rollback()
+            raise
         finally:
             conn.close()
 
-    async def revoke(self, bundle_id: str, reason: str = "") -> ProvisionedUser:
-        """Mark a bundle revoked. Does not touch the Matrix account itself."""
-        return await asyncio.to_thread(self._revoke_sync, bundle_id, reason)
+    async def revoke(
+        self,
+        bundle_id: str,
+        reason: str = "",
+        *,
+        now: datetime | None = None,
+    ) -> ProvisionedUser:
+        """Mark a bundle revoked without touching the Matrix account.
+
+        ``now`` lets deterministic maintenance work stamp the revocation and
+        any subclass-owned terminal state with the same authoritative time.
+        """
+        return await asyncio.to_thread(self._revoke_sync, bundle_id, reason, now)
 
     def _update_sync(
         self,

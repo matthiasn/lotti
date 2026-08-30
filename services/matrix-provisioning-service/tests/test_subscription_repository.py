@@ -1046,6 +1046,22 @@ async def test_bundle_claim_operation_lease_is_exclusive_and_recoverable(
         == []
     )
 
+    reap_at = claim.expires_at + timedelta(minutes=5)
+    assert await subscription_repository.reserve_bundle_reap(
+        claim.bundle_id,
+        operation_token="final-reap",
+        now=reap_at,
+        stale_before=claim.expires_at,
+    )
+    abandoned = await subscription_repository.abandon_bundle_claim(
+        claim.bundle_id,
+        now=reap_at,
+        operation_token="final-reap",
+    )
+
+    assert abandoned.encrypted_bundle is None
+    assert abandoned.destroyed_at == reap_at
+
 
 async def test_terminal_and_unknown_claims_cannot_be_reserved(subscription_repository):
     entitlement = await create_entitlement(subscription_repository)
