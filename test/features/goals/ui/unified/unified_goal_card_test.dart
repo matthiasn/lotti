@@ -8,7 +8,9 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_assessment_state.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
@@ -136,10 +138,12 @@ void main() {
     required GoalAgentHealth agentHealth,
     GoalProgressView? progressView,
     bool progressFails = false,
+    ThemeData? theme,
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
         UnifiedGoalCard(identity: identity('goal-1', 'Fitness')),
+        theme: theme,
         overrides: [
           goalAgentHealthProvider(
             'goal-1',
@@ -159,6 +163,38 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+  }
+
+  for (final theme in [DesignSystemTheme.light(), DesignSystemTheme.dark()]) {
+    testWidgets(
+      'uses the habit-card frame in ${theme.brightness.name} mode',
+      (tester) async {
+        await pump(
+          tester,
+          agentHealth: health(
+            agentId: 'goal-1',
+            trackStatus: GoalTrackStatus.onTrack,
+          ),
+          progressView: progress(),
+          theme: theme,
+        );
+
+        final finder = find.byKey(
+          const ValueKey('unified-goal-card-frame-goal-1'),
+        );
+        final context = tester.element(finder);
+        final material = tester.widget<Material>(finder);
+        final shape = material.shape! as RoundedRectangleBorder;
+        final tokens = context.designTokens;
+        expect(material.color, dsCardSurface(context));
+        expect(
+          shape.borderRadius,
+          BorderRadius.circular(tokens.radii.m),
+        );
+        expect(shape.side.color, tokens.colors.decorative.level01);
+        expect(shape.side.width, 1);
+      },
+    );
   }
 
   testWidgets('renders the pill with the folded recovery hint and the '

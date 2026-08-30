@@ -4,6 +4,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_assessment_state.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
@@ -100,7 +101,7 @@ class UnifiedGoalCard extends ConsumerWidget {
     // hover overlay painted a phantom one over the title and strip. The
     // pointer cursor and the card's own affordances carry tappability.
     final header = DsQuietInk(
-      borderRadius: BorderRadius.circular(tokens.radii.l),
+      borderRadius: BorderRadius.circular(tokens.radii.m),
       focusRing: true,
       onTap: () => beamToNamed(goalDetailPath(identity.agentId)),
       builder: (context, highlighted) => Padding(
@@ -195,8 +196,13 @@ class UnifiedGoalCard extends ConsumerWidget {
     );
 
     return Material(
-      color: tokens.colors.surface.enabled,
-      borderRadius: BorderRadius.circular(tokens.radii.l),
+      key: ValueKey('unified-goal-card-frame-${identity.agentId}'),
+      color: dsCardSurface(context),
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(tokens.radii.m),
+        side: BorderSide(color: tokens.colors.decorative.level01),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
