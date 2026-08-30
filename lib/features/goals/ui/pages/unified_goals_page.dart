@@ -242,7 +242,11 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage>
         autoCompleteReason: state.autoCompletedToday[habitDefinition.id],
         autoCompletedAt: state.autoCompletedAt(habitDefinition.id),
         currentStreak: streaks[habitDefinition.id] ?? 0,
-        history: habitHistoryMarks(state, habitDefinition.id),
+        history: habitHistoryMarks(
+          state,
+          habitDefinition.id,
+          count: habitHistoryDays(context),
+        ),
       );
     }
 

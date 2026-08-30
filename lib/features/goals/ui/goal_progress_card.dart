@@ -1347,7 +1347,7 @@ class _WeekdayTrack extends StatelessWidget {
               'goal-habit-weekday-$trackId-'
               '${day.day.toIso8601String().substring(0, 10)}',
             ),
-            width: kDaySquareSize,
+            width: daySquareSize(context),
             child: OverflowBox(
               maxWidth: double.infinity,
               child: Text(
@@ -1478,16 +1478,12 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
     final noteStyle = tokens.typography.styles.others.caption.copyWith(
       color: tokens.colors.text.mediumEmphasis,
     );
-    final letterFormat = DateFormat.EEEEE(
-      Localizations.localeOf(context).toLanguageTag(),
-    );
-
     Widget cells(DayTrackMetrics metrics) {
       // Interactive rows own a touch-floor-high track so each cell's hit
       // slot meets TapTargets.minimum vertically; read-only rows keep the
       // compact height.
       final trackHeight = widget.onOutcomeSelected == null
-          ? kDaySquareSize
+          ? daySquareSize(context)
           : TapTargets.minimum;
       return DayTrack(
         height: trackHeight,
@@ -1501,9 +1497,6 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
                 activeDays[index].day,
                 widget.today,
               ),
-              weekdayLetter: widget.onOutcomeSelected == null
-                  ? null
-                  : letterFormat.format(activeDays[index].day),
               verdict:
                   widget.verdictsByDay[DateTime.utc(
                     activeDays[index].day.year,
@@ -1694,7 +1687,6 @@ class _ProgressDayCell extends StatelessWidget {
     required this.enabled,
     required this.onOutcomeSelected,
     required this.today,
-    this.weekdayLetter,
     this.verdict,
   });
 
@@ -1704,9 +1696,6 @@ class _ProgressDayCell extends StatelessWidget {
   /// Whether this is the current day. Empty and unjudged, it draws as the
   /// dashed unresolved outline rather than a past day's neutral fill.
   final bool today;
-
-  /// The weekday initial drawn above a tappable square, inside its slot.
-  final String? weekdayLetter;
 
   /// The user's verdict on this habit for this day, when they recorded one
   /// in the reflection sheet. It decides the fill; the measured outcome is
@@ -1739,19 +1728,29 @@ class _ProgressDayCell extends StatelessWidget {
         verdict == null &&
         dayState == DayMarkState.none &&
         (completionType == null || completionType == HabitCompletionType.open);
+    final size = daySquareSize(context);
     Widget cell = pending
         ? PlaceholderDayCell(
             key: ValueKey('goal-habit-day-visual-$habitId-$dayKey'),
+            day: day.day,
           )
         : Container(
             key: ValueKey('goal-habit-day-visual-$habitId-$dayKey'),
-            width: kDaySquareSize,
-            height: kDaySquareSize,
+            width: size,
+            height: size,
+            alignment: Alignment.center,
             decoration: BoxDecoration(
               color: verdict == null
                   ? dayMarkStateFill(tokens, dayState)
                   : dayVerdictFill(tokens, verdict),
               borderRadius: BorderRadius.circular(tokens.radii.xs),
+            ),
+            child: dayMarkSquareContent(
+              context,
+              state: dayState,
+              verdict: verdict,
+              day: day.day,
+              size: size,
             ),
           );
     if (dayState == DayMarkState.partial) {
@@ -1823,18 +1822,14 @@ class _ProgressDayCell extends StatelessWidget {
           semanticLabel: semanticLabel,
           onSelected: callback,
           child: Center(
-            child: dayCellWithCaption(
-              tokens,
-              saving
-                  ? const SizedBox.square(
-                      dimension: kDaySquareSize,
-                      child: CircularProgressIndicator(
-                        strokeWidth: BorderWidths.emphasis,
-                      ),
-                    )
-                  : cell,
-              weekdayLetter,
-            ),
+            child: saving
+                ? SizedBox.square(
+                    dimension: size,
+                    child: const CircularProgressIndicator(
+                      strokeWidth: BorderWidths.emphasis,
+                    ),
+                  )
+                : cell,
           ),
         ),
       ),
@@ -2348,7 +2343,7 @@ class _MetricProgressSeries extends StatelessWidget {
           // whose Stack expands against its parent, so it needs bounded
           // dimensions or every bar collapses to zero — an invisible chart.
           SizedBox(
-            width: kDaySquareSize,
+            width: daySquareSize(context),
             height: height,
             child: _bar(context, day, maxValue, chrome),
           ),

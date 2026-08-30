@@ -40,7 +40,9 @@ void main() {
           .color!;
 
   testWidgets('a read-only strip reports the number of successful days once '
-      'in semantics and draws nothing but the squares', (tester) async {
+      'in semantics and draws the squares with their kept ticks', (
+    tester,
+  ) async {
     final handle = tester.ensureSemantics();
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
@@ -54,8 +56,16 @@ void main() {
       findsOneWidget,
     );
     expect(find.byType(DayMarkCell), findsNWidgets(7));
-    expect(find.byType(Icon), findsNothing);
+    // Undated marks carry no weekday letter; the kept days carry the tick.
     expect(find.byType(Text), findsNothing);
+    expect(find.byType(Icon), findsNWidgets(2));
+    expect(
+      find.descendant(
+        of: find.byType(DayMarkCell).first,
+        matching: find.byIcon(dayVerdictGlyph(DayVerdict.met)),
+      ),
+      findsOneWidget,
+    );
     // The last mark is today and it is empty: "not yet", the dashed
     // unresolved outline, never a past day's grey.
     expect(find.byType(DsDashedBorder), findsOneWidget);
@@ -182,15 +192,28 @@ void main() {
       find.bySemanticsLabel(cell(4, 'done · target not met yet')),
       findsOneWidget,
     );
-    // An action says which day it acts on: a weekday initial rides above
-    // every tappable square, inside its slot.
+    // An action says which day it acts on: every square that has no
+    // outcome yet carries its weekday initial inside itself; the kept
+    // days (six and one back) carry the tick instead.
     for (var daysBack = 6; daysBack >= 0; daysBack--) {
-      final letter = DateFormat.EEEEE().format(
-        today.subtract(Duration(days: daysBack)),
+      final day = today.subtract(Duration(days: daysBack));
+      final letter = DateFormat.EEEEE().format(day);
+      final cell = find.byWidgetPredicate(
+        (widget) => widget is DayMarkCell && widget.mark.day == day,
       );
-      expect(find.text(letter), findsWidgets, reason: letter);
+      final kept = daysBack == 6 || daysBack == 1;
+      expect(
+        find.descendant(of: cell, matching: find.text(letter)),
+        kept ? findsNothing : findsOneWidget,
+        reason: letter,
+      );
+      expect(
+        find.descendant(of: cell, matching: find.byType(Icon)),
+        kept ? findsOneWidget : findsNothing,
+        reason: letter,
+      );
     }
-    expect(find.byType(Text), findsNWidgets(7));
+    expect(find.byType(Text), findsNWidgets(5));
     handle.dispose();
   });
 

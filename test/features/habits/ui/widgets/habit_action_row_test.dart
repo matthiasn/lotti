@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -202,6 +203,90 @@ void main() {
       expect(fillAt(2), tokens.colors.background.level03);
       expect(fillAt(3), tokens.colors.background.level03);
       expect(find.byIcon(LottiIcons.streak), findsNothing);
+    });
+
+    testWidgets('a square opens the completion sheet for ITS day, and the '
+        'weekday initials say which day each square is', (tester) async {
+      final handle = tester.ensureSemantics();
+      await pumpRow(tester, history: week(List.filled(7, DayMarkState.none)));
+      // Four days back from the last square, on a strip that ends on a
+      // Tuesday: the sheet must open on that Friday, not on today.
+      final friday = today.subtract(const Duration(days: 4));
+      expect(find.text('F'), findsOneWidget);
+      await tester.tap(
+        find.bySemanticsLabel(RegExp('Fri, Aug 7')),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      final sheet = tester.widget<HabitCompletionSheet>(
+        find.byType(HabitCompletionSheet),
+      );
+      expect(sheet.habitId, habitFlossing.id);
+      expect(sheet.dateString, '2026-08-07');
+      expect(DateTime.parse(sheet.dateString!), friday);
+      handle.dispose();
+    });
+
+    testWidgets('a square for a day after today opens nothing', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await withClock(Clock.fixed(today), () async {
+        await pumpRow(
+          tester,
+          history: [
+            DayMark(day: today, state: DayMarkState.none, isToday: true),
+            DayMark(
+              day: today.add(const Duration(days: 1)),
+              state: DayMarkState.none,
+            ),
+          ],
+        );
+        await tester.tap(find.bySemanticsLabel(RegExp('Wed, Aug 12')));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.byType(HabitCompletionSheet), findsNothing);
+        await tester.tap(find.bySemanticsLabel(RegExp('Tue, Aug 11')));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(
+          tester
+              .widget<HabitCompletionSheet>(find.byType(HabitCompletionSheet))
+              .dateString,
+          '2026-08-11',
+        );
+      });
+      handle.dispose();
+    });
+
+    testWidgets('the strip shows a week on a phone and two on a desktop '
+        'window', (tester) async {
+      late int phoneDays;
+      late int desktopDays;
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Builder(
+            builder: (context) {
+              phoneDays = habitHistoryDays(context);
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Builder(
+            builder: (context) {
+              desktopDays = habitHistoryDays(context);
+              return const SizedBox.shrink();
+            },
+          ),
+          mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
+        ),
+      );
+      expect(phoneDays, 7);
+      expect(desktopDays, kHabitHistoryDaysDesktop);
+      expect(kHabitHistoryDaysDesktop, 14);
     });
 
     testWidgets('no history and no streak draws no strip', (tester) async {

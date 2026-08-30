@@ -524,7 +524,8 @@ HabitsState _habitsState() {
       days[3]: {_recalibrateFishFeeder.id},
     },
     failedByDay: {
-      days[8]: {_reviewSardineInventory.id},
+      days[9]: {_reviewSardineInventory.id},
+      days[10]: {_recalibrateFishFeeder.id},
     },
     allByDay: {for (final day in days) day: allIds},
     shortStreakCount: 2,

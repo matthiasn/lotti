@@ -8,7 +8,7 @@ import 'package:lotti/widgets/misc/linked_scroll_group.dart';
 
 /// The geometry one day track draws on: the column pitch, whether the weekday
 /// captions still fit at full length, and how tall a caption row has to be.
-/// The square inside each column is always [kDaySquareSize].
+/// The square inside each column is always [daySquareSize] for the window.
 ///
 /// The caption height rides along so a caption track does not re-measure
 /// the same seven strings the pitch was already derived from.
@@ -58,13 +58,14 @@ typedef DayTrackMetrics = ({
 /// scroll. A reader cannot follow a day across the page unless the columns
 /// line up.
 ///
-/// The square never changes size — the handover draws one square — so a span
-/// that does not fit its width scrolls (see [fitOrScrollDayTrack]) rather
-/// than shrinking. At raised text scales the pitch widens to hold the weekday
+/// The square never sizes to its content — the handover draws one square,
+/// one size up on a desktop window (see [daySquareSize]) — so a span that
+/// does not fit its width scrolls (see [fitOrScrollDayTrack]) rather than
+/// shrinking. At raised text scales the pitch widens to hold the weekday
 /// caption, which is what keeps the axis readable rather than merely aligned.
 DayTrackMetrics dayTrackMetrics(BuildContext context) {
   final tokens = context.designTokens;
-  final defaultPitch = kDaySquareSize + tokens.spacing.step2;
+  final defaultPitch = daySquareSize(context) + tokens.spacing.step2;
   final label = _weekdayLabelMetrics(context);
   final labelWidth = label.width;
   final expandedPitch = labelWidth + tokens.spacing.step2;

@@ -30,8 +30,8 @@ void main() {
   BoxDecoration decoration(WidgetTester tester) =>
       square(tester).decoration! as BoxDecoration;
 
-  testWidgets('the square is the handover square: one size, the xs radius, '
-      'nothing inside it', (tester) async {
+  testWidgets('an undated square is one size at the xs radius, with a glyph '
+      'inside it only for a kept or missed day', (tester) async {
     for (final state in DayMarkState.values) {
       await pump(tester, DayMarkCell(mark: DayMark(state: state)));
       final tokens = tester.element(find.byType(DayMarkCell)).designTokens;
@@ -46,11 +46,62 @@ void main() {
         reason: '$state',
       );
       expect(decoration(tester).border, isNull, reason: '$state');
-      expect(square(tester).child, isNull, reason: '$state');
-      expect(find.byType(Icon), findsNothing, reason: '$state');
+      if (state == DayMarkState.missed) {
+        // A recorded miss and an empty day share the grey; the cross is
+        // what tells them apart. The reflections history's own glyph, in
+        // the quiet ink, inset one step so it sits inside the square.
+        final icon = tester.widget<Icon>(find.byType(Icon));
+        expect(icon.icon, dayVerdictGlyph(DayVerdict.missed));
+        expect(icon.color, tokens.colors.text.mediumEmphasis);
+        expect(icon.size, kDaySquareSize - tokens.spacing.step1);
+      } else if (state == DayMarkState.full) {
+        expect(
+          tester.widget<Icon>(find.byType(Icon)).icon,
+          dayVerdictGlyph(DayVerdict.met),
+        );
+      } else {
+        expect(square(tester).child, isNull, reason: '$state');
+        expect(find.byType(Icon), findsNothing, reason: '$state');
+      }
       expect(find.byType(Text), findsNothing, reason: '$state');
       expect(find.byType(DsDashedBorder), findsNothing, reason: '$state');
     }
+  });
+
+  testWidgets('a verdict paints over a measured miss with its own glyph', (
+    tester,
+  ) async {
+    await pump(
+      tester,
+      const DayMarkCell(
+        mark: DayMark(state: DayMarkState.missed, verdict: DayVerdict.met),
+      ),
+    );
+    expect(
+      tester.widget<Icon>(find.byType(Icon)).icon,
+      dayVerdictGlyph(DayVerdict.met),
+    );
+  });
+
+  testWidgets('on a desktop window the square and the placeholder are one '
+      'icon size up', (tester) async {
+    for (final cell in [
+      const DayMarkCell(mark: DayMark(state: DayMarkState.full)),
+      const PlaceholderDayCell(),
+    ]) {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Align(alignment: Alignment.topLeft, child: cell),
+          mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
+        ),
+      );
+      expect(
+        tester.getSize(find.byWidget(cell)),
+        const Size.square(kDaySquareSizeDesktop),
+        reason: '$cell',
+      );
+    }
+    expect(kDaySquareSizeDesktop, greaterThan(kDaySquareSize));
   });
 
   testWidgets('the measured state decides the fill', (tester) async {
@@ -159,38 +210,101 @@ void main() {
     handle.dispose();
   });
 
-  testWidgets('a caption rides above a tappable square, inside the slot, and '
-      'is ignored on a read-only cell', (tester) async {
+  testWidgets('an unresolved dated square carries its weekday initial '
+      'inside itself, quiet on the neutral fill and a step louder on the '
+      'partial wash; an undated one carries nothing', (tester) async {
+    final monday = DateTime.utc(2026, 8, 10);
+    for (final state in [
+      DayMarkState.none,
+      DayMarkState.skipped,
+      DayMarkState.partial,
+    ]) {
+      await pump(
+        tester,
+        DayMarkCell(
+          mark: DayMark(state: state, day: monday),
+        ),
+      );
+      final tokens = tester.element(find.byType(DayMarkCell)).designTokens;
+      final letter = find.descendant(
+        of: find.byType(Container),
+        matching: find.text('M'),
+      );
+      expect(letter, findsOneWidget, reason: '$state');
+      expect(find.byType(Icon), findsNothing, reason: '$state');
+      expect(
+        tester.widget<Text>(letter).style?.color,
+        state == DayMarkState.partial
+            ? tokens.colors.text.mediumEmphasis
+            : tokens.colors.text.lowEmphasis,
+        reason: '$state',
+      );
+      expect(
+        tester.getCenter(letter),
+        tester.getCenter(find.byType(Container)),
+        reason: '$state sits centred in its square',
+      );
+    }
+    await pump(
+      tester,
+      const DayMarkCell(mark: DayMark(state: DayMarkState.none)),
+    );
+    expect(find.byType(Text), findsNothing);
+    expect(find.byType(Icon), findsNothing);
+  });
+
+  testWidgets('a kept day draws the tick and a verdict its own glyph, in the '
+      'on-accent ink, instead of the letter', (tester) async {
+    final monday = DateTime.utc(2026, 8, 10);
     await pump(
       tester,
       DayMarkCell(
-        mark: const DayMark(state: DayMarkState.full),
-        caption: 'M',
-        onTap: () {},
+        mark: DayMark(state: DayMarkState.full, day: monday),
       ),
     );
-    final tokens = tester.element(find.byType(DayMarkCell)).designTokens;
-    expect(find.text('M'), findsOneWidget);
-    expect(
-      tester.widget<Text>(find.text('M')).style?.color,
-      tokens.colors.text.lowEmphasis,
-    );
-    expect(
-      tester.getBottomLeft(find.text('M')).dy,
-      lessThanOrEqualTo(tester.getTopLeft(find.byType(Container)).dy),
-    );
-    expect(
-      tester.getSize(find.byType(DayMarkCell)).height,
-      greaterThanOrEqualTo(TapTargets.minimum),
-    );
+    var tokens = tester.element(find.byType(DayMarkCell)).designTokens;
+    var icon = tester.widget<Icon>(find.byType(Icon));
+    expect(icon.icon, dayVerdictGlyph(DayVerdict.met));
+    expect(icon.color, tokens.colors.text.onInteractiveAlert);
+    expect(find.text('M'), findsNothing);
+    for (final verdict in DayVerdict.values) {
+      await pump(
+        tester,
+        DayMarkCell(
+          mark: DayMark(
+            state: DayMarkState.none,
+            day: monday,
+            verdict: verdict,
+          ),
+        ),
+      );
+      tokens = tester.element(find.byType(DayMarkCell)).designTokens;
+      icon = tester.widget<Icon>(find.byType(Icon));
+      expect(icon.icon, dayVerdictGlyph(verdict), reason: '$verdict');
+      expect(icon.color, tokens.colors.text.onInteractiveAlert);
+      expect(find.text('M'), findsNothing, reason: '$verdict');
+    }
+  });
+
+  testWidgets('a dated open today keeps its letter inside the dashed '
+      'outline', (tester) async {
     await pump(
       tester,
-      const DayMarkCell(
-        mark: DayMark(state: DayMarkState.full),
-        caption: 'M',
+      DayMarkCell(
+        mark: DayMark(
+          state: DayMarkState.none,
+          day: DateTime.utc(2026, 8, 10),
+          isToday: true,
+        ),
       ),
     );
-    expect(find.text('M'), findsNothing);
+    expect(
+      find.descendant(
+        of: find.byType(DsDashedBorder),
+        matching: find.text('M'),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('a read-only dated cell still answers hover with its day and '

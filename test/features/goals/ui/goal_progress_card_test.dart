@@ -582,34 +582,57 @@ void main() {
     );
     // The only outline anywhere is today's open square, once per track.
     expect(find.byType(DsDashedBorder), findsNWidgets(2));
-    // The tappable whole-goal strip names each day above its square and
-    // draws nothing else; the read-only habit track draws the bare squares.
-    expect(
+    // Every square says exactly one thing inside itself — its outcome's
+    // glyph, or its weekday letter while it has none — and nothing above
+    // or around it, on the tappable whole-goal strip and the read-only
+    // habit track alike.
+    for (final cell in tester.widgetList<DayMarkCell>(
       find.descendant(
         of: find.byType(DayMarkStrip),
-        matching: find.byType(Icon),
+        matching: find.byType(DayMarkCell),
       ),
-      findsNothing,
-    );
-    expect(
-      find.descendant(
-        of: find.byType(DayMarkStrip),
-        matching: find.byType(Text),
-      ),
-      findsNWidgets(7),
-    );
+    )) {
+      final self = find.byWidget(cell);
+      final resolved =
+          cell.mark.verdict != null ||
+          cell.mark.state == DayMarkState.full ||
+          cell.mark.state == DayMarkState.missed;
+      expect(
+        find.descendant(of: self, matching: find.byType(Icon)),
+        resolved ? findsOneWidget : findsNothing,
+        reason: '${cell.mark.day}',
+      );
+      expect(
+        find.descendant(of: self, matching: find.byType(Text)),
+        resolved ? findsNothing : findsOneWidget,
+        reason: '${cell.mark.day}',
+      );
+    }
     final habitTrack = find.descendant(
       of: find.byType(GoalProgressCard),
       matching: find.byType(DayTrack),
     );
-    expect(
-      find.descendant(of: habitTrack, matching: find.byType(Icon)),
-      findsNothing,
+    final habitSquares = find.descendant(
+      of: habitTrack,
+      matching: find.byWidgetPredicate(
+        (widget) =>
+            widget.key is ValueKey<String> &&
+            (widget.key! as ValueKey<String>).value.startsWith(
+              'goal-habit-day-visual-',
+            ),
+      ),
     );
-    expect(
-      find.descendant(of: habitTrack, matching: find.byType(Text)),
-      findsNothing,
-    );
+    expect(habitSquares, findsNWidgets(7));
+    for (var index = 0; index < 7; index++) {
+      final square = habitSquares.at(index);
+      final icons = find.descendant(of: square, matching: find.byType(Icon));
+      final letters = find.descendant(of: square, matching: find.byType(Text));
+      expect(
+        icons.evaluate().length + letters.evaluate().length,
+        1,
+        reason: 'square $index says one thing',
+      );
+    }
     final tokens = tester.element(find.byType(GoalProgressCard)).designTokens;
     final visual = tester.widget<Container>(
       find.byKey(ValueKey('goal-habit-day-visual-gym-${dayKey(6)}')),
@@ -2875,8 +2898,8 @@ void main() {
         ),
       );
 
-      // No full-word label row above the squares; a tappable square carries
-      // its weekday initial above it, inside its own slot.
+      // No full-word label row above the squares; an unresolved square
+      // carries its weekday initial inside itself.
       expect(find.text('Wed'), findsNothing);
       final letterFormat = DateFormat.EEEEE('en');
       final tokens = tester.element(find.byType(GoalProgressCard)).designTokens;
@@ -2899,18 +2922,23 @@ void main() {
             TapTargets.minimum,
           ),
         );
-        expect(
-          find.descendant(of: visualCell, matching: find.byType(Text)),
-          findsNothing,
-          reason: '$key draws nothing inside its square',
+        final letter = find.descendant(
+          of: visualCell,
+          matching: find.text(letterFormat.format(date)),
+        );
+        final glyph = find.descendant(
+          of: visualCell,
+          matching: find.byType(Icon),
         );
         expect(
-          find.descendant(
-            of: cell,
-            matching: find.text(letterFormat.format(date)),
-          ),
-          findsOneWidget,
-          reason: '$key names its weekday above the square',
+          letter.evaluate().length + glyph.evaluate().length,
+          1,
+          reason: '$key says its weekday or its outcome, inside the square',
+        );
+        expect(
+          find.descendant(of: cell, matching: find.byType(Text)),
+          letter.evaluate().isEmpty ? findsNothing : findsOneWidget,
+          reason: '$key draws nothing above the square',
         );
         final center = tester.getCenter(cell).dx;
         if (previousCenter != null) {

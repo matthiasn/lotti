@@ -1,17 +1,17 @@
 ---
 type: Architecture
 title: Day indicators — the shared day-mark model and cells
-description: One model (DayMark, DayMarkState, DayVerdict) and one component set (the handover's 11px square at the nearest icon size, the strip, the track geometry) that both goals and habits draw their per-day squares with, so a day looks the same wherever it is judged.
+description: One model (DayMark, DayMarkState, DayVerdict) and one component set (one square per window size with its outcome glyph or weekday letter inside, the strip, the track geometry) that both goals and habits draw their per-day squares with, so a day looks the same wherever it is judged.
 resource: ../../lib/widgets/day_indicators
 tags: [day-indicators, habits, goals, design-system, accessibility]
 status: draft
-generated: { by: claude-code/fable-5, at: 2026-08-29T12:00:00Z }
+generated: { by: claude-code/fable-5, at: 2026-08-30T12:00:00Z }
 stale_after: 2027-02-28
 sources:
   - id: src
     resource: ../../lib/widgets/day_indicators
     title: Day indicators package source
-    last_modified: 2026-08-29
+    last_modified: 2026-08-30
   - id: goal-adapter
     resource: ../../lib/features/goals/ui/goal_day_marks.dart
     title: goalDayMarks — the goal side's adapter
@@ -30,10 +30,12 @@ sources:
 habit's own history strip are **two views of the same day**, and for a while
 they drew it two ways — different fills, different corner radii, one with a
 today ring and one without. The package draws the square the habits design
-handover specifies — an 11px `--interactive` square at radius 3 in a 3px-gap
-row, rendered at `IconSizes.xs`, `radii.xs` and `spacing.step2` — and both
-features consume it. It imports neither `features/goals` nor
-`features/habits`; each feature adapts its own state into the shared model.
+handover specifies — an `--interactive` square at radius 3 in a 3px-gap row,
+rendered at `radii.xs` and `spacing.step2` — one icon size larger than the
+handover's 11px so a weekday letter fits inside it (`IconSizes.s` on a phone,
+`IconSizes.m` on a desktop window; `daySquareSize`), and both features
+consume it. It imports neither `features/goals` nor `features/habits`; each
+feature adapts its own state into the shared model.
 
 # The model
 
@@ -89,24 +91,23 @@ classDiagram
   (`DayMark.pending`) draws as the dashed unresolved outline — the same
   encoding a loading placeholder uses — so an alive streak never ends on the
   grey of a missed day; a kept or judged today is an ordinary square. The
-  tooltip names the date, and a tappable square carries its weekday initial
-  above it inside the hit slot (`DayMarkCell.caption`, `dayCellWithCaption`)
-  because an action has to say which day it acts on.
+  tooltip names the date; the square itself says its weekday
+  (`dayMarkSquareContent`) until it has an outcome to show instead.
 
 # The component set
 
 | Piece | File | Role |
 | --- | --- | --- |
-| Fills, labels, the verdict scheme | `day_mark_styles.dart` | The ONE mapping from state/verdict to token colors. `dayVerdictGlyph` and `dayVerdictSurfaceInk` serve the reflections history and the reflect button, not the squares. |
+| Fills, labels, the verdict scheme | `day_mark_styles.dart` | The ONE mapping from state/verdict to token colors. `dayVerdictGlyph` is drawn inside a judged square and in the reflections history alike; `dayVerdictSurfaceInk` serves the history and the reflect button. |
 | `DayTrack`, `dayTrackMetrics`, `fitOrScrollDayTrack`, `LinkedDayTrackScroller` | `day_track.dart` | Column geometry shared by every day row on a page — one square plus `step2` — and the fit-or-pan policy. |
-| `kDaySquareSize`, `DayMarkCell`, `PlaceholderDayCell` | `day_mark_cell.dart` | One square, nothing inside it. Read-only by default; with `onTap` it becomes a labelled button whose hit slot clears the touch floor while the square keeps its size. |
+| `daySquareSize`, `dayMarkSquareContent`, `DayMarkCell`, `PlaceholderDayCell` | `day_mark_cell.dart` | One square per window size, saying one thing inside itself: the outcome's glyph, or the weekday letter while there is none. Read-only by default; with `onTap` it becomes a labelled button whose hit slot clears the touch floor while the square keeps its size. |
 | `DayMarkStrip` | `day_mark_strip.dart` | A row of squares on the shared track with one semantic summary, and — with `streak` — the handover's flame and count after the last square. |
 
 ```mermaid
 flowchart LR
   GV["GoalProgressView.compactWindow<br/>+ latestRatingsByDay"] --> GA["goalDayMarks()"]
   HR["List&lt;HabitResult&gt;<br/>(dashboard range)"] --> HA["habitCompletionDayMarkState()"]
-  HS["HabitsState.*ByDay<br/>(habits page, last 7 of days)"] --> HM["habitHistoryMarks()"]
+  HS["HabitsState.*ByDay<br/>(habits page, last 7 or 14 of days)"] --> HM["habitHistoryMarks()"]
   GA --> M["List&lt;DayMark&gt;"]
   HA --> M
   HM --> M
@@ -123,10 +124,13 @@ flowchart LR
   the handover's `--interactive` square — a partial day its `muted` wash, and
   everything else `background.level03`. No alert hue on a habit square: a
   struggling habit is never a wall of red.
-- **Nothing is drawn inside or around a square.** No glyph, no ring around
-  a filled square, no dot. The words — weekday and date, outcome, verdict, ages-out — live in
-  the `DsTooltip` and the semantics of every dated square; only a TAPPABLE
-  square adds a one-letter weekday caption above itself.
+- **A square says one thing inside itself, and nothing around it.** A
+  judged day draws its verdict's glyph; a kept day the tick, a recorded miss
+  the cross (which is what tells a miss from the empty day it shares a fill
+  with); any other dated day its one-letter weekday, quiet on the fill. No
+  ring, no dot, no caption row above the track. The full date, the outcome's
+  name and the ages-out fact live in the `DsTooltip` and the semantics of
+  every dated square.
 - **Verdict hues are the goal-assessment layer's.** The whole-goal strip and
   the goal detail's habit rows paint a recorded verdict in its own hue — met
   in the same interactive green a kept day wears, so a card is a baseline
@@ -144,15 +148,19 @@ flowchart LR
 
 - `_ProgressDayCell` in `goal_progress_card.dart` is not a `DayMarkCell`: it
   hosts the outcome menu and the saving spinner. It draws the same
-  `kDaySquareSize` square with the shared styles and the shared state enum,
-  so its squares still match; only its interaction shell is its own. The
-  ages-out fact it used to draw as an outline is a tooltip line now.
-- A tappable track is `TapTargets.minimum` tall with the caption and square
-  centred in it, so the cards drop the `step1` they put above a read-only
-  track — the slot brings its own air.
+  `daySquareSize` square with the shared styles, the shared state enum and
+  `dayMarkSquareContent`, so its squares still match; only its interaction
+  shell is its own. The ages-out fact it used to draw as an outline is a
+  tooltip line now.
+- A tappable track is `TapTargets.minimum` tall with the square centred in
+  it, so the cards drop the `step1` they put above a read-only track — the
+  slot brings its own air.
 - The habits page rows and the dashboard card pass `HabitActionRow.history`
-  (a `List<DayMark>`) plus `currentStreak`; the row renders one
-  `DayMarkStrip(streak:)`. There is no separate streak chain.
+  (a `List<DayMark>`) plus `currentStreak`; the row renders one tappable
+  `DayMarkStrip(streak:)`, and a tap on a square opens the completion sheet
+  for THAT day (`HabitCompletionSheet.show(dateString:)`), never for today.
+  The pages slice `habitHistoryDays(context)` days off the state — seven on
+  a phone, fourteen on a desktop window. There is no separate streak chain.
 - The habit dashboard strip used to drop its oldest days to fit; it now pans
   like every other track. There is no `LinkedScrollGroup` on a dashboard, so
   each card pans alone.
@@ -201,8 +209,8 @@ better tooltip.
 
 Cells never size proportionally to a value or a count, and they never
 shrink or grow: every day track sizes its columns from `dayTrackMetrics` —
-one square, `step2` of air, widened only when scaled text needs the
-weekday caption — and a span that does not fit its width pans. A proportional cell (wider for a longer window, taller
+one square, `step2` of air, widened only when scaled text needs the metric
+bars' weekday axis — and a span that does not fit its width pans. A proportional cell (wider for a longer window, taller
 for a bigger number) was considered in the 2026-08-15 audit and rejected: a
 date has to line up down the page across strips, habit squares and metric
 bars, which one grid guarantees and per-cell sizing cannot. Longer spans are

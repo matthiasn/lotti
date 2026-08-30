@@ -7,8 +7,11 @@ import 'package:lotti/widgets/day_indicators/day_mark.dart';
 /// kept — the handover's `--interactive` square — a wash of it for a partial
 /// success (routine kept, target still building), and the neutral level-03
 /// surface for anything else. A skipped or missed day is not painted in an
-/// alert hue: the strip is a record of what was kept, and the tooltip and
-/// semantics say which of the other three the grey stands for.
+/// alert hue: the strip is a record of what was kept, and a struggling habit
+/// is never a wall of red. A recorded miss is told apart from a day nobody
+/// looked at by the cross drawn inside the grey (`dayMarkSquareContent`),
+/// not by its fill; a skip keeps its weekday letter, and is named by the
+/// tooltip and semantics.
 /// `SurfaceAlphas.muted` is the sanctioned "reduced-strength accent" alpha, so
 /// no new color token is introduced.
 Color dayMarkStateFill(DsTokens tokens, DayMarkState state) => switch (state) {
@@ -72,9 +75,9 @@ Color dayVerdictSurfaceInk(DsTokens tokens, DayVerdict verdict) =>
 ///
 /// The reflections history and the reflect button name a verdict by shape as
 /// well as hue: a tick for met, a rising arrow for improving, a half-filled
-/// circle for mixed, a cross for missed. The day squares themselves carry no
-/// glyph — at 12px there is no room for one — and say the verdict in their
-/// tooltip and semantics instead.
+/// circle for mixed, a cross for missed. A day square draws the same glyph
+/// inside its verdict fill (`dayMarkSquareContent`), and the tick and the
+/// cross double as the marks of a measured kept and missed day.
 IconData dayVerdictGlyph(DayVerdict verdict) => switch (verdict) {
   DayVerdict.met => LottiIcons.confirm,
   DayVerdict.improving => LottiIcons.trendingUp,
