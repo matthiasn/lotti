@@ -1,7 +1,6 @@
 ---
 name: release
 description: Cut a Lotti release — assemble the changelog.d/ fragments into CHANGELOG.md and the Flathub metainfo, bump the version, open the release PR, then tag. Use when asked to cut or prepare a release, assemble the changelog, publish a new version, or work out what is unreleased.
-argument-hint: "[optional: version, e.g. 1.0.14]"
 ---
 
 # Cut a release
@@ -56,24 +55,29 @@ fragment may supersede an earlier one.
 grep -m1 '^version:' pubspec.yaml     # e.g. version: 1.0.13+4352
 ```
 
-- **Patch** (`1.0.13` → `1.0.14`) for fixes and ordinary improvements. This is
-  the usual one.
-- **Minor** (`1.0.13` → `1.1.0`) when the release leads with a genuinely new
-  capability.
-- **Build number**: previous + 1. It only has to be unique and increasing per
-  tag — every release lane triggers on tag push, not on merges to `main` — so it
-  moves once per release, not once per pull request.
+- **Bug fixes alone:** keep the semantic version unchanged and increment only
+  the build number (`1.0.21+4362` → `1.0.21+4363`). A fix-only release appends
+  its notes to the current top changelog section and metainfo release block; it
+  must not create a duplicate `## [1.0.21]` heading or `<release
+  version="1.0.21">` block.
+- **User-facing additions or changes:** increment the minor version, reset the
+  patch component to zero, and increment the build number (`1.0.21+4362` →
+  `1.1.0+4363`). Any publishable `Added`, `Changed`, `Deprecated`, or `Removed`
+  entry makes this a user-facing release. Do not use patch-version bumps.
+- **Build number:** always previous + 1. It only has to be unique and increasing
+  per tag — every release lane triggers on tag push, not on merges to `main` —
+  so it moves once per release, not once per pull request.
 
 If the user named a version, use it. Otherwise propose one from what the
 fragments contain and confirm it.
 
 ## 3. Assemble the CHANGELOG section
 
-Insert one new section at the top of `CHANGELOG.md`, directly under the
-Keep a Changelog preamble and above the previous version:
+For a user-facing release, insert one new section at the top of `CHANGELOG.md`,
+directly under the Keep a Changelog preamble and above the previous version:
 
 ```markdown
-## [1.0.14]
+## [1.1.0]
 ### Added
 - **...**
 
@@ -93,13 +97,19 @@ Keep a Changelog preamble and above the previous version:
   duplication, house voice, or an entry that reads oddly next to its neighbours.
 - Wrap at about 78 columns, continuation lines indented two spaces.
 
+For a fix-only build release, add the new bullets to the current top semantic
+version instead. Reuse its existing `### Fixed` heading, or create that heading
+in the normal section order if it does not have one. Never create a second
+version section or a second `### Fixed` heading.
+
 ## 4. Write the Flathub release block
 
-Add one `<release>` to `flatpak/com.matthiasn.lotti.metainfo.xml`, as the
-**first** child of `<releases>` — newest first:
+For a user-facing release, add one `<release>` to
+`flatpak/com.matthiasn.lotti.metainfo.xml`, as the **first** child of
+`<releases>` — newest first:
 
 ```xml
-<release version="1.0.14" date="2026-08-25">
+<release version="1.1.0" date="2026-08-25">
   <description>
     <p>Fixed: ...</p>
   </description>
@@ -108,6 +118,11 @@ Add one `<release>` to `flatpak/com.matthiasn.lotti.metainfo.xml`, as the
 
 This is the same prose, mechanically transformed. AppStream renders `<p>` as
 plain text: markdown does not survive it, and an unescaped `&` breaks the build.
+
+For a fix-only build release, append the new `Fixed:` paragraphs to the
+description of the existing first `<release>` block and update that block's
+date to the day the build is cut. Do not create a duplicate release block for
+the unchanged semantic version.
 
 | In `CHANGELOG.md` | In the metainfo |
 |---|---|
@@ -139,7 +154,7 @@ The `date` is the day the release is cut, `YYYY-MM-DD`.
 One line in `pubspec.yaml`:
 
 ```yaml
-version: 1.0.14+4353
+version: 1.1.0+4363
 ```
 
 ## 6. Delete the fragments you consumed
@@ -169,18 +184,30 @@ than it is written.
 
 ## 8. Open the release pull request
 
+Use the semantic version in the title for a user-facing release:
+
 ```
-chore(release): 1.0.14
+chore(release): 1.1.0
 ```
 
-Body: the assembled `## [1.0.14]` section, so review reads the notes rather than
-the diff. No screenshots — nothing visual changed.
+Use the full version and build for a fix-only release so it is distinguishable
+from the release that first introduced that semantic version:
+
+```
+chore(release): 1.0.21+4363
+```
+
+Body: the entries assembled for this release, grouped under their release
+headings, so review reads the new notes rather than the diff. For a fix-only
+release, label the body with the full version and build even though the
+changelog heading remains the unchanged semantic version. No screenshots —
+nothing visual changed.
 
 ## 9. Tag, after it merges
 
 ```bash
 git checkout main && git pull
-make tag_push        # tags 1.0.14+4353 from pubspec.yaml and pushes it
+make tag_push        # tags 1.1.0+4363 from pubspec.yaml and pushes it
 ```
 
 `make tag_push` reads the version with `yq`; install it (`brew install yq`) or tag
