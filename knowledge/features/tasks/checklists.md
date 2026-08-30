@@ -59,12 +59,17 @@ before/after title and the item's category, and the rename surfaces an undo
 affordance. **That before→after pair becomes category-scoped AI guidance** — the
 the checklist feature owns the capture and undo logic.
 
-The pending correction is task-wide UI state, so its toast has exactly one
-listener at the task-details boundary: `CorrectionCaptureToastListener` sits
-immediately below `TaskDetailsPage`'s nested `ScaffoldMessenger`. Individual
-`ChecklistCardWrapper`s never listen for it. This keeps the undo toast inside
-the detail pane on desktop, above the sticky action bar on every platform, and
-prevents one provider update from being dispatched once per checklist card.
+The pending correction is shared UI state, but each editable details surface
+owns exactly one `CorrectionCaptureToastListener`. Task details mounts it
+immediately below its nested `ScaffoldMessenger`; the standalone journal entry
+details page mounts one around its scaffold so checklist edits there retain the
+undo affordance. Individual `ChecklistCardWrapper`s never listen for it.
+
+The app shell keeps inactive tabs mounted with `TickerMode` disabled, so each
+page listener ignores correction updates while its tab is offstage. This keeps
+the active task undo toast inside the detail pane on desktop, above the sticky
+action bar on every platform, without letting an offstage journal page dispatch
+the same provider update through the app-wide messenger.
 
 # The sorting state machine
 

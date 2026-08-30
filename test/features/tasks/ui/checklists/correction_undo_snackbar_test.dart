@@ -290,6 +290,41 @@ void main() {
       expect(find.byType(CorrectionUndoSnackbarContent), findsNothing);
     });
 
+    testWidgets('ignores corrections while its tab is inactive', (
+      tester,
+    ) async {
+      final notifier = _FakeCorrectionCaptureNotifier();
+
+      await tester.pumpWidget(
+        WidgetTestBench(
+          overrides: [
+            correctionCaptureProvider.overrideWith(() => notifier),
+          ],
+          child: const TickerMode(
+            enabled: false,
+            child: ScaffoldMessenger(
+              child: Scaffold(
+                body: CorrectionCaptureToastListener(
+                  child: SizedBox.shrink(),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      notifier.emit(
+        PendingCorrection(
+          before: 'Buy bred',
+          after: 'Buy bread',
+          createdAt: expiredDate,
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(CorrectionUndoSnackbarContent), findsNothing);
+    });
+
     testWidgets('does not suppress an independent global toast', (
       tester,
     ) async {

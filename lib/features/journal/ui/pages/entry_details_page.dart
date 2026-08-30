@@ -21,6 +21,7 @@ import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
 import 'package:lotti/features/tasks/state/task_app_bar_controller.dart';
+import 'package:lotti/features/tasks/ui/checklists/correction_undo_snackbar.dart';
 import 'package:lotti/features/tasks/ui/checklists/linked_from_checklist_widget.dart';
 import 'package:lotti/features/tasks/ui/checklists/linked_from_task_widget.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -166,6 +167,9 @@ class _EntryDetailsPageState extends ConsumerState<EntryDetailsPage>
           ),
           body: Stack(
             children: [
+              const CorrectionCaptureToastListener(
+                child: SizedBox.shrink(),
+              ),
               CustomScrollView(
                 scrollCacheExtent: const ScrollCacheExtent.pixels(4000),
                 controller: _scrollController,

@@ -6,12 +6,15 @@ import 'package:lotti/features/checklist/services/correction_capture_service.dar
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
-/// Owns the single correction-capture toast listener for a task details page.
+/// Owns one correction-capture toast listener for an editable details page.
 ///
-/// This belongs immediately below that page's scoped [ScaffoldMessenger].
-/// Keeping the listener at the page boundary prevents one global correction
-/// event from being handled once per checklist card while still resolving the
-/// toast to the task-local messenger rather than the app-wide messenger.
+/// Keep this at the page boundary instead of individual checklist cards so a
+/// global correction event is handled once per visible details surface. The
+/// app shell leaves inactive tabs mounted with [TickerMode] disabled, so those
+/// background surfaces must ignore the event. An active task details page
+/// resolves the toast to its nested [ScaffoldMessenger], while an active
+/// journal details page keeps the same undo affordance through the app-level
+/// messenger.
 class CorrectionCaptureToastListener extends ConsumerWidget {
   const CorrectionCaptureToastListener({
     required this.child,
@@ -22,10 +25,12 @@ class CorrectionCaptureToastListener extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isActiveSurface = TickerMode.valuesOf(context).enabled;
+
     ref.listen<PendingCorrection?>(
       correctionCaptureProvider,
       (previous, next) {
-        if (next == null || previous == next) return;
+        if (!isActiveSurface || next == null || previous == next) return;
 
         final captureNotifier = ref.read(correctionCaptureProvider.notifier);
         final messenger = ScaffoldMessenger.of(context)..hideCurrentSnackBar();
