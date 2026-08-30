@@ -34,6 +34,7 @@ EventTimelineEntry? eventTimelineEntryFor(
   required String timeLabel,
   required String Function(DateTime) formatTime,
   required ImageProvider Function(JournalImage image) imageProviderFor,
+  String Function(JournalImage image)? imagePathFor,
   Widget Function(JournalAudio audio)? audioPlayerFor,
 }) {
   return switch (entity) {
@@ -42,7 +43,14 @@ EventTimelineEntry? eventTimelineEntryFor(
       kind: EventTimelineKind.photo,
       entryId: image.meta.id,
       text: _trimmedNote(image),
-      photos: [EventPhoto(imageProviderFor(image))],
+      photos: [
+        EventPhoto(
+          imageProviderFor(image),
+          filePath: imagePathFor?.call(image),
+          capturedAt: image.data.capturedAt,
+          fileDate: image.meta.dateFrom,
+        ),
+      ],
     ),
     final JournalAudio audio => EventTimelineEntry(
       timeLabel: timeLabel,
@@ -119,6 +127,7 @@ EventDetailData eventDetailDataFromEntities({
   required String fallbackTitle,
   required String Function(DateTime) formatTime,
   required ImageProvider Function(JournalImage image) imageProviderFor,
+  String Function(JournalImage image)? imagePathFor,
   Widget Function(JournalAudio audio)? audioPlayerFor,
   String? categoryName,
 }) {
@@ -160,6 +169,7 @@ EventDetailData eventDetailDataFromEntities({
       timeLabel: formatTime(entity.meta.dateFrom.toLocal()),
       formatTime: formatTime,
       imageProviderFor: imageProviderFor,
+      imagePathFor: imagePathFor,
       audioPlayerFor: audioPlayerFor,
     );
     if (timelineEntry != null) timeline.add(timelineEntry);
@@ -178,7 +188,12 @@ EventDetailData eventDetailDataFromEntities({
   // All linked photos, oldest first, for the gallery grid.
   final photos = [
     for (final image in sorted.whereType<JournalImage>())
-      EventPhoto(imageProviderFor(image)),
+      EventPhoto(
+        imageProviderFor(image),
+        filePath: imagePathFor?.call(image),
+        capturedAt: image.data.capturedAt,
+        fileDate: image.meta.dateFrom,
+      ),
   ];
 
   final note = event.entryText?.plainText.trim();

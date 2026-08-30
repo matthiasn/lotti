@@ -95,10 +95,27 @@ enum EventTimelineKind { photo, note, audio, timeRecording }
 
 @immutable
 class EventPhoto {
-  const EventPhoto(this.image, {this.cropX = 0.5});
+  const EventPhoto(
+    this.image, {
+    this.cropX = 0.5,
+    this.filePath,
+    this.capturedAt,
+    this.fileDate,
+  });
 
   final ImageProvider image;
   final double cropX;
+
+  /// Original file used by the full-screen viewer's download action.
+  final String? filePath;
+
+  /// Embedded capture timestamp when the source photo supplied one.
+  final DateTime? capturedAt;
+
+  /// Journal/file timestamp used when capture metadata is unavailable.
+  final DateTime? fileDate;
+
+  DateTime? get displayDate => capturedAt ?? fileDate;
 }
 
 /// One item on an event's vertical timeline of linked entries.

@@ -58,7 +58,8 @@ class EventsOverviewController extends AsyncNotifier<EventsOverviewState> {
   @override
   Future<EventsOverviewState> build() async {
     final sub = getIt<UpdateNotifications>().updateStream.listen((affected) {
-      if (affected.contains(eventNotification)) {
+      if (affected.contains(eventNotification) ||
+          affected.contains(linkNotification)) {
         unawaited(_refresh());
       }
     });

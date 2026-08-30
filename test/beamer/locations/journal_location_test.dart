@@ -102,6 +102,29 @@ void main() {
         expect(detailsPage.showBackButton, isTrue);
       });
 
+      test('passes a valid linked-from event id into the entry page', () {
+        final entryId = const Uuid().v4();
+        final eventId = const Uuid().v4();
+        final pages = buildPagesFor(
+          Uri.parse('/journal/$entryId?linkedFromId=$eventId'),
+          {'entryId': entryId},
+        );
+
+        final detailsPage = pages[1].child as EntryDetailsPage;
+        expect(detailsPage.linkedFromId, eventId);
+      });
+
+      test('drops an invalid linked-from id', () {
+        final entryId = const Uuid().v4();
+        final pages = buildPagesFor(
+          Uri.parse('/journal/$entryId?linkedFromId=not-an-id'),
+          {'entryId': entryId},
+        );
+
+        final detailsPage = pages[1].child as EntryDetailsPage;
+        expect(detailsPage.linkedFromId, isNull);
+      });
+
       test('does not write the desktop selection notifier', () async {
         final entryId = const Uuid().v4();
         buildPagesFor(Uri.parse('/journal/$entryId'), {'entryId': entryId});

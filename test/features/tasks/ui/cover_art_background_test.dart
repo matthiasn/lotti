@@ -403,8 +403,9 @@ void main() {
         );
         expect(viewer.file.path, getFullImagePath(image));
         expect(viewer.heroTag, 'task_cover_art_image-1');
+        expect(viewer.date, image.data.capturedAt);
         final photoView = tester.widget<PhotoView>(find.byType(PhotoView));
-        expect(photoView.enableRotation, isTrue);
+        expect(photoView.enableRotation, isFalse);
         expect(find.byIcon(LottiIcons.close), findsOneWidget);
       });
     });

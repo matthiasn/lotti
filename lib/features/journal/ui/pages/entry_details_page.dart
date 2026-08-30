@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
 import 'package:lotti/features/ai/state/consts.dart';
@@ -11,6 +12,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/journal_focus_controller.dart';
+import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/mixins/highlight_scroll_mixin.dart';
 import 'package:lotti/features/journal/ui/widgets/create/create_entry_action_button.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_detail_linked_from.dart';
@@ -46,10 +48,16 @@ class EntryDetailsPage extends ConsumerStatefulWidget {
   const EntryDetailsPage({
     required this.itemId,
     this.showBackButton = true,
+    this.linkedFromId,
     super.key,
   });
 
   final String itemId;
+
+  /// Optional source whose outgoing link opened this standalone detail page.
+  /// Keeping it lets the entry overflow menu detach that link without deleting
+  /// the entry itself.
+  final String? linkedFromId;
 
   /// Whether the app bar renders a back affordance.
   ///
@@ -123,6 +131,28 @@ class _EntryDetailsPageState extends ConsumerState<EntryDetailsPage>
     final asyncItem = ref.watch(provider);
     final item = asyncItem.value?.entry;
     final tokens = context.designTokens;
+
+    JournalEntity? linkedFrom;
+    EntryLink? sourceLink;
+    final linkedFromId = widget.linkedFromId;
+    if (linkedFromId != null) {
+      final candidate = ref
+          .watch(entryControllerProvider(linkedFromId))
+          .value
+          ?.entry;
+      final links = ref
+          .watch(linkedEntriesControllerProvider(linkedFromId))
+          .value;
+      if (candidate != null && links != null) {
+        for (final link in links) {
+          if (link.toId == widget.itemId) {
+            linkedFrom = candidate;
+            sourceLink = link;
+            break;
+          }
+        }
+      }
+    }
 
     // Only attempt to scroll after entry data is loaded
     if (asyncItem.hasValue && item != null) {
@@ -202,6 +232,8 @@ class _EntryDetailsPageState extends ConsumerState<EntryDetailsPage>
                                     itemId: widget.itemId,
                                     showTaskDetails: true,
                                     showAiEntry: true,
+                                    linkedFrom: linkedFrom,
+                                    link: sourceLink,
                                   ),
                                   // Linked rows carry only the tight step2
                                   // embedded card inset; pad the sections up

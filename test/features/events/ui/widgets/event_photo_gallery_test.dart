@@ -1,16 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/events/ui/model/event_view_data.dart';
 import 'package:lotti/features/events/ui/widgets/event_photo_gallery.dart';
+import 'package:lotti/features/journal/util/image_export_service.dart';
 import 'package:lotti/utils/platform.dart' as platform;
+import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 
 import '../../../../widget_test_utils.dart';
 import '../../test_utils.dart';
 
 List<EventPhoto> _photos(int n) => [
-  for (var i = 0; i < n; i++) EventPhoto(testImage()),
+  for (var i = 0; i < n; i++)
+    EventPhoto(
+      testImage(),
+      filePath: '/tmp/event-photo-$i.png',
+      capturedAt: DateTime(2026, 1, i + 1),
+    ),
 ];
 
 void main() {
@@ -53,7 +61,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 400));
       expect(find.byType(EventPhotoGalleryViewer), findsOneWidget);
 
-      await tester.tap(find.byType(IconButton));
+      await tester.tap(find.byTooltip('Close'));
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
       expect(find.byType(EventPhotoGalleryViewer), findsNothing);
@@ -61,7 +69,7 @@ void main() {
   });
 
   group('EventPhotoGalleryViewer', () {
-    testWidgets('shows a page indicator and close button for many photos', (
+    testWidgets('shows counter, current date, download, and close controls', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -72,15 +80,110 @@ void main() {
       await tester.pump();
 
       expect(find.text('1 / 5'), findsOneWidget);
-      expect(find.byType(IconButton), findsOneWidget);
+      expect(find.text('Jan 1, 2026'), findsOneWidget);
+      expect(find.byTooltip('Download image'), findsOneWidget);
+      expect(find.byTooltip('Close'), findsOneWidget);
 
       final gallery = tester.widget<PhotoViewGallery>(
         find.byType(PhotoViewGallery),
       );
+      expect(gallery.enableRotation, isFalse);
       gallery.onPageChanged!(3);
       await tester.pump();
 
       expect(find.text('4 / 5'), findsOneWidget);
+      expect(find.text('Jan 4, 2026'), findsOneWidget);
+    });
+
+    testWidgets('download exports the currently visible photo', (tester) async {
+      final exported = <String>[];
+      await tester.pumpWidget(
+        makeTestableWidget2(
+          EventPhotoGalleryViewer(
+            photos: _photos(3),
+            imageExporter: (file) async {
+              exported.add(file.path);
+              return const ImageExportResult.cancelled();
+            },
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final gallery = tester.widget<PhotoViewGallery>(
+        find.byType(PhotoViewGallery),
+      );
+      gallery.onPageChanged!(1);
+      await tester.pump();
+      await tester.tap(find.byTooltip('Download image'));
+      await tester.pump();
+
+      expect(exported, ['/tmp/event-photo-1.png']);
+    });
+
+    testWidgets('single taps hide and restore every overlay control', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidget2(
+          EventPhotoGalleryViewer(photos: _photos(3)),
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.byType(PhotoView));
+      await tester.pump(const Duration(milliseconds: 350));
+
+      expect(find.text('1 / 3'), findsNothing);
+      expect(find.text('Jan 1, 2026'), findsNothing);
+      expect(find.byTooltip('Download image'), findsNothing);
+      expect(find.byTooltip('Close'), findsNothing);
+
+      await tester.tap(find.byType(PhotoView));
+      await tester.pump(const Duration(milliseconds: 350));
+
+      expect(find.text('1 / 3'), findsOneWidget);
+      expect(find.text('Jan 1, 2026'), findsOneWidget);
+      expect(find.byTooltip('Download image'), findsOneWidget);
+      expect(find.byTooltip('Close'), findsOneWidget);
+    });
+
+    testWidgets('double tap zoom leaves overlays visible', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget2(
+          EventPhotoGalleryViewer(photos: _photos(2)),
+        ),
+      );
+      await tester.pump();
+
+      final photo = find.byType(PhotoView);
+      await tester.tap(photo);
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.tap(photo);
+      await tester.pump(const Duration(milliseconds: 350));
+
+      expect(find.byTooltip('Close'), findsOneWidget);
+      expect(find.text('1 / 2'), findsOneWidget);
+    });
+
+    testWidgets('uses the file date when capture metadata is unavailable', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidget2(
+          EventPhotoGalleryViewer(
+            photos: [
+              EventPhoto(
+                testImage(),
+                fileDate: DateTime(2025, 12, 24),
+              ),
+            ],
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Dec 24, 2025'), findsOneWidget);
     });
 
     testWidgets('hides the page indicator for a single photo', (tester) async {
@@ -112,7 +215,8 @@ void main() {
         ),
       );
       await tester.pump();
-      final rightWithoutInset = tester.getTopRight(find.byType(IconButton)).dx;
+      final closeButton = find.widgetWithIcon(IconButton, LottiIcons.close);
+      final rightWithoutInset = tester.getTopRight(closeButton).dx;
 
       await tester.pumpWidget(
         makeTestableWidget2(
@@ -121,7 +225,7 @@ void main() {
         ),
       );
       await tester.pump();
-      final rightWithInset = tester.getTopRight(find.byType(IconButton)).dx;
+      final rightWithInset = tester.getTopRight(closeButton).dx;
 
       expect(rightWithInset, rightWithoutInset - rightInset);
     });

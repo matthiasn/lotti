@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
@@ -50,7 +52,11 @@ class EntryImageWidget extends ConsumerWidget {
     return GestureDetector(
       onTap: () {
         focusNode.unfocus();
-        showFullscreenImageViewer(context, file: file);
+        showFullscreenImageViewer(
+          context,
+          file: file,
+          date: journalImage.data.capturedAt,
+        );
       },
       child: ColoredBox(
         color: Colors.black,
@@ -89,6 +95,8 @@ void showFullscreenImageViewer(
   required File file,
   Object heroTag = 'entry_img',
   List<File>? gallery,
+  DateTime? date,
+  List<DateTime?>? galleryDates,
   int initialIndex = 0,
 }) {
   Navigator.of(context, rootNavigator: true).push(
@@ -102,6 +110,8 @@ void showFullscreenImageViewer(
             file: file,
             heroTag: heroTag,
             gallery: gallery,
+            date: date,
+            galleryDates: galleryDates,
             initialIndex: initialIndex,
           ),
     ),
@@ -117,6 +127,8 @@ class HeroPhotoViewRouteWrapper extends StatefulWidget {
     this.heroTag = 'entry_img',
     this.imageExporter,
     this.gallery,
+    this.date,
+    this.galleryDates,
     this.initialIndex = 0,
   });
 
@@ -132,6 +144,13 @@ class HeroPhotoViewRouteWrapper extends StatefulWidget {
   /// viewer should allow moving between them. Null (or a single entry) keeps
   /// the single-image behavior. [file] is expected to sit at [initialIndex].
   final List<File>? gallery;
+
+  /// Capture date for [file], falling back to the journal/file date at the
+  /// call site when embedded metadata is unavailable.
+  final DateTime? date;
+
+  /// Dates corresponding to [gallery], in the same display order.
+  final List<DateTime?>? galleryDates;
 
   /// Index of the initially shown image within [gallery]. Only the initial
   /// image participates in the Hero transition — after navigating away, a pop
@@ -150,13 +169,10 @@ class _HeroPhotoViewRouteWrapperState extends State<HeroPhotoViewRouteWrapper> {
   late final PhotoViewController _photoController;
   late final PhotoViewScaleStateController _scaleStateController;
   late final StreamSubscription<PhotoViewControllerValue> _photoSubscription;
-  late final ImageExporter _exporter =
-      widget.imageExporter ?? defaultImageExporter();
-
   double _scale = 1;
   double? _minimumScale;
   Size? _lastSize;
-  bool _isDownloading = false;
+  bool _overlaysVisible = true;
 
   late final List<File> _files =
       (widget.gallery == null || widget.gallery!.isEmpty)
@@ -173,6 +189,14 @@ class _HeroPhotoViewRouteWrapperState extends State<HeroPhotoViewRouteWrapper> {
   bool get _canGoNext => _index < _files.length - 1;
 
   File get _currentFile => _files[_index];
+
+  DateTime? get _currentDate {
+    final galleryDates = widget.galleryDates;
+    if (galleryDates != null && _index < galleryDates.length) {
+      return galleryDates[_index];
+    }
+    return _index == _initialIndex ? widget.date : null;
+  }
 
   void _goToPrevious() => _goTo(_index - 1);
 
@@ -226,6 +250,10 @@ class _HeroPhotoViewRouteWrapperState extends State<HeroPhotoViewRouteWrapper> {
 
   void _close() => Navigator.of(context, rootNavigator: true).pop();
 
+  void _toggleOverlays() {
+    setState(() => _overlaysVisible = !_overlaysVisible);
+  }
+
   void _zoomIn() {
     _setZoom(_scale * _zoomFactor);
   }
@@ -251,54 +279,6 @@ class _HeroPhotoViewRouteWrapperState extends State<HeroPhotoViewRouteWrapper> {
       position: Offset.zero,
       scale: nextScale,
     );
-  }
-
-  Future<void> _downloadImage() async {
-    if (_isDownloading) {
-      return;
-    }
-
-    setState(() => _isDownloading = true);
-    try {
-      final result = await _exporter(_currentFile);
-      if (!mounted) {
-        return;
-      }
-      switch (result.status) {
-        case ImageExportStatus.savedToFile:
-          _showSnackBar(
-            context.messages.imageViewerDownloadSaved(result.savedName ?? ''),
-          );
-        case ImageExportStatus.savedToGallery:
-          _showSnackBar(context.messages.imageViewerDownloadSavedToGallery);
-        case ImageExportStatus.permissionDenied:
-          _showSnackBar(context.messages.imageViewerDownloadPermissionDenied);
-        case ImageExportStatus.cancelled:
-          // User dismissed the save panel; no feedback needed.
-          break;
-      }
-    } on Object catch (error, stackTrace) {
-      getIt<LoggingService>().captureException(
-        error,
-        domain: 'entry_image_widget',
-        subDomain: 'downloadImage',
-        stackTrace: stackTrace,
-      );
-      if (!mounted) {
-        return;
-      }
-      _showSnackBar(context.messages.imageViewerDownloadFailed);
-    } finally {
-      if (mounted) {
-        setState(() => _isDownloading = false);
-      }
-    }
-  }
-
-  void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -332,35 +312,39 @@ class _HeroPhotoViewRouteWrapperState extends State<HeroPhotoViewRouteWrapper> {
             body: Stack(
               children: [
                 Positioned.fill(
-                  child: PhotoView(
-                    imageProvider: imageProvider,
-                    enableRotation: true,
-                    backgroundDecoration:
-                        widget.backgroundDecoration ??
-                        BoxDecoration(
-                          color: Theme.of(context).colorScheme.scrim,
-                        ),
-                    controller: _photoController,
-                    scaleStateController: _scaleStateController,
-                    // Only the initially opened image flies back to its source
-                    // tile; after navigating, a hero pop would pair the wrong
-                    // image with the tile the viewer was opened from.
-                    heroAttributes: _index == _initialIndex
-                        ? PhotoViewHeroAttributes(tag: widget.heroTag)
-                        : null,
-                    minScale: PhotoViewComputedScale.contained,
-                    maxScale: PhotoViewComputedScale.covered * 4,
-                    initialScale: PhotoViewComputedScale.contained,
-                    strictScale: true,
+                  child: ImageViewerTapRegion(
+                    onSingleTap: _toggleOverlays,
+                    child: PhotoView(
+                      imageProvider: imageProvider,
+                      // PhotoView defaults rotation off; do not opt in here.
+                      backgroundDecoration:
+                          widget.backgroundDecoration ??
+                          BoxDecoration(
+                            color: Theme.of(context).colorScheme.scrim,
+                          ),
+                      controller: _photoController,
+                      scaleStateController: _scaleStateController,
+                      // Only the initially opened image flies back to its
+                      // source tile; after navigating, a hero pop would pair
+                      // the wrong image with the tile the viewer was opened
+                      // from.
+                      heroAttributes: _index == _initialIndex
+                          ? PhotoViewHeroAttributes(tag: widget.heroTag)
+                          : null,
+                      minScale: PhotoViewComputedScale.contained,
+                      maxScale: PhotoViewComputedScale.covered * 4,
+                      initialScale: PhotoViewComputedScale.contained,
+                      strictScale: true,
+                    ),
                   ),
                 ),
-                if (_hasGallery) ...[
+                if (_overlaysVisible && _hasGallery) ...[
                   Positioned(
                     left: padding.left + edge,
                     top: 0,
                     bottom: 0,
                     child: Center(
-                      child: _ImageViewerIconButton(
+                      child: ImageViewerIconButton(
                         tooltip: context.messages.imageViewerPreviousTooltip,
                         icon: LottiIcons.chevronLeft,
                         onPressed: _canGoPrevious ? _goToPrevious : null,
@@ -372,7 +356,7 @@ class _HeroPhotoViewRouteWrapperState extends State<HeroPhotoViewRouteWrapper> {
                     top: 0,
                     bottom: 0,
                     child: Center(
-                      child: _ImageViewerIconButton(
+                      child: ImageViewerIconButton(
                         tooltip: context.messages.imageViewerNextTooltip,
                         icon: LottiIcons.chevronRight,
                         onPressed: _canGoNext ? _goToNext : null,
@@ -388,48 +372,53 @@ class _HeroPhotoViewRouteWrapperState extends State<HeroPhotoViewRouteWrapper> {
                     ),
                   ),
                 ],
-                Positioned(
-                  right: padding.right + edge,
-                  top: padding.top + tokens.spacing.step3,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _ImageViewerIconButton(
-                        tooltip: _isDownloading
-                            ? context.messages.imageViewerDownloadingTooltip
-                            : context.messages.imageViewerDownloadTooltip,
-                        icon: _isDownloading
-                            ? LottiIcons.pending
-                            : LottiIcons.download,
-                        onPressed: _isDownloading
-                            ? null
-                            : () => unawaited(_downloadImage()),
-                      ),
-                      SizedBox(width: tokens.spacing.step2),
-                      _ImageViewerIconButton(
-                        tooltip: MaterialLocalizations.of(
-                          context,
-                        ).closeButtonTooltip,
-                        icon: LottiIcons.close,
-                        onPressed: _close,
-                      ),
-                    ],
-                  ),
-                ),
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: padding.bottom + tokens.spacing.step4,
-                  child: Center(
-                    child: _ImageViewerZoomControls(
-                      scale: _scale,
-                      canZoomOut: canZoomOut,
-                      onZoomOut: canZoomOut ? _zoomOut : null,
-                      onZoomReset: _resetZoom,
-                      onZoomIn: _zoomIn,
+                if (_overlaysVisible)
+                  Positioned(
+                    right: padding.right + edge,
+                    top: padding.top + tokens.spacing.step3,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ImageViewerDownloadButton(
+                          file: _currentFile,
+                          imageExporter: widget.imageExporter,
+                          logDomain: 'entry_image_widget',
+                        ),
+                        SizedBox(width: tokens.spacing.step2),
+                        ImageViewerIconButton(
+                          tooltip: MaterialLocalizations.of(
+                            context,
+                          ).closeButtonTooltip,
+                          icon: LottiIcons.close,
+                          onPressed: _close,
+                        ),
+                      ],
                     ),
                   ),
-                ),
+                if (_overlaysVisible)
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: padding.bottom + tokens.spacing.step4,
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (_currentDate != null) ...[
+                            ImageViewerDateChip(date: _currentDate!),
+                            SizedBox(height: tokens.spacing.step2),
+                          ],
+                          _ImageViewerZoomControls(
+                            scale: _scale,
+                            canZoomOut: canZoomOut,
+                            onZoomOut: canZoomOut ? _zoomOut : null,
+                            onZoomReset: _resetZoom,
+                            onZoomIn: _zoomIn,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -472,11 +461,12 @@ class _ImageViewerCounterChip extends StatelessWidget {
   }
 }
 
-class _ImageViewerIconButton extends StatelessWidget {
-  const _ImageViewerIconButton({
+class ImageViewerIconButton extends StatelessWidget {
+  const ImageViewerIconButton({
     required this.tooltip,
     required this.icon,
     required this.onPressed,
+    super.key,
   });
 
   final String tooltip;
@@ -498,6 +488,197 @@ class _ImageViewerIconButton extends StatelessWidget {
         onPressed: onPressed,
         icon: Icon(icon),
       ),
+    );
+  }
+}
+
+/// Download control shared by the single-photo and event gallery viewers.
+///
+/// It owns the in-flight guard and platform-specific result feedback so both
+/// viewer modes have identical permissions, progress, and error behavior.
+class ImageViewerDownloadButton extends StatefulWidget {
+  const ImageViewerDownloadButton({
+    required this.file,
+    required this.logDomain,
+    this.imageExporter,
+    super.key,
+  });
+
+  final File? file;
+  final String logDomain;
+  final ImageExporter? imageExporter;
+
+  @override
+  State<ImageViewerDownloadButton> createState() =>
+      _ImageViewerDownloadButtonState();
+}
+
+class _ImageViewerDownloadButtonState extends State<ImageViewerDownloadButton> {
+  bool _isDownloading = false;
+
+  Future<void> _downloadImage() async {
+    final file = widget.file;
+    if (_isDownloading || file == null) return;
+
+    setState(() => _isDownloading = true);
+    try {
+      final exporter = widget.imageExporter ?? defaultImageExporter();
+      final result = await exporter(file);
+      if (!mounted) return;
+      switch (result.status) {
+        case ImageExportStatus.savedToFile:
+          _showSnackBar(
+            context.messages.imageViewerDownloadSaved(result.savedName ?? ''),
+          );
+        case ImageExportStatus.savedToGallery:
+          _showSnackBar(context.messages.imageViewerDownloadSavedToGallery);
+        case ImageExportStatus.permissionDenied:
+          _showSnackBar(context.messages.imageViewerDownloadPermissionDenied);
+        case ImageExportStatus.cancelled:
+          break;
+      }
+    } on Object catch (error, stackTrace) {
+      getIt<LoggingService>().captureException(
+        error,
+        domain: widget.logDomain,
+        subDomain: 'downloadImage',
+        stackTrace: stackTrace,
+      );
+      if (mounted) {
+        _showSnackBar(context.messages.imageViewerDownloadFailed);
+      }
+    } finally {
+      if (mounted) setState(() => _isDownloading = false);
+    }
+  }
+
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ImageViewerIconButton(
+      tooltip: _isDownloading
+          ? context.messages.imageViewerDownloadingTooltip
+          : context.messages.imageViewerDownloadTooltip,
+      icon: _isDownloading ? LottiIcons.pending : LottiIcons.download,
+      onPressed: _isDownloading || widget.file == null
+          ? null
+          : () => unawaited(_downloadImage()),
+    );
+  }
+}
+
+/// Locale-aware date chip shared by all full-screen image viewer modes.
+class ImageViewerDateChip extends StatelessWidget {
+  const ImageViewerDateChip({required this.date, super.key});
+
+  final DateTime date;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final locale = Localizations.localeOf(context).toString();
+    return Material(
+      color: Theme.of(context).colorScheme.scrim.withValues(alpha: 0.62),
+      borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.spacing.step4,
+          vertical: tokens.spacing.step2,
+        ),
+        child: Text(
+          DateFormat.yMMMd(locale).format(date.toLocal()),
+          style: tokens.typography.styles.body.bodyMedium.copyWith(
+            color: Colors.white,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Passive tap recognizer for an image canvas.
+///
+/// A [Listener] observes pointers without joining `photo_view`'s gesture arena,
+/// so scale/pan and double-tap zoom keep their native handling. Only a
+/// stationary one-finger tap toggles the chrome; the callback waits through
+/// [kDoubleTapTimeout] and is cancelled by a second tap.
+class ImageViewerTapRegion extends StatefulWidget {
+  const ImageViewerTapRegion({
+    required this.onSingleTap,
+    required this.child,
+    super.key,
+  });
+
+  final VoidCallback onSingleTap;
+  final Widget child;
+
+  @override
+  State<ImageViewerTapRegion> createState() => _ImageViewerTapRegionState();
+}
+
+class _ImageViewerTapRegionState extends State<ImageViewerTapRegion> {
+  final Set<int> _activePointers = {};
+  Offset? _origin;
+  bool _disqualified = false;
+  Timer? _pendingTap;
+
+  void _onPointerDown(PointerDownEvent event) {
+    if (_activePointers.isEmpty) {
+      _origin = event.position;
+      _disqualified = false;
+    }
+    _activePointers.add(event.pointer);
+    if (_activePointers.length > 1) _disqualified = true;
+  }
+
+  void _onPointerMove(PointerMoveEvent event) {
+    final origin = _origin;
+    if (origin != null && (event.position - origin).distance > kTouchSlop) {
+      _disqualified = true;
+    }
+  }
+
+  void _onPointerUp(PointerUpEvent event) {
+    _activePointers.remove(event.pointer);
+    if (_activePointers.isNotEmpty || _disqualified) return;
+
+    final pendingTap = _pendingTap;
+    if (pendingTap?.isActive ?? false) {
+      pendingTap!.cancel();
+      _pendingTap = null;
+      return;
+    }
+    _pendingTap = Timer(kDoubleTapTimeout, () {
+      _pendingTap = null;
+      if (mounted) widget.onSingleTap();
+    });
+  }
+
+  void _onPointerCancel(PointerCancelEvent event) {
+    _activePointers.remove(event.pointer);
+    _disqualified = true;
+  }
+
+  @override
+  void dispose() {
+    _pendingTap?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: _onPointerDown,
+      onPointerMove: _onPointerMove,
+      onPointerUp: _onPointerUp,
+      onPointerCancel: _onPointerCancel,
+      child: widget.child,
     );
   }
 }

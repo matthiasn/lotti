@@ -597,6 +597,39 @@ void main() {
           subdir: _subdir,
         );
       });
+
+      if (device.isPhone && brightness == Brightness.light) {
+        testWidgets('mobile event photo viewer — light', (tester) async {
+          await pumpSurface(
+            tester,
+            device: device,
+            brightness: brightness,
+            home: const EventDetailPage(eventId: _detailEventId),
+            overrides: detailOverrides(),
+          );
+          final grid = find.byType(EventPhotoGrid);
+          await tester.scrollUntilVisible(
+            grid,
+            320,
+            scrollable: find
+                .descendant(
+                  of: find.byType(EventDetailView),
+                  matching: find.byType(Scrollable),
+                )
+                .first,
+          );
+          await tester.tap(
+            find.descendant(of: grid, matching: find.byType(InkWell)).first,
+          );
+          await settleFrames(tester, 8);
+          expect(find.byType(EventPhotoGalleryViewer), findsOneWidget);
+          await captureScreenshot(
+            tester,
+            'events_photo_viewer_mobile_light',
+            subdir: _subdir,
+          );
+        });
+      }
     }
   }
 }

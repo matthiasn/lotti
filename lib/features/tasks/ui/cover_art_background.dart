@@ -128,6 +128,7 @@ class _CoverArtBackgroundState extends ConsumerState<CoverArtBackground>
       context,
       file: file,
       heroTag: heroTag,
+      date: entry.data.capturedAt,
     );
 
     final coverArt = Stack(

@@ -1,8 +1,10 @@
-import 'dart:ui';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/events/ui/model/event_view_data.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_image_widget.dart';
+import 'package:lotti/features/journal/util/image_export_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/media/image_viewer_orientation_scope.dart';
 import 'package:photo_view/photo_view.dart';
@@ -155,11 +157,13 @@ class EventPhotoGalleryViewer extends StatefulWidget {
   const EventPhotoGalleryViewer({
     required this.photos,
     this.initialIndex = 0,
+    this.imageExporter,
     super.key,
   });
 
   final List<EventPhoto> photos;
   final int initialIndex;
+  final ImageExporter? imageExporter;
 
   @override
   State<EventPhotoGalleryViewer> createState() =>
@@ -171,6 +175,13 @@ class _EventPhotoGalleryViewerState extends State<EventPhotoGalleryViewer> {
     initialPage: widget.initialIndex,
   );
   late int _index = widget.initialIndex;
+  bool _overlaysVisible = true;
+
+  EventPhoto get _currentPhoto => widget.photos[_index];
+
+  void _toggleOverlays() {
+    setState(() => _overlaysVisible = !_overlaysVisible);
+  }
 
   @override
   void dispose() {
@@ -187,20 +198,26 @@ class _EventPhotoGalleryViewerState extends State<EventPhotoGalleryViewer> {
         backgroundColor: Colors.black,
         body: Stack(
           children: [
-            PhotoViewGallery.builder(
-              pageController: _controller,
-              itemCount: widget.photos.length,
-              onPageChanged: (i) => setState(() => _index = i),
-              backgroundDecoration: const BoxDecoration(color: Colors.black),
-              builder: (context, i) => PhotoViewGalleryPageOptions(
-                imageProvider: widget.photos[i].image,
-                minScale: PhotoViewComputedScale.contained,
-                maxScale: PhotoViewComputedScale.covered * 3,
-                heroAttributes: PhotoViewHeroAttributes(tag: 'event_photo_$i'),
+            ImageViewerTapRegion(
+              onSingleTap: _toggleOverlays,
+              child: PhotoViewGallery.builder(
+                pageController: _controller,
+                itemCount: widget.photos.length,
+                // PhotoViewGallery defaults rotation off; do not opt in here.
+                onPageChanged: (i) => setState(() => _index = i),
+                backgroundDecoration: const BoxDecoration(color: Colors.black),
+                builder: (context, i) => PhotoViewGalleryPageOptions(
+                  imageProvider: widget.photos[i].image,
+                  minScale: PhotoViewComputedScale.contained,
+                  maxScale: PhotoViewComputedScale.covered * 3,
+                  heroAttributes: PhotoViewHeroAttributes(
+                    tag: 'event_photo_$i',
+                  ),
+                ),
               ),
             ),
             // Page indicator (e.g. "3 / 12").
-            if (widget.photos.length > 1)
+            if (_overlaysVisible && widget.photos.length > 1)
               Positioned(
                 top: padding.top + tokens.spacing.step3,
                 left: 0,
@@ -228,29 +245,43 @@ class _EventPhotoGalleryViewerState extends State<EventPhotoGalleryViewer> {
                   ),
                 ),
               ),
-            Positioned(
-              right: padding.right,
-              top: padding.top,
-              child: IconButton(
-                tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
-                padding: EdgeInsets.all(tokens.spacing.step6),
-                onPressed: () =>
-                    Navigator.of(context, rootNavigator: true).pop(),
-                icon: Stack(
+            if (_overlaysVisible)
+              Positioned(
+                right: padding.right + tokens.spacing.step3,
+                top: padding.top + tokens.spacing.step3,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    ImageFiltered(
-                      imageFilter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                      child: const Icon(LottiIcons.close, size: 30),
+                    ImageViewerDownloadButton(
+                      file: _currentPhoto.filePath == null
+                          ? null
+                          : File(_currentPhoto.filePath!),
+                      imageExporter: widget.imageExporter,
+                      logDomain: 'event_photo_gallery',
                     ),
-                    const Icon(
-                      LottiIcons.close,
-                      size: 30,
-                      color: Colors.white,
+                    SizedBox(width: tokens.spacing.step2),
+                    ImageViewerIconButton(
+                      tooltip: MaterialLocalizations.of(
+                        context,
+                      ).closeButtonTooltip,
+                      icon: LottiIcons.close,
+                      onPressed: () =>
+                          Navigator.of(context, rootNavigator: true).pop(),
                     ),
                   ],
                 ),
               ),
-            ),
+            if (_overlaysVisible && _currentPhoto.displayDate != null)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: padding.bottom + tokens.spacing.step4,
+                child: Center(
+                  child: ImageViewerDateChip(
+                    date: _currentPhoto.displayDate!,
+                  ),
+                ),
+              ),
           ],
         ),
       ),

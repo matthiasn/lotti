@@ -24,6 +24,8 @@ class JournalLocation extends BeamLocation<BeamState> {
     // `/journal/:entryId` also greedily matches the `fill_survey` segment, so
     // only a real uuid counts as an entry selection.
     final entryId = isUuid(rawEntryId) ? rawEntryId : null;
+    final rawLinkedFromId = state.queryParameters['linkedFromId'];
+    final linkedFromId = isUuid(rawLinkedFromId) ? rawLinkedFromId : null;
     final navService = getIt<NavService>();
     final isDesktop = navService.isDesktopMode;
 
@@ -49,7 +51,10 @@ class JournalLocation extends BeamLocation<BeamState> {
       if (!isDesktop && entryId != null)
         BeamPage(
           key: ValueKey('journal-$entryId'),
-          child: EntryDetailsPage(itemId: entryId),
+          child: EntryDetailsPage(
+            itemId: entryId,
+            linkedFromId: linkedFromId,
+          ),
         ),
     ];
   }

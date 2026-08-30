@@ -327,6 +327,8 @@ void main() {
       ImageExporter? imageExporter,
       MediaQueryData? mediaQueryData,
       List<File>? gallery,
+      DateTime? date,
+      List<DateTime?>? galleryDates,
       int initialIndex = 0,
     }) {
       return ProviderScope(
@@ -350,6 +352,8 @@ void main() {
             backgroundDecoration: backgroundDecoration,
             imageExporter: imageExporter,
             gallery: gallery,
+            date: date,
+            galleryDates: galleryDates,
             initialIndex: initialIndex,
           ),
         ),
@@ -390,6 +394,7 @@ void main() {
         expect(photoView.initialScale, PhotoViewComputedScale.contained);
         expect(photoView.maxScale, PhotoViewComputedScale.covered * 4);
         expect(photoView.strictScale, isTrue);
+        expect(photoView.enableRotation, isFalse);
         expect(photoView.controller, isA<PhotoViewController>());
         expect(
           photoView.scaleStateController,
@@ -413,6 +418,85 @@ void main() {
         expect(zoomOutButton.onPressed, isNull);
       },
     );
+
+    testWidgets('shows the photo date in the viewer overlay', (tester) async {
+      await tester.pumpWidget(
+        buildWrapper(date: DateTime(2026, 2, 3)),
+      );
+      await tester.pump();
+
+      expect(find.text('Feb 3, 2026'), findsOneWidget);
+    });
+
+    testWidgets('single taps hide and restore all viewer chrome', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildWrapper(date: DateTime(2026, 2, 3)),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      final canvasPoint =
+          tester.getCenter(find.byType(PhotoView)) - const Offset(100, 100);
+      await tester.tapAt(canvasPoint);
+      await tester.pump(const Duration(milliseconds: 600));
+      expect(find.byTooltip('Download image'), findsNothing);
+      expect(find.byTooltip('Close'), findsNothing);
+      expect(find.text('Feb 3, 2026'), findsNothing);
+      expect(find.byTooltip('Zoom In'), findsNothing);
+
+      await tester.tapAt(canvasPoint);
+      await tester.pump(const Duration(milliseconds: 600));
+      expect(find.byTooltip('Download image'), findsOneWidget);
+      expect(find.byTooltip('Close'), findsOneWidget);
+      expect(find.text('Feb 3, 2026'), findsOneWidget);
+      expect(find.byTooltip('Zoom In'), findsOneWidget);
+    });
+
+    testWidgets('double tap zoom does not toggle viewer chrome', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildWrapper());
+      await tester.pump();
+
+      final photo = find.byType(PhotoView);
+      await tester.tap(photo);
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.tap(photo);
+      await tester.pump(const Duration(milliseconds: 350));
+
+      expect(find.byTooltip('Close'), findsOneWidget);
+      expect(find.byTooltip('Zoom In'), findsOneWidget);
+    });
+
+    testWidgets('two-finger gesture keeps photo gestures and chrome active', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildWrapper());
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('100%'), findsOneWidget);
+
+      final center = tester.getCenter(find.byType(PhotoView));
+      final first = await tester.createGesture(pointer: 1);
+      final second = await tester.createGesture(pointer: 2);
+      await first.down(center - const Offset(20, 0));
+      await second.down(center + const Offset(20, 0));
+      await tester.pump();
+      await first.moveTo(center - const Offset(80, 0));
+      await second.moveTo(center + const Offset(80, 0));
+      await tester.pump();
+      await first.up();
+      await second.up();
+      await tester.pump(const Duration(milliseconds: 600));
+
+      expect(find.byTooltip('Close'), findsOneWidget);
+      final photoView = tester.widget<PhotoView>(find.byType(PhotoView));
+      expect(photoView.disableGestures, isNot(isTrue));
+      expect(photoView.enableRotation, isFalse);
+      expect(tester.takeException(), isNull);
+    });
 
     testWidgets('keeps top controls inside the landscape right safe area', (
       tester,
@@ -894,6 +978,28 @@ void main() {
           expect(shownPath(tester), gallery[1].path);
         },
       );
+
+      testWidgets('gallery navigation updates the displayed photo date', (
+        tester,
+      ) async {
+        final gallery = writeGallery();
+        await tester.pumpWidget(
+          buildWrapper(
+            gallery: gallery,
+            galleryDates: [
+              DateTime(2026),
+              DateTime(2026, 2),
+              DateTime(2026, 3),
+            ],
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('Jan 1, 2026'), findsOneWidget);
+        _pressIconButton(tester, LottiIcons.chevronRight);
+        await tester.pump();
+        expect(find.text('Feb 1, 2026'), findsOneWidget);
+      });
 
       testWidgets(
         'left/right arrow keys navigate and ignore presses beyond the ends',
