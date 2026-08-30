@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/checklist/services/correction_capture_service.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/journal/repository/app_clipboard_service.dart';
@@ -12,7 +11,6 @@ import 'package:lotti/features/tasks/state/checklist_completion_controller.dart'
 import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_card.dart';
-import 'package:lotti/features/tasks/ui/checklists/correction_undo_snackbar.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_detail_section_card.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -24,8 +22,8 @@ import 'package:lotti/utils/platform.dart';
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 
 /// Wires a checklist entity to its [ChecklistCard] and handles all
-/// side-effects: provider subscriptions, export/share, correction capture
-/// snackbars, and drop-zone for cross-checklist item moves.
+/// side-effects: provider subscriptions, export/share, and the drop-zone for
+/// cross-checklist item moves.
 ///
 /// Replaces the old `ChecklistWrapper`.
 class ChecklistCardWrapper extends ConsumerWidget {
@@ -101,35 +99,6 @@ class ChecklistCardWrapper extends ConsumerWidget {
           )),
         )
         .value;
-
-    // Show correction-capture toast with undo + countdown.
-    ref.listen<PendingCorrection?>(
-      correctionCaptureProvider,
-      (previous, next) {
-        if (next != null && previous != next) {
-          final captureNotifier = ref.read(correctionCaptureProvider.notifier);
-          final messenger = ScaffoldMessenger.of(context)
-            ..hideCurrentSnackBar();
-          messenger.showSnackBar(
-            SnackBar(
-              content: CorrectionUndoSnackbarContent(
-                pending: next,
-                onUndo: () {
-                  captureNotifier.cancel();
-                  messenger.hideCurrentSnackBar();
-                },
-              ),
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              padding: EdgeInsets.zero,
-              behavior: SnackBarBehavior.floating,
-              dismissDirection: DismissDirection.down,
-              duration: kCorrectionSaveDelay + const Duration(seconds: 1),
-            ),
-          );
-        }
-      },
-    );
 
     if (checklist == null || completionRate == null) {
       return const SizedBox.shrink();

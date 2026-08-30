@@ -170,18 +170,9 @@ class _FakeCorrectionCaptureNotifier extends CorrectionCaptureNotifier {
   @override
   PendingCorrection? build() => null;
 
-  bool cancelCalled = false;
-
   // ignore: use_setters_to_change_properties
   void emit(PendingCorrection pending) {
     state = pending;
-  }
-
-  @override
-  bool cancel() {
-    cancelCalled = true;
-    state = null;
-    return true;
   }
 }
 
@@ -477,13 +468,22 @@ void main() {
       },
     );
 
-    // ── Correction capture snackbar ────────────────────────────────────────
+    // ── Correction capture ownership ───────────────────────────────────────
 
-    testWidgets('shows correction undo snackbar on pending correction', (
+    testWidgets('does not dispatch the task-level correction toast', (
       tester,
     ) async {
       final corrNotifier = _FakeCorrectionCaptureNotifier();
       await _pump(tester, correctionNotifier: corrNotifier);
+
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(ChecklistCardWrapper)),
+      );
+      final subscription = container.listen<PendingCorrection?>(
+        correctionCaptureProvider,
+        (_, _) {},
+      );
+      addTearDown(subscription.close);
 
       // Emit a pending correction.
       corrNotifier.emit(
@@ -496,9 +496,9 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      expect(find.byType(CorrectionUndoSnackbarContent), findsOneWidget);
-      expect(find.textContaining('old text'), findsOneWidget);
-      expect(find.textContaining('new text'), findsOneWidget);
+      expect(find.byType(CorrectionUndoSnackbarContent), findsNothing);
+      expect(find.textContaining('old text'), findsNothing);
+      expect(find.textContaining('new text'), findsNothing);
     });
 
     // ── Completion rate and counts passed through ──────────────────────────
@@ -721,41 +721,6 @@ void main() {
         expect(find.byType(SnackBar), findsOneWidget);
       },
     );
-
-    // ── Correction snackbar Undo button ───────────────────────────────────
-
-    testWidgets('tapping Undo in correction snackbar calls cancel()', (
-      tester,
-    ) async {
-      final corrNotifier = _FakeCorrectionCaptureNotifier();
-      await _pump(tester, correctionNotifier: corrNotifier);
-
-      // Emit a pending correction to trigger the snackbar.
-      corrNotifier.emit(
-        PendingCorrection(
-          before: 'wrong',
-          after: 'right',
-          createdAt: DateTime(2025, 3, 15),
-        ),
-      );
-      await tester.pump();
-      await tester.pump();
-
-      expect(find.byType(CorrectionUndoSnackbarContent), findsOneWidget);
-
-      // Invoke the onUndo callback directly from the widget — the snackbar
-      // floats in an overlay layer and the hit-test offset won't reach it via
-      // a normal tap(), so we extract the callback from the widget tree and
-      // call it programmatically.
-      final content = tester.widget<CorrectionUndoSnackbarContent>(
-        find.byType(CorrectionUndoSnackbarContent),
-      );
-      content.onUndo();
-      await tester.pump();
-
-      // The fake cancel() should have been called.
-      expect(corrNotifier.cancelCalled, isTrue);
-    });
 
     // ── onExpansionChanged wiring ─────────────────────────────────────────
 

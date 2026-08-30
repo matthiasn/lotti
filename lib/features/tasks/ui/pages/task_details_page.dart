@@ -19,6 +19,7 @@ import 'package:lotti/features/tasks/state/task_app_bar_controller.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
 import 'package:lotti/features/tasks/state/task_link_groups_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/consts.dart';
+import 'package:lotti/features/tasks/ui/checklists/correction_undo_snackbar.dart';
 import 'package:lotti/features/tasks/ui/task_app_bar.dart';
 import 'package:lotti/features/tasks/ui/task_form.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_action_bar.dart';
@@ -688,7 +689,9 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
     // screen / window bottom edge — on mobile the bar would otherwise
     // cover the toast, on desktop it would sit visually detached at the
     // app window's bottom edge.
-    final body = ScaffoldMessenger(child: scaffold);
+    final body = ScaffoldMessenger(
+      child: CorrectionCaptureToastListener(child: scaffold),
+    );
 
     return MediaDropTarget(
       onFiles: (files) => handleDroppedMediaFiles(

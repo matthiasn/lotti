@@ -1,9 +1,57 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/checklist/services/correction_capture_service.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+
+/// Owns the single correction-capture toast listener for a task details page.
+///
+/// This belongs immediately below that page's scoped [ScaffoldMessenger].
+/// Keeping the listener at the page boundary prevents one global correction
+/// event from being handled once per checklist card while still resolving the
+/// toast to the task-local messenger rather than the app-wide messenger.
+class CorrectionCaptureToastListener extends ConsumerWidget {
+  const CorrectionCaptureToastListener({
+    required this.child,
+    super.key,
+  });
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen<PendingCorrection?>(
+      correctionCaptureProvider,
+      (previous, next) {
+        if (next == null || previous == next) return;
+
+        final captureNotifier = ref.read(correctionCaptureProvider.notifier);
+        final messenger = ScaffoldMessenger.of(context)..hideCurrentSnackBar();
+        messenger.showSnackBar(
+          SnackBar(
+            content: CorrectionUndoSnackbarContent(
+              pending: next,
+              onUndo: () {
+                captureNotifier.cancel();
+                messenger.hideCurrentSnackBar();
+              },
+            ),
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            padding: EdgeInsets.zero,
+            behavior: SnackBarBehavior.floating,
+            dismissDirection: DismissDirection.down,
+            duration: kCorrectionSaveDelay + const Duration(seconds: 1),
+          ),
+        );
+      },
+    );
+
+    return child;
+  }
+}
 
 /// SnackBar content that shows a pending text-correction with a countdown
 /// bar and an UNDO action, rendered through [DesignSystemToast] so the

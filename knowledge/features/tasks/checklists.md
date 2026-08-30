@@ -5,13 +5,17 @@ description: The checklist subsystem, its celebration and collapse motion contra
 resource: ../../../lib/features/tasks/ui/checklists
 tags: [tasks, checklists, motion, accessibility]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T01:00:00Z }
+generated: { by: codex/gpt-5, at: 2026-08-30T13:12:58Z }
 stale_after: 2027-01-25
 sources:
   - id: ui
     resource: ../../../lib/features/tasks/ui/checklists
     title: Checklist widgets
-    last_modified: 2026-07-25
+    last_modified: 2026-08-30
+  - id: task-details
+    resource: ../../../lib/features/tasks/ui/pages/task_details_page.dart
+    title: Task details toast scope
+    last_modified: 2026-08-30
   - id: checklist-feature
     resource: ../../../lib/features/checklist
     title: Correction capture and undo
@@ -54,6 +58,13 @@ fire-and-forget `correctionCaptureService.captureCorrection(...)` with the
 before/after title and the item's category, and the rename surfaces an undo
 affordance. **That before→after pair becomes category-scoped AI guidance** — the
 the checklist feature owns the capture and undo logic.
+
+The pending correction is task-wide UI state, so its toast has exactly one
+listener at the task-details boundary: `CorrectionCaptureToastListener` sits
+immediately below `TaskDetailsPage`'s nested `ScaffoldMessenger`. Individual
+`ChecklistCardWrapper`s never listen for it. This keeps the undo toast inside
+the detail pane on desktop, above the sticky action bar on every platform, and
+prevents one provider update from being dispatched once per checklist card.
 
 # The sorting state machine
 
