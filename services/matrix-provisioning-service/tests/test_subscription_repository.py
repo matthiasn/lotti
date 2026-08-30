@@ -670,6 +670,44 @@ async def test_out_of_app_replacement_audit_recovers_from_expired_predecessor(
     assert events[0].to_entitlement_state is EntitlementState.ACTIVE
 
 
+async def test_replacement_audit_recovers_into_canceled_active_access(
+    subscription_repository,
+):
+    entitlement = await create_entitlement(subscription_repository)
+    original = verified_subscription(entitlement.entitlement_id, "original-token")
+    await subscription_repository.store_verified_subscription(original, now=NOW)
+    suspended_time = NOW + timedelta(minutes=1)
+    suspended = await subscription_repository.store_verified_subscription(
+        replace(
+            original,
+            google_state=GoogleSubscriptionState.ON_HOLD,
+            entitlement_state=EntitlementState.SUSPENDED,
+            last_verified_at=suspended_time,
+        ),
+        now=suspended_time,
+    )
+    replacement_time = NOW + timedelta(minutes=2)
+    replacement = await subscription_repository.store_verified_subscription(
+        verified_subscription(
+            entitlement.entitlement_id,
+            "replacement-token",
+            google_state=GoogleSubscriptionState.CANCELED,
+            entitlement_state=EntitlementState.CANCELED_ACTIVE,
+            linked_token_fingerprint=suspended.token_fingerprint,
+            last_verified_at=replacement_time,
+        ),
+        now=replacement_time,
+    )
+
+    events = await subscription_repository.list_subscription_events(replacement.token_fingerprint)
+
+    assert [event.event_type for event in events] == [SubscriptionEventType.RECOVERED]
+    assert events[0].from_google_state is GoogleSubscriptionState.ON_HOLD
+    assert events[0].to_google_state is GoogleSubscriptionState.CANCELED
+    assert events[0].from_entitlement_state is EntitlementState.SUSPENDED
+    assert events[0].to_entitlement_state is EntitlementState.CANCELED_ACTIVE
+
+
 async def test_subscription_event_insert_failure_rolls_back_snapshot_update(
     subscription_repository,
 ):
