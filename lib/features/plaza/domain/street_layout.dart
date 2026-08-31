@@ -125,7 +125,7 @@ class StreetPlan {
 class StreetLayout {
   StreetLayout({
     required this.projectSeed,
-    this.roadWidth = 8,
+    this.roadWidth = 16,
     this.groupLength = 46,
     this.gapLength = 7,
     this.plotDepth = 8,
@@ -168,7 +168,7 @@ class StreetLayout {
 
   /// Logical pixels per world meter on a facade texture. Must match the
   /// scale the scene layer uses for facade widget layout sizes.
-  static const facadePxPerMeter = 56.0;
+  static const facadePxPerMeter = 90.0;
 
   /// Content-driven building height: the facade is sized to exactly fit
   /// the cover art, the wrapped title, the meta rows and the open
@@ -197,7 +197,7 @@ class StreetLayout {
     px += 44; // state row
 
     final facadeHeight = px / facadePxPerMeter;
-    return (facadeHeight / 0.88).clamp(3.5, 22.0);
+    return (facadeHeight / 0.88).clamp(2.5, 12.0);
   }
 
   /// Start of the week containing [time] (Monday 00:00).

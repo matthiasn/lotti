@@ -16,7 +16,7 @@ class FlyCameraController {
   }) : _position = Vector3.copy(position);
 
   // Slightly above head height so tall content-sized facades read well.
-  static const _eyeHeight = 4.5;
+  static const _eyeHeight = 5.0;
   static const _walkSpeed = 12.0;
   static const _sprintFactor = 3.0;
   static const _overheadHeight = 90.0;
