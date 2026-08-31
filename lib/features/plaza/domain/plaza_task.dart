@@ -39,6 +39,8 @@ class PlazaTask {
     required this.linkedTaskIds,
     required this.categoryColor,
     this.due,
+    this.coverImageUrl,
+    this.openChecklistItems = const [],
     this.deleted = false,
   });
 
@@ -59,6 +61,14 @@ class PlazaTask {
 
   /// ARGB, kept as an int so this layer stays Flutter-free.
   final int categoryColor;
+
+  /// Cover art for the facade, when the task has any (display only).
+  final String? coverImageUrl;
+
+  /// Titles of the still-open checklist items, shown on the facade.
+  /// Drives building height together with the title (content-sized
+  /// facades, no filler).
+  final List<String> openChecklistItems;
 
   /// Deleted tasks leave a fenced empty lot; the street never closes up.
   final bool deleted;

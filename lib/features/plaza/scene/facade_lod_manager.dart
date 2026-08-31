@@ -158,9 +158,12 @@ class FacadeLodManager {
           building.facadeWorldWidth,
           building.facadeWorldHeight,
         ),
+        // Static facades re-capture on a slow interval rather than once:
+        // negligible amortized cost, and late-arriving content (network
+        // cover art) still shows up without change-tracking plumbing.
         update: interactive
             ? WidgetUpdatePolicy.everyFrame
-            : WidgetUpdatePolicy.manual,
+            : const WidgetUpdatePolicy.interval(Duration(seconds: 3)),
       );
       building.facadeAnchor.addComponent(component);
       surface.component = component;

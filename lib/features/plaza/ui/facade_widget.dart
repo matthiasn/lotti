@@ -30,11 +30,23 @@ abstract final class FacadeStyle {
   };
 }
 
+const _months = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', //
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+];
+
+String _shortDate(DateTime date) => '${_months[date.month - 1]} ${date.day}';
+
 /// The live signage on one building facade.
 ///
-/// Designed to read at distance: state as color and light, progress as a
-/// filled portion of the facade, title auto-scaled. The checkbox on the
-/// near tier exists to prove interactive widgets on meshes work (spec §11).
+/// Content-packed, no filler: the building's height is sized to this very
+/// layout (see `StreetLayout.heightFor`), so the column stacks cover art
+/// (full 16:9), title, meta, open checklist items, and the state chip with
+/// nothing artificial in between. A scale-down fit absorbs the estimate
+/// error rather than overflowing.
+///
+/// On the near tier the checklist checkboxes are live — the proof that
+/// interactive widgets on meshes matter (spec §11).
 class FacadeWidget extends StatefulWidget {
   const FacadeWidget({
     required this.task,
@@ -44,7 +56,7 @@ class FacadeWidget extends StatefulWidget {
 
   final PlazaTask task;
 
-  /// Near-tier facades get a live checkbox; mid-tier captures stay passive.
+  /// Near-tier facades get live checkboxes; static captures stay passive.
   final bool interactive;
 
   @override
@@ -52,7 +64,7 @@ class FacadeWidget extends StatefulWidget {
 }
 
 class _FacadeWidgetState extends State<FacadeWidget> {
-  bool _demoTicked = false;
+  final Set<int> _ticked = {};
 
   @override
   Widget build(BuildContext context) {
@@ -61,6 +73,7 @@ class _FacadeWidgetState extends State<FacadeWidget> {
     final stateColor = FacadeStyle.stateColor(state);
     final quiet =
         state == PlazaTaskState.done || state == PlazaTaskState.cancelled;
+    final dimText = quiet ? FacadeStyle.textDim : FacadeStyle.text;
 
     return Material(
       color: state == PlazaTaskState.done
@@ -79,91 +92,162 @@ class _FacadeWidgetState extends State<FacadeWidget> {
                 child: ColoredBox(color: stateColor.withValues(alpha: 0.18)),
               ),
             ),
-          Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(height: 10, color: Color(task.categoryColor)),
-                const SizedBox(height: 20),
-                Expanded(
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      task.title,
-                      maxLines: 5,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: quiet ? FacadeStyle.textDim : FacadeStyle.text,
-                        fontSize: 44,
-                        height: 1.15,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
+          LayoutBuilder(
+            builder: (context, constraints) => FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.topCenter,
+              child: SizedBox(
+                width: constraints.maxWidth,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: stateColor.withValues(alpha: quiet ? 0.25 : 1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        FacadeStyle.stateLabel(state),
-                        style: TextStyle(
-                          color: quiet ? stateColor : Colors.black,
-                          fontSize: 24,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 1.5,
-                        ),
-                      ),
-                    ),
-                    const Spacer(),
-                    if (task.checklistItems > 0)
-                      Text(
-                        '${(task.progress * task.checklistItems).round()}'
-                        '/${task.checklistItems}',
-                        style: const TextStyle(
-                          color: FacadeStyle.textDim,
-                          fontSize: 28,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                  ],
-                ),
-                if (widget.interactive && !quiet) ...[
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Transform.scale(
-                        scale: 1.6,
-                        child: Checkbox(
-                          value: _demoTicked,
-                          activeColor: stateColor,
-                          onChanged: (v) =>
-                              setState(() => _demoTicked = v ?? false),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      const Expanded(
-                        child: Text(
-                          'Tick me from the street',
-                          style: TextStyle(
-                            color: FacadeStyle.textDim,
-                            fontSize: 24,
+                    Container(height: 10, color: Color(task.categoryColor)),
+                    if (task.coverImageUrl != null)
+                      // The demo covers are 16:9; a matching full-bleed
+                      // frame shows the whole image, edge to edge,
+                      // uncropped and undistorted.
+                      AspectRatio(
+                        aspectRatio: 16 / 9,
+                        child: Opacity(
+                          opacity: quiet ? 0.45 : 1,
+                          child: Image.network(
+                            task.coverImageUrl!,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, _, _) => const SizedBox(),
                           ),
                         ),
                       ),
-                    ],
-                  ),
-                ],
-              ],
+                    Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            task.title,
+                            maxLines: 6,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: dimText,
+                              fontSize: 44,
+                              height: 1.15,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          if (task.due != null ||
+                              task.linkedTaskIds.isNotEmpty) ...[
+                            Row(
+                              children: [
+                                if (task.due != null)
+                                  Text(
+                                    'due ${_shortDate(task.due!)}',
+                                    style: const TextStyle(
+                                      color: FacadeStyle.textDim,
+                                      fontSize: 26,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                const Spacer(),
+                                if (task.linkedTaskIds.isNotEmpty)
+                                  Text(
+                                    'links ${task.linkedTaskIds.length}',
+                                    style: const TextStyle(
+                                      color: FacadeStyle.textDim,
+                                      fontSize: 26,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                          ],
+                          for (final (index, item)
+                              in task.openChecklistItems.take(8).indexed)
+                            SizedBox(
+                              height: 46,
+                              child: Row(
+                                children: [
+                                  SizedBox(
+                                    width: 40,
+                                    child: Checkbox(
+                                      value: _ticked.contains(index),
+                                      activeColor: stateColor,
+                                      onChanged: widget.interactive && !quiet
+                                          ? (v) => setState(() {
+                                              if (v ?? false) {
+                                                _ticked.add(index);
+                                              } else {
+                                                _ticked.remove(index);
+                                              }
+                                            })
+                                          : null,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      item,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: _ticked.contains(index)
+                                            ? FacadeStyle.textDim
+                                            : dimText,
+                                        fontSize: 26,
+                                        decoration: _ticked.contains(index)
+                                            ? TextDecoration.lineThrough
+                                            : null,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: stateColor.withValues(
+                                    alpha: quiet ? 0.25 : 1,
+                                  ),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  FacadeStyle.stateLabel(state),
+                                  style: TextStyle(
+                                    color: quiet ? stateColor : Colors.black,
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 1.5,
+                                  ),
+                                ),
+                              ),
+                              const Spacer(),
+                              if (task.checklistItems > 0)
+                                Text(
+                                  '${(task.progress * task.checklistItems).round()}'
+                                  '/${task.checklistItems}',
+                                  style: const TextStyle(
+                                    color: FacadeStyle.textDim,
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         ],

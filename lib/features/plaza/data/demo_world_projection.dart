@@ -9,6 +9,7 @@ library;
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/demo/media/demo_media_asset.dart';
 import 'package:lotti/features/demo/seed/demo_world.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
 
@@ -65,9 +66,19 @@ PlazaTask _project({
   required int categoryColor,
 }) {
   final checked = items.where((i) => i.isChecked).length;
+  // Demo cover art lives in the public immutable R2 catalog; the harness
+  // loads it straight over HTTP, no hydrator or app storage involved.
+  final cover = demoMediaAssets
+      .where((asset) => asset.taskId == task.meta.id && asset.isCover)
+      .firstOrNull;
   return PlazaTask(
     id: task.meta.id,
     createdAt: task.meta.createdAt,
+    coverImageUrl: cover?.uri.toString(),
+    openChecklistItems: [
+      for (final item in items)
+        if (!item.isChecked) item.title,
+    ].take(8).toList(),
     title: task.data.title,
     state: _mapStatus(task.data.status),
     due: task.data.due,

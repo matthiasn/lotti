@@ -6,15 +6,17 @@ import 'package:vector_math/vector_math.dart' show Vector3;
 
 /// First-person walk camera with an animated overhead search mode.
 ///
-/// Eye height ~1.7 m, WASD/arrows + drag-look on desktop. The overhead
-/// toggle blends smoothly — transitions are animated, never cut (spec §10).
+/// WASD/arrows + drag-look on desktop; space toggles auto-walk. The
+/// overhead toggle blends smoothly — transitions are animated, never cut
+/// (spec §10).
 class FlyCameraController {
   FlyCameraController({
     required Vector3 position,
     required this._yaw,
   }) : _position = Vector3.copy(position);
 
-  static const _eyeHeight = 1.7;
+  // Slightly above head height so tall content-sized facades read well.
+  static const _eyeHeight = 4.5;
   static const _walkSpeed = 12.0;
   static const _sprintFactor = 3.0;
   static const _overheadHeight = 90.0;
@@ -38,6 +40,15 @@ class FlyCameraController {
   /// Feed key events from the harness. Returns true when handled.
   bool handleKeyEvent(KeyEvent event) {
     final key = event.logicalKey;
+    if (key == LogicalKeyboardKey.space) {
+      if (event is KeyDownEvent) {
+        // Stop/play: toggle auto-walk. Also clears any stuck movement key
+        // (a key-up lost to a focus change would otherwise walk forever).
+        autoForward = autoForward == 0 ? 1 : 0;
+        _pressed.clear();
+      }
+      return true;
+    }
     final tracked = {
       LogicalKeyboardKey.keyW,
       LogicalKeyboardKey.keyA,
@@ -79,6 +90,13 @@ class FlyCameraController {
 
   /// Advance one frame.
   void update(double dt) {
+    // A key-up lost to a focus change (clicking the overlay, panning)
+    // would leave a movement key latched and the camera walking forever;
+    // reconcile with the hardware's actual pressed set every frame.
+    _pressed.removeWhere(
+      (key) => !HardwareKeyboard.instance.logicalKeysPressed.contains(key),
+    );
+
     var forwardInput =
         (_down(LogicalKeyboardKey.keyW, LogicalKeyboardKey.arrowUp)
             ? 1.0

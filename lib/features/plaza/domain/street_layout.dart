@@ -74,7 +74,8 @@ class PlotPlacement {
   /// Building footprint away from the road.
   final double depth;
 
-  /// Building height. Deterministic per task id, surface-independent.
+  /// Building height. Content-driven: sized to the facade's cover art,
+  /// title and open checklist items (see [StreetLayout.heightFor]).
   final double height;
 }
 
@@ -165,10 +166,36 @@ class StreetLayout {
     return 0.5 + t;
   }
 
-  /// Deterministic building height for a task id (independent of state).
-  double heightFor(String taskId) {
-    final t = ((stableHash(taskId) >> 16) & 0xFFFF) / 0xFFFF;
-    return 6.0 + 9.0 * t * t;
+  /// Logical pixels per world meter on a facade texture. Must match the
+  /// scale the scene layer uses for facade widget layout sizes.
+  static const facadePxPerMeter = 56.0;
+
+  /// Content-driven building height: the facade is sized to exactly fit
+  /// the cover art, the wrapped title, the meta rows and the open
+  /// checklist items — no filler. Mirrors the facade widget's layout
+  /// metrics; still a pure function of merged task data, so it stays
+  /// identical on every device.
+  double heightFor(PlazaTask task, double buildingWidth) {
+    final facadeWidthPx = buildingWidth * 0.92 * facadePxPerMeter;
+    final innerPx = facadeWidthPx - 48; // horizontal text padding
+
+    var px = 10.0; // category bar
+    if (task.coverImageUrl != null) {
+      px += facadeWidthPx * 9 / 16; // full-bleed 16:9 cover
+    }
+    px += 48; // text-section vertical padding
+    // Title wrap estimate at 44px w700 (~0.53em average advance).
+    final charsPerLine = (innerPx / (44 * 0.53)).floor().clamp(6, 200);
+    final lines = (task.title.length / charsPerLine).ceil().clamp(1, 6);
+    px += lines * 44 * 1.15 + 16;
+    if (task.due != null || task.linkedTaskIds.isNotEmpty) {
+      px += 43; // meta row
+    }
+    px += task.openChecklistItems.length.clamp(0, 8) * 46; // item rows
+    px += 44; // state row
+
+    final facadeHeight = px / facadePxPerMeter;
+    return (facadeHeight / 0.88).clamp(3.5, 22.0);
   }
 
   /// Start of the week containing [time] (Monday 00:00).
@@ -312,7 +339,7 @@ class StreetLayout {
               heading + (side == PlotSide.left ? math.pi / 2 : -math.pi / 2),
           width: buildingWidth,
           depth: plotDepth * 0.8,
-          height: heightFor(task.id),
+          height: heightFor(task, buildingWidth),
         );
         cursor += slot;
       }

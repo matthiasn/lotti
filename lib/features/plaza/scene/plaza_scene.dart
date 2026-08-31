@@ -35,14 +35,12 @@ class PlazaBuilding {
   final double facadeWorldWidth;
   final double facadeWorldHeight;
 
-  /// Logical layout size for the facade widget subtree.
-  Size get widgetSize {
-    const pxPerMeter = 56.0;
-    return Size(
-      facadeWorldWidth * pxPerMeter,
-      facadeWorldHeight * pxPerMeter,
-    );
-  }
+  /// Logical layout size for the facade widget subtree. Uses the same
+  /// px-per-meter scale the layout's content-height estimate assumes.
+  Size get widgetSize => Size(
+    facadeWorldWidth * StreetLayout.facadePxPerMeter,
+    facadeWorldHeight * StreetLayout.facadePxPerMeter,
+  );
 }
 
 /// Builds and owns the plaza [Scene]: ground, road, buildings, dusk light.

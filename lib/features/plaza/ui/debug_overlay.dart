@@ -138,7 +138,7 @@ class PlazaDebugOverlay extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 const Text(
-                  'WASD walk · drag look · shift sprint',
+                  'WASD walk · space stop/go · drag look · shift sprint',
                   style: TextStyle(color: Color(0xFF6B7280)),
                 ),
               ],

@@ -129,6 +129,11 @@ List<PlazaTask> generatePlazaTasks({
     } else {
       progress = rng.nextInt(checklistItems + 1) / checklistItems;
     }
+    final openCount = checklistItems - (progress * checklistItems).round();
+    final openItems = [
+      for (var n = 0; n < openCount; n++)
+        '${_verbs[rng.nextInt(_verbs.length)]} ${_objects[rng.nextInt(_objects.length)]}',
+    ];
 
     final links = <String>[];
     if (rng.nextDouble() < 0.25 && i > 0) {
@@ -150,6 +155,7 @@ List<PlazaTask> generatePlazaTasks({
             : null,
         progress: progress,
         checklistItems: checklistItems,
+        openChecklistItems: openItems,
         linkedTaskIds: links,
         categoryColor: _categoryColors[rng.nextInt(_categoryColors.length)],
         deleted: rng.nextDouble() < 0.03,
