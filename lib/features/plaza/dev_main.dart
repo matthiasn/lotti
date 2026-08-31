@@ -22,6 +22,7 @@ import 'package:flutter_scene/scene.dart' hide FlyCameraController;
 import 'package:lotti/features/plaza/data/demo_world_projection.dart';
 import 'package:lotti/features/plaza/domain/plaza_generator.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
+import 'package:lotti/features/plaza/domain/street_layout.dart';
 import 'package:lotti/features/plaza/scene/facade_lod_manager.dart';
 import 'package:lotti/features/plaza/scene/plaza_scene.dart';
 import 'package:lotti/features/plaza/ui/debug_overlay.dart';
@@ -80,6 +81,7 @@ class _PlazaHarnessState extends State<_PlazaHarness> {
   late FacadeLodManager _lod;
   late FlyCameraController _camera;
   final FacadeLodConfig _config = FacadeLodConfig();
+  final PlazaLayoutKnobs _knobs = PlazaLayoutKnobs();
   final PlazaHarnessStats _stats = PlazaHarnessStats();
 
   Camera? _frameCamera;
@@ -177,6 +179,12 @@ class _PlazaHarnessState extends State<_PlazaHarness> {
     _sceneController = PlazaSceneController(
       tasks: preset.load(),
       projectSeed: 1337,
+      layout: StreetLayout(
+        projectSeed: 1337,
+        roadWidth: _knobs.roadWidth,
+        pxPerMeter: _knobs.pxPerMeter,
+        maxBuildingHeight: _knobs.maxHeight,
+      ),
     );
     _lod = FacadeLodManager(
       buildings: _sceneController.buildings,
@@ -194,6 +202,12 @@ class _PlazaHarnessState extends State<_PlazaHarness> {
       final next = (_preset.index + 1) % _HarnessPreset.values.length;
       _loadPreset(_HarnessPreset.values[next]);
     });
+  }
+
+  /// Rebuilds the scene with the current layout knobs, keeping the preset.
+  void _applyKnobs() {
+    _lod.dispose();
+    setState(() => _loadPreset(_preset));
   }
 
   void _onTick(Duration elapsed, double dt) {
@@ -259,9 +273,11 @@ class _PlazaHarnessState extends State<_PlazaHarness> {
                     child: PlazaDebugOverlay(
                       stats: _stats,
                       config: _config,
+                      knobs: _knobs,
                       presetLabel: _preset.label,
                       onCyclePreset: _cyclePreset,
-                      onConfigChanged: () {},
+                      onConfigChanged: () => setState(() {}),
+                      onKnobsApplied: _applyKnobs,
                       onToggleOverhead: _camera.toggleOverhead,
                     ),
                   ),

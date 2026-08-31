@@ -17,6 +17,7 @@ class PlazaBuilding {
     required this.facadeCenter,
     required this.facadeWorldWidth,
     required this.facadeWorldHeight,
+    required this.pxPerMeter,
   });
 
   final PlazaTask task;
@@ -35,11 +36,14 @@ class PlazaBuilding {
   final double facadeWorldWidth;
   final double facadeWorldHeight;
 
-  /// Logical layout size for the facade widget subtree. Uses the same
-  /// px-per-meter scale the layout's content-height estimate assumes.
+  /// Pixels per world meter for this building's facade texture, from the
+  /// layout that placed it (the content-height estimate uses the same).
+  final double pxPerMeter;
+
+  /// Logical layout size for the facade widget subtree.
   Size get widgetSize => Size(
-    facadeWorldWidth * StreetLayout.facadePxPerMeter,
-    facadeWorldHeight * StreetLayout.facadePxPerMeter,
+    facadeWorldWidth * pxPerMeter,
+    facadeWorldHeight * pxPerMeter,
   );
 }
 
@@ -52,8 +56,9 @@ class PlazaSceneController {
   PlazaSceneController({
     required List<PlazaTask> tasks,
     required int projectSeed,
-  }) : layout = StreetLayout(projectSeed: projectSeed) {
-    plan = layout.plan(tasks);
+    StreetLayout? layout,
+  }) : layout = layout ?? StreetLayout(projectSeed: projectSeed) {
+    plan = this.layout.plan(tasks);
     _build(tasks);
   }
 
@@ -191,6 +196,7 @@ class PlazaSceneController {
         ),
         facadeWorldWidth: facadeW,
         facadeWorldHeight: facadeH,
+        pxPerMeter: layout.pxPerMeter,
       ),
     );
   }

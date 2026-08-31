@@ -17,24 +17,38 @@ class PlazaHarnessStats extends ChangeNotifier {
   void publish() => notifyListeners();
 }
 
+/// World-scale tuning knobs. Changing one rebuilds the scene (they are
+/// layout inputs, not surface state), so sliders apply on release.
+class PlazaLayoutKnobs {
+  double pxPerMeter = 90;
+  double roadWidth = 25;
+  double maxHeight = 12;
+}
+
 /// The M0 instrumentation and knobs: frame time, tier counts, capture
 /// stats, plus the levers used to find the live-widget ceiling.
 class PlazaDebugOverlay extends StatelessWidget {
   const PlazaDebugOverlay({
     required this.stats,
     required this.config,
+    required this.knobs,
     required this.presetLabel,
     required this.onCyclePreset,
     required this.onConfigChanged,
+    required this.onKnobsApplied,
     required this.onToggleOverhead,
     super.key,
   });
 
   final PlazaHarnessStats stats;
   final FacadeLodConfig config;
+  final PlazaLayoutKnobs knobs;
   final String presetLabel;
   final VoidCallback onCyclePreset;
   final VoidCallback onConfigChanged;
+
+  /// Fired when a layout slider is released — the scene rebuilds.
+  final VoidCallback onKnobsApplied;
   final VoidCallback onToggleOverhead;
 
   @override
@@ -110,6 +124,39 @@ class PlazaDebugOverlay extends StatelessWidget {
                     onConfigChanged();
                   },
                 ),
+                _slider(
+                  label: 'px/m ${knobs.pxPerMeter.round()}',
+                  value: knobs.pxPerMeter,
+                  min: 40,
+                  max: 160,
+                  onChanged: (v) {
+                    knobs.pxPerMeter = v;
+                    onConfigChanged();
+                  },
+                  onChangeEnd: (_) => onKnobsApplied(),
+                ),
+                _slider(
+                  label: 'road ${knobs.roadWidth.round()} m',
+                  value: knobs.roadWidth,
+                  min: 6,
+                  max: 50,
+                  onChanged: (v) {
+                    knobs.roadWidth = v;
+                    onConfigChanged();
+                  },
+                  onChangeEnd: (_) => onKnobsApplied(),
+                ),
+                _slider(
+                  label: 'max h ${knobs.maxHeight.round()} m',
+                  value: knobs.maxHeight,
+                  min: 4,
+                  max: 25,
+                  onChanged: (v) {
+                    knobs.maxHeight = v;
+                    onConfigChanged();
+                  },
+                  onChangeEnd: (_) => onKnobsApplied(),
+                ),
                 Row(
                   children: [
                     const Expanded(child: Text('ALL LIVE (stress)')),
@@ -154,6 +201,8 @@ class PlazaDebugOverlay extends StatelessWidget {
     required double value,
     required double max,
     required ValueChanged<double> onChanged,
+    double min = 0,
+    ValueChanged<double>? onChangeEnd,
   }) {
     return Row(
       children: [
@@ -165,9 +214,11 @@ class PlazaDebugOverlay extends StatelessWidget {
               thumbShape: RoundSliderThumbShape(enabledThumbRadius: 6),
             ),
             child: Slider(
-              value: value.clamp(0, max),
+              value: value.clamp(min, max),
+              min: min,
               max: max,
               onChanged: onChanged,
+              onChangeEnd: onChangeEnd,
             ),
           ),
         ),

@@ -125,7 +125,9 @@ class StreetPlan {
 class StreetLayout {
   StreetLayout({
     required this.projectSeed,
-    this.roadWidth = 16,
+    this.roadWidth = 25,
+    this.pxPerMeter = 90,
+    this.maxBuildingHeight = 12,
     this.groupLength = 46,
     this.gapLength = 7,
     this.plotDepth = 8,
@@ -166,9 +168,13 @@ class StreetLayout {
     return 0.5 + t;
   }
 
-  /// Logical pixels per world meter on a facade texture. Must match the
-  /// scale the scene layer uses for facade widget layout sizes.
-  static const facadePxPerMeter = 90.0;
+  /// Logical pixels per world meter on a facade texture — bigger means
+  /// shorter buildings for the same content. The scene layer sizes facade
+  /// widget subtrees with the same value.
+  final double pxPerMeter;
+
+  /// Cap on content-driven building height, world meters.
+  final double maxBuildingHeight;
 
   /// Content-driven building height: the facade is sized to exactly fit
   /// the cover art, the wrapped title, the meta rows and the open
@@ -176,7 +182,7 @@ class StreetLayout {
   /// metrics; still a pure function of merged task data, so it stays
   /// identical on every device.
   double heightFor(PlazaTask task, double buildingWidth) {
-    final facadeWidthPx = buildingWidth * 0.92 * facadePxPerMeter;
+    final facadeWidthPx = buildingWidth * 0.92 * pxPerMeter;
     final innerPx = facadeWidthPx - 48; // horizontal text padding
 
     // Shopfront order: title block high, full-bleed cover at mid-height,
@@ -196,8 +202,8 @@ class StreetLayout {
     px += task.openChecklistItems.length.clamp(0, 8) * 46; // item rows
     px += 44; // state row
 
-    final facadeHeight = px / facadePxPerMeter;
-    return (facadeHeight / 0.88).clamp(2.5, 12.0);
+    final facadeHeight = px / pxPerMeter;
+    return (facadeHeight / 0.88).clamp(2.5, maxBuildingHeight);
   }
 
   /// Start of the week containing [time] (Monday 00:00).
