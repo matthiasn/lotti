@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/beamer/beamer_app.dart';
 import 'package:lotti/beamer/locations/goals_location.dart';
+import 'package:lotti/beamer/locations/habits_location.dart';
 import 'package:lotti/beamer/locations/projects_location.dart';
 import 'package:lotti/beamer/locations/relationships_location.dart';
 import 'package:lotti/beamer/locations/settings_location.dart';
@@ -237,6 +238,23 @@ class _TestGoalsLocation extends GoalsLocation {
   }
 }
 
+/// A [HabitsLocation] whose pages are inert stubs: route matching (and
+/// therefore [habitsRouteHidesBottomNav]) behaves exactly like production,
+/// without building the habits dashboard or editor dependency trees.
+class _TestHabitsLocation extends HabitsLocation {
+  _TestHabitsLocation(super.routeInformation);
+
+  @override
+  List<BeamPage> buildPages(BuildContext context, BeamState state) {
+    return [
+      BeamPage(
+        key: ValueKey('test-habits-${state.uri.path}'),
+        child: const SizedBox.shrink(),
+      ),
+    ];
+  }
+}
+
 Future<BeamerDelegate> _createEmptyDelegate(String initialPath) async {
   final delegate = BeamerDelegate(
     setBrowserTabTitle: false,
@@ -264,13 +282,14 @@ Future<void> _stubNavService(
   BeamerDelegate? settingsDelegate,
   BeamerDelegate? projectsDelegate,
   BeamerDelegate? goalsDelegate,
+  BeamerDelegate? habitsDelegate,
   BeamerDelegate? relationshipsDelegate,
 }) async {
   final tasksDelegate = await _createEmptyDelegate('/tasks');
   projectsDelegate ??= await _createEmptyDelegate('/projects');
   relationshipsDelegate ??= await _createEmptyDelegate('/people');
   final calendarDelegate = await _createEmptyDelegate('/calendar');
-  final habitsDelegate = await _createEmptyDelegate('/habits');
+  habitsDelegate ??= await _createEmptyDelegate('/habits');
   final dashboardsDelegate = await _createEmptyDelegate('/dashboards');
   final journalDelegate = await _createEmptyDelegate('/journal');
   final eventsDelegate = await _createEmptyDelegate('/events');
@@ -2804,6 +2823,40 @@ void main() {
     });
   });
 
+  group('habitsRouteHidesBottomNav', () {
+    HabitsLocation habitsLocationFor(String path) =>
+        HabitsLocation(RouteInformation(uri: Uri.parse(path)));
+
+    test('only valid create and edit routes hide the bar', () {
+      expect(habitsRouteHidesBottomNav(null), isFalse);
+      expect(
+        habitsRouteHidesBottomNav(
+          GoalsLocation(RouteInformation(uri: Uri.parse('/habits/create'))),
+        ),
+        isFalse,
+      );
+      expect(habitsRouteHidesBottomNav(habitsLocationFor('/habits')), isFalse);
+      expect(
+        habitsRouteHidesBottomNav(habitsLocationFor('/habits/create')),
+        isTrue,
+      );
+      expect(
+        habitsRouteHidesBottomNav(habitsLocationFor('/habits/edit/habit-1')),
+        isTrue,
+      );
+      expect(
+        habitsRouteHidesBottomNav(habitsLocationFor('/habits/edit')),
+        isFalse,
+      );
+      expect(
+        habitsRouteHidesBottomNav(
+          habitsLocationFor('/habits/edit/habit-1/deep'),
+        ),
+        isFalse,
+      );
+    });
+  });
+
   group('AppScreen settings entity-definition nav hiding', () {
     testWidgets(
       'slides the bar away inside an entity editor and back on the list',
@@ -3202,6 +3255,66 @@ void main() {
 
         // Popping back to the unified list slides the bar into place.
         goalsDelegate.beamToNamed('/goals');
+        await tester.pump();
+        expect(slide().offset, Offset.zero);
+        await tester.pump(const Duration(milliseconds: 450));
+      },
+    );
+
+    testWidgets(
+      'slides the bar away inside a Habits editor and back on the list',
+      (tester) async {
+        final mockNavService = MockNavService();
+        final indexController = StreamController<int>.broadcast();
+        addTearDown(indexController.close);
+
+        final habitsDelegate = BeamerDelegate(
+          setBrowserTabTitle: false,
+          initialPath: '/habits',
+          locationBuilder: (routeInformation, _) =>
+              _TestHabitsLocation(routeInformation),
+        );
+        addTearDown(habitsDelegate.dispose);
+        await habitsDelegate.setNewRoutePath(
+          RouteInformation(uri: Uri.parse('/habits')),
+        );
+
+        await _stubNavService(
+          mockNavService,
+          indexStream: indexController.stream,
+          isProjectsEnabled: () => false,
+          isDailyOsEnabled: () => false,
+          isHabitsEnabled: () => true,
+          isDashboardsEnabled: () => false,
+          habitsDelegate: habitsDelegate,
+        );
+        await _registerAppScreenGetIt(mockNavService);
+        addTearDown(tearDownTestGetIt);
+
+        await _pumpAppScreen(tester, navService: mockNavService);
+
+        // Destinations: Tasks, Habits, Journal, Settings.
+        indexController.add(1);
+        await tester.pump();
+
+        AnimatedSlide slide() => tester.widget<AnimatedSlide>(
+          find
+              .ancestor(
+                of: find.byType(DesignSystemBottomNavigationBar),
+                matching: find.byType(AnimatedSlide),
+              )
+              .first,
+        );
+
+        expect(slide().offset, Offset.zero);
+
+        habitsDelegate.beamToNamed('/habits/edit/habit-1');
+        await tester.pump();
+        expect(find.byType(DesignSystemBottomNavigationBar), findsOneWidget);
+        expect(slide().offset, const Offset(0, 1));
+        await tester.pump(const Duration(milliseconds: 450));
+
+        habitsDelegate.beamToNamed('/habits');
         await tester.pump();
         expect(slide().offset, Offset.zero);
         await tester.pump(const Duration(milliseconds: 450));

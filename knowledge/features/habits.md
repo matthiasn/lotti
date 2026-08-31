@@ -11,7 +11,7 @@ sources:
   - id: src
     resource: ../../lib/features/habits
     title: Habits feature source
-    last_modified: 2026-08-30
+    last_modified: 2026-08-31
   - id: definitions
     resource: ../../lib/classes/entity_definitions.dart
     title: HabitDefinition
@@ -159,6 +159,11 @@ scaffold or app bar; it takes the panel's height with the form scrolling in
 the middle only when the window is shorter than it and the action row pinned
 at the foot under a hairline; back, save and delete close the panel, and the
 wizard's signals step carries its own *Back*.
+
+On mobile, the `/habits/create` and `/habits/edit/:habitId` routes are terminal
+editor surfaces: the app shell keeps its navigation bar mounted for the exit
+animation but slides it fully off-screen, so the editor's pinned Continue or
+Save action owns the bottom edge. Returning to `/habits` restores the bar.
 
 The panel's layout came out of a design-review-panel loop (baseline 5.0 →
 7.2). On the edit path at desktop widths the form is two columns weighted
@@ -324,9 +329,16 @@ capped at **1100 px**: once the window exceeds that plus side padding, horizonta
 padding becomes `(width - 1100) / 2`, and below it the padding is one spacing
 step.
 
-**Between the list and the chart, the consistency heatmap breaks out to the full
-window width** in its own sliver, so a wide screen shows more history while the
-action content stays a comfortable column.
+The consistency heatmap and completion chart each occupy their own sliver but
+share the same centred width and horizontal padding as the reading content.
+The chart's final sliver adds
+`DesignSystemBottomNavigationBar.occupiedHeight(context)` beneath its ordinary
+spacing token on mobile, so at the end of the scroll the chart clears the
+floating navigation bar and any recording indicators above it. Desktop gets
+zero from that helper because its sidebar replaces the bottom bar. The page's
+outer `SafeArea` leaves its bottom disabled because `occupiedHeight` already
+includes the system inset; consuming both would create a second home-indicator
+gap.
 
 Tab rows are **action rows**: icon, name, the handover's history strip —
 the last seven days on a phone and fourteen on a desktop window as squares

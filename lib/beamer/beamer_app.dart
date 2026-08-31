@@ -10,6 +10,7 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:lotti/beamer/locations/goals_location.dart';
+import 'package:lotti/beamer/locations/habits_location.dart';
 import 'package:lotti/beamer/locations/projects_location.dart';
 import 'package:lotti/beamer/locations/relationships_location.dart';
 import 'package:lotti/beamer/locations/settings_location.dart';
@@ -247,6 +248,22 @@ bool goalsRouteHidesBottomNav(BeamLocation<dynamic>? location) {
   };
 }
 
+/// True when the Habits beamer location points at the create or edit route.
+///
+/// The list root keeps the bar because it is the tab surface. The editor owns
+/// the bottom edge with its pinned primary action, so the floating navigation
+/// pill slides away instead of covering Save or Continue.
+bool habitsRouteHidesBottomNav(BeamLocation<dynamic>? location) {
+  if (location is! HabitsLocation) return false;
+  final segments = location.state.uri.pathSegments;
+  if (segments.isEmpty || segments.first != 'habits') return false;
+  return switch (segments.length) {
+    2 => segments[1] == 'create',
+    3 => segments[1] == 'edit' && segments[2].isNotEmpty,
+    _ => false,
+  };
+}
+
 /// True when the PEOPLE beamer location points at one person's own pages —
 /// their detail page (`/people/<id>`) or their agent chat
 /// (`/people/<id>/chat`).
@@ -392,6 +409,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     navService.projectsDelegate,
     navService.settingsDelegate,
     navService.goalsDelegate,
+    navService.habitsDelegate,
     navService.relationshipsDelegate,
   ]);
 
@@ -713,13 +731,15 @@ class _AppScreenState extends ConsumerState<AppScreen> {
           Beamer(routerDelegate: navService.settingsDelegate),
         ];
 
-        // Listen to the tasks, projects, settings, goals and relationships
+        // Listen to the tasks, projects, settings, goals, habits and
+        // relationships
         // delegates so the mobile shell rebuilds when their routes change
         // (push to / pop from task, project, goal or person details, into /
         // out of settings entity editors). That's how we know whether to
         // hide the mobile bottom nav. See [_isTaskDetailRoute],
         // [projectsRouteHidesBottomNav], [settingsRouteHidesBottomNav],
-        // [goalsRouteHidesBottomNav] and [peopleRouteHidesBottomNav].
+        // [goalsRouteHidesBottomNav], [habitsRouteHidesBottomNav] and
+        // [peopleRouteHidesBottomNav].
         return ListenableBuilder(
           listenable: _routeChangeListenable,
           builder: (context, _) => _NudgeBannerTopLane(
@@ -903,10 +923,10 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     // instead of removing it: nothing replaces the bar there, so an instant
     // unmount would read as a jumpy glitch rather than a handoff to a
     // page-owned surface. Project details (`/projects/<id>`) are the same
-    // kind of terminal page and share the motion, as do a goal's own pages
-    // and a person's. See [settingsRouteHidesBottomNav],
+    // kind of terminal page and share the motion, as do a goal's own pages,
+    // a habit editor and a person's. See [settingsRouteHidesBottomNav],
     // [projectsRouteHidesBottomNav], [goalsRouteHidesBottomNav] and
-    // [peopleRouteHidesBottomNav].
+    // [habitsRouteHidesBottomNav] and [peopleRouteHidesBottomNav].
     final slideNavAway =
         (destinations[index].kind == _AppNavigationDestinationKind.settings &&
             settingsRouteHidesBottomNav(
@@ -919,6 +939,10 @@ class _AppScreenState extends ConsumerState<AppScreen> {
         (destinations[index].kind == _AppNavigationDestinationKind.goals &&
             goalsRouteHidesBottomNav(
               navService.goalsDelegate.currentBeamLocation,
+            )) ||
+        (destinations[index].kind == _AppNavigationDestinationKind.habits &&
+            habitsRouteHidesBottomNav(
+              navService.habitsDelegate.currentBeamLocation,
             )) ||
         (destinations[index].kind == _AppNavigationDestinationKind.people &&
             peopleRouteHidesBottomNav(

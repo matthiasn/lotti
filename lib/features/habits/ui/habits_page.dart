@@ -41,6 +41,8 @@ import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 /// heatmap controller's deep-history `streaksByHabit`. The reading content is
 /// centred on a comfortable column on wide windows; the heatmap band spans the
 /// full width. Scroll activity is reported to the `UserActivityService`.
+/// Its final chart reserves the shell-reported bottom overlay height so it can
+/// scroll completely clear of mobile navigation and recording indicators.
 class HabitsTabPage extends ConsumerStatefulWidget {
   const HabitsTabPage({super.key});
 
@@ -306,6 +308,10 @@ class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
         ),
         backgroundColor: dsPageSurface(context),
         body: SafeArea(
+          // The navigation bar's occupied height already includes the system
+          // bottom inset. Leave that edge to the chart footer so the inset is
+          // reserved exactly once.
+          bottom: false,
           child: CustomScrollView(
             controller: _scrollController,
             slivers: <Widget>[
@@ -369,7 +375,8 @@ class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
                   pagePadding,
                   0,
                   pagePadding,
-                  tokens.spacing.step6,
+                  tokens.spacing.step6 +
+                      DesignSystemBottomNavigationBar.occupiedHeight(context),
                 ),
                 sliver: const SliverToBoxAdapter(child: HabitsChartCard()),
               ),
