@@ -70,7 +70,12 @@ class _PlazaHarness extends StatefulWidget {
 }
 
 class _PlazaHarnessState extends State<_PlazaHarness> {
-  _HarnessPreset _preset = _HarnessPreset.large;
+  // Boots on the 300-task perf preset; override with PLAZA_PRESET=demo
+  // (or small/medium/large) to start elsewhere, e.g. on the penguin world.
+  _HarnessPreset _preset = _HarnessPreset.values.firstWhere(
+    (p) => p.name == Platform.environment['PLAZA_PRESET'],
+    orElse: () => _HarnessPreset.large,
+  );
   late PlazaSceneController _sceneController;
   late FacadeLodManager _lod;
   late FlyCameraController _camera;

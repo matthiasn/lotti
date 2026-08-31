@@ -1,7 +1,31 @@
+import 'dart:typed_data';
+
 import 'package:flutter_scene/scene.dart';
 import 'package:lotti/features/plaza/scene/plaza_scene.dart';
 import 'package:lotti/features/plaza/ui/facade_widget.dart';
 import 'package:vector_math/vector_math.dart' show Vector3;
+
+/// A facade quad for a [WidgetComponent], wound counter-clockwise.
+///
+/// flutter_scene 0.23 flipped the engine's front-face convention to CCW and
+/// regenerated its primitives, but `WidgetComponent`'s built-in quad still
+/// winds CW (byte-identical to 0.20), so the default surface is back-face
+/// culled and widget textures never show. Same vertex data as upstream's
+/// quad, triangles reversed. Drop when the upstream quad is fixed.
+Geometry _facadeQuad(double width, double height) {
+  final hw = width / 2;
+  final hh = height / 2;
+  return MeshGeometry.fromArrays(
+    positions: Float32List.fromList([
+      hw, -hh, 0, //
+      -hw, -hh, 0, //
+      -hw, hh, 0, //
+      hw, hh, 0, //
+    ]),
+    texCoords: Float32List.fromList([0, 1, 1, 1, 1, 0, 0, 0]),
+    indices: [3, 1, 0, 2, 1, 3],
+  );
+}
 
 /// Surface tier of one facade (spec §9):
 /// near = live interactive widget, mid = widget captured once (manual
@@ -130,7 +154,10 @@ class FacadeLodManager {
           interactive: interactive,
         ),
         size: building.widgetSize,
-        worldHeight: building.facadeWorldHeight,
+        geometry: _facadeQuad(
+          building.facadeWorldWidth,
+          building.facadeWorldHeight,
+        ),
         update: interactive
             ? WidgetUpdatePolicy.everyFrame
             : WidgetUpdatePolicy.manual,

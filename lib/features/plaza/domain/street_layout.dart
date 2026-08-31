@@ -168,7 +168,7 @@ class StreetLayout {
   /// Deterministic building height for a task id (independent of state).
   double heightFor(String taskId) {
     final t = ((stableHash(taskId) >> 16) & 0xFFFF) / 0xFFFF;
-    return 3.0 + 5.0 * t * t;
+    return 6.0 + 9.0 * t * t;
   }
 
   /// Start of the week containing [time] (Monday 00:00).
