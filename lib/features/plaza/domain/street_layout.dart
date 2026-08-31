@@ -179,18 +179,20 @@ class StreetLayout {
     final facadeWidthPx = buildingWidth * 0.92 * facadePxPerMeter;
     final innerPx = facadeWidthPx - 48; // horizontal text padding
 
-    var px = 10.0; // category bar
-    if (task.coverImageUrl != null) {
-      px += facadeWidthPx * 9 / 16; // full-bleed 16:9 cover
-    }
-    px += 48; // text-section vertical padding
+    // Shopfront order: title block high, full-bleed cover at mid-height,
+    // checklist and state at street level (mirrors the facade widget).
+    var px = 10.0 + 24 + 18; // category bar + title-section padding
     // Title wrap estimate at 44px w700 (~0.53em average advance).
     final charsPerLine = (innerPx / (44 * 0.53)).floor().clamp(6, 200);
     final lines = (task.title.length / charsPerLine).ceil().clamp(1, 6);
-    px += lines * 44 * 1.15 + 16;
+    px += lines * 44 * 1.15;
     if (task.due != null || task.linkedTaskIds.isNotEmpty) {
-      px += 43; // meta row
+      px += 16 + 43; // meta row
     }
+    if (task.coverImageUrl != null) {
+      px += facadeWidthPx * 9 / 16; // full-bleed 16:9 cover
+    }
+    px += 48; // bottom-section padding
     px += task.openChecklistItems.length.clamp(0, 8) * 46; // item rows
     px += 44; // state row
 

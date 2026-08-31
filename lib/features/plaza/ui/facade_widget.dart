@@ -39,11 +39,11 @@ String _shortDate(DateTime date) => '${_months[date.month - 1]} ${date.day}';
 
 /// The live signage on one building facade.
 ///
-/// Content-packed, no filler: the building's height is sized to this very
-/// layout (see `StreetLayout.heightFor`), so the column stacks cover art
-/// (full 16:9), title, meta, open checklist items, and the state chip with
-/// nothing artificial in between. A scale-down fit absorbs the estimate
-/// error rather than overflowing.
+/// Content-packed, no filler, ordered like a shopfront: the title reads
+/// high like a sign, the cover art hangs at mid-height near eye level, and
+/// the checklist and state chip sit at street level. The building's height
+/// is sized to this very layout (see `StreetLayout.heightFor`); a
+/// scale-down fit absorbs the estimate error rather than overflowing.
 ///
 /// On the near tier the checklist checkboxes are live — the proof that
 /// interactive widgets on meshes matter (spec §11).
@@ -65,6 +65,12 @@ class FacadeWidget extends StatefulWidget {
 
 class _FacadeWidgetState extends State<FacadeWidget> {
   final Set<int> _ticked = {};
+
+  static const _metaStyle = TextStyle(
+    color: FacadeStyle.textDim,
+    fontSize: 26,
+    fontWeight: FontWeight.w600,
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -103,10 +109,50 @@ class _FacadeWidgetState extends State<FacadeWidget> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(height: 10, color: Color(task.categoryColor)),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 18),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            task.title,
+                            maxLines: 6,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: dimText,
+                              fontSize: 44,
+                              height: 1.15,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          if (task.due != null ||
+                              task.linkedTaskIds.isNotEmpty) ...[
+                            const SizedBox(height: 16),
+                            Row(
+                              children: [
+                                if (task.due != null)
+                                  Text(
+                                    'due ${_shortDate(task.due!)}',
+                                    style: _metaStyle,
+                                  ),
+                                const Spacer(),
+                                if (task.linkedTaskIds.isNotEmpty)
+                                  Text(
+                                    'links ${task.linkedTaskIds.length}',
+                                    style: _metaStyle,
+                                  ),
+                              ],
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
                     if (task.coverImageUrl != null)
-                      // The demo covers are 16:9; a matching full-bleed
-                      // frame shows the whole image, edge to edge,
-                      // uncropped and undistorted.
+                      // Full-bleed 16:9 frame: the demo covers are 16:9,
+                      // so the whole image shows, edge to edge, uncropped
+                      // and undistorted — hung below the title so it sits
+                      // near eye level, not at the top of a tower.
                       AspectRatio(
                         aspectRatio: 16 / 9,
                         child: Opacity(
@@ -125,45 +171,6 @@ class _FacadeWidgetState extends State<FacadeWidget> {
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            task.title,
-                            maxLines: 6,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: dimText,
-                              fontSize: 44,
-                              height: 1.15,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          if (task.due != null ||
-                              task.linkedTaskIds.isNotEmpty) ...[
-                            Row(
-                              children: [
-                                if (task.due != null)
-                                  Text(
-                                    'due ${_shortDate(task.due!)}',
-                                    style: const TextStyle(
-                                      color: FacadeStyle.textDim,
-                                      fontSize: 26,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                const Spacer(),
-                                if (task.linkedTaskIds.isNotEmpty)
-                                  Text(
-                                    'links ${task.linkedTaskIds.length}',
-                                    style: const TextStyle(
-                                      color: FacadeStyle.textDim,
-                                      fontSize: 26,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                          ],
                           for (final (index, item)
                               in task.openChecklistItems.take(8).indexed)
                             SizedBox(
