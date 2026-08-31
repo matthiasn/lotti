@@ -203,6 +203,79 @@ void main() {
   });
 
   // -------------------------------------------------------------------------
+  group('aggregateWorkoutDailySum — spelling eras', () {
+    // Rows imported through the upstream plugin before the import normalised
+    // its spelling say `RUNNING`; the chart they belong to says `running`.
+    test('counts a row stored under the plugin spelling', () {
+      final result = aggregateWorkoutDailySum(
+        [
+          makeWorkoutEntry(
+            dateFrom: DateTime(2024, 3, 11, 8),
+            dateTo: DateTime(2024, 3, 11, 9),
+            workoutType: 'RUNNING',
+            energy: 300,
+            id: 'plugin-era',
+          ),
+          makeWorkoutEntry(
+            dateFrom: DateTime(2024, 3, 11, 17),
+            dateTo: DateTime(2024, 3, 11, 18),
+            workoutType: 'running',
+            energy: 200,
+            id: 'fork-era',
+          ),
+        ],
+        chartConfig: runningEnergyConfig,
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+      );
+
+      expect(result[1].value, 500);
+    });
+
+    test('matches a multi-word activity across spellings', () {
+      const strengthConfig = DashboardWorkoutItem(
+        workoutType: 'functionalStrengthTraining',
+        displayName: 'Strength training (time)',
+        color: '#82E6CE',
+        valueType: WorkoutValueType.duration,
+      );
+      final result = aggregateWorkoutDailySum(
+        [
+          makeWorkoutEntry(
+            dateFrom: DateTime(2024, 3, 12, 7),
+            dateTo: DateTime(2024, 3, 12, 7, 40),
+            workoutType: 'FUNCTIONAL_STRENGTH_TRAINING',
+            id: 'strength',
+          ),
+        ],
+        chartConfig: strengthConfig,
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+      );
+
+      expect(result[2].value, 40);
+    });
+
+    test('still ignores a different activity in the plugin spelling', () {
+      final result = aggregateWorkoutDailySum(
+        [
+          makeWorkoutEntry(
+            dateFrom: DateTime(2024, 3, 11, 8),
+            dateTo: DateTime(2024, 3, 11, 9),
+            workoutType: 'WALKING',
+            energy: 300,
+            id: 'walk',
+          ),
+        ],
+        chartConfig: runningEnergyConfig,
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+      );
+
+      expect(result.map((o) => o.value), everyElement(0));
+    });
+  });
+
   // Glados property tests.
   // -------------------------------------------------------------------------
 

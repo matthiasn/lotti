@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/dashboards/config/dashboard_workout_config.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_workout_chart.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/helpers.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
+import 'package:lotti/logic/health_workout_types.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 /// Detail-view summary for a workout entry: optional per-metric charts for the
@@ -24,14 +24,12 @@ class WorkoutSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final data = workoutEntry.data;
-    final items = <DashboardWorkoutItem>[];
-    final workoutType = workoutEntry.data.workoutType;
-
-    workoutTypes.forEach((key, value) {
-      if (key.contains(workoutType)) {
-        items.add(value);
-      }
-    });
+    // The catalogue series for this entry's activity, whichever spelling the
+    // row was imported under. An exact activity match, not a substring of the
+    // catalogue key: `walk` must not pick up every `walking.*` chart.
+    final items = workoutTypes.values
+        .where((item) => isSameWorkoutType(item.workoutType, data.workoutType))
+        .toList();
 
     final tokens = context.designTokens;
     // Lead with the Energy/Duration value lines (the facts users scan for);

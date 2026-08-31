@@ -2,6 +2,7 @@ import 'dart:core';
 
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/logic/health_workout_types.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
@@ -9,8 +10,10 @@ import 'package:lotti/widgets/charts/utils.dart';
 /// prefilling every day in `[rangeStart, rangeEnd]` with a zero bucket so the
 /// chart has a continuous daily series.
 ///
-/// Only workouts whose `workoutType` matches `chartConfig` contribute. The
-/// dimension summed is chosen by `chartConfig.valueType`: distance and energy
+/// Only workouts of `chartConfig`'s activity contribute — compared through
+/// `isSameWorkoutType`, so a row stored under the plugin's `WALKING` counts
+/// towards a chart configured for `walking`. The dimension summed is chosen by
+/// `chartConfig.valueType`: distance and energy
 /// add the entry's stored values (when present); duration adds the entry's
 /// elapsed minutes (dateTo − dateFrom). Each output observation is dated at the
 /// day's local midnight.
@@ -33,7 +36,7 @@ List<Observation> aggregateWorkoutDailySum(
     entity.maybeMap(
       workout: (WorkoutEntry workoutEntry) {
         final data = workoutEntry.data;
-        if (data.workoutType == chartConfig.workoutType) {
+        if (isSameWorkoutType(data.workoutType, chartConfig.workoutType)) {
           final dayString = entity.meta.dateFrom.ymd;
           final n = sumsByDay[dayString] ?? 0;
 

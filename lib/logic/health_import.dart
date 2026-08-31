@@ -17,6 +17,7 @@ import 'package:lotti/logic/health_daily_steps.dart'
 import 'package:lotti/logic/health_data_types.dart';
 import 'package:lotti/logic/health_import_result.dart';
 import 'package:lotti/logic/health_permission_gate.dart';
+import 'package:lotti/logic/health_workout_types.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/health_service.dart';
@@ -27,16 +28,18 @@ import 'package:permission_handler/permission_handler.dart';
 export 'package:lotti/logic/health_data_types.dart';
 export 'package:lotti/logic/health_import_result.dart';
 export 'package:lotti/logic/health_permission_gate.dart';
+export 'package:lotti/logic/health_workout_types.dart';
 
 /// Reads samples out of Apple Health / Health Connect and persists them as
 /// quantitative and workout journal entries.
 ///
-/// Two entry points drive it:
+/// Two kinds of entry point drive it:
 ///
-/// - **Dashboards**, via [fetchHealthDataDelta] / [getWorkoutsHealthDataDelta]:
-///   background, incremental (from the newest stored sample forward), and
-///   queued so a dashboard full of charts does not fan out into one health
-///   request per chart.
+/// - **Dashboards, habit and goal surfaces, and the Daily OS timeline**, via
+///   [fetchHealthDataDelta] / [getWorkoutsHealthDataDelta]: background,
+///   incremental (from the newest stored sample forward), and queued so a
+///   dashboard full of charts does not fan out into one health request per
+///   chart.
 /// - **Settings → Health Import**, via [getActivityHealthData],
 ///   [fetchHealthData] and [getWorkoutsHealthData]: an explicit user-chosen
 ///   date range, awaited so the page can report what happened.
@@ -96,6 +99,18 @@ class HealthImport {
   final queue = Queue<String>();
   bool running = false;
   bool workoutImportRunning = false;
+
+  /// How long [getWorkoutsHealthDataDelta] stays quiet after a run.
+  ///
+  /// The Daily OS timeline asks for a delta every time its recorded lane is
+  /// recomputed — which is every journal notification — and a dashboard asks
+  /// on every chart construction. A workout is a discrete session that lands
+  /// once, so re-reading the store more often than the cumulative types
+  /// (see [fetchHealthDataDelta]) buys nothing.
+  static const workoutDeltaInterval = Duration(minutes: 10);
+
+  /// When the last workout delta started, or null before the first one.
+  DateTime? lastWorkoutDelta;
 
   late final String platform;
   String? deviceType;
@@ -798,8 +813,11 @@ class HealthImport {
             dateTo: dataPoint.dateTo,
             distance: value.totalDistance,
             energy: value.totalEnergyBurned,
-            source: dataPoint.sourceId,
-            workoutType: value.workoutActivityType.name,
+            source: _workoutSource(dataPoint),
+            // The plugin's `WALKING`; the journal, the dashboard catalogue and
+            // every persisted chart say `walking` — see
+            // [canonicalWorkoutType] for why the import is where they meet.
+            workoutType: workoutTypeForActivity(value.workoutActivityType),
             id: dataPoint.uuid,
           );
 
@@ -827,8 +845,19 @@ class HealthImport {
     }
   }
 
+  /// The app or device a workout came from.
+  ///
+  /// HealthKit fills `sourceId` with the writing app's bundle identifier.
+  /// Health Connect leaves it empty and puts the provider's package name in
+  /// `sourceName` instead, so a workout imported on Android would otherwise be
+  /// stored with no source at all.
+  static String _workoutSource(HealthDataPoint dataPoint) =>
+      dataPoint.sourceId.isNotEmpty ? dataPoint.sourceId : dataPoint.sourceName;
+
   /// Imports workouts recorded since the newest stored one.
   ///
+  /// Returns an empty import without touching the store when a delta ran less
+  /// than [workoutDeltaInterval] ago, or when one is still in flight.
   /// [workoutImportRunning] guards against overlapping runs and is cleared in a
   /// `finally`: leaving it set on failure used to deadlock every later workout
   /// import for the rest of the session.
@@ -840,11 +869,16 @@ class HealthImport {
       return const HealthImportResult.imported(0);
     }
 
+    final now = clock.now();
+    final previous = lastWorkoutDelta;
+    if (previous != null && now.difference(previous) < workoutDeltaInterval) {
+      return const HealthImportResult.imported(0);
+    }
+    lastWorkoutDelta = now;
     workoutImportRunning = true;
 
     try {
       final latest = await _db.latestWorkout();
-      final now = clock.now();
 
       return await getWorkoutsHealthData(
         dateFrom: latest?.data.dateFrom ?? now.subtract(defaultFetchDuration),

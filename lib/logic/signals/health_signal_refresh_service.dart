@@ -6,8 +6,9 @@ import 'package:lotti/services/domain_logging.dart';
 
 /// Pulls journal-backed health signals forward from the platform health store.
 ///
-/// Goal and habit surfaces both read imported journal rows. This service owns
-/// the platform-type mapping and failure containment they share, without
+/// Goal and habit surfaces read imported journal rows, and the Daily OS
+/// timeline projects imported workouts onto its recorded lane. This service
+/// owns the platform-type mapping and failure containment they share, without
 /// making the always-available Habits feature depend on the Goals feature.
 class HealthSignalRefreshService {
   HealthSignalRefreshService(
@@ -60,6 +61,27 @@ class HealthSignalRefreshService {
           subDomain: _logSubDomain,
         );
       }
+    }
+  }
+
+  /// Pulls workouts recorded since the newest stored one forward.
+  ///
+  /// Workouts are not a `HealthDataType` request — they have their own delta,
+  /// throttled inside [HealthImport] — so a surface that shows recorded
+  /// sessions (the Daily OS timeline) calls this rather than
+  /// [refreshRequests]. Failures are contained the same way: the surface keeps
+  /// painting what is stored.
+  Future<void> refreshWorkouts() async {
+    try {
+      await _healthImport.getWorkoutsHealthDataDelta();
+    } catch (error, stackTrace) {
+      _domainLogger?.error(
+        LogDomain.health,
+        error,
+        message: 'refreshing workouts failed',
+        stackTrace: stackTrace,
+        subDomain: _logSubDomain,
+      );
     }
   }
 }

@@ -69,6 +69,52 @@ void main() {
     ).called(1);
   });
 
+  test('refreshWorkouts runs the workout delta', () async {
+    when(
+      healthImport.getWorkoutsHealthDataDelta,
+    ).thenAnswer((_) async => const HealthImportResult.imported(0));
+
+    await HealthSignalRefreshService(healthImport).refreshWorkouts();
+
+    verify(healthImport.getWorkoutsHealthDataDelta).called(1);
+  });
+
+  test('refreshWorkouts contains and logs a failing delta', () async {
+    final loggingService = MockLoggingService();
+    stubLoggingService(loggingService);
+    when(
+      healthImport.getWorkoutsHealthDataDelta,
+    ).thenThrow(StateError('health store unavailable'));
+    final service = HealthSignalRefreshService(
+      healthImport,
+      DomainLogger(loggingService: loggingService),
+    );
+
+    await expectLater(service.refreshWorkouts(), completes);
+
+    verify(
+      () => loggingService.captureException(
+        any<dynamic>(),
+        domain: any(named: 'domain'),
+        subDomain: 'healthSignalRefresh',
+        stackTrace: any<dynamic>(named: 'stackTrace'),
+        level: any(named: 'level'),
+        type: any(named: 'type'),
+      ),
+    ).called(1);
+  });
+
+  test('refreshWorkouts without a logger swallows the failure', () async {
+    when(
+      healthImport.getWorkoutsHealthDataDelta,
+    ).thenThrow(StateError('health store unavailable'));
+
+    await expectLater(
+      HealthSignalRefreshService(healthImport).refreshWorkouts(),
+      completes,
+    );
+  });
+
   test('provider resolves only when the profile registers an importer', () {
     final absent = ProviderContainer();
     addTearDown(absent.dispose);

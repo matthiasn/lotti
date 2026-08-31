@@ -5,13 +5,25 @@ description: How samples get out of Apple Health / Health Connect and into the j
 resource: ../../lib/logic/health_import.dart
 tags: [health, healthkit, health-connect, import, dashboards, settings]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-08-04T11:30:00Z }
+generated: { by: claude-code/fable-5, at: 2026-08-31T12:00:00Z }
 stale_after: 2027-03-01
 sources:
   - id: import
     resource: ../../lib/logic/health_import.dart
     title: HealthImport — the queue, the gate and the per-type fetchers
-    last_modified: 2026-08-27
+    last_modified: 2026-08-31
+  - id: workout-types
+    resource: ../../lib/logic/health_workout_types.dart
+    title: canonicalWorkoutType — one spelling across both import eras
+    last_modified: 2026-08-31
+  - id: signal-refresh
+    resource: ../../lib/logic/signals/health_signal_refresh_service.dart
+    title: HealthSignalRefreshService — the surfaces' contained, fire-and-forget refresh
+    last_modified: 2026-08-31
+  - id: actual-lane
+    resource: ../../lib/features/daily_os_next/state/actual_time_blocks_provider.dart
+    title: The Daily OS actual lane — the workout delta's other caller
+    last_modified: 2026-08-31
   - id: daily-steps
     resource: ../../lib/logic/health_daily_steps.dart
     title: resolveDailySteps — the merged total versus the best single source
@@ -59,12 +71,13 @@ where they came from.
 **Everything funnels through one `HealthImport` singleton**, and that is
 load-bearing rather than incidental. See [One request at a time](#one-request-at-a-time).
 
-# Two callers, different urgencies
+# Who asks, and how urgently
 
 | Caller | Entry point | Range | Awaited? |
 |--------|-------------|-------|----------|
 | A dashboard chart | `fetchHealthDataDelta(type)` / `getWorkoutsHealthDataDelta()` | newest stored sample → now (cumulative types: the day **before** the newest stored day → now) | No — returns as soon as the type is queued |
 | Settings → Health Import | `getActivityHealthData` / `fetchHealthData` / `getWorkoutsHealthData` | user-chosen | Yes — the page renders the outcome |
+| The Daily OS timeline's actual lane; the Habits and Goals pages | `HealthSignalRefreshService.refreshWorkouts()` / `refreshRequests()` — the same background deltas, with a failing importer contained so the surface keeps painting what is stored | as the dashboard row | No |
 
 `HealthObservationsController`'s constructor schedules a delta fetch for its
 health type after a short jittered delay, so **a dashboard with six health cards
@@ -77,6 +90,10 @@ differ.
 ```mermaid
 flowchart TD
   Chart["HealthObservationsController<br/>(one per chart)"] -->|fetchHealthDataDelta| Queue[["queue: Queue&lt;String&gt;"]]
+  Signals["Habits / Goals pages"] -->|HealthSignalRefreshService<br/>refreshRequests| Queue
+  WChart["WorkoutChartDataController"] -->|getWorkoutsHealthDataDelta| WDelta["workout delta<br/>(one at a time, 10-minute throttle)"]
+  Lane["Daily OS actual lane"] -->|HealthSignalRefreshService<br/>refreshWorkouts| WDelta
+  WDelta --> Gate
   Page["Health Import page"] -->|getActivityHealthData<br/>fetchHealthData<br/>getWorkoutsHealthData| Gate
   Queue -->|_start drains, one at a time| Delta["_fetchHealthDataDelta"]
   Delta --> Gate{{"_serialized<br/>(one at a time)"}}
@@ -204,6 +221,16 @@ nothing while charts kept rendering stale data. `workoutImportRunning` guards
 
 Cumulative (activity) types are re-fetched at most every ten minutes, because
 their per-day totals move continuously; discrete samples are not throttled.
+
+**The workout delta is not queued, and it is throttled.** `getWorkoutsHealthDataDelta`
+runs one at a time behind `workoutImportRunning`, and since the Daily OS actual
+lane asks for one on every journal notification it also keeps quiet for
+`workoutDeltaInterval` (ten minutes) after a run: a call inside that window
+returns an empty import without touching the database or the store. The stamp
+(`lastWorkoutDelta`) is taken when a run *starts* and is kept when it fails, so a
+store that is down is not hammered once per note saved. A refused overlap does
+not count as a run. The user-initiated import on the Health Import page is never
+throttled, and is the way to retry sooner.
 
 # What a request returns
 
@@ -383,6 +410,44 @@ flowchart TD
 The fix is the `SLEEP_ASLEEP` entry in `compositeStorageTypes` rather than a
 change at the call site, and it costs no extra authorization sheet:
 `expandToPermissionFamilies` already widens any sleep type to the whole family.
+
+# Workout types keep the fork's spelling
+
+A `WorkoutEntry` stores its activity as a string, and two eras spelled it
+differently. Until the move from the `flutter_health_fit` fork to the upstream
+`health` plugin (#2041), a workout's type was the fork's enum name —
+`walking`, `running`, `cycling`, `functionalStrengthTraining` — and that is what
+the dashboard catalogue (`dashboard_workout_config.dart`), every persisted
+`DashboardWorkoutItem` and every habit signal keyed on a workout still say. The
+upstream plugin names the same activities `HealthWorkoutActivityType.WALKING`,
+`FUNCTIONAL_STRENGTH_TRAINING`, and the import wrote that name verbatim — so
+every workout recorded since matched nothing: dashboards read "No data" over
+months of walks, and a workout's own detail card found no trend charts. Nothing
+failed; the rows were there, spelled so that nobody looked for them.
+
+`canonicalWorkoutType` (`health_workout_types.dart`) is the single answer. It
+folds `UPPER_SNAKE` into `lowerCamelCase` mechanically, aliases the plugin's
+`BIKING` to the `cycling` HealthKit and the fork both record, and passes a
+canonical value through unchanged, so it is idempotent. Two rules follow:
+
+- **The import writes the canonical form.** `_getWorkoutsHealthData` stores
+  `workoutTypeForActivity(value.workoutActivityType)`, never the enum name.
+- **Readers compare through `isSameWorkoutType`.** `aggregateWorkoutDailySum`,
+  `WorkoutObservationsController`'s empty-chart check and `WorkoutSummary`'s
+  chart selection all do, so the rows imported between #2041 and this
+  normalisation — still stored as `WALKING` — chart alongside the rest without
+  a data migration.
+
+**Known limit:** the habit-signal path reads workouts by SQL equality on the
+row's `subtype` (`workoutsByType`), and the signal picker lists the distinct
+stored strings. Plugin-era rows therefore show up there under their own spelling
+and are matched only by a signal that names it. A one-off rewrite of those rows,
+in the shape of `SleepAsleepBackfillService`, would close that; it has not been
+written.
+
+The same import also records a workout's `source` as `sourceId`, falling back
+to `sourceName` — Health Connect leaves the id empty and names the provider's
+package in the name, so Android workouts used to be stored sourceless.
 
 # Platform gates
 

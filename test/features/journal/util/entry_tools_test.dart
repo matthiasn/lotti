@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entity_definitions.dart';
@@ -6,6 +7,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 
 import '../../../test_data/test_data.dart';
+import '../../../widget_test_utils.dart';
 
 /// Glados generators for entry-tools property tests.
 extension _AnyDuration on glados.Any {
@@ -313,6 +315,50 @@ void main() {
     });
   });
 
+  group('isTimeRecordingSpan', () {
+    test('a minute or more reads as a tracked interval', () {
+      expect(isTimeRecordingSpan(const Duration(minutes: 1)), isTrue);
+      expect(isTimeRecordingSpan(const Duration(hours: 2)), isTrue);
+    });
+
+    test('anything shorter is a point in time', () {
+      expect(isTimeRecordingSpan(const Duration(seconds: 59)), isFalse);
+      expect(isTimeRecordingSpan(Duration.zero), isFalse);
+    });
+  });
+
+  group('formatEntryTimestamp', () {
+    // ICU separates the meridiem with a narrow no-break space in newer data;
+    // the assertion is about the words and their order, not the space.
+    String plainSpaces(String? s) =>
+        s!.replaceAll('\u202F', ' ').replaceAll('\u00A0', ' ');
+
+    test('renders a locale-aware date and time', () {
+      expect(
+        plainSpaces(
+          formatEntryTimestamp(DateTime(2024, 3, 15, 10, 30), locale: 'en_US'),
+        ),
+        'Mar 15, 2024 10:30 AM',
+      );
+    });
+
+    testWidgets('entryDateLabel resolves the widget locale', (tester) async {
+      String? label;
+      await tester.pumpWidget(
+        makeTestableWidget(
+          Builder(
+            builder: (context) {
+              label = entryDateLabel(context, DateTime(2024, 3, 15, 10, 30));
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+
+      expect(plainSpaces(label), 'Mar 15, 2024 10:30 AM');
+    });
+  });
+
   group('humanWorkoutType', () {
     test('title-cases a simple type', () {
       expect(humanWorkoutType('running'), 'Running');
@@ -408,6 +454,39 @@ void main() {
           includeTitle: false,
         ),
         'Energy: 0 kcal\nDuration: 12 min',
+      );
+    });
+
+    test('titles a multi-word activity the way the journal card does', () {
+      expect(
+        entryTextForWorkout(
+          workout(
+            workoutType: 'functionalStrengthTraining',
+            energy: 100,
+            minutes: 20,
+          ),
+        ),
+        'Functional Strength Training\nEnergy: 100 kcal\nDuration: 20 min',
+      );
+    });
+
+    test('reads a row imported under the plugin spelling the same way', () {
+      expect(
+        entryTextForWorkout(
+          workout(
+            workoutType: 'FUNCTIONAL_STRENGTH_TRAINING',
+            energy: 100,
+            minutes: 20,
+          ),
+        ),
+        'Functional Strength Training\nEnergy: 100 kcal\nDuration: 20 min',
+      );
+    });
+
+    test('an empty activity leaves an empty title line', () {
+      expect(
+        entryTextForWorkout(workout(workoutType: '', energy: 5, minutes: 1)),
+        '\nEnergy: 5 kcal\nDuration: 1 min',
       );
     });
   });
