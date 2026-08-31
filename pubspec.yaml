@@ -67,6 +67,7 @@ dependencies:
   flutter_quill_extensions: ^11.0.0
   flutter_rating: ^2.0.2
   flutter_riverpod: ^3.1.0
+  flutter_scene: ^0.23.0
   flutter_secure_storage: ^10.0.0
   flutter_svg: ^2.2.4
   flutter_vodozemac: ^0.7.1
@@ -124,6 +125,7 @@ dependencies:
   tinycolor2: ^3.0.0
   url_launcher: ^6.1.2
   uuid: ^4.3.3
+  vector_math: ^2.4.2
   wechat_assets_picker: ^10.1.0
   widgetbook: ^3.7.1
   window_manager: ^0.5.0
@@ -131,6 +133,12 @@ dependencies:
   zxing2: ^0.2.4
 
 dependency_overrides:
+  # flutter_scene 0.23 pins code_assets ^1.2.1, which would downgrade the
+  # native-assets toolchain for everyone else. Its build hook compiles fine
+  # against 2.x (verified by a full Linux build), so keep the toolchain
+  # current. Re-check on every flutter_scene bump.
+  code_assets: ^2.0.0
+  native_toolchain_c: 0.19.4
   # json_serializable >=6.13.2 requires analyzer >=10, while
   # objectbox_generator 5.x currently caps analyzer below 11.
   analyzer_plugin: '>=0.14.0 <0.14.5'
