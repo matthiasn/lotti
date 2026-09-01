@@ -14,6 +14,7 @@ import 'package:lotti/beamer/locations/projects_location.dart';
 import 'package:lotti/beamer/locations/relationships_location.dart';
 import 'package:lotti/beamer/locations/settings_location.dart';
 import 'package:lotti/beamer/locations/tasks_location.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/database/sync_db.dart';
@@ -38,6 +39,8 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/ui/app_command_controller.dart';
+import 'package:lotti/features/lockdown/state/lockdown_category_options.dart';
+import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
 import 'package:lotti/features/nudges/model/nudge_banner_entry.dart';
 import 'package:lotti/features/nudges/model/nudge_entity_view.dart';
 import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
@@ -66,6 +69,7 @@ import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/theme.dart';
@@ -660,6 +664,11 @@ void main() {
     // whose argument is an AiConfigType — mocktail needs a fallback for `any()`.
     registerFallbackValue(AiConfigType.inferenceProvider);
     registerFallbackValue(FakeLaunchOptions());
+    // The lockdown guard is set and reset by delegate.
+    registerFallbackValue(<BeamerDelegate>{});
+    registerFallbackValue(
+      BeamerDelegate(locationBuilder: (_, _) => NotFound()),
+    );
   });
 
   group('Navigation Index Clamping Logic Tests', () {
@@ -4802,6 +4811,243 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump();
     });
+  });
+
+  group('AppScreen lockdown mode', () {
+    CategoryDefinition category(String id, String name) => CategoryDefinition(
+      id: id,
+      name: name,
+      createdAt: DateTime(2026),
+      updatedAt: DateTime(2026),
+      vectorClock: null,
+      private: false,
+      active: true,
+    );
+
+    /// Pumps the desktop shell on the Tasks tab with the lockdown options
+    /// pinned to [categories]; returns the shell's provider container.
+    Future<ProviderContainer> pumpLockdownShell(
+      WidgetTester tester,
+      MockNavService mockNavService, {
+      required List<CategoryDefinition> categories,
+    }) async {
+      await _stubNavService(
+        mockNavService,
+        indexStream: Stream.value(0),
+        isProjectsEnabled: () => true,
+        isDailyOsEnabled: () => true,
+        isHabitsEnabled: () => true,
+        isDashboardsEnabled: () => true,
+      );
+      when(() => mockNavService.index).thenReturn(0);
+      when(() => mockNavService.journalIndex).thenReturn(5);
+      when(() => mockNavService.isTabAllowed(any())).thenReturn(true);
+      when(() => mockNavService.setIndex(any())).thenReturn(null);
+      when(
+        () => mockNavService.resetTabRootWithinTab(any()),
+      ).thenReturn(null);
+      await _registerAppScreenGetIt(mockNavService);
+      getIt.registerSingleton<EntitiesCacheService>(
+        MockEntitiesCacheService(),
+      );
+      addTearDown(tearDownTestGetIt);
+
+      await _pumpAppScreen(
+        tester,
+        navService: mockNavService,
+        viewportSize: _desktopViewportSize,
+        extraOverrides: [
+          lockdownCategoryOptionsProvider.overrideWith((ref) {
+            final lockdown = ref.watch(lockdownControllerProvider);
+            return categories.where((c) => lockdown.allows(c.id)).toList();
+          }),
+        ],
+      );
+      return ProviderScope.containerOf(
+        tester.element(find.byType(AppScreen)),
+      );
+    }
+
+    testWidgets(
+      'picking a category from the logo menu strips the rail down to Tasks '
+      'and Logbook and resets both tabs; exiting restores everything',
+      (tester) async {
+        final mockNavService = MockNavService();
+        final container = await pumpLockdownShell(
+          tester,
+          mockNavService,
+          categories: [category('work', 'Work'), category('health', 'Health')],
+        );
+
+        // Full rail before lockdown.
+        expect(find.text('Settings'), findsOneWidget);
+        expect(find.text('Habits'), findsOneWidget);
+        expect(find.byType(ContactSupportRow), findsOneWidget);
+        expect(find.text('Work'), findsNothing);
+
+        await tester.tap(find.byKey(desktopSidebarLogoMenuTriggerKey));
+        await tester.pumpAndSettle();
+        expect(find.text('Lock to a category'), findsOneWidget);
+        expect(find.text('Work'), findsOneWidget);
+        expect(find.text('Health'), findsOneWidget);
+
+        await tester.tap(find.byKey(const Key('lockdown-menu-category-work')));
+        await tester.pumpAndSettle();
+
+        expect(container.read(lockdownControllerProvider).categoryIds, {
+          'work',
+        });
+        final sidebar = tester.widget<DesktopNavigationSidebar>(
+          find.byType(DesktopNavigationSidebar),
+        );
+        expect(
+          sidebar.destinations.map((d) => d.label).toList(),
+          ['Tasks', 'Habits', 'Insights', 'Logbook'],
+        );
+        expect(sidebar.destinations.first.expandedChildBuilder, isNull);
+        expect(sidebar.settingsDestination, isNull);
+        expect(sidebar.aboveSettings, isNull);
+        expect(sidebar.footerBand, isNull);
+        expect(find.text('Settings'), findsNothing);
+        expect(find.text('DailyOS'), findsNothing);
+        expect(find.text('Projects'), findsNothing);
+        expect(find.byType(ContactSupportRow), findsNothing);
+        expect(find.byType(SidebarSavedTaskFilters), findsNothing);
+        // The day-view column stays: it redacts foreign blocks itself.
+        expect(find.byType(DayViewSidePanel), findsOneWidget);
+        // The navigation guard covers shortcuts, the palette and path beams,
+        // and is keyed by delegate so a flag flip cannot shift it.
+        // The guard is re-synced on every build, so read the latest value.
+        final allowed =
+            verify(
+                  () => mockNavService.allowedTabDelegates = captureAny(),
+                ).captured.last
+                as Set<BeamerDelegate>?;
+        expect(allowed, {
+          mockNavService.tasksDelegate,
+          mockNavService.journalDelegate,
+          mockNavService.habitsDelegate,
+          mockNavService.dashboardsDelegate,
+          mockNavService.goalsDelegate,
+        });
+        // Every surviving tab was reset to its root without being activated.
+        for (final delegate in allowed!) {
+          verify(
+            () => mockNavService.resetTabRootWithinTab(delegate),
+          ).called(1);
+        }
+        verifyNever(() => mockNavService.setTabRoot(any()));
+        verifyNever(() => mockNavService.setIndex(any()));
+
+        // A rail tap maps back to the full (content-stack) index.
+        await tester.tap(find.text('Logbook'));
+        await tester.pump();
+        verify(() => mockNavService.tapIndex(5)).called(1);
+
+        // The menu now offers only the locked category and the exit.
+        await tester.tap(find.byKey(desktopSidebarLogoMenuTriggerKey));
+        await tester.pumpAndSettle();
+        expect(find.text('Locked down'), findsOneWidget);
+        expect(find.text('Work'), findsOneWidget);
+        expect(find.text('Health'), findsNothing);
+
+        await tester.tap(find.byKey(const Key('lockdown-menu-clear')));
+        await tester.pumpAndSettle();
+
+        expect(container.read(lockdownControllerProvider).isActive, isFalse);
+        expect(
+          verify(
+            () => mockNavService.allowedTabDelegates = captureAny(),
+          ).captured.last,
+          isNull,
+        );
+        expect(find.text('Settings'), findsOneWidget);
+        expect(find.text('DailyOS'), findsOneWidget);
+        expect(find.byType(ContactSupportRow), findsOneWidget);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
+
+    testWidgets(
+      'on the phone layout lockdown applies no navigation guard and no '
+      'tab reset — the mobile shell is out of scope',
+      (tester) async {
+        final mockNavService = MockNavService();
+        await _stubNavService(
+          mockNavService,
+          indexStream: Stream.value(0),
+          isProjectsEnabled: () => true,
+          isDailyOsEnabled: () => true,
+          isHabitsEnabled: () => true,
+          isDashboardsEnabled: () => true,
+        );
+        when(() => mockNavService.index).thenReturn(0);
+        when(() => mockNavService.journalIndex).thenReturn(5);
+        when(() => mockNavService.isTabAllowed(any())).thenReturn(true);
+        await _registerAppScreenGetIt(mockNavService);
+        getIt.registerSingleton<EntitiesCacheService>(
+          MockEntitiesCacheService(),
+        );
+        addTearDown(tearDownTestGetIt);
+
+        await _pumpAppScreen(tester, navService: mockNavService);
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(AppScreen)),
+        );
+
+        container
+            .read(lockdownControllerProvider.notifier)
+            .lockToCategory(
+              'work',
+            );
+        await tester.pumpAndSettle();
+
+        final guards = verify(
+          () => mockNavService.allowedTabDelegates = captureAny(),
+        ).captured;
+        expect(guards, everyElement(isNull));
+        verifyNever(() => mockNavService.resetTabRootWithinTab(any()));
+        verifyNever(() => mockNavService.setIndex(any()));
+        expect(find.byType(DesktopNavigationSidebar), findsNothing);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
+
+    testWidgets(
+      'entering lockdown from a hidden tab switches to Tasks first',
+      (tester) async {
+        final mockNavService = MockNavService();
+        final container = await pumpLockdownShell(
+          tester,
+          mockNavService,
+          categories: [category('work', 'Work')],
+        );
+        // Projects is active: the guard reports it as not allowed.
+        when(() => mockNavService.index).thenReturn(2);
+        when(() => mockNavService.isTabAllowed(2)).thenReturn(false);
+
+        container
+            .read(lockdownControllerProvider.notifier)
+            .lockToCategory(
+              'work',
+            );
+        await tester.pumpAndSettle();
+
+        verify(() => mockNavService.setIndex(0)).called(1);
+        final reset = verify(
+          () => mockNavService.resetTabRootWithinTab(captureAny()),
+        ).captured;
+        expect(reset, hasLength(5));
+        expect(reset, contains(mockNavService.tasksDelegate));
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
   });
 }
 

@@ -32,6 +32,7 @@ class BlockPosition extends StatefulWidget {
     required this.onEdit,
     required this.arrangeMode,
     required this.onReschedule,
+    this.redacted = false,
     super.key,
   });
 
@@ -49,6 +50,10 @@ class BlockPosition extends StatefulWidget {
     DateTime end,
   )?
   onReschedule;
+
+  /// See [DayBlock.redacted]. A redacted block can be neither moved nor
+  /// resized.
+  final bool redacted;
 
   @override
   State<BlockPosition> createState() => _BlockPositionState();
@@ -106,6 +111,7 @@ class _BlockPositionState extends State<BlockPosition> {
     final canArrange =
         widget.arrangeMode &&
         !_rescheduleInFlight &&
+        !widget.redacted &&
         !widget.tracked &&
         block.type != TimeBlockType.cal &&
         widget.onReschedule != null;
@@ -115,6 +121,7 @@ class _BlockPositionState extends State<BlockPosition> {
       tracked: widget.tracked,
       onRename: widget.onRename,
       onEdit: widget.onEdit,
+      redacted: widget.redacted,
     );
     return Positioned(
       top: top + blockGap / 2,
@@ -355,11 +362,18 @@ class DayBlock extends ConsumerWidget {
     this.tracked = false,
     this.onRename,
     this.onEdit,
+    this.redacted = false,
     super.key,
   });
 
   final TimeBlock block;
   final bool tracked;
+
+  /// Draws the block as a plain neutral slab: right time and height, but no
+  /// title, no category colour, no live task projection and no tap, edit or
+  /// rename. Lockdown uses it for blocks outside the locked category so the
+  /// day keeps its shape without revealing what filled it.
+  final bool redacted;
 
   /// Inline rename for standalone blocks. Ignored for task-linked,
   /// calendar, buffer, and tracked blocks.
@@ -372,6 +386,7 @@ class DayBlock extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
+    if (redacted) return _RedactedBlock(block: block, tracked: tracked);
     final taskId = block.taskId?.trim();
     final liveTask = watchLiveTaskMetadata(ref, taskId);
     final effectiveTitle = liveTask.missing
@@ -524,6 +539,54 @@ class DayBlock extends ConsumerWidget {
 
   Color _categoryColor(TimeBlock block) =>
       categoryColorFromHex(block.category.colorHex);
+}
+
+/// The redacted rendering of a [DayBlock]: the buffer block's neutral stripe
+/// on a plain `background.level03` fill, the same radius as a real block, and
+/// nothing inside. Not a button — there is nothing to open — and its
+/// accessible name carries only the time range and whether it was tracked or
+/// planned, never the title.
+class _RedactedBlock extends StatelessWidget {
+  const _RedactedBlock({required this.block, required this.tracked});
+
+  final TimeBlock block;
+  final bool tracked;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final semanticsLabel = [
+      formatClockRange(context, block.start, block.end),
+      if (tracked)
+        context.messages.dailyOsNextTimelineTracked
+      else
+        context.messages.dailyOsNextTimelinePlanned,
+    ].join(', ');
+    return Semantics(
+      label: semanticsLabel,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: tokens.colors.background.level03,
+          borderRadius: BorderRadius.circular(tokens.radii.m),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              width: 3,
+              decoration: BoxDecoration(
+                color: tokens.colors.text.lowEmphasis.withValues(alpha: 0.32),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(tokens.radii.m),
+                  bottomLeft: Radius.circular(tokens.radii.m),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 String? _reasonFor(TimeBlock block) {

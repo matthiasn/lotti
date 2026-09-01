@@ -2377,4 +2377,70 @@ void main() {
       },
     );
   });
+
+  group('DayTimeline isRedacted', () {
+    testWidgets('a redacted block keeps its slot but shows no text, no '
+        'category colour and no interaction', (tester) async {
+      _setView(tester, const Size(1280, 1200));
+      final navigated = <String>[];
+      beamToNamedOverride = navigated.add;
+      final secret = _timeBlock(
+        id: 'secret',
+        title: 'Secret meeting',
+        startHour: 9,
+        endHour: 10,
+        taskId: 'task-secret',
+      );
+      final open = _timeBlock(
+        id: 'open',
+        title: 'Open work',
+        startHour: 11,
+        endHour: 12,
+      );
+      await tester.pumpWidget(
+        _wrap(
+          DayTimeline(
+            draft: _draftWithBlocks(blocks: [secret, open]),
+            isRedacted: (block) => block.id == 'secret',
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // Same slot, nothing inside.
+      final secretFinder = find.byKey(const Key('daily_os_day_block_secret'));
+      expect(secretFinder, findsOneWidget);
+      expect(find.text('Secret meeting'), findsNothing);
+      expect(
+        find.descendant(of: secretFinder, matching: find.byType(Text)),
+        findsNothing,
+      );
+      expect(
+        find.descendant(of: secretFinder, matching: find.byType(InkWell)),
+        findsNothing,
+      );
+      final slab = tester.widget<DecoratedBox>(
+        find
+            .descendant(of: secretFinder, matching: find.byType(DecoratedBox))
+            .first,
+      );
+      final tokens = tester.element(secretFinder).designTokens;
+      expect(
+        (slab.decoration as BoxDecoration).color,
+        tokens.colors.background.level03,
+      );
+      // A tap goes nowhere — no task navigation for a hidden block.
+      await tester.tap(secretFinder);
+      await tester.pump();
+      expect(navigated, isEmpty);
+      // The accessible name never carries the title either.
+      expect(
+        tester.getSemantics(secretFinder).label,
+        isNot(contains('Secret meeting')),
+      );
+
+      // The sibling is untouched.
+      expect(find.text('Open work'), findsOneWidget);
+    });
+  });
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/branding/design_system_brand_logo.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_navigation_sidebar.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -1164,5 +1165,88 @@ void main() {
         expect(activeInks.length, 1);
       },
     );
+  });
+
+  group('DesktopNavigationSidebar logo menu', () {
+    testWidgets('without menu items the logo is inert', (tester) async {
+      await tester.pumpWidget(
+        wrap(
+          DesktopNavigationSidebar(
+            destinations: buildDestinations(),
+            activeIndex: 0,
+            onDestinationSelected: (_) {},
+          ),
+        ),
+      );
+
+      expect(find.byKey(desktopSidebarLogoMenuTriggerKey), findsNothing);
+      await tester.tap(find.byType(DesignSystemBrandLogo));
+      await tester.pumpAndSettle();
+      expect(find.byType(DesignSystemContextMenu), findsNothing);
+    });
+
+    testWidgets('tapping the logo opens the supplied menu with its header, '
+        'and a row tap fires and closes it', (tester) async {
+      var picked = 0;
+      await tester.pumpWidget(
+        wrap(
+          DesktopNavigationSidebar(
+            destinations: buildDestinations(),
+            activeIndex: 0,
+            onDestinationSelected: (_) {},
+            logoMenuHeader: 'Lock to a category',
+            logoMenuSemanticsLabel: 'Lockdown menu',
+            logoMenuItems: [
+              DesignSystemContextMenuItem(
+                label: 'Work',
+                onTap: () => picked++,
+              ),
+            ],
+          ),
+        ),
+      );
+
+      expect(find.text('Work'), findsNothing);
+      expect(
+        tester.getSemantics(find.bySemanticsLabel('Lockdown menu')),
+        matchesSemantics(
+          label: 'Lockdown menu',
+          isButton: true,
+          isImage: true,
+          isFocusable: true,
+          hasTapAction: true,
+          hasFocusAction: true,
+        ),
+      );
+
+      await tester.tap(find.byKey(desktopSidebarLogoMenuTriggerKey));
+      await tester.pumpAndSettle();
+      expect(find.text('Lock to a category'), findsOneWidget);
+      expect(find.text('Work'), findsOneWidget);
+
+      await tester.tap(find.text('Work'));
+      await tester.pumpAndSettle();
+      expect(picked, 1);
+      expect(find.byType(DesignSystemContextMenu), findsNothing);
+    });
+
+    testWidgets('the collapsed rail has no logo and therefore no trigger', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        wrap(
+          DesktopNavigationSidebar(
+            destinations: buildDestinations(),
+            activeIndex: 0,
+            onDestinationSelected: (_) {},
+            collapsed: true,
+            logoMenuItems: const [DesignSystemContextMenuItem(label: 'Work')],
+          ),
+        ),
+      );
+
+      expect(find.byKey(desktopSidebarLogoMenuTriggerKey), findsNothing);
+      expect(find.byType(DesignSystemBrandLogo), findsNothing);
+    });
   });
 }

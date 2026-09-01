@@ -5,9 +5,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/categories/state/categories_list_controller.dart';
+import 'package:lotti/features/lockdown/domain/lockdown_state.dart';
+import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../lockdown/lockdown_test_utils.dart';
 import '../test_utils.dart';
 
 void main() {
@@ -65,5 +68,28 @@ void main() {
 
     final state = container.read(categoriesStreamProvider);
     expect(state.hasError, isTrue);
+  });
+
+  test('emits only the locked categories while lockdown is active', () async {
+    final work = CategoryTestUtils.createTestCategory(id: 'work', name: 'Work');
+    final health = CategoryTestUtils.createTestCategory(
+      id: 'health',
+      name: 'Health',
+    );
+    final lockdown = TestLockdownController(
+      const LockdownState(categoryIds: {'work'}),
+    );
+    final locked = ProviderContainer(
+      overrides: [
+        categoryRepositoryProvider.overrideWithValue(repository),
+        lockdownControllerProvider.overrideWith(() => lockdown),
+      ],
+    );
+    addTearDown(locked.dispose);
+    final sub = locked.listen(categoriesStreamProvider, (_, _) {});
+    addTearDown(sub.close);
+
+    categoriesController.add([work, health]);
+    expect(await locked.read(categoriesStreamProvider.future), [work]);
   });
 }

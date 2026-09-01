@@ -288,6 +288,65 @@ void main() {
       await getIt.reset();
     });
 
+    test('allowedTabDelegates refuses every route into a hidden tab', () async {
+      final navService = getIt<NavService>()..tapIndex(0);
+      addTearDown(() => navService.allowedTabDelegates = null);
+      final journalIndex = navService.journalIndex;
+      final settingsIndex = navService.settingsIndex;
+
+      navService.allowedTabDelegates = {
+        navService.tasksDelegate,
+        navService.journalDelegate,
+      };
+      expect(navService.isTabAllowed(settingsIndex), isFalse);
+      expect(navService.isTabAllowed(journalIndex), isTrue);
+
+      // Sidebar / keyboard / palette all end in tapIndex or setIndex.
+      navService.tapIndex(settingsIndex);
+      expect(navService.index, 0);
+      navService.setIndex(settingsIndex);
+      expect(navService.index, 0);
+
+      // Path-based navigation must not leak a foreign route into the
+      // current tab's delegate either.
+      beamToNamed('/settings/advanced');
+      expect(navService.index, 0);
+      expect(navService.currentPath, isNot(contains('/settings')));
+
+      // Allowed tabs still work in both directions.
+      beamToNamed('/journal');
+      expect(navService.index, journalIndex);
+      navService.tapIndex(0);
+      expect(navService.index, 0);
+
+      // Lifting the guard restores everything.
+      navService
+        ..allowedTabDelegates = null
+        ..tapIndex(settingsIndex);
+      expect(navService.index, settingsIndex);
+      navService.tapIndex(0);
+    });
+
+    test('resetTabRootWithinTab returns a tab to its root without activating '
+        'it', () async {
+      final navService = getIt<NavService>()..tapIndex(0);
+      final journalIndex = navService.journalIndex;
+
+      // Park the logbook on a detail route, then come back to Tasks.
+      beamToNamed('/journal/some-id');
+      expect(navService.index, journalIndex);
+      navService.tapIndex(0);
+      expect(navService.routeForTab('/journal'), '/journal/some-id');
+
+      navService.resetTabRootWithinTab(navService.journalDelegate);
+      expect(navService.index, 0, reason: 'the reset must not activate');
+      expect(navService.routeForTab('/journal'), '/journal');
+
+      // A delegate of a disabled tab is ignored rather than crashing.
+      navService.resetTabRootWithinTab(navService.goalsDelegate);
+      expect(navService.index, 0);
+    });
+
     test('tap all tabs', () async {
       final navService = getIt<NavService>();
 

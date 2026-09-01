@@ -15000,6 +15000,36 @@ abstract class AppLocalizations {
   /// **'Show list'**
   String get listPaneShowTooltip;
 
+  /// Heading of the hidden logo menu while a lockdown is active.
+  ///
+  /// In en, this message translates to:
+  /// **'Locked down'**
+  String get lockdownMenuActiveHeader;
+
+  /// Menu row that exits lockdown mode and restores the full app.
+  ///
+  /// In en, this message translates to:
+  /// **'Exit lockdown'**
+  String get lockdownMenuClear;
+
+  /// Heading of the hidden logo menu while no lockdown is active; the rows below are the categories to lock to.
+  ///
+  /// In en, this message translates to:
+  /// **'Lock to a category'**
+  String get lockdownMenuHeader;
+
+  /// Placeholder row of the lockdown menu when the user has no categories to lock to.
+  ///
+  /// In en, this message translates to:
+  /// **'No categories yet'**
+  String get lockdownMenuNoCategories;
+
+  /// Accessible name of the logo trigger and the lockdown menu container.
+  ///
+  /// In en, this message translates to:
+  /// **'Lockdown menu'**
+  String get lockdownMenuSemanticsLabel;
+
   /// No description provided for @logbookEmptyHint.
   ///
   /// In en, this message translates to:

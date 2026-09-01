@@ -8828,6 +8828,21 @@ class AppLocalizationsNl extends AppLocalizations {
   String get listPaneShowTooltip => 'Lijst tonen';
 
   @override
+  String get lockdownMenuActiveHeader => 'Vergrendeld';
+
+  @override
+  String get lockdownMenuClear => 'Vergrendeling opheffen';
+
+  @override
+  String get lockdownMenuHeader => 'Vergrendelen op een categorie';
+
+  @override
+  String get lockdownMenuNoCategories => 'Nog geen categorieën';
+
+  @override
+  String get lockdownMenuSemanticsLabel => 'Vergrendelingsmenu';
+
+  @override
   String get logbookEmptyHint => 'Create your first entry to start journaling.';
 
   @override

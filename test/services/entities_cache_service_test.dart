@@ -1042,4 +1042,37 @@ void main() {
       expect(cache.getLabelById(testLabelDefinition1.id), testLabelDefinition1);
     });
   });
+
+  test('sortedCategories is scoped to lockedCategoryIds while set', () async {
+    CategoryDefinition category(String id, String name) => CategoryDefinition(
+      id: id,
+      name: name,
+      color: '#000000',
+      createdAt: testEpochDateTime,
+      updatedAt: testEpochDateTime,
+      vectorClock: null,
+      active: true,
+      private: false,
+    );
+    final cache = await createCache(
+      categories: [
+        category('work', 'Work'),
+        category('health', 'Health'),
+        category('side', 'Side project'),
+      ],
+    );
+    expect(cache.lockedCategoryIds, isEmpty);
+
+    cache.lockedCategoryIds = {'work', 'side'};
+    expect(
+      cache.sortedCategories.map((c) => c.id).toList(),
+      ['side', 'work'],
+    );
+    // Lookups by id stay unscoped: the locked category's own content still
+    // has to resolve its definition.
+    expect(cache.getCategoryById('health')?.name, 'Health');
+
+    cache.lockedCategoryIds = const {};
+    expect(cache.sortedCategories.length, 3);
+  });
 }

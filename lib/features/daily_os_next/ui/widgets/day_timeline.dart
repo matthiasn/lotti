@@ -42,6 +42,7 @@ class DayTimeline extends StatefulWidget {
     this.showGestureHint = true,
     this.onGesturesLearned,
     this.comparisonBreakpoint = kDesktopBreakpoint,
+    this.isRedacted,
     super.key,
   });
 
@@ -92,6 +93,13 @@ class DayTimeline extends StatefulWidget {
   /// Injected clock used by the now-line. Defaults to `DateTime.now`.
   /// Tests pass a fixed `DateTime` to render the line deterministically.
   final DateTime Function()? clock;
+
+  /// Decides per block whether it is drawn **redacted**: a plain neutral
+  /// slab at the right time and height, with no title, no category colour
+  /// and no interaction. Lockdown uses it so the day still reads as a whole
+  /// while blocks outside the locked category reveal nothing. `null` (the
+  /// default) redacts nothing.
+  final bool Function(TimeBlock block)? isRedacted;
 
   @override
   State<DayTimeline> createState() => _DayTimelineState();
@@ -328,6 +336,7 @@ class _DayTimelineState extends State<DayTimeline> {
                                     children: [
                                       Expanded(
                                         child: _TimelinePane(
+                                          isRedacted: widget.isRedacted,
                                           label: context
                                               .messages
                                               .dailyOsNextTimelinePlanned,
@@ -354,6 +363,7 @@ class _DayTimelineState extends State<DayTimeline> {
                                       SizedBox(width: tokens.spacing.step3),
                                       Expanded(
                                         child: _TimelinePane(
+                                          isRedacted: widget.isRedacted,
                                           label: context
                                               .messages
                                               .dailyOsNextTimelineActual,
@@ -387,6 +397,7 @@ class _DayTimelineState extends State<DayTimeline> {
                                           right: tokens.spacing.step3,
                                         ),
                                         child: _TimelinePane(
+                                          isRedacted: widget.isRedacted,
                                           label: context
                                               .messages
                                               .dailyOsNextTimelinePlanned,
@@ -415,6 +426,7 @@ class _DayTimelineState extends State<DayTimeline> {
                                           right: tokens.spacing.step3,
                                         ),
                                         child: _TimelinePane(
+                                          isRedacted: widget.isRedacted,
                                           label: context
                                               .messages
                                               .dailyOsNextTimelineActual,

@@ -557,6 +557,36 @@ class NavService {
     return specs[index].rootPath;
   }
 
+  /// While non-null, only tabs owned by these delegates may become active.
+  ///
+  /// Lockdown sets it so that every navigation entry point — sidebar taps,
+  /// keyboard shortcuts, the command palette, the desktop menu, path-based
+  /// beams — is refused for a hidden tab from one seam instead of each
+  /// caller checking. Keyed by delegate rather than index because a tab's
+  /// index shifts whenever a feature flag enables or disables a tab before
+  /// it; the delegates are stable for the life of the service. `null` (the
+  /// default) means unrestricted.
+  Set<BeamerDelegate>? allowedTabDelegates;
+
+  /// Whether the tab at `tabIndex` may become active under the current
+  /// `allowedTabDelegates`.
+  bool isTabAllowed(int tabIndex) =>
+      allowedTabDelegates == null ||
+      allowedTabDelegates!.contains(delegateByIndex(tabIndex));
+
+  /// Beams the tab owned by [delegate] back to its root **without** making
+  /// it active — unlike [setTabRoot], which activates its target. Lockdown
+  /// uses it to clear every surviving tab's detail pane in one go while the
+  /// user stays where they are. A disabled (flag-gated) tab is left alone.
+  void resetTabRootWithinTab(BeamerDelegate delegate) {
+    for (final spec in _enabledTabSpecs) {
+      if (spec.delegate == delegate) {
+        beamWithinTab(spec.rootPath);
+        return;
+      }
+    }
+  }
+
   /// [syncPath] is false for callers that have ALREADY set [currentPath] to
   /// the route they are about to beam to: the target delegate still holds its
   /// previous route at that point, so deriving the path from it would clobber
@@ -566,6 +596,7 @@ class NavService {
     bool emit = true,
     bool syncPath = true,
   }) {
+    if (!isTabAllowed(newIndex)) return;
     index = newIndex;
     if (syncPath) {
       currentPath = routeForTab(_activeRootPath);
@@ -805,6 +836,14 @@ class NavService {
   /// use [beamWithinTab] instead.
   void beamToNamed(String path, {Object? data}) {
     final normalizedPath = _normalizePath(path);
+    // Refuse a path owned by a tab that may not become active; otherwise
+    // `setPath` would leave the index where it is and the *current* tab's
+    // delegate would be handed a route it does not own.
+    final owner = _specForPath(normalizedPath);
+    if (owner != null &&
+        !isTabAllowed(beamerDelegates.indexOf(owner.delegate))) {
+      return;
+    }
     setPath(normalizedPath);
     delegateByIndex(index).beamToNamed(normalizedPath, data: data);
   }

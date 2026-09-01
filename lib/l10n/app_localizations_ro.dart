@@ -8977,6 +8977,21 @@ class AppLocalizationsRo extends AppLocalizations {
   String get listPaneShowTooltip => 'Afișați lista';
 
   @override
+  String get lockdownMenuActiveHeader => 'Limitat';
+
+  @override
+  String get lockdownMenuClear => 'Ieșiți din modul limitat';
+
+  @override
+  String get lockdownMenuHeader => 'Limitați la o categorie';
+
+  @override
+  String get lockdownMenuNoCategories => 'Nu există încă categorii';
+
+  @override
+  String get lockdownMenuSemanticsLabel => 'Meniul modului limitat';
+
+  @override
   String get logbookEmptyHint =>
       'Creați prima dvs. intrare pentru a începe jurnalul.';
 
