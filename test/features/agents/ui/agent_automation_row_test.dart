@@ -352,6 +352,81 @@ void main() {
       }
     });
 
+    testWidgets(
+      'a pending countdown reads Out of date even when the stale flag is off',
+      (tester) async {
+        // A wake is scheduled because something changed since the last
+        // report, so the row must never say "Up to date" next to it.
+        for (final compact in [false, true]) {
+          await withClock(Clock.fixed(now), () async {
+            await pumpRow(
+              tester,
+              subject(
+                hasReportContent: true,
+                automaticUpdatesEnabled: true,
+                showCountdown: true,
+                nextWakeAt: now.add(const Duration(minutes: 1, seconds: 30)),
+                compact: compact,
+                onRunNow: () {},
+              ),
+            );
+          });
+
+          expect(
+            find.text('Out of date'),
+            findsOneWidget,
+            reason: 'compact=$compact',
+          );
+          expect(
+            find.text('Up to date'),
+            findsNothing,
+            reason: 'compact=$compact',
+          );
+          expect(
+            find.byKey(const ValueKey('taskAgentStaleGlyph')),
+            findsOneWidget,
+            reason: 'compact=$compact',
+          );
+          expect(
+            tester
+                .widget<Tooltip>(
+                  find.ancestor(
+                    of: find.byKey(const ValueKey('taskAgentStaleGlyph')),
+                    matching: find.byType(Tooltip),
+                  ),
+                )
+                .message,
+            'This summary is out of date',
+            reason: 'compact=$compact',
+          );
+          // The countdown itself stays: it is the honest part of the pair.
+          if (!compact) {
+            expect(find.text('Next update in 1:30'), findsOneWidget);
+          }
+        }
+      },
+    );
+
+    testWidgets('Up to date shows with no countdown beside it', (
+      tester,
+    ) async {
+      await withClock(Clock.fixed(now), () async {
+        await pumpRow(
+          tester,
+          subject(
+            hasReportContent: true,
+            automaticUpdatesEnabled: true,
+            onRunNow: () {},
+          ),
+        );
+      });
+
+      expect(find.text('Up to date'), findsOneWidget);
+      expect(find.text('Out of date'), findsNothing);
+      expect(find.byKey(const ValueKey('taskAgentFreshGlyph')), findsOneWidget);
+      expect(find.textContaining('Next update'), findsNothing);
+    });
+
     testWidgets('spends the alert tint on the glyph, never on the word', (
       tester,
     ) async {

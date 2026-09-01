@@ -169,6 +169,7 @@ class DesktopTaskHeaderConnector extends ConsumerWidget {
             ),
       category: category,
       dueDate: dueDate,
+      estimate: task.data.estimate,
       oneLiner: oneLiner,
       labels: labels,
     );

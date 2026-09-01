@@ -490,6 +490,37 @@ void main() {
     );
   });
 
+  group('DesktopTaskHeaderConnector — estimate in the summary lane', () {
+    final estimateTag = find.byKey(const ValueKey('task-estimate-summary-tag'));
+
+    testWidgets('shows the task estimate without opening the fly-out', (
+      tester,
+    ) async {
+      final task = buildTask(estimate: const Duration(hours: 2));
+
+      await tester.pumpWidget(pumpConnector(task: task));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(estimateTag, findsOneWidget);
+      expect(find.text('2h'), findsOneWidget);
+      expect(find.byType(TaskMetaSection), findsNothing);
+    });
+
+    testWidgets('shows no estimate tag for a task without an estimate', (
+      tester,
+    ) async {
+      final task = buildTask();
+
+      await tester.pumpWidget(pumpConnector(task: task));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(estimateTag, findsNothing);
+      expect(find.byType(DesktopTaskHeader), findsOneWidget);
+    });
+  });
+
   group('DesktopTaskHeaderConnector — AI cost in the summary lane', () {
     testWidgets('shows the cost beside the status once AI has run', (
       tester,

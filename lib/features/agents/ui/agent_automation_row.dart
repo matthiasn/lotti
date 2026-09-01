@@ -101,7 +101,9 @@ class AgentAutomationRow extends StatefulWidget {
   final bool hasReportContent;
 
   /// Whether the current report is stale. Only meaningful when
-  /// [hasReportContent] is true.
+  /// [hasReportContent] is true. A pending countdown also counts as stale —
+  /// see [_AgentAutomationRowState._isOutdated] — so a caller that passes
+  /// `false` here while a wake is scheduled still gets an honest label.
   final bool isStale;
   final ValueChanged<bool> onAutomaticUpdatesChanged;
   final VoidCallback? onRunNow;
@@ -168,6 +170,13 @@ class _AgentAutomationRowState extends State<AgentAutomationRow> {
       widget.nextWakeAt != null &&
       _widthAnchorSeconds > 0;
 
+  /// The one answer to "is this summary current?" that the label, glyph and
+  /// tooltip all read. A scheduled update exists because something changed
+  /// since the last report, so a ticking countdown is itself proof the
+  /// summary is behind — the row must never say "Up to date" beside it, even
+  /// when the caller's own staleness flag has not caught up.
+  bool get _isOutdated => widget.isStale || _countdownVisible;
+
   /// The schedule wording at each width tier, longest first, rendered against
   /// [seconds]. Empty when there is nothing to say about the next update.
   List<String> _scheduleLabels(BuildContext context, int seconds) {
@@ -198,20 +207,22 @@ class _AgentAutomationRowState extends State<AgentAutomationRow> {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
+    final outdated = _isOutdated;
     final freshnessLabel = widget.hasReportContent
-        ? (widget.isStale
+        ? (outdated
               ? messages.taskAgentStatusOutOfDate
               : messages.taskAgentStatusUpToDate)
+        : null;
+    final freshnessTooltip = widget.hasReportContent
+        ? (outdated
+              ? messages.taskAgentReportOutdatedTitle
+              : messages.taskAgentReportUpToDate)
         : null;
     if (widget.compact) {
       final freshness = _FreshnessCluster(
         label: freshnessLabel,
-        tooltip: widget.hasReportContent
-            ? (widget.isStale
-                  ? messages.taskAgentReportOutdatedTitle
-                  : messages.taskAgentReportUpToDate)
-            : null,
-        isStale: widget.isStale,
+        tooltip: freshnessTooltip,
+        isStale: outdated,
       );
       final trigger = _UpdateNowButton(
         isRunning: widget.isRunning,
@@ -258,12 +269,8 @@ class _AgentAutomationRowState extends State<AgentAutomationRow> {
 
         final freshness = _FreshnessCluster(
           label: freshnessLabel,
-          tooltip: widget.hasReportContent
-              ? (widget.isStale
-                    ? messages.taskAgentReportOutdatedTitle
-                    : messages.taskAgentReportUpToDate)
-              : null,
-          isStale: widget.isStale,
+          tooltip: freshnessTooltip,
+          isStale: outdated,
         );
         final trigger = _UpdateNowButton(
           isRunning: widget.isRunning,

@@ -104,6 +104,7 @@ DesktopTaskHeaderData _fixture({
   DesktopTaskHeaderProject? project,
   DesktopTaskHeaderCategory? category,
   DesktopTaskHeaderDueDate? dueDate,
+  Duration? estimate,
   List<LabelDefinition> labels = const [],
 }) {
   final createdAt = DateTime.utc(2026);
@@ -117,6 +118,7 @@ DesktopTaskHeaderData _fixture({
     project: project,
     category: category,
     dueDate: dueDate,
+    estimate: estimate,
     labels: labels,
   );
 }
@@ -976,6 +978,89 @@ void main() {
         expect(lane.runSpacing, greaterThan(lane.spacing));
       },
     );
+  });
+
+  group('DesktopTaskHeader — estimate read-out', () {
+    final estimateTag = find.byKey(const ValueKey('task-estimate-summary-tag'));
+
+    testWidgets(
+      'shows the estimate as an informational tag between due date and labels',
+      (tester) async {
+        await _pumpDesktop(
+          tester,
+          DesktopTaskHeader(
+            data: _fixture(
+              dueDate: _dueFixture,
+              estimate: const Duration(hours: 1, minutes: 30),
+              labels: _labelFixtures,
+            ),
+            onTitleSaved: (_) {},
+            onOpenDetails: () {},
+          ),
+        );
+
+        // Visible at a glance, without opening the fly-out.
+        expect(find.text('1h 30m'), findsOneWidget);
+        expect(
+          tester
+              .widget<DsPill>(
+                find.ancestor(
+                  of: find.text('1h 30m'),
+                  matching: find.byType(DsPill),
+                ),
+              )
+              .shape,
+          DsPillShape.tag,
+          reason: 'a fact wears the tag shape, like the due date beside it',
+        );
+
+        final due = tester.getTopLeft(find.text('Due: Apr 1, 2026'));
+        final estimate = tester.getTopLeft(find.text('1h 30m'));
+        final labels = tester.getTopLeft(find.text('Bug fix, Release blocker'));
+        expect(estimate.dx, greaterThan(due.dx));
+        expect(labels.dx, greaterThan(estimate.dx));
+      },
+    );
+
+    testWidgets('tapping the estimate tag opens the details fly-out', (
+      tester,
+    ) async {
+      var opened = 0;
+      await _pumpDesktop(
+        tester,
+        DesktopTaskHeader(
+          data: _fixture(estimate: const Duration(minutes: 45)),
+          onTitleSaved: (_) {},
+          onOpenDetails: () => opened++,
+        ),
+      );
+
+      await tester.tap(find.text('45m'));
+      await tester.pump();
+
+      expect(opened, 1);
+    });
+
+    testWidgets('omits the tag when the estimate is unset or zero', (
+      tester,
+    ) async {
+      for (final estimate in <Duration?>[null, Duration.zero]) {
+        await _pumpDesktop(
+          tester,
+          DesktopTaskHeader(
+            data: _fixture(estimate: estimate),
+            onTitleSaved: (_) {},
+            onOpenDetails: () {},
+          ),
+        );
+
+        // No placeholder either: like a missing due date, an unset estimate
+        // leaves no trace in the lane.
+        expect(estimateTag, findsNothing, reason: 'estimate=$estimate');
+        expect(find.text('0m'), findsNothing, reason: 'estimate=$estimate');
+        expect(find.text('Open'), findsOneWidget);
+      }
+    });
   });
 
   group('DesktopTaskHeader — label compression', () {

@@ -8,6 +8,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_celebration.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/settings/state/celebration_preferences_controller.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
@@ -24,7 +25,8 @@ import 'package:lotti/utils/color.dart';
 const double kTaskChipGlyphSize = 14;
 
 /// The compact metadata summary under the title: a single lane of quiet,
-/// **informational** read-outs (status, priority, due date, labels) followed
+/// **informational** read-outs (status, priority, due date, estimate, labels)
+/// followed
 /// by the one interactive element — the "Details" trigger that opens the
 /// metadata fly-out where every value is edited. A null [onOpenDetails] drops
 /// both the trigger and the tags' hit targets: that is the state where the
@@ -43,6 +45,7 @@ class TaskMetaSummaryLine extends StatelessWidget {
     required this.dueDate,
     required this.labels,
     required this.onOpenDetails,
+    this.estimate,
     this.aiCostSlot,
     this.blockedBySlot,
     this.showSetCategory = false,
@@ -53,6 +56,12 @@ class TaskMetaSummaryLine extends StatelessWidget {
   final TaskStatus status;
   final TaskPriority priority;
   final DesktopTaskHeaderDueDate? dueDate;
+
+  /// The task's time estimate, shown as its own read-out so it is legible at
+  /// the same glance as the due date rather than one fly-out away. Null or
+  /// zero drops the tag — the lane makes no "Not set" claim, matching how a
+  /// missing due date or an empty label list leave no trace either.
+  final Duration? estimate;
   final List<LabelDefinition> labels;
 
   /// Opens the metadata fly-out. Wired to the Details trigger and to every
@@ -108,6 +117,8 @@ class TaskMetaSummaryLine extends StatelessWidget {
         ),
         if (dueDate case final dueDate?)
           _DueSummaryTag(dueDate: dueDate, onTap: onOpenDetails),
+        if (estimate case final estimate? when estimate > Duration.zero)
+          _EstimateSummaryTag(estimate: estimate, onTap: onOpenDetails),
         if (labels.isNotEmpty)
           _LabelsSummaryTag(labels: labels, onTap: onOpenDetails),
         // What the AI has cost on this task, at the same glance as its status
@@ -148,6 +159,7 @@ class _SummaryTag extends StatelessWidget {
     this.labelColor,
     this.tintColor,
     this.onTap,
+    super.key,
   });
 
   final String label;
@@ -314,6 +326,31 @@ class _DueSummaryTag extends StatelessWidget {
         LottiIcons.today,
         size: kTaskChipGlyphSize,
         color: accent,
+      ),
+      onTap: onTap,
+    );
+  }
+}
+
+/// The estimate read-out: the planned time as compact units ("45m", "1h 30m")
+/// behind the timer glyph, on the same neutral shell as priority. Tracked
+/// time against the estimate stays in the fly-out and details column, which
+/// have room for the progress bar; the lane only answers "how big is this?".
+class _EstimateSummaryTag extends StatelessWidget {
+  const _EstimateSummaryTag({required this.estimate, this.onTap});
+
+  final Duration estimate;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return _SummaryTag(
+      key: const ValueKey('task-estimate-summary-tag'),
+      label: formatRangeDuration(estimate),
+      leading: Icon(
+        LottiIcons.timer,
+        size: kTaskChipGlyphSize,
+        color: TaskShowcasePalette.mediumText(context),
       ),
       onTap: onTap,
     );

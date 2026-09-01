@@ -61,6 +61,7 @@ class DesktopTaskHeaderData {
     this.project,
     this.category,
     this.dueDate,
+    this.estimate,
     this.oneLiner,
     this.labels = const [],
   });
@@ -71,6 +72,10 @@ class DesktopTaskHeaderData {
   final DesktopTaskHeaderProject? project;
   final DesktopTaskHeaderCategory? category;
   final DesktopTaskHeaderDueDate? dueDate;
+
+  /// The task's time estimate. Null or zero means "not set", and the summary
+  /// lane shows no estimate read-out at all.
+  final Duration? estimate;
   final String? oneLiner;
   final List<LabelDefinition> labels;
 }
@@ -280,6 +285,7 @@ class _DesktopTaskHeaderState extends State<DesktopTaskHeader> {
             status: widget.data.status,
             priority: widget.data.priority,
             dueDate: widget.data.dueDate,
+            estimate: widget.data.estimate,
             labels: widget.data.labels,
             blockedBySlot: widget.blockedBySlot,
             aiCostSlot: widget.aiCostSlot,
