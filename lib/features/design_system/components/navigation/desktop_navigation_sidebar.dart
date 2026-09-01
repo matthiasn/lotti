@@ -52,6 +52,11 @@ class DesktopSidebarDestination {
 
 /// Persistent left-hand navigation sidebar for the desktop layout.
 ///
+/// Width of the collapsed icon-only sidebar rail. Shared with the app shell,
+/// which needs the sidebar's actual footprint for layout budgeting (the
+/// day-view column's allowance) without waiting for a layout pass.
+const kCollapsedSidebarWidth = 72.0;
+
 /// Replaces the mobile bottom navigation bar when the window is wide enough.
 /// Contains the brand logo, a collapse/expand toggle, navigation items, and
 /// a Settings entry pinned to the bottom.
@@ -74,7 +79,7 @@ class DesktopNavigationSidebar extends StatelessWidget {
     this.onUtilitySelected,
     this.width = 320,
     this.collapsed = false,
-    this.collapsedWidth = 72,
+    this.collapsedWidth = kCollapsedSidebarWidth,
     this.onToggleCollapsed,
     this.aboveSettings,
     this.footerBand,

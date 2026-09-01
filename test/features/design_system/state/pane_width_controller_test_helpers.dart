@@ -32,8 +32,10 @@ Future<ProviderContainer> hCreateContainerWithPersistedWidths({
   String? sidebarWidth,
   String? listPaneWidth,
   String? journalListPaneWidth,
+  String? dayViewPanelWidth,
   String? sidebarCollapsed,
   String? listPaneCollapsed,
+  String? dayViewPanelHidden,
 }) async {
   await tearDownTestGetIt();
   final mocks = await setUpTestGetIt();
@@ -44,8 +46,10 @@ Future<ProviderContainer> hCreateContainerWithPersistedWidths({
       sidebarWidthKey: sidebarWidth,
       listPaneWidthKey: listPaneWidth,
       journalListPaneWidthKey: journalListPaneWidth,
+      dayViewPanelWidthKey: dayViewPanelWidth,
       sidebarCollapsedKey: sidebarCollapsed,
       listPaneCollapsedKey: listPaneCollapsed,
+      dayViewPanelHiddenKey: dayViewPanelHidden,
     },
   );
   return ProviderContainer();
@@ -82,8 +86,10 @@ Future<PaneWidths> hHydrateWith({
   String? sidebarWidth,
   String? listPaneWidth,
   String? journalListPaneWidth,
+  String? dayViewPanelWidth,
   String? sidebarCollapsed,
   String? listPaneCollapsed,
+  String? dayViewPanelHidden,
 }) async {
   when(
     () => getIt<SettingsDb>().itemsByKeys(any()),
@@ -92,8 +98,10 @@ Future<PaneWidths> hHydrateWith({
       sidebarWidthKey: sidebarWidth,
       listPaneWidthKey: listPaneWidth,
       journalListPaneWidthKey: journalListPaneWidth,
+      dayViewPanelWidthKey: dayViewPanelWidth,
       sidebarCollapsedKey: sidebarCollapsed,
       listPaneCollapsedKey: listPaneCollapsed,
+      dayViewPanelHiddenKey: dayViewPanelHidden,
     },
   );
   final container = ProviderContainer();

@@ -18,6 +18,7 @@ import 'package:lotti/features/design_system/components/chips/design_system_chip
 import 'package:lotti/features/design_system/components/empty_states/design_system_empty_state.dart';
 import 'package:lotti/features/design_system/components/headers/tab_section_header.dart';
 import 'package:lotti/features/design_system/components/layout/detail_content_width.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_list_palette.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
@@ -29,6 +30,7 @@ import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_activator.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
+import 'package:lotti/features/tasks/state/task_list_density_controller.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_filter_modal.dart';
 import 'package:lotti/features/tasks/ui/model/task_browse_models.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/mobile/saved_task_filter_rail.dart';
@@ -422,6 +424,9 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
     final liveFilter = liveTasksFilterFor(state);
     final activeFilterCount = taskFilterNarrowingClauseCount(liveFilter);
     final filtersActive = activeFilterCount > 0;
+    // Watched here (not only in the toggle widget) so flipping density
+    // rebuilds every visible row.
+    final compactList = ref.watch(taskListDensityControllerProvider);
 
     final expandedHeader = Column(
       mainAxisSize: MainAxisSize.min,
@@ -666,6 +671,15 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
                                                     .selectedTaskStatuses
                                                     .length !=
                                                 1,
+                                            compact: compactList,
+                                            // The density toggle rides the
+                                            // first section-header line so
+                                            // it costs the header no row of
+                                            // its own.
+                                            sectionHeaderTrailing:
+                                                entryIndex == 0
+                                                ? const _TaskListDensityToggle()
+                                                : null,
                                             vectorDistance: distance,
                                             previousTaskIdInSection:
                                                 entryIndex > 0 &&
@@ -1082,6 +1096,50 @@ class _ActionBarAlignedFabLocation extends StandardFabLocation
     return math.min(
       standard + (kFloatingActionButtonMargin - bottomMargin),
       lowest,
+    );
+  }
+}
+
+/// Compact list-density toggle riding the trailing end of the tasks list's
+/// first section-header line ("P2 Medium · 5 tasks"), so switching between
+/// full cards and title-only rows costs the header no row of its own.
+///
+/// The glyph stays at the dense [IconSizes.m] tier, but the hit area keeps
+/// the full [TapTargets.minimum] floor — a glyph-only control has no label
+/// to borrow interaction area from. The section header compensates by
+/// tightening its own vertical padding while it hosts a trailing control
+/// (see `TaskBrowseListItem.sectionHeaderTrailing`), so the line's overall
+/// height barely moves.
+class _TaskListDensityToggle extends ConsumerWidget {
+  const _TaskListDensityToggle();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tokens = context.designTokens;
+    final compact = ref.watch(taskListDensityControllerProvider);
+    return IconButton(
+      key: const Key('tasks_list_density_toggle'),
+      tooltip: compact
+          ? context.messages.tasksListExpandedModeTooltip
+          : context.messages.tasksListCompactModeTooltip,
+      onPressed: ref.read(taskListDensityControllerProvider.notifier).toggle,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(
+        minWidth: TapTargets.minimum,
+        minHeight: TapTargets.minimum,
+      ),
+      style: compact
+          ? IconButton.styleFrom(
+              backgroundColor: DesignSystemListPalette.activatedFill(tokens),
+            )
+          : null,
+      icon: Icon(
+        LottiIcons.viewRows,
+        size: IconSizes.m,
+        color: compact
+            ? tokens.colors.interactive.enabled
+            : tokens.colors.text.mediumEmphasis,
+      ),
     );
   }
 }

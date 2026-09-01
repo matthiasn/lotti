@@ -203,6 +203,46 @@ throttles it to one delta per ten minutes, a failure is logged and swallowed,
 and the journal write a delta produces comes back through the same notification
 stream that triggers the recompute. See [health import](../health_import.md).
 
+## The docked day-view column (desktop shell)
+
+The day timeline has one embed outside the `/calendar` tab:
+`DayViewSidePanel`
+([day_view_side_panel.dart](../../../lib/features/daily_os_next/ui/widgets/day_view_side_panel.dart))
+is docked as the last child of the desktop shell's `Row` in
+`AppScreen._buildDesktopLayout`, so today's planned-vs-recorded comparison sits
+beside the tasks list while the Tasks tab is active. Facts that matter when
+touching it:
+
+- **It renders `DayTimeline` for the current local day only** — fed by
+  `currentDraftPlanProvider(today)` (falling back to `DraftPlan.emptyForDay`
+  so tracked time shows even with no plan) and
+  `dailyOsActualTimeBlocksProvider(today)`. A midnight-rollover `Timer` moves
+  it to the new day, because unlike `DailyOsNextRoot` it lives as long as the
+  app window. It passes no edit callbacks: the column is glanceable, editing
+  stays on the Day surface.
+- **Visibility and width persist in `PaneWidthController`** under
+  `PANE_WIDTH_DAY_VIEW` / `PANE_WIDTH_DAY_VIEW_HIDDEN`, default **visible** at
+  380 px (clamped 300–800). Hidden state is a slim rail whose calendar button
+  restores the panel — the toggle stays in the same corner in both states.
+  The `ResizableDivider` sits on the panel's *leading* edge, so the shell
+  inverts drag deltas before handing them to `updateDayViewPanelWidth`.
+- **Gating:** the column (and its rail) exists only while the **Tasks tab is
+  active** — beside the list where time is planned and tracked, and never
+  redundantly next to the Daily OS surface itself — *and* the Daily OS
+  feature flag is on (`NavService.isDailyOsPageEnabled`) *and*
+  `dayViewColumnAllowance` (in `beamer_app.dart`) grants it room: a
+  `kDayViewPanelMinWindowWidth` (1200 px) window gate, plus a
+  clamp-then-yield rule while a task detail is open — the tasks list +
+  detail split keeps a `kDesktopBreakpoint`-wide region, the column is
+  clamped narrower to protect it, and yields entirely when even its
+  300 px minimum would starve the split.
+- **Lane behaviour follows the pane, not the window.** `DayTimeline` grew a
+  `comparisonBreakpoint` parameter (default `kDesktopBreakpoint`); the panel
+  passes `kDayViewSidePanelComparisonBreakpoint` (560) so a wide column shows
+  the planned and actual lanes side by side while a narrow one falls back to
+  the swipeable `PageView` — the same gesture as the Day surface, and it
+  feeds the same one-shot `timelineGesturesLearned` preference.
+
 ## Task-linked versus standalone
 
 **Task-linked is the marked case; standalone is the unmarked default.** A

@@ -3849,6 +3849,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dailyOsDayPlan => 'Day Plan';
 
   @override
+  String get dailyOsDayViewPanelHide => 'Hide day view';
+
+  @override
+  String get dailyOsDayViewPanelShow => 'Show day view';
+
+  @override
   String get dailyOsNextActivityActionFailed =>
       'That action didn\'t finish. Your recording is still safe—try again.';
 
@@ -13630,6 +13636,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tasksLabelsUpdateFailed => 'Failed to update labels';
+
+  @override
+  String get tasksListCompactModeTooltip => 'Compact list';
+
+  @override
+  String get tasksListExpandedModeTooltip => 'Detailed list';
 
   @override
   String get tasksPriorityFilterAll => 'All';

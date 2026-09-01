@@ -2298,6 +2298,8 @@
   },
   "customColor": "Custom Color",
   "dailyOsDayPlan": "Day Plan",
+  "dailyOsDayViewPanelHide": "Hide day view",
+  "dailyOsDayViewPanelShow": "Show day view",
   "dailyOsNextActivityActionFailed": "That action didn't finish. Your recording is still safe—try again.",
   "dailyOsNextActivityAgentActionFailed": "That action didn't finish. Nothing was lost—try again.",
   "@dailyOsNextActivityAgentActionFailed": {
@@ -7666,6 +7668,8 @@
   "tasksLabelsSheetApply": "Apply",
   "tasksLabelsSheetSearchHint": "Search labels…",
   "tasksLabelsUpdateFailed": "Failed to update labels",
+  "tasksListCompactModeTooltip": "Compact list",
+  "tasksListExpandedModeTooltip": "Detailed list",
   "tasksPriorityFilterAll": "All",
   "tasksPriorityFilterTitle": "Priority",
   "tasksPriorityP0": "Urgent",

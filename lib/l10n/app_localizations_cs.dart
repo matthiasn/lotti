@@ -3915,6 +3915,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsDayPlan => 'Plán dne';
 
   @override
+  String get dailyOsDayViewPanelHide => 'Skrýt denní přehled';
+
+  @override
+  String get dailyOsDayViewPanelShow => 'Zobrazit denní přehled';
+
+  @override
   String get dailyOsNextActivityActionFailed =>
       'Akci se nepodařilo dokončit. Nahrávka je pořád v bezpečí — zkus to znovu.';
 
@@ -13872,6 +13878,12 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get tasksLabelsUpdateFailed => 'Nepodařilo se aktualizovat štítky';
+
+  @override
+  String get tasksListCompactModeTooltip => 'Kompaktní seznam';
+
+  @override
+  String get tasksListExpandedModeTooltip => 'Podrobný seznam';
 
   @override
   String get tasksPriorityFilterAll => 'Vše';

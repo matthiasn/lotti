@@ -6527,6 +6527,18 @@ abstract class AppLocalizations {
   /// **'Day Plan'**
   String get dailyOsDayPlan;
 
+  /// No description provided for @dailyOsDayViewPanelHide.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide day view'**
+  String get dailyOsDayViewPanelHide;
+
+  /// No description provided for @dailyOsDayViewPanelShow.
+  ///
+  /// In en, this message translates to:
+  /// **'Show day view'**
+  String get dailyOsDayViewPanelShow;
+
   /// No description provided for @dailyOsNextActivityActionFailed.
   ///
   /// In en, this message translates to:
@@ -23112,6 +23124,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to update labels'**
   String get tasksLabelsUpdateFailed;
+
+  /// No description provided for @tasksListCompactModeTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Compact list'**
+  String get tasksListCompactModeTooltip;
+
+  /// No description provided for @tasksListExpandedModeTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Detailed list'**
+  String get tasksListExpandedModeTooltip;
 
   /// No description provided for @tasksPriorityFilterAll.
   ///

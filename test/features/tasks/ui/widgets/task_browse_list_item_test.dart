@@ -9,9 +9,12 @@ import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
 import 'package:lotti/features/tasks/ui/model/task_browse_models.dart';
+import 'package:lotti/features/tasks/ui/time_recording_icon.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_browse_list_item.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_browse_list_item_rows.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_shared_widgets.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
 import '../../../../helpers/entity_factories.dart';
 import '../../../../widget_test_utils.dart';
@@ -536,4 +539,191 @@ void main() {
   // -------------------------------------------------------------------------
   // Cover art
   // -------------------------------------------------------------------------
+
+  group('Compact density mode', () {
+    testWidgets(
+      'renders only the task title — no duration, category, or status',
+      (tester) async {
+        final task = TestTaskFactory.create(
+          id: 'task-compact',
+          title: 'Compact row task',
+          dateFrom: DateTime(2026, 4, 8),
+        );
+
+        await pumpTaskBrowseItem(tester, task, compact: true);
+
+        expect(find.byType(TaskCompactRowContent), findsOneWidget);
+        expect(find.text('Compact row task'), findsOneWidget);
+        // Everything else the expanded card carries is dropped.
+        expect(find.byType(TaskRowContent), findsNothing);
+        expect(find.byType(TaskShowcaseCategoryChip), findsNothing);
+        expect(find.byType(TaskShowcaseStatusLabel), findsNothing);
+        expect(find.byType(TimeRecordingIcon), findsNothing);
+        expect(find.text('0h 0m'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'the same fixture in expanded mode carries the dropped elements — '
+      'guards the compact assertions against passing vacuously',
+      (tester) async {
+        final task = TestTaskFactory.create(
+          id: 'task-compact',
+          title: 'Compact row task',
+          dateFrom: DateTime(2026, 4, 8),
+        );
+
+        await pumpTaskBrowseItem(tester, task);
+
+        expect(find.byType(TaskRowContent), findsOneWidget);
+        expect(find.byType(TaskCompactRowContent), findsNothing);
+        expect(find.byType(TaskShowcaseCategoryChip), findsOneWidget);
+        expect(find.text('0h 0m'), findsOneWidget);
+      },
+    );
+
+    testWidgets('keeps the section header and the tappable row shell', (
+      tester,
+    ) async {
+      final task = TestTaskFactory.create(
+        id: 'task-compact-shell',
+        title: 'Compact shell task',
+        dateFrom: DateTime(2026, 4, 8),
+      );
+      var taps = 0;
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          TaskBrowseListItem(
+            entry: TaskBrowseEntry(
+              task: task,
+              sectionKey: const TaskBrowseSectionKey.dueToday(),
+              showSectionHeader: true,
+              isFirstInSection: true,
+              isLastInSection: true,
+              sectionCount: 1,
+            ),
+            sortOption: TaskSortOption.byPriority,
+            showCreationDate: false,
+            showDueDate: false,
+            showCoverArt: false,
+            compact: true,
+            onTap: () => taps++,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final context = tester.element(find.byType(TaskBrowseListItem));
+      expect(
+        find.text(context.messages.taskDueToday),
+        findsOneWidget,
+      );
+
+      await tester.tap(
+        find.byKey(const ValueKey('task-browse-row-task-compact-shell')),
+      );
+      expect(taps, 1);
+    });
+
+    testWidgets(
+      'compact titles are left-aligned and the row stretches full width — '
+      'a bare Text would center-align and shrink-wrap the last row of a '
+      'section',
+      (tester) async {
+        final task = TestTaskFactory.create(
+          id: 'task-compact-stretch',
+          title: 'Short',
+          dateFrom: DateTime(2026, 4, 8),
+        );
+
+        await pumpTaskBrowseItem(tester, task, compact: true);
+
+        final shellRect = tester.getRect(
+          find.byKey(const ValueKey('task-browse-row-task-compact-stretch')),
+        );
+        final contentRect = tester.getRect(
+          find.byType(TaskCompactRowContent),
+        );
+        final context = tester.element(find.byType(TaskCompactRowContent));
+        final pad = context.designTokens.spacing.step4;
+
+        // Full width: the content spans the card minus its horizontal
+        // padding even though the title is short and this is the last row
+        // in its section (no divider forcing the card wide).
+        expect(contentRect.left, closeTo(shellRect.left + pad, 1));
+        expect(contentRect.right, closeTo(shellRect.right - pad, 1));
+        // Left-aligned: the title starts at the content's leading edge.
+        expect(
+          tester.getTopLeft(find.text('Short')).dx,
+          closeTo(contentRect.left, 1),
+        );
+      },
+    );
+
+    testWidgets(
+      'sectionHeaderTrailing renders on the section-header line',
+      (tester) async {
+        final task = TestTaskFactory.create(
+          id: 'task-header-trailing',
+          title: 'Header trailing task',
+          dateFrom: DateTime(2026, 4, 8),
+        );
+        const trailingKey = Key('test-header-trailing');
+
+        await pumpTaskBrowseItem(
+          tester,
+          task,
+          showSectionHeader: true,
+          sectionCount: 3,
+          sectionHeaderTitleOverride: 'Due today',
+          sectionHeaderTrailing: const SizedBox.square(
+            dimension: 20,
+            key: trailingKey,
+          ),
+        );
+
+        final trailing = find.byKey(trailingKey);
+        expect(trailing, findsOneWidget);
+        // Shares the header line with the section title (vertically
+        // centered on the same row), above the task card itself.
+        expect(
+          tester.getCenter(trailing).dy,
+          closeTo(tester.getCenter(find.text('Due today')).dy, 1),
+        );
+        expect(
+          tester.getCenter(trailing).dy,
+          lessThan(tester.getTopLeft(find.text('Header trailing task')).dy),
+        );
+      },
+    );
+
+    testWidgets('compact rows use tighter vertical padding', (tester) async {
+      final task = TestTaskFactory.create(
+        id: 'task-compact-padding',
+        title: 'Compact padding task',
+        dateFrom: DateTime(2026, 4, 8),
+      );
+
+      await pumpTaskBrowseItem(tester, task, compact: true);
+
+      final context = tester.element(find.byType(TaskCompactRowContent));
+      final tokens = context.designTokens;
+      final padding = tester.widget<Padding>(
+        find
+            .ancestor(
+              of: find.byType(TaskCompactRowContent),
+              matching: find.byType(Padding),
+            )
+            .first,
+      );
+      expect(
+        padding.padding,
+        EdgeInsets.symmetric(
+          horizontal: tokens.spacing.step4,
+          vertical: tokens.spacing.step2,
+        ),
+      );
+    });
+  });
 }

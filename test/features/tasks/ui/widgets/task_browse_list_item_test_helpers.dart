@@ -66,6 +66,8 @@ Future<void> pumpTaskBrowseItem(
   String? previousTaskIdInSection,
   String? nextTaskIdInSection,
   ValueNotifier<String?>? hoveredTaskIdNotifier,
+  bool compact = false,
+  Widget? sectionHeaderTrailing,
   List<Override> overrides = const [],
 }) async {
   await tester.pumpWidget(
@@ -87,6 +89,8 @@ Future<void> pumpTaskBrowseItem(
         previousTaskIdInSection: previousTaskIdInSection,
         nextTaskIdInSection: nextTaskIdInSection,
         hoveredTaskIdNotifier: hoveredTaskIdNotifier,
+        compact: compact,
+        sectionHeaderTrailing: sectionHeaderTrailing,
       ),
       overrides: overrides,
     ),
@@ -111,6 +115,8 @@ TaskBrowseListItem makeTaskBrowseWidget(
   String? previousTaskIdInSection,
   String? nextTaskIdInSection,
   ValueNotifier<String?>? hoveredTaskIdNotifier,
+  bool compact = false,
+  Widget? sectionHeaderTrailing,
 }) {
   return TaskBrowseListItem(
     entry: TaskBrowseEntry(
@@ -131,6 +137,8 @@ TaskBrowseListItem makeTaskBrowseWidget(
     previousTaskIdInSection: previousTaskIdInSection,
     nextTaskIdInSection: nextTaskIdInSection,
     hoveredTaskIdNotifier: hoveredTaskIdNotifier,
+    compact: compact,
+    sectionHeaderTrailing: sectionHeaderTrailing,
     onTap: () {},
   );
 }
