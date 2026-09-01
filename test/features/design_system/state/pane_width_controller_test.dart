@@ -26,6 +26,8 @@ void main() {
         // and the test does not pass by accident if lookup semantics change.
         sidebarCollapsedKey: null,
         listPaneCollapsedKey: null,
+        dayViewPanelWidthKey: null,
+        dayViewPanelHiddenKey: null,
       },
     );
     container = ProviderContainer();
@@ -44,6 +46,8 @@ void main() {
       expect(widths.journalListPaneWidth, defaultJournalListPaneWidth);
       expect(widths.sidebarCollapsed, isFalse);
       expect(widths.listPaneCollapsed, isFalse);
+      expect(widths.dayViewPanelWidth, defaultDayViewPanelWidth);
+      expect(widths.dayViewPanelHidden, isFalse);
     });
 
     test('copyWith creates new instance with updated values', () {
@@ -82,6 +86,18 @@ void main() {
       expect(updated.sidebarWidth, defaultSidebarWidth);
     });
 
+    test('copyWith updates day view panel width and hidden flag', () {
+      const widths = PaneWidths();
+      final updated = widths.copyWith(
+        dayViewPanelWidth: 440,
+        dayViewPanelHidden: true,
+      );
+      expect(updated.dayViewPanelWidth, 440);
+      expect(updated.dayViewPanelHidden, isTrue);
+      expect(updated.sidebarWidth, defaultSidebarWidth);
+      expect(updated.listPaneWidth, defaultListPaneWidth);
+    });
+
     test('equality compares all field values', () {
       const a = PaneWidths(sidebarWidth: 300, listPaneWidth: 500);
       const b = PaneWidths(sidebarWidth: 300, listPaneWidth: 500);
@@ -93,11 +109,23 @@ void main() {
         journalListPaneWidth: 350,
       );
       const f = PaneWidths(listPaneCollapsed: true);
+      const g = PaneWidths(
+        sidebarWidth: 300,
+        listPaneWidth: 500,
+        dayViewPanelWidth: 420,
+      );
+      const h = PaneWidths(
+        sidebarWidth: 300,
+        listPaneWidth: 500,
+        dayViewPanelHidden: true,
+      );
       expect(a, equals(b));
       expect(a, isNot(equals(c)));
       expect(a, isNot(equals(d)));
       expect(a, isNot(equals(e)));
       expect(a, isNot(equals(f)));
+      expect(a, isNot(equals(g)));
+      expect(a, isNot(equals(h)));
     });
 
     test('hashCode is consistent with equality', () {
@@ -564,6 +592,166 @@ void main() {
           ),
         ).called(1);
       });
+    });
+  });
+
+  group('PaneWidthController day view panel', () {
+    test('hydrates the persisted width and hidden flag', () async {
+      container.dispose();
+      container = await hCreateContainerWithPersistedWidths(
+        dayViewPanelWidth: '450.0',
+        dayViewPanelHidden: 'true',
+      );
+
+      final result = await hAwaitHydration(container);
+      expect(result.dayViewPanelWidth, 450.0);
+      expect(result.dayViewPanelHidden, isTrue);
+    });
+
+    test('clamps the persisted width into its window', () async {
+      container.dispose();
+      container = await hCreateContainerWithPersistedWidths(
+        dayViewPanelWidth: '50.0',
+      );
+      expect(
+        (await hAwaitHydration(container)).dayViewPanelWidth,
+        minDayViewPanelWidth,
+      );
+
+      container.dispose();
+      container = await hCreateContainerWithPersistedWidths(
+        dayViewPanelWidth: '2000.0',
+      );
+      expect(
+        (await hAwaitHydration(container)).dayViewPanelWidth,
+        maxDayViewPanelWidth,
+      );
+    });
+
+    test('defaults to visible when nothing is persisted', () async {
+      container.dispose();
+      container = await hCreateContainerWithPersistedWidths();
+
+      final result = await hAwaitHydration(container);
+      expect(result.dayViewPanelHidden, isFalse);
+      expect(result.dayViewPanelWidth, defaultDayViewPanelWidth);
+    });
+
+    test('updateDayViewPanelWidth applies delta and clamps', () {
+      final notifier = container.read(paneWidthControllerProvider.notifier)
+        ..updateDayViewPanelWidth(60);
+      expect(
+        container.read(paneWidthControllerProvider).dayViewPanelWidth,
+        defaultDayViewPanelWidth + 60,
+      );
+
+      notifier.updateDayViewPanelWidth(-2000);
+      expect(
+        container.read(paneWidthControllerProvider).dayViewPanelWidth,
+        minDayViewPanelWidth,
+      );
+
+      notifier.updateDayViewPanelWidth(5000);
+      expect(
+        container.read(paneWidthControllerProvider).dayViewPanelWidth,
+        maxDayViewPanelWidth,
+      );
+    });
+
+    test('resizing the day view panel leaves the other panes alone', () {
+      container
+          .read(paneWidthControllerProvider.notifier)
+          .updateDayViewPanelWidth(80);
+      final state = container.read(paneWidthControllerProvider);
+      expect(state.sidebarWidth, defaultSidebarWidth);
+      expect(state.listPaneWidth, defaultListPaneWidth);
+      expect(state.journalListPaneWidth, defaultJournalListPaneWidth);
+    });
+
+    test('persists after debounce, coalescing rapid drags', () {
+      fakeAsync((async) {
+        container.read(paneWidthControllerProvider.notifier)
+          ..updateDayViewPanelWidth(10)
+          ..updateDayViewPanelWidth(20)
+          ..updateDayViewPanelWidth(30);
+        async.flushMicrotasks();
+
+        verifyNever(
+          () => getIt<SettingsDb>().saveSettingsItem(
+            dayViewPanelWidthKey,
+            any(),
+          ),
+        );
+
+        async.elapse(persistDebounce);
+
+        // 380 + 10 + 20 + 30 — only the final accumulated value is written.
+        verify(
+          () => getIt<SettingsDb>().saveSettingsItem(
+            dayViewPanelWidthKey,
+            '440.0',
+          ),
+        ).called(1);
+      });
+    });
+
+    test('ignores resize input while hidden and restores prior width', () {
+      final notifier = container.read(paneWidthControllerProvider.notifier)
+        ..updateDayViewPanelWidth(60)
+        ..hideDayViewPanel()
+        ..updateDayViewPanelWidth(120);
+
+      var state = container.read(paneWidthControllerProvider);
+      expect(state.dayViewPanelHidden, isTrue);
+      expect(state.dayViewPanelWidth, defaultDayViewPanelWidth + 60);
+
+      notifier.showDayViewPanel();
+      state = container.read(paneWidthControllerProvider);
+      expect(state.dayViewPanelHidden, isFalse);
+      expect(state.dayViewPanelWidth, defaultDayViewPanelWidth + 60);
+    });
+
+    test('persists hide immediately and toggles idempotently', () {
+      container.read(paneWidthControllerProvider.notifier)
+        ..updateDayViewPanelWidth(30)
+        ..hideDayViewPanel()
+        ..hideDayViewPanel();
+      verify(
+        () => getIt<SettingsDb>().saveSettingsItem(
+          dayViewPanelWidthKey,
+          '${defaultDayViewPanelWidth + 30}',
+        ),
+      ).called(1);
+      verify(
+        () => getIt<SettingsDb>().saveSettingsItem(
+          dayViewPanelHiddenKey,
+          'true',
+        ),
+      ).called(1);
+
+      container.read(paneWidthControllerProvider.notifier)
+        ..toggleDayViewPanelHidden()
+        ..showDayViewPanel();
+      verify(
+        () => getIt<SettingsDb>().saveSettingsItem(
+          dayViewPanelHiddenKey,
+          'false',
+        ),
+      ).called(1);
+    });
+
+    test('toggleDayViewPanelHidden flips visible -> hidden -> visible', () {
+      final notifier = container.read(paneWidthControllerProvider.notifier)
+        ..toggleDayViewPanelHidden();
+      expect(
+        container.read(paneWidthControllerProvider).dayViewPanelHidden,
+        isTrue,
+      );
+      notifier.toggleDayViewPanelHidden();
+      expect(
+        container.read(paneWidthControllerProvider).dayViewPanelHidden,
+        isFalse,
+      );
     });
   });
 

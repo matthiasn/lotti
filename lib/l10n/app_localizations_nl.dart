@@ -3880,6 +3880,12 @@ class AppLocalizationsNl extends AppLocalizations {
   String get dailyOsDayPlan => 'Dagplan';
 
   @override
+  String get dailyOsDayViewPanelHide => 'Dagweergave verbergen';
+
+  @override
+  String get dailyOsDayViewPanelShow => 'Dagweergave tonen';
+
+  @override
   String get dailyOsNextActivityActionFailed =>
       'That action didn\'t finish. Your recording is still safe—try again.';
 
@@ -13749,6 +13755,12 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get tasksLabelsUpdateFailed => 'Bijwerken van labels is mislukt';
+
+  @override
+  String get tasksListCompactModeTooltip => 'Compacte lijst';
+
+  @override
+  String get tasksListExpandedModeTooltip => 'Gedetailleerde lijst';
 
   @override
   String get tasksPriorityFilterAll => 'Alles';

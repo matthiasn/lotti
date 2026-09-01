@@ -326,6 +326,35 @@ class TaskRowContent extends ConsumerWidget {
   }
 }
 
+/// Compact row content: the task title alone, one line. Used by the
+/// tasks list's compact density mode, where every other card element (time,
+/// category chip, status pill, cover art, one-liner) is deliberately dropped
+/// so the list reads as a terse line-per-task index. Still watches
+/// `taskLiveDataProvider` (via `.value` to keep stale data during reloads)
+/// so a rename in the detail pane updates the row in place.
+class TaskCompactRowContent extends ConsumerWidget {
+  const TaskCompactRowContent({required this.task, super.key});
+
+  final Task task;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final liveTask =
+        ref.watch(taskLiveDataProvider(task.meta.id)).value ?? task;
+    // The Row + Expanded stretches the row to the card's full width and
+    // left-aligns the title: a bare Text would let the shell's Column
+    // center-align it — and shrink-wrap the last row of a section, which has
+    // no full-width divider forcing the card wide.
+    return Row(
+      children: [
+        Expanded(
+          child: _TaskBrowseTitle(title: liveTask.data.title, maxLines: 1),
+        ),
+      ],
+    );
+  }
+}
+
 /// Title line for the task row. When the task has no title, renders a
 /// localized `(untitled)` warning in the error color so the gap is obvious
 /// in the list rather than silently collapsing to an empty row.

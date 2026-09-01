@@ -41,6 +41,7 @@ class DayTimeline extends StatefulWidget {
     this.clock,
     this.showGestureHint = true,
     this.onGesturesLearned,
+    this.comparisonBreakpoint = kDesktopBreakpoint,
     super.key,
   });
 
@@ -48,6 +49,13 @@ class DayTimeline extends StatefulWidget {
   final int startHour;
   final int endHour;
   final double pxPerMinute;
+
+  /// Measured pane width at which the planned and actual lanes render side
+  /// by side instead of as swipeable pages. Defaults to [kDesktopBreakpoint],
+  /// which is tuned for a full content pane; a narrow embed (the docked
+  /// day-view column) passes a smaller value so its widest setting still
+  /// earns the two-lane comparison.
+  final double comparisonBreakpoint;
 
   /// Whether the toolbar shows the one-shot "Swipe for actual · pinch to
   /// zoom" coaching line. Hosts pass false once the user has demonstrated
@@ -596,7 +604,7 @@ class _DayTimelineState extends State<DayTimeline> {
   }
 
   _TimelineComparisonMode _comparisonModeForWidth(double width) {
-    _lastAutoComparisonMode = width >= kDesktopBreakpoint
+    _lastAutoComparisonMode = width >= widget.comparisonBreakpoint
         ? _TimelineComparisonMode.both
         : _TimelineComparisonMode.paged;
     return _effectiveComparisonMode;

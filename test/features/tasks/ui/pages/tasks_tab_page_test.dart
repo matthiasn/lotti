@@ -28,11 +28,14 @@ import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart'
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_activator.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_count_provider.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
+import 'package:lotti/features/tasks/state/task_list_density_controller.dart';
 import 'package:lotti/features/tasks/ui/pages/tasks_tab_page.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/mobile/saved_task_filter_rail.dart';
 import 'package:lotti/features/tasks/ui/widgets/collapsing_task_list_header.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_browse_list_item_rows.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -2276,6 +2279,92 @@ void main() {
         );
       },
     );
+  });
+
+  group('tasks list density toggle', () {
+    const toggleKey = Key('tasks_list_density_toggle');
+
+    testWidgets(
+      'rides the first section-header line, below the filter row',
+      (tester) async {
+        await tester.pumpWidget(buildSubject(state: state()));
+        await tester.pump();
+
+        final toggle = find.byKey(toggleKey);
+        expect(toggle, findsOneWidget);
+
+        // Below the filter row: the toggle starts under the search field
+        // that anchors it…
+        final searchTop = tester.getTopLeft(find.byType(TextField).first).dy;
+        expect(tester.getTopLeft(toggle).dy, greaterThan(searchTop));
+
+        // …and shares the section-header line with the task count instead
+        // of costing the header a row of its own.
+        final context = tester.element(toggle);
+        final countText = find.text(
+          context.messages.taskShowcaseTaskCount(2),
+        );
+        expect(countText, findsOneWidget);
+        expect(
+          tester.getCenter(toggle).dy,
+          closeTo(tester.getCenter(countText).dy, 1),
+        );
+      },
+    );
+
+    testWidgets(
+      'tapping switches the rows to title-only compact mode and persists it',
+      (tester) async {
+        await tester.pumpWidget(buildSubject(state: state()));
+        await tester.pump();
+
+        // Expanded by default: full cards with their duration labels.
+        expect(find.byType(TaskRowContent), findsNWidgets(2));
+        expect(find.byType(TaskCompactRowContent), findsNothing);
+
+        await tester.tap(find.byKey(toggleKey));
+        await tester.pump();
+
+        // Compact: every row is title-only, the titles stay visible.
+        expect(find.byType(TaskCompactRowContent), findsNWidgets(2));
+        expect(find.byType(TaskRowContent), findsNothing);
+        expect(find.text('Write migration'), findsOneWidget);
+        expect(find.text('Validate grouping'), findsOneWidget);
+
+        verify(
+          () => getItMocks.settingsDb.saveSettingsItem(
+            taskListCompactModeSettingsKey,
+            'true',
+          ),
+        ).called(1);
+
+        // Tapping again restores the full cards.
+        await tester.tap(find.byKey(toggleKey));
+        await tester.pump();
+        expect(find.byType(TaskRowContent), findsNWidgets(2));
+        verify(
+          () => getItMocks.settingsDb.saveSettingsItem(
+            taskListCompactModeSettingsKey,
+            'false',
+          ),
+        ).called(1);
+      },
+    );
+
+    testWidgets('a persisted compact preference applies on first build', (
+      tester,
+    ) async {
+      when(
+        () => getItMocks.settingsDb.itemByKey(taskListCompactModeSettingsKey),
+      ).thenAnswer((_) async => 'true');
+
+      await tester.pumpWidget(buildSubject(state: state()));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.byType(TaskCompactRowContent), findsNWidgets(2));
+      expect(find.byType(TaskRowContent), findsNothing);
+    });
   });
 }
 

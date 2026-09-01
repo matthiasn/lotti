@@ -11,6 +11,8 @@ const listPaneWidthKey = 'PANE_WIDTH_LIST';
 const journalListPaneWidthKey = 'PANE_WIDTH_JOURNAL_LIST';
 const sidebarCollapsedKey = 'PANE_WIDTH_SIDEBAR_COLLAPSED';
 const listPaneCollapsedKey = 'PANE_WIDTH_LIST_COLLAPSED';
+const dayViewPanelWidthKey = 'PANE_WIDTH_DAY_VIEW';
+const dayViewPanelHiddenKey = 'PANE_WIDTH_DAY_VIEW_HIDDEN';
 
 /// Default and constraint values for pane widths.
 ///
@@ -33,6 +35,14 @@ const maxListPaneWidth = 800.0;
 const defaultJournalListPaneWidth = 460.0;
 const minJournalListPaneWidth = 300.0;
 const maxJournalListPaneWidth = 800.0;
+
+/// The always-available day-view column docked on the right edge of the
+/// desktop shell. Narrower than the list panes by default — it is a
+/// glanceable companion, not a primary surface — but resizable up to the
+/// same 800 ceiling so the planned/actual lanes can sit side by side.
+const defaultDayViewPanelWidth = 380.0;
+const minDayViewPanelWidth = 300.0;
+const maxDayViewPanelWidth = 800.0;
 
 /// How long to wait after the last drag update before persisting to disk.
 @visibleForTesting
@@ -109,8 +119,9 @@ ResolvedPaneWidth resolvedPaneWidth({
   );
 }
 
-/// State holding the current pane widths and the collapsed flags shared by the
-/// desktop navigation sidebar and the Tasks/Projects list pane.
+/// State holding the current pane widths and the collapsed/hidden flags
+/// shared by the desktop navigation sidebar, the Tasks/Projects list pane and
+/// the docked day-view column.
 ///
 /// [sidebarWidth] doubles as the restore target for
 /// `PaneWidthController.expandSidebar`: while collapsed the controller
@@ -122,29 +133,42 @@ class PaneWidths {
     this.sidebarWidth = defaultSidebarWidth,
     this.listPaneWidth = defaultListPaneWidth,
     this.journalListPaneWidth = defaultJournalListPaneWidth,
+    this.dayViewPanelWidth = defaultDayViewPanelWidth,
     this.sidebarCollapsed = false,
     this.listPaneCollapsed = false,
+    this.dayViewPanelHidden = false,
   });
 
   final double sidebarWidth;
   final double listPaneWidth;
   final double journalListPaneWidth;
+  final double dayViewPanelWidth;
   final bool sidebarCollapsed;
   final bool listPaneCollapsed;
+
+  /// Whether the docked day-view column is hidden. Defaults to visible so
+  /// the current day is front and center whenever the app opens; like the
+  /// collapse flags above, [dayViewPanelWidth] keeps the restore width while
+  /// hidden because width drags are refused in that state.
+  final bool dayViewPanelHidden;
 
   PaneWidths copyWith({
     double? sidebarWidth,
     double? listPaneWidth,
     double? journalListPaneWidth,
+    double? dayViewPanelWidth,
     bool? sidebarCollapsed,
     bool? listPaneCollapsed,
+    bool? dayViewPanelHidden,
   }) {
     return PaneWidths(
       sidebarWidth: sidebarWidth ?? this.sidebarWidth,
       listPaneWidth: listPaneWidth ?? this.listPaneWidth,
       journalListPaneWidth: journalListPaneWidth ?? this.journalListPaneWidth,
+      dayViewPanelWidth: dayViewPanelWidth ?? this.dayViewPanelWidth,
       sidebarCollapsed: sidebarCollapsed ?? this.sidebarCollapsed,
       listPaneCollapsed: listPaneCollapsed ?? this.listPaneCollapsed,
+      dayViewPanelHidden: dayViewPanelHidden ?? this.dayViewPanelHidden,
     );
   }
 
@@ -156,16 +180,20 @@ class PaneWidths {
           sidebarWidth == other.sidebarWidth &&
           listPaneWidth == other.listPaneWidth &&
           journalListPaneWidth == other.journalListPaneWidth &&
+          dayViewPanelWidth == other.dayViewPanelWidth &&
           sidebarCollapsed == other.sidebarCollapsed &&
-          listPaneCollapsed == other.listPaneCollapsed;
+          listPaneCollapsed == other.listPaneCollapsed &&
+          dayViewPanelHidden == other.dayViewPanelHidden;
 
   @override
   int get hashCode => Object.hash(
     sidebarWidth,
     listPaneWidth,
     journalListPaneWidth,
+    dayViewPanelWidth,
     sidebarCollapsed,
     listPaneCollapsed,
+    dayViewPanelHidden,
   );
 }
 
@@ -187,6 +215,7 @@ class PaneWidthController extends Notifier<PaneWidths> {
   Timer? _sidebarDebounce;
   Timer? _listPaneDebounce;
   Timer? _journalListPaneDebounce;
+  Timer? _dayViewPanelDebounce;
 
   @override
   PaneWidths build() {
@@ -194,6 +223,7 @@ class PaneWidthController extends Notifier<PaneWidths> {
       _sidebarDebounce?.cancel();
       _listPaneDebounce?.cancel();
       _journalListPaneDebounce?.cancel();
+      _dayViewPanelDebounce?.cancel();
     });
     unawaited(_loadPersistedWidths());
     return const PaneWidths();
@@ -206,8 +236,10 @@ class PaneWidthController extends Notifier<PaneWidths> {
         sidebarWidthKey,
         listPaneWidthKey,
         journalListPaneWidthKey,
+        dayViewPanelWidthKey,
         sidebarCollapsedKey,
         listPaneCollapsedKey,
+        dayViewPanelHiddenKey,
       });
 
       if (_userAdjusted) return;
@@ -230,15 +262,24 @@ class PaneWidthController extends Notifier<PaneWidths> {
         minJournalListPaneWidth,
         maxJournalListPaneWidth,
       );
+      final dayViewPanelWidth = _parseWidth(
+        values[dayViewPanelWidthKey],
+        defaultDayViewPanelWidth,
+        minDayViewPanelWidth,
+        maxDayViewPanelWidth,
+      );
       final sidebarCollapsed = values[sidebarCollapsedKey] == 'true';
       final listPaneCollapsed = values[listPaneCollapsedKey] == 'true';
+      final dayViewPanelHidden = values[dayViewPanelHiddenKey] == 'true';
 
       state = PaneWidths(
         sidebarWidth: sidebarWidth,
         listPaneWidth: listPaneWidth,
         journalListPaneWidth: journalListPaneWidth,
+        dayViewPanelWidth: dayViewPanelWidth,
         sidebarCollapsed: sidebarCollapsed,
         listPaneCollapsed: listPaneCollapsed,
+        dayViewPanelHidden: dayViewPanelHidden,
       );
     } catch (error, stackTrace) {
       debugPrint(
@@ -309,6 +350,50 @@ class PaneWidthController extends Notifier<PaneWidths> {
     );
     state = state.copyWith(journalListPaneWidth: newWidth);
     _debounceJournalListPanePersist();
+  }
+
+  /// Applies a drag [delta] to the docked day-view column's width, clamped to
+  /// [minDayViewPanelWidth]..[maxDayViewPanelWidth], and debounces
+  /// persistence. Ignored while the column is hidden so its restore width
+  /// stays frozen.
+  void updateDayViewPanelWidth(double delta) {
+    if (state.dayViewPanelHidden) return;
+    _userAdjusted = true;
+    final newWidth = (state.dayViewPanelWidth + delta).clamp(
+      minDayViewPanelWidth,
+      maxDayViewPanelWidth,
+    );
+    state = state.copyWith(dayViewPanelWidth: newWidth);
+    _debounceDayViewPanelPersist();
+  }
+
+  /// Hides the docked day-view column. `dayViewPanelWidth` is left as-is as
+  /// the restore target for [showDayViewPanel] — width drags are refused
+  /// while hidden. Persistence is best-effort; see [collapseSidebar].
+  void hideDayViewPanel() {
+    if (state.dayViewPanelHidden) return;
+    _userAdjusted = true;
+    _dayViewPanelDebounce?.cancel();
+    state = state.copyWith(dayViewPanelHidden: true);
+    _persistDayViewPanelWidth();
+    _persistDayViewPanelHiddenFlag();
+  }
+
+  /// Restores the docked day-view column at its previous width.
+  void showDayViewPanel() {
+    if (!state.dayViewPanelHidden) return;
+    _userAdjusted = true;
+    state = state.copyWith(dayViewPanelHidden: false);
+    _persistDayViewPanelHiddenFlag();
+  }
+
+  /// Toggles the docked day-view column between visible and hidden.
+  void toggleDayViewPanelHidden() {
+    if (state.dayViewPanelHidden) {
+      showDayViewPanel();
+    } else {
+      hideDayViewPanel();
+    }
   }
 
   /// Collapses the sidebar to the widget's fixed narrow layout.
@@ -397,6 +482,11 @@ class PaneWidthController extends Notifier<PaneWidths> {
     );
   }
 
+  void _debounceDayViewPanelPersist() {
+    _dayViewPanelDebounce?.cancel();
+    _dayViewPanelDebounce = Timer(persistDebounce, _persistDayViewPanelWidth);
+  }
+
   void _persistSidebarWidth() {
     unawaited(_persistWidth(sidebarWidthKey, state.sidebarWidth));
   }
@@ -422,6 +512,19 @@ class PaneWidthController extends Notifier<PaneWidths> {
       _persistString(
         listPaneCollapsedKey,
         state.listPaneCollapsed.toString(),
+      ),
+    );
+  }
+
+  void _persistDayViewPanelWidth() {
+    unawaited(_persistWidth(dayViewPanelWidthKey, state.dayViewPanelWidth));
+  }
+
+  void _persistDayViewPanelHiddenFlag() {
+    unawaited(
+      _persistString(
+        dayViewPanelHiddenKey,
+        state.dayViewPanelHidden.toString(),
       ),
     );
   }

@@ -3875,6 +3875,12 @@ class AppLocalizationsSv extends AppLocalizations {
   String get dailyOsDayPlan => 'Dagsplan';
 
   @override
+  String get dailyOsDayViewPanelHide => 'Dölj dagsvyn';
+
+  @override
+  String get dailyOsDayViewPanelShow => 'Visa dagsvyn';
+
+  @override
   String get dailyOsNextActivityActionFailed =>
       'That action didn\'t finish. Your recording is still safe—try again.';
 
@@ -13726,6 +13732,12 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get tasksLabelsUpdateFailed =>
       'Misslyckades med att uppdatera etiketterna';
+
+  @override
+  String get tasksListCompactModeTooltip => 'Kompakt lista';
+
+  @override
+  String get tasksListExpandedModeTooltip => 'Detaljerad lista';
 
   @override
   String get tasksPriorityFilterAll => 'Alla';

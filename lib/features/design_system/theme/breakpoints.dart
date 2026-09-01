@@ -55,6 +55,13 @@ const kPageHeaderFoldWidth = 520.0;
 /// around.
 const kGoalChatDrawerWidth = 400.0;
 
+/// The narrowest window that hosts the docked day-view column (and its
+/// collapsed rail). Below this, sidebar + content + column would starve the
+/// content pane — a 960-wide "desktop" window minus a 256 sidebar and a
+/// 300-minimum column leaves the active page ~400px, phone-narrow — so the
+/// column only exists on windows with room for all three.
+const kDayViewPanelMinWindowWidth = 1200.0;
+
 /// The narrowest row width that can host an inline trailing control (a
 /// stepper, say) beside the row's title without starving the title's measure.
 /// Below this, the control drops to the row's secondary line.

@@ -27,6 +27,7 @@ import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session.d
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session_controller.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_trigger_service.dart';
 import 'package:lotti/features/daily_os_next/state/day_processing_runtime_provider.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_view_side_panel.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/sidebar_calendar.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_five_slot_nav_bar.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_navigation_sidebar.dart';
@@ -3697,8 +3698,10 @@ void main() {
         ],
       );
 
-      final divider = find.byType(ResizableDivider);
-      expect(divider, findsOneWidget);
+      // Two dividers on a wide desktop shell: the sidebar's and the docked
+      // day-view column's. The sidebar's renders first in the Row.
+      final divider = find.byType(ResizableDivider).first;
+      expect(find.byType(ResizableDivider), findsNWidgets(2));
 
       // Perform a horizontal drag on the divider.
       await tester.drag(divider, const Offset(30, 0));
@@ -3706,6 +3709,160 @@ void main() {
 
       // At least one delta was reported to updateSidebarWidth.
       expect(deltas, isNotEmpty);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+    });
+  });
+
+  group('AppScreen docked day-view column', () {
+    Future<MockNavService> stubbedNavService({
+      bool dailyOsEnabled = true,
+      int activeIndex = 0,
+    }) async {
+      final mockNavService = MockNavService();
+      await _stubNavService(
+        mockNavService,
+        indexStream: Stream.value(activeIndex),
+        isProjectsEnabled: () => true,
+        isDailyOsEnabled: () => dailyOsEnabled,
+        isHabitsEnabled: () => true,
+        isDashboardsEnabled: () => true,
+      );
+      await _registerAppScreenGetIt(mockNavService);
+      addTearDown(tearDownTestGetIt);
+      return mockNavService;
+    }
+
+    testWidgets(
+      'is visible by default on a wide desktop window on the Tasks tab',
+      (tester) async {
+        final mockNavService = await stubbedNavService();
+        await _pumpAppScreen(
+          tester,
+          navService: mockNavService,
+          viewportSize: _desktopViewportSize,
+        );
+
+        expect(find.byType(DayViewSidePanel), findsOneWidget);
+        expect(find.byType(DayViewSidePanelRail), findsNothing);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
+
+    testWidgets('is absent on tabs other than Tasks', (tester) async {
+      // Index 1 is the Daily OS (calendar) tab with the flag enabled — the
+      // column belongs beside the tasks list only, and would be redundant
+      // next to the Daily OS surface itself.
+      final mockNavService = await stubbedNavService(activeIndex: 1);
+      await _pumpAppScreen(
+        tester,
+        navService: mockNavService,
+        viewportSize: _desktopViewportSize,
+      );
+
+      expect(find.byType(DayViewSidePanel), findsNothing);
+      expect(find.byType(DayViewSidePanelRail), findsNothing);
+      expect(find.byType(ResizableDivider), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+    });
+
+    testWidgets(
+      'the calendar toggle collapses it to the rail and brings it back',
+      (tester) async {
+        final mockNavService = await stubbedNavService();
+        await _pumpAppScreen(
+          tester,
+          navService: mockNavService,
+          viewportSize: _desktopViewportSize,
+        );
+
+        await tester.tap(
+          find.byKey(const Key('day_view_panel_hide_button')),
+        );
+        await tester.pump();
+
+        expect(find.byType(DayViewSidePanel), findsNothing);
+        expect(find.byType(DayViewSidePanelRail), findsOneWidget);
+
+        await tester.tap(
+          find.byKey(const Key('day_view_panel_show_button')),
+        );
+        await tester.pump();
+
+        expect(find.byType(DayViewSidePanel), findsOneWidget);
+        expect(find.byType(DayViewSidePanelRail), findsNothing);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
+
+    testWidgets('is absent when the Daily OS feature flag is off', (
+      tester,
+    ) async {
+      final mockNavService = await stubbedNavService(dailyOsEnabled: false);
+      await _pumpAppScreen(
+        tester,
+        navService: mockNavService,
+        viewportSize: _desktopViewportSize,
+      );
+
+      expect(find.byType(DayViewSidePanel), findsNothing);
+      expect(find.byType(DayViewSidePanelRail), findsNothing);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+    });
+
+    testWidgets(
+      'is absent on a desktop window too narrow to host a third column',
+      (tester) async {
+        final mockNavService = await stubbedNavService();
+        await _pumpAppScreen(
+          tester,
+          navService: mockNavService,
+          // Desktop layout (>= 960) but below kDayViewPanelMinWindowWidth.
+          viewportSize: const Size(1100, 800),
+        );
+
+        expect(find.byType(DayViewSidePanel), findsNothing);
+        expect(find.byType(DayViewSidePanelRail), findsNothing);
+        // The sidebar's divider is still the only one.
+        expect(find.byType(ResizableDivider), findsOneWidget);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
+
+    testWidgets('dragging its divider resizes the day-view column', (
+      tester,
+    ) async {
+      final mockNavService = await stubbedNavService();
+      await _pumpAppScreen(
+        tester,
+        navService: mockNavService,
+        viewportSize: _desktopViewportSize,
+      );
+
+      final panelFinder = find.byType(DayViewSidePanel);
+      final widthBefore = tester.getSize(panelFinder).width;
+
+      // The panel's divider is the second one in the Row; dragging it left
+      // grows the panel (the divider sits on the panel's leading edge).
+      await tester.drag(
+        find.byType(ResizableDivider).last,
+        const Offset(-40, 0),
+      );
+      await tester.pump();
+
+      final widthAfter = tester.getSize(panelFinder).width;
+      expect(widthAfter, greaterThan(widthBefore));
 
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump();

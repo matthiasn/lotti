@@ -3920,6 +3920,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dailyOsDayPlan => 'Plan du jour';
 
   @override
+  String get dailyOsDayViewPanelHide => 'Masquer la vue du jour';
+
+  @override
+  String get dailyOsDayViewPanelShow => 'Afficher la vue du jour';
+
+  @override
   String get dailyOsNextActivityActionFailed =>
       'L’action n’a pas abouti. Ton enregistrement est toujours en sécurité — réessaie.';
 
@@ -13953,6 +13959,12 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get tasksLabelsUpdateFailed =>
       'Échec de la mise à jour des étiquettes';
+
+  @override
+  String get tasksListCompactModeTooltip => 'Liste compacte';
+
+  @override
+  String get tasksListExpandedModeTooltip => 'Liste détaillée';
 
   @override
   String get tasksPriorityFilterAll => 'Toutes';

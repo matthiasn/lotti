@@ -3927,6 +3927,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsDayPlan => 'Planul zilei';
 
   @override
+  String get dailyOsDayViewPanelHide => 'Ascundeți vizualizarea zilei';
+
+  @override
+  String get dailyOsDayViewPanelShow => 'Afișați vizualizarea zilei';
+
+  @override
   String get dailyOsNextActivityActionFailed =>
       'Acțiunea nu s-a finalizat. Înregistrarea dvs. este în continuare în siguranță — încercați din nou.';
 
@@ -13980,6 +13986,12 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get tasksLabelsUpdateFailed => 'Eșec la actualizarea etichetelor';
+
+  @override
+  String get tasksListCompactModeTooltip => 'Listă compactă';
+
+  @override
+  String get tasksListExpandedModeTooltip => 'Listă detaliată';
 
   @override
   String get tasksPriorityFilterAll => 'Toate';

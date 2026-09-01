@@ -3915,6 +3915,12 @@ class AppLocalizationsIt extends AppLocalizations {
   String get dailyOsDayPlan => 'Piano giornaliero';
 
   @override
+  String get dailyOsDayViewPanelHide => 'Nascondi la vista del giorno';
+
+  @override
+  String get dailyOsDayViewPanelShow => 'Mostra la vista del giorno';
+
+  @override
   String get dailyOsNextActivityActionFailed =>
       'That action didn\'t finish. Your recording is still safe—try again.';
 
@@ -13896,6 +13902,12 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get tasksLabelsUpdateFailed =>
       'Non è riuscito ad aggiornare le etichette';
+
+  @override
+  String get tasksListCompactModeTooltip => 'Elenco compatto';
+
+  @override
+  String get tasksListExpandedModeTooltip => 'Elenco dettagliato';
 
   @override
   String get tasksPriorityFilterAll => 'Tutti';

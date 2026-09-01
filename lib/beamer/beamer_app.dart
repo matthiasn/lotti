@@ -22,6 +22,7 @@ import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session_c
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_trigger_service.dart';
 import 'package:lotti/features/daily_os_next/state/day_processing_runtime_provider.dart';
 import 'package:lotti/features/daily_os_next/state/selected_date_provider.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_view_side_panel.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/sidebar_calendar.dart';
 import 'package:lotti/features/demo/ui/demo_mode_banner.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_five_slot_nav_bar.dart';
@@ -825,6 +826,29 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     );
     final sidebarWidth = resolvedSidebar.width;
     final isCollapsed = paneWidths.sidebarCollapsed;
+    // The docked day-view column keeps the current day visible beside the
+    // tasks list — the surface where time is planned and tracked — and only
+    // there. It shares the Daily OS feature flag (no Daily OS, no day view)
+    // and only exists on windows wide enough to host a third column — see
+    // kDayViewPanelMinWindowWidth.
+    final showDayViewColumn =
+        destinations[index].kind == _AppNavigationDestinationKind.tasks &&
+        navService.isDailyOsPageEnabled &&
+        MediaQuery.sizeOf(context).width >= kDayViewPanelMinWindowWidth;
+    final resolvedDayView = resolvedPaneWidth(
+      storedWidth: paneWidths.dayViewPanelWidth,
+      flatDefault: defaultDayViewPanelWidth,
+      minValue: minDayViewPanelWidth,
+      maxValue: maxDayViewPanelWidth,
+      screenWidth: MediaQuery.sizeOf(context).width,
+      onDelta: ref
+          .read(paneWidthControllerProvider.notifier)
+          .updateDayViewPanelWidth,
+    );
+    final dayViewPanelHidden = paneWidths.dayViewPanelHidden;
+    void toggleDayViewPanel() => ref
+        .read(paneWidthControllerProvider.notifier)
+        .toggleDayViewPanelHidden();
     return Scaffold(
       // Scaffold fills behind the outer ResizableDivider's 3 px reserved
       // SizedBox; without an explicit colour Flutter would paint the theme
@@ -896,6 +920,24 @@ class _AppScreenState extends ConsumerState<AppScreen> {
               ),
             ),
           ),
+          if (showDayViewColumn)
+            if (dayViewPanelHidden)
+              DayViewSidePanelRail(onToggleHidden: toggleDayViewPanel)
+            else ...[
+              ResizableDivider(
+                currentValue: resolvedDayView.width,
+                minValue: minDayViewPanelWidth,
+                maxValue: maxDayViewPanelWidth,
+                // The divider sits on the panel's LEADING edge, so a
+                // rightward drag (positive delta) shrinks the panel —
+                // invert before handing the delta to the width controller.
+                onDrag: (delta) => resolvedDayView.onDrag(-delta),
+              ),
+              SizedBox(
+                width: resolvedDayView.width,
+                child: DayViewSidePanel(onToggleHidden: toggleDayViewPanel),
+              ),
+            ],
         ],
       ),
     );

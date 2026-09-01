@@ -4,7 +4,12 @@ Daily OS is Lotti's day planner. Instead of dragging tasks onto a calendar, the
 user talks: a short spoken check-in about what's on their mind, and an agent turns
 it into an actual plan for the day.
 
-It is the `/calendar` tab, and the only Daily OS surface in the app.
+It is the `/calendar` tab. On desktop, one piece of it also lives outside the
+tab: the docked day-view column on the right edge of the app shell
+(`ui/widgets/day_view_side_panel.dart`) reuses the day timeline to keep today's
+planned-vs-recorded time visible beside the tasks list while the Tasks tab is
+active. It can be hidden to a slim rail via its calendar button and resized by
+its edge; both survive restarts.
 
 ## What it does for the user
 

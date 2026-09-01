@@ -30,6 +30,8 @@ class TaskBrowseListItem extends StatelessWidget {
     this.selectedTaskId,
     this.hoveredTaskIdNotifier,
     this.showStatus = true,
+    this.compact = false,
+    this.sectionHeaderTrailing,
     super.key,
   });
 
@@ -55,12 +57,25 @@ class TaskBrowseListItem extends StatelessWidget {
   /// list down to a single status — repeating it on every row is noise.
   final bool showStatus;
 
+  /// When true, the row renders as a terse single line — the task title and
+  /// nothing else ([TaskCompactRowContent]) — with tighter vertical padding.
+  /// Section headers, grouping borders and the hover/selection shell are
+  /// kept, so the compact list still reads as the same structure.
+  final bool compact;
+
+  /// Optional compact control rendered at the trailing end of this entry's
+  /// section header line, after the task count. The tasks page passes the
+  /// list-density toggle here for the FIRST entry only, so the control rides
+  /// the "P2 Medium · 5 tasks" line instead of costing the header a row of
+  /// its own. Ignored when [TaskBrowseEntry.showSectionHeader] is false.
+  final Widget? sectionHeaderTrailing;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final rowPadding = EdgeInsets.symmetric(
       horizontal: tokens.spacing.step4,
-      vertical: tokens.spacing.step4,
+      vertical: compact ? tokens.spacing.step2 : tokens.spacing.step4,
     );
     final borderRadius = BorderRadius.vertical(
       top: entry.isFirstInSection
@@ -110,25 +125,17 @@ class TaskBrowseListItem extends StatelessWidget {
                         color: TaskShowcasePalette.mediumText(context),
                       ),
                     ),
+                  if (sectionHeaderTrailing case final trailing?) ...[
+                    SizedBox(width: tokens.spacing.step3),
+                    trailing,
+                  ],
                 ],
               ),
             ),
           if (hoveredTaskIdNotifier case final notifier?)
             ValueListenableBuilder<String?>(
               valueListenable: notifier,
-              child: TaskRowContent(
-                task: entry.task,
-                sortOption: sortOption,
-                showCreationDate: showCreationDate,
-                showDueDate: showDueDate,
-                showCoverArt: showCoverArt,
-                showStatus: showStatus,
-                vectorDistance: vectorDistance,
-                categoryNameOverride: categoryNameOverride,
-                categoryIconOverride: categoryIconOverride,
-                categoryColorHexOverride: categoryColorHexOverride,
-                trackedDurationLabelOverride: trackedDurationLabelOverride,
-              ),
+              child: _rowContent(),
               builder: (context, hoveredTaskId, child) {
                 return TaskBrowseRowShell(
                   entry: entry,
@@ -157,22 +164,27 @@ class TaskBrowseListItem extends StatelessWidget {
               hoveredTaskId: null,
               hoveredTaskIdNotifier: null,
               onTap: onTap,
-              child: TaskRowContent(
-                task: entry.task,
-                sortOption: sortOption,
-                showCreationDate: showCreationDate,
-                showDueDate: showDueDate,
-                showCoverArt: showCoverArt,
-                showStatus: showStatus,
-                vectorDistance: vectorDistance,
-                categoryNameOverride: categoryNameOverride,
-                categoryIconOverride: categoryIconOverride,
-                categoryColorHexOverride: categoryColorHexOverride,
-                trackedDurationLabelOverride: trackedDurationLabelOverride,
-              ),
+              child: _rowContent(),
             ),
         ],
       ),
+    );
+  }
+
+  Widget _rowContent() {
+    if (compact) return TaskCompactRowContent(task: entry.task);
+    return TaskRowContent(
+      task: entry.task,
+      sortOption: sortOption,
+      showCreationDate: showCreationDate,
+      showDueDate: showDueDate,
+      showCoverArt: showCoverArt,
+      showStatus: showStatus,
+      vectorDistance: vectorDistance,
+      categoryNameOverride: categoryNameOverride,
+      categoryIconOverride: categoryIconOverride,
+      categoryColorHexOverride: categoryColorHexOverride,
+      trackedDurationLabelOverride: trackedDurationLabelOverride,
     );
   }
 }

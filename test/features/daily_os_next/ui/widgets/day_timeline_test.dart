@@ -527,6 +527,61 @@ void main() {
       );
     });
 
+    testWidgets(
+      'a lowered comparisonBreakpoint earns both lanes on a narrow pane',
+      (tester) async {
+        // 700 is paged under the default 960 breakpoint (see the compact
+        // test above) — with the embed passing a 560 breakpoint the same
+        // width renders both lanes side by side.
+        const size = Size(700, 900);
+        _setView(tester, size);
+
+        await tester.pumpWidget(
+          _wrap(
+            DayTimeline(
+              draft: _draft(),
+              comparisonBreakpoint: 560,
+              clock: () => DateTime(2026, 5, 25, 9, 15),
+            ),
+            size: size,
+          ),
+        );
+        await tester.pump();
+
+        expect(find.byType(PageView), findsNothing);
+        expect(
+          find.byKey(const Key('daily_os_timeline_plan_pane')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const Key('daily_os_timeline_actual_pane')),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'below a custom comparisonBreakpoint the swipeable view remains',
+      (tester) async {
+        const size = Size(430, 900);
+        _setView(tester, size);
+
+        await tester.pumpWidget(
+          _wrap(
+            DayTimeline(
+              draft: _draft(),
+              comparisonBreakpoint: 560,
+              clock: () => DateTime(2026, 5, 25, 9, 15),
+            ),
+            size: size,
+          ),
+        );
+        await tester.pump();
+
+        expect(find.byType(PageView), findsOneWidget);
+      },
+    );
+
     testWidgets('folds a long gap caused by planned blocks', (tester) async {
       _setView(tester, const Size(1280, 900));
 
