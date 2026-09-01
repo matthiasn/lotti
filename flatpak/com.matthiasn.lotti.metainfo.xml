@@ -40,6 +40,14 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="1.0.24" date="2026-09-02">
+      <description>
+        <p>Added: sync can now be set up on Linux by signing in with a Matrix account. Until now the very first device needed a provisioning bundle from the server-side admin tool, which left out anyone with a Matrix account but no homeserver of their own or nobody to run the tool for them. Under Settings - Sync Settings - Devices, "Set up sync" now offers "Sign in with a Matrix account instead" on Linux: enter the server address, your full Matrix ID and your password, and Lotti signs in, creates the encrypted sync room itself and is ready. Your password stays in this device's secure storage and is never changed; only the server you name sees it, plus the pairing codes you later make for your own devices, which carry it. Every further device pairs from this one with a pairing code, as before.</p>
+        <p>Fixed: the task estimate is visible at a glance again. The task header's summary lane shows the estimate as its own read-out next to the due date - time tracked against the estimate, with the small progress bar, turning red once the estimate is exceeded - instead of only inside the Details fly-out. Tapping it opens the fly-out as the other read-outs do; a task without an estimate shows nothing extra.</p>
+        <p>Fixed: the AI summary no longer says "Up to date" while counting down to its next update. A scheduled update means something changed since the last summary, so the footer now reads "Out of date" beside the countdown and only claims "Up to date" when nothing is pending.</p>
+        <p>Fixed: the measurable "Choices" heading no longer repeats the "Options" heading in Spanish, Portuguese and Romanian, and no longer reads the same as the "Choice" value kind in French.</p>
+      </description>
+    </release>
     <release version="1.0.23" date="2026-09-01">
       <description>
         <p>Added: your day is now always in view next to your tasks. On desktop, a day-view column docks on the right edge of the Tasks tab, showing today's planned time next to the time actually recorded - the same view the Daily OS day surface uses. A calendar button at the top hides it to a slim rail or brings it back, its edge drags wider or narrower, and when it gets narrow the planned and recorded lanes become swipeable pages. The column's visibility and width survive app restarts.</p>
