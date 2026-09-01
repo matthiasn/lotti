@@ -438,12 +438,15 @@ canonical value through unchanged, so it is idempotent. Two rules follow:
   normalisation — still stored as `WALKING` — chart alongside the rest without
   a data migration.
 
-**Known limit:** the habit-signal path reads workouts by SQL equality on the
-row's `subtype` (`workoutsByType`), and the signal picker lists the distinct
-stored strings. Plugin-era rows therefore show up there under their own spelling
-and are matched only by a signal that names it. A one-off rewrite of those rows,
-in the shape of `SleepAsleepBackfillService`, would close that; it has not been
-written.
+The habit-signal path reads workouts by SQL equality on the row's `subtype`
+(`workoutsByType`), which neither rule above reaches — so `SignalReader
+.workoutEntities` fans out one query per known spelling of the chosen activity
+(`workoutTypeSpellings`: canonical, `UPPER_SNAKE`, the alias family, and the
+raw input) and merges by entry id, and the habit picker canonicalises and
+de-duplicates the stored strings. A rule persisted in either era therefore
+matches rows from both. The stored strings themselves are left as imported —
+unifying them would be a row rewrite in the shape of
+`SleepAsleepBackfillService`, and nothing needs it for matching.
 
 The same import also records a workout's `source` as `sourceId`, falling back
 to `sourceName` — Health Connect leaves the id empty and names the provider's

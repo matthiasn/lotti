@@ -166,6 +166,38 @@ void main() {
     });
   });
 
+  group('workoutTypeSpellings', () {
+    test('covers both eras for a simple activity, canonical first', () {
+      expect(workoutTypeSpellings('running'), ['running', 'RUNNING']);
+      expect(workoutTypeSpellings('RUNNING'), ['running', 'RUNNING']);
+    });
+
+    test('covers the alias family for cycling, from either name', () {
+      const family = ['cycling', 'CYCLING', 'biking', 'BIKING'];
+      expect(workoutTypeSpellings('cycling'), family);
+      expect(workoutTypeSpellings('BIKING'), family);
+    });
+
+    test('keeps an off-era raw spelling as a last resort', () {
+      expect(
+        workoutTypeSpellings('Running'),
+        ['running', 'RUNNING', 'Running'],
+      );
+    });
+
+    test('splits a multi-word activity back into the plugin spelling', () {
+      expect(workoutTypeSpellings('functionalStrengthTraining'), [
+        'functionalStrengthTraining',
+        'FUNCTIONAL_STRENGTH_TRAINING',
+      ]);
+    });
+
+    test('drops empty input instead of querying for nothing', () {
+      expect(workoutTypeSpellings(''), isEmpty);
+      expect(workoutTypeSpellings('   '), isEmpty);
+    });
+  });
+
   group('properties', () {
     glados.Glados(
       glados.any.workoutSpelling,
@@ -211,6 +243,35 @@ void main() {
           isSameWorkoutType(b, a),
           reason: 'a: "$a", b: "$b"',
         );
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados(
+      glados.any.activity,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'workoutTypeSpellings bridges the plugin name and the canonical form',
+      (activity) {
+        final canonical = workoutTypeForActivity(activity);
+        final fromCanonical = workoutTypeSpellings(canonical);
+        expect(
+          fromCanonical,
+          containsAll([canonical, activity.name]),
+          reason: activity.name,
+        );
+        expect(
+          workoutTypeSpellings(activity.name),
+          fromCanonical,
+          reason: '${activity.name}: both directions yield one family',
+        );
+        for (final spelling in fromCanonical) {
+          expect(
+            canonicalWorkoutType(spelling),
+            canonical,
+            reason: '${activity.name} spelling "$spelling"',
+          );
+        }
       },
       tags: 'glados',
     );

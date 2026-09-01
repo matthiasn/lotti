@@ -6,8 +6,9 @@
   `walking`. Dashboards therefore showed "No data" over months of workouts,
   and a workout's own detail card lost its trend charts. Imported workouts are
   stored under the spelling the charts use again, the charts also count the
-  workouts imported in between, and a workout imported on Android now keeps
-  the app it came from as its source.
+  workouts imported in between, habit signals that watch a workout match it
+  in either spelling, and a workout imported on Android now keeps the app it
+  came from as its source.
 - **Workouts appear on the Daily OS timeline by name.** The Actual lane used
   to print a workout's internal id as its title; it now reads "Walking" or
   "Functional Strength Training", and opening a day pulls new workouts from

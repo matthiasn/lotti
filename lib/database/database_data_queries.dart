@@ -222,8 +222,9 @@ mixin _JournalDbDataQueries on _$JournalDb, _JournalDbConfigFlags {
   }
 
   /// The distinct workout types present in the journal, sorted. Workout type
-  /// strings arrive from Apple Health / Health Connect un-normalised, so a
-  /// picker must offer what was actually imported rather than a fixed list.
+  /// strings changed spelling with the import eras, so consumers normalise:
+  /// the habit picker canonicalises and de-duplicates (`workoutTypesProvider`)
+  /// and the signal reader matches a chosen activity across every spelling.
   Future<List<String>> getWorkoutTypes() async {
     final types = await workoutTypes().get();
     return types.nonNulls.toList();
