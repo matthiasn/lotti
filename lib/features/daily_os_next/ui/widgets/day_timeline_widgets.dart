@@ -9,7 +9,15 @@ class _TimelineToolbar extends StatelessWidget {
     required this.showHint,
     required this.onToggleMode,
     required this.onToggleArrange,
+    this.leading,
+    this.trailing,
   });
+
+  /// See [DayTimeline.toolbarLeading]. Takes the coaching line's room.
+  final Widget? leading;
+
+  /// See [DayTimeline.toolbarTrailing].
+  final Widget? trailing;
 
   final _TimelineComparisonMode mode;
   final bool arrangeMode;
@@ -35,18 +43,23 @@ class _TimelineToolbar extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: showHint
-                ? Text(
-                    showingBoth
-                        ? messages.dailyOsNextTimelineBoth
-                        : messages.dailyOsNextTimelineSwipeHint,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: tokens.typography.styles.others.caption.copyWith(
-                      color: tokens.colors.text.lowEmphasis,
-                    ),
-                  )
-                : const SizedBox.shrink(),
+            child: switch (leading) {
+              final leading? => Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: leading,
+              ),
+              null when showHint => Text(
+                showingBoth
+                    ? messages.dailyOsNextTimelineBoth
+                    : messages.dailyOsNextTimelineSwipeHint,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: tokens.typography.styles.others.caption.copyWith(
+                  color: tokens.colors.text.lowEmphasis,
+                ),
+              ),
+              null => const SizedBox.shrink(),
+            },
           ),
           Tooltip(
             message: showingBoth
@@ -70,6 +83,7 @@ class _TimelineToolbar extends StatelessWidget {
                 icon: const Icon(LottiIcons.drag),
               ),
             ),
+          ?trailing,
         ],
       ),
     );

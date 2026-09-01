@@ -3771,10 +3771,10 @@ void main() {
         ],
       );
 
-      // Two dividers on a wide desktop shell: the sidebar's and the docked
-      // day-view column's. The sidebar's renders first in the Row.
-      final divider = find.byType(ResizableDivider).first;
-      expect(find.byType(ResizableDivider), findsNWidgets(2));
+      // One divider on a fresh desktop shell: the sidebar's. The docked
+      // day-view column starts hidden as a rail, which carries none.
+      final divider = find.byType(ResizableDivider);
+      expect(divider, findsOneWidget);
 
       // Perform a horizontal drag on the divider.
       await tester.drag(divider, const Offset(30, 0));
@@ -3808,7 +3808,7 @@ void main() {
     }
 
     testWidgets(
-      'is visible by default on a wide desktop window on the Tasks tab',
+      'starts hidden as a rail on a wide desktop window on the Tasks tab',
       (tester) async {
         final mockNavService = await stubbedNavService();
         await _pumpAppScreen(
@@ -3817,8 +3817,9 @@ void main() {
           viewportSize: _desktopViewportSize,
         );
 
-        expect(find.byType(DayViewSidePanel), findsOneWidget);
-        expect(find.byType(DayViewSidePanelRail), findsNothing);
+        // Opt-in: the column is a rail until the user brings it up.
+        expect(find.byType(DayViewSidePanel), findsNothing);
+        expect(find.byType(DayViewSidePanelRail), findsOneWidget);
 
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump();
@@ -3845,7 +3846,8 @@ void main() {
     });
 
     testWidgets(
-      'the calendar toggle collapses it to the rail and brings it back',
+      'the calendar toggle brings the column up from the rail and hides it '
+      'again',
       (tester) async {
         final mockNavService = await stubbedNavService();
         await _pumpAppScreen(
@@ -3855,20 +3857,20 @@ void main() {
         );
 
         await tester.tap(
-          find.byKey(const Key('day_view_panel_hide_button')),
-        );
-        await tester.pump();
-
-        expect(find.byType(DayViewSidePanel), findsNothing);
-        expect(find.byType(DayViewSidePanelRail), findsOneWidget);
-
-        await tester.tap(
           find.byKey(const Key('day_view_panel_show_button')),
         );
         await tester.pump();
 
         expect(find.byType(DayViewSidePanel), findsOneWidget);
         expect(find.byType(DayViewSidePanelRail), findsNothing);
+
+        await tester.tap(
+          find.byKey(const Key('day_view_panel_hide_button')),
+        );
+        await tester.pump();
+
+        expect(find.byType(DayViewSidePanel), findsNothing);
+        expect(find.byType(DayViewSidePanelRail), findsOneWidget);
 
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump();
@@ -3922,6 +3924,8 @@ void main() {
         navService: mockNavService,
         viewportSize: _desktopViewportSize,
       );
+      await tester.tap(find.byKey(const Key('day_view_panel_show_button')));
+      await tester.pump();
 
       final panelFinder = find.byType(DayViewSidePanel);
       final widthBefore = tester.getSize(panelFinder).width;
@@ -4913,8 +4917,9 @@ void main() {
         expect(find.text('Projects'), findsNothing);
         expect(find.byType(ContactSupportRow), findsNothing);
         expect(find.byType(SidebarSavedTaskFilters), findsNothing);
-        // The day-view column stays: it redacts foreign blocks itself.
-        expect(find.byType(DayViewSidePanel), findsOneWidget);
+        // The day-view column stays (as its rail here, the hidden default):
+        // it redacts foreign blocks itself rather than leaving the shell.
+        expect(find.byType(DayViewSidePanelRail), findsOneWidget);
         // The navigation guard covers shortcuts, the palette and path beams,
         // and is keyed by delegate so a flag flip cannot shift it.
         // The guard is re-synced on every build, so read the latest value.

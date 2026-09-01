@@ -2,11 +2,15 @@ import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/intl.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_preferences_controller.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
+import 'package:lotti/features/daily_os_next/state/selected_date_provider.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/daily_os_date_strip.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_view_side_panel.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -18,7 +22,7 @@ const _work = DayAgentCategory(
   colorHex: '5ED4B7',
 );
 
-/// The panel always renders the current local day, so fixtures anchor to the
+/// The panel opens on the current local day, so fixtures anchor to the
 /// ambient clock's date rather than a hard-coded one.
 DateTime get _today {
   final now = clock.now();
@@ -83,10 +87,14 @@ void main() {
     DraftPlan? plan,
     List<TimeBlock> actualBlocks = const [],
     DailyOsPreferencesController Function()? preferences,
+    List<DateTime>? requestedDays,
   }) {
     return ProviderScope(
       overrides: [
-        currentDraftPlanProvider.overrideWith((ref, date) async => plan),
+        currentDraftPlanProvider.overrideWith((ref, date) async {
+          requestedDays?.add(date);
+          return plan;
+        }),
         dailyOsActualTimeBlocksProvider.overrideWith(
           (ref, date) async => actualBlocks,
         ),
@@ -142,13 +150,232 @@ void main() {
         expect(find.text('Planned focus'), findsOneWidget);
         expect(find.text('Recorded session'), findsOneWidget);
 
-        // Header: the Today title plus the hide affordance.
+        // Toolbar: the strip reads Today, and the hide affordance is there.
         final messages = tester.element(find.byType(DayViewSidePanel)).messages;
         expect(find.text(messages.dailyOsTodayButton), findsOneWidget);
         expect(
           find.byKey(const Key('day_view_panel_hide_button')),
           findsOneWidget,
         );
+      },
+    );
+
+    testWidgets(
+      'the compact Daily OS date strip shares the toolbar row with the '
+      'lane-format toggle and the hide button',
+      (tester) async {
+        const size = Size(700, 900);
+        setView(tester, size);
+
+        await tester.pumpWidget(
+          wrap(
+            DayViewSidePanel(onToggleHidden: () {}),
+            size: size,
+            plan: _planForToday(),
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        final messages = tester.element(find.byType(DayViewSidePanel)).messages;
+        final strip = tester.widget<DailyOsDateStrip>(
+          find.byType(DailyOsDateStrip),
+        );
+        expect(strip.compact, isTrue);
+        expect(strip.isToday, isTrue);
+
+        final prev = tester.getCenter(find.byIcon(LottiIcons.chevronLeft));
+        final label = tester.getCenter(find.text(messages.dailyOsTodayButton));
+        final next = tester.getCenter(find.byIcon(LottiIcons.chevronRight));
+        final toggle = tester.getCenter(
+          find.byTooltip(messages.dailyOsNextTimelineShowPaged),
+        );
+        final hide = tester.getCenter(
+          find.byKey(const Key('day_view_panel_hide_button')),
+        );
+        // One row, left to right: ‹ Today › … [lanes] [hide].
+        for (final point in [label, next, toggle, hide]) {
+          expect(point.dy, moreOrLessEquals(prev.dy, epsilon: 1));
+        }
+        expect(prev.dx, lessThan(label.dx));
+        expect(label.dx, lessThan(next.dx));
+        expect(next.dx, lessThan(toggle.dx));
+        expect(toggle.dx, lessThan(hide.dx));
+        // The strip took the coaching line's room: no hint text beside it.
+        expect(find.text(messages.dailyOsNextTimelineBoth), findsNothing);
+        expect(find.text(messages.dailyOsNextTimelineSwipeHint), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'chevrons step the day, the label follows, and a long press on the '
+      'label returns to today',
+      (tester) async {
+        const size = Size(700, 900);
+        setView(tester, size);
+        final requested = <DateTime>[];
+
+        await tester.pumpWidget(
+          wrap(
+            DayViewSidePanel(onToggleHidden: () {}),
+            size: size,
+            plan: _planForToday(),
+            requestedDays: requested,
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        final context = tester.element(find.byType(DayViewSidePanel));
+        final messages = context.messages;
+        final locale = Localizations.localeOf(context).toString();
+        final today = _today;
+        final yesterday = DateTime(today.year, today.month, today.day - 1);
+        final tomorrow = DateTime(today.year, today.month, today.day + 1);
+        // 700 wide leaves the compact strip its wider tier (no year).
+        final format = DateFormat.MMMEd(locale);
+
+        await tester.tap(find.byIcon(LottiIcons.chevronLeft));
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.text(format.format(yesterday)), findsOneWidget);
+        expect(find.text(messages.dailyOsTodayButton), findsNothing);
+        expect(requested.last, yesterday);
+        // Compact: no standalone Today button.
+        expect(
+          find.byKey(const Key('daily_os_date_strip_today')),
+          findsNothing,
+        );
+
+        await tester.tap(find.byIcon(LottiIcons.chevronRight));
+        await tester.pump();
+        await tester.tap(find.byIcon(LottiIcons.chevronRight));
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.text(format.format(tomorrow)), findsOneWidget);
+        expect(requested.last, tomorrow);
+
+        await tester.longPress(find.text(format.format(tomorrow)));
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.text(messages.dailyOsTodayButton), findsOneWidget);
+        expect(requested.last, today);
+      },
+    );
+
+    testWidgets(
+      'tapping the label opens the shared picker and a pick moves the '
+      'panel, not the Daily OS tab',
+      (tester) async {
+        const size = Size(700, 900);
+        setView(tester, size);
+        final requested = <DateTime>[];
+        final container = ProviderContainer(
+          overrides: [
+            currentDraftPlanProvider.overrideWith((ref, date) async {
+              requested.add(date);
+              return null;
+            }),
+            dailyOsActualTimeBlocksProvider.overrideWith(
+              (ref, date) async => const [],
+            ),
+            dailyOsPreferencesControllerProvider.overrideWith(
+              _SeededPreferencesController.new,
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+        final today = _today;
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: makeTestableWidget2(
+              SizedBox(
+                width: size.width,
+                height: size.height,
+                child: DayViewSidePanel(onToggleHidden: () {}),
+              ),
+              mediaQueryData: const MediaQueryData(size: size),
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        final messages = tester.element(find.byType(DayViewSidePanel)).messages;
+        await tester.tap(find.text(messages.dailyOsTodayButton));
+        await tester.pumpAndSettle();
+        expect(find.byType(CalendarDatePicker), findsOneWidget);
+
+        // Yesterday is always inside the picker window.
+        final target = DateTime(today.year, today.month, today.day - 1);
+        tester
+            .widget<CalendarDatePicker>(find.byType(CalendarDatePicker))
+            .onDateChanged(target);
+        await tester.pumpAndSettle();
+        // Confirm through the modal's own action bar.
+        await tester.tap(find.text('Done'));
+        await tester.pumpAndSettle();
+
+        expect(requested.last, target);
+        expect(find.text(messages.dailyOsTodayButton), findsNothing);
+        expect(container.read(dailyOsNextSelectedDateProvider), today);
+      },
+    );
+
+    testWidgets(
+      'at midnight a panel on today rolls to the new day, but a day the '
+      'user navigated to stays put',
+      (tester) async {
+        const size = Size(700, 900);
+        setView(tester, size);
+        // A settable clock: the rollover timer reads it from the zone the
+        // panel was built in, so one `withClock` wraps the whole test.
+        var now = DateTime(2026, 5, 25, 23, 59, 30);
+        final requested = <DateTime>[];
+
+        await withClock(Clock(() => now), () async {
+          await tester.pumpWidget(
+            wrap(
+              DayViewSidePanel(onToggleHidden: () {}),
+              size: size,
+              requestedDays: requested,
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+          expect(requested.last, DateTime(2026, 5, 25));
+
+          // Past midnight: the panel was on "today", so it follows the
+          // clock.
+          now = DateTime(2026, 5, 26, 0, 0, 2);
+          await tester.pump(const Duration(seconds: 32));
+          await tester.pump();
+          expect(requested.last, DateTime(2026, 5, 26));
+
+          // Step back to the 25th, then cross the next midnight: the chosen
+          // day is left alone.
+          now = DateTime(2026, 5, 26, 23, 59, 30);
+          await tester.tap(find.byIcon(LottiIcons.chevronLeft));
+          await tester.pump();
+          await tester.pump();
+          expect(requested.last, DateTime(2026, 5, 25));
+
+          now = DateTime(2026, 5, 27, 0, 0, 2);
+          await tester.pump(const Duration(days: 1));
+          await tester.pump();
+          expect(requested.last, DateTime(2026, 5, 25));
+          expect(
+            tester
+                .widget<DailyOsDateStrip>(find.byType(DailyOsDateStrip))
+                .selected,
+            DateTime(2026, 5, 25),
+          );
+        });
       },
     );
 
@@ -199,26 +426,29 @@ void main() {
       expect(find.byType(PageView), findsOneWidget);
     });
 
-    testWidgets('the calendar button at the top fires the hide callback', (
-      tester,
-    ) async {
-      const size = Size(700, 900);
-      setView(tester, size);
+    testWidgets(
+      'the calendar button at the end of the toolbar row fires the hide callback',
+      (
+        tester,
+      ) async {
+        const size = Size(700, 900);
+        setView(tester, size);
 
-      var toggled = 0;
-      await tester.pumpWidget(
-        wrap(
-          DayViewSidePanel(onToggleHidden: () => toggled++),
-          size: size,
-          plan: _planForToday(),
-        ),
-      );
-      await tester.pump();
-      await tester.pump();
+        var toggled = 0;
+        await tester.pumpWidget(
+          wrap(
+            DayViewSidePanel(onToggleHidden: () => toggled++),
+            size: size,
+            plan: _planForToday(),
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
 
-      await tester.tap(find.byKey(const Key('day_view_panel_hide_button')));
-      expect(toggled, 1);
-    });
+        await tester.tap(find.byKey(const Key('day_view_panel_hide_button')));
+        expect(toggled, 1);
+      },
+    );
 
     testWidgets('forwards gesture learning to the Daily OS preferences', (
       tester,

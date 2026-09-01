@@ -40,6 +40,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="1.0.25" date="2026-09-02">
+      <description>
+        <p>Changed: the day-view column beside the tasks list is now opt-in, and it can step through days. On desktop the column that shows a day's planned and recorded time next to your tasks used to open by default; it now starts tucked away as a slim rail, and comes up with the calendar button when you want it. Once open, it no longer shows today only: the same date controls as the planner - previous and next arrows, and a date you can tap to pick any day or hold to jump back to today - sit in its top row beside the lane toggle, in a compact form that fits the narrow column. Paging the column leaves the planner tab's own day untouched.</p>
+      </description>
+    </release>
     <release version="1.0.24" date="2026-09-02">
       <description>
         <p>Added: sync can now be set up on Linux by signing in with a Matrix account. Until now the very first device needed a provisioning bundle from the server-side admin tool, which left out anyone with a Matrix account but no homeserver of their own or nobody to run the tool for them. Under Settings - Sync Settings - Devices, "Set up sync" now offers "Sign in with a Matrix account instead" on Linux: enter the server address, your full Matrix ID and your password, and Lotti signs in, creates the encrypted sync room itself and is ready. Your password stays in this device's secure storage and is never changed; only the server you name sees it, plus the pairing codes you later make for your own devices, which carry it. Every further device pairs from this one with a pairing code, as before.</p>

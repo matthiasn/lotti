@@ -47,7 +47,8 @@ void main() {
       expect(widths.sidebarCollapsed, isFalse);
       expect(widths.listPaneCollapsed, isFalse);
       expect(widths.dayViewPanelWidth, defaultDayViewPanelWidth);
-      expect(widths.dayViewPanelHidden, isFalse);
+      // The day-view column is opt-in: hidden until the user shows it.
+      expect(widths.dayViewPanelHidden, isTrue);
     });
 
     test('copyWith creates new instance with updated values', () {
@@ -114,10 +115,11 @@ void main() {
         listPaneWidth: 500,
         dayViewPanelWidth: 420,
       );
+      // Off the (hidden) default so the field actually differs.
       const h = PaneWidths(
         sidebarWidth: 300,
         listPaneWidth: 500,
-        dayViewPanelHidden: true,
+        dayViewPanelHidden: false,
       );
       expect(a, equals(b));
       expect(a, isNot(equals(c)));
@@ -628,17 +630,40 @@ void main() {
       );
     });
 
-    test('defaults to visible when nothing is persisted', () async {
+    test('defaults to hidden when nothing is persisted', () async {
       container.dispose();
       container = await hCreateContainerWithPersistedWidths();
 
       final result = await hAwaitHydration(container);
-      expect(result.dayViewPanelHidden, isFalse);
+      expect(result.dayViewPanelHidden, isTrue);
       expect(result.dayViewPanelWidth, defaultDayViewPanelWidth);
     });
 
+    test(
+      'stays visible once the user has shown it (persisted false)',
+      () async {
+        container.dispose();
+        container = await hCreateContainerWithPersistedWidths(
+          dayViewPanelHidden: 'false',
+        );
+
+        expect((await hAwaitHydration(container)).dayViewPanelHidden, isFalse);
+      },
+    );
+
+    test('an unparseable persisted flag falls back to hidden', () async {
+      container.dispose();
+      container = await hCreateContainerWithPersistedWidths(
+        dayViewPanelHidden: 'maybe',
+      );
+
+      expect((await hAwaitHydration(container)).dayViewPanelHidden, isTrue);
+    });
+
     test('updateDayViewPanelWidth applies delta and clamps', () {
+      // Shown first: the column starts hidden, where drags are refused.
       final notifier = container.read(paneWidthControllerProvider.notifier)
+        ..showDayViewPanel()
         ..updateDayViewPanelWidth(60);
       expect(
         container.read(paneWidthControllerProvider).dayViewPanelWidth,
@@ -659,10 +684,11 @@ void main() {
     });
 
     test('resizing the day view panel leaves the other panes alone', () {
-      container
-          .read(paneWidthControllerProvider.notifier)
-          .updateDayViewPanelWidth(80);
+      container.read(paneWidthControllerProvider.notifier)
+        ..showDayViewPanel()
+        ..updateDayViewPanelWidth(80);
       final state = container.read(paneWidthControllerProvider);
+      expect(state.dayViewPanelWidth, defaultDayViewPanelWidth + 80);
       expect(state.sidebarWidth, defaultSidebarWidth);
       expect(state.listPaneWidth, defaultListPaneWidth);
       expect(state.journalListPaneWidth, defaultJournalListPaneWidth);
@@ -671,6 +697,7 @@ void main() {
     test('persists after debounce, coalescing rapid drags', () {
       fakeAsync((async) {
         container.read(paneWidthControllerProvider.notifier)
+          ..showDayViewPanel()
           ..updateDayViewPanelWidth(10)
           ..updateDayViewPanelWidth(20)
           ..updateDayViewPanelWidth(30);
@@ -697,6 +724,15 @@ void main() {
 
     test('ignores resize input while hidden and restores prior width', () {
       final notifier = container.read(paneWidthControllerProvider.notifier)
+        // A drag against the hidden default is refused outright.
+        ..updateDayViewPanelWidth(45);
+      expect(
+        container.read(paneWidthControllerProvider).dayViewPanelWidth,
+        defaultDayViewPanelWidth,
+      );
+
+      notifier
+        ..showDayViewPanel()
         ..updateDayViewPanelWidth(60)
         ..hideDayViewPanel()
         ..updateDayViewPanelWidth(120);
@@ -712,6 +748,14 @@ void main() {
     });
 
     test('persists hide immediately and toggles idempotently', () {
+      container.read(paneWidthControllerProvider.notifier).showDayViewPanel();
+      verify(
+        () => getIt<SettingsDb>().saveSettingsItem(
+          dayViewPanelHiddenKey,
+          'false',
+        ),
+      ).called(1);
+
       container.read(paneWidthControllerProvider.notifier)
         ..updateDayViewPanelWidth(30)
         ..hideDayViewPanel()
@@ -740,17 +784,17 @@ void main() {
       ).called(1);
     });
 
-    test('toggleDayViewPanelHidden flips visible -> hidden -> visible', () {
+    test('toggleDayViewPanelHidden flips hidden -> visible -> hidden', () {
       final notifier = container.read(paneWidthControllerProvider.notifier)
         ..toggleDayViewPanelHidden();
       expect(
         container.read(paneWidthControllerProvider).dayViewPanelHidden,
-        isTrue,
+        isFalse,
       );
       notifier.toggleDayViewPanelHidden();
       expect(
         container.read(paneWidthControllerProvider).dayViewPanelHidden,
-        isFalse,
+        isTrue,
       );
     });
   });

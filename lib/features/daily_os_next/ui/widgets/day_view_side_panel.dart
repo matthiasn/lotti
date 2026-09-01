@@ -7,6 +7,7 @@ import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_preferences_controller.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/daily_os_date_strip.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
 import 'package:lotti/features/design_system/components/headers/tab_section_header.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -23,12 +24,18 @@ const kDayViewSidePanelComparisonBreakpoint = 560.0;
 /// the Tasks tab is active — the surface where time is planned and tracked.
 ///
 /// Reuses the Daily OS [DayTimeline] — the planned-vs-actual comparison for
-/// the current local day — fed by [currentDraftPlanProvider] (falling back to
+/// one local day — fed by [currentDraftPlanProvider] (falling back to
 /// [DraftPlan.emptyForDay] when no plan exists yet, so tracked time is still
-/// visible) and [dailyOsActualTimeBlocksProvider]. A calendar button at the
-/// top hides the column; [DayViewSidePanelRail] is its hidden counterpart
-/// carrying the matching button to bring it back. Visibility and width live
-/// in `paneWidthControllerProvider` so both survive app restarts.
+/// visible) and [dailyOsActualTimeBlocksProvider]. It opens on today and is
+/// navigated with the same [DailyOsDateStrip] as the Daily OS surface
+/// header — prev/next chevrons, a date label that opens the picker (long
+/// press for today) and a Today button once the selection has left today —
+/// placed in the timeline's toolbar row beside the lane-format toggle. The
+/// selection is the panel's own; it does not move the Daily OS tab's day. A
+/// calendar button at the end of that row hides the column;
+/// [DayViewSidePanelRail] is its hidden counterpart carrying the matching
+/// button to bring it back. Visibility and width live in
+/// `paneWidthControllerProvider` so both survive app restarts.
 class DayViewSidePanel extends ConsumerStatefulWidget {
   const DayViewSidePanel({required this.onToggleHidden, super.key});
 
@@ -42,12 +49,14 @@ class DayViewSidePanel extends ConsumerStatefulWidget {
 
 class _DayViewSidePanelState extends ConsumerState<DayViewSidePanel> {
   Timer? _midnightTimer;
-  late DateTime _today;
+
+  /// The day on display. Starts on today and follows the chevrons.
+  late DateTime _selectedDay;
 
   @override
   void initState() {
     super.initState();
-    _today = _currentDay();
+    _selectedDay = _currentDay();
     _scheduleMidnightRollover();
   }
 
@@ -64,7 +73,9 @@ class _DayViewSidePanelState extends ConsumerState<DayViewSidePanel> {
 
   /// The panel is a long-lived shell surface, so unlike the Daily OS root it
   /// must notice the date rolling over while the app stays open — otherwise
-  /// it would keep showing yesterday after midnight.
+  /// it would keep showing yesterday after midnight. Only a panel still
+  /// sitting on today follows the clock; a day the user navigated to stays
+  /// put, since they chose it deliberately.
   void _scheduleMidnightRollover() {
     final now = clock.now();
     final nextMidnight = DateTime(now.year, now.month, now.day + 1);
@@ -72,104 +83,100 @@ class _DayViewSidePanelState extends ConsumerState<DayViewSidePanel> {
       nextMidnight.difference(now) + const Duration(seconds: 1),
       () {
         if (!mounted) return;
-        setState(() => _today = _currentDay());
+        final wasOnToday =
+            _selectedDay ==
+            DateTime(
+              now.year,
+              now.month,
+              now.day,
+            );
+        if (wasOnToday) {
+          setState(() => _selectedDay = _currentDay());
+        }
         _scheduleMidnightRollover();
       },
+    );
+  }
+
+  /// Moves the selection by [days]; the `DateTime` constructor keeps the
+  /// day arithmetic DST-safe.
+  void _shiftDay(int days) {
+    setState(() {
+      _selectedDay = DateTime(
+        _selectedDay.year,
+        _selectedDay.month,
+        _selectedDay.day + days,
+      );
+    });
+  }
+
+  void _goToToday() {
+    setState(() => _selectedDay = _currentDay());
+  }
+
+  /// Opens the shared Daily OS date picker and applies the pick to the
+  /// panel's own selection.
+  Future<void> _pickDay() async {
+    final picked = await showDailyOsDayPicker(context, selected: _selectedDay);
+    if (picked == null || !mounted) return;
+    setState(
+      () => _selectedDay = DateTime(picked.year, picked.month, picked.day),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final today = _today;
+    final day = _selectedDay;
     // `.value` keeps the last rendered plan while the provider re-runs on a
     // background agent/sync update — no loading shell mid-session.
-    final plan = ref.watch(currentDraftPlanProvider(today)).value;
-    final actualBlocks = ref
-        .watch(dailyOsActualTimeBlocksProvider(today))
-        .value;
+    final plan = ref.watch(currentDraftPlanProvider(day)).value;
+    final actualBlocks = ref.watch(dailyOsActualTimeBlocksProvider(day)).value;
     final prefs = ref.watch(dailyOsPreferencesControllerProvider);
-    final draft = plan ?? DraftPlan.emptyForDay(today);
+    final draft = plan ?? DraftPlan.emptyForDay(day);
     // Under lockdown the column keeps every block so the day still reads as
     // a whole, but blocks outside the locked category are drawn redacted —
     // a neutral slab with no text — rather than dropped. The unassigned
     // fallback category is outside every lockdown.
     final lockdown = ref.watch(lockdownControllerProvider);
 
-    return ColoredBox(
+    // Material rather than a plain ColoredBox: the date strip's label is an
+    // InkWell, which needs a Material ancestor to draw its ink on.
+    return Material(
       color: tokens.colors.background.level01,
       child: SafeArea(
         bottom: false,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: EdgeInsets.fromLTRB(
-                tokens.spacing.step4,
-                tokens.spacing.step3,
-                tokens.spacing.step3,
-                0,
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          context.messages.dailyOsTodayButton,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: tokens.typography.styles.subtitle.subtitle2
-                              .copyWith(
-                                color: tokens.colors.text.highEmphasis,
-                              ),
-                        ),
-                        Text(
-                          MaterialLocalizations.of(
-                            context,
-                          ).formatMediumDate(today),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: tokens.typography.styles.others.caption
-                              .copyWith(
-                                color: tokens.colors.text.mediumEmphasis,
-                              ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(width: tokens.spacing.step3),
-                  SizedBox.square(
-                    dimension: TapTargets.minimum,
-                    child: Center(
-                      child: TabHeaderIconButton(
-                        key: const Key('day_view_panel_hide_button'),
-                        icon: LottiIcons.today,
-                        tooltip: context.messages.dailyOsDayViewPanelHide,
-                        active: true,
-                        onPressed: widget.onToggleHidden,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: DayTimeline(
-                draft: draft,
-                actualBlocks: actualBlocks,
-                comparisonBreakpoint: kDayViewSidePanelComparisonBreakpoint,
-                isRedacted: lockdown.isActive
-                    ? (block) => !lockdown.allows(block.category.id)
-                    : null,
-                showGestureHint: !prefs.timelineGesturesLearned,
-                onGesturesLearned: ref
-                    .read(dailyOsPreferencesControllerProvider.notifier)
-                    .markTimelineGesturesLearned,
-              ),
-            ),
-          ],
+        // One line of chrome: the Daily OS date strip leads the timeline's
+        // toolbar row, the lane-format toggle follows, the hide button ends
+        // it. The strip is the same widget the Daily OS surface header uses,
+        // so the two read and behave alike.
+        child: DayTimeline(
+          draft: draft,
+          actualBlocks: actualBlocks,
+          comparisonBreakpoint: kDayViewSidePanelComparisonBreakpoint,
+          toolbarLeading: DailyOsDateStrip(
+            compact: true,
+            selected: day,
+            isToday: day == _currentDay(),
+            onPrev: () => _shiftDay(-1),
+            onNext: () => _shiftDay(1),
+            onPick: _pickDay,
+            onToday: _goToToday,
+          ),
+          toolbarTrailing: TabHeaderIconButton(
+            key: const Key('day_view_panel_hide_button'),
+            icon: LottiIcons.today,
+            tooltip: context.messages.dailyOsDayViewPanelHide,
+            active: true,
+            onPressed: widget.onToggleHidden,
+          ),
+          isRedacted: lockdown.isActive
+              ? (block) => !lockdown.allows(block.category.id)
+              : null,
+          showGestureHint: !prefs.timelineGesturesLearned,
+          onGesturesLearned: ref
+              .read(dailyOsPreferencesControllerProvider.notifier)
+              .markTimelineGesturesLearned,
         ),
       ),
     );

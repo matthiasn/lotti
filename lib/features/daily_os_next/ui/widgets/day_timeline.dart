@@ -43,6 +43,8 @@ class DayTimeline extends StatefulWidget {
     this.onGesturesLearned,
     this.comparisonBreakpoint = kDesktopBreakpoint,
     this.isRedacted,
+    this.toolbarLeading,
+    this.toolbarTrailing,
     super.key,
   });
 
@@ -100,6 +102,17 @@ class DayTimeline extends StatefulWidget {
   /// while blocks outside the locked category reveal nothing. `null` (the
   /// default) redacts nothing.
   final bool Function(TimeBlock block)? isRedacted;
+
+  /// Host-supplied controls at the start of the toolbar row, in the room the
+  /// one-shot gesture hint would otherwise use (a host with its own controls
+  /// there has no width left for a coaching line). The docked day-view
+  /// column puts its date strip here so stepping through days and switching
+  /// the lane format share one line of chrome.
+  final Widget? toolbarLeading;
+
+  /// Host-supplied controls at the end of the toolbar row, after the
+  /// lane-mode toggle. The docked day-view column puts its hide button here.
+  final Widget? toolbarTrailing;
 
   @override
   State<DayTimeline> createState() => _DayTimelineState();
@@ -290,6 +303,8 @@ class _DayTimelineState extends State<DayTimeline> {
           children: [
             if (showToolbar)
               _TimelineToolbar(
+                leading: widget.toolbarLeading,
+                trailing: widget.toolbarTrailing,
                 mode: comparisonMode,
                 arrangeMode: _arrangeMode,
                 showHint: widget.showGestureHint,
