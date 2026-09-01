@@ -10,6 +10,7 @@ import 'package:lotti/features/daily_os_next/ui/widgets/day_view_side_panel.dart
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 import '../../../../widget_test_utils.dart';
+import '../../../lockdown/lockdown_test_utils.dart';
 
 const _work = DayAgentCategory(
   id: 'cat_work',
@@ -275,6 +276,65 @@ void main() {
       expect(showButton, findsOneWidget);
       await tester.tap(showButton);
       expect(toggled, 1);
+    });
+  });
+
+  group('DayViewSidePanel under lockdown', () {
+    testWidgets('blocks outside the locked category stay on the day but are '
+        'redacted; the locked category renders normally', (tester) async {
+      const size = Size(700, 900);
+      setView(tester, size);
+      const health = DayAgentCategory(
+        id: 'cat_health',
+        name: 'Health',
+        colorHex: 'FF0000',
+      );
+      final day = _today;
+      final secret = TimeBlock(
+        id: 'actual:secret',
+        title: 'Secret run',
+        start: day.add(const Duration(hours: 7)),
+        end: day.add(const Duration(hours: 8)),
+        type: TimeBlockType.manual,
+        state: TimeBlockState.completed,
+        category: health,
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            currentDraftPlanProvider.overrideWith(
+              (ref, date) async => _planForToday(),
+            ),
+            dailyOsActualTimeBlocksProvider.overrideWith(
+              (ref, date) async => [..._actualForToday(), secret],
+            ),
+            dailyOsPreferencesControllerProvider.overrideWith(
+              _SeededPreferencesController.new,
+            ),
+            lockdownOverride(const {'cat_work'}),
+          ],
+          child: makeTestableWidget2(
+            SizedBox(
+              width: size.width,
+              height: size.height,
+              child: DayViewSidePanel(onToggleHidden: () {}),
+            ),
+            mediaQueryData: const MediaQueryData(size: size),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('Planned focus'), findsOneWidget);
+      expect(find.text('Recorded session'), findsOneWidget);
+      // The other category's block is still on the timeline, textless.
+      expect(
+        find.byKey(const Key('daily_os_day_block_actual:secret')),
+        findsOneWidget,
+      );
+      expect(find.text('Secret run'), findsNothing);
     });
   });
 }

@@ -40,6 +40,7 @@ import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/keyboard/ui/command_palette.dart';
 import 'package:lotti/features/keyboard/ui/keyboard_focus_region.dart';
 import 'package:lotti/features/keyboard/ui/keyboard_shortcuts_page.dart';
+import 'package:lotti/features/lockdown/domain/lockdown_state.dart';
 import 'package:lotti/features/lockdown/state/lockdown_category_options.dart';
 import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
 import 'package:lotti/features/lockdown/ui/lockdown_logo_menu.dart';
@@ -615,6 +616,19 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     navService.goalsDelegate,
   };
 
+  /// The guard on NavService is what keeps keyboard shortcuts, the command
+  /// palette and path-based beams off hidden tabs for the whole active
+  /// period; the rail cut alone only covers sidebar taps. Desktop-only —
+  /// see the lockdown listener in [build].
+  void _syncLockdownGuard({
+    required bool isWide,
+    required LockdownState lockdown,
+  }) {
+    navService.allowedTabDelegates = isWide && lockdown.isActive
+        ? _lockdownDelegates()
+        : null;
+  }
+
   /// Brings the app onto a lockdown-safe tab and resets every surviving tab
   /// to its root — without activating any of them — so neither a foreign tab
   /// nor a detail pane opened before the lockdown began can stay on screen
@@ -631,13 +645,14 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     // Reset toast guard on login, and listen for login-gate events from outbox.
     ref
       ..listen(lockdownControllerProvider, (prev, next) {
-        // The guard on NavService is what keeps keyboard shortcuts, the
-        // command palette and path-based beams off hidden tabs for the whole
-        // active period; the rail cut alone only covers sidebar taps.
-        navService.allowedTabDelegates = next.isActive
-            ? _lockdownDelegates()
-            : null;
-        if (next.isActive) _enterLockdown();
+        // Lockdown is a desktop feature: the mobile layout has no logo to
+        // exit through and shows every destination, so the navigation guard
+        // (and the tab reset) apply only while the desktop layout is up.
+        // `_syncLockdownGuard` re-evaluates on every build, which is how a
+        // breakpoint crossing mid-lockdown lifts or re-applies the guard.
+        final isWide = isDesktopLayout(context);
+        _syncLockdownGuard(isWide: isWide, lockdown: next);
+        if (next.isActive && isWide) _enterLockdown();
       })
       ..listen(loginStateStreamProvider, (prev, next) {
         final state = next.asData?.value;
@@ -796,6 +811,10 @@ class _AppScreenState extends ConsumerState<AppScreen> {
 
         final isWide = isDesktopLayout(context);
         navService.isDesktopMode = isWide;
+        _syncLockdownGuard(
+          isWide: isWide,
+          lockdown: ref.watch(lockdownControllerProvider),
+        );
 
         final beamerChildren = [
           Beamer(routerDelegate: navService.tasksDelegate),
@@ -943,13 +962,12 @@ class _AppScreenState extends ConsumerState<AppScreen> {
       windowWidth: windowWidth,
       sidebarWidth: isCollapsed ? kCollapsedSidebarWidth : sidebarWidth,
     );
-    // The day view is category-agnostic (see [_lockdownVisibleKinds]), so it
-    // is hidden while a lockdown is active.
+    // The day view stays up under lockdown: the panel itself redacts blocks
+    // outside the locked category (see `DayViewSidePanel`).
     final showDayViewColumn =
         destinations[index].kind == _AppNavigationDestinationKind.tasks &&
         navService.isDailyOsPageEnabled &&
-        dayViewAllowance.show &&
-        !lockdown.isActive;
+        dayViewAllowance.show;
     final resolvedDayView = resolvedPaneWidth(
       storedWidth: paneWidths.dayViewPanelWidth,
       flatDefault: defaultDayViewPanelWidth,

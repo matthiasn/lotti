@@ -86,7 +86,10 @@ Restart is therefore always an exit.
   categories. **Goals** filters the active and archived identities on
   `allowedCategoryIds` in `UnifiedGoalsPage` — deliberately *not* in the agent
   providers, which the runtime watchers share and which must keep every goal
-  alive. A goal with no category is hidden, like an unassigned entry.
+  alive. A goal with no category is hidden, like an unassigned entry. The
+  page's *recordable* habit set — which feeds both the orphan group and every
+  goal card's rows — is intersected with `lockdown.allows(habit.categoryId)`
+  too, so an unclaimed habit from another category cannot surface there.
 - **`categoriesStreamProvider`** emits only locked categories while active, so
   the goal-creation wizard and the logo menu inherit the scope.
 - **`EntitiesCacheService.sortedCategories`** drops categories outside the
@@ -95,8 +98,14 @@ Restart is therefore always an exit.
   definition. The controller mirrors the set into the cache on every change.
 - **The desktop shell** keeps Tasks, Habits, Insights, Goals and Logbook in
   the rail, strips their under-row subtrees (saved filters, the AI impact
-  entry), and drops Settings, the utility row, the activity disclosure and the
-  contact band. On entering lockdown it sets `NavService.allowedTabDelegates`
+  entry), and drops Settings, the utility row, the activity disclosure, the
+  contact band. The docked day-view column beside the task list **stays**, so
+  the day still reads as a whole: `DayViewSidePanel` hands `DayTimeline` an
+  `isRedacted` predicate, and every block outside the locked category is
+  drawn by `DayBlock` as a plain `background.level03` slab — right time and
+  height, no title, no category colour, no live task projection, no tap,
+  edit, rename, move or resize, and an accessible name of only the time range
+  and tracked/planned. The unassigned fallback category counts as outside. On entering lockdown it sets `NavService.allowedTabDelegates`
   to the allowed tabs, switches to Tasks if the active tab is not an allowed
   one, and resets every allowed tab to its root **without activating it**
   (`resetTabRootWithinTab`, built on `beamWithinTab`) so no pre-lockdown detail
@@ -111,7 +120,11 @@ Restart is therefore always an exit.
   refuse a disallowed tab. It is keyed by delegate, not index: a feature flag
   toggling a tab ahead of Logbook shifts every later index, and a guard of
   indices would then authorise the wrong tab. The rail cut alone would only
-  have covered sidebar taps.
+  have covered sidebar taps. The guard is **desktop-only**: the shell
+  re-evaluates it on every build (`_syncLockdownGuard`), so crossing the
+  desktop breakpoint mid-lockdown lifts it — the mobile shell has no logo to
+  exit through and keeps its full navigation, which is why the feature is
+  documented as desktop-only rather than half-applied there.
 
 # Cut, not filtered
 

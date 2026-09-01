@@ -92,6 +92,7 @@ class _TimelinePane extends StatelessWidget {
     required this.tracked,
     required this.onRenameBlock,
     required this.onEditBlock,
+    required this.isRedacted,
     required this.arrangeMode,
     required this.onRescheduleBlock,
   });
@@ -114,6 +115,7 @@ class _TimelinePane extends StatelessWidget {
 
   final void Function(TimeBlock block, String title)? onRenameBlock;
   final ValueChanged<TimeBlock>? onEditBlock;
+  final bool Function(TimeBlock block)? isRedacted;
   final bool arrangeMode;
   final Future<bool> Function(
     TimeBlock block,
@@ -171,6 +173,7 @@ class _TimelinePane extends StatelessWidget {
                     onEdit: onEditBlock,
                     arrangeMode: arrangeMode,
                     onReschedule: onRescheduleBlock,
+                    redacted: isRedacted?.call(block) ?? false,
                   ),
                 if (now != null)
                   NowLine(

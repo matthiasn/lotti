@@ -4913,12 +4913,15 @@ void main() {
         expect(find.text('Projects'), findsNothing);
         expect(find.byType(ContactSupportRow), findsNothing);
         expect(find.byType(SidebarSavedTaskFilters), findsNothing);
+        // The day-view column stays: it redacts foreign blocks itself.
+        expect(find.byType(DayViewSidePanel), findsOneWidget);
         // The navigation guard covers shortcuts, the palette and path beams,
         // and is keyed by delegate so a flag flip cannot shift it.
+        // The guard is re-synced on every build, so read the latest value.
         final allowed =
             verify(
                   () => mockNavService.allowedTabDelegates = captureAny(),
-                ).captured.single
+                ).captured.last
                 as Set<BeamerDelegate>?;
         expect(allowed, {
           mockNavService.tasksDelegate,
@@ -4952,10 +4955,62 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(container.read(lockdownControllerProvider).isActive, isFalse);
-        verify(() => mockNavService.allowedTabDelegates = null).called(1);
+        expect(
+          verify(
+            () => mockNavService.allowedTabDelegates = captureAny(),
+          ).captured.last,
+          isNull,
+        );
         expect(find.text('Settings'), findsOneWidget);
         expect(find.text('DailyOS'), findsOneWidget);
         expect(find.byType(ContactSupportRow), findsOneWidget);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
+
+    testWidgets(
+      'on the phone layout lockdown applies no navigation guard and no '
+      'tab reset — the mobile shell is out of scope',
+      (tester) async {
+        final mockNavService = MockNavService();
+        await _stubNavService(
+          mockNavService,
+          indexStream: Stream.value(0),
+          isProjectsEnabled: () => true,
+          isDailyOsEnabled: () => true,
+          isHabitsEnabled: () => true,
+          isDashboardsEnabled: () => true,
+        );
+        when(() => mockNavService.index).thenReturn(0);
+        when(() => mockNavService.journalIndex).thenReturn(5);
+        when(() => mockNavService.isTabAllowed(any())).thenReturn(true);
+        await _registerAppScreenGetIt(mockNavService);
+        getIt.registerSingleton<EntitiesCacheService>(
+          MockEntitiesCacheService(),
+        );
+        addTearDown(tearDownTestGetIt);
+
+        await _pumpAppScreen(tester, navService: mockNavService);
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(AppScreen)),
+        );
+
+        container
+            .read(lockdownControllerProvider.notifier)
+            .lockToCategory(
+              'work',
+            );
+        await tester.pumpAndSettle();
+
+        final guards = verify(
+          () => mockNavService.allowedTabDelegates = captureAny(),
+        ).captured;
+        expect(guards, everyElement(isNull));
+        verifyNever(() => mockNavService.resetTabRootWithinTab(any()));
+        verifyNever(() => mockNavService.setIndex(any()));
+        expect(find.byType(DesktopNavigationSidebar), findsNothing);
 
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump();

@@ -818,12 +818,24 @@ void main() {
     verifyNoMoreInteractions(healthImport);
   });
 
-  testWidgets('lockdown hides goals whose category is not the locked one', (
-    tester,
-  ) async {
+  testWidgets('lockdown hides goals and orphan habits outside the locked '
+      'category, and keeps the ones inside it', (tester) async {
+    final workHabit = habitFlossingDueLater.copyWith(
+      id: 'habit-work-stretch',
+      name: 'Work stretch',
+      categoryId: 'work',
+    );
+    // Rows resolve their definition through the cache.
+    when(
+      () => mockEntitiesCacheService.getHabitById(workHabit.id),
+    ).thenAnswer((_) => workHabit);
+    final state = baseState().copyWith(
+      habitDefinitions: [habitFlossing, habitFlossingDueLater, workHabit],
+      openNowAll: [habitFlossing, habitFlossingDueLater, workHabit],
+    );
     await pump(
       tester,
-      baseState(),
+      state,
       activeAgents: [
         identity('g-work', 'Work goal', categoryIds: const {'work'}),
         identity('g-health', 'Health goal', categoryIds: const {'health'}),
@@ -835,7 +847,12 @@ void main() {
     );
 
     expect(find.byType(UnifiedGoalCard), findsOneWidget);
+    expect(find.text('Work goal'), findsOneWidget);
     expect(find.text('Health goal'), findsNothing);
     expect(find.text('Uncategorised goal'), findsNothing);
+
+    // Orphan rows: the in-scope habit stays, the unassigned one is gone.
+    expect(find.text('Work stretch'), findsOneWidget);
+    expect(find.text(habitFlossingDueLater.name), findsNothing);
   });
 }

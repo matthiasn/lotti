@@ -163,14 +163,18 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage>
     // reference a habit that was deactivated or has aged out of its window,
     // and such a row must not render an actionable quick-complete that the
     // service itself would reject.
+    // Lockdown is the one category scope this page does honour: a habit
+    // outside the locked category is not recordable here, which keeps it out
+    // of the orphan group and out of every goal card's rows alike.
     final gatingNow = ref.watch(habitsNowProvider)();
     final recordableIds = {
       for (final habit in state.habitDefinitions)
-        if (GoalHabitCompletionService.isRecordableDay(
-          habit,
-          day: gatingNow,
-          now: gatingNow,
-        ))
+        if (lockdown.allows(habit.categoryId) &&
+            GoalHabitCompletionService.isRecordableDay(
+              habit,
+              day: gatingNow,
+              now: gatingNow,
+            ))
           habit.id,
     };
     // Goal-card rows count only real successes as done: goal criteria credit

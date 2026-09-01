@@ -10,6 +10,7 @@ import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
 import 'package:lotti/features/design_system/components/headers/tab_section_header.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Measured panel width at which the docked day view shows the planned and
@@ -89,6 +90,11 @@ class _DayViewSidePanelState extends ConsumerState<DayViewSidePanel> {
         .value;
     final prefs = ref.watch(dailyOsPreferencesControllerProvider);
     final draft = plan ?? DraftPlan.emptyForDay(today);
+    // Under lockdown the column keeps every block so the day still reads as
+    // a whole, but blocks outside the locked category are drawn redacted —
+    // a neutral slab with no text — rather than dropped. The unassigned
+    // fallback category is outside every lockdown.
+    final lockdown = ref.watch(lockdownControllerProvider);
 
     return ColoredBox(
       color: tokens.colors.background.level01,
@@ -154,6 +160,9 @@ class _DayViewSidePanelState extends ConsumerState<DayViewSidePanel> {
                 draft: draft,
                 actualBlocks: actualBlocks,
                 comparisonBreakpoint: kDayViewSidePanelComparisonBreakpoint,
+                isRedacted: lockdown.isActive
+                    ? (block) => !lockdown.allows(block.category.id)
+                    : null,
                 showGestureHint: !prefs.timelineGesturesLearned,
                 onGesturesLearned: ref
                     .read(dailyOsPreferencesControllerProvider.notifier)
