@@ -14,6 +14,12 @@ import 'package:lotti/widgets/app_bar/settings_header_bar.dart';
 ///
 /// An optional [bottom] accessory (e.g. a sync filter-chip row) renders
 /// beneath the title; the bottom hairline sits below it.
+///
+/// The sliver delegate carries geometry and content only. Everything the
+/// theme decides — the surface colour, the hairline, the title typography —
+/// is resolved by widgets *below* the sliver ([_SettingsHeaderSurface],
+/// [SettingsHeaderBar]), never inside the delegate's `build`; see
+/// [_SettingsHeaderSurface] for why that distinction matters.
 class SettingsPageHeader extends StatelessWidget {
   const SettingsPageHeader({
     required this.title,
@@ -96,15 +102,8 @@ class _SettingsHeaderDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlaps) {
-    final tokens = context.designTokens;
     final accessory = bottom;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: tokens.colors.background.level01,
-        border: Border(
-          bottom: BorderSide(color: tokens.colors.decorative.level01),
-        ),
-      ),
+    return _SettingsHeaderSurface(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -136,4 +135,37 @@ class _SettingsHeaderDelegate extends SliverPersistentHeaderDelegate {
       old.onBack != onBack ||
       old.bottom != bottom ||
       old.actions != actions;
+}
+
+/// The header's painted surface — the level-01 background under a decorative
+/// bottom hairline — resolved from the theme by a widget of its own.
+///
+/// Every theme read belongs in a widget below the sliver, never in the
+/// delegate's `build`: that `build` runs with the sliver's render-object
+/// element as its context, and when the host page rebuilds in the same frame
+/// as a theme switch, the sliver's `update` clears its dirty flag before the
+/// `performRebuild` that would rebuild the delegate ever runs — so a surface
+/// painted there kept the previous theme until the route was rebuilt. A
+/// widget owns an element nothing else clears and re-resolves the tokens on
+/// every theme change. The full sequence is in
+/// `knowledge/features/design_system/tokens-and-theming.md`, under "Read
+/// tokens in a widget, never in a sliver delegate's `build`".
+class _SettingsHeaderSurface extends StatelessWidget {
+  const _SettingsHeaderSurface({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: tokens.colors.background.level01,
+        border: Border(
+          bottom: BorderSide(color: tokens.colors.decorative.level01),
+        ),
+      ),
+      child: child,
+    );
+  }
 }

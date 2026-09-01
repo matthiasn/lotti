@@ -7,6 +7,7 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/pages/theming_page.dart';
+import 'package:lotti/features/theming/state/theming_controller.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -15,6 +16,7 @@ import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../mocks/mocks.dart';
+import '../../../../../test_utils/settings_header_harness.dart';
 import '../../../../../widget_test_utils.dart';
 
 void main() {
@@ -70,21 +72,29 @@ void main() {
     GetIt.I.reset();
   });
 
+  /// The page under a `MaterialApp` whose theme mode follows the controller,
+  /// as `beamer_app` wires it — so a mode picked on the page re-themes the
+  /// very tree the page is rendered in.
   Widget createTestWidget({Locale? locale}) {
     return ProviderScope(
-      child: MaterialApp(
-        theme: resolveTestTheme(ThemeData.light()),
-        darkTheme: resolveTestTheme(ThemeData.dark()),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        locale: locale,
-        home: const MediaQuery(
-          data: MediaQueryData(
-            size: Size(390, 844),
-            padding: EdgeInsets.only(top: 47),
+      child: Consumer(
+        builder: (context, ref, _) => MaterialApp(
+          theme: resolveTestTheme(ThemeData.light()),
+          darkTheme: resolveTestTheme(ThemeData.dark()),
+          themeMode: ref.watch(
+            themingControllerProvider.select((state) => state.themeMode),
           ),
-          child: Scaffold(
-            body: ThemingPage(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: locale,
+          home: const MediaQuery(
+            data: MediaQueryData(
+              size: Size(390, 844),
+              padding: EdgeInsets.only(top: 47),
+            ),
+            child: Scaffold(
+              body: ThemingPage(),
+            ),
           ),
         ),
       ),
@@ -152,5 +162,49 @@ void main() {
         findsNWidgets(3), // dark, system, light
       );
     });
+
+    // The controller's first frame is ThemeMode.system, so the platform
+    // brightness is pinned to the stored mode: the tap is then the only
+    // theme switch the page goes through, and the header cannot go stale
+    // on a hidden first switch instead.
+    for (final (stored, platform, segment, brightness) in [
+      ('light', Brightness.light, LottiIcons.night, Brightness.dark),
+      ('dark', Brightness.dark, LottiIcons.day, Brightness.light),
+    ]) {
+      testWidgets(
+        'picking ${brightness.name} re-themes the page header with the body',
+        (tester) async {
+          when(
+            () => mockSettingsDb.itemByKey('THEME_MODE'),
+          ).thenAnswer((_) async => stored);
+          tester.platformDispatcher.platformBrightnessTestValue = platform;
+          addTearDown(
+            tester.platformDispatcher.clearPlatformBrightnessTestValue,
+          );
+          await tester.pumpWidget(
+            createTestWidget(locale: const Locale('en')),
+          );
+          await tester.pumpAndSettle();
+
+          await tester.tap(find.byIcon(segment));
+          await tester.pumpAndSettle();
+
+          final body = tester.element(
+            find.byType(DsSegmentedToggle<ThemeMode>),
+          );
+          expect(
+            Theme.of(body).brightness,
+            brightness,
+            reason: 'the body must already wear the picked mode',
+          );
+          final surface = settingsHeaderSurface(tester);
+          expect(surface.color, body.designTokens.colors.background.level01);
+          expect(
+            surface.border?.bottom.color,
+            body.designTokens.colors.decorative.level01,
+          );
+        },
+      );
+    }
   });
 }

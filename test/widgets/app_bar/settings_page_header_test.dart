@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/app_bar/settings_page_header.dart';
 
+import '../../test_utils/settings_header_harness.dart';
 import '../../widget_test_utils.dart';
 
 /// Pumps a [SettingsPageHeader] inside the standard scroll-view scaffolding,
@@ -23,8 +24,8 @@ Future<void> _pumpHeader(
 }) async {
   await tester.pumpWidget(
     MaterialApp(
-      // The header reads context.designTokens (for the bottom corner
-      // radius); the central helper attaches the brightness-matched
+      // The header reads context.designTokens (for its surface and title
+      // colours); the central helper attaches the brightness-matched
       // DsTokens extension to whatever theme the test supplies.
       theme: resolveTestTheme(theme ?? ThemeData.light()),
       home: MediaQuery(
@@ -55,6 +56,44 @@ Future<void> _pumpHeader(
   // scroll-gesture tests settle explicitly after dragging.
   await tester.pump();
   await tester.pump(const Duration(seconds: 1));
+}
+
+/// Pumps the header under a `MaterialApp` whose theme mode follows [mode],
+/// beneath an ancestor that reads the tokens for its own colour — the shape
+/// of `SliverBoxAdapterPage`, whose scaffold colour makes it rebuild in the
+/// very frame the theme changes and hand the sliver a fresh delegate.
+///
+/// [title] is a parameter so the header cannot be const-canonicalised: a
+/// const `SettingsPageHeader` would be reused across the ancestor's rebuilds
+/// and the sliver would never receive a new delegate, which is the half of
+/// the trap this host exists to reproduce.
+Future<void> _pumpThemeSwitchingHeader(
+  WidgetTester tester, {
+  required ValueNotifier<ThemeMode> mode,
+  required String title,
+}) async {
+  await tester.pumpWidget(
+    ValueListenableBuilder<ThemeMode>(
+      valueListenable: mode,
+      builder: (context, themeMode, _) => MaterialApp(
+        theme: resolveTestTheme(ThemeData.light()),
+        darkTheme: resolveTestTheme(ThemeData.dark()),
+        themeMode: themeMode,
+        home: Builder(
+          builder: (context) => Scaffold(
+            backgroundColor: context.designTokens.colors.background.level01,
+            body: CustomScrollView(
+              slivers: [
+                SettingsPageHeader(title: title),
+                const SliverToBoxAdapter(child: SizedBox(height: 400)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+  await tester.pumpAndSettle();
 }
 
 void main() {
@@ -238,6 +277,66 @@ void main() {
         );
       }
     });
+
+    for (final theme in [ThemeData.light(), ThemeData.dark()]) {
+      testWidgets(
+        'paints the level-01 background under a decorative hairline '
+        '(${theme.brightness.name})',
+        (tester) async {
+          await _pumpHeader(tester, theme: theme, contentHeight: 200);
+
+          final tokens = tester
+              .element(find.byType(SettingsPageHeader))
+              .designTokens;
+          final surface = settingsHeaderSurface(tester);
+          expect(surface.color, tokens.colors.background.level01);
+          expect(
+            surface.border?.bottom.color,
+            tokens.colors.decorative.level01,
+          );
+        },
+      );
+    }
+
+    for (final (from, to) in [
+      (ThemeMode.light, ThemeMode.dark),
+      (ThemeMode.dark, ThemeMode.light),
+    ]) {
+      testWidgets(
+        'surface follows a theme switch while a token-reading ancestor '
+        'rebuilds in the same frame (${from.name} to ${to.name})',
+        (tester) async {
+          final mode = ValueNotifier<ThemeMode>(from);
+          addTearDown(mode.dispose);
+          await _pumpThemeSwitchingHeader(
+            tester,
+            mode: mode,
+            title: 'Theming',
+          );
+
+          mode.value = to;
+          await tester.pumpAndSettle();
+
+          final dark = to == ThemeMode.dark;
+          final expected = dark ? dsTokensDark : dsTokensLight;
+          expect(
+            Theme.of(
+              tester.element(find.byType(SettingsPageHeader)),
+            ).brightness,
+            dark ? Brightness.dark : Brightness.light,
+            reason:
+                'the switch itself must have landed before the surface '
+                'is judged',
+          );
+          final surface = settingsHeaderSurface(tester);
+          expect(surface.color, expected.colors.background.level01);
+          expect(
+            surface.border?.bottom.color,
+            expected.colors.decorative.level01,
+          );
+        },
+      );
+    }
   });
 }
 

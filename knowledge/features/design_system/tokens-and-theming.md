@@ -28,6 +28,10 @@ sources:
     resource: ../../../lib/themes/theme_overrides.dart
     title: App theme integration
     last_modified: 2026-07-15
+  - id: settings-header
+    resource: ../../../lib/widgets/app_bar/settings_page_header.dart
+    title: The sliver settings header — tokens read below the delegate
+    last_modified: 2026-09-01
 ---
 
 # The pipeline
@@ -131,6 +135,37 @@ final tokens = context.designTokens;
 `designTokens` throws a `StateError` when the extension is missing. **The explicit
 null check is deliberate** — missing token injection is a wiring bug, not
 something a widget should quietly improvise around.
+
+### Read tokens in a widget, never in a sliver delegate's `build`
+
+`context.designTokens` is `Theme.of(context)` underneath, so it registers a
+theme dependency on whichever element the `context` is. Inside a widget's
+`build` that is the widget's own element and the read follows every theme
+change. Inside `SliverPersistentHeaderDelegate.build` it is the sliver's
+render-object element, and there the dependency can be silently lost:
+
+```mermaid
+sequenceDiagram
+  participant Theme as _InheritedTheme
+  participant Page as Host page (reads tokens for its scaffold)
+  participant Sliver as _SliverPersistentHeaderElement
+  Theme->>Page: didChangeDependencies → dirty
+  Theme->>Sliver: didChangeDependencies → dirty
+  Note over Page,Sliver: build phase, shallowest first
+  Page->>Sliver: update(new delegate)
+  Note over Sliver: RenderObjectElement.update clears the dirty flag
+  Sliver->>Sliver: shouldRebuild(old)? geometry and content only → false
+  Note over Sliver: rebuild() later: not dirty → no-op, delegate never rebuilt
+```
+
+The settings header hit exactly this: its surface colour was read in the
+delegate, the page above it reads tokens for its scaffold colour, and after a
+light/dark switch the bar kept the old theme until the route was rebuilt from
+scratch. The fix is structural, not a `shouldRebuild` tweak —
+`SettingsPageHeader` keeps every theme read in widgets *below* the sliver, so
+each owns an element whose dirty flag nothing else clears. Any new delegate
+follows the same rule: the delegate carries geometry and content, the widgets
+it builds resolve the tokens.
 
 # The alert ramp: `default` fills, `ink` writes
 
