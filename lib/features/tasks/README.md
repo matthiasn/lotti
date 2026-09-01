@@ -34,9 +34,10 @@ project, and relationships to other tasks.
 - **Makes room to focus on one task.** On desktop, the task list can be hidden
   after a task is selected and restored without losing its filters, search or
   scroll position. Back remains reserved for returning from a linked task.
-- **Keeps the day in view.** On wide desktop windows the Tasks tab docks the
-  Daily OS day-view column (planned vs recorded time for today) on its right
-  edge — owned by `lib/features/daily_os_next/`, see its README.
+- **Keeps the day in view.** On wide desktop windows — and only while the
+  Daily OS feature flag is enabled — the Tasks tab docks the Daily OS
+  day-view column (planned vs recorded time for today) on its right edge —
+  owned by `lib/features/daily_os_next/`, see its README.
 - **Reads at two densities.** A toggle below the search-and-filter row switches
   the list between full cards (time, category, status) and a terse title-only
   line per task. The choice persists across restarts
