@@ -12604,7 +12604,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get syncCredentialsErrorConfigurationFailed =>
-      'Inloggad, men syncrummet kunde inte skapas. Försök igen; om det fortsätter misslyckas, kontrollera att kontot får skapa rum.';
+      'Inloggad, men synkroniseringsrummet kunde inte skapas. Försök igen; om det fortsätter misslyckas, kontrollera att kontot får skapa rum.';
 
   @override
   String get syncCredentialsErrorHomeserver =>
@@ -12635,7 +12635,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get syncCredentialsIntro =>
-      'Lotti loggar in och skapar ett krypterat syncrum på det kontot. Använd ett konto som är avsett för sync, inte ett du chattar med.';
+      'Lotti loggar in och skapar ett krypterat synkroniseringsrum på det kontot. Använd ett konto som är avsett för synkronisering, inte ett du chattar med.';
 
   @override
   String get syncCredentialsKeptOnDevice =>
@@ -12648,7 +12648,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get syncCredentialsShowPassword => 'Visa lösenord';
 
   @override
-  String get syncCredentialsSubmit => 'Logga in och ställ in sync';
+  String get syncCredentialsSubmit => 'Logga in och konfigurera synk';
 
   @override
   String get syncCredentialsTitle => 'Logga in med ditt Matrix-konto';
@@ -12902,7 +12902,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get syncPairFirstDeviceHintWithAccount =>
-      'Det finns ingen annan enhet att kopiera från ännu. Din första kod kommer från syncserverns provisioneringsverktyg — eller hoppa över koden och logga in med ett Matrix-konto.';
+      'Det finns ingen annan enhet att kopiera från ännu. Din första kod kommer från synkroniseringsserverns provisioneringsverktyg — eller hoppa över koden och logga in med ett Matrix-konto.';
 
   @override
   String get syncPairFirstDeviceTitle => 'Ställer du in din första enhet?';

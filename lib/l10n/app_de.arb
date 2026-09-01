@@ -5008,7 +5008,7 @@
   "syncPairScannerRejected": "Das ist der Code, den du abgelehnt hast. Scanne den Code, den dein eigenes Gerät anzeigt, oder füge ihn unten ein.",
   "syncPairScanTitle": "Pairing-Code scannen",
   "syncPairShowEmoji": "Emoji anzeigen",
-  "syncPairSignInWithAccount": "Mit Matrix-Konto anmelden",
+  "syncPairSignInWithAccount": "Mit einem Matrix-Konto anmelden",
   "syncPairWhereToFind": "Er ist auf deinem anderen Gerät unter „Gerät hinzufügen“ — dort kopieren, hier einfügen.",
   "syncPayloadAgentBundle": "Agent-Bündel",
   "syncPayloadAgentEntity": "Agent-Entität",

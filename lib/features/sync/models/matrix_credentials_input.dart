@@ -1,5 +1,7 @@
 import 'package:lotti/classes/config.dart';
 
+final RegExp _whitespace = RegExp(r'\s');
+
 /// Which field of a manual sign-in the user still has to fix.
 enum MatrixCredentialsField { homeServer, user, password }
 
@@ -26,7 +28,10 @@ sealed class MatrixCredentialsInput {
         ? trimmedServer
         : 'https://$trimmedServer';
     final uri = Uri.tryParse(serverWithScheme);
+    // `Uri.tryParse` tolerates inner whitespace that no homeserver will, so
+    // it is refused up front rather than surfacing as a failed login.
     if (trimmedServer.isEmpty ||
+        _whitespace.hasMatch(trimmedServer) ||
         uri == null ||
         uri.scheme != 'https' ||
         uri.host.isEmpty ||
@@ -37,7 +42,10 @@ sealed class MatrixCredentialsInput {
 
     final trimmedUser = user.trim();
     final colon = trimmedUser.indexOf(':');
+    // Matrix user IDs contain no whitespace; a stray space inside one would
+    // otherwise reach the server and come back as a rejected password.
     if (!trimmedUser.startsWith('@') ||
+        _whitespace.hasMatch(trimmedUser) ||
         colon < 2 ||
         colon == trimmedUser.length - 1) {
       return const MatrixCredentialsInvalid(MatrixCredentialsField.user);

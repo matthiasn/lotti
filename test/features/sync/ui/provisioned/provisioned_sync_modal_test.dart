@@ -139,6 +139,26 @@ void main() {
         );
       });
 
+      testWidgets('on a configured device the link opens the roster, not an '
+          'out-of-range page', (tester) async {
+        pinPlatform(linux: true);
+        when(mockMatrixService.isLoggedIn).thenReturn(true);
+        when(
+          () => mockMatrixService.syncRoomId,
+        ).thenReturn('!room123:example.com');
+        when(() => mockClient.userID).thenReturn('@alice:example.com');
+
+        await pumpEmptyState(tester);
+        await tester.tap(find.byKey(const Key('sync_setup_use_account')));
+        await tester.pumpAndSettle();
+
+        // The configured sheet has a single page; asking for the credentials
+        // index there used to throw a RangeError inside the sheet.
+        expect(tester.takeException(), isNull);
+        expect(find.byKey(const Key('sync_devices_refresh')), findsOneWidget);
+        expect(find.byType(ManualCredentialsWidget), findsNothing);
+      });
+
       testWidgets('the pairing-code page can hand over to the form on Linux', (
         tester,
       ) async {

@@ -13035,7 +13035,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get syncPairShowEmoji => 'Emoji anzeigen';
 
   @override
-  String get syncPairSignInWithAccount => 'Mit Matrix-Konto anmelden';
+  String get syncPairSignInWithAccount => 'Mit einem Matrix-Konto anmelden';
 
   @override
   String get syncPairWhereToFind =>

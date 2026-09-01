@@ -4883,7 +4883,7 @@
   "syncCredentialsPasswordLabel": "Parolă",
   "syncCredentialsShowPassword": "Afișați parola",
   "syncCredentialsSubmit": "Autentificare și configurare sincronizare",
-  "syncCredentialsTitle": "Autentificați-vă cu contul dumneavoastră Matrix",
+  "syncCredentialsTitle": "Autentificați-vă cu contul dvs. Matrix",
   "syncCredentialsUsePairingCode": "Aveți un cod de asociere? Folosiți-l în schimb",
   "syncCredentialsUserHint": "@nume:example.com",
   "syncCredentialsUserLabel": "ID Matrix",

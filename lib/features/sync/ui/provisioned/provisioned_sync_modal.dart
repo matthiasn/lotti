@@ -78,7 +78,9 @@ class _SyncSetupEmptyStateState extends ConsumerState<SyncSetupEmptyState> {
     final matrixService = ref.read(matrixServiceProvider);
     final isConfigured =
         matrixService.isLoggedIn() && matrixService.syncRoomId != null;
-    pageIndexNotifier.value = entry.page;
+    // A configured device gets the one-page roster list, so any entry page
+    // index would be out of range there.
+    pageIndexNotifier.value = isConfigured ? 0 : entry.page;
     // The listener is silent when the index did not change.
     _trackEntry();
 

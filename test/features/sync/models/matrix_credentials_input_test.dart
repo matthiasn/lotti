@@ -77,6 +77,7 @@ void main() {
       'https://',
       'https://x?y=1',
       'https://x#f',
+      'https://matrix. example.com',
     ]) {
       test('rejects an unusable server address ("$server")', () {
         final input = normalize(homeServer: server);
@@ -88,7 +89,17 @@ void main() {
       });
     }
 
-    for (final user in ['alice', 'alice:example.com', '@alice', '@:x', '@a:']) {
+    for (final user in [
+      'alice',
+      'alice:example.com',
+      '@alice',
+      '@:x',
+      '@a:',
+      // Whitespace inside either part: Matrix IDs have none, and the server
+      // would report a failed login rather than a bad ID.
+      '@alice: example.com',
+      '@al ice:example.com',
+    ]) {
       test('rejects a user that is not a full Matrix ID ("$user")', () {
         // The account's server name need not match the homeserver host, so
         // a localpart cannot be completed safely — it is sent back instead.

@@ -12867,7 +12867,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get syncCredentialsUsePairingCode =>
-      'Tu as un code d\'appairage ? Utilise-le plutôt';
+      'Utiliser plutôt un code d\'appairage';
 
   @override
   String get syncCredentialsUserHint => '@nom:example.com';
@@ -13119,7 +13119,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get syncPairFirstDeviceHintWithAccount =>
-      'Il n\'y a pas encore d\'autre appareil où le copier. Ton premier code vient de l\'outil de provisionnement de ton serveur de synchronisation — ou passe le code et connecte-toi avec un compte Matrix.';
+      'Il n\'y a pas encore d\'autre appareil où le copier. Ton premier code vient de l\'outil de provisionnement de ton serveur de synchronisation — ou ignore le code et connecte-toi avec un compte Matrix.';
 
   @override
   String get syncPairFirstDeviceTitle => 'Tu configures ton premier appareil ?';

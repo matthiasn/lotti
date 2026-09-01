@@ -12882,8 +12882,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Autentificare și configurare sincronizare';
 
   @override
-  String get syncCredentialsTitle =>
-      'Autentificați-vă cu contul dumneavoastră Matrix';
+  String get syncCredentialsTitle => 'Autentificați-vă cu contul dvs. Matrix';
 
   @override
   String get syncCredentialsUsePairingCode =>
