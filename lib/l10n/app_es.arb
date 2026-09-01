@@ -4701,7 +4701,7 @@
   "settingsMeasurableChoicesArchivedTitle": "Opciones archivadas",
   "settingsMeasurableChoicesDescription": "Al registrar eliges una de ellas. Puedes renombrarlas o reordenarlas cuando quieras: las entradas ya registradas conservan su opción.",
   "settingsMeasurableChoicesRequired": "Añade al menos una opción",
-  "settingsMeasurableChoicesTitle": "Opciones",
+  "settingsMeasurableChoicesTitle": "Opciones de respuesta",
   "settingsMeasurableDeleteTooltip": "Eliminar tipo de medición",
   "settingsMeasurableDescriptionLabel": "Descripción (opcional)",
   "settingsMeasurableDetailsLabel": "Editar valor medible",

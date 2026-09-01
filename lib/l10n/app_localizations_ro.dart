@@ -12290,7 +12290,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Adăugați cel puțin o opțiune';
 
   @override
-  String get settingsMeasurableChoicesTitle => 'Opțiuni';
+  String get settingsMeasurableChoicesTitle => 'Variante de răspuns';
 
   @override
   String get settingsMeasurableDeleteTooltip => 'Ștergeți tipul măsurătorii';

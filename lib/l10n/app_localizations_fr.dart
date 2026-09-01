@@ -12269,7 +12269,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsMeasurableChoicesRequired => 'Ajoute au moins un choix';
 
   @override
-  String get settingsMeasurableChoicesTitle => 'Choix';
+  String get settingsMeasurableChoicesTitle => 'Choix possibles';
 
   @override
   String get settingsMeasurableDeleteTooltip => 'Supprimer type mesurable';

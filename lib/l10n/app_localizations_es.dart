@@ -12226,7 +12226,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsMeasurableChoicesRequired => 'Añade al menos una opción';
 
   @override
-  String get settingsMeasurableChoicesTitle => 'Opciones';
+  String get settingsMeasurableChoicesTitle => 'Opciones de respuesta';
 
   @override
   String get settingsMeasurableDeleteTooltip => 'Eliminar tipo de medición';

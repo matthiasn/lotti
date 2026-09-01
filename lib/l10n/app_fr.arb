@@ -4701,7 +4701,7 @@
   "settingsMeasurableChoicesArchivedTitle": "Choix archivés",
   "settingsMeasurableChoicesDescription": "Tu en choisis un à chaque enregistrement. Renomme-les ou réordonne-les quand tu veux : les entrées déjà enregistrées gardent leur choix.",
   "settingsMeasurableChoicesRequired": "Ajoute au moins un choix",
-  "settingsMeasurableChoicesTitle": "Choix",
+  "settingsMeasurableChoicesTitle": "Choix possibles",
   "settingsMeasurableDeleteTooltip": "Supprimer type mesurable",
   "settingsMeasurableDescriptionLabel": "Description",
   "settingsMeasurableDetailsLabel": "Modifier l'élément mesurable",
