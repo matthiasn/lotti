@@ -497,6 +497,61 @@ void main() {
     );
 
     testWidgets(
+      'a pick confirmed after the surface was disposed is dropped, not '
+      'applied to a dead state',
+      (tester) async {
+        // The sheet lives on the app navigator, so the root can be torn
+        // down (tab switch) while the sheet stays up. Swapping the root for
+        // an empty box under a live MaterialApp reproduces exactly that.
+        final showRoot = ValueNotifier<bool>(true);
+        addTearDown(showRoot.dispose);
+        await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
+          await tester.pumpWidget(
+            _wrap(
+              ValueListenableBuilder<bool>(
+                valueListenable: showRoot,
+                builder: (context, show, _) =>
+                    show ? const DailyOsNextRoot() : const SizedBox.shrink(),
+              ),
+              overrides: [
+                captureControllerProvider.overrideWith(
+                  () => CaptureController(recorder: _permissionlessRecorder()),
+                ),
+                currentDraftPlanProvider.overrideWith((ref, _) async => null),
+              ],
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          await tester.tap(find.text('Today'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+          expect(find.byType(CalendarDatePicker), findsOneWidget);
+
+          showRoot.value = false;
+          await tester.pump();
+          expect(find.byType(DailyOsNextRoot), findsNothing);
+          expect(find.byType(CalendarDatePicker), findsOneWidget);
+
+          // Confirm a pick against the disposed root: the `mounted` guard in
+          // `_pickDate` drops it instead of reading a provider through a
+          // dead ref.
+          tester
+              .widget<CalendarDatePicker>(find.byType(CalendarDatePicker))
+              .onDateChanged(DateTime(2026, 5, 20));
+          await tester.pump();
+          await tester.tap(find.text('Done'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+
+          expect(tester.takeException(), isNull);
+          expect(find.byType(CalendarDatePicker), findsNothing);
+        });
+      },
+    );
+
+    testWidgets(
       'long-pressing the date label returns selection to today',
       (tester) async {
         await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {

@@ -71,13 +71,15 @@ class _DailyOsNextRootState extends ConsumerState<DailyOsNextRoot> {
 
   /// Opens the design-system date picker.
   ///
-  /// The shared modal carries its own "Today" quick action in the header,
-  /// which is what lets the phone header drop the standalone Today button
-  /// without losing the way back to today.
-  /// Opens the shared Daily OS date picker and applies the pick.
+  /// Opens the shared Daily OS date picker and applies the pick. The
+  /// picker window and its own Today quick action are documented on
+  /// [showDailyOsDayPicker].
   Future<void> _pickDate() async {
     final selected = ref.read(dailyOsNextSelectedDateProvider);
     final date = await showDailyOsDayPicker(context, selected: selected);
+    // The surface can be torn down while the sheet is up (tab switch,
+    // sign-out); a `ref.read` on a disposed state would throw.
+    if (!mounted) return;
     if (date != null) {
       ref.read(dailyOsNextSelectedDateProvider.notifier).select(date);
     }
