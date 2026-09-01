@@ -1132,10 +1132,16 @@ void main() {
       expect(bar.color, TaskShowcasePalette.error(context));
     });
 
-    testWidgets('omits the tag when the estimate is unset or zero', (
+    testWidgets('omits the tag when the estimate is unset or under a minute', (
       tester,
     ) async {
-      for (final estimate in <Duration?>[null, Duration.zero]) {
+      // The units are whole minutes, so a 30-second estimate would read
+      // "0m of 0m" — the tag waits until it has something to state.
+      for (final estimate in <Duration?>[
+        null,
+        Duration.zero,
+        const Duration(seconds: 30),
+      ]) {
         await _pumpDesktop(
           tester,
           DesktopTaskHeader(
@@ -1148,7 +1154,7 @@ void main() {
         // No placeholder either: like a missing due date, an unset estimate
         // leaves no trace in the lane.
         expect(estimateTag, findsNothing, reason: 'estimate=$estimate');
-        expect(find.text('0m'), findsNothing, reason: 'estimate=$estimate');
+        expect(find.textContaining('0m'), findsNothing, reason: '$estimate');
         expect(find.text('Open'), findsOneWidget);
       }
     });

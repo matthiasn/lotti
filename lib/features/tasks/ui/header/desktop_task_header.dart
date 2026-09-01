@@ -74,8 +74,8 @@ class DesktopTaskHeaderData {
   final DesktopTaskHeaderCategory? category;
   final DesktopTaskHeaderDueDate? dueDate;
 
-  /// The task's time estimate. Null or zero means "not set", and the summary
-  /// lane shows no estimate read-out at all.
+  /// The task's time estimate. Null, or anything under a whole minute, means
+  /// "not set" to the summary lane, which then shows no estimate read-out.
   final Duration? estimate;
 
   /// Time recorded against the task so far, read out against [estimate]

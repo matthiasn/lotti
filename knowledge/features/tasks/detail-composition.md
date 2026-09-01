@@ -292,8 +292,9 @@ due?": the tag reads tracked-of-estimated as compact units (`45m of 1h 30m`)
 behind the timer glyph, with the 36×6 `TaskEstimateProgressBar` the
 pre-redesign header chip carried — the same bar `TaskMetaSection`'s Estimate
 row draws, so the two densities never disagree. Overtime escalates the tag to
-the tinted alert shell, the way an overdue due date does. A null or zero
-estimate leaves no trace, the way a missing due date does. The tracked figure
+the tinted alert shell, the way an overdue due date does. A null estimate, or
+one under a whole minute (which the units could only render as `0m`), leaves
+no trace, the way a missing due date does. The tracked figure
 comes from `taskProgressControllerProvider` through the connector, read with
 `.value` so a time-entry write recomputes without blanking the tag.
 

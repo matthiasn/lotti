@@ -60,9 +60,10 @@ class TaskMetaSummaryLine extends StatelessWidget {
   final DesktopTaskHeaderDueDate? dueDate;
 
   /// The task's time estimate, shown as its own read-out so it is legible at
-  /// the same glance as the due date rather than one fly-out away. Null or
-  /// zero drops the tag — the lane makes no "Not set" claim, matching how a
-  /// missing due date or an empty label list leave no trace either.
+  /// the same glance as the due date rather than one fly-out away. Null, or
+  /// anything under [minStatedEstimate], drops the tag — the lane makes no
+  /// "Not set" claim, matching how a missing due date or an empty label list
+  /// leave no trace either.
   final Duration? estimate;
 
   /// Time recorded against the task, read out against [estimate] in the same
@@ -101,6 +102,10 @@ class TaskMetaSummaryLine extends StatelessWidget {
   /// compress into a "+N" suffix.
   static const int maxNamedLabels = 2;
 
+  /// The shortest estimate the tag states. Its units are whole minutes, so a
+  /// shorter estimate has no non-zero rendering and leaves the lane alone.
+  static const Duration minStatedEstimate = Duration(minutes: 1);
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -124,7 +129,10 @@ class TaskMetaSummaryLine extends StatelessWidget {
         ),
         if (dueDate case final dueDate?)
           _DueSummaryTag(dueDate: dueDate, onTap: onOpenDetails),
-        if (estimate case final estimate? when estimate > Duration.zero)
+        // The compact units read in whole minutes, so anything shorter would
+        // say "0m of 0m"; the tag waits for an estimate it can actually state.
+        if (estimate case final estimate?
+            when estimate >= TaskMetaSummaryLine.minStatedEstimate)
           _EstimateSummaryTag(
             estimate: estimate,
             tracked: trackedTime,
