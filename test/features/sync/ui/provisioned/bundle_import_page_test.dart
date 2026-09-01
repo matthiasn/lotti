@@ -972,6 +972,63 @@ void main() {
       expect(manual.onPressed, isNotNull);
     });
 
+    testWidgets('the first-device card has no account sign-in by default', (
+      tester,
+    ) async {
+      await pumpImport(tester);
+
+      final context = tester.element(find.byType(BundleImportWidget));
+      expect(
+        find.byKey(const Key('bundle_import_sign_in_account')),
+        findsNothing,
+      );
+      // And the hint keeps calling the provisioning tool the only source.
+      expect(
+        find.text(context.messages.syncPairFirstDeviceHint),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('the first-device card offers account sign-in when the sheet '
+        'has that entry', (tester) async {
+      var signIns = 0;
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BundleImportWidget(
+            pageIndexNotifier: pageIndexNotifier,
+            onSignInWithAccount: () => signIns++,
+          ),
+          overrides: defaultOverrides(),
+        ),
+      );
+      await tester.pump();
+
+      final context = tester.element(find.byType(BundleImportWidget));
+      // The hint stops calling the provisioning tool the only source.
+      expect(
+        find.text(context.messages.syncPairFirstDeviceHintWithAccount),
+        findsOneWidget,
+      );
+      expect(find.text(context.messages.syncPairFirstDeviceHint), findsNothing);
+
+      final signIn = tester.widget<DesignSystemButton>(
+        find.byKey(const Key('bundle_import_sign_in_account')),
+      );
+      expect(signIn.label, context.messages.syncPairSignInWithAccount);
+      // A peer of the manual button, not the card's accent.
+      expect(signIn.variant, DesignSystemButtonVariant.outlined);
+      await tester.ensureVisible(
+        find.byKey(const Key('bundle_import_sign_in_account')),
+      );
+      await tester.tap(find.byKey(const Key('bundle_import_sign_in_account')));
+      expect(signIns, 1);
+      // The manual guide stays reachable beside it.
+      expect(
+        find.byKey(const Key('bundle_import_open_manual')),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('the manual button opens the first-device guide, not the '
         'manual root', (tester) async {
       // A root landing still left the user hunting for the one page that

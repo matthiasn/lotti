@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -10,6 +11,7 @@ import 'package:lotti/features/sync/state/matrix_verification_relaunch_provider.
 import 'package:lotti/features/sync/state/provisioning_controller.dart';
 import 'package:lotti/features/sync/state/provisioning_error.dart';
 import 'package:lotti/features/sync/state/sync_devices_provider.dart';
+import 'package:lotti/features/sync/ui/provisioned/sync_setup_entry.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/auto_verification_launcher.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/sync_sticky_bar.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_device_pair_motif.dart';
@@ -25,14 +27,24 @@ import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 /// side by side on a phone sheet they truncate into indistinguishability.
 const double kSyncErrorActionRowMinWidth = 420;
 
+/// The connect step. [entry] says which entry page the user came from —
+/// pairing code or, on Linux, typed credentials — and drives the copy of the
+/// failure ending and where "back" and "start over" land.
 SliverWoltModalSheetPage provisionedConfigPage({
   required BuildContext context,
   required ValueNotifier<int> pageIndexNotifier,
+  required ValueListenable<SyncSetupEntry> entry,
 }) {
   return ModalUtils.modalSheetPage(
     context: context,
     showCloseButton: true,
-    stickyActionBar: _ConfigActionBar(pageIndexNotifier: pageIndexNotifier),
+    stickyActionBar: ValueListenableBuilder<SyncSetupEntry>(
+      valueListenable: entry,
+      builder: (context, entry, _) => _ConfigActionBar(
+        pageIndexNotifier: pageIndexNotifier,
+        entry: entry,
+      ),
+    ),
     // The setup flow's own title. Reusing the roster's name titled a sheet
     // "Devices" that also contains a "Devices" section header.
     title: context.messages.provisionedSyncImportTitle,
@@ -41,14 +53,21 @@ SliverWoltModalSheetPage provisionedConfigPage({
         const EdgeInsets.only(
           bottom: WoltModalConfig.stickyActionBarClearance,
         ),
-    child: const ProvisionedConfigWidget(),
+    child: ValueListenableBuilder<SyncSetupEntry>(
+      valueListenable: entry,
+      builder: (context, entry, _) => ProvisionedConfigWidget(entry: entry),
+    ),
   );
 }
 
 class _ConfigActionBar extends ConsumerWidget {
-  const _ConfigActionBar({required this.pageIndexNotifier});
+  const _ConfigActionBar({
+    required this.pageIndexNotifier,
+    required this.entry,
+  });
 
   final ValueNotifier<int> pageIndexNotifier;
+  final SyncSetupEntry entry;
 
   /// Whether the paired screen still gates on the emoji ceremony. The `done`
   /// ending is the only one with a checklist; `ready` (first device) has
@@ -90,11 +109,18 @@ class _ConfigActionBar extends ConsumerWidget {
       // fixed by fetching a fresh code — never by re-attempting this one.
       // Retry stays for the transient-network case, demoted: as the accent
       // it re-attempted exactly the credential that just failed.
+      //
+      // After a typed sign-in the same slot reads "Edit sign-in details":
+      // the remedy for a rejected password is fixing it, not fetching a code
+      // that does not exist for a first device.
       final retry = DesignSystemButton(
         key: const Key('provisioned_config_retry'),
         onPressed: () =>
             ref.read(provisioningControllerProvider.notifier).retry(),
-        label: context.messages.syncPairRetryThisCode,
+        label: switch (entry) {
+          SyncSetupEntry.pairingCode => context.messages.syncPairRetryThisCode,
+          SyncSetupEntry.credentials => context.messages.provisionedSyncRetry,
+        },
         variant: DesignSystemButtonVariant.secondary,
         size: DesignSystemButtonSize.large,
       );
@@ -104,9 +130,13 @@ class _ConfigActionBar extends ConsumerWidget {
           // Reset first: the import page listens for the return to
           // the initial state and clears its stale decoded bundle.
           ref.read(provisioningControllerProvider.notifier).reset();
-          pageIndexNotifier.value = 0;
+          pageIndexNotifier.value = entry.page;
         },
-        label: context.messages.syncPairEnterNewCode,
+        label: switch (entry) {
+          SyncSetupEntry.pairingCode => context.messages.syncPairEnterNewCode,
+          SyncSetupEntry.credentials =>
+            context.messages.syncCredentialsEditDetails,
+        },
         size: DesignSystemButtonSize.large,
       );
       return SyncStickyBar(
@@ -152,14 +182,15 @@ class _ConfigActionBar extends ConsumerWidget {
                 // one thing left — the quiet slot points at the roster
                 // instead.
                 ? DesignSystemButton(
-                    onPressed: () => pageIndexNotifier.value = 2,
+                    onPressed: () =>
+                        pageIndexNotifier.value = SyncSetupPage.devices,
                     label: context.messages.syncPairGoToDevices,
                     variant: DesignSystemButtonVariant.secondary,
                     size: DesignSystemButtonSize.large,
                   )
                 : DesignSystemButton(
                     onPressed: canGoBack
-                        ? () => pageIndexNotifier.value = 0
+                        ? () => pageIndexNotifier.value = entry.page
                         : null,
                     label: context.messages.syncPairBack,
                     variant: DesignSystemButtonVariant.secondary,
@@ -193,7 +224,7 @@ class _ConfigActionBar extends ConsumerWidget {
                   )
                 : DesignSystemButton(
                     onPressed: isComplete
-                        ? () => pageIndexNotifier.value = 2
+                        ? () => pageIndexNotifier.value = SyncSetupPage.devices
                         : null,
                     // Named for where it lands. "Next Page" says nothing
                     // about what the user is about to see.
@@ -208,7 +239,13 @@ class _ConfigActionBar extends ConsumerWidget {
 }
 
 class ProvisionedConfigWidget extends ConsumerWidget {
-  const ProvisionedConfigWidget({super.key});
+  const ProvisionedConfigWidget({
+    super.key,
+    this.entry = SyncSetupEntry.pairingCode,
+  });
+
+  /// Which entry page the connect step was reached from.
+  final SyncSetupEntry entry;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -249,13 +286,16 @@ class ProvisionedConfigWidget extends ConsumerWidget {
       // roster, not to a second QR on the screen that just consumed one.
       ready: (_) => const _FirstDeviceView(),
       done: () => const _PairedView(),
-      error: (error) => _ErrorView(error: error),
+      error: (error) => _ErrorView(error: error, entry: entry),
     );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (inFlight) ...[
+        // The track's stations are the pairing journey's — Get code, Check,
+        // Connect. A typed sign-in passed through none of them, so it gets
+        // the wait without a track that would claim otherwise.
+        if (inFlight && entry == SyncSetupEntry.pairingCode) ...[
           const SyncWizardProgressTrack(active: SyncWizardStep.connect),
           SizedBox(height: context.designTokens.spacing.sectionGap),
         ],
@@ -733,20 +773,31 @@ class _VerifyStepState extends ConsumerState<_VerifyStep> {
 
 /// The failure ending: what went wrong and why, without its own button — the
 /// remedies live in the sticky bar, where "Enter a new code" carries the
-/// accent because a stale code is the usual culprit.
+/// accent because a stale code is the usual culprit. After a typed sign-in
+/// the copy blames the details instead: there is no code to go stale.
 class _ErrorView extends StatelessWidget {
-  const _ErrorView({required this.error});
+  const _ErrorView({required this.error, required this.entry});
 
   final ProvisioningError error;
+  final SyncSetupEntry entry;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final errorMessage = switch (error) {
-      ProvisioningError.loginFailed => messages.provisionedSyncErrorLoginFailed,
-      ProvisioningError.configurationError =>
+    final title = switch (entry) {
+      SyncSetupEntry.pairingCode => messages.provisionedSyncError,
+      SyncSetupEntry.credentials => messages.syncCredentialsFailedTitle,
+    };
+    final errorMessage = switch ((entry, error)) {
+      (SyncSetupEntry.pairingCode, ProvisioningError.loginFailed) =>
+        messages.provisionedSyncErrorLoginFailed,
+      (SyncSetupEntry.pairingCode, ProvisioningError.configurationError) =>
         messages.provisionedSyncErrorConfigurationFailed,
+      (SyncSetupEntry.credentials, ProvisioningError.loginFailed) =>
+        messages.syncCredentialsErrorLoginFailed,
+      (SyncSetupEntry.credentials, ProvisioningError.configurationError) =>
+        messages.syncCredentialsErrorConfigurationFailed,
     };
 
     return Column(
@@ -764,7 +815,8 @@ class _ErrorView extends StatelessWidget {
         ),
         SizedBox(height: tokens.spacing.step5),
         Text(
-          messages.provisionedSyncError,
+          title,
+          key: const Key('provisioned_config_error_title'),
           textAlign: TextAlign.center,
           style: tokens.typography.styles.heading.heading3,
         ),

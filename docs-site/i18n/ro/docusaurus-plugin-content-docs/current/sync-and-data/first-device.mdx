@@ -70,3 +70,24 @@ autentifica, dar nu există niciun motiv să o păstrați.
 Până la acea primă utilizare, tratați bundle-ul ca pe o parolă: se
 autentifică în contul de sincronizare — țineți-l departe de conversații,
 capturi de ecran și ecrane partajate.
+
+## Pe Linux: autentificare fără bundle
+
+Cerința de mai sus are o excepție. Pe Linux, **Configurați sincronizarea**
+oferă și **Autentificați-vă în schimb cu un cont Matrix**, iar cardul pentru
+primul dispozitiv de pe pagina codului de asociere are aceeași opțiune.
+Introduceți adresa serverului, ID-ul Matrix complet (de exemplu
+`@nume:example.com`) și parola contului: Lotti se autentifică, creează
+singur camera de sincronizare criptată în acel cont și ajunge pe același
+ecran pentru primul dispozitiv pe care se încheie și calea cu bundle. Fără
+administrator, fără instrument, fără bundle — este suficient orice cont
+Matrix pe care îl controlați, pe propriul homeserver sau pe unul public.
+
+Două lucruri de știut. Folosiți un cont dedicat sincronizării, nu unul cu
+care conversați: camera de sincronizare este doar o cameră în plus în acel
+cont, și tot ce scrieți ajunge acolo. Iar parola rămâne aici a dumneavoastră
+— stă în stocarea securizată a acestui dispozitiv, este trimisă doar
+serverului pe care îl introduceți și **nu este niciodată rotită**, spre
+deosebire de bundle-ul de mai sus. Fiecare dispozitiv următor se asociază în
+continuare pornind de la acesta, cu
+[Adăugați un dispozitiv](./add-device.mdx).

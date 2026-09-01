@@ -69,3 +69,23 @@ consegue iniciar sessão, mas não há razão para a manter.
 Até esse primeiro uso, trata o bundle como uma palavra-passe: ele inicia
 sessão na conta de sincronização — mantém-no fora de conversas, capturas de
 ecrã e ecrãs partilhados.
+
+## No Linux: entrar sem bundle
+
+O pré-requisito acima tem uma exceção. No Linux, **Configurar a
+sincronização** oferece também **Em vez disso, entrar com uma conta Matrix**,
+e o cartão do primeiro dispositivo na página do código de emparelhamento traz
+a mesma opção. Introduz o endereço do servidor, o teu ID Matrix completo
+(como `@nome:example.com`) e a palavra-passe da conta: o Lotti entra, cria
+ele próprio a sala de sincronização encriptada nessa conta e chega ao mesmo
+ecrã de primeiro dispositivo em que termina o caminho do bundle. Sem
+administrador, sem ferramenta, sem bundle — serve qualquer conta Matrix que
+controles, no teu próprio homeserver ou num público.
+
+Duas coisas a saber. Usa uma conta reservada à sincronização, não uma com
+que conversas: a sala de sincronização é apenas mais uma sala dessa conta, e
+tudo o que escreves vai para lá. E aqui a palavra-passe é tua — fica no
+armazenamento seguro deste dispositivo, só é enviada ao servidor que
+indicares e **nunca é rodada**, ao contrário do bundle acima. Cada
+dispositivo seguinte continua a emparelhar-se a partir deste com
+[Adicionar um dispositivo](./add-device.mdx).

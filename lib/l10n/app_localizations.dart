@@ -21271,6 +21271,120 @@ abstract class AppLocalizations {
   /// **'Unlocks after the emoji match — before that, the new device can\'t decrypt them anyway.'**
   String get syncAddDeviceUnlockHint;
 
+  /// No description provided for @syncCredentialsEditDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit sign-in details'**
+  String get syncCredentialsEditDetails;
+
+  /// No description provided for @syncCredentialsErrorConfigurationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in, but the sync room couldn\'t be created. Try again; if it keeps failing, check that the account is allowed to create rooms.'**
+  String get syncCredentialsErrorConfigurationFailed;
+
+  /// No description provided for @syncCredentialsErrorHomeserver.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the server as a web address starting with https://.'**
+  String get syncCredentialsErrorHomeserver;
+
+  /// No description provided for @syncCredentialsErrorLoginFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The server didn\'t accept those sign-in details. Check the server address, Matrix ID and password, then try again.'**
+  String get syncCredentialsErrorLoginFailed;
+
+  /// No description provided for @syncCredentialsErrorPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the account password.'**
+  String get syncCredentialsErrorPassword;
+
+  /// No description provided for @syncCredentialsErrorUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your full Matrix ID, like @name:example.com.'**
+  String get syncCredentialsErrorUser;
+
+  /// No description provided for @syncCredentialsFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'That sign-in didn\'t work'**
+  String get syncCredentialsFailedTitle;
+
+  /// No description provided for @syncCredentialsHidePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide password'**
+  String get syncCredentialsHidePassword;
+
+  /// No description provided for @syncCredentialsHomeserverHint.
+  ///
+  /// In en, this message translates to:
+  /// **'https://matrix.example.com'**
+  String get syncCredentialsHomeserverHint;
+
+  /// No description provided for @syncCredentialsHomeserverLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Server address'**
+  String get syncCredentialsHomeserverLabel;
+
+  /// No description provided for @syncCredentialsIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Lotti signs in and creates an encrypted sync room on that account. Use an account set aside for sync, not one you chat with.'**
+  String get syncCredentialsIntro;
+
+  /// No description provided for @syncCredentialsKeptOnDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Your password stays in this device\'s secure storage and goes only to the server you enter. Lotti never changes it.'**
+  String get syncCredentialsKeptOnDevice;
+
+  /// No description provided for @syncCredentialsPasswordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get syncCredentialsPasswordLabel;
+
+  /// No description provided for @syncCredentialsShowPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Show password'**
+  String get syncCredentialsShowPassword;
+
+  /// No description provided for @syncCredentialsSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in and set up sync'**
+  String get syncCredentialsSubmit;
+
+  /// No description provided for @syncCredentialsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with your Matrix account'**
+  String get syncCredentialsTitle;
+
+  /// No description provided for @syncCredentialsUsePairingCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Have a pairing code? Use it instead'**
+  String get syncCredentialsUsePairingCode;
+
+  /// No description provided for @syncCredentialsUserHint.
+  ///
+  /// In en, this message translates to:
+  /// **'@name:example.com'**
+  String get syncCredentialsUserHint;
+
+  /// No description provided for @syncCredentialsUserLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Matrix ID'**
+  String get syncCredentialsUserLabel;
+
   /// No description provided for @syncDeleteConfigConfirm.
   ///
   /// In en, this message translates to:
@@ -21601,6 +21715,12 @@ abstract class AppLocalizations {
   /// **'There\'s no other device to copy from yet — your first code comes from the sync server\'s provisioning tool.'**
   String get syncPairFirstDeviceHint;
 
+  /// No description provided for @syncPairFirstDeviceHintWithAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'There\'s no other device to copy from yet. Your first code comes from the sync server\'s provisioning tool — or skip the code and sign in with a Matrix account.'**
+  String get syncPairFirstDeviceHintWithAccount;
+
   /// No description provided for @syncPairFirstDeviceTitle.
   ///
   /// In en, this message translates to:
@@ -21690,6 +21810,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show the emoji'**
   String get syncPairShowEmoji;
+
+  /// No description provided for @syncPairSignInWithAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with a Matrix account'**
+  String get syncPairSignInWithAccount;
 
   /// No description provided for @syncPairWhereToFind.
   ///
@@ -21894,6 +22020,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sync your devices'**
   String get syncSetupEmptyTitle;
+
+  /// No description provided for @syncSetupUseAccountLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with a Matrix account instead'**
+  String get syncSetupUseAccountLink;
 
   /// No description provided for @syncStepAiSettings.
   ///

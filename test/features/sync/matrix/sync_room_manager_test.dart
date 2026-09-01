@@ -250,6 +250,39 @@ void main() {
     tags: 'glados',
   );
 
+  test('createRoom creates through the gateway and persists the id', () async {
+    when(
+      () => gateway.createRoom(name: any(named: 'name')),
+    ).thenAnswer((_) async => '!created:server');
+    when(() => gateway.getRoomById('!created:server')).thenReturn(MockRoom());
+    final seen = <String?>[];
+    final sub = manager.roomIdChanges.listen(seen.add);
+    addTearDown(sub.cancel);
+
+    final roomId = await manager.createRoom(name: 'Lotti sync');
+    await pumpEventQueue();
+
+    expect(roomId, '!created:server');
+    verify(() => gateway.createRoom(name: 'Lotti sync')).called(1);
+    verify(
+      () => settingsDb.saveSettingsItem(matrixRoomKey, '!created:server'),
+    ).called(1);
+    // The pointer is live immediately, so the configured gate flips without
+    // waiting for a sync tick.
+    expect(manager.currentRoomId, '!created:server');
+    expect(seen, ['!created:server']);
+  });
+
+  test('createRoom lets a gateway failure surface and persists nothing', () {
+    when(
+      () => gateway.createRoom(name: any(named: 'name')),
+    ).thenThrow(Exception('M_FORBIDDEN'));
+
+    expect(manager.createRoom(name: 'Lotti sync'), throwsException);
+    verifyNever(() => settingsDb.saveSettingsItem(any(), any()));
+    expect(manager.currentRoomId, isNull);
+  });
+
   test('clearPersistedRoom clears state and logs', () async {
     when(
       () => settingsDb.removeSettingsItem(matrixRoomKey),

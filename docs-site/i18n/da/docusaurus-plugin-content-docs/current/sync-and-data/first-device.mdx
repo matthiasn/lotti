@@ -66,3 +66,21 @@ ingen grund til at beholde den.
 Indtil den første brug skal du behandle bundlet som en adgangskode: det
 logger ind på synkroniseringskontoen — hold det ude af chats, skærmbilleder
 og delte skærme.
+
+## På Linux: log ind uden bundle
+
+Forudsætningen ovenfor har én undtagelse. På Linux tilbyder **Sæt sync op**
+også **Log i stedet ind med en Matrix-konto**, og kortet til den første enhed
+på siden med parringskoden har samme mulighed. Indtast serveradressen, dit
+fulde Matrix-ID (f.eks. `@navn:example.com`) og kontoens adgangskode: Lotti
+logger ind, opretter selv det krypterede syncrum på den konto og lander på
+den samme skærm for første enhed, som bundle-vejen ender på. Ingen
+administrator, intet værktøj, intet bundle — enhver Matrix-konto, du selv
+råder over, kan bruges, på din egen hjemmeserver eller en offentlig.
+
+To ting er værd at vide. Brug en konto, der kun er til sync, ikke en du
+chatter med: syncrummet er bare endnu et rum på den konto, og alt, hvad du
+skriver, ender der. Og din adgangskode er din egen her — den bliver i denne
+enheds sikre lager, sendes kun til den server, du indtaster, og **roteres
+aldrig**, i modsætning til bundlet ovenfor. Enhver yderligere enhed parres
+stadig fra denne med [Tilføj en enhed](./add-device.mdx).

@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test/flutter_test.dart'
+    hide isLinux, isMacOS, isWindows;
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/sync/ui/provisioned/bundle_import_page.dart';
+import 'package:lotti/features/sync/ui/provisioned/manual_credentials_page.dart';
 import 'package:lotti/features/sync/ui/provisioned/provisioned_sync_modal.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_device_pair_motif.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -36,6 +39,27 @@ void main() {
   });
 
   tearDown(() => scannerPreviewOverride = null);
+
+  /// Pins the platform flags for one test and restores them afterwards.
+  void pinPlatform({required bool linux}) {
+    final wasDesktop = isDesktop;
+    final wasMobile = isMobile;
+    final wasWindows = isWindows;
+    final wasLinux = isLinux;
+    final wasMacOS = isMacOS;
+    isDesktop = true;
+    isMobile = false;
+    isWindows = !linux;
+    isLinux = linux;
+    isMacOS = false;
+    addTearDown(() {
+      isDesktop = wasDesktop;
+      isMobile = wasMobile;
+      isWindows = wasWindows;
+      isLinux = wasLinux;
+      isMacOS = wasMacOS;
+    });
+  }
 
   Future<void> pumpEmptyState(WidgetTester tester) {
     return tester.pumpWidget(
@@ -78,6 +102,84 @@ void main() {
         find.text(context.messages.syncSetupEmptyFootnote),
         findsOneWidget,
       );
+    });
+
+    group('account sign-in entry (Linux only)', () {
+      testWidgets('is absent off Linux', (tester) async {
+        pinPlatform(linux: false);
+
+        await pumpEmptyState(tester);
+
+        expect(find.byKey(const Key('sync_setup_use_account')), findsNothing);
+      });
+
+      testWidgets('opens the sheet on the credentials page on Linux', (
+        tester,
+      ) async {
+        pinPlatform(linux: true);
+
+        await pumpEmptyState(tester);
+        final context = tester.element(find.byType(SyncSetupEmptyState));
+        expect(
+          find.text(context.messages.syncSetupUseAccountLink),
+          findsOneWidget,
+        );
+
+        await tester.tap(find.byKey(const Key('sync_setup_use_account')));
+        await tester.pumpAndSettle();
+
+        // Straight to the form — not the pairing-code page with one more
+        // tap to find.
+        expect(find.byType(ManualCredentialsWidget), findsOneWidget);
+        expect(find.byType(BundleImportWidget), findsNothing);
+        expect(
+          find.text(context.messages.syncCredentialsTitle),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('the pairing-code page can hand over to the form on Linux', (
+        tester,
+      ) async {
+        pinPlatform(linux: true);
+
+        await pumpEmptyState(tester);
+        await tester.tap(find.byKey(const Key('sync_setup_cta')));
+        await tester.pumpAndSettle();
+        expect(find.byType(BundleImportWidget), findsOneWidget);
+
+        final signIn = find.byKey(const Key('bundle_import_sign_in_account'));
+        await tester.ensureVisible(signIn);
+        await tester.pump();
+        await tester.tap(signIn, warnIfMissed: false);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(ManualCredentialsWidget), findsOneWidget);
+
+        // And back again: the form's own link returns to the code page.
+        final useCode = find.byKey(const Key('sync_credentials_use_code'));
+        await tester.ensureVisible(useCode);
+        await tester.pump();
+        await tester.tap(useCode, warnIfMissed: false);
+        await tester.pumpAndSettle();
+        expect(find.byType(BundleImportWidget), findsOneWidget);
+      });
+
+      testWidgets('the pairing-code page has no hand-over off Linux', (
+        tester,
+      ) async {
+        pinPlatform(linux: false);
+
+        await pumpEmptyState(tester);
+        await tester.tap(find.byKey(const Key('sync_setup_cta')));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(BundleImportWidget), findsOneWidget);
+        expect(
+          find.byKey(const Key('bundle_import_sign_in_account')),
+          findsNothing,
+        );
+      });
     });
 
     group('smart page detection', () {

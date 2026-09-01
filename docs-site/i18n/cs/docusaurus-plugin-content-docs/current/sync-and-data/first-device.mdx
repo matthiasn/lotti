@@ -66,3 +66,22 @@ důvod si ji nechávat.
 Do toho prvního použití zacházej s bundlem jako s heslem: přihlašuje se jím
 k synchronizačnímu účtu — drž ho mimo chaty, snímky obrazovky a sdílené
 obrazovky.
+
+## Na Linuxu: přihlášení bez bundlu
+
+Předpoklad výše má jednu výjimku. Na Linuxu nabízí **Nastavit synchronizaci**
+také **Místo toho se přihlásit účtem Matrix** a stejnou možnost nese i karta
+prvního zařízení na stránce s párovacím kódem. Zadej adresu serveru, své
+úplné Matrix ID (například `@jmeno:example.com`) a heslo k účtu: Lotti se
+přihlásí, samo v tom účtu vytvoří šifrovanou synchronizační místnost a
+skončí na stejné obrazovce prvního zařízení, na které končí i cesta přes
+bundle. Žádný správce, žádný nástroj, žádný bundle — stačí jakýkoli účet
+Matrix, který ovládáš, na vlastním homeserveru nebo na veřejném.
+
+Dvě věci stojí za to vědět. Použij účet vyhrazený pro synchronizaci, ne ten,
+přes který chatuješ: synchronizační místnost je jen další místnost v tom
+účtu a všechno, co napíšeš, jde do ní. A heslo je tady tvoje vlastní —
+zůstává v zabezpečeném úložišti tohoto zařízení, odchází jen na server,
+který zadáš, a **nikdy se nerotuje**, na rozdíl od bundlu výše. Každé další
+zařízení se i nadále páruje z tohoto přes
+[Přidat zařízení](./add-device.mdx).

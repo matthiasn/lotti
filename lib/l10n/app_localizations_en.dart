@@ -12513,6 +12513,70 @@ class AppLocalizationsEn extends AppLocalizations {
       'Unlocks after the emoji match — before that, the new device can\'t decrypt them anyway.';
 
   @override
+  String get syncCredentialsEditDetails => 'Edit sign-in details';
+
+  @override
+  String get syncCredentialsErrorConfigurationFailed =>
+      'Signed in, but the sync room couldn\'t be created. Try again; if it keeps failing, check that the account is allowed to create rooms.';
+
+  @override
+  String get syncCredentialsErrorHomeserver =>
+      'Enter the server as a web address starting with https://.';
+
+  @override
+  String get syncCredentialsErrorLoginFailed =>
+      'The server didn\'t accept those sign-in details. Check the server address, Matrix ID and password, then try again.';
+
+  @override
+  String get syncCredentialsErrorPassword => 'Enter the account password.';
+
+  @override
+  String get syncCredentialsErrorUser =>
+      'Enter your full Matrix ID, like @name:example.com.';
+
+  @override
+  String get syncCredentialsFailedTitle => 'That sign-in didn\'t work';
+
+  @override
+  String get syncCredentialsHidePassword => 'Hide password';
+
+  @override
+  String get syncCredentialsHomeserverHint => 'https://matrix.example.com';
+
+  @override
+  String get syncCredentialsHomeserverLabel => 'Server address';
+
+  @override
+  String get syncCredentialsIntro =>
+      'Lotti signs in and creates an encrypted sync room on that account. Use an account set aside for sync, not one you chat with.';
+
+  @override
+  String get syncCredentialsKeptOnDevice =>
+      'Your password stays in this device\'s secure storage and goes only to the server you enter. Lotti never changes it.';
+
+  @override
+  String get syncCredentialsPasswordLabel => 'Password';
+
+  @override
+  String get syncCredentialsShowPassword => 'Show password';
+
+  @override
+  String get syncCredentialsSubmit => 'Sign in and set up sync';
+
+  @override
+  String get syncCredentialsTitle => 'Sign in with your Matrix account';
+
+  @override
+  String get syncCredentialsUsePairingCode =>
+      'Have a pairing code? Use it instead';
+
+  @override
+  String get syncCredentialsUserHint => '@name:example.com';
+
+  @override
+  String get syncCredentialsUserLabel => 'Matrix ID';
+
+  @override
   String get syncDeleteConfigConfirm => 'Stop syncing';
 
   @override
@@ -12748,6 +12812,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'There\'s no other device to copy from yet — your first code comes from the sync server\'s provisioning tool.';
 
   @override
+  String get syncPairFirstDeviceHintWithAccount =>
+      'There\'s no other device to copy from yet. Your first code comes from the sync server\'s provisioning tool — or skip the code and sign in with a Matrix account.';
+
+  @override
   String get syncPairFirstDeviceTitle => 'Setting up your first device?';
 
   @override
@@ -12796,6 +12864,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncPairShowEmoji => 'Show the emoji';
+
+  @override
+  String get syncPairSignInWithAccount => 'Sign in with a Matrix account';
 
   @override
   String get syncPairWhereToFind =>
@@ -12912,6 +12983,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncSetupEmptyTitle => 'Sync your devices';
+
+  @override
+  String get syncSetupUseAccountLink => 'Sign in with a Matrix account instead';
 
   @override
   String get syncStepAiSettings => 'AI settings';

@@ -15,8 +15,9 @@ import 'package:lotti/services/domain_logging.dart';
 
 part 'provisioning_controller.freezed.dart';
 
-/// State machine for consuming a sync provisioning/handover bundle on a new
-/// device: from [ProvisioningState.initial] through decode, login, room-join,
+/// State machine for configuring sync on a new device — from a
+/// provisioning/handover bundle, or from credentials typed by hand: from
+/// [ProvisioningState.initial] through decode, login, room join or creation,
 /// and (for `provisioned` bundles) password rotation to [ProvisioningState.done],
 /// or [ProvisioningState.error]. [ProvisioningState.ready] carries a freshly
 /// minted handover string for chaining a further device.
@@ -51,6 +52,7 @@ class ProvisioningController extends Notifier<ProvisioningState> {
 
   final OnboardingSyncService? _injectedOnboardingSyncService;
   SyncProvisioningBundle? _lastBundle;
+  MatrixConfig? _lastCredentials;
 
   @override
   ProvisioningState build() => const ProvisioningState.initial();
@@ -139,6 +141,7 @@ class ProvisioningController extends Notifier<ProvisioningState> {
   ///   credential.
   Future<void> configureFromBundle(SyncProvisioningBundle bundle) async {
     _lastBundle = bundle;
+    _lastCredentials = null;
     final rotatePassword = bundle.kind == SyncBundleKind.provisioned;
 
     // Read dependencies eagerly and prevent auto-disposal while this async
@@ -171,22 +174,12 @@ class ProvisioningController extends Notifier<ProvisioningState> {
             );
       }
 
-      // If already logged in, disconnect so the session manager actually
-      // attempts credential login instead of silently reusing that session.
-      if (matrixService.isLoggedIn()) {
-        await matrixService.logout();
-      }
-      // Clear stale room pointer before switching credentials to avoid an
-      // eager auto-join attempt against a room from a previous account.
-      await matrixService.clearPersistedRoom();
-
       final newConfig = MatrixConfig(
         homeServer: bundle.homeServer,
         user: bundle.user,
         password: bundle.password,
       );
-      await matrixService.setConfig(newConfig);
-      final loggedIn = await matrixService.login(waitForLifecycle: false);
+      final loggedIn = await _switchSession(matrixService, newConfig);
       if (!loggedIn) {
         await _cancelInboundPreflight(
           onboardingSyncService,
@@ -229,10 +222,7 @@ class ProvisioningController extends Notifier<ProvisioningState> {
         password: newPassword,
         roomId: bundle.roomId,
       );
-      final handoverJson = jsonEncode(handoverBundle.toJson());
-      final handoverBase64 = base64UrlEncode(utf8.encode(handoverJson));
-
-      state = ProvisioningState.ready(handoverBase64);
+      state = ProvisioningState.ready(_encodeBundle(handoverBundle));
     } catch (e, stackTrace) {
       loggingService.error(
         LogDomain.sync,
@@ -251,6 +241,84 @@ class ProvisioningController extends Notifier<ProvisioningState> {
     } finally {
       link.close();
     }
+  }
+
+  /// Signs in with [config] and configures sync around the account's *own*
+  /// sync room — the Linux path for an account's first device when no
+  /// pairing code exists yet (GitHub #4055).
+  ///
+  /// Login, then create the encrypted sync room and persist it, then
+  /// `ready`. The password is the user's own and is **never rotated**:
+  /// rotation exists to spend a one-time CLI bundle, and here there is no
+  /// bundle — only a credential the user manages themselves. No inbound
+  /// preflight either: the room is brand new, so no peer holds history to
+  /// wait for. A failed login restores whatever session was active before.
+  Future<void> configureFromCredentials(MatrixConfig config) async {
+    _lastCredentials = config;
+    _lastBundle = null;
+
+    final link = ref.keepAlive();
+    final matrixService = ref.read(matrixServiceProvider);
+    final loggingService = getIt<DomainLogger>();
+
+    try {
+      state = const ProvisioningState.loggingIn();
+
+      final oldConfig = await matrixService.loadConfig();
+      final oldRoomId = await matrixService.getRoom();
+
+      final loggedIn = await _switchSession(matrixService, config);
+      if (!loggedIn) {
+        await _restorePreviousSession(matrixService, oldConfig, oldRoomId);
+        state = const ProvisioningState.error(ProvisioningError.loginFailed);
+        return;
+      }
+
+      state = const ProvisioningState.joiningRoom();
+      final roomId = await matrixService.createRoom();
+      await matrixService.saveRoom(roomId);
+
+      final handoverBundle = SyncProvisioningBundle(
+        v: kSyncBundleVersion,
+        kind: SyncBundleKind.handover,
+        homeServer: config.homeServer,
+        user: config.user,
+        password: config.password,
+        roomId: roomId,
+      );
+      state = ProvisioningState.ready(_encodeBundle(handoverBundle));
+    } catch (e, stackTrace) {
+      loggingService.error(
+        LogDomain.sync,
+        e,
+        stackTrace: stackTrace,
+        subDomain: 'configureFromCredentials',
+      );
+      state = const ProvisioningState.error(
+        ProvisioningError.configurationError,
+      );
+    } finally {
+      link.close();
+    }
+  }
+
+  /// Replaces the live Matrix session with one for [config] and reports
+  /// whether the credential login succeeded.
+  ///
+  /// Logs out first, so the session manager actually attempts a credential
+  /// login instead of silently reusing the current session, and clears the
+  /// persisted room pointer before the credentials change so reconnecting
+  /// cannot auto-join a room that belongs to the previous account.
+  Future<bool> _switchSession(
+    MatrixService matrixService,
+    MatrixConfig config,
+  ) async {
+    if (matrixService.isLoggedIn()) {
+      await matrixService.logout();
+    }
+    await matrixService.clearPersistedRoom();
+    await matrixService.setConfig(config);
+    return matrixService.login(waitForLifecycle: false);
   }
 
   Future<void> _cancelInboundPreflight(
@@ -290,6 +358,7 @@ class ProvisioningController extends Notifier<ProvisioningState> {
   /// Resets the controller to its initial state.
   void reset() {
     _lastBundle = null;
+    _lastCredentials = null;
     state = const ProvisioningState.initial();
   }
 
@@ -312,19 +381,29 @@ class ProvisioningController extends Notifier<ProvisioningState> {
       password: config.password,
       roomId: roomId,
     );
-    final json = jsonEncode(bundle.toJson());
-    return base64UrlEncode(utf8.encode(json));
+    return _encodeBundle(bundle);
   }
+
+  /// The wire form of a bundle: its JSON, Base64url-encoded.
+  static String _encodeBundle(SyncProvisioningBundle bundle) =>
+      base64UrlEncode(utf8.encode(jsonEncode(bundle.toJson())));
 
   /// Retries the last configuration attempt.
   ///
   /// Only meaningful when the current state is [ProvisioningState.error].
-  /// Re-uses the bundle from the last [configureFromBundle] call —
-  /// rotation behaviour is derived from the bundle's `kind`.
+  /// Re-uses the bundle from the last [configureFromBundle] call — rotation
+  /// behaviour is derived from the bundle's `kind` — or the credentials from
+  /// the last [configureFromCredentials] call, whichever came last.
   Future<void> retry() async {
     final bundle = _lastBundle;
-    if (bundle == null) return;
-    await configureFromBundle(bundle);
+    if (bundle != null) {
+      await configureFromBundle(bundle);
+      return;
+    }
+    final credentials = _lastCredentials;
+    if (credentials != null) {
+      await configureFromCredentials(credentials);
+    }
   }
 
   /// Normalizes a Base64 string by adding padding if needed and converting

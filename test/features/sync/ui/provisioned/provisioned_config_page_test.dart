@@ -16,6 +16,7 @@ import 'package:lotti/features/sync/state/provisioning_controller.dart';
 import 'package:lotti/features/sync/state/provisioning_error.dart';
 import 'package:lotti/features/sync/state/sync_devices_provider.dart';
 import 'package:lotti/features/sync/ui/provisioned/provisioned_config_page.dart';
+import 'package:lotti/features/sync/ui/provisioned/sync_setup_entry.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_device_pair_motif.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_wizard_progress_track.dart';
@@ -138,10 +139,11 @@ void main() {
     WidgetTester tester,
     ProvisioningState state, {
     List<Override> extraOverrides = const [],
+    SyncSetupEntry entry = SyncSetupEntry.pairingCode,
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
-        const ProvisionedConfigWidget(),
+        ProvisionedConfigWidget(entry: entry),
         overrides: [
           matrixServiceProvider.overrideWithValue(mockMatrixService),
           provisioningControllerProvider.overrideWith(
@@ -634,6 +636,85 @@ void main() {
 
   // Tests for the actual _ConfigActionBar widget rendered via
   // provisionedConfigPage.
+  group('ProvisionedConfigWidget reached from typed credentials', () {
+    testWidgets('drops the pairing track while connecting', (tester) async {
+      // Get code · Check · Connect are the pairing journey's stations; a
+      // typed sign-in passed through none of them.
+      await pumpConfigWidget(
+        tester,
+        const ProvisioningState.loggingIn(),
+        entry: SyncSetupEntry.credentials,
+      );
+
+      expect(find.byType(SyncWizardProgressTrack), findsNothing);
+      final context = tester.element(find.byType(ProvisionedConfigWidget));
+      expect(
+        find.text(context.messages.provisionedSyncLoggingIn),
+        findsOneWidget,
+      );
+      expect(find.byType(SyncDevicePairMotif), findsOneWidget);
+    });
+
+    testWidgets('a rejected login blames the details, not a code', (
+      tester,
+    ) async {
+      await pumpConfigWidget(
+        tester,
+        const ProvisioningState.error(ProvisioningError.loginFailed),
+        entry: SyncSetupEntry.credentials,
+      );
+
+      final context = tester.element(find.byType(ProvisionedConfigWidget));
+      expect(
+        find.text(context.messages.syncCredentialsFailedTitle),
+        findsOneWidget,
+      );
+      expect(
+        find.text(context.messages.syncCredentialsErrorLoginFailed),
+        findsOneWidget,
+      );
+      // "Get a fresh code from your other device" would send a first-device
+      // user to a device that does not exist.
+      expect(find.text(context.messages.provisionedSyncError), findsNothing);
+      expect(
+        find.text(context.messages.provisionedSyncErrorLoginFailed),
+        findsNothing,
+      );
+    });
+
+    testWidgets('a failed room creation says so', (tester) async {
+      await pumpConfigWidget(
+        tester,
+        const ProvisioningState.error(ProvisioningError.configurationError),
+        entry: SyncSetupEntry.credentials,
+      );
+
+      final context = tester.element(find.byType(ProvisionedConfigWidget));
+      expect(
+        find.text(context.messages.syncCredentialsErrorConfigurationFailed),
+        findsOneWidget,
+      );
+      expect(
+        find.text(context.messages.provisionedSyncErrorConfigurationFailed),
+        findsNothing,
+      );
+    });
+
+    testWidgets('the pairing entry keeps the pairing copy', (tester) async {
+      await pumpConfigWidget(
+        tester,
+        const ProvisioningState.error(ProvisioningError.loginFailed),
+      );
+
+      final context = tester.element(find.byType(ProvisionedConfigWidget));
+      expect(find.text(context.messages.provisionedSyncError), findsOneWidget);
+      expect(
+        find.text(context.messages.syncCredentialsFailedTitle),
+        findsNothing,
+      );
+    });
+  });
+
   group('provisionedConfigPage function — _ConfigActionBar', () {
     /// Pumps a full WoltModalSheet containing provisionedConfigPage.
     ///
@@ -648,9 +729,12 @@ void main() {
       List<SyncDeviceInfo> devices = const [],
       _FakeProvisioningController Function()? controller,
       List<Override> extraOverrides = const [],
+      SyncSetupEntry entry = SyncSetupEntry.pairingCode,
     }) async {
       final localNotifier = ValueNotifier<int>(0);
       addTearDown(localNotifier.dispose);
+      final entryNotifier = ValueNotifier<SyncSetupEntry>(entry);
+      addTearDown(entryNotifier.dispose);
 
       await tester.pumpWidget(
         ProviderScope(
@@ -678,6 +762,7 @@ void main() {
                       provisionedConfigPage(
                         context: modalCtx,
                         pageIndexNotifier: localNotifier,
+                        entry: entryNotifier,
                       ),
                     ],
                   ),
@@ -917,6 +1002,60 @@ void main() {
         expect(localNotifier.value, 2);
       },
     );
+
+    testWidgets(
+      'after a typed sign-in the error accent reads Edit sign-in details '
+      'and lands on the credentials page',
+      (tester) async {
+        final controller = _FakeProvisioningController(
+          const ProvisioningState.error(ProvisioningError.loginFailed),
+        );
+        final localNotifier = await pumpConfigPage(
+          tester,
+          state: controller.initialState,
+          controller: () => controller,
+          entry: SyncSetupEntry.credentials,
+        );
+
+        final edit = tester.widget<DesignSystemButton>(
+          find.byKey(const Key('provisioned_config_new_code')),
+        );
+        final context = tester.element(find.byType(ProvisionedConfigWidget));
+        expect(edit.label, context.messages.syncCredentialsEditDetails);
+        expect(edit.variant, DesignSystemButtonVariant.primary);
+        // There is no code to retry; the quiet slot says just "Retry".
+        final retry = tester.widget<DesignSystemButton>(
+          find.byKey(const Key('provisioned_config_retry')),
+        );
+        expect(retry.label, context.messages.provisionedSyncRetry);
+
+        edit.onPressed!();
+
+        // Reset first — the controller must not carry the failed attempt —
+        // then back to the form, not to a pairing-code page the user never
+        // used.
+        expect(controller.resetCalls, 1);
+        expect(localNotifier.value, SyncSetupPage.credentials);
+      },
+    );
+
+    testWidgets('Back from a typed sign-in returns to the credentials page', (
+      tester,
+    ) async {
+      final localNotifier = await pumpConfigPage(
+        tester,
+        state: const ProvisioningState.initial(),
+        entry: SyncSetupEntry.credentials,
+      );
+
+      final context = tester.element(find.byType(ProvisionedConfigWidget));
+      final back = tester.widget<DesignSystemButton>(
+        find.widgetWithText(DesignSystemButton, context.messages.syncPairBack),
+      );
+      back.onPressed!();
+
+      expect(localNotifier.value, SyncSetupPage.credentials);
+    });
 
     testWidgets(
       'the error remedies stack on a phone so neither label truncates',

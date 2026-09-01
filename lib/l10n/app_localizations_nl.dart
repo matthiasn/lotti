@@ -12613,6 +12613,71 @@ class AppLocalizationsNl extends AppLocalizations {
       'Wordt ontgrendeld na de emoji-match — daarvoor kan het nieuwe apparaat ze toch niet ontsleutelen.';
 
   @override
+  String get syncCredentialsEditDetails => 'Inloggegevens bewerken';
+
+  @override
+  String get syncCredentialsErrorConfigurationFailed =>
+      'Ingelogd, maar de synckamer kon niet worden aangemaakt. Probeer het opnieuw; blijft het mislukken, controleer dan of het account kamers mag aanmaken.';
+
+  @override
+  String get syncCredentialsErrorHomeserver =>
+      'Voer de server in als webadres dat begint met https://.';
+
+  @override
+  String get syncCredentialsErrorLoginFailed =>
+      'De server accepteerde deze inloggegevens niet. Controleer het serveradres, de Matrix-ID en het wachtwoord en probeer het opnieuw.';
+
+  @override
+  String get syncCredentialsErrorPassword =>
+      'Voer het wachtwoord van het account in.';
+
+  @override
+  String get syncCredentialsErrorUser =>
+      'Voer je volledige Matrix-ID in, zoals @naam:example.com.';
+
+  @override
+  String get syncCredentialsFailedTitle => 'Dat inloggen is niet gelukt';
+
+  @override
+  String get syncCredentialsHidePassword => 'Wachtwoord verbergen';
+
+  @override
+  String get syncCredentialsHomeserverHint => 'https://matrix.example.com';
+
+  @override
+  String get syncCredentialsHomeserverLabel => 'Serveradres';
+
+  @override
+  String get syncCredentialsIntro =>
+      'Lotti logt in en maakt in dat account een versleutelde synckamer aan. Gebruik een account dat alleen voor sync is, niet een waarmee je chat.';
+
+  @override
+  String get syncCredentialsKeptOnDevice =>
+      'Je wachtwoord blijft in de beveiligde opslag van dit apparaat en gaat alleen naar de server die je invoert. Lotti wijzigt het nooit.';
+
+  @override
+  String get syncCredentialsPasswordLabel => 'Wachtwoord';
+
+  @override
+  String get syncCredentialsShowPassword => 'Wachtwoord tonen';
+
+  @override
+  String get syncCredentialsSubmit => 'Inloggen en sync instellen';
+
+  @override
+  String get syncCredentialsTitle => 'Log in met je Matrix-account';
+
+  @override
+  String get syncCredentialsUsePairingCode =>
+      'Heb je een koppelcode? Gebruik die dan';
+
+  @override
+  String get syncCredentialsUserHint => '@naam:example.com';
+
+  @override
+  String get syncCredentialsUserLabel => 'Matrix-ID';
+
+  @override
   String get syncDeleteConfigConfirm => 'Stoppen met synchroniseren';
 
   @override
@@ -12855,6 +12920,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'Er is nog geen ander apparaat om van te kopiëren — je eerste code komt uit het provisioningtool van je synchronisatieserver.';
 
   @override
+  String get syncPairFirstDeviceHintWithAccount =>
+      'Er is nog geen ander apparaat om van te kopiëren. Je eerste code komt uit de provisioning-tool van je syncserver — of sla de code over en log in met een Matrix-account.';
+
+  @override
   String get syncPairFirstDeviceTitle => 'Je eerste apparaat instellen?';
 
   @override
@@ -12903,6 +12972,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get syncPairShowEmoji => 'Toon de emoji\'s';
+
+  @override
+  String get syncPairSignInWithAccount => 'Inloggen met een Matrix-account';
 
   @override
   String get syncPairWhereToFind =>
@@ -13023,6 +13095,10 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get syncSetupEmptyTitle => 'Synchroniseer je apparaten';
+
+  @override
+  String get syncSetupUseAccountLink =>
+      'In plaats daarvan inloggen met een Matrix-account';
 
   @override
   String get syncStepAiSettings => 'AI-instellingen';

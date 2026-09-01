@@ -80,6 +80,9 @@ void main() {
     when(() => mockMatrixService.isLoggedIn()).thenReturn(false);
     when(() => mockMatrixService.logout()).thenAnswer((_) async {});
     when(() => mockMatrixService.deleteConfig()).thenAnswer((_) async {});
+    when(
+      () => mockMatrixService.createRoom(),
+    ).thenAnswer((_) async => '!created:example.com');
     when(() => mockMatrixService.loadConfig()).thenAnswer(
       (_) async => MatrixConfig(
         homeServer: provisionedBundle.homeServer,
@@ -936,6 +939,242 @@ void main() {
           ).called(1);
         },
       );
+    });
+
+    group('configureFromCredentials (own account, no rotation)', () {
+      const credentials = MatrixConfig(
+        homeServer: 'https://matrix.example.com',
+        user: '@alice:example.com',
+        password: 'my-own-password',
+      );
+
+      test('logs in, creates the sync room and ends ready', () async {
+        final states = <ProvisioningState>[];
+        container.listen(
+          provisioningControllerProvider,
+          (_, next) => states.add(next),
+        );
+
+        await container
+            .read(provisioningControllerProvider.notifier)
+            .configureFromCredentials(credentials);
+
+        expect(states.length, 3);
+        expect(states[0], const ProvisioningState.loggingIn());
+        expect(states[1], const ProvisioningState.joiningRoom());
+        // `ready`, not `done`: this is the account's first device, with no
+        // peer to verify against — the same ending a CLI bundle reaches.
+        final handover = states[2].maybeWhen(
+          ready: (handover) => handover,
+          orElse: () => fail('Expected ready, got ${states[2]}'),
+        );
+        final decoded = SyncProvisioningBundle.fromJson(
+          jsonDecode(
+                utf8.decode(base64Url.decode(base64Url.normalize(handover))),
+              )
+              as Map<String, dynamic>,
+        );
+        expect(decoded.kind, SyncBundleKind.handover);
+        expect(decoded.homeServer, credentials.homeServer);
+        expect(decoded.user, credentials.user);
+        expect(decoded.password, credentials.password);
+        expect(decoded.roomId, '!created:example.com');
+
+        verifyInOrder([
+          () => mockMatrixService.clearPersistedRoom(),
+          () => mockMatrixService.setConfig(credentials),
+          () => mockMatrixService.login(waitForLifecycle: false),
+          () => mockMatrixService.createRoom(),
+          () => mockMatrixService.saveRoom('!created:example.com'),
+        ]);
+      });
+
+      test('never rotates the password and never joins a room', () async {
+        // The password is the user's own. Rotation exists to spend a one-time
+        // CLI bundle; rotating a credential the user manages would lock them
+        // out of their own account.
+        await container
+            .read(provisioningControllerProvider.notifier)
+            .configureFromCredentials(credentials);
+
+        verifyNever(
+          () => mockMatrixService.changePassword(
+            oldPassword: any(named: 'oldPassword'),
+            newPassword: any(named: 'newPassword'),
+          ),
+        );
+        verifyNever(() => mockMatrixService.joinRoom(any()));
+        // No peer holds history for a brand-new room, so no inbound gate.
+        verifyNever(
+          () => mockOnboardingSyncService.beginInboundPreflight(
+            recipientUserId: any(named: 'recipientUserId'),
+          ),
+        );
+      });
+
+      test('logs out a live session before signing in', () async {
+        when(() => mockMatrixService.isLoggedIn()).thenReturn(true);
+
+        await container
+            .read(provisioningControllerProvider.notifier)
+            .configureFromCredentials(credentials);
+
+        verifyInOrder([
+          () => mockMatrixService.logout(),
+          () => mockMatrixService.setConfig(credentials),
+          () => mockMatrixService.login(waitForLifecycle: false),
+        ]);
+      });
+
+      test('a rejected login restores the previous session', () async {
+        const oldConfig = MatrixConfig(
+          homeServer: 'https://old.example.com',
+          user: '@old:example.com',
+          password: 'old-pw',
+        );
+        when(
+          () => mockMatrixService.loadConfig(),
+        ).thenAnswer((_) async => oldConfig);
+        when(
+          () => mockMatrixService.getRoom(),
+        ).thenAnswer((_) async => '!old:example.com');
+        when(
+          () => mockMatrixService.login(waitForLifecycle: false),
+        ).thenAnswer((_) async => false);
+
+        await container
+            .read(provisioningControllerProvider.notifier)
+            .configureFromCredentials(credentials);
+
+        expect(
+          container.read(provisioningControllerProvider),
+          const ProvisioningState.error(ProvisioningError.loginFailed),
+        );
+        verify(() => mockMatrixService.setConfig(oldConfig)).called(1);
+        verify(() => mockMatrixService.saveRoom('!old:example.com')).called(1);
+        verifyNever(() => mockMatrixService.createRoom());
+      });
+
+      test(
+        'a rejected login with no previous config clears the config',
+        () async {
+          when(
+            () => mockMatrixService.loadConfig(),
+          ).thenAnswer((_) async => null);
+          when(() => mockMatrixService.getRoom()).thenAnswer((_) async => null);
+          when(
+            () => mockMatrixService.login(waitForLifecycle: false),
+          ).thenAnswer((_) async => false);
+
+          await container
+              .read(provisioningControllerProvider.notifier)
+              .configureFromCredentials(credentials);
+
+          // The typed password must not linger in the keychain after the
+          // server rejected it.
+          verify(() => mockMatrixService.deleteConfig()).called(1);
+          expect(
+            container.read(provisioningControllerProvider),
+            const ProvisioningState.error(ProvisioningError.loginFailed),
+          );
+        },
+      );
+
+      test('a failed room creation is a configuration error', () async {
+        when(
+          () => mockMatrixService.createRoom(),
+        ).thenThrow(Exception('M_FORBIDDEN'));
+
+        await container
+            .read(provisioningControllerProvider.notifier)
+            .configureFromCredentials(credentials);
+
+        expect(
+          container.read(provisioningControllerProvider),
+          const ProvisioningState.error(ProvisioningError.configurationError),
+        );
+        verify(
+          () => mockLoggingService.error(
+            LogDomain.sync,
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'configureFromCredentials',
+          ),
+        ).called(1);
+        verifyNever(() => mockMatrixService.saveRoom(any()));
+      });
+
+      test('retry re-runs the credentials, not a stale bundle', () async {
+        final controller = container.read(
+          provisioningControllerProvider.notifier,
+        );
+        // A bundle attempt first, then credentials: retry must follow the
+        // most recent attempt.
+        await controller.configureFromBundle(handoverBundle);
+        when(
+          () => mockMatrixService.login(waitForLifecycle: false),
+        ).thenAnswer((_) async => false);
+        await controller.configureFromCredentials(credentials);
+        expect(
+          container.read(provisioningControllerProvider),
+          const ProvisioningState.error(ProvisioningError.loginFailed),
+        );
+        when(
+          () => mockMatrixService.login(waitForLifecycle: false),
+        ).thenAnswer((_) async => true);
+        clearInteractions(mockMatrixService);
+
+        await controller.retry();
+
+        verify(() => mockMatrixService.setConfig(credentials)).called(1);
+        verify(() => mockMatrixService.createRoom()).called(1);
+        verifyNever(() => mockMatrixService.joinRoom(any()));
+        expect(
+          container
+              .read(provisioningControllerProvider)
+              .maybeWhen(
+                ready: (_) => true,
+                orElse: () => false,
+              ),
+          isTrue,
+        );
+      });
+
+      test(
+        'a bundle attempt after credentials makes retry use the bundle',
+        () async {
+          final controller = container.read(
+            provisioningControllerProvider.notifier,
+          );
+          await controller.configureFromCredentials(credentials);
+          await controller.configureFromBundle(handoverBundle);
+          clearInteractions(mockMatrixService);
+
+          await controller.retry();
+
+          verify(
+            () => mockMatrixService.joinRoom(handoverBundle.roomId),
+          ).called(1);
+          verifyNever(() => mockMatrixService.createRoom());
+        },
+      );
+
+      test('reset forgets the credentials so retry is a no-op', () async {
+        final controller = container.read(
+          provisioningControllerProvider.notifier,
+        );
+        await controller.configureFromCredentials(credentials);
+        controller.reset();
+        clearInteractions(mockMatrixService);
+
+        await controller.retry();
+
+        verifyNever(() => mockMatrixService.setConfig(any()));
+        expect(
+          container.read(provisioningControllerProvider),
+          const ProvisioningState.initial(),
+        );
+      });
     });
 
     group('reset', () {
