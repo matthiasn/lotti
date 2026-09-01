@@ -242,10 +242,16 @@ plain HTTPS GETs against the public origin, retried with backoff on 429 and
 100-pixel limit. It is idempotent — an object already in the map is skipped
 unless `FORCE=1` — and one failing object is reported without aborting the
 rest; `demo_media_asset_test` fails if any catalog object is missing its hash.
-The field's arrival did not bump `demoSeedVersion`: a world seeded before it
-already has its files on disk and would never show a stand-in, so retiring it
-would cost a wipe and a full re-download for nothing. Worlds seeded from now
-on carry the hashes.
+The field's arrival did not bump `demoSeedVersion`: retiring every existing
+demo profile would cost a wipe and a full re-download for a rendering hint.
+Instead `registerDemoMediaHydration` runs `backfillDemoThumbHashes` ahead of
+each hydration: one bulk read of the manifest-owned images, and a rewrite —
+through `JournalDb.updateJournalEntity`, announced on `UpdateNotifications`
+so a slot already on screen refreshes — only for an image whose
+`thumbHash` is still null. A world seeded before the field therefore gains
+its stand-ins on its next start, in place; after that first start the pass
+reads and writes nothing. Failures are logged per image and never delay the
+downloads.
 
 The file watcher behind all three widgets
 ([`FileWatcherMixin`](../../lib/features/tasks/ui/file_watcher_mixin.dart))
