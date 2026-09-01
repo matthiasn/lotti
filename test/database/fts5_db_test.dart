@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/fts5_db.dart';
@@ -28,6 +29,107 @@ Metadata _buildMetadata(String id) {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  group('measurementDefinitionAffectsFts', () {
+    final renamedChoice = measurableHydration.copyWith(
+      choices: [
+        for (final choice in measurableHydration.choices!)
+          if (choice.id == hydrationClear.id)
+            choice.copyWith(title: 'Transparent')
+          else
+            choice,
+      ],
+    );
+
+    test('a definition saved for the first time indexes from scratch', () {
+      expect(
+        measurementDefinitionAffectsFts(null, measurableHydration),
+        isTrue,
+      );
+    });
+
+    test(
+      'a renamed choice, a renamed measurable or a new unit changes the text',
+      () {
+        expect(
+          measurementDefinitionAffectsFts(measurableHydration, renamedChoice),
+          isTrue,
+        );
+        expect(
+          measurementDefinitionAffectsFts(
+            measurableWater,
+            measurableWater.copyWith(displayName: 'Still water'),
+          ),
+          isTrue,
+        );
+        expect(
+          measurementDefinitionAffectsFts(
+            measurableWater,
+            measurableWater.copyWith(unitName: 'l'),
+          ),
+          isTrue,
+        );
+      },
+    );
+
+    test('a choice added or dropped changes the indexed titles', () {
+      expect(
+        measurementDefinitionAffectsFts(
+          measurableHydration,
+          measurableHydration.copyWith(
+            choices: [
+              ...measurableHydration.choices!,
+              const MeasurableChoice(id: 'orange', title: 'Orange'),
+            ],
+          ),
+        ),
+        isTrue,
+      );
+      expect(
+        measurementDefinitionAffectsFts(
+          measurableHydration,
+          measurableHydration.copyWith(
+            choices: measurableHydration.choices!.sublist(1),
+          ),
+        ),
+        isTrue,
+      );
+    });
+
+    test(
+      'reordering or archiving a choice, or editing the description, does not',
+      () {
+        expect(
+          measurementDefinitionAffectsFts(
+            measurableHydration,
+            measurableHydration.copyWith(
+              choices: measurableHydration.choices!.reversed.toList(),
+            ),
+          ),
+          isFalse,
+        );
+        expect(
+          measurementDefinitionAffectsFts(
+            measurableHydration,
+            measurableHydration.copyWith(
+              choices: [
+                for (final choice in measurableHydration.choices!)
+                  choice.copyWith(archived: true),
+              ],
+            ),
+          ),
+          isFalse,
+        );
+        expect(
+          measurementDefinitionAffectsFts(
+            measurableWater,
+            measurableWater.copyWith(description: 'Tap or bottled'),
+          ),
+          isFalse,
+        );
+      },
+    );
+  });
 
   group('Fts5Db Tests', () {
     test(

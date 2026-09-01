@@ -92,6 +92,20 @@ void main() {
         same(rule),
       );
     });
+
+    test('leaves a bounded leaf alone when its measurable is not a choice', () {
+      const bounded = AutoCompleteRule.measurable(
+        dataTypeId: 'water',
+        minimum: 500,
+        maximum: 2000,
+        title: 'Water',
+      );
+
+      expect(
+        normalizeChoiceMeasurableBounds(bounded, isChoice: (_) => false),
+        same(bounded),
+      );
+    });
   });
 
   group('measurable leaf', () {
