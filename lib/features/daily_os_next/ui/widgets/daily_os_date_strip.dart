@@ -80,11 +80,12 @@ class DailyOsDateStrip extends StatelessWidget {
   });
 
   /// Tighter geometry for a narrow host — the docked day-view column, where
-  /// the strip shares one row with the timeline's own buttons. Chevrons
-  /// take compact density, the label prefers weekday + month + day and
-  /// falls back to month + day (measured, like the regular tiers), and the
-  /// standalone Today button is left out: a long press on the label and the
-  /// picker's own Today action remain the way back.
+  /// the strip shares one row with the timeline's own buttons. The label
+  /// sits in a tighter inset, prefers weekday + month + day and falls back
+  /// to month + day (measured, like the regular tiers), and the standalone
+  /// Today button is left out: a long press on the label and the picker's
+  /// own Today action remain the way back. The chevrons keep their full
+  /// 48dp box — a glyph-only control owes the `TapTargets.minimum` floor.
   final bool compact;
 
   final DateTime selected;
@@ -117,12 +118,7 @@ class DailyOsDateStrip extends StatelessWidget {
     );
     final locale = Localizations.localeOf(context).toString();
     final todayLabel = messages.dailyOsTodayButton;
-    // Compact density trims Material's minimum interactive box on each
-    // chevron (48 → 40), which is where a narrow host wins its room back.
-    final chevronExtent = compact
-        ? kMinInteractiveDimension + VisualDensity.compact.baseSizeAdjustment.dx
-        : kMinInteractiveDimension;
-    final chevrons = chevronExtent * 2;
+    const chevrons = kMinInteractiveDimension * 2;
     // The label's own chrome counts too: it sits in an inset on each side,
     // so a pane between `reserved + chevrons` and that plus the insets would
     // pick a format and then ellipsize it.
@@ -160,14 +156,12 @@ class DailyOsDateStrip extends StatelessWidget {
         (!available.isFinite ||
             fits(extra: _todayControlWidth(context, tokens)));
     final format = wide ? wideFormat : narrowFormat;
-    final chevronDensity = compact ? VisualDensity.compact : null;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         IconButton(
           icon: const Icon(LottiIcons.chevronLeft),
           tooltip: material.previousPageTooltip,
-          visualDensity: chevronDensity,
           onPressed: onPrev,
         ),
         Flexible(
@@ -208,7 +202,6 @@ class DailyOsDateStrip extends StatelessWidget {
         IconButton(
           icon: const Icon(LottiIcons.chevronRight),
           tooltip: material.nextPageTooltip,
-          visualDensity: chevronDensity,
           onPressed: onNext,
         ),
         // Desktop only, and only off-today. A phone header has no width to

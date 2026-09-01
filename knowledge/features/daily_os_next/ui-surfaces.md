@@ -221,7 +221,7 @@ touching it:
   ([daily_os_date_strip.dart](../../../lib/features/daily_os_next/ui/widgets/daily_os_date_strip.dart))
   the Day surface header uses — prev/next chevrons, a date label that opens
   the shared picker (`showDailyOsDayPicker`; long press returns to today) —
-  in its `compact` form: compact-density chevrons, weekday + month + day
+  in its `compact` form: a tighter label inset, weekday + month + day
   falling back to month + day, and no standalone Today button. The strip
   sits in the timeline toolbar's `toolbarLeading` slot, so stepping through
   days and the lane-format toggle share one row; the hide button takes

@@ -159,8 +159,8 @@ void main() {
 
   group('DailyOsDateStrip (compact)', () {
     testWidgets(
-      'compact chevrons take Material compact density and the wide tier '
-      'has no year; never a Today button',
+      'compact: chevrons keep the 48dp floor, the wide tier has no year, and '
+      'there is never a Today button',
       (tester) async {
         setView(tester);
         await tester.pumpWidget(
@@ -178,11 +178,8 @@ void main() {
         );
         final buttons = find.byType(IconButton);
         expect(buttons, findsNWidgets(2));
-        expect(
-          tester.getSize(buttons.first).width,
-          kMinInteractiveDimension +
-              VisualDensity.compact.baseSizeAdjustment.dx,
-        );
+        // A glyph-only control owes TapTargets.minimum even when compact.
+        expect(tester.getSize(buttons.first), const Size(48, 48));
       },
     );
 
