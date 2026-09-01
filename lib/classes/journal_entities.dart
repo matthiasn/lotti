@@ -77,6 +77,12 @@ abstract class ImageData with _$ImageData {
     required String imageDirectory,
     Geolocation? geolocation,
     AiWorkAttribution? aiAttribution,
+
+    /// Base64 ThumbHash of the picture: a few dozen bytes that decode into a
+    /// blurred stand-in, drawn until the file itself is on disk. A rendering
+    /// hint only — absent for everything but the demo catalog today, and
+    /// never required.
+    String? thumbHash,
   }) = _ImageData;
 
   factory ImageData.fromJson(Map<String, dynamic> json) =>

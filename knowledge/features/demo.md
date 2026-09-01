@@ -40,6 +40,14 @@ sources:
     resource: ../../lib/features/demo/media/demo_media_hydrator.dart
     title: Best-effort tenant-local media hydration
     last_modified: 2026-08-05
+  - id: thumbhash
+    resource: ../../lib/utils/thumbhash.dart
+    title: Vendored ThumbHash encoder and decoder
+    last_modified: 2026-09-01
+  - id: thumbhash-backfill
+    resource: ../../tool/demo_media/thumb_hash_backfill.dart
+    title: ThumbHash backfill for the media catalog
+    last_modified: 2026-09-01
   - id: copier
     resource: ../../lib/features/demo/copy/demo_data_copier.dart
     title: DemoDataCopier
@@ -173,8 +181,8 @@ matches. Catalog directories are created synchronously before the background
 work begins, so mounted cover widgets can install their file watchers. Missing
 or corrupt objects download to `.part`, pass the catalog checksum, and rename
 atomically inside that guest root. Individual failures are
-logged and contained; placeholders remain usable and the next startup retries
-the incomplete catalog.
+logged and contained; the ThumbHash stand-ins stay on screen and the next
+startup retries the incomplete catalog.
 
 `DemoMediaHydrator.progress` publishes the successfully verified or installed
 catalog count against the manifest-owned total, plus any failed or cancelled
@@ -183,6 +191,74 @@ progress component: it hides only after every asset succeeds; otherwise it
 keeps the incomplete count visible and explains that failed items retry on the
 next startup. The workspace stays usable without one live announcement per
 image.
+
+## The stand-in while it downloads
+
+A cover slot is never empty while its file is on the way. Every catalog
+object carries a **ThumbHash** — Evan Wallace's placeholder format: a DCT of
+the picture quantised into 25 bytes or so, decoding to a 32-pixel raster that
+upscales into a blur with the picture's colours and rough composition. The
+encoder and decoder are vendored in
+[`lib/utils/thumbhash.dart`](../../lib/utils/thumbhash.dart) (MIT, kept
+byte-compatible with the reference; the pub wrappers are single-maintainer
+render-path dependencies the app does not need) and covered against goldens
+from the reference implementation.
+
+The hash travels with the entity, not the catalog: `DemoMediaAsset.thumbHash`
+reads the generated map in
+[`media/generated/demo_media_thumb_hashes.g.dart`](../../lib/features/demo/media/generated/demo_media_thumb_hashes.g.dart),
+keyed by the object's `sha256` so a replaced object loses its stale hash by
+itself, and the seeders copy it into `ImageData.thumbHash` — a nullable
+rendering hint that older entities and user photos simply lack. The widgets
+therefore never see the catalog: `CoverArtThumbnail`, `CoverArtBackground` and
+`CardImageWidget` hand `ThumbHash.tryParse(entry.data.thumbHash)` (a corrupt
+hash is no hash) and the file's `ImageProvider` — null while the file is
+missing — to
+[`ThumbHashBackedImage`](../../lib/widgets/media/thumb_hash_backed_image.dart),
+which draws the stand-in alone, then the first decoded frame over it with a
+`MotionDurations.medium1` fade (none under reduced motion), and never fades
+again for later provider swaps such as a resize-bucket crossing. The raster
+reaches the engine through
+[`ThumbHashImage`](../../lib/widgets/media/thumb_hash_image.dart), an
+`ImageProvider` keyed on the hash so the cache decodes each distinct hash once
+however many tiles show it; its stream completer lets a frame that arrives
+after the tile has gone drop quietly instead of throwing.
+
+```mermaid
+flowchart LR
+    E[ImageData.thumbHash] --> P{parses?}
+    P -->|no| N[empty slot, as before]
+    P -->|yes| S[stand-in raster via ThumbHashImage]
+    S --> W{file on disk?}
+    W -->|no| S
+    W -->|yes| F[picture fades in over the stand-in]
+```
+
+The map is filled by `make demo_media_thumb_hashes`
+([`tool/demo_media/thumb_hashes.dart`](../../tool/demo_media/thumb_hashes.dart)
+over [`thumb_hash_backfill.dart`](../../tool/demo_media/thumb_hash_backfill.dart)):
+plain HTTPS GETs against the public origin, retried with backoff on 429 and
+5xx, the digest verified against the catalog, the image shrunk to the encoder's
+100-pixel limit. It is idempotent — an object already in the map is skipped
+unless `FORCE=1` — and one failing object is reported without aborting the
+rest; `demo_media_asset_test` fails if any catalog object is missing its hash.
+The field's arrival did not bump `demoSeedVersion`: retiring every existing
+demo profile would cost a wipe and a full re-download for a rendering hint.
+Instead `registerDemoMediaHydration` runs `backfillDemoThumbHashes` ahead of
+each hydration: one bulk read of the manifest-owned images, and a rewrite —
+through `JournalDb.updateJournalEntity`, announced on `UpdateNotifications`
+so a slot already on screen refreshes — only for an image whose
+`thumbHash` is still null. A world seeded before the field therefore gains
+its stand-ins on its next start, in place; after that first start the pass
+reads and writes nothing. Failures are logged per image and never delay the
+downloads.
+
+The file watcher behind all three widgets
+([`FileWatcherMixin`](../../lib/features/tasks/ui/file_watcher_mixin.dart))
+polls instead of watching where the OS offers no directory watch — iOS throws
+from `Directory.watch` — and falls back to polling when a watch is refused or
+errors out, because a watcher that throws inside `build` became a 100 000 px
+`ErrorWidget` in every cover slot.
 
 ```mermaid
 flowchart LR

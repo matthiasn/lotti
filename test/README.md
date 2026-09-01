@@ -50,6 +50,36 @@ callbacks, `whenComplete` futures and status listeners have not fired, and a
 start frame, then the duration, then a little past it — or sample in small steps
 until the state you are waiting for appears, and assert you saw it.
 
+## Image decoding never completes inside `testWidgets`
+
+`testWidgets` runs the body under FakeAsync, and the engine's completions —
+`instantiateImageCodec`, `ImmutableBuffer.fromUint8List`, `Picture.toImage`,
+which is what `createTestImage` uses — are delivered by the real event loop,
+so a widget test that `await`s one of them hangs until the per-test timeout.
+Three consequences:
+
+- Make test images in `setUpAll` (real async) and hand them to the widget —
+  `createTestImage()` inside a `testWidgets` body never returns. Flutter's own
+  image tests do the same.
+- A provider that decodes through the engine (`ThumbHashImage`) resolves only
+  in a plain `test()`; in a widget test its frame arrives *after the test has
+  ended*, so the stream must tolerate a frame for a disposed completer
+  (`ThumbHashStreamCompleter` does; `OneFrameImageStreamCompleter` throws
+  "Stream has been disposed", reported as a failure of the test that already
+  passed). To drive a picture's frame deterministically, use a controllable
+  `ImageProvider` whose future the test completes (see
+  `test/widgets/media/thumb_hash_backed_image_test.dart`).
+- `tester.runAsync` is the escape hatch when real decoding is the point.
+
+## Simulating a platform without a directory watch
+
+`FileWatcherMixin` polls where `FileSystemEntity.isWatchSupported` is false
+(iOS) and where `Directory.watch` throws or errors. Play the OS with
+`IOOverrides.runZoned(body, fsWatchIsSupported: () => false)` or
+`fsWatch: (_, _, _) => throw const FileSystemException(...)` — no seam in
+production code, and timers created inside the zone still run on the test's
+fake clock (`test/features/tasks/ui/file_watcher_mixin_test.dart`).
+
 ## Platform-channel calls in widgets (e.g. HapticFeedback)
 
 A widget action that `await`s a `SystemChannels.platform` call — `HapticFeedback.lightImpact()`, clipboard, etc. — never resolves under the test binding unless a mock handler is installed, so any follow-up work after the await (a DB write, a `setState`, a navigation) silently never runs and the test fails in a confusing way. Install a handler in `setUp` **and reset it in `tearDown`**, or it leaks into every later test in the same isolate under the batched (`very_good`) runner:

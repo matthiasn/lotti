@@ -361,6 +361,19 @@ void main() {
       };
 
       expect(world.images, hasLength(88));
+      final catalogById = {
+        for (final asset in demoMediaAssets) asset.id: asset,
+      };
+      for (final image in world.images) {
+        // The stand-in travels with the entity: the widgets never see the
+        // catalog.
+        expect(
+          image.data.thumbHash,
+          catalogById[image.meta.id]!.thumbHash,
+          reason: image.data.imageFile,
+        );
+        expect(image.data.thumbHash, isNotNull, reason: image.data.imageFile);
+      }
       expect(
         world.tasks.map((task) => task.data.coverArtId).toSet(),
         hasLength(world.tasks.length),

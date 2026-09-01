@@ -6,13 +6,22 @@ import 'package:lotti/utils/platform.dart';
 import 'package:path/path.dart' as p;
 
 /// Mixin that provides file watching functionality for widgets that need to
-/// display images that may not exist yet (e.g., still being written to disk).
+/// display images that may not exist yet (e.g., still being written to disk,
+/// or still downloading from the demo-media catalog).
 ///
 /// Usage:
 /// 1. Mix into your State class
 /// 2. Call [setupFileWatcher] in build() with the file path
 /// 3. Check [fileExists] to determine if file should be rendered
 /// 4. Call [disposeFileWatcher] in dispose()
+///
+/// Where the OS offers a directory watch (macOS, Linux, Windows, Android)
+/// the file's arrival is an event. Where it does not — iOS throws a
+/// [FileSystemException] from [Directory.watch] — or where the watch is
+/// refused (inotify exhausted on Linux, a directory removed under it), the
+/// mixin polls instead: one `stat` a second per mounted widget, for at most
+/// [_maxPollAttempts]. Nothing that reaches `build` may throw here: a
+/// throwing watcher became a 100 000 px `ErrorWidget` in every cover slot.
 mixin FileWatcherMixin<T extends StatefulWidget> on State<T> {
   StreamSubscription<FileSystemEvent>? _fileWatcher;
   Timer? _pollTimer;
@@ -25,6 +34,13 @@ mixin FileWatcherMixin<T extends StatefulWidget> on State<T> {
   /// [Directory.watch] watcher.
   static const _testEnvPollInterval = Duration(milliseconds: 100);
   static const _testEnvMaxPollAttempts = 20;
+
+  /// Poll cadence where no directory watch is available: a second apart,
+  /// for half an hour — longer than the slowest demo-media download on a
+  /// throttled connection, short enough that a file that never comes does
+  /// not tick for the life of the widget.
+  static const _pollInterval = Duration(seconds: 1);
+  static const _maxPollAttempts = 1800;
 
   /// Whether the file exists and is ready to be displayed.
   bool get fileExists => _fileExists;
@@ -46,18 +62,11 @@ mixin FileWatcherMixin<T extends StatefulWidget> on State<T> {
       _pollTimer?.cancel();
       _fileExists = File(path).existsSync();
       if (_fileExists) return;
-      var attempts = 0;
-      _pollTimer = Timer.periodic(_testEnvPollInterval, (timer) {
-        attempts++;
-        if (File(path).existsSync()) {
-          timer.cancel();
-          _pollTimer = null;
-          if (mounted) setState(() => _fileExists = true);
-        } else if (attempts >= _testEnvMaxPollAttempts) {
-          timer.cancel();
-          _pollTimer = null;
-        }
-      });
+      _startPolling(
+        path,
+        interval: _testEnvPollInterval,
+        maxAttempts: _testEnvMaxPollAttempts,
+      );
       return;
     }
 
@@ -80,10 +89,64 @@ mixin FileWatcherMixin<T extends StatefulWidget> on State<T> {
     final dir = file.parent;
     if (!dir.existsSync()) return;
 
-    _fileWatcher = dir.watch().listen((event) {
-      if (pathsEqual(event.path, path) && mounted) {
-        _disposeWatcher();
-        setState(() => _fileExists = true);
+    if (!FileSystemEntity.isWatchSupported) {
+      _startPolling(
+        path,
+        interval: _pollInterval,
+        maxAttempts: _maxPollAttempts,
+      );
+      return;
+    }
+    try {
+      _fileWatcher = dir.watch().listen(
+        (event) {
+          if (pathsEqual(event.path, path) && mounted) {
+            _disposeWatcher();
+            setState(() => _fileExists = true);
+          }
+        },
+        onError: (Object _) {
+          // The watch died under us (directory gone, inotify limit): keep
+          // looking the slow way rather than never noticing the file. The
+          // stream is not closed by an error, so cancel it here or nothing
+          // ever will.
+          unawaited(_fileWatcher?.cancel());
+          _fileWatcher = null;
+          if (!mounted) return;
+          _startPolling(
+            path,
+            interval: _pollInterval,
+            maxAttempts: _maxPollAttempts,
+          );
+        },
+      );
+    } on FileSystemException {
+      _startPolling(
+        path,
+        interval: _pollInterval,
+        maxAttempts: _maxPollAttempts,
+      );
+    }
+  }
+
+  /// Checks for the file every [interval] until it appears or [maxAttempts]
+  /// have passed; the arrival is applied with [setState] while mounted.
+  void _startPolling(
+    String path, {
+    required Duration interval,
+    required int maxAttempts,
+  }) {
+    _pollTimer?.cancel();
+    var attempts = 0;
+    _pollTimer = Timer.periodic(interval, (timer) {
+      attempts++;
+      if (File(path).existsSync()) {
+        timer.cancel();
+        _pollTimer = null;
+        if (mounted) setState(() => _fileExists = true);
+      } else if (attempts >= maxAttempts) {
+        timer.cancel();
+        _pollTimer = null;
       }
     });
   }

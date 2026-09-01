@@ -65,6 +65,7 @@ _ImageData _$ImageDataFromJson(Map<String, dynamic> json) => _ImageData(
       : AiWorkAttribution.fromJson(
           json['aiAttribution'] as Map<String, dynamic>,
         ),
+  thumbHash: json['thumbHash'] as String?,
 );
 
 Map<String, dynamic> _$ImageDataToJson(_ImageData instance) =>
@@ -75,6 +76,7 @@ Map<String, dynamic> _$ImageDataToJson(_ImageData instance) =>
       'imageDirectory': instance.imageDirectory,
       'geolocation': instance.geolocation,
       'aiAttribution': instance.aiAttribution,
+      'thumbHash': instance.thumbHash,
     };
 
 _AudioData _$AudioDataFromJson(Map<String, dynamic> json) => _AudioData(

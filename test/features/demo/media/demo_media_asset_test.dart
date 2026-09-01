@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/demo/media/demo_media_asset.dart';
+import 'package:lotti/features/demo/media/generated/demo_media_thumb_hashes.g.dart';
+import 'package:lotti/utils/thumbhash.dart';
 
 void main() {
   test('catalog gives every demo task one immutable R2 cover', () {
@@ -62,5 +64,39 @@ void main() {
       expect(asset.caption((english, _) => english), isNotEmpty);
       expect(asset.caption((_, german) => german), isNotEmpty);
     }
+  });
+
+  test('every catalog object carries a ThumbHash that decodes', () {
+    for (final asset in demoMediaAssets) {
+      final hash = ThumbHash.tryParse(asset.thumbHash);
+      expect(hash, isNotNull, reason: '${asset.fileName} has no usable hash');
+      // The catalog is 16:9 throughout; the stand-in must be, roughly.
+      expect(hash!.aspectRatio, greaterThan(1), reason: asset.fileName);
+    }
+  });
+
+  test('the generated map holds exactly the catalog digests', () {
+    expect(
+      demoMediaThumbHashes.keys.toSet(),
+      demoMediaAssets.map((asset) => asset.sha256).toSet(),
+    );
+  });
+
+  test('thumbHash is looked up by digest, and is null for an unknown one', () {
+    final known = demoMediaAssets.first;
+    const unknown = DemoMediaAsset(
+      id: 'image-unknown',
+      fileName: 'unknown.webp',
+      sha256:
+          'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+      taskId: 'task',
+      categoryId: 'category',
+      capturedDaysAgo: 0,
+      capturedHour: 0,
+      isCover: false,
+    );
+
+    expect(known.thumbHash, demoMediaThumbHashes[known.sha256]);
+    expect(unknown.thumbHash, isNull);
   });
 }

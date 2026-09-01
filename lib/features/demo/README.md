@@ -37,7 +37,8 @@ copy over in the exit sheet.
 lib/features/demo/
 ├── seed/    penguin-logistics fixture + locale tables, DemoSeeder,
 │            seed manifest, tutorial "first mission" content
-├── media/   immutable R2 catalog + checksummed background hydration
+├── media/   immutable R2 catalog + checksummed background hydration,
+│            generated ThumbHash map (make demo_media_thumb_hashes)
 ├── state/   DemoModeGateway — enter/resume/reseed/exit/delete decisions
 ├── ui/      banner + scaffold, entry launcher & Try button, exit sheet,
 │            real-AI setup sheet
@@ -56,9 +57,13 @@ The 91-image media catalog is hosted exclusively on Cloudflare R2. Seeding
 writes image metadata only and never waits for the network. Every demo-world
 startup compares the manifest-owned catalog with tenant-local checksums and
 downloads missing or corrupt files in the background; a slow or failed request
-leaves a normal placeholder and is retried on a later startup. While that
-reconciliation runs, the persistent demo banner shows its exact completed-item
-count without blocking the workspace.
+is retried on a later startup. While that reconciliation runs, the persistent
+demo banner shows its exact completed-item count without blocking the
+workspace, and every cover slot already shows the picture's ThumbHash — a
+blurred stand-in a few dozen bytes long that ships with the app
+(`media/generated/`, backfilled from the bucket by
+`make demo_media_thumb_hashes`) and cross-fades into the real picture when it
+lands.
 
 ## What it delegates
 

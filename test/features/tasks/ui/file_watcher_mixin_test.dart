@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -484,6 +485,201 @@ void main() {
       },
     );
   });
+
+  // ---------------------------------------------------------------------------
+  // Platforms without a directory watch. iOS throws a FileSystemException
+  // from Directory.watch(); before the poll fallback that exception left the
+  // build and became a 100 000 px ErrorWidget in every demo cover slot while
+  // the catalog downloaded. IOOverrides plays the OS here.
+  // ---------------------------------------------------------------------------
+  group('FileWatcherMixin – no directory watch available', () {
+    late Directory tempDir;
+
+    setUp(() {
+      tempDir = Directory.systemTemp.createTempSync('file_watcher_poll_');
+      platform_utils.isTestEnv = false;
+    });
+
+    tearDown(() {
+      platform_utils.isTestEnv = true;
+      if (tempDir.existsSync()) {
+        tempDir.deleteSync(recursive: true);
+      }
+    });
+
+    /// Runs [body] where the OS reports no watch support, as iOS does.
+    Future<void> withoutWatchSupport(Future<void> Function() body) =>
+        IOOverrides.runZoned(body, fsWatchIsSupported: () => false);
+
+    testWidgets('polls for the file instead of watching, and finds it', (
+      tester,
+    ) async {
+      final path = '${tempDir.path}/downloading.webp';
+
+      await withoutWatchSupport(() async {
+        await tester.pumpWidget(MaterialApp(home: _TestWidget(path: path)));
+        final state = tester.state<_TestWidgetState>(find.byType(_TestWidget));
+        expect(state.fileExists, isFalse);
+        expect(find.text('not exists'), findsOneWidget);
+
+        File(path).writeAsStringSync('bytes');
+        await tester.pump(const Duration(milliseconds: 999));
+        expect(find.text('not exists'), findsOneWidget);
+
+        await tester.pump(const Duration(milliseconds: 1));
+        expect(state.fileExists, isTrue);
+        expect(find.text('exists'), findsOneWidget);
+      });
+    });
+
+    testWidgets('stops polling after its budget, and stops looking', (
+      tester,
+    ) async {
+      final path = '${tempDir.path}/never.webp';
+
+      await withoutWatchSupport(() async {
+        await tester.pumpWidget(MaterialApp(home: _TestWidget(path: path)));
+        await tester.pump(const Duration(seconds: 1800));
+
+        // Budget spent: a file arriving now is not noticed until a rebuild,
+        // and — checked by the test framework at teardown — no timer is left
+        // ticking for a file that never came.
+        File(path).writeAsStringSync('late');
+        await tester.pump(const Duration(seconds: 5));
+        final state = tester.state<_TestWidgetState>(find.byType(_TestWidget));
+        expect(state.fileExists, isFalse);
+      });
+    });
+
+    testWidgets('a poll in flight is cancelled with the widget', (
+      tester,
+    ) async {
+      final path = '${tempDir.path}/abandoned.webp';
+
+      await withoutWatchSupport(() async {
+        await tester.pumpWidget(MaterialApp(home: _TestWidget(path: path)));
+        await tester.pump(const Duration(seconds: 3));
+
+        await tester.pumpWidget(const MaterialApp(home: SizedBox()));
+
+        // Would fail with "A Timer is still pending" otherwise.
+        await tester.pump(const Duration(seconds: 3));
+        expect(find.byType(_TestWidget), findsNothing);
+      });
+    });
+
+    testWidgets('falls back to polling when the watch itself is refused', (
+      tester,
+    ) async {
+      final path = '${tempDir.path}/refused.webp';
+
+      await IOOverrides.runZoned(
+        () async {
+          await tester.pumpWidget(MaterialApp(home: _TestWidget(path: path)));
+          final state = tester.state<_TestWidgetState>(
+            find.byType(_TestWidget),
+          );
+          expect(state.fileExists, isFalse);
+          expect(tester.takeException(), isNull);
+
+          File(path).writeAsStringSync('bytes');
+          await tester.pump(const Duration(seconds: 1));
+          expect(state.fileExists, isTrue);
+        },
+        fsWatch: (_, _, _) => throw const FileSystemException(
+          'File system watching is not supported on this platform',
+        ),
+      );
+    });
+
+    testWidgets('falls back to polling when the watch stream errors', (
+      tester,
+    ) async {
+      final path = '${tempDir.path}/lost_watch.webp';
+
+      await IOOverrides.runZoned(
+        () async {
+          await tester.pumpWidget(MaterialApp(home: _TestWidget(path: path)));
+          // Let the error reach the subscription.
+          await tester.pump();
+          final state = tester.state<_TestWidgetState>(
+            find.byType(_TestWidget),
+          );
+          expect(state.fileExists, isFalse);
+          expect(tester.takeException(), isNull);
+
+          File(path).writeAsStringSync('bytes');
+          await tester.pump(const Duration(seconds: 1));
+          expect(state.fileExists, isTrue);
+        },
+        fsWatch: (_, _, _) => Stream<FileSystemEvent>.error(
+          const FileSystemException('watch descriptor dropped'),
+        ),
+      );
+    });
+
+    testWidgets('cancels the errored watch it falls back from', (
+      tester,
+    ) async {
+      final path = '${tempDir.path}/errored_watch.webp';
+      var cancelled = false;
+      final watch = StreamController<FileSystemEvent>(
+        onCancel: () => cancelled = true,
+      );
+      addTearDown(() => unawaited(watch.close()));
+
+      await IOOverrides.runZoned(
+        () async {
+          await tester.pumpWidget(MaterialApp(home: _TestWidget(path: path)));
+          expect(cancelled, isFalse);
+
+          // An error does not close a stream; a subscription left behind
+          // would outlive the widget with nothing able to cancel it.
+          watch.addError(const FileSystemException('watch dropped'));
+          await tester.pump();
+          expect(cancelled, isTrue);
+
+          File(path).writeAsStringSync('bytes');
+          await tester.pump(const Duration(seconds: 1));
+          final state = tester.state<_TestWidgetState>(
+            find.byType(_TestWidget),
+          );
+          expect(state.fileExists, isTrue);
+        },
+        fsWatch: (_, _, _) => watch.stream,
+      );
+    });
+
+    testWidgets('a watch error reaching an unmounted state starts no poll', (
+      tester,
+    ) async {
+      final path = '${tempDir.path}/gone.webp';
+      final errors = StreamController<FileSystemEvent>();
+      addTearDown(() => unawaited(errors.close()));
+
+      await IOOverrides.runZoned(
+        () async {
+          // A widget that never calls disposeFileWatcher keeps its
+          // subscription past its own lifetime; the error must not start a
+          // poll for a state that is gone.
+          await tester.pumpWidget(
+            MaterialApp(home: _ForgetfulTestWidget(path: path)),
+          );
+          await tester.pumpWidget(const MaterialApp(home: SizedBox()));
+
+          errors.addError(const FileSystemException('late error'));
+          await tester.pump();
+
+          expect(tester.takeException(), isNull);
+          File(path).writeAsStringSync('bytes');
+          // No timer fires (the test framework fails a pending one at
+          // teardown), and nothing tries to setState on the dead widget.
+          await tester.pump(const Duration(seconds: 2));
+        },
+        fsWatch: (_, _, _) => errors.stream,
+      );
+    });
+  });
 }
 
 /// Test widget that uses the FileWatcherMixin
@@ -507,6 +703,30 @@ class _TestWidgetState extends State<_TestWidget> with FileWatcherMixin {
   void dispose() {
     disposeFileWatcher();
     super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(fileExists ? 'exists' : 'not exists');
+  }
+}
+
+/// A [FileWatcherMixin] user that forgets [FileWatcherMixin.disposeFileWatcher].
+class _ForgetfulTestWidget extends StatefulWidget {
+  const _ForgetfulTestWidget({required this.path});
+
+  final String path;
+
+  @override
+  State<_ForgetfulTestWidget> createState() => _ForgetfulTestWidgetState();
+}
+
+class _ForgetfulTestWidgetState extends State<_ForgetfulTestWidget>
+    with FileWatcherMixin {
+  @override
+  void initState() {
+    super.initState();
+    setupFileWatcher(widget.path);
   }
 
   @override

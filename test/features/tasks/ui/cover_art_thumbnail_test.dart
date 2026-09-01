@@ -12,8 +12,12 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/utils/image_utils.dart';
+import 'package:lotti/utils/thumbhash.dart';
+import 'package:lotti/widgets/media/thumb_hash_backed_image.dart';
+import 'package:lotti/widgets/media/thumb_hash_image.dart';
 
 import '../../../helpers/fake_entry_controller.dart';
+import '../../../helpers/thumb_hash_fixtures.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
@@ -72,6 +76,7 @@ void main() {
     String id = 'image-1',
     String imageFile = 'test.jpg',
     String imageDirectory = '/images/',
+    String? thumbHash,
   }) {
     final now = DateTime(2025, 12, 31, 12);
     return JournalImage(
@@ -87,6 +92,7 @@ void main() {
         imageFile: imageFile,
         imageDirectory: imageDirectory,
         capturedAt: now,
+        thumbHash: thumbHash,
       ),
     );
   }
@@ -128,10 +134,13 @@ void main() {
           overrides: [createEntryControllerOverride(image)],
         );
 
-        // Should render the image structure: SizedBox > ClipRect > FittedBox > Image.file
-        expect(find.byType(ClipRect), findsOneWidget);
-        expect(find.byType(FittedBox), findsOneWidget);
+        // Should render the image structure: SizedBox > picture, cropped by
+        // the Image's own fit. Without a hash there is no stand-in.
+        expect(find.byType(ThumbHashBackedImage), findsOneWidget);
         expect(find.byType(Image), findsOneWidget);
+        final picture = tester.widget<Image>(find.byType(Image));
+        expect(picture.fit, BoxFit.cover);
+        expect(picture.image, isA<ResizeImage>());
       });
 
       testWidgets('alignment reflects cropX=0.0 (left)', (tester) async {
@@ -148,9 +157,9 @@ void main() {
           overrides: [createEntryControllerOverride(image)],
         );
 
-        final fittedBox = tester.widget<FittedBox>(find.byType(FittedBox));
-        expect(fittedBox.alignment, Alignment.centerLeft);
-        expect(fittedBox.fit, BoxFit.cover);
+        final picture = tester.widget<Image>(find.byType(Image));
+        expect(picture.alignment, Alignment.centerLeft);
+        expect(picture.fit, BoxFit.cover);
       });
 
       testWidgets('alignment reflects cropX=0.5 (center)', (tester) async {
@@ -167,8 +176,8 @@ void main() {
           overrides: [createEntryControllerOverride(image)],
         );
 
-        final fittedBox = tester.widget<FittedBox>(find.byType(FittedBox));
-        expect(fittedBox.alignment, Alignment.center);
+        final picture = tester.widget<Image>(find.byType(Image));
+        expect(picture.alignment, Alignment.center);
       });
 
       testWidgets('alignment reflects cropX=1.0 (right)', (tester) async {
@@ -185,8 +194,8 @@ void main() {
           overrides: [createEntryControllerOverride(image)],
         );
 
-        final fittedBox = tester.widget<FittedBox>(find.byType(FittedBox));
-        expect(fittedBox.alignment, Alignment.centerRight);
+        final picture = tester.widget<Image>(find.byType(Image));
+        expect(picture.alignment, Alignment.centerRight);
       });
 
       testWidgets('alignment reflects cropX=0.25 (quarter left)', (
@@ -205,8 +214,8 @@ void main() {
           overrides: [createEntryControllerOverride(image)],
         );
 
-        final fittedBox = tester.widget<FittedBox>(find.byType(FittedBox));
-        expect(fittedBox.alignment, const Alignment(-0.5, 0));
+        final picture = tester.widget<Image>(find.byType(Image));
+        expect(picture.alignment, const Alignment(-0.5, 0));
       });
 
       testWidgets('renders with correct size', (tester) async {
@@ -233,6 +242,85 @@ void main() {
       });
     });
 
+    group('with a ThumbHash', () {
+      testWidgets('shows the stand-in in the square while the file is '
+          'missing', (tester) async {
+        final image = buildJournalImage(
+          imageFile: 'downloading.webp',
+          thumbHash: sampleThumbHash,
+        );
+
+        await pumpThumbnail(
+          tester,
+          const CoverArtThumbnail(imageId: 'image-1', size: 80, cropX: 0),
+          overrides: [createEntryControllerOverride(image)],
+        );
+
+        expect(
+          tester.getSize(find.byType(CoverArtThumbnail)),
+          const Size(80, 80),
+        );
+        expect(find.byType(Image), findsOneWidget);
+        final standIn = tester.widget<Image>(find.byType(Image));
+        expect(
+          standIn.image,
+          ThumbHashImage(ThumbHash.fromBase64(sampleThumbHash)),
+        );
+        expect(standIn.fit, BoxFit.cover);
+        expect(standIn.alignment, Alignment.centerLeft);
+      });
+
+      testWidgets('keeps the square empty for a hash that does not parse', (
+        tester,
+      ) async {
+        final image = buildJournalImage(
+          imageFile: 'downloading.webp',
+          thumbHash: corruptThumbHash,
+        );
+
+        await pumpThumbnail(
+          tester,
+          const CoverArtThumbnail(imageId: 'image-1', size: 80),
+          overrides: [createEntryControllerOverride(image)],
+        );
+
+        expect(find.byType(Image), findsNothing);
+        expect(find.byType(ThumbHashBackedImage), findsNothing);
+        expect(
+          tester.getSize(find.byType(CoverArtThumbnail)),
+          const Size(80, 80),
+        );
+      });
+
+      testWidgets('lays the picture over the stand-in once the file lands', (
+        tester,
+      ) async {
+        final image = buildJournalImage(thumbHash: sampleThumbHash);
+
+        await pumpThumbnail(
+          tester,
+          const CoverArtThumbnail(imageId: 'image-1', size: 80),
+          overrides: [createEntryControllerOverride(image)],
+        );
+        expect(find.byType(Image), findsOneWidget);
+
+        createImageFile(image);
+        // The test-environment poll looks every 100 ms.
+        await tester.pump(const Duration(milliseconds: 150));
+
+        final providers = tester
+            .widgetList<Image>(find.byType(Image))
+            .map((image) => image.image)
+            .toList();
+        expect(providers.whereType<ThumbHashImage>(), hasLength(1));
+        expect(providers.whereType<ResizeImage>(), hasLength(1));
+        final backed = tester.widget<ThumbHashBackedImage>(
+          find.byType(ThumbHashBackedImage),
+        );
+        expect(backed.key, ValueKey(getFullImagePath(image)));
+      });
+    });
+
     group('when entry is not a JournalImage', () {
       testWidgets('renders fallback SizedBox for JournalEntry', (tester) async {
         final now = DateTime(2025, 12, 31, 12);
@@ -256,9 +344,7 @@ void main() {
           overrides: [createEntryControllerOverride(textEntry)],
         );
 
-        // Should NOT render ClipRect/FittedBox/Image
-        expect(find.byType(ClipRect), findsNothing);
-        expect(find.byType(FittedBox), findsNothing);
+        // Should NOT render an Image
         expect(find.byType(Image), findsNothing);
 
         // Should render a fallback SizedBox with correct dimensions
@@ -302,7 +388,6 @@ void main() {
         );
 
         // Should NOT render image widgets
-        expect(find.byType(ClipRect), findsNothing);
         expect(find.byType(Image), findsNothing);
 
         // Should render fallback SizedBox
@@ -332,8 +417,6 @@ void main() {
         );
 
         // Should NOT render image widgets since file doesn't exist
-        expect(find.byType(ClipRect), findsNothing);
-        expect(find.byType(FittedBox), findsNothing);
         expect(find.byType(Image), findsNothing);
 
         // Should render fallback SizedBox
@@ -360,7 +443,6 @@ void main() {
 
           // File doesn't exist, so should show fallback
           expect(find.byType(Image), findsNothing);
-          expect(find.byType(ClipRect), findsNothing);
         },
       );
     });
@@ -444,8 +526,8 @@ void main() {
         expect(find.byType(Image), findsOneWidget);
 
         // Alignment should reflect new cropX
-        final fittedBox = tester.widget<FittedBox>(find.byType(FittedBox));
-        expect(fittedBox.alignment, Alignment.centerRight);
+        final picture = tester.widget<Image>(find.byType(Image));
+        expect(picture.alignment, Alignment.centerRight);
       });
 
       testWidgets('handles switching from existing to non-existing file', (

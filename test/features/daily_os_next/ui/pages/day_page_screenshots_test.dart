@@ -51,6 +51,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/editor_state_service.dart';
+import 'package:lotti/widgets/media/thumb_hash_image.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:lotti/widgets/settings/settings_picker_field.dart';
 import 'package:mocktail/mocktail.dart';
@@ -1119,13 +1120,16 @@ void _expectAgendaThumbnails(WidgetTester tester) {
       _manualWorld.coverImageById(thumbnail.imageId),
     );
   }
-  expect(
-    find.descendant(
-      of: agendaThumbnails,
-      matching: find.byType(Image),
-    ),
-    findsNWidgets(8),
-  );
+  // Every thumbnail shows its picture (the file is installed) over its
+  // ThumbHash stand-in: one of each per slot.
+  final images = tester
+      .widgetList<Image>(
+        find.descendant(of: agendaThumbnails, matching: find.byType(Image)),
+      )
+      .map((image) => image.image)
+      .toList();
+  expect(images.whereType<ResizeImage>(), hasLength(8));
+  expect(images.whereType<ThumbHashImage>(), hasLength(8));
 }
 
 void main() {
