@@ -159,7 +159,6 @@ class _SummaryTag extends StatelessWidget {
     this.labelColor,
     this.tintColor,
     this.onTap,
-    super.key,
   });
 
   final String label;
@@ -344,15 +343,26 @@ class _EstimateSummaryTag extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _SummaryTag(
+    final value = formatRangeDuration(estimate);
+    // Sighted readers get the timer glyph to say what the number is; a screen
+    // reader gets the word instead, so the tag is announced as
+    // "Estimate: 1h 30m" rather than a bare duration.
+    return Semantics(
       key: const ValueKey('task-estimate-summary-tag'),
-      label: formatRangeDuration(estimate),
-      leading: Icon(
-        LottiIcons.timer,
-        size: kTaskChipGlyphSize,
-        color: TaskShowcasePalette.mediumText(context),
-      ),
+      container: true,
+      excludeSemantics: true,
+      button: onTap != null,
+      label: '${context.messages.taskMetaEstimateLabel}: $value',
       onTap: onTap,
+      child: _SummaryTag(
+        label: value,
+        leading: Icon(
+          LottiIcons.timer,
+          size: kTaskChipGlyphSize,
+          color: TaskShowcasePalette.mediumText(context),
+        ),
+        onTap: onTap,
+      ),
     );
   }
 }

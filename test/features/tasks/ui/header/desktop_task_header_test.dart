@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -1039,6 +1040,28 @@ void main() {
       await tester.pump();
 
       expect(opened, 1);
+    });
+
+    testWidgets('announces the tag as the estimate, not a bare duration', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await _pumpDesktop(
+        tester,
+        DesktopTaskHeader(
+          data: _fixture(estimate: const Duration(hours: 1, minutes: 30)),
+          onTitleSaved: (_) {},
+          onOpenDetails: () {},
+        ),
+      );
+
+      final node = tester.getSemantics(estimateTag);
+      // One node, one sentence: the glyph carries "estimate" for sighted
+      // readers, the label carries it for everyone else.
+      expect(node.label, 'Estimate: 1h 30m');
+      expect(node.flagsCollection.isButton, isTrue);
+      expect(node.getSemanticsData().hasAction(SemanticsAction.tap), isTrue);
+      handle.dispose();
     });
 
     testWidgets('omits the tag when the estimate is unset or zero', (
