@@ -68,5 +68,29 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Row'), findsNothing);
     });
+
+    testWidgets('a row without a callback stays disabled and leaves the menu '
+        'open', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          DesignSystemContextMenuAnchor(
+            items: const [DesignSystemContextMenuItem(label: 'Inert')],
+            builder: (context, {required toggle, required isOpen}) =>
+                TextButton(onPressed: toggle, child: const Text('Open')),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+      final row = tester.widget<DesignSystemContextMenu>(
+        find.byType(DesignSystemContextMenu),
+      );
+      expect(row.items.single.onTap, isNull);
+
+      await tester.tap(find.text('Inert'));
+      await tester.pumpAndSettle();
+      expect(find.byType(DesignSystemContextMenu), findsOneWidget);
+    });
   });
 }

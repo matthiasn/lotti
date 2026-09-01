@@ -40,6 +40,8 @@ flowchart TD
   JPC --> Query["Tasks + Logbook queries<br/>category IN (locked)"]
   Shell --> Rail["Rail: Tasks + Logbook only,<br/>no Settings / saved filters /<br/>activity / contact band"]
   Shell --> Reset["setIndex(tasks) if needed,<br/>setTabRoot(tasks), setTabRoot(journal)"]
+  Shell --> Guard["NavService.allowedTabIndices<br/>= {tasks, journal}"]
+  Guard --> Refused["tapIndex / setIndex / beamToNamed<br/>into a hidden tab: refused"]
 ```
 
 # The model is a set on purpose
@@ -66,9 +68,13 @@ Restart is therefore always an exit.
 - **`JournalPageController`** reads `_effectiveCategoryIds` — the raw selection
   clamped by `restrict` — for its query params and for the `selectedCategoryIds`
   it emits, and re-queries on every lockdown change. The **raw** selection is
-  what gets persisted, so a demo never rewrites the user's own filter. Both the
-  Tasks tab and the Logbook tab are instances of this controller, which is why
-  they are the two tabs allowed to stay.
+  what gets persisted, and while lockdown is active the setter behind
+  `_selectedCategoryIds` **drops category writes** (chip toggles, the filter
+  sheet's Apply, saved-filter activation) — the sheet is seeded from the
+  effective scope and would otherwise write it back as the raw value on Apply.
+  Persisted loads bypass the guard. So exiting lockdown restores exactly the
+  filter the user had. Both the Tasks tab and the Logbook tab are instances of
+  this controller, which is why they are the two tabs allowed to stay.
 - **`EntitiesCacheService.sortedCategories`** drops categories outside the
   locked set while `lockedCategoryIds` is non-empty. `getCategoryById` is
   **not** scoped: the locked category's own content still has to resolve its
@@ -76,10 +82,17 @@ Restart is therefore always an exit.
 - **The desktop shell** keeps only Tasks and Logbook in the rail, strips their
   under-row subtrees (saved filters, the month calendar), and drops Settings,
   the utility row, the activity disclosure and the contact band. On entering
-  lockdown it switches to Tasks if the active tab is not an allowed one and
-  resets both allowed tabs to their roots so no pre-lockdown detail pane
-  survives. The content stack itself is untouched — only the active index and
-  the rail change — so leaving lockdown restores every tab's state.
+  lockdown it sets `NavService.allowedTabIndices` to the two allowed tabs,
+  switches to Tasks if the active tab is not an allowed one and resets both
+  allowed tabs to their roots so no pre-lockdown detail pane survives. The
+  content stack itself is untouched — only the active index and the rail
+  change — so leaving lockdown (which clears the guard) restores every tab's
+  state.
+- **`NavService.allowedTabIndices`** is the one seam that keeps *every* route
+  into a hidden tab shut for the whole active period — keyboard shortcuts, the
+  command palette, the desktop menu and path-based `beamToNamed` all end in
+  `_setIndexInternal` or `beamToNamed`, both of which refuse a disallowed tab.
+  The rail cut alone would only have covered sidebar taps.
 - **The logo menu** lists all active categories while inactive, and **only the
   locked one plus the exit row** while active: the exit menu must not spell out
   what it is hiding.

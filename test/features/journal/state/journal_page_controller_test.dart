@@ -5208,6 +5208,53 @@ void main() {
       });
     });
 
+    test('category edits made while locked down do not touch the raw '
+        'selection, so exiting restores the pre-lockdown filter', () {
+      fakeAsync((async) {
+        final controller = container.read(
+          journalPageControllerProvider(true).notifier,
+        );
+        settle(async);
+        unawaited(
+          controller.applyBatchFilterUpdate(categoryIds: {'health'}),
+        );
+        settle(async);
+
+        container
+            .read(lockdownControllerProvider.notifier)
+            .lockToCategory('work');
+        settle(async);
+        // The filter sheet re-applies what it was seeded with (the effective
+        // scope) on Apply, and chips toggle — neither may leak into the raw
+        // selection.
+        unawaited(
+          controller.applyBatchFilterUpdate(
+            categoryIds: {'work'},
+            statuses: {'OPEN'},
+          ),
+        );
+        unawaited(controller.toggleSelectedCategoryIds('other'));
+        settle(async);
+        expect(
+          container
+              .read(journalPageControllerProvider(true))
+              .selectedCategoryIds,
+          {'work'},
+        );
+
+        container.read(lockdownControllerProvider.notifier).clear();
+        settle(async);
+
+        expect(
+          container
+              .read(journalPageControllerProvider(true))
+              .selectedCategoryIds,
+          {'health'},
+        );
+        expect(lastTasksCategoryIds(), ['health']);
+      });
+    });
+
     test(
       'under lockdown an empty selection never expands to all categories',
       () {

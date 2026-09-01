@@ -87,8 +87,22 @@ class JournalPageController extends Notifier<JournalPageState>
   String _query = '';
   bool _showPrivateEntries = false;
   final bool _showTasks;
+  Set<String> _rawCategoryIds = {};
+
   @override
-  Set<String> _selectedCategoryIds = {};
+  Set<String> get _selectedCategoryIds => _rawCategoryIds;
+
+  /// Lockdown owns the category axis: while it is active, category edits
+  /// (chips, the filter sheet's Apply, saved filters) are dropped so the raw
+  /// selection — the one persisted and shown again on exit — survives the
+  /// demo untouched. The applied filter is [_effectiveCategoryIds] either
+  /// way, so nothing the user could pick would change what is shown.
+  @override
+  set _selectedCategoryIds(Set<String> value) {
+    if (ref.read(lockdownControllerProvider).isActive) return;
+    _rawCategoryIds = value;
+  }
+
   @override
   Set<String> _selectedProjectIds = {};
   @override
@@ -562,7 +576,9 @@ class JournalPageController extends Notifier<JournalPageState>
       _selectedPriorities = {};
     }
 
-    _selectedCategoryIds = tasksFilter.selectedCategoryIds;
+    // Persisted state is the raw selection by definition — it bypasses the
+    // lockdown guard on the setter.
+    _rawCategoryIds = tasksFilter.selectedCategoryIds;
     _emitState();
     await refreshQuery();
   }

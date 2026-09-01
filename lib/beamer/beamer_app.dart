@@ -626,6 +626,12 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     // Reset toast guard on login, and listen for login-gate events from outbox.
     ref
       ..listen(lockdownControllerProvider, (prev, next) {
+        // The guard on NavService is what keeps keyboard shortcuts, the
+        // command palette and path-based beams off hidden tabs for the whole
+        // active period; the rail cut alone only covers sidebar taps.
+        navService.allowedTabIndices = next.isActive
+            ? {0, navService.journalIndex}
+            : null;
         if (next.isActive) _enterLockdown();
       })
       ..listen(loginStateStreamProvider, (prev, next) {

@@ -288,6 +288,41 @@ void main() {
       await getIt.reset();
     });
 
+    test('allowedTabIndices refuses every route into a hidden tab', () async {
+      final navService = getIt<NavService>()..tapIndex(0);
+      addTearDown(() => navService.allowedTabIndices = null);
+      final journalIndex = navService.journalIndex;
+      final settingsIndex = navService.settingsIndex;
+
+      navService.allowedTabIndices = {0, journalIndex};
+      expect(navService.isTabAllowed(settingsIndex), isFalse);
+
+      // Sidebar / keyboard / palette all end in tapIndex or setIndex.
+      navService.tapIndex(settingsIndex);
+      expect(navService.index, 0);
+      navService.setIndex(settingsIndex);
+      expect(navService.index, 0);
+
+      // Path-based navigation must not leak a foreign route into the
+      // current tab's delegate either.
+      beamToNamed('/settings/advanced');
+      expect(navService.index, 0);
+      expect(navService.currentPath, isNot(contains('/settings')));
+
+      // Allowed tabs still work in both directions.
+      beamToNamed('/journal');
+      expect(navService.index, journalIndex);
+      navService.tapIndex(0);
+      expect(navService.index, 0);
+
+      // Lifting the guard restores everything.
+      navService
+        ..allowedTabIndices = null
+        ..tapIndex(settingsIndex);
+      expect(navService.index, settingsIndex);
+      navService.tapIndex(0);
+    });
+
     test('tap all tabs', () async {
       final navService = getIt<NavService>();
 

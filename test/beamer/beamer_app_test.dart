@@ -4907,6 +4907,8 @@ void main() {
         expect(find.text('Projects'), findsNothing);
         expect(find.byType(ContactSupportRow), findsNothing);
         expect(find.byType(SidebarSavedTaskFilters), findsNothing);
+        // The navigation guard covers shortcuts, the palette and path beams.
+        verify(() => mockNavService.allowedTabIndices = {0, 5}).called(1);
         // Both content tabs were reset to their roots.
         verify(() => mockNavService.setTabRoot(0)).called(1);
         verify(() => mockNavService.setTabRoot(5)).called(1);
@@ -4923,6 +4925,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(container.read(lockdownControllerProvider).isActive, isFalse);
+        verify(() => mockNavService.allowedTabIndices = null).called(1);
         expect(find.text('Settings'), findsOneWidget);
         expect(find.text('Habits'), findsOneWidget);
         expect(find.byType(ContactSupportRow), findsOneWidget);

@@ -22,7 +22,8 @@ typedef DesignSystemContextMenuTriggerBuilder =
 /// text chip. `DesignSystemContextMenuButton` is the ready-made `⋯` trigger
 /// on top of it.
 ///
-/// Each item's tap closes the menu before firing its callback.
+/// Each enabled item's tap closes the menu before firing its callback; an
+/// item without a callback renders disabled and leaves the menu open.
 class DesignSystemContextMenuAnchor extends StatefulWidget {
   const DesignSystemContextMenuAnchor({
     required this.items,
@@ -87,10 +88,14 @@ class _DesignSystemContextMenuAnchorState
                 iconColor: item.iconColor,
                 isDestructive: item.isDestructive,
                 isSelected: item.isSelected,
-                onTap: () {
-                  _controller.close();
-                  item.onTap?.call();
-                },
+                // A null callback is a disabled row and must stay one; only
+                // a real callback gets the close-then-fire wrapper.
+                onTap: item.onTap == null
+                    ? null
+                    : () {
+                        _controller.close();
+                        item.onTap!();
+                      },
               ),
           ],
         ),
