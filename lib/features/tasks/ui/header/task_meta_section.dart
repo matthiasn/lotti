@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,11 +11,13 @@ import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
 import 'package:lotti/features/tasks/state/task_progress_controller.dart';
 import 'package:lotti/features/tasks/ui/header/task_meta_pickers.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_ai_cost_indicator.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_estimate_progress_bar.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_shared_widgets.dart';
 import 'package:lotti/features/tasks/util/due_date_utils.dart';
@@ -421,21 +421,11 @@ class _DueDateValue extends StatelessWidget {
 }
 
 /// Tracked-of-estimated read-out with the same small progress bar the header
-/// chip used to carry, or "Not set" when the task has no estimate.
+/// estimate tag carries, or "Not set" when the task has no estimate.
 class _TimeValue extends ConsumerWidget {
   const _TimeValue({required this.task});
 
   final Task task;
-
-  /// Formats a duration as plain units ("1h 30m", "45m", "2h") rather than a
-  /// zero-padded clock — see the estimate chip this replaces.
-  static String format(Duration duration) {
-    final hours = duration.inHours;
-    final minutes = duration.inMinutes.remainder(60);
-    if (hours > 0 && minutes > 0) return '${hours}h ${minutes}m';
-    if (hours > 0) return '${hours}h';
-    return '${minutes}m';
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -453,16 +443,10 @@ class _TimeValue extends ConsumerWidget {
         .watch(taskProgressControllerProvider(task.meta.id))
         .value;
     final progress = progressState?.progress ?? Duration.zero;
-    final isOvertime = progress > estimate;
-    final progressValue = estimate.inSeconds > 0
-        ? math.min(progress.inSeconds / estimate.inSeconds, 1).toDouble()
-        : 0.0;
-    final barTrack = isOvertime
-        ? TaskShowcasePalette.error(context).withValues(alpha: 0.2)
-        : TaskShowcasePalette.lowText(context).withValues(alpha: 0.2);
-    final barFill = isOvertime
-        ? TaskShowcasePalette.error(context)
-        : TaskShowcasePalette.success(context);
+    final isOvertime = TaskEstimateProgressBar.isOvertime(
+      tracked: progress,
+      estimate: estimate,
+    );
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -470,8 +454,8 @@ class _TimeValue extends ConsumerWidget {
         Flexible(
           child: Text(
             context.messages.taskEstimateProgressLabel(
-              format(progress),
-              format(estimate),
+              formatRangeDuration(progress),
+              formatRangeDuration(estimate),
             ),
             overflow: TextOverflow.ellipsis,
             style: _valueStyle(context).copyWith(
@@ -482,21 +466,7 @@ class _TimeValue extends ConsumerWidget {
           ),
         ),
         SizedBox(width: tokens.spacing.step3),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(tokens.radii.xs),
-          // The same 36×6 bar the old header estimate chip carried — kept
-          // verbatim so the read-out is visually continuous with what it
-          // replaced (no sizing token matches a 6px bar height).
-          child: SizedBox(
-            width: 36,
-            height: 6,
-            child: LinearProgressIndicator(
-              value: progressValue,
-              backgroundColor: barTrack,
-              color: barFill,
-            ),
-          ),
-        ),
+        TaskEstimateProgressBar(tracked: progress, estimate: estimate),
       ],
     );
   }

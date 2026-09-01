@@ -283,8 +283,20 @@ category is set.
 
 **Metadata is set once and rarely changed, so it no longer wears
 always-visible button-styled chrome.** The summary lane is read-outs only:
-`[status] → [blocked-by?] → [priority] → [due?] → [labels?] → [AI cost?] →
-[Set category?] → Details`.
+`[status] → [blocked-by?] → [priority] → [due?] → [estimate?] → [labels?] →
+[AI cost?] → [Set category?] → Details`.
+
+**The estimate is a read-out in the lane, not only a fly-out row.** "How big
+is this, and how far along?" is answered at the same glance as "when is it
+due?": the tag reads tracked-of-estimated as compact units (`45m of 1h 30m`)
+behind the timer glyph, with the 36×6 `TaskEstimateProgressBar` the
+pre-redesign header chip carried — the same bar `TaskMetaSection`'s Estimate
+row draws, so the two densities never disagree. Overtime escalates the tag to
+the tinted alert shell, the way an overdue due date does. A null estimate, or
+one under a whole minute (which the units could only render as `0m`), leaves
+no trace, the way a missing due date does. The tracked figure
+comes from `taskProgressControllerProvider` through the connector, read with
+`.value` so a time-entry write recomputes without blanking the tag.
 
 **The AI cost sits in that lane, not behind a panel.** What the machine has
 cost on this task is readable at the same glance as its status, through the
@@ -302,7 +314,7 @@ Every read-out wears `DsPillShape.tag` — the tight `radii.xs` (4) corner —
 so a fact can never be mistaken for the fully-rounded filter/action pills
 elsewhere on the page. The one lever in the lane, the **Details** trigger,
 keeps the fully-rounded interactive pill shape. Tapping any **editable**
-read-out — status, priority, due, labels — opens the same fly-out, so a tap on
+read-out — status, priority, due, estimate, labels — opens the same fly-out, so a tap on
 the fact lands on its editor. The AI cost is the exception in both directions:
 it has no editor, and its tap opens the details for the fuller reading, which
 is why it stands down to a plain read-out once the column is showing them.

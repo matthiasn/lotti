@@ -124,6 +124,7 @@ DesktopTaskHeaderData _fixtureData({
   bool showDueDate = true,
   DesktopTaskHeaderDueUrgency dueUrgency = DesktopTaskHeaderDueUrgency.normal,
   bool showLabels = true,
+  bool showEstimate = true,
 }) {
   return DesktopTaskHeaderData(
     title: title,
@@ -146,6 +147,7 @@ DesktopTaskHeaderData _fixtureData({
             urgency: dueUrgency,
           )
         : null,
+    estimate: showEstimate ? const Duration(hours: 1, minutes: 30) : null,
     labels: showLabels
         ? [
             _label(id: 'bug-fix', name: 'Bug fix', color: '#1CA3E3'),

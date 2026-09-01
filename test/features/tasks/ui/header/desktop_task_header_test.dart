@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -104,6 +105,8 @@ DesktopTaskHeaderData _fixture({
   DesktopTaskHeaderProject? project,
   DesktopTaskHeaderCategory? category,
   DesktopTaskHeaderDueDate? dueDate,
+  Duration? estimate,
+  Duration trackedTime = Duration.zero,
   List<LabelDefinition> labels = const [],
 }) {
   final createdAt = DateTime.utc(2026);
@@ -117,6 +120,8 @@ DesktopTaskHeaderData _fixture({
     project: project,
     category: category,
     dueDate: dueDate,
+    estimate: estimate,
+    trackedTime: trackedTime,
     labels: labels,
   );
 }
@@ -976,6 +981,183 @@ void main() {
         expect(lane.runSpacing, greaterThan(lane.spacing));
       },
     );
+  });
+
+  group('DesktopTaskHeader — estimate read-out', () {
+    final estimateTag = find.byKey(const ValueKey('task-estimate-summary-tag'));
+
+    testWidgets(
+      'shows the estimate as an informational tag between due date and labels',
+      (tester) async {
+        await _pumpDesktop(
+          tester,
+          DesktopTaskHeader(
+            data: _fixture(
+              dueDate: _dueFixture,
+              estimate: const Duration(hours: 1, minutes: 30),
+              labels: _labelFixtures,
+            ),
+            onTitleSaved: (_) {},
+            onOpenDetails: () {},
+          ),
+        );
+
+        // Visible at a glance, without opening the fly-out.
+        expect(find.text('0m of 1h 30m'), findsOneWidget);
+        expect(
+          tester
+              .widget<DsPill>(
+                find.ancestor(
+                  of: find.text('0m of 1h 30m'),
+                  matching: find.byType(DsPill),
+                ),
+              )
+              .shape,
+          DsPillShape.tag,
+          reason: 'a fact wears the tag shape, like the due date beside it',
+        );
+
+        final due = tester.getTopLeft(find.text('Due: Apr 1, 2026'));
+        final estimate = tester.getTopLeft(find.text('0m of 1h 30m'));
+        final labels = tester.getTopLeft(find.text('Bug fix, Release blocker'));
+        expect(estimate.dx, greaterThan(due.dx));
+        expect(labels.dx, greaterThan(estimate.dx));
+      },
+    );
+
+    testWidgets('tapping the estimate tag opens the details fly-out', (
+      tester,
+    ) async {
+      var opened = 0;
+      await _pumpDesktop(
+        tester,
+        DesktopTaskHeader(
+          data: _fixture(estimate: const Duration(minutes: 45)),
+          onTitleSaved: (_) {},
+          onOpenDetails: () => opened++,
+        ),
+      );
+
+      await tester.tap(find.text('0m of 45m'));
+      await tester.pump();
+
+      expect(opened, 1);
+    });
+
+    testWidgets('announces the tag as the estimate, not a bare duration', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await _pumpDesktop(
+        tester,
+        DesktopTaskHeader(
+          data: _fixture(
+            estimate: const Duration(hours: 1, minutes: 30),
+            trackedTime: const Duration(minutes: 45),
+          ),
+          onTitleSaved: (_) {},
+          onOpenDetails: () {},
+        ),
+      );
+
+      final node = tester.getSemantics(estimateTag);
+      // One node, one sentence: the glyph carries "estimate" for sighted
+      // readers, the label carries it for everyone else.
+      expect(node.label, 'Time tracked: 45m of 1h 30m estimated');
+      expect(node.flagsCollection.isButton, isTrue);
+      expect(node.getSemanticsData().hasAction(SemanticsAction.tap), isTrue);
+      handle.dispose();
+    });
+
+    testWidgets('reads tracked time against the estimate, with the bar', (
+      tester,
+    ) async {
+      await _pumpDesktop(
+        tester,
+        DesktopTaskHeader(
+          data: _fixture(
+            estimate: const Duration(hours: 2),
+            trackedTime: const Duration(minutes: 30),
+          ),
+          onTitleSaved: (_) {},
+        ),
+      );
+
+      expect(find.text('30m of 2h'), findsOneWidget);
+      final bar = tester.widget<LinearProgressIndicator>(
+        find.descendant(
+          of: estimateTag,
+          matching: find.byType(LinearProgressIndicator),
+        ),
+      );
+      expect(bar.value, 0.25);
+      // Within the estimate: the neutral filled shell, green fill.
+      final pill = tester.widget<DsPill>(
+        find.descendant(of: estimateTag, matching: find.byType(DsPill)),
+      );
+      expect(pill.variant, DsPillVariant.filled);
+      final context = tester.element(find.text('30m of 2h'));
+      expect(bar.color, TaskShowcasePalette.success(context));
+    });
+
+    testWidgets('overtime escalates to the alert shell, like an overdue date', (
+      tester,
+    ) async {
+      await _pumpDesktop(
+        tester,
+        DesktopTaskHeader(
+          data: _fixture(
+            estimate: const Duration(hours: 1),
+            trackedTime: const Duration(hours: 1, minutes: 20),
+          ),
+          onTitleSaved: (_) {},
+        ),
+      );
+
+      expect(find.text('1h 20m of 1h'), findsOneWidget);
+      final context = tester.element(find.text('1h 20m of 1h'));
+      final pill = tester.widget<DsPill>(
+        find.descendant(of: estimateTag, matching: find.byType(DsPill)),
+      );
+      expect(pill.variant, DsPillVariant.tinted);
+      expect(pill.color, TaskShowcasePalette.errorInk(context));
+      final bar = tester.widget<LinearProgressIndicator>(
+        find.descendant(
+          of: estimateTag,
+          matching: find.byType(LinearProgressIndicator),
+        ),
+      );
+      // The bar saturates rather than overflowing its 36px.
+      expect(bar.value, 1);
+      expect(bar.color, TaskShowcasePalette.error(context));
+    });
+
+    testWidgets('omits the tag when the estimate is unset or under a minute', (
+      tester,
+    ) async {
+      // The units are whole minutes, so a 30-second estimate would read
+      // "0m of 0m" — the tag waits until it has something to state.
+      for (final estimate in <Duration?>[
+        null,
+        Duration.zero,
+        const Duration(seconds: 30),
+      ]) {
+        await _pumpDesktop(
+          tester,
+          DesktopTaskHeader(
+            data: _fixture(estimate: estimate),
+            onTitleSaved: (_) {},
+            onOpenDetails: () {},
+          ),
+        );
+
+        // No placeholder either: like a missing due date, an unset estimate
+        // leaves no trace in the lane.
+        expect(estimateTag, findsNothing, reason: 'estimate=$estimate');
+        expect(find.textContaining('0m'), findsNothing, reason: '$estimate');
+        expect(find.text('Open'), findsOneWidget);
+      }
+    });
   });
 
   group('DesktopTaskHeader — label compression', () {

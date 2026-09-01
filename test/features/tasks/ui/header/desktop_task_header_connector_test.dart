@@ -490,6 +490,60 @@ void main() {
     );
   });
 
+  group('DesktopTaskHeaderConnector — estimate in the summary lane', () {
+    final estimateTag = find.byKey(const ValueKey('task-estimate-summary-tag'));
+
+    testWidgets('shows the task estimate without opening the fly-out', (
+      tester,
+    ) async {
+      final task = buildTask(estimate: const Duration(hours: 2));
+
+      await tester.pumpWidget(pumpConnector(task: task));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(estimateTag, findsOneWidget);
+      expect(find.text('0m of 2h'), findsOneWidget);
+      expect(find.byType(TaskMetaSection), findsNothing);
+    });
+
+    testWidgets('reads the tracked time from the progress controller', (
+      tester,
+    ) async {
+      final task = buildTask(estimate: const Duration(hours: 2));
+
+      await tester.pumpWidget(
+        pumpConnector(
+          task: task,
+          progress: const TaskProgressState(
+            progress: Duration(minutes: 45),
+            estimate: Duration(hours: 2),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(
+        find.descendant(of: estimateTag, matching: find.text('45m of 2h')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('shows no estimate tag for a task without an estimate', (
+      tester,
+    ) async {
+      final task = buildTask();
+
+      await tester.pumpWidget(pumpConnector(task: task));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(estimateTag, findsNothing);
+      expect(find.byType(DesktopTaskHeader), findsOneWidget);
+    });
+  });
+
   group('DesktopTaskHeaderConnector — AI cost in the summary lane', () {
     testWidgets('shows the cost beside the status once AI has run', (
       tester,
@@ -615,7 +669,8 @@ void main() {
         expect(find.text('Status'), findsOneWidget);
         expect(find.text('Priority'), findsOneWidget);
         expect(find.text('Estimate'), findsOneWidget);
-        expect(find.text('0m of 2h'), findsOneWidget);
+        // Once in the fly-out's Estimate row, once in the header lane.
+        expect(find.text('0m of 2h'), findsNWidgets(2));
       },
     );
 

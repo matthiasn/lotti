@@ -225,7 +225,11 @@ is measured in the *painted* style: tabular figures change digit advance, and
 measuring without them clips the payload.
 
 Freshness is a glyph **and** a word, never colour alone; the full sentence lives
-in the tooltip. With automation on and nothing pending the line reads "Updates
+in the tooltip. **A visible countdown is itself proof the summary is behind**:
+`AgentAutomationRow` derives one outdated flag — the caller's `isStale` OR a
+ticking countdown — and the glyph, word and tooltip all read that flag, so the
+band never says "Up to date" beside "Next update in …", even when the caller's
+staleness watermark has not caught up with the scheduled wake. With automation on and nothing pending the line reads "Updates
 on changes", so flipping the switch never leaves a hole that resizes
 the card. The whole switch row is the interaction target — tapping the label
 toggles the setting — on the band's shared `spacing.step8` minimum; the switch's
