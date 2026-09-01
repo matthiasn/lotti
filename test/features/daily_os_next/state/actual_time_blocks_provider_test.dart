@@ -1,10 +1,19 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/rating_data.dart';
 import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/health_import.dart';
+import 'package:lotti/logic/signals/health_signal_refresh_service.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/entities_cache_service.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../../../mocks/mocks.dart';
 import 'actual_time_blocks_provider_test_helpers.dart';
 
 void main() {
@@ -276,6 +285,262 @@ void main() {
       );
 
       expect(blocks, isEmpty);
+    });
+
+    // An imported workout has no text, no category and no linked task, so it
+    // used to fall through every fallback and print its own id on the lane.
+    test('titles an imported workout by its activity, in either spelling', () {
+      final day = DateTime(2026, 5, 27);
+
+      final blocks = actualTimeBlocksForEntries(
+        entries: [
+          hWorkout(id: 'walk', day: day, startHour: 7),
+          hWorkout(
+            id: 'strength',
+            day: day,
+            startHour: 18,
+            workoutType: 'functionalStrengthTraining',
+          ),
+        ],
+        links: const [],
+        linkedFromById: const {},
+        categoryById: (_) => null,
+      );
+
+      expect(blocks.map((b) => b.title), [
+        'Walking',
+        'Functional Strength Training',
+      ]);
+      expect(blocks.first.taskId, isNull);
+      expect(blocks.first.duration, const Duration(minutes: 45));
+      expect(blocks.first.category.name, isEmpty);
+    });
+
+    test('a workout the user annotated keeps the annotation as its title', () {
+      final day = DateTime(2026, 5, 27);
+
+      final blocks = actualTimeBlocksForEntries(
+        entries: [
+          hWorkout(
+            id: 'walk',
+            day: day,
+            startHour: 7,
+            text: 'Morning walk\nround the lake',
+          ),
+        ],
+        links: const [],
+        linkedFromById: const {},
+        categoryById: (_) => null,
+      );
+
+      expect(blocks.single.title, 'Morning walk');
+    });
+
+    test('a workout without an activity falls through to the id', () {
+      final day = DateTime(2026, 5, 27);
+
+      final blocks = actualTimeBlocksForEntries(
+        entries: [
+          hWorkout(id: 'blank', day: day, startHour: 7, workoutType: ''),
+        ],
+        links: const [],
+        linkedFromById: const {},
+        categoryById: (_) => null,
+      );
+
+      expect(blocks.single.title, 'blank');
+    });
+  });
+
+  group('dailyOsActualTimeUpdateProvider', () {
+    test('actualTimelineUpdateBatches drops empty batches', () async {
+      final batches = await actualTimelineUpdateBatches(
+        Stream.fromIterable([
+          <String>{},
+          {'entry-1'},
+          <String>{},
+          {'entry-2', 'entry-3'},
+        ]),
+      ).toList();
+
+      expect(batches, [
+        {'entry-1'},
+        {'entry-2', 'entry-3'},
+      ]);
+    });
+
+    test(
+      'bridges the registered notification stream, empties dropped',
+      () async {
+        final notifications = MockUpdateNotifications();
+        when(() => notifications.updateStream).thenAnswer(
+          (_) => Stream.fromIterable([
+            <String>{},
+            {'entry-1'},
+          ]),
+        );
+        getIt.registerSingleton<UpdateNotifications>(notifications);
+        addTearDown(getIt.reset);
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+        // autoDispose: without a live listener the provider is torn down
+        // between the read and the first emission.
+        final subscription = container.listen(
+          dailyOsActualTimeUpdateProvider,
+          (_, _) {},
+        );
+        addTearDown(subscription.close);
+
+        final first = await container.read(
+          dailyOsActualTimeUpdateProvider.future,
+        );
+
+        expect(first, {'entry-1'});
+      },
+    );
+  });
+
+  group('dailyOsActualTimeBlocksProvider', () {
+    final day = DateTime(2026, 5, 27);
+    late MockJournalDb db;
+
+    setUp(() {
+      db = MockJournalDb();
+      final walk = hWorkout(id: 'walk', day: day, startHour: 7);
+      when(
+        () => db.sortedCalendarEntries(
+          rangeStart: day,
+          rangeEnd: day.add(const Duration(days: 1)),
+        ),
+      ).thenAnswer((_) async => [walk]);
+      when(
+        () => db.basicLinksForEntryIds({walk.meta.id}),
+      ).thenAnswer((_) async => const []);
+    });
+
+    // Workouts reach the journal only through the health import, and this
+    // lane used to wait for a dashboard to ask for one.
+    test('nudges the workout importer and projects the day', () async {
+      final healthImport = MockHealthImport();
+      when(
+        healthImport.getWorkoutsHealthDataDelta,
+      ).thenAnswer((_) async => const HealthImportResult.imported(0));
+      final container = ProviderContainer(
+        overrides: [
+          journalDbProvider.overrideWithValue(db),
+          healthSignalRefreshServiceProvider.overrideWithValue(
+            HealthSignalRefreshService(healthImport),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final blocks = await container.read(
+        dailyOsActualTimeBlocksProvider(day).future,
+      );
+
+      expect(blocks.single.title, 'Walking');
+      expect(blocks.single.id, 'actual:walk');
+      verify(healthImport.getWorkoutsHealthDataDelta).called(1);
+    });
+
+    test(
+      'projects the day without an importer (desktop, demo worlds)',
+      () async {
+        final container = ProviderContainer(
+          overrides: [
+            journalDbProvider.overrideWithValue(db),
+            healthSignalRefreshServiceProvider.overrideWithValue(null),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final blocks = await container.read(
+          dailyOsActualTimeBlocksProvider(day).future,
+        );
+
+        expect(blocks.single.title, 'Walking');
+      },
+    );
+
+    test(
+      'resolves linked-from entities through the database and categories '
+      'through the cache',
+      () async {
+        final task = hTask(
+          id: 'task-1',
+          title: 'Write release notes',
+          categoryId: 'cat-work',
+          day: day,
+        );
+        final entry = hEntry(
+          id: 'entry-1',
+          day: day,
+          startHour: 9,
+          endHour: 10,
+        );
+        final link = hLink(
+          'l1',
+          from: task.meta.id,
+          to: entry.meta.id,
+          day: day,
+        );
+        when(
+          () => db.sortedCalendarEntries(
+            rangeStart: day,
+            rangeEnd: day.add(const Duration(days: 1)),
+          ),
+        ).thenAnswer((_) async => [entry]);
+        when(
+          () => db.basicLinksForEntryIds({entry.meta.id}),
+        ).thenAnswer((_) async => [link]);
+        when(
+          () => db.getJournalEntitiesForIdsUnordered({task.meta.id}),
+        ).thenAnswer((_) async => [task]);
+        final cache = MockEntitiesCacheService();
+        when(() => cache.getCategoryById('cat-work')).thenReturn(
+          hCategory(id: 'cat-work', name: 'Work', color: '#5ED4B7'),
+        );
+        getIt.registerSingleton<EntitiesCacheService>(cache);
+        addTearDown(getIt.reset);
+        final container = ProviderContainer(
+          overrides: [
+            journalDbProvider.overrideWithValue(db),
+            healthSignalRefreshServiceProvider.overrideWithValue(null),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final blocks = await container.read(
+          dailyOsActualTimeBlocksProvider(day).future,
+        );
+
+        expect(blocks.single.title, 'Write release notes');
+        expect(blocks.single.taskId, 'task-1');
+        expect(blocks.single.category.name, 'Work');
+      },
+    );
+
+    test('a failing importer does not take the lane down', () async {
+      final healthImport = MockHealthImport();
+      when(
+        healthImport.getWorkoutsHealthDataDelta,
+      ).thenThrow(StateError('health store unavailable'));
+      final container = ProviderContainer(
+        overrides: [
+          journalDbProvider.overrideWithValue(db),
+          healthSignalRefreshServiceProvider.overrideWithValue(
+            HealthSignalRefreshService(healthImport),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final blocks = await container.read(
+        dailyOsActualTimeBlocksProvider(day).future,
+      );
+
+      expect(blocks.single.title, 'Walking');
     });
   });
 }

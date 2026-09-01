@@ -145,9 +145,12 @@ class WorkoutObservationsController extends AsyncNotifier<List<Observation>> {
     final config = chartConfig as DashboardWorkoutItem;
 
     // No workout of this type in range -> return empty so the chart shows its
-    // "No data" state rather than a flat row of prefilled zero buckets.
+    // "No data" state rather than a flat row of prefilled zero buckets. Types
+    // are compared across spellings (`WALKING` versus `walking`), the same way
+    // the aggregation below counts them.
     final hasMatchingWorkout = items.whereType<WorkoutEntry>().any(
-      (workout) => workout.data.workoutType == config.workoutType,
+      (workout) =>
+          isSameWorkoutType(workout.data.workoutType, config.workoutType),
     );
     if (!hasMatchingWorkout) return const <Observation>[];
 

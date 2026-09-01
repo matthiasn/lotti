@@ -176,6 +176,29 @@ void main() {
       );
       expect(form.signals.single, anyRun);
     });
+
+    // The picker offers canonical activities; a leaf persisted while rows
+    // were spelled `RUNNING` has to read back as the same signal, or the
+    // editor shows it unchecked and lets a duplicate be added beside it.
+    test('a plugin-era workout leaf reads back canonical', () {
+      final form = HabitFormMapping.fromRule(
+        const AutoCompleteRule.workout(dataType: 'RUNNING'),
+      );
+      expect(form.signals.single, anyRun);
+    });
+
+    test('leaves that name one activity in two spellings collapse', () {
+      final form = HabitFormMapping.fromRule(
+        const AutoCompleteRule.or(
+          rules: [
+            AutoCompleteRule.workout(dataType: 'RUNNING'),
+            AutoCompleteRule.workout(dataType: 'running'),
+            AutoCompleteRule.measurable(dataTypeId: 'water', minimum: 1000),
+          ],
+        ),
+      );
+      expect(form.signals, [anyRun, water]);
+    });
   });
 
   group('round trips', () {

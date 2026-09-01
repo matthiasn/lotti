@@ -263,6 +263,52 @@ void main() {
       },
     );
 
+    // The chart is configured with the catalogue's `walking`; the row was
+    // imported by the upstream plugin as `WALKING`. Before the spellings were
+    // reconciled this rendered "No data" over a week of walks.
+    test('charts a row stored under the plugin spelling', () async {
+      const walkingDurationConfig =
+          DashboardItem.workoutChart(
+                workoutType: 'walking',
+                displayName: 'Walking (time)',
+                color: '#82E6CE',
+                valueType: WorkoutValueType.duration,
+              )
+              as DashboardWorkoutItem;
+
+      when(
+        () => mocks.journalDb.getWorkouts(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer(
+        (_) async => [
+          makeWorkoutEntry(
+            dateFrom: DateTime(2024, 3, 12, 7),
+            dateTo: DateTime(2024, 3, 12, 7, 45),
+            workoutType: 'WALKING',
+          ),
+        ],
+      );
+
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final result = await container.read(
+        workoutObservationsControllerProvider((
+          chartConfig: walkingDurationConfig,
+          rangeStart: rangeStart,
+          rangeEnd: rangeEnd,
+        )).future,
+      );
+
+      expect(result, hasLength(5));
+      expect(
+        result.singleWhere((o) => o.dateTime == DateTime(2024, 3, 12)).value,
+        45,
+      );
+    });
+
     test(
       'guest/demo world (no HealthImport registered): still charts DB data '
       'and skips the device delta fetch',

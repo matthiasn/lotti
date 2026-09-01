@@ -5,7 +5,7 @@ description: The Day page, the anchored voice template, timeline editing, the ca
 resource: ../../../lib/features/daily_os_next/ui
 tags: [daily-os, ui, voice, timeline, onboarding]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-08-02T12:00:00+02:00 }
+generated: { by: claude-code/fable-5, at: 2026-08-31T12:00:00Z }
 stale_after: 2026-10-26
 sources:
   - id: ui
@@ -28,6 +28,10 @@ sources:
     resource: ../../../lib/features/onboarding/model/onboarding_event.dart
     title: Shared onboarding event vocabulary
     last_modified: 2026-08-01
+  - id: actual-lane
+    resource: ../../../lib/features/daily_os_next/state/actual_time_blocks_provider.dart
+    title: The Actual lane's blocks, and the workout nudge behind them
+    last_modified: 2026-08-31
 ---
 
 # The planning modal
@@ -183,6 +187,21 @@ expander that keeps the most recent sessions visible.
 Capture pins it at the top of its column with a date-neutral title for non-today
 dates; the Agenda tab reuses it as the empty-state body under a dashed "No plan
 yet" hint card.
+
+The Day timeline's **Actual** lane is the same recorded time, one block per
+entry, projected by `dailyOsActualTimeBlocksProvider`. Imported workouts count as
+recorded time too. A workout block is titled by its activity — `Walking`,
+`Functional Strength Training`, through `humanWorkoutType` — unless the user
+annotated the entry, in which case the first line of the annotation wins as it
+does for any recording; it stays in the uncategorised grey because a workout
+carries no category. (Before this, a workout fell through every title fallback
+and the lane printed its entry id.) Nothing on this surface used to *import*
+workouts — a walk reached the lane only after some dashboard with a workout
+chart had been opened — so each recompute of the lane now nudges
+`HealthSignalRefreshService.refreshWorkouts()`, fire and forget: the importer
+throttles it to one delta per ten minutes, a failure is logged and swallowed,
+and the journal write a delta produces comes back through the same notification
+stream that triggers the recompute. See [health import](../health_import.md).
 
 ## Task-linked versus standalone
 

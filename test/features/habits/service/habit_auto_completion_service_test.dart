@@ -325,6 +325,50 @@ void main() {
   });
 
   group('journal updates', () {
+    // A workout notifies under its stored type. A rule persisted while rows
+    // were spelled `RUNNING` must still hear a run stored as `running`, and
+    // the read behind it must find that row.
+    test('a plugin-era workout rule hears and reads a canonical run', () {
+      final runHabit = habitFlossing.copyWith(
+        id: 'habit-run',
+        name: 'Go running',
+        autoCompleteRule: const AutoCompleteRule.workout(dataType: 'RUNNING'),
+      );
+      stubHabits([runHabit]);
+      when(
+        () => journalDb.getWorkoutsByType(
+          workoutType: any(named: 'workoutType'),
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer((_) async => const []);
+      run((async) {
+        service.start();
+        async.flushMicrotasks();
+        expect(written, isEmpty);
+
+        // The new run is stored canonically; only that spelling answers.
+        when(
+          () => journalDb.getWorkoutsByType(
+            workoutType: 'running',
+            rangeStart: any(named: 'rangeStart'),
+            rangeEnd: any(named: 'rangeEnd'),
+          ),
+        ).thenAnswer(
+          (_) async => [
+            workoutEntity(
+              DateTime(2026, 8, 8, 7),
+              length: const Duration(minutes: 30),
+            ),
+          ],
+        );
+        updateNotifications.notify({workoutNotification, 'running'});
+        async.elapse(const Duration(seconds: 3));
+      });
+      expect(written, hasLength(1));
+      expect(written.single.habitId, 'habit-run');
+    });
+
     test(
       'a write to a series the rule reads re-evaluates after the debounce',
       () {

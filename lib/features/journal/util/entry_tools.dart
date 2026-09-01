@@ -166,12 +166,9 @@ String entryTextForWorkout(
   bool includeTitle = true,
 }) {
   final duration = data.dateTo.difference(data.dateFrom);
-  final type = data.workoutType;
-  // Capitalize the workout type so the group heading reads as a title
-  // ("Running"), not a bare lowercase word.
-  final heading = type.isEmpty
-      ? type
-      : '${type[0].toUpperCase()}${type.substring(1)}';
+  // The activity as a title ("Running", "Functional Strength Training"), the
+  // same reading the journal card gives it — not a bare identifier.
+  final heading = humanWorkoutType(data.workoutType);
   final title = includeTitle ? '$heading\n' : '';
   final energy = data.energy ?? 0;
 

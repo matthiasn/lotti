@@ -204,6 +204,90 @@ void main() {
     },
   );
 
+  group('workoutEntities across spelling eras', () {
+    final rangeStart = DateTime(2026, 8);
+    final rangeEnd = DateTime(2026, 8, 9);
+
+    void stubSpelling(String spelling, List<JournalEntity> entities) => when(
+      () => journalDb.getWorkoutsByType(
+        workoutType: spelling,
+        rangeStart: any(named: 'rangeStart'),
+        rangeEnd: any(named: 'rangeEnd'),
+      ),
+    ).thenAnswer((_) async => entities);
+
+    // The picker persisted whatever spelling the rows carried at the time, so
+    // a rule keyed `RUNNING` (created against plugin-era rows) must keep
+    // matching once new rows are stored as `running` — and vice versa.
+    test('merges rows stored in either spelling, newest first', () async {
+      final older = workoutEntity(
+        DateTime(2026, 8, 5, 7),
+        length: const Duration(minutes: 30),
+      );
+      final newer = workoutEntity(
+        DateTime(2026, 8, 7, 7),
+        length: const Duration(minutes: 45),
+      );
+      stubWorkouts(const []);
+      stubSpelling('running', [older]);
+      stubSpelling('RUNNING', [newer]);
+
+      final entities = await reader.workoutEntities(
+        workoutType: 'RUNNING',
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+      );
+
+      expect(entities, [newer, older]);
+      for (final spelling in ['running', 'RUNNING']) {
+        verify(
+          () => journalDb.getWorkoutsByType(
+            workoutType: spelling,
+            rangeStart: rangeStart,
+            rangeEnd: rangeEnd,
+          ),
+        ).called(1);
+      }
+    });
+
+    test('a row answering under both spellings counts once', () async {
+      final run = workoutEntity(
+        DateTime(2026, 8, 5, 7),
+        length: const Duration(minutes: 30),
+      );
+      stubWorkouts(const []);
+      stubSpelling('running', [run]);
+      stubSpelling('RUNNING', [run]);
+
+      final entities = await reader.workoutEntities(
+        workoutType: 'running',
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+      );
+
+      expect(entities, [run]);
+    });
+
+    test('a plugin-era rule reads canonical rows through read()', () async {
+      stubWorkouts(const []);
+      final run = workoutEntity(
+        DateTime(2026, 8, 8, 7),
+        length: const Duration(minutes: 30),
+      );
+      stubSpelling('running', [run]);
+
+      final window = await reader.read(
+        rule: const AutoCompleteRule.workout(dataType: 'RUNNING'),
+        reference: reference,
+      );
+
+      // Bucketed under the rule's own key, so the evaluator finds it.
+      expect(window.workoutsByDay['RUNNING'], {
+        todayKey: [(run as WorkoutEntry).data],
+      });
+    });
+  });
+
   test('a rule that needs nothing touches the database not at all', () async {
     final window = await reader.read(
       rule: const AutoCompleteRule.and(rules: []),

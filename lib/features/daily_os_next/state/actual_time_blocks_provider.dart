@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -7,7 +9,9 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/logic/recorded_time.dart';
+import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/signals/health_signal_refresh_service.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
@@ -40,10 +44,20 @@ Stream<Set<String>> actualTimelineUpdateBatches(Stream<Set<String>> updates) {
 /// [dailyOsActualTimeUpdateProvider] signals a change; the heavy lifting
 /// (tombstone/zero-length filtering, linked-from resolution) lives in
 /// [actualTimeBlocksForEntries] via the shared `resolveTimeEntries` core.
+///
+/// Workouts are recorded time too, but they reach the journal only through the
+/// health import, and nothing on this surface used to ask for one — a walk
+/// appeared on the timeline only after some dashboard with a workout chart had
+/// been opened. Each recompute therefore nudges the workout delta, fire and
+/// forget: the importer throttles it, and the journal write it produces comes
+/// back through [dailyOsActualTimeUpdateProvider] to repaint the lane.
 // ignore: specify_nonobvious_property_types
 final dailyOsActualTimeBlocksProvider = FutureProvider.autoDispose
     .family<List<TimeBlock>, DateTime>((ref, date) async {
       ref.watch(dailyOsActualTimeUpdateProvider);
+      unawaited(
+        ref.read(healthSignalRefreshServiceProvider)?.refreshWorkouts(),
+      );
       final db = ref.watch(journalDbProvider);
       final dayStart = date.dayAtMidnight;
       final dayEnd = dayStart.add(const Duration(days: 1));
@@ -152,6 +166,13 @@ String _actualBlockTitle({
   final entryText = entry.entryText?.plainText.trim();
   if (entryText != null && entryText.isNotEmpty) {
     return entryText.split('\n').first.trim();
+  }
+
+  // An imported workout carries no text and no category; its activity is the
+  // title ("Walking"), not the entry id the last fallback would print.
+  if (entry is WorkoutEntry) {
+    final activity = humanWorkoutType(entry.data.workoutType);
+    if (activity.isNotEmpty) return activity;
   }
 
   if (category.name.isNotEmpty) return category.name;

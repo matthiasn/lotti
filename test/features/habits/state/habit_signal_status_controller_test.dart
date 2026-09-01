@@ -137,6 +137,74 @@ void main() {
     });
   });
 
+  group('a workout rule persisted in the plugin-era spelling', () {
+    final runHabit = habitFlossing.copyWith(
+      id: 'run-habit',
+      autoCompleteRule: const AutoCompleteRule.workout(dataType: 'RUNNING'),
+    );
+
+    setUp(() {
+      when(() => cache.getHabitById(runHabit.id)).thenReturn(runHabit);
+      when(
+        () => journalDb.getWorkoutsByType(
+          workoutType: any(named: 'workoutType'),
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer((_) async => const []);
+    });
+
+    // The row notifies under its stored `running`; the rule says `RUNNING`.
+    test('re-reads when a canonically spelled run lands', () {
+      withClock(Clock.fixed(now), () {
+        fakeAsync((async) {
+          final sub = container.listen(
+            habitSignalStatusProvider(runHabit.id),
+            (_, _) {},
+          );
+          async.flushMicrotasks();
+          clearInteractions(journalDb);
+          updates.notify({workoutNotification, 'running'});
+          async.elapse(const Duration(milliseconds: 150));
+          // One query per known spelling of the activity.
+          for (final spelling in ['running', 'RUNNING']) {
+            verify(
+              () => journalDb.getWorkoutsByType(
+                workoutType: spelling,
+                rangeStart: any(named: 'rangeStart'),
+                rangeEnd: any(named: 'rangeEnd'),
+              ),
+            ).called(1);
+          }
+          sub.close();
+        }, initialTime: now);
+      });
+    });
+
+    test('ignores a different activity', () {
+      withClock(Clock.fixed(now), () {
+        fakeAsync((async) {
+          final sub = container.listen(
+            habitSignalStatusProvider(runHabit.id),
+            (_, _) {},
+          );
+          async.flushMicrotasks();
+          clearInteractions(journalDb);
+          updates.notify({workoutNotification, 'WALKING'});
+          async.elapse(const Duration(milliseconds: 150));
+          verifyNever(
+            () => journalDb.getWorkoutsByType(
+              workoutType: any(named: 'workoutType'),
+              rangeStart: any(named: 'rangeStart'),
+              rangeEnd: any(named: 'rangeEnd'),
+            ),
+          );
+          sub.close();
+        }, initialTime: now);
+      });
+    });
+  });
+
   test('an unrelated write does not re-read', () {
     withClock(Clock.fixed(now), () {
       fakeAsync((async) {

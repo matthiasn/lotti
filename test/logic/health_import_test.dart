@@ -2238,13 +2238,97 @@ void main() {
 
       expect(captured.length, 1);
       final workoutData = captured.first as WorkoutData;
-      expect(workoutData.workoutType, 'RUNNING');
+      expect(workoutData.workoutType, 'running');
       expect(workoutData.distance, 5000);
       expect(workoutData.energy, 350);
       expect(workoutData.source, 'apple-watch');
       expect(workoutData.id, 'workout-uuid-1');
       expect(workoutData.dateFrom, dateFrom);
       expect(workoutData.dateTo, dateTo);
+    });
+
+    HealthDataPoint workoutPoint({
+      required HealthWorkoutActivityType activity,
+      String uuid = 'workout-uuid',
+      String sourceId = 'apple-watch',
+      String sourceName = 'Apple Watch',
+    }) => HealthDataPoint(
+      uuid: uuid,
+      value: WorkoutHealthValue(workoutActivityType: activity),
+      type: HealthDataType.WORKOUT,
+      unit: HealthDataUnit.NO_UNIT,
+      dateFrom: DateTime(2024, 3, 1, 8),
+      dateTo: DateTime(2024, 3, 1, 9),
+      sourcePlatform: HealthPlatformType.appleHealth,
+      sourceDeviceId: 'test-device',
+      sourceId: sourceId,
+      sourceName: sourceName,
+    );
+
+    Future<WorkoutData> importSingle(HealthDataPoint point) async {
+      final mobileImport = createMobileHealthImport();
+      stubHealthStore(dataPoints: [point]);
+      await mobileImport.getWorkoutsHealthData(
+        dateFrom: point.dateFrom,
+        dateTo: point.dateTo,
+      );
+      return verify(
+            () => mockPersistenceLogic.createWorkoutEntry(captureAny()),
+          ).captured.single
+          as WorkoutData;
+    }
+
+    // The regression behind "workouts stopped landing in dashboards": the
+    // upstream plugin names activities `FUNCTIONAL_STRENGTH_TRAINING`, while
+    // every stored row, the catalogue and every persisted chart say
+    // `functionalStrengthTraining`. The import is where the two must meet.
+    test('stores the activity under the spelling the dashboards use', () async {
+      final stored = await importSingle(
+        workoutPoint(
+          activity: HealthWorkoutActivityType.FUNCTIONAL_STRENGTH_TRAINING,
+        ),
+      );
+
+      expect(stored.workoutType, 'functionalStrengthTraining');
+    });
+
+    test(
+      "stores the plugin's BIKING as the cycling HealthKit records",
+      () async {
+        final stored = await importSingle(
+          workoutPoint(activity: HealthWorkoutActivityType.BIKING),
+        );
+
+        expect(stored.workoutType, 'cycling');
+      },
+    );
+
+    // Health Connect leaves `sourceId` empty and names the provider package in
+    // `sourceName`; keeping the id verbatim stored Android workouts sourceless.
+    test(
+      'falls back to the source name when the store leaves the id empty',
+      () async {
+        final stored = await importSingle(
+          workoutPoint(
+            activity: HealthWorkoutActivityType.WALKING,
+            sourceId: '',
+            sourceName: 'com.google.android.apps.fitness',
+          ),
+        );
+
+        expect(stored.source, 'com.google.android.apps.fitness');
+      },
+    );
+
+    test('prefers the source id when the store provides one', () async {
+      final stored = await importSingle(
+        workoutPoint(
+          activity: HealthWorkoutActivityType.WALKING,
+          sourceId: 'com.apple.health',
+        ),
+      );
+
+      expect(stored.source, 'com.apple.health');
     });
 
     test('should skip non-workout health values', () async {
@@ -2312,8 +2396,8 @@ void main() {
       ).captured;
 
       expect(captured.length, 2);
-      expect((captured[0] as WorkoutData).workoutType, 'YOGA');
-      expect((captured[1] as WorkoutData).workoutType, 'RUNNING');
+      expect((captured[0] as WorkoutData).workoutType, 'yoga');
+      expect((captured[1] as WorkoutData).workoutType, 'running');
     });
 
     test('reports failed and logs when the health store throws', () async {
@@ -2445,6 +2529,133 @@ void main() {
       expect(mobileImport.workoutImportRunning, false);
     });
 
+    group('throttling', () {
+      /// Runs [body] under fake time with a mobile import whose store answers
+      /// empty, so each delta that reaches the store is one
+      /// `getHealthDataFromTypes` call.
+      void withQuietStore(void Function(FakeAsync async, HealthImport) body) {
+        fakeAsync((async) {
+          final mobileImport = createMobileHealthImport();
+          when(
+            () => mockJournalDb.latestWorkout(),
+          ).thenAnswer((_) async => null);
+          stubHealthStore();
+          // Health Connect's definitive yes: an empty read is then not
+          // followed by the access probe's second `latestWorkout()`, so each
+          // delta that runs is exactly one DB read and one store read.
+          when(
+            () => mockHealthService.hasPermissions(any()),
+          ).thenAnswer((_) async => true);
+          body(async, mobileImport);
+        });
+      }
+
+      /// Store reads since the previous call: mocktail's `verify` consumes
+      /// the invocations it matches, so each call counts only what happened
+      /// after the last one.
+      int newStoreReads() => verify(
+        () => mockHealthService.getHealthDataFromTypes(
+          types: workoutTypes,
+          startTime: any(named: 'startTime'),
+          endTime: any(named: 'endTime'),
+        ),
+      ).callCount;
+
+      // The Daily OS timeline asks for a delta on every journal notification;
+      // without this each note saved would have re-read HealthKit.
+      test('a second delta inside the interval reads nothing', () {
+        withQuietStore((async, mobileImport) {
+          mobileImport.getWorkoutsHealthDataDelta();
+          async.flushMicrotasks();
+
+          HealthImportResult? second;
+          mobileImport.getWorkoutsHealthDataDelta().then((r) => second = r);
+          async.flushMicrotasks();
+
+          expect(second?.status, HealthImportStatus.imported);
+          expect(second?.sampleCount, 0);
+          expect(newStoreReads(), 1);
+          verify(() => mockJournalDb.latestWorkout()).called(1);
+        });
+      });
+
+      test('the interval is HealthImport.workoutDeltaInterval', () {
+        withQuietStore((async, mobileImport) {
+          mobileImport.getWorkoutsHealthDataDelta();
+          async
+            ..flushMicrotasks()
+            ..elapse(
+              HealthImport.workoutDeltaInterval - const Duration(seconds: 1),
+            );
+          mobileImport.getWorkoutsHealthDataDelta();
+          async.flushMicrotasks();
+          expect(newStoreReads(), 1);
+
+          async.elapse(const Duration(seconds: 1));
+          mobileImport.getWorkoutsHealthDataDelta();
+          async.flushMicrotasks();
+          expect(
+            newStoreReads(),
+            1,
+            reason: 'one new read once the interval is up',
+          );
+        });
+      });
+
+      test('records when the run started, not when it finished', () {
+        withQuietStore((async, mobileImport) {
+          final started = clock.now();
+          mobileImport.getWorkoutsHealthDataDelta();
+          async
+            ..flushMicrotasks()
+            ..elapse(const Duration(minutes: 3));
+
+          expect(mobileImport.lastWorkoutDelta, started);
+        });
+      });
+
+      test('a refused overlap does not count as a run', () async {
+        final mobileImport = createMobileHealthImport()
+          ..workoutImportRunning = true;
+
+        await mobileImport.getWorkoutsHealthDataDelta();
+
+        expect(mobileImport.lastWorkoutDelta, isNull);
+      });
+
+      // Deliberate: a failing store must not be hammered once per notification
+      // either. The settings page import below is the way to retry sooner.
+      test('a failed delta still counts as a run', () {
+        fakeAsync((async) {
+          final mobileImport = createMobileHealthImport();
+          when(
+            () => mockJournalDb.latestWorkout(),
+          ).thenThrow(Exception('db down'));
+
+          mobileImport.getWorkoutsHealthDataDelta();
+          async.flushMicrotasks();
+          mobileImport.getWorkoutsHealthDataDelta();
+          async.flushMicrotasks();
+
+          verify(() => mockJournalDb.latestWorkout()).called(1);
+        });
+      });
+
+      test('the user-initiated import is never throttled', () {
+        withQuietStore((async, mobileImport) {
+          mobileImport.getWorkoutsHealthDataDelta();
+          async.flushMicrotasks();
+          mobileImport.getWorkoutsHealthData(
+            dateFrom: DateTime(2024),
+            dateTo: DateTime(2024, 1, 2),
+          );
+          async.flushMicrotasks();
+
+          expect(newStoreReads(), 2);
+        });
+      });
+    });
+
     // The workout-deadlock regression: the guard flag used to be set before an
     // unguarded fetch and cleared only on the line after it, so a throw left it
     // set forever and every later workout import returned early — silently, for
@@ -2470,27 +2681,40 @@ void main() {
       expect(mobileImport.workoutImportRunning, isFalse);
     });
 
-    test('a later delta still runs after an earlier one failed', () async {
-      final mobileImport = createMobileHealthImport();
+    test('a later delta still runs after an earlier one failed', () {
+      fakeAsync((async) {
+        final mobileImport = createMobileHealthImport();
 
-      when(() => mockJournalDb.latestWorkout()).thenThrow(Exception('db down'));
+        when(
+          () => mockJournalDb.latestWorkout(),
+        ).thenThrow(Exception('db down'));
 
-      final first = await mobileImport.getWorkoutsHealthDataDelta();
-      expect(first.status, HealthImportStatus.failed);
-      expect(mobileImport.workoutImportRunning, isFalse);
+        HealthImportResult? first;
+        mobileImport.getWorkoutsHealthDataDelta().then((r) => first = r);
+        async.flushMicrotasks();
+        expect(first?.status, HealthImportStatus.failed);
+        expect(mobileImport.workoutImportRunning, isFalse);
 
-      when(() => mockJournalDb.latestWorkout()).thenAnswer((_) async => null);
-      stubHealthStore();
+        when(() => mockJournalDb.latestWorkout()).thenAnswer((_) async => null);
+        stubHealthStore();
 
-      final second = await mobileImport.getWorkoutsHealthDataDelta();
-      expect(second.status, isNot(HealthImportStatus.failed));
-      verify(
-        () => mockHealthService.getHealthDataFromTypes(
-          types: workoutTypes,
-          startTime: any(named: 'startTime'),
-          endTime: any(named: 'endTime'),
-        ),
-      ).called(1);
+        // A failed run still counts towards the throttle (see the throttling
+        // group); what must not happen is the guard flag wedging the delta
+        // for the rest of the session.
+        async.elapse(HealthImport.workoutDeltaInterval);
+        HealthImportResult? second;
+        mobileImport.getWorkoutsHealthDataDelta().then((r) => second = r);
+        async.flushMicrotasks();
+
+        expect(second?.status, isNot(HealthImportStatus.failed));
+        verify(
+          () => mockHealthService.getHealthDataFromTypes(
+            types: workoutTypes,
+            startTime: any(named: 'startTime'),
+            endTime: any(named: 'endTime'),
+          ),
+        ).called(1);
+      });
     });
 
     test('a failing DB read is logged against the delta sub-domain', () async {

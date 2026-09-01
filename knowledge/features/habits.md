@@ -5,13 +5,13 @@ description: Two record streams reconciled into "what should the user see now" �
 resource: ../../lib/features/habits
 tags: [habits, derivation, streaks, heatmap]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-08-01T15:30:00Z }
+generated: { by: claude-code/fable-5, at: 2026-09-01T12:00:00Z }
 stale_after: 2027-02-22
 sources:
   - id: src
     resource: ../../lib/features/habits
     title: Habits feature source
-    last_modified: 2026-08-31
+    last_modified: 2026-09-01
   - id: definitions
     resource: ../../lib/classes/entity_definitions.dart
     title: HabitDefinition
@@ -282,8 +282,14 @@ Triggers, in order of what actually happens:
 2. **Journal updates.** The engine listens to `UpdateNotifications.updateStream`
    (local *and* sync batches) and matches the tokens `JournalEntity.affectedIds`
    emits — a measurable id, a health data type, a workout type, another
-   habit's id — against each rule's `SignalNeeds`. A hit queues the habit; a
-   2 s debounce collapses an import of many samples into one evaluation.
+   habit's id — against each rule's `SignalNeeds.notificationTokens`. That
+   set is the rule's series verbatim, except that a workout type expands to
+   every spelling its rows may be stored under (`running` and `RUNNING`; see
+   [health import](health_import.md#workout-types-keep-the-forks-spelling)):
+   a workout notifies under its *stored* type, so a rule persisted in one
+   era would otherwise never hear a run stored in the other. The status
+   controller subscribes on the same set. A hit queues the habit; a 2 s
+   debounce collapses an import of many samples into one evaluation.
 3. **Midnight.** A timer to the next local midnight runs a full pass and
    re-arms, so a day whose data was already there is checked off as soon as it
    begins.

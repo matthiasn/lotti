@@ -5,13 +5,13 @@ description: A view layer over journal-backed data — definitions routed to cha
 resource: ../../lib/features/dashboards
 tags: [dashboards, charts, visualization]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T03:45:00Z }
+generated: { by: claude-code/fable-5, at: 2026-08-31T12:00:00Z }
 stale_after: 2027-02-22
 sources:
   - id: src
     resource: ../../lib/features/dashboards
     title: Dashboards feature source
-    last_modified: 2026-08-28
+    last_modified: 2026-08-31
   - id: aggregation
     resource: ../../lib/features/dashboards/state/health_data.dart
     title: Health aggregations — and which day a sample belongs to
@@ -99,6 +99,16 @@ for such an item, and the measurable picker adds it with `AggregationType.none`.
 only the aggregation on the same measurable is therefore a different chart
 identity — drop that component and the new aggregation would render against the
 old one's retained data.
+
+The `workoutType` half of the workout key is Lotti's canonical camelCase
+spelling — `walking`, `functionalStrengthTraining` — which is what the catalogue
+in `dashboard_workout_config.dart`, every persisted `DashboardWorkoutItem` and the
+health import all use. Rows imported by the upstream health plugin before the
+import normalised its spelling say `WALKING` instead; `aggregateWorkoutDailySum`
+and `WorkoutObservationsController` compare through `isSameWorkoutType`, so those
+rows chart too, and the workout detail card's `WorkoutSummary` picks its trend
+charts the same way rather than by a substring of the catalogue key. The
+background is in [health import](health_import.md#workout-types-keep-the-forks-spelling).
 
 **Two of the five can write.** A measurement chart is constructed with
 `enableCreate: true` and opens the capture flow for its data type, and a survey

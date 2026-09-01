@@ -1,6 +1,7 @@
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/logic/health_workout_types.dart';
 import 'package:lotti/logic/signals/signal_day_buckets.dart';
 import 'package:lotti/logic/signals/signal_needs.dart';
 import 'package:lotti/logic/signals/signal_window.dart';
@@ -47,16 +48,36 @@ class SignalReader {
     rangeEnd: rangeEnd,
   );
 
-  /// Workout entities of [workoutType] in the range.
+  /// Workout entities of [workoutType]'s activity in the range, whichever
+  /// spelling era each stored row carries.
+  ///
+  /// The habit picker offered — and rules therefore persisted — whatever
+  /// distinct `subtype` strings existed at the time, and the rows themselves
+  /// changed spelling with the import eras (`running` before #2041 and since
+  /// the canonicalisation, `RUNNING` in between). `workoutsByType` matches by
+  /// SQL equality, so this fans out one query per known spelling
+  /// ([workoutTypeSpellings]) and merges: a rule keyed in either era matches
+  /// rows from both. De-duplicated by entry id, newest first — the same
+  /// contract as the single query.
   Future<List<JournalEntity>> workoutEntities({
     required String workoutType,
     required DateTime rangeStart,
     required DateTime rangeEnd,
-  }) => journalDb.getWorkoutsByType(
-    workoutType: workoutType,
-    rangeStart: rangeStart,
-    rangeEnd: rangeEnd,
-  );
+  }) async {
+    final byId = <String, JournalEntity>{};
+    for (final spelling in workoutTypeSpellings(workoutType)) {
+      final entities = await journalDb.getWorkoutsByType(
+        workoutType: spelling,
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+      );
+      for (final entity in entities) {
+        byId[entity.meta.id] = entity;
+      }
+    }
+    return byId.values.toList(growable: false)
+      ..sort((a, b) => b.meta.dateFrom.compareTo(a.meta.dateFrom));
+  }
 
   /// Every series an [AutoCompleteRule] tree needs, covering [days] calendar
   /// days ending on [reference]'s day (so `days: 14` is a two-week window
