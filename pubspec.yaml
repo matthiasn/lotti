@@ -133,15 +133,15 @@ dependencies:
   zxing2: ^0.2.4
 
 dependency_overrides:
-  # flutter_scene 0.23 pins code_assets ^1.2.1, which would downgrade the
-  # native-assets toolchain for everyone else. Its build hook compiles fine
-  # against 2.x (verified by a full Linux build), so keep the toolchain
-  # current. Re-check on every flutter_scene bump.
-  code_assets: ^2.0.0
-  native_toolchain_c: 0.19.4
   # json_serializable >=6.13.2 requires analyzer >=10, while
   # objectbox_generator 5.x currently caps analyzer below 11.
   analyzer_plugin: '>=0.14.0 <0.14.5'
+  # flutter_scene 0.23 pins code_assets ^1.2.1, which would downgrade the
+  # native-assets toolchain for everyone else. Its build hook compiles fine
+  # against 2.x (verified by a full Linux build), so keep the toolchain
+  # current (with the matching native_toolchain_c below). Re-check on every
+  # flutter_scene bump.
+  code_assets: ^2.0.0
   # health >=13.2.0 requires device_info_plus ^12.1.0, while
   # super_native_extensions 0.9.1 still caps it below 12.0.0.
   device_info_plus: ^12.1.0
@@ -151,6 +151,8 @@ dependency_overrides:
   flutter_onnxruntime:
     path: third_party/flutter_onnxruntime
   intl: ^0.20.3
+  # Partner of the code_assets override above (0.19.4 needs code_assets 2.x).
+  native_toolchain_c: 0.19.4
   # Downgrade to avoid objective_c.framework malformed bundle issue (ITMS-90291)
   # See: https://github.com/flutter/flutter/issues/178915
   path_provider_foundation: 2.5.1
