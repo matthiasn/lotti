@@ -19,6 +19,7 @@ import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/journal/utils/entry_type_gating.dart';
 import 'package:lotti/features/journal/utils/entry_types.dart';
+import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/utils/consts.dart';
@@ -5127,6 +5128,98 @@ void main() {
         },
       );
     });
+  });
+
+  group('JournalPageController lockdown', () {
+    final setup = JournalControllerTestSetup();
+    late MockJournalDb mockJournalDb;
+    late ProviderContainer container;
+
+    setUp(() {
+      setup.setUp();
+      mockJournalDb = setup.mockJournalDb;
+      container = setup.container;
+    });
+
+    tearDown(() async {
+      await setup.tearDown();
+    });
+
+    List<String>? lastTasksCategoryIds() {
+      final calls = verify(
+        () => mockJournalDb.getTasks(
+          ids: any(named: 'ids'),
+          starredStatuses: any(named: 'starredStatuses'),
+          taskStatuses: any(named: 'taskStatuses'),
+          categoryIds: captureAny(named: 'categoryIds'),
+          labelIds: any(named: 'labelIds'),
+          priorities: any(named: 'priorities'),
+          sortByDate: any(named: 'sortByDate'),
+          limit: any(named: 'limit'),
+          offset: any(named: 'offset'),
+        ),
+      ).captured;
+      return calls.isEmpty ? null : (calls.last as List<String>?);
+    }
+
+    test('entering lockdown re-queries with only the locked category and '
+        'shows it as the selection; the persisted filter stays untouched', () {
+      fakeAsync((async) {
+        final controller = container.read(
+          journalPageControllerProvider(true).notifier,
+        );
+        settle(async);
+        // The user's own filter picks a category outside the lock.
+        unawaited(controller.toggleSelectedCategoryIds('health'));
+        settle(async);
+        expect(
+          container
+              .read(journalPageControllerProvider(true))
+              .selectedCategoryIds,
+          {'health'},
+        );
+        lastTasksCategoryIds(); // drain the calls made so far
+
+        container
+            .read(lockdownControllerProvider.notifier)
+            .lockToCategory('work');
+        settle(async);
+
+        expect(lastTasksCategoryIds(), ['work']);
+        expect(
+          container
+              .read(journalPageControllerProvider(true))
+              .selectedCategoryIds,
+          {'work'},
+        );
+
+        container.read(lockdownControllerProvider.notifier).clear();
+        settle(async);
+
+        expect(lastTasksCategoryIds(), ['health']);
+        expect(
+          container
+              .read(journalPageControllerProvider(true))
+              .selectedCategoryIds,
+          {'health'},
+        );
+      });
+    });
+
+    test(
+      'under lockdown an empty selection never expands to all categories',
+      () {
+        fakeAsync((async) {
+          container
+              .read(lockdownControllerProvider.notifier)
+              .lockToCategory('work');
+          container.read(journalPageControllerProvider(true));
+          settle(async);
+
+          expect(lastTasksCategoryIds(), ['work']);
+        });
+      },
+    );
   });
 }
 

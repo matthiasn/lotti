@@ -1,19 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_anchor.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 /// A `⋯`-style trigger that opens a [DesignSystemContextMenu] in a
-/// dismiss-on-outside-tap popover (via [MenuAnchor]).
+/// dismiss-on-outside-tap popover.
 ///
-/// [DesignSystemContextMenu] is only the menu *surface*; this widget supplies
-/// the trigger, the overlay, positioning, and outside-tap / Escape dismissal so
-/// the styled menu can be used as a popup — the same role Material's
-/// `PopupMenuButton` plays for its own items, but reusing the design-system menu
-/// instead of a bespoke one.
+/// The popover, positioning and dismissal come from
+/// [DesignSystemContextMenuAnchor]; this widget only supplies the trigger —
+/// the same role Material's `PopupMenuButton` plays for its own items, but
+/// reusing the design-system menu instead of a bespoke one.
 ///
 /// The trigger is a >=48px (WCAG 2.5.5) touch target wrapping a compact glyph.
-/// Each item's tap closes the menu before firing its callback.
-class DesignSystemContextMenuButton extends StatefulWidget {
+class DesignSystemContextMenuButton extends StatelessWidget {
   const DesignSystemContextMenuButton({
     required this.items,
     this.icon = LottiIcons.more,
@@ -39,61 +38,14 @@ class DesignSystemContextMenuButton extends StatefulWidget {
   final String? semanticsLabel;
 
   @override
-  State<DesignSystemContextMenuButton> createState() =>
-      _DesignSystemContextMenuButtonState();
-}
-
-class _DesignSystemContextMenuButtonState
-    extends State<DesignSystemContextMenuButton> {
-  final MenuController _controller = MenuController();
-
-  @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final accessibleLabel =
-        widget.tooltip ?? MaterialLocalizations.of(context).showMenuTooltip;
-    return MenuAnchor(
-      controller: _controller,
-      alignmentOffset: Offset(0, tokens.spacing.step2),
-      // The panel itself is invisible — DesignSystemContextMenu carries its own
-      // surface, border-radius and shadow, so a second background here would
-      // double up.
-      style: const MenuStyle(
-        backgroundColor: WidgetStatePropertyAll(Colors.transparent),
-        elevation: WidgetStatePropertyAll(0),
-        padding: WidgetStatePropertyAll(EdgeInsets.zero),
-        shape: WidgetStatePropertyAll(RoundedRectangleBorder()),
-        side: WidgetStatePropertyAll(BorderSide.none),
-      ),
-      menuChildren: [
-        DesignSystemContextMenu(
-          semanticsLabel: widget.semanticsLabel,
-          items: [
-            for (final item in widget.items)
-              DesignSystemContextMenuItem(
-                key: item.key,
-                label: item.label,
-                icon: item.icon,
-                iconColor: item.iconColor,
-                isDestructive: item.isDestructive,
-                isSelected: item.isSelected,
-                onTap: () {
-                  _controller.close();
-                  item.onTap?.call();
-                },
-              ),
-          ],
-        ),
-      ],
-      builder: (context, controller, child) {
-        void toggleMenu() {
-          if (controller.isOpen) {
-            controller.close();
-          } else {
-            controller.open();
-          }
-        }
-
+        tooltip ?? MaterialLocalizations.of(context).showMenuTooltip;
+    return DesignSystemContextMenuAnchor(
+      items: items,
+      semanticsLabel: semanticsLabel,
+      builder: (context, {required toggle, required isOpen}) {
         return SizedBox(
           width: tokens.spacing.step9,
           height: tokens.spacing.step9,
@@ -101,16 +53,16 @@ class _DesignSystemContextMenuButtonState
             label: accessibleLabel,
             button: true,
             excludeSemantics: true,
-            onTap: toggleMenu,
+            onTap: toggle,
             child: IconButton(
               tooltip: accessibleLabel,
               padding: EdgeInsets.zero,
               iconSize: tokens.spacing.step5,
               icon: Icon(
-                widget.icon,
-                color: widget.iconColor ?? tokens.colors.text.lowEmphasis,
+                icon,
+                color: iconColor ?? tokens.colors.text.lowEmphasis,
               ),
-              onPressed: toggleMenu,
+              onPressed: toggle,
             ),
           ),
         );

@@ -22,6 +22,7 @@ class EntitiesCacheService {
   Map<String, DashboardDefinition> dashboardsById = {};
   Map<String, LabelDefinition> labelsById = {};
   bool _showPrivateEntries = false;
+  Set<String> _lockedCategoryIds = const {};
 
   // Per-type fetch serialization flags
   bool _measurablesLoading = false;
@@ -36,6 +37,15 @@ class EntitiesCacheService {
   bool _labelsPending = false;
 
   bool get showPrivateEntries => _showPrivateEntries;
+
+  /// Lockdown scope mirrored from `LockdownController`: while non-empty,
+  /// [sortedCategories] lists only these categories so every picker, chip and
+  /// "all categories" expansion built on the cache stays inside the lockdown.
+  /// Empty means no lockdown.
+  Set<String> get lockedCategoryIds => _lockedCategoryIds;
+  set lockedCategoryIds(Set<String> value) {
+    _lockedCategoryIds = Set.unmodifiable(value);
+  }
 
   /// Initializes the cache. Must be awaited before the service is used.
   ///
@@ -203,8 +213,16 @@ class EntitiesCacheService {
   }
 
   List<CategoryDefinition> get sortedCategories {
-    final res = categoriesById.values.where((e) => e.active).toList()
-      ..sortBy((category) => category.name.toLowerCase());
+    final res =
+        categoriesById.values
+            .where((e) => e.active)
+            .where(
+              (e) =>
+                  _lockedCategoryIds.isEmpty ||
+                  _lockedCategoryIds.contains(e.id),
+            )
+            .toList()
+          ..sortBy((category) => category.name.toLowerCase());
     return res;
   }
 

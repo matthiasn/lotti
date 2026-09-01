@@ -2,8 +2,16 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/branding/design_system_brand_logo.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_anchor.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+
+/// Stable key on the brand-logo trigger that opens [DesktopNavigationSidebar
+/// .logoMenuItems]. Only present while the sidebar is expanded and a menu is
+/// supplied.
+@visibleForTesting
+const Key desktopSidebarLogoMenuTriggerKey = Key('desktop-sidebar-logo-menu');
 
 /// Stable key on the sidebar's collapse/expand toggle tile — used by widget
 /// tests to locate and tap the toggle without depending on Material icon
@@ -83,6 +91,9 @@ class DesktopNavigationSidebar extends StatelessWidget {
     this.onToggleCollapsed,
     this.aboveSettings,
     this.footerBand,
+    this.logoMenuItems,
+    this.logoMenuHeader,
+    this.logoMenuSemanticsLabel,
     super.key,
   });
 
@@ -147,6 +158,20 @@ class DesktopNavigationSidebar extends StatelessWidget {
   /// Suppressed in [collapsed] mode for the same reason as [aboveSettings].
   final Widget? footerBand;
 
+  /// Optional rows of a hidden context menu opened by tapping the brand logo.
+  ///
+  /// When null the logo is inert, which is the default: the menu is a
+  /// deliberately undiscoverable affordance, so the logo shows no hover or
+  /// pressed treatment beyond the ink of the tap itself. Only reachable in
+  /// the expanded layout — the collapsed rail has no logo to tap.
+  final List<DesignSystemContextMenuItem>? logoMenuItems;
+
+  /// Optional quiet heading above [logoMenuItems].
+  final String? logoMenuHeader;
+
+  /// Accessible name for the logo trigger and the opened menu container.
+  final String? logoMenuSemanticsLabel;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -185,6 +210,9 @@ class DesktopNavigationSidebar extends StatelessWidget {
                   _SidebarLogoRow(
                     collapsed: collapsed,
                     onToggle: onToggleCollapsed,
+                    menuItems: logoMenuItems,
+                    menuHeader: logoMenuHeader,
+                    menuSemanticsLabel: logoMenuSemanticsLabel,
                   ),
                   const SizedBox(height: 24),
 
@@ -283,10 +311,16 @@ class _SidebarLogoRow extends StatelessWidget {
   const _SidebarLogoRow({
     required this.collapsed,
     this.onToggle,
+    this.menuItems,
+    this.menuHeader,
+    this.menuSemanticsLabel,
   });
 
   final bool collapsed;
   final VoidCallback? onToggle;
+  final List<DesignSystemContextMenuItem>? menuItems;
+  final String? menuHeader;
+  final String? menuSemanticsLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -314,12 +348,61 @@ class _SidebarLogoRow extends StatelessWidget {
         children: [
           Padding(
             padding: EdgeInsetsDirectional.only(start: tokens.spacing.step5),
-            child: const DesignSystemBrandLogo(),
+            child: menuItems == null
+                ? const DesignSystemBrandLogo()
+                : _SidebarLogoMenuTrigger(
+                    items: menuItems!,
+                    header: menuHeader,
+                    semanticsLabel: menuSemanticsLabel,
+                  ),
           ),
           const Spacer(),
           toggleIcon,
         ],
       ),
+    );
+  }
+}
+
+/// The brand logo as the trigger of a hidden [DesignSystemContextMenu].
+///
+/// Visually identical to the inert logo — no chevron, no hover fill — so the
+/// affordance stays undiscoverable to an audience; the tap ink and the
+/// accessible name are the only tells.
+class _SidebarLogoMenuTrigger extends StatelessWidget {
+  const _SidebarLogoMenuTrigger({
+    required this.items,
+    this.header,
+    this.semanticsLabel,
+  });
+
+  final List<DesignSystemContextMenuItem> items;
+  final String? header;
+  final String? semanticsLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return DesignSystemContextMenuAnchor(
+      items: items,
+      header: header,
+      semanticsLabel: semanticsLabel,
+      size: DesignSystemContextMenuSize.small,
+      builder: (context, {required toggle, required isOpen}) {
+        return Semantics(
+          button: true,
+          label: semanticsLabel,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              key: desktopSidebarLogoMenuTriggerKey,
+              borderRadius: BorderRadius.circular(tokens.radii.s),
+              onTap: toggle,
+              child: const DesignSystemBrandLogo(),
+            ),
+          ),
+        );
+      },
     );
   }
 }

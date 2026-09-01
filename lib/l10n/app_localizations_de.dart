@@ -8864,6 +8864,21 @@ class AppLocalizationsDe extends AppLocalizations {
   String get listPaneShowTooltip => 'Liste anzeigen';
 
   @override
+  String get lockdownMenuActiveHeader => 'Beschränkt';
+
+  @override
+  String get lockdownMenuClear => 'Beschränkung aufheben';
+
+  @override
+  String get lockdownMenuHeader => 'Auf eine Kategorie beschränken';
+
+  @override
+  String get lockdownMenuNoCategories => 'Noch keine Kategorien';
+
+  @override
+  String get lockdownMenuSemanticsLabel => 'Beschränkungsmenü';
+
+  @override
   String get logbookEmptyHint =>
       'Erstelle deinen ersten Eintrag, um mit dem Logbuch zu starten.';
 

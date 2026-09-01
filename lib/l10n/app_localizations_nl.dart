@@ -8828,6 +8828,21 @@ class AppLocalizationsNl extends AppLocalizations {
   String get listPaneShowTooltip => 'Lijst tonen';
 
   @override
+  String get lockdownMenuActiveHeader => 'Beperkt';
+
+  @override
+  String get lockdownMenuClear => 'Beperking opheffen';
+
+  @override
+  String get lockdownMenuHeader => 'Beperken tot een categorie';
+
+  @override
+  String get lockdownMenuNoCategories => 'Nog geen categorieën';
+
+  @override
+  String get lockdownMenuSemanticsLabel => 'Beperkingsmenu';
+
+  @override
   String get logbookEmptyHint => 'Create your first entry to start journaling.';
 
   @override

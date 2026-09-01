@@ -5155,6 +5155,26 @@
   },
   "listPaneHideTooltip": "Hide list",
   "listPaneShowTooltip": "Show list",
+  "lockdownMenuActiveHeader": "Locked down",
+  "@lockdownMenuActiveHeader": {
+    "description": "Heading of the hidden logo menu while a lockdown is active."
+  },
+  "lockdownMenuClear": "Exit lockdown",
+  "@lockdownMenuClear": {
+    "description": "Menu row that exits lockdown mode and restores the full app."
+  },
+  "lockdownMenuHeader": "Lock to a category",
+  "@lockdownMenuHeader": {
+    "description": "Heading of the hidden logo menu while no lockdown is active; the rows below are the categories to lock to."
+  },
+  "lockdownMenuNoCategories": "No categories yet",
+  "@lockdownMenuNoCategories": {
+    "description": "Placeholder row of the lockdown menu when the user has no categories to lock to."
+  },
+  "lockdownMenuSemanticsLabel": "Lockdown menu",
+  "@lockdownMenuSemanticsLabel": {
+    "description": "Accessible name of the logo trigger and the lockdown menu container."
+  },
   "logbookEmptyHint": "Create your first entry to start journaling.",
   "logbookEmptyTitle": "Your logbook is empty",
   "logbookNewEntriesHint": "New entries will open here.",

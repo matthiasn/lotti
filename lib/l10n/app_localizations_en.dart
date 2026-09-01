@@ -8776,6 +8776,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get listPaneShowTooltip => 'Show list';
 
   @override
+  String get lockdownMenuActiveHeader => 'Locked down';
+
+  @override
+  String get lockdownMenuClear => 'Exit lockdown';
+
+  @override
+  String get lockdownMenuHeader => 'Lock to a category';
+
+  @override
+  String get lockdownMenuNoCategories => 'No categories yet';
+
+  @override
+  String get lockdownMenuSemanticsLabel => 'Lockdown menu';
+
+  @override
   String get logbookEmptyHint => 'Create your first entry to start journaling.';
 
   @override

@@ -15,6 +15,7 @@ import 'package:lotti/features/journal/state/journal_paging_controller.dart';
 import 'package:lotti/features/journal/state/journal_query_runner.dart';
 import 'package:lotti/features/journal/utils/entry_type_gating.dart';
 import 'package:lotti/features/journal/utils/entry_types.dart';
+import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/dev_logger.dart';
@@ -151,6 +152,15 @@ class JournalPageController extends Notifier<JournalPageState>
       }
     }
 
+    // Lockdown narrows the effective category filter (see
+    // [_effectiveCategoryIds]); entering or leaving it must re-query, and the
+    // emitted state must show the clamped selection so chips and the filter
+    // modal reflect what is actually being shown.
+    ref.listen(lockdownControllerProvider, (previous, next) {
+      _emitState();
+      unawaited(refreshQuery());
+    });
+
     // Create pagination controller
     final controller = _createPagingController()..fetchNextPage();
 
@@ -182,7 +192,7 @@ class JournalPageController extends Notifier<JournalPageState>
       pagingController: controller,
       selectedEntryTypes: _selectedEntryTypes.toList(),
       allowedEntryTypes: _allowedEntryTypes(),
-      selectedCategoryIds: _selectedCategoryIds,
+      selectedCategoryIds: _effectiveCategoryIds,
       selectedProjectIds: _selectedProjectIds,
       selectedLabelIds: _selectedLabelIds,
       selectedPriorities: _selectedPriorities,
@@ -328,7 +338,7 @@ class JournalPageController extends Notifier<JournalPageState>
       allowedEntryTypes: _allowedEntryTypes(),
       fullTextMatches: _fullTextMatches,
       selectedTaskStatuses: _selectedTaskStatuses,
-      selectedCategoryIds: _selectedCategoryIds,
+      selectedCategoryIds: _effectiveCategoryIds,
       selectedProjectIds: _selectedProjectIds,
       selectedLabelIds: _selectedLabelIds,
       selectedPriorities: _selectedPriorities,
@@ -474,6 +484,15 @@ class JournalPageController extends Notifier<JournalPageState>
     dashboards: _enableDashboards,
   );
 
+  /// The category filter actually applied: the user's selection, clamped to
+  /// the lockdown set while lockdown is active.
+  ///
+  /// The raw [_selectedCategoryIds] is what gets persisted, so a demo never
+  /// rewrites the user's own filter; only the applied and displayed value is
+  /// narrowed. See `LockdownState.restrict` for the clamping rules.
+  Set<String> get _effectiveCategoryIds =>
+      ref.read(lockdownControllerProvider).restrict(_selectedCategoryIds);
+
   JournalQueryParams _buildQueryParams() {
     // An empty selection means "no status filter" → query across all statuses
     // rather than returning zero rows because `task_status IN ()` matches
@@ -484,7 +503,7 @@ class JournalPageController extends Notifier<JournalPageState>
     return JournalQueryParams(
       showTasks: _showTasks,
       selectedEntryTypes: _selectedEntryTypes,
-      selectedCategoryIds: _selectedCategoryIds,
+      selectedCategoryIds: _effectiveCategoryIds,
       selectedProjectIds: _selectedProjectIds,
       selectedLabelIds: _selectedLabelIds,
       selectedPriorities: _selectedPriorities,

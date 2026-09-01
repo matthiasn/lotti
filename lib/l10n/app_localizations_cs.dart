@@ -8903,6 +8903,21 @@ class AppLocalizationsCs extends AppLocalizations {
   String get listPaneShowTooltip => 'Zobrazit seznam';
 
   @override
+  String get lockdownMenuActiveHeader => 'Omezeno';
+
+  @override
+  String get lockdownMenuClear => 'Zrušit omezení';
+
+  @override
+  String get lockdownMenuHeader => 'Omezit na kategorii';
+
+  @override
+  String get lockdownMenuNoCategories => 'Zatím žádné kategorie';
+
+  @override
+  String get lockdownMenuSemanticsLabel => 'Nabídka omezení';
+
+  @override
   String get logbookEmptyHint =>
       'Vytvoř svůj první záznam a začni si psát deník.';
 

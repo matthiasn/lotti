@@ -8822,6 +8822,21 @@ class AppLocalizationsSv extends AppLocalizations {
   String get listPaneShowTooltip => 'Visa lista';
 
   @override
+  String get lockdownMenuActiveHeader => 'Låst';
+
+  @override
+  String get lockdownMenuClear => 'Avsluta låsningen';
+
+  @override
+  String get lockdownMenuHeader => 'Lås till en kategori';
+
+  @override
+  String get lockdownMenuNoCategories => 'Inga kategorier ännu';
+
+  @override
+  String get lockdownMenuSemanticsLabel => 'Låsningsmeny';
+
+  @override
   String get logbookEmptyHint => 'Create your first entry to start journaling.';
 
   @override

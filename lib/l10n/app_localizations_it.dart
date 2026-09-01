@@ -8918,6 +8918,21 @@ class AppLocalizationsIt extends AppLocalizations {
   String get listPaneShowTooltip => 'Mostra elenco';
 
   @override
+  String get lockdownMenuActiveHeader => 'Limitato';
+
+  @override
+  String get lockdownMenuClear => 'Esci dalla modalità limitata';
+
+  @override
+  String get lockdownMenuHeader => 'Limita a una categoria';
+
+  @override
+  String get lockdownMenuNoCategories => 'Ancora nessuna categoria';
+
+  @override
+  String get lockdownMenuSemanticsLabel => 'Menu modalità limitata';
+
+  @override
   String get logbookEmptyHint => 'Create your first entry to start journaling.';
 
   @override

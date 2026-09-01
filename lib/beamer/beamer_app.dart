@@ -40,6 +40,8 @@ import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/keyboard/ui/command_palette.dart';
 import 'package:lotti/features/keyboard/ui/keyboard_focus_region.dart';
 import 'package:lotti/features/keyboard/ui/keyboard_shortcuts_page.dart';
+import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
+import 'package:lotti/features/lockdown/ui/lockdown_logo_menu.dart';
 import 'package:lotti/features/nudges/model/nudge_banner_entry.dart';
 import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_dock.dart';
@@ -413,15 +415,30 @@ class _AppNavigationDestination {
     );
   }
 
-  DesktopSidebarDestination toDesktopSidebarDestination() {
+  /// [includeExpandedChild] drops the under-row subtree (saved filters, the
+  /// month calendar) — lockdown uses this because those subtrees name things
+  /// outside the locked category.
+  DesktopSidebarDestination toDesktopSidebarDestination({
+    bool includeExpandedChild = true,
+  }) {
     return DesktopSidebarDestination(
       label: label,
       iconBuilder: iconBuilder,
       trailingBuilder: trailingBuilder,
-      expandedChildBuilder: expandedChildBuilder,
+      expandedChildBuilder: includeExpandedChild ? expandedChildBuilder : null,
     );
   }
 }
+
+/// The destinations that stay reachable while lockdown is active — exactly
+/// those whose content is served by `JournalPageController`, which clamps its
+/// category filter to the lockdown set. Every other tab (day plan, projects,
+/// habits, insights, people, events, settings) is category-agnostic or lists
+/// definitions by name, so it is hidden rather than partially filtered.
+const Set<_AppNavigationDestinationKind> _lockdownVisibleKinds = {
+  _AppNavigationDestinationKind.tasks,
+  _AppNavigationDestinationKind.journal,
+};
 
 class AppScreen extends ConsumerStatefulWidget {
   const AppScreen({super.key});
@@ -581,10 +598,36 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     }
   }
 
+  /// Brings the app onto a lockdown-safe tab and resets that tab to its
+  /// root, so neither a foreign tab nor a detail pane opened before the
+  /// lockdown began can stay on screen once it is active.
+  void _enterLockdown() {
+    if (!_lockdownVisibleKinds.contains(_destinationKindAt(navService.index))) {
+      navService.setIndex(0);
+    }
+    navService
+      ..setTabRoot(0)
+      ..setTabRoot(navService.journalIndex);
+  }
+
+  _AppNavigationDestinationKind? _destinationKindAt(int index) {
+    final delegate = navService.delegateByIndex(index);
+    if (delegate == navService.tasksDelegate) {
+      return _AppNavigationDestinationKind.tasks;
+    }
+    if (delegate == navService.journalDelegate) {
+      return _AppNavigationDestinationKind.journal;
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     // Reset toast guard on login, and listen for login-gate events from outbox.
     ref
+      ..listen(lockdownControllerProvider, (prev, next) {
+        if (next.isActive) _enterLockdown();
+      })
       ..listen(loginStateStreamProvider, (prev, next) {
         final state = next.asData?.value;
         if (state == LoginState.loggedIn) {
@@ -857,6 +900,26 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     );
     final sidebarWidth = resolvedSidebar.width;
     final isCollapsed = paneWidths.sidebarCollapsed;
+    // Lockdown: the rail keeps only the destinations whose content is
+    // category-scoped by the journal page controller, and drops every slot
+    // that could name something outside the locked category — saved filters,
+    // the activity disclosure, Settings, the contact band.
+    final lockdown = ref.watch(lockdownControllerProvider);
+    final visibleMain = lockdown.isActive
+        ? mainDestinations
+              .where((dest) => _lockdownVisibleKinds.contains(dest.kind))
+              .toList(growable: false)
+        : mainDestinations;
+    final visibleActiveIndex = isSettingsActive
+        ? 0
+        : math.max(0, visibleMain.indexOf(mainDestinations[mainActiveIndex]));
+    final logoMenuItems = LockdownLogoMenu.items(
+      context,
+      ref,
+      lockdown: lockdown,
+      categories: ref.watch(lockdownCategoryOptionsProvider),
+    );
+
     // The docked day-view column keeps the current day visible beside the
     // tasks list — the surface where time is planned and tracked — and only
     // there. It shares the Daily OS feature flag (no Daily OS, no day view)
@@ -869,10 +932,13 @@ class _AppScreenState extends ConsumerState<AppScreen> {
       windowWidth: windowWidth,
       sidebarWidth: isCollapsed ? kCollapsedSidebarWidth : sidebarWidth,
     );
+    // The day view is category-agnostic (see [_lockdownVisibleKinds]), so it
+    // is hidden while a lockdown is active.
     final showDayViewColumn =
         destinations[index].kind == _AppNavigationDestinationKind.tasks &&
         navService.isDailyOsPageEnabled &&
-        dayViewAllowance.show;
+        dayViewAllowance.show &&
+        !lockdown.isActive;
     final resolvedDayView = resolvedPaneWidth(
       storedWidth: paneWidths.dayViewPanelWidth,
       flatDefault: defaultDayViewPanelWidth,
@@ -914,40 +980,37 @@ class _AppScreenState extends ConsumerState<AppScreen> {
             debugLabel: 'app-navigation',
             child: DesktopNavigationSidebar(
               destinations: [
-                for (final dest in mainDestinations)
-                  dest.toDesktopSidebarDestination(),
+                for (final dest in visibleMain)
+                  dest.toDesktopSidebarDestination(
+                    includeExpandedChild: !lockdown.isActive,
+                  ),
               ],
-              activeIndex: mainActiveIndex,
-              onDestinationSelected: (mainIdx) {
-                // Map main destination index back to the full index
-                var fullIdx = 0;
-                var count = 0;
-                for (var i = 0; i < destinations.length; i++) {
-                  if (destinations[i].kind ==
-                      _AppNavigationDestinationKind.settings) {
-                    continue;
-                  }
-                  if (count == mainIdx) {
-                    fullIdx = i;
-                    break;
-                  }
-                  count++;
-                }
-                navService.tapIndex(fullIdx);
-              },
-              settingsDestination: settingsDestination
-                  ?.toDesktopSidebarDestination(),
-              onSettingsSelected: settingsIndex >= 0
+              activeIndex: visibleActiveIndex,
+              // `destinations` (Settings included) is index-aligned with the
+              // content stack, so a sidebar tap maps back through identity.
+              onDestinationSelected: (visibleIdx) => navService.tapIndex(
+                destinations.indexOf(visibleMain[visibleIdx]),
+              ),
+              settingsDestination: lockdown.isActive
+                  ? null
+                  : settingsDestination?.toDesktopSidebarDestination(),
+              onSettingsSelected: settingsIndex >= 0 && !lockdown.isActive
                   ? () => navService.tapIndex(settingsIndex)
                   : null,
-              isSettingsActive: isSettingsActive,
+              isSettingsActive: isSettingsActive && !lockdown.isActive,
               width: sidebarWidth,
               collapsed: isCollapsed,
               onToggleCollapsed: () => ref
                   .read(paneWidthControllerProvider.notifier)
                   .toggleSidebarCollapsed(),
-              aboveSettings: const _DesktopSidebarAboveSettings(),
-              footerBand: const ContactSupportRow(),
+              aboveSettings: lockdown.isActive
+                  ? null
+                  : const _DesktopSidebarAboveSettings(),
+              footerBand: lockdown.isActive ? null : const ContactSupportRow(),
+              logoMenuItems: logoMenuItems,
+              logoMenuHeader: LockdownLogoMenu.header(context, lockdown),
+              logoMenuSemanticsLabel:
+                  context.messages.lockdownMenuSemanticsLabel,
             ),
           ),
           ResizableDivider(
