@@ -249,7 +249,9 @@ class StreetLayout {
         return byDate != 0 ? byDate : a.id.compareTo(b.id);
       });
 
-    final anchor = epoch ?? weekStart(ordered.first.createdAt);
+    // Normalize even an explicit epoch to its UTC week start, so a Tuesday
+    // or local-time anchor cannot shift the Monday-aligned bucket grid.
+    final anchor = weekStart(epoch ?? ordered.first.createdAt);
 
     // A task older than an explicit epoch lands in bucket zero rather than
     // being silently dropped to a negative bucket the street never renders.

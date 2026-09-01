@@ -149,6 +149,16 @@ void main() {
     expect(find.byType(AspectRatio), findsOneWidget);
     await tester.pump();
     expect(tester.takeException(), isNull);
+    // The failed load renders no image pixels — the slot collapsed to the
+    // errorBuilder's empty box instead of showing a broken image.
+    expect(find.byType(RawImage), findsNothing);
+    expect(
+      find.descendant(
+        of: find.byType(AspectRatio),
+        matching: find.byType(SizedBox),
+      ),
+      findsOneWidget,
+    );
   });
 
   test('state colors and labels cover every state', () {

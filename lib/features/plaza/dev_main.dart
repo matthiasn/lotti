@@ -214,6 +214,11 @@ class _PlazaHarnessState extends State<_PlazaHarness> {
   void _applyKnobs() {
     _lod.dispose();
     setState(() => _loadPreset(_preset));
+    // _loadPreset replaces the camera; keep the scripted walk going if a
+    // benchmark phase is mid-flight.
+    if (_benchMode && !_benchDone) {
+      _camera.autoForward = 1;
+    }
   }
 
   void _onTick(Duration elapsed, double dt) {
