@@ -5170,7 +5170,9 @@ void main() {
         );
         settle(async);
         // The user's own filter picks a category outside the lock.
-        unawaited(controller.toggleSelectedCategoryIds('health'));
+        unawaited(
+          controller.applyBatchFilterUpdate(categoryIds: {'health'}),
+        );
         settle(async);
         expect(
           container
