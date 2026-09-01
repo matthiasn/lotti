@@ -31,7 +31,7 @@ sources:
   - id: codemagic
     resource: ../../codemagic.yaml
     title: Windows release pipeline
-    last_modified: 2026-07-30
+    last_modified: 2026-09-02
 ---
 
 # One codebase, five targets
@@ -157,8 +157,8 @@ written is in [testing conventions](../conventions/testing.md).
 # Release
 
 Release is triggered by **pushing a git tag whose name is the `pubspec.yaml`
-version**. Seven GitHub workflows listen on `push: tags: ['**']`, and Windows
-fans out from the same tag on a different provider:
+version**. Seven GitHub workflows listen on `push: tags: ['**']`; Windows lives
+on a different provider and, since September 2026, is started by hand:
 
 ```mermaid
 flowchart TD
@@ -171,15 +171,20 @@ flowchart TD
   Tag --> E["flutter-linux-release.yml"]
   Tag --> F["flathub-release-pr.yml"]
   Tag --> G["python-services-release.yml"]
-  Tag --> H["codemagic.yaml — Windows MSIX"]
+  Tag -. "manual start, Codemagic UI/API" .-> H["codemagic.yaml — Windows MSIX"]
 ```
 
 **Windows is the one target not built on GitHub Actions.** It runs on
-[Codemagic](../../codemagic.yaml), on a `windows_x2` instance, triggered by the
-same `*.*.*+*` tag pattern, and it reports back as a `Windows Release` check on
-the tagged commit. Because it lives outside `.github/workflows/`, it is easy to
-overlook when auditing CI — its failures show up only on tag commits and in the
-build-notification email, never on a pull request.
+[Codemagic](../../codemagic.yaml), on a `windows_x2` instance, and reports back
+as a `Windows Release` check on the commit it builds. It **no longer triggers
+on the tag**: the `windows_x2` minutes made it the most expensive lane per
+release, so the `triggering` block was removed and a Windows build is started
+manually from the Codemagic UI (Start new build → *Windows Release*, choosing
+the release tag) or the builds API, only for releases that ship a Windows
+package. Reinstating the `*.*.*+*` tag trigger is one block in
+`codemagic.yaml`. Because it lives outside `.github/workflows/`, it is easy to
+overlook when auditing CI — its failures show up only on the built commit and
+in the build-notification email, never on a pull request.
 
 `flathub-release-pr.yml` also accepts `workflow_dispatch` with an explicit
 commit SHA and version override, for re-cutting a Flathub PR without moving the
