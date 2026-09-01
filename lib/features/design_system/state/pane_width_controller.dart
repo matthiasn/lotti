@@ -136,7 +136,7 @@ class PaneWidths {
     this.dayViewPanelWidth = defaultDayViewPanelWidth,
     this.sidebarCollapsed = false,
     this.listPaneCollapsed = false,
-    this.dayViewPanelHidden = false,
+    this.dayViewPanelHidden = true,
   });
 
   final double sidebarWidth;
@@ -146,8 +146,9 @@ class PaneWidths {
   final bool sidebarCollapsed;
   final bool listPaneCollapsed;
 
-  /// Whether the docked day-view column is hidden. Defaults to visible so
-  /// the current day is front and center whenever the app opens; like the
+  /// Whether the docked day-view column is hidden. Defaults to **hidden** —
+  /// the column is opt-in, brought up from its rail when the user wants the
+  /// day beside the tasks list, and the choice then persists. Like the
   /// collapse flags above, [dayViewPanelWidth] keeps the restore width while
   /// hidden because width drags are refused in that state.
   final bool dayViewPanelHidden;
@@ -270,7 +271,9 @@ class PaneWidthController extends Notifier<PaneWidths> {
       );
       final sidebarCollapsed = values[sidebarCollapsedKey] == 'true';
       final listPaneCollapsed = values[listPaneCollapsedKey] == 'true';
-      final dayViewPanelHidden = values[dayViewPanelHiddenKey] == 'true';
+      // Hidden unless the user has explicitly shown the column: a missing
+      // key (never toggled) keeps the hidden default.
+      final dayViewPanelHidden = values[dayViewPanelHiddenKey] != 'false';
 
       state = PaneWidths(
         sidebarWidth: sidebarWidth,

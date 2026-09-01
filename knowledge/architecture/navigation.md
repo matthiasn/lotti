@@ -122,7 +122,9 @@ rail). The allowance is a `kDayViewPanelMinWindowWidth` (1200 px) window gate
 plus a clamp-then-yield rule: while a task detail is open, the tasks split
 keeps a `kDesktopBreakpoint`-wide region — the column is clamped narrower to
 protect it and yields entirely when even its minimum would starve it. The
-column shows today's planned-vs-recorded timeline beside the tasks list only;
+column starts hidden as its rail and, once shown, pages through days with the
+compact Daily OS date strip; it shows a day's planned-vs-recorded timeline
+beside the tasks list only;
 its visibility and width persist through `PaneWidthController`
 (`PANE_WIDTH_DAY_VIEW*` keys).
 Because its divider sits on the column's leading edge, the shell inverts drag

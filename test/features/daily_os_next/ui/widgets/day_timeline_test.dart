@@ -957,6 +957,78 @@ void main() {
       expect(controller.position.pixels, greaterThan(beforeOffset));
     });
 
+    testWidgets(
+      'toolbarLeading takes the hint slot before the mode toggle and '
+      'toolbarTrailing follows it; both are absent by default',
+      (tester) async {
+        _setView(tester, const Size(430, 900));
+
+        await tester.pumpWidget(
+          _wrap(
+            DayTimeline(
+              draft: _draft(),
+              clock: () => DateTime(2026, 5, 25, 9, 15),
+            ),
+            size: const Size(430, 900),
+          ),
+        );
+        await tester.pump();
+        final messages = tester.element(find.byType(DayTimeline)).messages;
+        expect(find.byKey(const Key('leading_probe')), findsNothing);
+        expect(find.byKey(const Key('trailing_probe')), findsNothing);
+        expect(
+          find.text(messages.dailyOsNextTimelineSwipeHint),
+          findsOneWidget,
+        );
+
+        await tester.pumpWidget(
+          _wrap(
+            DayTimeline(
+              draft: _draft(),
+              clock: () => DateTime(2026, 5, 25, 9, 15),
+              toolbarLeading: const SizedBox(
+                key: Key('leading_probe'),
+                width: 40,
+                height: 40,
+              ),
+              toolbarTrailing: const SizedBox(
+                key: Key('trailing_probe'),
+                width: 40,
+                height: 40,
+              ),
+            ),
+            size: const Size(430, 900),
+          ),
+        );
+        await tester.pump();
+
+        final leading = tester.getRect(find.byKey(const Key('leading_probe')));
+        final trailing = tester.getRect(
+          find.byKey(const Key('trailing_probe')),
+        );
+        final toggle = tester.getRect(
+          find.byTooltip(messages.dailyOsNextTimelineShowBoth),
+        );
+        // Same row (vertical overlap): leading, then the toggle, then
+        // trailing.
+        expect(leading.right, lessThan(toggle.left));
+        expect(toggle.right, lessThanOrEqualTo(trailing.left));
+        expect(leading.top, lessThan(toggle.bottom));
+        expect(leading.bottom, greaterThan(toggle.top));
+        expect(trailing.top, lessThan(toggle.bottom));
+        expect(trailing.bottom, greaterThan(toggle.top));
+        // The leading slot sits at the row's start, where the hint was, and
+        // the hint yields to it.
+        expect(leading.left, lessThan(toggle.left - leading.width));
+        expect(find.text(messages.dailyOsNextTimelineSwipeHint), findsNothing);
+        // The timeline itself starts below the toolbar.
+        expect(
+          tester.getRect(find.byType(PageView)).top,
+          greaterThanOrEqualTo(leading.bottom),
+        );
+      },
+    );
+
     testWidgets('toolbar toggle button switches comparison mode paged→both', (
       tester,
     ) async {

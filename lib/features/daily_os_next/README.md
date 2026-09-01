@@ -6,10 +6,11 @@ it into an actual plan for the day.
 
 It is the `/calendar` tab. On desktop, one piece of it also lives outside the
 tab: the docked day-view column on the right edge of the app shell
-(`ui/widgets/day_view_side_panel.dart`) reuses the day timeline to keep today's
+(`ui/widgets/day_view_side_panel.dart`) reuses the day timeline to keep a day's
 planned-vs-recorded time visible beside the tasks list while the Tasks tab is
-active. It can be hidden to a slim rail via its calendar button and resized by
-its edge; both survive restarts.
+active. It opens on today and steps through days with the same compact date
+strip the planner header uses. It starts hidden as a slim rail, is brought up
+via the rail's calendar button and resized by its edge; both survive restarts.
 
 ## What it does for the user
 

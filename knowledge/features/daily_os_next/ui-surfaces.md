@@ -213,19 +213,32 @@ is docked as the last child of the desktop shell's `Row` in
 beside the tasks list while the Tasks tab is active. Facts that matter when
 touching it:
 
-- **It renders `DayTimeline` for the current local day only** — fed by
-  `currentDraftPlanProvider(today)` (falling back to `DraftPlan.emptyForDay`
+- **It renders `DayTimeline` for one local day, its own selection** — fed by
+  `currentDraftPlanProvider(day)` (falling back to `DraftPlan.emptyForDay`
   so tracked time shows even with no plan) and
-  `dailyOsActualTimeBlocksProvider(today)`. A midnight-rollover `Timer` moves
-  it to the new day, because unlike `DailyOsNextRoot` it lives as long as the
-  app window. It passes no edit callbacks: the column is glanceable, editing
-  stays on the Day surface.
+  `dailyOsActualTimeBlocksProvider(day)`. It opens on today. Day navigation
+  is the same `DailyOsDateStrip`
+  ([daily_os_date_strip.dart](../../../lib/features/daily_os_next/ui/widgets/daily_os_date_strip.dart))
+  the Day surface header uses — prev/next chevrons, a date label that opens
+  the shared picker (`showDailyOsDayPicker`; long press returns to today) —
+  in its `compact` form: compact-density chevrons, weekday + month + day
+  falling back to month + day, and no standalone Today button. The strip
+  sits in the timeline toolbar's `toolbarLeading` slot, so stepping through
+  days and the lane-format toggle share one row; the hide button takes
+  `toolbarTrailing`. The selection is panel-local state, deliberately *not*
+  `dailyOsNextSelectedDateProvider`: paging the column must not move the
+  Daily OS tab. A midnight-rollover `Timer` advances the panel only while it
+  is still on today (a day the user navigated to stays put), because unlike
+  `DailyOsNextRoot` it lives as long as the app window. It passes no edit
+  callbacks: the column is glanceable, editing stays on the Day surface.
 - **Visibility and width persist in `PaneWidthController`** under
-  `PANE_WIDTH_DAY_VIEW` / `PANE_WIDTH_DAY_VIEW_HIDDEN`, default **visible** at
-  380 px (clamped 300–800). Hidden state is a slim rail whose calendar button
-  restores the panel — the toggle stays in the same corner in both states.
-  The `ResizableDivider` sits on the panel's *leading* edge, so the shell
-  inverts drag deltas before handing them to `updateDayViewPanelWidth`.
+  `PANE_WIDTH_DAY_VIEW` / `PANE_WIDTH_DAY_VIEW_HIDDEN`, default **hidden**
+  (the column is opt-in; a missing or unparseable flag reads as hidden, only
+  a stored `false` shows it) at 380 px (clamped 300–800). Hidden state is a
+  slim rail whose calendar button restores the panel — the toggle stays in
+  the same corner in both states. The `ResizableDivider` sits on the panel's
+  *leading* edge, so the shell inverts drag deltas before handing them to
+  `updateDayViewPanelWidth`.
 - **Gating:** the column (and its rail) exists only while the **Tasks tab is
   active** — beside the list where time is planned and tracked, and never
   redundantly next to the Daily OS surface itself — *and* the Daily OS
