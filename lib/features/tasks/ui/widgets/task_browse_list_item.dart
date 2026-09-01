@@ -106,10 +106,18 @@ class TaskBrowseListItem extends StatelessWidget {
         children: [
           if (entry.showSectionHeader)
             Padding(
-              padding: EdgeInsets.only(
-                top: tokens.spacing.step4,
-                bottom: tokens.spacing.step4,
-              ),
+              // A trailing control carries the full 48px tap-target floor;
+              // the header trades its own vertical padding away so hosting
+              // one barely moves the line's overall height.
+              padding: sectionHeaderTrailing == null
+                  ? EdgeInsets.only(
+                      top: tokens.spacing.step4,
+                      bottom: tokens.spacing.step4,
+                    )
+                  : EdgeInsets.only(
+                      top: tokens.spacing.step1,
+                      bottom: tokens.spacing.step1,
+                    ),
               child: Row(
                 children: [
                   Expanded(

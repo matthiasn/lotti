@@ -33,6 +33,7 @@ import 'package:lotti/features/design_system/components/navigation/design_system
 import 'package:lotti/features/design_system/components/navigation/desktop_navigation_sidebar.dart';
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
@@ -2443,6 +2444,69 @@ void main() {
         RouteInformation(uri: Uri.parse('/tasks/$taskId')),
       );
       expect(isTaskDetailRoute(location, 0), isTrue);
+    });
+  });
+
+  group('dayViewColumnAllowance', () {
+    test('hides below the minimum window width', () {
+      final allowance = dayViewColumnAllowance(
+        taskDetailOpen: false,
+        windowWidth: kDayViewPanelMinWindowWidth - 1,
+        sidebarWidth: defaultSidebarWidth,
+      );
+      expect(allowance.show, isFalse);
+    });
+
+    test('allows the full width range with no open task detail', () {
+      final allowance = dayViewColumnAllowance(
+        taskDetailOpen: false,
+        windowWidth: 1280,
+        sidebarWidth: defaultSidebarWidth,
+      );
+      expect(allowance.show, isTrue);
+      expect(allowance.maxWidth, maxDayViewPanelWidth);
+    });
+
+    test(
+      'clamps the column while a task detail is open on a wide window, '
+      'preserving a desktop-wide split region',
+      () {
+        final allowance = dayViewColumnAllowance(
+          taskDetailOpen: true,
+          windowWidth: 1800,
+          sidebarWidth: defaultSidebarWidth,
+        );
+        expect(allowance.show, isTrue);
+        // 1800 - 256 sidebar - 960 split floor = 584.
+        expect(allowance.maxWidth, 1800 - defaultSidebarWidth - 960);
+        expect(allowance.maxWidth, lessThan(maxDayViewPanelWidth));
+      },
+    );
+
+    test(
+      'yields entirely while a detail is open when even the minimum column '
+      'would starve the split',
+      () {
+        // 1440 - 256 - 960 = 224 < minDayViewPanelWidth (300).
+        final allowance = dayViewColumnAllowance(
+          taskDetailOpen: true,
+          windowWidth: 1440,
+          sidebarWidth: defaultSidebarWidth,
+        );
+        expect(allowance.show, isFalse);
+      },
+    );
+
+    test('a collapsed sidebar frees room for the column beside a detail', () {
+      // 1440 - 72 - 960 = 408 >= 300 — the same window that yields with an
+      // expanded sidebar hosts the column at a clamped width.
+      final allowance = dayViewColumnAllowance(
+        taskDetailOpen: true,
+        windowWidth: 1440,
+        sidebarWidth: kCollapsedSidebarWidth,
+      );
+      expect(allowance.show, isTrue);
+      expect(allowance.maxWidth, 1440 - kCollapsedSidebarWidth - 960);
     });
   });
 

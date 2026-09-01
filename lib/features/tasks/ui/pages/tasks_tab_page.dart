@@ -1102,10 +1102,14 @@ class _ActionBarAlignedFabLocation extends StandardFabLocation
 
 /// Compact list-density toggle riding the trailing end of the tasks list's
 /// first section-header line ("P2 Medium · 5 tasks"), so switching between
-/// full cards and title-only rows costs the header no row of its own. Uses
-/// the compact 32px icon-button shape (the report-card precedent) rather
-/// than [TabHeaderIconButton], whose 48px slot would inflate the caption
-/// line it shares.
+/// full cards and title-only rows costs the header no row of its own.
+///
+/// The glyph stays at the dense [IconSizes.m] tier, but the hit area keeps
+/// the full [TapTargets.minimum] floor — a glyph-only control has no label
+/// to borrow interaction area from. The section header compensates by
+/// tightening its own vertical padding while it hosts a trailing control
+/// (see `TaskBrowseListItem.sectionHeaderTrailing`), so the line's overall
+/// height barely moves.
 class _TaskListDensityToggle extends ConsumerWidget {
   const _TaskListDensityToggle();
 
@@ -1119,9 +1123,11 @@ class _TaskListDensityToggle extends ConsumerWidget {
           ? context.messages.tasksListExpandedModeTooltip
           : context.messages.tasksListCompactModeTooltip,
       onPressed: ref.read(taskListDensityControllerProvider.notifier).toggle,
-      visualDensity: VisualDensity.compact,
       padding: EdgeInsets.zero,
-      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+      constraints: const BoxConstraints(
+        minWidth: TapTargets.minimum,
+        minHeight: TapTargets.minimum,
+      ),
       style: compact
           ? IconButton.styleFrom(
               backgroundColor: DesignSystemListPalette.activatedFill(tokens),

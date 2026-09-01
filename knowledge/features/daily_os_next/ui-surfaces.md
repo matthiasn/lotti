@@ -229,9 +229,13 @@ touching it:
 - **Gating:** the column (and its rail) exists only while the **Tasks tab is
   active** — beside the list where time is planned and tracked, and never
   redundantly next to the Daily OS surface itself — *and* the Daily OS
-  feature flag is on (`NavService.isDailyOsPageEnabled`) *and* the window is
-  at least `kDayViewPanelMinWindowWidth` (1200 px) — below that, sidebar +
-  content + column would starve the content pane.
+  feature flag is on (`NavService.isDailyOsPageEnabled`) *and*
+  `dayViewColumnAllowance` (in `beamer_app.dart`) grants it room: a
+  `kDayViewPanelMinWindowWidth` (1200 px) window gate, plus a
+  clamp-then-yield rule while a task detail is open — the tasks list +
+  detail split keeps a `kDesktopBreakpoint`-wide region, the column is
+  clamped narrower to protect it, and yields entirely when even its
+  300 px minimum would starve the split.
 - **Lane behaviour follows the pane, not the window.** `DayTimeline` grew a
   `comparisonBreakpoint` parameter (default `kDesktopBreakpoint`); the panel
   passes `kDayViewSidePanelComparisonBreakpoint` (560) so a wide column shows

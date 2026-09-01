@@ -116,11 +116,15 @@ widgets in memory.
 
 The desktop `Row` has up to four children: the sidebar, its `ResizableDivider`,
 the expanded content stack, and — while the **Tasks tab is active**, the Daily
-OS flag is on and the window is at least `kDayViewPanelMinWindowWidth`
-(1200 px) — a second divider plus the right-docked day-view column
-(`DayViewSidePanel`, or its collapsed rail). The column shows today's
-planned-vs-recorded timeline beside the tasks list only; its visibility and
-width persist through `PaneWidthController` (`PANE_WIDTH_DAY_VIEW*` keys).
+OS flag is on and `dayViewColumnAllowance` grants it room — a second divider
+plus the right-docked day-view column (`DayViewSidePanel`, or its collapsed
+rail). The allowance is a `kDayViewPanelMinWindowWidth` (1200 px) window gate
+plus a clamp-then-yield rule: while a task detail is open, the tasks split
+keeps a `kDesktopBreakpoint`-wide region — the column is clamped narrower to
+protect it and yields entirely when even its minimum would starve it. The
+column shows today's planned-vs-recorded timeline beside the tasks list only;
+its visibility and width persist through `PaneWidthController`
+(`PANE_WIDTH_DAY_VIEW*` keys).
 Because its divider sits on the column's leading edge, the shell inverts drag
 deltas before forwarding them. See
 [Daily OS UI surfaces](../features/daily_os_next/ui-surfaces.md#the-docked-day-view-column-desktop-shell)

@@ -2309,6 +2309,12 @@ void main() {
           tester.getCenter(toggle).dy,
           closeTo(tester.getCenter(countText).dy, 1),
         );
+
+        // Glyph-only control: dense visual, but the hit area keeps the
+        // full design-system tap-target floor.
+        final size = tester.getSize(find.byKey(toggleKey));
+        expect(size.width, greaterThanOrEqualTo(TapTargets.minimum));
+        expect(size.height, greaterThanOrEqualTo(TapTargets.minimum));
       },
     );
 

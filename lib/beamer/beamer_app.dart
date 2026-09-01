@@ -109,6 +109,37 @@ bool isTaskDetailRoute(BeamLocation<dynamic>? location, int activeTabIndex) {
   return isUuid(location.state.pathParameters['taskId']);
 }
 
+/// Layout allowance for the docked day-view column on the desktop shell:
+/// whether it may show at all, and the widest it may be. Pure function of
+/// geometry and route state so the policy is testable on its own.
+///
+/// Below [kDayViewPanelMinWindowWidth] the column never shows. While a task
+/// detail is open ([taskDetailOpen]) the content region hosts the tasks
+/// list + detail split, which needs a desktop-wide region
+/// ([kDesktopBreakpoint]) of its own — the column is first clamped narrower
+/// to protect that region, and yields entirely when even
+/// [minDayViewPanelWidth] would starve it. Without an open detail the split
+/// shows only the browse list and its empty-state pane, which tolerate a
+/// narrower region, so the window gate alone applies.
+({bool show, double maxWidth}) dayViewColumnAllowance({
+  required bool taskDetailOpen,
+  required double windowWidth,
+  required double sidebarWidth,
+}) {
+  if (windowWidth < kDayViewPanelMinWindowWidth) {
+    return (show: false, maxWidth: 0);
+  }
+  var maxWidth = maxDayViewPanelWidth;
+  if (taskDetailOpen) {
+    maxWidth = math.min(
+      maxWidth,
+      windowWidth - sidebarWidth - kDesktopBreakpoint,
+    );
+  }
+  if (maxWidth < minDayViewPanelWidth) return (show: false, maxWidth: 0);
+  return (show: true, maxWidth: maxWidth);
+}
+
 /// True when the settings beamer location points at a *detail* surface — a
 /// terminal page you navigate to, rather than a menu you navigate from — so
 /// the mobile shell slides the bottom nav out of the way and the page owns
@@ -829,22 +860,42 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     // The docked day-view column keeps the current day visible beside the
     // tasks list — the surface where time is planned and tracked — and only
     // there. It shares the Daily OS feature flag (no Daily OS, no day view)
-    // and only exists on windows wide enough to host a third column — see
-    // kDayViewPanelMinWindowWidth.
+    // and its geometry policy lives in [dayViewColumnAllowance]: a window
+    // gate, plus a clamp-then-yield rule that keeps an open task detail's
+    // split usable.
+    final windowWidth = MediaQuery.sizeOf(context).width;
+    final dayViewAllowance = dayViewColumnAllowance(
+      taskDetailOpen: _isTaskDetailRoute(index),
+      windowWidth: windowWidth,
+      sidebarWidth: isCollapsed ? kCollapsedSidebarWidth : sidebarWidth,
+    );
     final showDayViewColumn =
         destinations[index].kind == _AppNavigationDestinationKind.tasks &&
         navService.isDailyOsPageEnabled &&
-        MediaQuery.sizeOf(context).width >= kDayViewPanelMinWindowWidth;
+        dayViewAllowance.show;
     final resolvedDayView = resolvedPaneWidth(
       storedWidth: paneWidths.dayViewPanelWidth,
       flatDefault: defaultDayViewPanelWidth,
       minValue: minDayViewPanelWidth,
       maxValue: maxDayViewPanelWidth,
-      screenWidth: MediaQuery.sizeOf(context).width,
+      screenWidth: windowWidth,
       onDelta: ref
           .read(paneWidthControllerProvider.notifier)
           .updateDayViewPanelWidth,
     );
+    // The displayed width honors the allowance clamp; drags are rebased
+    // against it (same trick as resolvedPaneWidth's scaling) so the divider
+    // never desyncs from the pointer while the stored width exceeds the
+    // clamp.
+    final dayViewWidth = math.min(
+      resolvedDayView.width,
+      dayViewAllowance.maxWidth,
+    );
+    void dayViewDrag(double delta) => ref
+        .read(paneWidthControllerProvider.notifier)
+        .updateDayViewPanelWidth(
+          (dayViewWidth - delta) - paneWidths.dayViewPanelWidth,
+        );
     final dayViewPanelHidden = paneWidths.dayViewPanelHidden;
     void toggleDayViewPanel() => ref
         .read(paneWidthControllerProvider.notifier)
@@ -925,16 +976,17 @@ class _AppScreenState extends ConsumerState<AppScreen> {
               DayViewSidePanelRail(onToggleHidden: toggleDayViewPanel)
             else ...[
               ResizableDivider(
-                currentValue: resolvedDayView.width,
+                currentValue: dayViewWidth,
                 minValue: minDayViewPanelWidth,
-                maxValue: maxDayViewPanelWidth,
+                maxValue: dayViewAllowance.maxWidth,
                 // The divider sits on the panel's LEADING edge, so a
                 // rightward drag (positive delta) shrinks the panel —
-                // invert before handing the delta to the width controller.
-                onDrag: (delta) => resolvedDayView.onDrag(-delta),
+                // [dayViewDrag] inverts the delta before handing it to the
+                // width controller.
+                onDrag: dayViewDrag,
               ),
               SizedBox(
-                width: resolvedDayView.width,
+                width: dayViewWidth,
                 child: DayViewSidePanel(onToggleHidden: toggleDayViewPanel),
               ),
             ],
