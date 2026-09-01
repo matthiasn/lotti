@@ -5,7 +5,7 @@ description: How samples get out of Apple Health / Health Connect and into the j
 resource: ../../lib/logic/health_import.dart
 tags: [health, healthkit, health-connect, import, dashboards, settings]
 status: stable
-generated: { by: claude-code/fable-5, at: 2026-08-31T12:00:00Z }
+generated: { by: claude-code/fable-5, at: 2026-09-01T12:00:00Z }
 stale_after: 2027-03-01
 sources:
   - id: import
@@ -442,9 +442,14 @@ The habit-signal path reads workouts by SQL equality on the row's `subtype`
 (`workoutsByType`), which neither rule above reaches — so `SignalReader
 .workoutEntities` fans out one query per known spelling of the chosen activity
 (`workoutTypeSpellings`: canonical, `UPPER_SNAKE`, the alias family, and the
-raw input) and merges by entry id, and the habit picker canonicalises and
-de-duplicates the stored strings. A rule persisted in either era therefore
-matches rows from both. The stored strings themselves are left as imported —
+raw input) and merges by entry id, `SignalNeeds.notificationTokens` expands a
+rule's workout types the same way so a write stored in the other spelling still
+triggers evaluation (a workout notifies under its stored type only), the habit
+picker canonicalises and de-duplicates the stored strings, and
+`HabitFormMapping.fromRule` reads a persisted leaf back canonical — collapsing
+`RUNNING` beside `running` into one signal — so the editor's selection matches
+the picker. A rule persisted in either era therefore matches, and hears, rows
+from both. The stored strings themselves are left as imported —
 unifying them would be a row rewrite in the shape of
 `SleepAsleepBackfillService`, and nothing needs it for matching.
 

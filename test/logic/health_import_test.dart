@@ -2550,7 +2550,10 @@ void main() {
         });
       }
 
-      int storeReads() => verify(
+      /// Store reads since the previous call: mocktail's `verify` consumes
+      /// the invocations it matches, so each call counts only what happened
+      /// after the last one.
+      int newStoreReads() => verify(
         () => mockHealthService.getHealthDataFromTypes(
           types: workoutTypes,
           startTime: any(named: 'startTime'),
@@ -2571,7 +2574,7 @@ void main() {
 
           expect(second?.status, HealthImportStatus.imported);
           expect(second?.sampleCount, 0);
-          expect(storeReads(), 1);
+          expect(newStoreReads(), 1);
           verify(() => mockJournalDb.latestWorkout()).called(1);
         });
       });
@@ -2586,12 +2589,16 @@ void main() {
             );
           mobileImport.getWorkoutsHealthDataDelta();
           async.flushMicrotasks();
-          expect(storeReads(), 1);
+          expect(newStoreReads(), 1);
 
           async.elapse(const Duration(seconds: 1));
           mobileImport.getWorkoutsHealthDataDelta();
           async.flushMicrotasks();
-          expect(storeReads(), 1, reason: 'one more read after the interval');
+          expect(
+            newStoreReads(),
+            1,
+            reason: 'one new read once the interval is up',
+          );
         });
       });
 
@@ -2644,7 +2651,7 @@ void main() {
           );
           async.flushMicrotasks();
 
-          expect(storeReads(), 2);
+          expect(newStoreReads(), 2);
         });
       });
     });

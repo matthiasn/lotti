@@ -70,13 +70,7 @@ class HabitSignalStatusController extends AsyncNotifier<HabitSignalStatus?> {
     final rule = habit?.autoCompleteRule;
     if (rule == null) return null;
 
-    final needs = SignalNeeds.of(rule);
-    final tokens = {
-      ...needs.measurableIds,
-      ...needs.quantitativeTypes,
-      ...needs.workoutTypes,
-      ...needs.habitIds,
-    };
+    final tokens = SignalNeeds.of(rule).notificationTokens;
     _subscription = getIt<UpdateNotifications>().updateStream.listen((
       affectedIds,
     ) {

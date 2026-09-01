@@ -129,13 +129,7 @@ class HabitAutoCompletionService {
     if (candidates.isEmpty) return;
     var touched = false;
     for (final habit in candidates) {
-      final needs = SignalNeeds.of(habit.autoCompleteRule!);
-      final tokens = {
-        ...needs.measurableIds,
-        ...needs.quantitativeTypes,
-        ...needs.workoutTypes,
-        ...needs.habitIds,
-      };
+      final tokens = SignalNeeds.of(habit.autoCompleteRule!).notificationTokens;
       if (tokens.intersection(affectedIds).isNotEmpty) {
         _pendingHabitIds.add(habit.id);
         touched = true;

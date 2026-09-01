@@ -1,6 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/logic/health_workout_types.dart';
 
 /// What kind of journal series a signal row watches.
 enum HabitSignalKind { measurable, health, workout }
@@ -35,7 +36,8 @@ class HabitSignalForm {
 
   final HabitSignalKind kind;
 
-  /// Measurable id, health data type or raw workout type.
+  /// Measurable id, health data type or canonical workout type
+  /// (`canonicalWorkoutType` — a persisted `RUNNING` reads back as `running`).
   final String id;
   final HabitSignalMode mode;
   final num? threshold;
@@ -249,9 +251,12 @@ class HabitFormMapping {
           :final valueBasis,
           :final title,
         ):
+          // The picker offers canonical activities, so a leaf persisted in
+          // the plugin-era spelling has to read back canonical too, or the
+          // editor shows it unchecked beside the activity it names.
           final base = _leaf(
             HabitSignalKind.workout,
-            dataType,
+            canonicalWorkoutType(dataType),
             minimum,
             maximum,
             valueBasis,
@@ -280,6 +285,15 @@ class HabitFormMapping {
     }
 
     collect(rule);
+    // Canonicalising workout leaves can make two persisted leaves name one
+    // activity (`RUNNING` beside `running`, the duplicate the un-normalised
+    // picker used to let through); the card shows one signal per series, so
+    // the first stays.
+    final seen = <(HabitSignalKind, String)>{};
+    final distinct = [
+      for (final leaf in leaves)
+        if (seen.add((leaf.kind, leaf.id))) leaf,
+    ];
     final (composite, required) = switch (rule) {
       AutoCompleteRuleAnd() => (HabitCompositeRule.all, 1),
       AutoCompleteRuleMultiple(:final successes) => (
@@ -289,7 +303,7 @@ class HabitFormMapping {
       _ => (HabitCompositeRule.any, 1),
     };
     return HabitSignalsForm(
-      signals: leaves,
+      signals: distinct,
       composite: composite,
       requiredCount: required,
     ).normalized();
