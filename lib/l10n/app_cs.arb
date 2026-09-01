@@ -4886,7 +4886,7 @@
   "syncCredentialsHomeserverHint": "https://matrix.example.com",
   "syncCredentialsHomeserverLabel": "Adresa serveru",
   "syncCredentialsIntro": "Lotti se přihlásí a v tom účtu vytvoří šifrovanou synchronizační místnost. Použij účet vyhrazený pro synchronizaci, ne ten, přes který chatuješ.",
-  "syncCredentialsKeptOnDevice": "Tvoje heslo zůstává v zabezpečeném úložišti tohoto zařízení a odchází jen na server, který zadáš. Lotti ho nikdy nemění.",
+  "syncCredentialsKeptOnDevice": "Tvoje heslo zůstává v zabezpečeném úložišti tohoto zařízení a Lotti ho nikdy nemění. Vidí ho jen server, který zadáš — a párovací kódy, které si později vytvoříš pro svá vlastní zařízení: nesou ho v sobě, aby se mohla přihlásit i ona.",
   "syncCredentialsPasswordLabel": "Heslo",
   "syncCredentialsShowPassword": "Zobrazit heslo",
   "syncCredentialsSubmit": "Přihlásit se a nastavit synchronizaci",

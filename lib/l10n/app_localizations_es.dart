@@ -12806,7 +12806,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get syncCredentialsKeptOnDevice =>
-      'Tu contraseña se queda en el almacenamiento seguro de este dispositivo y solo se envía al servidor que indiques. Lotti nunca la cambia.';
+      'Tu contraseña se queda en el almacenamiento seguro de este dispositivo y Lotti nunca la cambia. Solo la ve el servidor que indiques — y los códigos de emparejamiento que crees después para tus propios dispositivos, que la llevan para que también puedan iniciar sesión.';
 
   @override
   String get syncCredentialsPasswordLabel => 'Contraseña';

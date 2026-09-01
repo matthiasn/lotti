@@ -355,7 +355,10 @@ encrypted sync room through `SyncRoomManager.createRoom` (the gateway stamps the
 `m.lotti.sync_room` marker and megolm encryption at creation) and ends in
 `ready`, exactly where a CLI bundle ends. The password is the user's own and is
 **never rotated** — rotation exists to spend a one-time bundle, and rotating a
-credential the user manages would lock them out of their own account. The
+credential the user manages would lock them out of their own account. Because
+it is not rotated, the handover codes this device later mints carry the user's
+own password — every handover carries the live credential — so the form's
+caveat says so rather than promising the password never leaves the device. The
 fields normalise through `models/matrix_credentials_input.dart`: a bare host
 becomes `https://`, plain `http://` is refused, and a localpart is sent back
 rather than completed, because the account's server name need not match the

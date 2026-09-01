@@ -63,9 +63,10 @@ merge of two users' work.
   nobody to run the CLI can type the server, their full Matrix ID and their
   password under *Set up sync*. Lotti signs in, creates the encrypted sync
   room itself and stops on the same first-device ending a CLI bundle reaches.
-  The password is the user's own: it stays in the device keychain, goes only
-  to the server named, and is never rotated. Every further device still pairs
-  from this one with a handover code. Linux only, by design.
+  The password is the user's own: it stays in the device keychain and is never
+  rotated; only the server named sees it — and the handover codes this device
+  later mints, which carry it like every handover does. Every further device
+  still pairs from this one with such a code. Linux only, by design.
 - **Confirms a handover only when another device can compare it.** A joining
   second device shows which account it is about to join and a six-character
   check code that the inviting device derives independently and displays too —

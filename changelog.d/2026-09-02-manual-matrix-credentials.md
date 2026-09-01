@@ -6,6 +6,7 @@
   → Sync Settings → Devices, *Set up sync* now offers *Sign in with a Matrix
   account instead* on Linux: enter the server address, your full Matrix ID and
   your password, and Lotti signs in, creates the encrypted sync room itself and
-  is ready. Your password stays in this device's secure storage, is sent only
-  to the server you name, and is never changed. Every further device pairs
-  from this one with a pairing code, as before.
+  is ready. Your password stays in this device's secure storage and is never
+  changed; only the server you name sees it, plus the pairing codes you later
+  make for your own devices, which carry it. Every further device pairs from
+  this one with a pairing code, as before.

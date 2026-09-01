@@ -5427,7 +5427,7 @@
   "syncCredentialsHomeserverHint": "https://matrix.example.com",
   "syncCredentialsHomeserverLabel": "Endereço do servidor",
   "syncCredentialsIntro": "O Lotti entra e cria uma sala de sincronização encriptada nessa conta. Usa uma conta reservada à sincronização, não uma com que conversas.",
-  "syncCredentialsKeptOnDevice": "A tua palavra-passe fica no armazenamento seguro deste dispositivo e só é enviada ao servidor que indicares. O Lotti nunca a altera.",
+  "syncCredentialsKeptOnDevice": "A tua palavra-passe fica no armazenamento seguro deste dispositivo e o Lotti nunca a altera. Só o servidor que indicares a vê — e os códigos de emparelhamento que criares depois para os teus próprios dispositivos, que a transportam para que também eles possam entrar.",
   "syncCredentialsPasswordLabel": "Palavra-passe",
   "syncCredentialsShowPassword": "Mostrar palavra-passe",
   "syncCredentialsSubmit": "Entrar e configurar a sincronização",

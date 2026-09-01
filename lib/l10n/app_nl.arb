@@ -5427,7 +5427,7 @@
   "syncCredentialsHomeserverHint": "https://matrix.example.com",
   "syncCredentialsHomeserverLabel": "Serveradres",
   "syncCredentialsIntro": "Lotti logt in en maakt in dat account een versleutelde synckamer aan. Gebruik een account dat alleen voor sync is, niet een waarmee je chat.",
-  "syncCredentialsKeptOnDevice": "Je wachtwoord blijft in de beveiligde opslag van dit apparaat en gaat alleen naar de server die je invoert. Lotti wijzigt het nooit.",
+  "syncCredentialsKeptOnDevice": "Je wachtwoord blijft in de beveiligde opslag van dit apparaat en Lotti wijzigt het nooit. Alleen de server die je invoert ziet het — plus de koppelcodes die je later voor je eigen apparaten maakt: die bevatten het, zodat ook zij kunnen inloggen.",
   "syncCredentialsPasswordLabel": "Wachtwoord",
   "syncCredentialsShowPassword": "Wachtwoord tonen",
   "syncCredentialsSubmit": "Inloggen en sync instellen",

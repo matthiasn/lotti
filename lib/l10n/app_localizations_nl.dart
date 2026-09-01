@@ -12653,7 +12653,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get syncCredentialsKeptOnDevice =>
-      'Je wachtwoord blijft in de beveiligde opslag van dit apparaat en gaat alleen naar de server die je invoert. Lotti wijzigt het nooit.';
+      'Je wachtwoord blijft in de beveiligde opslag van dit apparaat en Lotti wijzigt het nooit. Alleen de server die je invoert ziet het — plus de koppelcodes die je later voor je eigen apparaten maakt: die bevatten het, zodat ook zij kunnen inloggen.';
 
   @override
   String get syncCredentialsPasswordLabel => 'Wachtwoord';

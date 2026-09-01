@@ -12774,7 +12774,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get syncCredentialsKeptOnDevice =>
-      'Tvoje heslo zůstává v zabezpečeném úložišti tohoto zařízení a odchází jen na server, který zadáš. Lotti ho nikdy nemění.';
+      'Tvoje heslo zůstává v zabezpečeném úložišti tohoto zařízení a Lotti ho nikdy nemění. Vidí ho jen server, který zadáš — a párovací kódy, které si později vytvoříš pro svá vlastní zařízení: nesou ho v sobě, aby se mohla přihlásit i ona.';
 
   @override
   String get syncCredentialsPasswordLabel => 'Heslo';

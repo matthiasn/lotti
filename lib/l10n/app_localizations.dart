@@ -21340,7 +21340,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncCredentialsKeptOnDevice.
   ///
   /// In en, this message translates to:
-  /// **'Your password stays in this device\'s secure storage and goes only to the server you enter. Lotti never changes it.'**
+  /// **'Your password stays in this device\'s secure storage and Lotti never changes it. Only the server you enter sees it — plus the pairing codes you later make for your own devices, which carry it so they can sign in too.'**
   String get syncCredentialsKeptOnDevice;
 
   /// No description provided for @syncCredentialsPasswordLabel.

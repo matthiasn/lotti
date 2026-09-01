@@ -12797,7 +12797,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get syncCredentialsKeptOnDevice =>
-      'La tua password resta nell\'archivio sicuro di questo dispositivo e viene inviata solo al server che indichi. Lotti non la cambia mai.';
+      'La tua password resta nell\'archivio sicuro di questo dispositivo e Lotti non la cambia mai. La vede solo il server che indichi — e i codici di associazione che creerai in seguito per i tuoi dispositivi, che la contengono perché anche loro possano accedere.';
 
   @override
   String get syncCredentialsPasswordLabel => 'Password';

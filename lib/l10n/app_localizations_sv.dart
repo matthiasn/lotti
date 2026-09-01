@@ -12639,7 +12639,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get syncCredentialsKeptOnDevice =>
-      'Ditt lösenord stannar i den här enhetens säkra lagring och skickas bara till servern du anger. Lotti ändrar det aldrig.';
+      'Ditt lösenord stannar i den här enhetens säkra lagring och Lotti ändrar det aldrig. Bara servern du anger ser det — samt de parkopplingskoder du senare skapar för dina egna enheter, som bär med sig det så att även de kan logga in.';
 
   @override
   String get syncCredentialsPasswordLabel => 'Lösenord';

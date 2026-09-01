@@ -5428,7 +5428,7 @@
   "syncCredentialsHomeserverHint": "https://matrix.example.com",
   "syncCredentialsHomeserverLabel": "Indirizzo del server",
   "syncCredentialsIntro": "Lotti accede e crea una stanza di sincronizzazione cifrata su quell'account. Usa un account riservato alla sincronizzazione, non quello con cui chatti.",
-  "syncCredentialsKeptOnDevice": "La tua password resta nell'archivio sicuro di questo dispositivo e viene inviata solo al server che indichi. Lotti non la cambia mai.",
+  "syncCredentialsKeptOnDevice": "La tua password resta nell'archivio sicuro di questo dispositivo e Lotti non la cambia mai. La vede solo il server che indichi — e i codici di associazione che creerai in seguito per i tuoi dispositivi, che la contengono perché anche loro possano accedere.",
   "syncCredentialsPasswordLabel": "Password",
   "syncCredentialsShowPassword": "Mostra password",
   "syncCredentialsSubmit": "Accedi e configura la sincronizzazione",

@@ -12552,7 +12552,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncCredentialsKeptOnDevice =>
-      'Your password stays in this device\'s secure storage and goes only to the server you enter. Lotti never changes it.';
+      'Your password stays in this device\'s secure storage and Lotti never changes it. Only the server you enter sees it — plus the pairing codes you later make for your own devices, which carry it so they can sign in too.';
 
   @override
   String get syncCredentialsPasswordLabel => 'Password';

@@ -4879,7 +4879,7 @@
   "syncCredentialsHomeserverHint": "https://matrix.example.com",
   "syncCredentialsHomeserverLabel": "Serveradresse",
   "syncCredentialsIntro": "Lotti meldet sich an und erstellt in diesem Konto einen verschlüsselten Sync-Raum. Nimm ein Konto, das nur für Sync da ist — keins, mit dem du chattest.",
-  "syncCredentialsKeptOnDevice": "Dein Passwort bleibt im sicheren Speicher dieses Geräts und geht nur an den Server, den du eingibst. Lotti ändert es nie.",
+  "syncCredentialsKeptOnDevice": "Dein Passwort bleibt im sicheren Speicher dieses Geräts, und Lotti ändert es nie. Nur der Server, den du eingibst, sieht es — und die Pairing-Codes, die du später für deine eigenen Geräte erstellst: Sie enthalten es, damit auch diese sich anmelden können.",
   "syncCredentialsPasswordLabel": "Passwort",
   "syncCredentialsShowPassword": "Passwort anzeigen",
   "syncCredentialsSubmit": "Anmelden und Sync einrichten",

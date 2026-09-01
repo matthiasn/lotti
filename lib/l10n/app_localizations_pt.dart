@@ -12748,7 +12748,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get syncCredentialsKeptOnDevice =>
-      'A tua palavra-passe fica no armazenamento seguro deste dispositivo e só é enviada ao servidor que indicares. O Lotti nunca a altera.';
+      'A tua palavra-passe fica no armazenamento seguro deste dispositivo e o Lotti nunca a altera. Só o servidor que indicares a vê — e os códigos de emparelhamento que criares depois para os teus próprios dispositivos, que a transportam para que também eles possam entrar.';
 
   @override
   String get syncCredentialsPasswordLabel => 'Palavra-passe';

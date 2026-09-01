@@ -7044,7 +7044,7 @@
   "syncCredentialsHomeserverHint": "https://matrix.example.com",
   "syncCredentialsHomeserverLabel": "Server address",
   "syncCredentialsIntro": "Lotti signs in and creates an encrypted sync room on that account. Use an account set aside for sync, not one you chat with.",
-  "syncCredentialsKeptOnDevice": "Your password stays in this device's secure storage and goes only to the server you enter. Lotti never changes it.",
+  "syncCredentialsKeptOnDevice": "Your password stays in this device's secure storage and Lotti never changes it. Only the server you enter sees it — plus the pairing codes you later make for your own devices, which carry it so they can sign in too.",
   "syncCredentialsPasswordLabel": "Password",
   "syncCredentialsShowPassword": "Show password",
   "syncCredentialsSubmit": "Sign in and set up sync",

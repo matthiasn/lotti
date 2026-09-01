@@ -4879,7 +4879,7 @@
   "syncCredentialsHomeserverHint": "https://matrix.example.com",
   "syncCredentialsHomeserverLabel": "Dirección del servidor",
   "syncCredentialsIntro": "Lotti inicia sesión y crea una sala de sincronización cifrada en esa cuenta. Usa una cuenta reservada para sincronizar, no una con la que chatees.",
-  "syncCredentialsKeptOnDevice": "Tu contraseña se queda en el almacenamiento seguro de este dispositivo y solo se envía al servidor que indiques. Lotti nunca la cambia.",
+  "syncCredentialsKeptOnDevice": "Tu contraseña se queda en el almacenamiento seguro de este dispositivo y Lotti nunca la cambia. Solo la ve el servidor que indiques — y los códigos de emparejamiento que crees después para tus propios dispositivos, que la llevan para que también puedan iniciar sesión.",
   "syncCredentialsPasswordLabel": "Contraseña",
   "syncCredentialsShowPassword": "Mostrar contraseña",
   "syncCredentialsSubmit": "Iniciar sesión y configurar la sincronización",

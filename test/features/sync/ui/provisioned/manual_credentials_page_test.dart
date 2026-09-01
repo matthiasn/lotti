@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_inline_action.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 import 'package:lotti/features/sync/state/provisioning_controller.dart';
 import 'package:lotti/features/sync/ui/provisioned/manual_credentials_page.dart';
@@ -286,7 +287,13 @@ void main() {
     ) async {
       await pumpForm(tester);
 
-      await tester.tap(find.byKey(const Key('sync_credentials_use_code')));
+      // Invoked directly: the link sits under the credential frame, and
+      // under CI's font metrics its centre falls outside the 600 px test
+      // surface, so a synthetic tap lands on nothing.
+      final link = tester.widget<DesignSystemInlineAction>(
+        find.byKey(const Key('sync_credentials_use_code')),
+      );
+      link.onTap!();
       await tester.pump();
 
       expect(pageIndexNotifier.value, SyncSetupPage.pairingCode);

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart'
     hide isLinux, isMacOS, isWindows;
 import 'package:lotti/classes/config.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_inline_action.dart';
 import 'package:lotti/features/sync/ui/provisioned/bundle_import_page.dart';
 import 'package:lotti/features/sync/ui/provisioned/manual_credentials_page.dart';
 import 'package:lotti/features/sync/ui/provisioned/provisioned_sync_modal.dart';
@@ -157,10 +158,13 @@ void main() {
         expect(find.byType(ManualCredentialsWidget), findsOneWidget);
 
         // And back again: the form's own link returns to the code page.
-        final useCode = find.byKey(const Key('sync_credentials_use_code'));
-        await tester.ensureVisible(useCode);
-        await tester.pump();
-        await tester.tap(useCode, warnIfMissed: false);
+        // Invoked directly — the link's position depends on font metrics
+        // and lands off the test surface under CI's fonts.
+        tester
+            .widget<DesignSystemInlineAction>(
+              find.byKey(const Key('sync_credentials_use_code')),
+            )
+            .onTap!();
         await tester.pumpAndSettle();
         expect(find.byType(BundleImportWidget), findsOneWidget);
       });

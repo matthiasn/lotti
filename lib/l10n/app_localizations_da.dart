@@ -12626,7 +12626,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get syncCredentialsKeptOnDevice =>
-      'Din adgangskode bliver i denne enheds sikre lager og sendes kun til den server, du indtaster. Lotti ændrer den aldrig.';
+      'Din adgangskode bliver i denne enheds sikre lager, og Lotti ændrer den aldrig. Kun den server, du indtaster, ser den — samt de parringskoder, du senere laver til dine egne enheder, som bærer den med, så de også kan logge ind.';
 
   @override
   String get syncCredentialsPasswordLabel => 'Adgangskode';

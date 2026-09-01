@@ -5428,7 +5428,7 @@
   "syncCredentialsHomeserverHint": "https://matrix.example.com",
   "syncCredentialsHomeserverLabel": "Serveradresse",
   "syncCredentialsIntro": "Lotti logger ind og opretter et krypteret syncrum på den konto. Brug en konto, der kun er til sync, ikke en du chatter med.",
-  "syncCredentialsKeptOnDevice": "Din adgangskode bliver i denne enheds sikre lager og sendes kun til den server, du indtaster. Lotti ændrer den aldrig.",
+  "syncCredentialsKeptOnDevice": "Din adgangskode bliver i denne enheds sikre lager, og Lotti ændrer den aldrig. Kun den server, du indtaster, ser den — samt de parringskoder, du senere laver til dine egne enheder, som bærer den med, så de også kan logge ind.",
   "syncCredentialsPasswordLabel": "Adgangskode",
   "syncCredentialsShowPassword": "Vis adgangskode",
   "syncCredentialsSubmit": "Log ind og sæt sync op",

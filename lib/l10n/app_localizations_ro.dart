@@ -12869,7 +12869,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get syncCredentialsKeptOnDevice =>
-      'Parola rămâne în stocarea securizată a acestui dispozitiv și este trimisă doar serverului pe care îl introduceți. Lotti nu o schimbă niciodată.';
+      'Parola rămâne în stocarea securizată a acestui dispozitiv și Lotti nu o schimbă niciodată. O vede doar serverul pe care îl introduceți — și codurile de asociere pe care le creați ulterior pentru propriile dispozitive, care o conțin pentru ca și acestea să se poată autentifica.';
 
   @override
   String get syncCredentialsPasswordLabel => 'Parolă';

@@ -12850,7 +12850,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get syncCredentialsKeptOnDevice =>
-      'Ton mot de passe reste dans le stockage sécurisé de cet appareil et n\'est envoyé qu\'au serveur que tu indiques. Lotti ne le modifie jamais.';
+      'Ton mot de passe reste dans le stockage sécurisé de cet appareil et Lotti ne le modifie jamais. Seul le serveur que tu indiques le voit — ainsi que les codes d\'appairage que tu créeras plus tard pour tes propres appareils, qui le contiennent pour qu\'ils puissent se connecter eux aussi.';
 
   @override
   String get syncCredentialsPasswordLabel => 'Mot de passe';
