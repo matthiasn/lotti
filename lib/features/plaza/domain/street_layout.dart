@@ -206,9 +206,14 @@ class StreetLayout {
     return (facadeHeight / 0.88).clamp(2.5, maxBuildingHeight);
   }
 
-  /// Start of the week containing [time] (Monday 00:00).
+  /// Start of the UTC week containing [time] (Monday 00:00 UTC).
+  ///
+  /// Weeks are anchored in UTC so every device derives the same bucket from
+  /// the same instant regardless of its local time zone or DST — the local
+  /// calendar would break the merge-stable placement invariant.
   static DateTime weekStart(DateTime time) {
-    final day = DateTime(time.year, time.month, time.day);
+    final utc = time.toUtc();
+    final day = DateTime.utc(utc.year, utc.month, utc.day);
     return day.subtract(Duration(days: day.weekday - DateTime.monday));
   }
 
@@ -246,8 +251,10 @@ class StreetLayout {
 
     final anchor = epoch ?? weekStart(ordered.first.createdAt);
 
+    // A task older than an explicit epoch lands in bucket zero rather than
+    // being silently dropped to a negative bucket the street never renders.
     int bucketOf(PlazaTask task) =>
-        task.createdAt.difference(anchor).inDays ~/ 7;
+        math.max(0, task.createdAt.difference(anchor).inDays ~/ 7);
 
     final byBucket = <int, List<PlazaTask>>{};
     for (final task in ordered) {
@@ -328,9 +335,11 @@ class StreetLayout {
         final task = sideTasks[i];
         final slot = usable * weights[i] / totalWeight;
         final centerAlong = cursor + slot / 2;
-        final buildingWidth = (slot * 0.82).clamp(
-          minBuildingWidth,
-          maxBuildingWidth,
+        // Never wider than 95% of the slot: in a crowded week the minimum
+        // width yields to the slot so neighbors cannot intersect.
+        final buildingWidth = math.min(
+          slot * 0.95,
+          (slot * 0.82).clamp(minBuildingWidth, maxBuildingWidth),
         );
 
         final sideSign = side == PlotSide.left ? -1.0 : 1.0;

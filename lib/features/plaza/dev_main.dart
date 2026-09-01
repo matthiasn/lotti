@@ -113,6 +113,12 @@ class _PlazaHarnessState extends State<_PlazaHarness> {
   @override
   void initState() {
     super.initState();
+    if (_benchMode) {
+      // The bench phases assume the 300-task workload (their labels and
+      // saturation caps are sized for it), so the preset override is
+      // ignored in benchmark mode.
+      _preset = _HarnessPreset.large;
+    }
     _loadPreset(_preset);
     if (_benchMode) {
       _applyBenchPhase(0);

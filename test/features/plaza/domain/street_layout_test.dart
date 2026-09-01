@@ -21,7 +21,7 @@ PlazaTask _task(String id, DateTime createdAt) {
 /// some empty ones.
 List<PlazaTask> _dataset({int count = 60, int seed = 7}) {
   final rng = Random(seed);
-  var cursor = DateTime(2026, 3, 2, 9);
+  var cursor = DateTime.utc(2026, 3, 2, 9);
   return [
     for (var i = 0; i < count; i++)
       _task(
@@ -90,34 +90,35 @@ void main() {
   });
 
   group('the invariant: nothing ever moves', () {
-    test('appending tasks in later weeks never changes existing placements',
-        () {
-      final tasks = _dataset();
-      final before = layout.plan(tasks);
-
-      final lastCreated = tasks
-          .map((t) => t.createdAt)
-          .reduce((a, b) => a.isAfter(b) ? a : b);
-      final grown = [
-        ...tasks,
-        for (var i = 0; i < 25; i++)
-          _task('new-$i', lastCreated.add(Duration(days: 7 + i * 2))),
-      ];
-      final after = layout.plan(grown, epoch: before.epoch);
-
-      for (final id in before.placements.keys) {
-        expect(
-          after.placements[id],
-          _samePlacementAs(before.placements[id]!),
-          reason: 'appending later tasks moved $id',
-        );
-      }
-      // And the street did grow.
-      expect(after.segments.length, greaterThan(before.segments.length));
-    });
-
     test(
-        'a late-syncing task jostles only its own bucket — '
+      'appending tasks in later weeks never changes existing placements',
+      () {
+        final tasks = _dataset();
+        final before = layout.plan(tasks);
+
+        final lastCreated = tasks
+            .map((t) => t.createdAt)
+            .reduce((a, b) => a.isAfter(b) ? a : b);
+        final grown = [
+          ...tasks,
+          for (var i = 0; i < 25; i++)
+            _task('new-$i', lastCreated.add(Duration(days: 7 + i * 2))),
+        ];
+        final after = layout.plan(grown, epoch: before.epoch);
+
+        for (final id in before.placements.keys) {
+          expect(
+            after.placements[id],
+            _samePlacementAs(before.placements[id]!),
+            reason: 'appending later tasks moved $id',
+          );
+        }
+        // And the street did grow.
+        expect(after.segments.length, greaterThan(before.segments.length));
+      },
+    );
+
+    test('a late-syncing task jostles only its own bucket — '
         'every other placement is bit-identical', () {
       final tasks = _dataset();
       final before = layout.plan(tasks);
@@ -146,7 +147,8 @@ void main() {
           expect(
             after.placements[id],
             _samePlacementAs(b),
-            reason: 'late syncer in bucket $touchedBucket moved $id '
+            reason:
+                'late syncer in bucket $touchedBucket moved $id '
                 'in bucket ${b.bucketIndex}',
           );
         }
@@ -166,13 +168,12 @@ void main() {
   });
 
   group('street structure', () {
-    test('empty weeks collapse to gap segments, busy weeks to plot groups',
-        () {
+    test('empty weeks collapse to gap segments, busy weeks to plot groups', () {
       final tasks = [
-        _task('w0-a', DateTime(2026, 3, 2, 10)),
-        _task('w0-b', DateTime(2026, 3, 3, 10)),
+        _task('w0-a', DateTime.utc(2026, 3, 2, 10)),
+        _task('w0-b', DateTime.utc(2026, 3, 3, 10)),
         // Weeks 1 and 2 empty.
-        _task('w3-a', DateTime(2026, 3, 24, 10)),
+        _task('w3-a', DateTime.utc(2026, 3, 24, 10)),
       ];
       final plan = layout.plan(tasks);
 
@@ -184,10 +185,9 @@ void main() {
     });
 
     test('within a week, tasks alternate sides in (createdAt, id) order', () {
-      final base = DateTime(2026, 3, 2, 9);
+      final base = DateTime.utc(2026, 3, 2, 9);
       final tasks = [
-        for (var i = 0; i < 5; i++)
-          _task('t$i', base.add(Duration(hours: i))),
+        for (var i = 0; i < 5; i++) _task('t$i', base.add(Duration(hours: i))),
       ];
       final plan = layout.plan(tasks);
 
@@ -198,29 +198,63 @@ void main() {
       expect(plan.placements['t4']!.side, PlotSide.left);
     });
 
-    test('building widths stay within bounds however busy the week', () {
-      final base = DateTime(2026, 3, 2, 9);
+    test('crowded weeks never overlap neighboring buildings', () {
+      final base = DateTime.utc(2026, 3, 2, 9);
       final crowded = [
         for (var i = 0; i < 40; i++)
           _task('busy-$i', base.add(Duration(minutes: i))),
       ];
       final plan = layout.plan(crowded);
       for (final placement in plan.placements.values) {
-        expect(
-          placement.width,
-          inInclusiveRange(layout.minBuildingWidth, layout.maxBuildingWidth),
-        );
+        expect(placement.width, lessThanOrEqualTo(layout.maxBuildingWidth));
+        expect(placement.width, greaterThan(0));
+      }
+      // Same bucket, same side: neighbors must not intersect along the road.
+      for (final side in PlotSide.values) {
+        final sidePlacements =
+            plan.placements.values
+                .where((p) => p.side == side && p.bucketIndex == 0)
+                .toList()
+              ..sort((a, b) => a.z.compareTo(b.z));
+        for (var i = 1; i < sidePlacements.length; i++) {
+          final a = sidePlacements[i - 1];
+          final b = sidePlacements[i];
+          final centerGap = (b.z - a.z).abs();
+          expect(
+            centerGap + 1e-9,
+            greaterThanOrEqualTo((a.width + b.width) / 2),
+            reason: 'buildings ${a.taskId} and ${b.taskId} overlap',
+          );
+        }
       }
     });
 
-    test('weekStart anchors to Monday 00:00', () {
+    test('a task older than an explicit epoch lands in bucket zero', () {
+      final tasks = [
+        _task('anchor', DateTime.utc(2026, 3, 9, 10)),
+        _task('straggler', DateTime.utc(2026, 2, 2, 10)),
+      ];
+      final plan = layout.plan(
+        tasks,
+        epoch: StreetLayout.weekStart(DateTime.utc(2026, 3, 9)),
+      );
+      expect(plan.placements['straggler']!.bucketIndex, 0);
+      expect(plan.placements['anchor']!.bucketIndex, 0);
+    });
+
+    test('weekStart anchors to Monday 00:00 UTC', () {
       expect(
-        StreetLayout.weekStart(DateTime(2026, 9, 3, 15, 30)), // A Thursday.
-        DateTime(2026, 8, 31), // The preceding Monday.
+        StreetLayout.weekStart(DateTime.utc(2026, 9, 3, 15, 30)), // Thursday.
+        DateTime.utc(2026, 8, 31), // The preceding Monday.
       );
       expect(
-        StreetLayout.weekStart(DateTime(2026, 8, 31, 0, 1)), // A Monday.
-        DateTime(2026, 8, 31),
+        StreetLayout.weekStart(DateTime.utc(2026, 8, 31, 0, 1)), // Monday.
+        DateTime.utc(2026, 8, 31),
+      );
+      // A local time converts to the same UTC week as its instant.
+      expect(
+        StreetLayout.weekStart(DateTime.utc(2026, 9, 3, 12).toLocal()),
+        DateTime.utc(2026, 8, 31),
       );
     });
   });

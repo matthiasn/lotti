@@ -87,10 +87,15 @@ class PlazaDebugOverlay extends StatelessWidget {
                       ),
                     ),
                     const Spacer(),
-                    Text(
-                      '${stats.avgFrameMs.toStringAsFixed(1)} ms avg\n'
-                      '${stats.worstFrameMs.toStringAsFixed(1)} ms worst',
-                      textAlign: TextAlign.right,
+                    Flexible(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          '${stats.avgFrameMs.toStringAsFixed(1)} ms avg\n'
+                          '${stats.worstFrameMs.toStringAsFixed(1)} ms worst',
+                          textAlign: TextAlign.right,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -170,13 +175,14 @@ class PlazaDebugOverlay extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 4),
-                Row(
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
                   children: [
                     OutlinedButton(
                       onPressed: onCyclePreset,
                       child: const Text('preset'),
                     ),
-                    const SizedBox(width: 8),
                     OutlinedButton(
                       onPressed: onToggleOverhead,
                       child: const Text('overhead'),

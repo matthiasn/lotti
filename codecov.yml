@@ -50,6 +50,13 @@ ignore:
   # (`flutter run -t .../dev_main.dart`): a `runApp` harness with no logic to
   # unit-test, not shipped in the app.
   - "lib/features/knowledge_graph/dev_main.dart"
+  # Dev-only standalone entrypoint for the project-plaza prototype harness
+  # (same pattern as the knowledge-graph one above), plus its flutter_scene
+  # scene layer: `Scene()` requires a live Flutter GPU context at
+  # construction and throws on the headless Linux CI runner, so this code
+  # can only be exercised by running the real harness.
+  - "lib/features/plaza/dev_main.dart"
+  - "lib/features/plaza/scene/**"
   # Integration glue that embeds the app's real task/entry detail widgets
   # (TaskForm / EntryDetailsWidget) in the graph's side panel. Those widgets
   # carry their own extensive tests and pull the whole app's provider/getIt
