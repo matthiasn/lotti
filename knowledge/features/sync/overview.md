@@ -5,8 +5,8 @@ description: Single-user multi-device replication over end-to-end encrypted Matr
 resource: ../../../lib/features/sync
 tags: [sync, matrix, replication, outbox, queue]
 status: stable
-generated: { by: codex/gpt-5, at: 2026-08-29T23:51:47Z }
-stale_after: 2026-11-03
+generated: { by: claude-code/fable-5.1, at: 2026-09-02T00:30:00Z }
+stale_after: 2026-12-02
 sources:
   - id: sync-src
     resource: ../../../lib/features/sync
@@ -344,6 +344,29 @@ credential. The controller's state transitions expose that distinction directly:
 a rotating bundle enters `rotatingPassword`, while a handover bundle proceeds
 from room join to `done`. The behavior derives from bundle kind, never platform.
 
+One entry is platform-gated, and it is not a bundle at all. On Linux the setup
+sheet carries a fourth page, `ui/provisioned/manual_credentials_page.dart`,
+where the user types a homeserver, a full Matrix ID and a password
+([GitHub #4055](https://github.com/matthiasn/lotti/issues/4055)). It exists for
+the account's first device when nobody runs the provisioning CLI: the user has
+a Matrix account, on their own homeserver or a public one, and no code.
+`ProvisioningController.configureFromCredentials` signs in, **creates** the
+encrypted sync room through `SyncRoomManager.createRoom` (the gateway stamps the
+`m.lotti.sync_room` marker and megolm encryption at creation) and ends in
+`ready`, exactly where a CLI bundle ends. The password is the user's own and is
+**never rotated** — rotation exists to spend a one-time bundle, and rotating a
+credential the user manages would lock them out of their own account. Because
+it is not rotated, the handover codes this device later mints carry the user's
+own password — every handover carries the live credential — so the form's
+caveat says so rather than promising the password never leaves the device. The
+fields normalise through `models/matrix_credentials_input.dart`: a bare host
+becomes `https://`, plain `http://` is refused, and a localpart is sent back
+rather than completed, because the account's server name need not match the
+homeserver host. Every further device still pairs from this one with a
+handover code. The entry is reachable from a quiet link under *Set up sync* and
+from the first-device card on the pairing-code page; both are absent off
+Linux, and so is the page.
+
 ```mermaid
 stateDiagram-v2
   direction LR
@@ -365,8 +388,13 @@ stateDiagram-v2
   state "New device" as New {
     [*] --> Scanning: Android, iOS, macOS, or Linux opens the camera
     [*] --> Manual: Windows opens manual entry
+    [*] --> Credentials: Linux, Sign in with a Matrix account
     Scanning --> Manual: enter code manually
     Manual --> Scanning: scan with camera
+    Scanning --> Credentials: Linux, first-device card
+    Manual --> Credentials: Linux, first-device card
+    Credentials --> Manual: Have a pairing code
+    Credentials --> Configuring: Sign in and set up sync
     Scanning --> Decoded: handover barcode decodes
     Manual --> Decoded: Import handover bundle
     Scanning --> Configuring: provisioned barcode decodes
@@ -375,9 +403,11 @@ stateDiagram-v2
     Decoded --> Manual: Use a different code
     Decoded --> Configuring: Connect this device
     Configuring --> FirstDevice: provisioned bundle, password rotated
+    Configuring --> FirstDevice: typed credentials, room created, password untouched
     Configuring --> Paired: handover bundle, joined a peer's account
     Configuring --> Failed: login or configuration error
     Failed --> Configuring: Retry
+    Failed --> Credentials: Edit sign-in details
     Paired --> Verifying: AutoVerificationLauncher opens the SAS ceremony
   }
   ShowingCode --> Scanning: QR is scanned
@@ -475,9 +505,10 @@ Five properties are deliberate:
   handover produces a byte-identical one and cannot resolve a mismatch.
 
 **Configuring has two endings, and they are not interchangeable.**
-`ProvisioningState.ready` follows a `provisioned` bundle: the
-password has just been rotated and this is normally the *only* device on the
-account, so `_FirstDeviceView` says the account is set up and stops. There is
+`ProvisioningState.ready` follows a `provisioned` bundle — or, on Linux, a
+typed sign-in that just created the room: either way this is normally the
+*only* device on the account, so `_FirstDeviceView` says the account is set up
+and stops. There is
 no peer to run a SAS ceremony against and none to push settings from, so the
 diagram's `Verifying` transition does not apply to it.
 `ProvisioningState.done` follows a `handover` bundle minted by a peer, so a
@@ -564,6 +595,16 @@ re-attempting this one. So the bar's accent is *Enter a new code* (which
 resets `ProvisioningController` — the import page listens for the return to
 `initial` and clears its stale decoded bundle), while *Retry this code*
 stays as the demoted quiet action for transient network failures.
+
+The connect page learns which entry it was reached from through a
+`ValueListenable<SyncSetupEntry>` (`ui/provisioned/sync_setup_entry.dart`)
+that `SyncSetupEmptyState` derives from the sheet's page index: the connect
+step is reachable only from an entry page, so the last entry page shown is the
+one that sent the user on. After a typed sign-in the accent reads *Edit
+sign-in details* and returns to the form, the failure copy blames the details
+rather than a stale code (there is no other device to fetch one from), and the
+Get code · Check · Connect track is dropped, since none of its stations were
+passed.
 
 The last screen is state-driven throughout, for one reason worth stating: a
 device that has completed the SAS ceremony leaves `getUnverifiedDevices()`

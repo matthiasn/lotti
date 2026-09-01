@@ -69,3 +69,26 @@ giro non può più accedere, ma non c'è motivo di tenerla.
 Fino a quel primo uso, tratta il bundle come una password: accede
 all'account di sincronizzazione — tienilo fuori da chat, screenshot e
 schermi condivisi.
+
+## Su Linux: accedere senza bundle
+
+Il prerequisito qui sopra ha un'eccezione. Su Linux, **Configura la
+sincronizzazione** offre anche **Accedi invece con un account Matrix**, e la
+scheda del primo dispositivo nella pagina del codice di associazione porta
+la stessa opzione. Inserisci l'indirizzo del server, il tuo ID Matrix
+completo (come `@nome:example.com`) e la password dell'account: Lotti
+accede, crea da sé la stanza di sincronizzazione cifrata su quell'account e
+arriva alla stessa schermata del primo dispositivo in cui finisce il
+percorso del bundle. Nessun amministratore, nessuno strumento, nessun bundle
+— basta un account Matrix che controlli, sul tuo homeserver o su uno
+pubblico.
+
+Due cose da sapere. Usa un account riservato alla sincronizzazione, non
+quello con cui chatti: la stanza di sincronizzazione è solo un'altra stanza
+di quell'account, e tutto ciò che scrivi finisce lì. E qui la password è la
+tua: resta nell'archivio sicuro di questo dispositivo e **non viene mai
+ruotata**, a differenza del bundle qui sopra. La vede solo il server che
+indichi, oltre ai codici di associazione che creerai in seguito in
+**Aggiungi un dispositivo**: la contengono, quindi trattali come le
+credenziali che sono. Ogni dispositivo successivo si associa comunque a partire da questo
+con [Aggiungi un dispositivo](./add-device.mdx).

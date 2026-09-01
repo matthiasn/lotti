@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:clock/clock.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
@@ -66,6 +67,13 @@ class MatrixServiceOps {
     final room = await roomManager.joinRoom(roomId);
     return room?.id ?? roomId;
   }
+
+  /// Creates the account's encrypted sync room and returns its id. The room is
+  /// named by the moment it was created so an account that ends up with a
+  /// stray extra room can tell them apart in another client.
+  Future<String> createRoom() => roomManager.createRoom(
+    name: 'Lotti sync ${clock.now().toIso8601String()}',
+  );
 
   Future<void> saveRoom(String roomId) async {
     await roomManager.saveRoomId(roomId);

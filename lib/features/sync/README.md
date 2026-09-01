@@ -58,6 +58,15 @@ merge of two users' work.
   and manual recovery stays available. Choosing a partial range, closing the
   history sheet without starting, or closing Add Device after verification
   releases the provisional hold without suppressing unrelated repair.
+- **Lets a first device on Linux sign in without a provisioning bundle.** A
+  user with a Matrix account — their own homeserver or a public one — and
+  nobody to run the CLI can type the server, their full Matrix ID and their
+  password under *Set up sync*. Lotti signs in, creates the encrypted sync
+  room itself and stops on the same first-device ending a CLI bundle reaches.
+  The password is the user's own: it stays in the device keychain and is never
+  rotated; only the server named sees it — and the handover codes this device
+  later mints, which carry it like every handover does. Every further device
+  still pairs from this one with such a code. Linux only, by design.
 - **Confirms a handover only when another device can compare it.** A joining
   second device shows which account it is about to join and a six-character
   check code that the inviting device derives independently and displays too —

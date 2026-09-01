@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
@@ -125,6 +126,25 @@ void main() {
         expect(await buildOps().joinRoom('!req:server'), '!req:server');
       },
     );
+
+    test('createRoom names the room by the moment it was created', () async {
+      when(
+        () => roomManager.createRoom(name: any(named: 'name')),
+      ).thenAnswer((_) async => '!new:server');
+
+      final roomId = await withClock(
+        Clock.fixed(DateTime.utc(2026, 9, 1, 12, 30)),
+        () => buildOps().createRoom(),
+      );
+
+      expect(roomId, '!new:server');
+      // A stray extra room on the account stays tellable-apart in another
+      // client by when it was made.
+      verify(
+        () =>
+            roomManager.createRoom(name: 'Lotti sync 2026-09-01T12:30:00.000Z'),
+      ).called(1);
+    });
 
     test('getRoom returns the persisted room id', () async {
       when(

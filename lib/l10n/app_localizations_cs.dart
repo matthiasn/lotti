@@ -12735,6 +12735,70 @@ class AppLocalizationsCs extends AppLocalizations {
       'Odemkne se po shodě emoji — do té doby by je nové zařízení stejně nerozšifrovalo.';
 
   @override
+  String get syncCredentialsEditDetails => 'Upravit přihlašovací údaje';
+
+  @override
+  String get syncCredentialsErrorConfigurationFailed =>
+      'Přihlášení proběhlo, ale synchronizační místnost se nepodařilo vytvořit. Zkus to znovu; pokud to selhává dál, ověř, že účet smí vytvářet místnosti.';
+
+  @override
+  String get syncCredentialsErrorHomeserver =>
+      'Zadej server jako webovou adresu začínající na https://.';
+
+  @override
+  String get syncCredentialsErrorLoginFailed =>
+      'Server tyto přihlašovací údaje nepřijal. Zkontroluj adresu serveru, Matrix ID a heslo a zkus to znovu.';
+
+  @override
+  String get syncCredentialsErrorPassword => 'Zadej heslo k účtu.';
+
+  @override
+  String get syncCredentialsErrorUser =>
+      'Zadej své úplné Matrix ID, například @jmeno:example.com.';
+
+  @override
+  String get syncCredentialsFailedTitle => 'Toto přihlášení nevyšlo';
+
+  @override
+  String get syncCredentialsHidePassword => 'Skrýt heslo';
+
+  @override
+  String get syncCredentialsHomeserverHint => 'https://matrix.example.com';
+
+  @override
+  String get syncCredentialsHomeserverLabel => 'Adresa serveru';
+
+  @override
+  String get syncCredentialsIntro =>
+      'Lotti se přihlásí a v tom účtu vytvoří šifrovanou synchronizační místnost. Použij účet vyhrazený pro synchronizaci, ne ten, přes který chatuješ.';
+
+  @override
+  String get syncCredentialsKeptOnDevice =>
+      'Tvoje heslo zůstává v zabezpečeném úložišti tohoto zařízení a Lotti ho nikdy nemění. Vidí ho jen server, který zadáš — a párovací kódy, které si později vytvoříš pro svá vlastní zařízení: nesou ho v sobě, aby se mohla přihlásit i ona.';
+
+  @override
+  String get syncCredentialsPasswordLabel => 'Heslo';
+
+  @override
+  String get syncCredentialsShowPassword => 'Zobrazit heslo';
+
+  @override
+  String get syncCredentialsSubmit => 'Přihlásit se a nastavit synchronizaci';
+
+  @override
+  String get syncCredentialsTitle => 'Přihlas se svým účtem Matrix';
+
+  @override
+  String get syncCredentialsUsePairingCode =>
+      'Máš párovací kód? Použij radši ten';
+
+  @override
+  String get syncCredentialsUserHint => '@jmeno:example.com';
+
+  @override
+  String get syncCredentialsUserLabel => 'Matrix ID';
+
+  @override
   String get syncDeleteConfigConfirm => 'Ukončit synchronizaci';
 
   @override
@@ -12981,6 +13045,10 @@ class AppLocalizationsCs extends AppLocalizations {
       'Zatím není žádné jiné zařízení, ze kterého bys kopíroval(a) — první kód pochází z provisioning nástroje tvého synchronizačního serveru.';
 
   @override
+  String get syncPairFirstDeviceHintWithAccount =>
+      'Zatím není jiné zařízení, ze kterého by šlo kopírovat. Tvůj první kód pochází z provisioningového nástroje tvého synchronizačního serveru — nebo kód přeskoč a přihlas se účtem Matrix.';
+
+  @override
   String get syncPairFirstDeviceTitle => 'Nastavuješ své první zařízení?';
 
   @override
@@ -13029,6 +13097,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get syncPairShowEmoji => 'Zobrazit emoji';
+
+  @override
+  String get syncPairSignInWithAccount => 'Přihlásit se účtem Matrix';
 
   @override
   String get syncPairWhereToFind =>
@@ -13146,6 +13217,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get syncSetupEmptyTitle => 'Synchronizuj svá zařízení';
+
+  @override
+  String get syncSetupUseAccountLink => 'Místo toho se přihlásit účtem Matrix';
 
   @override
   String get syncStepAiSettings => 'AI nastavení';

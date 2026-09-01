@@ -70,3 +70,25 @@ meer inloggen, maar er is geen reden om die te bewaren.
 Tot dat eerste gebruik behandel je de bundle als een wachtwoord: er kan mee
 worden ingelogd op het synchronisatieaccount — houd hem uit chats,
 schermafbeeldingen en gedeelde schermen.
+
+## Op Linux: inloggen zonder bundle
+
+De voorwaarde hierboven kent één uitzondering. Op Linux biedt **Sync
+instellen** ook **In plaats daarvan inloggen met een Matrix-account**, en de
+kaart voor het eerste apparaat op de pagina met de koppelcode heeft dezelfde
+optie. Voer het serveradres, je volledige Matrix-ID (zoals
+`@naam:example.com`) en het wachtwoord van het account in: Lotti logt in,
+maakt zelf de versleutelde synckamer in dat account aan en komt uit op
+hetzelfde scherm voor het eerste apparaat waar het bundlepad eindigt. Geen
+beheerder, geen tool, geen bundle — elk Matrix-account dat je beheert
+volstaat, op je eigen homeserver of een openbare.
+
+Twee dingen om te weten. Gebruik een account dat alleen voor sync is, niet
+een waarmee je chat: de synckamer is gewoon nog een kamer in dat account, en
+alles wat je schrijft komt daarin terecht. En je wachtwoord is hier van
+jou — het blijft in de beveiligde opslag van dit apparaat en wordt **nooit
+geroteerd**, anders dan bij de bundle hierboven. Alleen de server die je
+invoert ziet het, plus de koppelcodes die je later onder **Een apparaat
+toevoegen** maakt: die bevatten het, behandel ze dus als de inloggegevens
+die ze zijn. Elk volgend apparaat koppelt nog steeds vanaf dit apparaat
+met [Een apparaat toevoegen](./add-device.mdx).

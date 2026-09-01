@@ -12708,6 +12708,71 @@ class AppLocalizationsPt extends AppLocalizations {
       'Desbloqueia depois de os emojis coincidirem — antes disso, o dispositivo novo nem os conseguiria decifrar.';
 
   @override
+  String get syncCredentialsEditDetails => 'Editar dados de acesso';
+
+  @override
+  String get syncCredentialsErrorConfigurationFailed =>
+      'Sessão iniciada, mas não foi possível criar a sala de sincronização. Tenta de novo; se continuar a falhar, confirma que a conta pode criar salas.';
+
+  @override
+  String get syncCredentialsErrorHomeserver =>
+      'Introduz o servidor como um endereço web que comece por https://.';
+
+  @override
+  String get syncCredentialsErrorLoginFailed =>
+      'O servidor não aceitou esses dados de acesso. Verifica o endereço do servidor, o ID Matrix e a palavra-passe e tenta de novo.';
+
+  @override
+  String get syncCredentialsErrorPassword =>
+      'Introduz a palavra-passe da conta.';
+
+  @override
+  String get syncCredentialsErrorUser =>
+      'Introduz o teu ID Matrix completo, como @nome:example.com.';
+
+  @override
+  String get syncCredentialsFailedTitle => 'Essa entrada não funcionou';
+
+  @override
+  String get syncCredentialsHidePassword => 'Ocultar palavra-passe';
+
+  @override
+  String get syncCredentialsHomeserverHint => 'https://matrix.example.com';
+
+  @override
+  String get syncCredentialsHomeserverLabel => 'Endereço do servidor';
+
+  @override
+  String get syncCredentialsIntro =>
+      'O Lotti entra e cria uma sala de sincronização encriptada nessa conta. Usa uma conta reservada à sincronização, não uma com que conversas.';
+
+  @override
+  String get syncCredentialsKeptOnDevice =>
+      'A tua palavra-passe fica no armazenamento seguro deste dispositivo e o Lotti nunca a altera. Só o servidor que indicares a vê — e os códigos de emparelhamento que criares depois para os teus próprios dispositivos, que a transportam para que também eles possam entrar.';
+
+  @override
+  String get syncCredentialsPasswordLabel => 'Palavra-passe';
+
+  @override
+  String get syncCredentialsShowPassword => 'Mostrar palavra-passe';
+
+  @override
+  String get syncCredentialsSubmit => 'Entrar e configurar a sincronização';
+
+  @override
+  String get syncCredentialsTitle => 'Entra com a tua conta Matrix';
+
+  @override
+  String get syncCredentialsUsePairingCode =>
+      'Tens um código de emparelhamento? Usa-o em vez disso';
+
+  @override
+  String get syncCredentialsUserHint => '@nome:example.com';
+
+  @override
+  String get syncCredentialsUserLabel => 'ID Matrix';
+
+  @override
   String get syncDeleteConfigConfirm => 'Parar de sincronizar';
 
   @override
@@ -12950,6 +13015,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'Ainda não há outro dispositivo de onde copiar — o teu primeiro código vem da ferramenta de aprovisionamento do teu servidor de sincronização.';
 
   @override
+  String get syncPairFirstDeviceHintWithAccount =>
+      'Ainda não há outro dispositivo de onde copiar. O teu primeiro código vem da ferramenta de provisionamento do teu servidor de sincronização — ou salta o código e entra com uma conta Matrix.';
+
+  @override
   String get syncPairFirstDeviceTitle =>
       'A configurar o teu primeiro dispositivo?';
 
@@ -12999,6 +13068,9 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get syncPairShowEmoji => 'Mostrar os emojis';
+
+  @override
+  String get syncPairSignInWithAccount => 'Entrar com uma conta Matrix';
 
   @override
   String get syncPairWhereToFind =>
@@ -13118,6 +13190,10 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get syncSetupEmptyTitle => 'Sincroniza os teus dispositivos';
+
+  @override
+  String get syncSetupUseAccountLink =>
+      'Em vez disso, entrar com uma conta Matrix';
 
   @override
   String get syncStepAiSettings => 'Configurações de IA';

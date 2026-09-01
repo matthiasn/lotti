@@ -12600,6 +12600,70 @@ class AppLocalizationsSv extends AppLocalizations {
       'Låses upp efter emoji-matchningen — innan dess kan den nya enheten ändå inte dekryptera dem.';
 
   @override
+  String get syncCredentialsEditDetails => 'Ändra inloggningsuppgifter';
+
+  @override
+  String get syncCredentialsErrorConfigurationFailed =>
+      'Inloggad, men synkroniseringsrummet kunde inte skapas. Försök igen; om det fortsätter misslyckas, kontrollera att kontot får skapa rum.';
+
+  @override
+  String get syncCredentialsErrorHomeserver =>
+      'Ange servern som en webbadress som börjar med https://.';
+
+  @override
+  String get syncCredentialsErrorLoginFailed =>
+      'Servern godtog inte de inloggningsuppgifterna. Kontrollera serveradressen, Matrix-ID:t och lösenordet och försök igen.';
+
+  @override
+  String get syncCredentialsErrorPassword => 'Ange kontots lösenord.';
+
+  @override
+  String get syncCredentialsErrorUser =>
+      'Ange ditt fullständiga Matrix-ID, till exempel @namn:example.com.';
+
+  @override
+  String get syncCredentialsFailedTitle => 'Den inloggningen fungerade inte';
+
+  @override
+  String get syncCredentialsHidePassword => 'Dölj lösenord';
+
+  @override
+  String get syncCredentialsHomeserverHint => 'https://matrix.example.com';
+
+  @override
+  String get syncCredentialsHomeserverLabel => 'Serveradress';
+
+  @override
+  String get syncCredentialsIntro =>
+      'Lotti loggar in och skapar ett krypterat synkroniseringsrum på det kontot. Använd ett konto som är avsett för synkronisering, inte ett du chattar med.';
+
+  @override
+  String get syncCredentialsKeptOnDevice =>
+      'Ditt lösenord stannar i den här enhetens säkra lagring och Lotti ändrar det aldrig. Bara servern du anger ser det — samt de parkopplingskoder du senare skapar för dina egna enheter, som bär med sig det så att även de kan logga in.';
+
+  @override
+  String get syncCredentialsPasswordLabel => 'Lösenord';
+
+  @override
+  String get syncCredentialsShowPassword => 'Visa lösenord';
+
+  @override
+  String get syncCredentialsSubmit => 'Logga in och konfigurera synk';
+
+  @override
+  String get syncCredentialsTitle => 'Logga in med ditt Matrix-konto';
+
+  @override
+  String get syncCredentialsUsePairingCode =>
+      'Har du en parkopplingskod? Använd den i stället';
+
+  @override
+  String get syncCredentialsUserHint => '@namn:example.com';
+
+  @override
+  String get syncCredentialsUserLabel => 'Matrix-ID';
+
+  @override
   String get syncDeleteConfigConfirm => 'Sluta synka';
 
   @override
@@ -12837,6 +12901,10 @@ class AppLocalizationsSv extends AppLocalizations {
       'Det finns ingen annan enhet att kopiera från ännu — din första kod kommer från synkroniseringsserverns provisioneringsverktyg.';
 
   @override
+  String get syncPairFirstDeviceHintWithAccount =>
+      'Det finns ingen annan enhet att kopiera från ännu. Din första kod kommer från synkroniseringsserverns provisioneringsverktyg — eller hoppa över koden och logga in med ett Matrix-konto.';
+
+  @override
   String get syncPairFirstDeviceTitle => 'Ställer du in din första enhet?';
 
   @override
@@ -12885,6 +12953,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get syncPairShowEmoji => 'Visa emojierna';
+
+  @override
+  String get syncPairSignInWithAccount => 'Logga in med ett Matrix-konto';
 
   @override
   String get syncPairWhereToFind =>
@@ -13003,6 +13074,10 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get syncSetupEmptyTitle => 'Synka dina enheter';
+
+  @override
+  String get syncSetupUseAccountLink =>
+      'Logga in med ett Matrix-konto i stället';
 
   @override
   String get syncStepAiSettings => 'AI-inställningar';

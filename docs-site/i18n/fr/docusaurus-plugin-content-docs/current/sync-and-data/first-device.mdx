@@ -71,3 +71,27 @@ connecter, mais rien ne justifie de la garder.
 Jusqu'à cette première utilisation, traite le bundle comme un mot de
 passe : il permet de se connecter au compte de synchronisation — garde-le
 hors des discussions, des captures d'écran et des écrans partagés.
+
+## Sous Linux : se connecter sans bundle
+
+Le prérequis ci-dessus a une exception. Sous Linux, **Configurer la
+synchronisation** propose aussi **Se connecter avec un compte Matrix à la
+place**, et la carte du premier appareil sur la page du code d'appairage
+porte la même option. Saisis l'adresse du serveur, ton identifiant Matrix
+complet (comme `@nom:example.com`) et le mot de passe du compte : Lotti se
+connecte, crée lui-même le salon de synchronisation chiffré sur ce compte et
+arrive sur le même écran de premier appareil que celui où se termine le
+chemin du bundle. Pas d'admin, pas d'outil, pas de bundle — n'importe quel
+compte Matrix que tu contrôles convient, sur ton propre serveur ou un
+serveur public.
+
+Deux choses à savoir. Utilise un compte réservé à la synchronisation, pas
+celui avec lequel tu discutes : le salon de synchronisation n'est qu'un
+salon de plus sur ce compte, et tout ce que tu écris y va. Et ton mot de
+passe reste le tien ici — il reste dans le stockage sécurisé de cet
+appareil et n'est **jamais renouvelé**, contrairement au bundle ci-dessus.
+Seul le serveur que tu indiques le voit, ainsi que les codes d'appairage que
+tu créeras plus tard sous **Ajouter un appareil** : ils le contiennent,
+traite-les donc comme les identifiants qu'ils sont. Chaque appareil suivant
+s'appaire toujours depuis celui-ci avec
+[Ajouter un appareil](./add-device.mdx).

@@ -338,6 +338,17 @@ void main() {
       verify(() => roomManager.dispose()).called(1);
     });
 
+    test('createRoom delegates to room manager and returns the id', () async {
+      when(
+        () => roomManager.createRoom(name: any(named: 'name')),
+      ).thenAnswer((_) async => '!created:server');
+
+      final service = createService();
+
+      expect(await service.createRoom(), '!created:server');
+      verify(() => roomManager.createRoom(name: any(named: 'name'))).called(1);
+    });
+
     test('joinRoom delegates to room manager', () async {
       when(
         () => roomManager.joinRoom(any()),

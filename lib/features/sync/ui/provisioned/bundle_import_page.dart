@@ -15,6 +15,7 @@ import 'package:lotti/features/sync/models/pairing_check_code.dart';
 import 'package:lotti/features/sync/state/bundle_decode_error.dart';
 import 'package:lotti/features/sync/state/provisioning_controller.dart';
 import 'package:lotti/features/sync/ui/provisioned/desktop_qr_scanner.dart';
+import 'package:lotti/features/sync/ui/provisioned/sync_setup_entry.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/pairing_check_code_view.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_well.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_wizard_progress_track.dart';
@@ -26,9 +27,13 @@ import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
+/// The pairing-code entry. [onSignInWithAccount], when given, adds the
+/// Linux-only way in that needs no code — typed Matrix credentials — to the
+/// first-device card, where the user with no other device is looking.
 SliverWoltModalSheetPage bundleImportPage({
   required BuildContext context,
   required ValueNotifier<int> pageIndexNotifier,
+  VoidCallback? onSignInWithAccount,
 }) {
   return ModalUtils.modalSheetPage(
     context: context,
@@ -37,7 +42,10 @@ SliverWoltModalSheetPage bundleImportPage({
     // No sticky bar on this page — reserving clearance for one left a dead
     // band under the last element on every desktop capture.
     padding: WoltModalConfig.pagePadding,
-    child: BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+    child: BundleImportWidget(
+      pageIndexNotifier: pageIndexNotifier,
+      onSignInWithAccount: onSignInWithAccount,
+    ),
   );
 }
 
@@ -45,9 +53,13 @@ class BundleImportWidget extends ConsumerStatefulWidget {
   const BundleImportWidget({
     required this.pageIndexNotifier,
     super.key,
+    this.onSignInWithAccount,
   });
 
   final ValueNotifier<int> pageIndexNotifier;
+
+  /// Opens the typed-credentials entry; null where that entry does not exist.
+  final VoidCallback? onSignInWithAccount;
 
   @override
   ConsumerState<BundleImportWidget> createState() => _BundleImportWidgetState();
@@ -167,7 +179,7 @@ class _BundleImportWidgetState extends ConsumerState<BundleImportWidget> {
           .read(provisioningControllerProvider.notifier)
           .configureFromBundle(bundle),
     );
-    widget.pageIndexNotifier.value = 1;
+    widget.pageIndexNotifier.value = SyncSetupPage.connect;
   }
 
   void _handleBarcode(BarcodeCapture barcodes) {
@@ -309,6 +321,7 @@ class _BundleImportWidgetState extends ConsumerState<BundleImportWidget> {
                         onUseCamera: _scannerSupported
                             ? () => _setManualEntry(manual: false)
                             : null,
+                        onSignInWithAccount: widget.onSignInWithAccount,
                       )
                     else
                       _ScannerView(
@@ -320,6 +333,7 @@ class _BundleImportWidgetState extends ConsumerState<BundleImportWidget> {
                         errorText: _errorText,
                         onEnterManually: () => _setManualEntry(manual: true),
                         onRetryCamera: _restartScanner,
+                        onSignInWithAccount: widget.onSignInWithAccount,
                       ),
                   ],
                 ),
@@ -406,13 +420,21 @@ const String _kFirstDeviceGuidePath = 'sync-and-data/first-device';
 /// nothing to press. The button deep-links to the manual's first-device
 /// guide, not the manual root: a root landing still left the user hunting
 /// for a page that explains the provisioning tool.
+///
+/// On Linux the card also carries the way in that needs no code at all:
+/// signing in with a Matrix account, after which the app creates the sync
+/// room itself. The hint says so, because "your first code comes from the
+/// provisioning tool" stops being the whole truth there.
 class _FirstDeviceCard extends ConsumerWidget {
-  const _FirstDeviceCard();
+  const _FirstDeviceCard({this.onSignInWithAccount});
+
+  final VoidCallback? onSignInWithAccount;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     final messages = context.messages;
+    final signIn = onSignInWithAccount;
 
     return SyncWell(
       child: Column(
@@ -425,24 +447,43 @@ class _FirstDeviceCard extends ConsumerWidget {
           ),
           SizedBox(height: tokens.spacing.step2),
           Text(
-            messages.syncPairFirstDeviceHint,
+            signIn == null
+                ? messages.syncPairFirstDeviceHint
+                : messages.syncPairFirstDeviceHintWithAccount,
             style: tokens.typography.styles.body.bodySmall.copyWith(
               color: tokens.colors.text.mediumEmphasis,
             ),
           ),
           SizedBox(height: tokens.spacing.step3),
-          DesignSystemButton(
-            key: const Key('bundle_import_open_manual'),
-            label: messages.syncPairOpenManual,
-            variant: DesignSystemButtonVariant.outlined,
-            leadingIcon: LottiIcons.book,
-            onPressed: () => unawaited(
-              openManualInBrowser(
-                systemLocale: WidgetsBinding.instance.platformDispatcher.locale,
-                override: ref.read(manualLanguageControllerProvider).value,
-                path: _kFirstDeviceGuidePath,
+          // Side by side where they fit, stacked where they do not: two
+          // outlined peers, neither the card's accent.
+          Wrap(
+            spacing: tokens.spacing.step3,
+            runSpacing: tokens.spacing.step3,
+            children: [
+              if (signIn != null)
+                DesignSystemButton(
+                  key: const Key('bundle_import_sign_in_account'),
+                  label: messages.syncPairSignInWithAccount,
+                  variant: DesignSystemButtonVariant.outlined,
+                  leadingIcon: LottiIcons.key,
+                  onPressed: signIn,
+                ),
+              DesignSystemButton(
+                key: const Key('bundle_import_open_manual'),
+                label: messages.syncPairOpenManual,
+                variant: DesignSystemButtonVariant.outlined,
+                leadingIcon: LottiIcons.book,
+                onPressed: () => unawaited(
+                  openManualInBrowser(
+                    systemLocale:
+                        WidgetsBinding.instance.platformDispatcher.locale,
+                    override: ref.read(manualLanguageControllerProvider).value,
+                    path: _kFirstDeviceGuidePath,
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
         ],
       ),
@@ -474,6 +515,7 @@ class _ScannerView extends StatefulWidget {
     required this.usesLinuxScanner,
     super.key,
     this.errorText,
+    this.onSignInWithAccount,
   });
 
   final MobileScannerController controller;
@@ -487,6 +529,7 @@ class _ScannerView extends StatefulWidget {
   /// back into the flow.
   final VoidCallback onRetryCamera;
   final String? errorText;
+  final VoidCallback? onSignInWithAccount;
 
   @override
   State<_ScannerView> createState() => _ScannerViewState();
@@ -632,7 +675,7 @@ class _ScannerViewState extends State<_ScannerView> {
           onPressed: widget.onEnterManually,
         ),
         SizedBox(height: tokens.spacing.step5),
-        const _FirstDeviceCard(),
+        _FirstDeviceCard(onSignInWithAccount: widget.onSignInWithAccount),
       ],
     );
   }
@@ -795,6 +838,7 @@ class _ManualEntry extends StatelessWidget {
     required this.onPaste,
     this.errorText,
     this.onUseCamera,
+    this.onSignInWithAccount,
   });
 
   final TextEditingController controller;
@@ -803,6 +847,7 @@ class _ManualEntry extends StatelessWidget {
   final VoidCallback onImport;
   final Future<void> Function() onPaste;
   final VoidCallback? onUseCamera;
+  final VoidCallback? onSignInWithAccount;
 
   @override
   Widget build(BuildContext context) {
@@ -885,7 +930,7 @@ class _ManualEntry extends StatelessWidget {
           ),
         ],
         SizedBox(height: tokens.spacing.step5),
-        const _FirstDeviceCard(),
+        _FirstDeviceCard(onSignInWithAccount: onSignInWithAccount),
       ],
     );
   }

@@ -67,3 +67,25 @@ den.
 Fram till den första användningen ska du behandla bundlen som ett lösenord:
 den loggar in på synkroniseringskontot — håll den borta från chattar,
 skärmbilder och delade skärmar.
+
+## På Linux: logga in utan bundle
+
+Förutsättningen ovan har ett undantag. På Linux erbjuder **Konfigurera synk**
+också **Logga in med ett Matrix-konto i stället**, och kortet för den första
+enheten på sidan med parkopplingskoden har samma alternativ. Ange
+serveradressen, ditt fullständiga Matrix-ID (som `@namn:example.com`) och
+kontots lösenord: Lotti loggar in, skapar själv det krypterade synkroniseringsrummet på
+det kontot och landar på samma skärm för första enheten som bundle-vägen
+slutar på. Ingen administratör, inget verktyg, ingen bundle — vilket
+Matrix-konto du än kontrollerar duger, på din egen hemserver eller en
+offentlig.
+
+Två saker att veta. Använd ett konto som är avsett för synkronisering, inte ett du
+chattar med: synkroniseringsrummet är bara ännu ett rum på det kontot, och allt du
+skriver hamnar där. Och ditt lösenord är ditt eget här — det stannar i den
+här enhetens säkra lagring och **roteras aldrig**, till skillnad från
+bundlen ovan. Bara servern du anger ser det, samt de parkopplingskoder du
+senare skapar under **Lägg till en enhet**: de bär med sig det, så behandla
+dem som de inloggningsuppgifter de är. Varje ytterligare enhet
+parkopplas fortfarande från den här med
+[Lägg till en enhet](./add-device.mdx).

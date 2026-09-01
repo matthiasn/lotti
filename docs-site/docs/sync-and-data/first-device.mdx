@@ -67,3 +67,23 @@ is no reason to keep it.
 
 Until that first use, treat the bundle like a password: it signs in to the
 sync account, so keep it out of chats, screenshots and shared screens.
+
+## On Linux: sign in without a bundle
+
+The prerequisite above has one exception. On Linux, **Set up sync** also
+offers **Sign in with a Matrix account instead**, and the first-device card
+on the pairing-code page carries the same option. Enter the server address,
+your full Matrix ID (like `@name:example.com`) and the account password, and
+Lotti signs in, creates the encrypted sync room on that account itself, and
+lands on the same first-device screen the bundle path ends on. No admin, no
+tool, no bundle — any Matrix account you control will do, on your own
+homeserver or a public one.
+
+Two things to know. Use an account set aside for sync, not one you chat
+with: the sync room is just another room on that account, and everything
+you write goes into it. And your password is your own here — it stays in
+this device's secure storage and is **never rotated**, unlike the bundle
+above. Only the server you enter sees it, plus the pairing codes you later
+make under **Add device**: those carry it, so treat them as the credentials
+they are. Every further device still pairs
+from this one with [Add a device](./add-device.mdx).

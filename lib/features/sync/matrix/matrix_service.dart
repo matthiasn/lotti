@@ -566,6 +566,10 @@ class MatrixService {
 
   Future<String?> joinRoom(String roomId) => _ops.joinRoom(roomId);
 
+  /// Creates the account's encrypted sync room and returns its id, for the
+  /// first device signing in with its own credentials rather than a bundle.
+  Future<String> createRoom() => _ops.createRoom();
+
   Future<void> saveRoom(String roomId) => _ops.saveRoom(roomId);
 
   /// Clears only the locally persisted sync-room pointer.

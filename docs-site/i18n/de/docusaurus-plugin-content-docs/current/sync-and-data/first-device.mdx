@@ -71,3 +71,25 @@ Grund, sie zu behalten.
 Bis zu diesem ersten Gebrauch behandle das Bundle wie ein Passwort: Es
 meldet sich am Sync-Konto an — halte es aus Chats, Screenshots und
 geteilten Bildschirmen heraus.
+
+## Unter Linux: anmelden ohne Bundle
+
+Die Voraussetzung oben hat eine Ausnahme. Unter Linux bietet **Sync
+einrichten** zusätzlich **Stattdessen mit einem Matrix-Konto anmelden** an,
+und die Karte für das erste Gerät auf der Seite mit dem Pairing-Code trägt
+dieselbe Option. Gib die Serveradresse, deine vollständige Matrix-ID (etwa
+`@name:example.com`) und das Kontopasswort ein — Lotti meldet sich an,
+erstellt den verschlüsselten Sync-Raum in diesem Konto selbst und landet auf
+demselben Bildschirm für das erste Gerät, auf dem auch der Bundle-Weg endet.
+Kein Admin, kein Werkzeug, kein Bundle — jedes Matrix-Konto, das du
+kontrollierst, reicht, auf deinem eigenen Homeserver oder einem öffentlichen.
+
+Zwei Dinge sind wissenswert. Nimm ein Konto, das nur für Sync da ist, keins,
+mit dem du chattest: Der Sync-Raum ist einfach ein weiterer Raum in diesem
+Konto, und alles, was du schreibst, landet darin. Und dein Passwort gehört
+hier dir — es bleibt im sicheren Speicher dieses Geräts und wird **nie
+rotiert**, anders als beim Bundle oben. Nur der Server, den du eingibst,
+sieht es — und die Pairing-Codes, die du später unter **Gerät hinzufügen**
+erstellst: Sie enthalten es, behandle sie also als die Zugangsdaten, die sie
+sind. Jedes weitere Gerät koppelt sich weiterhin über
+[Gerät hinzufügen](./add-device.mdx) an dieses an.

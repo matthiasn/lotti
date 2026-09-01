@@ -9,13 +9,14 @@ import 'package:matrix/matrix.dart';
 const int kSyncRoomLoadMaxAttempts = 4;
 const int kSyncRoomLoadBaseDelayMs = 1000;
 
-/// Handles sync-room persistence and the join/hydrate flows.
+/// Handles sync-room persistence and the create/join/hydrate flows.
 ///
-/// Devices never create or discover a sync room: provisioning carries the room
-/// id in the bundle, so every device simply joins the room it was told about
-/// (see `ProvisioningController`). This manager owns the persisted pointer to
-/// that room and the retry loop that resolves it once the homeserver has
-/// synced.
+/// Devices never discover a sync room. A pairing bundle carries the room id,
+/// so a device joining from one simply joins the room it was told about; the
+/// account's very first device, signing in with its own credentials on Linux,
+/// creates the room instead (both in `ProvisioningController`). This manager
+/// owns the persisted pointer to that room and the retry loop that resolves it
+/// once the homeserver has synced.
 class SyncRoomManager {
   SyncRoomManager({
     required this._gateway,
@@ -67,6 +68,21 @@ class SyncRoomManager {
     }
 
     _resolveRoomSnapshot(savedRoomId, subDomain: 'initialize');
+  }
+
+  /// Creates the account's encrypted sync room — the gateway marks it with the
+  /// Lotti sync-room state event — persists its identifier and returns it.
+  /// Errors bubble up to the caller so they can surface UI feedback.
+  Future<String> createRoom({required String name}) async {
+    final roomId = await _gateway.createRoom(name: name);
+    await _settingsDb.saveSettingsItem(matrixRoomKey, roomId);
+    _updateCurrentRoom(roomId);
+    _loggingService.log(
+      LogDomain.sync,
+      'Created sync room $roomId.',
+      subDomain: 'createRoom',
+    );
+    return roomId;
   }
 
   /// Persistently saves the provided room ID without joining. Useful for manual

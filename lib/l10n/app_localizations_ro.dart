@@ -12830,6 +12830,71 @@ class AppLocalizationsRo extends AppLocalizations {
       'Se deblochează după potrivirea emoji-urilor — înainte de asta, noul dispozitiv oricum nu le-ar putea decripta.';
 
   @override
+  String get syncCredentialsEditDetails => 'Modificați datele de autentificare';
+
+  @override
+  String get syncCredentialsErrorConfigurationFailed =>
+      'Autentificat, dar camera de sincronizare nu a putut fi creată. Reîncercați; dacă eșuează în continuare, verificați dacă contul are dreptul să creeze camere.';
+
+  @override
+  String get syncCredentialsErrorHomeserver =>
+      'Introduceți serverul ca adresă web care începe cu https://.';
+
+  @override
+  String get syncCredentialsErrorLoginFailed =>
+      'Serverul nu a acceptat aceste date de autentificare. Verificați adresa serverului, ID-ul Matrix și parola, apoi reîncercați.';
+
+  @override
+  String get syncCredentialsErrorPassword => 'Introduceți parola contului.';
+
+  @override
+  String get syncCredentialsErrorUser =>
+      'Introduceți ID-ul Matrix complet, de exemplu @nume:example.com.';
+
+  @override
+  String get syncCredentialsFailedTitle => 'Autentificarea nu a funcționat';
+
+  @override
+  String get syncCredentialsHidePassword => 'Ascundeți parola';
+
+  @override
+  String get syncCredentialsHomeserverHint => 'https://matrix.example.com';
+
+  @override
+  String get syncCredentialsHomeserverLabel => 'Adresa serverului';
+
+  @override
+  String get syncCredentialsIntro =>
+      'Lotti se autentifică și creează o cameră de sincronizare criptată în acel cont. Folosiți un cont dedicat sincronizării, nu unul cu care conversați.';
+
+  @override
+  String get syncCredentialsKeptOnDevice =>
+      'Parola rămâne în stocarea securizată a acestui dispozitiv și Lotti nu o schimbă niciodată. O vede doar serverul pe care îl introduceți — și codurile de asociere pe care le creați ulterior pentru propriile dispozitive, care o conțin pentru ca și acestea să se poată autentifica.';
+
+  @override
+  String get syncCredentialsPasswordLabel => 'Parolă';
+
+  @override
+  String get syncCredentialsShowPassword => 'Afișați parola';
+
+  @override
+  String get syncCredentialsSubmit =>
+      'Autentificare și configurare sincronizare';
+
+  @override
+  String get syncCredentialsTitle => 'Autentificați-vă cu contul dvs. Matrix';
+
+  @override
+  String get syncCredentialsUsePairingCode =>
+      'Aveți un cod de asociere? Folosiți-l în schimb';
+
+  @override
+  String get syncCredentialsUserHint => '@nume:example.com';
+
+  @override
+  String get syncCredentialsUserLabel => 'ID Matrix';
+
+  @override
   String get syncDeleteConfigConfirm => 'Opriți sincronizarea';
 
   @override
@@ -13079,6 +13144,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Nu există încă alt dispozitiv de pe care să copiați — primul cod vine din instrumentul de provizionare al serverului de sincronizare.';
 
   @override
+  String get syncPairFirstDeviceHintWithAccount =>
+      'Nu există încă alt dispozitiv de pe care să copiați. Primul cod vine din instrumentul de provizionare al serverului de sincronizare — sau săriți peste cod și autentificați-vă cu un cont Matrix.';
+
+  @override
   String get syncPairFirstDeviceTitle => 'Configurați primul dispozitiv?';
 
   @override
@@ -13127,6 +13196,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get syncPairShowEmoji => 'Afișați emoji-urile';
+
+  @override
+  String get syncPairSignInWithAccount => 'Autentificare cu un cont Matrix';
 
   @override
   String get syncPairWhereToFind =>
@@ -13245,6 +13317,10 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get syncSetupEmptyTitle => 'Sincronizați-vă dispozitivele';
+
+  @override
+  String get syncSetupUseAccountLink =>
+      'Autentificați-vă în schimb cu un cont Matrix';
 
   @override
   String get syncStepAiSettings => 'Setări AI';
