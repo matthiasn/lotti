@@ -35,12 +35,16 @@ flowchart TD
   Logo["Sidebar logo tap<br/>(LockdownLogoMenu)"] --> Ctrl["LockdownController<br/>LockdownState{categoryIds}"]
   Ctrl --> Cache["EntitiesCacheService<br/>.lockedCategoryIds"]
   Ctrl --> JPC["JournalPageController<br/>_effectiveCategoryIds"]
+  Ctrl --> Habits["HabitsController<br/>restrict(selectedCategoryIds)"]
+  Ctrl --> Dash["dashboards providers<br/>restrict(selection), scoped picker"]
+  Ctrl --> Goals["UnifiedGoalsPage<br/>identity.allowedCategoryIds"]
+  Ctrl --> CatStream["categoriesStreamProvider<br/>(scoped)"]
   Ctrl --> Shell["AppScreen desktop layout"]
   Cache --> Pickers["sortedCategories → every picker, chip,<br/>'all categories' expansion"]
   JPC --> Query["Tasks + Logbook queries<br/>category IN (locked)"]
-  Shell --> Rail["Rail: Tasks + Logbook only,<br/>no Settings / saved filters /<br/>activity / contact band"]
-  Shell --> Reset["setIndex(tasks) if needed,<br/>setTabRoot(tasks), setTabRoot(journal)"]
-  Shell --> Guard["NavService.allowedTabIndices<br/>= {tasks, journal}"]
+  Shell --> Rail["Rail: Tasks, Habits, Insights,<br/>Goals, Logbook — no Settings /<br/>saved filters / activity / contact band"]
+  Shell --> Reset["setIndex(tasks) if needed,<br/>resetTabRootWithinTab(each allowed tab)"]
+  Shell --> Guard["NavService.allowedTabDelegates<br/>= the five allowed tabs"]
   Guard --> Refused["tapIndex / setIndex / beamToNamed<br/>into a hidden tab: refused"]
 ```
 
@@ -74,42 +78,55 @@ Restart is therefore always an exit.
   effective scope and would otherwise write it back as the raw value on Apply.
   Persisted loads bypass the guard. So exiting lockdown restores exactly the
   filter the user had. Both the Tasks tab and the Logbook tab are instances of
-  this controller, which is why they are the two tabs allowed to stay.
+  this controller.
+- **`HabitsController`** runs `restrict` over `selectedCategoryIds` when it
+  buckets habits and recomputes on every lockdown change; the raw selection is
+  left alone. **Insights** does the same in `filteredSortedDashboardsProvider`,
+  and its category picker (`dashboardCategoriesProvider`) lists only locked
+  categories. **Goals** filters the active and archived identities on
+  `allowedCategoryIds` in `UnifiedGoalsPage` — deliberately *not* in the agent
+  providers, which the runtime watchers share and which must keep every goal
+  alive. A goal with no category is hidden, like an unassigned entry.
+- **`categoriesStreamProvider`** emits only locked categories while active, so
+  the goal-creation wizard and the logo menu inherit the scope.
 - **`EntitiesCacheService.sortedCategories`** drops categories outside the
   locked set while `lockedCategoryIds` is non-empty. `getCategoryById` is
   **not** scoped: the locked category's own content still has to resolve its
   definition. The controller mirrors the set into the cache on every change.
-- **The desktop shell** keeps only Tasks and Logbook in the rail, strips their
-  under-row subtrees (saved filters, the month calendar), and drops Settings,
-  the utility row, the activity disclosure and the contact band. On entering
-  lockdown it sets `NavService.allowedTabIndices` to the two allowed tabs,
-  switches to Tasks if the active tab is not an allowed one and resets both
-  allowed tabs to their roots so no pre-lockdown detail pane survives. The
-  content stack itself is untouched — only the active index and the rail
-  change — so leaving lockdown (which clears the guard) restores every tab's
-  state.
-- **`NavService.allowedTabIndices`** is the one seam that keeps *every* route
-  into a hidden tab shut for the whole active period — keyboard shortcuts, the
-  command palette, the desktop menu and path-based `beamToNamed` all end in
-  `_setIndexInternal` or `beamToNamed`, both of which refuse a disallowed tab.
-  The rail cut alone would only have covered sidebar taps.
-- **The logo menu** lists all active categories while inactive, and **only the
-  locked one plus the exit row** while active: the exit menu must not spell out
-  what it is hiding.
+- **The desktop shell** keeps Tasks, Habits, Insights, Goals and Logbook in
+  the rail, strips their under-row subtrees (saved filters, the AI impact
+  entry), and drops Settings, the utility row, the activity disclosure and the
+  contact band. On entering lockdown it sets `NavService.allowedTabDelegates`
+  to the allowed tabs, switches to Tasks if the active tab is not an allowed
+  one, and resets every allowed tab to its root **without activating it**
+  (`resetTabRootWithinTab`, built on `beamWithinTab`) so no pre-lockdown detail
+  pane survives while the user stays on the tab they were on. The content
+  stack itself is untouched — only the active index and the rail change — so
+  leaving lockdown (which clears the guard) restores every tab's state,
+  minus the detail panes that were reset.
+- **`NavService.allowedTabDelegates`** is the one seam that keeps *every*
+  route into a hidden tab shut for the whole active period — keyboard
+  shortcuts, the command palette, the desktop menu and path-based
+  `beamToNamed` all end in `_setIndexInternal` or `beamToNamed`, both of which
+  refuse a disallowed tab. It is keyed by delegate, not index: a feature flag
+  toggling a tab ahead of Logbook shifts every later index, and a guard of
+  indices would then authorise the wrong tab. The rail cut alone would only
+  have covered sidebar taps.
 
 # Cut, not filtered
 
-Every tab other than Tasks and Logbook is hidden outright rather than filtered
-because none of them can be made category-safe cheaply: the day plan, insights
-and habits list definitions by name, projects and people are category-agnostic,
-and Settings enumerates everything. Hiding is the only guarantee that holds
-without touching a dozen query paths.
+The day plan, projects, people, events and Settings are hidden outright rather
+than filtered: they are category-agnostic or enumerate everything, and none of
+them can be made category-safe without touching a dozen query paths. A tab
+stays only when its content is scoped at its own source.
 
 # Known gaps
 
 - The task filter modal still lists **projects and labels** by name; those are
   not category-scoped and may name things outside the lockdown.
-- A task's detail pane can show **linked entries** from other categories.
+- A task's detail pane can show **linked entries** from other categories, and
+  a dashboard's charts show whatever measurables it references regardless of
+  their category.
 - Below the desktop breakpoint the **mobile navigation** is unrestricted; the
   feature is desktop-only and the collapsed rail has no logo to tap, so a
   collapsed sidebar has to be expanded to exit.

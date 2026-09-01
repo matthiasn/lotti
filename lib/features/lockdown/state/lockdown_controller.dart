@@ -1,7 +1,4 @@
-import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/categories/state/categories_list_controller.dart';
 import 'package:lotti/features/lockdown/domain/lockdown_state.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -41,17 +38,3 @@ class LockdownController extends Notifier<LockdownState> {
     getIt<EntitiesCacheService>().lockedCategoryIds = next.categoryIds;
   }
 }
-
-/// The categories the logo menu may offer.
-///
-/// Active categories sorted by name — and, while lockdown is active, only the
-/// locked ones, so the exit menu never spells out the categories it is hiding.
-final lockdownCategoryOptionsProvider = Provider<List<CategoryDefinition>>((
-  ref,
-) {
-  final lockdown = ref.watch(lockdownControllerProvider);
-  final categories = ref.watch(categoriesStreamProvider).asData?.value ?? [];
-  return categories
-      .where((category) => category.active && lockdown.allows(category.id))
-      .sortedBy((category) => category.name.toLowerCase());
-});

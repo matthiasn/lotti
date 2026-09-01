@@ -40,6 +40,7 @@ import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/keyboard/ui/command_palette.dart';
 import 'package:lotti/features/keyboard/ui/keyboard_focus_region.dart';
 import 'package:lotti/features/keyboard/ui/keyboard_shortcuts_page.dart';
+import 'package:lotti/features/lockdown/state/lockdown_category_options.dart';
 import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
 import 'package:lotti/features/lockdown/ui/lockdown_logo_menu.dart';
 import 'package:lotti/features/nudges/model/nudge_banner_entry.dart';
@@ -431,13 +432,18 @@ class _AppNavigationDestination {
 }
 
 /// The destinations that stay reachable while lockdown is active — exactly
-/// those whose content is served by `JournalPageController`, which clamps its
-/// category filter to the lockdown set. Every other tab (day plan, projects,
-/// habits, insights, people, events, settings) is category-agnostic or lists
-/// definitions by name, so it is hidden rather than partially filtered.
+/// those whose content is category-scoped at its source: Tasks and Logbook
+/// through `JournalPageController`, Habits through `HabitsController`,
+/// Insights through the dashboards providers, and Goals through the goal
+/// identities' allowed categories. Every other tab (day plan, projects,
+/// people, events, settings) is category-agnostic or lists definitions by
+/// name, so it is hidden rather than partially filtered.
 const Set<_AppNavigationDestinationKind> _lockdownVisibleKinds = {
   _AppNavigationDestinationKind.tasks,
   _AppNavigationDestinationKind.journal,
+  _AppNavigationDestinationKind.habits,
+  _AppNavigationDestinationKind.dashboards,
+  _AppNavigationDestinationKind.goals,
 };
 
 class AppScreen extends ConsumerStatefulWidget {
@@ -598,27 +604,26 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     }
   }
 
-  /// Brings the app onto a lockdown-safe tab and resets that tab to its
-  /// root, so neither a foreign tab nor a detail pane opened before the
-  /// lockdown began can stay on screen once it is active.
+  /// The delegates of the tabs that stay reachable under lockdown — see
+  /// [_lockdownVisibleKinds]. Delegates, not indices: an index shifts when a
+  /// feature flag toggles a tab ahead of it, a delegate never does.
+  Set<BeamerDelegate> _lockdownDelegates() => {
+    navService.tasksDelegate,
+    navService.journalDelegate,
+    navService.habitsDelegate,
+    navService.dashboardsDelegate,
+    navService.goalsDelegate,
+  };
+
+  /// Brings the app onto a lockdown-safe tab and resets every surviving tab
+  /// to its root — without activating any of them — so neither a foreign tab
+  /// nor a detail pane opened before the lockdown began can stay on screen
+  /// once it is active. Assumes the navigation guard is already set.
   void _enterLockdown() {
-    if (!_lockdownVisibleKinds.contains(_destinationKindAt(navService.index))) {
+    if (!navService.isTabAllowed(navService.index)) {
       navService.setIndex(0);
     }
-    navService
-      ..setTabRoot(0)
-      ..setTabRoot(navService.journalIndex);
-  }
-
-  _AppNavigationDestinationKind? _destinationKindAt(int index) {
-    final delegate = navService.delegateByIndex(index);
-    if (delegate == navService.tasksDelegate) {
-      return _AppNavigationDestinationKind.tasks;
-    }
-    if (delegate == navService.journalDelegate) {
-      return _AppNavigationDestinationKind.journal;
-    }
-    return null;
+    _lockdownDelegates().forEach(navService.resetTabRootWithinTab);
   }
 
   @override
@@ -629,8 +634,8 @@ class _AppScreenState extends ConsumerState<AppScreen> {
         // The guard on NavService is what keeps keyboard shortcuts, the
         // command palette and path-based beams off hidden tabs for the whole
         // active period; the rail cut alone only covers sidebar taps.
-        navService.allowedTabIndices = next.isActive
-            ? {0, navService.journalIndex}
+        navService.allowedTabDelegates = next.isActive
+            ? _lockdownDelegates()
             : null;
         if (next.isActive) _enterLockdown();
       })

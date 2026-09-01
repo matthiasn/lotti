@@ -112,8 +112,11 @@ void main() {
       container
           .read(lockdownControllerProvider.notifier)
           .lockToCategory('work');
-      // The shell hands over the already-filtered option list.
-      final menu = await build(tester, [_category('work', 'Work')]);
+      // Even an unfiltered list must not name the hidden category.
+      final menu = await build(tester, [
+        _category('work', 'Work'),
+        _category('health', 'Health'),
+      ]);
 
       expect(menu.header, 'Locked down');
       expect(menu.items.map((i) => i.label), ['Work', 'Exit lockdown']);

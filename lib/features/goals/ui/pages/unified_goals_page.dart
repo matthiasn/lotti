@@ -26,6 +26,7 @@ import 'package:lotti/features/habits/ui/widgets/habits_section_header.dart';
 import 'package:lotti/features/habits/ui/widgets/habits_summary_card.dart';
 import 'package:lotti/features/habits/ui/widgets/heatmap/habit_heatmap_card.dart';
 import 'package:lotti/features/habits/ui/widgets/status_segmented_control.dart';
+import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -117,9 +118,21 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage>
     // first value the goal section renders nothing — unless that first load
     // FAILED, which must say so instead of silently hiding every goal and
     // ungrouped habit (the agents list's own rule).
-    final identities = agents.value ?? const [];
+    // A goal's category is its identity's allowed-category set (see
+    // `goal_timeline_page.dart`); lockdown hides goals outside the locked
+    // set. Filtered here rather than in the agent providers, which the
+    // runtime watchers share and which must keep every goal alive.
+    final lockdown = ref.watch(lockdownControllerProvider);
+    bool visibleUnderLockdown(AgentIdentityEntity identity) =>
+        identity.allowedCategoryIds.any(lockdown.allows);
+    final identities = (agents.value ?? const <AgentIdentityEntity>[])
+        .where(visibleUnderLockdown)
+        .toList(growable: false);
     final failedFirstLoad = agents.value == null && agents.hasError;
-    final archivedIdentities = archivedAgents.value ?? const [];
+    final archivedIdentities =
+        (archivedAgents.value ?? const <AgentIdentityEntity>[])
+            .where(visibleUnderLockdown)
+            .toList(growable: false);
 
     // A quick-complete on any row writes through the shared habit
     // persistence path; the habits controller refetches on the completion

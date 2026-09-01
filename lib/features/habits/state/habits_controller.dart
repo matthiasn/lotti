@@ -8,6 +8,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/habits/model/habit_completion_record.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
+import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -80,6 +81,11 @@ class HabitsController extends Notifier<HabitsState> {
     _navIndexSubscription = _navService.getIndexStream().listen(
       _handleNavIndex,
     );
+    // Entering or leaving lockdown changes the effective category filter
+    // without any habit changing, so the visible buckets must be recomputed.
+    ref.listen(lockdownControllerProvider, (previous, next) {
+      _determineHabitSuccessByDays();
+    });
     _definitionsSubscription = _repository.watchHabitDefinitions().listen((
       habitDefinitions,
     ) {
@@ -244,7 +250,12 @@ class HabitsController extends Notifier<HabitsState> {
       longStreakDays,
     );
 
-    final selectedCategoryIds = state.selectedCategoryIds;
+    // Lockdown clamps the user's category filter to the locked set (an
+    // empty filter becomes the locked set, never "all"), so a demo shows
+    // only the locked category's habits whatever the chips say.
+    final selectedCategoryIds = ref
+        .read(lockdownControllerProvider)
+        .restrict(state.selectedCategoryIds);
 
     final filteredOpenNow = selectedCategoryIds.isEmpty
         ? openNow

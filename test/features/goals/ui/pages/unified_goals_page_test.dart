@@ -39,6 +39,7 @@ import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../habits/habit_completion_record_fixtures.dart';
 import '../../../habits/test_utils.dart';
+import '../../../lockdown/lockdown_test_utils.dart';
 
 /// Deterministic "now" for the page's success-only today derivation.
 final _now = DateTime(2026, 8, 15, 14);
@@ -81,6 +82,7 @@ void main() {
     String id,
     String name, {
     AgentLifecycle lifecycle = AgentLifecycle.active,
+    Set<String> categoryIds = const {},
   }) =>
       AgentDomainEntity.agent(
             id: id,
@@ -89,7 +91,7 @@ void main() {
             displayName: name,
             lifecycle: lifecycle,
             mode: AgentInteractionMode.autonomous,
-            allowedCategoryIds: const {},
+            allowedCategoryIds: categoryIds,
             currentStateId: '$id:state',
             config: const AgentConfig(),
             createdAt: DateTime(2026),
@@ -814,5 +816,26 @@ void main() {
     await tester.pump();
     await tester.pumpAndSettle();
     verifyNoMoreInteractions(healthImport);
+  });
+
+  testWidgets('lockdown hides goals whose category is not the locked one', (
+    tester,
+  ) async {
+    await pump(
+      tester,
+      baseState(),
+      activeAgents: [
+        identity('g-work', 'Work goal', categoryIds: const {'work'}),
+        identity('g-health', 'Health goal', categoryIds: const {'health'}),
+        identity('g-none', 'Uncategorised goal'),
+      ],
+      extraOverrides: [
+        lockdownOverride(const {'work'}),
+      ],
+    );
+
+    expect(find.byType(UnifiedGoalCard), findsOneWidget);
+    expect(find.text('Health goal'), findsNothing);
+    expect(find.text('Uncategorised goal'), findsNothing);
   });
 }

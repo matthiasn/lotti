@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/dashboards/state/dashboards_page_controller.dart';
+import 'package:lotti/features/lockdown/domain/lockdown_state.dart';
+import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -13,6 +15,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
+import '../../lockdown/lockdown_test_utils.dart';
 
 void main() {
   group('DashboardsPageController', () {
@@ -20,6 +23,7 @@ void main() {
     late MockUpdateNotifications mockNotifications;
     late StreamController<Set<String>> notificationController;
     late ProviderContainer container;
+    late TestLockdownController lockdown;
 
     setUp(() async {
       notificationController = StreamController<Set<String>>.broadcast();
@@ -34,13 +38,83 @@ void main() {
         () => mockNotifications.updateStream,
       ).thenAnswer((_) => notificationController.stream);
 
-      container = ProviderContainer();
+      lockdown = TestLockdownController();
+      container = ProviderContainer(
+        overrides: [lockdownControllerProvider.overrideWith(() => lockdown)],
+      );
     });
 
     tearDown(() async {
       container.dispose();
       await notificationController.close();
       await tearDownTestGetIt();
+    });
+
+    group('lockdown', () {
+      test('filteredSortedDashboardsProvider is clamped to the locked set', () {
+        fakeAsync((async) {
+          when(() => mockDb.getAllDashboards()).thenAnswer(
+            (_) async => [
+              testDashboardConfig.copyWith(
+                id: 'd-work',
+                name: 'Work',
+                categoryId: 'work',
+              ),
+              testDashboardConfig.copyWith(
+                id: 'd-health',
+                name: 'Health',
+                categoryId: 'health',
+              ),
+              testDashboardConfig.copyWith(id: 'd-none', name: 'Unassigned'),
+            ],
+          );
+          container.listen(dashboardsProvider, (_, _) {});
+          async.flushMicrotasks();
+          expect(container.read(filteredSortedDashboardsProvider).length, 3);
+
+          lockdown.current = const LockdownState(categoryIds: {'work'});
+          expect(
+            container.read(filteredSortedDashboardsProvider).map((d) => d.id),
+            ['d-work'],
+          );
+
+          // A selection outside the lock does not widen it.
+          container.read(selectedCategoryIdsProvider.notifier).setAll({
+            'health',
+          });
+          expect(
+            container.read(filteredSortedDashboardsProvider).map((d) => d.id),
+            ['d-work'],
+          );
+
+          lockdown.current = LockdownState.inactive;
+          expect(
+            container.read(filteredSortedDashboardsProvider).map((d) => d.id),
+            ['d-health'],
+          );
+        });
+      });
+
+      test('dashboardCategoriesProvider lists only locked categories', () {
+        fakeAsync((async) {
+          when(() => mockDb.getAllCategories()).thenAnswer(
+            (_) async => [
+              categoryMindfulness.copyWith(id: 'work', name: 'Work'),
+              categoryMindfulness.copyWith(id: 'health', name: 'Health'),
+            ],
+          );
+          // Build the notifier before driving it.
+          container.read(lockdownControllerProvider);
+          lockdown.current = const LockdownState(categoryIds: {'health'});
+          container.listen(dashboardCategoriesProvider, (_, _) {});
+          async.flushMicrotasks();
+
+          expect(
+            container.read(dashboardCategoriesProvider).value?.map((c) => c.id),
+            ['health'],
+          );
+        });
+      });
     });
 
     group('dashboardsProvider', () {

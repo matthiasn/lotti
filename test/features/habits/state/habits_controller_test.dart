@@ -8,6 +8,8 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
+import 'package:lotti/features/lockdown/domain/lockdown_state.dart';
+import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/habits/habit_completion_resolution.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -17,6 +19,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
+import '../../lockdown/lockdown_test_utils.dart';
 import '../habit_completion_record_fixtures.dart';
 
 void main() {
@@ -93,6 +96,8 @@ void main() {
     );
   }
 
+  late TestLockdownController lockdown;
+
   setUp(() async {
     mockRepository = MockHabitsRepository();
     mockNavService = MockNavService();
@@ -129,10 +134,12 @@ void main() {
       },
     );
 
+    lockdown = TestLockdownController();
     container = ProviderContainer(
       overrides: [
         habitsRepositoryProvider.overrideWithValue(mockRepository),
         habitsNowProvider.overrideWithValue(() => controllerNow),
+        lockdownControllerProvider.overrideWith(() => lockdown),
       ],
     );
   });
@@ -623,6 +630,48 @@ void main() {
           ),
         );
       });
+    });
+  });
+
+  group('lockdown', () {
+    test('clamps the category filter to the locked set and recomputes on '
+        'enter and exit', () async {
+      container.read(habitsControllerProvider);
+      await pumpEventQueue();
+      definitionsController.add([testHabit1, testHabit2]);
+      await pumpEventQueue();
+
+      Set<String> visibleIds() {
+        final state = container.read(habitsControllerProvider);
+        return {
+          ...state.openNow.map((h) => h.id),
+          ...state.pendingLater.map((h) => h.id),
+          ...state.completed.map((h) => h.id),
+        };
+      }
+
+      expect(visibleIds(), {'habit-1', 'habit-2'});
+
+      // An empty user filter under lockdown is the locked set, never "all".
+      lockdown.current = const LockdownState(categoryIds: {'cat-2'});
+      await pumpEventQueue();
+      expect(visibleIds(), {'habit-2'});
+
+      // A user filter outside the lock cannot widen it either, and the raw
+      // selection is left as the user set it.
+      container.read(habitsControllerProvider.notifier).setSelectedCategoryIds({
+        'cat-1',
+      });
+      await pumpEventQueue();
+      expect(visibleIds(), {'habit-2'});
+      expect(
+        container.read(habitsControllerProvider).selectedCategoryIds,
+        {'cat-1'},
+      );
+
+      lockdown.current = LockdownState.inactive;
+      await pumpEventQueue();
+      expect(visibleIds(), {'habit-1'});
     });
   });
 }

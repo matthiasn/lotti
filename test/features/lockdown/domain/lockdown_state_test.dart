@@ -44,6 +44,13 @@ void main() {
       },
     );
 
+    test('toString names the locked set', () {
+      expect(
+        const LockdownState(categoryIds: {'work'}).toString(),
+        'LockdownState(categoryIds: {work})',
+      );
+    });
+
     test('equality is by category set, regardless of order or identity', () {
       expect(
         const LockdownState(categoryIds: {'a', 'b'}),

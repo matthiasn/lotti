@@ -4,6 +4,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -41,14 +42,18 @@ class SelectedCategoryIds extends Notifier<Set<String>> {
   }
 }
 
-/// Stream provider for categories from database.
+/// Stream provider for categories from database, scoped by lockdown so the
+/// filter picker never lists a category the demo is hiding.
 final StreamProvider<List<CategoryDefinition>> dashboardCategoriesProvider =
     StreamProvider.autoDispose<List<CategoryDefinition>>((ref) {
       final db = getIt<JournalDb>();
+      final lockdown = ref.watch(lockdownControllerProvider);
       return notificationDrivenStream(
         notifications: getIt<UpdateNotifications>(),
         notificationKeys: {categoriesNotification, privateToggleNotification},
-        fetcher: db.getAllCategories,
+        fetcher: () async => (await db.getAllCategories())
+            .where((c) => lockdown.allows(c.id))
+            .toList(),
       );
     });
 
@@ -65,7 +70,11 @@ final dashboardByIdProvider = Provider.autoDispose
 final Provider<List<DashboardDefinition>> filteredSortedDashboardsProvider =
     Provider.autoDispose<List<DashboardDefinition>>((ref) {
       final dashboardsAsync = ref.watch(dashboardsProvider);
-      final selectedCategories = ref.watch(selectedCategoryIdsProvider);
+      // Lockdown clamps the selection to the locked set (an empty selection
+      // becomes the locked set, never "all").
+      final selectedCategories = ref
+          .watch(lockdownControllerProvider)
+          .restrict(ref.watch(selectedCategoryIdsProvider));
 
       return dashboardsAsync.maybeWhen(
         data: (dashboards) {

@@ -32,9 +32,7 @@ const Key lockdownMenuClearKey = Key('lockdown-menu-clear');
 ///
 /// [items] and [header] are pure over the provider state so the shell can
 /// hand them to `DesktopNavigationSidebar` without owning any of the logic.
-class LockdownLogoMenu {
-  const LockdownLogoMenu._();
-
+abstract final class LockdownLogoMenu {
   /// Heading of the menu for the current lockdown state.
   static String header(BuildContext context, LockdownState lockdown) =>
       lockdown.isActive
@@ -58,22 +56,25 @@ class LockdownLogoMenu {
       ];
     }
     return [
+      // The caller already hands over a scoped list; filtering again here
+      // keeps the "never name a hidden category" rule local to the menu.
       for (final category in categories)
-        DesignSystemContextMenuItem(
-          key: Key('$lockdownMenuCategoryKeyPrefix${category.id}'),
-          label: category.name,
-          icon: categoryIconData[category.icon] ?? LottiIcons.folder,
-          iconColor: colorFromCssHex(
-            category.color,
-            substitute: tokens.colors.text.mediumEmphasis,
+        if (lockdown.allows(category.id))
+          DesignSystemContextMenuItem(
+            key: Key('$lockdownMenuCategoryKeyPrefix${category.id}'),
+            label: category.name,
+            icon: categoryIconData[category.icon] ?? LottiIcons.folder,
+            iconColor: colorFromCssHex(
+              category.color,
+              substitute: tokens.colors.text.mediumEmphasis,
+            ),
+            isSelected: lockdown.isActive && lockdown.allows(category.id),
+            // Re-picking the locked category is a no-op rather than a toggle:
+            // the exit row below is the one deliberate way out.
+            onTap: lockdown.allows(category.id) && lockdown.isActive
+                ? null
+                : () => controller.lockToCategory(category.id),
           ),
-          isSelected: lockdown.isActive && lockdown.allows(category.id),
-          // Re-picking the locked category is a no-op rather than a toggle:
-          // the exit row below is the one deliberate way out.
-          onTap: lockdown.allows(category.id) && lockdown.isActive
-              ? null
-              : () => controller.lockToCategory(category.id),
-        ),
       if (lockdown.isActive)
         DesignSystemContextMenuItem(
           key: lockdownMenuClearKey,

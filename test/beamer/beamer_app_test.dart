@@ -39,6 +39,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/ui/app_command_controller.dart';
+import 'package:lotti/features/lockdown/state/lockdown_category_options.dart';
 import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
 import 'package:lotti/features/nudges/model/nudge_banner_entry.dart';
 import 'package:lotti/features/nudges/model/nudge_entity_view.dart';
@@ -663,6 +664,11 @@ void main() {
     // whose argument is an AiConfigType — mocktail needs a fallback for `any()`.
     registerFallbackValue(AiConfigType.inferenceProvider);
     registerFallbackValue(FakeLaunchOptions());
+    // The lockdown guard is set and reset by delegate.
+    registerFallbackValue(<BeamerDelegate>{});
+    registerFallbackValue(
+      BeamerDelegate(locationBuilder: (_, _) => NotFound()),
+    );
   });
 
   group('Navigation Index Clamping Logic Tests', () {
@@ -4835,11 +4841,11 @@ void main() {
       );
       when(() => mockNavService.index).thenReturn(0);
       when(() => mockNavService.journalIndex).thenReturn(5);
-      when(
-        () => mockNavService.delegateByIndex(any()),
-      ).thenAnswer((_) => mockNavService.tasksDelegate);
+      when(() => mockNavService.isTabAllowed(any())).thenReturn(true);
       when(() => mockNavService.setIndex(any())).thenReturn(null);
-      when(() => mockNavService.setTabRoot(any())).thenReturn(null);
+      when(
+        () => mockNavService.resetTabRootWithinTab(any()),
+      ).thenReturn(null);
       await _registerAppScreenGetIt(mockNavService);
       getIt.registerSingleton<EntitiesCacheService>(
         MockEntitiesCacheService(),
@@ -4896,23 +4902,44 @@ void main() {
         );
         expect(
           sidebar.destinations.map((d) => d.label).toList(),
-          ['Tasks', 'Logbook'],
+          ['Tasks', 'Habits', 'Insights', 'Logbook'],
         );
         expect(sidebar.destinations.first.expandedChildBuilder, isNull);
         expect(sidebar.settingsDestination, isNull);
         expect(sidebar.aboveSettings, isNull);
         expect(sidebar.footerBand, isNull);
         expect(find.text('Settings'), findsNothing);
-        expect(find.text('Habits'), findsNothing);
+        expect(find.text('DailyOS'), findsNothing);
         expect(find.text('Projects'), findsNothing);
         expect(find.byType(ContactSupportRow), findsNothing);
         expect(find.byType(SidebarSavedTaskFilters), findsNothing);
-        // The navigation guard covers shortcuts, the palette and path beams.
-        verify(() => mockNavService.allowedTabIndices = {0, 5}).called(1);
-        // Both content tabs were reset to their roots.
-        verify(() => mockNavService.setTabRoot(0)).called(1);
-        verify(() => mockNavService.setTabRoot(5)).called(1);
+        // The navigation guard covers shortcuts, the palette and path beams,
+        // and is keyed by delegate so a flag flip cannot shift it.
+        final allowed =
+            verify(
+                  () => mockNavService.allowedTabDelegates = captureAny(),
+                ).captured.single
+                as Set<BeamerDelegate>?;
+        expect(allowed, {
+          mockNavService.tasksDelegate,
+          mockNavService.journalDelegate,
+          mockNavService.habitsDelegate,
+          mockNavService.dashboardsDelegate,
+          mockNavService.goalsDelegate,
+        });
+        // Every surviving tab was reset to its root without being activated.
+        for (final delegate in allowed!) {
+          verify(
+            () => mockNavService.resetTabRootWithinTab(delegate),
+          ).called(1);
+        }
+        verifyNever(() => mockNavService.setTabRoot(any()));
         verifyNever(() => mockNavService.setIndex(any()));
+
+        // A rail tap maps back to the full (content-stack) index.
+        await tester.tap(find.text('Logbook'));
+        await tester.pump();
+        verify(() => mockNavService.tapIndex(5)).called(1);
 
         // The menu now offers only the locked category and the exit.
         await tester.tap(find.byKey(desktopSidebarLogoMenuTriggerKey));
@@ -4925,9 +4952,9 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(container.read(lockdownControllerProvider).isActive, isFalse);
-        verify(() => mockNavService.allowedTabIndices = null).called(1);
+        verify(() => mockNavService.allowedTabDelegates = null).called(1);
         expect(find.text('Settings'), findsOneWidget);
-        expect(find.text('Habits'), findsOneWidget);
+        expect(find.text('DailyOS'), findsOneWidget);
         expect(find.byType(ContactSupportRow), findsOneWidget);
 
         await tester.pumpWidget(const SizedBox.shrink());
@@ -4944,11 +4971,9 @@ void main() {
           mockNavService,
           categories: [category('work', 'Work')],
         );
-        // Habits is active: its delegate is not a lockdown-visible one.
-        when(() => mockNavService.index).thenReturn(3);
-        when(
-          () => mockNavService.delegateByIndex(3),
-        ).thenAnswer((_) => mockNavService.habitsDelegate);
+        // Projects is active: the guard reports it as not allowed.
+        when(() => mockNavService.index).thenReturn(2);
+        when(() => mockNavService.isTabAllowed(2)).thenReturn(false);
 
         container
             .read(lockdownControllerProvider.notifier)
@@ -4958,7 +4983,11 @@ void main() {
         await tester.pumpAndSettle();
 
         verify(() => mockNavService.setIndex(0)).called(1);
-        verify(() => mockNavService.setTabRoot(0)).called(1);
+        final reset = verify(
+          () => mockNavService.resetTabRootWithinTab(captureAny()),
+        ).captured;
+        expect(reset, hasLength(5));
+        expect(reset, contains(mockNavService.tasksDelegate));
 
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump();

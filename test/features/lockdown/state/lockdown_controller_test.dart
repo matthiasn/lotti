@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/state/categories_list_controller.dart';
 import 'package:lotti/features/lockdown/domain/lockdown_state.dart';
+import 'package:lotti/features/lockdown/state/lockdown_category_options.dart';
 import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -108,6 +109,9 @@ void main() {
     });
   });
 
+  // Lockdown scoping of the underlying stream is covered by
+  // categories_list_controller_test.dart; this provider only sorts and drops
+  // inactive categories.
   group('lockdownCategoryOptionsProvider', () {
     setUp(() async {
       // Keep the derived provider (and the stream beneath it) alive for the
@@ -126,18 +130,6 @@ void main() {
           .map((c) => c.name)
           .toList();
       expect(names, ['Alpha', 'Zeta']);
-    });
-
-    test('lists only the locked category while active', () {
-      container
-          .read(lockdownControllerProvider.notifier)
-          .lockToCategory('zeta');
-
-      final ids = container
-          .read(lockdownCategoryOptionsProvider)
-          .map((c) => c.id)
-          .toList();
-      expect(ids, ['zeta']);
     });
   });
 }
