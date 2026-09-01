@@ -12170,7 +12170,7 @@ class AppLocalizationsPt extends AppLocalizations {
       'Adicione pelo menos uma opção';
 
   @override
-  String get settingsMeasurableChoicesTitle => 'Opções';
+  String get settingsMeasurableChoicesTitle => 'Opções de resposta';
 
   @override
   String get settingsMeasurableDeleteTooltip => 'Excluir tipo mensurável';
