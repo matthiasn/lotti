@@ -12,9 +12,13 @@ import 'package:lotti/features/tasks/ui/cover_art_background.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/utils/image_utils.dart';
+import 'package:lotti/utils/thumbhash.dart';
+import 'package:lotti/widgets/media/thumb_hash_backed_image.dart';
+import 'package:lotti/widgets/media/thumb_hash_image.dart';
 import 'package:photo_view/photo_view.dart';
 
 import '../../../helpers/fake_entry_controller.dart';
+import '../../../helpers/thumb_hash_fixtures.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
@@ -27,6 +31,7 @@ void main() {
     String id = 'image-1',
     String imageFile = 'test.jpg',
     String imageDirectory = '/images/',
+    String? thumbHash,
   }) {
     final now = DateTime(2025, 12, 31, 12);
     return JournalImage(
@@ -42,6 +47,7 @@ void main() {
         imageFile: imageFile,
         imageDirectory: imageDirectory,
         capturedAt: now,
+        thumbHash: thumbHash,
       ),
     );
   }
@@ -407,6 +413,93 @@ void main() {
         final photoView = tester.widget<PhotoView>(find.byType(PhotoView));
         expect(photoView.enableRotation, isFalse);
         expect(find.byIcon(LottiIcons.close), findsOneWidget);
+      });
+
+      testWidgets('shows the stand-in under the scrim while the file is '
+          'missing, with nothing to tap', (tester) async {
+        final image = buildJournalImage(
+          imageFile: 'downloading.webp',
+          thumbHash: sampleThumbHash,
+        );
+        // The directory exists, the file does not: the download window.
+        File(getFullImagePath(image)).parent.createSync(recursive: true);
+
+        await tester.pumpWidget(buildSubject(image, height: 240, width: 360));
+        await tester.pump();
+
+        final standIn = tester.widget<Image>(find.byType(Image));
+        expect(
+          standIn.image,
+          ThumbHashImage(ThumbHash.fromBase64(sampleThumbHash)),
+        );
+        expect(standIn.fit, BoxFit.cover);
+        expect(standIn.alignment, Alignment.topCenter);
+        expect(
+          tester.getSize(find.byType(ThumbHashBackedImage)),
+          const Size(360, 240),
+        );
+        final scrim = tester.widget<DecoratedBox>(
+          find.descendant(
+            of: find.byType(CoverArtBackground),
+            matching: find.byType(DecoratedBox),
+          ),
+        );
+        expect(
+          (scrim.decoration as BoxDecoration).gradient,
+          isA<LinearGradient>(),
+        );
+        expect(find.byType(Hero), findsNothing);
+        expect(
+          find.descendant(
+            of: find.byType(CoverArtBackground),
+            matching: find.byType(GestureDetector),
+          ),
+          findsNothing,
+        );
+      });
+
+      testWidgets('collapses while the file is missing and there is no hash', (
+        tester,
+      ) async {
+        final image = buildJournalImage(imageFile: 'downloading.webp');
+        File(getFullImagePath(image)).parent.createSync(recursive: true);
+
+        await tester.pumpWidget(buildSubject(image));
+        await tester.pump();
+
+        expect(find.byType(Image), findsNothing);
+        expect(find.byType(ThumbHashBackedImage), findsNothing);
+        expect(
+          find.descendant(
+            of: find.byType(CoverArtBackground),
+            matching: find.byType(DecoratedBox),
+          ),
+          findsNothing,
+        );
+      });
+
+      testWidgets('lays the picture over the stand-in once the file exists', (
+        tester,
+      ) async {
+        final image = buildJournalImage(thumbHash: sampleThumbHash);
+        createInvalidImageFile(image);
+
+        await tester.pumpWidget(buildSubject(image, height: 240, width: 360));
+        await tester.pump();
+
+        final providers = tester
+            .widgetList<Image>(find.byType(Image))
+            .map((image) => image.image)
+            .toList();
+        expect(providers.whereType<ThumbHashImage>(), hasLength(1));
+        expect(providers.whereType<ResizeImage>(), hasLength(1));
+        expect(find.byType(Hero), findsOneWidget);
+        final backed = tester.widget<ThumbHashBackedImage>(
+          find.byType(ThumbHashBackedImage),
+        );
+        expect(backed.key, ValueKey(getFullImagePath(image)));
+        expect(backed.alignment, Alignment.topCenter);
+        expect(backed.errorBuilder, isNotNull);
       });
     });
 

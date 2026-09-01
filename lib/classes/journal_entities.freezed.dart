@@ -325,7 +325,11 @@ as bool?,
 /// @nodoc
 mixin _$ImageData {
 
- DateTime get capturedAt; String get imageId; String get imageFile; String get imageDirectory; Geolocation? get geolocation; AiWorkAttribution? get aiAttribution;
+ DateTime get capturedAt; String get imageId; String get imageFile; String get imageDirectory; Geolocation? get geolocation; AiWorkAttribution? get aiAttribution;/// Base64 ThumbHash of the picture: a few dozen bytes that decode into a
+/// blurred stand-in, drawn until the file itself is on disk. A rendering
+/// hint only — absent for everything but the demo catalog today, and
+/// never required.
+ String? get thumbHash;
 /// Create a copy of ImageData
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -338,16 +342,16 @@ $ImageDataCopyWith<ImageData> get copyWith => _$ImageDataCopyWithImpl<ImageData>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ImageData&&(identical(other.capturedAt, capturedAt) || other.capturedAt == capturedAt)&&(identical(other.imageId, imageId) || other.imageId == imageId)&&(identical(other.imageFile, imageFile) || other.imageFile == imageFile)&&(identical(other.imageDirectory, imageDirectory) || other.imageDirectory == imageDirectory)&&(identical(other.geolocation, geolocation) || other.geolocation == geolocation)&&(identical(other.aiAttribution, aiAttribution) || other.aiAttribution == aiAttribution));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ImageData&&(identical(other.capturedAt, capturedAt) || other.capturedAt == capturedAt)&&(identical(other.imageId, imageId) || other.imageId == imageId)&&(identical(other.imageFile, imageFile) || other.imageFile == imageFile)&&(identical(other.imageDirectory, imageDirectory) || other.imageDirectory == imageDirectory)&&(identical(other.geolocation, geolocation) || other.geolocation == geolocation)&&(identical(other.aiAttribution, aiAttribution) || other.aiAttribution == aiAttribution)&&(identical(other.thumbHash, thumbHash) || other.thumbHash == thumbHash));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,capturedAt,imageId,imageFile,imageDirectory,geolocation,aiAttribution);
+int get hashCode => Object.hash(runtimeType,capturedAt,imageId,imageFile,imageDirectory,geolocation,aiAttribution,thumbHash);
 
 @override
 String toString() {
-  return 'ImageData(capturedAt: $capturedAt, imageId: $imageId, imageFile: $imageFile, imageDirectory: $imageDirectory, geolocation: $geolocation, aiAttribution: $aiAttribution)';
+  return 'ImageData(capturedAt: $capturedAt, imageId: $imageId, imageFile: $imageFile, imageDirectory: $imageDirectory, geolocation: $geolocation, aiAttribution: $aiAttribution, thumbHash: $thumbHash)';
 }
 
 
@@ -358,7 +362,7 @@ abstract mixin class $ImageDataCopyWith<$Res>  {
   factory $ImageDataCopyWith(ImageData value, $Res Function(ImageData) _then) = _$ImageDataCopyWithImpl;
 @useResult
 $Res call({
- DateTime capturedAt, String imageId, String imageFile, String imageDirectory, Geolocation? geolocation, AiWorkAttribution? aiAttribution
+ DateTime capturedAt, String imageId, String imageFile, String imageDirectory, Geolocation? geolocation, AiWorkAttribution? aiAttribution, String? thumbHash
 });
 
 
@@ -375,7 +379,7 @@ class _$ImageDataCopyWithImpl<$Res>
 
 /// Create a copy of ImageData
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? capturedAt = null,Object? imageId = null,Object? imageFile = null,Object? imageDirectory = null,Object? geolocation = freezed,Object? aiAttribution = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? capturedAt = null,Object? imageId = null,Object? imageFile = null,Object? imageDirectory = null,Object? geolocation = freezed,Object? aiAttribution = freezed,Object? thumbHash = freezed,}) {
   return _then(_self.copyWith(
 capturedAt: null == capturedAt ? _self.capturedAt : capturedAt // ignore: cast_nullable_to_non_nullable
 as DateTime,imageId: null == imageId ? _self.imageId : imageId // ignore: cast_nullable_to_non_nullable
@@ -383,7 +387,8 @@ as String,imageFile: null == imageFile ? _self.imageFile : imageFile // ignore: 
 as String,imageDirectory: null == imageDirectory ? _self.imageDirectory : imageDirectory // ignore: cast_nullable_to_non_nullable
 as String,geolocation: freezed == geolocation ? _self.geolocation : geolocation // ignore: cast_nullable_to_non_nullable
 as Geolocation?,aiAttribution: freezed == aiAttribution ? _self.aiAttribution : aiAttribution // ignore: cast_nullable_to_non_nullable
-as AiWorkAttribution?,
+as AiWorkAttribution?,thumbHash: freezed == thumbHash ? _self.thumbHash : thumbHash // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 /// Create a copy of ImageData
@@ -492,10 +497,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( DateTime capturedAt,  String imageId,  String imageFile,  String imageDirectory,  Geolocation? geolocation,  AiWorkAttribution? aiAttribution)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( DateTime capturedAt,  String imageId,  String imageFile,  String imageDirectory,  Geolocation? geolocation,  AiWorkAttribution? aiAttribution,  String? thumbHash)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ImageData() when $default != null:
-return $default(_that.capturedAt,_that.imageId,_that.imageFile,_that.imageDirectory,_that.geolocation,_that.aiAttribution);case _:
+return $default(_that.capturedAt,_that.imageId,_that.imageFile,_that.imageDirectory,_that.geolocation,_that.aiAttribution,_that.thumbHash);case _:
   return orElse();
 
 }
@@ -513,10 +518,10 @@ return $default(_that.capturedAt,_that.imageId,_that.imageFile,_that.imageDirect
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( DateTime capturedAt,  String imageId,  String imageFile,  String imageDirectory,  Geolocation? geolocation,  AiWorkAttribution? aiAttribution)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( DateTime capturedAt,  String imageId,  String imageFile,  String imageDirectory,  Geolocation? geolocation,  AiWorkAttribution? aiAttribution,  String? thumbHash)  $default,) {final _that = this;
 switch (_that) {
 case _ImageData():
-return $default(_that.capturedAt,_that.imageId,_that.imageFile,_that.imageDirectory,_that.geolocation,_that.aiAttribution);case _:
+return $default(_that.capturedAt,_that.imageId,_that.imageFile,_that.imageDirectory,_that.geolocation,_that.aiAttribution,_that.thumbHash);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -533,10 +538,10 @@ return $default(_that.capturedAt,_that.imageId,_that.imageFile,_that.imageDirect
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( DateTime capturedAt,  String imageId,  String imageFile,  String imageDirectory,  Geolocation? geolocation,  AiWorkAttribution? aiAttribution)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( DateTime capturedAt,  String imageId,  String imageFile,  String imageDirectory,  Geolocation? geolocation,  AiWorkAttribution? aiAttribution,  String? thumbHash)?  $default,) {final _that = this;
 switch (_that) {
 case _ImageData() when $default != null:
-return $default(_that.capturedAt,_that.imageId,_that.imageFile,_that.imageDirectory,_that.geolocation,_that.aiAttribution);case _:
+return $default(_that.capturedAt,_that.imageId,_that.imageFile,_that.imageDirectory,_that.geolocation,_that.aiAttribution,_that.thumbHash);case _:
   return null;
 
 }
@@ -548,7 +553,7 @@ return $default(_that.capturedAt,_that.imageId,_that.imageFile,_that.imageDirect
 @JsonSerializable()
 
 class _ImageData implements ImageData {
-  const _ImageData({required this.capturedAt, required this.imageId, required this.imageFile, required this.imageDirectory, this.geolocation, this.aiAttribution});
+  const _ImageData({required this.capturedAt, required this.imageId, required this.imageFile, required this.imageDirectory, this.geolocation, this.aiAttribution, this.thumbHash});
   factory _ImageData.fromJson(Map<String, dynamic> json) => _$ImageDataFromJson(json);
 
 @override final  DateTime capturedAt;
@@ -557,6 +562,11 @@ class _ImageData implements ImageData {
 @override final  String imageDirectory;
 @override final  Geolocation? geolocation;
 @override final  AiWorkAttribution? aiAttribution;
+/// Base64 ThumbHash of the picture: a few dozen bytes that decode into a
+/// blurred stand-in, drawn until the file itself is on disk. A rendering
+/// hint only — absent for everything but the demo catalog today, and
+/// never required.
+@override final  String? thumbHash;
 
 /// Create a copy of ImageData
 /// with the given fields replaced by the non-null parameter values.
@@ -571,16 +581,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ImageData&&(identical(other.capturedAt, capturedAt) || other.capturedAt == capturedAt)&&(identical(other.imageId, imageId) || other.imageId == imageId)&&(identical(other.imageFile, imageFile) || other.imageFile == imageFile)&&(identical(other.imageDirectory, imageDirectory) || other.imageDirectory == imageDirectory)&&(identical(other.geolocation, geolocation) || other.geolocation == geolocation)&&(identical(other.aiAttribution, aiAttribution) || other.aiAttribution == aiAttribution));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ImageData&&(identical(other.capturedAt, capturedAt) || other.capturedAt == capturedAt)&&(identical(other.imageId, imageId) || other.imageId == imageId)&&(identical(other.imageFile, imageFile) || other.imageFile == imageFile)&&(identical(other.imageDirectory, imageDirectory) || other.imageDirectory == imageDirectory)&&(identical(other.geolocation, geolocation) || other.geolocation == geolocation)&&(identical(other.aiAttribution, aiAttribution) || other.aiAttribution == aiAttribution)&&(identical(other.thumbHash, thumbHash) || other.thumbHash == thumbHash));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,capturedAt,imageId,imageFile,imageDirectory,geolocation,aiAttribution);
+int get hashCode => Object.hash(runtimeType,capturedAt,imageId,imageFile,imageDirectory,geolocation,aiAttribution,thumbHash);
 
 @override
 String toString() {
-  return 'ImageData(capturedAt: $capturedAt, imageId: $imageId, imageFile: $imageFile, imageDirectory: $imageDirectory, geolocation: $geolocation, aiAttribution: $aiAttribution)';
+  return 'ImageData(capturedAt: $capturedAt, imageId: $imageId, imageFile: $imageFile, imageDirectory: $imageDirectory, geolocation: $geolocation, aiAttribution: $aiAttribution, thumbHash: $thumbHash)';
 }
 
 
@@ -591,7 +601,7 @@ abstract mixin class _$ImageDataCopyWith<$Res> implements $ImageDataCopyWith<$Re
   factory _$ImageDataCopyWith(_ImageData value, $Res Function(_ImageData) _then) = __$ImageDataCopyWithImpl;
 @override @useResult
 $Res call({
- DateTime capturedAt, String imageId, String imageFile, String imageDirectory, Geolocation? geolocation, AiWorkAttribution? aiAttribution
+ DateTime capturedAt, String imageId, String imageFile, String imageDirectory, Geolocation? geolocation, AiWorkAttribution? aiAttribution, String? thumbHash
 });
 
 
@@ -608,7 +618,7 @@ class __$ImageDataCopyWithImpl<$Res>
 
 /// Create a copy of ImageData
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? capturedAt = null,Object? imageId = null,Object? imageFile = null,Object? imageDirectory = null,Object? geolocation = freezed,Object? aiAttribution = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? capturedAt = null,Object? imageId = null,Object? imageFile = null,Object? imageDirectory = null,Object? geolocation = freezed,Object? aiAttribution = freezed,Object? thumbHash = freezed,}) {
   return _then(_ImageData(
 capturedAt: null == capturedAt ? _self.capturedAt : capturedAt // ignore: cast_nullable_to_non_nullable
 as DateTime,imageId: null == imageId ? _self.imageId : imageId // ignore: cast_nullable_to_non_nullable
@@ -616,7 +626,8 @@ as String,imageFile: null == imageFile ? _self.imageFile : imageFile // ignore: 
 as String,imageDirectory: null == imageDirectory ? _self.imageDirectory : imageDirectory // ignore: cast_nullable_to_non_nullable
 as String,geolocation: freezed == geolocation ? _self.geolocation : geolocation // ignore: cast_nullable_to_non_nullable
 as Geolocation?,aiAttribution: freezed == aiAttribution ? _self.aiAttribution : aiAttribution // ignore: cast_nullable_to_non_nullable
-as AiWorkAttribution?,
+as AiWorkAttribution?,thumbHash: freezed == thumbHash ? _self.thumbHash : thumbHash // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

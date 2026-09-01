@@ -65,6 +65,41 @@ void main() {
     });
   });
 
+  group('ImageData.thumbHash', () {
+    const hash = 'EMYFFIIHmId8iIZwh4a1kF0J6A==';
+
+    test('round-trips through JSON', () {
+      final data = ImageData(
+        capturedAt: fixedDate,
+        imageId: 'img-1',
+        imageFile: 'photo.jpg',
+        imageDirectory: '/photos',
+        thumbHash: hash,
+      );
+
+      final json =
+          jsonDecode(jsonEncode(data.toJson())) as Map<String, dynamic>;
+
+      expect(json['thumbHash'], hash);
+      expect(ImageData.fromJson(json), data);
+    });
+
+    test('is optional: an image written before the field existed still '
+        'parses, without a hint', () {
+      final json = <String, dynamic>{
+        'capturedAt': fixedDate.toIso8601String(),
+        'imageId': 'img-1',
+        'imageFile': 'photo.jpg',
+        'imageDirectory': '/photos',
+      };
+
+      final data = ImageData.fromJson(json);
+
+      expect(data.thumbHash, isNull);
+      expect(ImageData.fromJson(data.toJson()).thumbHash, isNull);
+    });
+  });
+
   group('JournalEntityExtension simple getters', () {
     test('id, categoryId and isDeleted reflect metadata', () {
       final entry = JournalEntity.journalEntry(meta: meta);

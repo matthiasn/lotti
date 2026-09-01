@@ -448,6 +448,7 @@ class ManualDemoWorld {
           imageId: '${asset.id}-file',
           imageFile: asset.fileName,
           imageDirectory: asset.imageDirectory,
+          thumbHash: asset.thumbHash,
         ),
         entryText: caption == null ? null : EntryText(plainText: caption),
       );

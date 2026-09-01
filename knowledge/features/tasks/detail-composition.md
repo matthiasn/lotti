@@ -409,7 +409,13 @@ When the expandable app bar has cover art, the whole artwork is an interactive
 image surface. A tap opens the same full-screen, zoomable viewer used by linked
 image entries, including rotation, download and zoom controls. The cover uses a
 task-specific Hero tag so an expanded linked image lower on the same detail page
-cannot become the transition source by mistake. On a wide detail workspace the
+cannot become the transition source by mistake. While the cover's file is not
+on disk yet — a demo cover still downloading — `CoverArtBackground` draws the
+image's ThumbHash stand-in under the same scrim with nothing to tap, and the
+picture fades in over it once the file watcher sees it land; a cover without a
+hash collapses to nothing, as before. The same `ThumbHashBackedImage` handles
+the list thumbnail and the linked-image card (see
+[demo mode](../demo.md#the-stand-in-while-it-downloads)). On a wide detail workspace the
 art remains centred at the shared detail-content maximum width instead of
 stretching across the whole window. Once the cover scrolls away, the compact
 title renders on the toolbar's level-01 surface and therefore uses the standard

@@ -10,6 +10,8 @@ import 'package:lotti/features/journal/ui/widgets/entry_image_widget.dart';
 import 'package:lotti/features/tasks/ui/file_watcher_mixin.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/image_utils.dart';
+import 'package:lotti/utils/thumbhash.dart';
+import 'package:lotti/widgets/media/thumb_hash_backed_image.dart';
 
 /// Bucket size (physical pixels) for quantizing the decode target.
 ///
@@ -50,6 +52,10 @@ int? coverArtCacheExtent(double maxExtent, double devicePixelRatio) {
 }
 
 /// Displays task cover art in a SliverAppBar and opens it full screen on tap.
+///
+/// While the file is still missing, an image that carries a ThumbHash shows
+/// its blurred stand-in under the same scrim, with nothing to tap — there is
+/// no file to open yet; one that does not collapses to nothing, as before.
 class CoverArtBackground extends ConsumerStatefulWidget {
   const CoverArtBackground({
     required this.imageId,
@@ -117,9 +123,24 @@ class _CoverArtBackgroundState extends ConsumerState<CoverArtBackground>
 
     final path = getFullImagePath(entry);
     setupFileWatcher(path);
+    final thumbHash = ThumbHash.tryParse(entry.data.thumbHash);
 
     if (!fileExists) {
-      return const SizedBox.shrink();
+      if (thumbHash == null) {
+        return const SizedBox.shrink();
+      }
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          ThumbHashBackedImage(
+            key: ValueKey(path),
+            thumbHash: thumbHash,
+            image: null,
+            alignment: Alignment.topCenter,
+          ),
+          const _CoverArtScrim(),
+        ],
+      );
     }
 
     final file = File(path);
@@ -171,14 +192,16 @@ class _CoverArtBackgroundState extends ConsumerState<CoverArtBackground>
                 provider: imageProvider,
               );
             });
-            return Image(
+            // Gapless playback keeps the previously decoded frame on screen
+            // while a new decode (bucket boundary crossed mid-resize)
+            // resolves — without it the cover art blanks out on every
+            // provider change. The key ties the fade-in to this file, so a
+            // bucket swap does not fade again and a new cover does.
+            return ThumbHashBackedImage(
+              key: ValueKey(path),
+              thumbHash: thumbHash,
               image: imageProvider,
-              fit: BoxFit.cover,
               alignment: Alignment.topCenter,
-              // Keep showing the previously decoded frame while a new decode
-              // (bucket boundary crossed mid-resize) resolves — without this
-              // the cover art blanks out on every provider change.
-              gaplessPlayback: true,
               errorBuilder: (context, error, stackTrace) {
                 // Evict through the provider: the cache is keyed by
                 // obtainKey's result (a ResizeImageKey for ResizeImage),
@@ -189,19 +212,7 @@ class _CoverArtBackgroundState extends ConsumerState<CoverArtBackground>
             );
           },
         ),
-        const DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.center,
-              colors: [
-                Color(0x99000000),
-                Colors.transparent,
-              ],
-            ),
-          ),
-          child: SizedBox.expand(),
-        ),
+        const _CoverArtScrim(),
       ],
     );
 
@@ -219,6 +230,30 @@ class _CoverArtBackgroundState extends ConsumerState<CoverArtBackground>
           ),
         ),
       ),
+    );
+  }
+}
+
+/// The top-down scrim that keeps the app bar's title legible over the
+/// artwork — and over its stand-in, so the transition between the two
+/// changes nothing but the picture.
+class _CoverArtScrim extends StatelessWidget {
+  const _CoverArtScrim();
+
+  @override
+  Widget build(BuildContext context) {
+    return const DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.center,
+          colors: [
+            Color(0x99000000),
+            Colors.transparent,
+          ],
+        ),
+      ),
+      child: SizedBox.expand(),
     );
   }
 }

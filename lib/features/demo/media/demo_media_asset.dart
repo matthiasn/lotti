@@ -1,3 +1,4 @@
+import 'package:lotti/features/demo/media/generated/demo_media_thumb_hashes.g.dart';
 import 'package:lotti/features/demo/seed/demo_ids.dart';
 import 'package:meta/meta.dart';
 
@@ -61,6 +62,12 @@ class DemoMediaAsset {
   /// Optional attachment caption passed through the demo seed translator.
   final String? captionEnglish;
   final String? captionGerman;
+
+  /// Base64 ThumbHash of the object — the blurred stand-in the app draws
+  /// while the file downloads — or null when the backfill has not seen this
+  /// [sha256] yet. Keyed by digest, so a replaced object loses its stale
+  /// hash by itself; `make demo_media_thumb_hashes` fills the gap.
+  String? get thumbHash => demoMediaThumbHashes[sha256];
 
   String get objectKey => '$demoMediaR2Prefix/$fileName';
 

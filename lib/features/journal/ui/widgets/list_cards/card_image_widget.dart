@@ -4,12 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/tasks/ui/file_watcher_mixin.dart';
 import 'package:lotti/utils/image_utils.dart';
+import 'package:lotti/utils/thumbhash.dart';
+import 'package:lotti/widgets/media/thumb_hash_backed_image.dart';
 
 /// Thumbnail for a [JournalImage] inside a list card.
 ///
 /// Loads the image file at a fixed `height` and uses [FileWatcherMixin] so the
 /// thumbnail refreshes if the underlying file changes on disk (e.g. after a
-/// sync/import).
+/// sync/import). While the file is still missing, an image that carries a
+/// ThumbHash shows its blurred stand-in in the same box; one that does not
+/// takes no space at all.
 class CardImageWidget extends StatefulWidget {
   const CardImageWidget({
     required this.journalImage,
@@ -46,32 +50,37 @@ class _CardImageWidgetState extends State<CardImageWidget>
   Widget build(BuildContext context) {
     final path = getFullImagePath(widget.journalImage);
     setupFileWatcher(path);
+    final thumbHash = ThumbHash.tryParse(widget.journalImage.data.thumbHash);
 
-    if (!fileExists) {
+    if (!fileExists && thumbHash == null) {
       return const SizedBox.shrink();
     }
 
     final size = widget.height.toDouble();
-    final devicePixelRatio = MediaQuery.devicePixelRatioOf(context);
-    final cap = size > 0
-        ? (size * devicePixelRatio).round().clamp(1, 10000)
-        : null;
-    final fileImage = FileImage(File(path));
-    // Use ResizeImage.fit so capping both axes preserves aspect ratio
-    // instead of squashing non-square source images into a square decode.
-    ImageProvider imageProvider = fileImage;
-    if (cap != null) {
-      imageProvider = ResizeImage(
-        fileImage,
-        width: cap,
-        height: cap,
-        policy: ResizeImagePolicy.fit,
-      );
+    ImageProvider? imageProvider;
+    if (fileExists) {
+      final devicePixelRatio = MediaQuery.devicePixelRatioOf(context);
+      final cap = size > 0
+          ? (size * devicePixelRatio).round().clamp(1, 10000)
+          : null;
+      final fileImage = FileImage(File(path));
+      // Use ResizeImage.fit so capping both axes preserves aspect ratio
+      // instead of squashing non-square source images into a square decode.
+      imageProvider = cap == null
+          ? fileImage
+          : ResizeImage(
+              fileImage,
+              width: cap,
+              height: cap,
+              policy: ResizeImagePolicy.fit,
+            );
     }
     return SizedBox(
       width: size,
       height: size,
-      child: Image(
+      child: ThumbHashBackedImage(
+        key: ValueKey(path),
+        thumbHash: thumbHash,
         image: imageProvider,
         fit: widget.fit,
       ),

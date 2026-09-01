@@ -6,8 +6,11 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/card_image_widget.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/utils/thumbhash.dart';
+import 'package:lotti/widgets/media/thumb_hash_image.dart';
 import 'package:path/path.dart' as p;
 
+import '../../../../../helpers/thumb_hash_fixtures.dart';
 import '../../../../../test_helper.dart';
 
 void main() {
@@ -149,11 +152,76 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Verify the widget built properly
+      // Verify the widget built properly, and that the picture wears the fit.
       expect(find.byType(SizedBox), findsOneWidget);
+      expect(tester.widget<Image>(find.byType(Image)).fit, BoxFit.cover);
+    });
 
-      // Note: We can't directly test the BoxFit value since it's inside an Image.file
-      // widget, but we've confirmed it accepts the parameter
+    group('with a ThumbHash', () {
+      JournalImage withHash(String hash) => testImage.copyWith(
+        data: testImage.data.copyWith(thumbHash: hash),
+      );
+
+      testWidgets('shows the stand-in in the same box while the file is '
+          'missing', (tester) async {
+        expect(File(getExpectedImagePath()).existsSync(), isFalse);
+
+        await tester.pumpWidget(
+          WidgetTestBench(
+            child: CardImageWidget(
+              journalImage: withHash(sampleThumbHash),
+              height: testHeight,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final box = tester.widget<SizedBox>(find.byType(SizedBox));
+        expect(box.width, testHeight.toDouble());
+        expect(box.height, testHeight.toDouble());
+        final standIn = tester.widget<Image>(find.byType(Image));
+        expect(
+          standIn.image,
+          ThumbHashImage(ThumbHash.fromBase64(sampleThumbHash)),
+        );
+        // The default scaleDown would leave the 32 px raster a stamp in the
+        // corner; the stand-in fills the box the way the picture will.
+        expect(standIn.fit, BoxFit.contain);
+      });
+
+      testWidgets('gives the stand-in the fit it was given', (tester) async {
+        await tester.pumpWidget(
+          WidgetTestBench(
+            child: CardImageWidget(
+              journalImage: withHash(sampleThumbHash),
+              height: testHeight,
+              fit: BoxFit.cover,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(tester.widget<Image>(find.byType(Image)).fit, BoxFit.cover);
+      });
+
+      testWidgets('takes no space for a hash that does not parse', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          WidgetTestBench(
+            child: CardImageWidget(
+              journalImage: withHash(corruptThumbHash),
+              height: testHeight,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.byType(Image), findsNothing);
+        final box = tester.widget<SizedBox>(find.byType(SizedBox));
+        expect(box.width, 0);
+        expect(box.height, 0);
+      });
     });
 
     testWidgets('didUpdateWidget resets watcher when journalImage.id changes', (

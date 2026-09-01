@@ -2,6 +2,7 @@ import 'dart:ui' show Locale;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/demo/media/demo_media_asset.dart';
 import 'package:lotti/features/demo/seed/demo_seed_text.dart';
 import 'package:lotti/features/demo/seed/demo_tutorial_content.dart';
 import 'package:lotti/features/demo/seed/demo_world.dart';
@@ -57,6 +58,13 @@ void main() {
         expect(item.data.linkedChecklists, [demoTutorialChecklistId]);
       }
       expect(content.images, hasLength(3));
+      for (final image in content.images) {
+        final asset = demoMediaAssets.singleWhere(
+          (asset) => asset.id == image.meta.id,
+        );
+        expect(image.data.thumbHash, asset.thumbHash, reason: asset.fileName);
+        expect(image.data.thumbHash, isNotNull, reason: asset.fileName);
+      }
       expect(content.links, hasLength(content.images.length));
       expect(
         content.links.map((link) => link.fromId),
