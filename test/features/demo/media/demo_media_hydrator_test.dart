@@ -224,26 +224,191 @@ void main() {
     },
   );
 
-  test('network downloader contains a non-success HTTP response', () async {
-    final bytes = Uint8List.fromList([20]);
-    final image = asset('not-found', bytes);
+  test(
+    'network downloader retries a non-success HTTP response, then contains it',
+    () async {
+      final bytes = Uint8List.fromList([20]);
+      final image = asset('throttled-network', bytes);
+      final errors = <Object>[];
+      final waits = <Duration>[];
+      var requests = 0;
+      final hydrator = DemoMediaHydrator.network(
+        root: root,
+        assets: [image],
+        client: MockClient((request) async {
+          requests++;
+          return http.Response('', HttpStatus.tooManyRequests);
+        }),
+        wait: (delay) async => waits.add(delay),
+        onError: (asset, error, stackTrace) => errors.add(error),
+      );
+
+      final result = await hydrator.hydrate();
+      hydrator.dispose();
+
+      expect(requests, 5);
+      expect(waits, const [
+        Duration(milliseconds: 500),
+        Duration(seconds: 1),
+        Duration(seconds: 2),
+        Duration(seconds: 4),
+      ]);
+      expect(result.failed, 1);
+      expect(errors.single, isA<HttpException>());
+      expect(target(image).existsSync(), isFalse);
+    },
+  );
+
+  test(
+    'retries a throttled download and installs it on a later attempt',
+    () async {
+      final bytes = Uint8List.fromList([27, 28]);
+      final image = asset('throttled', bytes);
+      final errors = <Object>[];
+      final waits = <Duration>[];
+      var requests = 0;
+      final hydrator = DemoMediaHydrator(
+        root: root,
+        assets: [image],
+        download: (uri) async {
+          requests++;
+          if (requests < 3) {
+            throw http.ClientException(
+              'Request to $uri failed with status 429: Too Many Requests.',
+              uri,
+            );
+          }
+          return bytes;
+        },
+        wait: (delay) async => waits.add(delay),
+        onError: (asset, error, stackTrace) => errors.add(error),
+      );
+
+      final result = await hydrator.hydrate();
+
+      expect(requests, 3);
+      expect(waits, const [Duration(milliseconds: 500), Duration(seconds: 1)]);
+      expect(errors, isEmpty);
+      expect(result.downloaded, 1);
+      expect(result.failed, 0);
+      expect(result.isComplete, isTrue);
+      expect(await target(image).readAsBytes(), bytes);
+    },
+  );
+
+  test(
+    'gives up after maxAttempts and reports the last failure once',
+    () async {
+      final image = asset('refused', Uint8List.fromList([29]));
+      final errors = <Object>[];
+      final waits = <Duration>[];
+      var requests = 0;
+      final hydrator = DemoMediaHydrator(
+        root: root,
+        assets: [image],
+        maxAttempts: 3,
+        download: (uri) async {
+          requests++;
+          throw http.ClientException('attempt $requests', uri);
+        },
+        wait: (delay) async => waits.add(delay),
+        onError: (asset, error, stackTrace) => errors.add(error),
+      );
+
+      final result = await hydrator.hydrate();
+
+      expect(requests, 3);
+      expect(waits, const [Duration(milliseconds: 500), Duration(seconds: 1)]);
+      expect(
+        errors.single,
+        isA<http.ClientException>().having(
+          (error) => error.message,
+          'message',
+          'attempt 3',
+        ),
+      );
+      expect(result.failed, 1);
+      expect(hydrator.progress.value.failed, 1);
+      expect(target(image).existsSync(), isFalse);
+    },
+  );
+
+  test('does not retry an Error thrown by the downloader', () async {
+    final image = asset('broken-downloader', Uint8List.fromList([34]));
     final errors = <Object>[];
-    final hydrator = DemoMediaHydrator.network(
+    var requests = 0;
+    var waited = false;
+    final hydrator = DemoMediaHydrator(
       root: root,
       assets: [image],
-      client: MockClient(
-        (request) async => http.Response('', HttpStatus.notFound),
-      ),
+      download: (uri) async {
+        requests++;
+        throw ArgumentError('not a request failure');
+      },
+      wait: (delay) async => waited = true,
       onError: (asset, error, stackTrace) => errors.add(error),
     );
 
     final result = await hydrator.hydrate();
-    hydrator.dispose();
 
+    expect(requests, 1);
+    expect(waited, isFalse);
+    expect(errors.single, isA<ArgumentError>());
     expect(result.failed, 1);
-    expect(errors.single, isA<HttpException>());
+  });
+
+  test('does not retry a checksum mismatch', () async {
+    final image = asset('mismatch', Uint8List.fromList([30]));
+    final errors = <Object>[];
+    var requests = 0;
+    var waited = false;
+    final hydrator = DemoMediaHydrator(
+      root: root,
+      assets: [image],
+      download: (uri) async {
+        requests++;
+        return Uint8List.fromList([99]);
+      },
+      wait: (delay) async => waited = true,
+      onError: (asset, error, stackTrace) => errors.add(error),
+    );
+
+    final result = await hydrator.hydrate();
+
+    expect(requests, 1);
+    expect(waited, isFalse);
+    expect(errors.single, isA<StateError>());
+    expect(result.failed, 1);
     expect(target(image).existsSync(), isFalse);
   });
+
+  test(
+    'dispose during the back-off stops retrying without a failure',
+    () async {
+      final image = asset('disposed-mid-retry', Uint8List.fromList([33]));
+      final errors = <Object>[];
+      var requests = 0;
+      late DemoMediaHydrator hydrator;
+      hydrator = DemoMediaHydrator(
+        root: root,
+        assets: [image],
+        download: (uri) async {
+          requests++;
+          throw http.ClientException('throttled', uri);
+        },
+        wait: (delay) async => hydrator.dispose(),
+        onError: (asset, error, stackTrace) => errors.add(error),
+      );
+
+      final result = await hydrator.hydrate();
+
+      expect(requests, 1);
+      expect(errors, isEmpty);
+      expect(result.cancelled, 1);
+      expect(result.failed, 0);
+      expect(target(image).existsSync(), isFalse);
+    },
+  );
 
   test('dispose cancels the in-flight and queued catalog assets', () async {
     final bytes = Uint8List.fromList([21, 22]);

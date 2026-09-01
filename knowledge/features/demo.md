@@ -39,7 +39,7 @@ sources:
   - id: media-hydrator
     resource: ../../lib/features/demo/media/demo_media_hydrator.dart
     title: Best-effort tenant-local media hydration
-    last_modified: 2026-08-05
+    last_modified: 2026-08-31
   - id: copier
     resource: ../../lib/features/demo/copy/demo_data_copier.dart
     title: DemoDataCopier
@@ -172,9 +172,15 @@ user leaves the demo. Existing files are accepted only when their digest
 matches. Catalog directories are created synchronously before the background
 work begins, so mounted cover widgets can install their file watchers. Missing
 or corrupt objects download to `.part`, pass the catalog checksum, and rename
-atomically inside that guest root. Individual failures are
-logged and contained; placeholders remain usable and the next startup retries
-the incomplete catalog.
+atomically inside that guest root. A refused or dropped request is retried
+inside the same run — up to five attempts per object, pausing 0.5 s, 1 s, 2 s,
+4 s between them — because the public `r2.dev` bucket throttles a random
+slice of requests with HTTP 429 rather than for a window, and a one-shot
+request would lose a few covers out of every hydration. Every download error
+is retried, not only a throttle: the request is an idempotent GET, so a
+missing object costs a few extra seconds while a dropped connection recovers.
+Only the last attempt's failure is logged and contained; placeholders remain
+usable and the next startup retries the incomplete catalog.
 
 `DemoMediaHydrator.progress` publishes the successfully verified or installed
 catalog count against the manifest-owned total, plus any failed or cancelled
@@ -195,7 +201,9 @@ flowchart LR
     V -->|No| D[Download R2 object to .part]
     D --> Q{Digest matches catalog?}
     Q -->|Yes| A[Atomic rename into guest root]
-    Q -->|No / network error| R[Log and retry next startup]
+    D -->|Refused or dropped| W[Back off and retry, up to five attempts]
+    W --> D
+    Q -->|No / last attempt failed| R[Log and retry next startup]
 ```
 
 # Copy-over: closure semantics and the v1 line

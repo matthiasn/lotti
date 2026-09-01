@@ -1,7 +1,7 @@
 ---
 type: Convention
 title: Screenshots
-description: How generated screenshots leave this repository for R2, how the store listings are captured on a device, and why a UI pull request carries an immutable before/after pair rather than one picture of the new thing.
+description: How generated screenshots leave this repository for R2, how the store listings are captured on a device, how a phone or simulator flow is recorded as video, and why a UI pull request carries an immutable before/after pair rather than one picture of the new thing.
 resource: ../../test/test_utils/screenshot_harness.dart
 tags: [convention, screenshots, review, pull-request, r2]
 status: stable
@@ -36,6 +36,18 @@ sources:
     resource: ../../integration_test/store_screenshots_test.dart
     title: The screens the store listing shows, driven on the device
     last_modified: 2026-08-28
+  - id: record-android
+    resource: ../../tool/screen_recording/android.sh
+    title: Screen recording around a command on an Android emulator or phone
+    last_modified: 2026-08-31
+  - id: record-ios-simulator
+    resource: ../../tool/screen_recording/ios_simulator.sh
+    title: Screen recording around a command on an iOS simulator
+    last_modified: 2026-08-31
+  - id: app-preview
+    resource: ../../tool/screen_recording/app_preview.sh
+    title: Recording to App Store App Preview transcode
+    last_modified: 2026-08-31
 ---
 
 # Images do not live in this repository
@@ -175,6 +187,41 @@ Device facts that shape the two scripts:
 
 The output is a listing asset, not review evidence: it is uploaded to the
 Play Console and App Store Connect by hand and does not go to R2.
+
+# Screen recordings wrap the same walk
+
+A screenshot proves a screen; a recording shows a flow — the manual's
+walkthroughs, Play's promo video, the App Store's App Previews. The tutorial
+pipeline in `tools/tutorial_videos/` records only the Linux desktop app under
+Xvfb. For a phone, `tool/screen_recording/` wraps whatever drives the app in
+the platform's own recorder and hands back one file; the wrapped command's
+exit status is the wrapper's, so a failed walk still leaves a recording of how
+it failed.
+
+| Target | Wrapper | Recorder | Footage from a device? |
+|--------|---------|----------|------------------------|
+| Android emulator or phone | `tool/screen_recording/android.sh -s <serial> -o out.mp4 -- <command>` | `adb shell screenrecord`, in 180 s segments concatenated losslessly with ffmpeg because the recorder finalizes only at its time limit or on SIGINT; Android's crash and ANR dialogs are hidden for the duration, since a software-GPU emulator raises a System UI ANR under the encoder's load and the dialog would sit over every frame | yes — a phone on USB records exactly like the emulator |
+| iOS simulator | `tool/screen_recording/ios_simulator.sh -d <udid> -o out.mov -- <command>` | `xcrun simctl io recordVideo`, at the device's native size | no |
+| iPhone | none — `devicectl` can neither record nor screenshot | QuickTime Player over USB (File › New Movie Recording, the phone as camera) or the phone's Control Center recording | yes |
+
+The command is any host process; the store walk is the obvious first one:
+
+```bash
+tool/screen_recording/android.sh -o build/screen_recordings/store_walk.mp4 -- \
+  make store_screenshots_android LOTTI_STORE_THEMES=dark
+tool/screen_recording/ios_simulator.sh -d <udid> -- \
+  make store_screenshots_ios LOTTI_IOS_DEVICES="iPhone 17" LOTTI_STORE_THEMES=dark
+```
+
+`tool/screen_recording/app_preview.sh IN OUT [WxH] [START] [DURATION]` then
+cuts a 15–30 s slice into what App Store Connect takes — 886×1920 for the
+6.9" and 6.5" iPhone slots, 1200×1600 for the 13" iPad slot, H.264 High 4.0,
+constant 30 fps, about 10 Mbps, silent unless `LOTTI_PREVIEW_AUDIO=keep`
+carries a narrated capture's track over as 256 kbps AAC. Apple's guidance wants a preview built from
+footage captured on device, so the iPhone row is the one that feeds the store;
+the simulator and emulator rows feed the manual and Play's promo video, which
+is a YouTube link rather than an upload. Like the listing PNGs, recordings
+land under `build/` and are never committed.
 
 # A UI pull request shows before *and* after
 

@@ -8,6 +8,7 @@ import 'package:path/path.dart' as p;
 
 typedef DemoMediaDownload = Future<Uint8List> Function(Uri uri);
 typedef DemoMediaFileDigest = Future<String> Function(File file);
+typedef DemoMediaRetryWait = Future<void> Function(Duration delay);
 typedef DemoMediaFileRename =
     Future<File> Function(
       File source,
@@ -65,6 +66,14 @@ class DemoMediaHydrationResult {
 /// never waits for the network. Missing covers render as their established
 /// placeholders, and the existing file watchers reveal them as each atomic
 /// download lands. A later startup simply retries anything still incomplete.
+///
+/// Within one run, each request is retried with exponential backoff (see
+/// [maxAttempts] and [retryBaseDelay]): the catalog is served from a public
+/// `r2.dev` bucket, which throttles with HTTP 429 intermittently — a random
+/// slice of requests, not a window — so a one-shot request loses a few covers
+/// out of every hydration. The request is an idempotent GET, so every failure
+/// is retried rather than only a throttle: a missing object costs a few extra
+/// seconds, while a throttle or a dropped connection is recovered.
 class DemoMediaHydrator {
   DemoMediaHydrator({
     required this.root,
@@ -72,27 +81,38 @@ class DemoMediaHydrator {
     required this.download,
     this.onError,
     this.concurrency = 3,
+    this.maxAttempts = 5,
+    this.retryBaseDelay = const Duration(milliseconds: 500),
     this.closeDownloader,
     DemoMediaFileDigest? digestFile,
     DemoMediaFileRename? renameFile,
+    DemoMediaRetryWait? wait,
   }) : _digestFile = digestFile ?? _defaultDigestFile,
        _renameFile = renameFile ?? _defaultRenameFile,
-       assert(concurrency > 0, 'concurrency must be positive');
+       _wait = wait ?? _defaultWait,
+       assert(concurrency > 0, 'concurrency must be positive'),
+       assert(maxAttempts > 0, 'maxAttempts must be positive');
 
   factory DemoMediaHydrator.network({
     required Directory root,
     required List<DemoMediaAsset> assets,
     DemoMediaHydrationError? onError,
     int concurrency = 3,
+    int maxAttempts = 5,
+    Duration retryBaseDelay = const Duration(milliseconds: 500),
     Duration requestTimeout = const Duration(seconds: 20),
     http.Client? client,
+    DemoMediaRetryWait? wait,
   }) {
     final httpClient = client ?? http.Client();
     return DemoMediaHydrator(
       root: root,
       assets: assets,
       concurrency: concurrency,
+      maxAttempts: maxAttempts,
+      retryBaseDelay: retryBaseDelay,
       onError: onError,
+      wait: wait,
       download: (uri) async {
         final response = await httpClient.get(uri).timeout(requestTimeout);
         if (response.statusCode != HttpStatus.ok) {
@@ -110,11 +130,18 @@ class DemoMediaHydrator {
   final Directory root;
   final List<DemoMediaAsset> assets;
   final int concurrency;
+
+  /// Requests made for one asset before its failure is reported.
+  final int maxAttempts;
+
+  /// Pause before the second attempt; each later pause doubles it.
+  final Duration retryBaseDelay;
   final DemoMediaHydrationError? onError;
   final DemoMediaDownload download;
   final void Function()? closeDownloader;
   final DemoMediaFileDigest _digestFile;
   final DemoMediaFileRename _renameFile;
+  final DemoMediaRetryWait _wait;
 
   /// Updates as catalog items finish verification or download.
   final ValueNotifier<DemoMediaHydrationProgress> progress = ValueNotifier(
@@ -196,8 +223,8 @@ class DemoMediaHydrator {
   }
 
   Future<bool> _hydrateAsset(DemoMediaAsset asset) async {
-    final bytes = await download(asset.uri);
-    if (_disposed) return false;
+    final bytes = await _fetch(asset);
+    if (bytes == null || _disposed) return false;
 
     final actualDigest = sha256.convert(bytes).toString();
     if (actualDigest != asset.sha256) {
@@ -226,6 +253,24 @@ class DemoMediaHydrator {
     }
   }
 
+  /// Fetches [asset]'s bytes, retrying a failed request up to [maxAttempts]
+  /// times with backoff, or `null` once disposed mid-retry. The last failure
+  /// propagates; earlier ones are the retries' business. Only an [Exception]
+  /// is a failed request — an [Error] is a bug in the downloader and
+  /// surfaces on the first attempt.
+  Future<Uint8List?> _fetch(DemoMediaAsset asset) async {
+    for (var attempt = 1; ; attempt++) {
+      try {
+        return await download(asset.uri);
+      } on Exception {
+        if (attempt >= maxAttempts) rethrow;
+      }
+      if (_disposed) return null;
+      await _wait(retryBaseDelay * (1 << (attempt - 1)));
+      if (_disposed) return null;
+    }
+  }
+
   Future<bool> _isComplete(DemoMediaAsset asset) async {
     final file = _target(asset);
     if (!file.existsSync()) return false;
@@ -241,6 +286,8 @@ class DemoMediaHydrator {
 
   static Future<File> _defaultRenameFile(File source, String targetPath) =>
       source.rename(targetPath);
+
+  static Future<void> _defaultWait(Duration delay) => Future.delayed(delay);
 
   File _target(DemoMediaAsset asset) =>
       File(p.joinAll([root.path, ...asset.relativePath.split('/')]));

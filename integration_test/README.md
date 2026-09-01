@@ -110,7 +110,11 @@ make store_screenshots_ios LOTTI_IOS_DEVICES="iPhone 17 Pro Max" LOTTI_STORE_THE
 ```
 
 Output lands in `build/store_screenshots/android/` and
-`build/store_screenshots/ios/<device>/`. CI runs the same scripts — on an emulator
+`build/store_screenshots/ios/<device>/`. To record the walk as video instead —
+for the manual, a promo, or a rehearsal of an App Store App Preview — wrap the
+same `make` target in `tool/screen_recording/android.sh` or
+`tool/screen_recording/ios_simulator.sh`; the convention above lists the
+recorders and what App Store Connect takes. CI runs the same scripts — on an emulator
 in `store-screenshots-android.yml`, on simulators in `store-screenshots-ios.yml`
 (manual dispatch, or a pull request that touches the capture) — and uploads the
 PNGs as workflow artifacts.
