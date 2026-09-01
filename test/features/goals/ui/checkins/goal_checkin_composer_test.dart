@@ -77,10 +77,14 @@ void main() {
 
   testWidgets('names the goal and the moment', (tester) async {
     await pump(tester);
-    await tester.pump();
+    // The frame that lands the resolved capture target rebuilds the header,
+    // and the header formats `clock.now()` on every build — so this pump has
+    // to run under the fixed clock too, or the month tracks the wall calendar
+    // (the test rolled over on 1 September).
+    await withClock(Clock.fixed(now), tester.pump);
 
     expect(find.text('Check in · Fitness'), findsOneWidget);
-    expect(find.textContaining('August'), findsOneWidget);
+    expect(find.textContaining('August 18, 2026'), findsOneWidget);
   });
 
   testWidgets('opens on the recorder, not on a keyboard', (tester) async {

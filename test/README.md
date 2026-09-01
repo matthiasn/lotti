@@ -142,6 +142,23 @@ rows' rects must not change across hover).
 `onHoverChanged` only when it has an `onTap`, so a list of non-tappable rows
 (the Logging settings switches) has no hover state to test.
 
+## Settings header surface: `test_utils/settings_header_harness.dart`
+
+`settingsHeaderSurface(tester)` reads back the `BoxDecoration` the sliver
+`SettingsPageHeader` paints — its background and bottom hairline, the one
+theme-dependent value the header paints itself, so the first place a stale
+theme shows. Use it in the header's own tests and in any page that hosts the
+header and asserts the chrome followed a theme change, rather than hunting for
+the `DecoratedBox` by hand: only the helper knows the surface is one.
+
+When such a page drives `MaterialApp.themeMode` from `ThemingController`, pin
+`tester.platformDispatcher.platformBrightnessTestValue` to the stored mode
+first (and clear it in a teardown). The controller's first frame is always
+`ThemeMode.system`, so without the pin the page silently switches theme once
+on load — the header goes stale *there*, and a "dark → light" regression test
+then passes against the broken code because both sides are light again by the
+time it looks.
+
 ## Database test layout
 
 `lib/database/database.dart` and `lib/database/sync_db.dart` are shells (constructor + migration ladder) whose query surfaces live in `part` files holding private mixins (`database_task_queries.dart`, `sync_db_outbox.dart`, …). The tests mirror that layout one test file per part file:
