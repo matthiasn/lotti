@@ -12,6 +12,7 @@ import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
 import 'package:lotti/features/tasks/state/task_blockers_controller.dart';
 import 'package:lotti/features/tasks/state/task_one_liner_provider.dart';
+import 'package:lotti/features/tasks/state/task_progress_controller.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header.dart';
 import 'package:lotti/features/tasks/ui/header/task_meta_column.dart';
 import 'package:lotti/features/tasks/ui/header/task_meta_flyout.dart';
@@ -60,13 +61,18 @@ class DesktopTaskHeaderConnector extends ConsumerWidget {
     // `.value` preserves the established tagline while a background refresh
     // reloads the provider, avoiding a one-line header reflow.
     final oneLiner = ref.watch(taskOneLinerProvider(taskId)).value;
+    // `.value` again: the estimate read-out keeps its last tracked figure
+    // while the progress controller recomputes after a time-entry write.
+    final trackedTime =
+        ref.watch(taskProgressControllerProvider(taskId)).value?.progress ??
+        Duration.zero;
 
     // With the details column mounted beside the task, its metadata is
     // already on screen: the header keeps its read-outs but stops offering a
     // fly-out over a panel showing the same eight rows.
     final hasMetaColumn = TaskMetaColumnScope.isVisible(context);
 
-    final data = _buildData(context, task, project, oneLiner);
+    final data = _buildData(context, task, project, oneLiner, trackedTime);
     final controller = ref.read(entryControllerProvider(taskId).notifier);
     final categoryId = task.meta.categoryId;
 
@@ -120,6 +126,7 @@ class DesktopTaskHeaderConnector extends ConsumerWidget {
     Task task,
     ProjectEntry? project,
     String? oneLiner,
+    Duration trackedTime,
   ) {
     final cache = getIt<EntitiesCacheService>();
     final categoryId = task.meta.categoryId;
@@ -170,6 +177,7 @@ class DesktopTaskHeaderConnector extends ConsumerWidget {
       category: category,
       dueDate: dueDate,
       estimate: task.data.estimate,
+      trackedTime: trackedTime,
       oneLiner: oneLiner,
       labels: labels,
     );

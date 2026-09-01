@@ -287,11 +287,15 @@ always-visible button-styled chrome.** The summary lane is read-outs only:
 [AI cost?] → [Set category?] → Details`.
 
 **The estimate is a read-out in the lane, not only a fly-out row.** "How big
-is this?" is answered at the same glance as "when is it due?": the planned
-time renders as compact units (`1h 30m`) behind the timer glyph, and a null or
-zero estimate leaves no trace, the way a missing due date does. Tracked time
-against the estimate — the progress bar — stays in `TaskMetaSection`, which
-has the room for it.
+is this, and how far along?" is answered at the same glance as "when is it
+due?": the tag reads tracked-of-estimated as compact units (`45m of 1h 30m`)
+behind the timer glyph, with the 36×6 `TaskEstimateProgressBar` the
+pre-redesign header chip carried — the same bar `TaskMetaSection`'s Estimate
+row draws, so the two densities never disagree. Overtime escalates the tag to
+the tinted alert shell, the way an overdue due date does. A null or zero
+estimate leaves no trace, the way a missing due date does. The tracked figure
+comes from `taskProgressControllerProvider` through the connector, read with
+`.value` so a time-entry write recomputes without blanking the tag.
 
 **The AI cost sits in that lane, not behind a panel.** What the machine has
 cost on this task is readable at the same glance as its status, through the

@@ -106,6 +106,7 @@ DesktopTaskHeaderData _fixture({
   DesktopTaskHeaderCategory? category,
   DesktopTaskHeaderDueDate? dueDate,
   Duration? estimate,
+  Duration trackedTime = Duration.zero,
   List<LabelDefinition> labels = const [],
 }) {
   final createdAt = DateTime.utc(2026);
@@ -120,6 +121,7 @@ DesktopTaskHeaderData _fixture({
     category: category,
     dueDate: dueDate,
     estimate: estimate,
+    trackedTime: trackedTime,
     labels: labels,
   );
 }
@@ -1001,12 +1003,12 @@ void main() {
         );
 
         // Visible at a glance, without opening the fly-out.
-        expect(find.text('1h 30m'), findsOneWidget);
+        expect(find.text('0m of 1h 30m'), findsOneWidget);
         expect(
           tester
               .widget<DsPill>(
                 find.ancestor(
-                  of: find.text('1h 30m'),
+                  of: find.text('0m of 1h 30m'),
                   matching: find.byType(DsPill),
                 ),
               )
@@ -1016,7 +1018,7 @@ void main() {
         );
 
         final due = tester.getTopLeft(find.text('Due: Apr 1, 2026'));
-        final estimate = tester.getTopLeft(find.text('1h 30m'));
+        final estimate = tester.getTopLeft(find.text('0m of 1h 30m'));
         final labels = tester.getTopLeft(find.text('Bug fix, Release blocker'));
         expect(estimate.dx, greaterThan(due.dx));
         expect(labels.dx, greaterThan(estimate.dx));
@@ -1036,7 +1038,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.text('45m'));
+      await tester.tap(find.text('0m of 45m'));
       await tester.pump();
 
       expect(opened, 1);
@@ -1049,7 +1051,10 @@ void main() {
       await _pumpDesktop(
         tester,
         DesktopTaskHeader(
-          data: _fixture(estimate: const Duration(hours: 1, minutes: 30)),
+          data: _fixture(
+            estimate: const Duration(hours: 1, minutes: 30),
+            trackedTime: const Duration(minutes: 45),
+          ),
           onTitleSaved: (_) {},
           onOpenDetails: () {},
         ),
@@ -1058,10 +1063,73 @@ void main() {
       final node = tester.getSemantics(estimateTag);
       // One node, one sentence: the glyph carries "estimate" for sighted
       // readers, the label carries it for everyone else.
-      expect(node.label, 'Estimate: 1h 30m');
+      expect(node.label, 'Time tracked: 45m of 1h 30m estimated');
       expect(node.flagsCollection.isButton, isTrue);
       expect(node.getSemanticsData().hasAction(SemanticsAction.tap), isTrue);
       handle.dispose();
+    });
+
+    testWidgets('reads tracked time against the estimate, with the bar', (
+      tester,
+    ) async {
+      await _pumpDesktop(
+        tester,
+        DesktopTaskHeader(
+          data: _fixture(
+            estimate: const Duration(hours: 2),
+            trackedTime: const Duration(minutes: 30),
+          ),
+          onTitleSaved: (_) {},
+        ),
+      );
+
+      expect(find.text('30m of 2h'), findsOneWidget);
+      final bar = tester.widget<LinearProgressIndicator>(
+        find.descendant(
+          of: estimateTag,
+          matching: find.byType(LinearProgressIndicator),
+        ),
+      );
+      expect(bar.value, 0.25);
+      // Within the estimate: the neutral filled shell, green fill.
+      final pill = tester.widget<DsPill>(
+        find.descendant(of: estimateTag, matching: find.byType(DsPill)),
+      );
+      expect(pill.variant, DsPillVariant.filled);
+      final context = tester.element(find.text('30m of 2h'));
+      expect(bar.color, TaskShowcasePalette.success(context));
+    });
+
+    testWidgets('overtime escalates to the alert shell, like an overdue date', (
+      tester,
+    ) async {
+      await _pumpDesktop(
+        tester,
+        DesktopTaskHeader(
+          data: _fixture(
+            estimate: const Duration(hours: 1),
+            trackedTime: const Duration(hours: 1, minutes: 20),
+          ),
+          onTitleSaved: (_) {},
+        ),
+      );
+
+      expect(find.text('1h 20m of 1h'), findsOneWidget);
+      final context = tester.element(find.text('1h 20m of 1h'));
+      final pill = tester.widget<DsPill>(
+        find.descendant(of: estimateTag, matching: find.byType(DsPill)),
+      );
+      expect(pill.variant, DsPillVariant.tinted);
+      expect(pill.color, TaskShowcasePalette.errorInk(context));
+      final bar = tester.widget<LinearProgressIndicator>(
+        find.descendant(
+          of: estimateTag,
+          matching: find.byType(LinearProgressIndicator),
+        ),
+      );
+      // The bar saturates rather than overflowing its 36px.
+      expect(bar.value, 1);
+      expect(bar.color, TaskShowcasePalette.error(context));
     });
 
     testWidgets('omits the tag when the estimate is unset or zero', (

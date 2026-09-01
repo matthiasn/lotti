@@ -11,6 +11,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/settings/state/celebration_preferences_controller.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_estimate_progress_bar.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_shared_widgets.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -46,6 +47,7 @@ class TaskMetaSummaryLine extends StatelessWidget {
     required this.labels,
     required this.onOpenDetails,
     this.estimate,
+    this.trackedTime = Duration.zero,
     this.aiCostSlot,
     this.blockedBySlot,
     this.showSetCategory = false,
@@ -62,6 +64,11 @@ class TaskMetaSummaryLine extends StatelessWidget {
   /// zero drops the tag — the lane makes no "Not set" claim, matching how a
   /// missing due date or an empty label list leave no trace either.
   final Duration? estimate;
+
+  /// Time recorded against the task, read out against [estimate] in the same
+  /// tag ("45m of 1h 30m" plus the small progress bar). Only meaningful with
+  /// an estimate.
+  final Duration trackedTime;
   final List<LabelDefinition> labels;
 
   /// Opens the metadata fly-out. Wired to the Details trigger and to every
@@ -118,7 +125,11 @@ class TaskMetaSummaryLine extends StatelessWidget {
         if (dueDate case final dueDate?)
           _DueSummaryTag(dueDate: dueDate, onTap: onOpenDetails),
         if (estimate case final estimate? when estimate > Duration.zero)
-          _EstimateSummaryTag(estimate: estimate, onTap: onOpenDetails),
+          _EstimateSummaryTag(
+            estimate: estimate,
+            tracked: trackedTime,
+            onTap: onOpenDetails,
+          ),
         if (labels.isNotEmpty)
           _LabelsSummaryTag(labels: labels, onTap: onOpenDetails),
         // What the AI has cost on this task, at the same glance as its status
@@ -156,6 +167,7 @@ class _SummaryTag extends StatelessWidget {
   const _SummaryTag({
     required this.label,
     this.leading,
+    this.trailing,
     this.labelColor,
     this.tintColor,
     this.onTap,
@@ -163,6 +175,7 @@ class _SummaryTag extends StatelessWidget {
 
   final String label;
   final Widget? leading;
+  final Widget? trailing;
   final Color? labelColor;
 
   /// When set, renders the tinted variant (urgent due dates) instead of the
@@ -181,6 +194,7 @@ class _SummaryTag extends StatelessWidget {
         label: label,
         labelColor: labelColor,
         leading: leading,
+        trailing: trailing,
         onTap: onTap,
       );
     }
@@ -191,6 +205,7 @@ class _SummaryTag extends StatelessWidget {
       label: label,
       labelColor: labelColor ?? TaskShowcasePalette.mediumText(context),
       leading: leading,
+      trailing: trailing,
       onTap: onTap,
     );
   }
@@ -331,36 +346,49 @@ class _DueSummaryTag extends StatelessWidget {
   }
 }
 
-/// The estimate read-out: the planned time as compact units ("45m", "1h 30m")
-/// behind the timer glyph, on the same neutral shell as priority. Tracked
-/// time against the estimate stays in the fly-out and details column, which
-/// have room for the progress bar; the lane only answers "how big is this?".
+/// The estimate read-out: tracked-of-estimated as compact units ("45m of
+/// 1h 30m") behind the timer glyph, with the same 36×6 progress bar the
+/// pre-redesign header chip carried. Overtime escalates to the tinted alert
+/// shell, the way an overdue due date does, so a task that has blown its
+/// estimate reads as a warning at the same glance.
 class _EstimateSummaryTag extends StatelessWidget {
-  const _EstimateSummaryTag({required this.estimate, this.onTap});
+  const _EstimateSummaryTag({
+    required this.estimate,
+    required this.tracked,
+    this.onTap,
+  });
 
   final Duration estimate;
+  final Duration tracked;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    final value = formatRangeDuration(estimate);
-    // Sighted readers get the timer glyph to say what the number is; a screen
-    // reader gets the word instead, so the tag is announced as
-    // "Estimate: 1h 30m" rather than a bare duration.
+    final messages = context.messages;
+    final trackedText = formatRangeDuration(tracked);
+    final estimateText = formatRangeDuration(estimate);
+    final overtime = TaskEstimateProgressBar.isOvertime(
+      tracked: tracked,
+      estimate: estimate,
+    );
+    final ink = overtime
+        ? TaskShowcasePalette.errorInk(context)
+        : TaskShowcasePalette.mediumText(context);
+    // Sighted readers get the timer glyph to say what the numbers are; a
+    // screen reader gets the full sentence instead, so the tag is announced
+    // as "Time tracked: 45m of 1h 30m estimated" rather than bare durations.
     return Semantics(
       key: const ValueKey('task-estimate-summary-tag'),
       container: true,
       excludeSemantics: true,
       button: onTap != null,
-      label: '${context.messages.taskMetaEstimateLabel}: $value',
+      label: messages.taskEstimateTooltip(trackedText, estimateText),
       onTap: onTap,
       child: _SummaryTag(
-        label: value,
-        leading: Icon(
-          LottiIcons.timer,
-          size: kTaskChipGlyphSize,
-          color: TaskShowcasePalette.mediumText(context),
-        ),
+        label: messages.taskEstimateProgressLabel(trackedText, estimateText),
+        tintColor: overtime ? ink : null,
+        leading: Icon(LottiIcons.timer, size: kTaskChipGlyphSize, color: ink),
+        trailing: TaskEstimateProgressBar(tracked: tracked, estimate: estimate),
         onTap: onTap,
       ),
     );

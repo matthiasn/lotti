@@ -503,8 +503,31 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(estimateTag, findsOneWidget);
-      expect(find.text('2h'), findsOneWidget);
+      expect(find.text('0m of 2h'), findsOneWidget);
       expect(find.byType(TaskMetaSection), findsNothing);
+    });
+
+    testWidgets('reads the tracked time from the progress controller', (
+      tester,
+    ) async {
+      final task = buildTask(estimate: const Duration(hours: 2));
+
+      await tester.pumpWidget(
+        pumpConnector(
+          task: task,
+          progress: const TaskProgressState(
+            progress: Duration(minutes: 45),
+            estimate: Duration(hours: 2),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(
+        find.descendant(of: estimateTag, matching: find.text('45m of 2h')),
+        findsOneWidget,
+      );
     });
 
     testWidgets('shows no estimate tag for a task without an estimate', (
@@ -646,7 +669,8 @@ void main() {
         expect(find.text('Status'), findsOneWidget);
         expect(find.text('Priority'), findsOneWidget);
         expect(find.text('Estimate'), findsOneWidget);
-        expect(find.text('0m of 2h'), findsOneWidget);
+        // Once in the fly-out's Estimate row, once in the header lane.
+        expect(find.text('0m of 2h'), findsNWidgets(2));
       },
     );
 
