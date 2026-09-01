@@ -242,6 +242,32 @@ void main() {
       expect(plan.placements['anchor']!.bucketIndex, 0);
     });
 
+    test('an empty project plans an empty street', () {
+      final plan = layout.plan([]);
+      expect(plan.segments, isEmpty);
+      expect(plan.placements, isEmpty);
+    });
+
+    test('meta rows and cover art add height, checklist items stack more', () {
+      final bare = _task('t', DateTime.utc(2026, 3, 2, 9));
+      final withMeta = PlazaTask(
+        id: 't',
+        createdAt: bare.createdAt,
+        title: bare.title,
+        state: bare.state,
+        progress: 0,
+        checklistItems: 3,
+        openChecklistItems: const ['a', 'b', 'c'],
+        linkedTaskIds: const ['other'],
+        categoryColor: 0xFF5C9DFF,
+        due: DateTime.utc(2026, 4, 2),
+        coverImageUrl: 'https://example.invalid/cover.webp',
+      );
+      final plain = layout.heightFor(bare, 8);
+      final loaded = layout.heightFor(withMeta, 8);
+      expect(loaded, greaterThan(plain));
+    });
+
     test('weekStart anchors to Monday 00:00 UTC', () {
       expect(
         StreetLayout.weekStart(DateTime.utc(2026, 9, 3, 15, 30)), // Thursday.

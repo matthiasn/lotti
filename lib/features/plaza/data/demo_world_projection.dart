@@ -80,7 +80,7 @@ PlazaTask _project({
         if (!item.isChecked) item.title,
     ].take(8).toList(),
     title: task.data.title,
-    state: _mapStatus(task.data.status),
+    state: mapTaskStatusToPlazaState(task.data.status),
     due: task.data.due,
     progress: items.isEmpty ? 0 : checked / items.length,
     checklistItems: items.length,
@@ -90,7 +90,11 @@ PlazaTask _project({
   );
 }
 
-PlazaTaskState _mapStatus(TaskStatus status) {
+/// Maps the app's task status union onto the plaza's surface states.
+///
+/// Public so every arm is directly testable — the demo world does not
+/// exercise all of them.
+PlazaTaskState mapTaskStatusToPlazaState(TaskStatus status) {
   return switch (status) {
     TaskOpen() || TaskGroomed() => PlazaTaskState.open,
     TaskInProgress() => PlazaTaskState.inProgress,

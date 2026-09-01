@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/demo/media/demo_media_asset.dart';
 import 'package:lotti/features/plaza/data/demo_world_projection.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
@@ -72,6 +73,62 @@ void main() {
       for (final task in covered) {
         expect(task.coverImageUrl, startsWith(demoMediaPublicBaseUrl));
       }
+    });
+
+    test('every task status arm maps to a plaza state', () {
+      final now = DateTime.utc(2026, 7, 17);
+      expect(
+        mapTaskStatusToPlazaState(
+          TaskStatus.open(id: 'a', createdAt: now, utcOffset: 0),
+        ),
+        PlazaTaskState.open,
+      );
+      expect(
+        mapTaskStatusToPlazaState(
+          TaskStatus.groomed(id: 'b', createdAt: now, utcOffset: 0),
+        ),
+        PlazaTaskState.open,
+      );
+      expect(
+        mapTaskStatusToPlazaState(
+          TaskStatus.inProgress(id: 'c', createdAt: now, utcOffset: 0),
+        ),
+        PlazaTaskState.inProgress,
+      );
+      expect(
+        mapTaskStatusToPlazaState(
+          TaskStatus.blocked(
+            id: 'd',
+            createdAt: now,
+            utcOffset: 0,
+            reason: 'ice',
+          ),
+        ),
+        PlazaTaskState.blocked,
+      );
+      expect(
+        mapTaskStatusToPlazaState(
+          TaskStatus.onHold(
+            id: 'e',
+            createdAt: now,
+            utcOffset: 0,
+            reason: 'ice',
+          ),
+        ),
+        PlazaTaskState.blocked,
+      );
+      expect(
+        mapTaskStatusToPlazaState(
+          TaskStatus.done(id: 'f', createdAt: now, utcOffset: 0),
+        ),
+        PlazaTaskState.done,
+      );
+      expect(
+        mapTaskStatusToPlazaState(
+          TaskStatus.rejected(id: 'g', createdAt: now, utcOffset: 0),
+        ),
+        PlazaTaskState.cancelled,
+      );
     });
 
     test('projection is reproducible under the fixed clock', () {
