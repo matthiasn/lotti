@@ -124,7 +124,7 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage>
     // runtime watchers share and which must keep every goal alive.
     final lockdown = ref.watch(lockdownControllerProvider);
     bool visibleUnderLockdown(AgentIdentityEntity identity) =>
-        identity.allowedCategoryIds.any(lockdown.allows);
+        !lockdown.isActive || identity.allowedCategoryIds.any(lockdown.allows);
     final identities = (agents.value ?? const <AgentIdentityEntity>[])
         .where(visibleUnderLockdown)
         .toList(growable: false);
