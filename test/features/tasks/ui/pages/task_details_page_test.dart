@@ -25,6 +25,7 @@ import 'package:lotti/features/journal/ui/widgets/entry_detail_linked_from.dart'
 import 'package:lotti/features/journal/ui/widgets/linked_entries_with_timer.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
 import 'package:lotti/features/tasks/state/task_link_groups_controller.dart';
+import 'package:lotti/features/tasks/state/task_progress_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/correction_undo_snackbar.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header_connector.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_tasks_widget.dart';
@@ -46,6 +47,7 @@ import 'package:path_provider/path_provider.dart';
 import '../../../../helpers/fake_linked_entries_controller.dart';
 import '../../../../helpers/fallbacks.dart';
 import '../../../../helpers/path_provider.dart';
+import '../../../../helpers/task_progress_test_controller.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
@@ -457,7 +459,16 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           TaskDetailsPage(taskId: testTask.id),
-          overrides: hTaskDetailsPageOverrides(),
+          overrides: [
+            ...hTaskDetailsPageOverrides(),
+            // One hour logged against the fixture's four-hour estimate.
+            taskProgressControllerProvider(testTask.id).overrideWith(
+              () => TestTaskProgressController(
+                progress: const Duration(hours: 1),
+                estimate: const Duration(hours: 4),
+              ),
+            ),
+          ],
         ),
       );
 
@@ -465,14 +476,22 @@ void main() {
 
       await tester.pump(const Duration(milliseconds: 300));
 
-      // test task displays progress bar (now in Labels row)
-      final progressBarFinder = find.byType(LinearProgressIndicator);
-      if (progressBarFinder.evaluate().isNotEmpty) {
-        final progressBar =
-            tester.firstWidget(progressBarFinder) as LinearProgressIndicator;
-        expect(progressBar, isNotNull);
-        expect(progressBar.value, 0.25);
-      }
+      // The header's estimate tag reads the tracked time against the
+      // estimate, bar included.
+      final estimateTag = find.byKey(
+        const ValueKey('task-estimate-summary-tag'),
+      );
+      expect(
+        find.descendant(of: estimateTag, matching: find.text('1h of 4h')),
+        findsOneWidget,
+      );
+      final progressBar = tester.widget<LinearProgressIndicator>(
+        find.descendant(
+          of: estimateTag,
+          matching: find.byType(LinearProgressIndicator),
+        ),
+      );
+      expect(progressBar.value, 0.25);
 
       // test task title is displayed once (inside the new desktop header).
       expect(find.text(testTask.data.title), findsOneWidget);
