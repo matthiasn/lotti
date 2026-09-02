@@ -71,6 +71,13 @@ Three consequences:
   `test/widgets/media/thumb_hash_backed_image_test.dart`).
 - `tester.runAsync` is the escape hatch when real decoding is the point.
 
+The same fake clock stalls `dart:io`: a harness that creates a temp directory,
+opens in-memory databases and seeds them — the full-shell recipe in
+`integration_test/manual_screenshots_test.dart` — never gets past
+`Directory.systemTemp.createTemp` inside a `testWidgets` body. Build it in
+`setUp` and dispose it in `tearDown`, both of which run on the real event
+loop, and keep only the pumping inside the test.
+
 ## Simulating a platform without a directory watch
 
 `FileWatcherMixin` polls where `FileSystemEntity.isWatchSupported` is false

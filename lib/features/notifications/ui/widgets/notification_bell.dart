@@ -6,7 +6,7 @@ import 'package:lotti/classes/notification_entity.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/features/notifications/state/notification_inbox_controller.dart';
-import 'package:lotti/features/tasks/util/task_navigation.dart';
+import 'package:lotti/features/tasks/state/task_focus_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -50,6 +50,46 @@ class NotificationBell extends ConsumerStatefulWidget {
 class _NotificationBellState extends ConsumerState<NotificationBell> {
   final MenuController _menu = MenuController();
 
+  /// Closes the popover and takes the user to whatever [entity] is about.
+  ///
+  /// Every destination is a Beamer route through [beamToNamed] — the same
+  /// path the task list, the logbook cards and the Daily OS lanes take to
+  /// open a task. The task rows used to go through `openLinkedTaskDetail`,
+  /// which exists for layering a linked task *inside* an open task detail:
+  /// on desktop it pushes the right pane's own stack, on a phone it pushes a
+  /// pageless `MaterialPageRoute` onto the tab's Beamer navigator. A pageless
+  /// route is invisible to the router — `NavService.beamBack` found no history
+  /// to pop, and resetting the tab to its root left the page where it was —
+  /// so a task opened from the bell had no way out on mobile. Beaming to
+  /// `/tasks/<id>` hands the task to `TasksLocation` — a real page on a
+  /// phone, the selected task of the split on desktop — so the back chevron
+  /// works, from whichever tab the bell was tapped on.
+  ///
+  /// Exhaustive over the union rather than routing `linkedEntityId` into the
+  /// task detail: every variant answers that getter, so the task route
+  /// silently swallowed ids that were never tasks.
+  void _openEntry(NotificationEntity entity) {
+    _menu.close();
+    switch (entity) {
+      case TaskSuggestionNotification(:final linkedTaskId):
+        // Opening from a suggestion row is the one case that should land on
+        // the suggestions themselves. Published before the beam, so a detail
+        // page that is already mounted scrolls now and one this beam mounts
+        // consumes the intent after load.
+        ref
+            .read(taskFocusControllerProvider(linkedTaskId).notifier)
+            .publishSuggestionFocus();
+        beamToNamed('/tasks/$linkedTaskId');
+      case TaskOverdueNotification(:final linkedTaskId):
+        // No focus intent: an overdue alert is about the task itself.
+        beamToNamed('/tasks/$linkedTaskId');
+      case RelationshipCheckInNotification(:final linkedRelationshipId):
+        beamToNamed('/people/$linkedRelationshipId');
+      case HabitAutoCompletedNotification():
+        beamToNamed('/habits');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -62,11 +102,6 @@ class _NotificationBellState extends ConsumerState<NotificationBell> {
         ? LottiIcons.notificationActive
         : LottiIcons.notification;
 
-    // Capture the bell's own context so a row tap can navigate even after
-    // the popover overlay (and therefore the row's own context) is torn down
-    // by `_menu.close`. Without this, the row's `_handleTap` would close the
-    // menu and its own context would no longer be safe for navigation.
-    final bellContext = context;
     return MenuAnchor(
       controller: _menu,
       style: MenuStyle(
@@ -95,39 +130,7 @@ class _NotificationBellState extends ConsumerState<NotificationBell> {
               MediaQuery.sizeOf(context).width,
             ),
           ),
-          child: _InboxPanel(
-            onSelectEntry: (entity) {
-              _menu.close();
-              if (!bellContext.mounted) return;
-              // Exhaustive over the union rather than routing
-              // `linkedEntityId` into the task detail: every variant answers
-              // that getter, so the task route silently swallowed ids that
-              // were never tasks.
-              switch (entity) {
-                case TaskSuggestionNotification(:final linkedTaskId):
-                  openLinkedTaskDetail(
-                    context: bellContext,
-                    taskId: linkedTaskId,
-                    // Opening from a suggestion row is the one case that
-                    // should land on the suggestions themselves.
-                    focusSuggestions: true,
-                  );
-                case TaskOverdueNotification(:final linkedTaskId):
-                  // No focusSuggestions: an overdue alert is about the task
-                  // itself, and the parameter already defaults to false.
-                  openLinkedTaskDetail(
-                    context: bellContext,
-                    taskId: linkedTaskId,
-                  );
-                case RelationshipCheckInNotification(
-                  :final linkedRelationshipId,
-                ):
-                  beamToNamed('/people/$linkedRelationshipId');
-                case HabitAutoCompletedNotification():
-                  beamToNamed('/habits');
-              }
-            },
-          ),
+          child: _InboxPanel(onSelectEntry: _openEntry),
         ),
       ],
       builder: (context, controller, _) {
@@ -226,9 +229,9 @@ class _InboxPanel extends ConsumerWidget {
   });
 
   /// Called when the user taps a row. The callback owns both popover
-  /// dismissal and the navigation so it can run from the bell's stable
-  /// context — see comment in [NotificationBell] — and receives the whole
-  /// entity because where a row leads depends on its variant.
+  /// dismissal and the navigation — closing the menu tears the row down, so
+  /// the row itself cannot safely do anything after it — and receives the
+  /// whole entity because where a row leads depends on its variant.
   final void Function(NotificationEntity entity) onSelectEntry;
 
   @override
@@ -412,10 +415,8 @@ class _InboxRow extends StatelessWidget {
   }
 
   void _handleTap() {
-    // Navigation runs against the bell's stable context (captured by
-    // `onSelectEntry` in [NotificationBell.build]) — using the row's own
-    // context here would fail mid-flight because closing the menu
-    // unmounts the popover overlay first.
+    // The bell owns dismissal and navigation: closing the menu unmounts this
+    // row, so nothing here may touch the row's own context afterwards.
     onSelectEntry(entity);
     // Fire markSeen after navigation so the badge clears as the target opens.
     // Opening the target is not the same as acting on an agent suggestion;

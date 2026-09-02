@@ -11,7 +11,11 @@ sources:
   - id: src
     resource: ../../lib/features/notifications
     title: Synced notifications source
-    last_modified: 2026-08-27
+    last_modified: 2026-09-02
+  - id: bell
+    resource: ../../lib/features/notifications/ui/widgets/notification_bell.dart
+    title: NotificationBell — the inbox popover and where its rows lead
+    last_modified: 2026-09-02
   - id: os-boundary
     resource: ../../lib/services/notification_service.dart
     title: NotificationService — the OS delivery boundary
@@ -318,6 +322,18 @@ task — which is what happened the moment a second entity kind got a
 notification. The same trap exists in the bell, where `_InboxRow` routes
 through `onSelectEntry` with the whole entity for the same reason. An
 auto-completion row leads to `/habits`, on both channels.
+
+**A task row in the bell beams to `/tasks/<id>`** through `beamToNamed`, the
+route the task list, the logbook cards and the Daily OS lanes use, so the
+router owns the task on every form factor and the back chevron walks the
+Tasks tab's own history — the list, unless that tab already held a task. A
+suggestion row publishes the suggestions focus intent on the task's
+`taskFocusControllerProvider` *before* the beam, so a detail page that this
+very beam mounts finds the intent after load, and one already on screen
+scrolls at once. Why the rows must not go through `openLinkedTaskDetail`, and
+what its pageless push does to every exit the shell offers, lives with the
+shell under
+[a pageless push is invisible to the router](../architecture/navigation.md#a-pageless-push-is-invisible-to-the-router).
 
 **The payload is still not consumed anywhere.** `initialize` is called without
 `onDidReceiveNotificationResponse`, and nothing calls

@@ -18,14 +18,36 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
-/// Registers a stubbed [MockNavService] for tests that route desktop task
-/// detail through `getIt<NavService>()`; the file-level `tearDownTestGetIt`
-/// removes it again.
+const _phoneSize = Size(390, 844);
+const _desktopSize = Size(1400, 900);
+
+/// Registers a [MockNavService] so a test can prove the bell never reaches
+/// for the desktop detail stack directly — every destination goes through
+/// the `beamToNamed` seam. The file-level `tearDownTestGetIt` removes it.
 MockNavService _registerNavService() {
   final navService = MockNavService();
   getIt.registerSingleton<NavService>(navService);
-  when(() => navService.pushDesktopTaskDetail(any())).thenAnswer((_) {});
   return navService;
+}
+
+/// Routes the bell's `beamToNamed` calls into the returned list, restoring
+/// the real function on teardown.
+List<String> _captureBeams() {
+  final beamedTo = <String>[];
+  beamToNamedOverride = beamedTo.add;
+  addTearDown(() => beamToNamedOverride = null);
+  return beamedTo;
+}
+
+/// Records every route pushed onto the harness navigator, so a phone-sized
+/// test can prove the bell no longer pushes a pageless task page.
+class _PushRecordingObserver extends NavigatorObserver {
+  final List<Route<dynamic>> pushed = [];
+
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    pushed.add(route);
+  }
 }
 
 void main() {
@@ -324,101 +346,141 @@ void main() {
     },
   );
 
-  testWidgets(
-    'tapping a suggestion row marks it seen and opens suggestions',
-    (tester) async {
-      // Force desktop layout so `openLinkedTaskDetail` goes through
-      // NavService (a registered mock) instead of pushing a MaterialPageRoute
-      // for the still-missing TaskDetailsPage.
-      final navService = _registerNavService();
+  group('opening a task row', () {
+    testWidgets(
+      'a suggestion row on a phone beams to the task route and pushes nothing',
+      (tester) async {
+        // The regression this guards: the row used to push a pageless
+        // MaterialPageRoute onto the tab's Beamer navigator on mobile, which
+        // NavService.beamBack and the tab-root reset cannot see — so the task
+        // had no way out. Beaming lets TasksLocation build it as a real page.
+        final navService = _registerNavService();
+        final beamedTo = _captureBeams();
+        final observer = _PushRecordingObserver();
+        await _openInboxWith(
+          tester,
+          entity: _makeNotification(id: 'act-on-me', title: 'Review', body: ''),
+          size: _phoneSize,
+          navigatorObservers: [observer],
+        );
+        observer.pushed.clear();
 
-      final entity = _makeNotification(
-        id: 'act-on-me',
-        title: 'Review',
-        body: 'Take action',
-      );
-      final container = ProviderContainer(
-        overrides: [
-          unseenNotificationCountProvider.overrideWith(() => _CountUnseen(1)),
-          inboxNotificationsProvider.overrideWith(
-            () => _StaticInbox([entity]),
+        await tester.tap(find.text('Review'));
+        await tester.pump();
+
+        expect(beamedTo, ['/tasks/task-act-on-me']);
+        expect(observer.pushed, isEmpty);
+        verifyNever(() => navService.pushDesktopTaskDetail(any()));
+      },
+    );
+
+    testWidgets(
+      'a suggestion row on desktop beams to the same route rather than '
+      'layering the desktop detail stack',
+      (tester) async {
+        // Selecting the task, like the list pane does, keeps the URL and the
+        // persisted route on the task the user is looking at — and works
+        // from a tab that is not Tasks, where the detail stack is offstage.
+        final navService = _registerNavService();
+        final beamedTo = _captureBeams();
+        await _openInboxWith(
+          tester,
+          entity: _makeNotification(id: 'act-on-me', title: 'Review', body: ''),
+          size: _desktopSize,
+        );
+
+        await tester.tap(find.text('Review'));
+        await tester.pump();
+
+        expect(beamedTo, ['/tasks/task-act-on-me']);
+        verifyNever(() => navService.pushDesktopTaskDetail(any()));
+      },
+    );
+
+    testWidgets(
+      'a suggestion row publishes the suggestions focus intent before the beam',
+      (tester) async {
+        // Order matters: a detail page mounted by this very beam reads the
+        // intent after load, so it has to be there before the route changes.
+        _registerNavService();
+        late final ProviderContainer container;
+        TaskFocusIntent? intentAtBeam;
+        beamToNamedOverride = (_) {
+          intentAtBeam = container.read(
+            taskFocusControllerProvider('task-act-on-me'),
+          );
+        };
+        addTearDown(() => beamToNamedOverride = null);
+        container = await _openInboxWith(
+          tester,
+          entity: _makeNotification(id: 'act-on-me', title: 'Review', body: ''),
+          size: _phoneSize,
+        );
+
+        await tester.tap(find.text('Review'));
+        await tester.pump();
+
+        expect(intentAtBeam, isNotNull);
+        expect(intentAtBeam!.taskId, 'task-act-on-me');
+        expect(intentAtBeam!.target, TaskFocusTarget.suggestions);
+      },
+    );
+
+    testWidgets(
+      'an overdue row beams to the task without a focus intent',
+      (tester) async {
+        final navService = _registerNavService();
+        final beamedTo = _captureBeams();
+        final observer = _PushRecordingObserver();
+        final container = await _openInboxWith(
+          tester,
+          entity: _makeOverdueNotification(
+            id: 'overdue-act-on-me',
+            title: 'Overdue task',
+            body: 'Open task',
           ),
-        ],
-      );
-      addTearDown(container.dispose);
+          size: _phoneSize,
+          navigatorObservers: [observer],
+        );
+        observer.pushed.clear();
 
-      await tester.pumpWidget(
-        _makeBellHarness(
-          container: container,
-          mediaQueryData: const MediaQueryData(size: Size(1400, 900)),
-        ),
-      );
-      await tester.pump();
+        await tester.tap(find.text('Overdue task'));
+        await tester.pump();
 
-      await tester.tap(find.byIcon(LottiIcons.notificationActive));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Review'));
-      await tester.pump();
+        expect(beamedTo, ['/tasks/task-overdue-act-on-me']);
+        expect(observer.pushed, isEmpty);
+        verifyNever(() => navService.pushDesktopTaskDetail(any()));
+        // An overdue alert is about the task itself, not its suggestions.
+        expect(
+          container.read(taskFocusControllerProvider('task-overdue-act-on-me')),
+          isNull,
+        );
+      },
+    );
 
-      verify(() => repository.markSeen('act-on-me')).called(1);
-      verifyNever(() => repository.markTaskSuggestionsActedOn(any()));
-      verify(
-        () => navService.pushDesktopTaskDetail('task-act-on-me'),
-      ).called(1);
-      final intent = container.read(
-        taskFocusControllerProvider('task-act-on-me'),
-      );
-      expect(intent, isNotNull);
-      expect(intent!.target, TaskFocusTarget.suggestions);
-    },
-  );
+    testWidgets(
+      'tapping a task row marks it seen and closes the popover',
+      (tester) async {
+        _registerNavService();
+        _captureBeams();
+        await _openInboxWith(
+          tester,
+          entity: _makeNotification(id: 'act-on-me', title: 'Review', body: ''),
+          size: _phoneSize,
+        );
 
-  testWidgets(
-    'tapping a non-suggestion row marks only that row seen',
-    (tester) async {
-      final navService = _registerNavService();
+        await tester.tap(find.text('Review'));
+        await tester.pumpAndSettle();
 
-      final entity = _makeOverdueNotification(
-        id: 'overdue-act-on-me',
-        title: 'Overdue task',
-        body: 'Open task',
-      );
-      final container = ProviderContainer(
-        overrides: [
-          unseenNotificationCountProvider.overrideWith(() => _CountUnseen(1)),
-          inboxNotificationsProvider.overrideWith(
-            () => _StaticInbox([entity]),
-          ),
-        ],
-      );
-      addTearDown(container.dispose);
-
-      await tester.pumpWidget(
-        _makeBellHarness(
-          container: container,
-          mediaQueryData: const MediaQueryData(size: Size(1400, 900)),
-        ),
-      );
-      await tester.pump();
-
-      await tester.tap(find.byIcon(LottiIcons.notificationActive));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Overdue task'));
-      await tester.pump();
-
-      verify(() => repository.markSeen('overdue-act-on-me')).called(1);
-      verifyNever(() => repository.markTaskSuggestionsActedOn(any()));
-      verify(
-        () => navService.pushDesktopTaskDetail('task-overdue-act-on-me'),
-      ).called(1);
-      expect(
-        container.read(
-          taskFocusControllerProvider('task-overdue-act-on-me'),
-        ),
-        isNull,
-      );
-    },
-  );
+        verify(() => repository.markSeen('act-on-me')).called(1);
+        // Opening the target is not acting on the suggestion; the
+        // confirmation flow owns that.
+        verifyNever(() => repository.markTaskSuggestionsActedOn(any()));
+        expect(find.text('Review'), findsNothing);
+        expect(find.byType(NotificationBell), findsOneWidget);
+      },
+    );
+  });
 
   testWidgets(
     'tapping a check-in reminder opens the person, never a task detail',
@@ -427,9 +489,7 @@ void main() {
       // relationship id to `openLinkedTaskDetail` and land on a dead task
       // route. Routing switches on the union instead.
       final navService = _registerNavService();
-      final beamedTo = <String>[];
-      beamToNamedOverride = beamedTo.add;
-      addTearDown(() => beamToNamedOverride = null);
+      final beamedTo = _captureBeams();
 
       final entity = _makeCheckInNotification(
         id: 'anna',
@@ -470,9 +530,7 @@ void main() {
     'tapping an auto-completion row opens the habits page',
     (tester) async {
       final navService = _registerNavService();
-      final beamedTo = <String>[];
-      beamToNamedOverride = beamedTo.add;
-      addTearDown(() => beamToNamedOverride = null);
+      final beamedTo = _captureBeams();
 
       final entity = _makeHabitAutoCompletedNotification(
         id: 'auto-sat',
@@ -546,6 +604,7 @@ void main() {
     'markSeen failure is reported and navigation still proceeds',
     (tester) async {
       final navService = _registerNavService();
+      final beamedTo = _captureBeams();
 
       when(
         () => repository.markSeen(any()),
@@ -580,9 +639,8 @@ void main() {
       ).called(1);
       verifyNever(() => repository.markTaskSuggestionsActedOn(any()));
       // Navigation runs even when markSeen throws.
-      verify(
-        () => navService.pushDesktopTaskDetail('task-mark-failure'),
-      ).called(1);
+      expect(beamedTo, ['/tasks/task-mark-failure']);
+      verifyNever(() => navService.pushDesktopTaskDetail(any()));
       // FlutterError.reportError should have been called with the exception.
       expect(tester.takeException().toString(), contains('mark-seen-boom'));
     },
@@ -628,15 +686,47 @@ void main() {
   );
 }
 
+/// Pumps the bell hosting a single unseen [entity] at [size] and opens the
+/// popover, so a test starts with the row on screen. Returns the container
+/// so the test can read what the tap published.
+Future<ProviderContainer> _openInboxWith(
+  WidgetTester tester, {
+  required NotificationEntity entity,
+  required Size size,
+  List<NavigatorObserver> navigatorObservers = const [],
+}) async {
+  final container = ProviderContainer(
+    overrides: [
+      unseenNotificationCountProvider.overrideWith(() => _CountUnseen(1)),
+      inboxNotificationsProvider.overrideWith(() => _StaticInbox([entity])),
+    ],
+  );
+  addTearDown(container.dispose);
+
+  await tester.pumpWidget(
+    _makeBellHarness(
+      container: container,
+      mediaQueryData: MediaQueryData(size: size),
+      navigatorObservers: navigatorObservers,
+    ),
+  );
+  await tester.pump();
+  await tester.tap(find.byIcon(LottiIcons.notificationActive));
+  await tester.pumpAndSettle();
+  return container;
+}
+
 Widget _makeBellHarness({
   required ProviderContainer container,
   required MediaQueryData mediaQueryData,
+  List<NavigatorObserver> navigatorObservers = const [],
 }) {
   return UncontrolledProviderScope(
     container: container,
     child: MediaQuery(
       data: mediaQueryData,
       child: MaterialApp(
+        navigatorObservers: navigatorObservers,
         theme: resolveTestTheme(),
         localizationsDelegates: const [
           AppLocalizations.delegate,
