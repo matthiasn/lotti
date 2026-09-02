@@ -149,6 +149,20 @@ def release_for(track: Mapping[str, Any], version_code: int) -> dict[str, Any] |
     return None
 
 
+def bundle_uploaded(bundles: Mapping[str, Any], version_code: int) -> bool:
+    """Whether a ``bundles.list`` response holds a bundle with ``version_code``.
+
+    The internal track keeps only its latest release, so a build that a newer
+    release has pushed off it is no longer *on the track* - but its bundle
+    stays in Play and can still be promoted. A weekly production promotion of
+    a build the daily testing cadence has already moved past depends on this.
+    """
+    return any(
+        int(bundle.get("versionCode", -1)) == version_code
+        for bundle in bundles.get("bundles", [])
+    )
+
+
 def unfinished_release(track: Mapping[str, Any]) -> dict[str, Any] | None:
     """The first release on a ``tracks.get`` response that is not completed.
 
@@ -172,14 +186,16 @@ def promote(
 ) -> Promotion:
     """Moves the internal release with ``version_code`` onto ``track``.
 
-    One Play edit: read the internal track, read the target track, write the
-    target with that one version code as a completed release (keeping the
-    release's name and notes), then commit it for review. A target track
-    holding a draft, halted or in-progress release - a staged rollout someone
-    started in the Play Console - is refused rather than written over. A dry
-    run validates the edit server side and discards it instead of committing.
-    An edit that is not committed is deleted on the way out so a failed run
-    leaves nothing half-open.
+    One Play edit: read the internal track for the release's name and notes
+    - or, when a newer release has since replaced it there, confirm the
+    bundle is still among those Play holds - then read the target track,
+    write it with that one version code as a completed release, and commit
+    the edit for review. A build Play never received is refused, and so is a
+    target track holding a draft, halted or in-progress release - a staged
+    rollout someone started in the Play Console - rather than written over.
+    A dry run validates the edit server side and discards it instead of
+    committing. An edit that is not committed is deleted on the way out so a
+    failed run leaves nothing half-open.
     """
     edits = service.edits()
     edit_id = edits.insert(packageName=package_name, body={}).execute()["id"]
@@ -191,12 +207,17 @@ def promote(
         ).execute()
         release = release_for(source, version_code)
         if release is None:
-            raise PromotionError(
-                f"build {version_code} is not on the {SOURCE_TRACK} track yet; "
-                "flutter-android-release.yml uploads it there on the release "
-                "tag, so wait for that run to finish, then re-run this workflow "
-                "from the Actions tab"
+            uploaded = (
+                edits.bundles().list(packageName=package_name, editId=edit_id).execute()
             )
+            if not bundle_uploaded(uploaded, version_code):
+                raise PromotionError(
+                    f"build {version_code} has not been uploaded to Play; "
+                    "flutter-android-release.yml uploads it on the release tag, "
+                    "so wait for that run to finish, then re-run this workflow "
+                    "from the Actions tab"
+                )
+            release = {}
         target = tracks.get(
             packageName=package_name, editId=edit_id, track=track
         ).execute()

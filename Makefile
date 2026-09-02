@@ -459,20 +459,24 @@ tag_push:
 # `beta` (tag play/beta/<version> by hand if ever wanted); production is
 # `production`. Run from the commit whose pubspec carries the version to
 # promote, because the workflow refuses a tag that disagrees with it.
-.PHONY: play_tag_push
-play_tag_push:
+#
+# A canned recipe rather than a shared prerequisite: make builds a
+# prerequisite once per invocation, so `make android_closed_testing
+# android_release` would have pushed the first tag only and reported both
+# targets done.
+define play_tag_push
 	@test -n "$(LOTTI_VERSION)" || { echo "LOTTI_VERSION is empty: install yq (brew install yq)" >&2; exit 1; }
-	@test -n "$(PLAY_TRACK)" || { echo "PLAY_TRACK is unset: use android_closed_testing or android_release" >&2; exit 1; }
-	git tag play/$(PLAY_TRACK)/$(LOTTI_VERSION)
-	git push origin play/$(PLAY_TRACK)/$(LOTTI_VERSION)
+	git tag play/$(1)/$(LOTTI_VERSION)
+	git push origin play/$(1)/$(LOTTI_VERSION)
+endef
 
 .PHONY: android_closed_testing
-android_closed_testing: PLAY_TRACK = alpha
-android_closed_testing: play_tag_push
+android_closed_testing:
+	$(call play_tag_push,alpha)
 
 .PHONY: android_release
-android_release: PLAY_TRACK = production
-android_release: play_tag_push
+android_release:
+	$(call play_tag_push,production)
 
 .PHONY: all
 all: ios macos

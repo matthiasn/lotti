@@ -216,18 +216,32 @@ flowchart LR
 `play-promote.yml` listens on `push: tags: ['play/**']` and runs
 [`tool/play_promote.py`](../../tool/play_promote.py), which reads the track
 from the tag, the version code from `pubspec.yaml` at the tagged commit, finds
-that version code on the internal track and writes it to the target track as
-one completed release, then commits the edit for review. Two refusals guard
-it. The tag has to name the version the checkout carries — a tag that
-disagrees is refused, since the version code that moves comes from the
-checkout, not the tag. And a target track holding a draft, halted or
-in-progress release — a staged rollout someone started in the Console — is
-not written over: Play's reference says only that an update carries "desired
-changes", so the run stops and names the release instead. The same job runs
-from `workflow_dispatch` with a chosen track and an optional dry run that
+that version code on the internal track — or, when a newer release has since
+replaced it there, among the app bundles Play still holds, since the internal
+track keeps only its latest release and a weekly production promotion lags the
+daily testing one — and writes it to the target track as one completed
+release, then commits the edit for review. Three refusals guard it. The tag
+has to name the version the checkout carries — a tag that disagrees is
+refused, since the version code that moves comes from the checkout, not the
+tag. A build Play never received is refused with a pointer at the upload
+lane, which is what a tag pushed minutes after the release tag runs into. And
+a target track holding a draft, halted or in-progress release — a staged
+rollout someone started in the Console — is not written over: Play's
+reference says only that an update carries "desired changes", so the run
+stops and names the release instead. The same job runs from
+`workflow_dispatch` with a chosen track and an optional dry run that
 validates the edit server-side and discards it, for reruns against the release
 tag's ref. Every other release lane carries `'!play/**'` in its tag filter, so a
 promotion tag builds nothing.
+
+The job holds the Play service account, so it resolves nothing at run time:
+actions are pinned by SHA and the client is installed with `--require-hashes`
+from [`tool/play_promote_requirements.txt`](../../tool/play_promote_requirements.txt),
+compiled from the two pins in
+[`tool/play_promote_requirements.in`](../../tool/play_promote_requirements.in).
+Production promotions run in the `play-production` GitHub environment and
+testing ones in `play-testing`; required reviewers configured on the former
+make a production tag wait for an approval, with no change to the workflow.
 
 | Tag | Play track | Make target | Reviewed by Google |
 |-----|-----------|-------------|--------------------|

@@ -48,9 +48,15 @@ jobs:
     name: Promote internal build
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # Production runs in their own GitHub environment. Required reviewers
+    # configured on `play-production` (Settings > Environments) turn a
+    # production tag or dispatch into an approval step without touching this
+    # file; testing tracks run unattended in `play-testing`.
+    environment: ${{ (startsWith(github.ref_name, 'play/production/') || inputs.track == 'production') && 'play-production' || 'play-testing' }}
     steps:
-      # Actions pinned by SHA and the client pinned by version: this job
-      # holds the Play service account, so nothing it runs may float.
+      # Actions pinned by SHA and the whole dependency graph hash-locked:
+      # this job holds the Play service account, so nothing it runs may be
+      # resolved at run time.
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd  # v5.0.1
         with:
           persist-credentials: false
@@ -60,7 +66,7 @@ jobs:
           python-version: '3.13'
 
       - name: Install the Play API client
-        run: pip install google-api-python-client==2.200.0 google-auth==2.57.0
+        run: pip install --require-hashes -r tool/play_promote_requirements.txt
 
       # The tag and the dispatch inputs reach the script as environment
       # variables, never as text spliced into the shell: a ref or an input

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+import os
 import sys
 import tempfile
 import types
@@ -17,6 +18,7 @@ from play_promote import (
     PromotionError,
     Target,
     build_service,
+    bundle_uploaded,
     describe,
     main,
     parse_tag,
@@ -85,6 +87,20 @@ class _FakeTracks:
         return _Request(kwargs["body"], self._update_error)
 
 
+class _FakeBundles:
+    """Stands in for ``service.edits().bundles()``: every uploaded bundle."""
+
+    def __init__(self, calls: list[tuple[str, dict]], version_codes: list[int]):
+        self._calls = calls
+        self._version_codes = version_codes
+
+    def list(self, **kwargs):
+        self._calls.append(("bundles.list", kwargs))
+        return _Request(
+            {"bundles": [{"versionCode": code} for code in self._version_codes]}
+        )
+
+
 class _FakeEdits:
     """Stands in for ``service.edits()``.
 
@@ -96,12 +112,14 @@ class _FakeEdits:
         self,
         tracks: dict[str, dict] | None = None,
         *,
+        bundles: list[int] | None = None,
         update_error: Exception | None = None,
         delete_error: Exception | None = None,
     ):
         self.tracks_by_name = (
             {"internal": _INTERNAL_TRACK} if tracks is None else tracks
         )
+        self.uploaded = [4366] if bundles is None else bundles
         self.update_error = update_error
         self.delete_error = delete_error
         self.calls: list[tuple[str, dict]] = []
@@ -124,6 +142,9 @@ class _FakeEdits:
 
     def tracks(self):
         return _FakeTracks(self.calls, self.tracks_by_name, self.update_error)
+
+    def bundles(self):
+        return _FakeBundles(self.calls, self.uploaded)
 
     def validate(self, **kwargs):
         self._record("validate", kwargs)
@@ -276,6 +297,24 @@ class ReleaseForTest(unittest.TestCase):
 
     def test_none_when_the_track_has_no_releases(self):
         self.assertIsNone(release_for({"track": "internal"}, 4366))
+
+
+class BundleUploadedTest(unittest.TestCase):
+    def test_true_when_a_bundle_carries_the_version_code(self):
+        bundles = {"bundles": [{"versionCode": 4360}, {"versionCode": 4366}]}
+        self.assertTrue(bundle_uploaded(bundles, 4366))
+
+    def test_accepts_a_version_code_serialised_as_text(self):
+        self.assertTrue(bundle_uploaded({"bundles": [{"versionCode": "4366"}]}, 4366))
+
+    def test_false_when_no_bundle_carries_it(self):
+        self.assertFalse(bundle_uploaded({"bundles": [{"versionCode": 4360}]}, 4366))
+
+    def test_false_for_an_app_with_no_bundles(self):
+        self.assertFalse(bundle_uploaded({}, 4366))
+
+    def test_a_bundle_without_a_version_code_never_matches(self):
+        self.assertFalse(bundle_uploaded({"bundles": [{}]}, 4366))
 
 
 class UnfinishedReleaseTest(unittest.TestCase):
@@ -436,14 +475,44 @@ class PromoteTest(unittest.TestCase):
         self.assertEqual(edits.kwargs_of("delete")["editId"], "edit-1")
         self.assertFalse(promotion.committed)
 
-    def test_a_build_missing_from_internal_is_refused_and_the_edit_dropped(self):
-        edits = _FakeEdits()
+    def test_a_build_superseded_on_internal_is_promoted_from_the_bundle_list(self):
+        edits = _FakeEdits(
+            {"internal": {"releases": [{"versionCodes": ["4367"]}]}},
+            bundles=[4366, 4367],
+        )
+        promotion = self._promote(edits, version_code=4366)
+        self.assertEqual(
+            edits.methods(),
+            [
+                "insert",
+                "tracks.get",
+                "bundles.list",
+                "tracks.get",
+                "tracks.update",
+                "commit",
+            ],
+        )
+        release = edits.kwargs_of("tracks.update")["body"]["releases"][0]
+        self.assertEqual(release, {"versionCodes": ["4366"], "status": "completed"})
+        self.assertIsNone(promotion.release_name)
+
+    def test_a_build_play_never_received_is_refused_and_the_edit_dropped(self):
+        edits = _FakeEdits(bundles=[4366])
         with self.assertRaisesRegex(
             PromotionError,
-            "4367 is not on the internal track yet; flutter-android-release.yml",
+            "4367 has not been uploaded to Play; flutter-android-release.yml",
         ):
             self._promote(edits, version_code=4367)
-        self.assertEqual(edits.methods(), ["insert", "tracks.get", "delete"])
+        self.assertEqual(
+            edits.methods(), ["insert", "tracks.get", "bundles.list", "delete"]
+        )
+
+    def test_the_bundle_list_is_not_consulted_while_internal_still_holds_the_build(
+        self,
+    ):
+        edits = _FakeEdits(bundles=[])
+        self._promote(edits)
+        self.assertNotIn("bundles.list", edits.methods())
 
     def test_an_api_failure_drops_the_edit_and_propagates(self):
         edits = _FakeEdits(update_error=RuntimeError("403 forbidden"))
@@ -622,10 +691,10 @@ class MainTest(unittest.TestCase):
         self.assertEqual(self.factory_calls, [])
 
     def test_a_refused_promotion_is_reported_as_an_error(self):
-        self.edits = _FakeEdits({"internal": {"releases": []}})
+        self.edits = _FakeEdits({"internal": {"releases": []}}, bundles=[])
         code, _, err = self._run("--track", "alpha")
         self.assertEqual(code, 1)
-        self.assertIn("error: build 4366 is not on the internal track yet", err)
+        self.assertIn("error: build 4366 has not been uploaded to Play", err)
 
     def test_appends_the_outcome_to_the_step_summary(self):
         summary = self.root / "summary.md"
@@ -653,7 +722,15 @@ class MainTest(unittest.TestCase):
                 self._run("--track", "internal")
 
     def test_reads_credentials_from_the_process_environment_by_default(self):
-        with mock.patch.dict("os.environ", {CREDENTIALS_VAR: "from-env"}, clear=False):
+        # GitHub Actions sets GITHUB_STEP_SUMMARY in every step; left in place,
+        # this run would append a line to the real summary of the CI job.
+        environment = {
+            name: value
+            for name, value in os.environ.items()
+            if name != "GITHUB_STEP_SUMMARY"
+        }
+        environment[CREDENTIALS_VAR] = "from-env"
+        with mock.patch.dict("os.environ", environment, clear=True):
             with redirect_stdout(io.StringIO()):
                 code = main(
                     ["--pubspec", str(self.pubspec), "--track", "alpha"],
