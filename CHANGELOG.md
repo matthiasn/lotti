@@ -16,6 +16,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   form that fits the narrow column. Paging the column leaves the planner tab's
   own day untouched.
 
+### Fixed
+- **The day-view column's toggle vanished from the Tasks tab whenever a task
+  was open.** On a window narrower than about 1500 px, selecting a task removed
+  the whole docked day-view column together with the calendar button that
+  brings it back, so the day view could not be reached at all. The collapsed
+  rail with its button now stays on every desktop window wide enough to host
+  the column, and the expanded column shrinks to its minimum width beside an
+  open task instead of disappearing.
+
 ## [1.0.24]
 ### Added
 - **Sync can now be set up on Linux by signing in with a Matrix account.**

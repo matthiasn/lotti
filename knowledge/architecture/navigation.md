@@ -119,9 +119,10 @@ the expanded content stack, and — while the **Tasks tab is active**, the Daily
 OS flag is on and `dayViewColumnAllowance` grants it room — a second divider
 plus the right-docked day-view column (`DayViewSidePanel`, or its collapsed
 rail). The allowance is a `kDayViewPanelMinWindowWidth` (1200 px) window gate
-plus a clamp-then-yield rule: while a task detail is open, the tasks split
-keeps a `kDesktopBreakpoint`-wide region — the column is clamped narrower to
-protect it and yields entirely when even its minimum would starve it. The
+plus a clamp: while a task detail is open, the tasks split prefers a
+`kDesktopBreakpoint`-wide region — the column is clamped narrower to protect
+it, but never below its minimum, so the rail and its toggle stay reachable on
+every window above the gate. The
 column starts hidden as its rail and, once shown, pages through days with the
 compact Daily OS date strip, showing that day's planned-vs-recorded timeline
 beside the tasks list. Its visibility and width persist through `PaneWidthController`

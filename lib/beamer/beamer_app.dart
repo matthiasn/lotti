@@ -117,14 +117,19 @@ bool isTaskDetailRoute(BeamLocation<dynamic>? location, int activeTabIndex) {
 /// whether it may show at all, and the widest it may be. Pure function of
 /// geometry and route state so the policy is testable on its own.
 ///
-/// Below [kDayViewPanelMinWindowWidth] the column never shows. While a task
-/// detail is open ([taskDetailOpen]) the content region hosts the tasks
-/// list + detail split, which needs a desktop-wide region
-/// ([kDesktopBreakpoint]) of its own — the column is first clamped narrower
-/// to protect that region, and yields entirely when even
-/// [minDayViewPanelWidth] would starve it. Without an open detail the split
-/// shows only the browse list and its empty-state pane, which tolerate a
-/// narrower region, so the window gate alone applies.
+/// Below [kDayViewPanelMinWindowWidth] the column — rail included — never
+/// shows. Above it the column is always reachable: the rail is a fixed
+/// [TapTargets.minimum]-wide strip that costs the content region nothing
+/// worth protecting, and the expanded panel is opt-in, so the user's choice
+/// to bring it up wins over the split heuristic below. While a task detail
+/// is open ([taskDetailOpen]) the content region hosts the tasks list +
+/// detail split, which prefers a desktop-wide region ([kDesktopBreakpoint])
+/// of its own — the column is clamped narrower to protect that region, but
+/// never below [minDayViewPanelWidth]: on a window where even the minimum
+/// column eats into the split, the split gives way rather than the column
+/// vanishing with its toggle. Without an open detail the split shows only
+/// the browse list and its empty-state pane, which tolerate a narrower
+/// region, so the window gate alone applies.
 ({bool show, double maxWidth}) dayViewColumnAllowance({
   required bool taskDetailOpen,
   required double windowWidth,
@@ -135,12 +140,11 @@ bool isTaskDetailRoute(BeamLocation<dynamic>? location, int activeTabIndex) {
   }
   var maxWidth = maxDayViewPanelWidth;
   if (taskDetailOpen) {
-    maxWidth = math.min(
-      maxWidth,
-      windowWidth - sidebarWidth - kDesktopBreakpoint,
+    maxWidth = math.max(
+      minDayViewPanelWidth,
+      math.min(maxWidth, windowWidth - sidebarWidth - kDesktopBreakpoint),
     );
   }
-  if (maxWidth < minDayViewPanelWidth) return (show: false, maxWidth: 0);
   return (show: true, maxWidth: maxWidth);
 }
 
@@ -954,8 +958,8 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     // tasks list — the surface where time is planned and tracked — and only
     // there. It shares the Daily OS feature flag (no Daily OS, no day view)
     // and its geometry policy lives in [dayViewColumnAllowance]: a window
-    // gate, plus a clamp-then-yield rule that keeps an open task detail's
-    // split usable.
+    // gate, plus a clamp (never a yield) that keeps an open task detail's
+    // split as wide as the column's minimum allows.
     final windowWidth = MediaQuery.sizeOf(context).width;
     final dayViewAllowance = dayViewColumnAllowance(
       taskDetailOpen: _isTaskDetailRoute(index),
