@@ -86,75 +86,98 @@ class _TasksRootPageState extends ConsumerState<TasksRootPage> {
         decoration: BoxDecoration(
           color: TaskShowcasePalette.page(context),
         ),
-        child: ValueListenableBuilder<List<String>>(
-          valueListenable: getIt<NavService>().desktopTaskDetailStack,
-          builder: (context, stack, _) {
-            final selectedTaskId = stack.isEmpty ? null : stack.last;
-            final canHideListPane = selectedTaskId != null;
-            final listPaneVisible =
-                !paneWidths.listPaneCollapsed || !canHideListPane;
-            final detailChild = selectedTaskId != null
-                ? TaskDetailsPage(
-                    key: ValueKey(selectedTaskId),
-                    taskId: selectedTaskId,
-                  )
-                : DesktopDetailEmptyState(
-                    key: const ValueKey<String>(
-                      'tasks-root-empty-detail',
-                    ),
-                    message: context.messages.desktopEmptyStateSelectTask,
-                  );
-
-            return ListDetailFocusTraversal(
-              debugLabel: 'tasks-split',
-              listPaneVisible: listPaneVisible,
-              canHideListPane: canHideListPane,
-              onListPaneVisibilityChanged: (visible) {
-                if (visible) {
-                  paneController.expandListPane();
-                } else {
-                  paneController.collapseListPane();
-                }
-              },
-              listPane: SizedBox(
-                width: listPaneWidth,
-                child: TasksTabPage(controller: _tasksTabController),
-              ),
-              divider: ResizableDivider(
-                currentValue: listPaneWidth,
-                minValue: minListPaneWidth,
-                maxValue: maxListPaneWidth,
-                onDrag: resolvedListPane.onDrag,
-              ),
-              detailPane: _TasksDetailPane(
-                stackDepth: stack.length,
-                selectedTaskId: selectedTaskId,
-                // The details column is the collapsed-list layout: once the
-                // reader has hidden the list to focus one task, the pane is
-                // wide enough to carry the task's metadata beside it instead
-                // of over it. Null keeps the fly-out as the only host.
-                metaColumnTaskId: listPaneVisible ? null : selectedTaskId,
-                detail: AnimatedSwitcher(
-                  // Fast cross-fade (200ms): stepping row-by-row through tasks
-                  // is the split view's core interaction, and matches the
-                  // logbook split so both panes feel identical.
-                  duration: MotionDurations.short4,
-                  switchInCurve: Curves.easeInOutCubic,
-                  switchOutCurve: Curves.easeInOutCubic,
-                  layoutBuilder: (currentChild, previousChildren) {
-                    return Stack(
-                      fit: StackFit.expand,
-                      children: <Widget>[
-                        ...previousChildren.map(
-                          (child) => ExcludeFocus(child: child),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // The docked day-view column (see `dayViewColumnAllowance` in
+            // the app shell) is clamped, never removed, beside an open task
+            // — so on a window that cannot host sidebar, column and a
+            // desktop-wide split at once, this split is what gives way.
+            // While the column is up and the region has dropped below
+            // `kDesktopBreakpoint`, an open task takes the whole region
+            // instead of squeezing the task's action bar and controls into
+            // whatever the list pane leaves over. This forced hide does not
+            // touch the persisted collapse flag, so the list comes straight
+            // back once the column hides or the window widens.
+            final splitStarved =
+                !paneWidths.dayViewPanelHidden &&
+                constraints.maxWidth < kDesktopBreakpoint;
+            return ValueListenableBuilder<List<String>>(
+              valueListenable: getIt<NavService>().desktopTaskDetailStack,
+              builder: (context, stack, _) {
+                final selectedTaskId = stack.isEmpty ? null : stack.last;
+                final canHideListPane = selectedTaskId != null;
+                final listPaneVisible =
+                    !canHideListPane ||
+                    (!paneWidths.listPaneCollapsed && !splitStarved);
+                final detailChild = selectedTaskId != null
+                    ? TaskDetailsPage(
+                        key: ValueKey(selectedTaskId),
+                        taskId: selectedTaskId,
+                      )
+                    : DesktopDetailEmptyState(
+                        key: const ValueKey<String>(
+                          'tasks-root-empty-detail',
                         ),
-                        ?currentChild,
-                      ],
-                    );
+                        message: context.messages.desktopEmptyStateSelectTask,
+                      );
+
+                return ListDetailFocusTraversal(
+                  debugLabel: 'tasks-split',
+                  listPaneVisible: listPaneVisible,
+                  canHideListPane: canHideListPane,
+                  onListPaneVisibilityChanged: (visible) {
+                    if (visible) {
+                      // Asking for the list while the day-view column is what
+                      // starved the split yields the column: the list is the
+                      // surface the reader asked for, and merely clearing the
+                      // collapse flag would change nothing on screen.
+                      if (splitStarved) paneController.hideDayViewPanel();
+                      paneController.expandListPane();
+                    } else {
+                      paneController.collapseListPane();
+                    }
                   },
-                  child: detailChild,
-                ),
-              ),
+                  listPane: SizedBox(
+                    width: listPaneWidth,
+                    child: TasksTabPage(controller: _tasksTabController),
+                  ),
+                  divider: ResizableDivider(
+                    currentValue: listPaneWidth,
+                    minValue: minListPaneWidth,
+                    maxValue: maxListPaneWidth,
+                    onDrag: resolvedListPane.onDrag,
+                  ),
+                  detailPane: _TasksDetailPane(
+                    stackDepth: stack.length,
+                    selectedTaskId: selectedTaskId,
+                    // The details column is the collapsed-list layout: once the
+                    // reader has hidden the list to focus one task, the pane is
+                    // wide enough to carry the task's metadata beside it instead
+                    // of over it. Null keeps the fly-out as the only host.
+                    metaColumnTaskId: listPaneVisible ? null : selectedTaskId,
+                    detail: AnimatedSwitcher(
+                      // Fast cross-fade (200ms): stepping row-by-row through tasks
+                      // is the split view's core interaction, and matches the
+                      // logbook split so both panes feel identical.
+                      duration: MotionDurations.short4,
+                      switchInCurve: Curves.easeInOutCubic,
+                      switchOutCurve: Curves.easeInOutCubic,
+                      layoutBuilder: (currentChild, previousChildren) {
+                        return Stack(
+                          fit: StackFit.expand,
+                          children: <Widget>[
+                            ...previousChildren.map(
+                              (child) => ExcludeFocus(child: child),
+                            ),
+                            ?currentChild,
+                          ],
+                        );
+                      },
+                      child: detailChild,
+                    ),
+                  ),
+                );
+              },
             );
           },
         ),

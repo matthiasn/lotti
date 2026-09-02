@@ -294,6 +294,144 @@ void main() {
     });
   });
 
+  group('day-view column starving the split', () {
+    /// Pumps the split with a task open in a content region [regionWidth]
+    /// wide, on a desktop-layout window (MediaQuery stays at 1600), and
+    /// returns the pane-width controller so a test can bring the day-view
+    /// column up or read the persisted flags.
+    Future<ProviderContainer> pumpWithTask(
+      WidgetTester tester, {
+      required double regionWidth,
+    }) async {
+      fakeController = FakeJournalPageController(state());
+      final navService = getIt<NavService>() as MockNavService;
+      final stackNotifier = ValueNotifier<List<String>>(<String>['task-42']);
+      addTearDown(stackNotifier.dispose);
+      when(
+        () => navService.desktopTaskDetailStack,
+      ).thenReturn(stackNotifier);
+
+      await tester.binding.setSurfaceSize(Size(regionWidth, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const TasksRootPage(),
+          mediaQueryData: const MediaQueryData(size: Size(1600, 800)),
+          overrides: [
+            journalPageScopeProvider.overrideWithValue(true),
+            journalPageControllerProvider(
+              true,
+            ).overrideWith(() => fakeController),
+          ],
+        ),
+      );
+      await tester.pump();
+      return ProviderScope.containerOf(
+        tester.element(find.byType(TasksRootPage)),
+      );
+    }
+
+    Future<void> showDayViewColumn(
+      WidgetTester tester,
+      ProviderContainer container,
+    ) async {
+      container.read(paneWidthControllerProvider.notifier).showDayViewPanel();
+      await tester.pump();
+      await tester.pump();
+    }
+
+    testWidgets(
+      'gives the open task the whole region while the column is up on a '
+      'region below the desktop breakpoint, without touching the collapse '
+      'flag',
+      (tester) async {
+        final container = await pumpWithTask(tester, regionWidth: 900);
+        expect(find.byType(TasksTabPage), findsOneWidget);
+
+        await showDayViewColumn(tester, container);
+
+        expect(find.byType(TasksTabPage), findsNothing);
+        expect(
+          find.byType(TasksTabPage, skipOffstage: false),
+          findsOneWidget,
+        );
+        expect(find.byType(ResizableDivider), findsNothing);
+        expect(find.byType(TaskDetailsPage), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('tasks-show-list-pane')),
+          findsOneWidget,
+        );
+        // Forced by geometry, not chosen: the persisted flag stays clear so
+        // the list returns on its own once there is room again.
+        expect(
+          container.read(paneWidthControllerProvider).listPaneCollapsed,
+          isFalse,
+        );
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pumpAndSettle();
+      },
+    );
+
+    testWidgets(
+      'asking for the list back yields the day-view column instead of '
+      'flipping a flag that changes nothing',
+      (tester) async {
+        final container = await pumpWithTask(tester, regionWidth: 900);
+        await showDayViewColumn(tester, container);
+        expect(find.byType(TasksTabPage), findsNothing);
+
+        await tester.tap(find.byKey(const ValueKey('tasks-show-list-pane')));
+        await tester.pump();
+        await tester.pump();
+
+        expect(
+          container.read(paneWidthControllerProvider).dayViewPanelHidden,
+          isTrue,
+        );
+        expect(find.byType(TasksTabPage), findsOneWidget);
+        expect(find.byType(ResizableDivider), findsOneWidget);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pumpAndSettle();
+      },
+    );
+
+    testWidgets(
+      'keeps the list beside the task while the column is hidden, even on a '
+      'narrow region',
+      (tester) async {
+        final container = await pumpWithTask(tester, regionWidth: 900);
+        expect(
+          container.read(paneWidthControllerProvider).dayViewPanelHidden,
+          isTrue,
+        );
+
+        expect(find.byType(TasksTabPage), findsOneWidget);
+        expect(find.byType(ResizableDivider), findsOneWidget);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pumpAndSettle();
+      },
+    );
+
+    testWidgets(
+      'keeps the list beside the task while the column is up on a region '
+      'wide enough for both',
+      (tester) async {
+        final container = await pumpWithTask(tester, regionWidth: 1400);
+        await showDayViewColumn(tester, container);
+
+        expect(find.byType(TasksTabPage), findsOneWidget);
+        expect(find.byType(ResizableDivider), findsOneWidget);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pumpAndSettle();
+      },
+    );
+  });
+
   testWidgets(
     'focus mode hides and restores the selected task list while preserving it',
     (tester) async {

@@ -5,13 +5,13 @@ description: The Day page, the anchored voice template, timeline editing, the ca
 resource: ../../../lib/features/daily_os_next/ui
 tags: [daily-os, ui, voice, timeline, onboarding]
 status: stable
-generated: { by: claude-code/fable-5, at: 2026-08-31T12:00:00Z }
-stale_after: 2026-10-26
+generated: { by: claude-code/fable-5, at: 2026-09-02T12:00:00Z }
+stale_after: 2027-03-02
 sources:
   - id: ui
     resource: ../../../lib/features/daily_os_next/ui
     title: Daily OS widgets and pages
-    last_modified: 2026-08-02
+    last_modified: 2026-09-02
   - id: typography
     resource: ../../../lib/features/design_system/theme/typography_helpers.dart
     title: Calm typography helpers

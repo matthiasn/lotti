@@ -5,8 +5,8 @@ description: Ten independent Beamer stacks behind one IndexedStack, how the acti
 resource: ../../lib/beamer
 tags: [architecture, navigation, beamer, routing, app-shell]
 status: stable
-generated: { by: codex/gpt-5, at: 2026-08-25T14:10:00Z }
-stale_after: 2027-02-05
+generated: { by: claude-code/fable-5, at: 2026-09-02T12:00:00Z }
+stale_after: 2027-03-02
 sources:
   - id: route-mirror
     resource: ../../lib/beamer/locations/route_state_mirror.dart
@@ -15,7 +15,7 @@ sources:
   - id: beamer-app
     resource: ../../lib/beamer/beamer_app.dart
     title: MyBeamerApp and AppScreen
-    last_modified: 2026-08-19
+    last_modified: 2026-09-02
   - id: contact-support-row
     resource: ../../lib/widgets/misc/contact_support_row.dart
     title: ContactSupportRow — the Contact Us footer, wired to its destinations
