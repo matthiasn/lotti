@@ -5,13 +5,13 @@ description: The Day page, the anchored voice template, timeline editing, the ca
 resource: ../../../lib/features/daily_os_next/ui
 tags: [daily-os, ui, voice, timeline, onboarding]
 status: stable
-generated: { by: claude-code/fable-5, at: 2026-08-31T12:00:00Z }
-stale_after: 2026-10-26
+generated: { by: claude-code/fable-5, at: 2026-09-02T12:00:00Z }
+stale_after: 2027-03-02
 sources:
   - id: ui
     resource: ../../../lib/features/daily_os_next/ui
     title: Daily OS widgets and pages
-    last_modified: 2026-08-02
+    last_modified: 2026-09-02
   - id: typography
     resource: ../../../lib/features/design_system/theme/typography_helpers.dart
     title: Calm typography helpers
@@ -244,11 +244,13 @@ touching it:
   redundantly next to the Daily OS surface itself — *and* the Daily OS
   feature flag is on (`NavService.isDailyOsPageEnabled`) *and*
   `dayViewColumnAllowance` (in `beamer_app.dart`) grants it room: a
-  `kDayViewPanelMinWindowWidth` (1200 px) window gate, plus a
-  clamp-then-yield rule while a task detail is open — the tasks list +
-  detail split keeps a `kDesktopBreakpoint`-wide region, the column is
-  clamped narrower to protect it, and yields entirely when even its
-  300 px minimum would starve the split.
+  `kDayViewPanelMinWindowWidth` (1200 px) window gate, plus a clamp while
+  a task detail is open — the tasks list + detail split prefers a
+  `kDesktopBreakpoint`-wide region, so the column is clamped narrower to
+  protect it, but never below its 300 px minimum. The column never yields
+  above the window gate: it is opt-in, so the user's choice to show it
+  outranks the split heuristic, and the rail (with the toggle that brings
+  the panel up) must stay reachable on every window that can host it.
 - **Lane behaviour follows the pane, not the window.** `DayTimeline` grew a
   `comparisonBreakpoint` parameter (default `kDesktopBreakpoint`); the panel
   passes `kDayViewSidePanelComparisonBreakpoint` (560) so a wide column shows

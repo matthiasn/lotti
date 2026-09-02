@@ -5,8 +5,8 @@ description: Ten independent Beamer stacks behind one IndexedStack, how the acti
 resource: ../../lib/beamer
 tags: [architecture, navigation, beamer, routing, app-shell]
 status: stable
-generated: { by: codex/gpt-5, at: 2026-08-25T14:10:00Z }
-stale_after: 2027-02-05
+generated: { by: claude-code/fable-5, at: 2026-09-02T12:00:00Z }
+stale_after: 2027-03-02
 sources:
   - id: route-mirror
     resource: ../../lib/beamer/locations/route_state_mirror.dart
@@ -15,7 +15,7 @@ sources:
   - id: beamer-app
     resource: ../../lib/beamer/beamer_app.dart
     title: MyBeamerApp and AppScreen
-    last_modified: 2026-08-19
+    last_modified: 2026-09-02
   - id: contact-support-row
     resource: ../../lib/widgets/misc/contact_support_row.dart
     title: ContactSupportRow — the Contact Us footer, wired to its destinations
@@ -119,9 +119,10 @@ the expanded content stack, and — while the **Tasks tab is active**, the Daily
 OS flag is on and `dayViewColumnAllowance` grants it room — a second divider
 plus the right-docked day-view column (`DayViewSidePanel`, or its collapsed
 rail). The allowance is a `kDayViewPanelMinWindowWidth` (1200 px) window gate
-plus a clamp-then-yield rule: while a task detail is open, the tasks split
-keeps a `kDesktopBreakpoint`-wide region — the column is clamped narrower to
-protect it and yields entirely when even its minimum would starve it. The
+plus a clamp: while a task detail is open, the tasks split prefers a
+`kDesktopBreakpoint`-wide region — the column is clamped narrower to protect
+it, but never below its minimum, so the rail and its toggle stay reachable on
+every window above the gate. The
 column starts hidden as its rail and, once shown, pages through days with the
 compact Daily OS date strip, showing that day's planned-vs-recorded timeline
 beside the tasks list. Its visibility and width persist through `PaneWidthController`

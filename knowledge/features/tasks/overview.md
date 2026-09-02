@@ -5,13 +5,13 @@ description: The task-specific layer on the shared journal substrate — what it
 resource: ../../../lib/features/tasks
 tags: [tasks, journal, detail, browse]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T01:00:00Z }
-stale_after: 2027-01-25
+generated: { by: claude-code/fable-5, at: 2026-09-02T12:00:00Z }
+stale_after: 2027-03-02
 sources:
   - id: src
     resource: ../../../lib/features/tasks
     title: Tasks feature source
-    last_modified: 2026-08-20
+    last_modified: 2026-09-02
   - id: nav
     resource: ../../../lib/services/nav_service.dart
     title: desktopTaskDetailStack
@@ -110,6 +110,18 @@ cannot restore focus into a task that is only still present for animation.
 With a base task selected, the split can enter focus mode. The list and
 divider become offstage while the detail takes the full split width; the list
 subtree stays mounted, preserving its filter, search, paging and scroll state.
+
+Geometry can force the same layout. The app shell's docked day-view column
+(`dayViewColumnAllowance` in `lib/beamer/beamer_app.dart`) is clamped, never
+removed, beside an open task, so on a window that cannot host the sidebar, the
+column and a `kDesktopBreakpoint`-wide split at once, the split gives way:
+while the column is up and the region has dropped below the breakpoint, an
+open task takes the whole region as in focus mode, without setting the
+persisted collapse flag — the list returns on its own once the column hides
+or the window widens. `TaskDetailShowListButton` still works in that state:
+it yields the column (`hideDayViewPanel`) before expanding the list, since the
+list is what the reader asked for and clearing the flag alone would change
+nothing on screen.
 
 **Both halves of the toggle live in the detail pane's top-left corner.**
 `TaskDetailDesktopLeading` fills the task app bar's leading slot with up to two

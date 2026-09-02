@@ -2493,22 +2493,39 @@ void main() {
     );
 
     test(
-      'yields entirely while a detail is open when even the minimum column '
-      'would starve the split',
+      'floors the clamp at the minimum column width while a detail is open '
+      'instead of yielding, so the rail and its toggle stay reachable',
       () {
-        // 1440 - 256 - 960 = 224 < minDayViewPanelWidth (300).
+        // 1440 - 256 - 960 = 224 < minDayViewPanelWidth (300): the split
+        // gives way, the column does not vanish.
         final allowance = dayViewColumnAllowance(
           taskDetailOpen: true,
           windowWidth: 1440,
           sidebarWidth: defaultSidebarWidth,
         );
-        expect(allowance.show, isFalse);
+        expect(allowance.show, isTrue);
+        expect(allowance.maxWidth, minDayViewPanelWidth);
+      },
+    );
+
+    test(
+      'a default-size window with a task open still hosts the column at its '
+      'minimum width',
+      () {
+        // The Linux runner opens at 1280 wide; 1280 - 256 - 960 = 64.
+        final allowance = dayViewColumnAllowance(
+          taskDetailOpen: true,
+          windowWidth: 1280,
+          sidebarWidth: defaultSidebarWidth,
+        );
+        expect(allowance.show, isTrue);
+        expect(allowance.maxWidth, minDayViewPanelWidth);
       },
     );
 
     test('a collapsed sidebar frees room for the column beside a detail', () {
-      // 1440 - 72 - 960 = 408 >= 300 — the same window that yields with an
-      // expanded sidebar hosts the column at a clamped width.
+      // 1440 - 72 - 960 = 408 >= 300 — the same window that floors at the
+      // minimum with an expanded sidebar hosts a wider clamped column.
       final allowance = dayViewColumnAllowance(
         taskDetailOpen: true,
         windowWidth: 1440,

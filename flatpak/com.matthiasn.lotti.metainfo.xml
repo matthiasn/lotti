@@ -43,6 +43,7 @@
     <release version="1.0.25" date="2026-09-02">
       <description>
         <p>Changed: the day-view column beside the tasks list is now opt-in, and it can step through days. On desktop the column that shows a day's planned and recorded time next to your tasks used to open by default; it now starts tucked away as a slim rail, and comes up with the calendar button when you want it. Once open, it no longer shows today only: the same date controls as the planner - previous and next arrows, and a date you can tap to pick any day or hold to jump back to today - sit in its top row beside the lane toggle, in a compact form that fits the narrow column. Paging the column leaves the planner tab's own day untouched.</p>
+        <p>Fixed: the day-view column's toggle vanished from the Tasks tab whenever a task was open. On a window narrower than about 1500 px, selecting a task removed the whole docked day-view column together with the calendar button that brings it back, so the day view could not be reached at all. The collapsed rail with its button now stays on every desktop window wide enough to host the column, and the expanded column shrinks to its minimum width beside an open task instead of disappearing. When the window has no room for the task list, the column and the open task side by side, the task list tucks away behind its usual "show list" button until the column is hidden or the window is wider.</p>
       </description>
     </release>
     <release version="1.0.24" date="2026-09-02">
