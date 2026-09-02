@@ -1,0 +1,87 @@
+name: Play promote
+
+# Promotes the Android build already on Google Play's internal track to
+# closed testing, open testing or production. No build: every release tag
+# uploads the app bundle to internal (flutter-android-release.yml), and Play
+# refuses a version code it has seen, so a store-track release is that same
+# build moved along - the bytes testers had, sent to Google for review.
+#
+# Triggers:
+# - push of a play/<track>/<version> tag, from `make android_closed_testing`
+#   or `make android_release`. The track comes from the tag; the version must
+#   match pubspec.yaml at the tagged commit.
+# - workflow_dispatch from the Actions tab, for reruns or one-offs: pick the
+#   ref that carries the version (the release tag works) and the track.
+#
+# The store listing - screenshots included - is shared by every track and
+# deliberately not touched here.
+
+on:
+  push:
+    tags:
+      - 'play/**'
+  workflow_dispatch:
+    inputs:
+      track:
+        description: Track to promote the internal build to
+        type: choice
+        options:
+          - alpha
+          - beta
+          - production
+        default: alpha
+      dry_run:
+        description: Validate the edit with Play and discard it
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  # One promotion at a time: two edits on the same app race each other.
+  group: play-promote
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    name: Promote internal build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      # Actions pinned by SHA and the client pinned by version: this job
+      # holds the Play service account, so nothing it runs may float.
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd  # v5.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: '3.13'
+
+      - name: Install the Play API client
+        run: pip install google-api-python-client==2.200.0 google-auth==2.57.0
+
+      # The tag and the dispatch inputs reach the script as environment
+      # variables, never as text spliced into the shell: a ref or an input
+      # with a quote in it must not be able to end an argument and run a
+      # command. On a tag push the script takes the track from the tag; on a
+      # dispatch it takes the chosen track and the version from the checkout.
+      - name: Promote
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}
+          PLAY_TAG: ${{ github.event_name == 'push' && github.ref_name || '' }}
+          PLAY_TRACK: ${{ inputs.track }}
+          PLAY_DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          args=()
+          if [ -n "$PLAY_TAG" ]; then
+            args+=(--tag "$PLAY_TAG")
+          else
+            args+=(--track "$PLAY_TRACK")
+          fi
+          if [ "$PLAY_DRY_RUN" = "true" ]; then
+            args+=(--dry-run)
+          fi
+          python3 tool/play_promote.py "${args[@]}"

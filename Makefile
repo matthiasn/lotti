@@ -452,6 +452,28 @@ tag_push:
 	git tag ${LOTTI_VERSION}
 	git push origin ${LOTTI_VERSION}
 
+# Google Play store-track releases. Each pushes a play/<track>/<version> tag,
+# and .github/workflows/play-promote.yml promotes the build that the release
+# tag already put on the internal track - no rebuild, Play refuses a version
+# code it has seen. Closed testing is Play's `alpha` track; open testing is
+# `beta` (tag play/beta/<version> by hand if ever wanted); production is
+# `production`. Run from the commit whose pubspec carries the version to
+# promote, because the workflow refuses a tag that disagrees with it.
+.PHONY: play_tag_push
+play_tag_push:
+	@test -n "$(LOTTI_VERSION)" || { echo "LOTTI_VERSION is empty: install yq (brew install yq)" >&2; exit 1; }
+	@test -n "$(PLAY_TRACK)" || { echo "PLAY_TRACK is unset: use android_closed_testing or android_release" >&2; exit 1; }
+	git tag play/$(PLAY_TRACK)/$(LOTTI_VERSION)
+	git push origin play/$(PLAY_TRACK)/$(LOTTI_VERSION)
+
+.PHONY: android_closed_testing
+android_closed_testing: PLAY_TRACK = alpha
+android_closed_testing: play_tag_push
+
+.PHONY: android_release
+android_release: PLAY_TRACK = production
+android_release: play_tag_push
+
 .PHONY: all
 all: ios macos
 

@@ -11,6 +11,9 @@ on:
   push:
     tags:
       - '**'
+      # play/<track>/<version> tags promote an existing build on Google
+      # Play (play-promote.yml); they are not a release of anything else.
+      - '!play/**'
   workflow_dispatch:
     inputs:
       commit_sha:
