@@ -13,13 +13,13 @@ workflows:
       flutter: fvm
       groups:
         - windows_signing
-    triggering:
-      events:
-        - tag
-      tag_patterns:
-        - pattern: '*.*.*+*'
-          include: true
-      cancel_previous_builds: true
+    # No `triggering` block on purpose: the Windows build used to fan out from
+    # every release tag (`*.*.*+*`) like the GitHub lanes do, but the
+    # windows_x2 minutes made it the most expensive lane per release. It is
+    # manual-only for now — start it from the Codemagic UI (Start new build →
+    # Windows Release, pick the release tag) or the builds API. Reinstate a
+    # `triggering: events: [tag]` block with that pattern to put it back on
+    # automatic.
     scripts:
       - name: Show toolchain versions
         script: |
