@@ -144,12 +144,15 @@ Spoken relationships ("this task is blocked by X", "this supersedes Y") become
   unresolved (nothing to name or navigate to); otherwise a tappable pill naming
   the single blocker or the count, opening the blocker's detail page directly or
   a list sheet.
-- **The status-enrichment prompt.** When the header sets a task's status to
-  `BLOCKED` — a change, not a no-op — and the task is not already named-blocked,
-  it opens `BlockingTaskPickerModal`: a search picker **fixed** to the `blocks`
-  relationship with no type selector, creating a `blocks` link from the chosen
-  task to this one. Fully skippable — **the status write already committed before
-  the modal opens**, so dismissing persists nothing further.
+- **The status-enrichment prompt.** When the status picker sets a task's status
+  to `BLOCKED` — a change, not a no-op — and the task is not already
+  named-blocked, it opens `BlockingTaskPickerModal`: a search picker **fixed** to
+  the `blocks` relationship with no type selector, creating a `blocks` link from
+  the chosen task to this one. Fully skippable — **the status write already
+  committed before the modal opens**, so dismissing persists nothing further.
+  The panel the picker was opened from has closed by then
+  ([detail composition](detail-composition.md#one-section-two-hosts)), so the
+  prompt is presented on the navigator rather than over that panel.
 
 **Manual `TaskStatus.blocked` and link-derived blockedness never write to each
 other automatically.** The link layer only *offers* the picker after a manual

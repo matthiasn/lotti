@@ -11,7 +11,7 @@ sources:
   - id: header
     resource: ../../../lib/features/tasks/ui/header
     title: Desktop task header, metadata section, fly-out and details column
-    last_modified: 2026-08-20
+    last_modified: 2026-09-03
   - id: linked-task-row
     resource: ../../../lib/features/tasks/ui/linked_tasks/linked_task_row.dart
     title: Linked task row
@@ -343,6 +343,25 @@ The narrow density stacks rather than narrowing the label column: at
 `kTaskMetaColumnWidth` (320) a fixed 96 pt label column either starves the
 values or clips a long localized label — German "Fälligkeitsdatum" does not
 fit beside its own date.
+
+**A status pick closes a dismissible host.** The status write is the one edit
+in the section that plays a *celebration* — `TaskStatusSummaryTag` wraps the
+header's status read-out in `CompletionCelebration`, so moving a task to Done
+blooms a glow and throws a spark burst on the pill directly behind the panel.
+`TaskMetaSection.onStatusPicked` is how the host gets out of its way:
+`TaskMetaFlyout` passes its own `Navigator.pop`, the persistent column passes
+nothing. `TaskMetaPickers.showStatusPicker` fires it the instant the picker
+returns a status and **before** `updateTaskStatus`, so the panel's exit runs
+during the write rather than over the burst it triggers. No other row reports
+back — editing a second attribute in the same visit stays possible.
+
+Dismissing the host takes the picker's `context` and `ref` with it, so the
+[Blocked follow-up prompt](relationships.md#where-it-surfaces)
+is set up *before* the pick: the blockers are read through the
+`ProviderContainer`, and the prompt is presented on the hosting navigator's
+**overlay** context — a descendant of the navigator, so `Navigator.of`
+resolves back to it, and it outlives every route on it. Without that, a write
+slower than the panel's exit animation would silently swallow the prompt.
 
 ### The details column
 

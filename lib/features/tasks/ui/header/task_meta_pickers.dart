@@ -30,14 +30,28 @@ abstract final class TaskMetaPickers {
   /// Opens the status picker; when the task just became `BLOCKED` and carries
   /// no blocker link yet, follows up with the blocking-task picker so the
   /// user can name what it waits on.
+  ///
+  /// [onStatusPicked] dismisses the surface the picker was opened *from* —
+  /// the metadata fly-out passes its own pop, the persistent details column
+  /// has nothing to dismiss and passes nothing. See the call below for why it
+  /// fires before the write rather than after it.
   static Future<void> showStatusPicker(
     BuildContext context,
     WidgetRef ref,
-    Task task,
-  ) async {
+    Task task, {
+    VoidCallback? onStatusPicked,
+  }) async {
     final taskId = task.meta.id;
     final controller = ref.read(entryControllerProvider(taskId).notifier);
     final previousStatus = task.data.status.toDbString;
+    // [onStatusPicked] tears down the host, and with it [context] and [ref].
+    // The Blocked follow-up runs after that, so take a container and a
+    // presentation context that outlive the host now: a navigator's overlay
+    // sits *inside* the navigator (so `Navigator.of` resolves back to it) and
+    // outlives every route pushed onto it.
+    final container = ProviderScope.containerOf(context, listen: false);
+    final hostContext = Navigator.of(context).overlay?.context ?? context;
+
     final selected = await ModalUtils.showSinglePageModal<String>(
       context: context,
       // Strip the trailing colon so the picker title matches the other
@@ -48,20 +62,30 @@ abstract final class TaskMetaPickers {
     );
     if (selected == null) return;
 
+    // Close the host the moment a status is chosen — *before* the write lands.
+    // A task turning Done fires the completion celebration on the header's
+    // status pill, and that should play on an unobstructed screen rather than
+    // dimmed behind the fly-out the reader has finished with. Waiting until
+    // after the write would put the panel's exit on top of the burst.
+    onStatusPicked?.call();
+
     await controller.updateTaskStatus(selected);
 
     final becameBlocked = selected == 'BLOCKED' && selected != previousStatus;
-    if (!becameBlocked || !context.mounted) return;
+    if (!becameBlocked) return;
 
-    final blockers = await ref.read(
+    final blockers = await container.read(
       taskBlockersControllerProvider(taskId).future,
     );
     // isBlocked (not just openBlockers) so an unresolved-only blocker link
     // also counts as "already named" — don't re-prompt over it.
     if (blockers.isBlocked) return;
-    if (!context.mounted) return;
+    if (!hostContext.mounted) return;
 
-    await BlockingTaskPickerModal.show(context: context, blockedTaskId: taskId);
+    await BlockingTaskPickerModal.show(
+      context: hostContext,
+      blockedTaskId: taskId,
+    );
   }
 
   static Future<void> showPriorityPicker(

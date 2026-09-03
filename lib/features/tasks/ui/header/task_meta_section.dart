@@ -59,6 +59,7 @@ class TaskMetaSection extends ConsumerWidget {
   const TaskMetaSection({
     required this.taskId,
     this.density = TaskMetaDensity.wide,
+    this.onStatusPicked,
     super.key,
   });
 
@@ -66,6 +67,16 @@ class TaskMetaSection extends ConsumerWidget {
 
   /// How the rows lay out. See [TaskMetaDensity].
   final TaskMetaDensity density;
+
+  /// Dismisses the surface hosting this section, called the instant the status
+  /// picker returns a choice.
+  ///
+  /// Only the status row reports back: it is the one attribute whose write
+  /// plays a celebration on the header behind this section, and a panel left
+  /// standing over it dims the moment it exists to mark. A dismissible host
+  /// (the fly-out) passes its own pop; the persistent details column has
+  /// nothing to dismiss and passes nothing.
+  final VoidCallback? onStatusPicked;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -86,7 +97,12 @@ class TaskMetaSection extends ConsumerWidget {
           density: density,
           label: stripTrailingColon(messages.taskStatusLabel),
           value: _StatusValue(status: task.data.status),
-          onTap: () => TaskMetaPickers.showStatusPicker(context, ref, task),
+          onTap: () => TaskMetaPickers.showStatusPicker(
+            context,
+            ref,
+            task,
+            onStatusPicked: onStatusPicked,
+          ),
         ),
         TaskMetaFieldRow(
           density: density,

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -33,16 +35,24 @@ import '../../../../widget_test_utils.dart';
 /// Hosts one button per picker so each [TaskMetaPickers] entry point can be
 /// exercised directly, independent of the fly-out or the header.
 class _PickerHost extends ConsumerWidget {
-  const _PickerHost({required this.task});
+  const _PickerHost({required this.task, this.onStatusPicked});
 
   final Task task;
+
+  /// Stands in for the fly-out's own dismissal.
+  final VoidCallback? onStatusPicked;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Column(
       children: [
         TextButton(
-          onPressed: () => TaskMetaPickers.showStatusPicker(context, ref, task),
+          onPressed: () => TaskMetaPickers.showStatusPicker(
+            context,
+            ref,
+            task,
+            onStatusPicked: onStatusPicked,
+          ),
           child: const Text('open-status'),
         ),
         TextButton(
@@ -70,6 +80,31 @@ class _PickerHost extends ConsumerWidget {
           child: const Text('open-labels'),
         ),
       ],
+    );
+  }
+}
+
+/// A host that tears itself down — and with it the `context` and `ref` the
+/// picker was called with — the instant a status is picked, the way the
+/// metadata fly-out does when it pops itself.
+class _SelfDismissingHost extends StatefulWidget {
+  const _SelfDismissingHost({required this.task});
+
+  final Task task;
+
+  @override
+  State<_SelfDismissingHost> createState() => _SelfDismissingHostState();
+}
+
+class _SelfDismissingHostState extends State<_SelfDismissingHost> {
+  bool _open = true;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_open) return const SizedBox.shrink();
+    return _PickerHost(
+      task: widget.task,
+      onStatusPicked: () => setState(() => _open = false),
     );
   }
 }
@@ -155,11 +190,17 @@ void main() {
     );
   }
 
-  Widget pumpHost({required Task task, ToggleCallTracker? tracker}) {
+  Widget pumpHost({
+    required Task task,
+    ToggleCallTracker? tracker,
+    VoidCallback? onStatusPicked,
+    FakeEntryController Function()? controller,
+    Widget? host,
+  }) {
     return ProviderScope(
       overrides: [
         entryControllerProvider(task.id).overrideWith(
-          () => FakeEntryController(task, tracker: tracker),
+          controller ?? () => FakeEntryController(task, tracker: tracker),
         ),
       ],
       child: MaterialApp(
@@ -172,7 +213,9 @@ void main() {
           GlobalCupertinoLocalizations.delegate,
         ],
         supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(body: _PickerHost(task: task)),
+        home: Scaffold(
+          body: host ?? _PickerHost(task: task, onStatusPicked: onStatusPicked),
+        ),
       ),
     );
   }
@@ -321,6 +364,79 @@ void main() {
     });
   });
 
+  group('TaskMetaPickers — the host closes on a status pick', () {
+    testWidgets('onStatusPicked runs before the status is written', (
+      tester,
+    ) async {
+      // Order is the point: the host has to be out of the way *before* the
+      // write lands, or the completion celebration the write fires plays
+      // behind it.
+      final events = <String>[];
+      final task = buildTask();
+      await tester.pumpWidget(
+        pumpHost(
+          task: task,
+          controller: () => ScriptedEntryController(task, events: events),
+          onStatusPicked: () => events.add('dismiss'),
+        ),
+      );
+      await settle(tester);
+
+      await tester.tap(find.text('open-status'));
+      await settle(tester);
+      await tester.tap(find.byKey(const ValueKey('task-status-DONE')));
+      await settle(tester);
+
+      expect(events, equals(['dismiss', 'write:DONE']));
+    });
+
+    testWidgets(
+      'onStatusPicked is not called when the picker closes with no choice',
+      (tester) async {
+        var dismissed = 0;
+        final tracker = ToggleCallTracker();
+        await tester.pumpWidget(
+          pumpHost(
+            task: buildTask(),
+            tracker: tracker,
+            onStatusPicked: () => dismissed++,
+          ),
+        );
+        await settle(tester);
+
+        await tester.tap(find.text('open-status'));
+        await settle(tester);
+        await tester.tap(find.byTooltip('Close'));
+        await settle(tester);
+
+        expect(dismissed, isZero);
+        expect(tracker.updateTaskStatusCalls, isEmpty);
+      },
+    );
+
+    testWidgets('onStatusPicked runs for a re-pick of the current status', (
+      tester,
+    ) async {
+      // Re-picking what is already set is still the reader finishing with the
+      // panel; leaving it standing would read as an unresponsive tap.
+      var dismissed = 0;
+      await tester.pumpWidget(
+        pumpHost(
+          task: buildTask(),
+          onStatusPicked: () => dismissed++,
+        ),
+      );
+      await settle(tester);
+
+      await tester.tap(find.text('open-status'));
+      await settle(tester);
+      await tester.tap(find.byKey(const ValueKey('task-status-OPEN')));
+      await settle(tester);
+
+      expect(dismissed, 1);
+    });
+  });
+
   group('TaskMetaPickers — blocked-status follow-up prompt', () {
     late MockFts5Db mockFts5Db;
 
@@ -432,6 +548,42 @@ void main() {
         await selectBlockedStatus(tester, task);
 
         expect(find.text("What's blocking this?"), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'still prompts after the host that opened the picker has torn itself '
+      'down',
+      (tester) async {
+        // The fly-out closes on the pick, taking the picker's `context` and
+        // `ref` with it, and a write slower than that teardown leaves nothing
+        // of the caller behind. The prompt has to survive it: presented on the
+        // navigator, with the blockers read through the container.
+        final task = buildTask();
+        stubBlockers(task.id, []);
+        final gate = Completer<void>();
+
+        await tester.pumpWidget(
+          pumpHost(
+            task: task,
+            host: _SelfDismissingHost(task: task),
+            controller: () => ScriptedEntryController(task, gate: gate),
+          ),
+        );
+        await settle(tester);
+
+        await tester.tap(find.text('open-status'));
+        await settle(tester);
+        await tester.tap(find.byKey(const ValueKey('task-status-BLOCKED')));
+        await settle(tester);
+        // Nothing of the caller is left by the time the write lands.
+        expect(find.byType(_PickerHost), findsNothing);
+
+        gate.complete();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(find.text("What's blocking this?"), findsOneWidget);
       },
     );
 

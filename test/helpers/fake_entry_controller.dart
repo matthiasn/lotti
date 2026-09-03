@@ -4,6 +4,8 @@
 // file are exported and consumed by sibling `_test.dart` files, so the
 // analyzer's `unreachable_from_main` check doesn't apply here.
 
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
@@ -215,6 +217,50 @@ class StatefulTogglesFakeEntryController extends FakeEntryController {
   Future<void> togglePrivate() async {
     await super.togglePrivate();
     _apply((meta) => meta.copyWith(private: !(meta.private ?? false)));
+  }
+}
+
+/// Fake EntryController that scripts the *status* write's timing and ordering.
+///
+/// Two knobs, for the two things a status-picker test needs to be able to say
+/// about the write that the plain [FakeEntryController] cannot:
+///
+/// * [gate] — the write does not land until the test completes it, standing in
+///   for a database write slower than the host surface's exit animation. That
+///   is the window in which a picker holding its caller's `BuildContext` or
+///   `WidgetRef` finds both already disposed.
+/// * [events] — the write appends `write:<status>` here. Given the same list a
+///   surface writes its own dismissal into, a test can assert the *order* of
+///   the two rather than merely that both happened.
+class ScriptedEntryController extends FakeEntryController {
+  // ignore: use_super_parameters, parent uses private `_entity` field
+  ScriptedEntryController(
+    JournalEntity entity, {
+    ToggleCallTracker? tracker,
+    this.events,
+    this.gate,
+  }) : super(entity, tracker: tracker);
+
+  /// Ordered log the write appends to; shared with whatever else is being
+  /// sequenced against it.
+  final List<String>? events;
+
+  /// Held until the test completes it. Null writes land immediately.
+  final Completer<void>? gate;
+
+  @override
+  Future<void> updateTaskStatus(
+    String? status, {
+    String? blockerTaskId,
+    String? blockerTaskTitle,
+  }) async {
+    await gate?.future;
+    events?.add('write:$status');
+    await super.updateTaskStatus(
+      status,
+      blockerTaskId: blockerTaskId,
+      blockerTaskTitle: blockerTaskTitle,
+    );
   }
 }
 
