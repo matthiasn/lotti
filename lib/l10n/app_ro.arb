@@ -5243,6 +5243,8 @@
       }
     }
   },
+  "taskEstimateQuickPickHint": "Apăsați pentru a salva și a închide",
+  "taskEstimateQuickPickSemanticsLabel": "Setați estimarea la {duration}",
   "taskEstimateTooltip": "Timp înregistrat: {tracked} din {estimate} estimat",
   "@taskEstimateTooltip": {
     "placeholders": {

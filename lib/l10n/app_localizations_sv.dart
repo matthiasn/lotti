@@ -13462,6 +13462,14 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get taskEstimateQuickPickHint => 'Tryck för att spara och stänga';
+
+  @override
+  String taskEstimateQuickPickSemanticsLabel(String duration) {
+    return 'Ange uppskattning till $duration';
+  }
+
+  @override
   String taskEstimateTooltip(String tracked, String estimate) {
     return 'Tid spårad: $tracked av $estimate uppskattad';
   }

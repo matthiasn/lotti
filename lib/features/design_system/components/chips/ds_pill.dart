@@ -103,15 +103,28 @@ class DsPill extends StatelessWidget {
 
   /// Orthogonal selection state. Composes with [variant] (it is **not** a new
   /// variant): when true, the pill draws a 1px teal `interactive.enabled`
-  /// border, a teal-tinted fill (`surface.selected` on the `filled` variant;
-  /// the variant's own tint is kept on `tinted`), and a bold label — the
-  /// multi-channel "active saved filter" treatment used by the mobile saved
-  /// filter rail.
+  /// border, a teal-tinted fill (`surface.selected` on the `filled` and
+  /// `outline` variants; the variant's own tint is kept on `tinted`), and a
+  /// bold label — the multi-channel "active saved filter" treatment used by
+  /// the mobile saved filter rail.
   ///
-  /// Only `filled` and `tinted` react to selection; `outline` / `muted` ignore
-  /// it. **Regression guarantee:** `selected: false` leaves every existing
+  /// `outline` reacts too: it trades its 50%-alpha `color` border for the
+  /// full-alpha interactive one and gains the tinted fill. It used to react
+  /// with the bold label alone, which was a single 12pt weight bump and not
+  /// enough to say "this is the current value" — the estimate picker's
+  /// quick-pick chips need selection to survive a glance, and the habit
+  /// sheet's quick-record chips gain the same clarity.
+  ///
+  /// `muted` still ignores it: a dashed placeholder that is also "selected"
+  /// is not a state the design system has.
+  ///
+  /// **Regression guarantee:** `selected: false` leaves every existing
   /// consumer byte-identical (no border, no fill change, no weight change), so
   /// the orthogonal flag is safe to add without touching current callers.
+  ///
+  /// Note that the bold label does widen the pill slightly — w700 carries a
+  /// larger glyph advance — so a row that toggles selection between shells
+  /// nudges, it does not hold its metrics exactly.
   final bool selected;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
@@ -227,8 +240,11 @@ class DsPill extends StatelessWidget {
       ),
       DsPillVariant.outline => DecoratedBox(
         decoration: BoxDecoration(
+          color: selected ? tokens.colors.surface.selected : null,
           borderRadius: radius,
-          border: Border.all(color: color!.withValues(alpha: 0.5)),
+          border: selected
+              ? selectedBorder
+              : Border.all(color: color!.withValues(alpha: 0.5)),
         ),
         child: content,
       ),

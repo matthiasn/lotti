@@ -3,6 +3,7 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/features/design_system/components/time_pickers/design_system_picker_wheels.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/tasks/ui/header/estimate_quick_pick_chips.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
@@ -21,6 +22,14 @@ Future<void> showEstimatePicker({
         initialDuration: initialDuration,
         onDurationChanged: (duration) {
           selectedDuration = duration;
+        },
+        onQuickPick: (duration) async {
+          // Pop first, then write — the same order `Clear` uses below, so the
+          // modal never sits open over an awaited save.
+          Navigator.of(modalContext).pop();
+          if (duration != initialDuration) {
+            await onEstimateChanged(duration);
+          }
         },
       );
     },
@@ -48,15 +57,24 @@ Future<void> showEstimatePicker({
   );
 }
 
-/// The time picker widget for selecting estimated duration
+/// The estimate picker's body: a row of one-tap quick-pick chips over the
+/// duration wheel.
+///
+/// The chips answer the common case — the handful of durations this user
+/// actually estimates in — and commit on tap. The wheel below stays for
+/// everything else, and is deliberately unframed: it is the fallback now, and
+/// a bordered card around it made the escape hatch the largest object in the
+/// modal.
 class _EstimatedTimePicker extends StatefulWidget {
   const _EstimatedTimePicker({
     required this.initialDuration,
     required this.onDurationChanged,
+    required this.onQuickPick,
   });
 
   final Duration initialDuration;
   final void Function(Duration) onDurationChanged;
+  final ValueChanged<Duration> onQuickPick;
 
   @override
   State<_EstimatedTimePicker> createState() => _EstimatedTimePickerState();
@@ -83,14 +101,20 @@ class _EstimatedTimePickerState extends State<_EstimatedTimePicker> {
           _selectedDuration.inHours,
           _selectedDuration.inMinutes.remainder(60),
         );
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(tokens.radii.sectionCards),
-        border: Border.all(color: tokens.colors.decorative.level01),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(tokens.spacing.cardPadding),
-        child: DesignSystemDurationWheel(
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // The wheel's draft, not the value the modal opened on: spinning the
+        // wheel moves the selected chip with it, so the row and the wheel
+        // never claim two different estimates at once.
+        EstimateQuickPickChips(
+          currentEstimate: _selectedDuration,
+          onPick: widget.onQuickPick,
+        ),
+        // A gap larger than anything inside either element is the whole
+        // separation the two groups need — no divider, no second card.
+        SizedBox(height: tokens.spacing.sectionGap),
+        DesignSystemDurationWheel(
           initialDuration: widget.initialDuration,
           semanticsLabel:
               '${context.messages.taskEstimateModalTitle}: $durationLabel',
@@ -100,7 +124,7 @@ class _EstimatedTimePickerState extends State<_EstimatedTimePicker> {
             widget.onDurationChanged(duration);
           },
         ),
-      ),
+      ],
     );
   }
 }

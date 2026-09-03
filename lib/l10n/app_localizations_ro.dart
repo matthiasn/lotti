@@ -13715,6 +13715,14 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get taskEstimateQuickPickHint => 'Apăsați pentru a salva și a închide';
+
+  @override
+  String taskEstimateQuickPickSemanticsLabel(String duration) {
+    return 'Setați estimarea la $duration';
+  }
+
+  @override
   String taskEstimateTooltip(String tracked, String estimate) {
     return 'Timp înregistrat: $tracked din $estimate estimat';
   }

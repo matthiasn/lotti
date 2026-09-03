@@ -5800,6 +5800,8 @@
       }
     }
   },
+  "taskEstimateQuickPickHint": "Tryk for at gemme og lukke",
+  "taskEstimateQuickPickSemanticsLabel": "Sæt estimat til {duration}",
   "taskEstimateTooltip": "Tid registreret: {tracked} af {estimate} estimeret",
   "@taskEstimateTooltip": {
     "placeholders": {

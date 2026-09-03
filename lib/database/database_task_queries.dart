@@ -27,6 +27,91 @@ mixin _JournalDbTaskQueries
     }
   }
 
+  /// The estimates most often set on tasks dated on or after [since], most
+  /// used first, capped at [limit].
+  ///
+  /// [limit] is required: how many values a caller can show is the caller's
+  /// business, and a default here would be a second place to change the
+  /// estimate picker's row size.
+  ///
+  /// Powers the estimate picker's quick-pick chips the way
+  /// `rankedByPopularity` powers the measurement quick-add: the values offered
+  /// are the ones this user actually reaches for, not a guessed ladder.
+  ///
+  /// Honours the `private` config flag like every other task read here, so a
+  /// hidden task cannot put a value on the chip row that the task list would
+  /// not explain.
+  ///
+  /// Only **whole minutes above zero** are ranked. Zero is not a value anyone
+  /// would pick from a chip ("no estimate" is already the `Clear` action), and
+  /// a sub-minute or fractional-minute duration has no distinct rendering in
+  /// the compact `1h 30m` form the callers label with — two of them would read
+  /// identically. Enforcing it here keeps that a property of the data rather
+  /// than an assumption in the widget.
+  ///
+  /// Ties break on the shorter duration so the ordering is stable across runs
+  /// rather than left to the planner.
+  Future<List<Duration>> getRankedTaskEstimates({
+    required DateTime since,
+    required int limit,
+  }) async {
+    if (limit <= 0) {
+      return const <Duration>[];
+    }
+
+    final visiblePrivate = await _visiblePrivateStatuses();
+    // Omitted entirely when every private state is visible, the way
+    // `_JournalDbTaskQueriesBuilders` does it — an always-true `IN` clause
+    // only gets in the planner's way.
+    final privateFilter = _matchesAllPrivateStates(visiblePrivate)
+        ? const <bool>[]
+        : visiblePrivate;
+    final privateClause = privateFilter.isEmpty
+        ? ''
+        : 'AND private IN '
+              '(${List.filled(privateFilter.length, '?').join(', ')})';
+    const microsPerMinute = Duration.microsecondsPerMinute;
+
+    // EXPLAIN QUERY PLAN on the shipped schema reports
+    // `SEARCH journal USING INDEX idx_journal_browse
+    //  (deleted=? AND type=? AND date_from>?)` — the (deleted, type,
+    // date_from) index seeks straight to tasks inside the window, so the
+    // `json_extract` runs over those rows rather than over 90 days of every
+    // entry type. Group and order then use temp b-trees over that small set.
+    // The result is cached by the calling controller, so this runs about once
+    // per picker open.
+    final rows = await customSelect(
+      '''
+      SELECT estimate_us, COUNT(*) AS uses
+      FROM (
+        SELECT json_extract(serialized, '\$.data.estimate') AS estimate_us
+        FROM journal
+        WHERE deleted = FALSE
+        AND type = 'Task'
+        AND task = 1
+        AND date_from >= ?
+        $privateClause
+      )
+      WHERE estimate_us >= $microsPerMinute
+      AND estimate_us % $microsPerMinute = 0
+      GROUP BY estimate_us
+      ORDER BY uses DESC, estimate_us ASC
+      LIMIT ?
+      ''',
+      variables: [
+        Variable<DateTime>(since),
+        for (final private in privateFilter) Variable<bool>(private),
+        Variable<int>(limit),
+      ],
+      readsFrom: {journal},
+    ).get();
+
+    return [
+      for (final row in rows)
+        Duration(microseconds: row.read<int>('estimate_us')),
+    ];
+  }
+
   Future<Map<String, Duration?>> getTaskEstimatesByIds(Set<String> ids) async {
     if (ids.isEmpty) {
       return const <String, Duration?>{};

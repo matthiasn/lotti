@@ -13447,6 +13447,14 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String get taskEstimateQuickPickHint => 'Tryk for at gemme og lukke';
+
+  @override
+  String taskEstimateQuickPickSemanticsLabel(String duration) {
+    return 'Sæt estimat til $duration';
+  }
+
+  @override
   String taskEstimateTooltip(String tracked, String estimate) {
     return 'Tid registreret: $tracked af $estimate estimeret';
   }

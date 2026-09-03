@@ -9,6 +9,10 @@ project, and relationships to other tasks.
 
 - **Tracks a piece of work end to end.** Title, status, priority, due date and
   time estimate, with tracked time compared against the estimate as work happens.
+- **Estimates in one tap.** The estimate picker opens on chips for the durations
+  you actually use — ranked from your own tasks, the way the habit sheet offers
+  the amounts you actually log — so the usual half hour or two hours is a tap
+  rather than a scroll. The wheel underneath still takes anything else.
 - **Starts a new task with somewhere to go.** A task you have just created opens
   with the cursor in its title field, and offers the four things a task usually
   needs next — write a note, add a checklist, record a voice note, assign an

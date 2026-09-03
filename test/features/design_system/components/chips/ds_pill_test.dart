@@ -20,6 +20,68 @@ void main() {
       );
     }
 
+    Future<void> pumpLight(WidgetTester tester, Widget child) {
+      return tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Theme(
+            data: DesignSystemTheme.light(),
+            child: Scaffold(body: Center(child: child)),
+          ),
+        ),
+      );
+    }
+
+    testWidgets('labelWidget replaces the label and keeps the caller’s style', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        const DsPill(
+          variant: DsPillVariant.filled,
+          label: 'ignored',
+          labelWidget: Text(
+            'custom',
+            style: TextStyle(fontSize: 21, color: Color(0xFF00FF00)),
+          ),
+        ),
+      );
+
+      expect(find.text('ignored'), findsNothing);
+      final style = tester.widget<Text>(find.text('custom')).style!;
+      expect(style.fontSize, 21);
+      expect(style.color, const Color(0xFF00FF00));
+      expect(
+        find.ancestor(of: find.text('custom'), matching: find.byType(Flexible)),
+        findsOneWidget,
+        reason: 'a bounded pill must ellipsize the custom label, not overflow',
+      );
+    });
+
+    testWidgets(
+      'muted label reads high-emphasis in light theme, medium in dark',
+      (tester) async {
+        // In light theme mediumEmphasis grey on white flirted with the
+        // disabled affordance, so the unset chip's label steps up instead.
+        await pumpLight(
+          tester,
+          const DsPill(variant: DsPillVariant.muted, label: 'Unset'),
+        );
+        expect(
+          tester.widget<Text>(find.text('Unset')).style?.color,
+          dsTokensLight.colors.text.highEmphasis,
+        );
+
+        await pump(
+          tester,
+          const DsPill(variant: DsPillVariant.muted, label: 'Unset'),
+        );
+        expect(
+          tester.widget<Text>(find.text('Unset')).style?.color,
+          dsTokensDark.colors.text.mediumEmphasis,
+        );
+      },
+    );
+
     testWidgets('renders the label text', (tester) async {
       await pump(
         tester,
@@ -467,6 +529,84 @@ void main() {
         expect(
           tester.widget<Text>(find.text('P0')).style?.fontWeight,
           FontWeight.w700,
+        );
+      },
+    );
+
+    testWidgets(
+      'outline + selected: full-alpha interactive border, teal fill, bold',
+      (tester) async {
+        const accent = Color(0xFF4AB6E8);
+        await pump(
+          tester,
+          const DsPill(
+            variant: DsPillVariant.outline,
+            label: '2h',
+            color: accent,
+            selected: true,
+          ),
+        );
+
+        final decoration = decorationOf(tester);
+        expect(decoration.color, dsTokensDark.colors.surface.selected);
+        expect(
+          (decoration.border! as Border).top.color,
+          dsTokensDark.colors.interactive.enabled,
+          reason: 'selection replaces the quiet 50% accent stroke',
+        );
+        expect(
+          tester.widget<Text>(find.text('2h')).style?.fontWeight,
+          FontWeight.w700,
+        );
+      },
+    );
+
+    testWidgets(
+      'regression: selected:false leaves the outline pill byte-identical',
+      (tester) async {
+        const accent = Color(0xFF4AB6E8);
+        await pump(
+          tester,
+          const DsPill(
+            variant: DsPillVariant.outline,
+            label: '2h',
+            color: accent,
+          ),
+        );
+
+        final decoration = decorationOf(tester);
+        expect(decoration.color, isNull);
+        expect(
+          (decoration.border! as Border).top.color,
+          accent.withValues(alpha: 0.5),
+        );
+        expect(
+          tester.widget<Text>(find.text('2h')).style?.fontWeight,
+          isNot(FontWeight.w700),
+        );
+      },
+    );
+
+    testWidgets(
+      'muted still ignores selection — a dashed "selected" is not a state',
+      (tester) async {
+        await pump(
+          tester,
+          const DsPill(
+            variant: DsPillVariant.muted,
+            label: 'Unset',
+            selected: true,
+          ),
+        );
+
+        // No DecoratedBox shell at all: the muted variant renders a
+        // DsDashedBorder, selected or not.
+        expect(
+          find.descendant(
+            of: find.byType(DsPill),
+            matching: find.byType(DsDashedBorder),
+          ),
+          findsOneWidget,
         );
       },
     );
