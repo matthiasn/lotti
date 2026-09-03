@@ -32,7 +32,7 @@ final List<TourStop> plazaTourStops = [
   ),
   TourStop(
     name: 'block',
-    pose: (w) => blockBeaconPose(w, fraction: 0.5),
+    pose: (w) => blockBeaconPose(w, fraction: 0.25),
   ),
   TourStop(
     name: 'attention-closeup',

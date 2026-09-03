@@ -153,6 +153,21 @@ class PlazaSceneController {
   static final Vector4 _gap = linearColor(const Color(0xFF32363F));
   static final Vector4 _plaza = linearColor(const Color(0xFF474D5D));
   static final Vector4 _post = linearColor(const Color(0xFF14171F));
+  static final Vector4 _tower = linearColor(const Color(0xFF0E0B18));
+
+  /// Anchors for the vertical banners, keyed by task id.
+  final Map<String, Node> bannerAnchors = {};
+
+  /// Where the jumbotron widget hangs, when the plaza has one.
+  Node? jumbotronAnchor;
+
+  /// Where the lamp lanterns and spire lights hang.
+  final List<Node> lampAnchors = [];
+  final List<Node> spireAnchors = [];
+
+  /// Roof-edge and pylon-frame corner points for the chase lights, in
+  /// world space, per billboard.
+  final Map<PlazaBillboard, List<Vector3>> chaseLightPoints = {};
   static final Vector4 _panelBack = linearColor(PlazaStyle.panel);
 
   void _build() {
@@ -254,24 +269,217 @@ class PlazaSceneController {
     for (final (i, slot) in world.roofBillboards.indexed) {
       _buildBillboard(slot, world.roofBillboardTasks[i]);
     }
+    _buildStreetFurniture();
+  }
+
+  /// Lamp posts, the gantry over the street mouth, the jumbotron tower,
+  /// banner anchors and spires: the set dressing that makes a street a
+  /// place.
+  void _buildStreetFurniture() {
+    for (final (x, z) in world.lampPosts) {
+      final pole = Node(
+        localTransform: Matrix4.translation(Vector3(x, 2.6, z)),
+        mesh: Mesh(
+          CuboidGeometry(Vector3(0.18, 5.2, 0.18)),
+          UnlitMaterial()..baseColorFactor = _post,
+        ),
+      );
+      final lantern = Node(
+        localTransform: Matrix4.translation(Vector3(0, 2.75, 0)),
+      );
+      pole.add(lantern);
+      lampAnchors.add(lantern);
+      scene
+        ..add(pole)
+        ..add(
+          Node(
+            localTransform: Matrix4.translation(Vector3(x, 0.02, z)),
+            mesh: Mesh(
+              DiscGeometry(radius: 3.2, segments: 24),
+              UnlitMaterial()
+                ..baseColorFactor = linearColor(PlazaStyle.lamp, alpha: 0.12)
+                ..alphaMode = AlphaMode.blend,
+            ),
+          ),
+        );
+    }
+
+    final gantry = world.gantry;
+    if (gantry != null) {
+      final root = Node(
+        localTransform: Matrix4.translation(Vector3(gantry.x, 0, gantry.z))
+          ..rotateY(gantry.facingRadians),
+      );
+      final top = gantry.bottom + gantry.height + 0.4;
+      for (final side in [-1.0, 1.0]) {
+        root.add(
+          Node(
+            localTransform: Matrix4.translation(
+              Vector3(side * gantry.width / 2, top / 2, 0),
+            ),
+            mesh: Mesh(
+              CuboidGeometry(Vector3(0.5, top, 0.5)),
+              UnlitMaterial()..baseColorFactor = _post,
+            ),
+          ),
+        );
+      }
+      root.add(
+        Node(
+          localTransform: Matrix4.translation(Vector3(0, top - 0.2, 0)),
+          mesh: Mesh(
+            CuboidGeometry(Vector3(gantry.width + 0.5, 0.4, 0.5)),
+            UnlitMaterial()..baseColorFactor = _post,
+          ),
+        ),
+      );
+      scene.add(root);
+    }
+
+    final jumbotron = world.jumbotron;
+    if (jumbotron != null) {
+      final root = Node(
+        localTransform: Matrix4.translation(
+          Vector3(jumbotron.x, 0, jumbotron.z),
+        )..rotateY(jumbotron.facingRadians),
+      );
+      final towerH = jumbotron.bottom + jumbotron.height + 6;
+      root.add(
+        Node(
+          localTransform: Matrix4.translation(Vector3(0, towerH / 2, -3.5)),
+          mesh: Mesh(
+            CuboidGeometry(Vector3(jumbotron.width + 4, towerH, 6)),
+            UnlitMaterial()..baseColorFactor = _tower,
+          ),
+        ),
+      );
+      final backing = Node(
+        localTransform: Matrix4.translation(
+          Vector3(0, jumbotron.centerY, -0.2),
+        ),
+        mesh: Mesh(
+          CuboidGeometry(
+            Vector3(jumbotron.width + 0.6, jumbotron.height + 0.6, 0.4),
+          ),
+          UnlitMaterial()..baseColorFactor = linearColor(PlazaStyle.teal),
+        ),
+      );
+      root.add(backing);
+      final anchor = Node(
+        localTransform: Matrix4.translation(
+          Vector3(0, jumbotron.centerY, 0.06),
+        ),
+      );
+      root.add(anchor);
+      jumbotronAnchor = anchor;
+      // The tower's own spire.
+      final spire = Node(
+        localTransform: Matrix4.translation(Vector3(0, towerH + 5, -3.5)),
+        mesh: Mesh(
+          CuboidGeometry(Vector3(0.5, 10, 0.5)),
+          UnlitMaterial()..baseColorFactor = _post,
+        ),
+      );
+      root.add(spire);
+      final light = Node(
+        localTransform: Matrix4.translation(Vector3(0, towerH + 10.4, -3.5)),
+      );
+      root.add(light);
+      spireAnchors.add(light);
+      scene.add(root);
+      final billboard = PlazaBillboard(
+        slot: jumbotron,
+        attention: world.billboards.isEmpty
+            ? world.attention.values.first
+            : world.billboards.first,
+        backing: backing,
+        anchor: anchor,
+      );
+      chaseLightPoints[billboard] = _frameCorners(jumbotron);
+    }
+
+    for (final banner in world.banners) {
+      final anchor = Node(
+        localTransform: Matrix4.translation(
+          Vector3(banner.x, banner.centerY, banner.z),
+        )..rotateY(banner.facingRadians),
+      );
+      scene.add(anchor);
+      bannerAnchors[banner.taskId] = anchor;
+    }
+
+    for (final p in world.spires) {
+      final root = Node(
+        localTransform: Matrix4.translation(
+          Vector3(p.x, p.height + 4, p.z),
+        ),
+        mesh: Mesh(
+          CuboidGeometry(Vector3(0.4, 8, 0.4)),
+          UnlitMaterial()..baseColorFactor = _post,
+        ),
+      );
+      scene.add(root);
+      final light = Node(
+        localTransform: Matrix4.translation(Vector3(p.x, p.height + 8.3, p.z)),
+      );
+      scene.add(light);
+      spireAnchors.add(light);
+    }
+  }
+
+  /// Points around a panel's frame, world space, for the chase lights:
+  /// evenly along the perimeter.
+  List<Vector3> _frameCorners(BillboardSlot slot, {int perSide = 5}) {
+    final sinF = math.sin(slot.facingRadians);
+    final cosF = math.cos(slot.facingRadians);
+    final hw = slot.width / 2 + 0.35;
+    final hh = slot.height / 2 + 0.35;
+    Vector3 at(double u, double v) => Vector3(
+      slot.x + cosF * u + sinF * 0.12,
+      slot.centerY + v,
+      slot.z - sinF * u + cosF * 0.12,
+    );
+    final points = <Vector3>[];
+    for (var i = 0; i < perSide; i++) {
+      final t = -1 + 2 * (i + 0.5) / perSide;
+      points
+        ..add(at(t * hw, hh))
+        ..add(at(hw, -t * hh))
+        ..add(at(-t * hw, -hh))
+        ..add(at(-hw, t * hh));
+    }
+    // Order them clockwise around the frame so the chase runs round.
+    final cx = slot.x;
+    final cz = slot.z;
+    points.sort((a, b) {
+      double angle(Vector3 v) {
+        final u = (v.x - cx) * cosF - (v.z - cz) * sinF;
+        return math.atan2(v.y - slot.centerY, u);
+      }
+
+      return angle(a).compareTo(angle(b));
+    });
+    return points;
   }
 
   void _buildSky() {
     scene.skybox = Skybox(
       GradientSkySource(
-        zenithColor: linearColor(const Color(0xFF04060C)).xyz,
-        horizonColor: linearColor(const Color(0xFF57405A)).xyz,
-        groundColor: linearColor(const Color(0xFF181C26)).xyz,
+        zenithColor: linearColor(const Color(0xFF04030A)).xyz,
+        horizonColor: linearColor(const Color(0xFF6B2A5E)).xyz,
+        groundColor: linearColor(const Color(0xFF120C1C)).xyz,
         sunColor: Vector3.zero(),
       ),
     );
+    // Haze: close enough to soften the far rows, not to swallow the
+    // overview.
     scene.fog
       ..enabled = true
       ..mode = FogMode.linear
-      ..start = 140
-      ..end = 900
-      ..maxOpacity = 0.85
-      ..color = linearColor(const Color(0xFF2A2338)).xyz;
+      ..start = 60
+      ..end = 700
+      ..maxOpacity = 0.8
+      ..color = linearColor(const Color(0xFF3A1F4A)).xyz;
   }
 
   void _buildBuilding(PlazaTask task, PlotPlacement placement) {
@@ -293,6 +501,8 @@ class PlazaSceneController {
 
     final facadeW = w * 0.92;
     final facadeH = h * 0.9;
+    final facing = placement.facingRadians;
+    final normal = Vector3(math.sin(facing), 0, math.cos(facing));
 
     // Far-tier surface: an always-present dark plate; the lantern carries
     // the state colour, the plate only says "there is a facade here".
@@ -344,6 +554,54 @@ class PlazaSceneController {
       );
     }
 
+    // Neon edge strips in the category's neon: two verticals and the
+    // roofline, the Blade Runner outline that reads at every range.
+    final neon = UnlitMaterial()
+      ..baseColorFactor = linearColor(
+        PlazaStyle.neon(PlazaStyle.categoryBright(task)),
+        alpha: attention.lantern == LanternState.off ? 0.35 : 1,
+      )
+      ..alphaMode = attention.lantern == LanternState.off
+          ? AlphaMode.blend
+          : AlphaMode.opaque;
+    const strip = 0.14;
+    for (final (dx, dy, sw, sh) in [
+      (-facadeW / 2 - 0.12, 0.0, strip, facadeH),
+      (facadeW / 2 + 0.12, 0.0, strip, facadeH),
+      (0.0, facadeH / 2 + 0.12, facadeW + 0.4, strip),
+    ]) {
+      node.add(
+        Node(
+          localTransform: Matrix4.translation(Vector3(dx, dy, d / 2 + 0.04)),
+          mesh: Mesh(CuboidGeometry(Vector3(sw, sh, strip)), neon),
+        ),
+      );
+    }
+    // Light pool on the street in front of a lit facade: the wet-street
+    // reflection, without a reflection.
+    if (attention.lantern != LanternState.off) {
+      scene.add(
+        Node(
+          localTransform: Matrix4.translation(
+            Vector3(
+              placement.x + normal.x * (d / 2 + facadeW * 0.3),
+              0.025,
+              placement.z + normal.z * (d / 2 + facadeW * 0.3),
+            ),
+          ),
+          mesh: Mesh(
+            DiscGeometry(radius: facadeW * 0.55, segments: 28),
+            UnlitMaterial()
+              ..baseColorFactor = linearColor(
+                PlazaStyle.lantern(attention.lantern),
+                alpha: 0.13,
+              )
+              ..alphaMode = AlphaMode.blend,
+          ),
+        ),
+      );
+    }
+
     // Focus ring: four teal slats just outside the facade, hidden until
     // the walker faces this building.
     final ring = Node(
@@ -381,8 +639,6 @@ class PlazaSceneController {
 
     scene.add(node);
 
-    final facing = placement.facingRadians;
-    final normal = Vector3(math.sin(facing), 0, math.cos(facing));
     final building = PlazaBuilding(
       task: task,
       attention: attention,
@@ -493,6 +749,7 @@ class PlazaSceneController {
     );
     billboards.add(billboard);
     pickableBillboards[backing] = billboard;
+    chaseLightPoints[billboard] = _frameCorners(slot);
   }
 
   Vector3 _planCenter() {

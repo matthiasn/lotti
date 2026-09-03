@@ -73,6 +73,9 @@ enum BillboardMount {
 
   /// Above the roof of the task's own building, facing its street.
   roof,
+
+  /// The giant screen on the tower behind the plaza.
+  jumbotron,
 }
 
 /// One billboard mount: a pylon at the plaza edge, a screen on the
@@ -371,6 +374,127 @@ List<BillboardSlot> roofBillboardsFor(
   }
   return slots;
 }
+
+/// A vertical neon banner on the plaza-facing end wall of a tall building.
+class BannerSlot {
+  const BannerSlot({
+    required this.taskId,
+    required this.x,
+    required this.z,
+    required this.facingRadians,
+    required this.width,
+    required this.height,
+    required this.bottom,
+  });
+
+  final String taskId;
+  final double x;
+  final double z;
+  final double facingRadians;
+  final double width;
+  final double height;
+  final double bottom;
+
+  double get centerY => bottom + height / 2;
+}
+
+/// Buildings at least [minHeight] tall carry a vertical banner down the
+/// end wall that faces along the row (toward the plaza on the last row).
+List<BannerSlot> bannersFor(StreetPlan plan, {double minHeight = 12}) {
+  final slots = <BannerSlot>[];
+  for (final segment in plan.segments) {
+    if (segment.isGap) continue;
+    for (final p in plan.placements.values) {
+      if (p.bucketIndex != segment.bucketIndex || p.height < minHeight) {
+        continue;
+      }
+      final facing = segment.headingRadians;
+      slots.add(
+        BannerSlot(
+          taskId: p.taskId,
+          x: p.x + math.sin(facing) * (p.width / 2 + 0.06),
+          z: p.z + math.cos(facing) * (p.width / 2 + 0.06),
+          facingRadians: facing,
+          width: math.min(1.8, p.depth * 0.3),
+          height: p.height * 0.7,
+          bottom: p.height * 0.15,
+        ),
+      );
+    }
+  }
+  return slots;
+}
+
+/// Lamp posts along both kerbs of every built block, every [spacing]
+/// metres, as (x, z) pairs.
+List<(double, double)> lampPostsFor(
+  StreetPlan plan, {
+  required double roadWidth,
+  double spacing = 12,
+}) {
+  final posts = <(double, double)>[];
+  for (final segment in plan.segments) {
+    if (segment.isGap) continue;
+    final sinH = math.sin(segment.headingRadians);
+    final cosH = math.cos(segment.headingRadians);
+    final lateral = roadWidth / 2 - 0.6;
+    for (var along = spacing / 2; along < segment.length; along += spacing) {
+      for (final side in [-1.0, 1.0]) {
+        posts.add((
+          segment.startX + sinH * along + cosH * side * lateral,
+          segment.startZ + cosH * along - sinH * side * lateral,
+        ));
+      }
+    }
+  }
+  return posts;
+}
+
+/// The ticker gantry spanning the street mouth at the plaza, facing home.
+TickerSlot? gantryTickerFor(StreetPlan plan, {required double roadWidth}) {
+  final last = plan.last;
+  if (last == null) return null;
+  const along = 2.5;
+  return TickerSlot(
+    x: last.endX + math.sin(last.headingRadians) * along,
+    z: last.endZ + math.cos(last.headingRadians) * along,
+    facingRadians: last.headingRadians,
+    width: roadWidth + 4,
+    height: 1.8,
+    bottom: 6.5,
+    speedMetersPerSecond: 4.5,
+  );
+}
+
+/// The jumbotron: a giant screen on a tower behind the plaza, facing the
+/// street, so it fills the view when you turn round at home and reads
+/// from the overview.
+BillboardSlot? jumbotronSlotFor(StreetPlan plan) {
+  final last = plan.last;
+  if (last == null) return null;
+  const along = plazaSetback + plazaDepth + 8;
+  return BillboardSlot(
+    rank: 0,
+    x: last.endX + math.sin(last.headingRadians) * along,
+    z: last.endZ + math.cos(last.headingRadians) * along,
+    facingRadians: last.headingRadians + math.pi,
+    width: 30,
+    height: 16,
+    bottom: 5,
+    mount: BillboardMount.jumbotron,
+    pulseSeconds: 6,
+  );
+}
+
+/// The [count] tallest buildings, tallest first: they carry spires with
+/// blinking warning lights.
+List<PlotPlacement> spiresFor(StreetPlan plan, {int count = 2}) =>
+    ([...plan.placements.values]..sort((a, b) {
+          final byHeight = b.height.compareTo(a.height);
+          return byHeight != 0 ? byHeight : a.taskId.compareTo(b.taskId);
+        }))
+        .take(count)
+        .toList();
 
 /// A ticker band along the roofline of [hero]'s street-facing wall.
 TickerSlot rooflineTickerFor(PlotPlacement hero, {required bool fast}) =>

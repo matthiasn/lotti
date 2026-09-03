@@ -147,7 +147,7 @@ class StreetLayout {
     required this.projectSeed,
     this.roadWidth = 18,
     this.pxPerMeter = 90,
-    this.maxBuildingHeight = 16,
+    this.maxBuildingHeight = 24,
     this.groupLength = 40,
     this.gapLength = 4,
     this.plotDepth = 10,
@@ -205,7 +205,7 @@ class StreetLayout {
 
   /// Weight-driven building height, world meters.
   ///
-  /// `floor + priorityWeight × 3.2 × ln(1 + heft)`, capped at
+  /// `floor + priorityWeight × 4.2 × ln(1 + heft)`, capped at
   /// [maxBuildingHeight]: a heavy urgent task is a tower, a lone low-priority
   /// task is a bungalow, and a wordy title changes nothing. Still a pure
   /// function of merged task data, so it is identical on every device.
@@ -216,7 +216,7 @@ class StreetLayout {
       2 => 1.0,
       _ => 0.8,
     };
-    final raw = minBuildingHeight + weight * 3.2 * math.log(1 + task.heft);
+    final raw = minBuildingHeight + weight * 4.2 * math.log(1 + task.heft);
     return raw.clamp(minBuildingHeight, maxBuildingHeight);
   }
 

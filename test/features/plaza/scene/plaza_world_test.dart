@@ -36,8 +36,9 @@ void main() {
     expect(world.mountedScreens.every((s) => !s.onPylon), isTrue);
   });
 
-  test('tickers: one per mounted screen plus one per hero roofline', () {
-    expect(world.tickers.length, 2 + world.heroes.length);
+  test('tickers: mounted screens, the gantry, and the hero rooflines', () {
+    expect(world.gantry, isNotNull);
+    expect(world.tickers.length, 3 + world.heroes.length);
     expect(world.heroes.length, lessThanOrEqualTo(2));
     for (final hero in world.heroes) {
       expect(hero.task.coverImageUrl, isNotNull);
@@ -65,6 +66,19 @@ void main() {
     );
     expect(world.tickerText, contains('in progress'));
     expect(world.tickerText, endsWith('of ${world.liveTaskCount} done'));
+  });
+
+  test('street furniture is derived with the world', () {
+    expect(world.jumbotron, isNotNull);
+    expect(world.spires, hasLength(2));
+    expect(world.lampPosts, isNotEmpty);
+    expect(
+      world.banners.map((b) => b.taskId).toSet(),
+      world.plan.placements.values
+          .where((p) => p.height >= 12)
+          .map((p) => p.taskId)
+          .toSet(),
+    );
   });
 
   test('walk stops exist when there is a plaza', () {

@@ -32,10 +32,16 @@ class PlazaWorld {
     );
     collider = WalkCollider(plan.placements.values);
     roofBillboards = roofBillboardsFor(plan, anomalies);
+    banners = bannersFor(plan);
+    lampPosts = lampPostsFor(plan, roadWidth: layout.roadWidth);
+    gantry = gantryTickerFor(plan, roadWidth: layout.roadWidth);
+    jumbotron = jumbotronSlotFor(plan);
+    spires = spiresFor(plan);
     final mounted = mountedSlotsFor(plan);
     mountedScreens = mounted.screens;
     tickers = [
       ...mounted.tickers,
+      ...?gantry == null ? null : [gantry!],
       for (final (i, hero) in heroes.indexed)
         rooflineTickerFor(plan.placements[hero.task.id]!, fast: i.isEven),
     ];
@@ -60,6 +66,21 @@ class PlazaWorld {
 
   /// Panels above the anomalous buildings themselves, most urgent first.
   late final List<BillboardSlot> roofBillboards;
+
+  /// Vertical neon banners on the tall buildings' end walls.
+  late final List<BannerSlot> banners;
+
+  /// Lamp post positions along the kerbs.
+  late final List<(double, double)> lampPosts;
+
+  /// The ticker gantry over the street mouth.
+  late final TickerSlot? gantry;
+
+  /// The giant screen behind the plaza.
+  late final BillboardSlot? jumbotron;
+
+  /// The two tallest buildings, which carry spires.
+  late final List<PlotPlacement> spires;
   late final List<TickerSlot> tickers;
 
   /// Attention verdict for each roof billboard, in slot order.

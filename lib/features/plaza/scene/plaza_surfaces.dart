@@ -5,8 +5,11 @@ import 'package:flutter_scene/scene.dart';
 import 'package:lotti/features/plaza/domain/plaza_layout.dart';
 import 'package:lotti/features/plaza/scene/plaza_scene.dart';
 import 'package:lotti/features/plaza/scene/plaza_world.dart';
+import 'package:lotti/features/plaza/ui/banner_widget.dart';
 import 'package:lotti/features/plaza/ui/billboard_widget.dart';
 import 'package:lotti/features/plaza/ui/block_marker_widget.dart';
+import 'package:lotti/features/plaza/ui/jumbotron_widget.dart';
+import 'package:lotti/features/plaza/ui/plaza_style.dart';
 import 'package:lotti/features/plaza/ui/ticker_widget.dart';
 import 'package:vector_math/vector_math.dart' show Matrix4, Vector3;
 
@@ -23,10 +26,14 @@ class PlazaSurfaces {
     required this.markerAnchors,
     required this.billboards,
     required this.pxPerMeter,
+    Map<String, Node> bannerAnchors = const {},
+    Node? jumbotronAnchor,
   }) {
     _attachMarkers();
     _attachBillboards();
     _attachTickers();
+    _attachBanners(bannerAnchors);
+    _attachJumbotron(jumbotronAnchor);
   }
 
   final Scene scene;
@@ -36,6 +43,8 @@ class PlazaSurfaces {
   final double pxPerMeter;
 
   final List<WidgetComponent> _markers = [];
+  final List<WidgetComponent> _banners = [];
+  WidgetComponent? _jumbotron;
   final List<(Vector3, WidgetComponent, Node)> _billboardSurfaces = [];
   final List<(Vector3, WidgetComponent, Node)> _tickerSurfaces = [];
 
@@ -47,6 +56,59 @@ class PlazaSurfaces {
 
   static const markerWidth = 20.0;
   static const markerHeight = 6.5;
+  static const jumbotronInterval = Duration(seconds: 1);
+
+  void _attachBanners(Map<String, Node> anchors) {
+    final byId = {for (final t in world.tasks) t.id: t};
+    for (final banner in world.banners) {
+      final anchor = anchors[banner.taskId];
+      final task = byId[banner.taskId];
+      if (anchor == null || task == null) continue;
+      final label = world.categoryLabels.isEmpty
+          ? PlazaStyle.chip(world.attentionOf(task)).label
+          : world.categoryLabelOf(task);
+      final component = WidgetComponent(
+        child: BannerWidget(
+          label: label,
+          color: PlazaStyle.neon(PlazaStyle.categoryBright(task)),
+          widthMeters: banner.width,
+          heightMeters: banner.height,
+          pxPerMeter: pxPerMeter,
+        ),
+        size: Size(banner.width * pxPerMeter, banner.height * pxPerMeter),
+        geometry: ccwQuad(banner.width, banner.height),
+        update: WidgetUpdatePolicy.manual,
+        input: WidgetInput.manual,
+      );
+      anchor.addComponent(component);
+      _banners.add(component);
+    }
+  }
+
+  void _attachJumbotron(Node? anchor) {
+    final slot = world.jumbotron;
+    if (anchor == null || slot == null) return;
+    final component = WidgetComponent(
+      child: JumbotronWidget(
+        projectLabel: world.projectLabel,
+        taskCount: world.liveTaskCount,
+        attentionCount: world.anomalies.length,
+        headlines: world.anomalies,
+        covers: [
+          for (final a in world.billboards)
+            if (a.task.coverImageUrl != null) a.task.coverImageUrl!,
+        ],
+        widthMeters: slot.width,
+        pxPerMeter: pxPerMeter * 0.5,
+      ),
+      size: Size(slot.width * pxPerMeter * 0.5, slot.height * pxPerMeter * 0.5),
+      geometry: ccwQuad(slot.width, slot.height),
+      update: const WidgetUpdatePolicy.interval(jumbotronInterval),
+      input: WidgetInput.manual,
+    );
+    anchor.addComponent(component);
+    _jumbotron = component;
+  }
 
   void _attachMarkers() {
     for (final entry in markerAnchors.entries) {
@@ -120,8 +182,8 @@ class PlazaSurfaces {
   /// hides the plaza's animated surfaces when they are out of range (a
   /// hidden surface is not captured).
   void update(Vector3 eye) {
-    for (final marker in _markers) {
-      final controller = marker.controller;
+    for (final once in [..._markers, ..._banners]) {
+      final controller = once.controller;
       if (controller.texture == null) controller.requestCapture();
     }
     for (final (center, _, node) in _billboardSurfaces) {
@@ -144,7 +206,10 @@ class PlazaSurfaces {
     for (final (_, c, _) in _tickerSurfaces) {
       n += c.controller.captureCount;
     }
-    return n;
+    for (final b in _banners) {
+      n += b.controller.captureCount;
+    }
+    return n + (_jumbotron?.controller.captureCount ?? 0);
   }
 
   /// The pose in front of a billboard, for the tour and for taps on it.

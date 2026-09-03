@@ -84,6 +84,24 @@ abstract final class PlazaStyle {
       ? const Color(0xFF7AB889)
       : lantern(a.lantern);
 
+  /// The neon version of a category colour: saturated and bright, for edge
+  /// strips and banners. Greys stay grey (a neutral category is not
+  /// invented into a hue).
+  static Color neon(Color color) {
+    final hsl = HSLColor.fromColor(color);
+    if (hsl.saturation < 0.15) return color;
+    return hsl
+        .withSaturation((hsl.saturation + 0.35).clamp(0.0, 1.0))
+        .withLightness(0.62)
+        .toColor();
+  }
+
+  /// Warm sodium-vapour lamp light.
+  static const lamp = Color(0xFFFFD08A);
+
+  /// Aircraft warning light on the spires.
+  static const warning = Color(0xFFFF3B30);
+
   /// Category colours: the bright bar on the facade, the dim wall tint, the
   /// darker roof tint. Derived from the task's category colour so the demo
   /// world's categories tint their own blocks.

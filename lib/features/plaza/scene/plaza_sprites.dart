@@ -21,7 +21,40 @@ class PlazaSprites {
     required this.scene,
     required this.world,
     required List<PlazaBuilding> buildings,
+    List<Node> lampAnchors = const [],
+    List<Node> spireAnchors = const [],
+    Map<PlazaBillboard, List<Vector3>> chaseLightPoints = const {},
   }) {
+    for (final anchor in lampAnchors) {
+      final sprite = Sprite(color: linearColor(PlazaStyle.lamp));
+      anchor.add(Node(mesh: sprite.mesh)..raycastable = false);
+      _lamps.add(sprite);
+    }
+    for (final anchor in spireAnchors) {
+      final sprite = Sprite(color: linearColor(PlazaStyle.warning));
+      anchor.add(Node(mesh: sprite.mesh)..raycastable = false);
+      _spireLights.add(sprite);
+    }
+    for (final entry in chaseLightPoints.entries) {
+      final color = linearColor(
+        PlazaStyle.lantern(entry.key.attention.lantern),
+      );
+      final run = <_ChaseLight>[];
+      for (final point in entry.value) {
+        final sprite = Sprite(color: color);
+        scene.add(
+          Node(localTransform: Matrix4.translation(point), mesh: sprite.mesh)
+            ..raycastable = false,
+        );
+        run.add(_ChaseLight(sprite: sprite, position: point, color: color));
+      }
+      _chases.add(
+        _Chase(
+          lights: run,
+          periodSeconds: entry.key.slot.pulseSeconds.clamp(1.2, 4.0),
+        ),
+      );
+    }
     for (final building in buildings) {
       final color = PlazaStyle.lantern(building.attention.lantern);
       final sprite = Sprite(color: linearColor(color));
@@ -80,6 +113,9 @@ class PlazaSprites {
   final PlazaWorld world;
   final List<_Lantern> _lanterns = [];
   final List<_BeaconSprite> _beacons = [];
+  final List<Sprite> _lamps = [];
+  final List<Sprite> _spireLights = [];
+  final List<_Chase> _chases = [];
 
   /// Glow texture shared by every sprite; a square dot until it loads.
   Texture2D? _glow;
@@ -110,6 +146,17 @@ class PlazaSprites {
     for (final b in _beacons) {
       b.dot.material.colorTexture = _glow;
       b.ring?.material.colorTexture = _glow;
+    }
+    for (final l in _lamps) {
+      l.material.colorTexture = _glow;
+    }
+    for (final l in _spireLights) {
+      l.material.colorTexture = _glow;
+    }
+    for (final c in _chases) {
+      for (final l in c.lights) {
+        l.sprite.material.colorTexture = _glow;
+      }
     }
   }
 
@@ -148,6 +195,36 @@ class PlazaSprites {
           l.color.z,
           lanternPulse,
         );
+      }
+    }
+
+    // Lamps: a fixed warm glow that reads at every range.
+    for (final l in _lamps) {
+      l
+        ..width = 1.6
+        ..height = 1.6;
+    }
+    // Spire lights blink: on for a third of a 1.6 s cycle.
+    final blink = (elapsedSeconds % 1.6) < 0.55 ? 1.0 : 0.12;
+    for (final l in _spireLights) {
+      l
+        ..width = 2.4
+        ..height = 2.4
+        ..color = Vector4(l.color.x, l.color.y, l.color.z, blink);
+    }
+    // Chase lights run round each billboard frame: a bright head with a
+    // fading tail, faster for the more agitated panels.
+    for (final chase in _chases) {
+      final n = chase.lights.length;
+      if (n == 0) continue;
+      final head = (elapsedSeconds / chase.periodSeconds * n) % n;
+      for (final (i, light) in chase.lights.indexed) {
+        final behind = (head - i + n) % n;
+        final alpha = behind < 3 ? 1 - behind * 0.28 : 0.18;
+        light.sprite
+          ..width = 0.7
+          ..height = 0.7
+          ..color = Vector4(light.color.x, light.color.y, light.color.z, alpha);
       }
     }
 
@@ -233,4 +310,23 @@ class _BeaconSprite {
   final Node dotNode;
   final Sprite? ring;
   final Node? ringNode;
+}
+
+class _ChaseLight {
+  _ChaseLight({
+    required this.sprite,
+    required this.position,
+    required this.color,
+  });
+
+  final Sprite sprite;
+  final Vector3 position;
+  final Vector4 color;
+}
+
+class _Chase {
+  _Chase({required this.lights, required this.periodSeconds});
+
+  final List<_ChaseLight> lights;
+  final double periodSeconds;
 }

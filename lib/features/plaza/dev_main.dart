@@ -166,6 +166,9 @@ class _PlazaHarnessState extends State<_PlazaHarness> {
       scene: _sceneController.scene,
       world: _world,
       buildings: _sceneController.buildings,
+      lampAnchors: _sceneController.lampAnchors,
+      spireAnchors: _sceneController.spireAnchors,
+      chaseLightPoints: _sceneController.chaseLightPoints,
     );
     // Fire and forget: sprites are square dots until the glow lands.
     unawaited(_sprites.loadGlow());
@@ -175,6 +178,8 @@ class _PlazaHarnessState extends State<_PlazaHarness> {
       markerAnchors: _sceneController.markerAnchors,
       billboards: _sceneController.billboards,
       pxPerMeter: _sceneController.pxPerMeter,
+      bannerAnchors: _sceneController.bannerAnchors,
+      jumbotronAnchor: _sceneController.jumbotronAnchor,
     );
     _picker = PlazaPicker(controller: _sceneController, sprites: _sprites);
     final home =
@@ -295,6 +300,8 @@ class _PlazaHarnessState extends State<_PlazaHarness> {
   // ------------------------------------------------------------- input
 
   KeyEventResult _onKey(FocusNode node, KeyEvent event) {
+    // A tour is a screenshot run: stray input must not move the camera.
+    if (_tourMode) return KeyEventResult.handled;
     if (_searchOpen) return KeyEventResult.ignored;
     if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
       return _camera.handleKeyEvent(event)
@@ -327,7 +334,7 @@ class _PlazaHarnessState extends State<_PlazaHarness> {
   }
 
   void _onPointerDown(PointerDownEvent event) {
-    if (event.buttons != kPrimaryButton) return;
+    if (_tourMode || event.buttons != kPrimaryButton) return;
     _pointerDown = event.localPosition;
     _pointerDownAt = _elapsed;
     _dragging = false;

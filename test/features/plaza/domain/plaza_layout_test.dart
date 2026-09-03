@@ -285,4 +285,77 @@ void main() {
       }
     });
   });
+
+  group('street furniture', () {
+    test("banners hang on the tall buildings' row-facing end walls", () {
+      final banners = bannersFor(plan);
+      final tall = plan.placements.values.where((p) => p.height >= 12);
+      expect(
+        banners.map((b) => b.taskId).toSet(),
+        tall.map((p) => p.taskId).toSet(),
+      );
+      for (final b in banners) {
+        final p = plan.placements[b.taskId]!;
+        final segment = plan.segments.firstWhere(
+          (s) => s.bucketIndex == p.bucketIndex && !s.isConnector,
+        );
+        expect(b.facingRadians, segment.headingRadians);
+        expect(b.height, closeTo(p.height * 0.7, 1e-9));
+        expect(b.bottom + b.height, lessThan(p.height));
+        expect(b.width, lessThanOrEqualTo(1.8));
+      }
+      expect(bannersFor(plan, minHeight: 1000), isEmpty);
+    });
+
+    test('lamp posts line both kerbs of every built block', () {
+      final posts = lampPostsFor(plan, roadWidth: 18, spacing: 10);
+      final built = plan.segments.where((s) => !s.isGap).length;
+      // 40 m blocks, 10 m spacing → 4 per side per block.
+      expect(posts.length, built * 8);
+      final first = plan.segments.firstWhere((s) => !s.isGap);
+      // The first pair straddles the road 5 m into the block.
+      final (x0, z0) = posts[0];
+      final (x1, z1) = posts[1];
+      expect(z0, closeTo(first.startZ + 5, 1e-9));
+      expect(z1, closeTo(first.startZ + 5, 1e-9));
+      expect((x0 - x1).abs(), closeTo(2 * (9 - 0.6), 1e-9));
+    });
+
+    test('the gantry spans the street mouth facing home', () {
+      final g = gantryTickerFor(plan, roadWidth: 18)!;
+      expect(g.width, 22);
+      expect(g.facingRadians, last.headingRadians);
+      final along =
+          (g.x - last.endX) * math.sin(last.headingRadians) +
+          (g.z - last.endZ) * math.cos(last.headingRadians);
+      expect(along, closeTo(2.5, 1e-9));
+      expect(g.bottom, greaterThan(6));
+      expect(gantryTickerFor(layout.plan([]), roadWidth: 18), isNull);
+    });
+
+    test('the jumbotron stands behind the plaza facing the street', () {
+      final j = jumbotronSlotFor(plan)!;
+      expect(j.mount, BillboardMount.jumbotron);
+      expect(
+        _norm(j.facingRadians),
+        closeTo(_norm(last.headingRadians + math.pi), 1e-9),
+      );
+      final along =
+          (j.x - last.endX) * math.sin(last.headingRadians) +
+          (j.z - last.endZ) * math.cos(last.headingRadians);
+      expect(along, greaterThan(plazaSetback + plazaDepth));
+      expect(j.width, 30);
+      expect(jumbotronSlotFor(layout.plan([])), isNull);
+    });
+
+    test('spires go on the two tallest buildings, tallest first', () {
+      final spires = spiresFor(plan);
+      expect(spires, hasLength(2));
+      expect(spires[0].height, greaterThanOrEqualTo(spires[1].height));
+      final tallest = plan.placements.values
+          .map((p) => p.height)
+          .reduce(math.max);
+      expect(spires[0].height, tallest);
+    });
+  });
 }
