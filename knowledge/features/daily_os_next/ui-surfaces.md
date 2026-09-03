@@ -30,8 +30,12 @@ sources:
     last_modified: 2026-08-01
   - id: actual-lane
     resource: ../../../lib/features/daily_os_next/state/actual_time_blocks_provider.dart
-    title: The Actual lane's blocks, and the workout nudge behind them
-    last_modified: 2026-08-31
+    title: The Actual lane's blocks, the workout nudge and the Events flag behind them
+    last_modified: 2026-09-03
+  - id: recorded-time
+    resource: ../../../lib/features/daily_os_next/logic/recorded_time.dart
+    title: What counts as recorded time, shared by the lane and the planner lookback
+    last_modified: 2026-09-03
 ---
 
 # The planning modal
@@ -159,10 +163,8 @@ Three invariants make repeated navigation cheap:
 ```mermaid
 stateDiagram-v2
   [*] --> NoExplicitPick: app start
-  NoExplicitPick --> DefaultAgenda: render, day has a plan
-  NoExplicitPick --> DefaultActivity: render, day has no plan
-  DefaultAgenda --> ExplicitPick: user taps the toggle
-  DefaultActivity --> ExplicitPick: user taps the toggle
+  NoExplicitPick --> DefaultDay: render, with or without a plan
+  DefaultDay --> ExplicitPick: user taps the toggle
   ExplicitPick --> ExplicitPick: date changes (chevrons / Today / picker / sidebar)
   ExplicitPick --> [*]: app restart clears the in-memory provider
 ```
@@ -170,11 +172,14 @@ stateDiagram-v2
 - **The projection survives the day change.** The root re-keys `DayPage` on
   every date change, so the selected `PlanView` lives in
   `dailyOsNextPlanViewProvider` rather than in the page's `State`. `null` there
-  means "not chosen yet" and the page falls back to its per-day default —
-  Agenda with a plan, Activity without one. The provider is in-memory, so a
-  fresh app start lands on that default again, while every date-change path
-  (chevrons, `Today`, the picker, the sidebar month calendar) keeps whichever
-  view the user picked.
+  means "not chosen yet" and the page falls back to its default — the **Day**
+  timeline, with or without a plan: the calendar-shaped projection is where
+  the surface opens, and Agenda and Activity are a tap away. (Empty mode used
+  to land on Activity so a failed recording was in view at once; that recovery
+  path is now one tap away, while tracked time and events are visible at
+  once.) The provider is in-memory, so a fresh app start lands on that default
+  again, while every date-change path (chevrons, `Today`, the picker, the
+  sidebar month calendar) keeps whichever view the user picked.
 
 ## Tracked time
 
@@ -202,6 +207,40 @@ chart had been opened — so each recompute of the lane now nudges
 throttles it to one delta per ten minutes, a failure is logged and swallowed,
 and the journal write a delta produces comes back through the same notification
 stream that triggers the recompute. See [health import](../health_import.md).
+
+**Events are recorded time too.** An event the user gave a span on the events
+page — `meta.dateFrom`..`dateTo`; the date line there is the single source of
+its when — reaches the lane through the same `sortedCalendarEntries` query,
+whose SQL admits `JournalEvent` rows beside recordings and workouts. (Before
+this, the query named only `JournalEntry` and `WorkoutEntry`, so an event
+edited to run 18:00–24:00 was simply absent from the Day view.)
+`resolveTimeEntries` in
+[recorded_time.dart](../../../lib/features/daily_os_next/logic/recorded_time.dart)
+owns the rules once, for this lane *and* the planner's week-context lookback:
+
+- an event counts only while the **Events feature flag** is on — with it off,
+  events are hidden everywhere, so the lane awaits
+  `configFlagProvider(enableEventsFlag)` and re-runs when it flips, and the
+  week-context service reads `getConfigFlag` before it resolves;
+- and only when it **took place** (`eventTookPlace`): a cancelled or missed
+  event never happened and a postponed one has left its slot without naming
+  a new one; every other status — tentative, planned, ongoing, completed,
+  rescheduled — stands at its stored slot and is not second-guessed against
+  the date;
+- an event resolves with **no linked-from entity**: its own title and category
+  are the block's, never those of a task it was created under, and it carries
+  no `taskId`.
+
+It projects as a `TimeBlockType.cal` block whose id carries the `actual:`
+prefix, so it is read-only and never arrangeable like every tracked block, and
+a tap on it beams to `/events/<id>` — the event's one way in — where a tracked
+manual block would open its task. Its state follows the status
+(`eventBlockState`): `completed` earns the lane's check mark and a place in
+the time-spent card's "N done", `ongoing` the in-progress treatment, and an
+event still ahead — tentative, planned, rescheduled — is `committed`, filled
+but unchecked; a recording, finished by definition, is always `completed`. A
+multi-day event stays outside the containment query, as a recording crossing
+midnight does.
 
 ## The docked day-view column (desktop shell)
 
@@ -257,6 +296,19 @@ touching it:
   the planned and actual lanes side by side while a narrow one falls back to
   the swipeable `PageView` — the same gesture as the Day surface, and it
   feeds the same one-shot `timelineGesturesLearned` preference.
+- **A paged timeline with nothing planned opens on the recorded lane.** The
+  planned lane is empty by construction then, and since the Day view is the
+  default projection a phone would otherwise land on a blank page with the
+  tracked time and events one swipe away. The coaching line reads "Swipe for
+  plan" in that state, and the swipe counts as learned only by travelling
+  away from the lane the pager opened on — opening on the recorded lane is
+  not a demonstration of the gesture. The choice is re-made when "nothing
+  planned" flips under a live widget: the docked column hands the timeline
+  `DraftPlan.emptyForDay` while `currentDraftPlanProvider` is still loading,
+  so the pager opens on the recorded lane, and when the real plan resolves
+  into the same `State` the pager jumps to the planned lane (and back, should
+  a plan be emptied) — programmatically, so it is not counted as the swipe
+  either.
 
 ## Task-linked versus standalone
 

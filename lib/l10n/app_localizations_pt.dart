@@ -4849,6 +4849,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'Deslize para real · aperte verticalmente para ampliar';
 
   @override
+  String get dailyOsNextTimelineSwipeHintToPlan =>
+      'Deslize para o plano · aperte verticalmente para ampliar';
+
+  @override
   String get dailyOsNextTimelineTracked => 'rastreado';
 
   @override

@@ -89,8 +89,9 @@ empty Day surface. The selected local plan date lives in
 the same provider.
 
 **The root surface is identical on every no-plan day.** `DayPage` mounts in
-*empty mode* with a synthetic `DraftPlan.emptyForDay`, so recorded sessions stay
-visible in Activity without creating a plan first. Empty mode renders an honest
+*empty mode* with a synthetic `DraftPlan.emptyForDay`, so recorded sessions and
+events stay visible on the Day timeline — the default projection, plan or not —
+without creating a plan first. Empty mode renders an honest
 "No plan yet" stat strip, swaps the Refine/Commit footer for a single "Speak a
 check-in" CTA, and hides the delete-plan menu entry.
 

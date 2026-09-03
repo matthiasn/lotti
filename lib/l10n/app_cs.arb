@@ -2136,6 +2136,7 @@
   "dailyOsNextTimelineShowBoth": "Zobrazit plán a skutečnost společně",
   "dailyOsNextTimelineShowPaged": "Zobrazit plán a skutečnost posouváním",
   "dailyOsNextTimelineSwipeHint": "Přejeď na Skutečnost · svislým sevřením prstů přiblížíš",
+  "dailyOsNextTimelineSwipeHintToPlan": "Přejeď na Plán · svislým sevřením prstů přiblížíš",
   "dailyOsNextTimelineTracked": "zaznamenáno",
   "dailyOsNextTimeSpentEarlierSessions": "{count, plural, one{1 starší záznam} few{{count} starší záznamy} other{{count} starších záznamů}}",
   "dailyOsNextTimeSpentShowLess": "Zobrazit méně",

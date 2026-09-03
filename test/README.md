@@ -120,6 +120,23 @@ It happens when the widget's `await for` is still attached to the controller's s
 - A test that asserts a transient mid-stream UI state ("…while an event is in flight") is inherently racy; assert the settled state after a finite stream completes instead.
 - The inverse also hangs: `close()` on a single-subscription controller that was **never listened to** returns a future that never completes, so `addTearDown(controller.close)` stalls the teardown until the test times out. If a shared pump helper creates a controller the widget under test may not consume (e.g. an `items:`-mode variant of a stream widget), discard the future — `addTearDown(() => unawaited(controller.close()))`.
 
+## An autoDispose provider that awaits a stream provider
+
+`dailyOsActualTimeBlocksProvider` awaits `configFlagProvider(...).future`
+before it projects. In a test, a bare
+`container.read(provider.future)` closes its own subscription the moment
+`read` returns; the autoDispose family member is then scheduled for disposal,
+and the stream provider it depends on is torn down before its first value
+arrives — the failure reads "was disposed during loading state, yet no value
+could be emitted". Production never hits this (every surface `ref.watch`es
+the lane), so the fix is in the test: hold a live subscription across the
+read, the way `readActualBlocks` in
+`test/features/daily_os_next/state/actual_time_blocks_provider_test_helpers.dart`
+does (`container.listen(...)` + `addTearDown(subscription.close)`, then
+`read(.future)`). A `MockJournalDb` with no `watchConfigFlag` stub answers
+`false` through its `watchConfigFlags` fallback, so a test that needs the
+flag on stubs `watchConfigFlag(enableEventsFlag)` with `Stream.value(true)`.
+
 ## Native drag-and-drop wrappers
 
 Production pages may include `MediaDropTarget`, which registers

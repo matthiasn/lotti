@@ -4884,6 +4884,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Balaye vers le réel · pince verticalement pour zoomer';
 
   @override
+  String get dailyOsNextTimelineSwipeHintToPlan =>
+      'Balaye vers le plan · pince verticalement pour zoomer';
+
+  @override
   String get dailyOsNextTimelineTracked => 'suivi';
 
   @override

@@ -4,6 +4,8 @@ import 'package:lotti/classes/day_agent_identity.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
+import 'package:lotti/classes/event_data.dart';
+import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -13,6 +15,7 @@ import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.d
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fallbacks.dart';
@@ -75,6 +78,7 @@ void main() {
     when(() => journalDb.basicLinksForEntryIds(any())).thenAnswer(
       (_) async => const [],
     );
+    when(() => journalDb.getConfigFlag(any())).thenAnswer((_) async => false);
     when(() => syncService.upsertEntity(any())).thenAnswer((invocation) async {
       upserted.add(invocation.positionalArguments.single as AgentDomainEntity);
     });
@@ -375,6 +379,63 @@ void main() {
 
       // The span inherits the linked task's category.
       expect(ctx!.recentDays, contains('cat-work: 2h recorded.'));
+    });
+
+    // An event with a span is the user's own account of where an evening
+    // went, so it feeds the lookback — but only while the Events feature is
+    // on, because with it off events are hidden everywhere.
+    JournalEvent dinnerOn(DateTime day) =>
+        JournalEntity.event(
+              meta: Metadata(
+                id: 'evt-1',
+                createdAt: day,
+                updatedAt: day,
+                dateFrom: day.add(const Duration(hours: 18)),
+                dateTo: day.add(const Duration(hours: 21)),
+                categoryId: 'cat-social',
+              ),
+              data: const EventData(
+                title: 'Dinner with a friend',
+                stars: 0,
+                status: EventStatus.planned,
+              ),
+            )
+            as JournalEvent;
+
+    test('an event counts toward the recorded lookback while the Events '
+        'feature is on', () async {
+      when(
+        () => journalDb.getConfigFlag(enableEventsFlag),
+      ).thenAnswer((_) async => true);
+      when(
+        () => journalDb.sortedCalendarEntries(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer((_) async => [dinnerOn(DateTime(2026, 6, 9))]);
+
+      final ctx = await withNow(
+        () => service.buildForDay(planDate: DateTime(2026, 6, 10)),
+      );
+
+      expect(ctx!.recentDays, contains('cat-social: 3h recorded.'));
+    });
+
+    test('events stay out of the recorded lookback while the Events feature '
+        'is off', () async {
+      when(
+        () => journalDb.sortedCalendarEntries(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer((_) async => [dinnerOn(DateTime(2026, 6, 9))]);
+
+      final ctx = await withNow(
+        () => service.buildForDay(planDate: DateTime(2026, 6, 10)),
+      );
+
+      expect(ctx?.recentDays ?? '', isNot(contains('cat-social')));
+      verify(() => journalDb.getConfigFlag(enableEventsFlag)).called(1);
     });
 
     test('an explicitly passed now drives day classification end-to-end '

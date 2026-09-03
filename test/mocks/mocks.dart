@@ -253,6 +253,25 @@ class MockJournalDb extends Mock implements JournalDb {
     return Stream<Set<String>>.value(<String>{}).asBroadcastStream();
   }
 
+  /// Unstubbed, a flag reads as off — the same answer [watchConfigFlag]
+  /// falls back to, so a service that gates on a feature flag (the Daily OS
+  /// week context reads `enable_events`) sees a consistent default instead
+  /// of a null `Future<bool>`.
+  @override
+  Future<bool> getConfigFlag(String flagName) {
+    try {
+      final result = super.noSuchMethod(
+        Invocation.method(#getConfigFlag, [flagName]),
+      );
+      if (result is Future<bool>) {
+        return result;
+      }
+    } catch (_) {
+      // ignore and fall back
+    }
+    return Future<bool>.value(false);
+  }
+
   @override
   Stream<bool> watchConfigFlag(String flagName) {
     try {

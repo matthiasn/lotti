@@ -2343,7 +2343,8 @@
   },
   "dailyOsNextTimelineShowBoth": "Mostra piano e reale insieme",
   "dailyOsNextTimelineShowPaged": "Mostra piano e vero e proprio",
-  "dailyOsNextTimelineSwipeHint": "Swipe per reale · pizzicare verticalmente per ingrandire",
+  "dailyOsNextTimelineSwipeHint": "Scorri per il reale · pizzica verticalmente per ingrandire",
+  "dailyOsNextTimelineSwipeHintToPlan": "Scorri per il piano · pizzica verticalmente per ingrandire",
   "dailyOsNextTimelineTracked": "tracciato",
   "dailyOsNextTimeSpentEarlierSessions": "{count, plural, one{1 sessione precedente} other{{count} sessioni precedenti}}",
   "@dailyOsNextTimeSpentEarlierSessions": {

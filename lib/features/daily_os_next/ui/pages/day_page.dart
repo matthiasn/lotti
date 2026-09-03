@@ -39,19 +39,22 @@ import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
 enum _QuickRefinement { tooMuch, moveLighter, addBuffer }
 
-/// Hosts the two projections of the [DraftPlan] — Agenda (intent) and
-/// Day (mechanics) — with a pill toggle at the top.
+/// Hosts the three projections of the [DraftPlan] — Agenda (intent), Day
+/// (mechanics) and Activity (what was said and recorded) — with a pill
+/// toggle at the top.
 ///
-/// Agenda is the default surface per the prototype: it's the
-/// "what today is about" view; Day is the "when does it happen"
-/// projection a tap away. A footer pill opens the Refine screen for
+/// Day is the default surface: the calendar-shaped "when does it happen"
+/// projection, where planned blocks and the day's recorded time and events
+/// sit on one time axis. Agenda ("what today is about") and Activity are a
+/// tap away, and a pick survives day changes through
+/// [dailyOsNextPlanViewProvider]. A footer pill opens the Refine screen for
 /// voice-driven plan changes.
 ///
 /// With no plan ([hasPlan] false — the route-level root passes a
-/// synthetic empty [draft]) the page lands on **Activity** so every saved or
-/// recoverable recording remains immediately visible, and the
-/// footer carries a single "Speak a check-in" CTA instead of
-/// Refine/Commit (handoff v2 item 2).
+/// synthetic empty [draft]) the page still lands on Day, so recorded
+/// sessions and events stay visible on the timeline, and the footer carries
+/// a single "Speak a check-in" CTA instead of Refine/Commit (handoff v2
+/// item 2). Saved or recoverable recordings remain one tap away on Activity.
 class DayPage extends ConsumerStatefulWidget {
   const DayPage({
     required this.draft,
@@ -82,12 +85,10 @@ class DayPage extends ConsumerStatefulWidget {
 
 class _DayPageState extends ConsumerState<DayPage> {
   /// The projection to render: the user's explicit pick when there is one,
-  /// otherwise this day's default. The pick lives in
+  /// otherwise the Day timeline. The pick lives in
   /// [dailyOsNextPlanViewProvider] so stepping to another day — which re-keys
   /// this page — does not throw it away.
-  PlanView get _view =>
-      ref.watch(dailyOsNextPlanViewProvider) ??
-      (widget.hasPlan ? PlanView.agenda : PlanView.activity);
+  PlanView get _view => ref.watch(dailyOsNextPlanViewProvider) ?? PlanView.day;
 
   /// Measurement anchor for the onboarding spotlight over the empty-Day CTA.
   final GlobalKey _checkInCtaKey = GlobalKey();

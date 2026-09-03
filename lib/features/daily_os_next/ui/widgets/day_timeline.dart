@@ -157,7 +157,9 @@ class _DayTimelineState extends State<DayTimeline> {
   void initState() {
     super.initState();
     _pxPerMinute = widget.pxPerMinute;
+    _initialLanePage = _recordedLaneFirst ? 1 : 0;
     _pageController = PageController(
+      initialPage: _initialLanePage,
       viewportFraction: _horizontalPeekFraction,
     )..addListener(_onLanePageScroll);
     _timelineScrollController = ScrollController()
@@ -180,12 +182,40 @@ class _DayTimelineState extends State<DayTimeline> {
     if (oldWidget.pxPerMinute != widget.pxPerMinute) {
       _pxPerMinute = widget.pxPerMinute;
     }
+    _reselectLaneIfPlanPresenceChanged();
+  }
+
+  /// With nothing planned the planned lane is empty by construction, so a
+  /// phone opens on the recorded lane — where tracked time and events are —
+  /// rather than on a blank page with the real content one swipe away.
+  bool get _recordedLaneFirst => widget.draft.blocks.isEmpty;
+
+  /// The lane the pager opened on — or was last re-pointed at, see
+  /// [_reselectLaneIfPlanPresenceChanged]; the swipe is learned by travelling
+  /// away from it, not by where it started.
+  late int _initialLanePage;
+
+  /// Follows the natural first lane when "nothing planned" flips under a
+  /// live widget. The docked day-view column hands this timeline
+  /// `DraftPlan.emptyForDay` while the plan provider is still loading, so
+  /// the pager opened on the recorded lane; once the real plan resolves the
+  /// state is kept, and without this the planned day would stay on the
+  /// Actual lane under a coaching line pointing the wrong way. The jump is
+  /// programmatic and lands on the new baseline, so it never reads as the
+  /// user's swipe.
+  void _reselectLaneIfPlanPresenceChanged() {
+    final lane = _recordedLaneFirst ? 1 : 0;
+    if (lane == _initialLanePage) return;
+    _initialLanePage = lane;
+    if (_pageController.hasClients) _pageController.jumpToPage(lane);
   }
 
   void _onLanePageScroll() {
     final page = _pageController.hasClients ? _pageController.page : null;
     // Half a page of travel = the swipe gesture has been demonstrated.
-    if (page != null && page > 0.5) _markGesturesLearned();
+    if (page != null && (page - _initialLanePage).abs() > 0.5) {
+      _markGesturesLearned();
+    }
   }
 
   void _scheduleNextMinute() {
@@ -286,7 +316,16 @@ class _DayTimelineState extends State<DayTimeline> {
     final paneLabelHeight =
         tokens.typography.lineHeight.overline + tokens.spacing.step2;
     final timelineTopInset = paneLabelHeight + tokens.spacing.step3;
-    final timelineContentHeight = totalHeight + tokens.spacing.step9;
+    // The scroll content is exactly what a pane lays out — its label, the
+    // folded hour grid and the pane's own vertical inset — plus a step of
+    // room below the last block. Spelled in the pane's terms rather than as
+    // one larger token so it keeps fitting when a spacing token changes;
+    // a flat `step9` only fit the default tokens by coincidence.
+    final timelineContentHeight =
+        paneLabelHeight +
+        totalHeight +
+        tokens.spacing.step5 +
+        tokens.spacing.step4;
     // Hour labels and the now-chip live on the rail; widen it with the
     // user's text scale so "09:00" never clips at accessibility sizes.
     final timeRailWidth = math.max(
@@ -308,6 +347,7 @@ class _DayTimelineState extends State<DayTimeline> {
                 mode: comparisonMode,
                 arrangeMode: _arrangeMode,
                 showHint: widget.showGestureHint,
+                recordedLaneFirst: _recordedLaneFirst,
                 onToggleMode: _toggleComparisonMode,
                 onToggleArrange: widget.onRescheduleBlock == null
                     ? null

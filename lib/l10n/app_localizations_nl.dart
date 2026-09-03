@@ -4823,6 +4823,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'Veeg voor werkelijke · knijp verticaal naar zoom';
 
   @override
+  String get dailyOsNextTimelineSwipeHintToPlan =>
+      'Veeg voor plan · knijp verticaal naar zoom';
+
+  @override
   String get dailyOsNextTimelineTracked => 'traced';
 
   @override

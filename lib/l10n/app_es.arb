@@ -2129,6 +2129,7 @@
   "dailyOsNextTimelineShowBoth": "Mostrar plan y real juntos",
   "dailyOsNextTimelineShowPaged": "Mostrar plan y real deslizable",
   "dailyOsNextTimelineSwipeHint": "Desliza para ver lo real · pellizca verticalmente para zoom",
+  "dailyOsNextTimelineSwipeHintToPlan": "Desliza para ver el plan · pellizca verticalmente para zoom",
   "dailyOsNextTimelineTracked": "registrado",
   "dailyOsNextTimeSpentEarlierSessions": "{count, plural, one{1 sesión anterior} other{{count} sesiones anteriores}}",
   "dailyOsNextTimeSpentShowLess": "Mostrar menos",

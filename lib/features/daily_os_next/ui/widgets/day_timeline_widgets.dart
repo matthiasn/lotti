@@ -7,6 +7,7 @@ class _TimelineToolbar extends StatelessWidget {
     required this.mode,
     required this.arrangeMode,
     required this.showHint,
+    required this.recordedLaneFirst,
     required this.onToggleMode,
     required this.onToggleArrange,
     this.leading,
@@ -26,6 +27,10 @@ class _TimelineToolbar extends StatelessWidget {
   /// demonstrated the gestures. The mode-toggle icon stays — it is an
   /// affordance, not narration.
   final bool showHint;
+
+  /// Whether the pager opened on the recorded lane (nothing planned), in
+  /// which case the swipe leads to the plan, and the coaching line says so.
+  final bool recordedLaneFirst;
 
   final VoidCallback onToggleMode;
   final VoidCallback? onToggleArrange;
@@ -51,6 +56,8 @@ class _TimelineToolbar extends StatelessWidget {
               null when showHint => Text(
                 showingBoth
                     ? messages.dailyOsNextTimelineBoth
+                    : recordedLaneFirst
+                    ? messages.dailyOsNextTimelineSwipeHintToPlan
                     : messages.dailyOsNextTimelineSwipeHint,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,

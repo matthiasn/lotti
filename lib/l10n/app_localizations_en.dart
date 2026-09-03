@@ -4785,6 +4785,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Swipe for actual · pinch vertically to zoom';
 
   @override
+  String get dailyOsNextTimelineSwipeHintToPlan =>
+      'Swipe for plan · pinch vertically to zoom';
+
+  @override
   String get dailyOsNextTimelineTracked => 'tracked';
 
   @override

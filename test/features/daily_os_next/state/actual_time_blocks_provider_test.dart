@@ -1,9 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/rating_data.dart';
+import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
@@ -11,6 +15,7 @@ import 'package:lotti/logic/signals/health_signal_refresh_service.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -59,6 +64,7 @@ void main() {
           name: id == 'cat-work' ? 'Work' : 'Study',
           color: id == 'cat-work' ? '#5ED4B7' : '#FFAA00',
         ),
+        eventsEnabled: true,
       );
 
       expect(blocks.map((block) => block.id), [
@@ -140,6 +146,7 @@ void main() {
           },
           categoryById: (id) =>
               hCategory(id: id, name: 'Work', color: '5ED4B7'),
+          eventsEnabled: true,
         );
 
         expect(blocks.single.taskId, task.meta.id);
@@ -176,6 +183,7 @@ void main() {
         ],
         linkedFromById: {note.meta.id: note},
         categoryById: (_) => null,
+        eventsEnabled: true,
       );
 
       // No task is linked, so taskId stays null and the category comes from
@@ -214,6 +222,7 @@ void main() {
         categoryById: (id) => id == 'cat-named'
             ? hCategory(id: id, name: 'Named cat', color: '#112233')
             : null,
+        eventsEnabled: true,
       );
 
       final byId = {for (final b in blocks) b.id: b};
@@ -238,6 +247,7 @@ void main() {
         linkedFromById: const {},
         categoryById: (id) =>
             hCategory(id: id, name: 'Color cat', color: '#AABBCCDD'),
+        eventsEnabled: true,
       );
 
       // RRGGBBAA → keep first 6 chars (RRGGBB) per project convention.
@@ -260,6 +270,7 @@ void main() {
         links: const [],
         linkedFromById: const {},
         categoryById: (id) => hCategory(id: id, name: 'Short', color: '#ABC'),
+        eventsEnabled: true,
       );
 
       expect(blocks.single.category.colorHex, '8E8E8E');
@@ -282,6 +293,7 @@ void main() {
         links: const [],
         linkedFromById: const {},
         categoryById: (_) => null,
+        eventsEnabled: true,
       );
 
       expect(blocks, isEmpty);
@@ -305,6 +317,7 @@ void main() {
         links: const [],
         linkedFromById: const {},
         categoryById: (_) => null,
+        eventsEnabled: true,
       );
 
       expect(blocks.map((b) => b.title), [
@@ -331,9 +344,202 @@ void main() {
         links: const [],
         linkedFromById: const {},
         categoryById: (_) => null,
+        eventsEnabled: true,
       );
 
       expect(blocks.single.title, 'Morning walk');
+    });
+
+    // The event the user edited on the events page to run from 18:00 to
+    // midnight: it is recorded time like any session, but it is its own
+    // thing — its own title, its own category, no task behind it — and a
+    // calendar block so the timeline can open the event page from it.
+    test('projects an event as a calendar block titled by the event, in its '
+        'own category, sorted among the recordings', () {
+      final day = DateTime(2026, 5, 27);
+      final task = hTask(
+        id: 'task-1',
+        title: 'Plan the reunion',
+        categoryId: 'cat-work',
+        day: day,
+      );
+      final event = hEvent(
+        id: 'evt-1',
+        day: day,
+        startHour: 18,
+        endHour: 24,
+        title: ' Dinner with a friend ',
+        categoryId: 'cat-social',
+      );
+
+      final blocks = actualTimeBlocksForEntries(
+        entries: [
+          event,
+          hEntry(id: 'entry-1', day: day, startHour: 9, endHour: 10),
+        ],
+        links: [
+          hLink('l1', from: task.meta.id, to: event.meta.id, day: day),
+        ],
+        linkedFromById: {task.meta.id: task},
+        categoryById: (id) => id == 'cat-social'
+            ? hCategory(id: id, name: 'Social', color: '#E8A33D')
+            : hCategory(id: id, name: 'Work', color: '#5ED4B7'),
+        eventsEnabled: true,
+      );
+
+      expect(blocks.map((block) => block.id), [
+        'actual:entry-1',
+        'actual:evt-1',
+      ]);
+      final eventBlock = blocks.last;
+      expect(eventBlock.title, 'Dinner with a friend');
+      expect(eventBlock.type, TimeBlockType.cal);
+      // Planned, not done: the lane shows it filled but unchecked.
+      expect(eventBlock.state, TimeBlockState.committed);
+      expect(eventBlock.taskId, isNull);
+      expect(eventBlock.trackedEntryId, 'evt-1');
+      expect(eventBlock.category.name, 'Social');
+      expect(eventBlock.category.colorHex, 'E8A33D');
+      expect(eventBlock.start, day.add(const Duration(hours: 18)));
+      expect(eventBlock.end, day.add(const Duration(days: 1)));
+      expect(blocks.first.type, TimeBlockType.manual);
+    });
+
+    // A recording is finished by definition; an event is only as far along as
+    // its status says — a dinner still ahead must not wear the lane's check
+    // mark or count as done.
+    test('the block state follows the event status', () {
+      final day = DateTime(2026, 5, 27);
+      final byStatus = {
+        for (final status in EventStatus.values)
+          status: eventBlockState(
+            hEvent(
+              id: 'evt-${status.name}',
+              day: day,
+              startHour: 18,
+              endHour: 20,
+              status: status,
+            ),
+          ),
+      };
+
+      expect(byStatus, {
+        EventStatus.completed: TimeBlockState.completed,
+        EventStatus.ongoing: TimeBlockState.inProgress,
+        EventStatus.tentative: TimeBlockState.committed,
+        EventStatus.planned: TimeBlockState.committed,
+        EventStatus.rescheduled: TimeBlockState.committed,
+        EventStatus.cancelled: TimeBlockState.dropped,
+        EventStatus.missed: TimeBlockState.dropped,
+        EventStatus.postponed: TimeBlockState.dropped,
+      });
+    });
+
+    test('a completed event is checked on the lane, an ongoing one is in '
+        'progress, and a recording is always completed', () {
+      final day = DateTime(2026, 5, 27);
+
+      final blocks = actualTimeBlocksForEntries(
+        entries: [
+          hEvent(
+            id: 'done',
+            day: day,
+            startHour: 12,
+            endHour: 13,
+            status: EventStatus.completed,
+          ),
+          hEvent(
+            id: 'now',
+            day: day,
+            startHour: 18,
+            endHour: 20,
+            status: EventStatus.ongoing,
+          ),
+          hEntry(id: 'entry-1', day: day, startHour: 9, endHour: 10),
+        ],
+        links: const [],
+        linkedFromById: const {},
+        categoryById: (_) => null,
+        eventsEnabled: true,
+      );
+
+      expect(blocks.map((block) => block.state), [
+        TimeBlockState.completed,
+        TimeBlockState.completed,
+        TimeBlockState.inProgress,
+      ]);
+    });
+
+    test('an untitled event falls through to its text, then its category', () {
+      final day = DateTime(2026, 5, 27);
+
+      final blocks = actualTimeBlocksForEntries(
+        entries: [
+          hEvent(
+            id: 'noted',
+            day: day,
+            startHour: 18,
+            endHour: 20,
+            title: '',
+            text: 'Table for two\nby the window',
+          ),
+          hEvent(
+            id: 'bare',
+            day: day,
+            startHour: 20,
+            endHour: 22,
+            title: '  ',
+            categoryId: 'cat-social',
+          ),
+        ],
+        links: const [],
+        linkedFromById: const {},
+        categoryById: (id) =>
+            hCategory(id: id, name: 'Social', color: '#E8A33D'),
+        eventsEnabled: true,
+      );
+
+      expect(blocks.map((block) => block.title), ['Table for two', 'Social']);
+    });
+
+    test('a cancelled event stays off the lane', () {
+      final day = DateTime(2026, 5, 27);
+
+      final blocks = actualTimeBlocksForEntries(
+        entries: [
+          hEvent(
+            id: 'evt-1',
+            day: day,
+            startHour: 18,
+            endHour: 20,
+            status: EventStatus.cancelled,
+          ),
+          hEntry(id: 'entry-1', day: day, startHour: 9, endHour: 10),
+        ],
+        links: const [],
+        linkedFromById: const {},
+        categoryById: (_) => null,
+        eventsEnabled: true,
+      );
+
+      expect(blocks.map((block) => block.id), ['actual:entry-1']);
+    });
+
+    test('events stay off the lane while the Events feature is off', () {
+      final day = DateTime(2026, 5, 27);
+
+      final blocks = actualTimeBlocksForEntries(
+        entries: [
+          hEvent(id: 'evt-1', day: day, startHour: 18, endHour: 20),
+          hEntry(id: 'entry-1', day: day, startHour: 9, endHour: 10),
+        ],
+        links: const [],
+        linkedFromById: const {},
+        categoryById: (_) => null,
+        eventsEnabled: false,
+      );
+
+      expect(blocks.map((block) => block.id), ['actual:entry-1']);
     });
 
     test('a workout without an activity falls through to the id', () {
@@ -346,6 +552,7 @@ void main() {
         links: const [],
         linkedFromById: const {},
         categoryById: (_) => null,
+        eventsEnabled: true,
       );
 
       expect(blocks.single.title, 'blank');
@@ -435,9 +642,7 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      final blocks = await container.read(
-        dailyOsActualTimeBlocksProvider(day).future,
-      );
+      final blocks = await readActualBlocks(container, day);
 
       expect(blocks.single.title, 'Walking');
       expect(blocks.single.id, 'actual:walk');
@@ -455,9 +660,7 @@ void main() {
         );
         addTearDown(container.dispose);
 
-        final blocks = await container.read(
-          dailyOsActualTimeBlocksProvider(day).future,
-        );
+        final blocks = await readActualBlocks(container, day);
 
         expect(blocks.single.title, 'Walking');
       },
@@ -511,15 +714,96 @@ void main() {
         );
         addTearDown(container.dispose);
 
-        final blocks = await container.read(
-          dailyOsActualTimeBlocksProvider(day).future,
-        );
+        final blocks = await readActualBlocks(container, day);
 
         expect(blocks.single.title, 'Write release notes');
         expect(blocks.single.taskId, 'task-1');
         expect(blocks.single.category.name, 'Work');
       },
     );
+
+    group('the Events flag', () {
+      late JournalEvent dinner;
+
+      setUp(() {
+        final walk = hWorkout(id: 'walk', day: day, startHour: 7);
+        dinner = hEvent(id: 'dinner', day: day, startHour: 18, endHour: 24);
+        when(
+          () => db.sortedCalendarEntries(
+            rangeStart: day,
+            rangeEnd: day.add(const Duration(days: 1)),
+          ),
+        ).thenAnswer((_) async => [walk, dinner]);
+        when(
+          () => db.basicLinksForEntryIds({walk.meta.id, dinner.meta.id}),
+        ).thenAnswer((_) async => const []);
+      });
+
+      ProviderContainer container() {
+        final container = ProviderContainer(
+          overrides: [
+            journalDbProvider.overrideWithValue(db),
+            healthSignalRefreshServiceProvider.overrideWithValue(null),
+          ],
+        );
+        addTearDown(container.dispose);
+        return container;
+      }
+
+      test('on: the event is on the lane', () async {
+        when(
+          () => db.watchConfigFlag(enableEventsFlag),
+        ).thenAnswer((_) => Stream.value(true));
+
+        final blocks = await readActualBlocks(container(), day);
+
+        expect(blocks.map((block) => block.title), [
+          'Walking',
+          'Dinner with a friend',
+        ]);
+      });
+
+      test('off: the event is hidden, like everywhere else', () async {
+        when(
+          () => db.watchConfigFlag(enableEventsFlag),
+        ).thenAnswer((_) => Stream.value(false));
+
+        final blocks = await readActualBlocks(container(), day);
+
+        expect(blocks.map((block) => block.title), ['Walking']);
+      });
+
+      test('flipping it repaints the lane without a restart', () async {
+        final flag = StreamController<bool>();
+        addTearDown(flag.close);
+        when(
+          () => db.watchConfigFlag(enableEventsFlag),
+        ).thenAnswer((_) => flag.stream);
+        final scope = container();
+        final painted = <List<String>>[];
+        final subscription = scope.listen(
+          dailyOsActualTimeBlocksProvider(day),
+          (_, next) {
+            // Only settled paints: a reload first re-emits the previous
+            // value as a loading state, which is not a repaint of the lane.
+            if (next is AsyncData<List<TimeBlock>>) {
+              painted.add(next.value.map((block) => block.title).toList());
+            }
+          },
+        );
+        addTearDown(subscription.close);
+
+        flag.add(true);
+        await scope.read(dailyOsActualTimeBlocksProvider(day).future);
+        flag.add(false);
+        await pumpEventQueue();
+
+        expect(painted, [
+          ['Walking', 'Dinner with a friend'],
+          ['Walking'],
+        ]);
+      });
+    });
 
     test('a failing importer does not take the lane down', () async {
       final healthImport = MockHealthImport();
@@ -536,9 +820,7 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      final blocks = await container.read(
-        dailyOsActualTimeBlocksProvider(day).future,
-      );
+      final blocks = await readActualBlocks(container, day);
 
       expect(blocks.single.title, 'Walking');
     });

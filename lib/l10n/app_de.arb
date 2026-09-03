@@ -2129,6 +2129,7 @@
   "dailyOsNextTimelineShowBoth": "Plan und Ist gemeinsam anzeigen",
   "dailyOsNextTimelineShowPaged": "Plan und Ist zum Wischen anzeigen",
   "dailyOsNextTimelineSwipeHint": "Wische zu Ist · vertikal kneifen zum Zoomen",
+  "dailyOsNextTimelineSwipeHintToPlan": "Wische zum Plan · vertikal kneifen zum Zoomen",
   "dailyOsNextTimelineTracked": "erfasst",
   "dailyOsNextTimeSpentEarlierSessions": "{count, plural, one{1 frühere Sitzung} other{{count} frühere Sitzungen}}",
   "dailyOsNextTimeSpentShowLess": "Weniger anzeigen",

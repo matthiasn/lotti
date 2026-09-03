@@ -123,39 +123,9 @@ class _FoldRegionToggle extends StatelessWidget {
                   ),
                 ),
               Center(
-                child: Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: tokens.spacing.step2,
-                    vertical: tokens.spacing.step1,
-                  ),
-                  decoration: BoxDecoration(
-                    color: tokens.colors.background.level03.withValues(
-                      alpha: 0.88,
-                    ),
-                    borderRadius: BorderRadius.circular(tokens.radii.xs),
-                    border: Border.all(
-                      color: tokens.colors.decorative.level01.withValues(
-                        alpha: 0.32,
-                      ),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        LottiIcons.collapseBoth,
-                        size: tokens.spacing.step3,
-                        color: tokens.colors.text.lowEmphasis,
-                      ),
-                      SizedBox(width: tokens.spacing.step1),
-                      Text(
-                        _formatFoldRange(region),
-                        style: tokens.typography.styles.others.caption.copyWith(
-                          color: tokens.colors.text.lowEmphasis,
-                        ),
-                      ),
-                    ],
-                  ),
+                child: _FoldRangePill(
+                  icon: LottiIcons.collapseBoth,
+                  label: _formatFoldRange(region),
                 ),
               ),
             ],
@@ -199,35 +169,64 @@ class _CompressedFoldSurface extends StatelessWidget {
         spineColor: tokens.colors.text.lowEmphasis.withValues(alpha: 0.54),
       ),
       child: Center(
-        child: Container(
-          padding: EdgeInsets.symmetric(
-            horizontal: tokens.spacing.step2,
-            vertical: tokens.spacing.step1,
+        child: _FoldRangePill(icon: LottiIcons.expandBoth, label: label),
+      ),
+    );
+  }
+}
+
+/// The range pill both fold states centre in their region: a glyph and the
+/// `HH:00-HH:00` range the fold spans.
+///
+/// The label yields before the row does. At large accessibility text sizes
+/// the caption outgrows a narrow lane — the phone timeline at 2× text is the
+/// case — and a row that shrink-wraps two rigid children overflows the lane.
+/// Ellipsizing the label keeps the pill inside the region, and the full range
+/// stays one long-press (or hover) away as the pill's tooltip, so what the
+/// ellipsis takes is never lost.
+class _FoldRangePill extends StatelessWidget {
+  const _FoldRangePill({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Tooltip(
+      message: label,
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.spacing.step2,
+          vertical: tokens.spacing.step1,
+        ),
+        decoration: BoxDecoration(
+          color: tokens.colors.background.level03.withValues(alpha: 0.88),
+          borderRadius: BorderRadius.circular(tokens.radii.xs),
+          border: Border.all(
+            color: tokens.colors.decorative.level01.withValues(alpha: 0.32),
           ),
-          decoration: BoxDecoration(
-            color: tokens.colors.background.level03.withValues(alpha: 0.88),
-            borderRadius: BorderRadius.circular(tokens.radii.xs),
-            border: Border.all(
-              color: tokens.colors.decorative.level01.withValues(alpha: 0.32),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: tokens.spacing.step3,
+              color: tokens.colors.text.lowEmphasis,
             ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                LottiIcons.expandBoth,
-                size: tokens.spacing.step3,
-                color: tokens.colors.text.lowEmphasis,
-              ),
-              SizedBox(width: tokens.spacing.step1),
-              Text(
+            SizedBox(width: tokens.spacing.step1),
+            Flexible(
+              child: Text(
                 label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: tokens.typography.styles.others.caption.copyWith(
                   color: tokens.colors.text.lowEmphasis,
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

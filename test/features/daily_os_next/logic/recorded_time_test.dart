@@ -1,6 +1,8 @@
 import 'package:glados/glados.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/event_data.dart';
+import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/rating_data.dart';
 import 'package:lotti/classes/task.dart';
@@ -73,6 +75,30 @@ JournalEntity _note({required String id, String? categoryId}) {
     ),
     entryText: const EntryText(plainText: 'a linked note'),
   );
+}
+
+/// An event the way the events page stores it: the span lives on `meta`,
+/// the title and status on `data`.
+JournalEvent _event({
+  required String id,
+  required int startHour,
+  int durationMinutes = 180,
+  String? categoryId,
+  EventStatus status = EventStatus.planned,
+}) {
+  final start = _day.add(Duration(hours: startHour));
+  return JournalEntity.event(
+        meta: Metadata(
+          id: id,
+          createdAt: _day,
+          updatedAt: _day,
+          dateFrom: start,
+          dateTo: start.add(Duration(minutes: durationMinutes)),
+          categoryId: categoryId,
+        ),
+        data: EventData(title: 'Dinner', stars: 0, status: status),
+      )
+      as JournalEvent;
 }
 
 JournalEntity _rating({required String id}) {
@@ -161,6 +187,7 @@ void main() {
         entries: [entry],
         links: [_link(fromId: 'task-1', toId: 'e1')],
         linkedFromById: {'task-1': task},
+        eventsEnabled: true,
       );
 
       final pair = resolved.single;
@@ -180,6 +207,7 @@ void main() {
         entries: [entry],
         links: [_link(fromId: 'task-1', toId: 'e1')],
         linkedFromById: {'task-1': task},
+        eventsEnabled: true,
       ).single;
 
       expect(pair.categoryId, 'cat-own');
@@ -196,6 +224,7 @@ void main() {
         entries: [deleted, zero, linkedViaDeletedLink],
         links: [_link(fromId: 'task-1', toId: 'e-live', deleted: true)],
         linkedFromById: {'task-1': task},
+        eventsEnabled: true,
       );
 
       // Only the live entry survives, and its tombstoned link contributes no
@@ -215,11 +244,78 @@ void main() {
         entries: [entry],
         links: [_link(fromId: 'note-1', toId: 'e1')],
         linkedFromById: {'note-1': note},
+        eventsEnabled: true,
       ).single;
 
       expect(pair.linkedFrom?.meta.id, 'note-1');
       expect(pair.categoryId, 'cat-note');
       expect(pair.taskId, isNull);
+    });
+
+    test('an event counts on its own: own category, never attributed to the '
+        'task it hangs off', () {
+      final task = _task(id: 'task-1', categoryId: 'cat-work');
+      final event = _event(
+        id: 'evt-1',
+        startHour: 18,
+        categoryId: 'cat-social',
+      );
+
+      final pair = resolveTimeEntries(
+        entries: [event],
+        links: [_link(fromId: 'task-1', toId: 'evt-1')],
+        linkedFromById: {'task-1': task},
+        eventsEnabled: true,
+      ).single;
+
+      expect(pair.entry.meta.id, 'evt-1');
+      expect(pair.linkedFrom, isNull);
+      expect(pair.taskId, isNull);
+      expect(pair.categoryId, 'cat-social');
+      expect(pair.duration, const Duration(hours: 3));
+      expect(pair.start, _day.add(const Duration(hours: 18)));
+    });
+
+    test('a zero-length event is a point in time, not recorded time', () {
+      final resolved = resolveTimeEntries(
+        entries: [_event(id: 'evt-0', startHour: 18, durationMinutes: 0)],
+        links: const [],
+        linkedFromById: const {},
+        eventsEnabled: true,
+      );
+
+      expect(resolved, isEmpty);
+    });
+
+    test('an event survives only in the statuses where it took place', () {
+      for (final status in EventStatus.values) {
+        final resolved = resolveTimeEntries(
+          entries: [_event(id: 'evt-1', startHour: 18, status: status)],
+          links: const [],
+          linkedFromById: const {},
+          eventsEnabled: true,
+        );
+        final tookPlace =
+            status != EventStatus.cancelled &&
+            status != EventStatus.missed &&
+            status != EventStatus.postponed;
+        expect(resolved, hasLength(tookPlace ? 1 : 0), reason: '$status');
+      }
+    });
+
+    test('events are dropped while the Events feature is off; recordings '
+        'are kept', () {
+      final entry = _entry(id: 'e1', startHour: 9);
+      final event = _event(id: 'evt-1', startHour: 18);
+
+      final resolved = resolveTimeEntries(
+        entries: [event, entry],
+        links: const [],
+        linkedFromById: const {},
+        eventsEnabled: false,
+      );
+
+      expect(resolved.map((pair) => pair.entry.meta.id), ['e1']);
     });
 
     test('the fallback pick is invariant to the link list order '
@@ -254,6 +350,7 @@ void main() {
           entries: [entry],
           links: permutation,
           linkedFromById: {'note-a': noteA, 'note-b': noteB},
+          eventsEnabled: true,
         ).single;
         expect(
           pair.linkedFrom?.meta.id,
@@ -304,6 +401,7 @@ void main() {
           entries: entries,
           links: links,
           linkedFromById: linkedFromById,
+          eventsEnabled: true,
         );
 
         // Oracle: live entries with positive duration survive, in input order.
@@ -358,6 +456,23 @@ void main() {
       },
       tags: 'glados',
     );
+  });
+
+  group('eventTookPlace', () {
+    test('is false for cancelled, missed and postponed, true for every other '
+        'status', () {
+      final didNotHappen = {
+        for (final status in EventStatus.values)
+          if (!eventTookPlace(_event(id: 'evt', startHour: 18, status: status)))
+            status,
+      };
+
+      expect(didNotHappen, {
+        EventStatus.cancelled,
+        EventStatus.missed,
+        EventStatus.postponed,
+      });
+    });
   });
 
   group('resolveLinkedFrom', () {

@@ -4844,6 +4844,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Wische zu Ist · vertikal kneifen zum Zoomen';
 
   @override
+  String get dailyOsNextTimelineSwipeHintToPlan =>
+      'Wische zum Plan · vertikal kneifen zum Zoomen';
+
+  @override
   String get dailyOsNextTimelineTracked => 'erfasst';
 
   @override

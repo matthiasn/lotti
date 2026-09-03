@@ -1035,6 +1035,14 @@ Future<void> _tapPlanViewSegment(
   });
 }
 
+/// The surface opens on the Day timeline; the agenda captures have to ask
+/// for the Agenda projection explicitly.
+Future<void> _switchToAgendaView(WidgetTester tester) => _tapPlanViewSegment(
+  tester,
+  label: _messages(tester).dailyOsNextPlanViewAgenda,
+  icon: LottiIcons.list,
+);
+
 Future<void> _switchToDayView(WidgetTester tester) => _tapPlanViewSegment(
   tester,
   label: _messages(tester).dailyOsNextPlanViewDay,
@@ -1188,6 +1196,7 @@ void main() {
         device: device,
         showPlannerReview: false,
       );
+      await _switchToAgendaView(tester);
       expect(find.byType(AgendaView), findsOneWidget);
       _expectAgendaThumbnails(tester);
       await captureScreenshot(tester, 'day_${device.name}_01_agenda_dark');
@@ -1290,6 +1299,7 @@ void main() {
       brightness: Brightness.light,
       showPlannerReview: false,
     );
+    await _switchToAgendaView(tester);
     expect(find.byType(AgendaView), findsOneWidget);
     _expectAgendaThumbnails(tester);
     await captureScreenshot(tester, 'day_mini_04_agenda_light');
@@ -1302,6 +1312,7 @@ void main() {
       brightness: Brightness.light,
       showPlannerReview: false,
     );
+    await _switchToAgendaView(tester);
     expect(find.byType(AgendaView), findsOneWidget);
     _expectAgendaThumbnails(tester);
     await captureScreenshot(tester, 'day_desktop_03_agenda_light');
@@ -1454,12 +1465,16 @@ void main() {
 
   testWidgets('mini agenda — dark, 1.3x text', (tester) async {
     await _pumpDayPage(tester, device: miniDevice, textScale: 1.3);
+    await _switchToAgendaView(tester);
+    expect(find.byType(AgendaView), findsOneWidget);
     await captureScreenshot(tester, 'day_mini_06_agenda_dark_ts13');
   });
 
   // 2.0x — the upper end of common accessibility text sizes.
   testWidgets('mini agenda — dark, 2.0x text', (tester) async {
     await _pumpDayPage(tester, device: miniDevice, textScale: 2);
+    await _switchToAgendaView(tester);
+    expect(find.byType(AgendaView), findsOneWidget);
     await captureScreenshot(tester, 'day_mini_07_agenda_dark_ts20');
   });
 

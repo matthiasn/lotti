@@ -18,6 +18,7 @@ import 'package:lotti/features/daily_os_next/logic/recorded_time.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/utils/consts.dart';
 
 /// Raised by the week-context service for an invalid tool/argument.
 class DayAgentWeekContextException implements Exception {
@@ -196,11 +197,16 @@ class DayAgentWeekContextService {
 
   /// Shared recorded-time resolution for an arbitrary local-midnight range
   /// (containment query semantics — see [_recordedSpans] for the caveats).
+  ///
+  /// Events count as recorded time only while the Events feature is on —
+  /// they are hidden everywhere else with it off, and a planner quoting
+  /// hours the user cannot see anywhere would be a puzzle, not context.
   Future<List<RecordedSpan>> _recordedSpansInRange({
     required DateTime rangeStart,
     required DateTime rangeEnd,
     bool canonicalDurations = false,
   }) async {
+    final eventsEnabled = await journalDb.getConfigFlag(enableEventsFlag);
     final entries = await journalDb.sortedCalendarEntries(
       rangeStart: rangeStart,
       rangeEnd: rangeEnd,
@@ -218,6 +224,7 @@ class DayAgentWeekContextService {
       linkedFromById: {
         for (final entity in linkedFrom) entity.meta.id: entity,
       },
+      eventsEnabled: eventsEnabled,
     );
     return [
       for (final pair in resolved)

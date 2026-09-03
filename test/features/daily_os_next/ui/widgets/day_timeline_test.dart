@@ -24,6 +24,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../helpers/entity_factories.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../categories/test_utils.dart';
+import '../pages/day_page_test_helpers.dart';
 
 const _work = DayAgentCategory(
   id: 'cat_work',
@@ -318,6 +319,92 @@ void main() {
       );
 
       await tester.tapAt(blockRect.center);
+      await tester.pump();
+
+      expect(openedPath, isNull);
+    });
+
+    // A tracked calendar block projects a Lotti event; the event page is its
+    // one way in, so the block opens it — not a task, not the entry editor.
+    testWidgets('a tracked calendar block opens its event page', (
+      tester,
+    ) async {
+      _setView(tester, const Size(1280, 1200));
+
+      String? openedPath;
+      beamToNamedOverride = (path) => openedPath = path;
+
+      await tester.pumpWidget(
+        _wrap(
+          DayTimeline(
+            draft: _draftWithBlocks(
+              blocks: const [],
+              actualBlocks: [
+                _timeBlock(
+                  id: '${actualTimeBlockIdPrefix}evt-1',
+                  title: 'Dinner with a friend',
+                  startHour: 8,
+                  endHour: 9,
+                  type: TimeBlockType.cal,
+                  state: TimeBlockState.completed,
+                ),
+              ],
+            ),
+            clock: () => DateTime(2026, 5, 25, 9, 15),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final block = find.byKey(
+        const Key('daily_os_day_block_${actualTimeBlockIdPrefix}evt-1'),
+      );
+      expect(
+        find.descendant(of: block, matching: find.byType(Ink)),
+        findsOneWidget,
+      );
+
+      await tester.tap(block);
+      await tester.pump();
+
+      expect(openedPath, '/events/evt-1');
+    });
+
+    testWidgets('a tracked recording with neither task nor event stays inert', (
+      tester,
+    ) async {
+      _setView(tester, const Size(1280, 1200));
+
+      String? openedPath;
+      beamToNamedOverride = (path) => openedPath = path;
+
+      await tester.pumpWidget(
+        _wrap(
+          DayTimeline(
+            draft: _draftWithBlocks(
+              blocks: const [],
+              actualBlocks: [
+                _timeBlock(
+                  id: '${actualTimeBlockIdPrefix}entry-3',
+                  title: 'Loose recording',
+                  startHour: 8,
+                  endHour: 9,
+                  type: TimeBlockType.manual,
+                  state: TimeBlockState.completed,
+                ),
+              ],
+            ),
+            clock: () => DateTime(2026, 5, 25, 9, 15),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final block = find.byKey(
+        const Key('daily_os_day_block_${actualTimeBlockIdPrefix}entry-3'),
+      );
+
+      await tester.tap(block);
       await tester.pump();
 
       expect(openedPath, isNull);
@@ -1028,6 +1115,217 @@ void main() {
         );
       },
     );
+
+    // The Day view is the default projection now, so with nothing planned a
+    // phone would otherwise land on a blank planned lane with the tracked
+    // time and events one swipe away — and the pager used to count its own
+    // starting position as the swipe being learned.
+    testWidgets(
+      'with nothing planned the pager opens on the recorded lane, coaches the '
+      'swipe to the plan, and learns the swipe only when it happens',
+      (tester) async {
+        _setView(tester, const Size(430, 900));
+        var learned = 0;
+
+        await tester.pumpWidget(
+          _wrap(
+            DayTimeline(
+              draft: _draftWithBlocks(
+                blocks: const [],
+                actualBlocks: [
+                  _timeBlock(
+                    id: '${actualTimeBlockIdPrefix}evt-1',
+                    title: 'Dinner with a friend',
+                    startHour: 18,
+                    endHour: 20,
+                    type: TimeBlockType.cal,
+                    state: TimeBlockState.committed,
+                  ),
+                ],
+              ),
+              clock: () => DateTime(2026, 5, 25, 9, 15),
+              onGesturesLearned: () => learned++,
+            ),
+            size: const Size(430, 900),
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        final messages = tester.element(find.byType(DayTimeline)).messages;
+        final pageView = tester.widget<PageView>(find.byType(PageView));
+        expect(pageView.controller!.initialPage, 1);
+        // The peeking page fraction settles the last page short of 1.0; what
+        // matters is that the recorded lane is the one in view.
+        expect(pageView.controller!.page, greaterThan(0.5));
+        final actualPane = tester.getRect(
+          find.byKey(const Key('daily_os_timeline_actual_pane')),
+        );
+        expect(actualPane.left, greaterThanOrEqualTo(0));
+        expect(actualPane.right, lessThanOrEqualTo(430));
+        expect(
+          find.text(messages.dailyOsNextTimelineSwipeHintToPlan),
+          findsOneWidget,
+        );
+        expect(find.text(messages.dailyOsNextTimelineSwipeHint), findsNothing);
+        expect(learned, 0, reason: 'opening on a lane is not a swipe');
+
+        // Swiping back to the planned lane is the demonstration.
+        await tester.drag(find.byType(PageView), const Offset(300, 0));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(pageView.controller!.page, lessThan(0.5));
+        expect(learned, 1);
+      },
+    );
+
+    // The docked day-view column hands the timeline an empty plan while the
+    // provider is still loading; the real plan arrives into the same State.
+    testWidgets(
+      'a plan arriving after an empty first frame moves the pager to the '
+      'planned lane, the coaching line follows, and it is not a swipe',
+      (tester) async {
+        _setView(tester, const Size(430, 900));
+        var learned = 0;
+        Widget timeline(DraftPlan draft) => _wrap(
+          DayTimeline(
+            draft: draft,
+            clock: () => DateTime(2026, 5, 25, 9, 15),
+            onGesturesLearned: () => learned++,
+          ),
+          size: const Size(430, 900),
+        );
+
+        await tester.pumpWidget(
+          timeline(_draftWithBlocks(blocks: const [])),
+        );
+        await tester.pump();
+        final messages = tester.element(find.byType(DayTimeline)).messages;
+        final pageView = tester.widget<PageView>(find.byType(PageView));
+        expect(pageView.controller!.page, greaterThan(0.5));
+        expect(
+          find.text(messages.dailyOsNextTimelineSwipeHintToPlan),
+          findsOneWidget,
+        );
+
+        await tester.pumpWidget(timeline(_draft()));
+        await tester.pump();
+
+        expect(pageView.controller!.page, 0);
+        expect(
+          find.text(messages.dailyOsNextTimelineSwipeHint),
+          findsOneWidget,
+        );
+        expect(
+          find.text(messages.dailyOsNextTimelineSwipeHintToPlan),
+          findsNothing,
+        );
+        expect(learned, 0, reason: 'a programmatic jump is not a swipe');
+      },
+    );
+
+    testWidgets(
+      'a plan emptied under a live timeline moves the pager to the recorded '
+      'lane',
+      (tester) async {
+        _setView(tester, const Size(430, 900));
+        Widget timeline(DraftPlan draft) => _wrap(
+          DayTimeline(
+            draft: draft,
+            clock: () => DateTime(2026, 5, 25, 9, 15),
+          ),
+          size: const Size(430, 900),
+        );
+
+        await tester.pumpWidget(timeline(_draft()));
+        await tester.pump();
+        final pageView = tester.widget<PageView>(find.byType(PageView));
+        expect(pageView.controller!.page, 0);
+
+        await tester.pumpWidget(
+          timeline(_draftWithBlocks(blocks: const [])),
+        );
+        await tester.pump();
+
+        final messages = tester.element(find.byType(DayTimeline)).messages;
+        expect(pageView.controller!.page, greaterThan(0.5));
+        expect(
+          find.text(messages.dailyOsNextTimelineSwipeHintToPlan),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets('with a plan the pager opens on the planned lane as before', (
+      tester,
+    ) async {
+      _setView(tester, const Size(430, 900));
+      var learned = 0;
+
+      await tester.pumpWidget(
+        _wrap(
+          DayTimeline(
+            draft: _draft(),
+            clock: () => DateTime(2026, 5, 25, 9, 15),
+            onGesturesLearned: () => learned++,
+          ),
+          size: const Size(430, 900),
+        ),
+      );
+      await tester.pump();
+
+      final messages = tester.element(find.byType(DayTimeline)).messages;
+      expect(
+        tester.widget<PageView>(find.byType(PageView)).controller!.initialPage,
+        0,
+      );
+      expect(find.text(messages.dailyOsNextTimelineSwipeHint), findsOneWidget);
+      expect(
+        find.text(messages.dailyOsNextTimelineSwipeHintToPlan),
+        findsNothing,
+      );
+      expect(learned, 0);
+    });
+
+    // The scroll content used to be `totalHeight + step9`, which held the
+    // pane — label (overline + step2), grid, step5 inset — only because
+    // 16 + 4 + 16 happens to leave 12 px under 48 at the default tokens. A
+    // larger step2 overflowed the pane by the difference, which the Day page
+    // header test caught on CI once Day became the default view.
+    testWidgets('the scroll content fits the pane when a spacing token grows', (
+      tester,
+    ) async {
+      _setView(tester, const Size(430, 900));
+
+      await tester.pumpWidget(
+        _wrap(
+          Theme(
+            data: themeWithHeaderSpacing(32),
+            child: DayTimeline(
+              draft: _draft(),
+              clock: () => DateTime(2026, 5, 25, 9, 15),
+            ),
+          ),
+          size: const Size(430, 900),
+        ),
+      );
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+      final pane = tester.getRect(
+        find.byKey(const Key('daily_os_timeline_plan_pane')),
+      );
+      final content = tester.getRect(
+        find
+            .descendant(
+              of: find.byKey(const Key('daily_os_timeline_scroll')),
+              matching: find.byType(SizedBox),
+            )
+            .first,
+      );
+      expect(pane.bottom, lessThanOrEqualTo(content.bottom));
+    });
 
     testWidgets('toolbar toggle button switches comparison mode paged→both', (
       tester,

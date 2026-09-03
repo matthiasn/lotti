@@ -479,14 +479,18 @@ void main() {
     await withClock(Clock.fixed(_now), () async {
       await tester.pumpWidget(_desktopDayApp());
       await _settle(tester);
+      // The surface opens on the Day timeline; the agenda capture asks for
+      // the Agenda projection explicitly.
+      final context = tester.element(find.byType(DayPage));
+      final messages = AppLocalizations.of(context)!;
+      await tester.tap(find.text(messages.dailyOsNextPlanViewAgenda).last);
+      await _settle(tester);
       await captureManualScreenshot(
         binding: binding,
         tester: tester,
         name: 'day_desktop_01_agenda_dark',
       );
 
-      final context = tester.element(find.byType(DayPage));
-      final messages = AppLocalizations.of(context)!;
       await tester.tap(find.text(messages.dailyOsNextPlanViewDay).last);
       await _settle(tester);
       await captureManualScreenshot(

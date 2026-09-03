@@ -2793,6 +2793,7 @@
   "dailyOsNextTimelineShowBoth": "Show plan and actual together",
   "dailyOsNextTimelineShowPaged": "Show swipeable plan and actual",
   "dailyOsNextTimelineSwipeHint": "Swipe for actual · pinch vertically to zoom",
+  "dailyOsNextTimelineSwipeHintToPlan": "Swipe for plan · pinch vertically to zoom",
   "dailyOsNextTimelineTracked": "tracked",
   "dailyOsNextTimeSpentEarlierSessions": "{count, plural, one{1 earlier session} other{{count} earlier sessions}}",
   "@dailyOsNextTimeSpentEarlierSessions": {
