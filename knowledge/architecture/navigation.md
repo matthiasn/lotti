@@ -56,6 +56,10 @@ sources:
     resource: ../../lib/features/projects/ui/pages/projects_tab_page.dart
     title: Projects desktop split host
     last_modified: 2026-08-15
+  - id: notification-bell
+    resource: ../../lib/features/notifications/ui/widgets/notification_bell.dart
+    title: NotificationBell — a global entry point that beams to a task
+    last_modified: 2026-09-02
 ---
 
 # One stack per tab
@@ -264,6 +268,36 @@ doing nothing, so no route reached by any means is a dead end. That fallback
 root above it — a push would leave the detail underneath, and the next back
 would drop the user straight back into the page they just escaped. The tab root
 is therefore terminal: `canBeamBack` stays false and further backs are no-ops.
+
+## A pageless push is invisible to the router
+
+`Navigator.of(context).push(MaterialPageRoute(...))` from inside a tab lands
+on that tab's Beamer navigator as a *pageless* route: it sits above the pages
+`buildPages` produced, and neither the delegate's configuration nor its
+beaming history records it. Every exit the shell offers reads that state and
+nothing else. `NavService.beamBack` pops the delegate's history, and its
+fallback compares `routeForTab` with the tab root — both see a tab standing at
+its root and do nothing. `tapIndex` on the already-active tab re-beams that
+root, a no-op for a delegate already there. The mobile bottom bar shows or
+hides on `TasksLocation`'s path parameters, which never changed. So a pageless
+page has a dead back chevron, survives a tap on its own tab, and keeps the
+bottom bar docked underneath it.
+
+The notification bell was the case that proved it. Its task rows went through
+`openLinkedTaskDetail`, whose mobile branch is exactly that push, and a task
+opened from the bell on a phone could not be left. **A global entry point
+opens a task by beaming to `/tasks/<id>`** — the list, the logbook cards, the
+Daily OS lanes and the bell all do — so the route is the router's on every
+form factor: on a phone `TasksLocation` stacks `TaskDetailsPage` above the tab
+root with a history entry behind it, on desktop it returns the root page alone
+and selects the task in the split through `resetDesktopTaskDetail`. The beam
+stacks on whatever the Tasks tab already held, like every other beam into a
+tab: a Tasks tab parked on `/tasks/A` while the bell is tapped elsewhere walks
+back through A before reaching the list. That is deliberate — a notification
+tap must not discard the tab's history — and `beamBack` always has a step to
+take. `openLinkedTaskDetail` remains what its name says: a linked task layered
+on top of an *open* task detail, where the base task's own history still gives
+`beamBack` something to pop.
 
 ## Background tabs must not steal the foreground
 
