@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/plaza/domain/attention.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
+import 'package:lotti/features/plaza/ui/checklist_ticks.dart';
 import 'package:lotti/features/plaza/ui/facade_widget.dart';
+import 'package:lotti/features/plaza/ui/plaza_style.dart';
 
 import '../../../widget_test_utils.dart';
+
+final _now = DateTime.utc(2026, 7, 15);
 
 PlazaTask _task({
   PlazaTaskState state = PlazaTaskState.open,
@@ -29,20 +34,35 @@ PlazaTask _task({
   );
 }
 
-Widget _host(PlazaTask task, {bool interactive = false}) {
+Widget _host(
+  PlazaTask task, {
+  FacadeVariant variant = FacadeVariant.live,
+  ChecklistTicks? ticks,
+  VoidCallback? onOpen,
+  bool focused = false,
+}) {
   return makeTestableWidget2(
     Center(
       child: SizedBox(
-        width: 500,
-        height: 700,
-        child: FacadeWidget(task: task, interactive: interactive),
+        width: 540,
+        height: 720,
+        child: FacadeWidget(
+          task: task,
+          attention: attentionFor(task, _now),
+          variant: variant,
+          widthMeters: 12,
+          pxPerMeter: 45,
+          ticks: ticks,
+          onOpen: onOpen,
+          focused: focused,
+        ),
       ),
     ),
   );
 }
 
 void main() {
-  testWidgets('shows title, state label, due date and link count', (
+  testWidgets('live facade shows title, chip, meta and progress', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -51,120 +71,154 @@ void main() {
           state: PlazaTaskState.inProgress,
           due: DateTime.utc(2026, 7, 17),
           links: ['a', 'b'],
-        ),
-      ),
-    );
-    expect(find.text('Negotiate sardine futures'), findsOneWidget);
-    expect(find.text('IN PROGRESS'), findsOneWidget);
-    expect(find.text('due Jul 17'), findsOneWidget);
-    expect(find.text('links 2'), findsOneWidget);
-  });
-
-  testWidgets('checklist progress renders as facade fill and counter', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      _host(
-        _task(
-          state: PlazaTaskState.inProgress,
           checklistItems: 4,
           progress: 0.5,
           openItems: ['Check bay two', 'Ask the dock crew'],
         ),
       ),
     );
-    final fill = tester.widget<FractionallySizedBox>(
-      find.byType(FractionallySizedBox),
-    );
-    expect(fill.heightFactor, 0.5);
+    expect(find.text('Negotiate sardine futures'), findsOneWidget);
+    expect(find.text('IN PROGRESS'), findsOneWidget);
+    expect(find.text('due Jul 17  ·  links 2'), findsOneWidget);
     expect(find.text('2/4'), findsOneWidget);
     expect(find.text('Check bay two'), findsOneWidget);
-    expect(find.text('Ask the dock crew'), findsOneWidget);
+    // The light bar spans half the base.
+    final bar = tester.widget<FractionallySizedBox>(
+      find.byType(FractionallySizedBox),
+    );
+    expect(bar.widthFactor, 0.5);
   });
 
-  testWidgets('near tier ticks a checklist item live; ticking strikes it', (
+  testWidgets('sign facade drops everything but title, chip and bar', (
     tester,
   ) async {
     await tester.pumpWidget(
       _host(
         _task(
           state: PlazaTaskState.inProgress,
+          due: DateTime.utc(2026, 7, 17),
           checklistItems: 2,
           openItems: ['Check bay two'],
+          coverUrl: 'https://demo.invalid/cover.webp',
         ),
-        interactive: true,
+        variant: FacadeVariant.sign,
       ),
     );
-    expect(
-      tester.widget<Checkbox>(find.byType(Checkbox)).onChanged,
-      isNotNull,
-    );
-    await tester.tap(find.byType(Checkbox));
-    await tester.pump();
-    final struck = tester.widget<Text>(find.text('Check bay two'));
-    expect(struck.style?.decoration, TextDecoration.lineThrough);
-
-    await tester.tap(find.byType(Checkbox));
-    await tester.pump();
-    final unstruck = tester.widget<Text>(find.text('Check bay two'));
-    expect(unstruck.style?.decoration, isNull);
+    expect(find.text('Negotiate sardine futures'), findsOneWidget);
+    expect(find.text('IN PROGRESS'), findsOneWidget);
+    expect(find.textContaining('due Jul 17'), findsNothing);
+    expect(find.text('Check bay two'), findsNothing);
+    expect(find.text('OPEN'), findsNothing);
+    expect(find.byType(Image), findsNothing);
+    // Bigger type than the live variant for the same wall.
+    final sign = tester.widget<Text>(find.text('Negotiate sardine futures'));
+    await tester.pumpWidget(_host(_task()));
+    final live = tester.widget<Text>(find.text('Negotiate sardine futures'));
+    expect(sign.style!.fontSize!, greaterThan(live.style!.fontSize!));
   });
 
-  testWidgets('static tier renders checkboxes disabled', (tester) async {
+  testWidgets('overdue overrides the chip; an in-progress task fills 35%', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _host(_task(due: DateTime.utc(2026, 7, 1))),
+    );
+    expect(find.text('OVERDUE'), findsOneWidget);
+    expect(find.text('OPEN'), findsNothing);
+
+    await tester.pumpWidget(_host(_task(state: PlazaTaskState.inProgress)));
+    final bar = tester.widget<FractionallySizedBox>(
+      find.byType(FractionallySizedBox),
+    );
+    expect(bar.widthFactor, 0.35);
+  });
+
+  testWidgets('ticking on the wall goes through the shared ticks', (
+    tester,
+  ) async {
+    final ticks = ChecklistTicks();
     await tester.pumpWidget(
       _host(
         _task(
-          // ignore: avoid_redundant_argument_values
-          state: PlazaTaskState.open,
-          checklistItems: 1,
-          openItems: ['Check bay two'],
+          state: PlazaTaskState.inProgress,
+          checklistItems: 3,
+          progress: 1 / 3,
+          openItems: ['Check bay two', 'Ask the dock crew'],
         ),
+        ticks: ticks,
       ),
     );
-    expect(
-      tester.widget<Checkbox>(find.byType(Checkbox)).onChanged,
-      isNull,
-    );
+    expect(find.text('1/3'), findsOneWidget);
+    await tester.tap(find.text('Check bay two'));
+    await tester.pump();
+    expect(ticks.isTicked('facade-test', 0), isTrue);
+    expect(find.text('2/3'), findsOneWidget);
+    final struck = tester.widget<Text>(find.text('Check bay two'));
+    expect(struck.style?.decoration, TextDecoration.lineThrough);
+
+    // A tick from elsewhere (the side panel) shows on the wall too.
+    ticks.toggle('facade-test', 1);
+    await tester.pump();
+    expect(find.text('3/3'), findsOneWidget);
   });
 
-  testWidgets('done tasks go green and quiet: dim title, muted chip', (
+  testWidgets('without ticks the items are inert; OPEN fires its callback', (
     tester,
   ) async {
-    await tester.pumpWidget(_host(_task(state: PlazaTaskState.done)));
-    expect(find.text('DONE'), findsOneWidget);
-    final title = tester.widget<Text>(find.text('Negotiate sardine futures'));
-    expect(title.style?.color, FacadeStyle.textDim);
-    final material = tester.widget<Material>(find.byType(Material).first);
-    expect(material.color, FacadeStyle.backgroundDone);
+    var opened = 0;
+    await tester.pumpWidget(
+      _host(
+        _task(checklistItems: 1, openItems: ['Check bay two']),
+        onOpen: () => opened++,
+      ),
+    );
+    await tester.tap(find.text('Check bay two'));
+    await tester.pump();
+    expect(
+      tester.widget<Text>(find.text('Check bay two')).style?.decoration,
+      isNull,
+    );
+    await tester.tap(find.text('OPEN'));
+    expect(opened, 1);
   });
 
-  testWidgets('a cover URL renders the image slot; broken loads collapse', (
+  testWidgets('the OPEN chip and the state chip use the design colours', (
     tester,
   ) async {
     await tester.pumpWidget(
-      _host(_task(coverUrl: 'https://demo.invalid/cover.webp')),
+      _host(_task(state: PlazaTaskState.blocked), onOpen: () {}),
     );
-    // The 16:9 frame exists; the test HTTP client fails the fetch and the
-    // errorBuilder collapses it without throwing into the test harness.
-    expect(find.byType(AspectRatio), findsOneWidget);
-    await tester.pump();
-    expect(tester.takeException(), isNull);
-    // The failed load renders no image pixels — the slot collapsed to the
-    // errorBuilder's empty box instead of showing a broken image.
-    expect(find.byType(RawImage), findsNothing);
+    expect(find.text('BLOCKED'), findsOneWidget);
+    final open = tester.widget<Container>(
+      find.ancestor(of: find.text('OPEN'), matching: find.byType(Container)).first,
+    );
+    expect((open.decoration! as BoxDecoration).color, PlazaStyle.teal);
+  });
+
+  testWidgets('focused draws the teal ring', (tester) async {
+    await tester.pumpWidget(_host(_task(), focused: true));
+    final ringed = tester
+        .widgetList<Container>(find.byType(Container))
+        .where((c) => c.foregroundDecoration != null);
+    expect(ringed, hasLength(1));
+    final border = (ringed.first.foregroundDecoration! as BoxDecoration).border!;
+    expect(border.top.color, PlazaStyle.teal);
+    await tester.pumpWidget(_host(_task()));
     expect(
-      find.descendant(
-        of: find.byType(AspectRatio),
-        matching: find.byType(SizedBox),
-      ),
-      findsOneWidget,
+      tester
+          .widgetList<Container>(find.byType(Container))
+          .where((c) => c.foregroundDecoration != null),
+      isEmpty,
     );
   });
 
-  test('state colors and labels cover every state', () {
-    for (final state in PlazaTaskState.values) {
-      expect(FacadeStyle.stateLabel(state), isNotEmpty);
-      expect(FacadeStyle.stateColor(state).a, greaterThan(0));
-    }
+  testWidgets('a broken cover collapses without throwing', (tester) async {
+    await tester.pumpWidget(
+      _host(_task(coverUrl: 'https://demo.invalid/cover.webp')),
+    );
+    expect(find.byType(Image), findsOneWidget);
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+    expect(find.byType(RawImage), findsNothing);
   });
 }

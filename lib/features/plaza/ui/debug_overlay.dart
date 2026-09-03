@@ -7,10 +7,11 @@ class PlazaHarnessStats extends ChangeNotifier {
   double avgFrameMs = 0;
   double worstFrameMs = 0;
   int buildings = 0;
-  int near = 0;
-  int mid = 0;
+  int live = 0;
+  int sign = 0;
   int far = 0;
   int captures = 0;
+  int surfaceCaptures = 0;
   double lastCaptureMs = 0;
   int promotions = 0;
 
@@ -22,34 +23,30 @@ class PlazaHarnessStats extends ChangeNotifier {
 class PlazaLayoutKnobs {
   double pxPerMeter = 90;
   double roadWidth = 25;
-  double maxHeight = 12;
+  double maxHeight = 14;
 }
 
-/// The M0 instrumentation and knobs: frame time, tier counts, capture
-/// stats, plus the levers used to find the live-widget ceiling.
+/// Frame time, tier counts, capture stats and the LOD budget knobs.
+/// Hidden by default; the backtick key shows it.
 class PlazaDebugOverlay extends StatelessWidget {
   const PlazaDebugOverlay({
     required this.stats,
     required this.config,
     required this.knobs,
-    required this.presetLabel,
-    required this.onCyclePreset,
+    required this.datasetLabel,
     required this.onConfigChanged,
     required this.onKnobsApplied,
-    required this.onToggleOverhead,
     super.key,
   });
 
   final PlazaHarnessStats stats;
   final FacadeLodConfig config;
   final PlazaLayoutKnobs knobs;
-  final String presetLabel;
-  final VoidCallback onCyclePreset;
+  final String datasetLabel;
   final VoidCallback onConfigChanged;
 
   /// Fired when a layout slider is released — the scene rebuilds.
   final VoidCallback onKnobsApplied;
-  final VoidCallback onToggleOverhead;
 
   @override
   Widget build(BuildContext context) {
@@ -100,32 +97,51 @@ class PlazaDebugOverlay extends StatelessWidget {
                   ],
                 ),
                 const Divider(color: Color(0xFF2A2E38)),
-                Text('buildings ${stats.buildings}   preset $presetLabel'),
+                Text('buildings ${stats.buildings}   data $datasetLabel'),
                 Text(
-                  'live ${stats.near}   static ${stats.mid}   '
-                  'far ${stats.far}',
+                  'live ${stats.live}   sign ${stats.sign}   far ${stats.far}',
                 ),
                 Text(
-                  'captures ${stats.captures}   '
+                  'captures ${stats.captures}+${stats.surfaceCaptures}   '
                   'last ${stats.lastCaptureMs.toStringAsFixed(1)} ms   '
                   'promos ${stats.promotions}',
                 ),
                 const Divider(color: Color(0xFF2A2E38)),
                 _slider(
-                  label: 'live cap ${config.nearCap}',
-                  value: config.nearCap.toDouble(),
-                  max: 100,
+                  label: 'live cap ${config.liveCap}',
+                  value: config.liveCap.toDouble(),
+                  max: 40,
                   onChanged: (v) {
-                    config.nearCap = v.round();
+                    config.liveCap = v.round();
                     onConfigChanged();
                   },
                 ),
                 _slider(
-                  label: 'static cap ${config.midCap}',
-                  value: config.midCap.toDouble(),
+                  label: 'sign cap ${config.signCap}',
+                  value: config.signCap.toDouble(),
                   max: 300,
                   onChanged: (v) {
-                    config.midCap = v.round();
+                    config.signCap = v.round();
+                    onConfigChanged();
+                  },
+                ),
+                _slider(
+                  label: 'live ${config.liveDistance.round()} m',
+                  value: config.liveDistance,
+                  min: 5,
+                  max: 80,
+                  onChanged: (v) {
+                    config.liveDistance = v;
+                    onConfigChanged();
+                  },
+                ),
+                _slider(
+                  label: 'sign ${config.signDistance.round()} m',
+                  value: config.signDistance,
+                  min: 20,
+                  max: 400,
+                  onChanged: (v) {
+                    config.signDistance = v;
                     onConfigChanged();
                   },
                 ),
@@ -175,23 +191,8 @@ class PlazaDebugOverlay extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 4),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 4,
-                  children: [
-                    OutlinedButton(
-                      onPressed: onCyclePreset,
-                      child: const Text('preset'),
-                    ),
-                    OutlinedButton(
-                      onPressed: onToggleOverhead,
-                      child: const Text('overhead'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
                 const Text(
-                  'WASD walk · space stop/go · drag look · shift sprint',
+                  '` hides this panel',
                   style: TextStyle(color: Color(0xFF6B7280)),
                 ),
               ],

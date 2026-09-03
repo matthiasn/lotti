@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/plaza/domain/attention.dart';
 import 'package:lotti/features/plaza/domain/plaza_generator.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
 
@@ -75,6 +76,48 @@ void main() {
           expect(target, isNot(task.id));
         }
       }
+    });
+  });
+
+  group('attention signals', () {
+    for (final preset in PlazaPreset.values) {
+      test('the ${preset.name} preset has anomalies at its frontier', () {
+        final tasks = generatePlazaTasks(preset: preset);
+        final now = plazaNowFor(tasks);
+        final verdicts = attentionForAll(tasks, now);
+        expect(
+          verdicts.where((a) => a.overdue).length,
+          greaterThanOrEqualTo(2),
+        );
+        expect(
+          verdicts.where((a) => a.dueSoon).length,
+          greaterThanOrEqualTo(2),
+        );
+        expect(anomalies(verdicts).length, greaterThanOrEqualTo(3));
+        expect(tasks.map((t) => t.priority).toSet().length, greaterThan(1));
+      });
+    }
+
+    test('planting signals changes dates only, never placement inputs', () {
+      final tasks = generatePlazaTasks(preset: PlazaPreset.small);
+      final again = generatePlazaTasks(preset: PlazaPreset.small);
+      for (var i = 0; i < tasks.length; i++) {
+        expect(tasks[i].id, again[i].id);
+        expect(tasks[i].createdAt, again[i].createdAt);
+      }
+      // Creation times are still strictly increasing (bursty but ordered).
+      for (var i = 1; i < tasks.length; i++) {
+        expect(tasks[i].createdAt.isAfter(tasks[i - 1].createdAt), isTrue);
+      }
+    });
+
+    test('plazaNowFor is the day after the newest task', () {
+      final tasks = generatePlazaTasks(preset: PlazaPreset.small);
+      final newest = tasks
+          .map((t) => t.createdAt)
+          .reduce((a, b) => a.isAfter(b) ? a : b);
+      expect(plazaNowFor(tasks), newest.add(const Duration(days: 1)));
+      expect(plazaNowFor(const []), DateTime.utc(2026, 3, 2));
     });
   });
 }

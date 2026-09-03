@@ -42,6 +42,8 @@ class PlazaTask {
     this.coverImageUrl,
     this.openChecklistItems = const [],
     this.deleted = false,
+    this.priority = 2,
+    this.lastActivityAt,
   });
 
   /// Placement tiebreak within a week bucket.
@@ -72,4 +74,20 @@ class PlazaTask {
 
   /// Deleted tasks leave a fenced empty lot; the street never closes up.
   final bool deleted;
+
+  /// 0 = urgent, 1 = high, 2 = medium, 3 = low (mirrors `TaskPriority`).
+  /// Drives building height and the attention score.
+  final int priority;
+
+  /// When the task was last touched; null means "at creation". Drives the
+  /// stale-in-progress attention signal.
+  final DateTime? lastActivityAt;
+
+  /// The instant the task was last worked on, for attention scoring.
+  DateTime get activityAt => lastActivityAt ?? createdAt;
+
+  /// Signal weight for building height: how much the task is connected to
+  /// and how much of it is still open.
+  int get heft =>
+      linkedTaskIds.length + checklistItems + openChecklistItems.length;
 }

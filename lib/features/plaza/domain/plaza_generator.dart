@@ -80,7 +80,23 @@ const _categoryColors = [
   0xFF6ECBD8, // admin — teal
 ];
 
+/// The clock a synthetic preset is scored against: the day after the
+/// newest task was created, so "overdue", "due soon" and "stale" mean
+/// something without wall-clock time leaking into the harness.
+DateTime plazaNowFor(List<PlazaTask> tasks) {
+  if (tasks.isEmpty) return DateTime.utc(2026, 3, 2);
+  final newest = tasks
+      .map((t) => t.createdAt)
+      .reduce((a, b) => a.isAfter(b) ? a : b);
+  return newest.add(const Duration(days: 1));
+}
+
 /// Generates a reproducible task list for [preset] from [seed].
+///
+/// Besides titles, states and checklists it plants the attention signals
+/// the plaza is built to surface: a few blocked tasks, overdue and
+/// due-soon dates around the frontier, stale in-progress work, and a
+/// spread of priorities so heights vary.
 List<PlazaTask> generatePlazaTasks({
   required PlazaPreset preset,
   int seed = 42,
@@ -144,6 +160,21 @@ List<PlazaTask> generatePlazaTasks({
       if (target != i) links.add('plaza-$seed-$target');
     }
 
+    final priorityRoll = rng.nextDouble();
+    final priority = priorityRoll < 0.08
+        ? 0
+        : priorityRoll < 0.3
+        ? 1
+        : priorityRoll < 0.85
+        ? 2
+        : 3;
+
+    // In-progress work is usually fresh; one in four is stale.
+    final active = state == PlazaTaskState.inProgress;
+    final lastActivityAt = active && rng.nextDouble() < 0.75
+        ? null
+        : cursor.add(Duration(hours: 6 + rng.nextInt(48)));
+
     tasks.add(
       PlazaTask(
         id: 'plaza-$seed-$i',
@@ -159,10 +190,55 @@ List<PlazaTask> generatePlazaTasks({
         linkedTaskIds: links,
         categoryColor: _categoryColors[rng.nextInt(_categoryColors.length)],
         deleted: rng.nextDouble() < 0.03,
+        priority: priority,
+        lastActivityAt: lastActivityAt,
       ),
     );
   }
-  return tasks;
+  return _plantFrontierSignals(tasks, rng);
+}
+
+/// Re-dates a handful of the newest open tasks so the frontier has
+/// something to say: two overdue, three due within days, one stale. Only
+/// dates change, never ids or creation times, so placement is untouched.
+List<PlazaTask> _plantFrontierSignals(List<PlazaTask> tasks, math.Random rng) {
+  final now = plazaNowFor(tasks);
+  final out = [...tasks];
+  final recentOpen = <int>[];
+  for (var i = out.length - 1; i >= 0 && recentOpen.length < 6; i--) {
+    if (out[i].state == PlazaTaskState.open ||
+        out[i].state == PlazaTaskState.inProgress) {
+      recentOpen.add(i);
+    }
+  }
+  for (final (n, i) in recentOpen.indexed) {
+    final t = out[i];
+    final due = n < 2
+        ? now.subtract(Duration(days: 3 + n * 9))
+        : n < 5
+        ? now.add(Duration(days: n - 2))
+        : t.due;
+    final stale = n == 5 && t.state == PlazaTaskState.inProgress;
+    out[i] = PlazaTask(
+      id: t.id,
+      createdAt: t.createdAt,
+      title: t.title,
+      state: t.state,
+      due: due,
+      progress: t.progress,
+      checklistItems: t.checklistItems,
+      openChecklistItems: t.openChecklistItems,
+      linkedTaskIds: t.linkedTaskIds,
+      categoryColor: t.categoryColor,
+      deleted: t.deleted,
+      priority: t.priority,
+      lastActivityAt: stale
+          ? now.subtract(const Duration(days: 21))
+          : t.lastActivityAt,
+      coverImageUrl: t.coverImageUrl,
+    );
+  }
+  return out;
 }
 
 String _title(math.Random rng) {
