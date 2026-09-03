@@ -105,54 +105,30 @@ test/features/plaza/                one test file per source file above
 tool/plaza/capture_tour.py          Linux/X11 script: runs PLAZA_TOUR and
                                     grabs one PNG per stop (this handover)
 docs/plaza/                         this file, DESIGN.md, screenshots/
+knowledge/features/plaza.md         the runtime map (architecture, invariants,
+                                    tiers, gotchas) — the authoritative home
 ```
 
 ### 2.3 Architecture
 
-```mermaid
-flowchart LR
-  subgraph data [Data, pure Dart]
-    Gen[plaza_generator\nseeded presets] --> Tasks[List of PlazaTask]
-    Demo[demo_world_projection\npenguin world] --> Tasks
-    Tasks --> Layout[StreetLayout.plan\ncreatedAt + id, week buckets]
-    Layout --> Plan[StreetPlan\nsegments + placements]
-  end
-  subgraph scene [Scene, flutter_scene]
-    Plan --> SceneCtl[PlazaSceneController\nground, road, boxes, plates]
-    SceneCtl --> Buildings[PlazaBuilding list\nfacade anchor + centre]
-    Buildings --> LOD[FacadeLodManager\nnear / mid / far, caps, hysteresis]
-    LOD -->|WidgetComponent| Facade[FacadeWidget\nlive or captured]
-  end
-  subgraph harness [Harness]
-    Cam[FlyCameraController] -->|camera position| LOD
-    Cam --> View[SceneView]
-    SceneCtl --> View
-    Stats[PlazaHarnessStats] --> Overlay[PlazaDebugOverlay]
-    LOD --> Stats
-  end
-```
+The runtime map — the data → layout → scene → LOD → harness flow, the
+week-bucket layout and its invariants, the facade tier state machine, the
+harness modes and the gotchas — is the knowledge concept
+[knowledge/features/plaza.md](../../knowledge/features/plaza.md). Read it
+before changing anything under `lib/features/plaza`; it is the one home for
+those facts, and `make knowledge_check` validates it.
 
-**Street layout (`domain/street_layout.dart`).** Placement is a pure function
-of `(createdAt, id)`; there is no global creation order in a local-first app
-with several devices, so the layout must merge identically everywhere.
+The two facts from it that shape everything in [DESIGN.md](DESIGN.md):
 
-- One **week bucket** (UTC Monday-anchored) is one plot group, 46 m of road.
-  Tasks inside a bucket are ordered by `(createdAt, id)`, alternate road
-  sides, and share the group's length weighted by a per-id hash (so widths
-  vary but never change).
-- **Empty weeks collapse** to a 7 m gap, drawn darker.
-- **Road bends** after roughly every third bucket are a hash of
-  `(projectSeed, bucketIndex)`, never of task data.
-- **Building height** is content-driven: title lines, meta row, cover art,
-  open checklist items, capped at 12 m. Still a pure function of merged data.
-- **Deleted tasks leave a fenced empty lot.** The street never closes up.
-- Property tests pin: shuffled arrival gives an identical street; appending a
-  task never moves an existing building; a late-syncing task only jostles its
-  own week bucket. Known, accepted edge: a task syncing into a previously
-  *empty* week widens that gap into a plot group and shifts everything
-  downstream (documented in the tests).
+- **Placement is a pure function of `(createdAt, id)` bucketed by UTC week**,
+  so the street merges identically on every device. Appending never moves an
+  existing building; a late-syncing task jostles only its own week.
+- **Facades come in three tiers**: near = live interactive widget captured
+  every frame (hard cap 12), mid = hosted widget captured on a slow interval
+  (cap 60), far = a state-coloured plate and no widget.
 
-Street sizes the layout produces for the presets, with default knobs:
+Street sizes the layout produces for the presets, with default knobs (these
+are measurements of the current generator, not design values):
 
 | Preset | Tasks | Weeks (built + gaps) | Street length | Busiest week |
 |---|---|---|---|---|
@@ -162,20 +138,7 @@ Street sizes the layout produces for the presets, with default knobs:
 | large | 300 | 93 (86 + 7) | **4.0 km** | 12 |
 
 At the 12 m/s walk speed the large street takes five and a half minutes to
-walk end to end. That number alone explains most of section 5.
-
-**Facade LOD (`scene/facade_lod_manager.dart`).** Every frame, buildings are
-ranked by camera distance (with 15 % hysteresis for surfaces already
-promoted) and assigned a tier under hard caps:
-
-| Tier | Default | What it is | Cost |
-|---|---|---|---|
-| near | ≤ 12 within 35 m | `WidgetComponent` with `WidgetUpdatePolicy.everyFrame`, interactive (checkboxes work) | ~0.6 ms/widget/frame (capture) |
-| mid | ≤ 60 within 140 m | Same widget, non-interactive, re-captured on a 3 s interval | one capture per 3 s |
-| far | everything else | No widget; a flat colour plate on the box front, coloured by state | free |
-
-Caps and distances are the sliders in the debug overlay. `forceAllLive` is
-the naive version M0 exists to disprove.
+walk end to end. That number alone explains most of section 6.
 
 **Facade widget (`ui/facade_widget.dart`).** Shopfront order: category bar,
 title (44 px, up to six lines), due / links row, full-bleed 16:9 cover art,
@@ -191,15 +154,20 @@ the **frontier**: the end of the newest week, looking back down the street.
 
 ### 2.4 Tests
 
+One test file per source file, mirroring the path. Run only the files for
+the sources you touched (repository rule; never a whole feature suite), e.g.:
+
 ```sh
-fvm flutter test test/features/plaza
+fvm flutter test test/features/plaza/domain/street_layout_test.dart
+fvm flutter test test/features/plaza/ui/plaza_tour_test.dart
 ```
 
 All pure-Dart layers (task model, generator, layout, demo projection, tour
 poses) are covered without a GPU. `PlazaSceneController` and
-`FacadeLodManager` construct `flutter_scene` meshes and are exercised only by
-running the harness; the tour data class `TourScene` exists precisely so the
-pose maths can be tested without them.
+`FacadeLodManager` construct `flutter_scene` meshes, are exercised only by
+running the harness, and are excluded from coverage together with
+`dev_main.dart`; the tour data class `TourScene` exists precisely so the pose
+maths can be tested without them.
 
 ## 3. Screenshots (current state, Linux VM, 1600×1000 window)
 

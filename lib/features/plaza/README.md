@@ -25,10 +25,13 @@ What lives here:
 - `ui/` — the facade widget, the walk camera, the debug overlay and the
   fixed screenshot tour (`PLAZA_TOUR=1`).
 
-Everything else — the vision, the run modes and environment variables, the
-screenshots of the current state, the benchmark and its interpretation, the
-dependency caveats and the full list of why it is not usable yet — is in
+The vision, the screenshots of the current state, the benchmark and its
+interpretation, and the full list of why it is not usable yet are in
 [docs/plaza/HANDOVER.md](../../../docs/plaza/HANDOVER.md). The proposal for
 making it usable (navigation, districts, information design at distance,
 performance budget, milestones M1–M6) is in
 [docs/plaza/DESIGN.md](../../../docs/plaza/DESIGN.md).
+
+How it runs — the layout invariants, the facade tiers, the harness modes and
+the gotchas — is the concept
+[knowledge/features/plaza.md](../../../knowledge/features/plaza.md).

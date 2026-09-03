@@ -20,19 +20,32 @@ The script keys on the `PLAZA_TOUR ready <i> <name>` lines the harness prints
 once a stop has settled, writes <out_dir>/<name>.png, and exits after
 `PLAZA_TOUR done` (or a 240 s timeout).
 """
-import os, re, subprocess, sys, time
+import os, platform, re, subprocess, sys, threading, time
 from pathlib import Path
 from PIL import Image
 from Xlib import display, X
 from Xlib.ext import xtest
 
 out = Path(sys.argv[1]); out.mkdir(parents=True, exist_ok=True)
+ARCH_DIRS = {'aarch64': 'arm64', 'arm64': 'arm64', 'x86_64': 'x64', 'amd64': 'x64'}
+arch = ARCH_DIRS.get(platform.machine().lower())
+if arch is None:
+    sys.exit(f'unsupported host architecture {platform.machine()!r}')
+bundle = Path('build/linux') / arch / 'debug/bundle/lotti'
+if not bundle.exists():
+    sys.exit(f'{bundle} not found; build it first with '
+             'fvm flutter build linux --debug -t lib/features/plaza/dev_main.dart')
+
 env = dict(os.environ, GDK_BACKEND='x11', PLAZA_TOUR='1',
            FLUTTER_ENGINE_SWITCHES='1', FLUTTER_ENGINE_SWITCH_1='enable-flutter-gpu',
            LOTTI_WINDOW_SIZE=os.environ.get('LOTTI_WINDOW_SIZE', '1600x1000'))
 extra = {k: v for k, v in os.environ.items() if k.startswith('PLAZA_')}
 env.update(extra)
-proc = subprocess.Popen(['build/linux/arm64/debug/bundle/lotti'], env=env,
+# Benchmark mode wins over tour mode in the harness; an inherited flag would
+# silently produce no `PLAZA_TOUR` lines at all.
+env.pop('PLAZA_BENCH', None)
+env['PLAZA_TOUR'] = '1'
+proc = subprocess.Popen([str(bundle)], env=env,
                         stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
 d = display.Display()
 root = d.screen().root
@@ -61,7 +74,12 @@ def grab(w, path):
     print(f'captured {path} {g.width}x{g.height}', flush=True)
 
 win = None
-deadline = time.time() + 240
+TIMEOUT_S = 240
+# The read loop blocks on stdout, so a silent hang would never reach a
+# deadline check; a watchdog terminates the child, which closes the pipe.
+watchdog = threading.Timer(TIMEOUT_S, proc.terminate)
+watchdog.daemon = True
+watchdog.start()
 for line in proc.stdout:
     line = line.rstrip()
     if 'PLAZA_TOUR' in line or 'Error' in line or 'error' in line:
@@ -86,8 +104,9 @@ for line in proc.stdout:
             xtest.fake_input(d, X.ButtonRelease, 1); d.sync()
             time.sleep(1.5)
             grab(win, out / f'{m.group(2)}-ticked.png')
-    if 'PLAZA_TOUR done' in line or time.time() > deadline:
+    if 'PLAZA_TOUR done' in line:
         break
+watchdog.cancel()
 proc.terminate()
 try: proc.wait(5)
 except Exception: proc.kill()

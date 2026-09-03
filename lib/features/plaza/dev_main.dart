@@ -148,6 +148,21 @@ class _PlazaHarnessState extends State<_PlazaHarness> {
     }
   }
 
+  /// Projects the built scene into the tour's plain data.
+  static TourScene _tourSceneOf(PlazaSceneController scene) => TourScene(
+    frontierEye: scene.frontierEye,
+    frontierYaw: scene.frontierYaw,
+    plan: scene.plan,
+    buildings: [
+      for (final b in scene.buildings)
+        TourBuilding(
+          task: b.task,
+          placement: b.placement,
+          facadeCenter: b.facadeCenter,
+        ),
+    ],
+  );
+
   _HarnessPreset _presetFor(TourPreset preset) => switch (preset) {
     TourPreset.large => _HarnessPreset.large,
     TourPreset.demo => _HarnessPreset.demo,
@@ -162,7 +177,7 @@ class _PlazaHarnessState extends State<_PlazaHarness> {
       // A fresh scene needs a rebuild before the pose is worth showing.
       if (mounted) setState(() {});
     }
-    final pose = stop.pose(TourScene.fromController(_sceneController));
+    final pose = stop.pose(_tourSceneOf(_sceneController));
     _camera
       ..reset(position: pose.position, yaw: pose.yaw, pitch: pose.pitch)
       ..overhead = pose.overhead

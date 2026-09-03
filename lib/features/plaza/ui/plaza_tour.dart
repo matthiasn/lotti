@@ -10,7 +10,6 @@ import 'dart:math' as math;
 
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
 import 'package:lotti/features/plaza/domain/street_layout.dart';
-import 'package:lotti/features/plaza/scene/plaza_scene.dart';
 import 'package:vector_math/vector_math.dart' show Vector3;
 
 /// Which harness dataset a tour stop is shot on.
@@ -46,7 +45,8 @@ class TourBuilding {
 }
 
 /// The street as the tour sees it — plain data, so poses are testable
-/// without a GPU-backed scene.
+/// without a GPU-backed scene. The harness projects its
+/// `PlazaSceneController` into this.
 class TourScene {
   const TourScene({
     required this.frontierEye,
@@ -54,21 +54,6 @@ class TourScene {
     required this.plan,
     required this.buildings,
   });
-
-  /// Projects a built scene into tour terms.
-  factory TourScene.fromController(PlazaSceneController scene) => TourScene(
-    frontierEye: scene.frontierEye,
-    frontierYaw: scene.frontierYaw,
-    plan: scene.plan,
-    buildings: [
-      for (final b in scene.buildings)
-        TourBuilding(
-          task: b.task,
-          placement: b.placement,
-          facadeCenter: b.facadeCenter,
-        ),
-    ],
-  );
 
   final Vector3 frontierEye;
   final double frontierYaw;
