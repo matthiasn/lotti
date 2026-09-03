@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:lotti/features/plaza/domain/attention.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
@@ -63,24 +65,25 @@ class FacadeWidget extends StatelessWidget {
   Widget _build(BuildContext context, ChecklistTicks? t) {
     double m(double meters) => meters * pxPerMeter;
     final w = widthMeters;
-    final titleM = (0.1 * w).clamp(0.9, 2.0) * (_live ? 1 : 1.35);
+    var titleM = (0.1 * w).clamp(0.9, 2.0) * (_live ? 1 : 1.35);
+    // Never break a word in the middle of a wall: shrink the title until
+    // its longest word fits the measure.
+    final innerPx = (w - 2 * 0.08 * w) * pxPerMeter;
+    final longest = task.title
+        .split(RegExp(r'\s+'))
+        .fold<int>(0, (n, word) => math.max(n, word.length));
+    while (titleM > 0.55 && longest * m(titleM) * 0.6 > innerPx) {
+      titleM *= 0.9;
+    }
     final itemM = (0.22 * titleM).clamp(0.55, 1.2);
     final metaM = (0.15 * titleM).clamp(0.45, 1.0);
     final chipM = (0.12 * titleM).clamp(0.4, 0.9);
     final pad = m(0.08 * w);
     final chip = PlazaStyle.chip(attention);
-    final bar = PlazaStyle.lightBar(attention);
     final items = task.openChecklistItems;
     final tickedCount = t?.tickedCount(task.id) ?? 0;
     final total = task.checklistItems;
     final done = task.checklistItems - items.length + tickedCount;
-    final pct = task.state == PlazaTaskState.done
-        ? 1.0
-        : total > 0
-        ? done / total
-        : task.state == PlazaTaskState.inProgress
-        ? 0.35
-        : 0.0;
     final metaBits = <String>[
       if (task.due != null) 'due ${shortDate(task.due!)}',
       if (task.linkedTaskIds.isNotEmpty) 'links ${task.linkedTaskIds.length}',
@@ -182,58 +185,80 @@ class FacadeWidget extends StatelessWidget {
                           ),
                         ],
                         const Spacer(),
-                        Row(
-                          children: [
-                            _Chip(
-                              label: chip.label,
-                              fill: chip.fill,
-                              ink: chip.ink,
-                              fontPx: m(chipM),
+                        if (!_live)
+                          // Street range: the state is a full-width marquee
+                          // band, not a sticker.
+                          Container(
+                            width: double.infinity,
+                            padding: EdgeInsets.symmetric(
+                              vertical: m(chipM) * 0.45,
                             ),
-                            if (_live && onOpen != null) ...[
-                              SizedBox(width: m(0.3)),
-                              _Chip(
-                                label: 'OPEN',
-                                fill: PlazaStyle.teal,
-                                ink: const Color(0xFF0D0D0D),
-                                fontPx: m(chipM),
-                                onTap: onOpen,
+                            decoration: BoxDecoration(
+                              color: chip.fill,
+                              borderRadius: BorderRadius.circular(m(0.12)),
+                            ),
+                            child: Text(
+                              chip.label,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontFamily: PlazaStyle.fontText,
+                                fontSize: m(chipM * 1.6),
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: m(chipM) * 0.12,
+                                color: chip.ink,
                               ),
-                            ],
-                            const Spacer(),
-                            if (_live && total > 0)
-                              Text(
-                                '$done/$total',
-                                style: TextStyle(
-                                  fontFamily: PlazaStyle.fontMono,
-                                  fontSize: m(metaM),
-                                  color: PlazaStyle.textDim,
+                            ),
+                          )
+                        else
+                          Row(
+                            children: [
+                              // Chips scale down together on a narrow
+                              // wall rather than overflowing the row.
+                              Flexible(
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: Alignment.centerLeft,
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      _Chip(
+                                        label: chip.label,
+                                        fill: chip.fill,
+                                        ink: chip.ink,
+                                        fontPx: m(chipM),
+                                      ),
+                                      if (onOpen != null) ...[
+                                        SizedBox(width: m(0.3)),
+                                        _Chip(
+                                          label: 'DETAILS ›',
+                                          fill: PlazaStyle.teal,
+                                          ink: const Color(0xFF0D0D0D),
+                                          fontPx: m(chipM),
+                                          onTap: onOpen,
+                                        ),
+                                      ],
+                                    ],
+                                  ),
                                 ),
                               ),
-                          ],
-                        ),
+                              if (total > 0) ...[
+                                SizedBox(width: m(0.3)),
+                                Text(
+                                  '$done/$total',
+                                  style: TextStyle(
+                                    fontFamily: PlazaStyle.fontMono,
+                                    fontSize: m(metaM),
+                                    color: PlazaStyle.textDim,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
                       ],
                     ),
                   ),
                 ),
               ],
-            ),
-            // Progress light bar along the base, readable from any angle.
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: FractionallySizedBox(
-                alignment: Alignment.centerLeft,
-                widthFactor: pct.clamp(0.0, 1.0),
-                child: Container(
-                  height: m(0.3),
-                  decoration: BoxDecoration(
-                    color: bar,
-                    boxShadow: [BoxShadow(color: bar, blurRadius: m(0.6))],
-                  ),
-                ),
-              ),
             ),
           ],
         ),

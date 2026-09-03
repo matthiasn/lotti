@@ -35,6 +35,7 @@ import 'package:lotti/features/plaza/scene/plaza_scene.dart';
 import 'package:lotti/features/plaza/scene/plaza_sprites.dart';
 import 'package:lotti/features/plaza/scene/plaza_surfaces.dart';
 import 'package:lotti/features/plaza/scene/plaza_world.dart';
+import 'package:lotti/features/plaza/scene/wall_textures.dart';
 import 'package:lotti/features/plaza/ui/checklist_ticks.dart';
 import 'package:lotti/features/plaza/ui/debug_overlay.dart';
 import 'package:lotti/features/plaza/ui/fly_camera_controller.dart';
@@ -114,6 +115,7 @@ class _PlazaHarnessState extends State<_PlazaHarness> {
   /// Sprites and the gradient sky touch the base shader library, which must
   /// be loaded before any of them is constructed.
   bool _ready = false;
+  WallTextures? _walls;
 
   @override
   void initState() {
@@ -123,6 +125,7 @@ class _PlazaHarnessState extends State<_PlazaHarness> {
 
   Future<void> _boot() async {
     await Scene.initializeStaticResources();
+    _walls = await WallTextures.load();
     if (!mounted) return;
     _load();
     if (_tourMode) {
@@ -156,6 +159,8 @@ class _PlazaHarnessState extends State<_PlazaHarness> {
       ),
     );
     _sceneController = PlazaSceneController(world: _world);
+    final walls = _walls;
+    if (walls != null) _sceneController.attachWallTextures(walls);
     _lod = FacadeLodManager(
       buildings: _sceneController.buildings,
       config: _config,
@@ -180,6 +185,7 @@ class _PlazaHarnessState extends State<_PlazaHarness> {
       pxPerMeter: _sceneController.pxPerMeter,
       bannerAnchors: _sceneController.bannerAnchors,
       jumbotronAnchor: _sceneController.jumbotronAnchor,
+      weekSignAnchors: _sceneController.weekSignAnchors,
     );
     _picker = PlazaPicker(controller: _sceneController, sprites: _sprites);
     final home =

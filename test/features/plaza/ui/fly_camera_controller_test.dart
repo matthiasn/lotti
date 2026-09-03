@@ -1,5 +1,6 @@
 import 'package:flutter/services.dart';
-import 'package:flutter_scene/scene.dart' show PerspectiveCamera;
+import 'package:flutter_scene/scene.dart'
+    show PerspectiveCamera, PerspectiveProjection;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/plaza/domain/plaza_layout.dart';
 import 'package:lotti/features/plaza/domain/street_layout.dart';
@@ -35,7 +36,8 @@ void main() {
           _down(LogicalKeyboardKey.keyW, PhysicalKeyboardKey.keyW),
         )
         ..update(1);
-      expect(camera.pose.z, closeTo(FlyCameraController.walkSpeed, 1e-9));
+      // One long step: the velocity blend has all but converged.
+      expect(camera.pose.z, closeTo(FlyCameraController.walkSpeed, 0.05));
       expect(camera.pose.y, eyeHeight);
       await simulateKeyUpEvent(LogicalKeyboardKey.keyW);
       final zAfterWalk = camera.pose.z;
@@ -63,7 +65,7 @@ void main() {
           _down(LogicalKeyboardKey.shiftLeft, PhysicalKeyboardKey.shiftLeft),
         )
         ..update(1);
-      expect(sprinter.pose.z, closeTo(walker.pose.z * 3, 1e-9));
+      expect(sprinter.pose.z, closeTo(walker.pose.z * 3, 0.05));
       await simulateKeyUpEvent(LogicalKeyboardKey.shiftLeft);
       await simulateKeyUpEvent(LogicalKeyboardKey.keyW);
     });
@@ -111,9 +113,48 @@ void main() {
         camera.update(0.1);
       }
       await simulateKeyUpEvent(LogicalKeyboardKey.keyW);
-      // 12 m of walking would end inside the box; the collider stops the
-      // walker at the facade plus the margin.
+      // Five metres of walking would end inside the box; the collider
+      // stops the walker at the facade plus the margin.
       expect(camera.pose.z, closeTo(8 - 3 - 0.6, 1e-6));
+    });
+  });
+
+  group('walk feel', () {
+    testWidgets('accelerates over the first steps and coasts to a stop', (
+      tester,
+    ) async {
+      final camera = _controller();
+      await simulateKeyDownEvent(LogicalKeyboardKey.keyW);
+      camera
+        ..handleKeyEvent(
+          _down(LogicalKeyboardKey.keyW, PhysicalKeyboardKey.keyW),
+        )
+        ..update(0.05);
+      final first = camera.pose.z;
+      expect(first, greaterThan(0));
+      expect(first, lessThan(FlyCameraController.walkSpeed * 0.05 * 0.6));
+      await simulateKeyUpEvent(LogicalKeyboardKey.keyW);
+      camera.handleKeyEvent(
+        _up(LogicalKeyboardKey.keyW, PhysicalKeyboardKey.keyW),
+      );
+      camera.update(0.05);
+      // Still moving right after the key-up, then settles.
+      expect(camera.pose.z, greaterThan(first));
+      for (var i = 0; i < 40; i++) {
+        camera.update(0.05);
+      }
+      final settled = camera.pose.z;
+      camera.update(0.05);
+      // ignore: cascade_invocations
+      expect(camera.pose.z, settled);
+    });
+
+    test('uses a 60° game-camera field of view', () {
+      final cam = _controller().camera() as PerspectiveCamera;
+      expect(
+        (cam.projection as PerspectiveProjection).fovRadiansY,
+        closeTo(60 * 3.141592653589793 / 180, 1e-9),
+      );
     });
   });
 

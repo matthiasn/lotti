@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/plaza/domain/attention.dart';
+import 'package:lotti/features/plaza/domain/plaza_layout.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
+import 'package:lotti/features/plaza/scene/plaza_world.dart';
 
 /// Dev-harness palette and type for the plaza's scene content.
 ///
@@ -94,6 +96,22 @@ abstract final class PlazaStyle {
         .withSaturation((hsl.saturation + 0.35).clamp(0.0, 1.0))
         .withLightness(0.62)
         .toColor();
+  }
+
+  /// Beacon colour by kind: navigation stops are teal, home is white, an
+  /// attention beacon takes its task's state colour.
+  static Color beaconColor(Beacon beacon, PlazaWorld world) {
+    switch (beacon.kind) {
+      case BeaconKind.home:
+        return const Color(0xFFF2FFFA);
+      case BeaconKind.attention:
+        final attention = world.attention[beacon.taskId];
+        return attention == null ? teal : lantern(attention.lantern);
+      case BeaconKind.block:
+      case BeaconKind.corner:
+      case BeaconKind.overview:
+        return teal;
+    }
   }
 
   /// Warm sodium-vapour lamp light.

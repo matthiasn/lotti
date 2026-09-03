@@ -116,4 +116,36 @@ void main() {
       expect(f.poseAt(0.5).yaw.abs(), closeTo(math.pi, 1e-9));
     });
   });
+
+  group('vertical trips', () {
+    test('a climb keeps its heading and gets no extra arc', () {
+      // Home to overview: mostly up, a little back.
+      const from = CameraPose(x: 0, y: 2.2, z: 0, yaw: 3.1);
+      const to = CameraPose(x: 0, y: 140, z: -60, yaw: 3.1, pitch: -0.9);
+      final f = Flight.plan(from, to);
+      expect(f.travelYaw, isNull);
+      expect(f.horizontalFraction, lessThan(0.55));
+      expect(f.poseAt(0.5).yaw, closeTo(3.1, 1e-9));
+      // Height is monotonic: no overshoot above the destination.
+      var last = from.y;
+      for (var t = 0.0; t <= 1.0001; t += 0.05) {
+        final y = f.poseAt(t).y;
+        expect(y, greaterThanOrEqualTo(last - 1e-9));
+        expect(y, lessThanOrEqualTo(to.y + 1e-9));
+        last = y;
+      }
+    });
+
+    test(
+      'a long, mostly horizontal trip still arcs, scaled by its ground share',
+      () {
+        const from = CameraPose(x: 0, y: 2.2, z: 0, yaw: 0);
+        const to = CameraPose(x: 0, y: 60, z: 200, yaw: 0);
+        final f = Flight.plan(from, to);
+        final dist = from.distanceTo(to);
+        expect(f.arc, closeTo(math.min(55, dist * 0.2) * (200 / dist), 1e-9));
+        expect(f.travelYaw, isNotNull);
+      },
+    );
+  });
 }

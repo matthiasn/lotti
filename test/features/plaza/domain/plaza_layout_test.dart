@@ -42,24 +42,44 @@ void main() {
         final along =
             (plaza.home.x - last.endX) * math.sin(last.headingRadians) +
             (plaza.home.z - last.endZ) * math.cos(last.headingRadians);
-        expect(along, closeTo(56, 1e-9));
+        expect(along, closeTo(60, 1e-9));
       },
     );
 
-    test('overview is high, farther back, pitched down the street', () {
-      expect(plaza.overview.y, 140);
-      expect(plaza.overview.pitch, lessThan(0));
-      expect(plaza.overview.distanceTo(plaza.home), greaterThan(140));
-      expect(_norm(plaza.overview.yaw), closeTo(_norm(plaza.home.yaw), 1e-9));
-    });
+    test(
+      'overview is a map shot: high behind the district, toward the plaza',
+      () {
+        final o = plaza.overview;
+        final again = overviewPoseFor(plan);
+        expect(o.x, again.x);
+        expect(o.y, again.y);
+        expect(o.z, again.z);
+        expect(o.y, greaterThan(100));
+        expect(o.pitch, closeTo(-math.atan2(0.88, 0.62), 1e-9)); // ~55° down
+        expect(_norm(o.yaw), closeTo(_norm(last.headingRadians), 1e-9));
+        // Behind the district relative to the plaza: farther from home than
+        // any building is.
+        final farthest = plan.placements.values
+            .map(
+              (p) => math.sqrt(
+                math.pow(p.x - plaza.home.x, 2) +
+                    math.pow(p.z - plaza.home.z, 2),
+              ),
+            )
+            .reduce(math.max);
+        final dx = o.x - plaza.home.x;
+        final dz = o.z - plaza.home.z;
+        expect(math.sqrt(dx * dx + dz * dz), greaterThan(farthest * 0.5));
+      },
+    );
 
     test('four pylons in rank order, each facing the plaza focal point', () {
       expect(plaza.pylons.map((p) => p.rank), [0, 1, 2, 3]);
       for (final pylon in plaza.pylons) {
         expect(pylon.onPylon, isTrue);
-        // The focal point (0, 48) in the plaza frame.
-        final fx = last.endX + math.sin(last.headingRadians) * 48;
-        final fz = last.endZ + math.cos(last.headingRadians) * 48;
+        // The focal point (0, 52) in the plaza frame.
+        final fx = last.endX + math.sin(last.headingRadians) * 52;
+        final fz = last.endZ + math.cos(last.headingRadians) * 52;
         final toFocus = math.atan2(fx - pylon.x, fz - pylon.z);
         expect(_norm(pylon.facingRadians), closeTo(_norm(toFocus), 1e-9));
         expect(pylon.centerY, pylon.bottom + pylon.height / 2);
@@ -138,12 +158,12 @@ void main() {
       final d = math.sqrt(
         math.pow(pose.x - facadeX, 2) + math.pow(pose.z - facadeZ, 2),
       );
-      expect(d, greaterThanOrEqualTo(13));
+      expect(d, greaterThanOrEqualTo(14));
       expect(_norm(pose.yaw), closeTo(_norm(p.facingRadians + math.pi), 1e-9));
       expect(pose.y, eyeHeight);
       expect(
         pose.pitch,
-        closeTo(math.atan2(p.height / 2 - eyeHeight, d), 1e-9),
+        closeTo(math.atan2(p.height * 0.55 - eyeHeight, d), 1e-9),
       );
     });
 
@@ -159,11 +179,11 @@ void main() {
         depth: 6,
         height: height,
       );
-      expect(taskPoseFor(place(4, 4)).z, closeTo(3 + 13, 1e-9));
-      expect(taskPoseFor(place(15, 4)).z, closeTo(3 + 16.5, 1e-9));
+      expect(taskPoseFor(place(4, 4)).z, closeTo(3 + 14, 1e-9));
+      expect(taskPoseFor(place(15, 4)).z, closeTo(3 + 15 * 1.15, 1e-9));
       expect(
-        taskPoseFor(place(4, 14)).z,
-        closeTo(3 + (14 - eyeHeight) * 1.9, 1e-9),
+        taskPoseFor(place(4, 20)).z,
+        closeTo(3 + (20 + 5 - eyeHeight) * 1.05, 1e-9),
       );
     });
   });
@@ -307,19 +327,70 @@ void main() {
       expect(bannersFor(plan, minHeight: 1000), isEmpty);
     });
 
-    test('lamp posts line both kerbs of every built block', () {
-      final posts = lampPostsFor(plan, roadWidth: 18, spacing: 10);
-      final built = plan.segments.where((s) => !s.isGap).length;
-      // 40 m blocks, 10 m spacing → 4 per side per block.
-      expect(posts.length, built * 8);
-      final first = plan.segments.firstWhere((s) => !s.isGap);
-      // The first pair straddles the road 5 m into the block.
-      final (x0, z0) = posts[0];
-      final (x1, z1) = posts[1];
-      expect(z0, closeTo(first.startZ + 5, 1e-9));
-      expect(z1, closeTo(first.startZ + 5, 1e-9));
-      expect((x0 - x1).abs(), closeTo(2 * (9 - 0.6), 1e-9));
-    });
+    test(
+      'lamp posts stand on the pavement in the gaps, never in front of a facade',
+      () {
+        final posts = lampPostsFor(plan, roadWidth: 18);
+        expect(posts, isNotEmpty);
+        for (final segment in plan.segments.where((s) => !s.isGap)) {
+          final sinH = math.sin(segment.headingRadians);
+          final cosH = math.cos(segment.headingRadians);
+          double along(double x, double z) =>
+              (x - segment.startX) * sinH + (z - segment.startZ) * cosH;
+          double lateral(double x, double z) =>
+              (x - segment.startX) * cosH - (z - segment.startZ) * sinH;
+          final inBlock = posts.where((p) {
+            final a = along(p.$1, p.$2);
+            return a >= 0 &&
+                a <= segment.length &&
+                lateral(p.$1, p.$2).abs() < 9;
+          });
+          // At least the block head on each side.
+          expect(
+            inBlock.length,
+            greaterThanOrEqualTo(2),
+            reason: 'bucket ${segment.bucketIndex}',
+          );
+          for (final (x, z) in inBlock) {
+            expect(lateral(x, z).abs(), closeTo(9 - 1.6, 1e-9));
+            final side = lateral(x, z) < 0 ? PlotSide.left : PlotSide.right;
+            for (final plot in plan.placements.values.where(
+              (q) => q.bucketIndex == segment.bucketIndex && q.side == side,
+            )) {
+              final pa = along(plot.x, plot.z);
+              expect(
+                (along(x, z) - pa).abs(),
+                greaterThanOrEqualTo(plot.width / 2 - 1e-9),
+                reason: 'a lamp stands in front of ${plot.taskId}',
+              );
+            }
+          }
+        }
+      },
+    );
+
+    test(
+      'week signs stand at each block head on the right kerb, facing in',
+      () {
+        final signs = weekSignsFor(plan, roadWidth: 18);
+        final built = plan.segments.where((s) => !s.isGap).toList();
+        expect(signs.length, built.length);
+        for (final (i, sign) in signs.indexed) {
+          final segment = built[i];
+          expect(sign.$1, segment.bucketIndex);
+          expect(
+            _norm(sign.$4),
+            closeTo(_norm(segment.headingRadians + math.pi), 1e-9),
+          );
+          final dx = sign.$2 - segment.startX;
+          final dz = sign.$3 - segment.startZ;
+          final along =
+              dx * math.sin(segment.headingRadians) +
+              dz * math.cos(segment.headingRadians);
+          expect(along, closeTo(0.6, 1e-9));
+        }
+      },
+    );
 
     test('the gantry spans the street mouth facing home', () {
       final g = gantryTickerFor(plan, roadWidth: 18)!;

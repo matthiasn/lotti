@@ -28,8 +28,10 @@ class PlazaSurfaces {
     required this.pxPerMeter,
     Map<String, Node> bannerAnchors = const {},
     Node? jumbotronAnchor,
+    Map<int, Node> weekSignAnchors = const {},
   }) {
     _attachMarkers();
+    _attachWeekSigns(weekSignAnchors);
     _attachBillboards();
     _attachTickers();
     _attachBanners(bannerAnchors);
@@ -57,6 +59,27 @@ class PlazaSurfaces {
   static const markerWidth = 20.0;
   static const markerHeight = 6.5;
   static const jumbotronInterval = Duration(seconds: 1);
+
+  static const signWidth = 5.0;
+  static const signHeight = 1.4;
+
+  void _attachWeekSigns(Map<int, Node> anchors) {
+    for (final entry in anchors.entries) {
+      final component = WidgetComponent(
+        child: BlockMarkerWidget(
+          label: world.weekLabel(entry.key),
+          heightMeters: signHeight,
+          pxPerMeter: pxPerMeter,
+        ),
+        size: Size(signWidth * pxPerMeter, signHeight * pxPerMeter),
+        geometry: ccwQuad(signWidth, signHeight),
+        update: WidgetUpdatePolicy.manual,
+        input: WidgetInput.manual,
+      );
+      entry.value.addComponent(component);
+      _markers.add(component);
+    }
+  }
 
   void _attachBanners(Map<String, Node> anchors) {
     final byId = {for (final t in world.tasks) t.id: t};

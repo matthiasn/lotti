@@ -26,9 +26,12 @@ class PlazaSprites {
     Map<PlazaBillboard, List<Vector3>> chaseLightPoints = const {},
   }) {
     for (final anchor in lampAnchors) {
-      final sprite = Sprite(color: linearColor(PlazaStyle.lamp));
-      anchor.add(Node(mesh: sprite.mesh)..raycastable = false);
-      _lamps.add(sprite);
+      final bulb = Sprite(color: linearColor(PlazaStyle.lamp));
+      final halo = Sprite(color: linearColor(PlazaStyle.lamp, alpha: 0.35));
+      anchor
+        ..add(Node(mesh: bulb.mesh)..raycastable = false)
+        ..add(Node(mesh: halo.mesh)..raycastable = false);
+      _lamps.add(_Lamp(bulb: bulb, halo: halo, anchor: anchor));
     }
     for (final anchor in spireAnchors) {
       final sprite = Sprite(color: linearColor(PlazaStyle.warning));
@@ -76,7 +79,7 @@ class PlazaSprites {
       );
     }
     for (final beacon in world.beacons) {
-      final teal = linearColor(PlazaStyle.teal);
+      final teal = linearColor(PlazaStyle.beaconColor(beacon, world));
       final dot = Sprite(color: teal);
       final dotNode = Node(
         localTransform: Matrix4.translation(
@@ -113,15 +116,20 @@ class PlazaSprites {
   final PlazaWorld world;
   final List<_Lantern> _lanterns = [];
   final List<_BeaconSprite> _beacons = [];
-  final List<Sprite> _lamps = [];
+  final List<_Lamp> _lamps = [];
   final List<Sprite> _spireLights = [];
   final List<_Chase> _chases = [];
 
-  /// Glow texture shared by every sprite; a square dot until it loads.
+  /// Two light vocabularies: a hard-edged bulb for fixtures (lamps, chase
+  /// lights, spire lights) and a soft halo for glows (lanterns, beacons,
+  /// lamp halos). Square dots until they load.
   Texture2D? _glow;
+  Texture2D? _bulb;
 
-  /// Paints a soft radial glow and uploads it once.
-  Future<void> loadGlow() async {
+  static Future<Texture2D> _radial(
+    List<ui.Color> colors,
+    List<double> stops,
+  ) async {
     const size = 64;
     final recorder = ui.PictureRecorder();
     final canvas = ui.Canvas(recorder);
@@ -129,17 +137,34 @@ class PlazaSprites {
       ..shader = ui.Gradient.radial(
         const ui.Offset(size / 2, size / 2),
         size / 2,
-        const [
-          ui.Color(0xFFFFFFFF),
-          ui.Color(0xFFFFFFFF),
-          ui.Color(0x80FFFFFF),
-          ui.Color(0x00FFFFFF),
-        ],
-        const [0, 0.28, 0.5, 1],
+        colors,
+        stops,
       );
     canvas.drawCircle(const ui.Offset(size / 2, size / 2), size / 2, paint);
     final image = await recorder.endRecording().toImage(size, size);
-    _glow = await Texture2D.fromImage(image);
+    return Texture2D.fromImage(image);
+  }
+
+  /// Paints and uploads both textures once.
+  Future<void> loadGlow() async {
+    _glow = await _radial(
+      const [
+        ui.Color(0xFFFFFFFF),
+        ui.Color(0xFFFFFFFF),
+        ui.Color(0x80FFFFFF),
+        ui.Color(0x00FFFFFF),
+      ],
+      const [0, 0.28, 0.5, 1],
+    );
+    _bulb = await _radial(
+      const [
+        ui.Color(0xFFFFFFFF),
+        ui.Color(0xFFFFFFFF),
+        ui.Color(0x33FFFFFF),
+        ui.Color(0x00FFFFFF),
+      ],
+      const [0, 0.6, 0.72, 1],
+    );
     for (final l in _lanterns) {
       l.sprite.material.colorTexture = _glow;
     }
@@ -148,14 +173,15 @@ class PlazaSprites {
       b.ring?.material.colorTexture = _glow;
     }
     for (final l in _lamps) {
-      l.material.colorTexture = _glow;
+      l.bulb.material.colorTexture = _bulb;
+      l.halo.material.colorTexture = _glow;
     }
     for (final l in _spireLights) {
-      l.material.colorTexture = _glow;
+      l.material.colorTexture = _bulb;
     }
     for (final c in _chases) {
       for (final l in c.lights) {
-        l.sprite.material.colorTexture = _glow;
+        l.sprite.material.colorTexture = _bulb;
       }
     }
   }
@@ -164,7 +190,14 @@ class PlazaSprites {
   static const lanternMinPx = 5.0;
   static const lanternMaxPx = 22.0;
   static const lanternNominalPx = 9.0;
-  static const beaconPx = 13.0;
+
+  /// Beacons stay small: they steer, the lanterns carry the health read.
+  static const beaconPx = 8.0;
+
+  /// Lamp halos fade out inside this distance so they never cover a
+  /// facade the walker is reading.
+  static const lampHaloFadeStart = 6.0;
+  static const lampHaloFadeEnd = 16.0;
 
   /// Per-frame update: sizes from distance, pulses from [elapsedSeconds].
   void update(Camera camera, ui.Size viewSize, double elapsedSeconds) {
@@ -198,11 +231,27 @@ class PlazaSprites {
       }
     }
 
-    // Lamps: a fixed warm glow that reads at every range.
+    // Lamps: a hard bulb that reads at every range, and a halo that fades
+    // away as the walker comes close so it never sits on a facade.
     for (final l in _lamps) {
-      l
-        ..width = 1.6
-        ..height = 1.6;
+      final pos = l.anchor.globalTransform.getTranslation();
+      final d = (pos - eye).length;
+      final haloAlpha =
+          ((d - lampHaloFadeStart) / (lampHaloFadeEnd - lampHaloFadeStart))
+              .clamp(0.0, 1.0) *
+          0.35;
+      l.bulb
+        ..width = 0.55
+        ..height = 0.55;
+      l.halo
+        ..width = 2.6
+        ..height = 2.6
+        ..color = Vector4(
+          l.halo.color.x,
+          l.halo.color.y,
+          l.halo.color.z,
+          haloAlpha,
+        );
     }
     // Spire lights blink: on for a third of a 1.6 s cycle.
     final blink = (elapsedSeconds % 1.6) < 0.55 ? 1.0 : 0.12;
@@ -222,8 +271,8 @@ class PlazaSprites {
         final behind = (head - i + n) % n;
         final alpha = behind < 3 ? 1 - behind * 0.28 : 0.18;
         light.sprite
-          ..width = 0.7
-          ..height = 0.7
+          ..width = 0.42
+          ..height = 0.42
           ..color = Vector4(light.color.x, light.color.y, light.color.z, alpha);
       }
     }
@@ -240,8 +289,11 @@ class PlazaSprites {
       b.ringNode?.visible = visible;
       if (!visible) continue;
       final d = (pos - eye).length;
-      final size = beaconPx * d * metersPerPxAtUnit * 2.0;
-      final alpha = ground > range * 0.7 ? 0.45 : 0.9;
+      // Shrinks gently with distance so a row of stops reads as a sequence
+      // rather than one blob at the vanishing point.
+      final px = beaconPx * (1 - 0.5 * (d / range).clamp(0.0, 1.0));
+      final size = px * d * metersPerPxAtUnit * 2.0;
+      final alpha = 0.9 - 0.6 * (d / range).clamp(0.0, 1.0);
       b.dot
         ..width = size
         ..height = size
@@ -310,6 +362,14 @@ class _BeaconSprite {
   final Node dotNode;
   final Sprite? ring;
   final Node? ringNode;
+}
+
+class _Lamp {
+  _Lamp({required this.bulb, required this.halo, required this.anchor});
+
+  final Sprite bulb;
+  final Sprite halo;
+  final Node anchor;
 }
 
 class _ChaseLight {

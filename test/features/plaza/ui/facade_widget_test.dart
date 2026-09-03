@@ -82,11 +82,8 @@ void main() {
     expect(find.text('due Jul 17  ·  links 2'), findsOneWidget);
     expect(find.text('2/4'), findsOneWidget);
     expect(find.text('Check bay two'), findsOneWidget);
-    // The light bar spans half the base.
-    final bar = tester.widget<FractionallySizedBox>(
-      find.byType(FractionallySizedBox),
-    );
-    expect(bar.widthFactor, 0.5);
+    // The progress light bar is scene geometry, not part of the widget.
+    expect(find.byType(FractionallySizedBox), findsNothing);
   });
 
   testWidgets('sign facade keeps title, cover, chip and bar only', (
@@ -108,7 +105,7 @@ void main() {
     expect(find.text('IN PROGRESS'), findsOneWidget);
     expect(find.textContaining('due Jul 17'), findsNothing);
     expect(find.text('Check bay two'), findsNothing);
-    expect(find.text('OPEN'), findsNothing);
+    expect(find.text('DETAILS ›'), findsNothing);
     // Cover art stays: it is what makes a street read from a distance.
     expect(find.byType(Image), findsOneWidget);
     // Bigger type than the live variant for the same wall.
@@ -118,20 +115,59 @@ void main() {
     expect(sign.style!.fontSize, greaterThan(live.style!.fontSize!));
   });
 
-  testWidgets('overdue overrides the chip; an in-progress task fills 35%', (
+  testWidgets('overdue overrides the chip', (tester) async {
+    await tester.pumpWidget(_host(_task(due: DateTime.utc(2026, 7))));
+    expect(find.text('OVERDUE'), findsOneWidget);
+    expect(find.text('OPEN'), findsNothing);
+  });
+
+  testWidgets('the sign variant carries the state as a full-width band', (
     tester,
   ) async {
     await tester.pumpWidget(
-      _host(_task(due: DateTime.utc(2026, 7))),
+      _host(_task(state: PlazaTaskState.blocked), variant: FacadeVariant.sign),
     );
-    expect(find.text('OVERDUE'), findsOneWidget);
-    expect(find.text('OPEN'), findsNothing);
+    final band = tester.widget<Text>(find.text('BLOCKED'));
+    expect(band.textAlign, TextAlign.center);
+    await tester.pumpWidget(_host(_task(state: PlazaTaskState.blocked)));
+    final chip = tester.widget<Text>(find.text('BLOCKED'));
+    expect(band.style!.fontSize, greaterThan(chip.style!.fontSize!));
+  });
 
-    await tester.pumpWidget(_host(_task(state: PlazaTaskState.inProgress)));
-    final bar = tester.widget<FractionallySizedBox>(
-      find.byType(FractionallySizedBox),
+  testWidgets('a long word shrinks the title instead of breaking mid-word', (
+    tester,
+  ) async {
+    final wordy = PlazaTask(
+      id: 'w',
+      createdAt: DateTime.utc(2026, 3, 2, 9),
+      title: 'Recalibrate the interplanetary sardine pods',
+      state: PlazaTaskState.open,
+      progress: 0,
+      checklistItems: 0,
+      linkedTaskIds: const [],
+      categoryColor: 0xFF5C9DFF,
     );
-    expect(bar.widthFactor, 0.35);
+    Widget host(double widthMeters) => makeTestableWidget2(
+      Center(
+        child: SizedBox(
+          width: widthMeters * 45,
+          height: 500,
+          child: FacadeWidget(
+            task: wordy,
+            attention: attentionFor(wordy, _now),
+            variant: FacadeVariant.sign,
+            widthMeters: widthMeters,
+            pxPerMeter: 45,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpWidget(host(12));
+    final wide = tester.widget<Text>(find.text(wordy.title)).style!.fontSize!;
+    await tester.pumpWidget(host(5));
+    final narrow = tester.widget<Text>(find.text(wordy.title)).style!.fontSize!;
+    expect(narrow, lessThan(wide));
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('ticking on the wall goes through the shared ticks', (
@@ -163,7 +199,7 @@ void main() {
     expect(find.text('3/3'), findsOneWidget);
   });
 
-  testWidgets('without ticks the items are inert; OPEN fires its callback', (
+  testWidgets('without ticks the items are inert; DETAILS fires its callback', (
     tester,
   ) async {
     var opened = 0;
@@ -183,11 +219,11 @@ void main() {
       tester.widget<Text>(find.text('Check bay two')).style?.decoration,
       isNull,
     );
-    await tester.tap(find.text('OPEN'));
+    await tester.tap(find.text('DETAILS ›'));
     expect(opened, 1);
   });
 
-  testWidgets('the OPEN chip and the state chip use the design colours', (
+  testWidgets('the DETAILS button and the state chip use the design colours', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -196,7 +232,10 @@ void main() {
     expect(find.text('BLOCKED'), findsOneWidget);
     final open = tester.widget<Container>(
       find
-          .ancestor(of: find.text('OPEN'), matching: find.byType(Container))
+          .ancestor(
+            of: find.text('DETAILS ›'),
+            matching: find.byType(Container),
+          )
           .first,
     );
     expect((open.decoration! as BoxDecoration).color, PlazaStyle.teal);

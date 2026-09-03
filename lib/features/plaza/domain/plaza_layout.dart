@@ -212,21 +212,19 @@ class FrontierPlaza {
 const plazaSetback = 7.0;
 const plazaDepth = 58.0;
 const plazaWidth = 62.0;
-const _homeAlong = 56.0;
-const _overviewAlong = 160.0;
-const _overviewHeight = 140.0;
-const _overviewPitch = -0.62;
+const _homeAlong = 60.0;
 
 /// Pylon slots in plaza-local metres: (lateral, along, width, height,
-/// bottom). Rank order; every panel faces the point (0, 48) on the plaza
-/// so they all read from the home pose.
+/// bottom). Rank order; every panel faces the point (0, 52) on the plaza
+/// so they all read from the home pose, and they sit inside a 60° field of
+/// view from there.
 const _pylonSlots = <(double, double, double, double, double)>[
-  (-19, 18, 15, 8.5, 4),
-  (19, 20, 14, 8, 5.5),
-  (-22, 36, 12, 7, 3.5),
-  (22, 38, 12, 7, 6),
+  (-14, 20, 14, 8, 4),
+  (14, 22, 13, 7.5, 5.5),
+  (-19, 38, 11, 6.5, 3.5),
+  (19, 40, 11, 6.5, 6),
 ];
-const _pylonFocusAlong = 48.0;
+const _pylonFocusAlong = 52.0;
 
 /// Builds the plaza at the end of [plan]. Returns null for an empty street.
 FrontierPlaza? frontierPlazaFor(StreetPlan plan) {
@@ -237,7 +235,6 @@ FrontierPlaza? frontierPlazaFor(StreetPlan plan) {
 
   final (cx, cz) = frame.toWorld(0, plazaSetback + plazaDepth / 2);
   final (hx, hz) = frame.toWorld(0, _homeAlong);
-  final (ox, oz) = frame.toWorld(0, _overviewAlong);
 
   final pylons = <BillboardSlot>[];
   for (final (rank, slot) in _pylonSlots.indexed) {
@@ -267,14 +264,53 @@ FrontierPlaza? frontierPlazaFor(StreetPlan plan) {
     width: plazaWidth,
     depth: plazaDepth,
     home: CameraPose(x: hx, y: eyeHeight, z: hz, yaw: lookBack),
-    overview: CameraPose(
-      x: ox,
-      y: _overviewHeight,
-      z: oz,
-      yaw: lookBack,
-      pitch: _overviewPitch,
-    ),
+    overview: overviewPoseFor(plan),
     pylons: pylons,
+  );
+}
+
+/// The map shot: high over the district, behind its oldest edge, looking
+/// toward the plaza so the jumbotron tower is the far landmark. Height and
+/// stand-off scale with the district's footprint so the whole thing fills
+/// the frame with headroom at a 55° pitch.
+CameraPose overviewPoseFor(StreetPlan plan) {
+  final last = plan.last;
+  if (last == null) return const CameraPose(x: 0, y: 120, z: -100, yaw: 0);
+  final points = <(double, double)>[
+    for (final p in plan.placements.values) (p.x, p.z),
+    for (final s in plan.segments) (s.startX, s.startZ),
+    (last.endX, last.endZ),
+  ];
+  var minX = double.infinity;
+  var maxX = -double.infinity;
+  var minZ = double.infinity;
+  var maxZ = -double.infinity;
+  for (final (x, z) in points) {
+    minX = math.min(minX, x);
+    maxX = math.max(maxX, x);
+    minZ = math.min(minZ, z);
+    maxZ = math.max(maxZ, z);
+  }
+  // Include the plaza and the jumbotron in the footprint.
+  const plazaFar = plazaSetback + plazaDepth + 20;
+  final fx = last.endX + math.sin(last.headingRadians) * plazaFar;
+  final fz = last.endZ + math.cos(last.headingRadians) * plazaFar;
+  minX = math.min(minX, fx);
+  maxX = math.max(maxX, fx);
+  minZ = math.min(minZ, fz);
+  maxZ = math.max(maxZ, fz);
+  final cx = (minX + maxX) / 2;
+  final cz = (minZ + maxZ) / 2;
+  final extent = math.max(maxX - minX, maxZ - minZ).clamp(120.0, 2000.0);
+  final back = 0.62 * extent;
+  final height = 0.88 * extent;
+  final h = last.headingRadians;
+  return CameraPose(
+    x: cx - math.sin(h) * back,
+    y: height,
+    z: cz - math.cos(h) * back,
+    yaw: h,
+    pitch: -math.atan2(height, back),
   );
 }
 
@@ -425,29 +461,67 @@ List<BannerSlot> bannersFor(StreetPlan plan, {double minHeight = 12}) {
   return slots;
 }
 
-/// Lamp posts along both kerbs of every built block, every [spacing]
-/// metres, as (x, z) pairs.
+/// Lamp posts on the pavement, in the gaps between buildings (never in
+/// front of a facade) plus the head of every built block, as (x, z) pairs.
 List<(double, double)> lampPostsFor(
   StreetPlan plan, {
   required double roadWidth,
-  double spacing = 12,
+  double minGap = 2.5,
 }) {
   final posts = <(double, double)>[];
+  final lateral = roadWidth / 2 - 1.6;
   for (final segment in plan.segments) {
     if (segment.isGap) continue;
     final sinH = math.sin(segment.headingRadians);
     final cosH = math.cos(segment.headingRadians);
-    final lateral = roadWidth / 2 - 0.6;
-    for (var along = spacing / 2; along < segment.length; along += spacing) {
-      for (final side in [-1.0, 1.0]) {
+    double along(PlotPlacement p) =>
+        (p.x - segment.startX) * sinH + (p.z - segment.startZ) * cosH;
+    for (final side in PlotSide.values) {
+      final sign = side == PlotSide.left ? -1.0 : 1.0;
+      final plots =
+          plan.placements.values
+              .where(
+                (p) => p.bucketIndex == segment.bucketIndex && p.side == side,
+              )
+              .toList()
+            ..sort((a, b) => along(a).compareTo(along(b)));
+      final spots = <double>[1.5];
+      for (var i = 0; i + 1 < plots.length; i++) {
+        final gapStart = along(plots[i]) + plots[i].width / 2;
+        final gapEnd = along(plots[i + 1]) - plots[i + 1].width / 2;
+        if (gapEnd - gapStart >= minGap) spots.add((gapStart + gapEnd) / 2);
+      }
+      for (final a in spots) {
         posts.add((
-          segment.startX + sinH * along + cosH * side * lateral,
-          segment.startZ + cosH * along - sinH * side * lateral,
+          segment.startX + sinH * a + cosH * sign * lateral,
+          segment.startZ + cosH * a - sinH * sign * lateral,
         ));
       }
     }
   }
   return posts;
+}
+
+/// An eye-level week sign at the head of each built block, on the right
+/// kerb, facing whoever walks in: (bucketIndex, x, z, facing).
+List<(int, double, double, double)> weekSignsFor(
+  StreetPlan plan, {
+  required double roadWidth,
+}) {
+  final signs = <(int, double, double, double)>[];
+  for (final segment in plan.segments) {
+    if (segment.isGap) continue;
+    final sinH = math.sin(segment.headingRadians);
+    final cosH = math.cos(segment.headingRadians);
+    final lateral = roadWidth / 2 - 0.8;
+    signs.add((
+      segment.bucketIndex,
+      segment.startX + sinH * 0.6 + cosH * lateral,
+      segment.startZ + cosH * 0.6 - sinH * lateral,
+      segment.headingRadians + math.pi,
+    ));
+  }
+  return signs;
 }
 
 /// The ticker gantry spanning the street mouth at the plaza, facing home.
@@ -512,9 +586,11 @@ TickerSlot rooflineTickerFor(PlotPlacement hero, {required bool fast}) =>
 /// far enough back to frame a wide or tall wall, tilted to keep the
 /// facade centre in view from eye height.
 CameraPose taskPoseFor(PlotPlacement p) {
+  // Far enough back that the wall, its roof signage and the street on
+  // either side all fit at a 60° field of view.
   final d = math.max(
-    13,
-    math.max(p.width * 1.1, (p.height - eyeHeight) * 1.9),
+    14,
+    math.max(p.width * 1.15, (p.height + 5 - eyeHeight) * 1.05),
   );
   final facing = p.facingRadians;
   final facadeX = p.x + math.sin(facing) * (p.depth / 2);
@@ -524,15 +600,16 @@ CameraPose taskPoseFor(PlotPlacement p) {
     y: eyeHeight,
     z: facadeZ + math.cos(facing) * d,
     yaw: facing + math.pi,
-    pitch: math.atan2(p.height / 2 - eyeHeight, d),
+    pitch: math.atan2(p.height * 0.55 - eyeHeight, d),
   );
 }
 
 /// Height of the beacon dot above the road.
 const _markerHeight = 1.6;
 
-/// How far into a block its beacon stands.
-const blockBeaconInset = 3.0;
+/// Where a block's beacon stands: this far *before* the block starts, so
+/// its first buildings are ahead, not beside the camera.
+const blockBeaconInset = -7.0;
 
 /// The navigation beacons: Home, one per built week (newest first), one per
 /// fold corner; then one attention beacon per anomaly.
@@ -578,7 +655,7 @@ List<Beacon> beaconsFor(
       continue;
     }
     if (segment.isGap) continue;
-    // Stand at the block's start looking down it, so its buildings are
+    // Stand just before the block looking down it, so its buildings are
     // ahead on both sides rather than beside and behind the camera.
     final x =
         segment.startX + math.sin(segment.headingRadians) * blockBeaconInset;

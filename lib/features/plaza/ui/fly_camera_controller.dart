@@ -19,8 +19,17 @@ class FlyCameraController {
       _collider = collider;
   // ignore_for_file: prefer_initializing_formals
 
-  static const walkSpeed = 12.0;
+  static const walkSpeed = 5.0;
   static const _sprintFactor = 3.0;
+
+  /// Vertical field of view: a game camera, not a phone lens.
+  static const double fovRadiansY = 60 * math.pi / 180;
+
+  /// Velocity smoothing: reaches ~63% of the target in this many seconds.
+  static const _accelSeconds = 0.12;
+
+  double _vForward = 0;
+  double _vStrafe = 0;
 
   CameraPose _pose;
   final WalkCollider? _collider;
@@ -40,6 +49,8 @@ class FlyCameraController {
   set pose(CameraPose value) {
     _pose = value;
     _flight = null;
+    _vForward = 0;
+    _vStrafe = 0;
   }
 
   Vector3 get position => Vector3(_pose.x, _pose.y, _pose.z);
@@ -149,18 +160,24 @@ class FlyCameraController {
     var x = _pose.x;
     var z = _pose.z;
     var y = _pose.y;
-    if (forwardInput != 0 || strafeInput != 0) {
+    var speed = walkSpeed;
+    if (_down(LogicalKeyboardKey.shiftLeft, LogicalKeyboardKey.shiftRight)) {
+      speed *= _sprintFactor;
+    }
+    // Short acceleration and deceleration instead of an on/off switch.
+    final blend = dt <= 0 ? 1.0 : (1 - math.exp(-dt / _accelSeconds));
+    _vForward += (forwardInput * speed - _vForward) * blend;
+    _vStrafe += (strafeInput * speed - _vStrafe) * blend;
+    if (_vForward.abs() < 0.01) _vForward = 0;
+    if (_vStrafe.abs() < 0.01) _vStrafe = 0;
+    if (_vForward != 0 || _vStrafe != 0) {
       // Walking happens at eye height; a pose set from the overview drops
       // to the ground on the first step.
       y = eyeHeight;
-      var speed = walkSpeed;
-      if (_down(LogicalKeyboardKey.shiftLeft, LogicalKeyboardKey.shiftRight)) {
-        speed *= _sprintFactor;
-      }
       final sinY = math.sin(_pose.yaw);
       final cosY = math.cos(_pose.yaw);
-      x += (sinY * forwardInput + cosY * strafeInput) * speed * dt;
-      z += (cosY * forwardInput - sinY * strafeInput) * speed * dt;
+      x += (sinY * _vForward + cosY * _vStrafe) * dt;
+      z += (cosY * _vForward - sinY * _vStrafe) * dt;
       final collider = _collider;
       if (collider != null) {
         (x, z) = collider.resolve(x, z);
@@ -179,6 +196,7 @@ class FlyCameraController {
     return PerspectiveCamera(
       position: eye,
       target: eye + forward * 10,
+      fovRadiansY: fovRadiansY,
       fovFar: 2500,
     );
   }

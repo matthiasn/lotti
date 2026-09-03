@@ -37,6 +37,7 @@ class PlazaWorld {
     gantry = gantryTickerFor(plan, roadWidth: layout.roadWidth);
     jumbotron = jumbotronSlotFor(plan);
     spires = spiresFor(plan);
+    weekSigns = weekSignsFor(plan, roadWidth: layout.roadWidth);
     final mounted = mountedSlotsFor(plan);
     mountedScreens = mounted.screens;
     tickers = [
@@ -81,6 +82,9 @@ class PlazaWorld {
 
   /// The two tallest buildings, which carry spires.
   late final List<PlotPlacement> spires;
+
+  /// Eye-level week signs at each block head: (bucket, x, z, facing).
+  late final List<(int, double, double, double)> weekSigns;
   late final List<TickerSlot> tickers;
 
   /// Attention verdict for each roof billboard, in slot order.

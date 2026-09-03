@@ -25,11 +25,16 @@ class Flight {
   factory Flight.plan(CameraPose from, CameraPose to, {double timeScale = 1}) {
     final dist = from.distanceTo(to);
     final seconds = (0.32 * math.sqrt(dist)).clamp(0.8, 2.5) / timeScale;
+    final dx = to.x - from.x;
+    final dz = to.z - from.z;
+    final ground = math.sqrt(dx * dx + dz * dz);
+    // The arc is for crossing the district; a climb is already an arc.
+    final horizontal = dist == 0 ? 1.0 : (ground / dist).clamp(0.0, 1.0);
     return Flight._(
       from: from,
       to: to,
       duration: Duration(microseconds: (seconds * 1e6).round()),
-      arc: dist > arcThreshold ? math.min(55, dist * 0.2) : 0,
+      arc: dist > arcThreshold ? math.min(55, dist * 0.2) * horizontal : 0,
     );
   }
 
@@ -39,11 +44,26 @@ class Flight {
   /// heading would swing too fast to be worth turning into.
   static const lookAlongThreshold = 8.0;
 
-  /// The heading of travel, or null for a short hop.
-  double? get travelYaw {
+  /// Horizontal distance of the trip.
+  double get groundDistance {
     final dx = to.x - from.x;
     final dz = to.z - from.z;
-    if (math.sqrt(dx * dx + dz * dz) < lookAlongThreshold) return null;
+    return math.sqrt(dx * dx + dz * dz);
+  }
+
+  /// Fraction of the trip that is horizontal (0 = straight up/down).
+  double get horizontalFraction {
+    final total = from.distanceTo(to);
+    return total == 0 ? 1 : (groundDistance / total).clamp(0.0, 1.0);
+  }
+
+  /// The heading of travel, or null for a short hop or a mostly vertical
+  /// trip (a climb to the overview must not whip round to face its path).
+  double? get travelYaw {
+    if (groundDistance < lookAlongThreshold) return null;
+    if (horizontalFraction < 0.55) return null;
+    final dx = to.x - from.x;
+    final dz = to.z - from.z;
     return math.atan2(dx, dz);
   }
 
