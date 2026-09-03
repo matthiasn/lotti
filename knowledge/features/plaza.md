@@ -159,10 +159,13 @@ per stop.
 - **`flutter_scene` pins `code_assets ^1.2.1`.** `code_assets` and
   `native_toolchain_c` are held current under `dependency_overrides` in
   `pubspec.yaml`; re-check on every `flutter_scene` bump.
-- **Scene classes need a GPU context.** `PlazaSceneController` and
-  `FacadeLodManager` build meshes on construction and are excluded from
-  coverage along with `dev_main.dart`; keep logic that needs tests in the pure
-  layers (`domain/`, `ui/plaza_tour.dart`).
+- **Scene classes need a GPU context.** `PlazaSceneController` builds
+  meshes on construction; `FacadeLodManager` creates GPU-backed
+  `WidgetComponent`s inside `update()` when it promotes a surface. Both live
+  under `scene/`, which `codecov.yml` excludes along with `dev_main.dart`, so
+  keep logic that needs tests in the pure layers (`domain/`,
+  `ui/plaza_tour.dart`). The tier ranking itself is plain arithmetic and could
+  be tested by injecting the surface factory; nothing does yet.
 - **The facade palette is local on purpose.** Like the knowledge-graph
   explorer's `graph_style.dart`, `FacadeStyle` is scene content in a dev
   harness, not app chrome; it moves onto design-system tokens only if the

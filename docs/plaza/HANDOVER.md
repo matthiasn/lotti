@@ -163,11 +163,12 @@ fvm flutter test test/features/plaza/ui/plaza_tour_test.dart
 ```
 
 All pure-Dart layers (task model, generator, layout, demo projection, tour
-poses) are covered without a GPU. `PlazaSceneController` and
-`FacadeLodManager` construct `flutter_scene` meshes, are exercised only by
-running the harness, and are excluded from coverage together with
-`dev_main.dart`; the tour data class `TourScene` exists precisely so the pose
-maths can be tested without them.
+poses) are covered without a GPU. `PlazaSceneController` builds
+`flutter_scene` meshes on construction and `FacadeLodManager` creates
+GPU-backed `WidgetComponent`s when `update()` promotes a surface; both are
+exercised only by running the harness and `codecov.yml` excludes `scene/**`
+together with `dev_main.dart`. The tour data class `TourScene` exists
+precisely so the pose maths can be tested without them.
 
 ## 3. Screenshots (current state, Linux VM, 1600×1000 window)
 
