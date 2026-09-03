@@ -60,7 +60,9 @@ project, and relationships to other tasks.
   task list does not just widen the task: the task's metadata — status,
   priority, category, project, due date, estimate, labels, AI spend — moves
   into a persistent column on the right, editable in place. Narrower than that,
-  the same rows stay one tap away in their fly-out.
+  the same rows stay one tap away in their fly-out — which steps aside the
+  moment you set a status, so the completion animation on a task you just
+  finished is not playing behind a panel.
 
 ## What it owns
 

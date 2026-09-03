@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -9,7 +10,9 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/ai_cost_indicator.dart';
+import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/components/time_pickers/design_system_picker_wheels.dart';
+import 'package:lotti/features/design_system/theme/icon_tokens.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
@@ -153,10 +156,15 @@ void main() {
     TaskProgressState? progress,
     int aiCallCount = 0,
     List<Override> extraOverrides = const [],
+    VoidCallback? onStatusPicked,
   }) {
     return makeTestableWidget(
       Material(
-        child: TaskMetaSection(taskId: task.id, density: density),
+        child: TaskMetaSection(
+          taskId: task.id,
+          density: density,
+          onStatusPicked: onStatusPicked,
+        ),
       ),
       overrides: [
         entryControllerProvider(task.id).overrideWith(
@@ -215,6 +223,39 @@ void main() {
       expect(find.text('Apr 25, 2026'), findsOneWidget);
       expect(find.text('0m of 2h'), findsOneWidget);
       expect(find.byType(LinearProgressIndicator), findsOneWidget);
+    });
+
+    testWidgets('a hovered row brightens its chevron', (tester) async {
+      // The row deliberately has no hover fill, so the chevron brightening is
+      // the whole of its tappable affordance.
+      await tester.pumpWidget(pumpSection(task: buildTask()));
+      await settle(tester);
+
+      Color? chevronColor() => tester
+          .widget<Icon>(
+            find.descendant(
+              of: find.ancestor(
+                of: find.text('Status'),
+                matching: find.byType(DsQuietInk),
+              ),
+              matching: find.byIcon(LottiIcons.chevronRight),
+            ),
+          )
+          .color;
+
+      final context = tester.element(find.text('Status'));
+      expect(chevronColor(), TaskShowcasePalette.lowText(context));
+
+      // Hover needs pointer kind `mouse`; a tap won't fire `onEnter`.
+      final gesture = await tester.createGesture(
+        kind: PointerDeviceKind.mouse,
+      );
+      addTearDown(gesture.removePointer);
+      await gesture.addPointer();
+      await gesture.moveTo(tester.getCenter(find.text('Status')));
+      await settle(tester);
+
+      expect(chevronColor(), TaskShowcasePalette.highText(context));
     });
 
     testWidgets('unset fields read "Not set" at low emphasis', (tester) async {
@@ -635,6 +676,65 @@ void main() {
       await settle(tester);
 
       expect(find.byType(EntityPickerSheet), findsOneWidget);
+    });
+  });
+
+  group('TaskMetaSection — reporting a status pick to its host', () {
+    testWidgets('the status row calls onStatusPicked', (tester) async {
+      var dismissed = 0;
+      await tester.pumpWidget(
+        pumpSection(
+          task: buildTask(),
+          onStatusPicked: () => dismissed++,
+        ),
+      );
+      await settle(tester);
+
+      await tester.tap(find.text('Status'));
+      await settle(tester);
+      await tester.tap(find.text('In Progress'));
+      await settle(tester);
+
+      expect(dismissed, 1);
+    });
+
+    testWidgets('another attribute leaves the host standing', (tester) async {
+      // Only the status write celebrates on the header behind the host, so
+      // only the status row reports back — editing a second attribute in the
+      // same panel visit stays possible.
+      var dismissed = 0;
+      await tester.pumpWidget(
+        pumpSection(
+          task: buildTask(),
+          onStatusPicked: () => dismissed++,
+        ),
+      );
+      await settle(tester);
+
+      await tester.tap(find.text('Priority'));
+      await settle(tester);
+      await tester.tap(find.byKey(const ValueKey('task-priority-P0')));
+      await settle(tester);
+
+      expect(dismissed, isZero);
+    });
+
+    testWidgets('a host that passes no callback still persists the pick', (
+      tester,
+    ) async {
+      // The persistent details column has nothing to dismiss.
+      final tracker = ToggleCallTracker();
+      await tester.pumpWidget(
+        pumpSection(task: buildTask(), tracker: tracker),
+      );
+      await settle(tester);
+
+      await tester.tap(find.text('Status'));
+      await settle(tester);
+      await tester.tap(find.byKey(const ValueKey('task-status-DONE')));
+      await settle(tester);
+
+      expect(tracker.updateTaskStatusCalls, equals(['DONE']));
     });
   });
 
