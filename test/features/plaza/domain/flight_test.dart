@@ -85,4 +85,35 @@ void main() {
     expect(f.progress, 1);
     expect(end.x, 1);
   });
+
+  group('look along the path', () {
+    test('turns into the travel direction mid-flight, settles at the end', () {
+      // Fly 50 m along +X while facing +Z before and after.
+      const from = CameraPose(x: 0, y: 2.2, z: 0, yaw: 0);
+      const to = CameraPose(x: 50, y: 2.2, z: 0, yaw: 0);
+      final f = Flight.plan(from, to);
+      expect(f.travelYaw, closeTo(math.pi / 2, 1e-9));
+      expect(f.poseAt(0).yaw, 0);
+      expect(f.poseAt(0.1).yaw, inExclusiveRange(0, math.pi / 2));
+      expect(f.poseAt(0.5).yaw, closeTo(math.pi / 2, 1e-9));
+      expect(f.poseAt(0.9).yaw, inExclusiveRange(0, math.pi / 2));
+      expect(f.poseAt(1).yaw, closeTo(0, 1e-9));
+    });
+
+    test('a short hop blends yaw directly', () {
+      const from = CameraPose(x: 0, y: 2.2, z: 0, yaw: 0);
+      const to = CameraPose(x: 3, y: 2.2, z: 0, yaw: 1);
+      final f = Flight.plan(from, to);
+      expect(f.travelYaw, isNull);
+      expect(f.poseAt(0.5).yaw, closeTo(0.5, 1e-9));
+    });
+
+    test('flying backwards turns round rather than reversing', () {
+      // Facing +Z, flying toward -Z: the middle of the flight faces -Z.
+      const from = CameraPose(x: 0, y: 2.2, z: 100, yaw: 0);
+      const to = CameraPose(x: 0, y: 2.2, z: 0, yaw: 0);
+      final f = Flight.plan(from, to);
+      expect(f.poseAt(0.5).yaw.abs(), closeTo(math.pi, 1e-9));
+    });
+  });
 }

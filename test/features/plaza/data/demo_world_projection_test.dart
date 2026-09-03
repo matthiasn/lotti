@@ -67,6 +67,22 @@ void main() {
       expect(linked, greaterThan(0));
     });
 
+    test('carries priority and last activity for the attention score', () {
+      expect(tasks.map((t) => t.priority).toSet().length, greaterThan(1));
+      for (final task in tasks) {
+        expect(task.priority, inInclusiveRange(0, 3));
+        expect(task.lastActivityAt, isNotNull);
+      }
+    });
+
+    test('category labels are keyed by the colour the tasks carry', () {
+      final labels = demoCategoryLabels(now: DateTime(2026, 7, 17, 10, 30));
+      expect(labels, isNotEmpty);
+      for (final task in tasks) {
+        expect(labels[task.categoryColor.toRadixString(16)], isNotNull);
+      }
+    });
+
     test('cover art resolves to the public immutable R2 catalog', () {
       final covered = tasks.where((t) => t.coverImageUrl != null).toList();
       expect(covered, isNotEmpty);

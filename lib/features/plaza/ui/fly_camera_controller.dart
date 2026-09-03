@@ -11,7 +11,8 @@ import 'package:vector_math/vector_math.dart' show Vector3;
 ///
 /// WASD/arrows walk (shift sprints), drag looks, and [flyTo] hands the pose
 /// to a [Flight]; any movement input cancels a flight in place. Walking
-/// keeps the eye at [eyeHeight] and out of buildings via the collider.
+/// happens at [eyeHeight] and stays out of buildings via the collider; a
+/// pose set elsewhere (the overview) keeps its height until the next step.
 class FlyCameraController {
   FlyCameraController({required CameraPose pose, WalkCollider? collider})
     : _pose = pose,
@@ -25,10 +26,6 @@ class FlyCameraController {
   final WalkCollider? _collider;
   final Set<LogicalKeyboardKey> _pressed = {};
   Flight? _flight;
-
-  /// Scripted forward input (benchmark mode): -1..1, applied when no key is
-  /// pressed.
-  double autoForward = 0;
 
   /// Called when a flight lands.
   void Function()? onArrived;
@@ -134,14 +131,13 @@ class FlyCameraController {
       (key) => !HardwareKeyboard.instance.logicalKeysPressed.contains(key),
     );
 
-    var forwardInput =
+    final forwardInput =
         (_down(LogicalKeyboardKey.keyW, LogicalKeyboardKey.arrowUp)
             ? 1.0
             : 0.0) -
         (_down(LogicalKeyboardKey.keyS, LogicalKeyboardKey.arrowDown)
             ? 1.0
             : 0.0);
-    if (forwardInput == 0) forwardInput = autoForward;
     final strafeInput =
         (_down(LogicalKeyboardKey.keyD, LogicalKeyboardKey.arrowRight)
             ? 1.0
@@ -152,7 +148,11 @@ class FlyCameraController {
 
     var x = _pose.x;
     var z = _pose.z;
+    var y = _pose.y;
     if (forwardInput != 0 || strafeInput != 0) {
+      // Walking happens at eye height; a pose set from the overview drops
+      // to the ground on the first step.
+      y = eyeHeight;
       var speed = walkSpeed;
       if (_down(LogicalKeyboardKey.shiftLeft, LogicalKeyboardKey.shiftRight)) {
         speed *= _sprintFactor;
@@ -166,13 +166,7 @@ class FlyCameraController {
         (x, z) = collider.resolve(x, z);
       }
     }
-    _pose = CameraPose(
-      x: x,
-      y: eyeHeight,
-      z: z,
-      yaw: _pose.yaw,
-      pitch: _pose.pitch,
-    );
+    _pose = CameraPose(x: x, y: y, z: z, yaw: _pose.yaw, pitch: _pose.pitch);
   }
 
   /// The camera for this frame.

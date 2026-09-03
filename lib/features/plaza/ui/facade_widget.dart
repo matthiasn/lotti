@@ -6,8 +6,8 @@ import 'package:lotti/features/plaza/ui/plaza_style.dart';
 
 /// Which range a facade is drawn for.
 enum FacadeVariant {
-  /// Street range, captured: category bar, big title, state chip, light
-  /// bar. Nothing that cannot be read at 100 m.
+  /// Street range, captured: category bar, big title, cover art, state
+  /// chip, light bar. Nothing that cannot be read at 100 m.
   sign,
 
   /// Shopfront range, live: everything, with working checkboxes and OPEN.
@@ -136,9 +136,10 @@ class FacadeWidget extends StatelessWidget {
                             ),
                           ),
                         ],
-                        if (_live && task.coverImageUrl != null) ...[
+                        if (task.coverImageUrl != null) ...[
                           SizedBox(height: m(0.3 * titleM)),
                           Flexible(
+                            flex: 3,
                             child: _Cover(
                               url: task.coverImageUrl!,
                               quiet: attention.lantern == LanternState.off,
@@ -147,15 +148,38 @@ class FacadeWidget extends StatelessWidget {
                         ],
                         if (_live && items.isNotEmpty) ...[
                           SizedBox(height: m(0.3 * titleM)),
-                          for (final (i, label) in items.indexed)
-                            _Item(
-                              label: label,
-                              ticked: t?.isTicked(task.id, i) ?? false,
-                              fontPx: m(itemM),
-                              onTap: t == null
-                                  ? null
-                                  : () => t.toggle(task.id, i),
+                          // Only as many items as the wall has room for:
+                          // a short building shows fewer, never overflows.
+                          Flexible(
+                            flex: 4,
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                // Box + padding + the line's own leading.
+                                final rowPx = m(itemM) * 1.6;
+                                final fit = (constraints.maxHeight / rowPx)
+                                    .floor()
+                                    .clamp(0, items.length);
+                                return Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    for (final (i, label)
+                                        in items.take(fit).indexed)
+                                      _Item(
+                                        label: label,
+                                        ticked:
+                                            t?.isTicked(task.id, i) ?? false,
+                                        fontPx: m(itemM),
+                                        onTap: t == null
+                                            ? null
+                                            : () => t.toggle(task.id, i),
+                                      ),
+                                  ],
+                                );
+                              },
                             ),
+                          ),
                         ],
                         const Spacer(),
                         Row(
@@ -197,8 +221,10 @@ class FacadeWidget extends StatelessWidget {
             // Progress light bar along the base, readable from any angle.
             Positioned(
               left: 0,
+              right: 0,
               bottom: 0,
               child: FractionallySizedBox(
+                alignment: Alignment.centerLeft,
                 widthFactor: pct.clamp(0.0, 1.0),
                 child: Container(
                   height: m(0.3),

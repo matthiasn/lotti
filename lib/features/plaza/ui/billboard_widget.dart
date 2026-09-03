@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:lotti/features/plaza/domain/attention.dart';
 import 'package:lotti/features/plaza/ui/plaza_style.dart';
@@ -6,19 +8,27 @@ import 'package:lotti/features/plaza/ui/plaza_style.dart';
 /// attention, framed in its state colour.
 ///
 /// Mid tier (captured on an interval). For anomalies the frame glow
-/// breathes on a three-second cycle, driven by an animation so the capture
+/// breathes on a [pulseSeconds] cycle, driven by an animation so the capture
 /// interval decides how often it re-renders.
 class BillboardWidget extends StatefulWidget {
   const BillboardWidget({
     required this.attention,
     required this.widthMeters,
+    required this.heightMeters,
     required this.pxPerMeter,
+    this.pulseSeconds = 3,
     super.key,
   });
 
   final TaskAttention attention;
   final double widthMeters;
+
+  /// Panel height; a squat roof panel drops the cover, then the reason.
+  final double heightMeters;
   final double pxPerMeter;
+
+  /// Full glow cycle for anomalies; shorter is more agitated.
+  final double pulseSeconds;
 
   @override
   State<BillboardWidget> createState() => _BillboardWidgetState();
@@ -28,7 +38,7 @@ class _BillboardWidgetState extends State<BillboardWidget>
     with SingleTickerProviderStateMixin {
   late final AnimationController _glow = AnimationController(
     vsync: this,
-    duration: const Duration(seconds: 3),
+    duration: Duration(milliseconds: (widget.pulseSeconds * 500).round()),
   );
 
   @override
@@ -52,6 +62,7 @@ class _BillboardWidgetState extends State<BillboardWidget>
         return _BillboardFace(
           attention: widget.attention,
           widthMeters: widget.widthMeters,
+          heightMeters: widget.heightMeters,
           pxPerMeter: widget.pxPerMeter,
           glow: widget.attention.anomalous ? 0.55 + 0.45 * phase : 1,
         );
@@ -64,14 +75,21 @@ class _BillboardFace extends StatelessWidget {
   const _BillboardFace({
     required this.attention,
     required this.widthMeters,
+    required this.heightMeters,
     required this.pxPerMeter,
     required this.glow,
   });
 
   final TaskAttention attention;
   final double widthMeters;
+  final double heightMeters;
   final double pxPerMeter;
   final double glow;
+
+  /// Aspect thresholds: below [coverAspect] the cover goes, below
+  /// [reasonAspect] the reason goes too and the title gets one line.
+  static const coverAspect = 0.5;
+  static const reasonAspect = 0.34;
 
   @override
   Widget build(BuildContext context) {
@@ -80,8 +98,13 @@ class _BillboardFace extends StatelessWidget {
     final task = attention.task;
     final chip = PlazaStyle.chip(attention);
     final frame = PlazaStyle.lantern(attention.lantern);
-    final pad = m(0.09 * w);
-    final chipPx = m(0.038 * w);
+    final aspect = heightMeters / w;
+    final showCover = task.coverImageUrl != null && aspect >= coverAspect;
+    final showReason = attention.reason.isNotEmpty && aspect >= reasonAspect;
+    // Squat panels scale by height instead of width so nothing overflows.
+    final pad = m(math.min(0.06 * w, 0.1 * heightMeters));
+    final titlePx = m(math.min(0.07 * w, 0.24 * heightMeters));
+    final chipPx = m(math.min(0.036 * w, 0.12 * heightMeters));
 
     return Material(
       color: PlazaStyle.panel,
@@ -102,33 +125,47 @@ class _BillboardFace extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              task.title,
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontFamily: PlazaStyle.fontText,
-                fontWeight: FontWeight.w700,
-                fontSize: m(0.088 * w),
-                height: 1.1,
-                letterSpacing: -m(0.088 * w) * 0.02,
-                color: PlazaStyle.text,
+            // The title yields to the chip row and the gaps: on a squat
+            // panel it scales down instead of overflowing.
+            Flexible(
+              flex: 2,
+              child: LayoutBuilder(
+                builder: (context, constraints) => FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.topLeft,
+                  child: SizedBox(
+                    width: constraints.maxWidth,
+                    child: Text(
+                      task.title,
+                      maxLines: aspect >= reasonAspect ? 2 : 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontFamily: PlazaStyle.fontText,
+                        fontWeight: FontWeight.w700,
+                        fontSize: titlePx,
+                        height: 1.1,
+                        letterSpacing: -titlePx * 0.02,
+                        color: PlazaStyle.text,
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ),
-            if (attention.reason.isNotEmpty) ...[
-              SizedBox(height: m(0.4)),
+            if (showReason) ...[
+              SizedBox(height: m(0.3)),
               Text(
                 attention.reason,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontFamily: PlazaStyle.fontMono,
-                  fontSize: m(0.042 * w),
+                  fontSize: m(0.035 * w),
                   color: frame.withValues(alpha: glow),
                 ),
               ),
             ],
-            if (task.coverImageUrl != null) ...[
+            if (showCover) ...[
               SizedBox(height: m(0.4)),
               Expanded(
                 child: Image.network(

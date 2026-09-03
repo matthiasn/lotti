@@ -128,14 +128,25 @@ void main() {
       expect(camera.pitch, -1.25);
     });
 
-    test('setting the pose jumps, keeps eye height on the next update', () {
+    testWidgets('a set pose keeps its height until the first step', (
+      tester,
+    ) async {
       final camera = _controller()
         ..pose = const CameraPose(x: 10, y: 99, z: -4, yaw: 3.14, pitch: 0.4)
         ..update(0.016);
       expect(camera.pose.x, 10);
       expect(camera.pose.z, -4);
-      expect(camera.pose.y, eyeHeight);
+      expect(camera.pose.y, 99); // The overview pose stays aloft.
       expect(camera.pitch, 0.4);
+
+      await simulateKeyDownEvent(LogicalKeyboardKey.keyW);
+      camera
+        ..handleKeyEvent(
+          _down(LogicalKeyboardKey.keyW, PhysicalKeyboardKey.keyW),
+        )
+        ..update(0.1);
+      await simulateKeyUpEvent(LogicalKeyboardKey.keyW);
+      expect(camera.pose.y, eyeHeight); // Walking drops to the ground.
     });
   });
 
@@ -161,8 +172,12 @@ void main() {
       var cancelled = 0;
       var moved = 0;
       final camera = _controller()
-        ..onFlightCancelled = () => cancelled++
-        ..onMovement = () => moved++;
+        ..onFlightCancelled = () {
+          cancelled++;
+        }
+        ..onMovement = () {
+          moved++;
+        };
       final flight = camera.flyTo(
         const CameraPose(x: 0, y: eyeHeight, z: 100, yaw: 0),
       );
@@ -180,8 +195,12 @@ void main() {
 
     test('drag look cancels a flight too, and pose set clears it', () {
       var cancelled = 0;
-      final camera = _controller()..onFlightCancelled = () => cancelled++;
-      camera
+      void onCancelled() {
+        cancelled++;
+      }
+
+      final camera = _controller()
+        ..onFlightCancelled = onCancelled
         ..flyTo(const CameraPose(x: 0, y: eyeHeight, z: 100, yaw: 0))
         ..addLookDelta(5, 0);
       expect(camera.flying, isFalse);

@@ -35,6 +35,18 @@ class Flight {
 
   static const arcThreshold = 120.0;
 
+  /// Flights shorter than this on the ground keep a direct yaw blend; the
+  /// heading would swing too fast to be worth turning into.
+  static const lookAlongThreshold = 8.0;
+
+  /// The heading of travel, or null for a short hop.
+  double? get travelYaw {
+    final dx = to.x - from.x;
+    final dz = to.z - from.z;
+    if (math.sqrt(dx * dx + dz * dz) < lookAlongThreshold) return null;
+    return math.atan2(dx, dz);
+  }
+
   final CameraPose from;
   final CameraPose to;
   final Duration duration;
@@ -59,22 +71,44 @@ class Flight {
       ? 1
       : (_elapsed.inMicroseconds / duration.inMicroseconds).clamp(0.0, 1.0);
 
-  /// Ease-in-out (quadratic), the shortest yaw arc, and the height arc.
+  /// Ease-in-out (quadratic) along the path, the height arc, and a yaw
+  /// that turns into the direction of travel for the middle of the flight
+  /// and settles onto the target heading at the end — so the camera never
+  /// slides sideways or backwards through the street. Short hops blend yaw
+  /// directly.
   CameraPose poseAt(double t) {
     final s = t < 0.5 ? 2 * t * t : 1 - math.pow(-2 * t + 2, 2) / 2;
-    var dyaw = to.yaw - from.yaw;
-    while (dyaw > math.pi) {
-      dyaw -= 2 * math.pi;
-    }
-    while (dyaw < -math.pi) {
-      dyaw += 2 * math.pi;
+    final along = travelYaw;
+    final double yaw;
+    if (along == null) {
+      yaw = _turn(from.yaw, to.yaw, s);
+    } else if (t < 0.2) {
+      yaw = _turn(from.yaw, along, _smooth(t / 0.2));
+    } else if (t < 0.8) {
+      yaw = along;
+    } else {
+      yaw = _turn(along, to.yaw, _smooth((t - 0.8) / 0.2));
     }
     return CameraPose(
       x: from.x + (to.x - from.x) * s,
       y: from.y + (to.y - from.y) * s + arc * math.sin(math.pi * s),
       z: from.z + (to.z - from.z) * s,
-      yaw: from.yaw + dyaw * s,
+      yaw: yaw,
       pitch: from.pitch + (to.pitch - from.pitch) * s,
     );
+  }
+
+  static double _smooth(double t) => t * t * (3 - 2 * t);
+
+  /// Interpolates a heading the short way round.
+  static double _turn(double a, double b, double s) {
+    var d = b - a;
+    while (d > math.pi) {
+      d -= 2 * math.pi;
+    }
+    while (d < -math.pi) {
+      d += 2 * math.pi;
+    }
+    return a + d * s;
   }
 }

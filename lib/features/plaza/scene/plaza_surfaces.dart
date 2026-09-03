@@ -73,7 +73,9 @@ class PlazaSurfaces {
         child: BillboardWidget(
           attention: billboard.attention,
           widthMeters: slot.width,
+          heightMeters: slot.height,
           pxPerMeter: pxPerMeter,
+          pulseSeconds: slot.pulseSeconds,
         ),
         size: Size(slot.width * pxPerMeter, slot.height * pxPerMeter),
         geometry: ccwQuad(slot.width, slot.height),

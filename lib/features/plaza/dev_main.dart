@@ -10,10 +10,6 @@
 ///
 /// This is a developer harness only — it is not part of the shipping app.
 ///
-/// Benchmark mode: `PLAZA_BENCH=1` auto-walks the synthetic 300-task
-/// district through a fixed set of LOD budgets, printing an fps table
-/// (`PLAZA_BENCH` lines) to stdout.
-///
 /// Tour mode: `PLAZA_TOUR=1` steps through the fixed poses in
 /// `ui/plaza_tour.dart` (the documentation screenshots), printing
 /// `PLAZA_TOUR ready <index> <name>` once each has settled.
@@ -21,19 +17,19 @@ library;
 
 import 'dart:async' show unawaited;
 import 'dart:io' show Platform;
+import 'dart:math' as math;
 
 import 'package:flutter/gestures.dart' show kPrimaryButton;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_scene/scene.dart' hide FlyCameraController;
+import 'package:lotti/features/demo/seed/demo_world.dart' show manualDemoNow;
 import 'package:lotti/features/plaza/data/demo_world_projection.dart';
 import 'package:lotti/features/plaza/domain/morning_walk.dart';
-import 'package:lotti/features/plaza/domain/plaza_generator.dart';
 import 'package:lotti/features/plaza/domain/plaza_layout.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
 import 'package:lotti/features/plaza/domain/street_layout.dart';
 import 'package:lotti/features/plaza/scene/facade_lod_manager.dart';
-import 'package:lotti/features/plaza/scene/plaza_bench.dart';
 import 'package:lotti/features/plaza/scene/plaza_picker.dart';
 import 'package:lotti/features/plaza/scene/plaza_scene.dart';
 import 'package:lotti/features/plaza/scene/plaza_sprites.dart';
@@ -70,7 +66,6 @@ class _PlazaHarness extends StatefulWidget {
 }
 
 class _PlazaHarnessState extends State<_PlazaHarness> {
-  static final bool _benchMode = Platform.environment['PLAZA_BENCH'] == '1';
   static final bool _tourMode = Platform.environment['PLAZA_TOUR'] == '1';
 
   late PlazaWorld _world;
@@ -84,7 +79,6 @@ class _PlazaHarnessState extends State<_PlazaHarness> {
   final FacadeLodConfig _config = FacadeLodConfig();
   final PlazaLayoutKnobs _knobs = PlazaLayoutKnobs();
   final PlazaHarnessStats _stats = PlazaHarnessStats();
-  TourPreset _dataset = TourPreset.demo;
 
   Camera? _frameCamera;
   Size _viewSize = const Size(1, 1);
@@ -109,8 +103,6 @@ class _PlazaHarnessState extends State<_PlazaHarness> {
   final List<double> _frameMs = [];
   double _statsAge = 0;
 
-  late final PlazaBench? _bench = _benchMode ? PlazaBench() : null;
-
   // Tour mode.
   static const _tourSettleSeconds = 5.0;
   static const _tourHoldSeconds = 9.0;
@@ -132,10 +124,10 @@ class _PlazaHarnessState extends State<_PlazaHarness> {
   Future<void> _boot() async {
     await Scene.initializeStaticResources();
     if (!mounted) return;
-    _load(_benchMode ? TourPreset.large : TourPreset.demo);
-    if (_benchMode) _bench!.start(_config, _camera);
-    if (_tourMode && !_benchMode) _applyTourStop(0);
-    if (!_benchMode && !_tourMode) {
+    _load();
+    if (_tourMode) {
+      _applyTourStop(0);
+    } else {
       _toast = 'Home — ${_world.projectLabel}';
       _toastUntil = 3.2;
     }
@@ -144,23 +136,13 @@ class _PlazaHarnessState extends State<_PlazaHarness> {
 
   // ---------------------------------------------------------------- data
 
-  void _load(TourPreset dataset) {
-    _dataset = dataset;
-    final List<PlazaTask> tasks;
-    final DateTime now;
-    final String label;
-    var categoryLabels = const <String, String>{};
-    switch (dataset) {
-      case TourPreset.demo:
-        tasks = plazaTasksFromDemoWorld();
-        now = DateTime.now();
-        label = 'Project Waddle';
-        categoryLabels = demoCategoryLabels();
-      case TourPreset.large:
-        tasks = generatePlazaTasks(preset: PlazaPreset.large);
-        now = plazaNowFor(tasks);
-        label = 'Synthetic 300';
-    }
+  void _load() {
+    // The demo world is expressed against its fixture clock ("overdue by
+    // two days" is relative to it), so score it against the same.
+    final tasks = plazaTasksFromDemoWorld(now: manualDemoNow);
+    final now = manualDemoNow;
+    const label = 'Project Waddle';
+    final categoryLabels = demoCategoryLabels(now: manualDemoNow);
     _world = PlazaWorld(
       tasks: tasks,
       now: now,
@@ -210,11 +192,10 @@ class _PlazaHarnessState extends State<_PlazaHarness> {
     _panel = null;
   }
 
-  /// Rebuilds the scene with the current layout knobs, keeping the dataset.
+  /// Rebuilds the scene with the current layout knobs.
   void _applyKnobs() {
     _lod.dispose();
-    setState(() => _load(_dataset));
-    if (_benchMode) _bench!.resume(_camera);
+    setState(_load);
   }
 
   // ------------------------------------------------------------- flights
@@ -268,7 +249,19 @@ class _PlazaHarnessState extends State<_PlazaHarness> {
     if (nav.isEmpty) return;
     _beaconCursor = (_beaconCursor + direction + nav.length) % nav.length;
     final beacon = nav[_beaconCursor];
-    _flyTo(beacon.pose, beacon.label);
+    // Block and corner beacons look along the road; when cycling toward
+    // older weeks, look that way so the walk reads as walking, not
+    // reversing.
+    final pose = beacon.kind == BeaconKind.home || direction < 0
+        ? beacon.pose
+        : CameraPose(
+            x: beacon.pose.x,
+            y: beacon.pose.y,
+            z: beacon.pose.z,
+            yaw: beacon.pose.yaw + math.pi,
+            pitch: beacon.pose.pitch,
+          );
+    _flyTo(pose, beacon.label);
   }
 
   // -------------------------------------------------------- morning walk
@@ -381,11 +374,6 @@ class _PlazaHarnessState extends State<_PlazaHarness> {
     var index = from;
     while (index < plazaTourStops.length) {
       final stop = plazaTourStops[index];
-      if (stop.preset != _dataset) {
-        _lod.dispose();
-        _load(stop.preset);
-        if (mounted) setState(() {});
-      }
       final pose = stop.pose(_world);
       if (pose != null) {
         _camera.pose = pose;
@@ -420,8 +408,7 @@ class _PlazaHarnessState extends State<_PlazaHarness> {
 
   void _onTick(Duration elapsed, double dt) {
     _elapsed = elapsed.inMicroseconds / 1e6;
-    if (_benchMode) _bench!.tick(dt, _lod, _camera);
-    if (_tourMode && !_benchMode) _tourTick(dt);
+    if (_tourMode) _tourTick(dt);
     _walkTick(dt);
     _camera.update(dt);
     final camera = _camera.camera();
@@ -532,7 +519,7 @@ class _PlazaHarnessState extends State<_PlazaHarness> {
                       stats: _stats,
                       config: _config,
                       knobs: _knobs,
-                      datasetLabel: _dataset.name,
+                      datasetLabel: 'waddle',
                       onConfigChanged: () => setState(() {}),
                       onKnobsApplied: _applyKnobs,
                     ),

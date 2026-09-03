@@ -2,16 +2,17 @@ import 'dart:math' as math;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/plaza/domain/attention.dart';
-import 'package:lotti/features/plaza/domain/plaza_generator.dart';
 import 'package:lotti/features/plaza/domain/plaza_layout.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
 import 'package:lotti/features/plaza/domain/street_layout.dart';
+
+import '../plaza_fixtures.dart';
 
 double _norm(double a) => ((a % (2 * math.pi)) + 2 * math.pi) % (2 * math.pi);
 
 void main() {
   final layout = StreetLayout(projectSeed: 1337);
-  final tasks = generatePlazaTasks(preset: PlazaPreset.medium);
+  final tasks = syntheticPlazaTasks();
   final plan = layout.plan(tasks);
   final plaza = frontierPlazaFor(plan)!;
   final last = plan.last!;
@@ -168,7 +169,7 @@ void main() {
   });
 
   group('beaconsFor', () {
-    final now = plazaNowFor(tasks);
+    final now = syntheticNow(tasks);
     final anomalyList = anomalies(attentionForAll(tasks, now));
     final beacons = beaconsFor(
       plan,
@@ -197,7 +198,7 @@ void main() {
       expect(blocks.every((b) => b.visibleRange == 140), isTrue);
     });
 
-    test('a block beacon stands mid-segment looking along the road', () {
+    test('a block beacon stands at the block start looking down it', () {
       final block = beacons.firstWhere((b) => b.kind == BeaconKind.block);
       final index = int.parse(block.id.split('-').last);
       final segment = plan.segments.firstWhere(
@@ -206,8 +207,7 @@ void main() {
       expect(
         block.pose.x,
         closeTo(
-          segment.startX +
-              math.sin(segment.headingRadians) * segment.length / 2,
+          segment.startX + math.sin(segment.headingRadians) * blockBeaconInset,
           1e-9,
         ),
       );
@@ -239,5 +239,50 @@ void main() {
     const b = CameraPose(x: 3, y: 4, z: 0, yaw: 1, pitch: 0.5);
     expect(a.distanceTo(b), 5);
     expect(b.toString(), contains('yaw 1.00'));
+  });
+
+  group('roofBillboardsFor', () {
+    final now = syntheticNow(tasks);
+    final anomalyList = anomalies(attentionForAll(tasks, now));
+    final roofs = roofBillboardsFor(plan, anomalyList);
+
+    test('one panel per anomaly up to the cap, most urgent first', () {
+      expect(roofs.length, math.min(12, anomalyList.length));
+      expect(roofs.map((s) => s.rank), List.generate(roofs.length, (i) => i));
+      expect(roofs.every((s) => s.mount == BillboardMount.roof), isTrue);
+      expect(roofBillboardsFor(plan, anomalyList, cap: 2), hasLength(2));
+    });
+
+    test('sits above its own building, facing the street', () {
+      for (final (i, slot) in roofs.indexed) {
+        final p = plan.placements[anomalyList[i].task.id]!;
+        expect(slot.bottom, p.height + 0.5);
+        expect(slot.width, closeTo(p.width * 0.95, 1e-9));
+        expect(slot.facingRadians, p.facingRadians);
+        final dx = slot.x - p.x;
+        final dz = slot.z - p.z;
+        expect(
+          dx * math.sin(p.facingRadians) + dz * math.cos(p.facingRadians),
+          closeTo(p.depth / 2 - 0.4, 1e-9),
+        );
+      }
+    });
+
+    test('size and agitation follow the score', () {
+      final scores = roofs.map((s) => anomalyList[s.rank].score).toList();
+      for (var i = 1; i < roofs.length; i++) {
+        if (scores[i] < scores[i - 1]) {
+          expect(roofs[i].height, lessThanOrEqualTo(roofs[i - 1].height));
+          expect(
+            roofs[i].pulseSeconds,
+            greaterThanOrEqualTo(roofs[i - 1].pulseSeconds),
+          );
+        }
+      }
+      for (final s in roofs) {
+        expect(s.height, inInclusiveRange(3, 6));
+        expect(s.pulseSeconds, inInclusiveRange(1.2, 3));
+      }
+    });
   });
 }

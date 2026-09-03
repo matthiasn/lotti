@@ -136,7 +136,9 @@ class PlazaSceneController {
   final List<PlazaBuilding> buildings = [];
   final List<PlazaBillboard> billboards = [];
 
-  /// Nodes a tap can land on, and what they belong to.
+  /// Nodes a tap can land on, and what they belong to. Only the facade
+  /// plate is pickable, not the whole box: a tap on a side wall or a roof
+  /// does nothing, so idle clicks do not fling the camera about.
   final Map<Node, PlazaBuilding> pickableBuildings = {};
   final Map<Node, PlazaBillboard> pickableBillboards = {};
 
@@ -248,6 +250,9 @@ class PlazaSceneController {
     for (final (i, slot) in world.billboardSlots.indexed) {
       if (i >= world.billboards.length) break;
       _buildBillboard(slot, world.billboards[i]);
+    }
+    for (final (i, slot) in world.roofBillboards.indexed) {
+      _buildBillboard(slot, world.roofBillboardTasks[i]);
     }
   }
 
@@ -398,7 +403,6 @@ class PlazaSceneController {
     );
     buildings.add(building);
     pickableBuildings[plate] = building;
-    pickableBuildings[node] = building;
   }
 
   void _buildEmptyLot(PlotPlacement placement) {
@@ -423,6 +427,22 @@ class PlazaSceneController {
         ..rotateY(slot.facingRadians),
     );
     final frame = PlazaStyle.lantern(attention.lantern);
+    if (slot.mount == BillboardMount.roof) {
+      // Two short struts on the roof.
+      for (final side in [-1.0, 1.0]) {
+        root.add(
+          Node(
+            localTransform: Matrix4.translation(
+              Vector3(side * slot.width * 0.4, slot.bottom - 0.25, -0.3),
+            ),
+            mesh: Mesh(
+              CuboidGeometry(Vector3(0.25, 0.5, 0.25)),
+              UnlitMaterial()..baseColorFactor = _post,
+            ),
+          ),
+        );
+      }
+    }
     if (slot.onPylon) {
       for (final side in [-1.0, 1.0]) {
         root.add(

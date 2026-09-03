@@ -63,8 +63,21 @@ class _Frame {
   );
 }
 
-/// One billboard mount on the plaza: a pylon at the plaza edge or a screen
-/// on the plaza-facing wall of the newest building on one side.
+/// How a billboard is mounted.
+enum BillboardMount {
+  /// Two posts at the plaza edge.
+  pylon,
+
+  /// Flush on the plaza-facing wall of a newest building.
+  wall,
+
+  /// Above the roof of the task's own building, facing its street.
+  roof,
+}
+
+/// One billboard mount: a pylon at the plaza edge, a screen on the
+/// plaza-facing wall of the newest building on one side, or a panel on the
+/// roof of an anomalous building.
 class BillboardSlot {
   const BillboardSlot({
     required this.rank,
@@ -74,8 +87,12 @@ class BillboardSlot {
     required this.width,
     required this.height,
     required this.bottom,
-    required this.onPylon,
+    required this.mount,
+    this.pulseSeconds = 3,
   });
+
+  /// Pylon-mounted (two posts) — kept for the plaza builder.
+  bool get onPylon => mount == BillboardMount.pylon;
 
   /// Attention rank (0 = most urgent). Slot order is stable; only the
   /// content changes.
@@ -91,8 +108,10 @@ class BillboardSlot {
   /// Height of the panel's bottom edge above ground.
   final double bottom;
 
-  /// Pylon-mounted (two posts) versus flush on a building wall.
-  final bool onPylon;
+  final BillboardMount mount;
+
+  /// Glow cycle length; shorter is more agitated.
+  final double pulseSeconds;
 
   /// World-space centre of the panel.
   double get centerY => bottom + height / 2;
@@ -233,7 +252,7 @@ FrontierPlaza? frontierPlazaFor(StreetPlan plan) {
         width: width,
         height: height,
         bottom: bottom,
-        onPylon: true,
+        mount: BillboardMount.pylon,
       ),
     );
   }
@@ -305,7 +324,7 @@ List<PlotPlacement> plazaMounts(StreetPlan plan) {
         width: math.min(9.6, mount.depth * 1.2),
         height: 7,
         bottom: 2.6,
-        onPylon: false,
+        mount: BillboardMount.wall,
       ),
     );
     tickers.add(
@@ -321,6 +340,36 @@ List<PlotPlacement> plazaMounts(StreetPlan plan) {
     );
   }
   return (screens: screens, tickers: tickers);
+}
+
+/// Roof billboards for the anomalies, most urgent first, at most [cap]:
+/// a panel above the task's own building facing its street, sized and
+/// agitated by score, so the thing that needs you is lit where it stands.
+List<BillboardSlot> roofBillboardsFor(
+  StreetPlan plan,
+  List<TaskAttention> anomalies, {
+  int cap = 12,
+}) {
+  final slots = <BillboardSlot>[];
+  for (final (rank, anomaly) in anomalies.take(cap).indexed) {
+    final p = plan.placements[anomaly.task.id];
+    if (p == null) continue;
+    final height = (2.6 + anomaly.score * 0.45).clamp(3.0, 6.0);
+    slots.add(
+      BillboardSlot(
+        rank: rank,
+        x: p.x + math.sin(p.facingRadians) * (p.depth / 2 - 0.4),
+        z: p.z + math.cos(p.facingRadians) * (p.depth / 2 - 0.4),
+        facingRadians: p.facingRadians,
+        width: p.width * 0.95,
+        height: height,
+        bottom: p.height + 0.5,
+        mount: BillboardMount.roof,
+        pulseSeconds: (3.6 - anomaly.score * 0.4).clamp(1.2, 3.0),
+      ),
+    );
+  }
+  return slots;
 }
 
 /// A ticker band along the roofline of [hero]'s street-facing wall.
@@ -357,6 +406,9 @@ CameraPose taskPoseFor(PlotPlacement p) {
 
 /// Height of the beacon dot above the road.
 const _markerHeight = 1.6;
+
+/// How far into a block its beacon stands.
+const blockBeaconInset = 3.0;
 
 /// The navigation beacons: Home, one per built week (newest first), one per
 /// fold corner; then one attention beacon per anomaly.
@@ -402,24 +454,26 @@ List<Beacon> beaconsFor(
       continue;
     }
     if (segment.isGap) continue;
-    final midX =
-        segment.startX + math.sin(segment.headingRadians) * segment.length / 2;
-    final midZ =
-        segment.startZ + math.cos(segment.headingRadians) * segment.length / 2;
+    // Stand at the block's start looking down it, so its buildings are
+    // ahead on both sides rather than beside and behind the camera.
+    final x =
+        segment.startX + math.sin(segment.headingRadians) * blockBeaconInset;
+    final z =
+        segment.startZ + math.cos(segment.headingRadians) * blockBeaconInset;
     beacons.add(
       Beacon(
         id: 'block-${segment.bucketIndex}',
         kind: BeaconKind.block,
         label: '${weekLabel(segment.bucketIndex)} — block',
         pose: CameraPose(
-          x: midX,
+          x: x,
           y: eyeHeight,
-          z: midZ,
+          z: z,
           yaw: segment.headingRadians,
         ),
-        markerX: midX,
+        markerX: x,
         markerY: _markerHeight,
-        markerZ: midZ,
+        markerZ: z,
       ),
     );
   }

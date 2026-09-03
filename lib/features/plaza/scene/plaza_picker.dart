@@ -40,6 +40,11 @@ class PlazaPicker {
   /// Beacon dots accept a tap within this many logical pixels.
   static const beaconHitPx = 14.0;
 
+  /// Facades and billboards farther than this ignore taps: flying across
+  /// the district from a skyline click is disorienting, beacons are for
+  /// that.
+  static const maxTapDistance = 160.0;
+
   PickResult? pick(Camera camera, Size viewSize, Offset point) {
     Beacon? nearestBeacon;
     var nearest = beaconHitPx;
@@ -56,7 +61,7 @@ class PlazaPicker {
     if (nearestBeacon != null) return PickedBeacon(nearestBeacon);
 
     final ray = camera.screenPointToRay(point, viewSize);
-    final hit = controller.scene.raycast(ray);
+    final hit = controller.scene.raycast(ray, maxDistance: maxTapDistance);
     if (hit == null) return null;
     Node? node = hit.node;
     while (node != null) {

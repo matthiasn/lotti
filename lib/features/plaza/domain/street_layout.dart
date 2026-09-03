@@ -145,18 +145,18 @@ class StreetPlan {
 class StreetLayout {
   StreetLayout({
     required this.projectSeed,
-    this.roadWidth = 25,
+    this.roadWidth = 18,
     this.pxPerMeter = 90,
-    this.maxBuildingHeight = 14,
-    this.groupLength = 46,
-    this.gapLength = 7,
-    this.plotDepth = 8,
-    this.sideMargin = 2,
+    this.maxBuildingHeight = 16,
+    this.groupLength = 40,
+    this.gapLength = 4,
+    this.plotDepth = 10,
+    this.sideMargin = 1.5,
     this.minBuildingWidth = 2.5,
-    this.maxBuildingWidth = 12,
-    this.foldEvery = 6,
-    this.connectorLength = 50,
-    this.minBuildingHeight = 3.5,
+    this.maxBuildingWidth = 18,
+    this.foldEvery = 4,
+    this.connectorLength = 44,
+    this.minBuildingHeight = 6,
   });
 
   final int projectSeed;
@@ -205,7 +205,7 @@ class StreetLayout {
 
   /// Weight-driven building height, world meters.
   ///
-  /// `floor + priorityWeight × 2.6 × ln(1 + heft)`, capped at
+  /// `floor + priorityWeight × 3.2 × ln(1 + heft)`, capped at
   /// [maxBuildingHeight]: a heavy urgent task is a tower, a lone low-priority
   /// task is a bungalow, and a wordy title changes nothing. Still a pure
   /// function of merged task data, so it is identical on every device.
@@ -216,7 +216,7 @@ class StreetLayout {
       2 => 1.0,
       _ => 0.8,
     };
-    final raw = minBuildingHeight + weight * 2.6 * math.log(1 + task.heft);
+    final raw = minBuildingHeight + weight * 3.2 * math.log(1 + task.heft);
     return raw.clamp(minBuildingHeight, maxBuildingHeight);
   }
 
@@ -375,7 +375,7 @@ class StreetLayout {
         // width yields to the slot so neighbors cannot intersect.
         final buildingWidth = math.min(
           slot * 0.95,
-          (slot * 0.82).clamp(minBuildingWidth, maxBuildingWidth),
+          (slot * 0.9).clamp(minBuildingWidth, maxBuildingWidth),
         );
 
         final sideSign = side == PlotSide.left ? -1.0 : 1.0;

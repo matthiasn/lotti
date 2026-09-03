@@ -31,6 +31,7 @@ class PlazaWorld {
       weekLabel: weekLabel,
     );
     collider = WalkCollider(plan.placements.values);
+    roofBillboards = roofBillboardsFor(plan, anomalies);
     final mounted = mountedSlotsFor(plan);
     mountedScreens = mounted.screens;
     tickers = [
@@ -56,7 +57,15 @@ class PlazaWorld {
   late final List<Beacon> beacons;
   late final WalkCollider collider;
   late final List<BillboardSlot> mountedScreens;
+
+  /// Panels above the anomalous buildings themselves, most urgent first.
+  late final List<BillboardSlot> roofBillboards;
   late final List<TickerSlot> tickers;
+
+  /// Attention verdict for each roof billboard, in slot order.
+  List<TaskAttention> get roofBillboardTasks => [
+    for (final slot in roofBillboards) anomalies[slot.rank],
+  ];
 
   /// The two most urgent billboard tasks with cover art carry roofline
   /// tickers.

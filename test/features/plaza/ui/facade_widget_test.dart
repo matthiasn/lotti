@@ -89,7 +89,7 @@ void main() {
     expect(bar.widthFactor, 0.5);
   });
 
-  testWidgets('sign facade drops everything but title, chip and bar', (
+  testWidgets('sign facade keeps title, cover, chip and bar only', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -109,19 +109,20 @@ void main() {
     expect(find.textContaining('due Jul 17'), findsNothing);
     expect(find.text('Check bay two'), findsNothing);
     expect(find.text('OPEN'), findsNothing);
-    expect(find.byType(Image), findsNothing);
+    // Cover art stays: it is what makes a street read from a distance.
+    expect(find.byType(Image), findsOneWidget);
     // Bigger type than the live variant for the same wall.
     final sign = tester.widget<Text>(find.text('Negotiate sardine futures'));
     await tester.pumpWidget(_host(_task()));
     final live = tester.widget<Text>(find.text('Negotiate sardine futures'));
-    expect(sign.style!.fontSize!, greaterThan(live.style!.fontSize!));
+    expect(sign.style!.fontSize, greaterThan(live.style!.fontSize!));
   });
 
   testWidgets('overdue overrides the chip; an in-progress task fills 35%', (
     tester,
   ) async {
     await tester.pumpWidget(
-      _host(_task(due: DateTime.utc(2026, 7, 1))),
+      _host(_task(due: DateTime.utc(2026, 7))),
     );
     expect(find.text('OVERDUE'), findsOneWidget);
     expect(find.text('OPEN'), findsNothing);
@@ -168,7 +169,11 @@ void main() {
     var opened = 0;
     await tester.pumpWidget(
       _host(
-        _task(checklistItems: 1, openItems: ['Check bay two']),
+        _task(
+          state: PlazaTaskState.inProgress,
+          checklistItems: 1,
+          openItems: ['Check bay two'],
+        ),
         onOpen: () => opened++,
       ),
     );
@@ -190,7 +195,9 @@ void main() {
     );
     expect(find.text('BLOCKED'), findsOneWidget);
     final open = tester.widget<Container>(
-      find.ancestor(of: find.text('OPEN'), matching: find.byType(Container)).first,
+      find
+          .ancestor(of: find.text('OPEN'), matching: find.byType(Container))
+          .first,
     );
     expect((open.decoration! as BoxDecoration).color, PlazaStyle.teal);
   });
@@ -201,7 +208,8 @@ void main() {
         .widgetList<Container>(find.byType(Container))
         .where((c) => c.foregroundDecoration != null);
     expect(ringed, hasLength(1));
-    final border = (ringed.first.foregroundDecoration! as BoxDecoration).border!;
+    final border =
+        (ringed.first.foregroundDecoration! as BoxDecoration).border!;
     expect(border.top.color, PlazaStyle.teal);
     await tester.pumpWidget(_host(_task()));
     expect(
@@ -220,5 +228,37 @@ void main() {
     await tester.pump();
     expect(tester.takeException(), isNull);
     expect(find.byType(RawImage), findsNothing);
+  });
+
+  testWidgets('a short wall shows only the items that fit, no overflow', (
+    tester,
+  ) async {
+    final task = _task(
+      state: PlazaTaskState.inProgress,
+      checklistItems: 8,
+      openItems: [for (var i = 0; i < 8; i++) 'Item $i'],
+    );
+    await tester.pumpWidget(
+      makeTestableWidget2(
+        Center(
+          child: SizedBox(
+            width: 540,
+            height: 420, // a 9.3 m wall at 45 px/m
+            child: FacadeWidget(
+              task: task,
+              attention: attentionFor(task, _now),
+              variant: FacadeVariant.live,
+              widthMeters: 12,
+              pxPerMeter: 45,
+            ),
+          ),
+        ),
+      ),
+    );
+    expect(tester.takeException(), isNull);
+    final shown = find.textContaining('Item ');
+    expect(shown.evaluate().length, lessThan(8));
+    expect(shown.evaluate().length, greaterThan(0));
+    expect(find.text('Item 0'), findsOneWidget);
   });
 }

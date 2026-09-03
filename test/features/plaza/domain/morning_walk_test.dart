@@ -1,15 +1,16 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/plaza/domain/attention.dart';
 import 'package:lotti/features/plaza/domain/morning_walk.dart';
-import 'package:lotti/features/plaza/domain/plaza_generator.dart';
 import 'package:lotti/features/plaza/domain/plaza_layout.dart';
 import 'package:lotti/features/plaza/domain/street_layout.dart';
 
+import '../plaza_fixtures.dart';
+
 void main() {
-  final tasks = generatePlazaTasks(preset: PlazaPreset.medium);
+  final tasks = syntheticPlazaTasks();
   final plan = StreetLayout(projectSeed: 1337).plan(tasks);
   final plaza = frontierPlazaFor(plan)!;
-  final anomalyList = anomalies(attentionForAll(tasks, plazaNowFor(tasks)));
+  final anomalyList = anomalies(attentionForAll(tasks, syntheticNow(tasks)));
 
   test('stops: overview, up to three anomalies, home', () {
     final stops = morningWalkStops(plan, plaza, anomalyList, projectLabel: 'P');
