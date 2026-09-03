@@ -275,6 +275,8 @@ void main() {
       expect(entry.photos.single.capturedAt, image.data.capturedAt);
       expect(entry.photos.single.fileDate, image.meta.dateFrom);
       expect(entry.photos.single.displayDate, image.data.capturedAt);
+      // The photo knows which image it is, so a cover action can name it.
+      expect(entry.photos.single.id, image.meta.id);
     });
 
     test('maps a point-in-time text entry to a note timeline entry', () {
@@ -519,6 +521,59 @@ void main() {
     test('has no cover when there are no linked images', () {
       final data = detail(_event(), [testTextEntry]);
       expect(data.card.coverImage, isNull);
+      expect(data.card.coverChosen, isFalse);
+    });
+
+    // The gallery badges the chosen cover and the hero offers "Set cover"
+    // while the cover is only the default; both hang off these flags.
+    test('a resolvable coverArtId marks the cover chosen and badges exactly '
+        'that photo', () {
+      final later = testImageEntry.copyWith(
+        meta: testImageEntry.meta.copyWith(
+          id: 'img-later',
+          dateFrom: DateTime(2026, 5, 12, 21),
+        ),
+      );
+      final data = detail(_event(coverArtId: testImageEntry.meta.id), [
+        later,
+        testImageEntry,
+      ]);
+
+      expect(data.card.coverChosen, isTrue);
+      expect(
+        (data.card.coverImage! as NetworkImage).url,
+        testImageEntry.meta.id,
+      );
+      expect(data.photos.map((p) => p.id), [
+        testImageEntry.meta.id,
+        'img-later',
+      ]);
+      expect(data.photos.map((p) => p.isCover), [true, false]);
+    });
+
+    test('the newest-photo default is not a choice: nothing is badged', () {
+      final later = testImageEntry.copyWith(
+        meta: testImageEntry.meta.copyWith(
+          id: 'img-later',
+          dateFrom: DateTime(2026, 5, 12, 21),
+        ),
+      );
+      final data = detail(_event(), [testImageEntry, later]);
+
+      expect((data.card.coverImage! as NetworkImage).url, 'img-later');
+      expect(data.card.coverChosen, isFalse);
+      expect(data.photos.map((p) => p.isCover), [false, false]);
+    });
+
+    test('a coverArtId that no longer resolves counts as no choice', () {
+      final data = detail(_event(coverArtId: 'img-gone'), [testImageEntry]);
+
+      expect(
+        (data.card.coverImage! as NetworkImage).url,
+        testImageEntry.meta.id,
+      );
+      expect(data.card.coverChosen, isFalse);
+      expect(data.photos.single.isCover, isFalse);
     });
 
     test('prefers a linked AI response over the note for the summary', () {

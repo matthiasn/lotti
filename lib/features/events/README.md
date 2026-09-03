@@ -19,8 +19,11 @@ Behind the **Enable Events** flag. With it off, events are hidden everywhere.
   cancelled, missed or postponed one stays off it.
 - **Rates a memory, but only once it is a memory.** Stars appear once the event
   has happened, so a plan is not asked to rate itself.
-- **Picks its own cover.** The first linked photo becomes the cover; after that
-  the user can choose any linked photo.
+- **Picks its own cover, until told otherwise.** The newest linked photo stands
+  in as the cover until the user chooses one — from the full-screen viewer with
+  **Set cover** on the photo in view, or from the **Change cover** picker in
+  the header's menu. The gallery badges the chosen cover, and the header says
+  **Set cover** while the cover is only the default.
 - **Reads in the user's language.** Statuses and relative dates are rendered in
   the active language, so switching language changes the wording immediately.
 

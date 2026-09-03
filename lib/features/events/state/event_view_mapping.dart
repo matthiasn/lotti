@@ -46,6 +46,7 @@ EventTimelineEntry? eventTimelineEntryFor(
       photos: [
         EventPhoto(
           imageProviderFor(image),
+          id: image.meta.id,
           filePath: imagePathFor?.call(image),
           capturedAt: image.data.capturedAt,
           fileDate: image.meta.dateFrom,
@@ -112,8 +113,10 @@ EventTaskRef? eventTaskRefFor(JournalEntity entity, {String? dueLabel}) {
 /// and its outgoing linked entries. Pure: the documents-directory-dependent
 /// image resolution is injected via [imageProviderFor].
 ///
-/// - **Cover**: the linked image whose id matches the event's `coverArtId`,
-///   else the first linked photo, else none.
+/// - **Cover**: the linked image whose id matches the event's `coverArtId`
+///   (the chosen cover — `card.coverChosen`, and that photo's
+///   [EventPhoto.isCover]), else the newest linked photo as an unmarked
+///   default, else none.
 /// - **Timeline**: linked photos/notes/audio, oldest first.
 /// - **Tasks**: linked tasks.
 /// - **Summary**: the latest linked AI response, falling back to the event's
@@ -139,6 +142,9 @@ EventDetailData eventDetailDataFromEntities({
       break;
     }
   }
+  // The chosen cover is the one the user picked and that still resolves; a
+  // `coverArtId` pointing at an unlinked or deleted photo is no choice.
+  final chosenCoverId = cover?.meta.id;
   // Match the overview card (`loadResolvedEventsPage`): the newest linked
   // photo, picked explicitly rather than relying on the caller's link ordering,
   // so the card and the detail never disagree about an event's cover.
@@ -155,6 +161,7 @@ EventDetailData eventDetailDataFromEntities({
     categoryName: categoryName,
     fallbackTitle: fallbackTitle,
     coverImage: cover == null ? null : imageProviderFor(cover),
+    coverChosen: chosenCoverId != null,
   );
 
   // Sort the linked entries once; the timeline, photo gallery and AI summary
@@ -185,11 +192,14 @@ EventDetailData eventDetailDataFromEntities({
     if (task != null) tasks.add(task);
   }
 
-  // All linked photos, oldest first, for the gallery grid.
+  // All linked photos, oldest first, for the gallery grid; the chosen cover
+  // (never the default) is flagged so the grid can badge it.
   final photos = [
     for (final image in sorted.whereType<JournalImage>())
       EventPhoto(
         imageProviderFor(image),
+        id: image.meta.id,
+        isCover: image.meta.id == chosenCoverId,
         filePath: imagePathFor?.call(image),
         capturedAt: image.data.capturedAt,
         fileDate: image.meta.dateFrom,
@@ -249,6 +259,7 @@ EventCardData eventCardDataFromEvent(
   required String fallbackTitle,
   String? categoryName,
   ImageProvider? coverImage,
+  bool coverChosen = false,
   int photoCount = 0,
   int taskCount = 0,
 }) {
@@ -265,6 +276,7 @@ EventCardData eventCardDataFromEvent(
     categoryColor: categoryColor,
     coverImage: coverImage,
     coverCropX: event.data.coverArtCropX,
+    coverChosen: coverChosen,
     summary: (note != null && note.isNotEmpty) ? note : null,
     photoCount: photoCount,
     taskCount: taskCount,

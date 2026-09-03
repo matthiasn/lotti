@@ -1739,8 +1739,8 @@
       }
     }
   },
-  "coverArtChipActive": "Obal",
-  "coverArtChipSet": "Nastavit obal",
+  "coverArtChipActive": "Obálka",
+  "coverArtChipSet": "Nastavit obálku",
   "coverArtGenerationComplete": "Obálka je připravena!",
   "coverArtGenerationDismissHint": "Můžeš to zavřít — generování pokračuje na pozadí",
   "createButton": "Vytvořit",

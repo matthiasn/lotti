@@ -3825,10 +3825,10 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
-  String get coverArtChipActive => 'Forside';
+  String get coverArtChipActive => 'Omslag';
 
   @override
-  String get coverArtChipSet => 'Kulissecover';
+  String get coverArtChipSet => 'Vælg omslag';
 
   @override
   String get coverArtGenerationComplete => 'Coverkunst klar!';

@@ -1,10 +1,14 @@
 import 'dart:io';
 
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/events/ui/model/event_view_data.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_image_widget.dart';
 import 'package:lotti/features/journal/util/image_export_service.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/media/image_viewer_orientation_scope.dart';
 import 'package:photo_view/photo_view.dart';
@@ -15,10 +19,18 @@ import 'package:photo_view/photo_view_gallery.dart';
 /// width and, when there are more photos than fit the preview, caps the grid
 /// and marks the last tile with a "+N" overflow badge. Tapping any tile opens
 /// the full-screen, swipeable [EventPhotoGalleryViewer] at that photo.
+///
+/// The chosen cover ([EventPhoto.isCover]) wears a "Cover" badge, and
+/// [onSetCover] — forwarded to the viewer — is how any other photo becomes it.
 class EventPhotoGrid extends StatelessWidget {
-  const EventPhotoGrid({required this.photos, super.key});
+  const EventPhotoGrid({required this.photos, this.onSetCover, super.key});
 
   final List<EventPhoto> photos;
+
+  /// Makes the photo with this id the event's cover and reports whether the
+  /// write was stored, so the viewer can undo its optimistic state when it
+  /// was not. Null leaves the gallery read-only: no action in the viewer.
+  final Future<bool> Function(String id)? onSetCover;
 
   /// Target tile edge; the column count is derived from the available width.
   static const double _targetTile = 116;
@@ -41,6 +53,11 @@ class EventPhotoGrid extends StatelessWidget {
         final previewCount = columns * _previewRows;
         final capped = photos.length > previewCount;
         final tileCount = capped ? previewCount : photos.length;
+        // The "+N" tile stands for its own photo and every hidden one; when
+        // the chosen cover is among those, the tile wears the badge so a
+        // photo-heavy event never reads as "nothing chosen".
+        final coverBehindOverflow =
+            capped && photos.skip(tileCount - 1).any((photo) => photo.isCover);
 
         return Wrap(
           spacing: gap,
@@ -58,10 +75,14 @@ class EventPhotoGrid extends StatelessWidget {
                   overflow: capped && i == tileCount - 1
                       ? photos.length - tileCount + 1
                       : 0,
+                  showCoverBadge:
+                      photos[i].isCover ||
+                      (coverBehindOverflow && i == tileCount - 1),
                   onTap: () => openEventPhotoViewer(
                     context,
                     photos: photos,
                     initialIndex: i,
+                    onSetCover: onSetCover,
                   ),
                 ),
               ),
@@ -78,6 +99,7 @@ class _PhotoTile extends StatelessWidget {
     required this.radius,
     required this.index,
     required this.overflow,
+    required this.showCoverBadge,
     required this.onTap,
   });
 
@@ -85,6 +107,10 @@ class _PhotoTile extends StatelessWidget {
   final double radius;
   final int index;
   final int overflow;
+
+  /// Whether this tile wears the "Cover" badge: its own photo is the chosen
+  /// cover, or it is the "+N" tile and the chosen cover is behind it.
+  final bool showCoverBadge;
   final VoidCallback onTap;
 
   @override
@@ -124,9 +150,51 @@ class _PhotoTile extends StatelessWidget {
                 ),
               ),
             ),
+          if (showCoverBadge)
+            Positioned(
+              top: context.designTokens.spacing.step1,
+              left: context.designTokens.spacing.step1,
+              child: const _CoverBadge(),
+            ),
           Material(
             color: Colors.transparent,
             child: InkWell(onTap: onTap),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Marks the grid tile that is the event's chosen cover, in the viewer
+/// chrome's own idiom (scrim pill, white glyph and word) so the grid and the
+/// full-screen "Cover" state read as one thing.
+class _CoverBadge extends StatelessWidget {
+  const _CoverBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return ImageViewerPill(
+      alpha: 0.62,
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.step2,
+        vertical: tokens.spacing.step1,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            LottiIcons.confirmCircled,
+            size: tokens.spacing.step4,
+            color: Colors.white,
+          ),
+          SizedBox(width: tokens.spacing.step1),
+          Text(
+            context.messages.coverArtChipActive,
+            style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+              color: Colors.white,
+            ),
           ),
         ],
       ),
@@ -139,6 +207,7 @@ Future<void> openEventPhotoViewer(
   BuildContext context, {
   required List<EventPhoto> photos,
   required int initialIndex,
+  Future<bool> Function(String id)? onSetCover,
 }) {
   return Navigator.of(context, rootNavigator: true).push(
     MaterialPageRoute<void>(
@@ -146,6 +215,7 @@ Future<void> openEventPhotoViewer(
       builder: (_) => EventPhotoGalleryViewer(
         photos: photos,
         initialIndex: initialIndex,
+        onSetCover: onSetCover,
       ),
     ),
   );
@@ -153,17 +223,27 @@ Future<void> openEventPhotoViewer(
 
 /// Full-screen, swipeable, zoomable viewer for an event's photos, with a page
 /// indicator and a close button (mirroring the journal entry image viewer).
+///
+/// With [onSetCover] wired, the chrome carries a "Set cover" pill for the
+/// photo in view — the place to say "this one" while looking at it — which
+/// reads "Cover", inert, on the photo that already is.
 class EventPhotoGalleryViewer extends StatefulWidget {
   const EventPhotoGalleryViewer({
     required this.photos,
     this.initialIndex = 0,
     this.imageExporter,
+    this.onSetCover,
     super.key,
   });
 
   final List<EventPhoto> photos;
   final int initialIndex;
   final ImageExporter? imageExporter;
+
+  /// Makes the photo with this id the event's cover and reports whether it
+  /// was stored; a rejected (`false`) or throwing write takes the optimistic
+  /// "Cover" state back and is told to the user. Null hides the control.
+  final Future<bool> Function(String id)? onSetCover;
 
   @override
   State<EventPhotoGalleryViewer> createState() =>
@@ -177,10 +257,45 @@ class _EventPhotoGalleryViewerState extends State<EventPhotoGalleryViewer> {
   late int _index = widget.initialIndex;
   bool _overlaysVisible = true;
 
+  /// The chosen cover as this viewer knows it. Seeded from the photos and
+  /// advanced optimistically on "Set cover": the viewer sits on the root
+  /// navigator with a snapshot of the photos, so the page's refresh does not
+  /// reach it, and the pill must still flip to "Cover" at once.
+  late String? _coverId = widget.photos
+      .firstWhereOrNull((photo) => photo.isCover)
+      ?.id;
+
   EventPhoto get _currentPhoto => widget.photos[_index];
 
   void _toggleOverlays() {
     setState(() => _overlaysVisible = !_overlaysVisible);
+  }
+
+  /// Flips the pill first and writes second. A write the callback reports as
+  /// not stored, or that throws, takes the pill back to what it said and
+  /// tells the user with the shared save-failed line — so the viewer never
+  /// keeps a "Cover" the store disagrees with. A thrown error is also
+  /// captured the way the download button's failures are; a `false` has
+  /// already been logged by whoever rejected it.
+  Future<void> _setCurrentAsCover(String id) async {
+    final previous = _coverId;
+    setState(() => _coverId = id);
+    var stored = false;
+    try {
+      stored = await widget.onSetCover!(id);
+    } on Object catch (error, stackTrace) {
+      getIt<LoggingService>().captureException(
+        error,
+        domain: 'event_photo_gallery',
+        subDomain: 'setCover',
+        stackTrace: stackTrace,
+      );
+    }
+    if (stored || !mounted) return;
+    setState(() => _coverId = previous);
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(context.messages.saveFailedRetry)));
   }
 
   @override
@@ -216,30 +331,30 @@ class _EventPhotoGalleryViewerState extends State<EventPhotoGalleryViewer> {
                 ),
               ),
             ),
-            // Page indicator (e.g. "3 / 12").
+            // Page indicator (e.g. "3 / 12"), at the top-left the way the
+            // journal's own viewer places its counter: the action cluster on
+            // the right has grown a "Set cover" pill, and a centred counter
+            // would sit under it on a phone.
             if (_overlaysVisible && widget.photos.length > 1)
               Positioned(
                 top: padding.top + tokens.spacing.step3,
-                left: 0,
-                right: 0,
-                child: Center(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.45),
-                      borderRadius: BorderRadius.circular(
-                        tokens.radii.badgesPills,
-                      ),
+                left: padding.left + tokens.spacing.step3,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.45),
+                    borderRadius: BorderRadius.circular(
+                      tokens.radii.badgesPills,
                     ),
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: tokens.spacing.step3,
-                        vertical: tokens.spacing.step1,
-                      ),
-                      child: Text(
-                        '${_index + 1} / ${widget.photos.length}',
-                        style: tokens.typography.styles.body.bodySmall.copyWith(
-                          color: Colors.white,
-                        ),
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: tokens.spacing.step3,
+                      vertical: tokens.spacing.step1,
+                    ),
+                    child: Text(
+                      '${_index + 1} / ${widget.photos.length}',
+                      style: tokens.typography.styles.body.bodySmall.copyWith(
+                        color: Colors.white,
                       ),
                     ),
                   ),
@@ -252,6 +367,23 @@ class _EventPhotoGalleryViewerState extends State<EventPhotoGalleryViewer> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    if (widget.onSetCover != null &&
+                        _currentPhoto.id != null) ...[
+                      if (_currentPhoto.id == _coverId)
+                        ImageViewerLabelButton(
+                          label: context.messages.coverArtChipActive,
+                          icon: LottiIcons.confirmCircled,
+                          onPressed: null,
+                        )
+                      else
+                        ImageViewerLabelButton(
+                          label: context.messages.coverArtChipSet,
+                          icon: LottiIcons.image,
+                          onPressed: () =>
+                              _setCurrentAsCover(_currentPhoto.id!),
+                        ),
+                      SizedBox(width: tokens.spacing.step2),
+                    ],
                     ImageViewerDownloadButton(
                       file: _currentPhoto.filePath == null
                           ? null

@@ -2913,6 +2913,87 @@ void main() {
     });
   });
 
+  group('event edits report the persistence result', () {
+    setUp(() {
+      reset(mockPersistenceLogic);
+      when(
+        () => mockJournalDb.journalEntityById(testEventEntry.meta.id),
+      ).thenAnswer((_) async => testEventEntry);
+    });
+
+    // The persistence layer answers false when it rejects a write (the
+    // entity is gone). The page must not keep showing an edit that was not
+    // stored, and the gallery viewer takes its "Cover" pill back on this.
+    test('a rejected cover write rolls the optimistic state back and reports '
+        'false', () async {
+      final container = makeProviderContainer();
+      final entryId = testEventEntry.meta.id;
+      final testEntryProvider = entryControllerProvider(entryId);
+      final notifier = container.read(testEntryProvider.notifier);
+      await container.read(testEntryProvider.future);
+      when(
+        () => mockPersistenceLogic.updateEvent(
+          entryText: any(named: 'entryText'),
+          journalEntityId: entryId,
+          data: any(named: 'data'),
+        ),
+      ).thenAnswer((_) async => false);
+
+      final stored = await notifier.updateEventCover('img-new');
+
+      expect(stored, isFalse);
+      final entry = container.read(testEntryProvider).value!.entry;
+      expect((entry! as JournalEvent).data, testEventEntry.data);
+    });
+
+    test(
+      'a stored cover write keeps the optimistic state and reports true',
+      () async {
+        final container = makeProviderContainer();
+        final entryId = testEventEntry.meta.id;
+        final testEntryProvider = entryControllerProvider(entryId);
+        final notifier = container.read(testEntryProvider.notifier);
+        await container.read(testEntryProvider.future);
+        when(
+          () => mockPersistenceLogic.updateEvent(
+            entryText: any(named: 'entryText'),
+            journalEntityId: entryId,
+            data: any(named: 'data'),
+          ),
+        ).thenAnswer((_) async => true);
+
+        final stored = await notifier.updateEventCover('img-new', cropX: 0.25);
+
+        expect(stored, isTrue);
+        final entry = container.read(testEntryProvider).value!.entry;
+        final data = (entry! as JournalEvent).data;
+        expect(data.coverArtId, 'img-new');
+        expect(data.coverArtCropX, 0.25);
+      },
+    );
+
+    test('an unchanged edit is a no-op that reports true', () async {
+      final container = makeProviderContainer();
+      final entryId = testEventEntry.meta.id;
+      final testEntryProvider = entryControllerProvider(entryId);
+      final notifier = container.read(testEntryProvider.notifier);
+      await container.read(testEntryProvider.future);
+
+      final stored = await notifier.updateEventCover(
+        testEventEntry.data.coverArtId,
+      );
+
+      expect(stored, isTrue);
+      verifyNever(
+        () => mockPersistenceLogic.updateEvent(
+          entryText: any(named: 'entryText'),
+          journalEntityId: any(named: 'journalEntityId'),
+          data: any(named: 'data'),
+        ),
+      );
+    });
+  });
+
   group('updateEventTitle method', () {
     setUp(() {
       reset(mockPersistenceLogic);

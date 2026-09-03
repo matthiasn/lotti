@@ -24,6 +24,7 @@ class EventCardData {
     this.categoryName,
     this.coverImage,
     this.coverCropX = 0.5,
+    this.coverChosen = false,
     this.summary,
     this.location,
     this.photoCount = 0,
@@ -48,6 +49,12 @@ class EventCardData {
   /// Cover photo. `null` falls back to a category-tinted gradient + glyph.
   final ImageProvider? coverImage;
   final double coverCropX;
+
+  /// Whether [coverImage] is the event's own pick (its `coverArtId`) rather
+  /// than the automatic fallback — the newest linked photo, which moves every
+  /// time a newer one is added. The detail hero offers "Set cover" while the
+  /// cover is only that default.
+  final bool coverChosen;
 
   /// One-line AI/manual summary shown beneath the cover.
   final String? summary;
@@ -97,6 +104,8 @@ enum EventTimelineKind { photo, note, audio, timeRecording }
 class EventPhoto {
   const EventPhoto(
     this.image, {
+    this.id,
+    this.isCover = false,
     this.cropX = 0.5,
     this.filePath,
     this.capturedAt,
@@ -105,6 +114,15 @@ class EventPhoto {
 
   final ImageProvider image;
   final double cropX;
+
+  /// The linked image's entity id — what a "set cover" action reports back.
+  /// Null only for fixtures that never drive that action.
+  final String? id;
+
+  /// Whether this photo is the event's *chosen* cover (`coverArtId`). False
+  /// for every photo while the hero shows the automatic fallback, so the
+  /// gallery's "Cover" badge means chosen, never default.
+  final bool isCover;
 
   /// Original file used by the full-screen viewer's download action.
   final String? filePath;

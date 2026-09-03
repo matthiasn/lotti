@@ -3874,10 +3874,10 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get coverArtChipActive => 'Obal';
+  String get coverArtChipActive => 'Obálka';
 
   @override
-  String get coverArtChipSet => 'Nastavit obal';
+  String get coverArtChipSet => 'Nastavit obálku';
 
   @override
   String get coverArtGenerationComplete => 'Obálka je připravena!';
