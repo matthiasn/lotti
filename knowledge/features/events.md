@@ -20,8 +20,9 @@ memory-forward overview and a photographic detail page.
 
 **Gated behind `enableEventsFlag`.** With it off, events are hidden *everywhere*:
 the logbook query drops the `JournalEvent` type, `EntryDetailsWidget` renders a
-linked event as nothing, and the tab, create-event and type-filter affordances are
-absent.
+linked event as nothing, the tab, create-event and type-filter affordances are
+absent, and the Daily OS timeline's recorded lane — and the planner's
+recorded-time lookback behind it — leave events out.
 
 # An entity, not a task subtype
 
@@ -68,10 +69,20 @@ language updates both surfaces immediately without migrating an event.
 # One way in
 
 There is **one** way to open an event: `/events/<id>`. Every entry point routes
-there — the overview, a logbook card tap, a freshly created event, and a linked
-event inside a task's timeline. A linked event renders as a compact summary card
-resolved the same way the detail page resolves its cover, **not** the generic
-entry editor.
+there — the overview, a logbook card tap, a freshly created event, a linked
+event inside a task's timeline, and the event's block on the Daily OS Day
+timeline. A linked event renders as a compact summary card resolved the same
+way the detail page resolves its cover, **not** the generic entry editor.
+
+# On the day
+
+An event with a span is recorded time on the Daily OS Day timeline: it sits on
+the recorded lane at the start and end the date line gave it, titled and
+coloured as the event itself — never as a task it hangs off — and its block
+opens the event page. A cancelled, missed or postponed event stays off the
+lane. The
+query, the flag gate and the status rule live with the lane, in
+[Daily OS UI surfaces](daily_os_next/ui-surfaces.md#tracked-time).
 
 # The hero is the interaction surface
 

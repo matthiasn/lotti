@@ -363,6 +363,12 @@ void main() {
           await tester.pump();
 
           expect(find.byType(DayPage), findsOneWidget);
+          // The agenda row is the rendered content to keep; the page opens
+          // on the Day timeline, so pick Agenda first.
+          tester
+              .widget<PlanViewToggle>(find.byType(PlanViewToggle))
+              .onChanged(PlanView.agenda);
+          await tester.pump();
           expect(find.text('Deep work'), findsOneWidget);
 
           reloadTicks.add(1);
@@ -408,6 +414,10 @@ void main() {
           await tester.pump();
 
           expect(find.byType(DayPage), findsOneWidget);
+          tester
+              .widget<PlanViewToggle>(find.byType(PlanViewToggle))
+              .onChanged(PlanView.agenda);
+          await tester.pump();
           expect(find.text('Deep work'), findsOneWidget);
 
           ProviderScope.containerOf(
@@ -1041,23 +1051,26 @@ void main() {
           await tester.pump();
           await tester.pump();
 
-          // Default projection for a day with a plan.
-          expect(find.byType(AgendaView), findsOneWidget);
-
-          tester
-              .widget<PlanViewToggle>(find.byType(PlanViewToggle))
-              .onChanged(PlanView.day);
-          await tester.pump();
+          // The default projection is the Day timeline, plan or not.
           expect(find.byType(DayTimeline), findsOneWidget);
           expect(find.byType(AgendaView), findsNothing);
 
-          // Chevron navigation must not bounce the user back to Activity.
+          tester
+              .widget<PlanViewToggle>(find.byType(PlanViewToggle))
+              .onChanged(PlanView.agenda);
+          await tester.pump();
+          expect(find.byType(AgendaView), findsOneWidget);
+          expect(find.byType(DayTimeline), findsNothing);
+
+          // Chevron navigation re-keys the page; it must not bounce the user
+          // back to the Day default.
           await tester.tap(find.byIcon(LottiIcons.chevronRight));
           await tester.pump();
           await tester.pump();
           await tester.pump();
           expect(find.text('Wed, May 27, 2026'), findsOneWidget);
-          expect(find.byType(DayTimeline), findsOneWidget);
+          expect(find.byType(AgendaView), findsOneWidget);
+          expect(find.byType(DayTimeline), findsNothing);
           expect(find.byType(DayActivityView), findsNothing);
 
           // Neither does the jump-to-today control.
@@ -1066,7 +1079,8 @@ void main() {
           await tester.pump();
           await tester.pump();
           expect(find.text('Today'), findsOneWidget);
-          expect(find.byType(DayTimeline), findsOneWidget);
+          expect(find.byType(AgendaView), findsOneWidget);
+          expect(find.byType(DayTimeline), findsNothing);
           expect(find.byType(DayActivityView), findsNothing);
         });
       },

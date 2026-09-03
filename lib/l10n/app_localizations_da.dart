@@ -4810,6 +4810,10 @@ class AppLocalizationsDa extends AppLocalizations {
       'Swipe for actual · klem lodret for at zoome ind';
 
   @override
+  String get dailyOsNextTimelineSwipeHintToPlan =>
+      'Swipe for plan · klem lodret for at zoome ind';
+
+  @override
   String get dailyOsNextTimelineTracked => 'sporet';
 
   @override

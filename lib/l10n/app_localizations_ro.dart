@@ -4885,6 +4885,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Glisați spre real · ciupiți vertical pentru zoom';
 
   @override
+  String get dailyOsNextTimelineSwipeHintToPlan =>
+      'Glisați spre plan · ciupiți vertical pentru zoom';
+
+  @override
   String get dailyOsNextTimelineTracked => 'înregistrat';
 
   @override

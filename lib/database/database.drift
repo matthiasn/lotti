@@ -488,7 +488,7 @@ SELECT id FROM journal
 
 sortedCalenderEntriesInRange:
 SELECT * FROM journal
-  WHERE type in ('JournalEntry', 'WorkoutEntry') AND
+  WHERE type in ('JournalEntry', 'WorkoutEntry', 'JournalEvent') AND
   deleted = false
   AND date_from >= :rangeStart
   AND date_to <= :rangeEnd

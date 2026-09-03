@@ -403,7 +403,14 @@ class DayBlock extends ConsumerWidget {
     final openEditor = canEdit ? () => onEdit!(effectiveBlock) : null;
     final isDrafted =
         !tracked && effectiveBlock.state == TimeBlockState.drafted;
-    final onTap = taskId == null || taskId.isEmpty
+    // A tracked calendar block projects a Lotti event, and an event has one
+    // destination: its own page. Nothing else on the lane routes there.
+    final eventId = tracked && effectiveBlock.type == TimeBlockType.cal
+        ? effectiveBlock.trackedEntryId
+        : null;
+    final onTap = eventId != null
+        ? () => beamToNamed('/events/$eventId')
+        : taskId == null || taskId.isEmpty
         ? null
         : () {
             // Tracked blocks project a real time recording. Publish the

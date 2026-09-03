@@ -4864,6 +4864,10 @@ class AppLocalizationsCs extends AppLocalizations {
       'Přejeď na Skutečnost · svislým sevřením prstů přiblížíš';
 
   @override
+  String get dailyOsNextTimelineSwipeHintToPlan =>
+      'Přejeď na Plán · svislým sevřením prstů přiblížíš';
+
+  @override
   String get dailyOsNextTimelineTracked => 'zaznamenáno';
 
   @override

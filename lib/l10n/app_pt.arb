@@ -2343,6 +2343,7 @@
   "dailyOsNextTimelineShowBoth": "Mostrar o plano e o real juntos",
   "dailyOsNextTimelineShowPaged": "Mostrar plano deslizante e real",
   "dailyOsNextTimelineSwipeHint": "Deslize para real · aperte verticalmente para ampliar",
+  "dailyOsNextTimelineSwipeHintToPlan": "Deslize para o plano · aperte verticalmente para ampliar",
   "dailyOsNextTimelineTracked": "rastreado",
   "dailyOsNextTimeSpentEarlierSessions": "{count, plural, one{1 sessão anterior} other{{count} sessões anteriores}}",
   "@dailyOsNextTimeSpentEarlierSessions": {

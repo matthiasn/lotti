@@ -655,6 +655,56 @@ void main() {
           equals(['jan-20-workout', 'jan-05']),
         );
       });
+
+      // The Daily OS timeline reads this query; an event the user gave a
+      // span on the events page has to come back from it, while a task —
+      // whose meta span is a creation instant — must not.
+      test(
+        'sortedCalendarEntries admits events by their span, not tasks',
+        () async {
+          final dinner = buildEventEntry(
+            id: 'jan-10-dinner',
+            start: DateTime(2024, 1, 10, 18),
+            end: DateTime(2024, 1, 11),
+          );
+          final deletedEvent = buildEventEntry(
+            id: 'jan-11-deleted',
+            start: DateTime(2024, 1, 11, 18),
+            end: DateTime(2024, 1, 11, 20),
+            deletedAt: DateTime(2024, 1, 12),
+          );
+          final task = buildTaskEntry(
+            id: 'jan-12-task',
+            timestamp: DateTime(2024, 1, 12, 9),
+            status: TaskStatus.open(
+              id: 'jan-12-status',
+              createdAt: DateTime(2024, 1, 12, 9),
+              utcOffset: 0,
+            ),
+          );
+          final note = buildTextEntry(
+            id: 'jan-05',
+            timestamp: DateTime(2024, 1, 5, 8),
+            text: 'Entry Jan 05',
+          );
+
+          await db!.updateJournalEntity(dinner);
+          await db!.updateJournalEntity(deletedEvent);
+          await db!.updateJournalEntity(task);
+          await db!.updateJournalEntity(note);
+
+          final results = await db!.sortedCalendarEntries(
+            rangeStart: DateTime(2024),
+            rangeEnd: DateTime(2024, 1, 31, 23, 59),
+          );
+
+          expect(
+            results.map((e) => e.meta.id),
+            equals(['jan-10-dinner', 'jan-05']),
+          );
+          expect(results.first, isA<JournalEvent>());
+        },
+      );
     });
 
     group('Vector clock streaming for sequence log population -', () {

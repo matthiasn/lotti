@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -425,6 +427,55 @@ void main() {
       // actual lanes — the same interaction as the Daily OS day surface.
       expect(find.byType(PageView), findsOneWidget);
     });
+
+    // The panel hands the timeline `DraftPlan.emptyForDay` while the plan
+    // provider is still loading, so the pager opens on the recorded lane;
+    // the real plan then lands in the same widget state.
+    testWidgets(
+      'a plan that resolves after the loading frame lands the narrow panel '
+      'on the planned lane',
+      (tester) async {
+        const size = Size(340, 900);
+        setView(tester, size);
+        final plan = Completer<DraftPlan?>();
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              currentDraftPlanProvider.overrideWith(
+                (ref, date) => plan.future,
+              ),
+              dailyOsActualTimeBlocksProvider.overrideWith(
+                (ref, date) async => _actualForToday(),
+              ),
+              dailyOsPreferencesControllerProvider.overrideWith(
+                _SeededPreferencesController.new,
+              ),
+            ],
+            child: makeTestableWidget2(
+              SizedBox(
+                width: size.width,
+                height: size.height,
+                child: DayViewSidePanel(onToggleHidden: () {}),
+              ),
+              mediaQueryData: const MediaQueryData(size: size),
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        final pageView = tester.widget<PageView>(find.byType(PageView));
+        expect(pageView.controller!.page, greaterThan(0.5));
+
+        plan.complete(_planForToday());
+        await tester.pump();
+        await tester.pump();
+
+        expect(pageView.controller!.page, 0);
+        expect(find.byType(PageView), findsOneWidget);
+      },
+    );
 
     testWidgets(
       'the calendar button at the end of the toolbar row fires the hide callback',

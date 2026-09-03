@@ -15,6 +15,8 @@ import 'package:lotti/classes/day_audio_context.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/event_data.dart';
+import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -299,6 +301,32 @@ JournalEntity buildWorkoutEntry({
       id: 'workout-$id',
       source: 'test',
     ),
+  );
+}
+
+/// An event whose span (`meta.dateFrom`..`meta.dateTo`) is what the events
+/// page's date line edits — the calendar queries read that, not `data`.
+JournalEntity buildEventEntry({
+  required String id,
+  required DateTime start,
+  required DateTime end,
+  String title = 'Event',
+  EventStatus status = EventStatus.planned,
+  DateTime? deletedAt,
+}) {
+  return JournalEntity.event(
+    meta: Metadata(
+      id: id,
+      createdAt: start,
+      updatedAt: start,
+      dateFrom: start,
+      dateTo: end,
+      deletedAt: deletedAt,
+      starred: false,
+      private: false,
+    ),
+    data: EventData(title: title, stars: 0, status: status),
+    entryText: const EntryText(plainText: ''),
   );
 }
 

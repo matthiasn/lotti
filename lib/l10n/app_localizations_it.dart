@@ -4862,7 +4862,11 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get dailyOsNextTimelineSwipeHint =>
-      'Swipe per reale · pizzicare verticalmente per ingrandire';
+      'Scorri per il reale · pizzica verticalmente per ingrandire';
+
+  @override
+  String get dailyOsNextTimelineSwipeHintToPlan =>
+      'Scorri per il piano · pizzica verticalmente per ingrandire';
 
   @override
   String get dailyOsNextTimelineTracked => 'tracciato';

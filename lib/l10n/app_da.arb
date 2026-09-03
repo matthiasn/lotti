@@ -2344,6 +2344,7 @@
   "dailyOsNextTimelineShowBoth": "Showplan og faktisk sammen",
   "dailyOsNextTimelineShowPaged": "Vis swipebar plan og faktisk",
   "dailyOsNextTimelineSwipeHint": "Swipe for actual · klem lodret for at zoome ind",
+  "dailyOsNextTimelineSwipeHintToPlan": "Swipe for plan · klem lodret for at zoome ind",
   "dailyOsNextTimelineTracked": "sporet",
   "dailyOsNextTimeSpentEarlierSessions": "{count, plural, one{1 tidligere session} other{{count} tidligere sessioner}}",
   "@dailyOsNextTimeSpentEarlierSessions": {

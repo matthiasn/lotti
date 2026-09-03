@@ -8153,6 +8153,12 @@ abstract class AppLocalizations {
   /// **'Swipe for actual · pinch vertically to zoom'**
   String get dailyOsNextTimelineSwipeHint;
 
+  /// No description provided for @dailyOsNextTimelineSwipeHintToPlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Swipe for plan · pinch vertically to zoom'**
+  String get dailyOsNextTimelineSwipeHintToPlan;
+
   /// No description provided for @dailyOsNextTimelineTracked.
   ///
   /// In en, this message translates to:

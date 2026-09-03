@@ -4869,6 +4869,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Desliza para ver lo real · pellizca verticalmente para zoom';
 
   @override
+  String get dailyOsNextTimelineSwipeHintToPlan =>
+      'Desliza para ver el plan · pellizca verticalmente para zoom';
+
+  @override
   String get dailyOsNextTimelineTracked => 'registrado';
 
   @override

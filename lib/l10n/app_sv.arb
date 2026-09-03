@@ -2344,6 +2344,7 @@
   "dailyOsNextTimelineShowBoth": "Showplan och verklighet tillsammans",
   "dailyOsNextTimelineShowPaged": "Visa swipebar plan och faktisk",
   "dailyOsNextTimelineSwipeHint": "Svep för faktiska · nyp vertikalt för att zooma in",
+  "dailyOsNextTimelineSwipeHintToPlan": "Svep för plan · nyp vertikalt för att zooma in",
   "dailyOsNextTimelineTracked": "spårade",
   "dailyOsNextTimeSpentEarlierSessions": "{count, plural, one{1 tidigare session} other{{count} tidigare sessioner}}",
   "@dailyOsNextTimeSpentEarlierSessions": {

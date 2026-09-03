@@ -6,7 +6,10 @@ enum TimeBlockType {
   /// Agent-drafted block.
   ai,
 
-  /// Real calendar event imported from the device calendar.
+  /// A calendar event: on the Actual lane, a Lotti event projected from the
+  /// journal (its id carries the [actualTimeBlockIdPrefix], and a tap opens
+  /// the event page); on the planned lane, a calendar-owned block the plan
+  /// must schedule around. Never editable or arrangeable.
   cal,
 
   /// Buffer between focus blocks (transition / commute / decompression).

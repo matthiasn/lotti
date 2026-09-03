@@ -2129,6 +2129,7 @@
   "dailyOsNextTimelineShowBoth": "Afișați planul și realul împreună",
   "dailyOsNextTimelineShowPaged": "Afișați planul și realul prin glisare",
   "dailyOsNextTimelineSwipeHint": "Glisați spre real · ciupiți vertical pentru zoom",
+  "dailyOsNextTimelineSwipeHintToPlan": "Glisați spre plan · ciupiți vertical pentru zoom",
   "dailyOsNextTimelineTracked": "înregistrat",
   "dailyOsNextTimeSpentEarlierSessions": "{count, plural, one{1 sesiune anterioară} few{{count} sesiuni anterioare} other{{count} de sesiuni anterioare}}",
   "dailyOsNextTimeSpentShowLess": "Afișați mai puțin",

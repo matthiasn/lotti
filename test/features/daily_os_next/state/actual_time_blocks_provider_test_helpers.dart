@@ -1,8 +1,14 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/event_data.dart';
+import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
+import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.dart';
 
 EntryLink hLink(
   String id, {
@@ -127,4 +133,49 @@ WorkoutEntry hWorkout({
         entryText: text == null ? null : EntryText(plainText: text),
       )
       as WorkoutEntry;
+}
+
+/// An event the way the events page stores it: the span on `meta` (the date
+/// line is the single source of its when), the title and status on `data`.
+/// [endHour] may be 24 for an event that runs to midnight.
+JournalEvent hEvent({
+  required String id,
+  required DateTime day,
+  required int startHour,
+  required int endHour,
+  String title = 'Dinner with a friend',
+  String? categoryId,
+  EventStatus status = EventStatus.planned,
+  String? text,
+}) {
+  return JournalEntity.event(
+        meta: Metadata(
+          id: id,
+          createdAt: day,
+          updatedAt: day,
+          dateFrom: day.add(Duration(hours: startHour)),
+          dateTo: day.add(Duration(hours: endHour)),
+          categoryId: categoryId,
+        ),
+        data: EventData(title: title, stars: 0, status: status),
+        entryText: text == null ? null : EntryText(plainText: text),
+      )
+      as JournalEvent;
+}
+
+/// Reads the day's Actual lane the way the surfaces do — under a live
+/// subscription. The lane is autoDispose and awaits the Events flag stream
+/// before it projects; a bare `read(.future)` closes its subscription as soon
+/// as it returns, and the flag provider is then torn down between the read
+/// and its first emission ("disposed during loading state").
+Future<List<TimeBlock>> readActualBlocks(
+  ProviderContainer container,
+  DateTime day,
+) {
+  final subscription = container.listen(
+    dailyOsActualTimeBlocksProvider(day),
+    (_, _) {},
+  );
+  addTearDown(subscription.close);
+  return container.read(dailyOsActualTimeBlocksProvider(day).future);
 }

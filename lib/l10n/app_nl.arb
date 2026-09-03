@@ -2343,6 +2343,7 @@
   "dailyOsNextTimelineShowBoth": "Plan en werkelijke samen tonen",
   "dailyOsNextTimelineShowPaged": "Bewegingsbaar plan en werkelijke tonen",
   "dailyOsNextTimelineSwipeHint": "Veeg voor werkelijke · knijp verticaal naar zoom",
+  "dailyOsNextTimelineSwipeHintToPlan": "Veeg voor plan · knijp verticaal naar zoom",
   "dailyOsNextTimelineTracked": "traced",
   "dailyOsNextTimeSpentEarlierSessions": "{count, plural, one{1 vorige zitting} other{{count} eerdere sessies}}",
   "@dailyOsNextTimeSpentEarlierSessions": {

@@ -120,21 +120,33 @@ void main() {
   });
 
   group('DayPage', () {
-    testWidgets('default title and AgendaView render, DayTimeline absent', (
-      tester,
-    ) async {
+    testWidgets('lands on the Day timeline by default, under the default '
+        'title, with Agenda a tap away', (tester) async {
       _setSurface(tester);
       await tester.pumpWidget(_wrap(DayPage(draft: _drafted())));
       await tester.pump();
 
       final messages = tester.element(find.byType(DayPage)).messages;
       expect(find.text(messages.dailyOsNextDayTitle), findsOneWidget);
+      expect(find.byType(DayTimeline), findsOneWidget);
+      expect(find.byType(AgendaView), findsNothing);
+      expect(find.byType(DayActivityView), findsNothing);
+      expect(
+        tester.widget<PlanViewToggle>(find.byType(PlanViewToggle)).selected,
+        PlanView.day,
+      );
+
+      tester
+          .widget<PlanViewToggle>(find.byType(PlanViewToggle))
+          .onChanged(PlanView.agenda);
+      await tester.pump();
+
       expect(find.byType(AgendaView), findsOneWidget);
       expect(find.byType(DayTimeline), findsNothing);
     });
 
     testWidgets(
-      'empty mode (no plan) lands on Activity with the check-in CTA '
+      'empty mode (no plan) lands on the Day timeline with the check-in CTA '
       'instead of Refine/Commit, and hides the delete-plan menu entry',
       (tester) async {
         _setSurface(tester);
@@ -161,11 +173,20 @@ void main() {
         await tester.pump();
         await tester.pump();
 
-        // Failed or pending recordings are the primary no-plan recovery path,
-        // while already-tracked time remains visible on the same surface.
+        // Already-tracked time is visible on the timeline without a plan;
+        // failed or pending recordings — the no-plan recovery path — stay one
+        // tap away on Activity.
+        expect(find.byType(DayTimeline), findsOneWidget);
+        expect(find.byType(DayActivityView), findsNothing);
+        expect(find.byType(AgendaView), findsNothing);
+        expect(find.text('Recorded session'), findsOneWidget);
+        tester
+            .widget<PlanViewToggle>(find.byType(PlanViewToggle))
+            .onChanged(PlanView.activity);
+        await tester.pump();
+        await tester.pump();
         expect(find.byType(DayActivityView), findsOneWidget);
         expect(find.byType(DayTimeline), findsNothing);
-        expect(find.byType(AgendaView), findsNothing);
         expect(find.text('Recorded session'), findsOneWidget);
 
         // Footer carries the single check-in CTA, not Refine/Commit.
@@ -291,6 +312,13 @@ void main() {
           ),
         );
         await tester.pump();
+        // The surface opens on the Day timeline; the recovery row lives on
+        // Activity.
+        tester
+            .widget<PlanViewToggle>(find.byType(PlanViewToggle))
+            .onChanged(PlanView.activity);
+        await tester.pump();
+        await tester.pump();
 
         final messages = tester.element(find.byType(DayPage)).messages;
         await tester.tap(find.text(messages.dailyOsNextActivityUseToPlan));
@@ -342,6 +370,13 @@ void main() {
       await tester.pump();
       final messages = tester.element(find.byType(DayPage)).messages;
 
+      // The surface opens on the Day timeline; the recovery row lives on
+      // Activity.
+      tester
+          .widget<PlanViewToggle>(find.byType(PlanViewToggle))
+          .onChanged(PlanView.activity);
+      await tester.pump();
+      await tester.pump();
       await tester.tap(find.text(messages.dailyOsNextActivityUseToPlan));
       await tester.pump();
 
@@ -469,6 +504,11 @@ void main() {
           ],
         );
         await _pumpDayPage(tester, draft: draft, agent: agent);
+        // Agenda rows are the inline-rename surface; the page opens on Day.
+        tester
+            .widget<PlanViewToggle>(find.byType(PlanViewToggle))
+            .onChanged(PlanView.agenda);
+        await tester.pump();
 
         await tester.tap(find.text('Standalone block'));
         await tester.pump();
@@ -1018,20 +1058,27 @@ void main() {
       expect(find.text('2026-05-26'), findsOneWidget);
     });
 
-    testWidgets('toggling the plan view switches Agenda → DayTimeline', (
-      tester,
-    ) async {
+    testWidgets('toggling the plan view switches DayTimeline → Agenda → '
+        'DayTimeline', (tester) async {
       _setSurface(tester);
       await tester.pumpWidget(_wrap(DayPage(draft: _drafted())));
+      await tester.pump();
+
+      expect(find.byType(DayTimeline), findsOneWidget);
+      expect(find.byType(AgendaView), findsNothing);
+
+      // Drive the toggle directly; chip tap behavior is covered by
+      // PlanViewToggle's focused widget tests.
+      final toggle = tester.widget<PlanViewToggle>(find.byType(PlanViewToggle));
+      toggle.onChanged(PlanView.agenda);
       await tester.pump();
 
       expect(find.byType(AgendaView), findsOneWidget);
       expect(find.byType(DayTimeline), findsNothing);
 
-      // Drive the toggle directly; chip tap behavior is covered by
-      // PlanViewToggle's focused widget tests.
-      final toggle = tester.widget<PlanViewToggle>(find.byType(PlanViewToggle));
-      toggle.onChanged(PlanView.day);
+      tester
+          .widget<PlanViewToggle>(find.byType(PlanViewToggle))
+          .onChanged(PlanView.day);
       await tester.pump();
 
       expect(find.byType(AgendaView), findsNothing);
@@ -1173,6 +1220,10 @@ void main() {
     ) async {
       _setSurface(tester);
       await tester.pumpWidget(_wrap(DayPage(draft: _drafted())));
+      await tester.pump();
+      tester
+          .widget<PlanViewToggle>(find.byType(PlanViewToggle))
+          .onChanged(PlanView.agenda);
       await tester.pump();
 
       expect(find.text('Deep work'), findsOneWidget);

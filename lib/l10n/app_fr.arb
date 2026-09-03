@@ -2129,6 +2129,7 @@
   "dailyOsNextTimelineShowBoth": "Afficher plan et réel ensemble",
   "dailyOsNextTimelineShowPaged": "Afficher plan et réel en balayage",
   "dailyOsNextTimelineSwipeHint": "Balaye vers le réel · pince verticalement pour zoomer",
+  "dailyOsNextTimelineSwipeHintToPlan": "Balaye vers le plan · pince verticalement pour zoomer",
   "dailyOsNextTimelineTracked": "suivi",
   "dailyOsNextTimeSpentEarlierSessions": "{count, plural, =1{1 session précédente} other{{count} sessions précédentes}}",
   "dailyOsNextTimeSpentShowLess": "Afficher moins",

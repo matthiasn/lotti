@@ -11,8 +11,8 @@ import 'package:lotti/features/daily_os_next/ui/widgets/plan_view_toggle.dart';
 /// jump-to-today button, the date picker, the sidebar calendar).
 ///
 /// `null` means "the user has not chosen yet", in which case the page falls
-/// back to its per-day default (Agenda with a plan, Activity without one).
-/// The provider is deliberately in-memory only, so a fresh app start lands on
+/// back to its default, the Day timeline — with or without a plan. The
+/// provider is deliberately in-memory only, so a fresh app start lands on
 /// that default again.
 class DailyOsNextPlanView extends Notifier<PlanView?> {
   @override

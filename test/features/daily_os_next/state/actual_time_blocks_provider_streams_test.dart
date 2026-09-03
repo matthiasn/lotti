@@ -108,9 +108,7 @@ void main() {
         );
         addTearDown(container.dispose);
 
-        final blocks = await container.read(
-          dailyOsActualTimeBlocksProvider(day).future,
-        );
+        final blocks = await readActualBlocks(container, day);
 
         expect(blocks.single.id, 'actual:entry-1');
         expect(blocks.single.title, 'Day entry');
@@ -156,9 +154,7 @@ void main() {
         );
         addTearDown(container.dispose);
 
-        final blocks = await container.read(
-          dailyOsActualTimeBlocksProvider(day).future,
-        );
+        final blocks = await readActualBlocks(container, day);
 
         expect(blocks.single.taskId, 'task-1');
         expect(blocks.single.title, 'From link');
@@ -201,9 +197,7 @@ void main() {
         );
         addTearDown(container.dispose);
 
-        final blocks = await container.read(
-          dailyOsActualTimeBlocksProvider(day).future,
-        );
+        final blocks = await readActualBlocks(container, day);
 
         expect(blocks.single.category.name, 'Work');
         expect(blocks.single.category.colorHex, '5ED4B7');

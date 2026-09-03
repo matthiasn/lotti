@@ -4816,6 +4816,10 @@ class AppLocalizationsSv extends AppLocalizations {
       'Svep för faktiska · nyp vertikalt för att zooma in';
 
   @override
+  String get dailyOsNextTimelineSwipeHintToPlan =>
+      'Svep för plan · nyp vertikalt för att zooma in';
+
+  @override
   String get dailyOsNextTimelineTracked => 'spårade';
 
   @override

@@ -14,6 +14,9 @@ Behind the **Enable Events** flag. With it off, events are hidden everywhere.
   swipeable full-screen gallery that follows phone rotation on iOS and Android.
 - **Turns into work when needed.** A task can be created from an event and stays
   linked to it.
+- **Shows up on the day.** An event with a start and end sits on the Daily OS
+  Day timeline at that time, beside recorded work, and opens from there. A
+  cancelled, missed or postponed one stays off it.
 - **Rates a memory, but only once it is a memory.** Stars appear once the event
   has happened, so a plan is not asked to rate itself.
 - **Picks its own cover.** The first linked photo becomes the cover; after that
