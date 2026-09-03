@@ -4,6 +4,66 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.26]
+### Added
+- **Lotti on Google Play beyond internal testing.** Android builds now reach
+  Play's closed testing track, and production, as the very same builds that
+  internal testers already had, so Play users on those tracks receive the
+  same build as TestFlight and Flathub users.
+- **Setting a task estimate no longer means spinning a wheel for a value you
+  use every week.** The estimate picker now opens on a row of one-tap chips —
+  the durations you actually estimate in, ranked from your own tasks over the
+  last three months, with a 30m / 1h / 2h / 4h starter set until you have a
+  history of your own. Tapping one sets the estimate and closes the picker,
+  and the chip holding the task's current estimate is marked so you can see
+  what you are about to replace. The wheel is still there underneath for
+  anything the chips do not cover.
+- **Choose an event's cover photo where you are looking at it.** Open any of
+  an event's photos full screen and tap **Set cover**; the photo that already
+  is the cover says so, and the gallery marks it with a **Cover** badge. Until
+  you pick one, the event shows its newest photo and the header offers **Set
+  cover** right there, so it is clear the cover is only a default that would
+  move with the next photo you add. **Change cover** in the header's menu
+  still works as before.
+
+### Changed
+- **The Daily OS opens on the Day timeline.** The calendar-shaped view is now
+  the default, with or without a plan for the day; Agenda and Activity remain
+  a tap away. On a phone, a day with nothing planned opens on the recorded
+  lane, where tracked time and events are.
+
+### Fixed
+- **A task opened from the notification bell had no way back on a phone.**
+  Tapping a task suggestion or an overdue alert in the bell's inbox opened the
+  task, but the back chevron did nothing and tapping the Tasks tab again did
+  not return to the list either — the only way out was to restart the app.
+  The bell now opens the task through the same route as the task list, so
+  the back chevron takes you back out of it again, from whichever tab the
+  bell was tapped on.
+- **An event did not show up on the Daily OS timeline.** An event created on
+  the events page and given a start and end there — dinner from 6 PM to
+  midnight, say — was missing from the Day view: the timeline only asked the
+  journal for time recordings and workouts. Events now appear on the recorded
+  lane at the time they carry, titled and coloured as the event itself, and a
+  tap opens the event page. A cancelled, missed or postponed event stays off
+  the timeline, and events stay hidden while the Events feature is off.
+- **A selected outline chip was almost impossible to spot.** The chip marking
+  the value you had just recorded on a habit changed only its text weight, so
+  the one thing it was there to tell you was carried by a barely visible
+  difference. Selected chips now also take the accent fill and border the rest
+  of the app uses for a selected pill.
+- **The cover labels read like packaging in four languages.** The "Set cover"
+  and "Cover" chips on a task's photos — now also used on an event's photos —
+  said things like "Copripiumini" in Italian, "Scenografi" in Swedish,
+  "Kulissecover" in Danish and "Dekking instellen" in Dutch. They now use the
+  same word for a cover photo as the rest of the app, and the Italian and
+  Dutch **Change cover** menu items follow.
+- **Setting a task's status now closes the Details panel.** Marking a task Done
+  from **Details** left the panel sitting over the task while the completion
+  animation played behind it, dimmed by the panel's own backdrop. The panel now
+  steps aside as soon as you pick a status, so the celebration plays on a clear
+  screen. Setting a task to Blocked still asks what is blocking it.
+
 ## [1.0.25]
 ### Changed
 - **The day-view column beside the tasks list is now opt-in, and it can step
