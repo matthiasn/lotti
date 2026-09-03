@@ -13,6 +13,13 @@
 /// Benchmark mode: launch with `PLAZA_BENCH=1` in the environment and the
 /// harness auto-walks the street through a fixed set of LOD configurations,
 /// printing an fps table (`PLAZA_BENCH` lines) to stdout.
+///
+/// Tour mode: launch with `PLAZA_TOUR=1` and the harness steps through the
+/// fixed camera poses in `ui/plaza_tour.dart` (the documentation
+/// screenshots), holding each for a few seconds and printing
+/// `PLAZA_TOUR ready <index> <name>` once the pose has settled — an external
+/// capture script keys on those lines. Keyboard/mouse input still works, so
+/// a stop can be interacted with before the next one.
 library;
 
 import 'dart:io' show Platform;
@@ -27,6 +34,7 @@ import 'package:lotti/features/plaza/scene/facade_lod_manager.dart';
 import 'package:lotti/features/plaza/scene/plaza_scene.dart';
 import 'package:lotti/features/plaza/ui/debug_overlay.dart';
 import 'package:lotti/features/plaza/ui/fly_camera_controller.dart';
+import 'package:lotti/features/plaza/ui/plaza_tour.dart';
 
 void main() => runApp(const PlazaDevApp());
 
@@ -110,9 +118,21 @@ class _PlazaHarnessState extends State<_PlazaHarness> {
   final List<double> _benchSamples = [];
   bool _benchDone = false;
 
+  // --- Tour mode (PLAZA_TOUR=1) ---
+  static final bool _tourMode = Platform.environment['PLAZA_TOUR'] == '1';
+  static const _tourSettleSeconds = 5.0;
+  static const _tourHoldSeconds = 9.0;
+  int _tourStop = -1;
+  double _tourClock = 0;
+  bool _tourAnnounced = false;
+  bool _tourDone = false;
+
   @override
   void initState() {
     super.initState();
+    if (_tourMode) {
+      _preset = _HarnessPreset.large;
+    }
     if (_benchMode) {
       // The bench phases assume the 300-task workload (their labels and
       // saturation caps are sized for it), so the preset override is
@@ -122,6 +142,52 @@ class _PlazaHarnessState extends State<_PlazaHarness> {
     _loadPreset(_preset);
     if (_benchMode) {
       _applyBenchPhase(0);
+    }
+    if (_tourMode && !_benchMode) {
+      _applyTourStop(0);
+    }
+  }
+
+  _HarnessPreset _presetFor(TourPreset preset) => switch (preset) {
+    TourPreset.large => _HarnessPreset.large,
+    TourPreset.demo => _HarnessPreset.demo,
+  };
+
+  void _applyTourStop(int index) {
+    final stop = plazaTourStops[index];
+    final wanted = _presetFor(stop.preset);
+    if (wanted != _preset) {
+      _lod.dispose();
+      _loadPreset(wanted);
+      // A fresh scene needs a rebuild before the pose is worth showing.
+      if (mounted) setState(() {});
+    }
+    final pose = stop.pose(TourScene.fromController(_sceneController));
+    _camera
+      ..reset(position: pose.position, yaw: pose.yaw, pitch: pose.pitch)
+      ..overhead = pose.overhead
+      ..autoForward = 0;
+    _tourStop = index;
+    _tourClock = 0;
+    _tourAnnounced = false;
+    debugPrint('PLAZA_TOUR stop $index start: ${stop.name}');
+  }
+
+  void _tourTick(double dt) {
+    if (_tourDone || _tourStop < 0) return;
+    _tourClock += dt;
+    if (!_tourAnnounced && _tourClock >= _tourSettleSeconds) {
+      _tourAnnounced = true;
+      debugPrint(
+        'PLAZA_TOUR ready $_tourStop ${plazaTourStops[_tourStop].name}',
+      );
+    }
+    if (_tourClock < _tourHoldSeconds) return;
+    if (_tourStop + 1 < plazaTourStops.length) {
+      _applyTourStop(_tourStop + 1);
+    } else {
+      _tourDone = true;
+      debugPrint('PLAZA_TOUR done');
     }
   }
 
@@ -223,6 +289,7 @@ class _PlazaHarnessState extends State<_PlazaHarness> {
 
   void _onTick(Duration elapsed, double dt) {
     if (_benchMode) _benchTick(dt);
+    if (_tourMode && !_benchMode) _tourTick(dt);
     _camera.update(dt);
     final camera = _camera.camera();
     _frameCamera = camera;

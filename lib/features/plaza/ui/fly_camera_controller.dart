@@ -28,14 +28,16 @@ class FlyCameraController {
   final Set<LogicalKeyboardKey> _pressed = {};
 
   double _overheadBlend = 0;
-  bool _overhead = false;
+
+  /// Overhead search mode. Assign directly for scripted tours; the blend
+  /// still animates either way.
+  bool overhead = false;
 
   /// Scripted forward input (benchmark mode): -1..1, applied when no key is
   /// pressed.
   double autoForward = 0;
 
   Vector3 get position => _position;
-  bool get overhead => _overhead;
 
   /// Feed key events from the harness. Returns true when handled.
   bool handleKeyEvent(KeyEvent event) {
@@ -76,13 +78,18 @@ class FlyCameraController {
     _pitch = (_pitch - dy * 0.0035).clamp(-1.35, 1.35);
   }
 
-  void toggleOverhead() => _overhead = !_overhead;
+  void toggleOverhead() => overhead = !overhead;
 
-  /// Jump to a pose (used on preset change / locator entry).
-  void reset({required Vector3 position, required double yaw}) {
+  /// Jump to a pose (used on preset change / locator entry / tour stops).
+  /// [pitch] is clamped like drag-look.
+  void reset({
+    required Vector3 position,
+    required double yaw,
+    double pitch = 0,
+  }) {
     _position.setFrom(position);
     _yaw = yaw;
-    _pitch = 0;
+    _pitch = pitch.clamp(-1.35, 1.35);
   }
 
   bool _down(LogicalKeyboardKey a, LogicalKeyboardKey b) =>
@@ -128,7 +135,7 @@ class FlyCameraController {
     }
     _position.y = _eyeHeight;
 
-    final target = _overhead ? 1.0 : 0.0;
+    final target = overhead ? 1.0 : 0.0;
     final rate = dt * 2.2;
     _overheadBlend =
         _overheadBlend + (target - _overheadBlend).clamp(-rate, rate);

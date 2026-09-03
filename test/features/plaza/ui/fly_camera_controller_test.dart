@@ -125,9 +125,46 @@ void main() {
       expect(camera.position.z, -4);
       expect(camera.position.y, 5); // Eye height overrides the given y.
     });
+
+    test('reset takes a pitch and clamps it like drag-look', () {
+      final level = _controller()..reset(position: Vector3.zero(), yaw: 0);
+      final levelCam = level.camera() as PerspectiveCamera;
+      expect(levelCam.target.y, closeTo(levelCam.position.y, 1e-9));
+
+      final tilted = _controller()
+        ..reset(position: Vector3.zero(), yaw: 0, pitch: 0.5);
+      final tiltedCam = tilted.camera() as PerspectiveCamera;
+      expect(tiltedCam.target.y, greaterThan(tiltedCam.position.y));
+
+      final clamped = _controller()
+        ..reset(position: Vector3.zero(), yaw: 0, pitch: 9);
+      final clampedCam = clamped.camera() as PerspectiveCamera;
+      // Straight up would put the target 10 m above the eye; the clamp
+      // keeps a visible horizontal component.
+      expect(clampedCam.target.z - clampedCam.position.z, greaterThan(1));
+
+      // A tour stop resets pitch back to level.
+      tilted.reset(position: Vector3.zero(), yaw: 0);
+      final relevelled = tilted.camera() as PerspectiveCamera;
+      expect(relevelled.target.y, closeTo(relevelled.position.y, 1e-9));
+    });
   });
 
   group('overhead mode', () {
+    test('can be set directly and still animates the blend', () {
+      final camera = _controller()..overhead = true;
+      expect(camera.overhead, isTrue);
+      final before = (camera.camera() as PerspectiveCamera).position.y;
+      camera.update(0.1);
+      final after = (camera.camera() as PerspectiveCamera).position.y;
+      expect(after, greaterThan(before));
+      expect(after, lessThan(90)); // Not cut straight to the top.
+      camera
+        ..overhead = false
+        ..toggleOverhead();
+      expect(camera.overhead, isTrue);
+    });
+
     test('blends the eye upward over time, never cutting', () {
       final camera = _controller();
       final groundY = (camera.camera() as PerspectiveCamera).position.y;
