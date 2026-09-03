@@ -505,34 +505,48 @@ class EntryController extends AsyncNotifier<EntryState?> {
   }
 
   /// Applies a single-field edit to an event's [EventData] with optimistic local
-  /// state, persistence, and haptic feedback. No-ops for non-events or no change.
-  Future<void> _updateEventData(
+  /// state, persistence, and haptic feedback. No-ops (reporting true) for
+  /// non-events or no change.
+  ///
+  /// Returns what the persistence layer reports: `false` when it rejects the
+  /// write (the entity is gone), in which case the optimistic state is rolled
+  /// back so the page does not keep showing an edit that was not stored, and
+  /// no haptic plays. A storage exception inside `updateEvent` is logged there
+  /// and — by that layer's documented contract — reported as `true`, so it is
+  /// not something this method can roll back.
+  Future<bool> _updateEventData(
     EventData Function(EventData data) mutate, {
     Future<void> Function() haptic = HapticFeedback.selectionClick,
   }) async {
-    final event = state.value?.entry;
-    if (event is! JournalEvent) return;
+    final previous = state.value;
+    final event = previous?.entry;
+    if (event is! JournalEvent) return true;
     final next = mutate(event.data);
-    if (next == event.data) return;
-    state = AsyncData(state.value?.copyWith(entry: event.copyWith(data: next)));
-    await _persistenceLogic.updateEvent(
+    if (next == event.data) return true;
+    state = AsyncData(previous?.copyWith(entry: event.copyWith(data: next)));
+    final stored = await _persistenceLogic.updateEvent(
       entryText: entryTextFromController(controller),
       journalEntityId: id,
       data: next,
     );
+    if (!stored) {
+      state = AsyncData(previous);
+      return false;
+    }
     await haptic();
+    return true;
   }
 
   /// Sets an event's star rating.
-  Future<void> updateRating(double stars) =>
+  Future<bool> updateRating(double stars) =>
       _updateEventData((data) => data.copyWith(stars: stars));
 
   /// Renames an event inline.
-  Future<void> updateEventTitle(String title) =>
+  Future<bool> updateEventTitle(String title) =>
       _updateEventData((data) => data.copyWith(title: title.trim()));
 
   /// Sets an event's [EventStatus] inline.
-  Future<void> updateEventStatus(EventStatus status) => _updateEventData(
+  Future<bool> updateEventStatus(EventStatus status) => _updateEventData(
     (data) => data.copyWith(status: status),
     haptic: HapticFeedback.heavyImpact,
   );
@@ -540,7 +554,10 @@ class EntryController extends AsyncNotifier<EntryState?> {
   /// Sets the event's cover photo to [imageId] (a linked [JournalImage]),
   /// optionally repositioning the horizontal crop. Passing null clears the
   /// explicit cover so it falls back to the newest linked photo.
-  Future<void> updateEventCover(String? imageId, {double? cropX}) =>
+  /// Sets (or clears) the event's cover photo and its horizontal crop. The
+  /// result is the persistence layer's, see [_updateEventData]; the gallery
+  /// viewer takes its optimistic "Cover" state back on `false`.
+  Future<bool> updateEventCover(String? imageId, {double? cropX}) =>
       _updateEventData(
         (data) => data.copyWith(
           coverArtId: imageId,

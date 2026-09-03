@@ -17,6 +17,7 @@ import 'package:lotti/features/events/ui/pages/event_detail_page.dart';
 import 'package:lotti/features/events/ui/widgets/event_cover_image.dart';
 import 'package:lotti/features/events/ui/widgets/event_cover_picker.dart';
 import 'package:lotti/features/events/ui/widgets/event_detail_view.dart';
+import 'package:lotti/features/events/ui/widgets/event_photo_gallery.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
@@ -69,10 +70,16 @@ class _RecordingEntryController extends FakeEntryController {
   int deletes = 0;
 
   @override
-  Future<void> updateEventTitle(String title) async => titles.add(title);
+  Future<bool> updateEventTitle(String title) async {
+    titles.add(title);
+    return true;
+  }
 
   @override
-  Future<void> updateRating(double stars) async => ratings.add(stars);
+  Future<bool> updateRating(double stars) async {
+    ratings.add(stars);
+    return true;
+  }
 
   @override
   Future<bool> updateCategoryId(String? categoryId) async {
@@ -81,12 +88,16 @@ class _RecordingEntryController extends FakeEntryController {
   }
 
   @override
-  Future<void> updateEventStatus(EventStatus status) async =>
-      statuses.add(status);
+  Future<bool> updateEventStatus(EventStatus status) async {
+    statuses.add(status);
+    return true;
+  }
 
   @override
-  Future<void> updateEventCover(String? imageId, {double? cropX}) async =>
-      covers.add(imageId);
+  Future<bool> updateEventCover(String? imageId, {double? cropX}) async {
+    covers.add(imageId);
+    return true;
+  }
 
   @override
   Future<bool> delete({required bool beamBack}) async {
@@ -431,6 +442,49 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(rec.covers, [testImageEntry.meta.id]);
+    });
+
+    testWidgets('Set cover in the photo viewer persists that photo as the '
+        'cover', (tester) async {
+      final rec = _RecordingEntryController(_event());
+      await pumpResolved(
+        tester,
+        linked: [testImageEntry],
+        controllerBuilder: () => rec,
+      );
+
+      await tester.tap(
+        find.descendant(
+          of: find.byType(EventPhotoGrid),
+          matching: find.byType(InkWell),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.byType(EventPhotoGalleryViewer), findsOneWidget);
+
+      // The hero also offers "Set cover" for this default cover; the viewer's
+      // pill is the one under test.
+      await tester.tap(
+        find.descendant(
+          of: find.byType(EventPhotoGalleryViewer),
+          matching: find.text('Set cover'),
+        ),
+      );
+      await tester.pump();
+
+      expect(rec.covers, [testImageEntry.meta.id]);
+    });
+
+    testWidgets('the hero Set cover chip opens the picker while the cover is '
+        'only the default', (tester) async {
+      // No coverArtId: the linked photo is the newest-photo default.
+      await pumpResolved(tester, linked: [testImageEntry]);
+
+      await tester.tap(find.text('Set cover'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(EventCoverPicker), findsOneWidget);
     });
 
     testWidgets('the back button is wired to maybePop', (tester) async {

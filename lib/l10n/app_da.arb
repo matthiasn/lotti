@@ -1926,8 +1926,8 @@
       }
     }
   },
-  "coverArtChipActive": "Forside",
-  "coverArtChipSet": "Kulissecover",
+  "coverArtChipActive": "Omslag",
+  "coverArtChipSet": "Vælg omslag",
   "coverArtGenerationComplete": "Coverkunst klar!",
   "coverArtGenerationDismissHint": "Du kan lukke dette — generationen fortsætter i baggrunden",
   "createButton": "Opret",

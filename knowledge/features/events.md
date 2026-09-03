@@ -93,10 +93,35 @@ when** — the body no longer repeats it.
 **Rating stars only appear once the event has happened** or already carries a
 rating, so a fresh or tentative event is not pushed gold stars.
 
-**Cover art becomes automatic then explicit**: while there is no cover, an "add
-cover photo" action opens the create-entry menu and the first linked photo becomes
-the cover; once one exists, the overflow menu offers a picker over the event's
-linked photos.
+**Cover art becomes automatic then explicit**: while there is no linked photo,
+an "add cover photo" action opens the create-entry menu; the **newest** linked
+photo then stands in as the cover — a default that moves with every newer
+photo, on the overview card and the detail hero alike (`_resolveEventCovers`
+and `eventDetailDataFromEntities` pick it the same way, so the two never
+disagree). A cover becomes *chosen* only through `coverArtId`, and the view
+model says which is which: `EventCardData.coverChosen` and, on the gallery's
+photos, `EventPhoto.isCover` (chosen only, never the default — so a `coverArtId`
+pointing at an unlinked or deleted photo counts as no choice). Three surfaces
+set it, all through `EntryController.updateEventCover`: the overflow menu's
+picker (`showEventCoverPicker`), a "Set cover" chip on the hero that opens the
+same picker while the cover is only the default, and the full-screen viewer's
+"Set cover" pill for the photo in view (`EventPhotoGalleryViewer.onSetCover`,
+forwarded through `EventPhotoGrid`). The viewer sits on the root navigator
+with a snapshot of the photos, so it advances its own cover id optimistically
+to flip the pill to "Cover" at once and awaits the write. The controller's
+event edits (`_updateEventData`) return the persistence layer's verdict and
+roll their own optimistic state back on `false` (the entity is gone); the
+viewer takes the pill back on `false` or on a thrown error — the latter also
+captured under the `event_photo_gallery` log domain like the download button
+does — and shows the shared save-failed line. One gap is deliberate and lives
+below this feature: `updateEvent` logs a storage exception and, by its
+documented contract (pinned in `persistence_logic_test`), reports `true`, so
+such a failure is invisible to every event edit on the page, not only to the
+cover; the grid's "Cover"
+badge follows on the page's next resolve. When the grid is capped, the "+N"
+tile wears the badge whenever the chosen cover is among the photos it stands
+for. The viewer chips — counter, date, badge, labelled action — all sit on one
+`ImageViewerPill` shell in the journal's image-viewer widgets.
 
 Linked photos render as a compact grid and open into a swipeable, zoomable
 full-screen gallery. The gallery contains each image without changing its aspect

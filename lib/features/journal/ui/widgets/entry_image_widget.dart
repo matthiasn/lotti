@@ -492,6 +492,92 @@ class ImageViewerIconButton extends StatelessWidget {
   }
 }
 
+/// The scrim pill every piece of viewer chrome sits on: a dark, rounded
+/// surface over the photo with the padding the chips share, so a counter, a
+/// date, a badge and a labelled action all read as one family. Tappable only
+/// when [onTap] is given — an inert pill adds no ink layer, so taps on it
+/// still fall through to the canvas the way they did before.
+class ImageViewerPill extends StatelessWidget {
+  const ImageViewerPill({
+    required this.child,
+    this.alpha = 0.46,
+    this.onTap,
+    this.padding,
+    super.key,
+  });
+
+  final Widget child;
+
+  /// Opacity of the scrim behind [child]; chrome that has to stay legible
+  /// over any photo (the date, a badge) uses a darker one than a button.
+  final double alpha;
+  final VoidCallback? onTap;
+
+  /// Defaults to the chrome's standard inset (`step4` × `step2`).
+  final EdgeInsetsGeometry? padding;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final body = Padding(
+      padding:
+          padding ??
+          EdgeInsets.symmetric(
+            horizontal: tokens.spacing.step4,
+            vertical: tokens.spacing.step2,
+          ),
+      child: child,
+    );
+    return Material(
+      color: Theme.of(context).colorScheme.scrim.withValues(alpha: alpha),
+      borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
+      clipBehavior: Clip.antiAlias,
+      child: onTap == null ? body : InkWell(onTap: onTap, child: body),
+    );
+  }
+}
+
+/// A labelled pill action for the viewer chrome — [ImageViewerIconButton]
+/// with a word beside the glyph, for an action a glyph alone would not carry
+/// ("Set cover"). A null [onPressed] renders it inert and dimmed, so the same
+/// pill can state a fact ("Cover") where there is nothing left to do.
+class ImageViewerLabelButton extends StatelessWidget {
+  const ImageViewerLabelButton({
+    required this.label,
+    required this.icon,
+    required this.onPressed,
+    super.key,
+  });
+
+  final String label;
+  final IconData icon;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final foreground = onPressed == null
+        ? Colors.white.withValues(alpha: 0.7)
+        : Colors.white;
+    return ImageViewerPill(
+      onTap: onPressed,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: tokens.spacing.step5, color: foreground),
+          SizedBox(width: tokens.spacing.step2),
+          Text(
+            label,
+            style: tokens.typography.styles.subtitle.subtitle1.copyWith(
+              color: foreground,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// Download control shared by the single-photo and event gallery viewers.
 ///
 /// It owns the in-flight guard and platform-specific result feedback so both
@@ -582,19 +668,12 @@ class ImageViewerDateChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final locale = Localizations.localeOf(context).toString();
-    return Material(
-      color: Theme.of(context).colorScheme.scrim.withValues(alpha: 0.62),
-      borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: tokens.spacing.step4,
-          vertical: tokens.spacing.step2,
-        ),
-        child: Text(
-          DateFormat.yMMMd(locale).format(date.toLocal()),
-          style: tokens.typography.styles.body.bodyMedium.copyWith(
-            color: Colors.white,
-          ),
+    return ImageViewerPill(
+      alpha: 0.62,
+      child: Text(
+        DateFormat.yMMMd(locale).format(date.toLocal()),
+        style: tokens.typography.styles.body.bodyMedium.copyWith(
+          color: Colors.white,
         ),
       ),
     );

@@ -482,6 +482,81 @@ void main() {
       expect(deletes, 1);
     });
 
+    // Until a cover is chosen, the hero photo is only the newest one and
+    // would move with the next photo added; the chip says so and opens the
+    // same picker the overflow menu does.
+    testWidgets('offers Set cover on the hero only while the cover is the '
+        'automatic default', (tester) async {
+      var picks = 0;
+      await pumpEventScreen(
+        tester,
+        EventDetailView(
+          data: buildEventDetailData(
+            card: buildEventCardData(coverImage: testImage()),
+          ),
+          onChangeCover: () => picks++,
+        ),
+        size: _tallMobile,
+      );
+      await tester.tap(find.text('Set cover'));
+      expect(picks, 1);
+
+      // Chosen: the chip is gone, the menu item remains.
+      await pumpEventScreen(
+        tester,
+        EventDetailView(
+          data: buildEventDetailData(
+            card: buildEventCardData(
+              coverImage: testImage(),
+              coverChosen: true,
+            ),
+          ),
+          onChangeCover: () => picks++,
+        ),
+        size: _tallMobile,
+      );
+      expect(find.text('Set cover'), findsNothing);
+
+      // No cover at all: "Add cover photo" is the affordance, not this.
+      await pumpEventScreen(
+        tester,
+        EventDetailView(data: _emptyData(), onChangeCover: () => picks++),
+        size: _tallMobile,
+      );
+      expect(find.text('Set cover'), findsNothing);
+
+      // Read-only view: nothing to open.
+      await pumpEventScreen(
+        tester,
+        EventDetailView(
+          data: buildEventDetailData(
+            card: buildEventCardData(coverImage: testImage()),
+          ),
+        ),
+        size: _tallMobile,
+      );
+      expect(find.text('Set cover'), findsNothing);
+    });
+
+    testWidgets('the photo grid receives the set-cover handler', (
+      tester,
+    ) async {
+      Future<bool> setCover(String id) async => true;
+      await pumpEventScreen(
+        tester,
+        EventDetailView(
+          data: buildEventDetailData(
+            photos: [EventPhoto(testImage(), id: 'p1')],
+          ),
+          onSetCover: setCover,
+        ),
+        size: _tallMobile,
+      );
+
+      final grid = tester.widget<EventPhotoGrid>(find.byType(EventPhotoGrid));
+      expect(grid.onSetCover, same(setCover));
+    });
+
     testWidgets('the overflow menu changes the cover', (tester) async {
       var changes = 0;
       await pumpEventScreen(

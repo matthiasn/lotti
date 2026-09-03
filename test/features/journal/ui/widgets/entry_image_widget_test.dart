@@ -295,6 +295,108 @@ void main() {
     );
   });
 
+  group('ImageViewerPill', () {
+    testWidgets('is inert without onTap so taps fall through, and tappable '
+        'with it', (tester) async {
+      var taps = 0;
+      await tester.pumpWidget(
+        makeTestableWidget2(
+          Column(
+            children: [
+              const ImageViewerPill(child: Text('inert')),
+              ImageViewerPill(
+                onTap: () => taps++,
+                child: const Text('tappable'),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      expect(
+        find.ancestor(of: find.text('inert'), matching: find.byType(InkWell)),
+        findsNothing,
+      );
+      await tester.tap(find.text('tappable'));
+      expect(taps, 1);
+    });
+
+    testWidgets('honours the scrim opacity and padding it is given', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidget2(
+          const ImageViewerPill(
+            alpha: 0.62,
+            padding: EdgeInsets.all(2),
+            child: Text('x'),
+          ),
+        ),
+      );
+
+      final material = tester.widget<Material>(
+        find
+            .ancestor(of: find.text('x'), matching: find.byType(Material))
+            .first,
+      );
+      expect(material.color!.a, closeTo(0.62, 0.01));
+      final padding = tester.widget<Padding>(
+        find.ancestor(of: find.text('x'), matching: find.byType(Padding)).first,
+      );
+      expect(padding.padding, const EdgeInsets.all(2));
+    });
+  });
+
+  group('ImageViewerLabelButton', () {
+    testWidgets('shows its glyph and word and fires when pressed', (
+      tester,
+    ) async {
+      var presses = 0;
+      await tester.pumpWidget(
+        makeTestableWidget2(
+          Center(
+            child: ImageViewerLabelButton(
+              label: 'Set cover',
+              icon: LottiIcons.image,
+              onPressed: () => presses++,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Set cover'), findsOneWidget);
+      expect(find.byIcon(LottiIcons.image), findsOneWidget);
+      await tester.tap(find.text('Set cover'));
+      expect(presses, 1);
+    });
+
+    testWidgets('without a handler it states rather than acts', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidget2(
+          const Center(
+            child: ImageViewerLabelButton(
+              label: 'Cover',
+              icon: LottiIcons.confirmCircled,
+              onPressed: null,
+            ),
+          ),
+        ),
+      );
+
+      // No ink layer at all: the pill is a statement, not a disabled button,
+      // and a tap on it falls through to the canvas.
+      expect(
+        find.ancestor(of: find.text('Cover'), matching: find.byType(InkWell)),
+        findsNothing,
+      );
+      // Dimmed, so it reads as a state and not a disabled button.
+      final text = tester.widget<Text>(find.text('Cover'));
+      expect(text.style!.color, isNot(Colors.white));
+    });
+  });
+
   group('HeroPhotoViewRouteWrapper', () {
     late Directory tempDir;
     late File imageFile;

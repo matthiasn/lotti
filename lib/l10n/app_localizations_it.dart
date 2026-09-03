@@ -3874,10 +3874,10 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
-  String get coverArtChipActive => 'Copertura';
+  String get coverArtChipActive => 'Copertina';
 
   @override
-  String get coverArtChipSet => 'Copripiumini';
+  String get coverArtChipSet => 'Imposta copertina';
 
   @override
   String get coverArtGenerationComplete => 'Coprire l\'arte pronta!';
@@ -6074,7 +6074,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get eventsAddLabel => 'Aggiungi';
 
   @override
-  String get eventsChangeCover => 'Cambia la copertura';
+  String get eventsChangeCover => 'Cambia la copertina';
 
   @override
   String get eventsDeleteEvent => 'Elimina evento';

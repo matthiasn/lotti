@@ -1925,8 +1925,8 @@
       }
     }
   },
-  "coverArtChipActive": "Omhulsel",
-  "coverArtChipSet": "Dekking instellen",
+  "coverArtChipActive": "Omslag",
+  "coverArtChipSet": "Omslag instellen",
   "coverArtGenerationComplete": "Dek de kunst klaar!",
   "coverArtGenerationDismissHint": "U kunt deze .. generatie blijft op de achtergrond",
   "createButton": "Aanmaken",
@@ -2806,7 +2806,7 @@
   "eventNameLabel": "Gebeurtenis:",
   "eventsAddCoverPhoto": "Hoesfoto toevoegen",
   "eventsAddLabel": "Toevoegen",
-  "eventsChangeCover": "Verander dekking",
+  "eventsChangeCover": "Omslag wijzigen",
   "eventsDeleteEvent": "Gebeurtenis verwijderen",
   "eventsFilterAll": "Alles",
   "eventsMetricPhotos": "{count, plural, =1{1 foto} other{{count} foto's}}",

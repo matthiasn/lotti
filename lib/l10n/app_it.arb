@@ -1926,8 +1926,8 @@
       }
     }
   },
-  "coverArtChipActive": "Copertura",
-  "coverArtChipSet": "Copripiumini",
+  "coverArtChipActive": "Copertina",
+  "coverArtChipSet": "Imposta copertina",
   "coverArtGenerationComplete": "Coprire l'arte pronta!",
   "coverArtGenerationDismissHint": "È possibile chiudere questo — la generazione continua in background",
   "createButton": "Creare",
@@ -2807,7 +2807,7 @@
   "eventNameLabel": "Evento:",
   "eventsAddCoverPhoto": "Aggiungi foto di copertina",
   "eventsAddLabel": "Aggiungi",
-  "eventsChangeCover": "Cambia la copertura",
+  "eventsChangeCover": "Cambia la copertina",
   "eventsDeleteEvent": "Elimina evento",
   "eventsFilterAll": "Tutti",
   "eventsMetricPhotos": "{count, plural, =1{1 foto} other{{count} foto}}",

@@ -58,4 +58,25 @@ void main() {
     expect(EventPhoto(testImage()).cropX, 0.5);
     expect(EventPhoto(testImage(), cropX: 0.2).cropX, 0.2);
   });
+
+  test('EventPhoto carries no id and is not the cover unless told', () {
+    final bare = EventPhoto(testImage());
+    expect(bare.id, isNull);
+    expect(bare.isCover, isFalse);
+
+    final cover = EventPhoto(testImage(), id: 'img-1', isCover: true);
+    expect(cover.id, 'img-1');
+    expect(cover.isCover, isTrue);
+  });
+
+  test('EventCardData treats its cover as the default unless chosen', () {
+    expect(buildEventCardData(coverImage: testImage()).coverChosen, isFalse);
+    expect(
+      buildEventCardData(
+        coverImage: testImage(),
+        coverChosen: true,
+      ).coverChosen,
+      isTrue,
+    );
+  });
 }

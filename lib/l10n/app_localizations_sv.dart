@@ -3837,7 +3837,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get coverArtChipActive => 'Omslag';
 
   @override
-  String get coverArtChipSet => 'Scenografi';
+  String get coverArtChipSet => 'Välj omslag';
 
   @override
   String get coverArtGenerationComplete => 'Omslagskonsten klar!';

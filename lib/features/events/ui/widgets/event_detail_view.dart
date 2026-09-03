@@ -38,6 +38,7 @@ class EventDetailView extends StatelessWidget {
     this.onSetRating,
     this.onAddCover,
     this.onChangeCover,
+    this.onSetCover,
     this.onDelete,
     this.onRegenerateSummary,
     this.onAddToTimeline,
@@ -64,9 +65,16 @@ class EventDetailView extends StatelessWidget {
   /// Adds a cover photo (shown only while the event has no cover).
   final VoidCallback? onAddCover;
 
-  /// Changes the cover photo (offered in the overflow menu once the event has
-  /// one), e.g. picking a different linked photo or adding a new one.
+  /// Changes the cover photo through the picker: offered in the overflow menu
+  /// once the event has a cover, and as a "Set cover" chip on the hero while
+  /// that cover is only the automatic default ([EventCardData.coverChosen]
+  /// false).
   final VoidCallback? onChangeCover;
+
+  /// Makes the linked photo with this id the cover, from the photo gallery:
+  /// the full-screen viewer's "Set cover" pill reports the photo in view,
+  /// awaits the write and undoes its optimistic state unless it was stored.
+  final Future<bool> Function(String id)? onSetCover;
 
   /// Deletes the event (offered in the overflow menu).
   final VoidCallback? onDelete;
@@ -196,7 +204,7 @@ class EventDetailView extends StatelessWidget {
           count: data.photos.length,
           onAdd: onAddToTimeline,
         ),
-        EventPhotoGrid(photos: data.photos),
+        EventPhotoGrid(photos: data.photos, onSetCover: onSetCover),
       ],
       _SectionHeader(
         title: context.messages.eventsTimelineSection,
@@ -309,6 +317,7 @@ class _HeroSliver extends StatelessWidget {
                   onTapDateTime: onTapDateTime,
                   onSetRating: onSetRating,
                   onAddCover: onAddCover,
+                  onChangeCover: onChangeCover,
                 ),
               ),
             ),
@@ -329,6 +338,7 @@ class _HeroContent extends StatelessWidget {
     this.onTapDateTime,
     this.onSetRating,
     this.onAddCover,
+    this.onChangeCover,
   });
 
   final EventCardData card;
@@ -339,6 +349,7 @@ class _HeroContent extends StatelessWidget {
   final VoidCallback? onTapDateTime;
   final ValueChanged<double>? onSetRating;
   final VoidCallback? onAddCover;
+  final VoidCallback? onChangeCover;
 
   @override
   Widget build(BuildContext context) {
@@ -360,8 +371,24 @@ class _HeroContent extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
+        // One slot for the cover affordance: add a photo while there is none,
+        // or pick one while the photo behind this hero is only the newest —
+        // the default that would move with the next photo added.
         if (card.coverImage == null && onAddCover != null) ...[
-          _AddCoverButton(onTap: onAddCover),
+          _CoverActionButton(
+            icon: LottiIcons.addPhoto,
+            label: context.messages.eventsAddCoverPhoto,
+            onTap: onAddCover!,
+          ),
+          SizedBox(height: tokens.spacing.step3),
+        ] else if (card.coverImage != null &&
+            !card.coverChosen &&
+            onChangeCover != null) ...[
+          _CoverActionButton(
+            icon: LottiIcons.image,
+            label: context.messages.coverArtChipSet,
+            onTap: onChangeCover!,
+          ),
           SizedBox(height: tokens.spacing.step3),
         ],
         Row(
@@ -446,11 +473,19 @@ class _HeroContent extends StatelessWidget {
 }
 
 /// A labelled ghost button over the hero inviting a cover photo, shown while the
-/// event has none.
-class _AddCoverButton extends StatelessWidget {
-  const _AddCoverButton({this.onTap});
+/// The hero's one cover affordance, in the "Add cover photo" pill's shape:
+/// a glyph and a word on a dark pill, over the photo or the tinted gradient.
+/// Which action it carries follows the cover's state (none / default).
+class _CoverActionButton extends StatelessWidget {
+  const _CoverActionButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
 
-  final VoidCallback? onTap;
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -469,17 +504,12 @@ class _AddCoverButton extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
-                LottiIcons.addPhoto,
-                size: 16,
-                color: Colors.white,
-              ),
+              Icon(icon, size: 16, color: Colors.white),
               SizedBox(width: tokens.spacing.step2),
               Text(
-                context.messages.eventsAddCoverPhoto,
-                style: tokens.typography.styles.body.bodyMedium.copyWith(
+                label,
+                style: tokens.typography.styles.subtitle.subtitle1.copyWith(
                   color: Colors.white,
-                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],

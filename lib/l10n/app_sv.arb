@@ -1927,7 +1927,7 @@
     }
   },
   "coverArtChipActive": "Omslag",
-  "coverArtChipSet": "Scenografi",
+  "coverArtChipSet": "Välj omslag",
   "coverArtGenerationComplete": "Omslagskonsten klar!",
   "coverArtGenerationDismissHint": "Du kan stänga detta – generationen fortsätter i bakgrunden",
   "createButton": "Skapa",

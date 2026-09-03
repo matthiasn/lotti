@@ -208,6 +208,7 @@ class EventDetailPage extends ConsumerWidget {
       onSetRating: controller.updateRating,
       onAddCover: addLinkedEntry,
       onChangeCover: data.card.coverImage == null ? null : changeCover,
+      onSetCover: controller.updateEventCover,
       onDelete: confirmDelete,
       onAddToTimeline: addLinkedEntry,
       onAddTask: addTask,

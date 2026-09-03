@@ -3839,10 +3839,10 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get coverArtChipActive => 'Omhulsel';
+  String get coverArtChipActive => 'Omslag';
 
   @override
-  String get coverArtChipSet => 'Dekking instellen';
+  String get coverArtChipSet => 'Omslag instellen';
 
   @override
   String get coverArtGenerationComplete => 'Dek de kunst klaar!';
@@ -6020,7 +6020,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get eventsAddLabel => 'Toevoegen';
 
   @override
-  String get eventsChangeCover => 'Verander dekking';
+  String get eventsChangeCover => 'Omslag wijzigen';
 
   @override
   String get eventsDeleteEvent => 'Gebeurtenis verwijderen';
