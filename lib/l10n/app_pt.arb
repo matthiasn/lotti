@@ -5799,6 +5799,8 @@
       }
     }
   },
+  "taskEstimateQuickPickHint": "Toque para salvar e fechar",
+  "taskEstimateQuickPickSemanticsLabel": "Definir a estimativa para {duration}",
   "taskEstimateTooltip": "Tempo monitorado: {tracked} de {estimate} estimado",
   "@taskEstimateTooltip": {
     "placeholders": {

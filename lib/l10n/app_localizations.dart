@@ -22657,6 +22657,18 @@ abstract class AppLocalizations {
   /// **'{tracked} of {estimate}'**
   String taskEstimateProgressLabel(String tracked, String estimate);
 
+  /// No description provided for @taskEstimateQuickPickHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to save and close'**
+  String get taskEstimateQuickPickHint;
+
+  /// No description provided for @taskEstimateQuickPickSemanticsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Set estimate to {duration}'**
+  String taskEstimateQuickPickSemanticsLabel(String duration);
+
   /// No description provided for @taskEstimateTooltip.
   ///
   /// In en, this message translates to:

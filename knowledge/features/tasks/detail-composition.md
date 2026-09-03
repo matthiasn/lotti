@@ -48,6 +48,14 @@ sources:
     resource: ../../../lib/features/tasks/ui/widgets/viewport_stable_animated_size.dart
     title: TaskScrollStabilityScope and ViewportStableScrollController
     last_modified: 2026-08-28
+  - id: estimate-quick-pick
+    resource: ../../../lib/features/tasks/ui/header/estimate_quick_pick_chips.dart
+    title: Estimate quick-pick chips
+    last_modified: 2026-09-03
+  - id: estimate-suggestions
+    resource: ../../../lib/features/tasks/state/task_estimate_suggestions_controller.dart
+    title: taskEstimateSuggestionsControllerProvider
+    last_modified: 2026-09-03
 ---
 
 # Band order
@@ -330,6 +338,69 @@ so a persisted edit updates the open host immediately. The Estimate row keeps
 the `{tracked} of {estimate}` read (`1h 30m of 2h`, never a clock-like
 `01:30 / 02:00`) plus the small progress bar, escalating to error ink when
 tracked exceeds the estimate.
+
+### The estimate picker answers in one tap
+
+Opening Estimate lands on a row of **quick-pick chips** above the duration
+wheel, not on the wheel alone. The chips are the same affordance the habit
+completion sheet gives a measurable — `DsPillVariant.outline` at the canonical
+28pt shell, `spacing.step2` apart in a `Wrap`, `spacing.sectionGap` down to the
+wheel — because the problem is the same one: a user reaches for the same
+handful of values over and over, and a wheel charges a scroll for each of them.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Open: tap the Estimate read-out
+    Open --> Committed: tap a chip (writes, pops)
+    Open --> Open: tap the chip already holding the estimate (pops, no write)
+    Open --> Spun: scroll the wheel
+    Spun --> Committed: Done
+    Open --> Cleared: Clear
+    Open --> [*]: dismiss
+    Committed --> [*]
+    Cleared --> [*]
+```
+
+A chip **commits and closes** — pop first, then await the write, the order
+`Clear` already used — so the common case costs one tap rather than a scroll
+plus a confirm. Re-tapping the chip that already carries the task's estimate
+closes without writing, so a confirming tap does not push an update or a sync
+message. The wheel stays for everything else and is deliberately **unframed**:
+it is the fallback now, and the bordered card it used to wear made the escape
+hatch the largest object in the modal.
+
+The four values come from `taskEstimateSuggestionsControllerProvider`, which
+ranks the estimates actually set on tasks over the last 90 days
+(`JournalDb.getRankedTaskEstimates`) — popularity picks the set, duration sorts
+it shortest-first, and a history too thin to fill the row is topped up from a
+30m / 1h / 2h / 4h starter ladder so a fresh install still opens on chips. The
+query honours the `private` flag like every other task read, and only ranks
+whole-minute durations, which is what lets the row key on `inMinutes` without
+two values colliding. Because the row is kept alive for `dashboardCacheDuration`,
+the controller also *subscribes* to that flag and invalidates itself when it
+changes: a cached row would otherwise outlive the visibility decision that
+produced it.
+Labels use `formatRangeDuration`, the same compact form the header's estimate
+read-out speaks, so tapping `2h` produces a header that says `2h`.
+
+The chip matching **the value on show** reads `selected` — the task's own
+estimate as the modal opens, then whatever the wheel is spun to, so the row and
+the wheel can never state two different answers to "what is the estimate". This
+chip *overwrites* rather than appends, so the selection doubles as the read-out
+of what is about to be replaced. Making that visible needed a design-system fix:
+`DsPillVariant.outline` had ignored `selected` in everything but label weight,
+and now takes the `surface.selected` fill and the full-alpha interactive border
+the other variants do — which the habit sheet's quick-record chips inherit.
+Selection carries no leading glyph, deliberately: fill, border and weight say it
+in three channels without changing a chip's width, so spinning the wheel moves
+the selection between chips without reflowing the `Wrap`.
+
+A caption above the row — **"Tap to save and close"** — states the commit
+contract in terms of the outcome rather than the gesture, because a `Done`
+button sits at the bottom of the same sheet and otherwise teaches that nothing
+is saved until it is pressed. Until the ranking lands, the row renders
+the starter ladder in `DsPillVariant.muted`, the design system's placeholder
+variant: the real row's shape and height at any text scale, and not tappable.
 
 The section has two hosts, and `TaskMetaDensity` is the only difference
 between them:

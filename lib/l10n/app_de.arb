@@ -5243,6 +5243,8 @@
       }
     }
   },
+  "taskEstimateQuickPickHint": "Tippen zum Speichern und Schließen",
+  "taskEstimateQuickPickSemanticsLabel": "Schätzung auf {duration} setzen",
   "taskEstimateTooltip": "Erfasste Zeit: {tracked} von {estimate} geschätzt",
   "@taskEstimateTooltip": {
     "placeholders": {

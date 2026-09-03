@@ -13605,6 +13605,14 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get taskEstimateQuickPickHint => 'Klepni pro uložení a zavření';
+
+  @override
+  String taskEstimateQuickPickSemanticsLabel(String duration) {
+    return 'Nastavit odhad na $duration';
+  }
+
+  @override
   String taskEstimateTooltip(String tracked, String estimate) {
     return 'Zaznamenaný čas: $tracked z odhadovaných $estimate';
   }

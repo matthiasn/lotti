@@ -5799,6 +5799,8 @@
       }
     }
   },
+  "taskEstimateQuickPickHint": "Tik om op te slaan en te sluiten",
+  "taskEstimateQuickPickSemanticsLabel": "Schatting instellen op {duration}",
   "taskEstimateTooltip": "Gespoorde tijd: {tracked} van {estimate} geraamd",
   "@taskEstimateTooltip": {
     "placeholders": {

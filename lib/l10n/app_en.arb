@@ -7521,6 +7521,15 @@
       }
     }
   },
+  "taskEstimateQuickPickHint": "Tap to save and close",
+  "taskEstimateQuickPickSemanticsLabel": "Set estimate to {duration}",
+  "@taskEstimateQuickPickSemanticsLabel": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
   "taskEstimateTooltip": "Time tracked: {tracked} of {estimate} estimated",
   "@taskEstimateTooltip": {
     "placeholders": {

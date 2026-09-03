@@ -1938,6 +1938,285 @@ void main() {
       });
     });
 
+    group('getRankedTaskEstimates -', () {
+      // Every task in this group is dated relative to [base] so the `since`
+      // window is exercised against known distances, never the wall clock.
+      final base = DateTime(2024, 8, 2);
+      final windowStart = base.subtract(const Duration(days: 90));
+
+      var statusCounter = 0;
+      Future<void> seedTask({
+        required String id,
+        required Duration? estimate,
+        DateTime? timestamp,
+        DateTime? deletedAt,
+        bool private = false,
+      }) async {
+        final at = timestamp ?? base;
+        statusCounter++;
+        final task = JournalEntity.task(
+          meta: Metadata(
+            id: id,
+            createdAt: at,
+            updatedAt: at,
+            dateFrom: at,
+            dateTo: at,
+            deletedAt: deletedAt,
+            private: private,
+          ),
+          data: testTask.data.copyWith(
+            status: TaskStatus.open(
+              id: 'ranked-status-$statusCounter',
+              createdAt: at,
+              utcOffset: 0,
+            ),
+            statusHistory: [],
+            title: 'Ranked $id',
+            dateFrom: at,
+            dateTo: at,
+            estimate: estimate,
+          ),
+          entryText: const EntryText(plainText: 'Ranked task'),
+        );
+        await db!.upsertJournalDbEntity(toDbEntity(task));
+      }
+
+      test('returns nothing when no task carries an estimate', () async {
+        await seedTask(id: 'ranked-none', estimate: null);
+
+        expect(
+          await db!.getRankedTaskEstimates(since: windowStart, limit: 4),
+          isEmpty,
+        );
+      });
+
+      test('orders by how often each estimate was used', () async {
+        for (var i = 0; i < 3; i++) {
+          await seedTask(id: 'one-hour-$i', estimate: const Duration(hours: 1));
+        }
+        for (var i = 0; i < 2; i++) {
+          await seedTask(
+            id: 'two-hours-$i',
+            estimate: const Duration(hours: 2),
+          );
+        }
+        await seedTask(id: 'half-hour', estimate: const Duration(minutes: 30));
+
+        expect(
+          await db!.getRankedTaskEstimates(since: windowStart, limit: 4),
+          const [
+            Duration(hours: 1),
+            Duration(hours: 2),
+            Duration(minutes: 30),
+          ],
+        );
+      });
+
+      test('breaks a tie on the shorter duration', () async {
+        await seedTask(id: 'tie-long', estimate: const Duration(hours: 3));
+        await seedTask(id: 'tie-short', estimate: const Duration(minutes: 15));
+
+        expect(
+          await db!.getRankedTaskEstimates(since: windowStart, limit: 4),
+          const [
+            Duration(minutes: 15),
+            Duration(hours: 3),
+          ],
+        );
+      });
+
+      test(
+        'ignores a zero estimate — "none" is the Clear action, not a chip',
+        () async {
+          await seedTask(id: 'zero-1', estimate: Duration.zero);
+          await seedTask(id: 'zero-2', estimate: Duration.zero);
+          await seedTask(id: 'real', estimate: const Duration(hours: 1));
+
+          expect(
+            await db!.getRankedTaskEstimates(since: windowStart, limit: 4),
+            const [
+              Duration(hours: 1),
+            ],
+          );
+        },
+      );
+
+      test('ignores tasks dated before the window', () async {
+        await seedTask(
+          id: 'stale-1',
+          estimate: const Duration(hours: 8),
+          timestamp: windowStart.subtract(const Duration(days: 1)),
+        );
+        await seedTask(
+          id: 'stale-2',
+          estimate: const Duration(hours: 8),
+          timestamp: windowStart.subtract(const Duration(days: 2)),
+        );
+        await seedTask(id: 'recent', estimate: const Duration(hours: 1));
+
+        expect(
+          await db!.getRankedTaskEstimates(since: windowStart, limit: 4),
+          const [
+            Duration(hours: 1),
+          ],
+        );
+      });
+
+      test('ignores deleted tasks', () async {
+        await seedTask(
+          id: 'deleted-1',
+          estimate: const Duration(hours: 6),
+          deletedAt: base,
+        );
+        await seedTask(
+          id: 'deleted-2',
+          estimate: const Duration(hours: 6),
+          deletedAt: base,
+        );
+        await seedTask(id: 'alive', estimate: const Duration(hours: 1));
+
+        expect(
+          await db!.getRankedTaskEstimates(since: windowStart, limit: 4),
+          const [
+            Duration(hours: 1),
+          ],
+        );
+      });
+
+      test('ignores non-task entities', () async {
+        await db!.upsertJournalDbEntity(
+          toDbEntity(
+            buildJournalEntry(
+              id: 'ranked-not-a-task',
+              timestamp: base,
+              text: 'Not a task',
+            ),
+          ),
+        );
+        await seedTask(id: 'ranked-task', estimate: const Duration(hours: 1));
+
+        expect(
+          await db!.getRankedTaskEstimates(since: windowStart, limit: 4),
+          const [
+            Duration(hours: 1),
+          ],
+        );
+      });
+
+      test('returns at most `limit` values, keeping the most used', () async {
+        for (var i = 0; i < 4; i++) {
+          await seedTask(id: 'lim-a-$i', estimate: const Duration(hours: 1));
+        }
+        for (var i = 0; i < 3; i++) {
+          await seedTask(id: 'lim-b-$i', estimate: const Duration(hours: 2));
+        }
+        for (var i = 0; i < 2; i++) {
+          await seedTask(id: 'lim-c-$i', estimate: const Duration(hours: 3));
+        }
+        await seedTask(id: 'lim-d', estimate: const Duration(hours: 4));
+
+        expect(
+          await db!.getRankedTaskEstimates(since: windowStart, limit: 2),
+          const [Duration(hours: 1), Duration(hours: 2)],
+        );
+      });
+
+      test(
+        'ignores a private task while private entries are hidden, and counts '
+        'it once they are shown',
+        () async {
+          Future<void> setPrivateFlag({required bool status}) =>
+              db!.upsertConfigFlag(
+                ConfigFlag(
+                  name: privateFlag,
+                  description: 'Show private entries?',
+                  status: status,
+                ),
+              );
+
+          await seedTask(
+            id: 'private-1',
+            estimate: const Duration(hours: 6),
+            private: true,
+          );
+          await seedTask(
+            id: 'private-2',
+            estimate: const Duration(hours: 6),
+            private: true,
+          );
+          await seedTask(id: 'public', estimate: const Duration(hours: 1));
+
+          // The flag ships enabled, so start from the shown case.
+          expect(
+            await db!.getRankedTaskEstimates(since: windowStart, limit: 4),
+            const [Duration(hours: 6), Duration(hours: 1)],
+            reason: 'shown private tasks rank like any other',
+          );
+
+          await setPrivateFlag(status: false);
+          addTearDown(() => setPrivateFlag(status: true));
+
+          expect(
+            await db!.getRankedTaskEstimates(since: windowStart, limit: 4),
+            const [Duration(hours: 1)],
+            reason: 'a hidden task must not put a value on the chip row',
+          );
+        },
+      );
+
+      test(
+        'ignores an estimate that is not a whole number of minutes',
+        () async {
+          // `formatRangeDuration` renders 90m and 90m30s identically, and the
+          // chip row keys on whole minutes — two of these would collide.
+          await seedTask(
+            id: 'fractional-1',
+            estimate: const Duration(minutes: 90, seconds: 30),
+          );
+          await seedTask(
+            id: 'fractional-2',
+            estimate: const Duration(minutes: 90, milliseconds: 1),
+          );
+          await seedTask(id: 'whole', estimate: const Duration(minutes: 90));
+
+          expect(
+            await db!.getRankedTaskEstimates(since: windowStart, limit: 4),
+            const [
+              Duration(minutes: 90),
+            ],
+          );
+        },
+      );
+
+      test(
+        'ignores a sub-minute estimate, which would render as "0m"',
+        () async {
+          await seedTask(id: 'seconds', estimate: const Duration(seconds: 45));
+          await seedTask(id: 'minute', estimate: const Duration(minutes: 1));
+
+          expect(
+            await db!.getRankedTaskEstimates(since: windowStart, limit: 4),
+            const [
+              Duration(minutes: 1),
+            ],
+          );
+        },
+      );
+
+      test('a non-positive limit short-circuits without querying', () async {
+        await seedTask(id: 'limit-zero', estimate: const Duration(hours: 1));
+
+        expect(
+          await db!.getRankedTaskEstimates(since: windowStart, limit: 0),
+          isEmpty,
+        );
+        expect(
+          await db!.getRankedTaskEstimates(since: windowStart, limit: -1),
+          isEmpty,
+        );
+      });
+    });
+
     group('getTasks not-all-starred sortByDate branches -', () {
       // starredStatuses single-valued ([true]) forces the slower
       // `_selectTasks` branches (1779+ / 1871+) instead of the

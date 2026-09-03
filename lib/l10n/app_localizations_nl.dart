@@ -13486,6 +13486,14 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get taskEstimateQuickPickHint => 'Tik om op te slaan en te sluiten';
+
+  @override
+  String taskEstimateQuickPickSemanticsLabel(String duration) {
+    return 'Schatting instellen op $duration';
+  }
+
+  @override
   String taskEstimateTooltip(String tracked, String estimate) {
     return 'Gespoorde tijd: $tracked van $estimate geraamd';
   }

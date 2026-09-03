@@ -13367,6 +13367,14 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get taskEstimateQuickPickHint => 'Tap to save and close';
+
+  @override
+  String taskEstimateQuickPickSemanticsLabel(String duration) {
+    return 'Set estimate to $duration';
+  }
+
+  @override
   String taskEstimateTooltip(String tracked, String estimate) {
     return 'Time tracked: $tracked of $estimate estimated';
   }

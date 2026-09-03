@@ -5800,6 +5800,8 @@
       }
     }
   },
+  "taskEstimateQuickPickHint": "Toccare per salvare e chiudere",
+  "taskEstimateQuickPickSemanticsLabel": "Imposta la stima a {duration}",
   "taskEstimateTooltip": "Tempo tracciato: {tracked} di {estimate} stimato",
   "@taskEstimateTooltip": {
     "placeholders": {

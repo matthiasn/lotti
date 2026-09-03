@@ -13684,6 +13684,14 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get taskEstimateQuickPickHint => 'Tape pour enregistrer et fermer';
+
+  @override
+  String taskEstimateQuickPickSemanticsLabel(String duration) {
+    return 'Définir l\'estimation à $duration';
+  }
+
+  @override
   String taskEstimateTooltip(String tracked, String estimate) {
     return 'Temps suivi : $tracked sur $estimate estimé';
   }

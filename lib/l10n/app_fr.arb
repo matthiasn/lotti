@@ -5243,6 +5243,8 @@
       }
     }
   },
+  "taskEstimateQuickPickHint": "Tape pour enregistrer et fermer",
+  "taskEstimateQuickPickSemanticsLabel": "Définir l'estimation à {duration}",
   "taskEstimateTooltip": "Temps suivi : {tracked} sur {estimate} estimé",
   "@taskEstimateTooltip": {
     "placeholders": {

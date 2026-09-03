@@ -5800,6 +5800,8 @@
       }
     }
   },
+  "taskEstimateQuickPickHint": "Tryck för att spara och stänga",
+  "taskEstimateQuickPickSemanticsLabel": "Ange uppskattning till {duration}",
   "taskEstimateTooltip": "Tid spårad: {tracked} av {estimate} uppskattad",
   "@taskEstimateTooltip": {
     "placeholders": {

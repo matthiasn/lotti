@@ -5250,6 +5250,8 @@
       }
     }
   },
+  "taskEstimateQuickPickHint": "Klepni pro uložení a zavření",
+  "taskEstimateQuickPickSemanticsLabel": "Nastavit odhad na {duration}",
   "taskEstimateTooltip": "Zaznamenaný čas: {tracked} z odhadovaných {estimate}",
   "@taskEstimateTooltip": {
     "placeholders": {
