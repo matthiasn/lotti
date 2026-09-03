@@ -1,0 +1,9 @@
+# Direct dependencies of tool/play_promote.py, pinned. play-promote.yml
+# installs the hash-locked play_promote_requirements.txt compiled from this
+# file, so the job holding the Play service account never resolves anything
+# at run time. Recompile after changing a pin:
+#
+#   uv pip compile --python-version 3.13 --generate-hashes \
+#     tool/play_promote_requirements.in -o tool/play_promote_requirements.txt
+google-api-python-client==2.200.0
+google-auth==2.57.0

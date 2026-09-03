@@ -15,6 +15,8 @@ on:
       - "tool/task_agent_model_eval_judge_test.py"
       - "tool/pr_screenshot_publish.py"
       - "tool/pr_screenshot_publish_test.py"
+      - "tool/play_promote.py"
+      - "tool/play_promote_test.py"
       - ".github/workflows/python-tools-ci.yml"
   pull_request:
     branches: [main]
@@ -27,6 +29,8 @@ on:
       - "tool/task_agent_model_eval_judge_test.py"
       - "tool/pr_screenshot_publish.py"
       - "tool/pr_screenshot_publish_test.py"
+      - "tool/play_promote.py"
+      - "tool/play_promote_test.py"
       - ".github/workflows/python-tools-ci.yml"
 
 concurrency:
@@ -107,3 +111,28 @@ jobs:
       - name: Test
         working-directory: tool
         run: python -m unittest pr_screenshot_publish_test.py
+
+  play-promote:
+    name: Play Promote (test + coverage)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install coverage
+        run: pip install coverage
+
+      # The driver runs unattended against the live Play account, so every
+      # line of it is exercised here: the report fails below 100%.
+      - name: Test with coverage
+        working-directory: tool
+        run: |
+          python -m coverage run --include=play_promote.py -m unittest play_promote_test.py
+          python -m coverage report --show-missing --fail-under=100

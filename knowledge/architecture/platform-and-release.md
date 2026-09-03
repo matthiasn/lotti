@@ -1,21 +1,25 @@
 ---
 type: Architecture
 title: Platform targets, CI and release
-description: Five platform targets from one codebase, the checks every branch runs, and the tag that triggers seven release pipelines.
+description: Five platform targets from one codebase, the checks every branch runs, the tag that triggers seven release pipelines, and the play/ tag that promotes an Android build along Google Play's tracks.
 resource: ../..
 tags: [architecture, ci, release, platforms, build]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-08-25T12:00:00Z }
+generated: { by: claude-code/fable-5, at: 2026-09-02T15:00:00Z }
 stale_after: 2027-02-01
 sources:
   - id: workflows
     resource: ../../.github/workflows
     title: GitHub Actions workflows
-    last_modified: 2026-08-25
+    last_modified: 2026-09-02
   - id: makefile
     resource: ../../Makefile
     title: Developer and build entry points
-    last_modified: 2026-08-25
+    last_modified: 2026-09-02
+  - id: play-promote
+    resource: ../../tool/play_promote.py
+    title: Google Play track promotion driver
+    last_modified: 2026-09-02
   - id: changelog-fragments
     resource: ../../tool/changelog/fragment_guard.dart
     title: Release-note fragment guard
@@ -40,7 +44,7 @@ sources:
 |----------|--------------|
 | macOS | TestFlight and direct release build |
 | iOS | TestFlight |
-| Android | APK / AAB |
+| Android | APK on GitHub Releases; app bundle on Google Play — internal testing on every release tag, closed testing and production by promotion |
 | Linux | Flatpak (Flathub) and tarball |
 | Windows | MSIX |
 
@@ -157,8 +161,10 @@ written is in [testing conventions](../conventions/testing.md).
 # Release
 
 Release is triggered by **pushing a git tag whose name is the `pubspec.yaml`
-version**. Seven GitHub workflows listen on `push: tags: ['**']`; Windows lives
-on a different provider and, since September 2026, is started by hand:
+version**. Seven GitHub workflows listen on `push: tags: ['**']`, minus the
+`play/` namespace that belongs to [Google Play tracks](#google-play-tracks)
+below; Windows lives on a different provider and, since September 2026, is
+started by hand:
 
 ```mermaid
 flowchart TD
@@ -190,6 +196,66 @@ in the build-notification email, never on a pull request.
 commit SHA and version override, for re-cutting a Flathub PR without moving the
 tag.
 
+## Google Play tracks
+
+The release tag puts the app bundle on Play's **internal testing** track and
+stops there. Moving a build further is a second, separate tag namespace,
+because Play refuses a version code it has already seen and the build number
+moves once per release: by the time a build graduates it is already on
+internal, so a store-track release **promotes that build rather than
+rebuilding it** — the bytes internal testers had, sent to Google for review.
+
+```mermaid
+flowchart LR
+  Release["release tag 1.0.25+4366"] --> Internal["internal testing (no review)"]
+  Internal -- "make android_closed_testing → play/alpha/1.0.25+4366" --> Alpha["closed testing (reviewed)"]
+  Internal -- "make android_release → play/production/1.0.25+4366" --> Production["production (reviewed)"]
+  Alpha -. "same version code" .-> Production
+```
+
+`play-promote.yml` listens on `push: tags: ['play/**']` and runs
+[`tool/play_promote.py`](../../tool/play_promote.py), which reads the track
+from the tag, the version code from `pubspec.yaml` at the tagged commit, finds
+that version code on the internal track — or, when a newer release has since
+replaced it there, among the app bundles Play still holds, since the internal
+track keeps only its latest release and a weekly production promotion lags the
+daily testing one — and writes it to the target track as one completed
+release, then commits the edit for review. Three refusals guard it. The tag
+has to name the version the checkout carries — a tag that disagrees is
+refused, since the version code that moves comes from the checkout, not the
+tag. A build Play never received is refused with a pointer at the upload
+lane, which is what a tag pushed minutes after the release tag runs into. And
+a target track holding a draft, halted or in-progress release — a staged
+rollout someone started in the Console — is not written over: Play's
+reference says only that an update carries "desired changes", so the run
+stops and names the release instead. The same job runs from
+`workflow_dispatch` with a chosen track and an optional dry run that
+validates the edit server-side and discards it, for reruns against the release
+tag's ref. Every other release lane carries `'!play/**'` in its tag filter, so a
+promotion tag builds nothing.
+
+The job holds the Play service account, so it resolves nothing at run time:
+actions are pinned by SHA and the client is installed with `--require-hashes`
+from [`tool/play_promote_requirements.txt`](../../tool/play_promote_requirements.txt),
+compiled from the two pins in
+[`tool/play_promote_requirements.in`](../../tool/play_promote_requirements.in).
+Production promotions run in the `play-production` GitHub environment and
+testing ones in `play-testing`; required reviewers configured on the former
+make a production tag wait for an approval, with no change to the workflow.
+
+| Tag | Play track | Make target | Reviewed by Google |
+|-----|-----------|-------------|--------------------|
+| `<version>` | `internal` | `make tag_push` | no |
+| `play/alpha/<version>` | closed testing | `make android_closed_testing` | yes |
+| `play/beta/<version>` | open testing | tag by hand | yes |
+| `play/production/<version>` | production | `make android_release` | yes |
+
+The store listing — screenshots included — is one object per language, shared
+by every track, so it is deliberately outside this lane; `make
+store_screenshots_android` still produces listing images as an artifact (see
+[screenshots](../conventions/screenshots.md)), and uploading them stays a
+separate, production-time concern.
+
 **No ordinary change writes the release files.** `CHANGELOG.md`,
 `flatpak/com.matthiasn.lotti.metainfo.xml` and the `version:` line in
 `pubspec.yaml` are all written at their top, so every pull request that edited
@@ -215,6 +281,7 @@ too — not once per pull request.
 | Code generation | `make build_runner` (watch: `make watch`) |
 | Localization | `make l10n`, `make sort_arb_files` |
 | Integration tests | `make integration_test` |
+| Promote the Play build | `make android_closed_testing`, `make android_release` |
 | Knowledge bundle check | `make knowledge_check` (validator + mermaid) |
 | Release-note fragments | `make changelog_check` |
 | Run the app | `fvm flutter run -d <device>` |
@@ -230,6 +297,7 @@ generated-code rules live.
 | Concern | File |
 |---------|------|
 | CI and release pipelines | [`.github/workflows/`](../../.github/workflows) |
+| Google Play track promotion | [`tool/play_promote.py`](../../tool/play_promote.py) |
 | Windows release (Codemagic) | [`codemagic.yaml`](../../codemagic.yaml) |
 | Buildkite lanes | [`.buildkite/`](../../.buildkite) |
 | Build, test, packaging targets | [`Makefile`](../../Makefile) |

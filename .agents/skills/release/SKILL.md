@@ -220,6 +220,13 @@ TestFlight, the Android release, the Linux GitHub release, the macOS signed
 `.dmg`, and the Flathub submission PR against `flathub/com.matthiasn.lotti` —
 which is why the metainfo has to be right *before* the tag, not after.
 
+On Google Play the release tag stops at internal testing. Moving that build on
+is a separate tag from the same commit, once the internal upload has finished:
+`make android_closed_testing` for closed testing, `make android_release` for
+production. Both promote the build Play already has rather than rebuilding it;
+the mechanism is the *Google Play tracks* section of
+[`knowledge/architecture/platform-and-release.md`](../../../knowledge/architecture/platform-and-release.md).
+
 Confirm with the user before tagging. Watch the lanes; `docs/macos-release.md`
 and `docs/flatpak-flathub-recovery.md` cover the two that fail in interesting
 ways.
