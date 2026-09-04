@@ -406,8 +406,8 @@ merged set for the tests.
 ```mermaid
 flowchart TD
   Far["far<br/>plate, neon strips, light bar, lantern<br/>no widget"] -->|"within 140 m and sign cap 80, one promotion per frame"| Sign["sign<br/>FacadeWidget sign variant<br/>captured once, manual input"]
-  Far -->|"within 26 m (or the building's own stand-off), in front of the wall, live cap 4"| Live["live<br/>FacadeWidget live variant<br/>captured every frame, automatic input"]
-  Sign -->|"within 26 m (or the building's own stand-off), in front of the wall, live cap 4"| Live
+  Far -->|"within 26 m (or the building's own stand-off), on the wall's street side and ahead of the camera, live cap 4"| Live["live<br/>FacadeWidget live variant<br/>captured every frame, automatic input"]
+  Sign -->|"within 26 m (or the building's own stand-off), on the wall's street side and ahead of the camera, live cap 4"| Live
   Live -->|"immediately when out of budget or range"| Sign
   Sign -->|"immediately"| Far
   Far -->|"prepare on flight start, the destination only"| Sign
