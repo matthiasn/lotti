@@ -73,8 +73,40 @@ void main() {
         // Two stops six metres apart share the middle.
         final close = corner.pathBetween((10, -3), (16, -3), join: 8);
         expect(close, [(13, 0)]);
+        // A stop at the corner, or within the merge tolerance of it, joins
+        // the way at the corner: the join never slides round it onto the
+        // next stretch.
+        expect(corner.pathBetween((49.98, -3), (53, 40), join: 8), [
+          (50, 0),
+          (50, 32),
+        ]);
+        expect(corner.pathBetween((50, 0), (53, 40), join: 8), [
+          (50, 0),
+          (50, 32),
+        ]);
+        expect(corner.pathBetween((53, 40), (50.02, -3), join: 8), [
+          (50, 32),
+          (50, 0),
+        ]);
+        // A stop at the end of the network joins it there.
+        expect(corner.pathBetween((10, -3), (50, 50), join: 8), [
+          (18, 0),
+          (50, 0),
+          (50, 50),
+        ]);
       },
     );
+
+    test('a join is a distance: never negative', () {
+      expect(
+        () => corner.pathBetween((10, -3), (53, 40), join: -1),
+        throwsAssertionError,
+      );
+      expect(
+        () => corner.pathBetween((10, -3), (53, 40), join: double.nan),
+        throwsAssertionError,
+      );
+    });
   });
 
   group('of a street plan', () {

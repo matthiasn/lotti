@@ -128,6 +128,7 @@ class StreetNetwork {
     (double, double) b, {
     double join = 0,
   }) {
+    assert(join >= 0, 'a join is a distance along the way');
     final pa = project(a.$1, a.$2);
     final pb = project(b.$1, b.$2);
     final forward = pa.along <= pb.along;
@@ -152,18 +153,22 @@ class StreetNetwork {
     return _distinct(way);
   }
 
-  /// [along] moved by [by] metres, stopped at the first vertex on the way:
-  /// a join slides along its own stretch, never round a corner.
+  /// [along] moved by [by] metres, stopped at the first vertex on the way,
+  /// one within [mergeDistance] of [along] included: a join slides along
+  /// its own stretch, never round a corner, and a stop at a corner joins
+  /// the way there.
   double _slide(double along, double by) {
     if (by == 0) return along;
     var limit = by > 0 ? length : 0.0;
     for (final c in _cumulative) {
-      if (by > 0 && c > along + mergeDistance) {
+      if (by > 0 && c > along - mergeDistance) {
         limit = math.min(limit, c);
-      } else if (by < 0 && c < along - mergeDistance) {
+      } else if (by < 0 && c < along + mergeDistance) {
         limit = math.max(limit, c);
       }
     }
-    return by > 0 ? math.min(along + by, limit) : math.max(along + by, limit);
+    return by > 0
+        ? math.max(along, math.min(along + by, limit))
+        : math.min(along, math.max(along + by, limit));
   }
 }

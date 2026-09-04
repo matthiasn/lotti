@@ -463,7 +463,9 @@ A `Flight` is planned once, as a chain of straight **legs** with one
   diagonal: `pathBetween(a, b, join:)` slides both projections
   `joinDistance` (8 m) along the way, never past the next vertex and never
   past each other, so the first and last legs are slants, not right-angled
-  hops.
+  hops. A vertex within `mergeDistance` of a projection counts as reached:
+  a stop at a corner, or at home, joins the way there and never slides
+  round the corner onto the next stretch.
 
 The street network (`domain/street_network.dart`) is the polyline of
 every segment, gaps and fold connectors included, continued through the
