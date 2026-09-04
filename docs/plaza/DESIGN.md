@@ -516,6 +516,10 @@ itself shows it. The values are in the concept.
   rather than 120 m and is suppressed for mostly vertical trips. A landing
   flight (not in the spec) brings the walker down when a movement key is
   pressed above eye height.
+- **Bloom is real.** The design assumed unlit materials and glow quads
+  only; `flutter_scene` 0.23 has an HDR bloom pass and a vignette, both on,
+  and the neon, rooflines and chase heads are pushed past white so the
+  pass carries them. The glow quads remain as the near-field halo.
 - **Collision is with every solid, not with street edges**: the walker is
   kept out of the buildings, the fillers, the towers, the pylon footings,
   the gantry legs and the lamp posts, and slides along them; kerbs and the

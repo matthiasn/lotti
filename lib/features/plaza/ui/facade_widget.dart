@@ -257,6 +257,21 @@ class FacadeWidget extends StatelessWidget {
                               ),
                             ],
                             const Spacer(),
+                            if (_live && attention.reason.isNotEmpty) ...[
+                              // The wall you fly to says at least what the
+                              // billboard that sent you said.
+                              Text(
+                                attention.reason,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontFamily: PlazaStyle.fontMono,
+                                  fontSize: m(metaM),
+                                  color: PlazaStyle.textDim,
+                                ),
+                              ),
+                              SizedBox(height: gap),
+                            ],
                             if (_live)
                               Flexible(
                                 child: LayoutBuilder(

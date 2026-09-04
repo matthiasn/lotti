@@ -88,7 +88,7 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(_host(_task(due: _now)));
-    expect(find.text('due Jul 15 — finish it'), findsOneWidget);
+    expect(find.text('due today — finish it'), findsOneWidget);
     double alpha() => tester
         .widgetList<Container>(find.byType(Container))
         .map((c) => c.decoration)

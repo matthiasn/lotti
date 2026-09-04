@@ -271,11 +271,20 @@ class PlazaSprites {
       final head = (elapsedSeconds / chase.periodSeconds * n) % n;
       for (final (i, light) in chase.lights.indexed) {
         final behind = (head - i + n) % n;
-        final alpha = behind < 3 ? 1 - behind * 0.22 : 0.35;
+        // A five-bulb head over a near-dark tail, so the chase reads in a
+        // still frame and not only in motion; the head goes past white for
+        // the bloom.
+        final alpha = behind < 5 ? 1 - behind * 0.18 : 0.12;
+        final boost = behind < 2 ? 1.5 : 1.0;
         light.sprite
-          ..width = 0.3
-          ..height = 0.3
-          ..color = Vector4(light.color.x, light.color.y, light.color.z, alpha);
+          ..width = behind < 2 ? 0.36 : 0.3
+          ..height = behind < 2 ? 0.36 : 0.3
+          ..color = Vector4(
+            light.color.x * boost,
+            light.color.y * boost,
+            light.color.z * boost,
+            alpha,
+          );
       }
     }
 

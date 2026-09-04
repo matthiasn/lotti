@@ -53,11 +53,14 @@ Geometry tiledQuad(
   required double uRepeat,
   required double vRepeat,
   double uOffset = 0,
+  double vOffset = 0,
 }) {
   final hw = width / 2;
   final hh = height / 2;
   final u0 = uOffset;
   final u1 = uOffset + uRepeat;
+  final v0 = vOffset;
+  final v1 = vOffset + vRepeat;
   return MeshGeometry.fromArrays(
     positions: Float32List.fromList([
       hw, -hh, 0, //
@@ -65,9 +68,114 @@ Geometry tiledQuad(
       -hw, hh, 0, //
       hw, hh, 0, //
     ]),
-    texCoords: Float32List.fromList([u0, vRepeat, u1, vRepeat, u1, 0, u0, 0]),
+    texCoords: Float32List.fromList([u0, v1, u1, v1, u1, v0, u0, v0]),
     indices: [3, 1, 0, 2, 1, 3],
   );
+}
+
+/// A box whose faces carry their own tint in the vertex colour — the top
+/// full, the front and back a little down, the sides further, the bottom
+/// darkest — so an unlit box keeps its silhouette from every camera
+/// height instead of collapsing to one flat patch. The material's base
+/// colour multiplies the tint. Wound counter-clockwise, like the engine's
+/// own primitives.
+Geometry shadedCuboid(
+  Vector3 size, {
+  double top = 1.0,
+  double front = 0.86,
+  double side = 0.7,
+  double bottom = 0.5,
+}) {
+  final x = size.x / 2;
+  final y = size.y / 2;
+  final z = size.z / 2;
+  // Each face: four corners counter-clockwise seen from outside, its tint.
+  final faces = <(List<List<double>>, double)>[
+    (
+      [
+        [-x, -y, z],
+        [x, -y, z],
+        [x, y, z],
+        [-x, y, z],
+      ],
+      front,
+    ),
+    (
+      [
+        [x, -y, -z],
+        [-x, -y, -z],
+        [-x, y, -z],
+        [x, y, -z],
+      ],
+      front,
+    ),
+    (
+      [
+        [x, -y, z],
+        [x, -y, -z],
+        [x, y, -z],
+        [x, y, z],
+      ],
+      side,
+    ),
+    (
+      [
+        [-x, -y, -z],
+        [-x, -y, z],
+        [-x, y, z],
+        [-x, y, -z],
+      ],
+      side,
+    ),
+    (
+      [
+        [-x, y, z],
+        [x, y, z],
+        [x, y, -z],
+        [-x, y, -z],
+      ],
+      top,
+    ),
+    (
+      [
+        [-x, -y, -z],
+        [x, -y, -z],
+        [x, -y, z],
+        [-x, -y, z],
+      ],
+      bottom,
+    ),
+  ];
+  final positions = Float32List(24 * 3);
+  final colors = Float32List(24 * 4);
+  final indices = <int>[];
+  var v = 0;
+  for (final (corners, tint) in faces) {
+    final base = v;
+    for (final c in corners) {
+      positions[v * 3] = c[0];
+      positions[v * 3 + 1] = c[1];
+      positions[v * 3 + 2] = c[2];
+      colors[v * 4] = tint;
+      colors[v * 4 + 1] = tint;
+      colors[v * 4 + 2] = tint;
+      colors[v * 4 + 3] = 1;
+      v++;
+    }
+    indices.addAll([base, base + 1, base + 2, base, base + 2, base + 3]);
+  }
+  return MeshGeometry.fromArrays(
+    positions: positions,
+    colors: colors,
+    indices: indices,
+  );
+}
+
+/// An emitter's colour pushed above display white by [boost], so the HDR
+/// bloom pass picks it up: neon, chase heads, lit rooflines.
+Vector4 emissiveColor(Color color, double boost, {double? alpha}) {
+  final c = linearColor(color, alpha: alpha);
+  return Vector4(c.x * boost, c.y * boost, c.z * boost, c.w);
 }
 
 /// An opaque material for a widget surface plus the bind callback that
@@ -258,7 +366,7 @@ class PlazaSceneController {
   /// Ground surfaces that take the asphalt grain.
   final List<UnlitMaterial> _grainMaterials = [];
   final List<UnlitMaterial> _pavingMaterials = [];
-  final Map<LanternState, List<UnlitMaterial>> _shopfrontMaterials = {};
+  final Map<(LanternState, int), List<UnlitMaterial>> _shopfrontMaterials = {};
 
   /// Gives every windowed wall its texture once the tiles are uploaded,
   /// the pools their falloff and the ground its grain.
@@ -279,11 +387,11 @@ class PlazaSceneController {
     for (final material in _pavingMaterials) {
       material.baseColorTexture = textures.paving;
     }
-    for (final MapEntry(key: state, value: materials)
+    for (final MapEntry(key: (state, variant), value: materials)
         in _shopfrontMaterials.entries) {
       for (final material in materials) {
         material
-          ..baseColorTexture = textures.shopfront(state)
+          ..baseColorTexture = textures.shopfront(state, variant)
           ..baseColorFactor = Vector4(1, 1, 1, 1);
       }
     }
@@ -305,6 +413,15 @@ class PlazaSceneController {
   static const fogDensityHigh = 0.002;
   static const fogOpacityLow = 0.92;
   static const fogOpacityHigh = 0.6;
+
+  /// HDR brightness above which a pixel blooms, and how much of the bloom
+  /// is added back. Widget whites sit at 1.0, so screens bloom a little;
+  /// neon and chase heads are pushed past it with [emissiveColor].
+  static const bloomThreshold = 0.9;
+  static const bloomIntensity = 0.3;
+
+  /// How far past white the neon and the lit rooflines go.
+  static const neonBoost = 1.6;
   void updateForCamera(Vector3 eye) {
     final t = ((eye.y - poolFadeStart) / (poolFadeTop - poolFadeStart)).clamp(
       0.0,
@@ -340,7 +457,7 @@ class PlazaSceneController {
         localTransform: Matrix4.translation(Vector3(0, y, 0))
           ..rotateX(-math.pi / 2),
         mesh: Mesh(
-          tiledQuad(width, depth, uRepeat: width / 6, vRepeat: depth / 6),
+          tiledQuad(width, depth, uRepeat: width / 2, vRepeat: depth / 2),
           material,
         ),
       ),
@@ -352,9 +469,12 @@ class PlazaSceneController {
 
   /// A wall face: a shopfront band at the foot (the parade of shops,
   /// dressed for [shops], which defaults to [state]: trading, late,
-  /// fitting out, shuttered, closed) under the window grid of [state]'s
-  /// lit ratio. The quad's face is +Z before [yaw]; [dx], [dz] place it on
-  /// the parent's box, whose centre sits at half [height].
+  /// fitting out, shuttered, closed; [variant] picks the parade order)
+  /// under the window grid of [state]'s lit ratio, stacked in whole
+  /// storeys from the band up with the remainder as a dark cornice, so no
+  /// cut row ever sits on the fascia. The quad's face is +Z before [yaw];
+  /// [dx], [dz] place it on the parent's box, whose centre sits at half
+  /// [height].
   void _windowedWall(
     Node parent, {
     required double dx,
@@ -366,10 +486,13 @@ class PlazaSceneController {
     required Vector4 tint,
     required double uOffset,
     LanternState? shops,
+    int variant = 0,
   }) {
     final ground = math.min(shopfrontHeight, height * 0.45);
     final shop = UnlitMaterial()..baseColorFactor = tint;
-    _shopfrontMaterials.putIfAbsent(shops ?? state, () => []).add(shop);
+    _shopfrontMaterials
+        .putIfAbsent((shops ?? state, variant), () => [])
+        .add(shop);
     parent.add(
       Node(
         localTransform: Matrix4.translation(
@@ -389,26 +512,48 @@ class PlazaSceneController {
     );
     final upper = height - ground;
     if (upper <= 0.1) return;
-    final windows = UnlitMaterial()..baseColorFactor = tint;
-    _wallMaterials.putIfAbsent(state, () => []).add(windows);
-    parent.add(
-      Node(
-        localTransform: Matrix4.translation(
-          Vector3(dx, ground / 2, dz),
-        )..rotateY(yaw),
-        mesh: Mesh(
-          tiledQuad(
-            width,
-            upper,
-            uRepeat: width / WallTextures.tileWidth,
-            vRepeat: upper / WallTextures.tileHeight,
-            uOffset: uOffset,
+    final floors = (upper / WallTextures.storeyHeight).floor();
+    final storeys = floors * WallTextures.storeyHeight;
+    final cornice = upper - storeys;
+    if (floors > 0) {
+      final windows = UnlitMaterial()..baseColorFactor = tint;
+      _wallMaterials.putIfAbsent(state, () => []).add(windows);
+      parent.add(
+        Node(
+          localTransform: Matrix4.translation(
+            Vector3(dx, -height / 2 + ground + storeys / 2, dz),
+          )..rotateY(yaw),
+          mesh: Mesh(
+            tiledQuad(
+              width,
+              storeys,
+              uRepeat: width / WallTextures.tileWidth,
+              vRepeat: floors / WallTextures.floors,
+              uOffset: uOffset,
+              // The tile's floor slabs sit at its own storey lines; start
+              // at a whole tile so the first slab lands on the fascia.
+              vOffset: 1 - floors / WallTextures.floors,
+            ),
+            windows,
           ),
-          windows,
         ),
-      ),
-    );
+      );
+    }
+    if (cornice > 0.05) {
+      parent.add(
+        Node(
+          localTransform: Matrix4.translation(
+            Vector3(dx, height / 2 - cornice / 2, dz),
+          )..rotateY(yaw),
+          mesh: Mesh(ccwQuad(width, cornice), _corniceMaterial),
+        ),
+      );
+    }
   }
+
+  /// The cornice band: the wall's own dark, a shade above the night.
+  static final _corniceMaterial = UnlitMaterial()
+    ..baseColorFactor = linearColor(const Color(0xFF141220));
 
   /// Paving joints on the plaza: a blended tiled quad of slab outlines.
   void _addPaving(Node parent, double width, double depth, double y) {
@@ -700,7 +845,7 @@ class PlazaSceneController {
                   Vector3(0, f.height / 2, 0),
                 ),
                 mesh: Mesh(
-                  CuboidGeometry(Vector3(f.width, f.height, f.depth)),
+                  shadedCuboid(Vector3(f.width, f.height, f.depth)),
                   dark,
                 ),
               ),
@@ -744,7 +889,7 @@ class PlazaSceneController {
                   Vector3(0, f.height / 2, 0),
                 ),
                 mesh: Mesh(
-                  CuboidGeometry(Vector3(f.width, f.height, f.depth)),
+                  shadedCuboid(Vector3(f.width, f.height, f.depth)),
                   UnlitMaterial()..baseColorFactor = _tower,
                 ),
               ),
@@ -912,7 +1057,7 @@ class PlazaSceneController {
           Vector3(0, towerH / 2, -jumbotronTowerSetback),
         ),
         mesh: Mesh(
-          CuboidGeometry(Vector3(towerW, towerH, towerD)),
+          shadedCuboid(Vector3(towerW, towerH, towerD)),
           UnlitMaterial()..baseColorFactor = _tower,
         ),
       );
@@ -934,8 +1079,12 @@ class PlazaSceneController {
           uOffset: stableUnit('jumbotron', 'tile$yaw') * 3,
         );
       }
+      // The corner strips and crown at a quarter, so the screen's own
+      // border is the one teal frame on the tower.
       final corner = UnlitMaterial()
-        ..baseColorFactor = linearColor(PlazaStyle.teal);
+        ..baseColorFactor = linearColor(
+          Color.lerp(const Color(0xFF0B0A14), PlazaStyle.teal, 0.3)!,
+        );
       for (final side in [-1.0, 1.0]) {
         tower.add(
           Node(
@@ -993,6 +1142,12 @@ class PlazaSceneController {
         radius: jumbotron.width * 0.3,
         color: PlazaStyle.teal,
         alpha: 0.12,
+      );
+      _addPool(
+        Vector3(jumbotron.x + jsin * 16, 0, jumbotron.z + jcos * 16),
+        radius: jumbotron.width * 1.2,
+        color: PlazaStyle.teal,
+        alpha: 0.05,
       );
       // The tower's own spire.
       final spire = Node(
@@ -1102,6 +1257,19 @@ class PlazaSceneController {
     // so the overview still sees the district. The night is a desaturated
     // indigo so amber signage sits warm against it; the magenta lives in
     // the hero towers' domes alone.
+    // Real bloom: the emitters (neon, screens, chase heads, rooflines)
+    // bleed into the night the way a lightbox does, and a soft vignette
+    // pulls the eye to the centre of every frame.
+    scene.postProcess.bloom
+      ..enabled = true
+      ..threshold = bloomThreshold
+      ..intensity = bloomIntensity
+      ..scatter = 0.6;
+    scene.postProcess.vignette
+      ..enabled = true
+      ..intensity = 0.32
+      ..radius = 0.82
+      ..smoothness = 0.6;
     scene.fog
       ..enabled = true
       ..mode = FogMode.exponential
@@ -1133,12 +1301,24 @@ class PlazaSceneController {
         ),
       )..rotateY(facing),
       mesh: Mesh(
-        CuboidGeometry(Vector3(w, h, d)),
+        shadedCuboid(Vector3(w, h, d)),
         UnlitMaterial()
           ..baseColorFactor = linearColor(PlazaStyle.categoryWall(task)),
       ),
     );
+    final parade = stableUnit(task.id, 'parade') < 0.5 ? 0 : 1;
 
+    // A pavement apron round the plot, so the building stands on a street
+    // and not on a speckled void.
+    node.add(
+      Node(
+        localTransform: Matrix4.translation(Vector3(0, -h / 2 + 0.02, 0)),
+        mesh: Mesh(
+          CuboidGeometry(Vector3(w + 3, 0.04, d + 3)),
+          UnlitMaterial()..baseColorFactor = _pavement,
+        ),
+      ),
+    );
     // Side and back walls: window grids in the state's lit ratio over
     // the shopfront parade dressed for the state, tiled by the wall's
     // size; a hashed tile offset per wall so each starts at its own shop.
@@ -1164,7 +1344,34 @@ class PlazaSceneController {
         state: attention.lantern,
         tint: wallTint,
         uOffset: stableUnit(task.id, 'tile$yaw') * 3,
+        variant: parade,
       );
+    }
+    // An alarmed building spills its state colour onto the ground round
+    // every wall: the coral or amber under the doors is what a walker
+    // sees first.
+    final alarmed =
+        attention.lantern == LanternState.blocked ||
+        attention.lantern == LanternState.overdue;
+    if (alarmed) {
+      final spill = PlazaStyle.lantern(attention.lantern);
+      final sinF = math.sin(facing);
+      final cosF = math.cos(facing);
+      final cx = placement.x + normal.x * setback;
+      final cz = placement.z + normal.z * setback;
+      for (final (lx, lz, r) in [
+        (0.0, d / 2 + 1.5, w * 0.45),
+        (0.0, -d / 2 - 1.5, w * 0.45),
+        (w / 2 + 1.5, 0.0, d * 0.45),
+        (-w / 2 - 1.5, 0.0, d * 0.45),
+      ]) {
+        _addPool(
+          Vector3(cx + lx * cosF + lz * sinF, 0, cz - lx * sinF + lz * cosF),
+          radius: math.max(r, 3),
+          color: spill,
+          alpha: 0.14,
+        );
+      }
     }
 
     // Contact band: a dark plinth so the box sits on the ground.
@@ -1188,7 +1395,7 @@ class PlazaSceneController {
             Vector3(0, h / 2 + upperH / 2, -d * 0.12),
           ),
           mesh: Mesh(
-            CuboidGeometry(Vector3(w * 0.68, upperH, d * 0.7)),
+            shadedCuboid(Vector3(w * 0.68, upperH, d * 0.7)),
             UnlitMaterial()
               ..baseColorFactor = linearColor(PlazaStyle.categoryRoof(task)),
           ),
@@ -1236,6 +1443,20 @@ class PlazaSceneController {
         : task.state == PlazaTaskState.inProgress
         ? 0.35
         : 0.0;
+    // A full-width dark track first, so the lit part reads as progress
+    // along something rather than an orphan block.
+    node.add(
+      Node(
+        localTransform: Matrix4.translation(
+          Vector3(0, -facadeH / 2 + 0.15, d / 2 + 0.18),
+        ),
+        mesh: Mesh(
+          CuboidGeometry(Vector3(facadeW, 0.3, 0.12)),
+          UnlitMaterial()
+            ..baseColorFactor = linearColor(const Color(0xFF14121E)),
+        ),
+      ),
+    );
     if (pct > 0) {
       node.add(
         Node(
@@ -1279,13 +1500,17 @@ class PlazaSceneController {
         attention.lantern == LanternState.blocked ||
         attention.lantern == LanternState.overdue;
     final stateNeon = PlazaStyle.lantern(attention.lantern);
+    // Lit neon goes past white so the bloom pass carries it; a dark shop's
+    // strips stay under the threshold.
+    final boost = emissive >= 0.7 ? neonBoost : 1.0;
     final vertical = UnlitMaterial()
-      ..baseColorFactor = linearColor(alarm ? stateNeon : neonColor);
+      ..baseColorFactor = emissiveColor(alarm ? stateNeon : neonColor, boost);
     final roofline = UnlitMaterial()
-      ..baseColorFactor = linearColor(
+      ..baseColorFactor = emissiveColor(
         alarm
             ? Color.lerp(const Color(0xFF0B0A14), categoryNeon, 0.5)!
             : neonColor,
+        boost,
       );
     const strip = 0.2;
     for (final (dx, dy, sw, sh, isRoofline) in [
@@ -1506,7 +1731,8 @@ class PlazaSceneController {
             ),
           ),
         );
-      // Light pool on the ground in the state colour.
+      // Light pool on the ground in the state colour, and a wide faint
+      // wash in front of it so the panel connects to the paving.
       final sinF = math.sin(slot.facingRadians);
       final cosF = math.cos(slot.facingRadians);
       _addPool(
@@ -1514,6 +1740,16 @@ class PlazaSceneController {
         radius: math.max(slot.width, 8) * 0.45,
         color: frame,
         alpha: 0.34,
+      );
+      _addPool(
+        Vector3(
+          slot.x + sinF * slot.width * 0.5,
+          0,
+          slot.z + cosF * slot.width * 0.5,
+        ),
+        radius: slot.width * 1.5,
+        color: frame,
+        alpha: 0.07,
       );
     }
     // Backing box: a real lightbox with depth, dark body and a rim in the
@@ -1668,10 +1904,11 @@ class PlazaSceneController {
         localTransform: Matrix4.translation(Vector3(block.x, bh / 2, block.z))
           ..rotateY(block.yawRadians),
         mesh: Mesh(
-          CuboidGeometry(Vector3(bd, bh, bw)),
+          shadedCuboid(Vector3(bd, bh, bw)),
           UnlitMaterial()..baseColorFactor = _tower,
         ),
       );
+      final parade = stableUnit(id, 'parade') < 0.5 ? 0 : 1;
       // Windows on every face: a filler is seen from the street, from
       // the plaza and from above.
       for (final (dx, dz, yaw, width) in [
@@ -1692,6 +1929,7 @@ class PlazaSceneController {
           uOffset: stableUnit(id, 'tile$yaw') * 3,
           // The fabric trades all night, whatever its flats are doing.
           shops: LanternState.inProgress,
+          variant: parade,
         );
       }
       if (stableUnit(id, 'sign') < 0.34) {
@@ -1738,10 +1976,11 @@ class PlazaSceneController {
       final box = Node(
         localTransform: Matrix4.translation(Vector3(0, height / 2, 0)),
         mesh: Mesh(
-          CuboidGeometry(Vector3(w, height, bd)),
+          shadedCuboid(Vector3(w, height, bd)),
           UnlitMaterial()..baseColorFactor = _tower,
         ),
       );
+      final parade = stableUnit(id, 'parade') < 0.5 ? 0 : 1;
       root.add(box);
       for (final (dx, dz, yaw, faceW) in [
         (0.0, bd / 2 + 0.02, 0.0, w),
@@ -1759,6 +1998,7 @@ class PlazaSceneController {
           state: LanternState.inProgress,
           tint: _tower,
           uOffset: stableUnit(id, 'tile$yaw') * 3,
+          variant: parade,
         );
       }
       // Crown: a lit trim and a spire with a blinking light.
@@ -1815,6 +2055,17 @@ class PlazaSceneController {
         );
         root.add(anchor);
         skylineScreens.add((anchor, sw, sh, 0));
+        // The screen's wash on the ground before the tower.
+        _addPool(
+          Vector3(
+            tower.x + math.sin(tower.yawRadians) * (bd / 2 + sw * 0.6),
+            0,
+            tower.z + math.cos(tower.yawRadians) * (bd / 2 + sw * 0.6),
+          ),
+          radius: sw * 1.2,
+          color: frame,
+          alpha: 0.06,
+        );
       }
       root.add(
         _glowQuad(w * 9, height * 1.4, const Color(0xFFFF7A4A), 0.11)
@@ -1839,7 +2090,7 @@ class PlazaSceneController {
         localTransform: Matrix4.translation(Vector3(tower.x, h / 2, tower.z))
           ..rotateY(tower.yawRadians),
         mesh: Mesh(
-          CuboidGeometry(Vector3(w, h, tower.depth)),
+          shadedCuboid(Vector3(w, h, tower.depth)),
           UnlitMaterial()..baseColorFactor = _skyline,
         ),
       );
@@ -1855,7 +2106,11 @@ class PlazaSceneController {
             mesh: Mesh(
               CuboidGeometry(Vector3(w + 0.2, 0.25, 0.25)),
               UnlitMaterial()
-                ..baseColorFactor = linearColor(roofline, alpha: 0.95),
+                ..baseColorFactor = emissiveColor(
+                  roofline,
+                  neonBoost,
+                  alpha: 0.95,
+                ),
             ),
           ),
         )

@@ -50,51 +50,61 @@ void main() {
   });
 
   group('shopfrontPose', () {
-    test('stands before a row, square on to a bare head end wall', () {
+    test('stands on the road at a row head, facing the near corner', () {
       final pose = shopfrontPose(large)!;
-      final segment = large.plan.segments.firstWhere(
-        (s) => !s.isGap && !s.isConnector && s.headingRadians == pose.yaw,
-      );
-      expect(pose.yaw, segment.headingRadians);
       expect(pose.y, eyeHeight);
-      final sinH = math.sin(segment.headingRadians);
-      final cosH = math.cos(segment.headingRadians);
-      final along =
-          (pose.x - segment.startX) * sinH + (pose.z - segment.startZ) * cosH;
-      final lateral =
-          (pose.x - segment.startX) * cosH - (pose.z - segment.startZ) * sinH;
-      // On a plot's own line, one stand-off before the first end wall on
-      // that side, and outside every footprint.
-      final row = large.plan.placements.values
-          .where(
-            (p) =>
-                p.bucketIndex == segment.bucketIndex &&
-                ((p.x - segment.startX) * cosH -
-                            (p.z - segment.startZ) * sinH -
-                            lateral)
-                        .abs() <
-                    1e-6,
-          )
-          .toList();
-      expect(row, isNotEmpty);
-      final nearest = row.reduce(
-        (a, b) =>
-            ((a.x - segment.startX) * sinH + (a.z - segment.startZ) * cosH) <
-                ((b.x - segment.startX) * sinH + (b.z - segment.startZ) * cosH)
-            ? a
-            : b,
+      // Find the head building the pose looks at: the one whose near
+      // corner lies straight ahead.
+      final segments = large.plan.segments.where(
+        (s) => !s.isGap && !s.isConnector,
       );
-      final wall =
-          (nearest.x - segment.startX) * sinH +
-          (nearest.z - segment.startZ) * cosH -
-          nearest.width / 2;
-      expect(along, closeTo(wall - shopfrontStandOff, 1e-9));
-      expect(large.collider.resolve(pose.x, pose.z), (pose.x, pose.z));
-      // Never a wall that carries a plaza screen and ticker.
+      PlotPlacement? head;
+      RoadSegment? row;
+      for (final segment in segments) {
+        final sinH = math.sin(segment.headingRadians);
+        final cosH = math.cos(segment.headingRadians);
+        for (final p in large.plan.placements.values) {
+          if (p.bucketIndex != segment.bucketIndex) continue;
+          final along =
+              (p.x - segment.startX) * sinH + (p.z - segment.startZ) * cosH;
+          final lateral =
+              (p.x - segment.startX) * cosH - (p.z - segment.startZ) * sinH;
+          final toRoad = lateral < 0 ? 1.0 : -1.0;
+          final ca = along - p.width / 2;
+          final cl = lateral + toRoad * p.depth / 2;
+          final cx = segment.startX + sinH * ca + cosH * cl;
+          final cz = segment.startZ + cosH * ca - sinH * cl;
+          final expectAlong = ca - shopfrontStandOff;
+          final expectLateral = cl + toRoad * shopfrontRoadOffset;
+          final ex = segment.startX + sinH * expectAlong + cosH * expectLateral;
+          final ez = segment.startZ + cosH * expectAlong - sinH * expectLateral;
+          if ((pose.x - ex).abs() < 1e-6 && (pose.z - ez).abs() < 1e-6) {
+            head = p;
+            row = segment;
+            expect(pose.yaw, closeTo(math.atan2(cx - ex, cz - ez), 1e-9));
+          }
+        }
+      }
+      expect(head, isNotNull, reason: 'the pose matches no head corner');
+      // The head of its row on its side, never a plaza mount, and the
+      // eye is on the road, outside every footprint.
+      final sinH = math.sin(row!.headingRadians);
+      final cosH = math.cos(row.headingRadians);
+      double along(PlotPlacement p) =>
+          (p.x - row!.startX) * sinH + (p.z - row.startZ) * cosH;
+      for (final p in large.plan.placements.values) {
+        if (p.bucketIndex == row.bucketIndex && p.side == head!.side) {
+          expect(along(p), greaterThanOrEqualTo(along(head) - 1e-9));
+        }
+      }
       expect(
         plazaMounts(large.plan).map((p) => p.taskId),
-        isNot(contains(nearest.taskId)),
+        isNot(contains(head!.taskId)),
       );
+      expect(large.collider.resolve(pose.x, pose.z), (pose.x, pose.z));
+      final eyeLateral =
+          (pose.x - row.startX) * cosH - (pose.z - row.startZ) * sinH;
+      expect(eyeLateral.abs(), lessThan(9), reason: 'on the road');
     });
 
     test('skips a head wall that is a plaza mount', () {
@@ -151,7 +161,9 @@ void main() {
       final headLateral =
           (head.x - segment.startX) * math.cos(segment.headingRadians) -
           (head.z - segment.startZ) * math.sin(segment.headingRadians);
-      expect(lateral, closeTo(headLateral, 1e-9));
+      // Same side of the road as the alarmed head, out toward the road.
+      expect(lateral.sign, headLateral.sign);
+      expect(lateral.abs(), lessThan(headLateral.abs()));
     });
 
     test('prefers a trading head over one shut for the night', () {
@@ -190,13 +202,13 @@ void main() {
       expect(doneLeft.attention['t0']!.lantern, LanternState.off);
       expect(doneLeft.attention['t1']!.lantern, LanternState.inProgress);
       expect(
-        lateralOf(doneLeft, shopfrontPose(doneLeft)!),
-        closeTo(plotLateral(doneLeft, 't1'), 1e-9),
+        lateralOf(doneLeft, shopfrontPose(doneLeft)!).sign,
+        plotLateral(doneLeft, 't1').sign,
       );
       final doneRight = world(PlazaTaskState.open, PlazaTaskState.done);
       expect(
-        lateralOf(doneRight, shopfrontPose(doneRight)!),
-        closeTo(plotLateral(doneRight, 't0'), 1e-9),
+        lateralOf(doneRight, shopfrontPose(doneRight)!).sign,
+        plotLateral(doneRight, 't0').sign,
       );
     });
 

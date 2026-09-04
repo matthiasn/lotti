@@ -21,18 +21,25 @@ class WallTextures {
   static const bays = 10;
   static const tileWidth = 12.0;
   static const tileHeight = 12.0;
+
+  /// One storey of the window tile, metres: walls stack whole storeys.
+  static const double storeyHeight = tileHeight / floors;
   static const _px = 96;
 
   /// One paving tile covers this many metres of plaza: a 2 × 2 grid of
   /// slabs with a joint between.
   static const pavingMeters = 4.0;
 
-  /// The shopfront strip: six trades in one [shopfrontWidth] ×
-  /// [shopfrontHeight] metre parade, painted once per lantern state so a
-  /// building's ground floor says what its task is doing (see
+  /// The shopfront strip: six trades and one vacant unit in one
+  /// [shopfrontWidth] × [shopfrontHeight] metre parade, painted once per
+  /// lantern state and parade order so a building's ground floor says
+  /// what its task is doing and no two neighbours show the same run (see
   /// [shopfront]).
-  static const shopfrontWidth = 30.0;
+  static const shopfrontWidth = 33.0;
   static const shopfrontHeight = 4.0;
+
+  /// How many parade orders there are; `_windowedWall` picks one per wall.
+  static const paradeVariants = 2;
 
   /// Lit-window ratio per state: busy buildings glow, finished ones sleep.
   static double litRatio(LanternState state) => switch (state) {
@@ -57,10 +64,14 @@ class WallTextures {
   /// the light-pool falloff, the asphalt grain and the plaza paving.
   static Future<WallTextures> load() async {
     final map = <LanternState, Texture2D>{};
-    final shops = <LanternState, Texture2D>{};
+    final shops = <(LanternState, int), Texture2D>{};
     for (final state in LanternState.values) {
       map[state] = await Texture2D.fromImage(_paint(state));
-      shops[state] = await Texture2D.fromImage(paintShopfront(state));
+      for (var v = 0; v < paradeVariants; v++) {
+        shops[(state, v)] = await Texture2D.fromImage(
+          paintShopfront(state, variant: v),
+        );
+      }
     }
     final textures = WallTextures._(map)
       ..pool = await Texture2D.fromImage(_paintPool())
@@ -82,15 +93,17 @@ class WallTextures {
   /// Plaza paving: slab joints and a little wear, blended over the slab.
   late final Texture2D paving;
 
-  late Map<LanternState, Texture2D> _shopfronts;
+  late Map<(LanternState, int), Texture2D> _shopfronts;
 
-  /// The ground floor for [state]: the parade dressed for what the task is
-  /// doing. In progress trades (lit signs, lit glass, people inside);
-  /// overdue trades late, flooded amber; open (not started) is papered
-  /// over and fitting out, with no sign yet; blocked is shuttered behind
-  /// alarm tape; off is shuttered for the night with a security light
-  /// over each door.
-  Texture2D shopfront(LanternState state) => _shopfronts[state]!;
+  /// The ground floor for [state] in parade order [variant]: the parade
+  /// dressed for what the task is doing. In progress trades (lit signs,
+  /// lit glass, people inside); overdue trades late, flooded amber, every
+  /// sign reading OPEN LATE; open (not started) is papered over and
+  /// fitting out, OPENING SOON on the fascia; blocked is shuttered behind
+  /// alarm tape with BLOCKED on every sign; off is shuttered for the
+  /// night, CLOSED, with a security light over each door.
+  Texture2D shopfront(LanternState state, int variant) =>
+      _shopfronts[(state, variant)]!;
 
   static double _m(double meters) => meters * _px;
 
@@ -114,10 +127,10 @@ class WallTextures {
   static const _jambM = 0.12;
   static const _doorM = 1.0;
 
-  /// Paints the shopfront strip for [state]; public so the dressing can be
-  /// checked pixel by pixel without a GPU.
+  /// Paints the shopfront strip for [state] in parade order [variant];
+  /// public so the dressing can be checked pixel by pixel without a GPU.
   @visibleForTesting
-  static ui.Image paintShopfront(LanternState state) {
+  static ui.Image paintShopfront(LanternState state, {int variant = 0}) {
     const w = shopfrontWidth * _px;
     const h = shopfrontHeight * _px;
     final recorder = ui.PictureRecorder();
@@ -126,14 +139,60 @@ class WallTextures {
         const ui.Rect.fromLTWH(0, 0, w, h),
         ui.Paint()..color = _night,
       );
-    final rng = math.Random(31337 + state.index);
+    final rng = math.Random(31337 + state.index * 7 + variant);
     final dressing = _dressingFor(state);
     var left = 0.0;
-    for (final shop in _parade) {
+    for (final shop in _parades[variant % _parades.length]) {
       _paintShop(canvas, rng, shop, left, _m(shop.width), dressing);
       left += _m(shop.width);
     }
     return recorder.endRecording().toImageSync(w.toInt(), h.toInt());
+  }
+
+  /// Text on a sign or a notice: capitals, letter-spaced, centred in
+  /// [box], shrunk to fit.
+  static void _paintWord(
+    ui.Canvas canvas,
+    String word,
+    ui.Rect box,
+    ui.Color ink, {
+    required double sizePx,
+    ui.Color? glow,
+  }) {
+    var size = sizePx;
+    ui.Paragraph paragraph;
+    while (true) {
+      final builder =
+          ui.ParagraphBuilder(
+              ui.ParagraphStyle(
+                textAlign: ui.TextAlign.center,
+                maxLines: 1,
+                fontFamily: 'sans-serif',
+              ),
+            )
+            ..pushStyle(
+              ui.TextStyle(
+                color: ink,
+                fontSize: size,
+                fontWeight: ui.FontWeight.w700,
+                letterSpacing: size * 0.12,
+                shadows: glow == null
+                    ? null
+                    : [ui.Shadow(color: glow, blurRadius: size * 0.6)],
+              ),
+            )
+            ..addText(word);
+      paragraph = builder.build()
+        ..layout(ui.ParagraphConstraints(width: box.width));
+      // The intrinsic width, not the laid-out line: a single clipped line
+      // always fits its box.
+      if (paragraph.maxIntrinsicWidth <= box.width * 0.96 || size < 6) break;
+      size *= 0.9;
+    }
+    canvas.drawParagraph(
+      paragraph,
+      ui.Offset(box.left, box.center.dy - paragraph.height / 2),
+    );
   }
 
   static void _paintShop(
@@ -173,34 +232,86 @@ class WallTextures {
               ..maskFilter = ui.MaskFilter.blur(ui.BlurStyle.normal, _m(0.12)),
           )
           ..drawRect(sign, ui.Paint()..color = accent);
-        // Lettering, abstracted: a few dark blocks in a row.
-        final letters = 3 + rng.nextInt(3);
-        final slot = sign.width / letters;
-        for (var i = 0; i < letters; i++) {
-          canvas.drawRRect(
-            ui.RRect.fromRectAndRadius(
-              ui.Rect.fromLTWH(
-                sign.left + slot * i + slot * 0.18,
-                sign.top + sign.height * 0.28,
-                slot * 0.64,
-                sign.height * 0.44,
-              ),
-              ui.Radius.circular(_m(0.03)),
-            ),
-            ui.Paint()..color = const ui.Color(0x9E07060D),
+        if (dressing == _Dressing.late) {
+          // Trading late says so on every sign.
+          _paintWord(
+            canvas,
+            'OPEN LATE',
+            sign.deflate(_m(0.05)),
+            const ui.Color(0xE607060D),
+            sizePx: sign.height * 0.5,
           );
+        } else if (shop.trade == _Trade.vacant) {
+          _paintWord(
+            canvas,
+            'TO LET',
+            sign.deflate(_m(0.05)),
+            const ui.Color(0xB3EDE6D6),
+            sizePx: sign.height * 0.45,
+          );
+        } else {
+          // Lettering, abstracted: a few dark blocks in a row.
+          final letters = 3 + rng.nextInt(3);
+          final slot = sign.width / letters;
+          for (var i = 0; i < letters; i++) {
+            canvas.drawRRect(
+              ui.RRect.fromRectAndRadius(
+                ui.Rect.fromLTWH(
+                  sign.left + slot * i + slot * 0.18,
+                  sign.top + sign.height * 0.28,
+                  slot * 0.64,
+                  sign.height * 0.44,
+                ),
+                ui.Radius.circular(_m(0.03)),
+              ),
+              ui.Paint()..color = const ui.Color(0x9E07060D),
+            );
+          }
         }
       } else {
+        // A dark sign box that says why the shop is shut: the state word
+        // is on the wall where the walker reads it.
+        final alarm = dressing == _Dressing.shuttered;
         canvas
           ..drawRect(sign, ui.Paint()..color = _signOff)
           ..drawRect(
             sign.deflate(2),
             ui.Paint()
-              ..color = const ui.Color(0xFF474356)
+              ..color = alarm
+                  ? _alarm.withValues(alpha: 0.7)
+                  : const ui.Color(0xFF474356)
               ..style = ui.PaintingStyle.stroke
               ..strokeWidth = 2,
           );
+        _paintWord(
+          canvas,
+          shop.trade == _Trade.vacant
+              ? 'TO LET'
+              : alarm
+              ? 'BLOCKED'
+              : 'CLOSED',
+          sign.deflate(_m(0.05)),
+          alarm ? _alarm : const ui.Color(0xFF6E6A80),
+          sizePx: sign.height * 0.5,
+          glow: alarm ? _alarm.withValues(alpha: 0.6) : null,
+        );
       }
+    } else {
+      // Fitting out: the fascia is blank but for a small builder's board.
+      final board = ui.Rect.fromLTWH(
+        left + width * 0.2,
+        _m(0.2),
+        width * 0.6,
+        _m(_fasciaM - 0.4),
+      );
+      canvas.drawRect(board, ui.Paint()..color = const ui.Color(0xFF2A2734));
+      _paintWord(
+        canvas,
+        shop.trade == _Trade.vacant ? 'TO LET' : 'OPENING SOON',
+        board.deflate(_m(0.04)),
+        const ui.Color(0xFF8A8598),
+        sizePx: board.height * 0.5,
+      );
     }
     if (lit) {
       canvas.drawRect(
@@ -228,7 +339,14 @@ class WallTextures {
       h - _m(_baseM),
     );
     final riser = ui.Rect.fromLTRB(glass.left, glass.bottom, glass.right, h);
+    final vacant = shop.trade == _Trade.vacant;
     switch (dressing) {
+      case _Dressing.trading when vacant:
+      case _Dressing.late when vacant:
+      case _Dressing.fittingOut:
+        _paintPapered(canvas, rng, glass);
+        _paintDoor(canvas, door, accent, lit: false, dressing: dressing);
+        canvas.drawRect(riser, ui.Paint()..color = _riser);
       case _Dressing.trading:
       case _Dressing.late:
         _paintInterior(
@@ -238,13 +356,9 @@ class WallTextures {
           shop,
           late: dressing == _Dressing.late,
         );
-        _paintDoor(canvas, door, accent, lit: true);
+        _paintDoor(canvas, door, accent, lit: true, dressing: dressing);
         canvas.drawRect(riser, ui.Paint()..color = _riser);
         if (shop.awning) _paintAwning(canvas, glass, accent);
-      case _Dressing.fittingOut:
-        _paintPapered(canvas, rng, glass);
-        _paintDoor(canvas, door, accent, lit: false);
-        canvas.drawRect(riser, ui.Paint()..color = _riser);
       case _Dressing.shuttered:
       case _Dressing.closed:
         _paintShutters(
@@ -275,6 +389,8 @@ class WallTextures {
       _Trade.noodles => (const ui.Color(0xFFFFB070), 0.55),
       _Trade.arcade => (const ui.Color(0xFF6A7AFF), 0.28),
       _Trade.florist => (const ui.Color(0xFFBDE8A0), 0.5),
+      // Never trades; painted papered before this is reached.
+      _Trade.vacant => (const ui.Color(0xFF8A8598), 0.2),
     };
     canvas
       ..drawRect(glass.inflate(_m(0.05)), ui.Paint()..color = _frame)
@@ -299,6 +415,8 @@ class WallTextures {
         _paintArcade(canvas, rng, glass);
       case _Trade.florist:
         _paintFlorist(canvas, rng, glass);
+      case _Trade.vacant:
+        break;
     }
     // People inside.
     final figures = 1 + rng.nextInt(2);
@@ -359,6 +477,7 @@ class WallTextures {
     ui.Rect door,
     ui.Color accent, {
     required bool lit,
+    required _Dressing dressing,
   }) {
     canvas.drawRect(door.inflate(_m(0.06)), ui.Paint()..color = _frame);
     if (lit) {
@@ -381,18 +500,23 @@ class WallTextures {
           ui.Paint()..color = _frame,
         );
     } else {
+      // A notice taped to the door at eye height, with the words on it.
+      final notice = ui.Rect.fromLTWH(
+        door.center.dx - _m(0.3),
+        _m(1.35),
+        _m(0.6),
+        _m(0.42),
+      );
       canvas
         ..drawRect(door, ui.Paint()..color = _leaf)
-        // A notice taped to the door at eye height.
-        ..drawRect(
-          ui.Rect.fromLTWH(
-            door.center.dx - _m(0.12),
-            _m(1.45),
-            _m(0.24),
-            _m(0.3),
-          ),
-          ui.Paint()..color = const ui.Color(0xFFEDE6D6),
-        );
+        ..drawRect(notice, ui.Paint()..color = const ui.Color(0xFFEDE6D6));
+      _paintWord(
+        canvas,
+        dressing == _Dressing.fittingOut ? 'OPENING SOON' : 'TO LET',
+        notice.deflate(_m(0.03)),
+        const ui.Color(0xFF2A2734),
+        sizePx: notice.height * 0.4,
+      );
     }
     canvas.drawCircle(
       ui.Offset(door.left + door.width * 0.82, _m(2.05)),
@@ -485,14 +609,40 @@ class WallTextures {
     }
     final lamp = ui.Offset(door.center.dx, _m(_glassTopM) + _m(0.14));
     if (alarm) {
-      canvas.drawCircle(
-        lamp,
-        _m(0.14),
-        ui.Paint()
-          ..color = _alarm.withValues(alpha: 0.6)
-          ..maskFilter = ui.MaskFilter.blur(ui.BlurStyle.normal, _m(0.1)),
-      );
+      canvas
+        ..drawCircle(
+          lamp,
+          _m(0.5),
+          ui.Paint()
+            ..color = _alarm.withValues(alpha: 0.35)
+            ..maskFilter = ui.MaskFilter.blur(ui.BlurStyle.normal, _m(0.3)),
+        )
+        ..drawCircle(
+          lamp,
+          _m(0.16),
+          ui.Paint()
+            ..color = _alarm.withValues(alpha: 0.8)
+            ..maskFilter = ui.MaskFilter.blur(ui.BlurStyle.normal, _m(0.08)),
+        );
     }
+    // A notice on the shutter at eye height: why it is down.
+    final notice = ui.Rect.fromLTWH(
+      door.center.dx - _m(0.42),
+      _m(2),
+      _m(0.84),
+      _m(0.36),
+    );
+    canvas.drawRect(
+      notice,
+      ui.Paint()..color = alarm ? _alarm : const ui.Color(0xFFD9D2C2),
+    );
+    _paintWord(
+      canvas,
+      alarm ? 'NEEDS A DECISION' : 'CLOSED FOR THE NIGHT',
+      notice.deflate(_m(0.03)),
+      alarm ? const ui.Color(0xFF14121F) : const ui.Color(0xFF2A2734),
+      sizePx: notice.height * 0.45,
+    );
     canvas.drawCircle(
       lamp,
       _m(0.05),
@@ -969,8 +1119,8 @@ class WallTextures {
         ),
         ui.Paint()
           ..color = light
-              ? ui.Color.fromARGB(10 + rng.nextInt(14), 255, 240, 220)
-              : ui.Color.fromARGB(50 + rng.nextInt(80), 0, 0, 0),
+              ? ui.Color.fromARGB(5 + rng.nextInt(8), 255, 240, 220)
+              : ui.Color.fromARGB(40 + rng.nextInt(60), 0, 0, 0),
       );
     }
     return recorder.endRecording().toImageSync(size, size);
@@ -990,9 +1140,11 @@ class WallTextures {
     final lit = litRatio(state);
     for (var floor = 0; floor < floors; floor++) {
       for (var bay = 0; bay < bays; bay++) {
-        final x = bay * _px + _px * 0.2;
-        final y = floor * _px + _px * 0.24;
-        final rect = ui.Rect.fromLTWH(x, y, _px * 0.6, _px * 0.56);
+        // A pane clearly smaller than a shop door, so the storeys read
+        // as storeys next to the 4 m band.
+        final x = bay * _px + _px * 0.27;
+        final y = floor * _px + _px * 0.3;
+        final rect = ui.Rect.fromLTWH(x, y, _px * 0.46, _px * 0.5);
         final on = rng.nextDouble() < lit;
         // Two tints per state: most windows warm, a few the cooler one,
         // and a sill-to-lintel gradient so the pane has depth.
@@ -1064,8 +1216,8 @@ class WallTextures {
   }
 }
 
-/// The trades in the parade, left to right.
-enum _Trade { cafe, records, bar, noodles, arcade, florist }
+/// The trades in the parade, left to right, plus a vacant unit.
+enum _Trade { cafe, records, bar, noodles, arcade, florist, vacant }
 
 /// One shop: its frontage in metres, its trade, its sign colour, which
 /// side its door is on and whether it has an awning.
@@ -1085,15 +1237,67 @@ class _Shop {
   final bool awning;
 }
 
-/// Six shops of different widths, 30 m in all, so any stretch of wall
-/// shows a different mix and no two walls start at the same shop.
-const _parade = [
-  _Shop(5, _Trade.cafe, ui.Color(0xFFFFC46B), doorLeft: false, awning: true),
-  _Shop(6, _Trade.records, ui.Color(0xFFE84C6A), doorLeft: true, awning: false),
-  _Shop(4, _Trade.bar, ui.Color(0xFFFF5A7A), doorLeft: false, awning: false),
-  _Shop(6, _Trade.noodles, ui.Color(0xFFFF7A4A), doorLeft: true, awning: true),
-  _Shop(5, _Trade.arcade, ui.Color(0xFF5CE0FF), doorLeft: false, awning: false),
-  _Shop(4, _Trade.florist, ui.Color(0xFF7ED957), doorLeft: true, awning: true),
+/// The shops, in a warm register (amber, coral, salmon, orange, gold)
+/// with the arcade's teal as the one cool accent, so the attention
+/// colours stay the loudest thing at street level.
+const _cafe = _Shop(
+  5,
+  _Trade.cafe,
+  ui.Color(0xFFFFC46B),
+  doorLeft: false,
+  awning: true,
+);
+const _records = _Shop(
+  6,
+  _Trade.records,
+  ui.Color(0xFFE8705F),
+  doorLeft: true,
+  awning: false,
+);
+const _bar = _Shop(
+  4,
+  _Trade.bar,
+  ui.Color(0xFFFF8A6B),
+  doorLeft: false,
+  awning: false,
+);
+const _noodles = _Shop(
+  6,
+  _Trade.noodles,
+  ui.Color(0xFFFF7A4A),
+  doorLeft: true,
+  awning: true,
+);
+const _arcade = _Shop(
+  5,
+  _Trade.arcade,
+  ui.Color(0xFF5CE0FF),
+  doorLeft: false,
+  awning: false,
+);
+const _florist = _Shop(
+  4,
+  _Trade.florist,
+  ui.Color(0xFFD9C36B),
+  doorLeft: true,
+  awning: true,
+);
+
+/// The unit nobody has taken: papered, TO LET, whatever the neighbours
+/// are doing. One per run breaks the parade's perfect rhythm.
+const _vacant = _Shop(
+  3,
+  _Trade.vacant,
+  ui.Color(0xFF8A8598),
+  doorLeft: true,
+  awning: false,
+);
+
+/// Two orders of the same seven units, 33 m each; a wall picks one by
+/// hash, so neighbours never show the same run in the same order.
+const _parades = <List<_Shop>>[
+  [_cafe, _records, _bar, _vacant, _noodles, _arcade, _florist],
+  [_florist, _noodles, _vacant, _cafe, _arcade, _records, _bar],
 ];
 
 /// How the parade is dressed for a lantern state.

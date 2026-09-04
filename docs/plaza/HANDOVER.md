@@ -165,9 +165,9 @@ LIVE stress switch.
 | `jumbotron` | in front of the jumbotron, 1.1 × its width back | the giant screen with the project card, its tower and the plaza from behind home |
 | `overview` | the map pose behind the oldest edge | the whole district as lanterns, light pools and markers, the jumbotron as the far landmark |
 | `block` | the block beacon a quarter of the way from oldest to newest | a week of buildings at street range: sign facades, lanterns, lamps |
-| `billboard` | 14 m in front of the first pylon | the top-ranked billboard, its frame, chase lights and pool |
-| `attention-closeup` | the second attention beacon (the first when there is only one) | a live facade of an anomaly with its roof billboard |
-| `shopfront` | eye level, 10 m before a bare block-head end wall (alarmed first, then trading, never a plaza mount) | the shopfront band up close, dressed for the task's state, with the storeys above it |
+| `shopfront` | eye level on the road at a row head, three-quarters on to the block-head building's near corner (alarmed first, then trading, never a plaza mount) | the shopfront parade up the end wall, dressed and worded for the task's state, with the named facade beside it |
+| `billboard` | before the first pylon at 1.25 × its width, pitch capped at 12° | the top-ranked billboard, its frame, chase lights, posts and pool |
+| `attention-closeup` | the second attention beacon (the first when there is only one) | a live facade of an anomaly with its roof billboard; the tour's last word |
 
 A stop the world cannot provide (no anomalies, no plaza) is skipped;
 `PLAZA_TOUR_ONLY` narrows the run.

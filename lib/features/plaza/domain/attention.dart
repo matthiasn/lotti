@@ -117,7 +117,13 @@ TaskAttention attentionFor(PlazaTask task, DateTime now) {
       score += 1;
     }
     if (reason.isEmpty && dueSoon && due != null) {
-      reason = 'due ${shortDate(due)} — finish it';
+      final days = due.difference(today).inDays;
+      final when = days <= 0
+          ? 'today'
+          : days == 1
+          ? 'tomorrow'
+          : 'in $days days';
+      reason = 'due $when — finish it';
     }
   }
 

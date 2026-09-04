@@ -76,13 +76,21 @@ void main() {
       expect(today.score, 2);
       expect(today.dueSoon, isTrue);
       expect(today.overdue, isFalse);
-      expect(today.reason, 'due Jul 15 — finish it');
+      expect(today.reason, 'due today — finish it');
 
       final inThree = attentionFor(
         _task(due: _now.add(const Duration(days: 3))),
         _now,
       );
       expect(inThree.score, 2);
+      expect(inThree.reason, 'due in 3 days — finish it');
+      expect(
+        attentionFor(
+          _task(due: _now.add(const Duration(days: 1))),
+          _now,
+        ).reason,
+        'due tomorrow — finish it',
+      );
 
       final inFour = attentionFor(
         _task(due: _now.add(const Duration(days: 4))),

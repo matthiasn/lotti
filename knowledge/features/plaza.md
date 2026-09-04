@@ -283,6 +283,11 @@ crown and teal corner strips, and a pool at its foot.
 carry no roof billboard (`PlazaWorld.heroes`) get a band along their
 roofline (1.9 m tall, 4.2 or 3.4 m/s) showing `tickerText`.
 
+**Facing pose** (`PlazaSurfaces.facingPose`): before a billboard at
+`max(14 m, 1.25 × width)` unless a distance is given, pitched at the
+panel's centre but never more than 12°, so the posts and the paving stay
+in frame and verticals stay near vertical.
+
 **Task pose** (`taskPoseFor`): on the road in front of a facade at eye
 height, `max(16, 1.2 × width, 0.9 × (height + roofSignageHeight + 3))`
 metres back (`roofSignageHeight` 6.5), capped at `maxTaskStandOff` (24 m,
@@ -314,8 +319,10 @@ tasks score zero. Otherwise it sums:
 The `reason` is the first that applies of blocked, overdue since a date,
 quiet for N days, due on a date, each in the same problem-then-action
 grammar (`blocked — needs a decision`, `overdue since Jul 14 — finish or
-move it`, `quiet for 14 days — pick it back up`, `due Jul 15 — finish
-it`); it is the headline on billboards, tickers and the jumbotron. Score at or above `anomalyThreshold` (3) makes an
+move it`, `quiet for 14 days — pick it back up`, `due today — finish it`
+with `tomorrow` or `in N days` as the case may be); it is the headline on
+billboards, tickers and the jumbotron, and the live facade repeats it
+under its checklist. Score at or above `anomalyThreshold` (3) makes an
 **anomaly**: attention beacon, pulsing lantern, roof billboard, billboard
 candidate. Score at or above `billboardThreshold` (2) may fill a spare
 plaza slot; `billboardCandidates` sorts by score then id and takes six.
@@ -552,6 +559,18 @@ until it lands.
 
 `PlazaSceneController` builds the `Scene` on construction:
 
+- **Post-processing**: real HDR **bloom** (`scene.postProcess.bloom`,
+  threshold `bloomThreshold` 0.9, intensity `bloomIntensity` 0.3, scatter
+  0.6) and a soft **vignette** (0.32 at radius 0.82). Widget whites sit at
+  1.0 and bloom a little; neon strips, the skyline rooflines and the chase
+  heads are pushed past white by `emissiveColor` (`neonBoost` 1.6, chase
+  heads 1.5) so the bloom carries them. The glow quads stay as the
+  near-field halo the bloom's blur cannot give a thin strip.
+- **Shaded boxes**: every massing box (buildings, upper storeys, fillers,
+  hero and skyline towers, the jumbotron tower, the kiosk, the planters)
+  is a `shadedCuboid`: per-face vertex tints (top 1.0, front and back
+  0.86, sides 0.7, bottom 0.5) multiplied into the unlit base colour, so a
+  box keeps its silhouette from every camera height.
 - **Sky**: a `GradientSkySource` (near-black zenith, desaturated indigo
   horizon, no sun): the night is cool so amber signage sits warm against
   it, and the magenta lives in the hero towers' domes alone. **Fog**:
@@ -564,7 +583,8 @@ until it lands.
 - **Ground**: a 6000 × 6000 m slab at the plan centre. Per segment a road
   slab (`roadWidth` wide, darker for gaps), 3 m pavements with a kerb on
   both sides, a dashed centre line every 6 m on built segments, and an
-  asphalt grain overlay. The plaza is a slab in the ground colour with the
+  asphalt grain overlay (a 2 m tile of dim grit). Every plot stands on a
+  pavement apron 1.5 m wider than its box on each side. The plaza is a slab in the ground colour with the
   grain, a paving-joint overlay (`WallTextures.paving`, a 4 m tile of four
   slabs), a raised kerb round its edge open at the street mouth (0.16 m,
   steppable, not a solid), a teal home ring with a soft warm pool under it,
@@ -574,7 +594,12 @@ until it lands.
   core and a short skirt, dark again inside the radius) per lit facade
   (radius 0.55 × facade width), lamp post (3 m), pylon
   (`0.45 × max(width, 8)`), gantry (0.3 × width) and jumbotron (0.3 × width,
-  alpha 0.12), so the walker stands on dark paving. `updateForCamera` fades
+  alpha 0.12), so the walker stands on dark paving; and a wide faint
+  **wash** in the frame colour before every large emitter (pylon 1.5 ×
+  width at 0.07, jumbotron 1.2 × width at 0.05, hero screen 1.2 × screen
+  width at 0.06) so the emitters connect to the ground. A blocked or
+  overdue building spills its lantern colour in four pools round its
+  walls. `updateForCamera` fades
   every pool and glow quad with the eye's altitude from `poolFadeStart`
   (12 m) to `poolFadeTop` (70 m) down to `poolFloor` (0.4), so the overview
   is carried by lanterns, not discs.
@@ -582,10 +607,14 @@ until it lands.
   (`0.78 to 1.1 × plot depth`, anchored to the street side), side and back
   walls built by `_windowedWall`: a **shopfront band** at the foot
   (`min(4 m, 0.45 × height)`) under tiled **window textures** by lantern
-  state (`WallTextures`: a 12 × 12 m tile of 4 floors × 10 bays; lit ratio
-  inProgress 0.62, blocked and overdue 0.5, open 0.36, off 0.2; a lit pane
-  tops out at 0.8 alpha so screens and signs stay the brightest thing on a
-  wall;
+  state (`WallTextures`: a 12 × 12 m tile of 4 floors × 10 bays, panes
+  0.46 × 0.5 of a 3 m cell so a window is visibly smaller than a shop
+  door; lit ratio inProgress 0.62, blocked and overdue 0.5, open 0.36,
+  off 0.2; a lit pane tops out at 0.8 alpha so screens and signs stay the
+  brightest thing on a wall). The upper wall is stacked in **whole
+  storeys** from the band up (`vRepeat = floors / 4`, `vOffset` so a
+  floor slab lands on the fascia) and the remainder is a dark **cornice**
+  band at the top, so no cut row ever sits on the shops;
   per-wall tile offset), a plinth,
   a stepped-back upper storey at 14 m and above, a roof slab and trim, the
   facade plate (the only pickable part of a building), a progress **light
@@ -596,22 +625,30 @@ until it lands.
   their glow burn in the lantern colour and the roofline keeps the
   category at half power, a seeded **roof kit** (parapet, one or two plant boxes, a
   water tank on 40 % of buildings wider than 5 m, a mast on a third), the
-  hidden focus ring, the facade anchor and the lantern anchor.
-- **Shopfronts** (`WallTextures.shopfront`): the band is one 30 × 4 m
-  strip, a parade of six trades of different widths (café, record shop,
-  bar, noodle bar, arcade, florist), each with its own sign colour, door
-  side, window contents and, on three of them, an awning; every wall
-  starts at its own point in the parade, so no two walls show the same
-  shops. The strip is painted once **per lantern state**, so the ground
-  floor says what the task is doing: **in progress** trades (lit signs,
-  lit glass, people inside, lit transoms); **overdue** trades late, the
-  interior and every sign flooded in the lantern amber; **open** is not
-  open yet (papered glass, a blank fascia, a notice on the door, a work
-  light some nights); **blocked** is shuttered behind alarm tape in the
-  lantern red with a red lamp over each door; **off** is shuttered for
-  the night, signs dark, a security light over each door. Fillers, the
-  hero towers and the jumbotron tower always trade: they are the city,
-  not tasks.
+  hidden focus ring, the facade anchor and the lantern anchor. The light
+  bar runs on a full-width dark track, so the lit part reads as progress
+  along something.
+- **Shopfronts** (`WallTextures.shopfront(state, variant)`): the band is
+  one 33 × 4 m strip, a parade of six trades of different widths (café,
+  record shop, bar, noodle bar, arcade, florist) plus one 3 m **vacant
+  unit** (papered, TO LET, whatever the neighbours do), in a warm register
+  (amber, coral, salmon, orange, gold) with the arcade's teal as the one
+  cool accent; each shop has its own door side, window contents and, on
+  three of them, an awning. There are **two parade orders**
+  (`paradeVariants`), a wall picks one by `stableUnit(id, 'parade')` and
+  starts at its own offset, so neighbours never show the same run. The
+  strip is painted once **per state and order**, so the ground floor says
+  what the task is doing, in words as well as dressing: **in progress**
+  trades (lit signs, lit glass, people inside, lit transoms); **overdue**
+  trades late, the interior flooded in the lantern amber and every sign
+  reading OPEN LATE; **open** is not open yet (papered glass, OPENING
+  SOON on a builder's board and on the door notice, a work light some
+  nights); **blocked** is shuttered behind alarm tape in the lantern red,
+  BLOCKED glowing in every dark sign box, NEEDS A DECISION on the
+  shutter, a red lamp with a halo over each door; **off** is shuttered
+  for the night, CLOSED in every sign box, CLOSED FOR THE NIGHT on the
+  shutter, a security light over each door. Fillers, the hero towers and
+  the jumbotron tower always trade: they are the city, not tasks.
 - **Billboards**: pylons get two braced posts on footings and a catwalk; roof
   panels get two struts; every panel gets a dark lightbox, a glow quad and
   chase-light points around the frame; the panel's own border (the widget's,

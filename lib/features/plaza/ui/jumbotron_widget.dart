@@ -177,30 +177,17 @@ class _JumbotronWidgetState extends State<JumbotronWidget>
           ),
         ),
         SizedBox(height: m(0.6)),
-        Row(
-          children: [
-            Container(
-              width: bodyPx * 1.4,
-              height: bodyPx * 1.4,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: frame,
-                boxShadow: [
-                  BoxShadow(color: frame, blurRadius: bodyPx),
-                ],
-              ),
-            ),
-            SizedBox(width: bodyPx),
-            Text(
-              '${PlazaStyle.glyph(a)}  ${PlazaStyle.chip(a).label}',
-              style: TextStyle(
-                fontFamily: PlazaStyle.fontMono,
-                fontSize: bodyPx * 1.8,
-                fontWeight: FontWeight.w500,
-                color: frame,
-              ),
-            ),
-          ],
+        // One status glyph, one word: the glyph is the state's mark, so
+        // no disc beside it.
+        Text(
+          '${PlazaStyle.glyph(a)}  ${PlazaStyle.chip(a).label}',
+          style: TextStyle(
+            fontFamily: PlazaStyle.fontMono,
+            fontSize: bodyPx * 1.8,
+            fontWeight: FontWeight.w500,
+            color: frame,
+            shadows: [Shadow(color: frame, blurRadius: bodyPx * 0.6)],
+          ),
         ),
         SizedBox(height: m(0.3)),
         Text(

@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
@@ -47,8 +48,8 @@ class _Strip {
   }
 }
 
-Future<_Strip> _paint(LanternState state) async {
-  final image = WallTextures.paintShopfront(state);
+Future<_Strip> _paint(LanternState state, {int variant = 0}) async {
+  final image = WallTextures.paintShopfront(state, variant: variant);
   final bytes = await image.toByteData();
   return _Strip(image.width, image.height, bytes!);
 }
@@ -64,7 +65,15 @@ bool _isRed(ui.Color c) => c.r > 0.7 && c.g < 0.5 && c.b < 0.5;
 bool _isAmber(ui.Color c) => c.r > 0.7 && c.g > 0.45 && c.g < 0.85 && c.b < 0.4;
 bool _isPale(ui.Color c) =>
     c.r > 0.6 && c.g > 0.55 && c.b > 0.45 && c.r - c.b < 0.25;
-bool _isLitSign(ui.Color c) => _sum(c) > 1.2;
+
+/// A sign lit in a shop colour: bright and saturated. Grey state words
+/// on a dark box are not lit signs.
+bool _isLitSign(ui.Color c) {
+  final hi = math.max(c.r, math.max(c.g, c.b));
+  final lo = math.min(c.r, math.min(c.g, c.b));
+  return hi > 0.7 && hi - lo > 0.3;
+}
+
 bool _isLitGlass(ui.Color c) => _sum(c) > 0.75;
 bool _isDark(ui.Color c) => _sum(c) < 0.9;
 
@@ -94,6 +103,30 @@ void main() {
     }
   });
 
+  test(
+    'the second parade order is a different picture with the same dressing',
+    () async {
+      final a = strips[LanternState.inProgress]!;
+      final b = await _paint(LanternState.inProgress, variant: 1);
+      expect(b.width, a.width);
+      // Same amount of lit shop, different arrangement.
+      final litA = _count(a.along(_signRow), _isLitSign);
+      final litB = _count(b.along(_signRow), _isLitSign);
+      expect((litA - litB).abs(), lessThan(litA ~/ 2));
+      var differ = 0;
+      for (final (ca, cb) in [
+        for (var i = 0; i < 300; i++)
+          (
+            a.at(WallTextures.shopfrontWidth * (i + 0.5) / 300, _glassRow),
+            b.at(WallTextures.shopfrontWidth * (i + 0.5) / 300, _glassRow),
+          ),
+      ]) {
+        if ((_sum(ca) - _sum(cb)).abs() > 0.2) differ++;
+      }
+      expect(differ, greaterThan(100));
+    },
+  );
+
   test('the five dressings are five different pictures', () {
     final signatures = {
       for (final MapEntry(key: state, value: strip) in strips.entries)
@@ -114,7 +147,9 @@ void main() {
 
   test('in progress trades: lit signs, lit glass, no tape', () {
     final strip = strips[LanternState.inProgress]!;
-    expect(_count(strip.along(_signRow), _isLitSign), greaterThan(60));
+    // Lit sign colour on at least an eighth of the fascia (the abstract
+    // lettering and the vacant unit's board are dark).
+    expect(_count(strip.along(_signRow), _isLitSign), greaterThan(38));
     expect(_count(strip.along(_glassRow), _isLitGlass), greaterThan(60));
     expect(_count(strip.along(_tapeRow), _isRed), lessThan(10));
   });
@@ -131,18 +166,21 @@ void main() {
     expect(_count(strip.along(_glassRow), _isLitGlass), greaterThan(60));
   });
 
-  test('open is not open yet: papered glass and no sign', () {
+  test('open is not open yet: papered glass and no lit sign', () {
     final strip = strips[LanternState.open]!;
     expect(_count(strip.along(_glassRow), _isPale), greaterThan(150));
     expect(_count(strip.along(_signRow), _isLitSign), lessThan(5));
     expect(_count(strip.along(_tapeRow), _isRed), lessThan(5));
   });
 
-  test('blocked is shuttered behind alarm tape', () {
+  test('blocked is shuttered behind alarm tape, BLOCKED on the signs', () {
     final strip = strips[LanternState.blocked]!;
     expect(_count(strip.along(_tapeRow), _isRed), greaterThan(60));
     expect(_count(strip.along(_glassRow), _isDark), greaterThan(250));
-    expect(_count(strip.along(_signRow), _isLitSign), lessThan(5));
+    // The only colour on the fascia is the alarm word.
+    final signs = strip.along(_signRow).toList();
+    expect(_count(signs, _isRed), greaterThan(8));
+    expect(_count(signs, (c) => _isLitSign(c) && !_isRed(c)), lessThan(5));
   });
 
   test('off is shuttered for the night: dark, no tape, no lit sign', () {
@@ -150,6 +188,7 @@ void main() {
     expect(_count(strip.along(_glassRow), _isDark), greaterThan(250));
     expect(_count(strip.along(_tapeRow), _isRed), lessThan(5));
     expect(_count(strip.along(_signRow), _isLitSign), lessThan(5));
+    expect(_count(strip.along(_signRow), _isRed), lessThan(5));
     // The shutter slats read as lines down the glass, not a black hole.
     final slats = _count(
       strip.down(_glassColumn, _glassTop, _glassBottom),

@@ -25,7 +25,8 @@ class TourStop {
 }
 
 /// The tour, in order: the landing, the project card on the jumbotron,
-/// the map, then the street. Names double as screenshot file names.
+/// the map, the street and its shopfronts, then the alarms, closing on
+/// the wall you fly to. Names double as screenshot file names.
 final List<TourStop> plazaTourStops = [
   TourStop(
     name: 'home',
@@ -48,6 +49,7 @@ final List<TourStop> plazaTourStops = [
     name: 'block',
     pose: (w) => blockBeaconPose(w, fraction: 0.25),
   ),
+  const TourStop(name: 'shopfront', pose: shopfrontPose),
   TourStop(
     name: 'billboard',
     pose: (w) {
@@ -67,7 +69,6 @@ final List<TourStop> plazaTourStops = [
       return attention[attention.length > 1 ? 1 : 0].pose;
     },
   ),
-  const TourStop(name: 'shopfront', pose: shopfrontPose),
 ];
 
 /// The block beacon [fraction] of the way from oldest to newest, or null
@@ -83,16 +84,20 @@ CameraPose? blockBeaconPose(PlazaWorld world, {required double fraction}) {
   return blocks[index].pose;
 }
 
-/// How far the shopfront stop stands from the end wall it looks at.
-const shopfrontStandOff = 10.0;
+/// The shopfront stop stands this far before the end wall and this far
+/// out from the facade plane, on the road, looking at the building's
+/// near corner: the parade on the end wall and the named facade in one
+/// frame.
+const shopfrontStandOff = 9.0;
+const shopfrontRoadOffset = 6.0;
 
-/// Eye level on the open ground before a built row, square on to the end
-/// wall of the building at its block head: the shopfront band up close,
-/// with the storeys above it. Of the bare head walls (the plaza mounts
-/// carry a screen and a ticker instead), the one whose dressing says the
-/// most: on alarm first, then trading, then fitting out, then shuttered
-/// for the night; the oldest row on a tie. Null on a street with no bare
-/// head wall.
+/// Eye level on the road at a built row's head, three-quarters on to the
+/// block-head building's near corner: the shopfront parade up its end
+/// wall, and the facade with the task's name beside it. Of the bare head
+/// walls (the plaza mounts carry a screen and a ticker instead), the one
+/// whose dressing says the most: on alarm first, then trading, then
+/// fitting out, then shuttered for the night; the oldest row on a tie.
+/// Null on a street with no bare head wall.
 CameraPose? shopfrontPose(PlazaWorld world) {
   final deleted = {
     for (final t in world.tasks)
@@ -134,13 +139,22 @@ CameraPose? shopfrontPose(PlazaWorld world) {
   final cosH = math.cos(segment.headingRadians);
   final along =
       (head.x - segment.startX) * sinH + (head.z - segment.startZ) * cosH;
-  final a = along - head.width / 2 - shopfrontStandOff;
   final lateral =
       (head.x - segment.startX) * cosH - (head.z - segment.startZ) * sinH;
+  // The near corner: the end wall meets the facade on the road side.
+  final toRoad = lateral < 0 ? 1.0 : -1.0;
+  final cornerAlong = along - head.width / 2;
+  final cornerLateral = lateral + toRoad * head.depth / 2;
+  final eyeAlong = cornerAlong - shopfrontStandOff;
+  final eyeLateral = cornerLateral + toRoad * shopfrontRoadOffset;
+  final ex = segment.startX + sinH * eyeAlong + cosH * eyeLateral;
+  final ez = segment.startZ + cosH * eyeAlong - sinH * eyeLateral;
+  final cx = segment.startX + sinH * cornerAlong + cosH * cornerLateral;
+  final cz = segment.startZ + cosH * cornerAlong - sinH * cornerLateral;
   return CameraPose(
-    x: segment.startX + sinH * a + cosH * lateral,
+    x: ex,
     y: eyeHeight,
-    z: segment.startZ + cosH * a - sinH * lateral,
-    yaw: segment.headingRadians,
+    z: ez,
+    yaw: math.atan2(cx - ex, cz - ez),
   );
 }

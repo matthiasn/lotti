@@ -330,12 +330,19 @@ class PlazaSurfaces {
   }
 
   /// The pose in front of a billboard, for the tour and for taps on it.
-  static CameraPose facingPose(BillboardSlot slot, {double distance = 14}) =>
-      CameraPose(
-        x: slot.x + math.sin(slot.facingRadians) * distance,
-        y: eyeHeight,
-        z: slot.z + math.cos(slot.facingRadians) * distance,
-        yaw: slot.facingRadians + math.pi,
-        pitch: math.atan2(slot.centerY - eyeHeight, distance),
-      );
+  static CameraPose facingPose(BillboardSlot slot, {double? distance}) {
+    final d = distance ?? math.max(minFacingDistance, slot.width * 1.25);
+    return CameraPose(
+      x: slot.x + math.sin(slot.facingRadians) * d,
+      y: eyeHeight,
+      z: slot.z + math.cos(slot.facingRadians) * d,
+      yaw: slot.facingRadians + math.pi,
+      pitch: math.min(math.atan2(slot.centerY - eyeHeight, d), maxFacingPitch),
+    );
+  }
+
+  /// The stand-off scales with the panel so its posts and the paving stay
+  /// in frame, and the pitch is capped so verticals stay near vertical.
+  static const minFacingDistance = 14.0;
+  static const double maxFacingPitch = 12 * math.pi / 180;
 }
