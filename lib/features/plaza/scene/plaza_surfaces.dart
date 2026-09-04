@@ -20,17 +20,17 @@ import 'package:vector_math/vector_math.dart' show Matrix4, Vector3;
 /// ticker bands and the week markers on the road.
 ///
 /// Budget (spec): billboards ≤ 6, still faces captured once (and again
-/// when a cover lands), their bloom breathing in the scene; tickers at
-/// [tickerInterval] within the plaza's range and not at all beyond it; the
-/// jumbotron at [jumbotronInterval]; the skyline screens, block markers,
-/// banners and signs captured once at build.
+/// when a cover lands), their bloom breathing in the scene; tickers one
+/// period each captured once and scrolled by UV offset; the jumbotron at
+/// [jumbotronInterval]; the skyline screens, block markers, banners and
+/// signs captured once at build.
 ///
 /// Every capture is manual, requested from [update] on the harness clock
 /// through [SurfaceCaptures]: an interval policy would make flutter_scene
 /// pump an engine frame on every vsync, whatever the harness paints. Each
-/// cadence owns the clock its widgets read ([tickerClock],
-/// [jumbotronClock]), advanced only when that cadence asks for
-/// a capture, so between captures nothing in them runs.
+/// cadence owns the clock its widgets read ([jumbotronClock]), advanced
+/// only when that cadence asks for a capture, so between captures nothing
+/// in them runs.
 class PlazaSurfaces {
   PlazaSurfaces({
     required this.scene,
@@ -61,12 +61,7 @@ class PlazaSurfaces {
   final double pxPerMeter;
 
   final SurfaceCaptures _captures = SurfaceCaptures();
-  final CaptureCadence _tickers = CaptureCadence(tickerInterval);
   final CaptureCadence _jumbotron = CaptureCadence(jumbotronInterval);
-
-  /// Elapsed harness seconds as of the tickers' last capture request: the
-  /// clock the bands scroll by.
-  ValueListenable<double> get tickerClock => _tickers.clock;
 
   /// Elapsed harness seconds as of the jumbotron's last capture request:
   /// the clock it turns its slides by.
@@ -92,8 +87,6 @@ class PlazaSurfaces {
     );
     return math.max(plazaRangeFloor, reach + 60);
   }
-
-  static const tickerInterval = 0.05;
 
   static const markerWidth = 16.0;
   static const markerHeight = 5.2;
@@ -280,18 +273,30 @@ class PlazaSurfaces {
           Vector3(slot.x, slot.bottom + slot.height / 2, slot.z),
         )..rotateY(slot.facingRadians),
       );
+      // One period of the band is captured, once, at a density that keeps
+      // the texture under [maxTickerTexturePx] wide; the band's quad shows
+      // [slot.width] of it and the scene slides the offset each frame.
+      final text = world.tickerTexts[slot] ?? world.tickerText;
+      final period = TickerWidget.periodMeters(text, slot.height, slot.width);
+      final density = math.min(pxPerMeter, maxTickerTexturePx / period);
+      final surface = OpaqueSurface();
       final component = hostedSurface(
         child: TickerWidget(
-          text: world.tickerTexts[slot] ?? world.tickerText,
+          text: text,
           heightMeters: slot.height,
-          pxPerMeter: pxPerMeter,
-          speedMetersPerSecond: slot.speedMetersPerSecond,
-          clock: _tickers.clock,
+          pxPerMeter: density,
         ),
-        width: slot.width,
+        width: period,
         height: slot.height,
-        pxPerMeter: pxPerMeter,
+        pxPerMeter: density,
+        geometry: fadedQuad(slot.width, slot.height, fade: tickerFade),
+        surface: surface,
       );
+      surface.material.baseColorTextureTransform.scale.x = slot.width / period;
+      _tickerBands.add((
+        surface.material,
+        slot.speedMetersPerSecond / period,
+      ));
       anchor.addComponent(component);
       // Housing: a dark track behind the band with a thin teal rim and
       // end caps, so the ticker is a fixture on the wall and not a strip
@@ -328,17 +333,21 @@ class PlazaSurfaces {
       // view culling measure against.
       final center = Vector3(slot.x, slot.bottom + slot.height / 2, slot.z);
       _ranged.add((center, anchor));
-      _captures.timed(
-        _tickers,
-        TimedSurface.facing(
-          controller: component.controller,
-          node: anchor,
-          center: center,
-          facingRadians: slot.facingRadians,
-        ),
-      );
+      _captures.once(component.controller);
     }
   }
+
+  /// Each ticker band's material and its scroll speed in periods a
+  /// second: the UV offset the scene slides every frame.
+  final List<(UnlitMaterial, double)> _tickerBands = [];
+
+  /// A ticker texture is never wider than this: the long headline bands
+  /// are captured at a lower density instead.
+  static const maxTickerTexturePx = 8192.0;
+
+  /// The fraction of a band's width over which its type fades in and out
+  /// at the housing's ends.
+  static const tickerFade = 0.06;
 
   /// Once per painted frame, at [seconds] on the harness clock: keeps
   /// asking for the one-off captures until they land, hides the plaza's
@@ -367,9 +376,13 @@ class PlazaSurfaces {
           : 1.0;
       billboard.currentGlow = PlazaBillboard.glowAlpha * glowFade * pulse;
     }
-    _captures
-      ..requestDue(_tickers, eye, seconds, forward: forward)
-      ..requestDue(_jumbotron, eye, seconds, forward: forward);
+    // The bands scroll: the texture's offset along the band, in periods,
+    // wrapping every period. Leftward on the band is +u on the quad.
+    for (final (material, periodsPerSecond) in _tickerBands) {
+      material.baseColorTextureTransform.offset.x =
+          (seconds * periodsPerSecond) % 1;
+    }
+    _captures.requestDue(_jumbotron, eye, seconds, forward: forward);
   }
 
   /// Total captures across these surfaces, for the debug overlay.

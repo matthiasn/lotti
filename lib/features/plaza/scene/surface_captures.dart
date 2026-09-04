@@ -9,7 +9,9 @@ import 'package:vector_math/vector_math.dart' show Vector3;
 
 /// A widget surface for the plaza: [child] laid out at [pxPerMeter] ×
 /// [scale] logical pixels a metre on a [ccwQuad] of [width] × [height]
-/// metres, over an [OpaqueSurface].
+/// metres (or the [geometry] given, when the texture is not the quad's
+/// size: a ticker's period on its band), over an [OpaqueSurface] — the
+/// caller's [surface], when it keeps the material to drive it.
 ///
 /// Every plaza surface is a [WidgetUpdatePolicy.manual] component: an
 /// interval policy would make flutter_scene pump an engine frame on every
@@ -23,12 +25,14 @@ WidgetComponent hostedSurface({
   required double pxPerMeter,
   double scale = 1,
   WidgetInput input = WidgetInput.manual,
+  Geometry? geometry,
+  OpaqueSurface? surface,
 }) {
-  final surface = OpaqueSurface();
+  surface ??= OpaqueSurface();
   return WidgetComponent(
     child: child,
     size: Size(width * pxPerMeter * scale, height * pxPerMeter * scale),
-    geometry: ccwQuad(width, height),
+    geometry: geometry ?? ccwQuad(width, height),
     update: WidgetUpdatePolicy.manual,
     input: input,
     material: surface.material,

@@ -658,10 +658,10 @@ fourteen metres away).
 | activated facade (one normally; all in stress mode) | `FacadeWidget` live | every 50 ms, preserving press feedback |
 | sign facade (at most 80) | `FacadeWidget` sign | initially and after cover completion |
 | pylon, mounted and roof billboards | `BillboardWidget` | once, and again when the cover lands; hidden beyond the plaza range. The frame's breathing is the scene's glow quad, not the widget |
-| mounted, gantry and roofline tickers | `TickerWidget` | every 50 ms, hidden beyond the plaza range |
+| mounted, gantry and roofline tickers | `TickerWidget`, one period of text | once; the band's material scrolls the texture by UV offset every frame (`PlazaSurfaces.update`) and repeats it, on a `fadedQuad` whose ends darken by vertex colour; hidden beyond the plaza range |
 | jumbotron | `JumbotronWidget` at 0.5 × px/m | every 1 s |
 | skyline screens | `BillboardWidget` at 0.35 × px/m | once, and again when the cover lands |
-| ticker housing | a dark track and a teal rim with end caps behind every band (geometry, not a widget); the type fades in and out at the housing's ends | — |
+| ticker housing | a dark track and a teal rim with end caps behind every band (geometry, not a widget) | — |
 | block markers, week signs | `BlockMarkerWidget` | once |
 | banners | `BannerWidget` | once |
 | filler signs | `BannerWidget` at 0.6 × px/m | once |
@@ -973,17 +973,18 @@ for keyboard and scene navigation is ignored in tour and bench modes.
   a captured widget ticks on every vsync. So every surface is a **manual
   capture requested from the pacer**: `PlazaSurfaces.update(eye, seconds,
   forward:)` asks each timed surface in range, and in view, once its
-  interval is up (tickers `tickerInterval` 0.05 s, the jumbotron
-  `jumbotronInterval` 1 s; billboards, skyline screens, markers, banners
-  and signs once, a cover that lands later asking for one more), and
+  interval is up (the jumbotron `jumbotronInterval` 1 s; tickers,
+  billboards, skyline screens, markers, banners and signs once, a cover
+  that lands later asking for one more; a ticker is one captured period
+  that the band's material scrolls by UV offset, its texture never wider
+  than `maxTickerTexturePx`), and
   `FacadeLodManager.update(eye, forward:,
   seconds:, flying:)` asks each live wall every `liveInterval` (0.05 s),
   and re-ranks the tiers only when the eye, the view direction, the budget
   or the flight state moved since a ranking that left nothing undone. And
-  the animated widgets read **their cadence's clock**, a
+  the one animated widget left reads **its cadence's clock**, a
   `ValueNotifier<double>` of harness seconds that `requestDue` advances
-  immediately before each capture request: `TickerWidget` scrolls by it,
-  `JumbotronWidget` turns its
+  immediately before each capture request: `JumbotronWidget` turns its
   slides by it; none of them owns an animation controller, so a clock notification rebuilds its listeners in the frame of the request.
   These clocks are shared per cadence, so even a culled surface can rebuild
   when another surface advances that clock; only its capture is culled.

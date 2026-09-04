@@ -43,6 +43,43 @@ Geometry ccwQuad(double width, double height) {
   );
 }
 
+/// A [ccwQuad] whose two ends, each [fade] of its width, darken to black
+/// through the vertex colour the unlit material multiplies in: a ticker
+/// band's type fades into its housing instead of being sliced mid-glyph.
+Geometry fadedQuad(double width, double height, {required double fade}) {
+  final hw = width / 2;
+  final hh = height / 2;
+  // Columns from +X to -X, the way [ccwQuad] orders its vertices, each
+  // with a bottom and a top vertex.
+  final xs = [hw, hw - width * fade, -hw + width * fade, -hw];
+  final us = [0.0, fade, 1 - fade, 1.0];
+  final positions = <double>[];
+  final texCoords = <double>[];
+  final colors = <double>[];
+  for (var c = 0; c < xs.length; c++) {
+    final lit = c == 1 || c == 2 ? 1.0 : 0.0;
+    for (final (y, v) in [(-hh, 1.0), (hh, 0.0)]) {
+      positions.addAll([xs[c], y, 0]);
+      texCoords.addAll([us[c], v]);
+      colors.addAll([lit, lit, lit, 1]);
+    }
+  }
+  final indices = <int>[];
+  for (var c = 0; c + 1 < xs.length; c++) {
+    final bottomA = 2 * c;
+    final topA = bottomA + 1;
+    final bottomB = bottomA + 2;
+    final topB = bottomB + 1;
+    indices.addAll([topA, bottomB, bottomA, topB, bottomB, topA]);
+  }
+  return MeshGeometry.fromArrays(
+    positions: Float32List.fromList(positions),
+    texCoords: Float32List.fromList(texCoords),
+    colors: Float32List.fromList(colors),
+    indices: indices,
+  );
+}
+
 /// A CCW quad whose texture coordinates repeat [uRepeat] × [vRepeat] times
 /// (textures sample with wrap-around), offset by [uOffset] so tiled walls
 /// do not all show the same windows.
