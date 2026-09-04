@@ -19,6 +19,15 @@ KeyDownEvent _down(LogicalKeyboardKey logical, PhysicalKeyboardKey physical) =>
       timeStamp: Duration.zero,
     );
 
+KeyRepeatEvent _repeat(
+  LogicalKeyboardKey logical,
+  PhysicalKeyboardKey physical,
+) => KeyRepeatEvent(
+  logicalKey: logical,
+  physicalKey: physical,
+  timeStamp: Duration.zero,
+);
+
 KeyUpEvent _up(LogicalKeyboardKey logical, PhysicalKeyboardKey physical) =>
     KeyUpEvent(
       logicalKey: logical,
@@ -303,6 +312,31 @@ void main() {
       }
       expect(camera.flying, isFalse);
       expect(camera.pose.y, closeTo(eyeHeight, 1e-6));
+    });
+
+    test("a held key's repeats do not restart the landing", () {
+      final camera = _controller()
+        ..pose = const CameraPose(x: 0, y: 40, z: 0, yaw: 0)
+        ..handleKeyEvent(
+          _down(LogicalKeyboardKey.keyW, PhysicalKeyboardKey.keyW),
+        );
+      expect(camera.flying, isTrue);
+      camera.update(0.1);
+      // Repeats every tenth of a second, as a held key sends them: the
+      // landing keeps its speed and finishes in its own time.
+      var steps = 0;
+      while (camera.flying && steps < 60) {
+        camera
+          ..handleKeyEvent(
+            _repeat(LogicalKeyboardKey.keyW, PhysicalKeyboardKey.keyW),
+          )
+          ..update(0.1);
+        steps++;
+      }
+      expect(camera.flying, isFalse);
+      expect(camera.pose.y, closeTo(eyeHeight, 1e-6));
+      // Under four seconds for a 38 m descent on the direct profile.
+      expect(steps, lessThan(40));
     });
 
     test('drag look cancels a flight too, and pose set clears it', () {

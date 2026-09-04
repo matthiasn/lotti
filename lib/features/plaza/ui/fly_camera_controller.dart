@@ -68,6 +68,7 @@ class FlyCameraController {
   set pose(CameraPose value) {
     _pose = value;
     _flight = null;
+    _landing = false;
     _vForward = 0;
     _vStrafe = 0;
   }
@@ -114,6 +115,7 @@ class FlyCameraController {
           )
         : Flight.plan(_pose, target, solids: _solids);
     _flight = flight;
+    _landing = false;
     return flight;
   }
 
@@ -149,7 +151,12 @@ class FlyCameraController {
   /// Above this height a movement key lands the camera first.
   static const double _landingAbove = eyeHeight + 1.5;
 
+  /// Whether the flight under way is a landing: a held key's repeats
+  /// must not restart it from rest every few milliseconds.
+  bool _landing = false;
+
   void _movementInput() {
+    if (_landing) return;
     _flight = null;
     // Aloft — from the overview, or a flight cut short over the street or
     // mid-arc — a short landing flight, not a one-frame drop.
@@ -169,11 +176,13 @@ class FlyCameraController {
       CameraPose(x: x, y: eyeHeight, z: z, yaw: _pose.yaw),
       solids: _solids,
     );
+    _landing = true;
   }
 
   /// Mouse-drag look, in logical pixels. Cancels a flight in place.
   void addLookDelta(double dx, double dy) {
     _flight = null;
+    _landing = false;
     _pose = CameraPose(
       x: _pose.x,
       y: _pose.y,
@@ -195,6 +204,7 @@ class FlyCameraController {
       );
       if (flight.done) {
         _flight = null;
+        _landing = false;
         onArrived?.call();
       }
       return;
