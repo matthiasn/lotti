@@ -911,10 +911,20 @@ is ignored entirely in tour and bench modes.
   flutter_scene's `WidgetTexture` schedules a frame on every paint for
   any surface under an `everyFrame` or `interval` capture policy (its
   frame pump; only `manual` does not), and an animation controller inside
-  a captured widget (the ticker's scroll, a billboard's glow) ticks on
-  every vsync. Capping the paint rate alone therefore does not calm the
-  CPU; the captures have to be manual and requested from the pacer, and
-  the surface animations driven by its clock.
+  a captured widget ticks on every vsync. So every surface is a **manual
+  capture requested from the pacer**: `PlazaSurfaces.update(eye, seconds)`
+  asks each timed surface in range once its interval is up (billboards
+  `nearInterval` 0.1 s, tickers `tickerInterval` 0.05 s, the jumbotron
+  `jumbotronInterval` 1 s, the skyline screens `farInterval` 3 s; markers,
+  banners and signs once), and `FacadeLodManager.update(eye, forward:,
+  seconds:)` asks each live wall every `liveInterval` (0.05 s). And the
+  animated widgets read **one clock**, the harness's `ValueNotifier<double>`
+  of elapsed seconds advanced once per painted frame: `TickerWidget`
+  scrolls by it, `BillboardWidget.glowAt` breathes by it, `JumbotronWidget`
+  turns its slides by it; none of them owns an animation controller, so
+  between painted frames nothing in them runs and the engine's frame rate
+  equals the painted one (`engineFps` in the overlay says so).
+  `PLAZA_FPS=auto|60|30` picks the cap at start.
 - **Fixtures are the demo world only.** The harness projects
   `ManualDemoWorld.penguinLogistics`; the synthetic generator lives in
   `test/features/plaza/plaza_fixtures.dart` for the tests and nowhere else.

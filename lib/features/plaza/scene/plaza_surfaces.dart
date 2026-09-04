@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 import 'dart:ui' show Color, Size;
 
-import 'package:flutter/foundation.dart' show ValueNotifier;
+import 'package:flutter/foundation.dart' show ValueListenable, ValueNotifier;
 
 import 'package:flutter_scene/scene.dart';
 import 'package:lotti/features/plaza/domain/plaza_layout.dart';
@@ -18,9 +18,15 @@ import 'package:vector_math/vector_math.dart' show Matrix4, Vector3;
 /// The plaza's mid-tier widget surfaces that are not facades: billboards,
 /// ticker bands and the week markers on the road.
 ///
-/// Budget (spec): billboards ≤ 6, captured on an interval that tightens
-/// near the plaza so the glow breathes; tickers captured at 20 Hz within
-/// range and at a crawl beyond it; block markers captured once at build.
+/// Budget (spec): billboards ≤ 6, captured at [nearInterval] within the
+/// plaza's range; tickers at [tickerInterval] within range and not at all
+/// beyond it; the jumbotron at [jumbotronInterval]; the skyline screens at
+/// [farInterval]; block markers, banners and signs captured once at build.
+///
+/// Every capture is manual, requested from [update] on the harness clock:
+/// an interval policy would make flutter_scene pump an engine frame on
+/// every vsync, whatever the harness paints, and the widgets themselves
+/// read the same clock, so between painted frames nothing runs.
 class PlazaSurfaces {
   PlazaSurfaces({
     required this.scene,
@@ -28,6 +34,7 @@ class PlazaSurfaces {
     required this.markerAnchors,
     required this.billboards,
     required this.pxPerMeter,
+    required this.clock,
     Map<String, Node> bannerAnchors = const {},
     Node? jumbotronAnchor,
     Map<int, Node> weekSignAnchors = const {},
@@ -50,8 +57,17 @@ class PlazaSurfaces {
   final List<PlazaBillboard> billboards;
   final double pxPerMeter;
 
+  /// Elapsed seconds, advanced by the harness once per painted frame;
+  /// the animated surfaces read it.
+  final ValueListenable<double> clock;
+
   final List<WidgetComponent> _markers = [];
   final List<WidgetComponent> _banners = [];
+  final List<WidgetComponent> _skylineScreens = [];
+
+  /// When each timed surface was last asked for a capture, seconds on the
+  /// harness clock.
+  final Map<WidgetComponent, double> _lastCapture = {};
   WidgetComponent? _jumbotron;
   final List<(Vector3, WidgetComponent, Node)> _billboardSurfaces = [];
   final List<(Vector3, WidgetComponent, Node)> _tickerSurfaces = [];
@@ -73,13 +89,13 @@ class PlazaSurfaces {
     return math.max(plazaRangeFloor, reach + 60);
   }
 
-  static const nearInterval = Duration(milliseconds: 100);
-  static const tickerInterval = Duration(milliseconds: 50);
-  static const farInterval = Duration(seconds: 3);
+  static const nearInterval = 0.1;
+  static const tickerInterval = 0.05;
+  static const farInterval = 3.0;
 
   static const markerWidth = 16.0;
   static const markerHeight = 5.2;
-  static const jumbotronInterval = Duration(seconds: 1);
+  static const jumbotronInterval = 1.0;
 
   static const signWidth = 5.0;
   static const signHeight = 1.4;
@@ -118,16 +134,17 @@ class PlazaSurfaces {
           heightMeters: h,
           pxPerMeter: pxPerMeter * 0.35,
           pulseSeconds: 4,
+          clock: clock,
         ),
         size: Size(w * pxPerMeter * 0.35, h * pxPerMeter * 0.35),
         geometry: ccwQuad(w, h),
-        update: const WidgetUpdatePolicy.interval(farInterval),
+        update: WidgetUpdatePolicy.manual,
         input: WidgetInput.manual,
         material: surface.material,
         bind: surface.bind,
       );
       anchor.addComponent(component);
-      _banners.add(component);
+      _skylineScreens.add(component);
     }
   }
 
@@ -212,10 +229,11 @@ class PlazaSurfaces {
         ],
         widthMeters: slot.width,
         pxPerMeter: pxPerMeter * 0.5,
+        clock: clock,
       ),
       size: Size(slot.width * pxPerMeter * 0.5, slot.height * pxPerMeter * 0.5),
       geometry: ccwQuad(slot.width, slot.height),
-      update: const WidgetUpdatePolicy.interval(jumbotronInterval),
+      update: WidgetUpdatePolicy.manual,
       input: WidgetInput.manual,
       material: surface.material,
       bind: surface.bind,
@@ -259,10 +277,11 @@ class PlazaSurfaces {
           // A roof panel sits over its own facade, which carries the
           // title: the panel leads with the reason instead.
           reasonFirst: slot.mount == BillboardMount.roof,
+          clock: clock,
         ),
         size: Size(slot.width * pxPerMeter, slot.height * pxPerMeter),
         geometry: ccwQuad(slot.width, slot.height),
-        update: const WidgetUpdatePolicy.interval(nearInterval),
+        update: WidgetUpdatePolicy.manual,
         input: WidgetInput.manual,
         material: surface.material,
         bind: surface.bind,
@@ -286,10 +305,11 @@ class PlazaSurfaces {
           heightMeters: slot.height,
           pxPerMeter: pxPerMeter,
           speedMetersPerSecond: slot.speedMetersPerSecond,
+          clock: clock,
         ),
         size: Size(slot.width * pxPerMeter, slot.height * pxPerMeter),
         geometry: ccwQuad(slot.width, slot.height),
-        update: const WidgetUpdatePolicy.interval(tickerInterval),
+        update: WidgetUpdatePolicy.manual,
         input: WidgetInput.manual,
         material: surface.material,
         bind: surface.bind,
@@ -334,20 +354,38 @@ class PlazaSurfaces {
     }
   }
 
-  /// Keeps asking for the one-off marker captures until they land, and
-  /// hides the plaza's animated surfaces when they are out of range (a
-  /// hidden surface is not captured).
-  void update(Vector3 eye) {
+  /// Once per painted frame, at [seconds] on the harness clock: keeps
+  /// asking for the one-off captures until they land, hides the plaza's
+  /// animated surfaces when they are out of range, and asks every timed
+  /// surface in range for a capture once its interval is up.
+  void update(Vector3 eye, double seconds) {
     for (final once in [..._markers, ..._banners]) {
       final controller = once.controller;
       if (controller.texture == null) controller.requestCapture();
     }
-    for (final (center, _, node) in _billboardSurfaces) {
+    for (final (center, component, node) in _billboardSurfaces) {
       node.visible = (center - eye).length <= plazaRange;
+      if (node.visible) _captureDue(component, seconds, nearInterval);
     }
-    for (final (origin, _, node) in _tickerSurfaces) {
+    for (final (origin, component, node) in _tickerSurfaces) {
       node.visible = (origin - eye).length <= plazaRange;
+      if (node.visible) _captureDue(component, seconds, tickerInterval);
     }
+    for (final screen in _skylineScreens) {
+      _captureDue(screen, seconds, farInterval);
+    }
+    if (_jumbotron case final jumbotron?) {
+      _captureDue(jumbotron, seconds, jumbotronInterval);
+    }
+  }
+
+  /// Asks [component] for a capture when [interval] seconds have passed
+  /// since the last request (or none was ever made).
+  void _captureDue(WidgetComponent component, double seconds, double interval) {
+    final last = _lastCapture[component];
+    if (last != null && seconds - last < interval - 1e-6) return;
+    _lastCapture[component] = seconds;
+    component.controller.requestCapture();
   }
 
   /// Total captures across these surfaces, for the debug overlay.
@@ -362,7 +400,7 @@ class PlazaSurfaces {
     for (final (_, c, _) in _tickerSurfaces) {
       n += c.controller.captureCount;
     }
-    for (final b in _banners) {
+    for (final b in [..._banners, ..._skylineScreens]) {
       n += b.controller.captureCount;
     }
     return n + (_jumbotron?.controller.captureCount ?? 0);

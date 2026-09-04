@@ -52,6 +52,9 @@ class _Surface {
   WidgetComponent? component;
   FacadeTier tier = FacadeTier.far;
   bool captured = false;
+
+  /// When a live wall was last asked for a capture, harness seconds.
+  double lastCapture = double.negativeInfinity;
 }
 
 /// Assigns each facade a tier from camera distance with sticky
@@ -113,10 +116,16 @@ class FacadeLodManager {
     if (_surfaces[i].tier == FacadeTier.far) _apply(i, FacadeTier.sign);
   }
 
-  /// [forward] is the camera's view direction: a wall behind the walker
-  /// never takes a live slot, however near — standing 22 m from a landmark
-  /// puts the opposite row 3 m behind your back.
-  void update(Vector3 eye, {Vector3? forward}) {
+  /// How often a live wall is captured, seconds on the harness clock.
+  static const liveInterval = 0.05;
+
+  /// Once per painted frame: assigns the tiers for [eye], then asks every
+  /// live wall for a capture once [liveInterval] has passed since its
+  /// last, at [seconds] on the harness clock. [forward] is the camera's
+  /// view direction: a wall behind the walker never takes a live slot,
+  /// however near — standing 22 m from a landmark puts the opposite row
+  /// 3 m behind your back.
+  void update(Vector3 eye, {Vector3? forward, double seconds = 0}) {
     final n = buildings.length;
     final distances = List<double>.filled(n, 0);
     final order = List<int>.generate(n, (i) => i);
@@ -181,6 +190,14 @@ class FacadeLodManager {
       focused?.neon.visible = false;
       _focused = focused;
     }
+    for (final surface in _surfaces) {
+      if (surface.tier != FacadeTier.live) continue;
+      final controller = surface.component?.controller;
+      if (controller == null) continue;
+      if (seconds - surface.lastCapture < liveInterval - 1e-6) continue;
+      surface.lastCapture = seconds;
+      controller.requestCapture();
+    }
     _refreshStats();
   }
 
@@ -227,9 +244,10 @@ class FacadeLodManager {
           building.facadeWorldWidth,
           building.facadeWorldHeight,
         ),
-        update: live
-            ? WidgetUpdatePolicy.everyFrame
-            : WidgetUpdatePolicy.manual,
+        // Manual for both tiers: a live wall is captured from [update] at
+        // [liveInterval]; an every-frame policy would make flutter_scene
+        // pump an engine frame on every vsync.
+        update: WidgetUpdatePolicy.manual,
         input: live ? WidgetInput.automatic : WidgetInput.manual,
         material: surfaceMaterial.material,
         bind: surfaceMaterial.bind,

@@ -17,7 +17,12 @@ PlazaTask _task(String id, String title) => PlazaTask(
   categoryColor: 0,
 );
 
+/// The harness clock the widget reads; each test starts it at zero.
+final clock = ValueNotifier<double>(0);
+
 void main() {
+  setUp(() => clock.value = 0);
+
   final now = DateTime.utc(2026, 7, 15);
   final headlines = [
     for (var i = 0; i < 4; i++) attentionFor(_task('$i', 'Headline $i'), now),
@@ -32,6 +37,7 @@ void main() {
         width: 900,
         height: 480,
         child: JumbotronWidget(
+          clock: clock,
           projectLabel: 'Project Waddle',
           taskCount: 28,
           attentionCount: 7,
@@ -52,8 +58,10 @@ void main() {
     addTearDown(pin.dispose);
     await tester.pumpWidget(host(pin: pin));
     expect(find.text('28 tasks · 7 need attention'), findsOneWidget);
-    await tester.pump(const Duration(seconds: 5));
-    await tester.pump(const Duration(seconds: 5));
+    clock.value += 5;
+    await tester.pump();
+    clock.value += 5;
+    await tester.pump();
     // Still the card, where an unpinned screen would show a headline.
     expect(find.text('28 tasks · 7 need attention'), findsOneWidget);
     expect(find.textContaining('Headline'), findsNothing);
@@ -75,6 +83,8 @@ void main() {
     // The real 30 × 16 m panel, then a squatter one the slide must scale
     // down into.
     for (final height in [480.0, 330.0]) {
+      // Every height starts the screen's cycle afresh.
+      clock.value = 0;
       await tester.pumpWidget(
         makeTestableWidget2(
           Center(
@@ -82,6 +92,7 @@ void main() {
               width: 900,
               height: height,
               child: JumbotronWidget(
+                clock: clock,
                 key: ValueKey(height),
                 projectLabel: 'Project Waddle',
                 taskCount: 28,
@@ -95,7 +106,8 @@ void main() {
           ),
         ),
       );
-      await tester.pump(const Duration(seconds: 5));
+      clock.value += 5;
+      await tester.pump();
       expect(find.text('blocked — needs a decision'), findsOneWidget);
       expect(find.text('fly there ›'), findsOneWidget);
       expect(tester.takeException(), isNull, reason: 'height $height');
@@ -111,14 +123,16 @@ void main() {
     expect(find.textContaining('Headline'), findsNothing);
     expect(find.byType(Image), findsNothing);
     for (var i = 0; i < 3; i++) {
-      await tester.pump(const Duration(seconds: 5));
+      clock.value += 5;
+      await tester.pump();
       expect(find.text('Headline $i'), findsOneWidget);
       expect(find.text('Project Waddle'), findsNothing);
       expect(find.textContaining('BLOCKED'), findsOneWidget);
       expect(find.text('blocked — needs a decision'), findsOneWidget);
     }
     // Only the top three, then back to the card.
-    await tester.pump(const Duration(seconds: 5));
+    clock.value += 5;
+    await tester.pump();
     expect(find.text('Project Waddle'), findsOneWidget);
     expect(find.textContaining('Headline 3'), findsNothing);
     expect(tester.takeException(), isNull);
@@ -130,9 +144,11 @@ void main() {
     );
     Image image() => tester.widget<Image>(find.byType(Image));
     expect((image().image as NetworkImage).url, endsWith('a.webp'));
-    await tester.pump(const Duration(seconds: 5));
+    clock.value += 5;
+    await tester.pump();
     expect((image().image as NetworkImage).url, endsWith('b.webp'));
-    await tester.pump(const Duration(seconds: 5));
+    clock.value += 5;
+    await tester.pump();
     expect((image().image as NetworkImage).url, endsWith('a.webp'));
   });
 }

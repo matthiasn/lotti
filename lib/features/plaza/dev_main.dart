@@ -88,8 +88,22 @@ class _PlazaHarnessState extends State<_PlazaHarness>
   /// its own, a ticker here paints at most [_frameRate] frames a second
   /// (the benchmark and the tour paint on every vsync). Every painted
   /// frame runs [_onTick] first.
-  PlazaFrameRate _frameRate = PlazaFrameRate.sixty;
+  PlazaFrameRate _frameRate = _initialFrameRate();
   Ticker? _pacer;
+
+  /// `PLAZA_FPS=auto|60|30` picks the cap at start; 60 otherwise.
+  static PlazaFrameRate _initialFrameRate() {
+    final wanted = Platform.environment['PLAZA_FPS'];
+    return PlazaFrameRate.values.firstWhere(
+      (rate) => rate.label == wanted,
+      orElse: () => PlazaFrameRate.sixty,
+    );
+  }
+
+  /// Elapsed seconds, advanced once per painted frame: the one clock the
+  /// animated surfaces (tickers, billboard glows, the jumbotron's slides)
+  /// read, so between painted frames nothing in them runs.
+  final ValueNotifier<double> _clock = ValueNotifier(0);
   Duration? _lastPaint;
   final ValueNotifier<int> _frame = ValueNotifier(0);
 
@@ -102,6 +116,7 @@ class _PlazaHarnessState extends State<_PlazaHarness>
   /// counted on a persistent frame callback: the number that shows whether
   /// anything besides the pacer keeps the engine running.
   int _engineFrames = 0;
+  int _engineFramesSinceTrace = 0;
   late final PlazaBench? _bench = _benchMode ? PlazaBench() : null;
 
   late PlazaWorld _world;
@@ -173,15 +188,17 @@ class _PlazaHarnessState extends State<_PlazaHarness>
     }
     setState(() => _ready = true);
     _pacer = createTicker(_onPace)..start();
-    SchedulerBinding.instance.addPersistentFrameCallback(
-      (_) => _engineFrames++,
-    );
+    SchedulerBinding.instance.addPersistentFrameCallback((_) {
+      _engineFrames++;
+      _engineFramesSinceTrace++;
+    });
   }
 
   @override
   void dispose() {
     _pacer?.dispose();
     _frame.dispose();
+    _clock.dispose();
     super.dispose();
   }
 
@@ -256,6 +273,7 @@ class _PlazaHarnessState extends State<_PlazaHarness>
     unawaited(_sprites.loadGlow());
     _surfaces = PlazaSurfaces(
       scene: _sceneController.scene,
+      clock: _clock,
       world: _world,
       markerAnchors: _sceneController.markerAnchors,
       billboards: _sceneController.billboards,
@@ -527,9 +545,11 @@ class _PlazaHarnessState extends State<_PlazaHarness>
   void _trace(double dt) {
     final p = _camera.pose;
     final inside = _world.solids.where((s) => s.contains(p.x, p.y, p.z)).length;
+    final engine = _engineFramesSinceTrace;
+    _engineFramesSinceTrace = 0;
     debugPrint(
       'PLAZA_TRACE t=${_elapsed.toStringAsFixed(3)} '
-      'dt=${(dt * 1000).toStringAsFixed(1)} '
+      'dt=${(dt * 1000).toStringAsFixed(1)} engine=$engine '
       'flying=${_camera.flying} walk=${_walk?.index} '
       'x=${p.x.toStringAsFixed(2)} y=${p.y.toStringAsFixed(2)} '
       'z=${p.z.toStringAsFixed(2)} inside=$inside',
@@ -546,8 +566,9 @@ class _PlazaHarnessState extends State<_PlazaHarness>
     final camera = _camera.camera();
     _frameCamera = camera;
     final eye = camera.position;
-    _lod.update(eye, forward: _camera.forward);
-    _surfaces.update(eye);
+    _clock.value = _elapsed;
+    _lod.update(eye, forward: _camera.forward, seconds: _elapsed);
+    _surfaces.update(eye, _elapsed);
     _sceneController.updateForCamera(eye);
     _sprites.update(camera, _viewSize, _elapsed);
 

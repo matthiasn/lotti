@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 import 'package:lotti/features/plaza/domain/attention.dart';
 import 'package:lotti/features/plaza/ui/plaza_style.dart';
@@ -8,14 +9,16 @@ import 'package:lotti/features/plaza/ui/plaza_style.dart';
 /// attention, framed in its state colour.
 ///
 /// Mid tier (captured on an interval). For anomalies the frame glow
-/// breathes on a [pulseSeconds] cycle, driven by an animation so the capture
-/// interval decides how often it re-renders.
-class BillboardWidget extends StatefulWidget {
+/// breathes on a [pulseSeconds] cycle, read off the harness [clock] so the
+/// panel changes only when the harness paints a frame; nothing here ticks
+/// on its own.
+class BillboardWidget extends StatelessWidget {
   const BillboardWidget({
     required this.attention,
     required this.widthMeters,
     required this.heightMeters,
     required this.pxPerMeter,
+    required this.clock,
     this.pulseSeconds = 3,
     this.reasonFirst = false,
     super.key,
@@ -35,44 +38,32 @@ class BillboardWidget extends StatefulWidget {
   /// Full glow cycle for anomalies; shorter is more agitated.
   final double pulseSeconds;
 
-  @override
-  State<BillboardWidget> createState() => _BillboardWidgetState();
-}
+  /// Elapsed seconds, advanced by the harness once per painted frame.
+  final ValueListenable<double> clock;
 
-class _BillboardWidgetState extends State<BillboardWidget>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _glow = AnimationController(
-    vsync: this,
-    duration: Duration(milliseconds: (widget.pulseSeconds * 500).round()),
-  );
-
-  @override
-  void initState() {
-    super.initState();
-    if (widget.attention.anomalous) _glow.repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _glow.dispose();
-    super.dispose();
+  /// The glow at [seconds]: up over half a cycle, down over the other
+  /// half, eased at both ends, between 0.55 and 1.
+  double glowAt(double seconds) {
+    final half = pulseSeconds / 2;
+    final cycle = (seconds / half) % 2;
+    final phase = Curves.easeInOut.transform(cycle <= 1 ? cycle : 2 - cycle);
+    return 0.55 + 0.45 * phase;
   }
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _glow,
-      builder: (context, _) {
-        final phase = Curves.easeInOut.transform(_glow.value);
-        return _BillboardFace(
-          attention: widget.attention,
-          widthMeters: widget.widthMeters,
-          heightMeters: widget.heightMeters,
-          pxPerMeter: widget.pxPerMeter,
-          glow: widget.attention.anomalous ? 0.55 + 0.45 * phase : 1,
-          reasonFirst: widget.reasonFirst,
-        );
-      },
+    Widget face(double glow) => _BillboardFace(
+      attention: attention,
+      widthMeters: widthMeters,
+      heightMeters: heightMeters,
+      pxPerMeter: pxPerMeter,
+      glow: glow,
+      reasonFirst: reasonFirst,
+    );
+    if (!attention.anomalous) return face(1);
+    return ValueListenableBuilder<double>(
+      valueListenable: clock,
+      builder: (context, seconds, _) => face(glowAt(seconds)),
     );
   }
 }

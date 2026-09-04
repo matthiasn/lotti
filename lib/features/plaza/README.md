@@ -34,7 +34,8 @@ All read at start-up; none is needed for an interactive session.
 | `PLAZA_TOUR_ONLY=home,block` | `dev_main.dart` | Restricts the tour to the named stops |
 | `PLAZA_BENCH=1` | `dev_main.dart` | Auto-walk benchmark through six LOD budgets, printing `PLAZA_BENCH result` lines; wins over `PLAZA_TOUR` |
 | `PLAZA_HIDE=gantry,jumbotron,fillers,skyline,pylons,walls` | `scene/plaza_scene.dart` | Leaves those pieces out of the scene, to isolate what a screenshot shows |
-| `PLAZA_TRACE=1` | `dev_main.dart` | Prints one line per painted frame: frame time, flight state, pose and how many solids contain the eye |
+| `PLAZA_TRACE=1` | `dev_main.dart` | Prints one line per painted frame: frame time, engine frames since the last line, flight state, pose and how many solids contain the eye |
+| `PLAZA_FPS=auto,60,30` | `dev_main.dart` | The frame-rate cap at start (the HUD control changes it); 60 by default |
 | `PLAZA_CLICK=<stop>:<x>,<y>` | `tool/plaza/capture_tour.py` | After capturing that tour stop, clicks the window-relative point and grabs a second `-ticked` frame |
 | `LOTTI_WINDOW_SIZE=WxH` | `linux/runner/my_application.cc` | Linux runner window size (a generic Lotti runner feature the capture script uses) |
 

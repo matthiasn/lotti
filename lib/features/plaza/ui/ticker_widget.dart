@@ -1,19 +1,22 @@
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 import 'package:lotti/features/plaza/ui/plaza_style.dart';
 
 /// An LED ticker band: [text] scrolls leftward forever at
 /// [speedMetersPerSecond], two copies back to back so the loop is seamless.
 ///
-/// Driven by an [AnimationController] so the scroll is a pure function of
-/// elapsed time; the scene decides how often the band is captured.
-class TickerWidget extends StatefulWidget {
+/// The scroll is a pure function of the harness [clock] (elapsed seconds),
+/// so the band moves only when the harness paints a frame and the scene
+/// decides how often it is captured; nothing here ticks on its own.
+class TickerWidget extends StatelessWidget {
   const TickerWidget({
     required this.text,
     required this.heightMeters,
     required this.pxPerMeter,
     required this.speedMetersPerSecond,
+    required this.clock,
     super.key,
   });
 
@@ -22,26 +25,12 @@ class TickerWidget extends StatefulWidget {
   final double pxPerMeter;
   final double speedMetersPerSecond;
 
-  @override
-  State<TickerWidget> createState() => _TickerWidgetState();
-}
-
-class _TickerWidgetState extends State<TickerWidget>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _clock = AnimationController(
-    vsync: this,
-    duration: const Duration(seconds: 1),
-  )..repeat();
-
-  @override
-  void dispose() {
-    _clock.dispose();
-    super.dispose();
-  }
+  /// Elapsed seconds, advanced by the harness once per painted frame.
+  final ValueListenable<double> clock;
 
   @override
   Widget build(BuildContext context) {
-    final fontPx = widget.heightMeters * widget.pxPerMeter * 0.62;
+    final fontPx = heightMeters * pxPerMeter * 0.62;
     final style = TextStyle(
       fontFamily: PlazaStyle.fontMono,
       fontSize: fontPx,
@@ -75,7 +64,7 @@ class _TickerWidgetState extends State<TickerWidget>
           child: LayoutBuilder(
             builder: (context, constraints) {
               final painter = TextPainter(
-                text: TextSpan(text: widget.text, style: style),
+                text: TextSpan(text: text, style: style),
                 textDirection: TextDirection.ltr,
                 maxLines: 1,
               )..layout();
@@ -83,14 +72,11 @@ class _TickerWidgetState extends State<TickerWidget>
               // is read whole before the next one arrives.
               final gap = math.max(fontPx * 4, constraints.maxWidth * 0.5);
               final copyWidth = painter.width + gap;
-              final pxPerSecond =
-                  widget.speedMetersPerSecond * widget.pxPerMeter;
-              return AnimatedBuilder(
-                animation: _clock,
-                builder: (context, _) {
-                  final elapsed =
-                      _clock.lastElapsedDuration?.inMicroseconds ?? 0;
-                  final offset = (elapsed / 1e6 * pxPerSecond) % copyWidth;
+              final pxPerSecond = speedMetersPerSecond * pxPerMeter;
+              return ValueListenableBuilder<double>(
+                valueListenable: clock,
+                builder: (context, seconds, _) {
+                  final offset = (seconds * pxPerSecond) % copyWidth;
                   return Stack(
                     children: [
                       for (var i = 0; i < 2; i++)
@@ -100,7 +86,7 @@ class _TickerWidgetState extends State<TickerWidget>
                           bottom: 0,
                           child: Center(
                             child: Text(
-                              widget.text,
+                              text,
                               maxLines: 1,
                               softWrap: false,
                               style: style,

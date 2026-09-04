@@ -37,6 +37,7 @@ Widget _host(
       width: 600,
       height: heightMeters * 40,
       child: BillboardWidget(
+        clock: clock,
         attention: attentionFor(task, _now),
         widthMeters: 15,
         heightMeters: heightMeters,
@@ -48,7 +49,12 @@ Widget _host(
   ),
 );
 
+/// The harness clock the widget reads; each test starts it at zero.
+final clock = ValueNotifier<double>(0);
+
 void main() {
+  setUp(() => clock.value = 0);
+
   testWidgets('a roof panel leads with the reason and has no fly-there', (
     tester,
   ) async {
@@ -117,7 +123,8 @@ void main() {
         .color
         .a;
     final start = alpha();
-    await tester.pump(const Duration(milliseconds: 1500));
+    clock.value += 1.5;
+    await tester.pump();
     expect(alpha(), isNot(closeTo(start, 0.05)));
   });
 
@@ -136,7 +143,8 @@ void main() {
         .color
         .a;
     expect(alpha(), 1);
-    await tester.pump(const Duration(milliseconds: 1500));
+    clock.value += 1.5;
+    await tester.pump();
     expect(alpha(), 1);
   });
 
@@ -164,10 +172,12 @@ void main() {
     await tester.pumpWidget(
       _host(_task(state: PlazaTaskState.blocked), pulseSeconds: 1.2),
     );
-    await tester.pump(const Duration(milliseconds: 600));
+    clock.value += 0.6;
+    await tester.pump();
     final fast = alphaOf(tester);
     await tester.pumpWidget(_host(_task(state: PlazaTaskState.blocked)));
-    await tester.pump(const Duration(milliseconds: 600));
+    clock.value += 0.6;
+    await tester.pump();
     final slow = alphaOf(tester);
     // After 0.6 s the 1.2 s cycle is at its peak; the 3 s cycle is not.
     expect(fast, greaterThan(slow));

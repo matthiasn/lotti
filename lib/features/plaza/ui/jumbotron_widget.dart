@@ -5,8 +5,9 @@ import 'package:lotti/features/plaza/ui/plaza_style.dart';
 
 /// The giant screen behind the plaza: the project's name over the hero's
 /// cover art, the attention count, and the top headlines. Captured on a
-/// slow interval; the hero cover cross-fades every few seconds.
-class JumbotronWidget extends StatefulWidget {
+/// slow interval; the hero cover turns every few seconds on the harness
+/// [clock], so nothing here ticks on its own.
+class JumbotronWidget extends StatelessWidget {
   const JumbotronWidget({
     required this.projectLabel,
     required this.taskCount,
@@ -15,6 +16,7 @@ class JumbotronWidget extends StatefulWidget {
     required this.covers,
     required this.widthMeters,
     required this.pxPerMeter,
+    required this.clock,
     this.coverSeconds = 5,
     this.pinProjectCard,
     super.key,
@@ -37,39 +39,21 @@ class JumbotronWidget extends StatefulWidget {
   final double pxPerMeter;
   final double coverSeconds;
 
-  @override
-  State<JumbotronWidget> createState() => _JumbotronWidgetState();
-}
-
-class _JumbotronWidgetState extends State<JumbotronWidget>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _clock = AnimationController(
-    vsync: this,
-    duration: Duration(milliseconds: (widget.coverSeconds * 1000).round()),
-  )..repeat();
-
-  @override
-  void dispose() {
-    _clock.dispose();
-    super.dispose();
-  }
+  /// Elapsed seconds, advanced by the harness once per painted frame.
+  final ValueListenable<double> clock;
 
   @override
   Widget build(BuildContext context) {
-    double m(double meters) => meters * widget.pxPerMeter;
-    final w = widget.widthMeters;
+    double m(double meters) => meters * pxPerMeter;
+    final w = widthMeters;
     final titlePx = m(0.11 * w);
     final bodyPx = m(0.035 * w);
     final pad = m(0.04 * w);
-    final pin = widget.pinProjectCard;
+    final pin = pinProjectCard;
     return AnimatedBuilder(
-      animation: pin == null ? _clock : Listenable.merge([_clock, pin]),
+      animation: pin == null ? clock : Listenable.merge([clock, pin]),
       builder: (context, _) {
-        final covers = widget.covers;
-        final cycle = _clock.lastElapsedDuration == null
-            ? 0
-            : _clock.lastElapsedDuration!.inMilliseconds ~/
-                  (widget.coverSeconds * 1000);
+        final cycle = (clock.value / coverSeconds).floor();
         final pinned = pin?.value ?? false;
         final cover = covers.isEmpty ? null : covers[cycle % covers.length];
         return Material(
@@ -126,7 +110,7 @@ class _JumbotronWidgetState extends State<JumbotronWidget>
     double bodyPx,
     double Function(double) m,
   ) {
-    final slides = widget.headlines.take(3).length + 1;
+    final slides = headlines.take(3).length + 1;
     final slide = cycle % slides;
     if (slide == 0) {
       return Column(
@@ -134,7 +118,7 @@ class _JumbotronWidgetState extends State<JumbotronWidget>
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            widget.projectLabel,
+            projectLabel,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
@@ -154,8 +138,8 @@ class _JumbotronWidgetState extends State<JumbotronWidget>
           ),
           SizedBox(height: m(0.35)),
           Text(
-            '${widget.taskCount} tasks · '
-            '${widget.attentionCount} need attention',
+            '$taskCount tasks · '
+            '$attentionCount need attention',
             style: TextStyle(
               fontFamily: PlazaStyle.fontMono,
               fontSize: bodyPx * 2,
@@ -165,7 +149,7 @@ class _JumbotronWidgetState extends State<JumbotronWidget>
         ],
       );
     }
-    final a = widget.headlines[slide - 1];
+    final a = headlines[slide - 1];
     final frame = PlazaStyle.lantern(a.lantern);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -174,8 +158,8 @@ class _JumbotronWidgetState extends State<JumbotronWidget>
         // Masthead: the project stays on screen while the
         // headlines turn.
         Text(
-          '${widget.projectLabel}  ·  '
-          '${widget.attentionCount} need attention',
+          '$projectLabel  ·  '
+          '$attentionCount need attention',
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
