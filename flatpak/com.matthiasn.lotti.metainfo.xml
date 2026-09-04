@@ -40,6 +40,13 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="1.0.27" date="2026-09-05">
+      <description>
+        <p>Changed: projects have a clearer workspace for focused work. Browse projects by area, hide the desktop list when you need more room, and edit project settings in a dedicated form. Project-agent reports, health assessments, automation controls, and recommended actions now share one consistent detail surface.</p>
+        <p>Fixed: project membership stays consistent when tasks or projects change. Task links now respect category and privacy changes, failed task assignments clean up newly created tasks, and project edits preserve unrelated synced changes. A project's category cannot change while it has linked tasks or a live agent.</p>
+        <p>Fixed: project agents follow synced project changes. Agents are retired when a synced project disappears, and their category permissions follow synced moves without scheduling an unnecessary report.</p>
+      </description>
+    </release>
     <release version="1.0.26" date="2026-09-04">
       <description>
         <p>Added: Lotti on Google Play beyond internal testing. Android builds now reach Play's closed testing track, and production, as the very same builds that internal testers already had, so Play users on those tracks receive the same build as TestFlight and Flathub users.</p>
