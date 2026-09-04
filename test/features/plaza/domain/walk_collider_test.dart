@@ -20,6 +20,20 @@ Footprint _box({
 );
 
 void main() {
+  test('a long box turned 45° still pushes out near its far corner', () {
+    // Width 20 along local X, depth 2: the far corner is 10.05 m from the
+    // centre, well past the |dx| + |dz| a square box of that reach would
+    // allow. A point just inside that corner must still be pushed out.
+    final c = WalkCollider([_box(width: 20, depth: 2, facing: math.pi / 4)]);
+    final (cx, cz) = frameToWorld(0, 0, math.pi / 4, 9.5, 0.8);
+    final (rx, rz) = c.resolve(cx, cz);
+    expect((rx, rz), isNot((cx, cz)));
+    // Out through the nearest face, the long side: to v = 1 + margin.
+    final (u, v) = _box(width: 20, depth: 2, facing: math.pi / 4).local(rx, rz);
+    expect(u, closeTo(9.5, 1e-9));
+    expect(v, closeTo(1.6, 1e-9));
+  });
+
   test('a point outside every footprint is untouched', () {
     final c = WalkCollider([_box()]);
     expect(c.resolve(20, 20), (20, 20));

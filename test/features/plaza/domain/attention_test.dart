@@ -243,4 +243,25 @@ void main() {
     expect(shortDate(DateTime.utc(2026, 1, 3)), 'Jan 3');
     expect(shortDate(DateTime.utc(2026, 12, 25)), 'Dec 25');
   });
+
+  test('every lantern state has its own glyph and word', () {
+    final glyphs = {for (final s in LanternState.values) s.glyph};
+    final words = {for (final s in LanternState.values) s.word};
+    expect(glyphs, hasLength(LanternState.values.length));
+    expect(words, hasLength(LanternState.values.length));
+    expect(LanternState.blocked.glyph, '✕');
+    expect(LanternState.overdue.word, 'overdue');
+    expect(LanternState.inProgress.word, 'in progress');
+    expect(LanternState.off.word, 'done');
+  });
+
+  test('the meta bits name only what the task has', () {
+    expect(taskMetaBits(_task()), isEmpty);
+    expect(taskMetaBits(_task(due: DateTime.utc(2026, 8, 2))), ['due Aug 2']);
+    expect(taskMetaBits(_task(links: const ['a', 'b'])), ['links 2']);
+    expect(
+      taskMetaBits(_task(due: DateTime.utc(2026, 8, 2), links: const ['a'])),
+      ['due Aug 2', 'links 1'],
+    );
+  });
 }

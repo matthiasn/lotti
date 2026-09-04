@@ -262,7 +262,7 @@ class _KeyLegend extends StatelessWidget {
                   style: const TextStyle(
                     fontFamily: PlazaStyle.fontMono,
                     fontSize: 12,
-                    color: Color(0x8CFFFFFF),
+                    color: PlazaStyle.textFaint,
                   ),
                 ),
               ),
@@ -272,7 +272,7 @@ class _KeyLegend extends StatelessWidget {
                 style: const TextStyle(
                   fontFamily: PlazaStyle.fontText,
                   fontSize: 12,
-                  color: Color(0x8CFFFFFF),
+                  color: PlazaStyle.textFaint,
                 ),
               ),
             ],
@@ -290,12 +290,12 @@ class _LanternLegend extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        for (final (state, label) in const [
-          (LanternState.inProgress, 'in progress'),
-          (LanternState.open, 'open'),
-          (LanternState.blocked, 'blocked'),
-          (LanternState.overdue, 'overdue'),
-          (LanternState.off, 'done'),
+        for (final state in const [
+          LanternState.inProgress,
+          LanternState.open,
+          LanternState.blocked,
+          LanternState.overdue,
+          LanternState.off,
         ])
           Padding(
             padding: const EdgeInsets.only(top: 5),
@@ -319,7 +319,7 @@ class _LanternLegend extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  label,
+                  state.word,
                   style: const TextStyle(
                     fontFamily: PlazaStyle.fontText,
                     fontSize: 11,

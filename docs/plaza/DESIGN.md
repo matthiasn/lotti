@@ -509,9 +509,9 @@ itself shows it. The values are in the concept.
   row's end it would land on an earlier row's plots, so the plaza frame
   moves to the district's outside, away from the plot centroid. The spec
   drew it on the axis.
-- **No overview beacon dot.** `BeaconKind.overview` exists but nothing
-  creates one; the overview is a computed pose (behind the oldest edge,
-  framing the whole footprint) reached by key, button or the walk. Task
+- **No overview beacon dot.** The overview is a computed pose (behind the
+  oldest edge, framing the whole footprint) reached by key, button or the
+  walk, not a beacon kind. Task
   beacons are not objects either: a facade tap, a billboard tap and a search
   hit fly straight to the computed task pose.
 - **Block beacons stand before the block, not mid-block**, so the first

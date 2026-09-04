@@ -375,10 +375,9 @@ one **Attention** beacon per anomaly. A block beacon stands `blockBeaconInset`
 (20 m) *before* the block start, looking down it with a 0.05 rad upward
 pitch, so the first pair of facades fits the frame. An attention beacon's
 pose is `taskPoseFor` its building. Markers hang 1.6 m above the road
-(1.8 m for attention). `BeaconKind.overview` exists in the enum but no
-overview beacon is created; the overview is reached by key, button or the
-morning walk. Attention and home beacons are visible within 450 m, block
-and corner within 320 m.
+(1.8 m for attention). There is no overview beacon: the overview is
+reached by key, button or the morning walk. Attention and home beacons are
+visible within 450 m, block and corner within 320 m.
 
 # Camera: walking, flying, landing
 
@@ -388,8 +387,8 @@ stateDiagram-v2
   Walking --> Flying: flyTo from a beacon, facade or billboard tap, Tab, H, M, Backspace, search or a walk stop
   Walking --> Flying: movement key while above eye height plus 1.5 m, a landing flight straight down
   Flying --> Walking: flight lands, onArrived
-  Flying --> Walking: drag look, or a movement key on a flight with no arc or below landing height, cancelled in place
-  Flying --> Flying: movement key mid arc above landing height, replaced by a landing flight
+  Flying --> Walking: drag look, or a movement key below landing height, cancelled in place
+  Flying --> Flying: movement key above landing height (mid arc, or cruising down the street), replaced by a landing flight
   Walking --> Walking: WASD and shift, the collider keeps the walker out of every solid
 ```
 
@@ -420,9 +419,8 @@ A `Flight` is planned once, as a chain of straight **legs** with one
   acceleration starts and ends at zero; a way shorter than one cruise-ramp
   (`cruise × ramp`) shrinks both ramps to `sqrt(length × ramp / cruise)`
   and never reaches the cruise. Duration is `2 × ramp + (length − cruise ×
-  ramp) / cruise`; `timeScale` multiplies the speed and divides the ramp.
-  `distanceAt(t)` is the way covered, `cruiseSpeed` and `rampTime` what
-  was flown.
+  ramp) / cruise`. `distanceAt(t)` is the way covered, `cruiseSpeed` and
+  `rampTime` what was flown.
 - **The lift of a leg**: `arc × profile(s)` over the leg's straight line,
   where `s` is the fraction of the leg and the profile is a smoothstep
   climb over the first `rampStart` of it, a cruise, and a smoothstep
@@ -448,12 +446,14 @@ A `Flight` is planned once, as a chain of straight **legs** with one
   yaw over the last ramp's distance; shorter or mostly vertical trips
   blend yaw directly. On a routed flight the yaw looks at the point
   `lookAhead` (12 m) further along the way, which turns a corner before
-  reaching it. When the stop stands beside the road the last leg is the
-  **arrival** hop off the way: the look-ahead stops where the way leaves
-  the road and the camera holds the road's heading through the hop, then
-  turns onto the stop's own heading over the last ramp, instead of
-  swinging toward the stop and back. Each ramp blends between two *fixed*
-  headings (the way's heading where the ramp ends, or where it starts),
+  reaching it. A routed flight keeps where its way leaves the road as a
+  distance along the flight (`_wayEnd`, the whole length for a stop on
+  the road): the look-ahead never reaches past it, so when the stop stands
+  beside the road the last leg is the **arrival** hop off the way and the
+  camera holds the road's heading through the hop, then turns onto the
+  stop's own heading over the last ramp, instead of swinging toward the
+  stop and back. Each ramp blends between two *fixed* headings (the way's
+  heading where the ramp ends, or where it starts, both computed once),
   so the side the camera turns to is settled for the whole ramp, and a
   blend is a slerp of the two direction vectors (`_blendHeading`), so a
   heading that crosses the ±π seam of `atan2` between two frames is no
@@ -485,8 +485,9 @@ fix is a climb that starts *under* a solid in the air and rises into it;
 no stop stands under a sign or the beam.
 
 Every flight pushes the departure pose onto a back stack in the harness;
-Backspace flies the reverse without pushing. While flying, the LOD manager
-is `suspended` and the destination building of a facade flight is
+Backspace flies the reverse without pushing. While the camera flies
+(`FlyCameraController.flying`, landings included) the LOD manager makes
+no promotions, and the destination building of a facade flight is
 pre-promoted to the sign tier (`prepare`). `Tab` cycles the navigation
 beacons (everything but attention); when cycling toward older weeks a block
 or corner pose is turned round so the walk reads as walking, not reversing.
@@ -528,14 +529,26 @@ sizes), so a box on screen and a box in the list are one thing.
 
 `WalkCollider` keeps the walker out of every solid `atWalkHeight` (bottom
 below eye level) with a `solidClearance` (0.6 m) margin: a
-point-versus-rotated-rectangle push through the nearest face. A solid in
-the air, a pylon's sign or the gantry's beam, is not in it: you walk under
-those, and only a flight has to clear them. Two neighbours in a crowded week can stand closer than twice the margin,
-and resolving them one after the other never settles, so **aligned
-footprints are merged** first (`_mergeAligned`): same facing, same row
-line, same depth, and clearances that overlap become one footprint,
-repeatedly, so the alley between them is solid. `footprints` exposes the
-merged set for the tests.
+point-versus-rotated-rectangle push through the nearest face. Each
+footprint's frame (its sine and cosine, its half extents with the margin)
+is fixed once when the collider is built, and a footprint whose corner is
+nearer its centre than the walker is rejected on the squared distance
+before it is rotated into. A solid in the air, a pylon's sign or the
+gantry's beam, is not in it: you walk under those, and only a flight has
+to clear them. Two neighbours in a crowded week can stand closer than
+twice the margin, and resolving them one after the other never settles,
+so **aligned footprints are merged** first (`_mergeAligned`): same facing,
+same row line, same depth, and clearances that overlap become one
+footprint, repeatedly, so the alley between them is solid. `footprints`
+exposes the merged set for the tests.
+
+Every rotation between a road's or a footprint's frame and the world goes
+through `frameToWorld` / `worldToFrame` (`domain/street_layout.dart`):
+local X is the right-hand normal of the facing, local Z the facing itself.
+`Footprint.local`, `Footprint.toWorld` and `Footprint.contains` wrap them,
+and the layout, the scenery, the tour and the collider build on those
+rather than expanding the rotation by hand. Square posts (spires, pylon
+footings, gantry legs, lamp posts) are `Solid.post`.
 
 # The scenery
 
@@ -629,7 +642,7 @@ fourteen metres away).
 |---|---|---|
 | live facade (at most 4) | `FacadeWidget` live | every frame |
 | sign facade (at most 80) | `FacadeWidget` sign | once |
-| pylon, mounted and roof billboards | `BillboardWidget` | every 100 ms, hidden beyond the plaza range |
+| pylon, mounted and roof billboards | `BillboardWidget` | anomalies every 100 ms, the rest (a still face) every 3 s; hidden beyond the plaza range |
 | mounted, gantry and roofline tickers | `TickerWidget` | every 50 ms, hidden beyond the plaza range |
 | jumbotron | `JumbotronWidget` at 0.5 × px/m | every 1 s |
 | skyline screens | `BillboardWidget` at 0.35 × px/m | every 3 s |
@@ -641,12 +654,20 @@ fourteen metres away).
 The **plaza range** is `max(180 m, distance from the plaza centre to the
 overview pose + 60 m)`, so the map shot still sees the pylons lit. A hidden
 surface is not captured, which is what stops the plaza's animation costing
-anything from the far end of the street. `PlazaSurfaces.update` re-requests
-the one-off captures until their textures land. `PlazaSurfaces.facingPose`
+anything from the far end of the street. The bookkeeping is
+`SurfaceCaptures` (`scene/surface_captures.dart`), shared by
+`PlazaSurfaces` and the LOD manager: `hostedSurface` builds every widget
+component the same way (manual capture, manual input unless live), a
+`CaptureCadence` holds the surfaces on one interval and the clock their
+widgets read, `requestDue` throttles per surface (the first capture is
+free) and skips a surface the camera cannot see (`TimedSurface.seenFrom`:
+centre behind the eye by more than a few metres, or eye behind the
+surface's front), and `requestPending` re-requests the one-off captures
+until their textures land, then forgets them. `PlazaSurfaces.facingPose`
 gives the pose in front of a billboard slot (14 m by default), used by the
-tour. Billboard and
-ticker animation is driven by `AnimationController`s inside the widgets, so
-the capture interval alone decides how often they re-render.
+tour. No widget owns an animation controller: a billboard's glow, a
+ticker's scroll and the jumbotron's slides all read their cadence's clock,
+which advances only when a capture is requested.
 
 The **sign** facade variant is the category bar, a state marquee band with
 its glyph, the title (up to three lines, shrunk until its longest word fits
@@ -928,19 +949,23 @@ is ignored entirely in tour and bench modes.
   any surface under an `everyFrame` or `interval` capture policy (its
   frame pump; only `manual` does not), and an animation controller inside
   a captured widget ticks on every vsync. So every surface is a **manual
-  capture requested from the pacer**: `PlazaSurfaces.update(eye, seconds)`
-  asks each timed surface in range once its interval is up (billboards
-  `nearInterval` 0.1 s, tickers `tickerInterval` 0.05 s, the jumbotron
-  `jumbotronInterval` 1 s, the skyline screens `farInterval` 3 s; markers,
+  capture requested from the pacer**: `PlazaSurfaces.update(eye, seconds,
+  forward:)` asks each timed surface in range, and in view, once its
+  interval is up (anomalous billboards `nearInterval` 0.1 s, tickers
+  `tickerInterval` 0.05 s, the jumbotron `jumbotronInterval` 1 s, the
+  skyline screens and the still billboards `farInterval` 3 s; markers,
   banners and signs once), and `FacadeLodManager.update(eye, forward:,
-  seconds:)` asks each live wall every `liveInterval` (0.05 s). And the
-  animated widgets read **one clock**, the harness's `ValueNotifier<double>`
-  of elapsed seconds advanced once per painted frame: `TickerWidget`
-  scrolls by it, `BillboardWidget.glowAt` breathes by it, `JumbotronWidget`
-  turns its slides by it; none of them owns an animation controller, so
-  between painted frames nothing in them runs and the engine's frame rate
-  equals the painted one (`engineFps` in the overlay says so).
-  `PLAZA_FPS=auto|60|30` picks the cap at start.
+  seconds:, flying:)` asks each live wall every `liveInterval` (0.05 s),
+  and re-ranks the tiers only when the eye, the view direction, the budget
+  or the flight state moved since a ranking that left nothing undone. And
+  the animated widgets read **their cadence's clock**, a
+  `ValueNotifier<double>` of harness seconds that `requestDue` advances
+  immediately before each capture request: `TickerWidget` scrolls by it,
+  `BillboardWidget.glowAt` breathes by it, `JumbotronWidget` turns its
+  slides by it; none of them owns an animation controller, so a hosted
+  widget rebuilds exactly once per capture, in the frame of the request,
+  and the engine's frame rate equals the painted one (`engineFps` in the
+  overlay says so). `PLAZA_FPS=auto|60|30` picks the cap at start.
 - **Fixtures are the demo world only.** The harness projects
   `ManualDemoWorld.penguinLogistics`; the synthetic generator lives in
   `test/features/plaza/plaza_fixtures.dart` for the tests and nowhere else.

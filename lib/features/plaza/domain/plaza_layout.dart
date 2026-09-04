@@ -45,31 +45,21 @@ class CameraPose {
       'pitch ${pitch.toStringAsFixed(2)})';
 }
 
-/// A world-space point with the street's local frame at the frontier.
-class _Frame {
-  _Frame(this.originX, this.originZ, this.heading, {this.lateralOffset = 0});
-
-  final double originX;
-  final double originZ;
-
-  /// Direction of travel of the last segment.
-  final double heading;
-
-  /// Sideways shift of the whole plaza frame, world metres along the
-  /// lateral axis (see [frontierPlazaFor]).
-  final double lateralOffset;
-
-  /// Local (lateral, along) → world. Lateral is the road's right-hand
-  /// normal; along is the heading.
-  (double, double) toWorld(double lateral, double along) => (
-    originX +
-        math.sin(heading) * along +
-        math.cos(heading) * (lateral + lateralOffset),
-    originZ +
-        math.cos(heading) * along -
-        math.sin(heading) * (lateral + lateralOffset),
-  );
-}
+/// Plaza-local ([lateral], [along]) from the end of [last], the frame
+/// shifted sideways by [lateralOffset] (see [frontierPlazaFor]), to the
+/// world. Lateral is the road's right-hand normal; along is its heading.
+(double, double) _plazaPoint(
+  RoadSegment last,
+  double lateralOffset,
+  double lateral,
+  double along,
+) => frameToWorld(
+  last.endX,
+  last.endZ,
+  last.headingRadians,
+  lateral + lateralOffset,
+  along,
+);
 
 /// How a billboard is mounted.
 enum BillboardMount {
@@ -151,7 +141,7 @@ class TickerSlot {
 }
 
 /// What a beacon is for; drives its look and its visibility range.
-enum BeaconKind { home, block, corner, overview, attention }
+enum BeaconKind { home, block, corner, attention }
 
 /// A beacon: a visible point plus the curated pose it flies you to.
 class Beacon {
@@ -223,6 +213,16 @@ class FrontierPlaza {
 
   /// The four pylon slots, rank order.
   final List<BillboardSlot> pylons;
+
+  /// The square's rectangle on the ground, local Z along the street's
+  /// heading.
+  Footprint get footprint => Footprint(
+    x: centerX,
+    z: centerZ,
+    facingRadians: headingRadians,
+    width: width,
+    depth: depth,
+  );
 }
 
 /// Plaza dimensions, world meters. The plaza starts [plazaSetback] past the
@@ -277,9 +277,13 @@ double plazaLateralOffsetFor(StreetPlan plan) {
   cx /= plan.placements.length;
   cz /= plan.placements.length;
   // Lateral component of (centroid − street end) in the last row's frame.
-  final toCentroid =
-      (cx - last.endX) * math.cos(last.headingRadians) -
-      (cz - last.endZ) * math.sin(last.headingRadians);
+  final (toCentroid, _) = worldToFrame(
+    last.endX,
+    last.endZ,
+    last.headingRadians,
+    cx,
+    cz,
+  );
   return toCentroid >= 0 ? -plazaFoldClearance : plazaFoldClearance;
 }
 
@@ -292,38 +296,21 @@ double plazaLateralOffsetFor(StreetPlan plan) {
 FrontierPlaza? frontierPlazaFor(StreetPlan plan) {
   final last = plan.last;
   if (last == null) return null;
-  final folded = plan.segments.any((s) => s.isConnector);
-  var lateralOffset = 0.0;
-  if (folded && plan.placements.isNotEmpty) {
-    var cx = 0.0;
-    var cz = 0.0;
-    for (final p in plan.placements.values) {
-      cx += p.x;
-      cz += p.z;
-    }
-    cx /= plan.placements.length;
-    cz /= plan.placements.length;
-    // Lateral component of (centroid − street end) in the last row's frame.
-    final toCentroid =
-        (cx - last.endX) * math.cos(last.headingRadians) -
-        (cz - last.endZ) * math.sin(last.headingRadians);
-    lateralOffset = toCentroid >= 0 ? -plazaFoldClearance : plazaFoldClearance;
-  }
-  final frame = _Frame(
-    last.endX,
-    last.endZ,
-    last.headingRadians,
-    lateralOffset: lateralOffset,
-  );
+  final lateralOffset = plazaLateralOffsetFor(plan);
   final lookBack = last.headingRadians + math.pi;
 
-  final (cx, cz) = frame.toWorld(0, plazaSetback + plazaDepth / 2);
-  final (hx, hz) = frame.toWorld(0, _homeAlong);
+  final (cx, cz) = _plazaPoint(
+    last,
+    lateralOffset,
+    0,
+    plazaSetback + plazaDepth / 2,
+  );
+  final (hx, hz) = _plazaPoint(last, lateralOffset, 0, _homeAlong);
 
   final pylons = <BillboardSlot>[];
   for (final (rank, slot) in _pylonSlots.indexed) {
     final (lateral, along, width, height, bottom) = slot;
-    final (px, pz) = frame.toWorld(lateral, along);
+    final (px, pz) = _plazaPoint(last, lateralOffset, lateral, along);
     // Face the plaza's focal point, expressed in the local frame then
     // rotated into the world.
     final localFacing = math.atan2(0 - lateral, _pylonFocusAlong - along);
@@ -384,15 +371,7 @@ CameraPose overviewPoseFor(StreetPlan plan) {
   }
   // Include the plaza and the jumbotron tower in the footprint.
   const plazaFar = plazaSetback + plazaDepth + 20;
-  final plazaLateral = plazaLateralOffsetFor(plan);
-  final fx =
-      last.endX +
-      math.sin(last.headingRadians) * plazaFar +
-      math.cos(last.headingRadians) * plazaLateral;
-  final fz =
-      last.endZ +
-      math.cos(last.headingRadians) * plazaFar -
-      math.sin(last.headingRadians) * plazaLateral;
+  final (fx, fz) = _plazaPoint(last, plazaLateralOffsetFor(plan), 0, plazaFar);
   minX = math.min(minX, fx);
   maxX = math.max(maxX, fx);
   final jumbotron = jumbotronSlotFor(plan);
@@ -428,12 +407,8 @@ CameraPose overviewPoseFor(StreetPlan plan) {
 List<PlotPlacement> plazaMounts(StreetPlan plan) {
   final last = plan.last;
   if (last == null) return const [];
-  double along(PlotPlacement p) {
-    final dx = p.x - last.startX;
-    final dz = p.z - last.startZ;
-    return dx * math.sin(last.headingRadians) +
-        dz * math.cos(last.headingRadians);
-  }
+  double along(PlotPlacement p) =>
+      worldToFrame(last.startX, last.startZ, last.headingRadians, p.x, p.z).$2;
 
   final result = <PlotPlacement>[];
   for (final side in PlotSide.values) {
@@ -461,8 +436,13 @@ List<PlotPlacement> plazaMounts(StreetPlan plan) {
   for (final (i, mount) in plazaMounts(plan).indexed) {
     // The end wall faces along the street heading (toward the plaza).
     final facing = last.headingRadians;
-    final endX = mount.x + math.sin(facing) * (mount.width / 2 + 0.15);
-    final endZ = mount.z + math.cos(facing) * (mount.width / 2 + 0.15);
+    final (endX, endZ) = frameToWorld(
+      mount.x,
+      mount.z,
+      facing,
+      0,
+      mount.width / 2 + 0.15,
+    );
     screens.add(
       BillboardSlot(
         rank: 4 + i,
@@ -503,11 +483,12 @@ List<BillboardSlot> roofBillboardsFor(
     final p = plan.placements[anomaly.task.id];
     if (p == null) continue;
     final height = (2.6 + anomaly.score * 0.45).clamp(3.0, 6.0);
+    final (x, z) = p.footprint.toWorld(0, p.depth / 2 - 0.4);
     slots.add(
       BillboardSlot(
         rank: rank,
-        x: p.x + math.sin(p.facingRadians) * (p.depth / 2 - 0.4),
-        z: p.z + math.cos(p.facingRadians) * (p.depth / 2 - 0.4),
+        x: x,
+        z: z,
         facingRadians: p.facingRadians,
         width: p.width * 0.95,
         height: height,
@@ -554,11 +535,12 @@ List<BannerSlot> bannersFor(StreetPlan plan, {double minHeight = 12}) {
         continue;
       }
       final facing = segment.headingRadians;
+      final (x, z) = frameToWorld(p.x, p.z, facing, 0, p.width / 2 + 0.06);
       slots.add(
         BannerSlot(
           taskId: p.taskId,
-          x: p.x + math.sin(facing) * (p.width / 2 + 0.06),
-          z: p.z + math.cos(facing) * (p.width / 2 + 0.06),
+          x: x,
+          z: z,
           facingRadians: facing,
           width: math.min(1.8, p.depth * 0.3),
           height: p.height * 0.7,
@@ -573,6 +555,9 @@ List<BannerSlot> bannersFor(StreetPlan plan, {double minHeight = 12}) {
 /// Lamp posts stand about this far apart along a kerb.
 const lampRhythm = 18.0;
 
+/// A lamp post needs a gap at least this wide between two buildings.
+const _lampMinGap = 2.5;
+
 /// Lamp posts on the pavement of both kerbs at a [lampRhythm] beat, each
 /// beat snapped to the nearest gap between buildings (never in front of a
 /// facade), plus the head of every built block on the left kerb (the week
@@ -581,16 +566,18 @@ const lampRhythm = 18.0;
 List<(double, double)> lampPostsFor(
   StreetPlan plan, {
   required double roadWidth,
-  double minGap = 2.5,
 }) {
   final posts = <(double, double)>[];
   final lateral = roadWidth / 2 - kerbFixtureInset;
   for (final segment in plan.segments) {
     if (segment.isGap) continue;
-    final sinH = math.sin(segment.headingRadians);
-    final cosH = math.cos(segment.headingRadians);
-    double along(PlotPlacement p) =>
-        (p.x - segment.startX) * sinH + (p.z - segment.startZ) * cosH;
+    double along(PlotPlacement p) => worldToFrame(
+      segment.startX,
+      segment.startZ,
+      segment.headingRadians,
+      p.x,
+      p.z,
+    ).$2;
     for (final side in PlotSide.values) {
       final sign = side == PlotSide.left ? -1.0 : 1.0;
       final plots =
@@ -601,15 +588,17 @@ List<(double, double)> lampPostsFor(
               .toList()
             ..sort((a, b) => along(a).compareTo(along(b)));
       // The gaps a post may stand in: before the first plot, between
-      // neighbours at least [minGap] apart, and after the last.
+      // neighbours at least [_lampMinGap] apart, and after the last.
       final gaps = <(double, double)>[];
       var cursor = 0.0;
       for (final p in plots) {
         final start = along(p) - p.width / 2;
-        if (start - cursor >= minGap) gaps.add((cursor, start));
+        if (start - cursor >= _lampMinGap) gaps.add((cursor, start));
         cursor = along(p) + p.width / 2;
       }
-      if (segment.length - cursor >= minGap) gaps.add((cursor, segment.length));
+      if (segment.length - cursor >= _lampMinGap) {
+        gaps.add((cursor, segment.length));
+      }
       final spots = <double>[if (side == PlotSide.left) blockHeadAlong];
       for (
         var beat = lampRhythm / 2;
@@ -629,10 +618,15 @@ List<(double, double)> lampPostsFor(
         }
       }
       for (final a in spots) {
-        posts.add((
-          segment.startX + sinH * a + cosH * sign * lateral,
-          segment.startZ + cosH * a - sinH * sign * lateral,
-        ));
+        posts.add(
+          frameToWorld(
+            segment.startX,
+            segment.startZ,
+            segment.headingRadians,
+            sign * lateral,
+            a,
+          ),
+        );
       }
     }
   }
@@ -655,15 +649,14 @@ List<(int, double, double, double)> weekSignsFor(
   final signs = <(int, double, double, double)>[];
   for (final segment in plan.segments) {
     if (segment.isGap) continue;
-    final sinH = math.sin(segment.headingRadians);
-    final cosH = math.cos(segment.headingRadians);
-    final lateral = -(roadWidth / 2 - kerbFixtureInset);
-    signs.add((
-      segment.bucketIndex,
-      segment.startX + sinH * blockHeadAlong + cosH * lateral,
-      segment.startZ + cosH * blockHeadAlong - sinH * lateral,
-      segment.headingRadians + math.pi,
-    ));
+    final (x, z) = frameToWorld(
+      segment.startX,
+      segment.startZ,
+      segment.headingRadians,
+      -(roadWidth / 2 - kerbFixtureInset),
+      blockHeadAlong,
+    );
+    signs.add((segment.bucketIndex, x, z, segment.headingRadians + math.pi));
   }
   return signs;
 }
@@ -673,9 +666,16 @@ TickerSlot? gantryTickerFor(StreetPlan plan, {required double roadWidth}) {
   final last = plan.last;
   if (last == null) return null;
   const along = 3.0;
+  final (x, z) = frameToWorld(
+    last.endX,
+    last.endZ,
+    last.headingRadians,
+    0,
+    along,
+  );
   return TickerSlot(
-    x: last.endX + math.sin(last.headingRadians) * along,
-    z: last.endZ + math.cos(last.headingRadians) * along,
+    x: x,
+    z: z,
     facingRadians: last.headingRadians,
     width: roadWidth + 4,
     height: 1.8,
@@ -701,17 +701,13 @@ BillboardSlot? jumbotronSlotFor(StreetPlan plan) {
   if (last == null) return null;
   final offset = plazaLateralOffsetFor(plan);
   final side = offset == 0 ? -1.0 : offset.sign;
-  final frame = _Frame(
-    last.endX,
-    last.endZ,
-    last.headingRadians,
-    lateralOffset: offset,
-  );
-  final (x, z) = frame.toWorld(
+  final (x, z) = _plazaPoint(
+    last,
+    offset,
     side * (plazaWidth / 2 + jumbotronLateralClearance),
     jumbotronAlong,
   );
-  final (hx, hz) = frame.toWorld(0, _homeAlong);
+  final (hx, hz) = _plazaPoint(last, offset, 0, _homeAlong);
   return BillboardSlot(
     rank: 0,
     x: x,
@@ -725,27 +721,31 @@ BillboardSlot? jumbotronSlotFor(StreetPlan plan) {
   );
 }
 
+/// Tallest first, ties by task id, so the order never moves under the
+/// user's feet.
+int tallestFirst(PlotPlacement a, PlotPlacement b) {
+  final byHeight = b.height.compareTo(a.height);
+  return byHeight != 0 ? byHeight : a.taskId.compareTo(b.taskId);
+}
+
 /// The [count] tallest buildings, tallest first: they carry spires with
 /// blinking warning lights.
 List<PlotPlacement> spiresFor(StreetPlan plan, {int count = 2}) =>
-    ([...plan.placements.values]..sort((a, b) {
-          final byHeight = b.height.compareTo(a.height);
-          return byHeight != 0 ? byHeight : a.taskId.compareTo(b.taskId);
-        }))
-        .take(count)
-        .toList();
+    ([...plan.placements.values]..sort(tallestFirst)).take(count).toList();
 
 /// A ticker band along the roofline of [hero]'s street-facing wall.
-TickerSlot rooflineTickerFor(PlotPlacement hero, {required bool fast}) =>
-    TickerSlot(
-      x: hero.x + math.sin(hero.facingRadians) * (hero.depth / 2 + 0.05),
-      z: hero.z + math.cos(hero.facingRadians) * (hero.depth / 2 + 0.05),
-      facingRadians: hero.facingRadians,
-      width: hero.width,
-      height: 1.9,
-      bottom: hero.height + 0.2,
-      speedMetersPerSecond: fast ? 4.2 : 3.4,
-    );
+TickerSlot rooflineTickerFor(PlotPlacement hero, {required bool fast}) {
+  final (x, z) = hero.footprint.toWorld(0, hero.depth / 2 + 0.05);
+  return TickerSlot(
+    x: x,
+    z: z,
+    facingRadians: hero.facingRadians,
+    width: hero.width,
+    height: 1.9,
+    bottom: hero.height + 0.2,
+    speedMetersPerSecond: fast ? 4.2 : 3.4,
+  );
+}
 
 /// The pose that looks straight at a building's facade from the road:
 /// far enough back to frame a wide or tall wall, tilted to keep the
@@ -783,12 +783,12 @@ const double maxTaskPitch = 14 * math.pi / 180;
 CameraPose taskPoseFor(PlotPlacement p) {
   final d = taskStandOffFor(p);
   final facing = p.facingRadians;
-  final facadeX = p.x + math.sin(facing) * (p.depth / 2);
-  final facadeZ = p.z + math.cos(facing) * (p.depth / 2);
+  // In front of the facade, which is half the depth out from the centre.
+  final (x, z) = p.footprint.toWorld(0, p.depth / 2 + d);
   return CameraPose(
-    x: facadeX + math.sin(facing) * d,
+    x: x,
     y: eyeHeight,
-    z: facadeZ + math.cos(facing) * d,
+    z: z,
     yaw: facing + math.pi,
     pitch: math.min(
       math.atan2((p.height + roofSignageHeight) / 2 - eyeHeight, d),
@@ -854,10 +854,13 @@ List<Beacon> beaconsFor(
     if (segment.isGap) continue;
     // Stand just before the block looking down it, so its buildings are
     // ahead on both sides rather than beside and behind the camera.
-    final x =
-        segment.startX + math.sin(segment.headingRadians) * blockBeaconInset;
-    final z =
-        segment.startZ + math.cos(segment.headingRadians) * blockBeaconInset;
+    final (x, z) = frameToWorld(
+      segment.startX,
+      segment.startZ,
+      segment.headingRadians,
+      0,
+      blockBeaconInset,
+    );
     beacons.add(
       Beacon(
         id: 'block-${segment.bucketIndex}',

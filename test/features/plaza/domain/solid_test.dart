@@ -37,6 +37,28 @@ void main() {
     expect(wall.contains(10, 12.6, 0, clearance: 0.5), isFalse);
   });
 
+  test('a post is a square solid, turned with its owner', () {
+    final post = Solid.post(
+      x: 4,
+      z: 6,
+      facingRadians: math.pi / 4,
+      size: 2,
+      bottom: 10,
+      top: 14,
+    );
+    expect(post.footprint.width, 2);
+    expect(post.footprint.depth, 2);
+    expect(post.footprint.facingRadians, math.pi / 4);
+    expect(post.bottom, 10);
+    expect(post.top, 14);
+    expect(post.atWalkHeight, isFalse);
+    // Half a square's diagonal is 1.41 m: inside at 1.3, outside at 1.5.
+    expect(post.contains(4 + 1.3, 12, 6), isTrue);
+    expect(post.contains(4 + 1.5, 12, 6), isFalse);
+    expect(post.contains(4, 9, 6), isFalse);
+    expect(Solid.post(x: 0, z: 0, size: 1, top: 5).atWalkHeight, isTrue);
+  });
+
   test('a solid above eye level is for flights, not the walker', () {
     const footprint = Footprint(
       x: 0,

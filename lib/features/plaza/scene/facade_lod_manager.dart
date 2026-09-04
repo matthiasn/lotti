@@ -1,7 +1,10 @@
 import 'dart:math' as math;
+import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter_scene/scene.dart';
 import 'package:lotti/features/plaza/scene/plaza_scene.dart';
+import 'package:lotti/features/plaza/scene/surface_captures.dart';
 import 'package:lotti/features/plaza/ui/checklist_ticks.dart';
 import 'package:lotti/features/plaza/ui/facade_widget.dart';
 import 'package:vector_math/vector_math.dart' show Vector3;
@@ -51,11 +54,19 @@ class FacadeLodStats {
 class _Surface {
   WidgetComponent? component;
   FacadeTier tier = FacadeTier.far;
-  bool captured = false;
-
-  /// When a live wall was last asked for a capture, harness seconds.
-  double lastCapture = double.negativeInfinity;
 }
+
+/// The budget and the suspension a ranking was made under; a change to any
+/// of them makes the ranking stale.
+typedef _Budget = ({
+  int liveCap,
+  int signCap,
+  double liveDistance,
+  double signDistance,
+  int promotionsPerFrame,
+  bool forceAllLive,
+  bool flying,
+});
 
 /// Assigns each facade a tier from camera distance with sticky
 /// hysteresis, enforces the caps by construction, and schedules
@@ -69,7 +80,9 @@ class FacadeLodManager {
     required this.config,
     required this.ticks,
     required this.onOpen,
-  }) : _surfaces = [for (final _ in buildings) _Surface()];
+  }) : _surfaces = [for (final _ in buildings) _Surface()],
+       _distances = Float64List(buildings.length),
+       _order = List<int>.generate(buildings.length, (i) => i);
 
   final List<PlazaBuilding> buildings;
   final FacadeLodConfig config;
@@ -77,6 +90,29 @@ class FacadeLodManager {
   final void Function(PlazaBuilding building) onOpen;
   final List<_Surface> _surfaces;
   final FacadeLodStats stats = FacadeLodStats();
+
+  final SurfaceCaptures _captures = SurfaceCaptures();
+  final CaptureCadence _live = CaptureCadence(liveInterval);
+
+  /// Ranking scratch, allocated once: each building's sticky distance and
+  /// the building indices sorted by it.
+  final Float64List _distances;
+  final List<int> _order;
+
+  /// What the last ranking was made for. It holds until the eye, the view
+  /// direction, the budget or the suspension changes, or until it left
+  /// work undone: a tier it changed (the hysteresis shifts) or a promotion
+  /// it could not afford.
+  final Vector3 _rankedEye = Vector3.zero();
+  final Vector3 _rankedForward = Vector3.zero();
+  bool _rankedWithForward = false;
+  _Budget? _rankedBudget;
+  bool _settled = false;
+  int _rankings = 0;
+
+  /// How many times the tiers have been ranked.
+  @visibleForTesting
+  int get rankings => _rankings;
 
   /// Sticky factor: a surface already at a tier ranks as if 15% closer.
   static const _hysteresis = 0.85;
@@ -101,10 +137,6 @@ class FacadeLodManager {
         .join(' | ');
   }
 
-  /// While true (during flights) no surface is created except the one
-  /// pre-captured by [prepare].
-  bool suspended = false;
-
   PlazaBuilding? _focused;
   PlazaBuilding? get focused => _focused;
 
@@ -113,52 +145,89 @@ class FacadeLodManager {
   void prepare(PlazaBuilding building) {
     final i = buildings.indexOf(building);
     if (i < 0) return;
-    if (_surfaces[i].tier == FacadeTier.far) _apply(i, FacadeTier.sign);
+    if (_surfaces[i].tier == FacadeTier.far) {
+      _apply(i, FacadeTier.sign);
+      _settled = false;
+    }
   }
 
   /// How often a live wall is captured, seconds on the harness clock.
   static const liveInterval = 0.05;
 
-  /// Once per painted frame: assigns the tiers for [eye], then asks every
-  /// live wall for a capture once [liveInterval] has passed since its
-  /// last, at [seconds] on the harness clock. [forward] is the camera's
-  /// view direction: a wall behind the walker never takes a live slot,
-  /// however near — standing 22 m from a landmark puts the opposite row
-  /// 3 m behind your back.
-  void update(Vector3 eye, {Vector3? forward, double seconds = 0}) {
+  /// Once per painted frame: assigns the tiers for [eye] unless the last
+  /// ranking still holds (same eye, [forward], budget and [flying], and
+  /// nothing left undone), then asks every live wall for a capture once
+  /// [liveInterval] has passed since its last, at [seconds] on the harness
+  /// clock, and every sign for its one capture until it lands. [forward]
+  /// is the camera's view direction: a wall behind the walker never takes
+  /// a live slot, however near — standing 22 m from a landmark puts the
+  /// opposite row 3 m behind your back. While [flying] no surface is
+  /// created except the one pre-captured by [prepare].
+  void update(
+    Vector3 eye, {
+    Vector3? forward,
+    double seconds = 0,
+    bool flying = false,
+  }) {
+    if (!_rankingHolds(eye, forward, flying)) _rank(eye, forward, flying);
+    // No culling here: the ranking already demoted every wall the camera
+    // cannot see.
+    _captures
+      ..requestDue(_live, eye, seconds)
+      ..requestPending();
+    _refreshStats();
+  }
+
+  bool _rankingHolds(Vector3 eye, Vector3? forward, bool flying) {
+    if (!_settled || eye != _rankedEye) return false;
+    if (forward == null) {
+      if (_rankedWithForward) return false;
+    } else if (!_rankedWithForward || forward != _rankedForward) {
+      return false;
+    }
+    final b = _rankedBudget;
+    return b != null &&
+        b.liveCap == config.liveCap &&
+        b.signCap == config.signCap &&
+        b.liveDistance == config.liveDistance &&
+        b.signDistance == config.signDistance &&
+        b.promotionsPerFrame == config.promotionsPerFrame &&
+        b.forceAllLive == config.forceAllLive &&
+        b.flying == flying;
+  }
+
+  void _rank(Vector3 eye, Vector3? forward, bool flying) {
+    _rankings++;
     final n = buildings.length;
-    final distances = List<double>.filled(n, 0);
-    final order = List<int>.generate(n, (i) => i);
     for (var i = 0; i < n; i++) {
       final d = buildings[i].groundDistanceTo(eye);
-      distances[i] = _surfaces[i].tier == FacadeTier.far ? d : d * _hysteresis;
+      _distances[i] = _surfaces[i].tier == FacadeTier.far ? d : d * _hysteresis;
+      _order[i] = i;
     }
-    order.sort((a, b) => distances[a].compareTo(distances[b]));
+    _order.sort((a, b) => _distances[a].compareTo(_distances[b]));
 
     var liveLeft = config.forceAllLive ? n : config.liveCap;
     var signLeft = config.forceAllLive ? 0 : config.signCap;
     // The stress switch wants the steady state, not a five-second ramp:
     // it ignores the per-frame promotion budget.
-    var promotionsLeft = suspended
+    var promotionsLeft = flying
         ? 0
         : config.forceAllLive
         ? n
         : config.promotionsPerFrame;
     PlazaBuilding? focused;
+    var changed = false;
+    var waiting = false;
 
-    for (final i in order) {
+    for (final i in _order) {
       final building = buildings[i];
-      final d = distances[i];
-      final inFront = building.facesEye(eye);
-      final ahead =
-          forward == null || (building.facadeCenter - eye).dot(forward) > 0;
+      final d = _distances[i];
       FacadeTier target;
       if (config.forceAllLive) {
         target = FacadeTier.live;
       } else if (liveLeft > 0 &&
           d < math.max(config.liveDistance, building.liveRange) &&
-          inFront &&
-          ahead) {
+          _inView(building, eye, forward)) {
         target = FacadeTier.live;
       } else if (signLeft > 0 && d < config.signDistance) {
         target = FacadeTier.sign;
@@ -172,14 +241,19 @@ class FacadeLodManager {
       if (target == FacadeTier.sign) signLeft--;
 
       final current = _surfaces[i].tier;
+      if (target == current) continue;
       if (target.index > current.index) {
         // Promotion: rate-limited.
         if (promotionsLeft > 0) {
           promotionsLeft--;
           _apply(i, target);
+          changed = true;
+        } else {
+          waiting = true;
         }
       } else {
         _apply(i, target);
+        changed = true;
       }
     }
 
@@ -190,46 +264,48 @@ class FacadeLodManager {
       focused?.neon.visible = false;
       _focused = focused;
     }
-    for (final surface in _surfaces) {
-      if (surface.tier != FacadeTier.live) continue;
-      final controller = surface.component?.controller;
-      if (controller == null) continue;
-      if (seconds - surface.lastCapture < liveInterval - 1e-6) continue;
-      surface.lastCapture = seconds;
-      controller.requestCapture();
-    }
-    _refreshStats();
+
+    _settled = !changed && !waiting;
+    _rankedEye.setFrom(eye);
+    _rankedWithForward = forward != null;
+    if (forward != null) _rankedForward.setFrom(forward);
+    _rankedBudget = (
+      liveCap: config.liveCap,
+      signCap: config.signCap,
+      liveDistance: config.liveDistance,
+      signDistance: config.signDistance,
+      promotionsPerFrame: config.promotionsPerFrame,
+      forceAllLive: config.forceAllLive,
+      flying: flying,
+    );
+  }
+
+  /// Whether the eye is on [building]'s street side and, given [forward],
+  /// the wall is ahead of the camera. Scalar maths from one offset.
+  static bool _inView(PlazaBuilding building, Vector3 eye, Vector3? forward) {
+    final center = building.facadeCenter;
+    final dx = eye.x - center.x;
+    final dy = eye.y - center.y;
+    final dz = eye.z - center.z;
+    final normal = building.facadeNormal;
+    if (dx * normal.x + dy * normal.y + dz * normal.z <= 0) return false;
+    if (forward == null) return true;
+    return dx * forward.x + dy * forward.y + dz * forward.z < 0;
   }
 
   void _apply(int index, FacadeTier target) {
     final surface = _surfaces[index];
-    if (surface.tier == target) {
-      // Sign surfaces capture once; keep asking until the first capture
-      // lands (the host attaches a frame after the component does).
-      if (target == FacadeTier.sign && !surface.captured) {
-        final controller = surface.component?.controller;
-        if (controller != null) {
-          if (controller.texture != null) {
-            surface.captured = true;
-          } else {
-            controller.requestCapture();
-          }
-        }
-      }
-      return;
-    }
-
     final building = buildings[index];
     final existing = surface.component;
     if (existing != null) {
       building.facadeAnchor.removeComponent(existing);
+      _captures.forget(existing.controller, cadence: _live);
       surface.component = null;
     }
 
     if (target != FacadeTier.far) {
       final live = target == FacadeTier.live;
-      final surfaceMaterial = OpaqueSurface();
-      final component = WidgetComponent(
+      final component = hostedSurface(
         child: FacadeWidget(
           task: building.task,
           attention: building.attention,
@@ -239,33 +315,35 @@ class FacadeLodManager {
           ticks: live ? ticks : null,
           onOpen: live ? () => onOpen(building) : null,
         ),
-        size: building.widgetSize,
-        geometry: ccwQuad(
-          building.facadeWorldWidth,
-          building.facadeWorldHeight,
-        ),
-        // Manual for both tiers: a live wall is captured from [update] at
-        // [liveInterval]; an every-frame policy would make flutter_scene
-        // pump an engine frame on every vsync.
-        update: WidgetUpdatePolicy.manual,
+        width: building.facadeWorldWidth,
+        height: building.facadeWorldHeight,
+        pxPerMeter: building.pxPerMeter,
+        // A live wall takes pointer input; a sign does not.
         input: live ? WidgetInput.automatic : WidgetInput.manual,
-        material: surfaceMaterial.material,
-        bind: surfaceMaterial.bind,
       );
       building.facadeAnchor.addComponent(component);
       surface.component = component;
+      if (live) {
+        _captures.timed(
+          _live,
+          TimedSurface(
+            controller: component.controller,
+            node: building.facadeAnchor,
+            center: building.facadeCenter,
+            normal: building.facadeNormal,
+          ),
+        );
+      } else {
+        _captures.once(component.controller);
+      }
       stats.promotions++;
     }
-    surface
-      ..tier = target
-      ..captured = false;
+    surface.tier = target;
   }
 
   void _refreshStats() {
     var live = 0;
     var sign = 0;
-    var captures = 0;
-    var lastCapture = Duration.zero;
     for (final surface in _surfaces) {
       switch (surface.tier) {
         case FacadeTier.live:
@@ -275,20 +353,13 @@ class FacadeLodManager {
         case FacadeTier.far:
           break;
       }
-      final controller = surface.component?.controller;
-      if (controller != null) {
-        captures += controller.captureCount;
-        if (controller.lastCaptureDuration > lastCapture) {
-          lastCapture = controller.lastCaptureDuration;
-        }
-      }
     }
     stats
       ..live = live
       ..sign = sign
       ..far = buildings.length - live - sign
-      ..captures = captures
-      ..lastCapture = lastCapture;
+      ..captures = _captures.captures
+      ..lastCapture = _captures.lastCaptureDuration;
   }
 
   /// Detaches every widget surface (used when tearing a scene down).
@@ -297,8 +368,10 @@ class FacadeLodManager {
       final component = _surfaces[i].component;
       if (component != null) {
         buildings[i].facadeAnchor.removeComponent(component);
+        _captures.forget(component.controller, cadence: _live);
         _surfaces[i].component = null;
       }
     }
+    _settled = false;
   }
 }

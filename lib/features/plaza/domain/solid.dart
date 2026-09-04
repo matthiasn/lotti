@@ -17,6 +17,24 @@ const solidClearance = 0.6;
 class Solid {
   const Solid({required this.footprint, required this.top, this.bottom = 0});
 
+  /// A square post [size] wide at ([x], [z]), turned [facingRadians],
+  /// from [bottom] up to [top]: a spire, a pylon's footing, a gantry's
+  /// leg, a lamp post.
+  Solid.post({
+    required double x,
+    required double z,
+    required double size,
+    required this.top,
+    double facingRadians = 0,
+    this.bottom = 0,
+  }) : footprint = Footprint(
+         x: x,
+         z: z,
+         facingRadians: facingRadians,
+         width: size,
+         depth: size,
+       );
+
   final Footprint footprint;
 
   /// Height of the underside above the ground; 0 for anything standing on
@@ -32,10 +50,8 @@ class Solid {
 
   /// Whether the point is inside, with [clearance] metres of margin on
   /// every side.
-  bool contains(double x, double y, double z, {double clearance = 0}) {
-    if (y <= bottom - clearance || y >= top + clearance) return false;
-    final (u, v) = footprint.local(x, z);
-    return u.abs() < footprint.width / 2 + clearance &&
-        v.abs() < footprint.depth / 2 + clearance;
-  }
+  bool contains(double x, double y, double z, {double clearance = 0}) =>
+      y > bottom - clearance &&
+      y < top + clearance &&
+      footprint.contains(x, z, clearance: clearance);
 }

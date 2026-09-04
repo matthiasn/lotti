@@ -61,9 +61,6 @@ class FlyCameraController {
   /// Called when a flight lands.
   void Function()? onArrived;
 
-  /// Called when movement input cancels a flight.
-  void Function()? onFlightCancelled;
-
   /// Called on any movement input (used to abandon the morning walk).
   void Function()? onMovement;
 
@@ -71,6 +68,7 @@ class FlyCameraController {
   set pose(CameraPose value) {
     _pose = value;
     _flight = null;
+    _landing = false;
     _vForward = 0;
     _vStrafe = 0;
   }
@@ -101,7 +99,7 @@ class FlyCameraController {
   /// From one stop on the ground to another the flight follows the street
   /// network; a climb, a dive or a world without a street takes the direct
   /// line. Both are swept over every solid on the way.
-  Flight flyTo(CameraPose target, {double timeScale = 1}) {
+  Flight flyTo(CameraPose target) {
     final network = _network;
     final onGround = _pose.y <= groundCeiling && target.y <= groundCeiling;
     final flight = network != null && onGround
@@ -113,11 +111,11 @@ class FlyCameraController {
               (target.x, target.z),
               join: Flight.joinDistance,
             ),
-            timeScale: timeScale,
             solids: _solids,
           )
-        : Flight.plan(_pose, target, timeScale: timeScale, solids: _solids);
+        : Flight.plan(_pose, target, solids: _solids);
     _flight = flight;
+    _landing = false;
     return flight;
   }
 
@@ -153,21 +151,16 @@ class FlyCameraController {
   /// Above this height a movement key lands the camera first.
   static const double _landingAbove = eyeHeight + 1.5;
 
+  /// Whether the flight under way is a landing: a held key's repeats
+  /// must not restart it from rest every few milliseconds.
+  bool _landing = false;
+
   void _movementInput() {
-    if (_flight != null) {
-      final flight = _flight!;
-      _flight = null;
-      onFlightCancelled?.call();
-      // Cancelled mid-arc: come down before walking.
-      if (flight.arc > 0 && _pose.y > _landingAbove) {
-        _land();
-        onMovement?.call();
-        return;
-      }
-    } else if (_pose.y > _landingAbove) {
-      // From the overview: a short landing flight, not a one-frame drop.
-      _land();
-    }
+    if (_landing) return;
+    _flight = null;
+    // Aloft — from the overview, or a flight cut short over the street or
+    // mid-arc — a short landing flight, not a one-frame drop.
+    if (_pose.y > _landingAbove) _land();
     onMovement?.call();
   }
 
@@ -183,14 +176,13 @@ class FlyCameraController {
       CameraPose(x: x, y: eyeHeight, z: z, yaw: _pose.yaw),
       solids: _solids,
     );
+    _landing = true;
   }
 
   /// Mouse-drag look, in logical pixels. Cancels a flight in place.
   void addLookDelta(double dx, double dy) {
-    if (_flight != null) {
-      _flight = null;
-      onFlightCancelled?.call();
-    }
+    _flight = null;
+    _landing = false;
     _pose = CameraPose(
       x: _pose.x,
       y: _pose.y,
@@ -212,6 +204,7 @@ class FlyCameraController {
       );
       if (flight.done) {
         _flight = null;
+        _landing = false;
         onArrived?.call();
       }
       return;

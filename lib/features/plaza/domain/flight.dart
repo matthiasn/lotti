@@ -11,6 +11,10 @@ import 'dart:math' as math;
 
 import 'package:lotti/features/plaza/domain/plaza_layout.dart';
 import 'package:lotti/features/plaza/domain/solid.dart';
+import 'package:lotti/features/plaza/domain/street_layout.dart';
+import 'package:meta/meta.dart';
+
+double _lerp(double a, double b, double s) => a + (b - a) * s;
 
 /// A planned camera flight between two poses.
 class Flight {
@@ -20,11 +24,12 @@ class Flight {
     required List<_Leg> legs,
     required _Profile profile,
     required this.routed,
-    this.arrival = false,
+    double? wayEnd,
     // A private field cannot be a named initializing formal.
     // ignore: prefer_initializing_formals
   }) : _legs = legs,
        _profile = profile,
+       _wayEnd = wayEnd ?? profile.length,
        duration = Duration(microseconds: (profile.duration * 1e6).round());
 
   /// Plans the direct flight from [from] to [to]: one straight leg, swept
@@ -32,12 +37,10 @@ class Flight {
   /// ([clearance] above it), climbing before the first solid on the way
   /// and descending after the last; trips over [arcThreshold] metres rise
   /// into an arc proportional to distance regardless, so the route stays
-  /// legible. Cruises at [directSpeed]; [timeScale] speeds the whole
-  /// flight up.
+  /// legible. Cruises at [directSpeed].
   factory Flight.plan(
     CameraPose from,
     CameraPose to, {
-    double timeScale = 1,
     Iterable<Solid> solids = const [],
   }) {
     final leg = _Leg.plan(from, to, solids, districtArc: true);
@@ -47,8 +50,8 @@ class Flight {
       legs: [leg],
       profile: _Profile(
         length: leg.length,
-        cruise: directSpeed * timeScale,
-        ramp: rampSeconds / timeScale,
+        cruise: directSpeed,
+        ramp: rampSeconds,
       ),
       routed: false,
     );
@@ -63,7 +66,6 @@ class Flight {
     CameraPose from,
     CameraPose to, {
     required List<(double, double)> via,
-    double timeScale = 1,
     Iterable<Solid> solids = const [],
   }) {
     final points = <CameraPose>[from];
@@ -73,12 +75,10 @@ class Flight {
     }
     // The stop itself, not a via point a step short of it; otherwise the
     // last leg is the hop off the way to the stop.
-    var arrival = points.length > 1;
-    if (points.length > 1 &&
-        _apart(points.last, to.x, to.z) < viaMergeDistance) {
-      points.removeLast();
-      arrival = false;
-    }
+    final onWay =
+        points.length > 1 && _apart(points.last, to.x, to.z) < viaMergeDistance;
+    if (onWay) points.removeLast();
+    final hop = points.length > 1 && !onWay;
     points.add(to);
     final legs = <_Leg>[
       for (var i = 1; i < points.length; i++)
@@ -94,19 +94,16 @@ class Flight {
       legs: legs,
       profile: _Profile(
         length: length,
-        cruise: streetSpeed * timeScale,
-        ramp: rampSeconds / timeScale,
+        cruise: streetSpeed,
+        ramp: rampSeconds,
       ),
       routed: true,
-      arrival: arrival && legs.length > 1,
+      wayEnd: hop ? length - legs.last.length : length,
     );
   }
 
-  static double _apart(CameraPose p, double x, double z) {
-    final dx = x - p.x;
-    final dz = z - p.z;
-    return math.sqrt(dx * dx + dz * dz);
-  }
+  static double _apart(CameraPose p, double x, double z) =>
+      groundDistanceBetween(p.x, p.z, x, z);
 
   /// Cruise speeds, world metres per second: down a street, and on the
   /// direct line (a climb to the overview, a dive back).
@@ -166,11 +163,16 @@ class Flight {
   /// Whether the flight follows the street (see [Flight.route]).
   final bool routed;
 
+  /// Where the way leaves the road, metres along the flight: the whole
+  /// length when the stop is on the road, else the start of the last leg,
+  /// the hop off the way to a stop beside it.
+  final double _wayEnd;
+
   /// Whether the last leg is the hop off the way to a stop beside it: the
   /// camera holds the road's heading through it and turns onto the stop's
   /// own heading over the last ramp, instead of swinging toward the stop
   /// and back.
-  final bool arrival;
+  bool get arrival => _wayEnd < length;
 
   final List<_Leg> _legs;
   final _Profile _profile;
@@ -179,32 +181,35 @@ class Flight {
   double get length => _profile.length;
 
   /// How many straight legs the way has.
+  @visibleForTesting
   int get legCount => _legs.length;
 
   /// The speed the flight cruises at once its ramp is done, and how long
   /// each ramp takes; both shrink on a hop too short to reach the cruise.
+  @visibleForTesting
   double get cruiseSpeed => _profile.v;
+  @visibleForTesting
   double get rampTime => _profile.t;
 
   /// Peak extra height over the straight line of any leg, world meters.
   double get arc => _legs.fold(0, (m, leg) => math.max(m, leg.arc));
 
   /// The first leg's ramps, as fractions of that leg.
+  @visibleForTesting
   double get rampStart => _legs.first.rampStart;
+  @visibleForTesting
   double get rampEnd => _legs.first.rampEnd;
 
   /// Extra height over the straight line [s] of the way along (0..1).
+  @visibleForTesting
   double liftAt(double s) {
     final (leg, f) = _locate(s.clamp(0.0, 1.0) * length);
     return leg.liftAt(f);
   }
 
   /// Horizontal distance of the trip, end to end.
-  double get groundDistance {
-    final dx = to.x - from.x;
-    final dz = to.z - from.z;
-    return math.sqrt(dx * dx + dz * dz);
-  }
+  double get groundDistance =>
+      groundDistanceBetween(from.x, from.z, to.x, to.z);
 
   /// Fraction of the trip that is horizontal (0 = straight up/down).
   double get horizontalFraction {
@@ -215,16 +220,25 @@ class Flight {
   /// The heading of a direct flight's travel, or null for a short hop or
   /// a mostly vertical trip (a climb to the overview must not whip round
   /// to face its path).
-  double? get travelYaw {
+  late final double? travelYaw = _travelYaw();
+
+  double? _travelYaw() {
     if (groundDistance < lookAlongThreshold) return null;
     if (horizontalFraction < 0.55) return null;
-    final dx = to.x - from.x;
-    final dz = to.z - from.z;
-    return math.atan2(dx, dz);
+    return math.atan2(to.x - from.x, to.z - from.z);
   }
+
+  /// The way's headings where the first ramp ends and where the last one
+  /// starts: fixed for the flight, so the side the camera turns to over a
+  /// ramp is settled once.
+  late final double _rampInHeading = _wayHeadingAt(_profile.rampDistance);
+  late final double _rampOutHeading = _wayHeadingAt(
+    length - _profile.rampDistance,
+  );
 
   Duration _elapsed = Duration.zero;
 
+  @visibleForTesting
   Duration get elapsed => _elapsed;
   bool get done => _elapsed >= duration;
 
@@ -260,10 +274,7 @@ class Flight {
   /// The point [d] metres along the way, on the ground.
   (double, double) _groundAt(double d) {
     final (leg, f) = _locate(d);
-    return (
-      leg.from.x + (leg.to.x - leg.from.x) * f,
-      leg.from.z + (leg.to.z - leg.from.z) * f,
-    );
+    return (_lerp(leg.from.x, leg.to.x, f), _lerp(leg.from.z, leg.to.z, f));
   }
 
   /// The pose at [t] of the flight's time (0..1): along the way on the
@@ -274,10 +285,10 @@ class Flight {
   CameraPose poseAt(double t) {
     final d = distanceAt(t);
     final (leg, f) = _locate(d);
-    final x = leg.from.x + (leg.to.x - leg.from.x) * f;
-    final z = leg.from.z + (leg.to.z - leg.from.z) * f;
+    final x = _lerp(leg.from.x, leg.to.x, f);
+    final z = _lerp(leg.from.z, leg.to.z, f);
     final lift = leg.liftAt(f);
-    final y = leg.from.y + (leg.to.y - leg.from.y) * f + lift;
+    final y = _lerp(leg.from.y, leg.to.y, f) + lift;
 
     final ramp = _profile.rampDistance;
     final total = length;
@@ -296,13 +307,9 @@ class Flight {
     if (along == null) {
       yaw = _blendHeading(from.yaw, to.yaw, _smooth(t));
     } else if (d < ramp) {
-      yaw = _blendHeading(from.yaw, _wayHeadingAt(ramp), _smooth(inRamp));
+      yaw = _blendHeading(from.yaw, _rampInHeading, _smooth(inRamp));
     } else if (d > total - ramp) {
-      yaw = _blendHeading(
-        _wayHeadingAt(total - ramp),
-        to.yaw,
-        _smooth(outRamp),
-      );
+      yaw = _blendHeading(_rampOutHeading, to.yaw, _smooth(outRamp));
     } else {
       yaw = along;
     }
@@ -316,7 +323,7 @@ class Flight {
           ? to.pitch * _smooth(outRamp)
           : 0;
     } else {
-      pitch = from.pitch + (to.pitch - from.pitch) * _smooth(t);
+      pitch = _lerp(from.pitch, to.pitch, _smooth(t));
     }
     final pitchDip = lift == 0 ? 0.0 : -math.atan2(lift, 40) * 0.9;
     return CameraPose(x: x, y: y, z: z, yaw: yaw, pitch: pitch + pitchDip);
@@ -328,19 +335,17 @@ class Flight {
   double _wayHeadingAt(double d) {
     if (!routed) return travelYaw ?? to.yaw;
     final (leg, f) = _locate(d);
-    final x = leg.from.x + (leg.to.x - leg.from.x) * f;
-    final z = leg.from.z + (leg.to.z - leg.from.z) * f;
+    final x = _lerp(leg.from.x, leg.to.x, f);
+    final z = _lerp(leg.from.z, leg.to.z, f);
     return _lookAheadYaw(d, x, z, leg);
   }
 
   /// The heading from ([x], [z]) to the point [lookAhead] metres further
-  /// along the way, which ends where the way leaves the road when the
-  /// flight has an [arrival] hop; past that, the road's last heading.
+  /// along the way, which ends where the way leaves the road; past that,
+  /// the road's last heading.
   double _lookAheadYaw(double d, double x, double z, _Leg leg) {
-    final road = arrival ? _legs[_legs.length - 2] : _legs.last;
-    final wayEnd = arrival ? length - _legs.last.length : length;
-    final ahead = math.min(wayEnd, d + lookAhead);
-    if (ahead <= d + 1e-6) return _heading(road);
+    final ahead = math.min(_wayEnd, d + lookAhead);
+    if (ahead <= d + 1e-6) return _heading(_locate(_wayEnd - 1e-6).$1);
     final (ax, az) = _groundAt(ahead);
     final dx = ax - x;
     final dz = az - z;
@@ -407,9 +412,7 @@ class _Leg {
     required bool districtArc,
   }) {
     final dist = from.distanceTo(to);
-    final dx = to.x - from.x;
-    final dz = to.z - from.z;
-    final ground = math.sqrt(dx * dx + dz * dz);
+    final ground = groundDistanceBetween(from.x, from.z, to.x, to.z);
     // The arc is for crossing the district; a climb is already an arc.
     final horizontal = dist == 0 ? 1.0 : (ground / dist).clamp(0.0, 1.0);
     final baseArc = districtArc && dist > Flight.arcThreshold
@@ -528,8 +531,6 @@ class _Leg {
     );
   }
 
-  static double _lerp(double a, double b, double s) => a + (b - a) * s;
-
   static double _profile(double s, double rampStart, double rampEnd) {
     if (s < rampStart) return Flight._smooth(s / rampStart);
     if (s > 1 - rampEnd) return Flight._smooth((1 - s) / rampEnd);
@@ -565,7 +566,7 @@ class _Span {
   /// band of height anywhere along the stretch.
   bool blocks(CameraPose from, CameraPose to, double Function(double) lift) {
     for (final s in samples) {
-      final y = from.y + (to.y - from.y) * s + lift(s);
+      final y = _lerp(from.y, to.y, s) + lift(s);
       if (y > floor && y < ceiling) return true;
     }
     return false;

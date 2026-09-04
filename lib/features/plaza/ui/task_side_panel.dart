@@ -24,10 +24,7 @@ class TaskSidePanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final task = attention.task;
     final chip = PlazaStyle.chip(attention);
-    final meta = <String>[
-      if (task.due != null) 'due ${shortDate(task.due!)}',
-      if (task.linkedTaskIds.isNotEmpty) 'links ${task.linkedTaskIds.length}',
-    ].join(' · ');
+    final meta = taskMetaBits(task).join(' · ');
     return Positioned(
       right: 16,
       top: 60,
@@ -60,7 +57,7 @@ class TaskSidePanel extends StatelessWidget {
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                           letterSpacing: 2,
-                          color: Color(0x8CFFFFFF),
+                          color: PlazaStyle.textFaint,
                         ),
                       ),
                     ),

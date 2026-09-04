@@ -5,6 +5,7 @@ import 'package:lotti/features/design_system/theme/icon_tokens.dart';
 import 'package:lotti/features/plaza/domain/attention.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
 import 'package:lotti/features/plaza/ui/checklist_ticks.dart';
+import 'package:lotti/features/plaza/ui/plaza_chip.dart';
 import 'package:lotti/features/plaza/ui/plaza_style.dart';
 
 /// Which range a facade is drawn for.
@@ -85,10 +86,7 @@ class FacadeWidget extends StatelessWidget {
     final tickedCount = t?.tickedCount(task.id) ?? 0;
     final total = task.checklistItems;
     final done = task.checklistItems - items.length + tickedCount;
-    final metaBits = <String>[
-      if (task.due != null) 'due ${shortDate(task.due!)}',
-      if (task.linkedTaskIds.isNotEmpty) 'links ${task.linkedTaskIds.length}',
-    ];
+    final metaBits = taskMetaBits(task);
 
     // A finished shop is dark: everything on it steps down.
     final quiet = attention.lantern == LanternState.off;
@@ -321,7 +319,7 @@ class FacadeWidget extends StatelessWidget {
                                               child: Row(
                                                 mainAxisSize: MainAxisSize.min,
                                                 children: [
-                                                  _Chip(
+                                                  PlazaChip(
                                                     label:
                                                         '${PlazaStyle.glyph(attention)} '
                                                         '${chip.label}',
@@ -331,7 +329,7 @@ class FacadeWidget extends StatelessWidget {
                                                   ),
                                                   if (onOpen != null) ...[
                                                     SizedBox(width: m(0.3)),
-                                                    _Chip(
+                                                    PlazaChip(
                                                       label: 'DETAILS ›',
                                                       fill: PlazaStyle.teal,
                                                       ink: const Color(
@@ -478,54 +476,6 @@ class _Item extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-/// A state chip (or the OPEN button when [onTap] is set).
-class _Chip extends StatelessWidget {
-  const _Chip({
-    required this.label,
-    required this.fill,
-    required this.ink,
-    required this.fontPx,
-    this.onTap,
-  });
-
-  final String label;
-  final Color fill;
-  final Color ink;
-  final double fontPx;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final child = Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: fontPx * 0.8,
-        vertical: fontPx * 0.25,
-      ),
-      decoration: BoxDecoration(
-        color: fill,
-        borderRadius: BorderRadius.circular(fontPx * 0.35),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontFamily: PlazaStyle.fontText,
-          fontSize: fontPx,
-          fontWeight: FontWeight.w700,
-          letterSpacing: fontPx * 0.05,
-          color: ink,
-        ),
-      ),
-    );
-    if (onTap == null) return child;
-    return InkWell(
-      onTap: onTap,
-      hoverColor: PlazaStyle.tealHover,
-      borderRadius: BorderRadius.circular(fontPx * 0.35),
-      child: child,
     );
   }
 }
