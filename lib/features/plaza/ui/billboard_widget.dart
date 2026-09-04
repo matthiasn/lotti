@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 import 'package:lotti/features/plaza/domain/attention.dart';
+import 'package:lotti/features/plaza/ui/plaza_chip.dart';
 import 'package:lotti/features/plaza/ui/plaza_style.dart';
 
 /// A frontier-plaza billboard: the headline for one task that needs
@@ -117,25 +118,11 @@ class _BillboardFace extends StatelessWidget {
             child: FittedBox(
               fit: BoxFit.scaleDown,
               alignment: Alignment.centerLeft,
-              child: Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: chipPx * 0.8,
-                  vertical: chipPx * 0.25,
-                ),
-                decoration: BoxDecoration(
-                  color: chip.fill,
-                  borderRadius: BorderRadius.circular(chipPx * 0.35),
-                ),
-                child: Text(
-                  '${PlazaStyle.glyph(attention)}  ${chip.label}',
-                  style: TextStyle(
-                    fontFamily: PlazaStyle.fontText,
-                    fontSize: chipPx,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: chipPx * 0.05,
-                    color: chip.ink,
-                  ),
-                ),
+              child: PlazaChip(
+                label: '${PlazaStyle.glyph(attention)}  ${chip.label}',
+                fill: chip.fill,
+                ink: chip.ink,
+                fontPx: chipPx,
               ),
             ),
           ),
@@ -143,25 +130,11 @@ class _BillboardFace extends StatelessWidget {
         if (!reasonFirst) SizedBox(width: chipPx * 0.6),
         if (!reasonFirst)
           // The call to action is a chip like the state, not loose type.
-          Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: chipPx * 0.8,
-              vertical: chipPx * 0.25,
-            ),
-            decoration: BoxDecoration(
-              color: PlazaStyle.teal,
-              borderRadius: BorderRadius.circular(chipPx * 0.35),
-            ),
-            child: Text(
-              'fly there ›',
-              style: TextStyle(
-                fontFamily: PlazaStyle.fontText,
-                fontSize: chipPx,
-                fontWeight: FontWeight.w700,
-                letterSpacing: chipPx * 0.05,
-                color: const Color(0xFF0D0D0D),
-              ),
-            ),
+          PlazaChip(
+            label: 'fly there ›',
+            fill: PlazaStyle.teal,
+            ink: const Color(0xFF0D0D0D),
+            fontPx: chipPx,
           ),
       ],
     );

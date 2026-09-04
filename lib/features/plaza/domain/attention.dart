@@ -29,6 +29,28 @@ const oldAfter = Duration(days: 56);
 /// What lights the roof lantern, in priority order.
 enum LanternState { blocked, overdue, inProgress, open, off }
 
+/// How a lantern's state is written where hue cannot carry it: a glyph
+/// and a word, the same on a ticker band and in the HUD's legend.
+extension LanternStateText on LanternState {
+  /// A cross for blocked, a bang for overdue, a play mark for in
+  /// progress, a ring for open, a tick for a lantern that is off.
+  String get glyph => switch (this) {
+    LanternState.blocked => '✕',
+    LanternState.overdue => '!',
+    LanternState.inProgress => '▶',
+    LanternState.open => '○',
+    LanternState.off => '✓',
+  };
+
+  String get word => switch (this) {
+    LanternState.blocked => 'blocked',
+    LanternState.overdue => 'overdue',
+    LanternState.inProgress => 'in progress',
+    LanternState.open => 'open',
+    LanternState.off => 'done',
+  };
+}
+
 /// The attention verdict for one task.
 class TaskAttention {
   const TaskAttention({
@@ -178,3 +200,10 @@ const _months = [
 
 /// `Jul 18` — the short date used on facades, billboards and tickers.
 String shortDate(DateTime date) => '${_months[date.month - 1]} ${date.day}';
+
+/// The small print under a task's title, on its facade and in the side
+/// panel: the due date and the link count, each only when there is one.
+List<String> taskMetaBits(PlazaTask task) => [
+  if (task.due != null) 'due ${shortDate(task.due!)}',
+  if (task.linkedTaskIds.isNotEmpty) 'links ${task.linkedTaskIds.length}',
+];

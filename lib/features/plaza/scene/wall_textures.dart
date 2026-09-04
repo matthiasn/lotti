@@ -73,7 +73,9 @@ class WallTextures {
     final shops = <(LanternState, int), Texture2D>{};
     for (final state in LanternState.values) {
       for (var f = 0; f < tileFamilies; f++) {
-        map[(state, f)] = await Texture2D.fromImage(_paint(state, family: f));
+        map[(state, f)] = await Texture2D.fromImage(
+          paintWindows(state, family: f),
+        );
       }
       for (var v = 0; v < paradeVariants; v++) {
         shops[(state, v)] = await Texture2D.fromImage(
@@ -1157,17 +1159,14 @@ class WallTextures {
   /// Paints the window tile for [state] in tile [family]; public so the
   /// occupancy contract can be checked without a GPU.
   @visibleForTesting
-  static ui.Image paintWindows(LanternState state, {int family = 0}) =>
-      _paint(state, family: family);
-
-  static ui.Image _paint(LanternState state, {int family = 0}) {
+  static ui.Image paintWindows(LanternState state, {int family = 0}) {
     const w = bays * _px;
     const h = floors * _px;
     final recorder = ui.PictureRecorder();
     final canvas = ui.Canvas(recorder)
       ..drawRect(
         ui.Rect.fromLTWH(0, 0, w.toDouble(), h.toDouble()),
-        ui.Paint()..color = const ui.Color(0xFF0B0A14),
+        ui.Paint()..color = _night,
       );
     final rng = math.Random(state.index * 7919 + 17 + family * 101);
     final tint = _tints[state]!;
@@ -1202,7 +1201,7 @@ class WallTextures {
             : 0.14 + rng.nextDouble() * 0.1;
         // Reveal: a dark frame around the pane; then the pane with a
         // sill-to-lintel gradient; then mullion and transom.
-        final mullion = ui.Paint()..color = const ui.Color(0xFF07060D);
+        final mullion = ui.Paint()..color = _frame;
         canvas
           ..drawRect(
             rect.inflate(_px * 0.03),
@@ -1250,7 +1249,7 @@ class WallTextures {
       canvas
         ..drawRect(
           ui.Rect.fromLTWH(0, floor * _px.toDouble(), w.toDouble(), 6),
-          ui.Paint()..color = const ui.Color(0xFF07060D),
+          ui.Paint()..color = _frame,
         )
         ..drawRect(
           ui.Rect.fromLTWH(0, floor * _px.toDouble() + 6, w.toDouble(), 3),

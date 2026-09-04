@@ -33,7 +33,7 @@ All read at start-up; none is needed for an interactive session.
 | `PLAZA_TOUR=1` | `dev_main.dart` | Screenshot tour: steps through the fixed poses in `ui/plaza_tour.dart`, printing `PLAZA_TOUR ready <i> <name>` lines; input is ignored |
 | `PLAZA_TOUR_ONLY=home,block` | `dev_main.dart` | Restricts the tour to the named stops |
 | `PLAZA_BENCH=1` | `dev_main.dart` | Auto-walk benchmark through six LOD budgets, printing `PLAZA_BENCH result` lines; wins over `PLAZA_TOUR` |
-| `PLAZA_HIDE=gantry,jumbotron,fillers,skyline,pylons,walls` | `scene/plaza_scene.dart` | Leaves those pieces out of the scene, to isolate what a screenshot shows |
+| `PLAZA_HIDE=gantry,jumbotron,fillers,skyline,pylons,walls` | `dev_main.dart` | Leaves those pieces out of the scene (`PlazaSceneController(hidden:)`), to isolate what a screenshot shows |
 | `PLAZA_TRACE=1` | `dev_main.dart` | Prints one line per painted frame: frame time, engine frames since the last line, flight state, pose and how many solids contain the eye |
 | `PLAZA_FPS=auto,60,30` | `dev_main.dart` | The frame-rate cap at start (the HUD control changes it); 60 by default |
 | `PLAZA_CLICK=<stop>:<x>,<y>` | `tool/plaza/capture_tour.py` | After capturing that tour stop, clicks the window-relative point and grabs a second `-ticked` frame |
@@ -79,6 +79,7 @@ lib/features/plaza/
     plaza_scene.dart     the scene graph: sky, road, buildings, fillers, skyline
     facade_lod_manager.dart      far, sign and live facade tiers
     plaza_surfaces.dart  billboards, tickers, markers, signs, banners, jumbotron
+    surface_captures.dart        the shared capture bookkeeping and cadences
     plaza_sprites.dart   lanterns, beacons, lamps, spire and chase lights
     wall_textures.dart   window-grid, light-pool and grain textures
     plaza_picker.dart    tap resolution
@@ -88,7 +89,8 @@ lib/features/plaza/
     ticker_widget.dart, banner_widget.dart, block_marker_widget.dart
     fly_camera_controller.dart   walk camera and flights
     plaza_hud.dart, plaza_search_sheet.dart, task_side_panel.dart,
-    debug_overlay.dart, checklist_ticks.dart, plaza_style.dart
+    debug_overlay.dart, checklist_ticks.dart, plaza_style.dart,
+    plaza_chip.dart
     plaza_tour.dart      the tour stops
 tool/plaza/capture_tour.py       X11 screenshot capture for the tour
 test/features/plaza/             one test file per pure source file

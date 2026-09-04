@@ -17,7 +17,6 @@ class JumbotronWidget extends StatelessWidget {
     required this.widthMeters,
     required this.pxPerMeter,
     required this.clock,
-    this.coverSeconds = 5,
     this.pinProjectCard,
     super.key,
   });
@@ -37,7 +36,9 @@ class JumbotronWidget extends StatelessWidget {
   final List<String> covers;
   final double widthMeters;
   final double pxPerMeter;
-  final double coverSeconds;
+
+  /// How long each cover holds before the next.
+  static const coverSeconds = 5.0;
 
   /// Elapsed seconds, advanced by the harness once per painted frame.
   final ValueListenable<double> clock;

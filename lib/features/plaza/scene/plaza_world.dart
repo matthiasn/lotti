@@ -42,23 +42,18 @@ class PlazaWorld {
     weekSigns = weekSignsFor(plan, roadWidth: layout.roadWidth);
     final mounted = mountedSlotsFor(plan);
     mountedScreens = mounted.screens;
-    tickers = [
-      ...mounted.tickers,
-      ?gantry,
-      for (final (i, hero) in heroes.indexed)
-        rooflineTickerFor(plan.placements[hero.task.id]!, fast: i.isEven),
-    ];
     // A band on a building speaks for that building; the gantry counts
     // the district; the hero rooflines carry the headlines.
     final mountTasks = plazaMounts(plan);
-    tickerTexts = {
+    tickerTexts = Map.unmodifiable({
       for (final (i, slot) in mounted.tickers.indexed)
         slot: _ownTickerText(mountTasks[i].taskId),
       ?gantry: countsText,
-      for (final hero in heroes)
-        tickers[tickers.length - heroes.length + heroes.indexOf(hero)]:
+      for (final (i, hero) in heroes.indexed)
+        rooflineTickerFor(plan.placements[hero.task.id]!, fast: i.isEven):
             tickerText,
-    };
+    });
+    tickers = List.unmodifiable(tickerTexts.keys);
     scenery = sceneryFor(
       plan,
       plaza: plaza,
@@ -90,8 +85,15 @@ class PlazaWorld {
   /// Category names keyed by colour hex, for the side panel.
   final Map<String, String> categoryLabels;
 
-  /// What each ticker band scrolls.
+  /// What each ticker band scrolls, in band order: the mounted bands, the
+  /// gantry, the hero rooflines.
   late final Map<TickerSlot, String> tickerTexts;
+
+  /// The bands, in the order of [tickerTexts].
+  late final List<TickerSlot> tickers;
+
+  /// What separates the items on a band.
+  static const _separator = '   ·   ';
 
   /// A building's own band: its state word with the glyph, then the
   /// reason or the due date — short, so a narrow band never cuts a word
@@ -100,30 +102,14 @@ class PlazaWorld {
     final a = attention[taskId];
     if (a == null) return countsText;
     final parts = <String>[
-      '${_glyph(a.lantern)} ${_stateWord(a.lantern)}',
+      '${a.lantern.glyph} ${a.lantern.word}',
       if (a.reason.isNotEmpty)
         a.reason
       else if (a.task.due != null)
         'due ${shortDate(a.task.due!)}',
     ];
-    return parts.join('   ·   ');
+    return parts.join(_separator);
   }
-
-  static String _glyph(LanternState state) => switch (state) {
-    LanternState.blocked => '✕',
-    LanternState.overdue => '!',
-    LanternState.inProgress => '▶',
-    LanternState.open => '○',
-    LanternState.off => '✓',
-  };
-
-  static String _stateWord(LanternState state) => switch (state) {
-    LanternState.blocked => 'blocked',
-    LanternState.overdue => 'overdue',
-    LanternState.inProgress => 'in progress',
-    LanternState.open => 'open',
-    LanternState.off => 'done',
-  };
 
   late final StreetPlan plan;
   late final FrontierPlaza? plaza;
@@ -171,7 +157,6 @@ class PlazaWorld {
 
   /// Eye-level week signs at each block head: (bucket, x, z, facing).
   late final List<(int, double, double, double)> weekSigns;
-  late final List<TickerSlot> tickers;
 
   /// Attention verdict for each roof billboard, in slot order.
   List<TaskAttention> get roofBillboardTasks => [
@@ -180,7 +165,9 @@ class PlazaWorld {
 
   /// The two tallest buildings that carry no roof billboard take the
   /// roofline tickers, so a ticker never covers a billboard.
-  List<TaskAttention> get heroes {
+  late final List<TaskAttention> heroes = _heroes();
+
+  List<TaskAttention> _heroes() {
     final roofed = {for (final s in roofBillboards) anomalies[s.rank].task.id};
     final candidates =
         plan.placements.values
@@ -189,11 +176,10 @@ class PlazaWorld {
                   !roofed.contains(p.taskId) && attention.containsKey(p.taskId),
             )
             .toList()
-          ..sort((a, b) {
-            final byHeight = b.height.compareTo(a.height);
-            return byHeight != 0 ? byHeight : a.taskId.compareTo(b.taskId);
-          });
-    return [for (final p in candidates.take(2)) attention[p.taskId]!];
+          ..sort(tallestFirst);
+    return List.unmodifiable([
+      for (final p in candidates.take(2)) attention[p.taskId]!,
+    ]);
   }
 
   /// The billboard slots in rank order: four pylons, then the mounted
@@ -226,37 +212,33 @@ class PlazaWorld {
 
   int get liveTaskCount => tasks.where((t) => !t.deleted).length;
 
-  /// The gantry's line: the project's numbers, no headlines (those are on
-  /// the pylons and the mounted screens already).
-  String get countsText {
+  /// The project and its attention count: how every district band opens.
+  List<String> get _opening => [
+    projectLabel,
+    '${anomalies.length} need attention',
+  ];
+
+  /// The progress counts every district band carries.
+  List<String> get _progress {
     final inProgress = tasks
         .where((t) => t.state == PlazaTaskState.inProgress)
         .length;
     final done = tasks.where((t) => t.state == PlazaTaskState.done).length;
-    return [
-      projectLabel,
-      '${anomalies.length} need attention',
-      '$inProgress in progress',
-      '$done of $liveTaskCount done',
-      'W$builtWeeks',
-    ].join('   ·   ');
+    return ['$inProgress in progress', '$done of $liveTaskCount done'];
   }
+
+  /// The gantry's line: the project's numbers, no headlines (those are on
+  /// the pylons and the mounted screens already).
+  String get countsText =>
+      [..._opening, ..._progress, 'W$builtWeeks'].join(_separator);
 
   /// The scrolling headline: project, attention count, the top three
   /// reasons, progress counts.
-  String get tickerText {
-    final inProgress = tasks
-        .where((t) => t.state == PlazaTaskState.inProgress)
-        .length;
-    final done = tasks.where((t) => t.state == PlazaTaskState.done).length;
-    return [
-      projectLabel,
-      '${anomalies.length} need attention',
-      for (final a in anomalies.take(3)) '${a.task.title} — ${a.reason}',
-      '$inProgress in progress',
-      '$done of $liveTaskCount done',
-    ].join('   ·   ');
-  }
+  String get tickerText => [
+    ..._opening,
+    for (final a in anomalies.take(3)) '${a.task.title} — ${a.reason}',
+    ..._progress,
+  ].join(_separator);
 
   /// The morning walk's stops, or null for a street with no plaza.
   List<WalkStop>? get walkStops {
