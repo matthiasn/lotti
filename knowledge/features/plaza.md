@@ -263,7 +263,9 @@ project card and the top three headlines every 5 s over the billboard tasks'
 cover art.
 
 **Spires** (`spiresFor`): the two tallest buildings carry a mast with a
-blinking warning light, as does the jumbotron tower.
+blinking warning light, as does the jumbotron tower, which is itself a
+building: windowed on every face over a shopfront band, a teal crown and
+teal corner strips, and a pool at its foot.
 
 **Roofline tickers** (`rooflineTickerFor`): the two tallest buildings that
 carry no roof billboard (`PlazaWorld.heroes`) get a band along their
@@ -541,11 +543,12 @@ until it lands.
   district; every fourth carries a screen that shows the anomalies in
   rotation.
 - **Hero towers** (`_buildHeroTowers`, with the skyline): one past the far
-  end of every row that folds, 150 m beyond the row end on its axis, 26 to
+  end of every row that folds, 90 m beyond the row end on its axis, 26 to
   34 m wide and 70 to 86 m tall, windowed on all four faces, with a teal
-  crown, a 14 m spire with a blinking light, a screen toward the street
-  showing the top anomaly and a warm glow dome behind it, so every row has
-  a lit horizon to walk toward. The last row's far end has the jumbotron
+  crown, a 14 m spire with a blinking light, a screen across the upper
+  face toward the street showing the top anomaly and a warm glow dome
+  behind it, so every row has a lit horizon to walk toward. The last row's
+  far end has the jumbotron
   instead.
 
 `PLAZA_HIDE` (see the README) drops the gantry, jumbotron, fillers,

@@ -67,7 +67,7 @@ Implemented, by area (the mechanism behind each is in the concept):
   roof lanterns in state colours, window-grid walls lit by state over a
   shopfront band, neon edges (category colour, state colour on an alarm),
   light pools that fade
-  with altitude, week markers on the road and week signs hung from the
+  with altitude, week markers on the road (shown from the air only) and week signs hung from the
   block-head lamp posts, vertical banners on tall buildings, spires with
   warning lights, a paved plaza, a second row of filler blocks, a ring of
   skyline towers and a hero tower with a screen at the far end of every
@@ -161,7 +161,7 @@ LIVE stress switch.
 | `overview` | the map pose behind the oldest edge | the whole district as lanterns, light pools and markers, the jumbotron as the far landmark |
 | `block` | the block beacon a quarter of the way from oldest to newest | a week of buildings at street range: sign facades, lanterns, lamps |
 | `billboard` | 14 m in front of the first pylon | the top-ranked billboard, its frame, chase lights and pool |
-| `attention-closeup` | the first attention beacon | a live facade of an anomaly with its roof billboard |
+| `attention-closeup` | the second attention beacon (the first when there is only one) | a live facade of an anomaly with its roof billboard |
 | `jumbotron` | in front of the jumbotron, 1.1 × its width back | the giant screen, its tower and the plaza from behind home |
 
 A stop the world cannot provide (no anomalies, no plaza) is skipped;
