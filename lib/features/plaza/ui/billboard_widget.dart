@@ -89,7 +89,7 @@ class _BillboardFace extends StatelessWidget {
   /// Aspect threshold: below [reasonAspect] the reason goes and the title
   /// gets one line. The cover always stays: it is the backdrop, and a
   /// squat panel with art still reads as a billboard, a bare one as a sign.
-  static const reasonAspect = 0.34;
+  static const reasonAspect = 0.45;
 
   @override
   Widget build(BuildContext context) {
@@ -103,7 +103,9 @@ class _BillboardFace extends StatelessWidget {
     final showReason = attention.reason.isNotEmpty && aspect >= reasonAspect;
     // Squat panels scale by height instead of width so nothing overflows.
     final pad = m(math.min(0.06 * w, 0.1 * heightMeters));
-    final titlePx = m(math.min(0.07 * w, 0.24 * heightMeters));
+    // The title is the largest text on every panel: sized from the
+    // height first, capped by the width.
+    final titlePx = m(math.min(0.07 * w, 0.3 * heightMeters));
     final chipPx = m(math.min(0.036 * w, 0.12 * heightMeters));
 
     final chipRow = Row(
@@ -168,7 +170,7 @@ class _BillboardFace extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontFamily: PlazaStyle.fontMono,
-              fontSize: m(0.04 * w),
+              fontSize: m(math.min(0.04 * w, 0.12 * heightMeters)),
               color: const Color(0xF2FFFFFF),
               shadows: showCover
                   ? [const Shadow(color: Color(0xCC000000), blurRadius: 6)]
@@ -211,10 +213,13 @@ class _BillboardFace extends StatelessWidget {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     stops: const [0, 0.35, 1],
+                    // The scrim ends in the panel's own dark, not the
+                    // frame colour: the chip keeps its hue to itself and
+                    // the lightbox reads as a lightbox.
                     colors: [
                       const Color(0x00000000),
                       const Color(0x33000000),
-                      frame.withValues(alpha: 0.9),
+                      PlazaStyle.panel.withValues(alpha: 0.85),
                     ],
                   ),
                 ),

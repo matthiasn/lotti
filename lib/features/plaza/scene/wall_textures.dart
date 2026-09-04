@@ -22,6 +22,10 @@ class WallTextures {
   static const tileHeight = 12.0;
   static const _px = 96;
 
+  /// One paving tile covers this many metres of plaza: a 2 × 2 grid of
+  /// slabs with a joint between.
+  static const pavingMeters = 4.0;
+
   /// Lit-window ratio per state: busy buildings glow, finished ones sleep.
   static double litRatio(LanternState state) => switch (state) {
     LanternState.inProgress => 0.62,
@@ -50,7 +54,8 @@ class WallTextures {
     }
     final textures = WallTextures._(map)
       ..pool = await Texture2D.fromImage(_paintPool())
-      ..grain = await Texture2D.fromImage(_paintGrain());
+      ..grain = await Texture2D.fromImage(_paintGrain())
+      ..paving = await Texture2D.fromImage(_paintPaving());
     return textures;
   }
 
@@ -62,6 +67,51 @@ class WallTextures {
 
   /// Asphalt grain: a near-black noise tile with faint lighter grit.
   late final Texture2D grain;
+
+  /// Plaza paving: slab joints and a little wear, blended over the slab.
+  late final Texture2D paving;
+
+  static ui.Image _paintPaving() {
+    const size = 256;
+    const half = size / 2;
+    final recorder = ui.PictureRecorder();
+    final canvas = ui.Canvas(recorder)
+      ..drawRect(
+        ui.Rect.fromLTWH(0, 0, size.toDouble(), size.toDouble()),
+        ui.Paint()..color = const ui.Color(0x00000000),
+      );
+    final rng = math.Random(9001);
+    // Four slabs, each a faintly different shade, so the grid is not flat.
+    for (final (x, y) in [(0.0, 0.0), (half, 0.0), (0.0, half), (half, half)]) {
+      canvas.drawRect(
+        ui.Rect.fromLTWH(x, y, half, half),
+        ui.Paint()
+          ..color = ui.Color.fromARGB(10 + rng.nextInt(16), 255, 255, 255),
+      );
+    }
+    // Joints: a dark line with a lit edge, the way wet paving catches light.
+    final joint = ui.Paint()..color = const ui.Color(0xB3000000);
+    final edge = ui.Paint()..color = const ui.Color(0x2EFFFFFF);
+    for (final at in [0.0, half]) {
+      canvas
+        ..drawRect(ui.Rect.fromLTWH(at, 0, 3, size.toDouble()), joint)
+        ..drawRect(ui.Rect.fromLTWH(at + 3, 0, 1.5, size.toDouble()), edge)
+        ..drawRect(ui.Rect.fromLTWH(0, at, size.toDouble(), 3), joint)
+        ..drawRect(ui.Rect.fromLTWH(0, at + 3, size.toDouble(), 1.5), edge);
+    }
+    for (var i = 0; i < 300; i++) {
+      canvas.drawRect(
+        ui.Rect.fromLTWH(
+          rng.nextDouble() * size,
+          rng.nextDouble() * size,
+          1.5,
+          1,
+        ),
+        ui.Paint()..color = ui.Color.fromARGB(20 + rng.nextInt(40), 0, 0, 0),
+      );
+    }
+    return recorder.endRecording().toImageSync(size, size);
+  }
 
   static ui.Image _paintPool() {
     const size = 256;

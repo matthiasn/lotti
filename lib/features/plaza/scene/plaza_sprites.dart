@@ -271,7 +271,7 @@ class PlazaSprites {
       final head = (elapsedSeconds / chase.periodSeconds * n) % n;
       for (final (i, light) in chase.lights.indexed) {
         final behind = (head - i + n) % n;
-        final alpha = behind < 3 ? 1 - behind * 0.3 : 0.06;
+        final alpha = behind < 3 ? 1 - behind * 0.22 : 0.35;
         light.sprite
           ..width = 0.3
           ..height = 0.3

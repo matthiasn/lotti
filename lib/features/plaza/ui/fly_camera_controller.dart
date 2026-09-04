@@ -222,7 +222,7 @@ class FlyCameraController {
       position: eye,
       target: eye + forward * 10,
       fovRadiansY: fovRadiansY,
-      fovFar: 2500,
+      fovFar: 1400,
     );
   }
 }

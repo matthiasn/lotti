@@ -346,7 +346,7 @@ FrontierPlaza? frontierPlazaFor(StreetPlan plan) {
 /// The map shot: high over the district, behind its oldest edge, looking
 /// toward the plaza so the jumbotron tower is the far landmark. Height and
 /// stand-off scale with the district's footprint so the whole thing fills
-/// the frame with a little headroom at a 56° pitch.
+/// the frame with a little headroom at a 55° pitch.
 CameraPose overviewPoseFor(StreetPlan plan) {
   final last = plan.last;
   if (last == null) return const CameraPose(x: 0, y: 120, z: -100, yaw: 0);
@@ -386,8 +386,8 @@ CameraPose overviewPoseFor(StreetPlan plan) {
   // Aim a little short of the centre (toward the near rows) and stand off
   // by the extent, so the nearest row and the jumbotron both fit with
   // headroom at a 60° field of view.
-  final back = 0.6 * extent;
-  final height = 0.88 * extent;
+  final back = 0.5 * extent;
+  final height = 0.72 * extent;
   final h = last.headingRadians;
   final aimBack = 0.08 * extent;
   return CameraPose(
@@ -554,7 +554,7 @@ List<(double, double)> lampPostsFor(
   double minGap = 2.5,
 }) {
   final posts = <(double, double)>[];
-  final lateral = roadWidth / 2 - 1.6;
+  final lateral = roadWidth / 2 - kerbFixtureInset;
   for (final segment in plan.segments) {
     if (segment.isGap) continue;
     final sinH = math.sin(segment.headingRadians);
@@ -570,7 +570,7 @@ List<(double, double)> lampPostsFor(
               )
               .toList()
             ..sort((a, b) => along(a).compareTo(along(b)));
-      final spots = <double>[1.5];
+      final spots = <double>[blockHeadAlong];
       for (var i = 0; i + 1 < plots.length; i++) {
         final gapStart = along(plots[i]) + plots[i].width / 2;
         final gapEnd = along(plots[i + 1]) - plots[i + 1].width / 2;
@@ -587,8 +587,14 @@ List<(double, double)> lampPostsFor(
   return posts;
 }
 
-/// An eye-level week sign at the head of each built block, on the right
-/// kerb, facing whoever walks in: (bucketIndex, x, z, facing).
+/// Where the block-head lamp post stands, along the road and in from the
+/// road edge: the week sign hangs from the same post.
+const blockHeadAlong = 1.5;
+const kerbFixtureInset = 1.6;
+
+/// A week sign at the head of each built block, hung from the right-hand
+/// block-head lamp post, facing whoever walks in: (bucketIndex, x, z,
+/// facing).
 List<(int, double, double, double)> weekSignsFor(
   StreetPlan plan, {
   required double roadWidth,
@@ -598,11 +604,11 @@ List<(int, double, double, double)> weekSignsFor(
     if (segment.isGap) continue;
     final sinH = math.sin(segment.headingRadians);
     final cosH = math.cos(segment.headingRadians);
-    final lateral = roadWidth / 2 - 0.8;
+    final lateral = roadWidth / 2 - kerbFixtureInset;
     signs.add((
       segment.bucketIndex,
-      segment.startX + sinH * 0.6 + cosH * lateral,
-      segment.startZ + cosH * 0.6 - sinH * lateral,
+      segment.startX + sinH * blockHeadAlong + cosH * lateral,
+      segment.startZ + cosH * blockHeadAlong - sinH * lateral,
       segment.headingRadians + math.pi,
     ));
   }
@@ -704,7 +710,7 @@ const _markerHeight = 1.6;
 /// Where a block's beacon stands: this far *before* the block starts, so
 /// its first pair of facades fits the frame with margin at a 60° field of
 /// view (a 32 m tall landmark at 14 m needs the distance).
-const blockBeaconInset = -14.0;
+const blockBeaconInset = -20.0;
 
 /// The navigation beacons: Home, one per built week (newest first), one per
 /// fold corner; then one attention beacon per anomaly.

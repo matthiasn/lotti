@@ -143,7 +143,8 @@ void main() {
       state: PlazaTaskState.blocked,
       cover: 'https://x.invalid/c.webp',
     );
-    await tester.pumpWidget(_host(task, heightMeters: 6));
+    // 7 m on a 15 m panel: still tall enough for the reason line.
+    await tester.pumpWidget(_host(task, heightMeters: 7));
     expect(find.byType(Image), findsOneWidget);
     expect(find.text('blocked — needs a decision'), findsOneWidget);
     expect(tester.takeException(), isNull);

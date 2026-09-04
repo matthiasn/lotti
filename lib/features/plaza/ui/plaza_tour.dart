@@ -35,6 +35,13 @@ final List<TourStop> plazaTourStops = [
     pose: (w) => blockBeaconPose(w, fraction: 0.25),
   ),
   TourStop(
+    name: 'billboard',
+    pose: (w) {
+      final slot = w.plaza?.pylons.firstOrNull;
+      return slot == null ? null : PlazaSurfaces.facingPose(slot);
+    },
+  ),
+  TourStop(
     name: 'attention-closeup',
     pose: (w) => w.beacons
         .where((b) => b.kind == BeaconKind.attention)
@@ -42,10 +49,12 @@ final List<TourStop> plazaTourStops = [
         ?.pose,
   ),
   TourStop(
-    name: 'billboard',
+    name: 'jumbotron',
     pose: (w) {
-      final slot = w.plaza?.pylons.firstOrNull;
-      return slot == null ? null : PlazaSurfaces.facingPose(slot);
+      final slot = w.jumbotron;
+      return slot == null
+          ? null
+          : PlazaSurfaces.facingPose(slot, distance: slot.width * 1.1);
     },
   ),
 ];

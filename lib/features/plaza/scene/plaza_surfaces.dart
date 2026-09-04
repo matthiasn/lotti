@@ -54,8 +54,23 @@ class PlazaSurfaces {
   final List<(Vector3, WidgetComponent, Node)> _billboardSurfaces = [];
   final List<(Vector3, WidgetComponent, Node)> _tickerSurfaces = [];
 
-  /// Beyond this distance the plaza's animated surfaces crawl.
-  static const plazaRange = 180.0;
+  /// Beyond this distance the plaza's animated surfaces are hidden: far
+  /// enough that the map shot still sees the pylons lit.
+  static const plazaRangeFloor = 180.0;
+  late final double plazaRange = _plazaRangeFor(world);
+
+  static double _plazaRangeFor(PlazaWorld world) {
+    final plaza = world.plaza;
+    if (plaza == null) return plazaRangeFloor;
+    final dx = plaza.overview.x - plaza.centerX;
+    final dz = plaza.overview.z - plaza.centerZ;
+    final ground = math.sqrt(dx * dx + dz * dz);
+    final reach = math.sqrt(
+      ground * ground + plaza.overview.y * plaza.overview.y,
+    );
+    return math.max(plazaRangeFloor, reach + 60);
+  }
+
   static const nearInterval = Duration(milliseconds: 100);
   static const tickerInterval = Duration(milliseconds: 50);
   static const farInterval = Duration(seconds: 3);
@@ -315,11 +330,12 @@ class PlazaSurfaces {
   }
 
   /// The pose in front of a billboard, for the tour and for taps on it.
-  static CameraPose facingPose(BillboardSlot slot) => CameraPose(
-    x: slot.x + math.sin(slot.facingRadians) * 14,
-    y: eyeHeight,
-    z: slot.z + math.cos(slot.facingRadians) * 14,
-    yaw: slot.facingRadians + math.pi,
-    pitch: math.atan2(slot.centerY - eyeHeight, 14),
-  );
+  static CameraPose facingPose(BillboardSlot slot, {double distance = 14}) =>
+      CameraPose(
+        x: slot.x + math.sin(slot.facingRadians) * distance,
+        y: eyeHeight,
+        z: slot.z + math.cos(slot.facingRadians) * distance,
+        yaw: slot.facingRadians + math.pi,
+        pitch: math.atan2(slot.centerY - eyeHeight, distance),
+      );
 }

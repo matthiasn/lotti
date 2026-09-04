@@ -38,8 +38,9 @@ void main() {
         'home',
         'overview',
         'block',
-        'attention-closeup',
         'billboard',
+        'attention-closeup',
+        'jumbotron',
       ]),
     );
   });

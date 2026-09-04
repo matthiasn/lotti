@@ -58,7 +58,7 @@ void main() {
         expect(o.y, again.y);
         expect(o.z, again.z);
         expect(o.y, greaterThan(100));
-        expect(o.pitch, closeTo(-math.atan2(0.88, 0.6), 1e-9)); // ~56° down
+        expect(o.pitch, closeTo(-math.atan2(0.72, 0.5), 1e-9)); // ~55° down
         expect(_norm(o.yaw), closeTo(_norm(last.headingRadians), 1e-9));
         // Behind the district relative to the plaza: farther from home than
         // any building is.
@@ -399,7 +399,7 @@ void main() {
     );
 
     test(
-      'week signs stand at each block head on the right kerb, facing in',
+      'week signs hang at each block head on the right kerb, facing in',
       () {
         final signs = weekSignsFor(plan, roadWidth: 18);
         final built = plan.segments.where((s) => !s.isGap).toList();
@@ -416,7 +416,7 @@ void main() {
           final along =
               dx * math.sin(segment.headingRadians) +
               dz * math.cos(segment.headingRadians);
-          expect(along, closeTo(0.6, 1e-9));
+          expect(along, closeTo(blockHeadAlong, 1e-9));
         }
       },
     );
