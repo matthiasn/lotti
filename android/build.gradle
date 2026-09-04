@@ -2,6 +2,12 @@ buildscript {
     ext {
         kotlin_version = '2.2.20'
         compileSdkVersion = 36
+        // NDK r28 is the first release that aligns shared libraries to 16 KB by
+        // default, which Google Play requires of apps targeting Android 15+.
+        // Plugins that do not pin an NDK fall back to the Android Gradle Plugin
+        // default (r27 or older) and would ship 4 KB-aligned .so files, so the
+        // subprojects block below pins every module to this version.
+        ndkVersion = '28.2.13676358'
     }
     repositories {
         google()
@@ -20,6 +26,12 @@ subprojects {
     
     beforeEvaluate { project ->
         project.ext.compileSdkVersion = rootProject.ext.compileSdkVersion
+    }
+
+    afterEvaluate { project ->
+        if (project.hasProperty('android')) {
+            project.android.ndkVersion = rootProject.ext.ndkVersion
+        }
     }
 }
 
