@@ -3,7 +3,12 @@ import 'package:lotti/features/plaza/scene/facade_lod_manager.dart';
 
 /// Rolling frame stats published by the harness a few times a second.
 class PlazaHarnessStats extends ChangeNotifier {
+  /// Frames the harness painted per second, and frames the engine
+  /// produced per second: the two differ when something other than the
+  /// pacer keeps the engine running (a widget capture's frame pump, an
+  /// animation controller inside a captured surface).
   double fps = 0;
+  double engineFps = 0;
   double avgFrameMs = 0;
   double worstFrameMs = 0;
   int buildings = 0;
@@ -18,10 +23,10 @@ class PlazaHarnessStats extends ChangeNotifier {
   void publish() => notifyListeners();
 }
 
-/// How often the harness paints a frame. The scene is animated (tickers,
-/// chase lights, pulsing glows), so without a cap it paints on every
-/// vsync, 120 times a second on a ProMotion display, and re-encodes the
-/// whole district each time.
+/// How often the harness paints a frame; the HUD's segmented control
+/// picks one. The scene is animated (tickers, chase lights, pulsing
+/// glows), so without a cap it paints on every vsync, 120 times a second
+/// on a ProMotion display, and re-encodes the whole district each time.
 enum PlazaFrameRate {
   /// The display's rate while the camera moves, 30 Hz while it stands.
   auto,
@@ -51,7 +56,8 @@ class PlazaLayoutKnobs {
 }
 
 /// Frame time, tier counts, capture stats and the LOD budget knobs.
-/// Hidden by default; the backtick key shows it.
+/// Hidden by default; the Debug box in the HUD (or the backtick key)
+/// shows it.
 class PlazaDebugOverlay extends StatelessWidget {
   const PlazaDebugOverlay({
     required this.stats,
@@ -60,8 +66,6 @@ class PlazaDebugOverlay extends StatelessWidget {
     required this.datasetLabel,
     required this.onConfigChanged,
     required this.onKnobsApplied,
-    required this.frameRate,
-    required this.onFrameRateChanged,
     super.key,
   });
 
@@ -70,10 +74,6 @@ class PlazaDebugOverlay extends StatelessWidget {
   final PlazaLayoutKnobs knobs;
   final String datasetLabel;
   final VoidCallback onConfigChanged;
-
-  /// The frame-rate cap and its setter; applies at once, no rebuild.
-  final PlazaFrameRate frameRate;
-  final ValueChanged<PlazaFrameRate> onFrameRateChanged;
 
   /// Fired when a layout slider is released — the scene rebuilds.
   final VoidCallback onKnobsApplied;
@@ -119,7 +119,8 @@ class PlazaDebugOverlay extends StatelessWidget {
                         fit: BoxFit.scaleDown,
                         child: Text(
                           '${stats.avgFrameMs.toStringAsFixed(1)} ms avg\n'
-                          '${stats.worstFrameMs.toStringAsFixed(1)} ms worst',
+                          '${stats.worstFrameMs.toStringAsFixed(1)} ms worst\n'
+                          'engine ${stats.engineFps.toStringAsFixed(0)} fps',
                           textAlign: TextAlign.right,
                         ),
                       ),
@@ -135,29 +136,6 @@ class PlazaDebugOverlay extends StatelessWidget {
                   'captures ${stats.captures}+${stats.surfaceCaptures}   '
                   'last ${stats.lastCaptureMs.toStringAsFixed(1)} ms   '
                   'promos ${stats.promotions}',
-                ),
-                const Divider(color: Color(0xFF2A2E38)),
-                Row(
-                  children: [
-                    const SizedBox(width: 70, child: Text('frame rate')),
-                    Expanded(
-                      child: Wrap(
-                        spacing: 6,
-                        runSpacing: 4,
-                        children: [
-                          for (final rate in PlazaFrameRate.values)
-                            ChoiceChip(
-                              label: Text(rate.label),
-                              selected: rate == frameRate,
-                              visualDensity: VisualDensity.compact,
-                              materialTapTargetSize:
-                                  MaterialTapTargetSize.shrinkWrap,
-                              onSelected: (_) => onFrameRateChanged(rate),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ],
                 ),
                 const Divider(color: Color(0xFF2A2E38)),
                 _slider(
@@ -245,7 +223,7 @@ class PlazaDebugOverlay extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 const Text(
-                  '` hides this panel',
+                  'the Debug box in the HUD hides this panel',
                   style: TextStyle(color: Color(0xFF6B7280)),
                 ),
               ],

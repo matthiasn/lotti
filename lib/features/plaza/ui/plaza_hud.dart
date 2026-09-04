@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
+import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
 import 'package:lotti/features/plaza/domain/attention.dart';
+import 'package:lotti/features/plaza/ui/debug_overlay.dart';
 import 'package:lotti/features/plaza/ui/plaza_style.dart';
 
 /// The chrome over the world: project title and counts, the three
@@ -15,6 +18,10 @@ class PlazaHud extends StatelessWidget {
     required this.onMorningWalk,
     required this.onOverview,
     required this.onHome,
+    required this.frameRate,
+    required this.onFrameRateChanged,
+    required this.showDebug,
+    required this.onShowDebugChanged,
     this.toast,
     this.walkChip,
     super.key,
@@ -27,6 +34,14 @@ class PlazaHud extends StatelessWidget {
   final VoidCallback onMorningWalk;
   final VoidCallback onOverview;
   final VoidCallback onHome;
+
+  /// The frame-rate cap and its setter: auto, 60 or 30.
+  final PlazaFrameRate frameRate;
+  final ValueChanged<PlazaFrameRate> onFrameRateChanged;
+
+  /// Whether the debug overlay shows, and its setter.
+  final bool showDebug;
+  final ValueChanged<bool> onShowDebugChanged;
   final String? toast;
   final String? walkChip;
 
@@ -63,6 +78,21 @@ class PlazaHud extends StatelessWidget {
           top: 14,
           child: Row(
             children: [
+              DsSegmentedToggle<PlazaFrameRate>(
+                segments: [
+                  for (final rate in PlazaFrameRate.values)
+                    DsSegment(rate, rate.label),
+                ],
+                selected: frameRate,
+                onChanged: onFrameRateChanged,
+              ),
+              const SizedBox(width: 10),
+              DesignSystemCheckbox(
+                value: showDebug,
+                label: 'Debug',
+                onChanged: (value) => onShowDebugChanged(value ?? false),
+              ),
+              const SizedBox(width: 14),
               _HudButton(
                 label: 'Morning walk',
                 primary: true,

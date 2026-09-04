@@ -11,11 +11,11 @@ void main() {
   late PlazaLayoutKnobs knobs;
   late int configChanges;
   late int knobsApplied;
-  late PlazaFrameRate frameRate;
 
   setUp(() {
     stats = PlazaHarnessStats()
       ..fps = 60
+      ..engineFps = 120
       ..avgFrameMs = 16.6
       ..worstFrameMs = 20
       ..buildings = 28
@@ -30,7 +30,6 @@ void main() {
     knobs = PlazaLayoutKnobs();
     configChanges = 0;
     knobsApplied = 0;
-    frameRate = PlazaFrameRate.sixty;
   });
 
   Widget host() {
@@ -44,8 +43,6 @@ void main() {
             datasetLabel: 'demo',
             onConfigChanged: () => configChanges++,
             onKnobsApplied: () => knobsApplied++,
-            frameRate: frameRate,
-            onFrameRateChanged: (rate) => frameRate = rate,
           ),
         ),
       ),
@@ -56,6 +53,7 @@ void main() {
   testWidgets('renders the frame and tier instrumentation', (tester) async {
     await tester.pumpWidget(host());
     expect(find.text('60 fps'), findsOneWidget);
+    expect(find.textContaining('engine 120 fps'), findsOneWidget);
     expect(find.text('buildings 28   data demo'), findsOneWidget);
     expect(find.text('live 1   sign 13   far 14'), findsOneWidget);
     expect(
@@ -118,17 +116,6 @@ void main() {
     await tester.pump();
     expect(config.forceAllLive, isTrue);
     expect(configChanges, 1);
-  });
-
-  testWidgets('frame rate chips pick a cap', (tester) async {
-    await tester.pumpWidget(host());
-    expect(find.text('60'), findsOneWidget);
-    await tester.tap(find.text('30'));
-    await tester.pump();
-    expect(frameRate, PlazaFrameRate.thirty);
-    await tester.tap(find.text('auto'));
-    await tester.pump();
-    expect(frameRate, PlazaFrameRate.auto);
   });
 
   test('a cap for every setting: auto lets movement run at the display', () {

@@ -93,8 +93,9 @@ Implemented, by area (the mechanism behind each is in the concept):
   walk height (plots, fillers, towers, plaza benches, planters and kiosk,
   pylon posts, gantry legs, lamp posts; the signs and the beam are in the
   air, for the flights), and title search. The harness paces its own
-  frames: a frame-rate control in the debug overlay (backquote) offers
-  auto, 60 and 30, default 60.
+  frames: a frame-rate control in the HUD offers auto, 60 and 30, default
+  60, and a Debug box there shows the overlay with painted and engine
+  frame rates.
 - **Morning walk.** Overview, up to three anomalies, home; pausable, and
   abandoned by any movement.
 - **Harness modes.** The interactive session, a screenshot tour

@@ -902,12 +902,19 @@ is ignored entirely in tour and bench modes.
   second: `auto` is the display's rate while anything moves (a flight, the
   walk, a held key, a drag, and 0.6 s after) and 30 Hz at rest, `60` and
   `30` are caps; the default is 60, the benchmark and the tour are never
-  capped. The chips are in the debug overlay (backquote). The scene is
-  always animated (tickers, chase lights, pulsing glows), so without a cap
-  it paints on every vsync, 120 times a second on a ProMotion display, and
-  re-encodes the whole district each time; the cap is the first lever on
-  idle CPU, the ticker captures (20 Hz each) and the draw count per
-  building are the next two.
+  capped. The HUD carries the control (a design-system segmented toggle)
+  and a Debug box that shows the overlay; the backquote key toggles the
+  overlay too, where a keyboard sends it. The overlay reports two rates:
+  the frames the harness painted and the frames the engine produced
+  (`engineFps`, a persistent frame callback). They differ when something
+  besides the pacer keeps the engine running, and two things do:
+  flutter_scene's `WidgetTexture` schedules a frame on every paint for
+  any surface under an `everyFrame` or `interval` capture policy (its
+  frame pump; only `manual` does not), and an animation controller inside
+  a captured widget (the ticker's scroll, a billboard's glow) ticks on
+  every vsync. Capping the paint rate alone therefore does not calm the
+  CPU; the captures have to be manual and requested from the pacer, and
+  the surface animations driven by its clock.
 - **Fixtures are the demo world only.** The harness projects
   `ManualDemoWorld.penguinLogistics`; the synthetic generator lives in
   `test/features/plaza/plaza_fixtures.dart` for the tests and nowhere else.

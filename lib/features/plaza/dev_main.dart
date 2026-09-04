@@ -25,10 +25,11 @@ import 'dart:math' as math;
 
 import 'package:flutter/gestures.dart' show kPrimaryButton;
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart' show Ticker;
+import 'package:flutter/scheduler.dart' show SchedulerBinding, Ticker;
 import 'package:flutter/services.dart';
 import 'package:flutter_scene/scene.dart' hide FlyCameraController;
 import 'package:lotti/features/demo/seed/demo_world.dart' show manualDemoNow;
+import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/plaza/data/demo_world_projection.dart';
 import 'package:lotti/features/plaza/domain/morning_walk.dart';
 import 'package:lotti/features/plaza/domain/plaza_layout.dart';
@@ -59,7 +60,7 @@ class PlazaDevApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: ThemeData.dark(useMaterial3: true),
+      theme: DesignSystemTheme.dark(),
       home: const _PlazaHarness(),
     );
   }
@@ -96,6 +97,11 @@ class _PlazaHarnessState extends State<_PlazaHarness>
   /// stops, so a coast to a halt is smooth.
   static const _movingHold = 0.6;
   double _movingUntil = 0;
+
+  /// Frames the engine produced since the stats were last published,
+  /// counted on a persistent frame callback: the number that shows whether
+  /// anything besides the pacer keeps the engine running.
+  int _engineFrames = 0;
   late final PlazaBench? _bench = _benchMode ? PlazaBench() : null;
 
   late PlazaWorld _world;
@@ -167,6 +173,9 @@ class _PlazaHarnessState extends State<_PlazaHarness>
     }
     setState(() => _ready = true);
     _pacer = createTicker(_onPace)..start();
+    SchedulerBinding.instance.addPersistentFrameCallback(
+      (_) => _engineFrames++,
+    );
   }
 
   @override
@@ -552,11 +561,14 @@ class _PlazaHarnessState extends State<_PlazaHarness>
     }
     _statsAge += dt;
     if (_statsAge >= 0.25 && _frameMs.isNotEmpty) {
+      final engineFps = _engineFrames / _statsAge;
+      _engineFrames = 0;
       _statsAge = 0;
       final sum = _frameMs.fold<double>(0, (a, b) => a + b);
       final avg = sum / _frameMs.length;
       _stats
         ..fps = 1000 / avg
+        ..engineFps = engineFps
         ..avgFrameMs = avg
         ..worstFrameMs = _frameMs.reduce((a, b) => a > b ? a : b)
         ..buildings = _sceneController.buildings.length
@@ -617,6 +629,10 @@ class _PlazaHarnessState extends State<_PlazaHarness>
               onMorningWalk: _startWalk,
               onOverview: _flyOverview,
               onHome: _flyHome,
+              frameRate: _frameRate,
+              onFrameRateChanged: (rate) => setState(() => _frameRate = rate),
+              showDebug: _showDebug,
+              onShowDebugChanged: (show) => setState(() => _showDebug = show),
               toast: _toast,
               walkChip: _walk?.chip,
             ),
@@ -651,9 +667,6 @@ class _PlazaHarnessState extends State<_PlazaHarness>
                       datasetLabel: 'waddle',
                       onConfigChanged: () => setState(() {}),
                       onKnobsApplied: _applyKnobs,
-                      frameRate: _frameRate,
-                      onFrameRateChanged: (rate) =>
-                          setState(() => _frameRate = rate),
                     ),
                   ),
                 ),
