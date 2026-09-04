@@ -78,6 +78,7 @@ lib/features/plaza/
   scene/                 flutter_scene, needs a GPU context
     plaza_world.dart     everything derived from tasks and the clock (pure)
     plaza_scene.dart     the scene graph: sky, road, buildings, fillers, skyline
+    plaza_boxes.dart     shared unit geometry and solid materials for boxes
     facade_lod_manager.dart      far, sign and live facade tiers
     plaza_surfaces.dart  billboards, tickers, markers, signs, banners, jumbotron
     surface_captures.dart        the shared capture bookkeeping and cadences

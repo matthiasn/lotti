@@ -163,6 +163,9 @@ every request the scheduler makes and lands a capture on demand
 with a fake capture controller, so activation, promotions, demotions and
 cover invalidation can be tested without geometry. Capture controller fakes
 are shared in `test/features/plaza/scene/test_utils.dart`.
+An empty `UnskinnedGeometry` with explicit local bounds also needs no GPU
+upload: `plaza_boxes_test.dart` uses it to verify shared geometry and material
+identity and the placement of scaled meshes under unscaled anchors.
 
 ## Hover-divider tests: `test_utils/hover_divider_harness.dart`
 

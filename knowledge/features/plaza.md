@@ -5,7 +5,7 @@ description: "The developer-only 3D project map: a merge-stable street folded in
 resource: ../../lib/features/plaza
 tags: [plaza, 3d, flutter-scene, flutter-gpu, tasks, visualization, prototype]
 status: draft
-generated: { by: codex/gpt-6, at: 2026-09-04T22:05:04Z }
+generated: { by: codex/gpt-6, at: 2026-09-04T23:15:00Z }
 stale_after: 2027-03-01
 sources:
   - id: street
@@ -56,6 +56,10 @@ sources:
     resource: ../../lib/features/plaza/scene/plaza_scene.dart
     title: PlazaSceneController, the scene graph builder
     last_modified: 2026-09-04
+  - id: boxes
+    resource: ../../lib/features/plaza/scene/plaza_boxes.dart
+    title: Shared unit geometry and immutable solid materials
+    last_modified: 2026-09-05
   - id: surfaces
     resource: ../../lib/features/plaza/scene/plaza_surfaces.dart
     title: PlazaSurfaces, the non-facade widget surfaces and their capture intervals
@@ -716,6 +720,14 @@ until it lands.
 
 `PlazaSceneController` builds the `Scene` on construction:
 
+- **Shared box resources**: `PlazaBoxes` owns one plain unit cube and one
+  face-tinted unit cube per scene. Every box has an unscaled logical anchor
+  and a scaled mesh child, so attachments and ancestor-based picking keep
+  their coordinates. Matching solid colours and depth biases reuse material
+  instances, allowing the renderer to instance compatible opaque draws.
+  Shared materials are never animated or textured; surfaces with changing
+  material state keep their own instances. The helper accepts only unlit
+  materials, avoiding lighting changes from nonuniform normal transforms.
 - **Post-processing**: real HDR **bloom** (`scene.postProcess.bloom`,
   threshold `bloomThreshold` 1.0, intensity `bloomIntensity` 0.3, scatter
   0.6) and a soft **vignette** (0.32 at radius 0.82). Widget whites sit at
