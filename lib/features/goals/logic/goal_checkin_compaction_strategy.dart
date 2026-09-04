@@ -146,7 +146,6 @@ class GoalCheckInDigestRequest {
 /// Abstract so the strategy stays pure: production would back it with an
 /// inference call and persist the result; the evaluation backs it with a
 /// cached inference call; unit tests back it with a fake.
-// ignore: one_member_abstracts
 abstract interface class GoalCheckInDigestWriter {
   Future<String> write(GoalCheckInDigestRequest request);
 }

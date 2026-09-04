@@ -1,4 +1,4 @@
-// ignore_for_file: one_member_abstracts, sort_constructors_first
+// ignore_for_file: sort_constructors_first
 
 import 'dart:async';
 import 'dart:convert';

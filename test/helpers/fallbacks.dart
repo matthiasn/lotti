@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:typed_data';
 import 'dart:ui' show Locale;
 
+import 'package:a2ui_core/a2ui_core.dart' show CreateSurfaceMessage;
 import 'package:drift/drift.dart' as drift;
-import 'package:genui/genui.dart' show CreateSurface;
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
@@ -539,7 +539,7 @@ void registerAllFallbackValues() {
   // GenUI A2uiMessage fallback (needed when MockSurfaceController.handleMessage
   // is stubbed with any()).
   registerFallbackValue(
-    const CreateSurface(surfaceId: 'fallback-surface', catalogId: 'fallback'),
+    CreateSurfaceMessage(surfaceId: 'fallback-surface', catalogId: 'fallback'),
   );
 
   // Day processing outbox payload fallbacks (ADR 0032 phase 1; needed when

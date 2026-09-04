@@ -1,3 +1,5 @@
+import 'package:a2ui_core/a2ui_core.dart'
+    show CreateSurfaceMessage, UpdateComponentsMessage;
 import 'package:genui/genui.dart';
 import 'package:lotti/features/agents/genui/evolution_catalog.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -5,8 +7,8 @@ import 'package:openai_dart/openai_dart.dart';
 /// Bridges Lotti's OpenAI tool-calling layer to GenUI's A2UI message protocol.
 ///
 /// When the LLM calls the `render_surface` tool, this bridge constructs the
-/// necessary [Component], [UpdateComponents], and [CreateSurface] messages and
-/// feeds them to the [SurfaceController].
+/// necessary [CreateSurfaceMessage] and [UpdateComponentsMessage] messages
+/// and feeds them to the [SurfaceController].
 class GenUiBridge {
   GenUiBridge({required this.processor});
 
@@ -78,8 +80,9 @@ class GenUiBridge {
 
   /// Process a `render_surface` tool call.
   ///
-  /// Constructs the genui [Component], sends [UpdateComponents] and
-  /// [CreateSurface] to the processor, and returns the surface ID.
+  /// Sends a [CreateSurfaceMessage] followed by an [UpdateComponentsMessage]
+  /// carrying the root component to the processor, and returns the surface
+  /// ID.
   String handleToolCall(Map<String, dynamic> args) {
     final surfaceIdValue = args['surfaceId'];
     final surfaceId = surfaceIdValue is String && surfaceIdValue.isNotEmpty
@@ -112,21 +115,24 @@ class GenUiBridge {
 
     const rootId = 'root';
 
-    final component = Component(
-      id: rootId,
-      type: rootType,
-      properties: data,
-    );
+    // A2UI components are flat JSON: the id and type sit beside the
+    // widget's own properties. The fixed keys come last so a stray `id` or
+    // `component` in the LLM's data cannot rename the root.
+    final component = <String, dynamic>{
+      ...data,
+      'id': rootId,
+      'component': rootType,
+    };
 
     processor
       ..handleMessage(
-        CreateSurface(
+        CreateSurfaceMessage(
           surfaceId: surfaceId,
           catalogId: evolutionCatalogId,
         ),
       )
       ..handleMessage(
-        UpdateComponents(
+        UpdateComponentsMessage(
           surfaceId: surfaceId,
           components: [component],
         ),
