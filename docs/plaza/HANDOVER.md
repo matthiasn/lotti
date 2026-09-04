@@ -65,7 +65,9 @@ Implemented, by area (the mechanism behind each is in the concept):
   on the tickers, the jumbotron and screens on the skyline towers.
 - **Skyline range.** Night sky and a haze that thins as the camera climbs,
   roof lanterns in state colours, window-grid walls lit by state over a
-  shopfront band, neon edges (category colour, state colour on an alarm),
+  parade of shopfronts dressed by state (trading, trading late in amber,
+  papered and fitting out, shuttered behind alarm tape, shuttered for the
+  night), neon edges (category colour, state colour on an alarm),
   light pools that fade
   with altitude, week markers on the road (shown from the air only) and week signs hung from the
   block-head lamp posts, vertical banners on tall buildings, spires with
@@ -163,6 +165,7 @@ LIVE stress switch.
 | `block` | the block beacon a quarter of the way from oldest to newest | a week of buildings at street range: sign facades, lanterns, lamps |
 | `billboard` | 14 m in front of the first pylon | the top-ranked billboard, its frame, chase lights and pool |
 | `attention-closeup` | the second attention beacon (the first when there is only one) | a live facade of an anomaly with its roof billboard |
+| `shopfront` | eye level, 6.5 m before the bare end wall at a block head (an alarmed head when there is one, never a plaza mount) | the shopfront band up close, dressed for the task's state, with the storeys above it |
 | `jumbotron` | in front of the jumbotron, 1.1 × its width back | the giant screen, its tower and the plaza from behind home |
 
 A stop the world cannot provide (no anomalies, no plaza) is skipped;
@@ -293,7 +296,8 @@ still open.
 
 ## 8. Known limits
 
-- The harness needs a GPU context; the `scene/` classes have no unit tests.
+- The harness needs a GPU context; of the `scene/` classes only `PlazaWorld`
+  and the shopfront strip painter have unit tests.
 - Cover art is loaded over HTTP from the public demo media catalogue, so an
   offline run shows facades and billboards without pictures.
 - Capturing under Xvfb yields blank widget surfaces (section 4.1).

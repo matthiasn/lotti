@@ -534,7 +534,8 @@ itself shows it. The values are in the concept.
 - **Anomalies are lit where they stand**: roof billboards, banners, the
   gantry, the jumbotron, skyline screens, hero towers at the end of folded
   rows, chase lights, lamps, spires, light pools, window-grid walls over
-  shopfront bands, plaza paving, filler blocks and the skyline ring are all
+  shopfront parades dressed by the task's state, plaza paving, filler
+  blocks and the skyline ring are all
   additions beyond the spec's skyline range, from the dressing passes. On a blocked or overdue
   building the neon verticals take the state colour, so the alarm reads at
   street range without a lantern.

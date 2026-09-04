@@ -273,8 +273,8 @@ cover art.
 
 **Spires** (`spiresFor`): the two tallest buildings carry a mast with a
 blinking warning light, as does the jumbotron tower, which is itself a
-building: windowed on every face over a shopfront band, a teal crown and
-teal corner strips, and a pool at its foot.
+building: windowed on every face over a trading shopfront parade, a teal
+crown and teal corner strips, and a pool at its foot.
 
 **Roofline tickers** (`rooflineTickerFor`): the two tallest buildings that
 carry no roof billboard (`PlazaWorld.heroes`) get a band along their
@@ -563,11 +563,10 @@ until it lands.
 - **Buildings**: a category-tinted box whose depth varies by hash
   (`0.78 to 1.1 × plot depth`, anchored to the street side), side and back
   walls built by `_windowedWall`: a **shopfront band** at the foot
-  (`min(4 m, 0.45 × height)`, a 12 × 4 m tile of three glazed bays, a door
-  and a lit fascia) under tiled **window textures** by lantern state
-  (`WallTextures`: a 12 × 12 m tile of 4 floors × 10 bays; lit ratio
+  (`min(4 m, 0.45 × height)`) under tiled **window textures** by lantern
+  state (`WallTextures`: a 12 × 12 m tile of 4 floors × 10 bays; lit ratio
   inProgress 0.62, blocked and overdue 0.5, open 0.36, off 0.2;
-  per-building tile offset), a plinth,
+  per-wall tile offset), a plinth,
   a stepped-back upper storey at 14 m and above, a roof slab and trim, the
   facade plate (the only pickable part of a building), a progress **light
   bar** along the base (done fills it, a checklist fills its fraction, in
@@ -578,13 +577,28 @@ until it lands.
   category at half power, a seeded **roof kit** (parapet, one or two plant boxes, a
   water tank on 40 % of buildings wider than 5 m, a mast on a third), the
   hidden focus ring, the facade anchor and the lantern anchor.
+- **Shopfronts** (`WallTextures.shopfront`): the band is one 30 × 4 m
+  strip, a parade of six trades of different widths (café, record shop,
+  bar, noodle bar, arcade, florist), each with its own sign colour, door
+  side, window contents and, on three of them, an awning; every wall
+  starts at its own point in the parade, so no two walls show the same
+  shops. The strip is painted once **per lantern state**, so the ground
+  floor says what the task is doing: **in progress** trades (lit signs,
+  lit glass, people inside, lit transoms); **overdue** trades late, the
+  interior and every sign flooded in the lantern amber; **open** is not
+  open yet (papered glass, a blank fascia, a notice on the door, a work
+  light some nights); **blocked** is shuttered behind alarm tape in the
+  lantern red with a red lamp over each door; **off** is shuttered for
+  the night, signs dark, a security light over each door. Fillers, the
+  hero towers and the jumbotron tower always trade: they are the city,
+  not tasks.
 - **Billboards**: pylons get two braced posts on footings and a catwalk; roof
   panels get two struts; every panel gets a dark lightbox, a glow quad, a rim
   in the lantern colour and chase-light points around the frame. The
   backing box is the pickable node.
 - **Fillers** (`Scenery.fillers`): dark blocks behind the plots, every
-  face a shopfront band under open-state windows; about a third carry a
-  neon category sign named after one of the week's own tasks.
+  face a trading shopfront parade under open-state windows; about a third
+  carry a neon category sign named after one of the week's own tasks.
 - **Skyline** (`Scenery.skyline`): the ring of towers with two windowed
   faces toward the district; every fourth carries a screen that shows the
   anomalies in rotation.
@@ -654,7 +668,8 @@ is ignored entirely in tour and bench modes.
   on construction; the LOD manager, surfaces and sprites create GPU-backed
   components as they run. `codecov.yml` excludes `lib/features/plaza/scene/**`
   and `dev_main.dart`; `PlazaWorld` is the one scene-directory class that is
-  pure and tested.
+  pure and tested, and `WallTextures.paintShopfront` is checked pixel by
+  pixel because the dressing is a contract.
 - **Xvfb cannot render the widget textures.** Under a virtual framebuffer the
   facades and billboards come out as flat slabs (observed in capture runs, not
   something the code checks); capture on a real X11 or XWayland display.

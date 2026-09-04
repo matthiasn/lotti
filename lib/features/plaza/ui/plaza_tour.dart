@@ -6,7 +6,11 @@
 /// tour is reproducible on every machine.
 library;
 
+import 'dart:math' as math;
+
+import 'package:lotti/features/plaza/domain/attention.dart';
 import 'package:lotti/features/plaza/domain/plaza_layout.dart';
+import 'package:lotti/features/plaza/domain/street_layout.dart';
 import 'package:lotti/features/plaza/scene/plaza_surfaces.dart';
 import 'package:lotti/features/plaza/scene/plaza_world.dart';
 
@@ -53,6 +57,7 @@ final List<TourStop> plazaTourStops = [
       return attention[attention.length > 1 ? 1 : 0].pose;
     },
   ),
+  const TourStop(name: 'shopfront', pose: shopfrontPose),
   TourStop(
     name: 'jumbotron',
     pose: (w) {
@@ -75,4 +80,66 @@ CameraPose? blockBeaconPose(PlazaWorld world, {required double fraction}) {
   if (blocks.isEmpty) return null;
   final index = (blocks.length * fraction).floor().clamp(0, blocks.length - 1);
   return blocks[index].pose;
+}
+
+/// How far the shopfront stop stands from the end wall it looks at.
+const shopfrontStandOff = 10.0;
+
+/// Eye level on the open ground before a built row, square on to the end
+/// wall of the building at its block head: the shopfront band up close,
+/// with the storeys above it. Of the bare head walls (the plaza mounts
+/// carry a screen and a ticker instead), the one whose dressing says the
+/// most: on alarm first, then trading, then fitting out, then shuttered
+/// for the night; the oldest row on a tie. Null on a street with no bare
+/// head wall.
+CameraPose? shopfrontPose(PlazaWorld world) {
+  final deleted = {
+    for (final t in world.tasks)
+      if (t.deleted) t.id,
+  };
+  final mounted = {for (final p in plazaMounts(world.plan)) p.taskId};
+  int rank(PlotPlacement p) => switch (world.attention[p.taskId]?.lantern) {
+    LanternState.blocked || LanternState.overdue => 0,
+    LanternState.inProgress => 1,
+    LanternState.open => 2,
+    _ => 3,
+  };
+  (PlotPlacement, RoadSegment)? best;
+  for (final segment in world.plan.segments) {
+    if (segment.isGap || segment.isConnector) continue;
+    final sinH = math.sin(segment.headingRadians);
+    final cosH = math.cos(segment.headingRadians);
+    double along(PlotPlacement p) =>
+        (p.x - segment.startX) * sinH + (p.z - segment.startZ) * cosH;
+    for (final side in PlotSide.values) {
+      final row =
+          world.plan.placements.values
+              .where(
+                (p) =>
+                    p.bucketIndex == segment.bucketIndex &&
+                    p.side == side &&
+                    !deleted.contains(p.taskId),
+              )
+              .toList()
+            ..sort((a, b) => along(a).compareTo(along(b)));
+      final head = row.firstOrNull;
+      if (head == null || mounted.contains(head.taskId)) continue;
+      if (best == null || rank(head) < rank(best.$1)) best = (head, segment);
+    }
+  }
+  if (best == null) return null;
+  final (head, segment) = best;
+  final sinH = math.sin(segment.headingRadians);
+  final cosH = math.cos(segment.headingRadians);
+  final along =
+      (head.x - segment.startX) * sinH + (head.z - segment.startZ) * cosH;
+  final a = along - head.width / 2 - shopfrontStandOff;
+  final lateral =
+      (head.x - segment.startX) * cosH - (head.z - segment.startZ) * sinH;
+  return CameraPose(
+    x: segment.startX + sinH * a + cosH * lateral,
+    y: eyeHeight,
+    z: segment.startZ + cosH * a - sinH * lateral,
+    yaw: segment.headingRadians,
+  );
 }

@@ -254,7 +254,7 @@ class PlazaSceneController {
   /// Ground surfaces that take the asphalt grain.
   final List<UnlitMaterial> _grainMaterials = [];
   final List<UnlitMaterial> _pavingMaterials = [];
-  final List<UnlitMaterial> _shopfrontMaterials = [];
+  final Map<LanternState, List<UnlitMaterial>> _shopfrontMaterials = {};
 
   /// Gives every windowed wall its texture once the tiles are uploaded,
   /// the pools their falloff and the ground its grain.
@@ -275,10 +275,13 @@ class PlazaSceneController {
     for (final material in _pavingMaterials) {
       material.baseColorTexture = textures.paving;
     }
-    for (final material in _shopfrontMaterials) {
-      material
-        ..baseColorTexture = textures.shopfront
-        ..baseColorFactor = Vector4(1, 1, 1, 1);
+    for (final MapEntry(key: state, value: materials)
+        in _shopfrontMaterials.entries) {
+      for (final material in materials) {
+        material
+          ..baseColorTexture = textures.shopfront(state)
+          ..baseColorFactor = Vector4(1, 1, 1, 1);
+      }
     }
   }
 
@@ -343,10 +346,11 @@ class PlazaSceneController {
   /// Height of the shopfront band at the foot of every wall.
   static const shopfrontHeight = 4.0;
 
-  /// A wall face: a shopfront band at the foot (glazing, a door, a lit
-  /// fascia) under the window grid of [state]'s lit ratio. The quad's face
-  /// is +Z before [yaw]; [dx], [dz] place it on the parent's box, whose
-  /// centre sits at half [height].
+  /// A wall face: a shopfront band at the foot (the parade of shops,
+  /// dressed for [shops], which defaults to [state]: trading, late,
+  /// fitting out, shuttered, closed) under the window grid of [state]'s
+  /// lit ratio. The quad's face is +Z before [yaw]; [dx], [dz] place it on
+  /// the parent's box, whose centre sits at half [height].
   void _windowedWall(
     Node parent, {
     required double dx,
@@ -357,10 +361,11 @@ class PlazaSceneController {
     required LanternState state,
     required Vector4 tint,
     required double uOffset,
+    LanternState? shops,
   }) {
     final ground = math.min(shopfrontHeight, height * 0.45);
     final shop = UnlitMaterial()..baseColorFactor = tint;
-    _shopfrontMaterials.add(shop);
+    _shopfrontMaterials.putIfAbsent(shops ?? state, () => []).add(shop);
     parent.add(
       Node(
         localTransform: Matrix4.translation(
@@ -929,12 +934,12 @@ class PlazaSceneController {
       ),
     );
 
-    // Side and back walls: window grids in the state's lit ratio, tiled
-    // by the wall's size; a hashed tile offset per building.
+    // Side and back walls: window grids in the state's lit ratio over
+    // the shopfront parade dressed for the state, tiled by the wall's
+    // size; a hashed tile offset per wall so each starts at its own shop.
     final wallTint = linearColor(
       Color.lerp(PlazaStyle.categoryWall(task), const Color(0xFF0B0A14), 0.5)!,
     );
-    final offset = stableUnit(task.id, 'tile') * 3;
     // A quad's face is +Z before rotation: rotateY(-π/2) turns it to -X
     // for the left wall, rotateY(π/2) to +X for the right, π for the back.
     for (final (dx, dz, yaw, width) in [
@@ -953,7 +958,7 @@ class PlazaSceneController {
         height: h,
         state: attention.lantern,
         tint: wallTint,
-        uOffset: offset,
+        uOffset: stableUnit(task.id, 'tile$yaw') * 3,
       );
     }
 
@@ -1495,6 +1500,8 @@ class PlazaSceneController {
           state: LanternState.open,
           tint: _tower,
           uOffset: stableUnit(id, 'tile$yaw') * 3,
+          // The fabric trades all night, whatever its flats are doing.
+          shops: LanternState.inProgress,
         );
       }
       if (stableUnit(id, 'sign') < 0.34) {

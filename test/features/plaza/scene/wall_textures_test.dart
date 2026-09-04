@@ -1,0 +1,161 @@
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/plaza/domain/attention.dart';
+import 'package:lotti/features/plaza/scene/wall_textures.dart';
+
+/// The strip as raw RGBA, sampled in world metres from its top-left.
+class _Strip {
+  _Strip(this.width, this.height, this.bytes);
+
+  final int width;
+  final int height;
+  final ByteData bytes;
+
+  double get pxPerMeter => width / WallTextures.shopfrontWidth;
+
+  ui.Color at(double xMeters, double yMeters) {
+    final x = (xMeters * pxPerMeter).floor().clamp(0, width - 1);
+    final y = (yMeters * pxPerMeter).floor().clamp(0, height - 1);
+    final i = (y * width + x) * 4;
+    return ui.Color.fromARGB(
+      bytes.getUint8(i + 3),
+      bytes.getUint8(i),
+      bytes.getUint8(i + 1),
+      bytes.getUint8(i + 2),
+    );
+  }
+
+  /// Samples along the whole strip at [yMeters], 300 points.
+  Iterable<ui.Color> along(double yMeters) sync* {
+    for (var i = 0; i < 300; i++) {
+      yield at(WallTextures.shopfrontWidth * (i + 0.5) / 300, yMeters);
+    }
+  }
+
+  /// Every pixel row at [xMeters] between two heights.
+  Iterable<ui.Color> down(
+    double xMeters,
+    double fromMeters,
+    double toMeters,
+  ) sync* {
+    final rows = ((toMeters - fromMeters) * pxPerMeter).floor();
+    for (var i = 0; i < rows; i++) {
+      yield at(xMeters, fromMeters + i / pxPerMeter);
+    }
+  }
+}
+
+Future<_Strip> _paint(LanternState state) async {
+  final image = WallTextures.paintShopfront(state);
+  final bytes = await image.toByteData();
+  return _Strip(image.width, image.height, bytes!);
+}
+
+int _count(Iterable<ui.Color> colors, bool Function(ui.Color) test) =>
+    colors.where(test).length;
+
+double _mean(Iterable<ui.Color> colors, double Function(ui.Color) f) =>
+    colors.map(f).reduce((a, b) => a + b) / colors.length;
+
+double _sum(ui.Color c) => c.r + c.g + c.b;
+bool _isRed(ui.Color c) => c.r > 0.7 && c.g < 0.5 && c.b < 0.5;
+bool _isAmber(ui.Color c) => c.r > 0.7 && c.g > 0.45 && c.g < 0.85 && c.b < 0.4;
+bool _isPale(ui.Color c) =>
+    c.r > 0.6 && c.g > 0.55 && c.b > 0.45 && c.r - c.b < 0.25;
+bool _isLitSign(ui.Color c) => _sum(c) > 1.2;
+bool _isLitGlass(ui.Color c) => _sum(c) > 0.75;
+bool _isDark(ui.Color c) => _sum(c) < 0.9;
+
+/// Rows of the strip in metres from its top: the fascia signs, the tape
+/// band, mid-glass.
+const _signRow = 0.4;
+const _tapeRow = 1.45;
+const _glassRow = 2.4;
+
+/// The first shop's glass, centre column, and its glazed height.
+const _glassColumn = 1.9;
+const _glassTop = 0.9;
+const _glassBottom = 3.5;
+
+void main() {
+  late final Map<LanternState, _Strip> strips;
+  setUpAll(() async {
+    strips = {
+      for (final state in LanternState.values) state: await _paint(state),
+    };
+  });
+
+  test('every strip is the parade at 96 px per metre', () {
+    for (final strip in strips.values) {
+      expect(strip.pxPerMeter, 96);
+      expect(strip.height / strip.pxPerMeter, WallTextures.shopfrontHeight);
+    }
+  });
+
+  test('the five dressings are five different pictures', () {
+    final signatures = {
+      for (final MapEntry(key: state, value: strip) in strips.entries)
+        state: [
+          _count(strip.along(_signRow), _isLitSign),
+          _count(strip.along(_glassRow), _isLitGlass),
+          _count(strip.along(_tapeRow), _isRed),
+          _count(strip.along(_glassRow), _isPale),
+        ],
+    };
+    final distinct = signatures.values.map((s) => s.join(',')).toSet();
+    expect(
+      distinct,
+      hasLength(LanternState.values.length),
+      reason: '$signatures',
+    );
+  });
+
+  test('in progress trades: lit signs, lit glass, no tape', () {
+    final strip = strips[LanternState.inProgress]!;
+    expect(_count(strip.along(_signRow), _isLitSign), greaterThan(60));
+    expect(_count(strip.along(_glassRow), _isLitGlass), greaterThan(60));
+    expect(_count(strip.along(_tapeRow), _isRed), lessThan(10));
+  });
+
+  test('overdue trades late in amber', () {
+    final strip = strips[LanternState.overdue]!;
+    final trading = strips[LanternState.inProgress]!;
+    // Every sign is amber, and the glass is warmer than when trading.
+    expect(_count(strip.along(_signRow), _isAmber), greaterThan(60));
+    expect(_count(trading.along(_signRow), _isAmber), lessThan(40));
+    final warmth = _mean(strip.along(_glassRow), (c) => c.r - c.b);
+    final tradingWarmth = _mean(trading.along(_glassRow), (c) => c.r - c.b);
+    expect(warmth, greaterThan(tradingWarmth + 0.08));
+    expect(_count(strip.along(_glassRow), _isLitGlass), greaterThan(60));
+  });
+
+  test('open is not open yet: papered glass and no sign', () {
+    final strip = strips[LanternState.open]!;
+    expect(_count(strip.along(_glassRow), _isPale), greaterThan(150));
+    expect(_count(strip.along(_signRow), _isLitSign), lessThan(5));
+    expect(_count(strip.along(_tapeRow), _isRed), lessThan(5));
+  });
+
+  test('blocked is shuttered behind alarm tape', () {
+    final strip = strips[LanternState.blocked]!;
+    expect(_count(strip.along(_tapeRow), _isRed), greaterThan(60));
+    expect(_count(strip.along(_glassRow), _isDark), greaterThan(250));
+    expect(_count(strip.along(_signRow), _isLitSign), lessThan(5));
+  });
+
+  test('off is shuttered for the night: dark, no tape, no lit sign', () {
+    final strip = strips[LanternState.off]!;
+    expect(_count(strip.along(_glassRow), _isDark), greaterThan(250));
+    expect(_count(strip.along(_tapeRow), _isRed), lessThan(5));
+    expect(_count(strip.along(_signRow), _isLitSign), lessThan(5));
+    // The shutter slats read as lines down the glass, not a black hole.
+    final slats = _count(
+      strip.down(_glassColumn, _glassTop, _glassBottom),
+      (c) => _sum(c) > 0.6,
+    );
+    expect(slats, greaterThan(10));
+    expect(slats, lessThan(80));
+  });
+}
