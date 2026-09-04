@@ -41,6 +41,45 @@ void main() {
     ),
   );
 
+  testWidgets('a two-line headline with its reason fits the panel', (
+    tester,
+  ) async {
+    final long = [
+      attentionFor(
+        _task('long', 'Trace the humidity spike in Bay C before the audit'),
+        now,
+      ),
+    ];
+    // The real 30 × 16 m panel, then a squatter one the slide must scale
+    // down into.
+    for (final height in [480.0, 330.0]) {
+      await tester.pumpWidget(
+        makeTestableWidget2(
+          Center(
+            child: SizedBox(
+              width: 900,
+              height: height,
+              child: JumbotronWidget(
+                key: ValueKey(height),
+                projectLabel: 'Project Waddle',
+                taskCount: 28,
+                attentionCount: 7,
+                headlines: long,
+                covers: const [],
+                widthMeters: 30,
+                pxPerMeter: 30,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump(const Duration(seconds: 5));
+      expect(find.text('blocked — needs a decision'), findsOneWidget);
+      expect(find.text('fly there ›'), findsOneWidget);
+      expect(tester.takeException(), isNull, reason: 'height $height');
+    }
+  });
+
   testWidgets('one message at a time: the project card, then each headline', (
     tester,
   ) async {

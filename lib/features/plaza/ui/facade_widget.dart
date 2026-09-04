@@ -137,138 +137,188 @@ class FacadeWidget extends StatelessWidget {
                 Expanded(
                   child: Padding(
                     padding: EdgeInsets.all(pad),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // A finished task is a small sign: the wall-height
-                        // title is for what is live or wrong.
-                        Text(
-                          task.title,
-                          maxLines: quiet ? 2 : 3,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontFamily: PlazaStyle.fontText,
-                            fontWeight: FontWeight.w700,
-                            fontSize: m(quiet ? titleM * 0.55 : titleM),
-                            height: 1.14,
-                            letterSpacing: -m(titleM) * 0.012,
-                            color: ink,
-                          ),
-                        ),
-                        if (_live && metaBits.isNotEmpty) ...[
-                          SizedBox(height: m(0.3 * titleM)),
-                          Text(
-                            metaBits.join('  ·  '),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontFamily: PlazaStyle.fontText,
-                              fontSize: m(metaM),
-                              color: quiet
-                                  ? PlazaStyle.textDim
-                                  : PlazaStyle.textMed,
-                            ),
-                          ),
-                        ],
-                        if (task.coverImageUrl != null) ...[
-                          SizedBox(height: m(0.3 * titleM)),
-                          // The picture gets the biggest band the wall can
-                          // spare: it fills its share edge to edge.
-                          Flexible(
-                            flex: _live ? 7 : 10,
-                            child: SizedBox(
-                              width: double.infinity,
-                              child: _Cover(
-                                url: task.coverImageUrl!,
-                                quiet: attention.lantern == LanternState.off,
+                    child: LayoutBuilder(
+                      builder: (context, box) {
+                        // A squat wall keeps the title and the chips;
+                        // meta, cover and checklist yield. The title has
+                        // a bounded box and scales down inside it, so no
+                        // wall ever overflows.
+                        final tight = box.maxHeight < m(6);
+                        final gap = math.min(
+                          m(0.3 * titleM),
+                          box.maxHeight * 0.04,
+                        );
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // A finished task is a small sign: the wall-height
+                            // title is for what is live or wrong.
+                            ConstrainedBox(
+                              constraints: BoxConstraints(
+                                maxHeight: box.maxHeight * (tight ? 0.5 : 0.6),
                               ),
-                            ),
-                          ),
-                        ],
-                        if (_live && items.isNotEmpty) ...[
-                          SizedBox(height: m(0.3 * titleM)),
-                          // Only as many items as the wall has room for:
-                          // a short building shows fewer, never overflows.
-                          Flexible(
-                            flex: 4,
-                            child: LayoutBuilder(
-                              builder: (context, constraints) {
-                                // Box + padding + the line's own leading.
-                                final rowPx = m(itemM) * 1.6;
-                                final fit = (constraints.maxHeight / rowPx)
-                                    .floor()
-                                    .clamp(0, items.length);
-                                return Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: [
-                                    for (final (i, label)
-                                        in items.take(fit).indexed)
-                                      _Item(
-                                        label: label,
-                                        ticked:
-                                            t?.isTicked(task.id, i) ?? false,
-                                        fontPx: m(itemM),
-                                        onTap: t == null
-                                            ? null
-                                            : () => t.toggle(task.id, i),
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.topLeft,
+                                child: SizedBox(
+                                  width: box.maxWidth,
+                                  child: Text(
+                                    task.title,
+                                    maxLines: quiet ? 2 : 3,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontFamily: PlazaStyle.fontText,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: m(
+                                        quiet ? titleM * 0.55 : titleM,
                                       ),
-                                  ],
-                                );
-                              },
-                            ),
-                          ),
-                        ],
-                        const Spacer(),
-                        if (_live)
-                          Row(
-                            children: [
-                              // Chips scale down together on a narrow
-                              // wall rather than overflowing the row.
-                              Flexible(
-                                child: FittedBox(
-                                  fit: BoxFit.scaleDown,
-                                  alignment: Alignment.centerLeft,
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      _Chip(
-                                        label:
-                                            '${PlazaStyle.glyph(attention)} '
-                                            '${chip.label}',
-                                        fill: chip.fill,
-                                        ink: chip.ink,
-                                        fontPx: m(chipM),
-                                      ),
-                                      if (onOpen != null) ...[
-                                        SizedBox(width: m(0.3)),
-                                        _Chip(
-                                          label: 'DETAILS ›',
-                                          fill: PlazaStyle.teal,
-                                          ink: const Color(0xFF0D0D0D),
-                                          fontPx: m(chipM),
-                                          onTap: onOpen,
-                                        ),
-                                      ],
-                                    ],
+                                      height: 1.14,
+                                      letterSpacing: -m(titleM) * 0.012,
+                                      color: ink,
+                                    ),
                                   ),
                                 ),
                               ),
-                              if (total > 0) ...[
-                                SizedBox(width: m(0.3)),
-                                Text(
-                                  '$done/$total',
-                                  style: TextStyle(
-                                    fontFamily: PlazaStyle.fontMono,
-                                    fontSize: m(metaM),
-                                    color: PlazaStyle.textDim,
-                                  ),
+                            ),
+                            if (_live && metaBits.isNotEmpty && !tight) ...[
+                              SizedBox(height: gap),
+                              Text(
+                                metaBits.join('  ·  '),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontFamily: PlazaStyle.fontText,
+                                  fontSize: m(metaM),
+                                  color: quiet
+                                      ? PlazaStyle.textDim
+                                      : PlazaStyle.textMed,
                                 ),
-                              ],
+                              ),
                             ],
-                          ),
-                      ],
+                            if (task.coverImageUrl != null && !tight) ...[
+                              SizedBox(height: gap),
+                              // The picture gets the biggest band the wall can
+                              // spare: it fills its share edge to edge.
+                              Flexible(
+                                flex: _live ? 7 : 10,
+                                child: SizedBox(
+                                  width: double.infinity,
+                                  child: _Cover(
+                                    url: task.coverImageUrl!,
+                                    quiet:
+                                        attention.lantern == LanternState.off,
+                                  ),
+                                ),
+                              ),
+                            ],
+                            if (_live && items.isNotEmpty && !tight) ...[
+                              SizedBox(height: gap),
+                              // Only as many items as the wall has room for:
+                              // a short building shows fewer, never overflows.
+                              Flexible(
+                                flex: 4,
+                                child: LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    // Box + padding + the line's own leading,
+                                    // counted generously: a row that would not
+                                    // fit is dropped, and the list is clipped
+                                    // as the backstop, so the wall never shows
+                                    // an overflow.
+                                    final rowPx = m(itemM) * 1.85;
+                                    final fit = (constraints.maxHeight / rowPx)
+                                        .floor()
+                                        .clamp(0, items.length);
+                                    return SingleChildScrollView(
+                                      physics:
+                                          const NeverScrollableScrollPhysics(),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.stretch,
+                                        children: [
+                                          for (final (i, label)
+                                              in items.take(fit).indexed)
+                                            _Item(
+                                              label: label,
+                                              ticked:
+                                                  t?.isTicked(task.id, i) ??
+                                                  false,
+                                              fontPx: m(itemM),
+                                              onTap: t == null
+                                                  ? null
+                                                  : () => t.toggle(task.id, i),
+                                            ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                            const Spacer(),
+                            if (_live)
+                              Flexible(
+                                child: LayoutBuilder(
+                                  builder: (context, row) => FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    alignment: Alignment.bottomLeft,
+                                    child: SizedBox(
+                                      width: row.maxWidth,
+                                      child: Row(
+                                        children: [
+                                          // Chips scale down together on a narrow
+                                          // wall rather than overflowing the row.
+                                          Flexible(
+                                            child: FittedBox(
+                                              fit: BoxFit.scaleDown,
+                                              alignment: Alignment.centerLeft,
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  _Chip(
+                                                    label:
+                                                        '${PlazaStyle.glyph(attention)} '
+                                                        '${chip.label}',
+                                                    fill: chip.fill,
+                                                    ink: chip.ink,
+                                                    fontPx: m(chipM),
+                                                  ),
+                                                  if (onOpen != null) ...[
+                                                    SizedBox(width: m(0.3)),
+                                                    _Chip(
+                                                      label: 'DETAILS ›',
+                                                      fill: PlazaStyle.teal,
+                                                      ink: const Color(
+                                                        0xFF0D0D0D,
+                                                      ),
+                                                      fontPx: m(chipM),
+                                                      onTap: onOpen,
+                                                    ),
+                                                  ],
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                          if (total > 0) ...[
+                                            SizedBox(width: m(0.3)),
+                                            Text(
+                                              '$done/$total',
+                                              style: TextStyle(
+                                                fontFamily: PlazaStyle.fontMono,
+                                                fontSize: m(metaM),
+                                                color: PlazaStyle.textDim,
+                                              ),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        );
+                      },
                     ),
                   ),
                 ),

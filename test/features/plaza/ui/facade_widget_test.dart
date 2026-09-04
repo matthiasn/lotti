@@ -40,17 +40,19 @@ Widget _host(
   ChecklistTicks? ticks,
   VoidCallback? onOpen,
   bool focused = false,
+  double widthMeters = 12,
+  double heightMeters = 16,
 }) {
   return makeTestableWidget2(
     Center(
       child: SizedBox(
-        width: 540,
-        height: 720,
+        width: widthMeters * 45,
+        height: heightMeters * 45,
         child: FacadeWidget(
           task: task,
           attention: attentionFor(task, _now),
           variant: variant,
-          widthMeters: 12,
+          widthMeters: widthMeters,
           pxPerMeter: 45,
           ticks: ticks,
           onOpen: onOpen,
@@ -62,6 +64,34 @@ Widget _host(
 }
 
 void main() {
+  testWidgets('a tall live wall never overflows its checklist', (
+    tester,
+  ) async {
+    // The landmark at the closeup stop: a 16.5 × 28.8 m wall, four items
+    // whose rows must fit the space the column gives them or be dropped.
+    for (final height in [28.8, 24.0, 20.0, 14.0, 9.0]) {
+      await tester.pumpWidget(
+        _host(
+          _task(
+            state: PlazaTaskState.blocked,
+            due: DateTime.utc(2026, 7, 20),
+            links: ['a'],
+            checklistItems: 4,
+            openItems: [
+              'Draft the passenger ruling request',
+              'Copy the current manifest',
+              'Ask the harbour master',
+              'File the customs form',
+            ],
+          ),
+          widthMeters: 16.5,
+          heightMeters: height,
+        ),
+      );
+      expect(tester.takeException(), isNull, reason: 'height $height');
+    }
+  });
+
   testWidgets('live facade shows title, chip, meta and progress', (
     tester,
   ) async {
