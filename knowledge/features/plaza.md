@@ -273,9 +273,11 @@ roofline (1.9 m tall, 4.2 or 3.4 m/s) showing `tickerText`.
 
 **Task pose** (`taskPoseFor`): on the road in front of a facade at eye
 height, `max(16, 1.2 × width, 0.9 × (height + roofSignageHeight + 3))`
-metres back (`roofSignageHeight` 6.5), yawed at the wall and pitched at the
-midpoint of wall plus signage. Used by attention beacons, facade taps, search
-results, billboard taps and the morning walk.
+metres back (`roofSignageHeight` 6.5), capped at `maxTaskStandOff` (24 m,
+inside the live range and the street: farther out the camera lands among
+the next row's buildings, which then take the live slots), yawed at the
+wall and pitched at the midpoint of wall plus signage. Used by attention
+beacons, facade taps, search results, billboard taps and the morning walk.
 
 The tests in `plaza_layout_test.dart` pin that appending to the newest week
 does not move the plaza, that a straight street keeps it on the axis, that
