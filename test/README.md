@@ -159,9 +159,10 @@ GPU-free scheduling in `lib/features/plaza/scene/surface_captures.dart`.
 `WidgetTextureController` is a plain subclassable class, so a test fake that
 overrides `requestCapture`, `captureCount` and `lastCaptureDuration` observes
 every request the scheduler makes and lands a capture on demand
-(`test/features/plaza/scene/surface_captures_test.dart`). The LOD manager is
-testable as long as nothing is promoted: buildings beyond `signDistance`, or a
-promotion that is wanted but withheld (`flying: true`, `promotionsPerFrame: 0`).
+(`test/features/plaza/scene/surface_captures_test.dart`). The LOD manager's `surfaceBuilder` seam accepts a `WidgetComponent.bindOnly`
+with a fake capture controller, so activation, promotions, demotions and
+cover invalidation can be tested without geometry. Capture controller fakes
+are shared in `test/features/plaza/scene/test_utils.dart`.
 
 ## Hover-divider tests: `test_utils/hover_divider_harness.dart`
 

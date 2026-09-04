@@ -6,6 +6,24 @@ import 'package:lotti/features/plaza/ui/debug_overlay.dart';
 import '../../../widget_test_utils.dart';
 
 void main() {
+  test(
+    'default frame pacing rests at 30 fps and preserves explicit overrides',
+    () {
+      for (final environment in <Map<String, String>>[
+        {},
+        {'PLAZA_FPS': 'invalid'},
+      ]) {
+        final rate = PlazaFrameRate.fromEnvironment(environment);
+        expect(rate, PlazaFrameRate.auto);
+        expect(rate.capFor(moving: false), 30);
+        expect(rate.capFor(moving: true), isNull);
+      }
+      for (final rate in PlazaFrameRate.values) {
+        expect(PlazaFrameRate.fromEnvironment({'PLAZA_FPS': rate.label}), rate);
+      }
+    },
+  );
+
   late PlazaHarnessStats stats;
   late FacadeLodConfig config;
   late PlazaLayoutKnobs knobs;

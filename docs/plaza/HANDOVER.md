@@ -75,7 +75,7 @@ Implemented, by area (the mechanism behind each is in the concept):
   skyline towers and a hero tower with a screen at the far end of every
   folded row.
 - **Facade tiers.** Far (geometry and lantern), sign (captured once) and
-  live (captured every frame, interactive) with caps, hysteresis, one
+  live (activated by a nearby tap, interactive) with caps, hysteresis, one
   promotion per frame, suspension during flights and pre-capture of a
   flight's destination. The faced building gets a focus ring; its
   checkboxes tick and its details button opens a side panel.
@@ -94,7 +94,7 @@ Implemented, by area (the mechanism behind each is in the concept):
   pylon posts, gantry legs, lamp posts; the signs and the beam are in the
   air, for the flights), and title search. The harness paces its own
   frames: a frame-rate control in the HUD offers auto, 60 and 30, default
-  60, and a Debug box there shows the overlay with painted and engine
+  auto, and a Debug box there shows the overlay with painted and engine
   frame rates.
 - **Morning walk.** Overview, up to three anomalies, home; pausable, and
   abandoned by any movement.
@@ -152,7 +152,8 @@ label, it does nothing). Top right: **Morning walk**, **Overview**,
 the walk's progress; the key legend and the lantern legend sit along the
 bottom edge.
 
-**On a live facade** (the one with the teal ring): the checkboxes tick and
+**Tap a nearby facade to activate it** (the teal ring); walking away or
+turning away returns it to a static sign. On the activated facade: the checkboxes tick and
 strike through, and **DETAILS** opens the side panel with the category,
 title, chip, due and links line and the same checklist. Ticks are shared
 between wall and panel and forgotten when the harness exits.
@@ -267,9 +268,11 @@ sources you touched (repository rule), for example:
 fvm flutter test test/features/plaza/domain/plaza_layout_test.dart
 ```
 
-`PlazaSceneController`, `FacadeLodManager`, `PlazaSurfaces`, `PlazaSprites`,
-`PlazaPicker`, `WallTextures` and `PlazaBench` need a GPU context and are
-exercised only by running the harness; `codecov.yml` excludes `scene/**` and
+Scene geometry needs a GPU context and is exercised by the harness.
+`FacadeLodManager` tests inject bind-only components to exercise tier changes,
+activation and capture scheduling without a GPU; `SurfaceCaptures` tests use
+fake capture controllers. The pointer state and cover-completion callbacks
+also have headless regression tests. See `test/README.md` for these seams; `codecov.yml` excludes `scene/**` and
 `dev_main.dart`.
 
 ## 7. What is still missing
@@ -307,8 +310,8 @@ still open.
 
 ## 8. Known limits
 
-- The harness needs a GPU context; of the `scene/` classes only `PlazaWorld`
-  and the shopfront strip painter have unit tests.
+- The harness needs a GPU context; scheduling and activation are tested
+  headlessly, while actual scene geometry is checked with the harness.
 - Cover art is loaded over HTTP from the public demo media catalogue, so an
   offline run shows facades and billboards without pictures.
 - Capturing under Xvfb yields blank widget surfaces (section 4.1).

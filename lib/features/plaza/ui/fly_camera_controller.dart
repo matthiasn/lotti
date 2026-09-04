@@ -95,7 +95,8 @@ class FlyCameraController {
   bool get moving =>
       _vForward != 0 || _vStrafe != 0 || _pressed.any(_movementKeys.contains);
 
-  /// Starts a flight to [target]; the current flight, if any, is replaced.
+  /// Starts a flight to [target], discarding walking momentum; the current
+  /// flight, if any, is replaced.
   /// From one stop on the ground to another the flight follows the street
   /// network; a climb, a dive or a world without a street takes the direct
   /// line. Both are swept over every solid on the way.
@@ -116,6 +117,8 @@ class FlyCameraController {
         : Flight.plan(_pose, target, solids: _solids);
     _flight = flight;
     _landing = false;
+    _vForward = 0;
+    _vStrafe = 0;
     return flight;
   }
 
@@ -179,7 +182,8 @@ class FlyCameraController {
     _landing = true;
   }
 
-  /// Mouse-drag look, in logical pixels. Cancels a flight in place.
+  /// Mouse-drag look, in logical pixels. Cancels a flight in place and
+  /// notifies the owner to abandon any guided walk.
   void addLookDelta(double dx, double dy) {
     _flight = null;
     _landing = false;
@@ -190,6 +194,7 @@ class FlyCameraController {
       yaw: _pose.yaw - dx * 0.0032,
       pitch: (_pose.pitch - dy * 0.0028).clamp(-1.25, 1.25),
     );
+    onMovement?.call();
   }
 
   bool _down(LogicalKeyboardKey a, LogicalKeyboardKey b) =>

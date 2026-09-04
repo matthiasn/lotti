@@ -1,5 +1,7 @@
 import 'dart:math' as math;
 
+import 'package:flutter/widgets.dart';
+
 import 'package:flutter_scene/scene.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/plaza/domain/attention.dart';
@@ -8,7 +10,10 @@ import 'package:lotti/features/plaza/domain/street_layout.dart';
 import 'package:lotti/features/plaza/scene/facade_lod_manager.dart';
 import 'package:lotti/features/plaza/scene/plaza_scene.dart';
 import 'package:lotti/features/plaza/ui/checklist_ticks.dart';
+import 'package:lotti/features/plaza/ui/facade_widget.dart';
 import 'package:vector_math/vector_math.dart' show Vector3;
+
+import 'test_utils.dart';
 
 final _now = DateTime.utc(2026, 7, 15);
 
@@ -63,9 +68,150 @@ FacadeLodManager _manager(
   onOpen: (_) {},
 );
 
+class _TestSurface extends WidgetComponent {
+  _TestSurface({
+    required super.child,
+    required super.size,
+    required super.input,
+  }) : super.bindOnly(bind: (_) {}, update: WidgetUpdatePolicy.manual);
+
+  @override
+  final FakeWidgetTextureController controller = FakeWidgetTextureController();
+}
+
+FacadeSurfaceBuilder _surfaceBuilder(List<_TestSurface> surfaces) =>
+    ({
+      required child,
+      required width,
+      required height,
+      required pxPerMeter,
+      input = WidgetInput.manual,
+    }) {
+      final surface = _TestSurface(
+        child: child,
+        size: Size(width * pxPerMeter, height * pxPerMeter),
+        input: input,
+      );
+      surfaces.add(surface);
+      return surface;
+    };
+
 void main() {
   final eye = Vector3(0, 1.7, 0);
   final forward = Vector3(0, 0, 1);
+
+  testWidgets('nearby facades stay static until tapped and disarm on leaving', (
+    tester,
+  ) async {
+    final building = _building('near', 0, 10, facing: math.pi);
+    final surfaces = <_TestSurface>[];
+    final ticks = ChecklistTicks();
+    addTearDown(ticks.dispose);
+    final lod = FacadeLodManager(
+      buildings: [building],
+      config: FacadeLodConfig(),
+      ticks: ticks,
+      onOpen: (_) {},
+      surfaceBuilder: _surfaceBuilder(surfaces),
+    );
+    addTearDown(lod.dispose);
+    lod.update(eye, forward: forward);
+    expect((lod.stats.live, lod.stats.sign), (0, 1));
+    expect(surfaces.single.input, WidgetInput.manual);
+    final sign = surfaces.single;
+    sign.controller.landed = 1;
+    lod.update(eye, forward: forward, seconds: 3);
+    expect(sign.controller.requests, 1, reason: 'a static sign does not poll');
+    (sign.child as FacadeWidget).onCoverChanged!();
+    lod.update(eye, forward: forward, seconds: 4);
+    expect(
+      sign.controller.requests,
+      2,
+      reason: 'late cover completion refreshes the sign',
+    );
+    sign.controller.landed = 2;
+
+    expect(lod.activate(building, eye, forward: forward), isTrue);
+    lod.update(eye, forward: forward, seconds: 5);
+    expect((lod.stats.live, lod.stats.sign), (1, 0));
+    expect(lod.focused, building);
+    final live = surfaces.last;
+    expect(live.input, WidgetInput.automatic);
+    expect((live.child as FacadeWidget).ticks, same(ticks));
+    expect(live.controller.requests, 1);
+    lod.update(eye, forward: forward, seconds: 5.1);
+    expect(
+      live.controller.requests,
+      2,
+      reason: 'interactive feedback keeps its cadence',
+    );
+
+    lod.update(Vector3(0, 1.7, -60), forward: forward, seconds: 6);
+    expect((lod.stats.live, lod.stats.sign), (0, 1));
+    expect(lod.focused, isNull);
+    lod.update(eye, forward: forward, seconds: 7);
+    expect(lod.stats.live, 0, reason: 'returning needs another tap');
+    expect(
+      live.controller.requests,
+      2,
+      reason: 'the old live texture stopped capturing',
+    );
+    (live.child as FacadeWidget).onCoverChanged!();
+    lod.update(eye, forward: forward, seconds: 8);
+    expect(
+      live.controller.requests,
+      2,
+      reason: 'detached cover callbacks are ignored',
+    );
+    expect(
+      lod.activate(building, Vector3(0, 1.7, -100), forward: forward),
+      isFalse,
+    );
+    expect(lod.activate(building, eye, forward: -forward), isFalse);
+  });
+
+  test(
+    'activation switches walls, disarms on turning, and respects the budget',
+    () {
+      final a = _building('a', -5, 10, facing: math.pi);
+      final b = _building('b', 5, 10, facing: math.pi);
+      final config = FacadeLodConfig(promotionsPerFrame: 2);
+      final ticks = ChecklistTicks();
+      addTearDown(ticks.dispose);
+      final lod = FacadeLodManager(
+        buildings: [a, b],
+        config: config,
+        ticks: ticks,
+        onOpen: (_) {},
+        surfaceBuilder: _surfaceBuilder([]),
+      );
+      addTearDown(lod.dispose);
+      lod.update(eye, forward: forward);
+      expect(lod.stats.sign, 2);
+      expect(lod.activate(a, eye, forward: forward), isTrue);
+      lod.update(eye, forward: forward);
+      expect(lod.focused, a);
+      expect(lod.activate(a, eye, forward: forward), isTrue);
+      expect(lod.activate(b, eye, forward: forward), isTrue);
+      lod.update(eye, forward: forward);
+      expect((lod.stats.live, lod.stats.sign), (1, 1));
+      expect(lod.focused, b);
+      lod.update(eye, forward: -forward);
+      expect(lod.stats.live, 0);
+      lod.update(eye, forward: forward);
+      expect(lod.stats.live, 0);
+      config.liveCap = 0;
+      expect(lod.activate(a, eye, forward: forward), isFalse);
+      expect(lod.activate(_building('other', 0, 10), eye), isFalse);
+      config.forceAllLive = true;
+      lod.update(eye, forward: forward);
+      expect(
+        lod.stats.live,
+        2,
+        reason: 'explicit stress mode still bypasses activation',
+      );
+    },
+  );
 
   group('ranking', () {
     test('runs once while the camera and the budget hold still', () {

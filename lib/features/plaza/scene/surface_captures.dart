@@ -133,7 +133,7 @@ class CaptureCadence {
 /// until they land, cadenced captures throttled per surface and skipped
 /// while the camera cannot see them, and the counters the overlay shows.
 class SurfaceCaptures {
-  final List<WidgetTextureController> _pendingOnce = [];
+  final Map<WidgetTextureController, int> _pendingOnce = {};
   final Set<WidgetTextureController> _tracked = {};
 
   /// A capture request is due once this much of the interval has passed:
@@ -141,11 +141,18 @@ class SurfaceCaptures {
   static const _slack = 1e-6;
 
   /// Registers a surface captured once. The host attaches a frame after
-  /// the component does, so [requestPending] keeps asking until the first
+  /// the component does, so [requestPending] keeps asking until the requested
   /// capture lands.
   void once(WidgetTextureController controller) {
     _tracked.add(controller);
-    _pendingOnce.add(controller);
+    invalidate(controller);
+  }
+
+  /// Requests a fresh texture after content changes, even when the initial
+  /// capture already landed. Forgotten surfaces ignore late image callbacks.
+  void invalidate(WidgetTextureController controller) {
+    if (!_tracked.contains(controller)) return;
+    _pendingOnce[controller] = controller.captureCount + 1;
   }
 
   /// Registers [surface] on [cadence].
@@ -166,14 +173,11 @@ class SurfaceCaptures {
   /// asking for those that have, so the list empties after the first
   /// frames.
   void requestPending() {
-    for (var i = _pendingOnce.length - 1; i >= 0; i--) {
-      final controller = _pendingOnce[i];
-      if (controller.captureCount > 0) {
-        _pendingOnce.removeAt(i);
-      } else {
-        controller.requestCapture();
-      }
-    }
+    _pendingOnce.removeWhere((controller, target) {
+      if (controller.captureCount >= target) return true;
+      controller.requestCapture();
+      return false;
+    });
   }
 
   /// Asks every visible surface of [cadence] for a capture once its
