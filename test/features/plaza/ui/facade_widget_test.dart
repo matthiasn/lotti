@@ -281,13 +281,10 @@ void main() {
       _host(_task(state: PlazaTaskState.blocked), onOpen: () {}),
     );
     expect(find.textContaining('BLOCKED'), findsOneWidget);
-    final open = tester.widget<Container>(
-      find
-          .ancestor(
-            of: find.text('DETAILS ›'),
-            matching: find.byType(Container),
-          )
-          .first,
+    // The button's fill is ink on the wall's Material, so the hover wash
+    // shows over it.
+    final open = tester.widget<Ink>(
+      find.ancestor(of: find.text('DETAILS ›'), matching: find.byType(Ink)),
     );
     expect((open.decoration! as BoxDecoration).color, PlazaStyle.teal);
   });

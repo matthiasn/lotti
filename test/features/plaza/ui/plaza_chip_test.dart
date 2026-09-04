@@ -55,6 +55,14 @@ void main() {
     final ink = tester.widget<InkWell>(find.byType(InkWell));
     expect(ink.hoverColor, PlazaStyle.tealHover);
     expect(ink.borderRadius!.topLeft.x, closeTo(4.2, 1e-9));
+    // The fill is ink on the Material, under the hover wash, not a
+    // Container over it.
+    expect(find.byType(Container), findsNothing);
+    final fill = tester.widget<Ink>(find.byType(Ink));
+    expect((fill.decoration! as BoxDecoration).color, PlazaStyle.teal);
+    final padding = fill.padding! as EdgeInsets;
+    expect(padding.left, closeTo(9.6, 1e-9));
+    expect(padding.top, closeTo(3, 1e-9));
     await tester.tap(find.text('fly there'));
     expect(taps, 1);
   });

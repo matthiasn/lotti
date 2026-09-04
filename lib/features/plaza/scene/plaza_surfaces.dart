@@ -347,14 +347,16 @@ class PlazaSurfaces {
         );
       }
       scene.add(anchor);
-      final origin = Vector3(slot.x, slot.bottom, slot.z);
-      _ranged.add((origin, anchor));
+      // The band's centre, where the anchor stands: what the range and the
+      // view culling measure against.
+      final center = Vector3(slot.x, slot.bottom + slot.height / 2, slot.z);
+      _ranged.add((center, anchor));
       _captures.timed(
         _tickers,
         TimedSurface.facing(
           controller: component.controller,
           node: anchor,
-          center: origin,
+          center: center,
           facingRadians: slot.facingRadians,
         ),
       );
