@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/plaza/domain/attention.dart';
@@ -39,6 +42,7 @@ Widget _host(
   FacadeVariant variant = FacadeVariant.live,
   ChecklistTicks? ticks,
   VoidCallback? onOpen,
+  VoidCallback? onCoverChanged,
   bool focused = false,
   double widthMeters = 12,
   double heightMeters = 16,
@@ -56,6 +60,7 @@ Widget _host(
           pxPerMeter: 45,
           ticks: ticks,
           onOpen: onOpen,
+          onCoverChanged: onCoverChanged,
           focused: focused,
         ),
       ),
@@ -63,7 +68,92 @@ Widget _host(
   );
 }
 
+Completer<ImageInfo> _pendingCover(String url) {
+  final provider = NetworkImage(url);
+  final decoded = Completer<ImageInfo>();
+  PaintingBinding.instance.imageCache.putIfAbsent(
+    provider,
+    () => OneFrameImageStreamCompleter(decoded.future),
+  );
+  addTearDown(provider.evict);
+  return decoded;
+}
+
 void main() {
+  late ui.Image coverImage;
+  setUpAll(() async {
+    coverImage = await createTestImage();
+  });
+  tearDownAll(() => coverImage.dispose());
+
+  testWidgets('a late decoded cover invalidates its sign texture once', (
+    tester,
+  ) async {
+    const url = 'https://demo.invalid/delayed-cover.webp';
+    final decoded = _pendingCover(url);
+    var invalidations = 0;
+    final task = _task(coverUrl: url);
+    await tester.pumpWidget(
+      _host(
+        task,
+        variant: FacadeVariant.sign,
+        onCoverChanged: () => invalidations++,
+      ),
+    );
+    expect(invalidations, 0);
+    expect(tester.widget<RawImage>(find.byType(RawImage)).image, isNull);
+    decoded.complete(ImageInfo(image: coverImage.clone()));
+    await tester.pump();
+    expect(tester.widget<RawImage>(find.byType(RawImage)).image, isNotNull);
+    expect(invalidations, 1);
+    await tester.pumpWidget(
+      _host(
+        task,
+        variant: FacadeVariant.sign,
+        onCoverChanged: () => invalidations++,
+      ),
+    );
+    await tester.pump();
+    expect(
+      invalidations,
+      1,
+      reason: 'ordinary rebuilds do not re-capture a static sign',
+    );
+  });
+
+  testWidgets('a replacement cover failure invalidates the previous picture', (
+    tester,
+  ) async {
+    const firstUrl = 'https://demo.invalid/first-cover.webp';
+    const nextUrl = 'https://demo.invalid/next-cover.webp';
+    final first = _pendingCover(firstUrl);
+    final next = _pendingCover(nextUrl);
+    var invalidations = 0;
+    await tester.pumpWidget(
+      _host(
+        _task(coverUrl: firstUrl),
+        variant: FacadeVariant.sign,
+        onCoverChanged: () => invalidations++,
+      ),
+    );
+    first.complete(ImageInfo(image: coverImage.clone()));
+    await tester.pump();
+    expect(invalidations, 1);
+    await tester.pumpWidget(
+      _host(
+        _task(coverUrl: nextUrl),
+        variant: FacadeVariant.sign,
+        onCoverChanged: () => invalidations++,
+      ),
+    );
+    next.completeError(StateError('cover unavailable'));
+    await tester.pump();
+    await tester.pump();
+    expect(invalidations, 2);
+    expect(find.byType(RawImage), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('a tall live wall never overflows its checklist', (
     tester,
   ) async {

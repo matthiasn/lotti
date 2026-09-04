@@ -33,6 +33,13 @@ enum PlazaFrameRate {
   sixty,
   thirty;
 
+  /// Uses the explicit development override, or saves idle work by default.
+  static PlazaFrameRate fromEnvironment(Map<String, String> environment) =>
+      values.firstWhere(
+        (rate) => rate.label == environment['PLAZA_FPS'],
+        orElse: () => auto,
+      );
+
   String get label => switch (this) {
     PlazaFrameRate.auto => 'auto',
     PlazaFrameRate.sixty => '60',

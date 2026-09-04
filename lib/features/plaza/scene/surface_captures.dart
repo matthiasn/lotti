@@ -7,9 +7,15 @@ import 'package:flutter_scene/scene.dart';
 import 'package:lotti/features/plaza/scene/plaza_scene.dart';
 import 'package:vector_math/vector_math.dart' show Vector3;
 
+/// World metres a widget surface is pulled toward the eye in the depth
+/// test (see [hostedSurface]).
+const widgetDepthBias = 0.15;
+
 /// A widget surface for the plaza: [child] laid out at [pxPerMeter] ×
 /// [scale] logical pixels a metre on a [ccwQuad] of [width] × [height]
-/// metres, over an [OpaqueSurface].
+/// metres (or the [geometry] given, when the texture is not the quad's
+/// size: a ticker's period on its band), over an [OpaqueSurface] — the
+/// caller's [surface], when it keeps the material to drive it.
 ///
 /// Every plaza surface is a [WidgetUpdatePolicy.manual] component: an
 /// interval policy would make flutter_scene pump an engine frame on every
@@ -23,12 +29,19 @@ WidgetComponent hostedSurface({
   required double pxPerMeter,
   double scale = 1,
   WidgetInput input = WidgetInput.manual,
+  Geometry? geometry,
+  OpaqueSurface? surface,
 }) {
-  final surface = OpaqueSurface();
+  surface ??= OpaqueSurface();
+  // Every widget surface hangs a few centimetres in front of something
+  // (a facade's plate, a lightbox, a ticker's track): biased toward the
+  // eye so it wins the depth test at any distance instead of fighting the
+  // backing frame by frame as the camera flies.
+  surface.material.depthBias = widgetDepthBias;
   return WidgetComponent(
     child: child,
     size: Size(width * pxPerMeter * scale, height * pxPerMeter * scale),
-    geometry: ccwQuad(width, height),
+    geometry: geometry ?? ccwQuad(width, height),
     update: WidgetUpdatePolicy.manual,
     input: input,
     material: surface.material,
@@ -133,7 +146,7 @@ class CaptureCadence {
 /// until they land, cadenced captures throttled per surface and skipped
 /// while the camera cannot see them, and the counters the overlay shows.
 class SurfaceCaptures {
-  final List<WidgetTextureController> _pendingOnce = [];
+  final Map<WidgetTextureController, int> _pendingOnce = {};
   final Set<WidgetTextureController> _tracked = {};
 
   /// A capture request is due once this much of the interval has passed:
@@ -141,11 +154,18 @@ class SurfaceCaptures {
   static const _slack = 1e-6;
 
   /// Registers a surface captured once. The host attaches a frame after
-  /// the component does, so [requestPending] keeps asking until the first
+  /// the component does, so [requestPending] keeps asking until the requested
   /// capture lands.
   void once(WidgetTextureController controller) {
     _tracked.add(controller);
-    _pendingOnce.add(controller);
+    invalidate(controller);
+  }
+
+  /// Requests a fresh texture after content changes, even when the initial
+  /// capture already landed. Forgotten surfaces ignore late image callbacks.
+  void invalidate(WidgetTextureController controller) {
+    if (!_tracked.contains(controller)) return;
+    _pendingOnce[controller] = controller.captureCount + 1;
   }
 
   /// Registers [surface] on [cadence].
@@ -166,14 +186,11 @@ class SurfaceCaptures {
   /// asking for those that have, so the list empties after the first
   /// frames.
   void requestPending() {
-    for (var i = _pendingOnce.length - 1; i >= 0; i--) {
-      final controller = _pendingOnce[i];
-      if (controller.captureCount > 0) {
-        _pendingOnce.removeAt(i);
-      } else {
-        controller.requestCapture();
-      }
-    }
+    _pendingOnce.removeWhere((controller, target) {
+      if (controller.captureCount >= target) return true;
+      controller.requestCapture();
+      return false;
+    });
   }
 
   /// Asks every visible surface of [cadence] for a capture once its

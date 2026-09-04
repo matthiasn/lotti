@@ -23,7 +23,6 @@ import 'dart:async' show unawaited;
 import 'dart:io' show Platform;
 import 'dart:math' as math;
 
-import 'package:flutter/gestures.dart' show kPrimaryButton;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart' show SchedulerBinding, Ticker;
 import 'package:flutter/services.dart';
@@ -47,6 +46,7 @@ import 'package:lotti/features/plaza/ui/checklist_ticks.dart';
 import 'package:lotti/features/plaza/ui/debug_overlay.dart';
 import 'package:lotti/features/plaza/ui/fly_camera_controller.dart';
 import 'package:lotti/features/plaza/ui/plaza_hud.dart';
+import 'package:lotti/features/plaza/ui/plaza_pointer_controller.dart';
 import 'package:lotti/features/plaza/ui/plaza_search_sheet.dart';
 import 'package:lotti/features/plaza/ui/plaza_tour.dart';
 import 'package:lotti/features/plaza/ui/task_side_panel.dart';
@@ -105,26 +105,20 @@ class _PlazaHarnessState extends State<_PlazaHarness>
   };
 
   /// `PLAZA_TRACE=1` prints one line per frame: the frame time, whether a
-  /// flight is under way, the pose, and how many solids contain the eye —
-  /// the ground truth for a stall, a missing flight or a wall flown
-  /// through, read off the running harness rather than a unit test.
+  /// flight is under way, the pose, how many solids contain the eye and
+  /// the running count of widget captures — the ground truth for a stall,
+  /// a missing flight, a wall flown through or a surface captured too
+  /// often, read off the running harness rather than a unit test.
   static final bool _traceMode = Platform.environment['PLAZA_TRACE'] == '1';
 
   /// The harness owns the frame pacing: the scene view does not tick on
   /// its own, a ticker here paints at most [_frameRate] frames a second
   /// (the benchmark and the tour paint on every vsync). Every painted
   /// frame runs [_onTick] first.
-  PlazaFrameRate _frameRate = _initialFrameRate();
+  PlazaFrameRate _frameRate = PlazaFrameRate.fromEnvironment(
+    Platform.environment,
+  );
   Ticker? _pacer;
-
-  /// `PLAZA_FPS=auto|60|30` picks the cap at start; 60 otherwise.
-  static PlazaFrameRate _initialFrameRate() {
-    final wanted = Platform.environment['PLAZA_FPS'];
-    return PlazaFrameRate.values.firstWhere(
-      (rate) => rate.label == wanted,
-      orElse: () => PlazaFrameRate.sixty,
-    );
-  }
 
   Duration? _lastPaint;
   final ValueNotifier<int> _frame = ValueNotifier(0);
@@ -173,9 +167,7 @@ class _PlazaHarnessState extends State<_PlazaHarness>
   int _beaconCursor = -1;
 
   // Tap-versus-drag.
-  Offset? _pointerDown;
-  double _pointerDownAt = 0;
-  bool _dragging = false;
+  final _pointer = PlazaPointerController();
 
   // Rolling frame-time window.
   final List<double> _frameMs = [];
@@ -234,7 +226,7 @@ class _PlazaHarnessState extends State<_PlazaHarness>
       _mode.scripted ||
       _camera.flying ||
       _camera.moving ||
-      _dragging ||
+      _pointer.dragging ||
       _walk != null;
 
   void _onPace(Duration elapsed) {
@@ -459,33 +451,31 @@ class _PlazaHarnessState extends State<_PlazaHarness>
   }
 
   void _onPointerDown(PointerDownEvent event) {
-    if (_mode.scripted || event.buttons != kPrimaryButton) return;
-    _pointerDown = event.localPosition;
-    _pointerDownAt = _elapsed;
-    _dragging = false;
+    if (_mode.scripted) return;
+    _pointer.down(event, _elapsed);
   }
 
   void _onPointerMove(PointerMoveEvent event) {
-    final down = _pointerDown;
-    if (down == null || event.buttons == 0) return;
-    if (!_dragging && (event.localPosition - down).distance > 6) {
-      _dragging = true;
-    }
-    if (_dragging) _camera.addLookDelta(event.delta.dx, event.delta.dy);
+    final delta = _pointer.move(event);
+    if (delta != null) _camera.addLookDelta(delta.dx, delta.dy);
   }
 
   void _onPointerUp(PointerUpEvent event) {
-    final down = _pointerDown;
-    _pointerDown = null;
-    if (down == null || _dragging) return;
-    if (_elapsed - _pointerDownAt > 0.25) return;
+    final point = _pointer.up(event, _elapsed);
+    if (point == null) return;
     final camera = _frameCamera;
     if (camera == null) return;
-    switch (_picker.pick(camera, _viewSize, event.localPosition)) {
+    switch (_picker.pick(camera, _viewSize, point)) {
       case PickedBeacon(:final beacon):
         _flyTo(beacon.pose, beacon.label);
       case PickedBuilding(:final building):
-        if (_lod.focused != building) _flyToBuilding(building);
+        if (!_lod.activate(
+          building,
+          _camera.position,
+          forward: _camera.forward,
+        )) {
+          _flyToBuilding(building);
+        }
       case PickedBillboard(:final billboard):
         _flyToTask(billboard.attention.task);
       case null:
@@ -566,7 +556,8 @@ class _PlazaHarnessState extends State<_PlazaHarness>
       'dt=${(dt * 1000).toStringAsFixed(1)} engine=$engine '
       'flying=${_camera.flying} walk=${_walk?.index} '
       'x=${p.x.toStringAsFixed(2)} y=${p.y.toStringAsFixed(2)} '
-      'z=${p.z.toStringAsFixed(2)} inside=$inside',
+      'z=${p.z.toStringAsFixed(2)} inside=$inside '
+      'captures=${_lod.stats.captures + _surfaces.captures}',
     );
   }
 
@@ -593,7 +584,12 @@ class _PlazaHarnessState extends State<_PlazaHarness>
       seconds: _elapsed,
       flying: _camera.flying,
     );
-    _surfaces.update(eye, _elapsed, forward: forward);
+    _surfaces.update(
+      eye,
+      _elapsed,
+      forward: forward,
+      glowFade: _sceneController.poolFade,
+    );
     _sceneController.updateForCamera(eye);
     _sprites.update(camera, _viewSize, _elapsed);
 
@@ -650,6 +646,7 @@ class _PlazaHarnessState extends State<_PlazaHarness>
                 onPointerDown: _onPointerDown,
                 onPointerMove: _onPointerMove,
                 onPointerUp: _onPointerUp,
+                onPointerCancel: (event) => _pointer.cancel(event.pointer),
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     _viewSize = constraints.biggest;

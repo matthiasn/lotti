@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'dart:ui' show Color;
@@ -17,8 +18,9 @@ import 'package:vector_math/vector_math.dart' hide Colors;
 /// frame from their distance, so a lantern never shrinks below a few pixels
 /// from the overview pose and a beacon reads the same from across the
 /// district as from up close. Anomalous lanterns and attention beacons
-/// pulse on a fixed cycle. A sprite is only written when its size or
-/// colour actually moved: every [Sprite] setter re-commits its quad.
+/// pulse on a fixed cycle. Lanterns, beacons and halos retain separate
+/// sprites for depth sorting; the non-overlapping chase bulbs on each
+/// billboard share one instanced draw with fixed bounds.
 class PlazaSprites {
   PlazaSprites({
     required this.scene,
@@ -65,18 +67,21 @@ class PlazaSprites {
       // Warm-white bulbs read against any bezel colour; the tail goes
       // near-black so the chase is a chase.
       final color = linearColor(const Color(0xFFFFF1C8));
-      final run = <_ChaseLight>[];
-      for (final point in entry.value) {
-        final sprite = Sprite(color: color);
-        scene.add(
-          Node(localTransform: Matrix4.translation(point), mesh: sprite.mesh)
-            ..raycastable = false,
-        );
-        run.add(_ChaseLight(sprite: sprite, color: color));
+      final points = entry.value;
+      if (points.isEmpty) continue;
+      final geometry = BillboardGeometry(capacity: points.length);
+      final material = SpriteMaterial();
+      final instances = PlazaLightBuffer(geometry.instanceData);
+      for (final point in points) {
+        instances.add(point, size: 0.3, color: color);
       }
+      instances.commitBounds(geometry.commit, pad: maxChaseBulbSize);
+      scene.add(Node(mesh: Mesh(geometry, material))..raycastable = false);
       _chases.add(
         _Chase(
-          lights: run,
+          instances: instances,
+          material: material,
+          color: color,
           periodSeconds: entry.key.slot.pulseSeconds.clamp(1.2, 4.0),
         ),
       );
@@ -200,10 +205,8 @@ class PlazaSprites {
     for (final l in _spireLights) {
       l.material.colorTexture = _bulb;
     }
-    for (final c in _chases) {
-      for (final l in c.lights) {
-        l.sprite.material.colorTexture = _bulb;
-      }
+    for (final chase in _chases) {
+      chase.material.colorTexture = _bulb;
     }
   }
 
@@ -224,6 +227,9 @@ class PlazaSprites {
   static const lampBulbSize = 0.5;
   static const lampHaloSize = 2.0;
   static const spireLightSize = 2.4;
+
+  /// The largest chase bulb, also the conservative padding of its batch.
+  static const maxChaseBulbSize = 0.45;
 
   /// Below this a size or colour change is invisible and is not written:
   /// every [Sprite] setter re-commits its quad, and at rest most frames
@@ -299,10 +305,9 @@ class PlazaSprites {
     // Chase lights run round each billboard frame: a bright head with a
     // fading tail, faster for the more agitated panels.
     for (final chase in _chases) {
-      final n = chase.lights.length;
-      if (n == 0) continue;
+      final n = chase.instances.count;
       final head = (elapsedSeconds / chase.periodSeconds * n) % n;
-      for (final (i, light) in chase.lights.indexed) {
+      for (var i = 0; i < n; i++) {
         final behind = (head - i + n) % n;
         // A five-bulb head over a near-dark tail, so the chase reads in a
         // still frame and not only in motion; the head goes past white for
@@ -313,17 +318,16 @@ class PlazaSprites {
         final alpha = behind < 5 ? 1 - behind * 0.14 : 0.3;
         final boost = behind < 2 ? 1.6 : 1.0;
         final size = behind < 1
-            ? 0.45
+            ? maxChaseBulbSize
             : behind < 2
             ? 0.36
             : 0.3;
-        _resize(light.sprite, size);
-        _tint(
-          light.sprite,
-          light.color.x * boost,
-          light.color.y * boost,
-          light.color.z * boost,
-          alpha,
+        chase.instances.write(
+          i,
+          size: size,
+          color: chase.color,
+          alpha: alpha,
+          boost: boost,
         );
       }
     }
@@ -423,16 +427,77 @@ class _Lamp {
   final Vector3 worldPosition;
 }
 
-class _ChaseLight {
-  _ChaseLight({required this.sprite, required this.color});
+class _Chase {
+  _Chase({
+    required this.instances,
+    required this.material,
+    required this.color,
+    required this.periodSeconds,
+  });
 
-  final Sprite sprite;
+  final PlazaLightBuffer instances;
+  final SpriteMaterial material;
   final Vector4 color;
+  final double periodSeconds;
 }
 
-class _Chase {
-  _Chase({required this.lights, required this.periodSeconds});
+/// CPU-side instance data for a fixed group of chase bulbs. Geometry uploads
+/// this buffer on each draw; changing only size and colour needs no bounds
+/// refit after [commitBounds] reserves the maximum bulb size.
+class PlazaLightBuffer {
+  PlazaLightBuffer(this.data);
 
-  final List<_ChaseLight> lights;
-  final double periodSeconds;
+  final Float32List data;
+  int _count = 0;
+  int get count => _count;
+
+  /// Adds one stationary bulb, copying its position and colour into the
+  /// billboard layout. The rest of the record remains at its zero defaults.
+  void add(Vector3 center, {required double size, required Vector4 color}) {
+    final offset = _count * BillboardGeometry.floatsPerInstance;
+    data[offset] = center.x;
+    data[offset + 1] = center.y;
+    data[offset + 2] = center.z;
+    write(_count, size: size, color: color, alpha: color.w);
+    _count++;
+  }
+
+  /// Commits bounds with each bulb at its largest [pad], then restores the
+  /// display sizes even if the geometry's commit fails.
+  void commitBounds(void Function(int) commit, {required double pad}) {
+    const stride = BillboardGeometry.floatsPerInstance;
+    final sizes = Float32List(_count * 2);
+    for (var i = 0; i < _count; i++) {
+      sizes[2 * i] = data[i * stride + 3];
+      sizes[2 * i + 1] = data[i * stride + 4];
+      data[i * stride + 3] = pad;
+      data[i * stride + 4] = pad;
+    }
+    try {
+      commit(_count);
+    } finally {
+      for (var i = 0; i < _count; i++) {
+        data[i * stride + 3] = sizes[2 * i];
+        data[i * stride + 4] = sizes[2 * i + 1];
+      }
+    }
+  }
+
+  /// Updates the bulb's size and linear HDR colour while retaining its
+  /// centre, rotation, flipbook frame and velocity.
+  void write(
+    int index, {
+    required double size,
+    required Vector4 color,
+    required double alpha,
+    double boost = 1,
+  }) {
+    final offset = index * BillboardGeometry.floatsPerInstance;
+    data[offset + 3] = size;
+    data[offset + 4] = size;
+    data[offset + 6] = color.x * boost;
+    data[offset + 7] = color.y * boost;
+    data[offset + 8] = color.z * boost;
+    data[offset + 9] = alpha;
+  }
 }

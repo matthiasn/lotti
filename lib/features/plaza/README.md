@@ -6,7 +6,8 @@ needs attention is lit where it stands and repeated on a Times-Square-like
 frontier plaza of billboards, tickers and a jumbotron; roof lanterns show
 project health from the sky; beacons fly the camera to curated poses; a
 morning walk visits the anomalies; search and a side panel get you to any
-task. Built on `flutter_scene` (Flutter GPU / Impeller). It is the
+task. Tap a nearby facade to enable its checklist and details; moving away
+returns it to a static sign. Built on `flutter_scene` (Flutter GPU / Impeller). It is the
 exploration meant to replace the knowledge-graph hairball with a spatial,
 memorable map of a project.
 
@@ -34,8 +35,8 @@ All read at start-up; none is needed for an interactive session.
 | `PLAZA_TOUR_ONLY=home,block` | `dev_main.dart` | Restricts the tour to the named stops |
 | `PLAZA_BENCH=1` | `dev_main.dart` | Auto-walk benchmark through six LOD budgets, printing `PLAZA_BENCH result` lines; wins over `PLAZA_TOUR` |
 | `PLAZA_HIDE=gantry,jumbotron,fillers,skyline,pylons,walls` | `dev_main.dart` | Leaves those pieces out of the scene (`PlazaSceneController(hidden:)`), to isolate what a screenshot shows |
-| `PLAZA_TRACE=1` | `dev_main.dart` | Prints one line per painted frame: frame time, engine frames since the last line, flight state, pose and how many solids contain the eye |
-| `PLAZA_FPS=auto,60,30` | `dev_main.dart` | The frame-rate cap at start (the HUD control changes it); 60 by default |
+| `PLAZA_TRACE=1` | `dev_main.dart` | Prints one line per painted frame: frame time, engine frames since the last line, flight state, pose, how many solids contain the eye and the running widget-capture count |
+| `PLAZA_FPS=auto,60,30` | `dev_main.dart` | The frame-rate cap at start (the HUD control changes it); auto by default |
 | `PLAZA_CLICK=<stop>:<x>,<y>` | `tool/plaza/capture_tour.py` | After capturing that tour stop, clicks the window-relative point and grabs a second `-ticked` frame |
 | `LOTTI_WINDOW_SIZE=WxH` | `linux/runner/my_application.cc` | Linux runner window size (a generic Lotti runner feature the capture script uses) |
 
@@ -77,6 +78,7 @@ lib/features/plaza/
   scene/                 flutter_scene, needs a GPU context
     plaza_world.dart     everything derived from tasks and the clock (pure)
     plaza_scene.dart     the scene graph: sky, road, buildings, fillers, skyline
+    plaza_boxes.dart     shared unit geometry and solid materials for boxes
     facade_lod_manager.dart      far, sign and live facade tiers
     plaza_surfaces.dart  billboards, tickers, markers, signs, banners, jumbotron
     surface_captures.dart        the shared capture bookkeeping and cadences
@@ -88,9 +90,10 @@ lib/features/plaza/
     facade_widget.dart, billboard_widget.dart, jumbotron_widget.dart,
     ticker_widget.dart, banner_widget.dart, block_marker_widget.dart
     fly_camera_controller.dart   walk camera and flights
+    plaza_pointer_controller.dart   tap, drag and cancellation
     plaza_hud.dart, plaza_search_sheet.dart, task_side_panel.dart,
     debug_overlay.dart, checklist_ticks.dart, plaza_style.dart,
-    plaza_chip.dart
+    plaza_chip.dart, cover_image.dart
     plaza_tour.dart      the tour stops
 tool/plaza/capture_tour.py       X11 screenshot capture for the tour
 test/features/plaza/             one test file per pure source file

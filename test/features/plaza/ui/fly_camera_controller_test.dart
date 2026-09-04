@@ -5,6 +5,7 @@ import 'package:flutter_scene/scene.dart'
     show PerspectiveCamera, PerspectiveProjection;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/plaza/domain/flight.dart';
+import 'package:lotti/features/plaza/domain/morning_walk.dart';
 import 'package:lotti/features/plaza/domain/plaza_layout.dart';
 import 'package:lotti/features/plaza/domain/solid.dart';
 import 'package:lotti/features/plaza/domain/street_layout.dart';
@@ -232,6 +233,58 @@ void main() {
   });
 
   group('flights', () {
+    testWidgets('a flight discards walking momentum before overview arrival', (
+      tester,
+    ) async {
+      final camera = _controller();
+      await simulateKeyDownEvent(LogicalKeyboardKey.keyW);
+      camera
+        ..handleKeyEvent(
+          _down(LogicalKeyboardKey.keyW, PhysicalKeyboardKey.keyW),
+        )
+        ..update(0.1);
+      expect(camera.pose.z, greaterThan(0));
+      const target = CameraPose(x: 20, y: 90, z: 40, yaw: 1);
+      final flight = camera.flyTo(target);
+      await simulateKeyUpEvent(LogicalKeyboardKey.keyW);
+      camera
+        ..handleKeyEvent(_up(LogicalKeyboardKey.keyW, PhysicalKeyboardKey.keyW))
+        ..update(flight.duration.inMicroseconds / 1e6 + 0.01);
+      expect(camera.pose.y, target.y);
+      camera.update(1 / 60);
+      expect(camera.pose.y, target.y);
+      expect(camera.pose.x, target.x);
+      expect(camera.pose.z, target.z);
+      expect(camera.moving, isFalse);
+    });
+
+    for (final holding in [false, true]) {
+      test('drag abandons a morning walk (holding: $holding)', () {
+        final walk = MorningWalk([
+          const WalkStop(
+            pose: _origin,
+            label: 'Home',
+            hold: Duration(seconds: 1),
+          ),
+          const WalkStop(
+            pose: _origin,
+            label: 'Next',
+            hold: Duration(seconds: 1),
+          ),
+        ]);
+        final camera = _controller()..onMovement = walk.abandon;
+        if (holding) {
+          walk.arrived();
+        } else {
+          camera.flyTo(const CameraPose(x: 0, y: 30, z: 20, yaw: 0));
+        }
+        camera.addLookDelta(10, 0);
+        expect(camera.flying, isFalse);
+        expect(walk.finished, isTrue);
+        expect(walk.tick(const Duration(seconds: 5)), isNull);
+      });
+    }
+
     test('flyTo moves the camera along the flight and lands exactly', () {
       var arrivals = 0;
       final camera = _controller()..onArrived = () => arrivals++;

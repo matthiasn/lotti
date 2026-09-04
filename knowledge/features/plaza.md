@@ -5,7 +5,7 @@ description: "The developer-only 3D project map: a merge-stable street folded in
 resource: ../../lib/features/plaza
 tags: [plaza, 3d, flutter-scene, flutter-gpu, tasks, visualization, prototype]
 status: draft
-generated: { by: claude-code/fable-5.1, at: 2026-09-04T12:00:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-04T22:54:16Z }
 stale_after: 2027-03-01
 sources:
   - id: street
@@ -56,6 +56,10 @@ sources:
     resource: ../../lib/features/plaza/scene/plaza_scene.dart
     title: PlazaSceneController, the scene graph builder
     last_modified: 2026-09-04
+  - id: boxes
+    resource: ../../lib/features/plaza/scene/plaza_boxes.dart
+    title: Shared unit geometry and immutable solid materials
+    last_modified: 2026-09-05
   - id: surfaces
     resource: ../../lib/features/plaza/scene/plaza_surfaces.dart
     title: PlazaSurfaces, the non-facade widget surfaces and their capture intervals
@@ -76,6 +80,10 @@ sources:
     resource: ../../lib/features/plaza/dev_main.dart
     title: The dev harness, input, flights, walk, tour, bench
     last_modified: 2026-09-04
+  - id: pointer
+    resource: ../../lib/features/plaza/ui/plaza_pointer_controller.dart
+    title: Tap, drag and pointer cancellation state
+    last_modified: 2026-09-05
   - id: tour
     resource: ../../lib/features/plaza/ui/plaza_tour.dart
     title: The tour stops
@@ -399,7 +407,10 @@ clamped to ±1.25 rad. Walking always happens at `eyeHeight`; a pose set from
 above (overview, tour) keeps its height until the next step, and that step
 first plans a **landing flight** to eye height rather than dropping in one
 frame. Pressed keys are reconciled with `HardwareKeyboard` every frame so a
-key-up lost to a focus change cannot latch the camera walking.
+key-up lost to a focus change cannot latch the camera walking. Starting a
+flight clears the previous walking velocity; arriving at the overview cannot
+resume stale momentum and drop the camera. Drag look notifies `onMovement`,
+which abandons the morning walk whether it is flying or holding at a stop.
 
 A `Flight` is planned once, as a chain of straight **legs** with one
 **speed profile** over the whole way, and is evaluated by normalised time:
@@ -603,30 +614,38 @@ task data.
 
 ```mermaid
 flowchart TD
-  Far["far<br/>plate, neon strips, light bar, lantern<br/>no widget"] -->|"within 140 m and sign cap 80, one promotion per frame"| Sign["sign<br/>FacadeWidget sign variant<br/>captured once, manual input"]
-  Far -->|"within 26 m (or the building's own stand-off), on the wall's street side and ahead of the camera, live cap 4"| Live["live<br/>FacadeWidget live variant<br/>captured every frame, automatic input"]
-  Sign -->|"within 26 m (or the building's own stand-off), on the wall's street side and ahead of the camera, live cap 4"| Live
+  Far["far<br/>plate, neon strips, light bar, lantern<br/>no widget"] -->|"within 140 m and sign cap 80, one promotion per frame"| Sign["sign<br/>FacadeWidget sign variant<br/>initial capture and cover completion, manual input"]
+  Far -->|"tapped within live range, in front and in view, live budget available"| Live["live<br/>FacadeWidget live variant<br/>captured every 50 ms, automatic input"]
+  Sign -->|"tapped within live range, in front and in view, live budget available"| Live
   Live -->|"immediately when out of budget or range"| Sign
   Sign -->|"immediately"| Far
   Far -->|"prepare on flight start, the destination only"| Sign
 ```
 
 `FacadeLodConfig` defaults: `liveCap` 4, `signCap` 80, `liveDistance` 26 m,
-`signDistance` 140 m, `promotionsPerFrame` 1. Each frame the buildings are
-ranked by ground distance to the eye with a sticky factor (a surface already
+`signDistance` 140 m, `promotionsPerFrame` 1. When the camera or budget changes,
+or a promotion remains pending, the buildings are ranked by ground distance to the eye with a sticky factor (a surface already
 above far ranks as if 15 % closer), and the budget is handed out in that
-order. Live needs the eye on the street side of the wall (`facesEye`).
+order. A nearby tap activates one building via `activate`; merely walking
+up to it leaves its sign static. Live also needs the eye on the street side
+of the wall and the wall ahead of the camera. Leaving live range, turning
+away or activating another wall disarms the previous one; returning needs
+a new tap. A distant tap still flies to the building first.
 Promotions are rate-limited to one per frame and suspended while
-`suspended` is set (flights); demotions are immediate. `forceAllLive` (the
+`flying` is set; demotions are immediate. `forceAllLive` (the
 overlay's stress switch) makes every facade live and ignores the per-frame
 budget. The nearest live building is the **focused** one: its teal ring
 node is shown, and it is the wall whose checkboxes and details button
 work. Ticks live in a shared `ChecklistTicks` so the wall and the side
 panel agree; nothing is persisted.
 
-A sign surface captures once (`WidgetUpdatePolicy.manual`); the manager keeps
-requesting the capture until the first texture lands, because the host
-attaches a frame after the component does. Widget subtrees are sized at the
+A sign surface takes an initial capture (`WidgetUpdatePolicy.manual`); the
+manager keeps requesting it until the texture lands, because the host
+attaches a frame after the component does. `FacadeWidget.onCoverChanged`
+invalidates that texture after its image has painted or failed, so a late
+network image reaches the sign without a tier change or continuous polling.
+`SurfaceCaptures.invalidate` tracks the next capture count; callbacks from
+a detached component are ignored. Widget subtrees are sized at the
 facade's world size × `pxPerMeter` (the plate is `0.92 × width` by
 `0.9 × height`).
 
@@ -640,13 +659,13 @@ fourteen metres away).
 
 | Surface | Widget | Capture |
 |---|---|---|
-| live facade (at most 4) | `FacadeWidget` live | every frame |
-| sign facade (at most 80) | `FacadeWidget` sign | once |
-| pylon, mounted and roof billboards | `BillboardWidget` | anomalies every 100 ms, the rest (a still face) every 3 s; hidden beyond the plaza range |
-| mounted, gantry and roofline tickers | `TickerWidget` | every 50 ms, hidden beyond the plaza range |
+| activated facade (one normally; all in stress mode) | `FacadeWidget` live | every 50 ms, preserving press feedback |
+| sign facade (at most 80) | `FacadeWidget` sign | initially and after cover completion |
+| pylon, mounted and roof billboards | `BillboardWidget` | once, and again when the cover lands; hidden beyond the plaza range. The frame's breathing is the scene's glow quad, not the widget |
+| mounted, gantry and roofline tickers | `TickerWidget`, one period of text | once; the band's material scrolls the texture by UV offset every frame (`PlazaSurfaces.update`) and repeats it, on a `fadedQuad` whose ends darken by vertex colour; hidden beyond the plaza range |
 | jumbotron | `JumbotronWidget` at 0.5 × px/m | every 1 s |
-| skyline screens | `BillboardWidget` at 0.35 × px/m | every 3 s |
-| ticker housing | a dark track and a teal rim with end caps behind every band (geometry, not a widget); the type fades in and out at the housing's ends | — |
+| skyline screens | `BillboardWidget` at 0.35 × px/m | once, and again when the cover lands |
+| ticker housing | a dark track and a teal rim with end caps behind every band (geometry, not a widget) | — |
 | block markers, week signs | `BlockMarkerWidget` | once |
 | banners | `BannerWidget` | once |
 | filler signs | `BannerWidget` at 0.6 × px/m | once |
@@ -663,7 +682,7 @@ widgets read, `requestDue` throttles per surface (the first capture is
 free) and skips a surface the camera cannot see (`TimedSurface.seenFrom`:
 centre behind the eye by more than a few metres, or eye behind the
 surface's front), and `requestPending` re-requests the one-off captures
-until their textures land, then forgets them. `PlazaSurfaces.facingPose`
+until their requested capture counts land, then removes the pending requests. `PlazaSurfaces.facingPose`
 gives the pose in front of a billboard slot (14 m by default), used by the
 tour. No widget owns an animation controller: a billboard's glow, a
 ticker's scroll and the jumbotron's slides all read their cadence's clock,
@@ -677,7 +696,16 @@ chip, a details button (opens the side panel) and the done count.
 
 # Sprites
 
-`PlazaSprites` owns the camera-facing dots, all with `raycastable = false`:
+`PlazaSprites` keeps lanterns, beacons, lamp bulbs/halos and spire lights
+as individually sorted sprites (`raycastable = false`). The chase bulbs
+around each billboard share one `BillboardGeometry` and `SpriteMaterial`:
+one draw per frame instead of twenty. Each batch stays local to its panel,
+so its bounds and translucent draw order remain tied to that lightbox;
+unrelated alpha-blended halos and beacons are not merged into global batches.
+`PlazaLightBuffer` stores the fixed world positions and updates only size and
+HDR colour. Bounds are committed once using `maxChaseBulbSize` (0.45 m),
+then the actual sizes are restored; the geometry uploads the current buffer
+on each draw without a bounds refit.
 
 - **Lanterns**, one per building at roof + 0.7 m, coloured by lantern state,
   sized to `clamp(9 × 60 / d, 5, 22)` logical pixels, scaled by 2.2 when
@@ -701,6 +729,14 @@ until it lands.
 
 `PlazaSceneController` builds the `Scene` on construction:
 
+- **Shared box resources**: `PlazaBoxes` owns one plain unit cube and one
+  face-tinted unit cube per scene. Every box has an unscaled logical anchor
+  and a scaled mesh child, so attachments and ancestor-based picking keep
+  their coordinates. Matching solid colours and depth biases reuse material
+  instances, allowing the renderer to instance compatible opaque draws.
+  Shared materials are never animated or textured; surfaces with changing
+  material state keep their own instances. The helper accepts only unlit
+  materials, avoiding lighting changes from nonuniform normal transforms.
 - **Post-processing**: real HDR **bloom** (`scene.postProcess.bloom`,
   threshold `bloomThreshold` 1.0, intensity `bloomIntensity` 0.3, scatter
   0.6) and a soft **vignette** (0.32 at radius 0.82). Widget whites sit at
@@ -820,8 +856,17 @@ until it lands.
   the jumbotron tower always trade: they are the city, not tasks.
 - **Billboards**: pylons get two braced posts on footings and a catwalk; roof
   panels get two struts; every panel gets a dark lightbox, a glow quad and
-  chase-light points around the frame; the panel's own border (the widget's,
-  which breathes) is the one frame. A roof panel sits over its own facade,
+  chase-light points around the frame; the panel's own border (the widget's)
+  is the one frame, and the glow quad behind the lightbox is what breathes:
+  `PlazaSurfaces.update` writes its alpha once per frame from the slot's
+  pulse (`BillboardSlot.glowAt`, floor 0.55) times the scene's `poolFade`,
+  and only when it moved, so a billboard costs no capture at rest. A
+  pylon's or a roof panel's lightbox is translucent: its back is a
+  `backQuad` (the front's vertices and UVs wound the other way, so the
+  eye reads the picture mirrored) sharing the panel's capture through
+  `OpaqueSurface.shared`, dimmed to `PlazaBillboard.backTint`; a wall
+  screen and the jumbotron have no back to see. A roof
+  panel sits over its own facade,
   which carries the title, so it leads with the reason on a solid band in
   the state colour across its top, panel-dark ink, the title small on the
   scrim, and drops its 'fly there' (`BillboardWidget.reasonFirst`). On a
@@ -850,15 +895,18 @@ shows.
 
 # Picking and input
 
-Pointer handling lives in the harness: a press that moves more than 6 px is a
-drag (look), a release within 0.25 s that never dragged is a tap.
+The harness delegates gesture state to `PlazaPointerController`: a primary
+press that moves more than 6 px is a drag (look); a release within 0.25 s
+that never dragged is a tap. Release, cancellation and loss of pressed
+buttons clear the active pointer and drag flag. Unrelated pointers cannot
+end the gesture. Auto pacing can therefore settle back to its idle cap.
 `PlazaPicker.pick` resolves beacon dots first in screen space (within
 `beaconHitPx` 14), because sprites are skipped by the raycaster, then casts a
 ray up to `maxTapDistance` (160 m) and walks up from the hit node to a
 billboard backing or a facade plate. A beacon tap flies to its pose, a
-building tap to its task pose unless it is already the focused building, a
-billboard tap to the task it shows. Only the primary button is used; input
-is ignored entirely in tour and bench modes.
+nearby building tap activates its facade, a distant building tap flies to
+its task pose, and a billboard tap flies to the task it shows. Only the primary button is used; input
+for keyboard and scene navigation is ignored in tour and bench modes.
 
 # Tour, bench and capture
 
@@ -912,6 +960,14 @@ is ignored entirely in tour and bench modes.
   washed out.
 - **Alpha-blended widget surfaces sort unreliably.** Use `OpaqueSurface` for
   every widget quad; keep `AlphaMode.blend` for pools and glow quads only.
+- **Layers centimetres apart fight in the depth buffer far out.** A
+  facade's window wall, far plate, neon glows and widget surface sit 1–3 cm
+  apart along the wall's normal; past ~200 m the depth buffer (near plane
+  0.3 m, far 1400 m) cannot separate them and they flicker as the camera
+  flies. Each layer carries a `Material.depthBias` (world metres toward
+  the eye: plate `plateDepthBias` 0.05, glows and ring `glowDepthBias`
+  0.1, every widget surface `widgetDepthBias` 0.15) so the order is fixed
+  at any distance. Raise the bias, not the spacing, when adding a layer.
 - **Sprites are skipped by the raycaster**, so the picker resolves beacons in
   screen space first.
 - **The harness clock is the demo fixture clock**, not `DateTime.now()`; the
@@ -938,7 +994,7 @@ is ignored entirely in tour and bench modes.
   the view (which repaints it once) at most `PlazaFrameRate` frames a
   second: `auto` is the display's rate while anything moves (a flight, the
   walk, a held key, a drag, and 0.6 s after) and 30 Hz at rest, `60` and
-  `30` are caps; the default is 60, the benchmark and the tour are never
+  `30` are caps; the default is `auto`, the benchmark and the tour are never
   capped. The HUD carries the control (a design-system segmented toggle)
   and a Debug box that shows the overlay; the backquote key toggles the
   overlay too, where a keyboard sends it. The overlay reports two rates:
@@ -951,21 +1007,23 @@ is ignored entirely in tour and bench modes.
   a captured widget ticks on every vsync. So every surface is a **manual
   capture requested from the pacer**: `PlazaSurfaces.update(eye, seconds,
   forward:)` asks each timed surface in range, and in view, once its
-  interval is up (anomalous billboards `nearInterval` 0.1 s, tickers
-  `tickerInterval` 0.05 s, the jumbotron `jumbotronInterval` 1 s, the
-  skyline screens and the still billboards `farInterval` 3 s; markers,
-  banners and signs once), and `FacadeLodManager.update(eye, forward:,
+  interval is up (the jumbotron `jumbotronInterval` 1 s; tickers,
+  billboards, skyline screens, markers, banners and signs once, a cover
+  that lands later asking for one more; a ticker is one captured period
+  that the band's material scrolls by UV offset, its texture never wider
+  than `maxTickerTexturePx`), and
+  `FacadeLodManager.update(eye, forward:,
   seconds:, flying:)` asks each live wall every `liveInterval` (0.05 s),
   and re-ranks the tiers only when the eye, the view direction, the budget
   or the flight state moved since a ranking that left nothing undone. And
-  the animated widgets read **their cadence's clock**, a
+  the one animated widget left reads **its cadence's clock**, a
   `ValueNotifier<double>` of harness seconds that `requestDue` advances
-  immediately before each capture request: `TickerWidget` scrolls by it,
-  `BillboardWidget.glowAt` breathes by it, `JumbotronWidget` turns its
-  slides by it; none of them owns an animation controller, so a hosted
-  widget rebuilds exactly once per capture, in the frame of the request,
-  and the engine's frame rate equals the painted one (`engineFps` in the
-  overlay says so). `PLAZA_FPS=auto|60|30` picks the cap at start.
+  immediately before each capture request: `JumbotronWidget` turns its
+  slides by it; none of them owns an animation controller, so a clock notification rebuilds its listeners in the frame of the request.
+  These clocks are shared per cadence, so even a culled surface can rebuild
+  when another surface advances that clock; only its capture is culled.
+  The pacer's `Ticker` still wakes on every vsync even when `_onPace` skips
+  a scene frame, so `engineFps` need not equal the painted rate. `PLAZA_FPS=auto|60|30` picks the cap at start.
 - **Fixtures are the demo world only.** The harness projects
   `ManualDemoWorld.penguinLogistics`; the synthetic generator lives in
   `test/features/plaza/plaza_fixtures.dart` for the tests and nowhere else.

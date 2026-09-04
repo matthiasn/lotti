@@ -5,6 +5,7 @@ import 'package:lotti/features/design_system/theme/icon_tokens.dart';
 import 'package:lotti/features/plaza/domain/attention.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
 import 'package:lotti/features/plaza/ui/checklist_ticks.dart';
+import 'package:lotti/features/plaza/ui/cover_image.dart';
 import 'package:lotti/features/plaza/ui/plaza_chip.dart';
 import 'package:lotti/features/plaza/ui/plaza_style.dart';
 
@@ -33,6 +34,7 @@ class FacadeWidget extends StatelessWidget {
     required this.pxPerMeter,
     this.ticks,
     this.onOpen,
+    this.onCoverChanged,
     this.focused = false,
     super.key,
   });
@@ -48,6 +50,9 @@ class FacadeWidget extends StatelessWidget {
   /// Shared tick state; required for the live variant to be interactive.
   final ChecklistTicks? ticks;
   final VoidCallback? onOpen;
+
+  /// Invalidates a hosted texture once asynchronous cover loading settles.
+  final VoidCallback? onCoverChanged;
 
   /// Draws the teal focus ring (the faced building is the live one).
   final bool focused;
@@ -242,10 +247,13 @@ class FacadeWidget extends StatelessWidget {
                                   ),
                                   child: SizedBox(
                                     width: double.infinity,
-                                    child: _Cover(
+                                    child: CoverImage(
                                       url: task.coverImageUrl!,
-                                      quiet:
-                                          attention.lantern == LanternState.off,
+                                      onLoaded: onCoverChanged,
+                                      opacity:
+                                          attention.lantern == LanternState.off
+                                          ? 0.45
+                                          : 1,
                                     ),
                                   ),
                                 ),
@@ -388,26 +396,6 @@ class FacadeWidget extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _Cover extends StatelessWidget {
-  const _Cover({required this.url, required this.quiet});
-
-  final String url;
-  final bool quiet;
-
-  @override
-  Widget build(BuildContext context) {
-    return Opacity(
-      opacity: quiet ? 0.45 : 1,
-      child: Image.network(
-        url,
-        width: double.infinity,
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => const SizedBox(),
       ),
     );
   }

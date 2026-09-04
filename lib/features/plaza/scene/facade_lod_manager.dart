@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart' show visibleForTesting;
+import 'package:flutter/widgets.dart' show Widget;
 import 'package:flutter_scene/scene.dart';
 import 'package:lotti/features/plaza/scene/plaza_scene.dart';
 import 'package:lotti/features/plaza/scene/surface_captures.dart';
@@ -10,7 +11,8 @@ import 'package:lotti/features/plaza/ui/facade_widget.dart';
 import 'package:vector_math/vector_math.dart' show Vector3;
 
 /// Surface tier of one facade: live = interactive widget captured every
-/// frame, sign = captured once, far = the plate and the lantern only.
+/// 50 ms, sign = captured initially and after cover completion, far = the
+/// plate and the lantern only.
 enum FacadeTier { far, sign, live }
 
 /// The tier budget. Defaults are the design's numbers; the debug overlay
@@ -25,7 +27,7 @@ class FacadeLodConfig {
     this.forceAllLive = false,
   });
 
-  /// Hard cap on live (every-frame) surfaces: the faced building and its
+  /// Hard cap on live (interactive) surfaces: the faced building and its
   /// nearest neighbours.
   int liveCap;
 
@@ -68,18 +70,30 @@ typedef _Budget = ({
   bool flying,
 });
 
+/// Builds the GPU surface separately from the tier and capture scheduling.
+/// Tests supply a bind-only component to exercise promotions without a GPU.
+typedef FacadeSurfaceBuilder =
+    WidgetComponent Function({
+      required Widget child,
+      required double width,
+      required double height,
+      required double pxPerMeter,
+      WidgetInput input,
+    });
+
 /// Assigns each facade a tier from camera distance with sticky
 /// hysteresis, enforces the caps by construction, and schedules
 /// promotions one per frame so walking into a busy block never spikes.
 ///
-/// The faced building (nearest live facade the walker is in front of) gets
-/// the focus ring and is the one whose checkboxes work.
+/// A nearby facade becomes live only after a tap, gets the focus ring,
+/// and remains interactive until the walker leaves its range or view.
 class FacadeLodManager {
   FacadeLodManager({
     required this.buildings,
     required this.config,
     required this.ticks,
     required this.onOpen,
+    this.surfaceBuilder = hostedSurface,
   }) : _surfaces = [for (final _ in buildings) _Surface()],
        _distances = Float64List(buildings.length),
        _order = List<int>.generate(buildings.length, (i) => i);
@@ -88,6 +102,7 @@ class FacadeLodManager {
   final FacadeLodConfig config;
   final ChecklistTicks ticks;
   final void Function(PlazaBuilding building) onOpen;
+  final FacadeSurfaceBuilder surfaceBuilder;
   final List<_Surface> _surfaces;
   final FacadeLodStats stats = FacadeLodStats();
 
@@ -135,6 +150,26 @@ class FacadeLodManager {
               'front=${r.$2.facesEye(eye)}',
         )
         .join(' | ');
+  }
+
+  PlazaBuilding? _activated;
+
+  /// Activates a nearby facade after a tap. A distant tap should navigate
+  /// first. Only the selected wall is interactive; leaving its live range
+  /// or turning away disarms it, so idle signs do not keep capturing.
+  bool activate(PlazaBuilding building, Vector3 eye, {Vector3? forward}) {
+    if (!buildings.contains(building) ||
+        config.liveCap <= 0 ||
+        building.groundDistanceTo(eye) >=
+            math.max(config.liveDistance, building.liveRange) ||
+        !_inView(building, eye, forward)) {
+      return false;
+    }
+    if (_activated != building) {
+      _activated = building;
+      _settled = false;
+    }
+    return true;
   }
 
   PlazaBuilding? _focused;
@@ -225,7 +260,8 @@ class FacadeLodManager {
       FacadeTier target;
       if (config.forceAllLive) {
         target = FacadeTier.live;
-      } else if (liveLeft > 0 &&
+      } else if (building == _activated &&
+          liveLeft > 0 &&
           d < math.max(config.liveDistance, building.liveRange) &&
           _inView(building, eye, forward)) {
         target = FacadeTier.live;
@@ -256,6 +292,8 @@ class FacadeLodManager {
         changed = true;
       }
     }
+
+    if (!config.forceAllLive && focused == null) _activated = null;
 
     if (focused != _focused) {
       _focused?.ring.visible = false;
@@ -305,7 +343,8 @@ class FacadeLodManager {
 
     if (target != FacadeTier.far) {
       final live = target == FacadeTier.live;
-      final component = hostedSurface(
+      late final WidgetComponent component;
+      component = surfaceBuilder(
         child: FacadeWidget(
           task: building.task,
           attention: building.attention,
@@ -313,6 +352,7 @@ class FacadeLodManager {
           widthMeters: building.facadeWorldWidth,
           pxPerMeter: building.pxPerMeter,
           ticks: live ? ticks : null,
+          onCoverChanged: () => _captures.invalidate(component.controller),
           onOpen: live ? () => onOpen(building) : null,
         ),
         width: building.facadeWorldWidth,
@@ -364,6 +404,7 @@ class FacadeLodManager {
 
   /// Detaches every widget surface (used when tearing a scene down).
   void dispose() {
+    _activated = null;
     for (var i = 0; i < buildings.length; i++) {
       final component = _surfaces[i].component;
       if (component != null) {

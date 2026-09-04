@@ -6,25 +6,10 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/plaza/scene/surface_captures.dart';
 import 'package:vector_math/vector_math.dart' show Matrix4, Vector3;
 
-/// A capture controller with no host: counts the requests the scheduler
-/// makes, and lands a capture when the test says so.
-class _FakeController extends WidgetTextureController {
-  int requests = 0;
-  int landed = 0;
-  Duration duration = Duration.zero;
-
-  @override
-  void requestCapture() => requests++;
-
-  @override
-  int get captureCount => landed;
-
-  @override
-  Duration get lastCaptureDuration => duration;
-}
+import 'test_utils.dart';
 
 /// A vertical surface at the origin whose front faces +z.
-TimedSurface _atOrigin(_FakeController controller, {Node? node}) =>
+TimedSurface _atOrigin(FakeWidgetTextureController controller, {Node? node}) =>
     TimedSurface.facing(
       controller: controller,
       node: node ?? Node(),
@@ -41,7 +26,7 @@ void main() {
     test('the first capture is free and the next waits for the interval', () {
       final captures = SurfaceCaptures();
       final cadence = CaptureCadence(0.1);
-      final controller = _FakeController();
+      final controller = FakeWidgetTextureController();
       captures.timed(cadence, _atOrigin(controller));
       expect(controller.requests, 0, reason: 'registering asks nothing');
 
@@ -66,7 +51,7 @@ void main() {
     test('advances the cadence clock only when a capture is requested', () {
       final captures = SurfaceCaptures();
       final cadence = CaptureCadence(0.1);
-      final controller = _FakeController();
+      final controller = FakeWidgetTextureController();
       final node = Node();
       captures.timed(cadence, _atOrigin(controller, node: node));
       var notifications = 0;
@@ -97,7 +82,7 @@ void main() {
     test('a surface behind the eye is not captured', () {
       final captures = SurfaceCaptures();
       final cadence = CaptureCadence(0.1);
-      final controller = _FakeController();
+      final controller = FakeWidgetTextureController();
       captures.timed(cadence, _atOrigin(controller));
       expect(controller.requests, 0);
 
@@ -116,7 +101,7 @@ void main() {
       // two metres behind the eye's plane and its near end still in view.
       final captures = SurfaceCaptures();
       final cadence = CaptureCadence(0.1);
-      final controller = _FakeController();
+      final controller = FakeWidgetTextureController();
       captures.timed(cadence, _atOrigin(controller));
       final justPast = Vector3(0, 1.7, 2);
       captures.requestDue(cadence, justPast, 0, forward: Vector3(0, 0, 1));
@@ -130,7 +115,7 @@ void main() {
     test('a surface whose front faces away from the eye is not captured', () {
       final captures = SurfaceCaptures();
       final cadence = CaptureCadence(0.1);
-      final controller = _FakeController();
+      final controller = FakeWidgetTextureController();
       captures.timed(cadence, _atOrigin(controller));
 
       // Behind the panel, looking at its back.
@@ -146,7 +131,7 @@ void main() {
     test('a culled surface is captured as soon as it comes into view', () {
       final captures = SurfaceCaptures();
       final cadence = CaptureCadence(3);
-      final controller = _FakeController();
+      final controller = FakeWidgetTextureController();
       captures.timed(cadence, _atOrigin(controller));
       expect(controller.requests, 0);
 
@@ -162,8 +147,8 @@ void main() {
     test('each surface keeps its own interval within a cadence', () {
       final captures = SurfaceCaptures();
       final cadence = CaptureCadence(0.1);
-      final a = _FakeController();
-      final b = _FakeController();
+      final a = FakeWidgetTextureController();
+      final b = FakeWidgetTextureController();
       final bNode = Node();
       captures
         ..timed(cadence, _atOrigin(a))
@@ -185,7 +170,7 @@ void main() {
   group('once', () {
     test('re-requested every frame until the capture lands, then dropped', () {
       final captures = SurfaceCaptures();
-      final controller = _FakeController();
+      final controller = FakeWidgetTextureController();
       captures.once(controller);
       expect(controller.requests, 0, reason: 'registering asks nothing');
 
@@ -209,8 +194,8 @@ void main() {
 
     test('a landed surface leaves the pending list, others stay', () {
       final captures = SurfaceCaptures();
-      final first = _FakeController();
-      final second = _FakeController();
+      final first = FakeWidgetTextureController();
+      final second = FakeWidgetTextureController();
       captures
         ..once(first)
         ..once(second)
@@ -221,14 +206,52 @@ void main() {
     });
   });
 
+  group('content invalidation', () {
+    test('recaptures a decoded cover after the initial texture landed', () {
+      final captures = SurfaceCaptures();
+      final controller = FakeWidgetTextureController();
+      captures
+        ..once(controller)
+        ..requestPending();
+      controller.landed = 1;
+      captures.requestPending();
+      expect(controller.requests, 1);
+      captures
+        ..invalidate(controller)
+        ..invalidate(controller)
+        ..requestPending();
+      expect(controller.requests, 2);
+      // Keep retrying while the host has not delivered the new texture.
+      captures.requestPending();
+      expect(controller.requests, 3);
+      controller.landed = 2;
+      captures
+        ..requestPending()
+        ..requestPending();
+      expect(controller.requests, 3);
+    });
+
+    test('late image callbacks cannot revive a detached surface', () {
+      final captures = SurfaceCaptures();
+      final controller = FakeWidgetTextureController();
+      captures
+        ..once(controller)
+        ..forget(controller)
+        ..invalidate(controller)
+        ..requestPending();
+      expect(controller.requests, 0);
+      expect(captures.captures, 0);
+    });
+  });
+
   group('counters', () {
     test('sum the captures and take the longest recent capture', () {
       final captures = SurfaceCaptures();
       final cadence = CaptureCadence(0.1);
-      final once = _FakeController()
+      final once = FakeWidgetTextureController()
         ..landed = 2
         ..duration = const Duration(milliseconds: 3);
-      final timed = _FakeController()
+      final timed = FakeWidgetTextureController()
         ..landed = 5
         ..duration = const Duration(milliseconds: 7);
       captures
@@ -241,8 +264,8 @@ void main() {
     test('a forgotten surface is neither counted nor requested again', () {
       final captures = SurfaceCaptures();
       final cadence = CaptureCadence(0.1);
-      final timed = _FakeController()..landed = 4;
-      final once = _FakeController();
+      final timed = FakeWidgetTextureController()..landed = 4;
+      final once = FakeWidgetTextureController();
       captures
         ..timed(cadence, _atOrigin(timed))
         ..once(once)
@@ -267,7 +290,7 @@ void main() {
         localTransform: Matrix4.translation(Vector3(0, 5, 3)),
       );
       parent.add(anchor);
-      final surface = TimedSurface.posed(_FakeController(), anchor);
+      final surface = TimedSurface.posed(FakeWidgetTextureController(), anchor);
       // Local +z under a quarter turn about y points along world +x.
       expect(surface.center.x, closeTo(13, 1e-6));
       expect(surface.center.y, closeTo(5, 1e-6));
@@ -293,7 +316,7 @@ void main() {
           math.sin(pitch),
           math.cos(yaw) * math.cos(pitch),
         );
-        final controller = _FakeController();
+        final controller = FakeWidgetTextureController();
         final ahead = eye + forward * distance;
         final facingEye = TimedSurface(
           controller: controller,

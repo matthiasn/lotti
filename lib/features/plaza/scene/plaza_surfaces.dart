@@ -19,18 +19,18 @@ import 'package:vector_math/vector_math.dart' show Matrix4, Vector3;
 /// The plaza's mid-tier widget surfaces that are not facades: billboards,
 /// ticker bands and the week markers on the road.
 ///
-/// Budget (spec): billboards ≤ 6, captured at [nearInterval] within the
-/// plaza's range; tickers at [tickerInterval] within range and not at all
-/// beyond it; the jumbotron at [jumbotronInterval]; the skyline screens at
-/// [farInterval]; block markers, banners, signs and the billboards that do
-/// not animate captured once at build.
+/// Budget (spec): billboards ≤ 6, still faces captured once (and again
+/// when a cover lands), their bloom breathing in the scene; tickers one
+/// period each captured once and scrolled by UV offset; the jumbotron at
+/// [jumbotronInterval]; the skyline screens, block markers, banners and
+/// signs captured once at build.
 ///
 /// Every capture is manual, requested from [update] on the harness clock
 /// through [SurfaceCaptures]: an interval policy would make flutter_scene
 /// pump an engine frame on every vsync, whatever the harness paints. Each
-/// cadence owns the clock its widgets read ([nearClock], [tickerClock],
-/// [farClock], [jumbotronClock]), advanced only when that cadence asks for
-/// a capture, so between captures nothing in them runs.
+/// cadence owns the clock its widgets read ([jumbotronClock]), advanced
+/// only when that cadence asks for a capture, so between captures nothing
+/// in them runs.
 class PlazaSurfaces {
   PlazaSurfaces({
     required this.scene,
@@ -61,22 +61,7 @@ class PlazaSurfaces {
   final double pxPerMeter;
 
   final SurfaceCaptures _captures = SurfaceCaptures();
-  final CaptureCadence _near = CaptureCadence(nearInterval);
-  final CaptureCadence _tickers = CaptureCadence(tickerInterval);
-  final CaptureCadence _far = CaptureCadence(farInterval);
   final CaptureCadence _jumbotron = CaptureCadence(jumbotronInterval);
-
-  /// Elapsed harness seconds as of the billboards' last capture request:
-  /// the clock the anomaly billboards breathe by.
-  ValueListenable<double> get nearClock => _near.clock;
-
-  /// Elapsed harness seconds as of the tickers' last capture request: the
-  /// clock the bands scroll by.
-  ValueListenable<double> get tickerClock => _tickers.clock;
-
-  /// Elapsed harness seconds as of the skyline screens' last capture
-  /// request.
-  ValueListenable<double> get farClock => _far.clock;
 
   /// Elapsed harness seconds as of the jumbotron's last capture request:
   /// the clock it turns its slides by.
@@ -102,10 +87,6 @@ class PlazaSurfaces {
     );
     return math.max(plazaRangeFloor, reach + 60);
   }
-
-  static const nearInterval = 0.1;
-  static const tickerInterval = 0.05;
-  static const farInterval = 3.0;
 
   static const markerWidth = 16.0;
   static const markerHeight = 5.2;
@@ -140,19 +121,19 @@ class PlazaSurfaces {
     }
   }
 
-  /// Big screens on the skyline: the anomalies again, at a slow capture
-  /// rate — they are far, and repetition is the Times Square idiom.
+  /// Big screens on the skyline: the anomalies again, captured once —
+  /// they are far, and repetition is the Times Square idiom.
   void _attachSkylineScreens(List<(Node, double, double, int)> screens) {
     for (final (anchor, w, h, rank) in screens) {
       if (rank >= world.anomalies.length) continue;
-      final component = hostedSurface(
+      late final WidgetComponent component;
+      component = hostedSurface(
         child: BillboardWidget(
           attention: world.anomalies[rank],
           widthMeters: w,
           heightMeters: h,
           pxPerMeter: pxPerMeter * 0.35,
-          pulseSeconds: 4,
-          clock: _far.clock,
+          onCoverChanged: () => _captures.invalidate(component.controller),
         ),
         width: w,
         height: h,
@@ -160,7 +141,7 @@ class PlazaSurfaces {
         scale: 0.35,
       );
       anchor.addComponent(component);
-      _captures.timed(_far, TimedSurface.posed(component.controller, anchor));
+      _captures.once(component.controller);
     }
   }
 
@@ -261,38 +242,29 @@ class PlazaSurfaces {
   void _attachBillboards() {
     for (final billboard in billboards) {
       final slot = billboard.slot;
-      final component = hostedSurface(
+      late final WidgetComponent component;
+      component = hostedSurface(
         child: BillboardWidget(
           attention: billboard.attention,
           widthMeters: slot.width,
           heightMeters: slot.height,
           pxPerMeter: pxPerMeter,
-          pulseSeconds: slot.pulseSeconds,
           // A roof panel sits over its own facade, which carries the
           // title: the panel leads with the reason instead.
           reasonFirst: slot.mount == BillboardMount.roof,
-          clock: _near.clock,
+          onCoverChanged: () => _captures.invalidate(component.controller),
         ),
         width: slot.width,
         height: slot.height,
         pxPerMeter: pxPerMeter,
+        // The lightbox's back shows the same capture, dimmed.
+        surface: OpaqueSurface(shared: [?billboard.back]),
       );
       billboard.anchor.addComponent(component);
-      final center = billboard.center;
-      _ranged.add((center, billboard.anchor));
-      // Only an anomaly breathes ([BillboardWidget] renders a still face
-      // below the threshold): the rest take the far cadence, seldom
-      // enough to cost nothing and often enough that a cover image that
-      // decodes after the first capture still lands on the panel.
-      _captures.timed(
-        billboard.attention.anomalous ? _near : _far,
-        TimedSurface.facing(
-          controller: component.controller,
-          node: billboard.anchor,
-          center: center,
-          facingRadians: slot.facingRadians,
-        ),
-      );
+      _ranged.add((billboard.center, billboard.anchor));
+      // A still face: captured once, and once more when its cover lands.
+      // The breathing is the glow quad's, in [update].
+      _captures.once(component.controller);
     }
   }
 
@@ -303,18 +275,30 @@ class PlazaSurfaces {
           Vector3(slot.x, slot.bottom + slot.height / 2, slot.z),
         )..rotateY(slot.facingRadians),
       );
+      // One period of the band is captured, once, at a density that keeps
+      // the texture under [maxTickerTexturePx] wide; the band's quad shows
+      // [slot.width] of it and the scene slides the offset each frame.
+      final text = world.tickerTexts[slot] ?? world.tickerText;
+      final period = TickerWidget.periodMeters(text, slot.height, slot.width);
+      final density = math.min(pxPerMeter, maxTickerTexturePx / period);
+      final surface = OpaqueSurface();
       final component = hostedSurface(
         child: TickerWidget(
-          text: world.tickerTexts[slot] ?? world.tickerText,
+          text: text,
           heightMeters: slot.height,
-          pxPerMeter: pxPerMeter,
-          speedMetersPerSecond: slot.speedMetersPerSecond,
-          clock: _tickers.clock,
+          pxPerMeter: density,
         ),
-        width: slot.width,
+        width: period,
         height: slot.height,
-        pxPerMeter: pxPerMeter,
+        pxPerMeter: density,
+        geometry: fadedQuad(slot.width, slot.height, fade: tickerFade),
+        surface: surface,
       );
+      surface.material.baseColorTextureTransform.scale.x = slot.width / period;
+      _tickerBands.add((
+        surface.material,
+        slot.speedMetersPerSecond / period,
+      ));
       anchor.addComponent(component);
       // Housing: a dark track behind the band with a thin teal rim and
       // end caps, so the ticker is a fixture on the wall and not a strip
@@ -351,17 +335,21 @@ class PlazaSurfaces {
       // view culling measure against.
       final center = Vector3(slot.x, slot.bottom + slot.height / 2, slot.z);
       _ranged.add((center, anchor));
-      _captures.timed(
-        _tickers,
-        TimedSurface.facing(
-          controller: component.controller,
-          node: anchor,
-          center: center,
-          facingRadians: slot.facingRadians,
-        ),
-      );
+      _captures.once(component.controller);
     }
   }
+
+  /// Each ticker band's material and its scroll speed in periods a
+  /// second: the UV offset the scene slides every frame.
+  final List<(UnlitMaterial, double)> _tickerBands = [];
+
+  /// A ticker texture is never wider than this: the long headline bands
+  /// are captured at a lower density instead.
+  static const maxTickerTexturePx = 8192.0;
+
+  /// The fraction of a band's width over which its type fades in and out
+  /// at the housing's ends.
+  static const tickerFade = 0.06;
 
   /// Once per painted frame, at [seconds] on the harness clock: keeps
   /// asking for the one-off captures until they land, hides the plaza's
@@ -371,16 +359,32 @@ class PlazaSurfaces {
   /// [forward] is the camera's view direction: with it a surface behind
   /// the eye or facing away from it is not captured; without it nothing is
   /// culled.
-  void update(Vector3 eye, double seconds, {Vector3? forward}) {
+  void update(
+    Vector3 eye,
+    double seconds, {
+    Vector3? forward,
+    double glowFade = 1,
+  }) {
     _captures.requestPending();
     for (final (center, node) in _ranged) {
       node.visible = eye.distanceTo(center) <= plazaRange;
     }
-    _captures
-      ..requestDue(_near, eye, seconds, forward: forward)
-      ..requestDue(_tickers, eye, seconds, forward: forward)
-      ..requestDue(_far, eye, seconds, forward: forward)
-      ..requestDue(_jumbotron, eye, seconds, forward: forward);
+    // An anomaly's bloom breathes on its slot's pulse; every bloom fades
+    // with the camera's height like a pool. One material write per
+    // billboard, and only when the alpha moved.
+    for (final billboard in billboards) {
+      final pulse = billboard.attention.anomalous
+          ? billboard.slot.glowAt(seconds)
+          : 1.0;
+      billboard.currentGlow = PlazaBillboard.glowAlpha * glowFade * pulse;
+    }
+    // The bands scroll: the texture's offset along the band, in periods,
+    // wrapping every period. Leftward on the band is +u on the quad.
+    for (final (material, periodsPerSecond) in _tickerBands) {
+      material.baseColorTextureTransform.offset.x =
+          (seconds * periodsPerSecond) % 1;
+    }
+    _captures.requestDue(_jumbotron, eye, seconds, forward: forward);
   }
 
   /// Total captures across these surfaces, for the debug overlay.
