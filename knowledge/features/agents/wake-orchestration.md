@@ -5,7 +5,7 @@ description: How a local change becomes an agent wake — subscription matching,
 resource: ../../../lib/features/agents/wake
 tags: [agents, wake, scheduling, concurrency]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-08-10T14:30:00Z }
+generated: { by: codex/gpt-5, at: 2026-09-04T23:30:00Z }
 stale_after: 2026-10-12
 sources:
   - id: wake
@@ -217,7 +217,8 @@ Two independent limits apply:
   re-reads it whenever capacity frees up, so tuning takes effect without a
   restart. Setting it to 1 restores the former globally sequential behaviour.
 - **Per agent**: `WakeRunner` enforces single-flight, so two wakes for the same
-  agent never overlap even when global capacity is free.
+  agent cannot hold the runner simultaneously. An aborted executor may outlive
+  its lease; see the execution bound below.
 
 Each acquisition carries an ownership lease. Stale-drain recovery releases
 only the superseded generation's individually stale leases before starting its
@@ -263,6 +264,14 @@ agent lock. Dart cannot cancel the executor's underlying future, so inference
 may continue in the background; its eventual result is ignored by the drain.
 Workflows must therefore continue to treat late writes as normal database
 mutations that can produce a later notification.
+
+`waitForAgentExecutors(agentId)` is the explicit settlement barrier for
+operations that cannot tolerate those late writes. It waits for tracked
+executors across every workspace, including futures detached by an earlier
+abort, and observes both successful and failed completion. Callers first retire
+the agent and cancel queued/drain-owned jobs so no replacement executor can
+start. Project deletion uses the barrier before writing the journal tombstone;
+`runCompletions` or a released runner lock alone is not evidence of settlement.
 
 The scheduler only treats a drain as stale after **12 minutes without
 progress**. Dispatching or completing a wake resets that clock, so a healthy

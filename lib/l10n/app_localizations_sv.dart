@@ -10120,11 +10120,26 @@ class AppLocalizationsSv extends AppLocalizations {
       'Endast synligt när privata bidrag visas';
 
   @override
+  String get projectActionAddTask => 'Lägg till uppgift';
+
+  @override
+  String get projectActionArchive => 'Arkivera';
+
+  @override
+  String get projectActionDelete => 'Ta bort';
+
+  @override
+  String get projectActionEdit => 'Redigera projekt';
+
+  @override
   String get projectAgentNotProvisioned =>
       'Ingen projektagent har ännu tilldelats detta projekt.';
 
   @override
   String get projectAgentSectionTitle => 'Agent';
+
+  @override
+  String get projectArchiveSuccess => 'Projekt arkiverat';
 
   @override
   String projectCountSummary(int count) {
@@ -10142,6 +10157,20 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get projectCreateTitle => 'Skapa projekt';
+
+  @override
+  String get projectDeleteConfirmBody =>
+      'Projektet tas bort. Uppgifterna finns kvar i din journal.';
+
+  @override
+  String get projectDeleteConfirmTitle => 'Ta bort det här projektet?';
+
+  @override
+  String get projectDeleteFailed =>
+      'Det gick inte att ta bort projektet. Försök igen.';
+
+  @override
+  String get projectDeleteSuccess => 'Projekt borttaget';
 
   @override
   String get projectDetailTitle => 'Projektdetaljer';
@@ -10177,6 +10206,21 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get projectHealthBandWatch => 'Titta';
+
+  @override
+  String projectHealthConfidence(int confidence) {
+    return '$confidence% tillförlitlighet';
+  }
+
+  @override
+  String get projectHealthEmptyBody =>
+      'Kör projektagenten för att skapa en bedömning från den senaste projekt- och uppgiftsaktiviteten.';
+
+  @override
+  String get projectHealthEmptyTitle => 'Ingen hälsobedömning ännu';
+
+  @override
+  String get projectHealthRunNow => 'Kör rapport';
 
   @override
   String get projectHealthSectionTitle => 'Projekthälsa';
@@ -10234,6 +10278,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get projectPickerUnassigned => 'Inget projekt';
 
   @override
+  String get projectPickerUpdateFailed =>
+      'Det gick inte att ändra uppgiftens projekt. Kontrollera kategori och sekretess och försök igen.';
+
+  @override
   String get projectRecommendationDismissTooltip => 'Avslut';
 
   @override
@@ -10245,6 +10293,30 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get projectRecommendationUpdateError =>
       'Kunde inte uppdatera rekommendationen. Försök igen, tack.';
+
+  @override
+  String get projectsClearFilters => 'Rensa filter';
+
+  @override
+  String get projectsEmptyBody =>
+      'Skapa ett projekt för att samla relaterade uppgifter, framsteg och agentinsikter.';
+
+  @override
+  String get projectsEmptyCurrentBody =>
+      'Slutförda och arkiverade projekt är undanstoppade. Byt till Alla för att se dem igen.';
+
+  @override
+  String get projectsEmptyCurrentTitle => 'Inga aktuella projekt';
+
+  @override
+  String get projectsEmptyFilteredBody =>
+      'Justera sökningen eller filtren för att visa matchande projekt igen.';
+
+  @override
+  String get projectsEmptyFilteredTitle => 'Inga projekt matchar den här vyn';
+
+  @override
+  String get projectsEmptyTitle => 'Starta ditt första projekt';
 
   @override
   String get projectsFilterStatusLabel => 'Status:';
@@ -10345,6 +10417,27 @@ class AppLocalizationsSv extends AppLocalizations {
   String get projectShowcaseViewBlocker => 'Visningsblockerare';
 
   @override
+  String get projectsScopeAll => 'Alla';
+
+  @override
+  String get projectsScopeCurrent => 'Aktuella';
+
+  @override
+  String get projectsSortActionable => 'Behöver uppmärksamhet';
+
+  @override
+  String get projectsSortName => 'Namn';
+
+  @override
+  String get projectsSortRecent => 'Nyligen uppdaterade';
+
+  @override
+  String get projectsSortTargetDate => 'Måldatum';
+
+  @override
+  String get projectsSortTooltip => 'Sortera projekt';
+
+  @override
   String get projectStatusActive => 'Aktiv';
 
   @override
@@ -10374,7 +10467,13 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get projectsUnavailableCategory => 'Otillgänglig kategori';
+
+  @override
   String get projectTargetDateLabel => 'Måldatum';
+
+  @override
+  String get projectTaskProgressNone => 'Inga uppgifter';
 
   @override
   String get projectTitleLabel => 'Projekttitel';

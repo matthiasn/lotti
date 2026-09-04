@@ -10206,11 +10206,26 @@ class AppLocalizationsPt extends AppLocalizations {
       'Visível apenas quando entradas privadas são mostradas';
 
   @override
+  String get projectActionAddTask => 'Adicionar tarefa';
+
+  @override
+  String get projectActionArchive => 'Arquivar';
+
+  @override
+  String get projectActionDelete => 'Eliminar';
+
+  @override
+  String get projectActionEdit => 'Editar projeto';
+
+  @override
   String get projectAgentNotProvisioned =>
       'Nenhum agente de projeto foi provisionado para este projeto ainda.';
 
   @override
   String get projectAgentSectionTitle => 'Agente';
+
+  @override
+  String get projectArchiveSuccess => 'Projeto arquivado';
 
   @override
   String projectCountSummary(int count) {
@@ -10228,6 +10243,20 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get projectCreateTitle => 'Criar projeto';
+
+  @override
+  String get projectDeleteConfirmBody =>
+      'O projeto será removido. As tarefas vão continuar no teu diário.';
+
+  @override
+  String get projectDeleteConfirmTitle => 'Eliminar este projeto?';
+
+  @override
+  String get projectDeleteFailed =>
+      'Não foi possível eliminar o projeto. Tenta novamente.';
+
+  @override
+  String get projectDeleteSuccess => 'Projeto eliminado';
 
   @override
   String get projectDetailTitle => 'Detalhes do projeto';
@@ -10262,6 +10291,21 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get projectHealthBandWatch => 'Assistir';
+
+  @override
+  String projectHealthConfidence(int confidence) {
+    return '$confidence% de confiança';
+  }
+
+  @override
+  String get projectHealthEmptyBody =>
+      'Executa o agente do projeto para criar uma avaliação a partir da atividade mais recente do projeto e das tarefas.';
+
+  @override
+  String get projectHealthEmptyTitle => 'Ainda não há avaliação do estado';
+
+  @override
+  String get projectHealthRunNow => 'Gerar relatório';
 
   @override
   String get projectHealthSectionTitle => 'Saúde do projeto';
@@ -10319,6 +10363,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get projectPickerUnassigned => 'Nenhum projeto';
 
   @override
+  String get projectPickerUpdateFailed =>
+      'Não foi possível alterar o projeto da tarefa. Verifica a categoria e a privacidade e tenta novamente.';
+
+  @override
   String get projectRecommendationDismissTooltip => 'Dispensar';
 
   @override
@@ -10330,6 +10378,31 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get projectRecommendationUpdateError =>
       'Não foi possível atualizar a recomendação. Por favor, tente novamente.';
+
+  @override
+  String get projectsClearFilters => 'Limpar filtros';
+
+  @override
+  String get projectsEmptyBody =>
+      'Cria um projeto para reunir tarefas relacionadas, progresso e informações do agente.';
+
+  @override
+  String get projectsEmptyCurrentBody =>
+      'Os projetos concluídos e arquivados estão fora do caminho. Muda para Todos para os rever.';
+
+  @override
+  String get projectsEmptyCurrentTitle => 'Nenhum projeto atual';
+
+  @override
+  String get projectsEmptyFilteredBody =>
+      'Ajusta a pesquisa ou os filtros para voltar a mostrar projetos correspondentes.';
+
+  @override
+  String get projectsEmptyFilteredTitle =>
+      'Nenhum projeto corresponde a esta vista';
+
+  @override
+  String get projectsEmptyTitle => 'Começa o teu primeiro projeto';
 
   @override
   String get projectsFilterStatusLabel => 'Estado:';
@@ -10431,6 +10504,27 @@ class AppLocalizationsPt extends AppLocalizations {
   String get projectShowcaseViewBlocker => 'Ver bloqueador';
 
   @override
+  String get projectsScopeAll => 'Todos';
+
+  @override
+  String get projectsScopeCurrent => 'Atuais';
+
+  @override
+  String get projectsSortActionable => 'Precisa de atenção';
+
+  @override
+  String get projectsSortName => 'Nome';
+
+  @override
+  String get projectsSortRecent => 'Atualizados recentemente';
+
+  @override
+  String get projectsSortTargetDate => 'Data-alvo';
+
+  @override
+  String get projectsSortTooltip => 'Ordenar projetos';
+
+  @override
   String get projectStatusActive => 'Ativo';
 
   @override
@@ -10460,7 +10554,13 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String get projectsUnavailableCategory => 'Categoria indisponível';
+
+  @override
   String get projectTargetDateLabel => 'Data prevista';
+
+  @override
+  String get projectTaskProgressNone => 'Sem tarefas';
 
   @override
   String get projectTitleLabel => 'Título do projeto';

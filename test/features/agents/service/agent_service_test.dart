@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
@@ -629,6 +631,24 @@ void main() {
     });
 
     group('abortRunningWake', () {
+      test('executor barrier waits for the orchestrator settlement', () async {
+        final settled = Completer<void>();
+        when(
+          () => mockOrchestrator.waitForAgentExecutors('agent-1'),
+        ).thenAnswer((_) => settled.future);
+        var completed = false;
+        final waiting = service
+            .waitForAgentExecutors('agent-1')
+            .then((_) => completed = true);
+        await Future<void>.value();
+        expect(completed, isFalse);
+        settled.complete();
+        await waiting;
+        expect(completed, isTrue);
+        verify(
+          () => mockOrchestrator.waitForAgentExecutors('agent-1'),
+        ).called(1);
+      });
       test(
         'returns true when the orchestrator signals an in-flight run',
         () {

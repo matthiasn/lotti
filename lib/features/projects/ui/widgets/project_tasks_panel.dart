@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
@@ -11,11 +12,17 @@ class ProjectTasksPanel extends StatelessWidget {
   const ProjectTasksPanel({
     required this.record,
     this.onTaskTap,
+    this.onAddTask,
+    this.isAddTaskEnabled = true,
+    this.isAddingTask = false,
     super.key,
   });
 
   final ProjectRecord record;
   final ValueChanged<TaskSummary>? onTaskTap;
+  final VoidCallback? onAddTask;
+  final bool isAddTaskEnabled;
+  final bool isAddingTask;
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +31,12 @@ class ProjectTasksPanel extends StatelessWidget {
     return ShowcasePanel(
       header: Padding(
         padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
-        child: _ProjectTasksPanelHeader(record: record),
+        child: _ProjectTasksPanelHeader(
+          record: record,
+          onAddTask: onAddTask,
+          isAddTaskEnabled: isAddTaskEnabled,
+          isAddingTask: isAddingTask,
+        ),
       ),
       itemCount: record.highlightedTaskSummaries.length,
       itemBuilder: (_, index) {
@@ -52,11 +64,17 @@ class ProjectTasksSliverPanel extends StatelessWidget {
   const ProjectTasksSliverPanel({
     required this.record,
     this.onTaskTap,
+    this.onAddTask,
+    this.isAddTaskEnabled = true,
+    this.isAddingTask = false,
     super.key,
   });
 
   final ProjectRecord record;
   final ValueChanged<TaskSummary>? onTaskTap;
+  final VoidCallback? onAddTask;
+  final bool isAddTaskEnabled;
+  final bool isAddingTask;
 
   @override
   Widget build(BuildContext context) {
@@ -79,7 +97,12 @@ class ProjectTasksSliverPanel extends StatelessWidget {
                 tokens.spacing.step5,
                 tokens.spacing.step2,
               ),
-              child: _ProjectTasksPanelHeader(record: record),
+              child: _ProjectTasksPanelHeader(
+                record: record,
+                onAddTask: onAddTask,
+                isAddTaskEnabled: isAddTaskEnabled,
+                isAddingTask: isAddingTask,
+              ),
             ),
           ),
           SliverToBoxAdapter(
@@ -131,51 +154,81 @@ class ProjectTasksSliverPanel extends StatelessWidget {
 class _ProjectTasksPanelHeader extends StatelessWidget {
   const _ProjectTasksPanelHeader({
     required this.record,
+    this.onAddTask,
+    this.isAddTaskEnabled = true,
+    this.isAddingTask = false,
   });
 
   final ProjectRecord record;
+  final VoidCallback? onAddTask;
+  final bool isAddTaskEnabled;
+  final bool isAddingTask;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
 
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Flexible(
-                child: Text(
-                  context.messages.projectShowcaseProjectTasksTab,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-                    color: ShowcasePalette.highText(context),
+        Row(
+          children: [
+            Expanded(
+              child: Wrap(
+                spacing: tokens.spacing.step2,
+                runSpacing: tokens.spacing.step1,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  Semantics(
+                    header: true,
+                    child: Text(
+                      context.messages.projectShowcaseProjectTasksTab,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: tokens.typography.styles.subtitle.subtitle2
+                          .copyWith(
+                            color: ShowcasePalette.highText(context),
+                          ),
+                    ),
                   ),
-                ),
+                  CountDotBadge(
+                    count: record.highlightedTaskSummaries.length,
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        LottiIcons.timer,
+                        size: tokens.typography.lineHeight.caption,
+                        color: ShowcasePalette.timeGreen(context),
+                      ),
+                      SizedBox(width: tokens.spacing.step1),
+                      Text(
+                        showcaseFormatDuration(
+                          record.highlightedTasksTotalDuration,
+                        ),
+                        style: tokens.typography.styles.others.caption.copyWith(
+                          color: ShowcasePalette.timeGreen(context),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-              SizedBox(width: tokens.spacing.step2),
-              CountDotBadge(
-                count: record.highlightedTaskSummaries.length,
+            ),
+            if (onAddTask != null) ...[
+              SizedBox(width: tokens.spacing.step3),
+              DesignSystemButton(
+                label: context.messages.projectActionAddTask,
+                leadingIcon: LottiIcons.add,
+                variant: DesignSystemButtonVariant.secondary,
+                size: DesignSystemButtonSize.dense,
+                tapTargetSize: MaterialTapTargetSize.padded,
+                isLoading: isAddingTask,
+                onPressed: isAddingTask || !isAddTaskEnabled ? null : onAddTask,
               ),
             ],
-          ),
-        ),
-        SizedBox(width: tokens.spacing.step2),
-        Icon(
-          LottiIcons.timer,
-          size: tokens.typography.lineHeight.subtitle2,
-          color: ShowcasePalette.timeGreen(context),
-        ),
-        SizedBox(width: tokens.spacing.step1),
-        Text(
-          showcaseFormatDuration(
-            record.highlightedTasksTotalDuration,
-          ),
-          style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-            color: ShowcasePalette.timeGreen(context),
-          ),
+          ],
         ),
       ],
     );

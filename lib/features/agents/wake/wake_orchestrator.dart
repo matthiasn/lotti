@@ -317,7 +317,11 @@ class WakeOrchestrator with AgentErrorLogging {
 
   final _subscriptions = <AgentSubscription>[];
   final _suppression = WakeSuppressionTracker();
-  final _activeExecutors = <String, ({String agentId, String? workspaceKey})>{};
+  final _activeExecutors =
+      <
+        String,
+        ({String agentId, String? workspaceKey, Future<void> settled})
+      >{};
   late final WakeThrottleCoordinator _throttle;
 
   final _runCompletions = StreamController<WakeRunCompletion>.broadcast();
@@ -353,15 +357,22 @@ class WakeOrchestrator with AgentErrorLogging {
   }
 
   void _trackExecutor(WakeJob job, Future<Map<String, VectorClock>?> future) {
+    final settled = Completer<void>();
     _activeExecutors[job.runKey] = (
       agentId: job.agentId,
       workspaceKey: job.workspaceKey,
+      settled: settled.future,
     );
+    void complete() {
+      _activeExecutors.remove(job.runKey);
+      settled.complete();
+    }
+
     unawaited(
       future.then(
-        (_) => _activeExecutors.remove(job.runKey),
+        (_) => complete(),
         onError: (Object _, StackTrace _) {
-          _activeExecutors.remove(job.runKey);
+          complete();
         },
       ),
     );
@@ -1095,4 +1106,18 @@ class WakeOrchestrator with AgentErrorLogging {
   /// Returns `true` when an active run was signalled, `false` when the
   /// agent is not currently running.
   bool abortRunningWake(String agentId) => runner.abort(agentId);
+
+  /// Waits for uncancellable executor work after retirement and cancellation.
+  ///
+  /// Covers every workspace, including executions detached by an earlier abort.
+  /// Callers must first prevent new wakes and cancel queued/drain-owned jobs.
+  /// Executor failures are already observed by the drain; this is a settlement
+  /// barrier, not a second delivery of those failures.
+  Future<void> waitForAgentExecutors(String agentId) async {
+    await Future.wait(
+      _activeExecutors.values
+          .where((execution) => execution.agentId == agentId)
+          .map((execution) => execution.settled),
+    );
+  }
 }

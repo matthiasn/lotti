@@ -1,3 +1,5 @@
+// ignore_for_file: invalid_use_of_internal_member
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -8,6 +10,7 @@ import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
 import 'package:lotti/features/design_system/components/chips/active_filter_chip.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_button.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_detail_empty_state.dart';
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
@@ -132,12 +135,15 @@ void main() {
   Future<void> pumpPage(
     WidgetTester tester, {
     required List<ProjectCategoryGroup> groups,
+    List<ProjectCategoryGroup>? overviewGroups,
     MediaQueryData? mediaQueryData,
     ThemeData? theme,
     bool overrideVisibleGroups = true,
     List<Override> extraOverrides = const [],
   }) async {
-    final snapshot = ProjectsOverviewSnapshot(groups: groups);
+    final snapshot = ProjectsOverviewSnapshot(
+      groups: overviewGroups ?? groups,
+    );
     final overrides = [
       projectsOverviewProvider.overrideWith(
         (ref) => Stream.value(snapshot),
@@ -325,6 +331,43 @@ void main() {
     expect(find.text('Completed'), findsOneWidget);
   });
 
+  testWidgets('switches Current/All scope and exposes the sort choices', (
+    tester,
+  ) async {
+    await pumpPage(tester, groups: [buildWorkGroup()]);
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(ProjectsTabPage)),
+    );
+
+    expect(find.text('Current'), findsOneWidget);
+    expect(find.text('All'), findsOneWidget);
+    await tester.tap(find.text('All'));
+    expect(
+      container.read(projectsFilterControllerProvider).selectedStatusIds,
+      isEmpty,
+    );
+    await tester.tap(find.text('Current'));
+    expect(
+      container.read(projectsFilterControllerProvider).selectedStatusIds,
+      currentProjectStatusFilterIds,
+    );
+
+    final sortMenu = tester.widget<DesignSystemContextMenuButton>(
+      find.byType(DesignSystemContextMenuButton),
+    );
+    expect(sortMenu.icon, LottiIcons.sort);
+    expect(find.byIcon(LottiIcons.filter), findsOneWidget);
+    expect(
+      sortMenu.items.map((item) => item.label),
+      ['Needs attention', 'Target date', 'Recently updated', 'Name'],
+    );
+    sortMenu.items[2].onTap!();
+    expect(
+      container.read(projectsFilterControllerProvider).sortMode,
+      ProjectsSortMode.recent,
+    );
+  });
+
   testWidgets('row tap opens the top-level project detail route', (
     tester,
   ) async {
@@ -463,6 +506,55 @@ void main() {
     },
   );
 
+  testWidgets('preserves category filters while overview metadata reloads', (
+    tester,
+  ) async {
+    final groups = [buildWorkGroup(), buildStudyGroup()];
+    final snapshot = ProjectsOverviewSnapshot(groups: groups);
+    final reloading = const AsyncLoading<ProjectsOverviewSnapshot>()
+        .copyWithPrevious(
+          AsyncData(snapshot),
+          isRefresh: false,
+        );
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const ProjectsTabPage(),
+        theme: withOverrides(ThemeData.dark(useMaterial3: true)),
+        overrides: [
+          projectsOverviewProvider.overrideWithValue(reloading),
+          visibleProjectGroupsProvider.overrideWith(
+            (ref) => AsyncValue.data(groups),
+          ),
+        ],
+      ),
+    );
+    await tester.pump();
+
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(ProjectsTabPage)),
+    );
+    container
+        .read(projectsFilterControllerProvider.notifier)
+        .setSelectedCategoryIds({'work'});
+    await tester.pump();
+    expect(container.read(projectsOverviewProvider).isLoading, isTrue);
+    expect(container.read(projectsOverviewProvider).value, isNotNull);
+
+    await tester.tap(find.byIcon(LottiIcons.filter));
+    await tester.pumpAndSettle();
+    final applyButton = find.byKey(
+      const ValueKey('design-system-task-filter-apply'),
+    );
+    await tester.ensureVisible(applyButton);
+    await tester.tap(applyButton);
+    await tester.pumpAndSettle();
+
+    expect(
+      container.read(projectsFilterControllerProvider).selectedCategoryIds,
+      {'work'},
+    );
+  });
+
   testWidgets('opens the shared DS status picker from the filter sheet', (
     tester,
   ) async {
@@ -560,9 +652,100 @@ void main() {
     await pumpPage(tester, groups: []);
 
     expect(
-      find.text('No projects match your search.'),
+      find.text('Start your first project'),
       findsOneWidget,
     );
+    expect(find.text('New Project'), findsOneWidget);
+
+    await tester.tap(find.text('New Project'));
+    await tester.pumpAndSettle();
+    expect(find.byType(ProjectCreateForm), findsOneWidget);
+  });
+
+  testWidgets('current-empty action switches the project scope to all', (
+    tester,
+  ) async {
+    await pumpPage(
+      tester,
+      groups: [],
+      overviewGroups: [buildWorkGroup()],
+    );
+    final pageContext = tester.element(find.byType(ProjectsTabPage));
+    final container = ProviderScope.containerOf(pageContext);
+
+    expect(find.text(pageContext.messages.projectsScopeAll), findsNWidgets(2));
+    tester
+        .widget<ProjectsOverviewContent>(
+          find.byType(ProjectsOverviewContent),
+        )
+        .onEmptyAction!();
+    await tester.pump();
+
+    expect(
+      container.read(projectsFilterControllerProvider).selectedStatusIds,
+      isEmpty,
+    );
+  });
+
+  testWidgets('sort-only changes keep the Current-empty All action', (
+    tester,
+  ) async {
+    await pumpPage(
+      tester,
+      groups: [],
+      overviewGroups: [buildWorkGroup()],
+    );
+    final pageContext = tester.element(find.byType(ProjectsTabPage));
+    final container = ProviderScope.containerOf(pageContext);
+    container
+        .read(projectsFilterControllerProvider.notifier)
+        .setSortMode(ProjectsSortMode.name);
+    await tester.pump();
+
+    expect(find.text(pageContext.messages.projectsScopeAll), findsNWidgets(2));
+    expect(find.text(pageContext.messages.projectsClearFilters), findsNothing);
+    tester
+        .widget<ProjectsOverviewContent>(
+          find.byType(ProjectsOverviewContent),
+        )
+        .onEmptyAction!();
+    await tester.pump();
+
+    expect(
+      container.read(projectsFilterControllerProvider).selectedStatusIds,
+      isEmpty,
+    );
+  });
+
+  testWidgets('filtered-empty action restores the default current view', (
+    tester,
+  ) async {
+    await pumpPage(
+      tester,
+      groups: [],
+      overviewGroups: [buildWorkGroup()],
+    );
+    final pageContext = tester.element(find.byType(ProjectsTabPage));
+    final container = ProviderScope.containerOf(pageContext);
+    container
+        .read(projectsFilterControllerProvider.notifier)
+        .setTextQuery('missing');
+    await tester.pump();
+
+    expect(
+      find.text(pageContext.messages.projectsClearFilters),
+      findsOneWidget,
+    );
+    tester
+        .widget<ProjectsOverviewContent>(
+          find.byType(ProjectsOverviewContent),
+        )
+        .onEmptyAction!();
+    await tester.pump();
+
+    final filter = container.read(projectsFilterControllerProvider);
+    expect(filter.textQuery, isEmpty);
+    expect(filter.selectedStatusIds, currentProjectStatusFilterIds);
   });
 
   testWidgets('filters visible projects by substring search', (tester) async {
@@ -608,6 +791,66 @@ void main() {
       find.byType(CircularProgressIndicator),
       findsOneWidget,
     );
+  });
+
+  testWidgets('keeps established projects visible during a provider reload', (
+    tester,
+  ) async {
+    final groups = [buildWorkGroup()];
+    // Riverpod uses this exact previous-data shape during dependency reloads.
+    final reloading = const AsyncLoading<List<ProjectCategoryGroup>>()
+        .copyWithPrevious(
+          AsyncData(groups),
+          isRefresh: false,
+        );
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const ProjectsTabPage(),
+        theme: withOverrides(ThemeData.dark(useMaterial3: true)),
+        overrides: [
+          projectsOverviewProvider.overrideWith(
+            (ref) => Stream.value(ProjectsOverviewSnapshot(groups: groups)),
+          ),
+          visibleProjectGroupsProvider.overrideWith((ref) => reloading),
+        ],
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('Device Sync'), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    expect(find.byType(DesignSystemFloatingActionButton), findsOneWidget);
+  });
+
+  testWidgets('keeps established projects visible when a reload fails', (
+    tester,
+  ) async {
+    final groups = [buildWorkGroup()];
+    final failedReload =
+        AsyncError<List<ProjectCategoryGroup>>(
+          Exception('background refresh failed'),
+          StackTrace.empty,
+        ).copyWithPrevious(
+          AsyncData(groups),
+          isRefresh: false,
+        );
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const ProjectsTabPage(),
+        theme: withOverrides(ThemeData.dark(useMaterial3: true)),
+        overrides: [
+          projectsOverviewProvider.overrideWith(
+            (ref) => Stream.value(ProjectsOverviewSnapshot(groups: groups)),
+          ),
+          visibleProjectGroupsProvider.overrideWith((ref) => failedReload),
+        ],
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('Device Sync'), findsOneWidget);
+    expect(find.text('Error'), findsNothing);
+    expect(find.byType(DesignSystemFloatingActionButton), findsOneWidget);
   });
 
   testWidgets('shows localized error message on failure', (tester) async {
@@ -929,8 +1172,7 @@ void main() {
 
   group('_ProjectsTabActiveFilters category resolution', () {
     testWidgets(
-      'a selected categoryId that is not present in the overview is '
-      'silently skipped (no chip rendered) and does not crash',
+      'a selected categoryId that is not present remains visible and removable',
       (tester) async {
         await pumpPage(
           tester,
@@ -945,7 +1187,8 @@ void main() {
             .setSelectedCategoryIds(const {'ghost-category'});
         await tester.pumpAndSettle();
 
-        expect(find.byType(ActiveFilterChip), findsNothing);
+        expect(find.byType(ActiveFilterChip), findsOneWidget);
+        expect(find.text('Unavailable category'), findsOneWidget);
       },
     );
 

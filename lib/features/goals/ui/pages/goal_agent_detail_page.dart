@@ -48,8 +48,6 @@ import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_dock.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_exposure_tracker.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_widgets.dart';
-import 'package:lotti/features/projects/ui/widgets/expandable_report_section.dart'
-    show formatCountdown;
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';

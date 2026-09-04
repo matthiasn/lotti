@@ -164,6 +164,10 @@ class AgentService {
   bool abortRunningWake(String agentId) =>
       orchestrator.abortRunningWake(agentId);
 
+  /// Waits for executor work that may outlive an abort signal.
+  Future<void> waitForAgentExecutors(String agentId) =>
+      orchestrator.waitForAgentExecutors(agentId);
+
   /// Marks the standing report stale without scheduling inference.
   Future<void> markReportStale(String agentId) =>
       orchestrator.markReportStale(agentId);

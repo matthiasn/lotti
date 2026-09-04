@@ -13,7 +13,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 /// "No project" placeholder; the same `onProjectTap` callback still fires so
 /// users can attach one. Without a category that placeholder is dropped, since
 /// no project can be picked yet — a project that *is* linked always shows. See
-/// [_HeroCrumb].
+/// [TaskHierarchyCrumb].
 @immutable
 class DesktopTaskHeaderProject {
   const DesktopTaskHeaderProject({required this.label});
@@ -265,7 +265,7 @@ class _DesktopTaskHeaderState extends State<DesktopTaskHeader> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (hasCrumb) ...[
-            _HeroCrumb(
+            TaskHierarchyCrumb(
               category: widget.data.category,
               project: widget.data.project,
               onCategoryTap: widget.onCategoryTap,
@@ -358,18 +358,21 @@ class _DesktopTaskHeaderState extends State<DesktopTaskHeader> {
 /// the new task — `null` included — so a task legitimately reaches this widget
 /// with no category and a project. Gating on the category alone would hide
 /// membership the user has.
-class _HeroCrumb extends StatelessWidget {
-  const _HeroCrumb({
+class TaskHierarchyCrumb extends StatelessWidget {
+  const TaskHierarchyCrumb({
     required this.category,
     required this.project,
     required this.onCategoryTap,
     required this.onProjectTap,
+    this.showProjectSegment = true,
+    super.key,
   });
 
   final DesktopTaskHeaderCategory? category;
   final DesktopTaskHeaderProject? project;
   final VoidCallback? onCategoryTap;
   final VoidCallback? onProjectTap;
+  final bool showProjectSegment;
 
   @override
   Widget build(BuildContext context) {
@@ -431,7 +434,7 @@ class _HeroCrumb extends StatelessWidget {
         // The separator needs something real on both of its sides: a linked
         // project after a category. An uncategorized task with a project shows
         // the project segment alone, flush with the rail.
-        if (category != null) ...[
+        if (showProjectSegment && category != null) ...[
           SizedBox(width: tokens.spacing.step3),
           Text(
             '/',
@@ -441,19 +444,20 @@ class _HeroCrumb extends StatelessWidget {
           ),
           SizedBox(width: tokens.spacing.step3),
         ],
-        Flexible(
-          child: _CrumbSegment(
-            onTap: onProjectTap,
-            builder: (context, inkColor) => Text(
-              projectName,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              // Keep an unset project legible (medium emphasis) for
-              // low-vision users rather than fading it to near-invisible.
-              style: crumbStyle.copyWith(color: inkColor),
+        if (showProjectSegment)
+          Flexible(
+            child: _CrumbSegment(
+              onTap: onProjectTap,
+              builder: (context, inkColor) => Text(
+                projectName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                // Keep an unset project legible (medium emphasis) for
+                // low-vision users rather than fading it to near-invisible.
+                style: crumbStyle.copyWith(color: inkColor),
+              ),
             ),
           ),
-        ),
       ],
     );
   }

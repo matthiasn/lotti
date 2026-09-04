@@ -158,7 +158,7 @@ void main() {
               builder: (context) => FilledButton(
                 onPressed: () => AgentModelSheet.show(
                   context: context,
-                  taskId: taskId,
+                  entityId: taskId,
                   agentId: 'agent-1',
                 ),
                 child: const Text('Open'),
@@ -647,6 +647,36 @@ void main() {
     expect(setup.mode, AgentInferenceSetupMode.configured);
     expect(setup.baseProfileId, profile.id);
     expect(find.textContaining('Using Saved profile'), findsWidgets);
+  });
+
+  testWidgets('project category default keeps inference configured', (
+    tester,
+  ) async {
+    when(() => journalDb.journalEntityById('project-1')).thenAnswer(
+      (_) async => makeTestProject(id: 'project-1', categoryId: 'category-1'),
+    );
+    when(() => journalDb.getCategoryById('category-1')).thenAnswer(
+      (_) async => CategoryTestUtils.createTestCategory(
+        id: 'category-1',
+        defaultProfileId: profile.id,
+      ),
+    );
+    await openSheet(tester, taskId: 'project-1');
+    await openProfilePage(tester);
+    await tester.tap(find.text('Copy category default'));
+    await tester.pump();
+
+    final setup =
+        verify(
+              () => service.updateAgentInferenceSetup(
+                agentId: 'agent-1',
+                setup: captureAny(named: 'setup'),
+              ),
+            ).captured.single
+            as AgentInferenceSetup;
+    expect(setup.mode, AgentInferenceSetupMode.configured);
+    expect(setup.baseProfileId, profile.id);
+    expect(setup.originEntityId, 'category-1');
   });
 
   testWidgets('broken profile routes and empty model state remain explicit', (

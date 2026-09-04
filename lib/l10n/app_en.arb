@@ -5790,8 +5790,13 @@
   "panasScaleVerySlightlyOrNotAtAll": "Very slightly or not at all",
   "privateLabel": "Private",
   "privateSwitchDescription": "Only visible when private entries are shown",
+  "projectActionAddTask": "Add task",
+  "projectActionArchive": "Archive",
+  "projectActionDelete": "Delete",
+  "projectActionEdit": "Edit project",
   "projectAgentNotProvisioned": "No project agent has been provisioned for this project yet.",
   "projectAgentSectionTitle": "Agent",
+  "projectArchiveSuccess": "Project archived",
   "projectCountSummary": "{count, plural, one{{count} project} other{{count} projects}}",
   "@projectCountSummary": {
     "placeholders": {
@@ -5802,6 +5807,10 @@
   },
   "projectCreateButton": "New Project",
   "projectCreateTitle": "Create Project",
+  "projectDeleteConfirmBody": "The project will be removed. Its tasks will stay in your journal.",
+  "projectDeleteConfirmTitle": "Delete this project?",
+  "projectDeleteFailed": "Failed to delete project. Please try again.",
+  "projectDeleteSuccess": "Project deleted",
   "projectDetailTitle": "Project Details",
   "projectErrorCreateFailed": "Error creating project.",
   "projectErrorLoadFailed": "Failed to load project data.",
@@ -5813,6 +5822,17 @@
   "projectHealthBandOnTrack": "On Track",
   "projectHealthBandSurviving": "Surviving",
   "projectHealthBandWatch": "Watch",
+  "projectHealthConfidence": "{confidence}% confidence",
+  "@projectHealthConfidence": {
+    "placeholders": {
+      "confidence": {
+        "type": "int"
+      }
+    }
+  },
+  "projectHealthEmptyBody": "Run the project agent to create an assessment from the latest project and task activity.",
+  "projectHealthEmptyTitle": "No health assessment yet",
+  "projectHealthRunNow": "Run report",
   "projectHealthSectionTitle": "Project health",
   "projectHealthSummary": "{projectCount, plural, one{{projectCount} project} other{{projectCount} projects}}, {taskCount, plural, one{{taskCount} task} other{{taskCount} tasks}}",
   "@projectHealthSummary": {
@@ -5841,10 +5861,21 @@
   "projectNotFound": "Project not found",
   "projectPickerLabel": "Project",
   "projectPickerUnassigned": "No project",
+  "projectPickerUpdateFailed": "Could not change this task's project. Check its category and privacy, then try again.",
+  "@projectPickerUpdateFailed": {
+    "description": "Error shown when a task-project assignment is rejected after the picker was opened."
+  },
   "projectRecommendationDismissTooltip": "Dismiss",
   "projectRecommendationResolveTooltip": "Mark resolved",
   "projectRecommendationsTitle": "Recommended next steps",
   "projectRecommendationUpdateError": "Couldn't update the recommendation. Please try again.",
+  "projectsClearFilters": "Clear filters",
+  "projectsEmptyBody": "Create a project to bring related tasks, progress, and agent insight together.",
+  "projectsEmptyCurrentBody": "Completed and archived projects are out of the way. Switch to All to revisit them.",
+  "projectsEmptyCurrentTitle": "No current projects",
+  "projectsEmptyFilteredBody": "Adjust your search or filters to bring matching projects back into view.",
+  "projectsEmptyFilteredTitle": "No projects match this view",
+  "projectsEmptyTitle": "Start your first project",
   "projectsFilterStatusLabel": "Status:",
   "projectsFilterTooltip": "Filter projects",
   "projectShowcaseAiReportTitle": "AI Report",
@@ -5925,6 +5956,13 @@
   },
   "projectShowcaseUsefulness": "Usefulness",
   "projectShowcaseViewBlocker": "View blocker",
+  "projectsScopeAll": "All",
+  "projectsScopeCurrent": "Current",
+  "projectsSortActionable": "Needs attention",
+  "projectsSortName": "Name",
+  "projectsSortRecent": "Recently updated",
+  "projectsSortTargetDate": "Target date",
+  "projectsSortTooltip": "Sort projects",
   "projectStatusActive": "Active",
   "projectStatusArchived": "Archived",
   "projectStatusChangeTitle": "Change status",
@@ -5944,7 +5982,9 @@
       }
     }
   },
+  "projectsUnavailableCategory": "Unavailable category",
   "projectTargetDateLabel": "Target Date",
+  "projectTaskProgressNone": "No tasks",
   "projectTitleLabel": "Project Title",
   "projectTitleRequired": "Project title cannot be empty",
   "promptDefaultModelBadge": "Default",

@@ -136,6 +136,7 @@ import 'package:lotti/features/onboarding/services/onboarding_task_structuring_s
 import 'package:lotti/features/profiles/service/profile_switcher.dart';
 import 'package:lotti/features/profiles/service/world_handle.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
+import 'package:lotti/features/projects/service/project_lifecycle_service.dart';
 import 'package:lotti/features/ratings/repository/rating_repository.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
@@ -1289,6 +1290,9 @@ class MockGoalHabitCompletionService extends Mock
 class MockRatingRepository extends Mock implements RatingRepository {}
 
 class MockProjectRepository extends Mock implements ProjectRepository {}
+
+class MockProjectLifecycleService extends Mock
+    implements ProjectLifecycleService {}
 
 class MockRelationshipRepository extends Mock
     implements RelationshipRepository {}

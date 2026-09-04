@@ -348,7 +348,7 @@ class _ProfileSection extends ConsumerWidget {
         : () => AgentModelSheet.show(
             context: context,
             agentId: agentId,
-            taskId: taskId,
+            entityId: taskId,
           );
     // This row reports and edits the task/goal/planner setup path. A
     // relationship agent is on none of them: it owns no task and no

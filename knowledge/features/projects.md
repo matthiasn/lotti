@@ -5,17 +5,21 @@ description: The middle layer between categories and tasks — a denormalized me
 resource: ../../lib/features/projects
 tags: [projects, grouping, health, agents]
 status: stable
-generated: { by: codex/gpt-5, at: 2026-09-04T21:30:00Z }
+generated: { by: codex/gpt-5, at: 2026-09-04T12:00:00Z }
 stale_after: 2027-03-01
 sources:
   - id: src
     resource: ../../lib/features/projects
     title: Projects feature source
-    last_modified: 2026-08-15
+    last_modified: 2026-08-16
   - id: queries
     resource: ../../lib/database/database_project_queries.dart
     title: Project queries and the coalescing wave
     last_modified: 2026-06-08
+  - id: lifecycle
+    resource: ../../lib/features/projects/service/project_lifecycle_service.dart
+    title: Coordinated project deletion and agent compensation
+    last_modified: 2026-09-04
 ---
 
 Projects group related tasks, power the projects tab, and integrate with the
@@ -44,8 +48,7 @@ flowchart TD
 
 A project is a `JournalEntity.project` variant. `ProjectData` carries `title`,
 `status`, `statusHistory`, `targetDate`, `dateFrom` and `dateTo`, plus free-form
-body text through `entryText` — which the detail page uses as fallback when no
-project-agent TL;DR exists yet.
+body text through `entryText`.
 
 **`ProjectStatus` has six variants**: `open`, `active`, `monitoring`, `onHold`
 (with a **required reason**), `completed`, `archived`.
@@ -82,7 +85,8 @@ before writing anything; it does not silently downgrade either context. If an
 assignment race requires cleanup and that cleanup cannot be confirmed, creation
 throws instead of claiming success. The Tasks tab catches that failure, shows a
 localized error, and does not navigate to the failed task.
-Project-agent
+The task header filters its project picker to the same normalized privacy, so
+it does not offer a choice the repository must reject. Project-agent
 `create_task` calls pass the project's privacy into task creation before
 linking. A category can still move after linking, and that
 write is nowhere near the link, so the category rule has to be re-checked there
@@ -192,6 +196,29 @@ The tab is driven by `ProjectsOverviewSnapshot`, `ProjectCategoryGroup`,
 `ProjectListItemData`, `ProjectTaskRollupData` and `ProjectsFilter` — **not raw
 entities** — so the UI renders grouped rows without recomputing counts,
 categories and rollups in each widget.
+Project-agent one-liners are resolved in two bulk reads when the snapshot is
+assembled, then stored on each `ProjectListItemData`. Rows therefore render a
+stable subtitle without one provider/query chain per card, and local search
+matches the same one-liner text that the list displays. Background enrichment
+listens through `projectAgentOverviewUpdateStreamProvider`, which bulk-resolves
+the affected agent IDs and emits only when at least one is a project agent;
+unrelated task, event, day and improver writes therefore do not rebuild the
+project query, task rollups, links and reports. Background enrichment
+reloads preserve the last rendered snapshot, category-filter metadata, and
+create affordance until the replacement is ready. If agent enrichment fails,
+the replacement snapshot retains the last resolved one-liner for each surviving
+project instead of dropping visible subtitles and their searchable text. If an
+upstream repository refresh fails after data was rendered, the tab keeps that
+previous list instead of replacing it with a full-page error.
+
+The default `Current` scope keeps open, active, monitoring and on-hold work in
+view; `All` restores completed and archived projects. Projects sort by
+actionability, then target date and recent activity by default, with target
+date, recent and name alternatives. Category sections are collapsible, and
+completion uses the interactive accent rather than pretending low completion
+is a health warning. Projects with no tasks say so instead of showing a red
+zero-percent ring. First-run, current-empty and filtered-empty states each
+explain the state and offer the relevant recovery action.
 
 On desktop the overview and selected detail share the standard resizable
 list/detail traversal. Once a project is selected, Hide list enters focus mode:
@@ -209,15 +236,80 @@ measure with its one standard horizontal gutter, keeping report lines and cards
 readable when the list releases a wide canvas without double-insetting mobile
 content.
 
-# Editor persistence
+Project detail actions preserve workspace continuity. Edit uses the
+Projects-owned `/projects/<id>/edit` route on mobile and desktop, with an
+explicit return path back to the selected project. The editor owns the complete
+user-authored project record — title, description, category, status and target
+date — while the detail surface keeps compact quick edits for category, status
+and target date. Both paths write through the same detail controller, so draft
+rebasing and save-failure behavior stay consistent. Add task creates a
+project-linked task with the project's privacy, serializes concurrent taps and
+project saves,
+awaits the category's default task-agent assignment, then opens the task. If
+that optional assignment fails after creation, the page reports the error but
+still opens the already-linked task, preventing a retry from creating another
+blank task. Back, system-back, task-row navigation and the overflow menu remain
+locked until this mutation settles, so the page cannot be disposed between
+creating the blank task and opening its editor. If
+the explicit project link loses a race with sync or otherwise fails, creation
+soft-deletes the new task before surfacing the error, preventing blank orphans.
+The inline editor rebases only locally changed fields onto a concurrently synced
+project; title and description controllers synchronize independently, so a
+dirty description does not leave a clean, remotely updated title stale. The
+description rebase carries only the local plain text onto the synced
+`EntryText`, preserving newer markdown, rich-text and geolocation payloads. Save
+locks Cancel, Back and system-back until persistence settles, preventing a
+discarded route from racing the still-running write. The controller invalidates
+pending edits when sync reports that the project was deleted. Description edits
+replace only `EntryText.plainText`, preserving any markdown, rich-text and
+geolocation payload attached to the project. The project
+lookup is applied before task rollups are loaded, so a
+slow or failed task query cannot delay tombstone handling. Overlapping reloads
+are generation-guarded, so an older read that finishes after a newer deletion
+cannot repopulate the editor and resurrect the tombstoned project on save.
+Cancel and system-back exits discard the shared
+editor draft before returning to the still-mounted desktop detail, so canceled
+values cannot appear there or leak into a later inline save.
 
-`ProjectDetailController` retains the persisted baseline and local draft.
-Reloads apply only locally changed fields to the latest project, preserving
-unrelated synced fields and rich-text payloads when plain text changes.
-A generation guard discards stale reload completions. A tombstone clears both
-baseline and draft before loading tasks, so saving cannot resurrect a deleted
-project. Repository writes verify ambiguous negative persistence results against
-the committed row before reporting failure.
+`ProjectLifecycleService` owns project deletion independently of the widget. It
+resolves every live linked project agent, aborts their running wakes and retires
+all of them, cancels queued/drain-owned jobs, and waits for their underlying
+executors to settle before soft-deleting the project. An abort signal releases
+the runner without cancelling its Dart future; the settlement barrier prevents
+late tool/report writes from following the project tombstone. Immediately before that tombstone
+write it re-reads the project inside the shared mutation coordinator, so the
+vector clock cannot come from the stale entity captured before the confirmation
+modal. Duplicate identities, runtime subscriptions and pending work cannot
+outlive the project. A
+retirement error aborts deletion instead of claiming success; when that error
+followed a committed lifecycle write, the deletion path re-reads the agent and
+restores its exact prior lifecycle before returning; dormant agents remain
+dormant and do not regain subscriptions. After a failed or throwing project
+write, the path verifies the tombstone before compensation. A committed
+tombstone is treated as successful deletion; if deletion cannot be confirmed,
+the reversible agent retirement is compensated so a live project cannot lose
+its automation because the verification read also failed. Lifecycle compensation
+attempts every retired identity even if one restore fails, then restores active
+subscriptions. The detail keeps the last resolved identity during provider
+reloads; route disposal cannot interrupt the service operation.
+
+```mermaid
+stateDiagram-v2
+  [*] --> ResolvingAgents
+  ResolvingAgents --> RetiringAgents: lookup succeeds
+  ResolvingAgents --> Failed: lookup fails
+  RetiringAgents --> DeletingProject: retirements and executor settlement complete
+  RetiringAgents --> RestoringAgents: retirement throws
+  DeletingProject --> Deleted: tombstone confirmed
+  DeletingProject --> RestoringAgents: tombstone unconfirmed
+  RestoringAgents --> Failed: compensation attempted for every retired agent
+  Deleted --> [*]
+  Failed --> [*]
+```
+
+Task creation and deletion
+each hold the shared detail mutation lock through completion, preventing
+overlapping edits, task creation, or deletion.
 
 # Health is agent-authored
 
@@ -226,17 +318,34 @@ flowchart LR
   Report["Latest project-agent report"] --> Metrics["projectHealthMetricsFromReport"]
   Metrics --> HealthProv["projectHealthMetricsProvider"]
   Recos["projectRecommendationsProvider"] --> UI
-  HealthProv --> UI["Health chip / header, panel, detail sections"]
+  HealthProv --> UI["Unified project-agent summary card"]
 ```
 
 The detail pages pull project entity data, linked tasks, the latest project-agent
 report, parsed health metrics from it, scheduled wake state, active
-recommendations, derived presentation data, and the wake controls.
+recommendations, pending project change sets, derived presentation data, and
+the wake controls. The read-first surface uses the same intelligence-card
+chrome, identity route, report expansion, automation toggle, countdown,
+run-now action and setup route as Task Details. Project health and durable
+recommendation/change-set actions remain project-owned content inside that one
+surface instead of becoming competing cards or duplicating the report in the
+editor.
 
 **There is no aggregator object** — each surface watches the providers it needs.
 
-**If the latest report has no parseable health payload yet, the app shows no
-health state** rather than falling back to invented local heuristics.
+**If the latest report has no parseable health payload yet, the app shows a
+neutral unassessed state** rather than falling back to invented local
+heuristics. Once metrics exist, the detail leads with the agent-authored band,
+rationale and optional confidence; it never converts a categorical assessment
+into a fabricated numeric score. Task counts remain separate live rollups. Blocker navigation appears only when blocked tasks exist and opens
+the first actionable blocker. A project with no agent gets distinct
+provisioning guidance and an assignment action rather than an unavailable Run
+report instruction.
+
+The user-authored project description and the agent report are distinct fields
+in the detail read model. A missing report renders the neutral report-empty
+state; it never repeats the project description under an AI-authored heading
+or presents the project's own modification time as report freshness.
 
 # When the project agent actually wakes
 

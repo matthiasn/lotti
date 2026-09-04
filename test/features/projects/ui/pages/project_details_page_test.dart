@@ -3,19 +3,30 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/misc.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
+import 'package:lotti/features/agents/state/task_agent_providers.dart';
+import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/state/inference_profile_controller.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/projects/repository/project_repository.dart';
+import 'package:lotti/features/projects/service/project_lifecycle_service.dart';
 import 'package:lotti/features/projects/state/project_detail_controller.dart';
 import 'package:lotti/features/projects/state/project_detail_record_provider.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
 import 'package:lotti/features/projects/ui/pages/project_details_page.dart';
 import 'package:lotti/features/projects/ui/widgets/project_mobile_detail_content.dart';
+import 'package:lotti/features/projects/ui/widgets/project_recommendations_panel.dart';
 import 'package:lotti/features/projects/ui/widgets/project_tasks_panel.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -28,6 +39,8 @@ import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../agents/test_data/entity_factories.dart';
+import '../../../agents/test_data/template_factories.dart';
+import '../../../ai/test_utils.dart';
 import '../../../categories/test_utils.dart';
 import '../../test_utils.dart';
 
@@ -56,6 +69,15 @@ class _TestProjectDetailController extends ProjectDetailController {
   Future<void> saveChanges() async {}
 }
 
+class _TestInferenceProfileController extends InferenceProfileController {
+  _TestInferenceProfileController(this.profiles);
+
+  final List<AiConfig> profiles;
+
+  @override
+  Stream<List<AiConfig>> build() => Stream.value(profiles);
+}
+
 /// A tracking variant that records calls to [updateCategoryId],
 /// [updateTargetDate], and [saveChanges] for assertion.
 class _TrackingProjectDetailController extends ProjectDetailController {
@@ -66,6 +88,7 @@ class _TrackingProjectDetailController extends ProjectDetailController {
 
   final List<String?> updatedCategoryIds = [];
   final List<DateTime?> updatedTargetDates = [];
+  final List<ProjectStatus> updatedStatuses = [];
   int saveChangesCallCount = 0;
 
   @override
@@ -85,11 +108,37 @@ class _TrackingProjectDetailController extends ProjectDetailController {
   }
 
   @override
-  void updateStatus(ProjectStatus newStatus) {}
+  void updateStatus(ProjectStatus newStatus) {
+    updatedStatuses.add(newStatus);
+  }
 
   @override
   Future<void> saveChanges() async {
     saveChangesCallCount++;
+  }
+}
+
+class _FailingProjectDetailController extends ProjectDetailController {
+  _FailingProjectDetailController(this._initialState) : super(_projectId);
+
+  final ProjectDetailState _initialState;
+  int discardCalls = 0;
+
+  @override
+  ProjectDetailState build() => _initialState;
+
+  @override
+  void updateStatus(ProjectStatus newStatus) {}
+
+  @override
+  Future<void> saveChanges() async {
+    state = state.copyWith(error: ProjectDetailError.updateFailed);
+  }
+
+  @override
+  void discardChanges() {
+    discardCalls++;
+    state = state.copyWith(error: null, hasChanges: false);
   }
 }
 
@@ -103,11 +152,15 @@ const _projectId = 'test-project-id';
 List<Override> _baseOverrides({
   required ProjectDetailState controllerState,
   required FutureOr<ProjectRecord?> Function(Ref) recordOverride,
+  ProjectDetailController Function()? controllerOverride,
+  AgentDomainEntity? projectAgent,
+  Override? projectAgentOverride,
+  ProjectByIdResolver? resolveProjectById,
   List<Override> extraOverrides = const [],
 }) {
   return [
     projectDetailControllerProvider(_projectId).overrideWith(
-      () => _TestProjectDetailController(controllerState),
+      controllerOverride ?? () => _TestProjectDetailController(controllerState),
     ),
     projectDetailRecordProvider(_projectId).overrideWith(
       (ref) => recordOverride(ref),
@@ -115,7 +168,19 @@ List<Override> _baseOverrides({
     projectDetailNowProvider.overrideWithValue(
       () => DateTime(2026, 3, 28, 9, 30),
     ),
-    projectAgentProvider(_projectId).overrideWith((ref) async => null),
+    projectAgentOverride ??
+        projectAgentProvider(_projectId).overrideWith(
+          (ref) async => projectAgent,
+        ),
+    projectRecommendationsProvider(
+      _projectId,
+    ).overrideWith((ref) async => []),
+    projectPendingChangeSetsProvider(
+      _projectId,
+    ).overrideWith((ref) async => []),
+    projectByIdResolverProvider.overrideWithValue(
+      resolveProjectById ?? (_) async => controllerState.project,
+    ),
     agentIsRunningProvider.overrideWith(
       (ref, agentId) => Stream.value(false),
     ),
@@ -131,6 +196,28 @@ void main() {
 
   final testRecord = makeTestProjectRecord(project: testProject);
 
+  test('project resolver uses the current repository snapshot', () async {
+    final repository = MockProjectRepository();
+    final project = makeTestProject(
+      id: 'resolver-project',
+      categoryId: 'latest-category',
+    );
+    when(
+      () => repository.getProjectById(project.id),
+    ).thenAnswer((_) async => project);
+    final container = ProviderContainer(
+      overrides: [
+        projectRepositoryProvider.overrideWithValue(repository),
+      ],
+    );
+    addTearDown(container.dispose);
+    final resolved = await container.read(projectByIdResolverProvider)(
+      project.id,
+    );
+    expect(resolved, project);
+    verify(() => repository.getProjectById(project.id)).called(1);
+  });
+
   setUpAll(registerAllFallbackValues);
 
   setUp(() async {
@@ -145,11 +232,19 @@ void main() {
     WidgetTester tester, {
     required ProjectDetailState controllerState,
     ProjectRecord? record,
+    ProjectDetailController Function()? controllerOverride,
+    AgentDomainEntity? projectAgent,
+    Override? projectAgentOverride,
+    ProjectByIdResolver? resolveProjectById,
     List<Override> extraOverrides = const [],
   }) async {
     final overrides = _baseOverrides(
       controllerState: controllerState,
       recordOverride: (_) => record,
+      controllerOverride: controllerOverride,
+      projectAgent: projectAgent,
+      projectAgentOverride: projectAgentOverride,
+      resolveProjectById: resolveProjectById,
       extraOverrides: extraOverrides,
     );
 
@@ -170,6 +265,45 @@ void main() {
   }
 
   group('ProjectDetailsPage', () {
+    test(
+      'default task creator uses the project-scoped creation path',
+      () async {
+        final mockRepository = MockProjectRepository();
+        getIt.registerSingleton<ProjectRepository>(mockRepository);
+        when(
+          () => mockRepository.getProjectById(_projectId),
+        ).thenAnswer((_) async => null);
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        final created = await container.read(projectTaskCreatorProvider)(
+          _projectId,
+        );
+
+        expect(created, isNull);
+        verify(() => mockRepository.getProjectById(_projectId)).called(1);
+      },
+    );
+
+    test(
+      'default task-agent assigner safely skips uncategorized tasks',
+      () async {
+        final mockService = MockTaskAgentService();
+        final container = ProviderContainer(
+          overrides: [
+            taskAgentServiceProvider.overrideWithValue(mockService),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await container.read(projectTaskAgentAssignerProvider)(
+          makeTestTask(id: 'uncategorized-task'),
+        );
+
+        verifyZeroInteractions(mockService);
+      },
+    );
+
     group('loading state', () {
       testWidgets(
         'shows CircularProgressIndicator when controller is loading with '
@@ -299,13 +433,13 @@ void main() {
           await tester.pump();
 
           expect(find.byType(ProjectMobileDetailContent), findsOneWidget);
-          expect(find.byType(TaskSummaryRow), findsWidgets);
 
           await tester.drag(
             find.byType(CustomScrollView),
             const Offset(0, -500),
           );
           await tester.pump();
+          expect(find.byType(TaskSummaryRow), findsWidgets);
 
           final scrollableState = tester.state<ScrollableState>(
             find.byType(Scrollable),
@@ -326,6 +460,55 @@ void main() {
                 .pixels,
             previousOffset,
           );
+        },
+      );
+
+      testWidgets(
+        'keeps rendered detail content after a transient reload error',
+        (tester) async {
+          final reloadTriggerProvider = StateProvider<int>((ref) => 0);
+          final container = ProviderContainer(
+            overrides: _baseOverrides(
+              controllerState: ProjectDetailState(
+                project: testProject,
+                linkedTasks: const [],
+                isLoading: false,
+                isSaving: false,
+                hasChanges: false,
+              ),
+              recordOverride: (ref) {
+                final reload = ref.watch(reloadTriggerProvider);
+                if (reload == 0) return testRecord;
+                throw StateError('transient agent report failure');
+              },
+            ),
+          );
+          addTearDown(container.dispose);
+
+          await tester.pumpWidget(
+            UncontrolledProviderScope(
+              container: container,
+              child: makeTestableWidget2(
+                Theme(
+                  data: DesignSystemTheme.dark(),
+                  child: const ProjectDetailsPage(projectId: _projectId),
+                ),
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          expect(find.byType(ProjectMobileDetailContent), findsOneWidget);
+          expect(find.text('Test Project'), findsOneWidget);
+
+          container.read(reloadTriggerProvider.notifier).state = 1;
+          await tester.pump();
+          await tester.pump();
+
+          expect(find.byType(ProjectMobileDetailContent), findsOneWidget);
+          expect(find.text('Test Project'), findsOneWidget);
+          expect(find.byType(ErrorStateWidget), findsNothing);
         },
       );
     });
@@ -463,7 +646,462 @@ void main() {
                 'onCancelScheduledReportWake should be null when no agent '
                 'identity exists — there is nothing to cancel without an agent',
           );
+          expect(content.hasProjectAgent, isFalse);
           expect(content.isRefreshingReport, isFalse);
+        },
+      );
+
+      testWidgets('does not offer assignment while agent lookup is pending', (
+        tester,
+      ) async {
+        final pendingAgent = Completer<AgentDomainEntity?>();
+        await pumpPageWithData(
+          tester,
+          controllerState: ProjectDetailState(
+            project: testProject,
+            linkedTasks: const [],
+            isLoading: false,
+            isSaving: false,
+            hasChanges: false,
+          ),
+          record: testRecord,
+          projectAgentOverride: projectAgentProvider(
+            _projectId,
+          ).overrideWith((ref) => pendingAgent.future),
+        );
+
+        final content = tester.widget<ProjectMobileDetailContent>(
+          find.byType(ProjectMobileDetailContent),
+        );
+        expect(content.onAssignAgent, isNull);
+        expect(content.hasProjectAgent, isTrue);
+        expect(find.text('Assign an agent'), findsNothing);
+
+        pendingAgent.complete();
+      });
+
+      testWidgets(
+        'assigns a project agent from the unprovisioned health state',
+        (tester) async {
+          final agentService = MockProjectAgentService();
+          ({
+            String projectId,
+            String templateId,
+            String displayName,
+            Set<String> allowedCategoryIds,
+            String? profileId,
+          })?
+          creation;
+          final template = makeTestTemplate(
+            id: 'project-template',
+            displayName: 'Project guide',
+            kind: AgentTemplateKind.projectAgent,
+          );
+          final profile = AiTestDataFactory.createTestProfile(
+            id: 'project-profile',
+            name: 'Project profile',
+          );
+          when(
+            () => agentService.createProjectAgent(
+              projectId: any(named: 'projectId'),
+              templateId: any(named: 'templateId'),
+              displayName: any(named: 'displayName'),
+              allowedCategoryIds: any(named: 'allowedCategoryIds'),
+              profileId: any(named: 'profileId'),
+            ),
+          ).thenAnswer(
+            (invocation) async {
+              creation = (
+                projectId: invocation.namedArguments[#projectId]! as String,
+                templateId: invocation.namedArguments[#templateId]! as String,
+                displayName: invocation.namedArguments[#displayName]! as String,
+                allowedCategoryIds:
+                    invocation.namedArguments[#allowedCategoryIds]!
+                        as Set<String>,
+                profileId: invocation.namedArguments[#profileId] as String?,
+              );
+              return makeTestIdentity(
+                agentId: 'assigned-project-agent',
+                kind: 'project_agent',
+              );
+            },
+          );
+
+          await pumpPageWithData(
+            tester,
+            controllerState: ProjectDetailState(
+              project: testProject,
+              linkedTasks: const [],
+              isLoading: false,
+              isSaving: false,
+              hasChanges: false,
+            ),
+            record: testRecord,
+            resolveProjectById: (_) async => testProject.copyWith(
+              meta: testProject.meta.copyWith(categoryId: 'latest-category'),
+            ),
+            extraOverrides: [
+              projectAgentServiceProvider.overrideWithValue(agentService),
+              agentTemplatesProvider.overrideWith(
+                (ref) async => [template],
+              ),
+              inferenceProfileControllerProvider.overrideWith(
+                () => _TestInferenceProfileController([profile]),
+              ),
+            ],
+          );
+
+          await tester.tap(find.text('Assign an agent'));
+          await tester.pump();
+          await tester.pump(const Duration(seconds: 1));
+          expect(find.text('Project profile'), findsOneWidget);
+
+          await tester.tap(find.text('Project profile'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+
+          expect(creation?.projectId, _projectId);
+          expect(creation?.templateId, 'project-template');
+          expect(creation?.displayName, testProject.data.title);
+          expect(creation?.allowedCategoryIds, {'latest-category'});
+          expect(creation?.profileId, 'project-profile');
+        },
+      );
+
+      testWidgets(
+        'explains when no project-agent template can be assigned',
+        (tester) async {
+          final agentService = MockProjectAgentService();
+          await pumpPageWithData(
+            tester,
+            controllerState: ProjectDetailState(
+              project: testProject,
+              linkedTasks: const [],
+              isLoading: false,
+              isSaving: false,
+              hasChanges: false,
+            ),
+            record: testRecord,
+            extraOverrides: [
+              projectAgentServiceProvider.overrideWithValue(agentService),
+              agentTemplatesProvider.overrideWith(
+                (ref) async => [makeTestTemplate()],
+              ),
+            ],
+          );
+
+          await tester.tap(find.text('Assign an agent'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
+
+          expect(
+            find.text('No templates available. Create one in Settings first.'),
+            findsOneWidget,
+          );
+          verifyNever(
+            () => agentService.createProjectAgent(
+              projectId: any(named: 'projectId'),
+              templateId: any(named: 'templateId'),
+              displayName: any(named: 'displayName'),
+              allowedCategoryIds: any(named: 'allowedCategoryIds'),
+              profileId: any(named: 'profileId'),
+            ),
+          );
+        },
+      );
+
+      testWidgets(
+        'offers only global and matching-category project templates',
+        (tester) async {
+          final agentService = MockProjectAgentService();
+          final categorizedProject = makeTestProject(
+            id: _projectId,
+            categoryId: 'cat-1',
+          );
+          final globalTemplate = makeTestTemplate(
+            id: 'global-project-template',
+            displayName: 'Global project guide',
+            kind: AgentTemplateKind.projectAgent,
+          );
+          final matchingTemplate = makeTestTemplate(
+            id: 'matching-project-template',
+            displayName: 'Matching project guide',
+            kind: AgentTemplateKind.projectAgent,
+            categoryIds: const {'cat-1'},
+          );
+          final foreignTemplate = makeTestTemplate(
+            id: 'foreign-project-template',
+            displayName: 'Foreign project guide',
+            kind: AgentTemplateKind.projectAgent,
+            categoryIds: const {'cat-2'},
+          );
+
+          await pumpPageWithData(
+            tester,
+            controllerState: ProjectDetailState(
+              project: categorizedProject,
+              linkedTasks: const [],
+              isLoading: false,
+              isSaving: false,
+              hasChanges: false,
+            ),
+            record: makeTestProjectRecord(project: categorizedProject),
+            extraOverrides: [
+              projectAgentServiceProvider.overrideWithValue(agentService),
+              agentTemplatesProvider.overrideWith(
+                (ref) async => [
+                  globalTemplate,
+                  matchingTemplate,
+                  foreignTemplate,
+                ],
+              ),
+            ],
+          );
+
+          await tester.tap(find.text('Assign an agent'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
+
+          expect(find.text('Global project guide'), findsOneWidget);
+          expect(find.text('Matching project guide'), findsOneWidget);
+          expect(find.text('Foreign project guide'), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'does not provision an agent after the project was deleted',
+        (tester) async {
+          final agentService = MockProjectAgentService();
+          final template = makeTestTemplate(
+            id: 'project-template',
+            kind: AgentTemplateKind.projectAgent,
+          );
+          final profile = AiTestDataFactory.createTestProfile(
+            id: 'project-profile',
+            name: 'Project profile',
+          );
+
+          await pumpPageWithData(
+            tester,
+            controllerState: ProjectDetailState(
+              project: testProject,
+              linkedTasks: const [],
+              isLoading: false,
+              isSaving: false,
+              hasChanges: false,
+            ),
+            record: testRecord,
+            resolveProjectById: (_) async => null,
+            extraOverrides: [
+              projectAgentServiceProvider.overrideWithValue(agentService),
+              agentTemplatesProvider.overrideWith(
+                (ref) async => [template],
+              ),
+              inferenceProfileControllerProvider.overrideWith(
+                () => _TestInferenceProfileController([profile]),
+              ),
+            ],
+          );
+
+          await tester.tap(find.text('Assign an agent'));
+          await tester.pump();
+          await tester.pump(const Duration(seconds: 1));
+          await tester.tap(find.text('Project profile'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
+
+          expect(find.text('Project not found'), findsOneWidget);
+          verifyNever(
+            () => agentService.createProjectAgent(
+              projectId: any(named: 'projectId'),
+              templateId: any(named: 'templateId'),
+              displayName: any(named: 'displayName'),
+              allowedCategoryIds: any(named: 'allowedCategoryIds'),
+              profileId: any(named: 'profileId'),
+            ),
+          );
+        },
+      );
+
+      testWidgets(
+        'rejects a template made incompatible while the assignment modal was open',
+        (tester) async {
+          final agentService = MockProjectAgentService();
+          final template = makeTestTemplate(
+            id: 'project-template',
+            kind: AgentTemplateKind.projectAgent,
+            categoryIds: const {'initial-category'},
+          );
+          final profile = AiTestDataFactory.createTestProfile(
+            id: 'project-profile',
+            name: 'Project profile',
+          );
+
+          await pumpPageWithData(
+            tester,
+            controllerState: ProjectDetailState(
+              project: testProject.copyWith(
+                meta: testProject.meta.copyWith(categoryId: 'initial-category'),
+              ),
+              linkedTasks: const [],
+              isLoading: false,
+              isSaving: false,
+              hasChanges: false,
+            ),
+            record: makeTestProjectRecord(
+              project: testProject.copyWith(
+                meta: testProject.meta.copyWith(categoryId: 'initial-category'),
+              ),
+            ),
+            resolveProjectById: (_) async => testProject.copyWith(
+              meta: testProject.meta.copyWith(categoryId: 'new-category'),
+            ),
+            extraOverrides: [
+              projectAgentServiceProvider.overrideWithValue(agentService),
+              agentTemplatesProvider.overrideWith(
+                (ref) async => [template],
+              ),
+              inferenceProfileControllerProvider.overrideWith(
+                () => _TestInferenceProfileController([profile]),
+              ),
+            ],
+          );
+
+          await tester.tap(find.text('Assign an agent'));
+          await tester.pump();
+          await tester.pump(const Duration(seconds: 1));
+          await tester.tap(find.text('Project profile'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
+
+          expect(
+            find.text('No templates available. Create one in Settings first.'),
+            findsOneWidget,
+          );
+          verifyNever(
+            () => agentService.createProjectAgent(
+              projectId: any(named: 'projectId'),
+              templateId: any(named: 'templateId'),
+              displayName: any(named: 'displayName'),
+              allowedCategoryIds: any(named: 'allowedCategoryIds'),
+              profileId: any(named: 'profileId'),
+            ),
+          );
+        },
+      );
+
+      testWidgets('reports project-agent assignment failures', (tester) async {
+        final agentService = MockProjectAgentService();
+        final template = makeTestTemplate(
+          id: 'failing-project-template',
+          kind: AgentTemplateKind.projectAgent,
+        );
+        final profile = AiTestDataFactory.createTestProfile(
+          id: 'failing-project-profile',
+          name: 'Failing project profile',
+        );
+        when(
+          () => agentService.createProjectAgent(
+            projectId: any(named: 'projectId'),
+            templateId: any(named: 'templateId'),
+            displayName: any(named: 'displayName'),
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            profileId: any(named: 'profileId'),
+          ),
+        ).thenThrow(StateError('create failed'));
+
+        await pumpPageWithData(
+          tester,
+          controllerState: ProjectDetailState(
+            project: testProject,
+            linkedTasks: const [],
+            isLoading: false,
+            isSaving: false,
+            hasChanges: false,
+          ),
+          record: testRecord,
+          extraOverrides: [
+            projectAgentServiceProvider.overrideWithValue(agentService),
+            agentTemplatesProvider.overrideWith(
+              (ref) async => [template],
+            ),
+            inferenceProfileControllerProvider.overrideWith(
+              () => _TestInferenceProfileController([profile]),
+            ),
+          ],
+        );
+
+        await tester.tap(find.text('Assign an agent'));
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+        await tester.tap(find.text('Failing project profile'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+
+        expect(
+          find.textContaining('Failed to create agent:'),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets(
+        'preserves the project agent while its provider reloads',
+        (tester) async {
+          tester.view
+            ..physicalSize = const Size(430, 1200)
+            ..devicePixelRatio = 1;
+          addTearDown(tester.view.resetPhysicalSize);
+          addTearDown(tester.view.resetDevicePixelRatio);
+          beamToNamedOverride = (_) {};
+          addTearDown(() => beamToNamedOverride = null);
+          final reloadGeneration = StateProvider<int>((ref) => 0);
+          final pendingReload = Completer<AgentDomainEntity?>();
+          final identity = makeTestIdentity(agentId: 'agent-project-1');
+          final lifecycle = MockProjectLifecycleService();
+          when(
+            () => lifecycle.deleteProject(_projectId),
+          ).thenAnswer((_) async => true);
+          await pumpPageWithData(
+            tester,
+            controllerState: ProjectDetailState(
+              project: testProject,
+              linkedTasks: const [],
+              isLoading: false,
+              isSaving: false,
+              hasChanges: false,
+            ),
+            record: testRecord,
+            projectAgentOverride:
+                projectAgentProvider(
+                  _projectId,
+                ).overrideWith((ref) async {
+                  if (ref.watch(reloadGeneration) == 0) return identity;
+                  return pendingReload.future;
+                }),
+            extraOverrides: [
+              projectLifecycleServiceProvider.overrideWithValue(lifecycle),
+            ],
+          );
+          final container = ProviderScope.containerOf(
+            tester.element(find.byType(ProjectDetailsPage)),
+          );
+
+          container.read(reloadGeneration.notifier).state = 1;
+          await tester.pump();
+
+          final content = tester.widget<ProjectMobileDetailContent>(
+            find.byType(ProjectMobileDetailContent),
+          );
+          expect(content.hasProjectAgent, isTrue);
+          content.onDelete!();
+          await tester.pumpAndSettle();
+          await tester.tap(find.text('Delete').last);
+          await tester.pumpAndSettle();
+
+          verify(
+            () => lifecycle.deleteProject(_projectId),
+          ).called(1);
+          pendingReload.complete(identity);
         },
       );
 
@@ -513,6 +1151,12 @@ void main() {
                   (ref, agentId) => Stream.value(false),
                 ),
                 projectAgentServiceProvider.overrideWithValue(agentService),
+                projectRecommendationsProvider(
+                  _projectId,
+                ).overrideWith((ref) async => []),
+                projectPendingChangeSetsProvider(
+                  _projectId,
+                ).overrideWith((ref) async => []),
               ],
               child: makeTestableWidget2(
                 Theme(
@@ -530,6 +1174,9 @@ void main() {
           );
           expect(content.onRefreshReport, isNotNull);
           expect(content.onCancelScheduledReportWake, isNotNull);
+          final actions = content.agentActions! as Column;
+          expect(actions.children.first, isA<ProjectRecommendationsPanel>());
+          expect(actions.children.last, isA<ChangeSetSummaryCard>());
 
           // Invoking the wired callbacks must dispatch to the project
           // agent service for the resolved agent ID, with the cancel path
@@ -681,6 +1328,10 @@ void main() {
             'onCategoryTap': content.onCategoryTap,
             'onTargetDateTap': content.onTargetDateTap,
             'onStatusTap': content.onStatusTap,
+            'onEdit': content.onEdit,
+            'onArchive': content.onArchive,
+            'onDelete': content.onDelete,
+            'onAddTask': content.onAddTask,
             'onTaskTap': content.onTaskTap,
           }.forEach(
             (name, callback) => expect(
@@ -691,6 +1342,408 @@ void main() {
           );
         },
       );
+
+      testWidgets('archive persists an archived status and reports success', (
+        tester,
+      ) async {
+        final initialState = ProjectDetailState(
+          project: testProject,
+          linkedTasks: const [],
+          isLoading: false,
+          isSaving: false,
+          hasChanges: false,
+        );
+        final tracking = _TrackingProjectDetailController(
+          initialState,
+          _projectId,
+        );
+        await pumpPageWithData(
+          tester,
+          controllerState: initialState,
+          record: testRecord,
+          controllerOverride: () => tracking,
+        );
+
+        final content = tester.widget<ProjectMobileDetailContent>(
+          find.byType(ProjectMobileDetailContent),
+        );
+        content.onArchive!();
+        await tester.pump();
+
+        expect(tracking.updatedStatuses.single, isA<ProjectArchived>());
+        expect(tracking.saveChangesCallCount, 1);
+      });
+
+      testWidgets('edit stays on the project-owned editor route', (
+        tester,
+      ) async {
+        final capturedPaths = <String>[];
+        beamToNamedOverride = capturedPaths.add;
+        addTearDown(() => beamToNamedOverride = null);
+        await pumpPageWithData(
+          tester,
+          controllerState: ProjectDetailState(
+            project: testProject,
+            linkedTasks: const [],
+            isLoading: false,
+            isSaving: false,
+            hasChanges: false,
+          ),
+          record: testRecord,
+        );
+
+        tester
+            .widget<ProjectMobileDetailContent>(
+              find.byType(ProjectMobileDetailContent),
+            )
+            .onEdit!();
+
+        final route = Uri.parse(capturedPaths.single);
+        expect(route.path, '/projects/test-project-id/edit');
+        expect(route.queryParameters, isEmpty);
+      });
+
+      testWidgets('failed inline actions roll back and surface the error', (
+        tester,
+      ) async {
+        final initialState = ProjectDetailState(
+          project: testProject,
+          linkedTasks: const [],
+          isLoading: false,
+          isSaving: false,
+          hasChanges: false,
+        );
+        final failing = _FailingProjectDetailController(initialState);
+        await pumpPageWithData(
+          tester,
+          controllerState: initialState,
+          record: testRecord,
+          controllerOverride: () => failing,
+        );
+
+        tester
+            .widget<ProjectMobileDetailContent>(
+              find.byType(ProjectMobileDetailContent),
+            )
+            .onArchive!();
+        await tester.pump();
+
+        expect(failing.discardCalls, 1);
+        expect(
+          find.text('Failed to update project. Please try again.'),
+          findsOneWidget,
+        );
+      });
+
+      for (final succeeds in [false, true]) {
+        testWidgets('confirmed deletion reports its result ($succeeds)', (
+          tester,
+        ) async {
+          final lifecycle = MockProjectLifecycleService();
+          when(
+            () => lifecycle.deleteProject(_projectId),
+          ).thenAnswer((_) async => succeeds);
+          beamToNamedOverride = (_) {};
+          addTearDown(() => beamToNamedOverride = null);
+          await pumpPageWithData(
+            tester,
+            controllerState: ProjectDetailState(
+              project: testProject,
+              linkedTasks: const [],
+              isLoading: false,
+              isSaving: false,
+              hasChanges: false,
+            ),
+            record: testRecord,
+            extraOverrides: [
+              projectLifecycleServiceProvider.overrideWithValue(lifecycle),
+            ],
+          );
+          tester
+              .widget<ProjectMobileDetailContent>(
+                find.byType(ProjectMobileDetailContent),
+              )
+              .onDelete!();
+          await tester.pumpAndSettle();
+          verifyNever(() => lifecycle.deleteProject(_projectId));
+          await tester.tap(find.text('Delete').last);
+          await tester.pumpAndSettle();
+          verify(() => lifecycle.deleteProject(_projectId)).called(1);
+          expect(
+            find.text(
+              succeeds
+                  ? 'Project deleted'
+                  : 'Failed to delete project. Please try again.',
+            ),
+            findsOneWidget,
+          );
+        });
+      }
+
+      testWidgets('cancelled confirmation does not invoke deletion', (
+        tester,
+      ) async {
+        final lifecycle = MockProjectLifecycleService();
+        await pumpPageWithData(
+          tester,
+          controllerState: ProjectDetailState(
+            project: testProject,
+            linkedTasks: const [],
+            isLoading: false,
+            isSaving: false,
+            hasChanges: false,
+          ),
+          record: testRecord,
+          extraOverrides: [
+            projectLifecycleServiceProvider.overrideWithValue(lifecycle),
+          ],
+        );
+        tester
+            .widget<ProjectMobileDetailContent>(
+              find.byType(ProjectMobileDetailContent),
+            )
+            .onDelete!();
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Cancel').last);
+        await tester.pumpAndSettle();
+        verifyZeroInteractions(lifecycle);
+        expect(find.byType(ProjectMobileDetailContent), findsOneWidget);
+      });
+
+      testWidgets('deletion can finish after the page unmounts', (
+        tester,
+      ) async {
+        final lifecycle = MockProjectLifecycleService();
+        final completion = Completer<bool>();
+        when(
+          () => lifecycle.deleteProject(_projectId),
+        ).thenAnswer((_) => completion.future);
+        await pumpPageWithData(
+          tester,
+          controllerState: ProjectDetailState(
+            project: testProject,
+            linkedTasks: const [],
+            isLoading: false,
+            isSaving: false,
+            hasChanges: false,
+          ),
+          record: testRecord,
+          extraOverrides: [
+            projectLifecycleServiceProvider.overrideWithValue(lifecycle),
+          ],
+        );
+        tester
+            .widget<ProjectMobileDetailContent>(
+              find.byType(ProjectMobileDetailContent),
+            )
+            .onDelete!();
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Delete').last);
+        await tester.pumpAndSettle();
+        verify(() => lifecycle.deleteProject(_projectId)).called(1);
+        await tester.pumpWidget(const SizedBox.shrink());
+        completion.complete(false);
+        await tester.pump();
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('add task assigns its category agent before navigating', (
+        tester,
+      ) async {
+        final task = makeTestTask(id: 'created-task', title: 'Created task');
+        final capturedPaths = <String>[];
+        final assignment = Completer<void>();
+        Task? assignedTask;
+        beamToNamedOverride = capturedPaths.add;
+        addTearDown(() => beamToNamedOverride = null);
+        await pumpPageWithData(
+          tester,
+          controllerState: ProjectDetailState(
+            project: testProject,
+            linkedTasks: const [],
+            isLoading: false,
+            isSaving: false,
+            hasChanges: false,
+          ),
+          record: testRecord,
+          extraOverrides: [
+            projectTaskCreatorProvider.overrideWithValue((projectId) async {
+              expect(projectId, _projectId);
+              return task;
+            }),
+            projectTaskAgentAssignerProvider.overrideWithValue((task) async {
+              assignedTask = task;
+              await assignment.future;
+            }),
+          ],
+        );
+
+        final addFuture = tester
+            .widget<ProjectMobileDetailContent>(
+              find.byType(ProjectMobileDetailContent),
+            )
+            .onAddTask!();
+        await tester.pump();
+
+        expect(assignedTask?.meta.id, 'created-task');
+        expect(capturedPaths, isEmpty);
+
+        assignment.complete();
+        await addFuture;
+        await tester.pump();
+
+        expect(capturedPaths, ['/tasks/created-task']);
+      });
+
+      testWidgets(
+        'assigns the category agent when the page unmounts during creation',
+        (tester) async {
+          final task = makeTestTask(id: 'created-task', title: 'Created task');
+          final creation = Completer<Task?>();
+          Task? assignedTask;
+          await pumpPageWithData(
+            tester,
+            controllerState: ProjectDetailState(
+              project: testProject,
+              linkedTasks: const [],
+              isLoading: false,
+              isSaving: false,
+              hasChanges: false,
+            ),
+            record: testRecord,
+            extraOverrides: [
+              projectTaskCreatorProvider.overrideWithValue(
+                (_) => creation.future,
+              ),
+              projectTaskAgentAssignerProvider.overrideWithValue((task) async {
+                assignedTask = task;
+              }),
+            ],
+          );
+
+          final addFuture = tester
+              .widget<ProjectMobileDetailContent>(
+                find.byType(ProjectMobileDetailContent),
+              )
+              .onAddTask!();
+          await tester.pump();
+          await tester.pumpWidget(const SizedBox.shrink());
+
+          creation.complete(task);
+          await addFuture;
+          await tester.pump();
+
+          expect(assignedTask?.meta.id, 'created-task');
+        },
+      );
+
+      testWidgets('agent assignment failure still opens the created task', (
+        tester,
+      ) async {
+        final task = makeTestTask(id: 'created-task', title: 'Created task');
+        final capturedPaths = <String>[];
+        beamToNamedOverride = capturedPaths.add;
+        addTearDown(() => beamToNamedOverride = null);
+        await pumpPageWithData(
+          tester,
+          controllerState: ProjectDetailState(
+            project: testProject,
+            linkedTasks: const [],
+            isLoading: false,
+            isSaving: false,
+            hasChanges: false,
+          ),
+          record: testRecord,
+          extraOverrides: [
+            projectTaskCreatorProvider.overrideWithValue((_) async => task),
+            projectTaskAgentAssignerProvider.overrideWithValue((_) async {
+              throw StateError('assignment failed');
+            }),
+          ],
+        );
+
+        await tester
+            .widget<ProjectMobileDetailContent>(
+              find.byType(ProjectMobileDetailContent),
+            )
+            .onAddTask!();
+        await tester.pump();
+        await tester.pump();
+
+        expect(capturedPaths, ['/tasks/created-task']);
+        expect(find.text('Error'), findsOneWidget);
+      });
+
+      testWidgets('add task failure stays put and reports an error', (
+        tester,
+      ) async {
+        final capturedPaths = <String>[];
+        beamToNamedOverride = capturedPaths.add;
+        addTearDown(() => beamToNamedOverride = null);
+        await pumpPageWithData(
+          tester,
+          controllerState: ProjectDetailState(
+            project: testProject,
+            linkedTasks: const [],
+            isLoading: false,
+            isSaving: false,
+            hasChanges: false,
+          ),
+          record: testRecord,
+          extraOverrides: [
+            projectTaskCreatorProvider.overrideWithValue((_) async => null),
+            projectTaskAgentAssignerProvider.overrideWithValue((_) async {}),
+          ],
+        );
+
+        await tester
+            .widget<ProjectMobileDetailContent>(
+              find.byType(ProjectMobileDetailContent),
+            )
+            .onAddTask!();
+        await tester.pump();
+        await tester.pump();
+
+        expect(capturedPaths, isEmpty);
+        expect(find.text('Error'), findsOneWidget);
+      });
+
+      testWidgets('task creator exceptions stay put and report an error', (
+        tester,
+      ) async {
+        final capturedPaths = <String>[];
+        beamToNamedOverride = capturedPaths.add;
+        addTearDown(() => beamToNamedOverride = null);
+        await pumpPageWithData(
+          tester,
+          controllerState: ProjectDetailState(
+            project: testProject,
+            linkedTasks: const [],
+            isLoading: false,
+            isSaving: false,
+            hasChanges: false,
+          ),
+          record: testRecord,
+          extraOverrides: [
+            projectTaskCreatorProvider.overrideWithValue((_) async {
+              throw StateError('create failed');
+            }),
+            projectTaskAgentAssignerProvider.overrideWithValue((_) async {}),
+          ],
+        );
+
+        await tester
+            .widget<ProjectMobileDetailContent>(
+              find.byType(ProjectMobileDetailContent),
+            )
+            .onAddTask!();
+        await tester.pump();
+        await tester.pump();
+
+        expect(tester.takeException(), isNull);
+        expect(capturedPaths, isEmpty);
+        expect(find.text('Error'), findsOneWidget);
+      });
     });
 
     /// Sizes the test surface tall enough for bottom-sheet / modal content to

@@ -1052,6 +1052,62 @@ void main() {
       },
     );
 
+    testWidgets('the picker hides projects with incompatible privacy', (
+      tester,
+    ) async {
+      final category = buildCategory(id: 'cat-proj', name: 'Design');
+      when(
+        () => mockCache.getCategoryById('cat-proj'),
+      ).thenReturn(category);
+
+      final publicProject = buildProject(
+        id: 'proj-public',
+        title: 'Public Project',
+      );
+      final privateProjectBase = buildProject(
+        id: 'proj-private',
+        title: 'Private Project',
+      );
+      final privateProject = privateProjectBase.copyWith(
+        meta: privateProjectBase.meta.copyWith(private: true),
+      );
+      final taskBase = buildTask(categoryId: 'cat-proj');
+      final task = taskBase.copyWith(
+        meta: taskBase.meta.copyWith(
+          categoryId: 'cat-proj',
+          private: true,
+        ),
+      );
+      final projectRepo = MockProjectRepository();
+      when(
+        () => projectRepo.updateStream,
+      ).thenAnswer((_) => const Stream<Set<String>>.empty());
+
+      final overrides = projectPickerOverrides(
+        task: task,
+        tracker: ToggleCallTracker(),
+        projectRepo: projectRepo,
+        projects: [publicProject, privateProject],
+      );
+
+      await tester.pumpWidget(
+        wrapWithProjectApp(overrides: overrides, task: task),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.tap(find.text('No project'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('Private Project'), findsOneWidget);
+      expect(find.text('Public Project'), findsNothing);
+      expect(
+        find.byType(DesignSystemSelectionRow),
+        findsNWidgets(2),
+      );
+    });
+
     testWidgets(
       'selecting "No project" in the picker calls unlinkTaskFromProject',
       (tester) async {
@@ -1078,6 +1134,7 @@ void main() {
           tracker: tracker,
           projectRepo: projectRepo,
           projects: [existingProject],
+          currentProject: existingProject,
         );
 
         await tester.pumpWidget(
@@ -1086,7 +1143,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        await tester.tap(find.text('No project'));
+        await tester.tap(find.text('Old'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -1147,6 +1204,65 @@ void main() {
         verify(
           () => projectRepo.linkTaskToProject(
             projectId: 'proj-1',
+            taskId: task.id,
+          ),
+        ).called(1);
+      },
+    );
+
+    testWidgets(
+      'keeps the picker open when a concurrent change rejects the link',
+      (tester) async {
+        final category = buildCategory(id: 'cat-proj', name: 'Design');
+        when(
+          () => mockCache.getCategoryById('cat-proj'),
+        ).thenReturn(category);
+
+        final project = buildProject(id: 'proj-rejected', title: 'Rejected');
+        final task = buildTask(categoryId: 'cat-proj');
+        final tracker = ToggleCallTracker();
+        final projectRepo = MockProjectRepository();
+        when(
+          () => projectRepo.updateStream,
+        ).thenAnswer((_) => const Stream<Set<String>>.empty());
+        when(
+          () => projectRepo.linkTaskToProject(
+            projectId: any(named: 'projectId'),
+            taskId: any(named: 'taskId'),
+          ),
+        ).thenAnswer((_) async => false);
+
+        await tester.pumpWidget(
+          wrapWithProjectApp(
+            overrides: projectPickerOverrides(
+              task: task,
+              tracker: tracker,
+              projectRepo: projectRepo,
+              projects: [project],
+            ),
+            task: task,
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        await tester.tap(find.text('No project'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.tap(find.text('Rejected'));
+        await tester.pump();
+
+        expect(find.text('Rejected'), findsOneWidget);
+        expect(
+          find.text(
+            "Could not change this task's project. Check its category and "
+            'privacy, then try again.',
+          ),
+          findsOneWidget,
+        );
+        verify(
+          () => projectRepo.linkTaskToProject(
+            projectId: 'proj-rejected',
             taskId: task.id,
           ),
         ).called(1);

@@ -95,7 +95,6 @@ ProjectListData buildProjectListDetailMockData() {
       ProjectRecord(
         project: deviceSync,
         category: workCategory,
-        healthScore: 78,
         healthMetrics: const ProjectHealthMetrics(
           band: ProjectHealthBand.watch,
           rationale:
@@ -153,7 +152,6 @@ Device Sync is progressing well. The sync engine core is complete and conflict r
       ProjectRecord(
         project: apiMigration,
         category: workCategory,
-        healthScore: 89,
         healthMetrics: const ProjectHealthMetrics(
           band: ProjectHealthBand.onTrack,
           rationale:
@@ -179,7 +177,6 @@ API Migration is on track after the auth adapter landed.
       ProjectRecord(
         project: ciCdPipeline,
         category: workCategory,
-        healthScore: 95,
         healthMetrics: const ProjectHealthMetrics(
           band: ProjectHealthBand.onTrack,
           rationale: 'The refreshed pipeline is stable and fully automated.',
@@ -199,7 +196,6 @@ API Migration is on track after the auth adapter landed.
       ProjectRecord(
         project: weeklyMealPrep,
         category: mealsCategory,
-        healthScore: 62,
         healthMetrics: const ProjectHealthMetrics(
           band: ProjectHealthBand.surviving,
           rationale:
@@ -220,7 +216,6 @@ API Migration is on track after the auth adapter landed.
       ProjectRecord(
         project: reactCourse,
         category: studyCategory,
-        healthScore: 45,
         healthMetrics: const ProjectHealthMetrics(
           band: ProjectHealthBand.atRisk,
           rationale:
@@ -241,7 +236,6 @@ API Migration is on track after the auth adapter landed.
       ProjectRecord(
         project: designSystemBook,
         category: studyCategory,
-        healthScore: 88,
         healthMetrics: const ProjectHealthMetrics(
           band: ProjectHealthBand.onTrack,
           rationale:

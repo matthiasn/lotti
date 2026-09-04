@@ -131,6 +131,43 @@ void main() {
       );
       semantics.dispose();
     });
+
+    testWidgets('preserves disabled menu items without invoking them', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const DesignSystemContextMenuButton(
+            tooltip: 'More actions',
+            items: [
+              DesignSystemContextMenuItem(
+                label: 'Archive',
+                icon: LottiIcons.archive,
+              ),
+            ],
+          ),
+        ),
+      );
+
+      await tester.tap(find.byIcon(LottiIcons.more));
+      await tester.pumpAndSettle();
+
+      final menu = tester.widget<DesignSystemContextMenu>(
+        find.byType(DesignSystemContextMenu),
+      );
+      expect(menu.items.single.onTap, isNull);
+      expect(
+        tester.getSemantics(find.text('Archive')),
+        matchesSemantics(
+          label: 'Archive',
+          isButton: true,
+          hasEnabledState: true,
+          // Explicitly assert the disabled value, not just its presence.
+          // ignore: avoid_redundant_argument_values
+          isEnabled: false,
+        ),
+      );
+    });
   });
 }
 

@@ -114,6 +114,197 @@ void main() {
       expect(result[1].projects, hasLength(2));
     });
 
+    test('actionable sort puts active work before open and completed work', () {
+      final result = applyProjectsFilter(
+        makeSnapshot(),
+        const ProjectsFilter(),
+      );
+
+      expect(
+        result.first.projects.map((item) => item.project.data.title),
+        ['CI Pipeline', 'Backend API', 'Legacy Cleanup'],
+      );
+    });
+
+    test(
+      'target-date sort puts nearest dated projects first and null last',
+      () {
+        ProjectListItemData dated(String title, DateTime? targetDate) {
+          return makeTestProjectListItemData(
+            project: makeTestProject(
+              title: title,
+              status: openStatus,
+              targetDate: targetDate,
+              categoryId: catEngineering.id,
+            ),
+            category: catEngineering,
+          );
+        }
+
+        final snapshot = ProjectsOverviewSnapshot(
+          groups: [
+            ProjectCategoryGroup(
+              categoryId: catEngineering.id,
+              category: catEngineering,
+              projects: [
+                dated('No date', null),
+                dated('Later', DateTime(2026, 9)),
+                dated('Sooner', DateTime(2026, 8)),
+              ],
+            ),
+          ],
+        );
+
+        final result = applyProjectsFilter(
+          snapshot,
+          const ProjectsFilter(sortMode: ProjectsSortMode.targetDate),
+        );
+        expect(
+          result.single.projects.map((item) => item.project.data.title),
+          ['Sooner', 'Later', 'No date'],
+        );
+      },
+    );
+
+    test(
+      'recent sort uses update time and title as its stable tie-breaker',
+      () {
+        ProjectListItemData item(String title, DateTime updatedAt) {
+          return makeTestProjectListItemData(
+            project: makeTestProject(
+              title: title,
+              createdAt: updatedAt,
+              categoryId: catEngineering.id,
+            ),
+            category: catEngineering,
+          );
+        }
+
+        final result = applyProjectsFilter(
+          ProjectsOverviewSnapshot(
+            groups: [
+              ProjectCategoryGroup(
+                categoryId: catEngineering.id,
+                category: catEngineering,
+                projects: [
+                  item('Beta', DateTime(2026, 8)),
+                  item('Zulu', DateTime(2026, 9)),
+                  item('Alpha', DateTime(2026, 8)),
+                ],
+              ),
+            ],
+          ),
+          const ProjectsFilter(sortMode: ProjectsSortMode.recent),
+        );
+
+        expect(
+          result.single.projects.map((item) => item.project.data.title),
+          ['Zulu', 'Alpha', 'Beta'],
+        );
+      },
+    );
+
+    test('name sort is case-insensitive', () {
+      ProjectListItemData item(String title) => makeTestProjectListItemData(
+        project: makeTestProject(
+          title: title,
+          categoryId: catEngineering.id,
+        ),
+        category: catEngineering,
+      );
+
+      final result = applyProjectsFilter(
+        ProjectsOverviewSnapshot(
+          groups: [
+            ProjectCategoryGroup(
+              categoryId: catEngineering.id,
+              category: catEngineering,
+              projects: [item('zebra'), item('Alpha'), item('beta')],
+            ),
+          ],
+        ),
+        const ProjectsFilter(sortMode: ProjectsSortMode.name),
+      );
+
+      expect(
+        result.single.projects.map((item) => item.project.data.title),
+        ['Alpha', 'beta', 'zebra'],
+      );
+    });
+
+    test('actionable sort prefers newer work after status and date ties', () {
+      ProjectListItemData item(String title, DateTime updatedAt) {
+        return makeTestProjectListItemData(
+          project: makeTestProject(
+            title: title,
+            status: openStatus,
+            targetDate: DateTime(2026, 9),
+            createdAt: updatedAt,
+            categoryId: catEngineering.id,
+          ),
+          category: catEngineering,
+        );
+      }
+
+      final result = applyProjectsFilter(
+        ProjectsOverviewSnapshot(
+          groups: [
+            ProjectCategoryGroup(
+              categoryId: catEngineering.id,
+              category: catEngineering,
+              projects: [
+                item('Older', DateTime(2026, 8)),
+                item('Newer', DateTime(2026, 8, 2)),
+              ],
+            ),
+          ],
+        ),
+        const ProjectsFilter(),
+      );
+
+      expect(
+        result.single.projects.map((item) => item.project.data.title),
+        ['Newer', 'Older'],
+      );
+    });
+
+    test(
+      'target-date sort handles a dated item already before an undated one',
+      () {
+        ProjectListItemData item(String title, DateTime? targetDate) {
+          return makeTestProjectListItemData(
+            project: makeTestProject(
+              title: title,
+              targetDate: targetDate,
+              categoryId: catEngineering.id,
+            ),
+            category: catEngineering,
+          );
+        }
+
+        final result = applyProjectsFilter(
+          ProjectsOverviewSnapshot(
+            groups: [
+              ProjectCategoryGroup(
+                categoryId: catEngineering.id,
+                category: catEngineering,
+                projects: [
+                  item('Dated', DateTime(2026, 8)),
+                  item('Undated', null),
+                ],
+              ),
+            ],
+          ),
+          const ProjectsFilter(sortMode: ProjectsSortMode.targetDate),
+        );
+
+        expect(
+          result.single.projects.map((item) => item.project.data.title),
+          ['Dated', 'Undated'],
+        );
+      },
+    );
+
     test('status filter includes only projects with matching status', () {
       final snapshot = makeSnapshot();
       const filter = ProjectsFilter(
@@ -517,6 +708,7 @@ void main() {
       ),
       textQuery: f.textQuery,
       searchMode: f.searchMode,
+      sortMode: f.sortMode,
     );
 
     glados.Glados<ProjectsFilter>(

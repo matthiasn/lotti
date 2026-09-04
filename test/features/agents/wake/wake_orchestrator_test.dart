@@ -7,6 +7,78 @@ void main() {
 
   // Owns subscription routing, notification matching, suppression, and lifecycle.
   group('WakeOrchestrator', () {
+    test(
+      'executor barrier covers every agent workspace but ignores other agents',
+      () {
+        fakeAsync((async) {
+          final first = Completer<Map<String, VectorClock>?>();
+          final second = Completer<Map<String, VectorClock>?>();
+          final unrelated = Completer<Map<String, VectorClock>?>();
+          orchestrator.wakeExecutor = (_, runKey, _, _) => switch (runKey) {
+            'first' => first.future,
+            'second' => second.future,
+            _ => unrelated.future,
+          };
+          queue.enqueue(makeJob(runKey: 'first', workspaceKey: 'day-a'));
+          unawaited(orchestrator.processNext());
+          async.flushMicrotasks();
+          expect(orchestrator.abortRunningWake('agent-1'), isTrue);
+          async.flushMicrotasks();
+          queue
+            ..enqueue(makeJob(runKey: 'second', workspaceKey: 'day-b'))
+            ..enqueue(makeJob(runKey: 'unrelated', agentId: 'agent-2'));
+          unawaited(orchestrator.processNext());
+          async.flushMicrotasks();
+          var settled = false;
+          unawaited(
+            orchestrator
+                .waitForAgentExecutors('agent-1')
+                .then((_) => settled = true),
+          );
+          first.complete(const {});
+          async.flushMicrotasks();
+          expect(settled, isFalse);
+          second.complete(const {});
+          async.flushMicrotasks();
+          expect(settled, isTrue);
+          expect(orchestrator.hasPendingOrActiveWake('agent-2'), isTrue);
+          unrelated.complete(const {});
+          async.flushMicrotasks();
+        });
+      },
+    );
+
+    for (final fails in [false, true]) {
+      test('executor settlement outlives an abort (fails: $fails)', () {
+        fakeAsync((async) {
+          final executor = Completer<Map<String, VectorClock>?>();
+          orchestrator.wakeExecutor = (_, _, _, _) => executor.future;
+          queue.enqueue(makeJob());
+          unawaited(orchestrator.processNext());
+          async.flushMicrotasks();
+          expect(orchestrator.abortRunningWake('agent-1'), isTrue);
+          async.flushMicrotasks();
+          expect(runner.isRunning('agent-1'), isFalse);
+          var settled = false;
+          unawaited(
+            orchestrator
+                .waitForAgentExecutors('agent-1')
+                .then((_) => settled = true),
+          );
+          async.flushMicrotasks();
+          expect(settled, isFalse);
+          if (fails) {
+            executor.completeError(StateError('late executor failure'));
+          } else {
+            executor.complete(const {});
+          }
+          async.flushMicrotasks();
+          expect(settled, isTrue);
+          expect(orchestrator.hasPendingOrActiveWake('agent-1'), isFalse);
+        });
+      });
+    }
+
     group('subscription management', () {
       glados.Glados(
         glados.any.wakeRoutingScenario,

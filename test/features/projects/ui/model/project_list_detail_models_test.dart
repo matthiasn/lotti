@@ -5,14 +5,12 @@ void main() {
   group('ProjectRecord', () {
     test('stores all fields correctly', () {
       final record = makeTestProjectRecord(
-        healthScore: 85,
         completedTaskCount: 5,
         totalTaskCount: 10,
         blockedTaskCount: 2,
         aiSummary: 'Custom summary',
       );
 
-      expect(record.healthScore, 85);
       expect(record.completedTaskCount, 5);
       expect(record.totalTaskCount, 10);
       expect(record.blockedTaskCount, 2);

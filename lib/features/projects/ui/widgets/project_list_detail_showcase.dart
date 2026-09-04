@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_navigation_sidebar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/widgetbook/widgetbook_helpers.dart';
-import 'package:lotti/features/projects/ui/widgets/project_detail_pane.dart';
 import 'package:lotti/features/projects/ui/widgets/project_list_pane.dart';
+import 'package:lotti/features/projects/ui/widgets/project_mobile_detail_content.dart';
 import 'package:lotti/features/projects/ui/widgets/projects_filter_modal.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
 import 'package:lotti/features/projects/widgetbook/project_list_detail_mock_controller.dart';
@@ -79,7 +79,7 @@ class ProjectListDetailShowcase extends ConsumerWidget {
                         Expanded(
                           child: selected == null
                               ? const SizedBox.shrink()
-                              : ProjectDetailPane(
+                              : ProjectMobileDetailContent(
                                   record: selected,
                                   currentTime: state.data.currentTime,
                                 ),

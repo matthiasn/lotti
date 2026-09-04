@@ -9,7 +9,6 @@ class ProjectRecord {
   const ProjectRecord({
     required this.project,
     required this.category,
-    required this.healthScore,
     required this.healthMetrics,
     required this.reportNextWakeAt,
     required this.completedTaskCount,
@@ -24,7 +23,6 @@ class ProjectRecord {
 
   final ProjectEntry project;
   final CategoryDefinition? category;
-  final int healthScore;
   final ProjectHealthMetrics? healthMetrics;
   final DateTime? reportNextWakeAt;
   final int completedTaskCount;
@@ -32,7 +30,9 @@ class ProjectRecord {
   final int blockedTaskCount;
   final String aiSummary;
   final String reportContent;
-  final DateTime reportUpdatedAt;
+
+  /// Creation time of the persisted agent report, or `null` before one exists.
+  final DateTime? reportUpdatedAt;
   final List<TaskSummary> highlightedTaskSummaries;
   final Duration highlightedTasksTotalDuration;
 

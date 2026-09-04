@@ -4,21 +4,59 @@ import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
+import 'package:lotti/features/agents/state/task_agent_providers.dart';
+import 'package:lotti/features/agents/ui/agent_creation_modal.dart';
+import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/design_system/components/calendar_pickers/design_system_date_picker_modal.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
+import 'package:lotti/features/projects/repository/project_repository.dart';
+import 'package:lotti/features/projects/service/project_lifecycle_service.dart';
 import 'package:lotti/features/projects/state/project_detail_controller.dart';
 import 'package:lotti/features/projects/state/project_detail_record_provider.dart';
 import 'package:lotti/features/projects/ui/widgets/project_mobile_detail_content.dart';
+import 'package:lotti/features/projects/ui/widgets/project_recommendations_panel.dart';
+import 'package:lotti/features/projects/ui/widgets/project_status_attributes.dart';
 import 'package:lotti/features/projects/ui/widgets/project_status_picker.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:lotti/widgets/ui/error_state_widget.dart';
+
+typedef ProjectTaskCreator = Future<Task?> Function(String projectId);
+typedef ProjectTaskAgentAssigner = Future<void> Function(Task task);
+typedef ProjectByIdResolver = Future<ProjectEntry?> Function(String projectId);
+
+/// Injectable task-creation seam used by the project detail action.
+final projectTaskCreatorProvider = Provider<ProjectTaskCreator>(
+  (ref) =>
+      (projectId) => createTask(projectId: projectId),
+  name: 'projectTaskCreatorProvider',
+);
+
+/// Captures the task-agent service before task creation crosses an async gap.
+final projectTaskAgentAssignerProvider = Provider<ProjectTaskAgentAssigner>(
+  (ref) {
+    final service = ref.watch(taskAgentServiceProvider);
+    return (task) => autoAssignCategoryAgentWith(service, task);
+  },
+  name: 'projectTaskAgentAssignerProvider',
+);
+
+/// Re-reads a project immediately before a delayed UI flow creates durable
+/// state for it, preventing provisioning against a project deleted by sync.
+final projectByIdResolverProvider = Provider<ProjectByIdResolver>(
+  (ref) => ref.watch(projectRepositoryProvider).getProjectById,
+  name: 'projectByIdResolverProvider',
+);
 
 /// Read-first project detail surface rendered in the desktop right pane and as
 /// the mobile `/projects/<id>` route.
@@ -49,8 +87,9 @@ class ProjectDetailsPage extends ConsumerWidget {
     final recordAsync = ref.watch(projectDetailRecordProvider(projectId));
     final currentTime = ref.watch(projectDetailNowProvider)();
     final agentAsync = ref.watch(projectAgentProvider(projectId));
-    final agent = agentAsync.asData?.value;
+    final agent = agentAsync.value;
     final identity = agent?.mapOrNull(agent: (value) => value);
+    final canAssignProjectAgent = agentAsync.hasValue && identity == null;
     final isRefreshingReport =
         identity != null &&
         (ref.watch(agentIsRunningProvider(identity.agentId)).value ?? false);
@@ -64,6 +103,7 @@ class ProjectDetailsPage extends ConsumerWidget {
 
     return recordAsync.when(
       skipLoadingOnReload: true,
+      skipError: true,
       loading: () => Scaffold(
         backgroundColor: ShowcasePalette.page(context),
         body: const Center(child: CircularProgressIndicator.adaptive()),
@@ -98,6 +138,16 @@ class ProjectDetailsPage extends ConsumerWidget {
               onTargetDateTap: () =>
                   _pickTargetDate(context, ref, record.project),
               onStatusTap: () => _pickStatus(context, ref, record.project),
+              onEdit: () => beamToNamed('/projects/$projectId/edit'),
+              onArchive: record.project.data.status is ProjectArchived
+                  ? null
+                  : () => _archiveProject(context, ref),
+              onDelete: () => _deleteProject(
+                context,
+                ref,
+                record.project,
+              ),
+              onAddTask: () => _addTask(context, ref),
               onRefreshReport: identity == null
                   ? null
                   : () => ref
@@ -112,7 +162,21 @@ class ProjectDetailsPage extends ConsumerWidget {
                         identity.agentId,
                       );
                     },
+              onAssignAgent: canAssignProjectAgent
+                  ? () => _assignProjectAgent(context, ref, record.project)
+                  : null,
+              agentIdentity: identity,
+              agentActions: identity == null
+                  ? null
+                  : Column(
+                      children: [
+                        ProjectRecommendationsPanel(projectId: projectId),
+                        ChangeSetSummaryCard.project(projectId: projectId),
+                      ],
+                    ),
+              hasProjectAgent: identity != null || agentAsync.isLoading,
               isRefreshingReport: isRefreshingReport,
+              isSaving: detailState.isSaving,
               onTaskTap: (summary) => beamToNamed(
                 '/tasks/${summary.task.meta.id}',
               ),
@@ -145,6 +209,91 @@ class ProjectDetailsPage extends ConsumerWidget {
     }
   }
 
+  Future<void> _assignProjectAgent(
+    BuildContext context,
+    WidgetRef ref,
+    ProjectEntry project,
+  ) async {
+    final resolveProject = ref.read(projectByIdResolverProvider);
+    final agentService = ref.read(projectAgentServiceProvider);
+    try {
+      final templates = (await ref.read(agentTemplatesProvider.future))
+          .whereType<AgentTemplateEntity>()
+          .where((template) => template.kind == AgentTemplateKind.projectAgent)
+          .where((template) => _templateAppliesToProject(template, project))
+          .toList(growable: false);
+      if (!context.mounted) return;
+      if (templates.isEmpty) {
+        context.showToast(
+          tone: DesignSystemToastTone.warning,
+          title: context.messages.agentTemplateNoTemplates,
+        );
+        return;
+      }
+
+      final result = await AgentCreationModal.show(
+        context: context,
+        templates: templates,
+      );
+      if (result == null || !context.mounted) return;
+
+      final currentProject = await resolveProject(project.meta.id);
+      if (!context.mounted) return;
+      if (currentProject == null) {
+        context.showToast(
+          tone: DesignSystemToastTone.error,
+          title: context.messages.projectNotFound,
+        );
+        return;
+      }
+      final selectedTemplate = templates
+          .where((template) => template.id == result.templateId)
+          .firstOrNull;
+      if (selectedTemplate == null ||
+          !_templateAppliesToProject(selectedTemplate, currentProject)) {
+        context.showToast(
+          tone: DesignSystemToastTone.warning,
+          title: context.messages.agentTemplateNoTemplates,
+        );
+        return;
+      }
+
+      await agentService.createProjectAgent(
+        projectId: currentProject.meta.id,
+        templateId: result.templateId,
+        displayName: currentProject.data.title,
+        allowedCategoryIds: {
+          if (currentProject.meta.categoryId case final String categoryId)
+            categoryId,
+        },
+        profileId: result.profileId,
+      );
+      ref.invalidate(projectAgentProvider(currentProject.meta.id));
+    } catch (error, stackTrace) {
+      developer.log(
+        'Failed to assign project agent',
+        name: 'ProjectDetailsPage',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      if (!context.mounted) return;
+      context.showToast(
+        tone: DesignSystemToastTone.error,
+        title: context.messages.taskAgentCreateError(error.toString()),
+      );
+    }
+  }
+
+  bool _templateAppliesToProject(
+    AgentTemplateEntity template,
+    ProjectEntry project,
+  ) {
+    final categoryIds = template.categoryIds;
+    if (categoryIds.isEmpty) return true;
+    final categoryId = project.meta.categoryId;
+    return categoryId != null && categoryIds.contains(categoryId);
+  }
+
   Future<void> _pickCategory(
     BuildContext context,
     WidgetRef ref,
@@ -155,12 +304,11 @@ class ProjectDetailsPage extends ConsumerWidget {
       title: context.messages.habitCategoryLabel,
       currentCategoryId: project.meta.categoryId,
     );
-    if (result == null) return;
+    if (result == null || !context.mounted) return;
     final controller = ref.read(
       projectDetailControllerProvider(projectId).notifier,
-    );
-    await (controller..updateCategoryId(result.categoryOrNull?.id))
-        .saveChanges();
+    )..updateCategoryId(result.categoryOrNull?.id);
+    await _saveInlineUpdate(context, ref, controller);
   }
 
   Future<void> _pickTargetDate(
@@ -187,13 +335,12 @@ class ProjectDetailsPage extends ConsumerWidget {
       allowClear: currentDate != null,
     );
 
-    if (result == null) return;
+    if (result == null || !context.mounted) return;
 
     final controller = ref.read(
       projectDetailControllerProvider(projectId).notifier,
-    );
-    await (controller..updateTargetDate(result.cleared ? null : result.date))
-        .saveChanges();
+    )..updateTargetDate(result.cleared ? null : result.date);
+    await _saveInlineUpdate(context, ref, controller);
   }
 
   Future<void> _pickStatus(
@@ -206,14 +353,117 @@ class ProjectDetailsPage extends ConsumerWidget {
       currentStatus: project.data.status,
     );
 
-    if (selected == null) {
+    if (selected == null || !context.mounted) {
       return;
     }
 
     final controller = ref.read(
       projectDetailControllerProvider(projectId).notifier,
+    )..updateStatus(selected);
+    await _saveInlineUpdate(context, ref, controller);
+  }
+
+  Future<void> _archiveProject(BuildContext context, WidgetRef ref) async {
+    final controller =
+        ref.read(
+          projectDetailControllerProvider(projectId).notifier,
+        )..updateStatus(
+          buildProjectStatus(ProjectStatusKind.archived, clock.now()),
+        );
+    final saved = await _saveInlineUpdate(context, ref, controller);
+    if (saved && context.mounted) {
+      context.showToast(
+        tone: DesignSystemToastTone.success,
+        title: context.messages.projectArchiveSuccess,
+      );
+    }
+  }
+
+  Future<void> _deleteProject(
+    BuildContext context,
+    WidgetRef ref,
+    ProjectEntry project,
+  ) async {
+    final confirmed = await showConfirmationModal(
+      context: context,
+      title: context.messages.projectDeleteConfirmTitle,
+      message: context.messages.projectDeleteConfirmBody,
+      confirmLabel: context.messages.projectActionDelete,
     );
-    await (controller..updateStatus(selected)).saveChanges();
+    if (!confirmed || !context.mounted) return;
+
+    final deleted = await ref
+        .read(projectLifecycleServiceProvider)
+        .deleteProject(project.id);
+    if (!context.mounted) return;
+    context.showToast(
+      tone: deleted
+          ? DesignSystemToastTone.success
+          : DesignSystemToastTone.error,
+      title: deleted
+          ? context.messages.projectDeleteSuccess
+          : context.messages.projectDeleteFailed,
+    );
+    if (deleted) _handleBack(context);
+  }
+
+  Future<void> _addTask(BuildContext context, WidgetRef ref) async {
+    final createProjectTask = ref.read(projectTaskCreatorProvider);
+    final assignTaskAgent = ref.read(projectTaskAgentAssignerProvider);
+    Task? task;
+    try {
+      task = await createProjectTask(projectId);
+    } catch (error, stackTrace) {
+      developer.log(
+        'Failed to create project task',
+        name: 'ProjectDetailsPage',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+    if (task == null) {
+      if (!context.mounted) return;
+      context.showToast(
+        tone: DesignSystemToastTone.error,
+        title: context.messages.commonError,
+      );
+      return;
+    }
+    try {
+      await assignTaskAgent(task);
+    } catch (error, stackTrace) {
+      developer.log(
+        'Failed to assign category agent to project task',
+        name: 'ProjectDetailsPage',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      if (!context.mounted) return;
+      context.showToast(
+        tone: DesignSystemToastTone.error,
+        title: context.messages.commonError,
+      );
+    }
+    if (!context.mounted) return;
+    beamToNamed('/tasks/${task.meta.id}');
+  }
+
+  Future<bool> _saveInlineUpdate(
+    BuildContext context,
+    WidgetRef ref,
+    ProjectDetailController controller,
+  ) async {
+    await controller.saveChanges();
+    if (!context.mounted) return false;
+    final detailState = ref.read(projectDetailControllerProvider(projectId));
+    if (detailState.error == null) return true;
+
+    controller.discardChanges();
+    context.showToast(
+      tone: DesignSystemToastTone.error,
+      title: context.messages.projectErrorUpdateFailed,
+    );
+    return false;
   }
 
   void _handleBack(BuildContext context) {

@@ -1,32 +1,16 @@
-import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/state/project_health_metrics.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
-import 'package:lotti/l10n/app_localizations_context.dart';
 
 import '../../../../widget_test_utils.dart';
-
-// ---------------------------------------------------------------------------
-// Generators for formatCountdown property tests
-// ---------------------------------------------------------------------------
-
-extension _AnyCountdown on glados.Any {
-  /// Non-negative seconds that exercise all three branches of [formatCountdown].
-  glados.Generator<int> get countdownSeconds =>
-      glados.any.intInRange(0, 360000);
-
-  /// Negative seconds to verify the clamping branch.
-  glados.Generator<int> get negativeSeconds =>
-      glados.any.intInRange(-360000, 0);
-}
 
 /// Helper to create a [ProjectStatus] variant concisely.
 ProjectStatus _activeStatus() => ProjectStatus.active(
@@ -202,6 +186,39 @@ void main() {
       await tester.tap(find.byType(OutlinedMetaTag));
       expect(taps, 1);
     });
+
+    testWidgets('interactive tags stay shrink-wrapped inside a Wrap', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        wrap(
+          Wrap(
+            children: [
+              OutlinedMetaTag(
+                icon: LottiIcons.folder,
+                label: 'Category',
+                onTap: () {},
+              ),
+              OutlinedMetaTag(
+                icon: LottiIcons.today,
+                label: 'Target date',
+                onTap: () {},
+              ),
+            ],
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(
+        tester.getCenter(find.text('Category')).dy,
+        tester.getCenter(find.text('Target date')).dy,
+      );
+      expect(
+        tester.getSize(find.byType(OutlinedMetaTag).first).width,
+        lessThan(200),
+      );
+    });
   });
 
   group('ProjectHealthBandTag', () {
@@ -274,36 +291,26 @@ void main() {
       expect(find.byIcon(LottiIcons.expandBoth), findsNothing);
     });
 
-    testWidgets('matches the category tag height in compact mode', (
+    testWidgets('uses the shared task metadata pill height in compact mode', (
       tester,
     ) async {
       await tester.pumpWidget(
         wrap(
-          Row(
-            children: [
-              const CategoryTag(
-                label: 'Work',
-                icon: LottiIcons.work,
-                color: Colors.blue,
-              ),
-              const SizedBox(width: 12),
-              ProjectStatusPill(
-                status: ProjectStatus.active(
-                  id: 'a',
-                  createdAt: DateTime(2026),
-                  utcOffset: 0,
-                ),
-              ),
-            ],
+          ProjectStatusPill(
+            status: ProjectStatus.active(
+              id: 'a',
+              createdAt: DateTime(2026),
+              utcOffset: 0,
+            ),
           ),
         ),
       );
       await tester.pump();
 
-      final categorySize = tester.getSize(find.byType(CategoryTag));
       final statusSize = tester.getSize(find.byType(ProjectStatusPill));
 
-      expect(statusSize.height, categorySize.height);
+      expect(find.byType(DsPill), findsOneWidget);
+      expect(statusSize.height, DsPill.height);
     });
   });
 
@@ -491,411 +498,6 @@ void main() {
     });
   });
 
-  group('TextSection', () {
-    testWidgets('renders title and body', (tester) async {
-      await tester.pumpWidget(
-        wrap(
-          const TextSection(
-            title: 'Description',
-            body: 'Some text here.',
-          ),
-        ),
-      );
-      await tester.pump();
-
-      expect(find.text('Description'), findsOneWidget);
-      expect(find.text('Some text here.'), findsOneWidget);
-    });
-
-    testWidgets('renders trailing label when provided', (tester) async {
-      await tester.pumpWidget(
-        wrap(
-          const TextSection(
-            title: 'Report',
-            body: 'Content.',
-            trailingLabel: 'Updated 2h ago',
-          ),
-        ),
-      );
-      await tester.pump();
-
-      expect(find.text('Updated 2h ago'), findsOneWidget);
-    });
-
-    testWidgets('omits trailing label when null', (tester) async {
-      await tester.pumpWidget(
-        wrap(
-          const TextSection(title: 'Title', body: 'Body'),
-        ),
-      );
-      await tester.pump();
-
-      // Only title and body text widgets
-      expect(find.text('Title'), findsOneWidget);
-      expect(find.text('Body'), findsOneWidget);
-    });
-  });
-
-  group('ExpandableReportSection', () {
-    testWidgets(
-      'starts collapsed on the TLDR and expands to the full report body without repeating the TLDR section',
-      (tester) async {
-        await tester.pumpWidget(
-          wrap(
-            const ExpandableReportSection(
-              title: 'AI Report',
-              body: 'TLDR only.',
-              fullContent: '''
-## 📋 TLDR
-TLDR only.
-
-## Details
-Longer report content.
-''',
-            ),
-          ),
-        );
-        await tester.pump();
-
-        expect(find.textContaining('TLDR only'), findsOneWidget);
-        expect(find.textContaining('Longer report content'), findsNothing);
-        expect(find.text('Recommendations'), findsNothing);
-        expect(find.text('Ship the fix'), findsNothing);
-
-        await tester.tap(find.byIcon(LottiIcons.chevronRight));
-        // Drive the 180ms AnimatedSize expand to completion deterministically.
-        await tester.pump(const Duration(milliseconds: 200));
-
-        expect(find.textContaining('Longer report content'), findsOneWidget);
-        expect(find.text('TLDR'), findsNothing);
-      },
-    );
-
-    testWidgets(
-      'does not show an expand affordance when only the summary is available',
-      (tester) async {
-        await tester.pumpWidget(
-          wrap(
-            const ExpandableReportSection(
-              title: 'AI Report',
-              body: 'TLDR only.',
-              fullContent: 'TLDR only.',
-            ),
-          ),
-        );
-        await tester.pump();
-
-        expect(find.byIcon(LottiIcons.chevronRight), findsNothing);
-        expect(find.text('Recommendations'), findsNothing);
-        expect(find.text('Ship the fix'), findsNothing);
-      },
-    );
-
-    testWidgets(
-      'derives the collapsed TLDR from full markdown when the body matches the full content',
-      (tester) async {
-        const fullReport = '''
-## 📋 TLDR
-Short summary.
-
-## Details
-Longer report content.
-''';
-
-        await tester.pumpWidget(
-          wrap(
-            const ExpandableReportSection(
-              title: 'AI Report',
-              body: fullReport,
-              fullContent: fullReport,
-            ),
-          ),
-        );
-        await tester.pump();
-
-        expect(find.textContaining('Short summary'), findsOneWidget);
-        expect(find.textContaining('Longer report content'), findsNothing);
-        expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
-      },
-    );
-
-    testWidgets(
-      'shows an expand affordance and renders the full report when the body is a separate summary',
-      (tester) async {
-        const fullReport =
-            'Full report body with more context.\n\nSecond paragraph.';
-
-        await tester.pumpWidget(
-          wrap(
-            const ExpandableReportSection(
-              title: 'AI Report',
-              body: 'Short summary.',
-              fullContent: fullReport,
-            ),
-          ),
-        );
-        await tester.pump();
-
-        expect(find.textContaining('Short summary'), findsOneWidget);
-        expect(
-          find.textContaining('Full report body with more context'),
-          findsNothing,
-        );
-        expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
-
-        await tester.tap(find.byIcon(LottiIcons.chevronRight));
-        // Drive the 180ms AnimatedSize expand to completion deterministically.
-        await tester.pump(const Duration(milliseconds: 200));
-
-        expect(
-          find.textContaining('Full report body with more context'),
-          findsOneWidget,
-        );
-      },
-    );
-
-    testWidgets('invokes refresh callback when refresh icon is tapped', (
-      tester,
-    ) async {
-      var refreshCount = 0;
-
-      await tester.pumpWidget(
-        wrap(
-          ExpandableReportSection(
-            title: 'AI Report',
-            body: 'TLDR only.',
-            fullContent: 'TLDR only.',
-            onRefresh: () => refreshCount++,
-          ),
-        ),
-      );
-      await tester.pump();
-
-      await tester.tap(find.byIcon(LottiIcons.refresh));
-      await tester.pump();
-
-      expect(refreshCount, 1);
-    });
-
-    testWidgets('renders a countdown pill when the next run is scheduled', (
-      tester,
-    ) async {
-      final start = DateTime(2024, 3, 15, 12);
-      await withClock(Clock.fixed(start), () async {
-        await tester.pumpWidget(
-          wrap(
-            ExpandableReportSection(
-              title: 'AI Report',
-              body: 'TLDR only.',
-              fullContent: 'TLDR only.',
-              nextWakeAt: start.add(const Duration(seconds: 90)),
-              onRefresh: () {},
-            ),
-          ),
-        );
-        await tester.pump();
-
-        expect(find.byType(ShowcaseCountdownPill), findsOneWidget);
-        expect(find.byIcon(LottiIcons.refresh), findsOneWidget);
-      });
-    });
-
-    testWidgets(
-      'countdown does not update while ticker mode is disabled and catches up when re-enabled',
-      (tester) async {
-        final start = DateTime(2024, 3, 15, 12);
-        var currentTime = start;
-        final nextWakeAt = start.add(const Duration(seconds: 90));
-
-        await withClock(Clock(() => currentTime), () async {
-          Widget subject({required bool tickerModeEnabled}) {
-            return wrap(
-              ExpandableReportSection(
-                title: 'AI Report',
-                body: 'TLDR only.',
-                fullContent: 'TLDR only.',
-                nextWakeAt: nextWakeAt,
-                onRefresh: () {},
-              ),
-              tickerModeEnabled: tickerModeEnabled,
-            );
-          }
-
-          await tester.pumpWidget(subject(tickerModeEnabled: false));
-          await tester.pump();
-
-          expect(find.text('1:30'), findsOneWidget);
-
-          currentTime = start.add(const Duration(seconds: 30));
-          await tester.pump(const Duration(seconds: 1));
-
-          expect(find.text('1:30'), findsOneWidget);
-          expect(find.text('1:00'), findsNothing);
-
-          await tester.pumpWidget(subject(tickerModeEnabled: true));
-          await tester.pump();
-
-          expect(find.text('1:00'), findsOneWidget);
-        });
-      },
-    );
-
-    testWidgets('countdown pill resyncs when nextWakeAt changes', (
-      tester,
-    ) async {
-      final start = DateTime(2024, 3, 15, 12);
-
-      await withClock(Clock.fixed(start), () async {
-        Widget subject(DateTime nextWakeAt) {
-          return wrap(
-            ExpandableReportSection(
-              title: 'AI Report',
-              body: 'TLDR only.',
-              fullContent: 'TLDR only.',
-              nextWakeAt: nextWakeAt,
-              onRefresh: () {},
-            ),
-          );
-        }
-
-        await tester.pumpWidget(
-          subject(start.add(const Duration(seconds: 30))),
-        );
-        await tester.pump();
-        expect(find.text('0:30'), findsOneWidget);
-
-        // Same widget type, new nextWakeAt → didUpdateWidget must call
-        // resyncCountdown so the pill snaps to the new remaining seconds
-        // without waiting for the next periodic tick.
-        await tester.pumpWidget(
-          subject(start.add(const Duration(seconds: 90))),
-        );
-        await tester.pump();
-        expect(find.text('1:30'), findsOneWidget);
-        expect(find.text('0:30'), findsNothing);
-      });
-    });
-
-    testWidgets(
-      'cancel × is rendered next to the countdown pill when '
-      'onCancelScheduledWake is provided and tapping it fires the callback',
-      (tester) async {
-        final start = DateTime(2024, 3, 15, 12);
-        var cancelCount = 0;
-
-        await withClock(Clock.fixed(start), () async {
-          await tester.pumpWidget(
-            wrap(
-              ExpandableReportSection(
-                title: 'AI Report',
-                body: 'TLDR only.',
-                fullContent: 'TLDR only.',
-                nextWakeAt: start.add(const Duration(seconds: 90)),
-                onRefresh: () {},
-                onCancelScheduledWake: () => cancelCount++,
-              ),
-            ),
-          );
-          await tester.pump();
-
-          // Sanity: countdown pill renders the remaining time.
-          expect(find.text('1:30'), findsOneWidget);
-
-          final element = tester.element(find.byType(ExpandableReportSection));
-          await tester.tap(
-            find.byTooltip(element.messages.taskAgentCancelTimerTooltip),
-          );
-          await tester.pump();
-
-          expect(cancelCount, 1);
-        });
-      },
-    );
-
-    testWidgets(
-      'cancel × is hidden while isRefreshing is true',
-      (tester) async {
-        final start = DateTime(2024, 3, 15, 12);
-
-        await withClock(Clock.fixed(start), () async {
-          await tester.pumpWidget(
-            wrap(
-              ExpandableReportSection(
-                title: 'AI Report',
-                body: 'TLDR only.',
-                fullContent: 'TLDR only.',
-                nextWakeAt: start.add(const Duration(seconds: 30)),
-                onRefresh: () {},
-                onCancelScheduledWake: () {},
-                isRefreshing: true,
-              ),
-            ),
-          );
-          await tester.pump();
-
-          final element = tester.element(find.byType(ExpandableReportSection));
-          expect(
-            find.byTooltip(element.messages.taskAgentCancelTimerTooltip),
-            findsNothing,
-          );
-        });
-      },
-    );
-
-    testWidgets(
-      'cancel × is hidden when onCancelScheduledWake is omitted',
-      (tester) async {
-        final start = DateTime(2024, 3, 15, 12);
-
-        await withClock(Clock.fixed(start), () async {
-          await tester.pumpWidget(
-            wrap(
-              ExpandableReportSection(
-                title: 'AI Report',
-                body: 'TLDR only.',
-                fullContent: 'TLDR only.',
-                nextWakeAt: start.add(const Duration(seconds: 30)),
-                onRefresh: () {},
-              ),
-            ),
-          );
-          await tester.pump();
-
-          final element = tester.element(find.byType(ExpandableReportSection));
-          expect(
-            find.byTooltip(element.messages.taskAgentCancelTimerTooltip),
-            findsNothing,
-          );
-        });
-      },
-    );
-
-    testWidgets(
-      'countdown pill hides itself once nextWakeAt has already passed',
-      (tester) async {
-        final start = DateTime(2024, 3, 15, 12);
-
-        await withClock(Clock.fixed(start), () async {
-          await tester.pumpWidget(
-            wrap(
-              ExpandableReportSection(
-                title: 'AI Report',
-                body: 'TLDR only.',
-                fullContent: 'TLDR only.',
-                nextWakeAt: start.subtract(const Duration(seconds: 5)),
-                onRefresh: () {},
-              ),
-            ),
-          );
-          await tester.pump();
-
-          // Pill builds with countdownSeconds <= 0 → returns SizedBox.shrink.
-          expect(find.byType(ShowcaseCountdownPill), findsNothing);
-        });
-      },
-    );
-  });
-
   group('ShowcasePanel', () {
     testWidgets('renders header, dividers between items, and all items', (
       tester,
@@ -958,234 +560,6 @@ Longer report content.
       expect(find.text('Only item'), findsOneWidget);
       // 1 divider below header, 0 between items
       expect(find.byType(Divider), findsOneWidget);
-    });
-  });
-
-  group('formatCountdown', () {
-    test('formats zero seconds as 0:00', () {
-      expect(formatCountdown(0), '0:00');
-    });
-
-    test('formats seconds less than a minute with leading zero', () {
-      expect(formatCountdown(5), '0:05');
-      expect(formatCountdown(59), '0:59');
-    });
-
-    test('formats exact minutes with :00 suffix', () {
-      expect(formatCountdown(60), '1:00');
-      expect(formatCountdown(120), '2:00');
-    });
-
-    test('formats mixed minutes and seconds', () {
-      expect(formatCountdown(90), '1:30');
-      expect(formatCountdown(125), '2:05');
-    });
-
-    test('formats hour-scale durations with an hour cell', () {
-      expect(formatCountdown(3661), '1:01:01');
-      expect(formatCountdown(5 * 3600 + 39 * 60 + 14), '5:39:14');
-    });
-
-    test('clamps negative input to zero', () {
-      expect(formatCountdown(-1), '0:00');
-      expect(formatCountdown(-3661), '0:00');
-    });
-  });
-
-  // -------------------------------------------------------------------------
-  // formatCountdown — Glados property tests
-  // -------------------------------------------------------------------------
-
-  group('formatCountdown — properties', () {
-    glados.Glados<int>(
-      glados.any.countdownSeconds,
-      glados.ExploreConfig(numRuns: 120),
-    ).test(
-      'result is never empty for non-negative input',
-      (seconds) {
-        expect(formatCountdown(seconds), isNotEmpty);
-      },
-      tags: 'glados',
-    );
-
-    glados.Glados<int>(
-      glados.any.negativeSeconds,
-      glados.ExploreConfig(numRuns: 120),
-    ).test(
-      'negative input always yields 0:00',
-      (seconds) {
-        expect(formatCountdown(seconds), '0:00');
-      },
-      tags: 'glados',
-    );
-
-    glados.Glados<int>(
-      glados.any.intInRange(0, 3600),
-      glados.ExploreConfig(numRuns: 120),
-    ).test(
-      'sub-hour durations produce m:ss (no hour cell, exactly one colon)',
-      (seconds) {
-        final result = formatCountdown(seconds);
-        expect(
-          result.split(':').length,
-          2,
-          reason: '"$result" should be m:ss for $seconds seconds',
-        );
-      },
-      tags: 'glados',
-    );
-
-    glados.Glados<int>(
-      glados.any.intInRange(3600, 360000),
-      glados.ExploreConfig(numRuns: 120),
-    ).test(
-      'hour-or-more durations produce h:mm:ss (exactly two colons)',
-      (seconds) {
-        final result = formatCountdown(seconds);
-        expect(
-          result.split(':').length,
-          3,
-          reason: '"$result" should be h:mm:ss for $seconds seconds',
-        );
-      },
-      tags: 'glados',
-    );
-
-    glados.Glados<int>(
-      glados.any.countdownSeconds,
-      glados.ExploreConfig(numRuns: 120),
-    ).test(
-      'output round-trips to the clamped input seconds',
-      (totalSeconds) {
-        final result = formatCountdown(totalSeconds);
-
-        // Independent parser: h:mm:ss or m:ss back to total seconds.
-        final segments = result.split(':').map(int.parse).toList();
-        final parsed = segments.length == 3
-            ? segments[0] * 3600 + segments[1] * 60 + segments[2]
-            : segments[0] * 60 + segments[1];
-
-        expect(
-          parsed,
-          totalSeconds < 0 ? 0 : totalSeconds,
-          reason: '"$result" should round-trip from $totalSeconds',
-        );
-      },
-      tags: 'glados',
-    );
-
-    glados.Glados<int>(
-      glados.any.intInRange(0, 360000),
-      glados.ExploreConfig(numRuns: 120),
-    ).test(
-      'seconds component (last segment) is always exactly two digits',
-      (totalSeconds) {
-        final result = formatCountdown(totalSeconds);
-        final ssSegment = result.split(':').last;
-        expect(
-          ssSegment.length,
-          2,
-          reason: 'seconds segment "$ssSegment" in "$result" must be 2 digits',
-        );
-      },
-      tags: 'glados',
-    );
-  });
-
-  group('showcaseUpdatedLabel', () {
-    testWidgets('returns minutes label when difference is under one hour', (
-      tester,
-    ) async {
-      late String result;
-      await tester.pumpWidget(
-        wrap(
-          Builder(
-            builder: (context) {
-              result = showcaseUpdatedLabel(
-                context,
-                updatedAt: DateTime(2024, 3, 15, 10),
-                currentTime: DateTime(2024, 3, 15, 10, 30),
-              );
-              return const SizedBox.shrink();
-            },
-          ),
-        ),
-      );
-      await tester.pump();
-
-      expect(result, contains('30m'));
-      expect(result, isNot(contains('↻')));
-    });
-
-    testWidgets('returns hours label when difference >= 1 hour', (
-      tester,
-    ) async {
-      late String result;
-      await tester.pumpWidget(
-        wrap(
-          Builder(
-            builder: (context) {
-              result = showcaseUpdatedLabel(
-                context,
-                updatedAt: DateTime(2024, 3, 15, 8),
-                currentTime: DateTime(2024, 3, 15, 11),
-              );
-              return const SizedBox.shrink();
-            },
-          ),
-        ),
-      );
-      await tester.pump();
-
-      expect(result, contains('3h'));
-      expect(result, isNot(contains('↻')));
-    });
-
-    testWidgets('clamps to 1 minute when difference is under 1 minute', (
-      tester,
-    ) async {
-      late String result;
-      await tester.pumpWidget(
-        wrap(
-          Builder(
-            builder: (context) {
-              result = showcaseUpdatedLabel(
-                context,
-                updatedAt: DateTime(2024, 3, 15, 10, 0, 50),
-                currentTime: DateTime(2024, 3, 15, 10),
-              );
-              return const SizedBox.shrink();
-            },
-          ),
-        ),
-      );
-      await tester.pump();
-
-      // Negative difference => treated as <1 hour, clamped to 1 minute
-      expect(result, contains('1m'));
-    });
-
-    testWidgets('returns 1 minute when updatedAt equals currentTime', (
-      tester,
-    ) async {
-      late String result;
-      await tester.pumpWidget(
-        wrap(
-          Builder(
-            builder: (context) {
-              result = showcaseUpdatedLabel(
-                context,
-                updatedAt: DateTime(2024, 3, 15, 10),
-                currentTime: DateTime(2024, 3, 15, 10),
-              );
-              return const SizedBox.shrink();
-            },
-          ),
-        ),
-      );
-      await tester.pump();
-
-      expect(result, contains('1m'));
     });
   });
 
@@ -1319,140 +693,6 @@ Longer report content.
         findsOneWidget,
       );
       expect(find.text('Open'), findsOneWidget);
-    });
-  });
-
-  group('ExpandableReportSection - isRefreshing', () {
-    testWidgets('shows CircularProgressIndicator when isRefreshing is true', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        wrap(
-          ExpandableReportSection(
-            title: 'AI Report',
-            body: 'Summary.',
-            fullContent: 'Summary.',
-            onRefresh: () {},
-            isRefreshing: true,
-          ),
-        ),
-      );
-      await tester.pump();
-
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
-      // refresh icon should not be present while refreshing
-      expect(find.byIcon(LottiIcons.refresh), findsNothing);
-    });
-
-    testWidgets('hides countdown pill when isRefreshing is true', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        wrap(
-          ExpandableReportSection(
-            title: 'AI Report',
-            body: 'Summary.',
-            fullContent: 'Summary.',
-            // Use a far-future date so the countdown would be positive
-            // if not for isRefreshing suppressing it.
-            // ignore: avoid_redundant_argument_values
-            nextWakeAt: DateTime(2099, 1, 1),
-            onRefresh: () {},
-            isRefreshing: true,
-          ),
-        ),
-      );
-      await tester.pump();
-
-      // Countdown should be hidden while refreshing
-      expect(find.byType(ShowcaseCountdownPill), findsNothing);
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
-    });
-  });
-
-  group('ExpandableReportSection - trailingLabel', () {
-    testWidgets('renders trailing label text', (tester) async {
-      await tester.pumpWidget(
-        wrap(
-          const ExpandableReportSection(
-            title: 'AI Report',
-            body: 'Summary.',
-            fullContent: 'Summary.',
-            trailingLabel: 'Updated 5m ago',
-          ),
-        ),
-      );
-      await tester.pump();
-
-      expect(find.text('Updated 5m ago'), findsOneWidget);
-    });
-  });
-
-  group('ExpandableReportSection - expanded with recommendations', () {
-    testWidgets('displays full content and recommendations when expanded', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        wrap(
-          const ExpandableReportSection(
-            title: 'AI Report',
-            body: 'Short TLDR.',
-            fullContent: '''
-## 📋 TLDR
-Short TLDR.
-
-## Analysis
-Detailed analysis section.
-''',
-            initiallyExpanded: true,
-          ),
-        ),
-      );
-      await tester.pump();
-
-      expect(find.textContaining('Detailed analysis section'), findsOneWidget);
-    });
-  });
-
-  group('ExpandableReportSection - empty fullContent', () {
-    testWidgets('falls back to body when fullContent is empty', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        wrap(
-          const ExpandableReportSection(
-            title: 'AI Report',
-            body: 'Only body text here.',
-            fullContent: '',
-          ),
-        ),
-      );
-      await tester.pump();
-
-      expect(find.textContaining('Only body text here'), findsOneWidget);
-      // No expand icon since there's no additional content
-      expect(find.byIcon(LottiIcons.chevronRight), findsNothing);
-    });
-  });
-
-  group('ShowcaseCountdownPill', () {
-    testWidgets('renders the countdown text in a pill', (tester) async {
-      await tester.pumpWidget(
-        wrap(const ShowcaseCountdownPill(countdownText: '2:45')),
-      );
-      await tester.pump();
-
-      expect(find.text('2:45'), findsOneWidget);
-
-      // Verify it has the pill Container with minimum width
-      final container = tester.widget<Container>(
-        find.ancestor(
-          of: find.text('2:45'),
-          matching: find.byType(Container),
-        ),
-      );
-      final constraints = container.constraints;
-      expect(constraints?.minWidth, 52);
     });
   });
 
@@ -1700,141 +940,5 @@ Detailed analysis section.
       expect(find.text('Rejected'), findsOneWidget);
       expect(find.byIcon(LottiIcons.closeCircled), findsOneWidget);
     });
-  });
-
-  group('ExpandableReportSection - collapse/expand toggle', () {
-    testWidgets('collapses from expanded state on toggle', (tester) async {
-      await tester.pumpWidget(
-        wrap(
-          const ExpandableReportSection(
-            title: 'AI Report',
-            body: 'Short summary.',
-            fullContent: '''
-## 📋 TLDR
-Short summary.
-
-## Details
-Full details here.
-''',
-            initiallyExpanded: true,
-          ),
-        ),
-      );
-      await tester.pump();
-
-      // Initially expanded - full details visible
-      expect(find.textContaining('Full details here'), findsOneWidget);
-      expect(find.byIcon(LottiIcons.chevronDown), findsOneWidget);
-
-      // Collapse
-      await tester.tap(find.byIcon(LottiIcons.chevronDown));
-      // Drive the 180ms AnimatedSize collapse to completion deterministically.
-      await tester.pump(const Duration(milliseconds: 200));
-
-      expect(find.textContaining('Full details here'), findsNothing);
-      expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
-    });
-  });
-
-  group('ExpandableReportSection - TLDR with explicit body text', () {
-    testWidgets(
-      'uses body as TLDR and shows fullContent as additional when body differs',
-      (tester) async {
-        const fullContent =
-            'Detailed report without explicit TLDR section markers.';
-
-        await tester.pumpWidget(
-          wrap(
-            const ExpandableReportSection(
-              title: 'Report',
-              body: 'Explicit summary.',
-              fullContent: fullContent,
-            ),
-          ),
-        );
-        await tester.pump();
-
-        // Shows explicit body as TLDR
-        expect(find.textContaining('Explicit summary'), findsOneWidget);
-        // Full content hidden in collapsed state
-        expect(
-          find.textContaining('Detailed report without explicit'),
-          findsNothing,
-        );
-
-        // Has expand icon because fullContent differs from body
-        expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
-      },
-    );
-  });
-
-  group('ExpandableReportSection - H1 stripping', () {
-    testWidgets('strips leading H1 heading from expanded content', (
-      tester,
-    ) async {
-      const fullReport =
-          '# My Project\n\nDetailed analysis paragraph.\n\nSecond paragraph.';
-
-      await tester.pumpWidget(
-        wrap(
-          const ExpandableReportSection(
-            title: 'AI Report',
-            body: 'Short summary.',
-            fullContent: fullReport,
-          ),
-        ),
-      );
-      await tester.pump();
-
-      // Should have expand affordance
-      expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
-
-      await tester.tap(find.byIcon(LottiIcons.chevronRight));
-      // Drive the 180ms AnimatedSize expand to completion deterministically.
-      await tester.pump(const Duration(milliseconds: 200));
-
-      // H1 should NOT appear in the expanded content
-      expect(find.textContaining('My Project'), findsNothing);
-      // But the paragraph content should be visible
-      expect(
-        find.textContaining('Detailed analysis paragraph'),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets(
-      'strips H1 and leaves no additional content when only whitespace remains',
-      (tester) async {
-        // Content with H1 followed by only whitespace paragraphs.
-        // parseReportContent splits on \n\n, yielding the H1 as tldr and
-        // whitespace as additional. _expandedBody then strips the H1 and
-        // finds only whitespace, so additional is null.
-        const fullReport = '# Project Title\n\nSome real content here.';
-
-        await tester.pumpWidget(
-          wrap(
-            const ExpandableReportSection(
-              title: 'AI Report',
-              body: 'Summary.',
-              fullContent: fullReport,
-            ),
-          ),
-        );
-        await tester.pump();
-
-        // The expand affordance should be present because after stripping
-        // the H1, 'Some real content here.' remains.
-        expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
-
-        await tester.tap(find.byIcon(LottiIcons.chevronRight));
-        // Drive the 180ms AnimatedSize expand to completion deterministically.
-        await tester.pump(const Duration(milliseconds: 200));
-
-        // The H1 should be stripped from expanded view
-        expect(find.textContaining('Project Title'), findsNothing);
-        // But the remaining content should appear
-        expect(find.textContaining('Some real content here'), findsOneWidget);
-      },
-    );
   });
 }

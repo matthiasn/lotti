@@ -32,6 +32,9 @@ class ProjectsOverviewSliverList extends StatelessWidget {
             SliverToBoxAdapter(
               child: DetailContentWidth(
                 child: ProjectGroupSection(
+                  key: ValueKey(
+                    'project-group-${groups[index].categoryId ?? 'unassigned'}',
+                  ),
                   group: groups[index],
                   selectedProjectId: selectedProjectId,
                   onProjectSelected: onProjectTap,
