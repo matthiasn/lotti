@@ -5,7 +5,7 @@ description: "The developer-only 3D project map: a merge-stable street folded in
 resource: ../../lib/features/plaza
 tags: [plaza, 3d, flutter-scene, flutter-gpu, tasks, visualization, prototype]
 status: draft
-generated: { by: codex/gpt-6, at: 2026-09-04T23:15:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-04T22:54:16Z }
 stale_after: 2027-03-01
 sources:
   - id: street
@@ -696,7 +696,16 @@ chip, a details button (opens the side panel) and the done count.
 
 # Sprites
 
-`PlazaSprites` owns the camera-facing dots, all with `raycastable = false`:
+`PlazaSprites` keeps lanterns, beacons, lamp bulbs/halos and spire lights
+as individually sorted sprites (`raycastable = false`). The chase bulbs
+around each billboard share one `BillboardGeometry` and `SpriteMaterial`:
+one draw per frame instead of twenty. Each batch stays local to its panel,
+so its bounds and translucent draw order remain tied to that lightbox;
+unrelated alpha-blended halos and beacons are not merged into global batches.
+`PlazaLightBuffer` stores the fixed world positions and updates only size and
+HDR colour. Bounds are committed once using `maxChaseBulbSize` (0.45 m),
+then the actual sizes are restored; the geometry uploads the current buffer
+on each draw without a bounds refit.
 
 - **Lanterns**, one per building at roof + 0.7 m, coloured by lantern state,
   sized to `clamp(9 × 60 / d, 5, 22)` logical pixels, scaled by 2.2 when
