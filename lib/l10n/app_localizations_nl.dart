@@ -10126,11 +10126,26 @@ class AppLocalizationsNl extends AppLocalizations {
       'Alleen zichtbaar wanneer privé-items getoond worden';
 
   @override
+  String get projectActionAddTask => 'Taak toevoegen';
+
+  @override
+  String get projectActionArchive => 'Archiveren';
+
+  @override
+  String get projectActionDelete => 'Verwijderen';
+
+  @override
+  String get projectActionEdit => 'Project bewerken';
+
+  @override
   String get projectAgentNotProvisioned =>
       'Er is nog geen projectmanager voor dit project voorzien.';
 
   @override
   String get projectAgentSectionTitle => 'Agent';
+
+  @override
+  String get projectArchiveSuccess => 'Project gearchiveerd';
 
   @override
   String projectCountSummary(int count) {
@@ -10148,6 +10163,20 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get projectCreateTitle => 'Project aanmaken';
+
+  @override
+  String get projectDeleteConfirmBody =>
+      'Het project wordt verwijderd. De taken blijven in je dagboek staan.';
+
+  @override
+  String get projectDeleteConfirmTitle => 'Dit project verwijderen?';
+
+  @override
+  String get projectDeleteFailed =>
+      'Het project kon niet worden verwijderd. Probeer het opnieuw.';
+
+  @override
+  String get projectDeleteSuccess => 'Project verwijderd';
 
   @override
   String get projectDetailTitle => 'Projectdetails';
@@ -10182,6 +10211,21 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get projectHealthBandWatch => 'Kijk';
+
+  @override
+  String projectHealthConfidence(int confidence) {
+    return '$confidence% zekerheid';
+  }
+
+  @override
+  String get projectHealthEmptyBody =>
+      'Voer de projectagent uit om een beoordeling te maken op basis van de nieuwste project- en taakactiviteit.';
+
+  @override
+  String get projectHealthEmptyTitle => 'Nog geen gezondheidsbeoordeling';
+
+  @override
+  String get projectHealthRunNow => 'Rapport uitvoeren';
 
   @override
   String get projectHealthSectionTitle => 'Gezondheid van projecten';
@@ -10239,6 +10283,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get projectPickerUnassigned => 'Geen project';
 
   @override
+  String get projectPickerUpdateFailed =>
+      'Het project van de taak kon niet worden gewijzigd. Controleer de categorie en privacy en probeer het opnieuw.';
+
+  @override
   String get projectRecommendationDismissTooltip => 'Ingerukt';
 
   @override
@@ -10250,6 +10298,31 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get projectRecommendationUpdateError =>
       'Ik kon de aanbeveling niet bijwerken.';
+
+  @override
+  String get projectsClearFilters => 'Filters wissen';
+
+  @override
+  String get projectsEmptyBody =>
+      'Maak een project om samenhangende taken, voortgang en agentinzichten te bundelen.';
+
+  @override
+  String get projectsEmptyCurrentBody =>
+      'Voltooide en gearchiveerde projecten zijn uit beeld. Schakel naar Alles om ze opnieuw te bekijken.';
+
+  @override
+  String get projectsEmptyCurrentTitle => 'Geen actuele projecten';
+
+  @override
+  String get projectsEmptyFilteredBody =>
+      'Pas je zoekopdracht of filters aan om overeenkomende projecten weer te tonen.';
+
+  @override
+  String get projectsEmptyFilteredTitle =>
+      'Geen projecten passen bij deze weergave';
+
+  @override
+  String get projectsEmptyTitle => 'Start je eerste project';
 
   @override
   String get projectsFilterStatusLabel => 'Status:';
@@ -10351,6 +10424,27 @@ class AppLocalizationsNl extends AppLocalizations {
   String get projectShowcaseViewBlocker => 'Beeldblokker';
 
   @override
+  String get projectsScopeAll => 'Alles';
+
+  @override
+  String get projectsScopeCurrent => 'Actueel';
+
+  @override
+  String get projectsSortActionable => 'Aandacht nodig';
+
+  @override
+  String get projectsSortName => 'Naam';
+
+  @override
+  String get projectsSortRecent => 'Recent bijgewerkt';
+
+  @override
+  String get projectsSortTargetDate => 'Streefdatum';
+
+  @override
+  String get projectsSortTooltip => 'Projecten sorteren';
+
+  @override
   String get projectStatusActive => 'Actief';
 
   @override
@@ -10380,7 +10474,13 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get projectsUnavailableCategory => 'Niet-beschikbare categorie';
+
+  @override
   String get projectTargetDateLabel => 'Streefdatum';
+
+  @override
+  String get projectTaskProgressNone => 'Geen taken';
 
   @override
   String get projectTitleLabel => 'Projecttitel';

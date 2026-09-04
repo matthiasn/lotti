@@ -447,6 +447,7 @@ class SettingsLocation extends BeamLocation<BeamState> {
           child: ProjectDetailPage(
             projectId: state.pathParameters['projectId']!,
             categoryId: state.uri.queryParameters['categoryId'],
+            returnPath: state.uri.queryParameters['returnTo'],
           ),
         ),
 

@@ -10,7 +10,8 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
-import 'package:lotti/features/categories/ui/widgets/category_field.dart';
+import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
+import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/ui/app_command_controller.dart';
@@ -21,7 +22,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/widgets/form/form_widgets.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fallbacks.dart';
@@ -46,13 +46,14 @@ void main() {
     mockAgentService = MockProjectAgentService();
     mockEntitiesCacheService = MockEntitiesCacheService();
 
-    // CategoryField (rendered by the form) reads the category name through
-    // `getIt<EntitiesCacheService>()`. Default the lookup to "no category" so
+    // The category selection row reads category data through the shared cache.
+    // Default the lookup and picker options to empty so
     // tests that don't preselect one don't trip GetIt's missing-registration
     // guard.
     when(
       () => mockEntitiesCacheService.getCategoryById(any()),
     ).thenReturn(null);
+    when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
 
     await setUpTestGetIt(
       additionalSetup: () {
@@ -189,9 +190,9 @@ void main() {
       await pumpForm(tester);
       final messages = tester.element(find.byType(ProjectCreateForm)).messages;
 
-      expect(find.byType(LottiTextField), findsOneWidget);
-      expect(find.byType(CategoryField), findsOneWidget);
-      expect(find.text(messages.projectTargetDateLabel), findsOneWidget);
+      expect(find.byType(DesignSystemTextInput), findsOneWidget);
+      expect(find.byType(DesignSystemSelectionRow), findsNWidgets(2));
+      expect(find.text(messages.projectTargetDateLabel), findsNWidgets(2));
       expect(find.text(messages.cancelButton), findsOneWidget);
       expect(find.text(messages.createButton), findsOneWidget);
     });
@@ -222,7 +223,10 @@ void main() {
             .element(find.byType(ProjectCreateForm))
             .messages;
 
-        await tester.enterText(find.byType(LottiTextField), 'My New Project');
+        await tester.enterText(
+          find.byType(DesignSystemTextInput),
+          'My New Project',
+        );
         await tester.pump();
 
         await tester.tap(find.text(messages.createButton));
@@ -256,7 +260,10 @@ void main() {
       await pumpForm(tester);
       final messages = tester.element(find.byType(ProjectCreateForm)).messages;
 
-      await tester.enterText(find.byType(LottiTextField), 'Doomed Project');
+      await tester.enterText(
+        find.byType(DesignSystemTextInput),
+        'Doomed Project',
+      );
       await tester.pump();
 
       await tester.tap(find.text(messages.createButton));
@@ -284,7 +291,10 @@ void main() {
       await pumpForm(tester);
       final messages = tester.element(find.byType(ProjectCreateForm)).messages;
 
-      await tester.enterText(find.byType(LottiTextField), 'Failing Project');
+      await tester.enterText(
+        find.byType(DesignSystemTextInput),
+        'Failing Project',
+      );
       await tester.pump();
 
       await tester.tap(find.text(messages.createButton));
@@ -305,7 +315,10 @@ void main() {
       await pumpForm(tester, categoryId: categoryId);
       final messages = tester.element(find.byType(ProjectCreateForm)).messages;
 
-      await tester.enterText(find.byType(LottiTextField), 'Categorised');
+      await tester.enterText(
+        find.byType(DesignSystemTextInput),
+        'Categorised',
+      );
       await tester.pump();
 
       await tester.tap(find.text(messages.createButton));
@@ -320,38 +333,35 @@ void main() {
       ).called(1);
     });
 
-    testWidgets('CategoryField onSave updates the categoryId used on save', (
+    testWidgets('category picker updates the categoryId used on save', (
       tester,
     ) async {
       const pickedCategoryId = 'cat-picked';
+      final pickedCategory = CategoryTestUtils.createTestCategory(
+        id: pickedCategoryId,
+        name: 'Picked',
+      );
       when(
         () => mockEntitiesCacheService.getCategoryById(pickedCategoryId),
-      ).thenReturn(
-        CategoryTestUtils.createTestCategory(
-          id: pickedCategoryId,
-          name: 'Picked',
-        ),
-      );
+      ).thenReturn(pickedCategory);
+      when(
+        () => mockEntitiesCacheService.sortedCategories,
+      ).thenReturn([pickedCategory]);
       stubCreateMetadata(categoryId: pickedCategoryId);
       stubCreateProject();
 
       await pumpForm(tester);
       final messages = tester.element(find.byType(ProjectCreateForm)).messages;
 
-      // Driving the picker modal end-to-end would be a wider integration
-      // test; what matters here is the wiring between the field's callback
-      // and the form's `_categoryId` state.
-      tester
-          .widget<CategoryField>(find.byType(CategoryField))
-          .onSave(
-            CategoryTestUtils.createTestCategory(
-              id: pickedCategoryId,
-              name: 'Picked',
-            ),
-          );
-      await tester.pump();
+      await tester.tap(find.text(messages.habitCategoryLabel));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Picked'));
+      await tester.pumpAndSettle();
 
-      await tester.enterText(find.byType(LottiTextField), 'Picked Project');
+      await tester.enterText(
+        find.byType(DesignSystemTextInput),
+        'Picked Project',
+      );
       await tester.pump();
 
       await tester.tap(find.text(messages.createButton));
@@ -384,10 +394,17 @@ void main() {
       await pumpForm(tester, categoryId: seededCategoryId);
       final messages = tester.element(find.byType(ProjectCreateForm)).messages;
 
-      tester.widget<CategoryField>(find.byType(CategoryField)).onSave(null);
-      await tester.pump();
+      await tester.tap(find.text(messages.habitCategoryLabel));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('category-picker-clear')),
+      );
+      await tester.pumpAndSettle();
 
-      await tester.enterText(find.byType(LottiTextField), 'Uncategorised');
+      await tester.enterText(
+        find.byType(DesignSystemTextInput),
+        'Uncategorised',
+      );
       await tester.pump();
 
       await tester.tap(find.text(messages.createButton));
@@ -423,7 +440,10 @@ void main() {
       await pumpForm(tester);
       final messages = tester.element(find.byType(ProjectCreateForm)).messages;
 
-      await tester.enterText(find.byType(LottiTextField), 'Agent Project');
+      await tester.enterText(
+        find.byType(DesignSystemTextInput),
+        'Agent Project',
+      );
       await tester.pump();
 
       await tester.tap(find.text(messages.createButton));
@@ -464,7 +484,10 @@ void main() {
       await pumpForm(tester, categoryId: categoryId);
       final messages = tester.element(find.byType(ProjectCreateForm)).messages;
 
-      await tester.enterText(find.byType(LottiTextField), 'Cat Project');
+      await tester.enterText(
+        find.byType(DesignSystemTextInput),
+        'Cat Project',
+      );
       await tester.pump();
 
       await tester.tap(find.text(messages.createButton));
@@ -495,12 +518,12 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      // After picking, a clear affordance appears.
-      expect(find.byIcon(LottiIcons.close), findsOneWidget);
-
-      await tester.tap(find.byIcon(LottiIcons.close));
-      await tester.pump();
-      expect(find.byIcon(LottiIcons.close), findsNothing);
+      // Reopening the shared picker exposes its explicit Clear action.
+      await tester.tap(find.byIcon(LottiIcons.today));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Clear'));
+      await tester.pumpAndSettle();
+      expect(find.byType(CalendarDatePicker), findsNothing);
     });
 
     testWidgets('Primary+S dispatches save and creates the project', (
@@ -511,7 +534,10 @@ void main() {
 
       await pumpForm(tester);
 
-      await tester.enterText(find.byType(LottiTextField), 'Shortcut Project');
+      await tester.enterText(
+        find.byType(DesignSystemTextInput),
+        'Shortcut Project',
+      );
       await tester.pump();
 
       await tester.sendKeyDownEvent(LogicalKeyboardKey.control);
@@ -539,9 +565,14 @@ void main() {
       stubCreateProject();
 
       await pumpForm(tester);
-      await tester.enterText(find.byType(LottiTextField), 'Pending Project');
+      await tester.enterText(
+        find.byType(DesignSystemTextInput),
+        'Pending Project',
+      );
       await tester.pump();
-      final commandContext = tester.element(find.byType(LottiTextField));
+      final commandContext = tester.element(
+        find.byType(DesignSystemTextInput),
+      );
       final commandController = AppCommandControllerProvider.of(commandContext);
 
       final invocation = commandController.invoke(
@@ -625,7 +656,7 @@ void main() {
       final messages = tester.element(find.byType(ProjectCreateForm)).messages;
       expect(find.text(messages.projectCreateTitle), findsWidgets);
 
-      await tester.enterText(find.byType(LottiTextField), 'Modal');
+      await tester.enterText(find.byType(DesignSystemTextInput), 'Modal');
       await tester.pump();
 
       await tester.tap(find.text(messages.createButton));

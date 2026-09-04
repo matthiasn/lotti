@@ -126,6 +126,7 @@ class TaskMetaSection extends ConsumerWidget {
               ref,
               taskId: taskId,
               categoryId: categoryId,
+              taskIsPrivate: task.meta.private ?? false,
               // `.value` keeps the picker's current selection through a
               // background reload (same rationale as _ProjectValue).
               current: ref.read(projectForTaskProvider(taskId)).value,

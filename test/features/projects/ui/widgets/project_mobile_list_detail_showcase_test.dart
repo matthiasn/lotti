@@ -64,7 +64,17 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('Health Score'), findsOneWidget);
+      final detailScroll = find.descendant(
+        of: find.byType(ProjectMobileDetailContent),
+        matching: find.byType(Scrollable),
+      );
+      await tester.scrollUntilVisible(
+        find.text('Project health'),
+        300,
+        scrollable: detailScroll,
+      );
+      expect(find.text('Project health'), findsOneWidget);
+      expect(find.text('Health Score'), findsNothing);
       expect(
         container
             .read(projectListDetailShowcaseControllerProvider)
@@ -87,7 +97,20 @@ void main() {
             .title,
         'API Migration',
       );
+      await tester.scrollUntilVisible(
+        find.descendant(
+          of: find.byType(ProjectMobileDetailContent),
+          matching: find.text('API Migration'),
+        ),
+        -300,
+        scrollable: detailScroll,
+      );
       expect(find.text('API Migration'), findsAtLeastNWidgets(2));
+      await tester.scrollUntilVisible(
+        find.textContaining('legacy webhook bridge'),
+        300,
+        scrollable: detailScroll,
+      );
       expect(
         find.textContaining('legacy webhook bridge'),
         findsOneWidget,

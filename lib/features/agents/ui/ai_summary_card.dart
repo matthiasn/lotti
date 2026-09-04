@@ -644,7 +644,7 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
       identityData: identityData,
       onSetupTap: () => AgentModelSheet.show(
         context: context,
-        taskId: widget.taskId,
+        entityId: widget.taskId,
         agentId: agentId,
       ),
     );
@@ -757,40 +757,31 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
           )
         : null;
 
-    final cardRadius = aiCardRadius(context);
-    return DecoratedBox(
-      // The chrome both AI panels share — see [aiCardDecoration].
-      decoration: aiCardDecoration(context),
-      child: ClipRRect(
-        borderRadius: cardRadius,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TldrHeader(
-              agentName: subtitle,
-              onAgentTap: () => _openInternals(agentName: subtitle),
-              trailing: playbackControl,
-            ),
-            // Reading order: the summary first, then the update CTA for the
-            // summary just read, then the proposals. Quiet links already own
-            // their compact row height, so the section needs only step3 below.
-            if (hasReportContent)
-              Padding(
-                // No bottom inset here: the body's own disclosure row carries
-                // the trailing optical gap inside its tap target, and supplies
-                // an explicit one when it renders no row at all.
-                padding: EdgeInsets.symmetric(
-                  horizontal: tokens.spacing.cardPadding,
-                ),
-                child: reportBody,
-              ),
-            // Both hidden until the first value to avoid flashing empty state.
-            ?proposalsBand,
-            ?historySection,
-            controlsFooter,
-          ],
+    return AgentSummaryCardSurface(
+      children: [
+        TldrHeader(
+          agentName: subtitle,
+          onAgentTap: () => _openInternals(agentName: subtitle),
+          trailing: playbackControl,
         ),
-      ),
+        // Reading order: the summary first, then the update CTA for the
+        // summary just read, then the proposals. Quiet links already own
+        // their compact row height, so the section needs only step3 below.
+        if (hasReportContent)
+          Padding(
+            // No bottom inset here: the body's own disclosure row carries
+            // the trailing optical gap inside its tap target, and supplies
+            // an explicit one when it renders no row at all.
+            padding: EdgeInsets.symmetric(
+              horizontal: tokens.spacing.cardPadding,
+            ),
+            child: reportBody,
+          ),
+        // Both hidden until the first value to avoid flashing empty state.
+        ?proposalsBand,
+        ?historySection,
+        controlsFooter,
+      ],
     );
   }
 

@@ -5,9 +5,9 @@ import 'package:lotti/features/design_system/components/navigation/desktop_navig
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_state.dart';
-import 'package:lotti/features/projects/ui/widgets/project_detail_pane.dart';
 import 'package:lotti/features/projects/ui/widgets/project_list_detail_showcase.dart';
 import 'package:lotti/features/projects/ui/widgets/project_list_pane.dart';
+import 'package:lotti/features/projects/ui/widgets/project_mobile_detail_content.dart';
 import 'package:lotti/features/projects/widgetbook/project_list_detail_mock_controller.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -66,11 +66,12 @@ void main() {
         'Device Sync',
       );
       expect(find.byType(ProjectListPane), findsOneWidget);
-      expect(find.byType(ProjectDetailPane), findsOneWidget);
+      expect(find.byType(ProjectMobileDetailContent), findsOneWidget);
 
       // "Device Sync" appears in both the list row and the detail header.
       expect(find.text('Device Sync'), findsAtLeastNWidgets(2));
-      expect(find.text('Health Score'), findsOneWidget);
+      expect(find.text('Project health'), findsOneWidget);
+      expect(find.text('Health Score'), findsNothing);
     });
 
     testWidgets('updates the detail pane when a list project is selected', (
@@ -85,7 +86,7 @@ void main() {
         readState(container).selectedProject?.project.meta.id,
         'api-migration',
       );
-      expect(find.byType(ProjectDetailPane), findsOneWidget);
+      expect(find.byType(ProjectMobileDetailContent), findsOneWidget);
       // The detail pane now renders content unique to the API Migration
       // project's report.
       expect(find.textContaining('legacy webhook bridge'), findsOneWidget);

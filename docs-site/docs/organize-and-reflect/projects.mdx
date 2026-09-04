@@ -52,15 +52,16 @@ lunar sardine reserve” says more than “Sardines.”
 
 ## Edit project settings
 
-The project settings route provides the complete form editor for status, title,
-target date, health, agent assignment, proposed agent changes, and linked
-tasks. It also keeps **Cancel** and **Save** actions pinned at the bottom, so
-pending form changes are explicit.
+Choose **Edit project** from a project detail to open the complete form editor
+inside the Projects workspace. It covers the title, description, category,
+status, and target date. Health, agent actions, proposed changes, and linked
+tasks stay on the read-first project detail. **Cancel** and **Save** sit directly
+below the form, and either action returns to that project.
 
 <ManualScreenshot
   caseId="projects/editor"
-  alt="Project Waddle settings editor showing its active status, title, target date, health, agent assignment, and linked tasks"
-  caption="This is the production settings editor. It is separate from the read-first project workspace shown below."
+  alt="Project Waddle editor showing its title, description, category, active status, and target date"
+  caption="The form editor opens from the read-first project workspace and returns there after saving or canceling."
 />
 
 ## Understand project status
@@ -82,25 +83,26 @@ save button on this read-first detail surface.
 
 <ManualScreenshot
   caseId="projects/detail"
-  alt="Project Waddle detail showing an 82 health score, five of eight tasks completed, one blocker, and an AI report updated two hours ago"
+  alt="Project Waddle detail showing an On Track health assessment, five of eight tasks completed, one blocker, and an expandable AI report"
   caption="Desktop keeps the project list and detail side by side. Mobile opens the same detail as a full page."
 />
 
-The health panel summarizes the current project-agent assessment:
+The project-agent card brings the assessment and report together:
 
-- the health score is a compact signal, not a substitute for the underlying
-  work;
+- the health band summarizes the agent's assessment, with rationale and
+  confidence when available;
 - task progress shows completed and blocked counts;
 - the report gives a current summary and can expand to its full content; and
 - recommendations call attention to concrete next actions.
 
-In Project Waddle, a score of 82 and five completed tasks are encouraging, but
-the zero-gravity fish feeder is still a launch blocker. Read the explanation
-before treating a score as a verdict.
+In Project Waddle, an On Track assessment and five completed tasks are
+encouraging, but the zero-gravity fish feeder is still a launch blocker. Read
+the rationale before treating the band as a verdict.
 
-When a project agent is configured, the report menu can request a fresh report
-or cancel a scheduled wake. Without an agent, the project still shows its tasks
-and any stored project text.
+When a project agent is configured, its controls let you choose a model setup,
+toggle automatic updates, run a report now, or cancel a scheduled wake. Without
+an agent, the detail offers assignment and still shows the project's tasks and
+description.
 
 ## Keep project work in tasks
 
@@ -118,6 +120,10 @@ Assign a task to a project from the project control in the task header. Projects
 are scoped by category, so give the task a category before choosing a project.
 A task belongs to at most one project at a time; assigning another project
 moves the link instead of duplicating it.
+
+A project's category cannot change while it has linked tasks or a live project
+agent. This protects membership and agent permissions from silently drifting
+into different categories.
 
 ## Projects, categories, and tasks
 

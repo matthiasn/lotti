@@ -7,23 +7,33 @@ import 'package:lotti/features/projects/state/project_providers.dart';
 import 'package:lotti/features/projects/ui/widgets/project_status_chip.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
-/// Modal content for selecting a project within a category.
+/// Modal content for selecting a privacy-compatible project within a category.
 class ProjectSelectionModalContent extends ConsumerWidget {
   const ProjectSelectionModalContent({
     required this.categoryId,
+    required this.taskIsPrivate,
     required this.onProjectSelected,
     this.currentProjectId,
     super.key,
   });
 
   final String categoryId;
-  final Future<void> Function(ProjectEntry? project) onProjectSelected;
+  final bool taskIsPrivate;
+  final Future<bool> Function(ProjectEntry? project) onProjectSelected;
   final String? currentProjectId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return ProjectSelectionModalBody(
-      projectsAsync: ref.watch(projectsForCategoryProvider(categoryId)),
+      projectsAsync: ref
+          .watch(projectsForCategoryProvider(categoryId))
+          .whenData(
+            (projects) => projects
+                .where(
+                  (project) => (project.meta.private ?? false) == taskIsPrivate,
+                )
+                .toList(),
+          ),
       onProjectSelected: onProjectSelected,
       currentProjectId: currentProjectId,
     );
@@ -31,7 +41,7 @@ class ProjectSelectionModalContent extends ConsumerWidget {
 }
 
 /// Testable rendering core shared by every project-picker entry point.
-class ProjectSelectionModalBody extends StatelessWidget {
+class ProjectSelectionModalBody extends StatefulWidget {
   const ProjectSelectionModalBody({
     required this.projectsAsync,
     required this.onProjectSelected,
@@ -40,15 +50,23 @@ class ProjectSelectionModalBody extends StatelessWidget {
   });
 
   final AsyncValue<List<ProjectEntry>> projectsAsync;
-  final Future<void> Function(ProjectEntry? project) onProjectSelected;
+  final Future<bool> Function(ProjectEntry? project) onProjectSelected;
   final String? currentProjectId;
+
+  @override
+  State<ProjectSelectionModalBody> createState() =>
+      _ProjectSelectionModalBodyState();
+}
+
+class _ProjectSelectionModalBodyState extends State<ProjectSelectionModalBody> {
+  bool _selectionRejected = false;
 
   @override
   Widget build(BuildContext context) {
     final messages = context.messages;
     final tokens = context.designTokens;
 
-    return projectsAsync.when(
+    return widget.projectsAsync.when(
       loading: () => Padding(
         padding: EdgeInsets.all(tokens.spacing.step7),
         child: const Center(child: CircularProgressIndicator()),
@@ -86,8 +104,8 @@ class ProjectSelectionModalBody extends StatelessWidget {
                       : item.project!.data.title,
                   type: DesignSystemSelectionRowType.singleSelect,
                   selected: item.isNone
-                      ? currentProjectId == null
-                      : item.project!.meta.id == currentProjectId,
+                      ? widget.currentProjectId == null
+                      : item.project!.meta.id == widget.currentProjectId,
                   leading: Icon(
                     item.isNone ? LottiIcons.block : LottiIcons.folder,
                     color: tokens.colors.text.mediumEmphasis,
@@ -97,10 +115,41 @@ class ProjectSelectionModalBody extends StatelessWidget {
                       ? null
                       : ProjectStatusChip(status: item.project!.data.status),
                   onTap: () async {
-                    await onProjectSelected(item.project);
+                    final alreadySelected = item.isNone
+                        ? widget.currentProjectId == null
+                        : item.project!.meta.id == widget.currentProjectId;
+                    if (alreadySelected) {
+                      Navigator.pop(context);
+                      return;
+                    }
+                    var accepted = false;
+                    try {
+                      accepted = await widget.onProjectSelected(item.project);
+                    } catch (_) {
+                      accepted = false;
+                    }
                     if (!context.mounted) return;
+                    if (!accepted) {
+                      setState(() => _selectionRejected = true);
+                      return;
+                    }
                     Navigator.pop(context);
                   },
+                ),
+              if (_selectionRejected)
+                Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    tokens.spacing.step5,
+                    tokens.spacing.step4,
+                    tokens.spacing.step5,
+                    tokens.spacing.step3,
+                  ),
+                  child: Text(
+                    messages.projectPickerUpdateFailed,
+                    style: tokens.typography.styles.body.bodySmall.copyWith(
+                      color: tokens.colors.alert.error.ink,
+                    ),
+                  ),
                 ),
               if (projects.isEmpty)
                 Padding(

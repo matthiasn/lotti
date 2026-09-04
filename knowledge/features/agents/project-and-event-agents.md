@@ -50,7 +50,7 @@ expensive and useless.
 
 `ProjectAgentService.createProjectAgent()`:
 
-1. Serializes with scope reconciliation of the same project,
+1. Serializes with category edits and destructive mutation of the same project,
    then verifies the journal project still exists with the requested category.
 2. Enforces one project agent per project.
 3. Re-reads the template and validates that it is an active project-agent
@@ -66,8 +66,10 @@ expensive and useless.
 10. Registers the project subscription.
 11. Enqueues the explicit creation wake.
 
-Synced scope reconciliation holds the same per-project coordinator as
-provisioning. It verifies the current journal scope after waiting and reads
+Project deletion and synced scope reconciliation hold the same per-project
+coordinator as provisioning. Deletion lives in `ProjectLifecycleService`; its
+cross-store compensation is documented in [Projects](../projects.md).
+Scope reconciliation verifies the current journal scope after waiting and reads
 identities and assigned templates inside the agent transaction, preserving
 unrelated preferences. Missing, deleted, wrong-kind, or category-incompatible
 templates retire their agents without granting access to the new category.

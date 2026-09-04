@@ -108,6 +108,12 @@ void main() {
         expect(a, isNot(equals(b)));
       });
 
+      test('not equal when sortMode differs', () {
+        const a = ProjectsFilter();
+        const b = ProjectsFilter(sortMode: ProjectsSortMode.name);
+        expect(a, isNot(equals(b)));
+      });
+
       test('identical instance is equal', () {
         const filter = ProjectsFilter(textQuery: 'x');
         expect(filter, equals(filter));
@@ -147,6 +153,12 @@ void main() {
           searchMode: ProjectsSearchMode.localText,
         );
         expect(copied.searchMode, ProjectsSearchMode.localText);
+      });
+
+      test('copies with new sortMode', () {
+        const original = ProjectsFilter();
+        final copied = original.copyWith(sortMode: ProjectsSortMode.recent);
+        expect(copied.sortMode, ProjectsSortMode.recent);
       });
 
       test('retains all fields when no arguments given', () {
@@ -319,6 +331,20 @@ void main() {
         expect(item.searchableText, contains('some description'));
         expect(item.searchableText, contains('Beta Project'));
         expect(item.searchableText, contains('Work'));
+      });
+
+      test('includes the visible agent one-liner', () {
+        final item = ProjectListItemData(
+          project: makeTestProject(title: 'Device Sync'),
+          category: null,
+          taskRollup: const ProjectTaskRollupData(),
+          oneLiner: 'Ready for the offline-first release review',
+        );
+
+        expect(
+          item.searchableText,
+          contains('Ready for the offline-first release review'),
+        );
       });
 
       test('omits blank segments', () {

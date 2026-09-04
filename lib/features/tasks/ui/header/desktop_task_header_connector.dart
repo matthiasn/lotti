@@ -111,6 +111,7 @@ class DesktopTaskHeaderConnector extends ConsumerWidget {
               ref,
               taskId: taskId,
               categoryId: categoryId,
+              taskIsPrivate: task.meta.private ?? false,
               current: project,
             ),
       onCategoryTap: () => TaskMetaPickers.showCategoryPicker(

@@ -31,6 +31,10 @@ class ProjectsOverviewContent extends StatefulWidget {
     this.titleBottomSpacing = 24,
     this.listBottomPadding = 24,
     this.renderHeader = true,
+    this.emptyTitle,
+    this.emptyBody,
+    this.emptyActionLabel,
+    this.onEmptyAction,
     super.key,
   });
 
@@ -54,6 +58,10 @@ class ProjectsOverviewContent extends StatefulWidget {
   /// [ProjectsHeader] so the caller can render its own header (e.g. the
   /// shared tab-section header used by the live Projects tab).
   final bool renderHeader;
+  final String? emptyTitle;
+  final String? emptyBody;
+  final String? emptyActionLabel;
+  final VoidCallback? onEmptyAction;
 
   @override
   State<ProjectsOverviewContent> createState() =>
@@ -113,10 +121,15 @@ class _ProjectsOverviewContentState extends State<ProjectsOverviewContent> {
                 if (widget.groups.isEmpty)
                   SliverPadding(
                     padding: EdgeInsets.only(bottom: widget.listBottomPadding),
-                    sliver: const SliverFillRemaining(
+                    sliver: SliverFillRemaining(
                       hasScrollBody: false,
                       child: DetailContentWidth(
-                        child: NoResultsPane(),
+                        child: NoResultsPane(
+                          title: widget.emptyTitle,
+                          body: widget.emptyBody,
+                          actionLabel: widget.emptyActionLabel,
+                          onAction: widget.onEmptyAction,
+                        ),
                       ),
                     ),
                   )

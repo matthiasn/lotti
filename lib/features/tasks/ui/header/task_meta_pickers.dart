@@ -134,6 +134,7 @@ abstract final class TaskMetaPickers {
     WidgetRef ref, {
     required String taskId,
     required String categoryId,
+    required bool taskIsPrivate,
     ProjectEntry? current,
   }) async {
     final repository = ref.read(projectRepositoryProvider);
@@ -143,12 +144,13 @@ abstract final class TaskMetaPickers {
       padding: EdgeInsets.zero,
       builder: (_) => ProjectSelectionModalContent(
         categoryId: categoryId,
+        taskIsPrivate: taskIsPrivate,
         currentProjectId: current?.meta.id,
         onProjectSelected: (selected) async {
           if (selected == null) {
-            await repository.unlinkTaskFromProject(taskId);
+            return repository.unlinkTaskFromProject(taskId);
           } else {
-            await repository.linkTaskToProject(
+            return repository.linkTaskToProject(
               projectId: selected.meta.id,
               taskId: taskId,
             );

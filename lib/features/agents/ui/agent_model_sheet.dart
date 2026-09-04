@@ -27,21 +27,21 @@ import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
-/// Adaptive agent setup flow for task agents and goal-agent profiles.
+/// Adaptive setup for task/project agents and goal-agent profiles.
 class AgentModelSheet {
   const AgentModelSheet._();
 
   static Future<void> show({
     required BuildContext context,
     required String agentId,
-    String? taskId,
+    String? entityId,
   }) {
     final pageIndex = ValueNotifier<int>(0);
     final selectedProviderId = ValueNotifier<String?>(null);
     final modelBackPage = ValueNotifier<int>(0);
     final controller = _AgentSetupFlowController(
       container: ProviderScope.containerOf(context),
-      taskId: taskId,
+      entityId: entityId,
       agentId: agentId,
       navigator: Navigator.of(
         context,
@@ -151,7 +151,7 @@ String? _selectedProfileId(
 class _AgentSetupFlowController {
   _AgentSetupFlowController({
     required this.container,
-    required this.taskId,
+    required this.entityId,
     required this.agentId,
     required this.navigator,
     required this.taskMessenger,
@@ -159,7 +159,7 @@ class _AgentSetupFlowController {
   });
 
   final ProviderContainer container;
-  final String? taskId;
+  final String? entityId;
   final String agentId;
   final NavigatorState navigator;
   final ScaffoldMessengerState taskMessenger;
@@ -228,12 +228,14 @@ class _AgentSetupFlowController {
     BuildContext context,
     TaskAgentSetupOptions options,
   ) async {
-    final taskId = this.taskId;
-    if (taskId == null) return;
+    final entityId = this.entityId;
+    if (entityId == null) return;
     final messages = context.messages;
     final journalDb = container.read(journalDbProvider);
-    final entity = await journalDb.journalEntityById(taskId);
-    final categoryId = entity is Task ? entity.categoryId : null;
+    final entity = await journalDb.journalEntityById(entityId);
+    final categoryId = entity is Task || entity is ProjectEntry
+        ? entity?.meta.categoryId
+        : null;
     final category = categoryId == null
         ? null
         : await journalDb.getCategoryById(categoryId);
@@ -388,7 +390,7 @@ class _AgentSetupOverviewPage extends ConsumerWidget {
     final config = identity?.config;
     final selectedProfileId = _selectedProfileId(
       config,
-      allowLegacyProfile: controller.taskId == null,
+      allowLegacyProfile: controller.entityId == null,
     );
     final currentProfile = options?.profiles
         .where((profile) => profile.id == selectedProfileId)
@@ -422,7 +424,7 @@ class _AgentSetupOverviewPage extends ConsumerWidget {
             children: [
               _AgentSetupSection(
                 label: context.messages.taskAgentCurrentSetupLabel,
-                description: controller.taskId == null
+                description: controller.entityId == null
                     ? null
                     : context.messages.taskAgentSetupChoiceHelp,
                 child: DesignSystemGroupedList(
@@ -443,7 +445,7 @@ class _AgentSetupOverviewPage extends ConsumerWidget {
                       ),
                       onTap: options == null ? null : onChooseProfile,
                     ),
-                    if (controller.taskId != null)
+                    if (controller.entityId != null)
                       DesignSystemSelectionRow(
                         key: const ValueKey('agent-choose-model'),
                         title: context.messages.taskAgentThinkingModelLabel,
@@ -463,7 +465,7 @@ class _AgentSetupOverviewPage extends ConsumerWidget {
                             ? null
                             : () => onChooseModel(options),
                       ),
-                    if (controller.taskId != null &&
+                    if (controller.entityId != null &&
                         config?.inferenceSetup?.thinkingModelOverrideId != null)
                       DesignSystemSelectionRow(
                         key: const ValueKey('agent-clear-override'),
@@ -479,7 +481,7 @@ class _AgentSetupOverviewPage extends ConsumerWidget {
                   ],
                 ),
               ),
-              if (controller.taskId != null) ...[
+              if (controller.entityId != null) ...[
                 SizedBox(height: tokens.spacing.step5),
                 ValueListenableBuilder<bool>(
                   valueListenable: controller.confirmDisable,
@@ -662,7 +664,7 @@ class _AgentProfilePage extends ConsumerWidget {
         const <AiConfigInferenceProfile>[];
     final selectedProfileId = _selectedProfileId(
       config,
-      allowLegacyProfile: controller.taskId == null,
+      allowLegacyProfile: controller.entityId == null,
     );
 
     return _AgentBusyGuard(
@@ -671,7 +673,7 @@ class _AgentProfilePage extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (controller.taskId != null)
+            if (controller.entityId != null)
               DesignSystemSelectionRow(
                 title: context.messages.taskAgentUseCategoryDefault,
                 subtitle:

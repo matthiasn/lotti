@@ -45,14 +45,14 @@ String? resolveReportAdditional(AgentReportEntity? report) {
 class TldrHeader extends StatelessWidget {
   const TldrHeader({
     required this.agentName,
-    required this.onAgentTap,
+    this.onAgentTap,
     this.title,
     this.trailing,
     super.key,
   });
 
   final String? agentName;
-  final VoidCallback onAgentTap;
+  final VoidCallback? onAgentTap;
 
   /// The card's own name, when it is not the task/goal agent's
   /// `aiCardTitle`. The relationship briefing is the same panel wearing a
@@ -92,7 +92,7 @@ class TldrHeader extends StatelessWidget {
               child: Align(
                 alignment: AlignmentDirectional.centerStart,
                 child: Semantics(
-                  button: true,
+                  button: onAgentTap != null,
                   label: hasName ? '$cardTitle. $displayName' : cardTitle,
                   excludeSemantics: true,
                   // No hover fill: a rectangle washing over the badge + title
@@ -256,8 +256,8 @@ class TldrBody extends StatelessWidget {
     required this.expanded,
     required this.additionalReport,
     required this.onToggle,
-    required this.onOpenInternals,
     required this.disclosureKey,
+    this.onOpenInternals,
     super.key,
   });
 
@@ -265,7 +265,7 @@ class TldrBody extends StatelessWidget {
   final bool expanded;
   final String? additionalReport;
   final VoidCallback onToggle;
-  final VoidCallback onOpenInternals;
+  final VoidCallback? onOpenInternals;
 
   /// Key on the Read more / Show less control. Required rather than
   /// defaulted: a default would hand a fourth surface the task card's key
@@ -337,11 +337,11 @@ class TldrBody extends StatelessWidget {
                   expanded: expanded,
                   onPressed: onToggle,
                 ),
-              if (expanded)
+              if (expanded && onOpenInternals != null)
                 _QuietDisclosureLink(
                   label: messages.aiCardOpenAgentInternals,
                   icon: LottiIcons.tune,
-                  onPressed: onOpenInternals,
+                  onPressed: onOpenInternals!,
                 ),
             ],
           ),

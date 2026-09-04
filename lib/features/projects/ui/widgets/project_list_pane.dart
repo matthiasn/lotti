@@ -70,8 +70,12 @@ class _ProjectListPaneState extends State<ProjectListPane> {
                         itemCount: groups.length,
                         separatorBuilder: (_, _) => const SizedBox(height: 20),
                         itemBuilder: (context, index) {
+                          final group = groups[index];
                           return ProjectGroupSection(
-                            group: groups[index],
+                            key: ValueKey(
+                              'project-group-${group.categoryId ?? 'unassigned'}',
+                            ),
+                            group: group,
                             selectedProjectId: selectedId,
                             onProjectSelected: (item) =>
                                 widget.onProjectSelected(item.project.meta.id),
