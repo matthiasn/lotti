@@ -270,12 +270,33 @@ class PlazaBillboard {
     required this.attention,
     required this.backing,
     required this.anchor,
+    this.glow,
   });
 
   final BillboardSlot slot;
   final TaskAttention attention;
   final Node backing;
   final Node anchor;
+
+  /// The soft bloom behind the lightbox: an anomaly breathes by it. The
+  /// jumbotron has none of its own here; its bloom is a pool of the scene.
+  final UnlitMaterial? glow;
+
+  /// The bloom's alpha at eye level, at the top of a breath.
+  static const glowAlpha = 0.3;
+
+  double _glowAlpha = glowAlpha;
+
+  /// The bloom's current alpha; written to the material only when it
+  /// moved, so a still billboard costs nothing per frame.
+  double get currentGlow => _glowAlpha;
+  set currentGlow(double value) {
+    final glow = this.glow;
+    if (glow == null || (value - _glowAlpha).abs() < 1e-3) return;
+    _glowAlpha = value;
+    final c = glow.baseColorFactor;
+    glow.baseColorFactor = Vector4(c.x, c.y, c.z, value);
+  }
 
   Vector3 get center => Vector3(slot.x, slot.centerY, slot.z);
 }
@@ -448,6 +469,11 @@ class PlazaSceneController {
   /// The altitude fade last applied, so a camera that has not climbed
   /// does not rewrite every pool and wash material each frame.
   double? _lastFadeT;
+
+  /// What is left of a pool's alpha at the camera's height: 1 at eye
+  /// level, [poolFloor] above [poolFadeTop]. The billboards' bloom fades
+  /// by it too.
+  double get poolFade => 1 - (1 - poolFloor) * (_lastFadeT ?? 0);
 
   /// Shows the map layer once [eye] is above [poolFadeStart], and fades
   /// the fog, pools and washes with its height.
@@ -1858,12 +1884,18 @@ class PlazaSceneController {
       Vector3(slot.width + 0.5, slot.height + 0.5, depth),
       _towerMaterial,
     );
-    // Faux bloom: a wide soft glow behind the lightbox.
+    // Faux bloom: a wide soft glow behind the lightbox. Not a pool: the
+    // surfaces breathe it and fade it with [poolFade] themselves.
+    final glow = UnlitMaterial()
+      ..baseColorFactor = linearColor(frame, alpha: PlazaBillboard.glowAlpha)
+      ..alphaMode = AlphaMode.blend;
     root.add(
-      _glowQuad(slot.width + 3, slot.height + 3, frame, 0.3)
-        ..localTransform = Matrix4.translation(
+      Node(
+        localTransform: Matrix4.translation(
           Vector3(0, slot.centerY, -depth - 0.06),
         ),
+        mesh: Mesh(ccwQuad(slot.width + 3, slot.height + 3), glow),
+      ),
     );
     // The panel's own border is the one frame; the lightbox bezel and the
     // chase lights sit behind it.
@@ -1877,6 +1909,7 @@ class PlazaSceneController {
       attention: attention,
       backing: backing,
       anchor: anchor,
+      glow: glow,
     );
     billboards.add(billboard);
     pickableBillboards[backing] = billboard;

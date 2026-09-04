@@ -430,6 +430,44 @@ void main() {
         expect(s.pulseSeconds, inInclusiveRange(1.2, 3));
       }
     });
+
+    test('the glow breathes on the pulse: floor to full and back, eased', () {
+      const slot = BillboardSlot(
+        rank: 0,
+        x: 0,
+        z: 0,
+        facingRadians: 0,
+        width: 10,
+        height: 5,
+        bottom: 4,
+        mount: BillboardMount.pylon,
+        pulseSeconds: 2,
+      );
+      expect(slot.glowAt(0), BillboardSlot.glowFloor);
+      expect(slot.glowAt(1), closeTo(1, 1e-9));
+      expect(slot.glowAt(2), closeTo(BillboardSlot.glowFloor, 1e-9));
+      expect(slot.glowAt(0.5), closeTo(slot.glowAt(1.5), 1e-9));
+      // Eased: slow at the turns, fast through the middle.
+      final start = slot.glowAt(0.1) - slot.glowAt(0);
+      final middle = slot.glowAt(0.55) - slot.glowAt(0.45);
+      expect(middle, greaterThan(start));
+      for (var t = 0.0; t < 6; t += 0.05) {
+        expect(slot.glowAt(t), inInclusiveRange(BillboardSlot.glowFloor, 1));
+      }
+      // A shorter pulse is further through its breath after 0.6 s.
+      const quick = BillboardSlot(
+        rank: 0,
+        x: 0,
+        z: 0,
+        facingRadians: 0,
+        width: 10,
+        height: 5,
+        bottom: 4,
+        mount: BillboardMount.roof,
+        pulseSeconds: 1.2,
+      );
+      expect(quick.glowAt(0.6), greaterThan(slot.glowAt(0.6)));
+    });
   });
 
   group('street furniture', () {

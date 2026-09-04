@@ -5,6 +5,7 @@ import 'package:lotti/features/design_system/theme/icon_tokens.dart';
 import 'package:lotti/features/plaza/domain/attention.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
 import 'package:lotti/features/plaza/ui/checklist_ticks.dart';
+import 'package:lotti/features/plaza/ui/cover_image.dart';
 import 'package:lotti/features/plaza/ui/plaza_chip.dart';
 import 'package:lotti/features/plaza/ui/plaza_style.dart';
 
@@ -246,11 +247,13 @@ class FacadeWidget extends StatelessWidget {
                                   ),
                                   child: SizedBox(
                                     width: double.infinity,
-                                    child: _Cover(
+                                    child: CoverImage(
                                       url: task.coverImageUrl!,
-                                      onChanged: onCoverChanged,
-                                      quiet:
-                                          attention.lantern == LanternState.off,
+                                      onLoaded: onCoverChanged,
+                                      opacity:
+                                          attention.lantern == LanternState.off
+                                          ? 0.45
+                                          : 1,
                                     ),
                                   ),
                                 ),
@@ -393,56 +396,6 @@ class FacadeWidget extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _Cover extends StatefulWidget {
-  const _Cover({required this.url, required this.quiet, this.onChanged});
-
-  final String url;
-  final bool quiet;
-  final VoidCallback? onChanged;
-
-  @override
-  State<_Cover> createState() => _CoverState();
-}
-
-class _CoverState extends State<_Cover> {
-  bool _notified = false;
-
-  @override
-  void didUpdateWidget(_Cover oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.url != widget.url) _notified = false;
-  }
-
-  void _changed() {
-    if (_notified || widget.onChanged == null) return;
-    _notified = true;
-    // Capture after this frame paints the decoded image (or error fallback).
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) widget.onChanged?.call();
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Opacity(
-      opacity: widget.quiet ? 0.45 : 1,
-      child: Image.network(
-        widget.url,
-        width: double.infinity,
-        fit: BoxFit.cover,
-        frameBuilder: (_, child, frame, _) {
-          if (frame != null) _changed();
-          return child;
-        },
-        errorBuilder: (_, _, _) {
-          _changed();
-          return const SizedBox();
-        },
       ),
     );
   }

@@ -1,27 +1,25 @@
 import 'dart:math' as math;
 
-import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 import 'package:lotti/features/plaza/domain/attention.dart';
+import 'package:lotti/features/plaza/ui/cover_image.dart';
 import 'package:lotti/features/plaza/ui/plaza_chip.dart';
 import 'package:lotti/features/plaza/ui/plaza_style.dart';
 
 /// A frontier-plaza billboard: the headline for one task that needs
 /// attention, framed in its state colour.
 ///
-/// Mid tier (captured on an interval). For anomalies the frame glow
-/// breathes on a [pulseSeconds] cycle, read off the harness [clock] so the
-/// panel changes only when the harness paints a frame; nothing here ticks
-/// on its own.
+/// A still face, captured once (and again when its cover lands, through
+/// [onCoverChanged]): nothing here animates. An anomaly's frame breathes
+/// in the scene, on the glow quad behind the lightbox, not in the widget.
 class BillboardWidget extends StatelessWidget {
   const BillboardWidget({
     required this.attention,
     required this.widthMeters,
     required this.heightMeters,
     required this.pxPerMeter,
-    required this.clock,
-    this.pulseSeconds = 3,
     this.reasonFirst = false,
+    this.onCoverChanged,
     super.key,
   });
 
@@ -36,55 +34,9 @@ class BillboardWidget extends StatelessWidget {
   final double heightMeters;
   final double pxPerMeter;
 
-  /// Full glow cycle for anomalies; shorter is more agitated.
-  final double pulseSeconds;
-
-  /// Elapsed seconds, advanced by the harness once per painted frame.
-  final ValueListenable<double> clock;
-
-  /// The glow at [seconds]: up over half a cycle, down over the other
-  /// half, eased at both ends, between 0.55 and 1.
-  double glowAt(double seconds) {
-    final half = pulseSeconds / 2;
-    final cycle = (seconds / half) % 2;
-    final phase = Curves.easeInOut.transform(cycle <= 1 ? cycle : 2 - cycle);
-    return 0.55 + 0.45 * phase;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    Widget face(double glow) => _BillboardFace(
-      attention: attention,
-      widthMeters: widthMeters,
-      heightMeters: heightMeters,
-      pxPerMeter: pxPerMeter,
-      glow: glow,
-      reasonFirst: reasonFirst,
-    );
-    if (!attention.anomalous) return face(1);
-    return ValueListenableBuilder<double>(
-      valueListenable: clock,
-      builder: (context, seconds, _) => face(glowAt(seconds)),
-    );
-  }
-}
-
-class _BillboardFace extends StatelessWidget {
-  const _BillboardFace({
-    required this.attention,
-    required this.widthMeters,
-    required this.heightMeters,
-    required this.pxPerMeter,
-    required this.glow,
-    required this.reasonFirst,
-  });
-
-  final TaskAttention attention;
-  final double widthMeters;
-  final double heightMeters;
-  final double pxPerMeter;
-  final double glow;
-  final bool reasonFirst;
+  /// Called once the cover art has decoded or failed, so the panel's
+  /// texture is captured again with the picture on it.
+  final VoidCallback? onCoverChanged;
 
   /// Aspect threshold: below [reasonAspect] the reason goes and the title
   /// gets one line. The cover always stays: it is the backdrop, and a
@@ -195,13 +147,10 @@ class _BillboardFace extends StatelessWidget {
       color: PlazaStyle.panel,
       child: Container(
         decoration: BoxDecoration(
-          border: Border.all(
-            color: frame.withValues(alpha: glow),
-            width: m(0.15),
-          ),
+          border: Border.all(color: frame, width: m(0.15)),
           boxShadow: [
             BoxShadow(
-              color: frame.withValues(alpha: 0.6 * glow),
+              color: frame.withValues(alpha: 0.6),
               blurRadius: m(1.3),
             ),
           ],
@@ -211,11 +160,7 @@ class _BillboardFace extends StatelessWidget {
           fit: StackFit.expand,
           children: [
             if (showCover)
-              Image.network(
-                task.coverImageUrl!,
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => const SizedBox(),
-              ),
+              CoverImage(url: task.coverImageUrl!, onLoaded: onCoverChanged),
             if (showCover)
               DecoratedBox(
                 decoration: BoxDecoration(

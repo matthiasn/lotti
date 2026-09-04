@@ -75,8 +75,10 @@ class _TestSurface extends WidgetComponent {
     required super.input,
   }) : super.bindOnly(bind: (_) {}, update: WidgetUpdatePolicy.manual);
 
+  final _controller = FakeWidgetTextureController();
+
   @override
-  final FakeWidgetTextureController controller = FakeWidgetTextureController();
+  FakeWidgetTextureController get controller => _controller;
 }
 
 FacadeSurfaceBuilder _surfaceBuilder(List<_TestSurface> surfaces) =>

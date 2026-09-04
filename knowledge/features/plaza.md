@@ -657,10 +657,10 @@ fourteen metres away).
 |---|---|---|
 | activated facade (one normally; all in stress mode) | `FacadeWidget` live | every 50 ms, preserving press feedback |
 | sign facade (at most 80) | `FacadeWidget` sign | initially and after cover completion |
-| pylon, mounted and roof billboards | `BillboardWidget` | anomalies every 100 ms, the rest (a still face) every 3 s; hidden beyond the plaza range |
+| pylon, mounted and roof billboards | `BillboardWidget` | once, and again when the cover lands; hidden beyond the plaza range. The frame's breathing is the scene's glow quad, not the widget |
 | mounted, gantry and roofline tickers | `TickerWidget` | every 50 ms, hidden beyond the plaza range |
 | jumbotron | `JumbotronWidget` at 0.5 × px/m | every 1 s |
-| skyline screens | `BillboardWidget` at 0.35 × px/m | every 3 s |
+| skyline screens | `BillboardWidget` at 0.35 × px/m | once, and again when the cover lands |
 | ticker housing | a dark track and a teal rim with end caps behind every band (geometry, not a widget); the type fades in and out at the housing's ends | — |
 | block markers, week signs | `BlockMarkerWidget` | once |
 | banners | `BannerWidget` | once |
@@ -835,8 +835,12 @@ until it lands.
   the jumbotron tower always trade: they are the city, not tasks.
 - **Billboards**: pylons get two braced posts on footings and a catwalk; roof
   panels get two struts; every panel gets a dark lightbox, a glow quad and
-  chase-light points around the frame; the panel's own border (the widget's,
-  which breathes) is the one frame. A roof panel sits over its own facade,
+  chase-light points around the frame; the panel's own border (the widget's)
+  is the one frame, and the glow quad behind the lightbox is what breathes:
+  `PlazaSurfaces.update` writes its alpha once per frame from the slot's
+  pulse (`BillboardSlot.glowAt`, floor 0.55) times the scene's `poolFade`,
+  and only when it moved, so a billboard costs no capture at rest. A roof
+  panel sits over its own facade,
   which carries the title, so it leads with the reason on a solid band in
   the state colour across its top, panel-dark ink, the title small on the
   scrim, and drops its 'fly there' (`BillboardWidget.reasonFirst`). On a
@@ -969,17 +973,17 @@ for keyboard and scene navigation is ignored in tour and bench modes.
   a captured widget ticks on every vsync. So every surface is a **manual
   capture requested from the pacer**: `PlazaSurfaces.update(eye, seconds,
   forward:)` asks each timed surface in range, and in view, once its
-  interval is up (anomalous billboards `nearInterval` 0.1 s, tickers
-  `tickerInterval` 0.05 s, the jumbotron `jumbotronInterval` 1 s, the
-  skyline screens and the still billboards `farInterval` 3 s; markers,
-  banners and signs once), and `FacadeLodManager.update(eye, forward:,
+  interval is up (tickers `tickerInterval` 0.05 s, the jumbotron
+  `jumbotronInterval` 1 s; billboards, skyline screens, markers, banners
+  and signs once, a cover that lands later asking for one more), and
+  `FacadeLodManager.update(eye, forward:,
   seconds:, flying:)` asks each live wall every `liveInterval` (0.05 s),
   and re-ranks the tiers only when the eye, the view direction, the budget
   or the flight state moved since a ranking that left nothing undone. And
   the animated widgets read **their cadence's clock**, a
   `ValueNotifier<double>` of harness seconds that `requestDue` advances
   immediately before each capture request: `TickerWidget` scrolls by it,
-  `BillboardWidget.glowAt` breathes by it, `JumbotronWidget` turns its
+  `JumbotronWidget` turns its
   slides by it; none of them owns an animation controller, so a clock notification rebuilds its listeners in the frame of the request.
   These clocks are shared per cadence, so even a culled surface can rebuild
   when another surface advances that clock; only its capture is culled.

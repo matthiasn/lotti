@@ -105,9 +105,10 @@ class _PlazaHarnessState extends State<_PlazaHarness>
   };
 
   /// `PLAZA_TRACE=1` prints one line per frame: the frame time, whether a
-  /// flight is under way, the pose, and how many solids contain the eye —
-  /// the ground truth for a stall, a missing flight or a wall flown
-  /// through, read off the running harness rather than a unit test.
+  /// flight is under way, the pose, how many solids contain the eye and
+  /// the running count of widget captures — the ground truth for a stall,
+  /// a missing flight, a wall flown through or a surface captured too
+  /// often, read off the running harness rather than a unit test.
   static final bool _traceMode = Platform.environment['PLAZA_TRACE'] == '1';
 
   /// The harness owns the frame pacing: the scene view does not tick on
@@ -555,7 +556,8 @@ class _PlazaHarnessState extends State<_PlazaHarness>
       'dt=${(dt * 1000).toStringAsFixed(1)} engine=$engine '
       'flying=${_camera.flying} walk=${_walk?.index} '
       'x=${p.x.toStringAsFixed(2)} y=${p.y.toStringAsFixed(2)} '
-      'z=${p.z.toStringAsFixed(2)} inside=$inside',
+      'z=${p.z.toStringAsFixed(2)} inside=$inside '
+      'captures=${_lod.stats.captures + _surfaces.captures}',
     );
   }
 
@@ -582,7 +584,12 @@ class _PlazaHarnessState extends State<_PlazaHarness>
       seconds: _elapsed,
       flying: _camera.flying,
     );
-    _surfaces.update(eye, _elapsed, forward: forward);
+    _surfaces.update(
+      eye,
+      _elapsed,
+      forward: forward,
+      glowFade: _sceneController.poolFade,
+    );
     _sceneController.updateForCamera(eye);
     _sprites.update(camera, _viewSize, _elapsed);
 

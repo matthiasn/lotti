@@ -247,10 +247,9 @@ void main() {
       const target = CameraPose(x: 20, y: 90, z: 40, yaw: 1);
       final flight = camera.flyTo(target);
       await simulateKeyUpEvent(LogicalKeyboardKey.keyW);
-      camera.handleKeyEvent(
-        _up(LogicalKeyboardKey.keyW, PhysicalKeyboardKey.keyW),
-      );
-      camera.update(flight.duration.inMicroseconds / 1e6 + 0.01);
+      camera
+        ..handleKeyEvent(_up(LogicalKeyboardKey.keyW, PhysicalKeyboardKey.keyW))
+        ..update(flight.duration.inMicroseconds / 1e6 + 0.01);
       expect(camera.pose.y, target.y);
       camera.update(1 / 60);
       expect(camera.pose.y, target.y);

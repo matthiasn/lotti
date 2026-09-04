@@ -75,7 +75,7 @@ Completer<ImageInfo> _pendingCover(String url) {
     provider,
     () => OneFrameImageStreamCompleter(decoded.future),
   );
-  addTearDown(() => provider.evict());
+  addTearDown(provider.evict);
   return decoded;
 }
 

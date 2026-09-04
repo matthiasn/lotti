@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/plaza/domain/attention.dart';
@@ -28,32 +31,54 @@ PlazaTask _task({
 
 Widget _host(
   PlazaTask task, {
-  double pulseSeconds = 3,
   double heightMeters = 8.5,
   bool reasonFirst = false,
+  VoidCallback? onCoverChanged,
 }) => makeTestableWidget2(
   Center(
     child: SizedBox(
       width: 600,
       height: heightMeters * 40,
       child: BillboardWidget(
-        clock: clock,
         attention: attentionFor(task, _now),
         widthMeters: 15,
         heightMeters: heightMeters,
         pxPerMeter: 40,
-        pulseSeconds: pulseSeconds,
         reasonFirst: reasonFirst,
+        onCoverChanged: onCoverChanged,
       ),
     ),
   ),
 );
 
-/// The harness clock the widget reads; each test starts it at zero.
-final clock = ValueNotifier<double>(0);
+/// A cover the test decodes when it chooses.
+Completer<ImageInfo> _pendingCover(String url) {
+  final provider = NetworkImage(url);
+  final decoded = Completer<ImageInfo>();
+  PaintingBinding.instance.imageCache.putIfAbsent(
+    provider,
+    () => OneFrameImageStreamCompleter(decoded.future),
+  );
+  addTearDown(provider.evict);
+  return decoded;
+}
+
+double _frameAlpha(WidgetTester tester) => tester
+    .widgetList<Container>(find.byType(Container))
+    .map((c) => c.decoration)
+    .whereType<BoxDecoration>()
+    .firstWhere((d) => d.border != null)
+    .border!
+    .top
+    .color
+    .a;
 
 void main() {
-  setUp(() => clock.value = 0);
+  late ui.Image coverImage;
+  setUpAll(() async {
+    coverImage = await createTestImage();
+  });
+  tearDownAll(() => coverImage.dispose());
 
   testWidgets('a roof panel leads with the reason and has no fly-there', (
     tester,
@@ -109,43 +134,41 @@ void main() {
     );
   });
 
-  testWidgets('an anomaly breathes: the frame alpha changes over 1.5 s', (
+  testWidgets("the face is still: an anomaly's frame is at full glow", (
     tester,
   ) async {
     await tester.pumpWidget(_host(_task(state: PlazaTaskState.blocked)));
-    double alpha() => tester
-        .widgetList<Container>(find.byType(Container))
-        .map((c) => c.decoration)
-        .whereType<BoxDecoration>()
-        .firstWhere((d) => d.border != null)
-        .border!
-        .top
-        .color
-        .a;
-    final start = alpha();
-    clock.value += 1.5;
-    await tester.pump();
-    expect(alpha(), isNot(closeTo(start, 0.05)));
+    expect(_frameAlpha(tester), 1);
+    await tester.pump(const Duration(seconds: 2));
+    expect(_frameAlpha(tester), 1);
+    // Nothing on the panel listens to anything.
+    expect(find.byType(ValueListenableBuilder<double>), findsNothing);
   });
 
-  testWidgets('a due-soon task does not pulse and shows its date', (
-    tester,
-  ) async {
+  testWidgets('a due-soon task shows its date at full glow', (tester) async {
     await tester.pumpWidget(_host(_task(due: _now)));
     expect(find.text('due today — finish it'), findsOneWidget);
-    double alpha() => tester
-        .widgetList<Container>(find.byType(Container))
-        .map((c) => c.decoration)
-        .whereType<BoxDecoration>()
-        .firstWhere((d) => d.border != null)
-        .border!
-        .top
-        .color
-        .a;
-    expect(alpha(), 1);
-    clock.value += 1.5;
+    expect(_frameAlpha(tester), 1);
+  });
+
+  testWidgets('a cover that lands late asks for one more capture', (
+    tester,
+  ) async {
+    const url = 'https://demo.invalid/late-cover.webp';
+    final decoded = _pendingCover(url);
+    var changes = 0;
+    await tester.pumpWidget(
+      _host(
+        _task(state: PlazaTaskState.blocked, cover: url),
+        onCoverChanged: () => changes++,
+      ),
+    );
+    expect(changes, 0);
+    decoded.complete(ImageInfo(image: coverImage.clone()));
     await tester.pump();
-    expect(alpha(), 1);
+    expect(changes, 1);
+    await tester.pump();
+    expect(changes, 1, reason: 'a rebuild is not a new cover');
   });
 
   testWidgets('cover art gets the middle of the panel', (tester) async {
@@ -157,30 +180,6 @@ void main() {
     expect(find.byType(Image), findsOneWidget);
     await tester.pump();
     expect(tester.takeException(), isNull);
-  });
-
-  testWidgets('a shorter pulse is more agitated', (tester) async {
-    double alphaOf(WidgetTester t) => t
-        .widgetList<Container>(find.byType(Container))
-        .map((c) => c.decoration)
-        .whereType<BoxDecoration>()
-        .firstWhere((d) => d.border != null)
-        .border!
-        .top
-        .color
-        .a;
-    await tester.pumpWidget(
-      _host(_task(state: PlazaTaskState.blocked), pulseSeconds: 1.2),
-    );
-    clock.value += 0.6;
-    await tester.pump();
-    final fast = alphaOf(tester);
-    await tester.pumpWidget(_host(_task(state: PlazaTaskState.blocked)));
-    clock.value += 0.6;
-    await tester.pump();
-    final slow = alphaOf(tester);
-    // After 0.6 s the 1.2 s cycle is at its peak; the 3 s cycle is not.
-    expect(fast, greaterThan(slow));
   });
 
   testWidgets('a squat roof panel keeps the cover, then drops the reason', (

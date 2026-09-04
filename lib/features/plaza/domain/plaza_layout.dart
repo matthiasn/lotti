@@ -116,6 +116,20 @@ class BillboardSlot {
 
   /// World-space centre of the panel.
   double get centerY => bottom + height / 2;
+
+  /// The frame's glow at [seconds] of an anomaly's breathing: up over half
+  /// a [pulseSeconds] cycle and down over the other half, eased at both
+  /// ends, between [glowFloor] and 1.
+  double glowAt(double seconds) {
+    final half = pulseSeconds / 2;
+    final cycle = (seconds / half) % 2;
+    final phase = cycle <= 1 ? cycle : 2 - cycle;
+    final eased = phase * phase * (3 - 2 * phase);
+    return glowFloor + (1 - glowFloor) * eased;
+  }
+
+  /// The glow at the bottom of a breath.
+  static const glowFloor = 0.55;
 }
 
 /// Where a ticker band runs: on the plaza-facing wall under a mounted
