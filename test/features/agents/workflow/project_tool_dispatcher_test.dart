@@ -202,6 +202,7 @@ void main() {
           data: any(named: 'data'),
           entryText: any(named: 'entryText'),
           categoryId: any(named: 'categoryId'),
+          private: any(named: 'private'),
         ),
       ).thenAnswer((_) async => createdTask);
       when(
@@ -251,6 +252,9 @@ void main() {
           ),
           entryText: any(named: 'entryText'),
           categoryId: 'cat-001',
+          // Explicitly verifies that public projects preserve null privacy.
+          // ignore: avoid_redundant_argument_values
+          private: null,
         ),
       ).called(1);
       verify(
@@ -268,6 +272,50 @@ void main() {
           awaitContent: true,
           // ignore: avoid_redundant_argument_values
           automaticUpdatesEnabled: false,
+        ),
+      ).called(1);
+    });
+
+    test('create_task inherits privacy from a private project', () async {
+      final privateProject = project.copyWith(
+        meta: project.meta.copyWith(private: true),
+      );
+      final createdTask = makeTestTask(id: taskId, title: 'Private work');
+
+      when(
+        () => mockProjectRepository.getProjectById(projectId),
+      ).thenAnswer((_) async => privateProject);
+      when(
+        () => mockEntitiesCacheService.getCategoryById('cat-001'),
+      ).thenReturn(null);
+      when(
+        () => mockPersistenceLogic.createTaskEntry(
+          data: any(named: 'data'),
+          entryText: any(named: 'entryText'),
+          categoryId: 'cat-001',
+          private: true,
+        ),
+      ).thenAnswer((_) async => createdTask);
+      when(
+        () => mockProjectRepository.linkTaskToProject(
+          projectId: projectId,
+          taskId: taskId,
+        ),
+      ).thenAnswer((_) async => true);
+
+      final result = await dispatcher.dispatch(
+        ProjectAgentToolNames.createTask,
+        {'title': 'Private work'},
+        projectId,
+      );
+
+      expect(result.success, isTrue);
+      verify(
+        () => mockPersistenceLogic.createTaskEntry(
+          data: any(named: 'data'),
+          entryText: any(named: 'entryText'),
+          categoryId: 'cat-001',
+          private: true,
         ),
       ).called(1);
     });
@@ -303,6 +351,7 @@ void main() {
           data: any(named: 'data'),
           entryText: any(named: 'entryText'),
           categoryId: any(named: 'categoryId'),
+          private: any(named: 'private'),
         ),
       ).thenAnswer((_) async => createdTask);
       when(
@@ -373,6 +422,7 @@ void main() {
             data: any(named: 'data'),
             entryText: any(named: 'entryText'),
             categoryId: any(named: 'categoryId'),
+            private: any(named: 'private'),
           ),
         ).thenAnswer((_) async => createdTask);
         when(
@@ -468,6 +518,7 @@ void main() {
             data: any(named: 'data'),
             entryText: any(named: 'entryText'),
             categoryId: any(named: 'categoryId'),
+            private: any(named: 'private'),
           ),
         ).thenAnswer((_) async => createdTask);
         when(
@@ -561,6 +612,7 @@ void main() {
           data: any(named: 'data'),
           entryText: any(named: 'entryText'),
           categoryId: any(named: 'categoryId'),
+          private: any(named: 'private'),
         ),
       );
     });
@@ -580,6 +632,7 @@ void main() {
           data: any(named: 'data'),
           entryText: any(named: 'entryText'),
           categoryId: any(named: 'categoryId'),
+          private: any(named: 'private'),
         ),
       ).thenAnswer((invocation) async {
         capturedPriorities.add(
@@ -808,6 +861,7 @@ void main() {
             data: any(named: 'data'),
             entryText: any(named: 'entryText'),
             categoryId: any(named: 'categoryId'),
+            private: any(named: 'private'),
           ),
         ).thenAnswer((_) async => null);
 
@@ -844,6 +898,7 @@ void main() {
           data: any(named: 'data'),
           entryText: any(named: 'entryText'),
           categoryId: any(named: 'categoryId'),
+          private: any(named: 'private'),
         ),
       ).thenAnswer((_) async => createdTask);
       when(
@@ -910,6 +965,7 @@ void main() {
           data: any(named: 'data'),
           entryText: any(named: 'entryText'),
           categoryId: any(named: 'categoryId'),
+          private: any(named: 'private'),
         ),
       ).thenAnswer((_) async => createdTask);
       when(
@@ -963,6 +1019,7 @@ void main() {
             data: any(named: 'data'),
             entryText: any(named: 'entryText'),
             categoryId: any(named: 'categoryId'),
+            private: any(named: 'private'),
           ),
         ).thenAnswer((_) async => createdTask);
         when(
@@ -1008,6 +1065,7 @@ void main() {
             data: any(named: 'data'),
             entryText: any(named: 'entryText'),
             categoryId: any(named: 'categoryId'),
+            private: any(named: 'private'),
           ),
         ).thenAnswer((_) async => createdTask);
         when(
@@ -1054,6 +1112,7 @@ void main() {
             data: any(named: 'data'),
             entryText: any(named: 'entryText'),
             categoryId: any(named: 'categoryId'),
+            private: any(named: 'private'),
           ),
         ).thenAnswer((_) async => createdTask);
         when(

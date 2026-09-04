@@ -48,7 +48,12 @@ class ProjectAgentReportCard extends ConsumerWidget {
         templates = await templateService.listTemplates();
       }
       templates = templates
-          .where((t) => t.kind == AgentTemplateKind.projectAgent)
+          .where(
+            (t) =>
+                t.kind == AgentTemplateKind.projectAgent &&
+                t.deletedAt == null &&
+                (t.categoryIds.isEmpty || t.categoryIds.contains(categoryId)),
+          )
           .toList();
 
       if (templates.isEmpty) {

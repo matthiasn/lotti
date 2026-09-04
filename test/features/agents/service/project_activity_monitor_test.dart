@@ -14,6 +14,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../projects/test_utils.dart' as projects;
 import '../test_utils.dart';
 import 'project_activity_monitor_test_helpers.dart';
 
@@ -26,6 +27,7 @@ void main() {
   late MockProjectRepository projectRepository;
   late MockAgentSyncService syncService;
   late StreamController<Set<String>> updateController;
+  late StreamController<Set<String>> syncUpdateController;
   late ProjectActivityMonitor monitor;
 
   setUp(() {
@@ -34,9 +36,13 @@ void main() {
     projectRepository = MockProjectRepository();
     syncService = MockAgentSyncService();
     updateController = StreamController<Set<String>>.broadcast();
+    syncUpdateController = StreamController<Set<String>>.broadcast();
 
     when(() => notifications.localUpdateStream).thenAnswer(
       (_) => updateController.stream,
+    );
+    when(() => notifications.syncUpdateStream).thenAnswer(
+      (_) => syncUpdateController.stream,
     );
     when(
       () => notifications.notify(
@@ -67,9 +73,303 @@ void main() {
   tearDown(() async {
     await monitor.stop();
     await updateController.close();
+    await syncUpdateController.close();
   });
 
   group('ProjectActivityMonitor', () {
+    test(
+      'retires every linked agent when sync tombstones its project',
+      () async {
+        final retiredAgentIds = <String>[];
+        final tombstoneMonitor = ProjectActivityMonitor(
+          notifications: notifications,
+          agentRepository: repository,
+          projectRepository: projectRepository,
+          syncService: syncService,
+          retireProjectAgent: (agentId) async {
+            retiredAgentIds.add(agentId);
+          },
+          clock: Clock.fixed(now),
+        );
+        addTearDown(tombstoneMonitor.stop);
+        when(
+          () => projectRepository.getProjectById('project-tombstoned'),
+        ).thenAnswer((_) async => null);
+        when(
+          () => repository.getLinksTo(
+            'project-tombstoned',
+            type: AgentLinkTypes.agentProject,
+          ),
+        ).thenAnswer(
+          (_) async => [
+            AgentLink.agentProject(
+              id: 'link-1',
+              fromId: 'agent-1',
+              toId: 'project-tombstoned',
+              createdAt: now,
+              updatedAt: now,
+              vectorClock: null,
+            ),
+            AgentLink.agentProject(
+              id: 'link-2',
+              fromId: 'agent-2',
+              toId: 'project-tombstoned',
+              createdAt: now,
+              updatedAt: now,
+              vectorClock: null,
+            ),
+            AgentLink.agentProject(
+              id: 'duplicate-link',
+              fromId: 'agent-1',
+              toId: 'project-tombstoned',
+              createdAt: now,
+              updatedAt: now,
+              vectorClock: null,
+            ),
+          ],
+        );
+
+        tombstoneMonitor.start();
+        syncUpdateController.add({
+          'project-tombstoned',
+          projectNotification,
+          labelUsageNotification,
+        });
+        await pumpEventQueue(times: 3);
+
+        expect(retiredAgentIds, ['agent-1', 'agent-2']);
+        verifyNever(() => syncService.upsertEntity(any()));
+      },
+    );
+
+    test(
+      'keeps agents when a project is restored during link lookup',
+      () async {
+        var restored = false;
+        final retired = <String>[];
+        final scopes = <Set<String>>[];
+        final reconciliationMonitor = ProjectActivityMonitor(
+          notifications: notifications,
+          agentRepository: repository,
+          projectRepository: projectRepository,
+          syncService: syncService,
+          retireProjectAgent: (id) async => retired.add(id),
+          updateProjectAgentScopes: (_, categories) async =>
+              scopes.add(categories),
+        );
+        addTearDown(reconciliationMonitor.stop);
+        when(
+          () => projectRepository.getProjectById('project-restored'),
+        ).thenAnswer(
+          (_) async => restored
+              ? projects.makeTestProject(
+                  id: 'project-restored',
+                  categoryId: 'restored-category',
+                )
+              : null,
+        );
+        when(
+          () => repository.getLinksTo(
+            'project-restored',
+            type: AgentLinkTypes.agentProject,
+          ),
+        ).thenAnswer((_) async {
+          restored = true;
+          return [
+            AgentLink.agentProject(
+              id: 'restored-link',
+              fromId: 'agent-1',
+              toId: 'project-restored',
+              createdAt: now,
+              updatedAt: now,
+              vectorClock: null,
+            ),
+          ];
+        });
+        reconciliationMonitor.start();
+        syncUpdateController.add({'project-restored', projectNotification});
+        await pumpEventQueue(times: 3);
+        expect(retired, isEmpty);
+        expect(scopes, [
+          const {'restored-category'},
+        ]);
+      },
+    );
+
+    test(
+      'reconciliation waits for the shared project mutation coordinator',
+      () async {
+        final coordinator = ProjectAgentMutationCoordinator();
+        final entered = Completer<void>();
+        final release = Completer<void>();
+        final blocker = coordinator.run('project-live', () async {
+          entered.complete();
+          await release.future;
+        });
+        await entered.future;
+        final updates = <Set<String>>[];
+        final reconciliationMonitor = ProjectActivityMonitor(
+          notifications: notifications,
+          agentRepository: repository,
+          projectRepository: projectRepository,
+          syncService: syncService,
+          mutationCoordinator: coordinator,
+          updateProjectAgentScopes: (projectId, categories) =>
+              coordinator.run(projectId, () async => updates.add(categories)),
+        );
+        addTearDown(reconciliationMonitor.stop);
+        when(() => projectRepository.getProjectById('project-live')).thenAnswer(
+          (_) async => projects.makeTestProject(
+            id: 'project-live',
+            categoryId: 'restored',
+          ),
+        );
+        reconciliationMonitor.start();
+        syncUpdateController.add({'project-live', projectNotification});
+        await pumpEventQueue(times: 3);
+        verifyNever(() => projectRepository.getProjectById('project-live'));
+        expect(updates, isEmpty);
+        release.complete();
+        await blocker;
+        await pumpEventQueue(times: 3);
+        expect(updates, [
+          const {'restored'},
+        ]);
+      },
+    );
+
+    test(
+      'a failed synced lookup does not block later project updates',
+      () async {
+        final updates = <String>[];
+        final reconciliationMonitor = ProjectActivityMonitor(
+          notifications: notifications,
+          agentRepository: repository,
+          projectRepository: projectRepository,
+          syncService: syncService,
+          updateProjectAgentScopes: (id, _) async => updates.add(id),
+        );
+        addTearDown(reconciliationMonitor.stop);
+        when(
+          () => projectRepository.getProjectById('project-failed'),
+        ).thenThrow(StateError('read failed'));
+        when(
+          () => projectRepository.getProjectById('project-live'),
+        ).thenAnswer((_) async => projects.makeTestProject(id: 'project-live'));
+        reconciliationMonitor.start();
+        syncUpdateController.add({
+          'project-failed',
+          'project-live',
+          projectNotification,
+        });
+        await pumpEventQueue(times: 3);
+        verify(
+          () => projectRepository.getProjectById('project-failed'),
+        ).called(1);
+        expect(updates, ['project-live']);
+      },
+    );
+
+    test(
+      'continues retiring linked agents after one retirement fails',
+      () async {
+        final attemptedAgentIds = <String>[];
+        final tombstoneMonitor = ProjectActivityMonitor(
+          notifications: notifications,
+          agentRepository: repository,
+          projectRepository: projectRepository,
+          syncService: syncService,
+          retireProjectAgent: (agentId) async {
+            attemptedAgentIds.add(agentId);
+            if (agentId == 'agent-1') {
+              throw StateError('first retirement failed');
+            }
+          },
+          clock: Clock.fixed(now),
+        );
+        addTearDown(tombstoneMonitor.stop);
+        when(
+          () => projectRepository.getProjectById('project-tombstoned'),
+        ).thenAnswer((_) async => null);
+        when(
+          () => repository.getLinksTo(
+            'project-tombstoned',
+            type: AgentLinkTypes.agentProject,
+          ),
+        ).thenAnswer(
+          (_) async => [
+            AgentLink.agentProject(
+              id: 'link-1',
+              fromId: 'agent-1',
+              toId: 'project-tombstoned',
+              createdAt: now,
+              updatedAt: now,
+              vectorClock: null,
+            ),
+            AgentLink.agentProject(
+              id: 'link-2',
+              fromId: 'agent-2',
+              toId: 'project-tombstoned',
+              createdAt: now,
+              updatedAt: now,
+              vectorClock: null,
+            ),
+          ],
+        );
+
+        tombstoneMonitor.start();
+        syncUpdateController.add({'project-tombstoned', projectNotification});
+        await pumpEventQueue(times: 3);
+
+        expect(attemptedAgentIds, ['agent-1', 'agent-2']);
+      },
+    );
+
+    test(
+      're-scopes linked agents when the synced project still exists',
+      () async {
+        final retiredAgentIds = <String>[];
+        final scopeUpdates = <(String, Set<String>)>[];
+        final reconciliationMonitor = ProjectActivityMonitor(
+          notifications: notifications,
+          agentRepository: repository,
+          projectRepository: projectRepository,
+          syncService: syncService,
+          retireProjectAgent: (agentId) async {
+            retiredAgentIds.add(agentId);
+          },
+          updateProjectAgentScopes: (projectId, categoryIds) async {
+            scopeUpdates.add((projectId, categoryIds));
+          },
+          clock: Clock.fixed(now),
+        );
+        addTearDown(reconciliationMonitor.stop);
+        when(
+          () => projectRepository.getProjectById('project-live'),
+        ).thenAnswer(
+          (_) async => projects.makeTestProject(
+            id: 'project-live',
+            categoryId: 'synced-category',
+          ),
+        );
+
+        reconciliationMonitor.start();
+        syncUpdateController.add({'project-live', projectNotification});
+        await pumpEventQueue(times: 3);
+
+        expect(retiredAgentIds, isEmpty);
+        expect(scopeUpdates, hasLength(1));
+        expect(scopeUpdates.single.$1, 'project-live');
+        expect(scopeUpdates.single.$2, {'synced-category'});
+        verifyNever(
+          () => repository.getLinksTo(
+            'project-live',
+            type: AgentLinkTypes.agentProject,
+          ),
+        );
+      },
+    );
+
     test(
       'failed cancellation restores eligibility for the older activity batch',
       () async {
@@ -234,6 +534,8 @@ void main() {
           repository: repository,
           orchestrator: orchestrator,
           syncService: syncService,
+          projectScopeIsCurrent: (_, _) async => true,
+          mutationCoordinator: ProjectAgentMutationCoordinator(),
           cancellationCoordinator: coordinator,
         );
         final raceMonitor = ProjectActivityMonitor(

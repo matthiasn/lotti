@@ -5,7 +5,7 @@ description: The digest-shaped project agent that resists waking on every linked
 resource: ../../../lib/features/agents/workflow/project_agent_workflow.dart
 tags: [agents, project-agent, event-agent, digest, notifications]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T00:00:00Z }
+generated: { by: codex/gpt-5, at: 2026-09-04T12:00:00Z }
 stale_after: 2026-10-12
 sources:
   - id: project-workflow
@@ -19,7 +19,11 @@ sources:
   - id: project-service
     resource: ../../../lib/features/agents/service/project_agent_service.dart
     title: ProjectAgentService (creation and announcement)
-    last_modified: 2026-08-14
+    last_modified: 2026-08-16
+  - id: project-mutations
+    resource: ../../../lib/features/agents/service/project_agent_mutation_coordinator.dart
+    title: Shared project category, provisioning, and retirement exclusion
+    last_modified: 2026-09-04
   - id: event-service
     resource: ../../../lib/features/agents/service/event_agent_service.dart
     title: EventAgentService (creation, content gate and announcement)
@@ -46,15 +50,39 @@ expensive and useless.
 
 `ProjectAgentService.createProjectAgent()`:
 
-1. Enforces one project agent per project.
-2. Validates the template is a project-agent template.
-3. Creates identity and state.
-4. Sets `slots.activeProjectId` and marks the explicit creation work pending.
-5. Persists a one-shot next-06:00 fallback for the in-memory creation wake.
-6. Creates `agent_project` and `template_assignment` links.
-7. Announces itself (see below).
-8. Registers the project subscription.
-9. Enqueues the explicit creation wake.
+1. Serializes with scope reconciliation of the same project,
+   then verifies the journal project still exists with the requested category.
+2. Enforces one project agent per project.
+3. Re-reads the template and validates that it is an active project-agent
+   template whose category scope still applies to the requested project scope.
+4. Creates identity and state.
+5. Sets `slots.activeProjectId` and marks the explicit creation work pending.
+6. Persists a one-shot next-06:00 fallback for the in-memory creation wake.
+7. Creates `agent_project` and `template_assignment` links.
+8. Rechecks the journal project and category; a sync tombstone or scope change
+   compensates by deleting the just-created agent before it can be announced,
+   subscribed, or woken.
+9. Announces itself (see below).
+10. Registers the project subscription.
+11. Enqueues the explicit creation wake.
+
+Synced scope reconciliation holds the same per-project coordinator as
+provisioning. It verifies the current journal scope after waiting and reads
+identities and assigned templates inside the agent transaction, preserving
+unrelated preferences. Missing, deleted, wrong-kind, or category-incompatible
+templates retire their agents without granting access to the new category.
+Local category changes are rejected while any live agent or linked task exists.
+Agent and journal data use separate databases, so the coordinator provides
+local exclusion; pre/post-create scope checks cover stale category input and
+independent tombstones or category changes arriving through sync.
+Because a peer can still apply its tombstone or category move after that final check,
+`ProjectActivityMonitor` also listens to `syncUpdateStream` for project rows.
+Reconciliation shares the per-project mutation coordinator. When the announced
+project is absent, it rechecks absence immediately before each retirement,
+cancels queued/running work, and attempts every linked agent even if one fails.
+A project restored during link lookup instead receives scope reconciliation.
+Surviving projects retain only agents whose templates permit the synced category. This is reconciliation only: synced edits never enter the
+local activity path and therefore never arm a new wake.
 
 ## Announcing a newly created agent
 

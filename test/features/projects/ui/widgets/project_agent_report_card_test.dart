@@ -390,6 +390,54 @@ void main() {
       ).called(1);
     });
 
+    for (final ineligible in [
+      makeTestTemplate(
+        kind: AgentTemplateKind.projectAgent,
+        categoryIds: const {'another-category'},
+      ),
+      makeTestTemplate(
+        kind: AgentTemplateKind.projectAgent,
+      ).copyWith(deletedAt: DateTime(2026, 9, 4)),
+    ]) {
+      testWidgets(
+        'fallback rejects ineligible template ${ineligible.categoryIds}',
+        (
+          tester,
+        ) async {
+          final templates = MockAgentTemplateService();
+          when(
+            () => templates.listTemplatesForCategory(categoryId),
+          ).thenAnswer((_) async => []);
+          when(templates.listTemplates).thenAnswer((_) async => [ineligible]);
+          await tester.pumpWidget(
+            buildSubject(
+              overrides: [
+                projectAgentProvider(
+                  projectId,
+                ).overrideWith((ref) async => null),
+                projectAgentServiceProvider.overrideWithValue(
+                  MockProjectAgentService(),
+                ),
+                agentTemplateServiceProvider.overrideWithValue(templates),
+                inferenceProfileControllerProvider.overrideWith(
+                  () => _FakeInferenceProfileController([testProfile]),
+                ),
+              ],
+            ),
+          );
+          await tester.pumpAndSettle();
+          await tester.tap(find.text('Assign Agent'));
+          await tester.pumpAndSettle();
+          final context = tester.element(find.byType(ProjectAgentReportCard));
+          expect(
+            find.text(context.messages.agentTemplateNoTemplates),
+            findsOneWidget,
+          );
+          expect(find.text('Create Agent'), findsNothing);
+        },
+      );
+    }
+
     testWidgets('create agent button shows snackbar when no templates exist', (
       tester,
     ) async {

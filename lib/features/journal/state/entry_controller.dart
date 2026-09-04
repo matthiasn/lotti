@@ -606,9 +606,33 @@ class EntryController extends AsyncNotifier<EntryState?> {
     final item = await _journalDb.journalEntityById(id);
     if (item != null) {
       final prev = item.meta.private ?? false;
-      await _persistenceLogic.updateJournalEntity(
+      final nextPrivate = !prev;
+      final updated = await _persistenceLogic.updateJournalEntity(
         item,
-        item.meta.copyWith(private: !prev),
+        item.meta.copyWith(private: nextPrivate),
+      );
+      if (updated && item is Task) {
+        await _dropPrivacyMismatchedProjectLink(item.id);
+      }
+    }
+  }
+
+  /// Removes an incompatible membership after a successful privacy toggle.
+  /// The repository rechecks the current task, project, and link atomically.
+  Future<void> _dropPrivacyMismatchedProjectLink(String taskId) async {
+    try {
+      await ref
+          .read(projectRepositoryProvider)
+          .unlinkTaskFromProject(
+            taskId,
+            onlyIfPrivacyMismatched: true,
+          );
+    } catch (e, stackTrace) {
+      developer.log(
+        'Failed to drop privacy-incompatible project link for entry $id: $e',
+        name: 'EntryController',
+        error: e,
+        stackTrace: stackTrace,
       );
     }
   }

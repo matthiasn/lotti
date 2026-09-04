@@ -210,6 +210,7 @@ class ProjectToolDispatcher {
       ),
       entryText: entryText,
       categoryId: categoryId,
+      private: project.meta.private,
     );
 
     if (task == null) {

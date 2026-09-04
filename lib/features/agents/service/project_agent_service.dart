@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
@@ -12,11 +13,15 @@ import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/model/agent_time_utils.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/service/project_activity_monitor.dart';
+import 'package:lotti/features/agents/service/project_agent_mutation_coordinator.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:uuid/uuid.dart';
+
+export 'package:lotti/features/agents/service/project_agent_mutation_coordinator.dart'
+    show ProjectAgentMutationCoordinator;
 
 /// Project-agent-specific lifecycle management.
 ///
@@ -28,6 +33,8 @@ class ProjectAgentService {
     required this.repository,
     required this.orchestrator,
     required this.syncService,
+    required this.projectScopeIsCurrent,
+    required this.mutationCoordinator,
     this.domainLogger,
     this.onPersistedStateChanged,
     ProjectActivityCancellationCoordinator? cancellationCoordinator,
@@ -37,6 +44,12 @@ class ProjectAgentService {
   final AgentService agentService;
   final AgentRepository repository;
   final WakeOrchestrator orchestrator;
+  final Future<bool> Function(
+    String projectId,
+    Set<String> allowedCategoryIds,
+  )
+  projectScopeIsCurrent;
+  final ProjectAgentMutationCoordinator mutationCoordinator;
   final ProjectActivityCancellationCoordinator _cancellationCoordinator;
 
   /// Sync-aware write service. All entity/link writes go through this so
@@ -53,23 +66,31 @@ class ProjectAgentService {
   /// Create a new Project Agent for [projectId].
   ///
   /// Steps:
-  /// 1. Create the agent via [AgentService.createAgent] with kind
+  /// 1. Serialize with project deletion and verify the project still exists.
+  /// 2. Create the agent via [AgentService.createAgent] with kind
   ///    `'project_agent'`.
-  /// 2. Update the agent's state with `activeProjectId = projectId`.
-  /// 3. Create an [AgentProjectLink] from agentId → projectId.
-  /// 4. If [templateId] is provided, create a `templateAssignment` link.
-  /// 5. Enqueue a creation wake with a one-shot persisted fallback.
+  /// 3. Update the agent's state with `activeProjectId = projectId`.
+  /// 4. Create an [AgentProjectLink] from agentId → projectId.
+  /// 5. If [templateId] is provided, create a `templateAssignment` link.
+  /// 6. Compensate a concurrent sync tombstone before announcing the agent.
+  /// 7. Enqueue a creation wake with a one-shot persisted fallback.
   ///
   /// Returns the created [AgentIdentityEntity].
   ///
-  /// Throws [StateError] if a Project Agent already exists for [projectId].
+  /// Throws [StateError] if the project no longer exists, its current category
+  /// differs from [allowedCategoryIds], or a Project Agent already exists for
+  /// [projectId].
   Future<AgentIdentityEntity> createProjectAgent({
     required String projectId,
     required String templateId,
     required String displayName,
     required Set<String> allowedCategoryIds,
     String? profileId,
-  }) async {
+  }) => mutationCoordinator.run(projectId, () async {
+    if (!await projectScopeIsCurrent(projectId, allowedCategoryIds)) {
+      throw StateError('Project $projectId no longer has the requested scope.');
+    }
+
     final identity = await syncService.runInTransaction(() async {
       // Definitive duplicate check inside the transaction to prevent
       // concurrent createProjectAgent calls from both committing.
@@ -89,9 +110,11 @@ class ProjectAgentService {
       final templateEntity = await repository.getEntity(templateId);
       if (templateEntity is! AgentTemplateEntity ||
           templateEntity.deletedAt != null ||
-          templateEntity.kind != AgentTemplateKind.projectAgent) {
+          templateEntity.kind != AgentTemplateKind.projectAgent ||
+          !_templateAppliesToScope(templateEntity, allowedCategoryIds)) {
         throw StateError(
-          'Template $templateId is not an active project-agent template.',
+          'Template $templateId is not an active project-agent template for '
+          'the requested project scope.',
         );
       }
 
@@ -156,6 +179,14 @@ class ProjectAgentService {
       return identity;
     });
 
+    // Sync can tombstone the journal project while the independent agent-store
+    // transaction is committing. Compensate before announcing, subscribing, or
+    // waking the new identity so no orphan project agent escapes this method.
+    if (!await projectScopeIsCurrent(projectId, allowedCategoryIds)) {
+      await agentService.deleteAgent(identity.agentId);
+      throw StateError('Project $projectId no longer has the requested scope.');
+    }
+
     onPersistedStateChanged
       ?..call(identity.agentId)
       // `projectAgentProvider` refreshes on the *project* id, and nothing in
@@ -182,6 +213,15 @@ class ProjectAgentService {
     );
 
     return identity;
+  });
+
+  static bool _templateAppliesToScope(
+    AgentTemplateEntity template,
+    Set<String> allowedCategoryIds,
+  ) {
+    if (template.categoryIds.isEmpty) return true;
+    return allowedCategoryIds.length == 1 &&
+        template.categoryIds.contains(allowedCategoryIds.single);
   }
 
   /// Find the Project Agent for [projectId], or `null` if none exists.
@@ -200,6 +240,96 @@ class ProjectAgentService {
     final agentId = links.selectPrimary().fromId;
     return agentService.getAgent(agentId);
   }
+
+  /// Finds every live project agent linked to [projectId].
+  ///
+  /// Concurrent provisioning can temporarily leave multiple active links for
+  /// one project. Destructive project operations must retire all of them, not
+  /// only the primary identity used for ordinary report presentation.
+  Future<List<AgentIdentityEntity>> getProjectAgentsForProject(
+    String projectId,
+  ) async {
+    final links = (await repository.getLinksTo(
+      projectId,
+      type: AgentLinkTypes.agentProject,
+    )).orderedPrimaryFirst();
+    final agentIds = <String>[];
+    final seenAgentIds = <String>{};
+    for (final link in links) {
+      if (seenAgentIds.add(link.fromId)) agentIds.add(link.fromId);
+    }
+    if (agentIds.isEmpty) return const [];
+
+    final entitiesById = await repository.getEntitiesByIds(agentIds);
+    return [
+      for (final agentId in agentIds)
+        if (entitiesById[agentId] case final AgentIdentityEntity identity)
+          if (identity.kind == _agentKind &&
+              identity.lifecycle != AgentLifecycle.destroyed)
+            identity,
+    ];
+  }
+
+  /// Re-scopes every live project agent to [allowedCategoryIds].
+  ///
+  /// Synced project edits share the coordinator used by provisioning and
+  /// deletion. Stale scope requests are ignored; identities are re-read inside
+  /// the agent transaction so unrelated preference changes are preserved.
+  /// Agents with missing, deleted, or category-incompatible templates are
+  /// retired without ever granting access to the new category.
+  Future<void> updateProjectAgentScopes({
+    required String projectId,
+    required Set<String> allowedCategoryIds,
+  }) => mutationCoordinator.run(projectId, () async {
+    if (!await projectScopeIsCurrent(projectId, allowedCategoryIds)) return;
+    final updatedIds = <String>[];
+    final incompatibleIds = <String>[];
+    await syncService.runInTransaction(() async {
+      final identities = await getProjectAgentsForProject(projectId);
+      for (final identity in identities) {
+        final assignments = await repository.getLinksTo(
+          identity.agentId,
+          type: AgentLinkTypes.templateAssignment,
+        );
+        final template = assignments.isEmpty
+            ? null
+            : await repository.getEntity(assignments.selectPrimary().fromId);
+        if (template is! AgentTemplateEntity ||
+            template.deletedAt != null ||
+            template.kind != AgentTemplateKind.projectAgent ||
+            !_templateAppliesToScope(template, allowedCategoryIds)) {
+          incompatibleIds.add(identity.agentId);
+          continue;
+        }
+        if (identity.allowedCategoryIds.length == allowedCategoryIds.length &&
+            identity.allowedCategoryIds.containsAll(allowedCategoryIds)) {
+          continue;
+        }
+        await syncService.upsertEntity(
+          identity.copyWith(
+            allowedCategoryIds: Set<String>.unmodifiable(allowedCategoryIds),
+            updatedAt: clock.now(),
+          ),
+        );
+        updatedIds.add(identity.agentId);
+      }
+    });
+    // Keep incompatible agents on their old scope until retirement commits.
+    // Lifecycle writes own their transaction and runtime cleanup; never detach
+    // subscriptions from inside an enclosing transaction that could roll back.
+    for (final agentId in incompatibleIds) {
+      agentService
+        ..abortRunningWake(agentId)
+        ..cancelPendingWake(agentId);
+      await agentService.destroyAgent(agentId);
+      updatedIds.add(agentId);
+    }
+    if (updatedIds.isNotEmpty) {
+      onPersistedStateChanged?.call(projectId);
+      final notify = onPersistedStateChanged;
+      if (notify != null) updatedIds.forEach(notify);
+    }
+  });
 
   /// Trigger a manual re-analysis wake for [agentId].
   void triggerReanalysis(String agentId) {
