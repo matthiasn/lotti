@@ -228,9 +228,12 @@ class FrontierPlaza {
 /// Plaza dimensions, world meters. The plaza starts [plazaSetback] past the
 /// street end and is [plazaDepth] deep and [plazaWidth] wide.
 const plazaSetback = 7.0;
-const plazaDepth = 58.0;
+const plazaDepth = 66.0;
 const plazaWidth = 62.0;
-const _homeAlong = 60.0;
+
+/// Home stands far enough back that all four pylons sit inside a 60°
+/// field of view at a 3:2 frame.
+const _homeAlong = 68.0;
 
 /// Pylon slots in plaza-local metres: (lateral, along, width, height,
 /// bottom). Rank order; every panel faces the point (0, 52) on the plaza
@@ -687,12 +690,18 @@ TickerSlot rooflineTickerFor(PlotPlacement hero, {required bool fast}) =>
 /// Roof signage above a building that the task pose must frame.
 const roofSignageHeight = 6.5;
 
-CameraPose taskPoseFor(PlotPlacement p) {
-  // Frame the whole framed extent — wall plus roof signage plus a margin —
-  // at a 60° vertical field of view (half-angle 30°, so distance ≥ 0.87 ×
-  // the extent), and never closer than a wide wall needs.
+/// How far in front of the facade the task pose stands: the whole framed
+/// extent — wall plus roof signage plus a margin — at a 60° vertical field
+/// of view (half-angle 30°, so distance ≥ 0.87 × the extent), and never
+/// closer than a wide wall needs. A tall landmark needs more than the live
+/// range, so the facade LOD extends its live range to this.
+double taskStandOffFor(PlotPlacement p) {
   final extent = p.height + roofSignageHeight + 3;
-  final d = math.max(16, math.max(p.width * 1.2, extent * 0.9));
+  return math.max(16, math.max(p.width * 1.2, extent * 0.9));
+}
+
+CameraPose taskPoseFor(PlotPlacement p) {
+  final d = taskStandOffFor(p);
   final facing = p.facingRadians;
   final facadeX = p.x + math.sin(facing) * (p.depth / 2);
   final facadeZ = p.z + math.cos(facing) * (p.depth / 2);

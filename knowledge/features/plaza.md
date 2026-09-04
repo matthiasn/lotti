@@ -202,14 +202,14 @@ Everything beyond the street is derived from the `StreetPlan` (and, for
 attention, from task data plus the day). None of it moves a building.
 
 **Plaza geometry** (`frontierPlazaFor`): the square starts `plazaSetback`
-(7 m) past the end of the newest segment, is `plazaDepth` (58 m) deep and
+(7 m) past the end of the newest segment, is `plazaDepth` (66 m) deep and
 `plazaWidth` (62 m) wide, in the last segment's frame. On a folded street
 the last row runs back alongside an earlier one, so the whole plaza frame is
 shifted sideways by `plazaFoldClearance` (`plazaWidth / 2 + 11` = 42 m)
 toward the district's outside, away from the centroid of every plot
 (`plazaLateralOffsetFor`). A straight street keeps the plaza on its axis.
 
-- **Home** stands 60 m past the street end, at `eyeHeight` (2.2 m), looking
+- **Home** stands 68 m past the street end, at `eyeHeight` (2.2 m), looking
   back down the street.
 - **Overview** (`overviewPoseFor`) is the map shot: the bounding box of every
   placement, every segment start, the street end and a point 85 m past the
@@ -404,8 +404,8 @@ merged set for the tests.
 ```mermaid
 flowchart TD
   Far["far<br/>plate, neon strips, light bar, lantern<br/>no widget"] -->|"within 140 m and sign cap 80, one promotion per frame"| Sign["sign<br/>FacadeWidget sign variant<br/>captured once, manual input"]
-  Far -->|"within 26 m, in front of the wall, live cap 4"| Live["live<br/>FacadeWidget live variant<br/>captured every frame, automatic input"]
-  Sign -->|"within 26 m, in front of the wall, live cap 4"| Live
+  Far -->|"within 26 m (or the building's own stand-off), in front of the wall, live cap 4"| Live["live<br/>FacadeWidget live variant<br/>captured every frame, automatic input"]
+  Sign -->|"within 26 m (or the building's own stand-off), in front of the wall, live cap 4"| Live
   Live -->|"immediately when out of budget or range"| Sign
   Sign -->|"immediately"| Far
   Far -->|"prepare on flight start, the destination only"| Sign

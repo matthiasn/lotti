@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter_scene/scene.dart';
 import 'package:lotti/features/plaza/scene/plaza_scene.dart';
 import 'package:lotti/features/plaza/ui/checklist_ticks.dart';
@@ -119,7 +121,9 @@ class FacadeLodManager {
       FacadeTier target;
       if (config.forceAllLive) {
         target = FacadeTier.live;
-      } else if (liveLeft > 0 && d < config.liveDistance && inFront) {
+      } else if (liveLeft > 0 &&
+          d < math.max(config.liveDistance, building.liveRange) &&
+          inFront) {
         target = FacadeTier.live;
       } else if (signLeft > 0 && d < config.signDistance) {
         target = FacadeTier.sign;

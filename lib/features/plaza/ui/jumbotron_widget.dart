@@ -190,34 +190,31 @@ class _JumbotronWidgetState extends State<JumbotronWidget>
                             color: PlazaStyle.text,
                           ),
                         ),
-                        SizedBox(height: m(0.3)),
-                        Row(
-                          children: [
-                            if (a.reason.isNotEmpty)
-                              Expanded(
-                                child: Text(
-                                  a.reason,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontFamily: PlazaStyle.fontMono,
-                                    fontSize: bodyPx * 1.7,
-                                    color: const Color(0xF2FFFFFF),
-                                  ),
-                                ),
-                              )
-                            else
-                              const Spacer(),
-                            Text(
-                              'fly there ›',
-                              style: TextStyle(
-                                fontFamily: PlazaStyle.fontText,
-                                fontSize: bodyPx * 1.7,
-                                fontWeight: FontWeight.w600,
-                                color: PlazaStyle.teal,
-                              ),
+                        if (a.reason.isNotEmpty) ...[
+                          SizedBox(height: m(0.3)),
+                          Text(
+                            a.reason,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontFamily: PlazaStyle.fontMono,
+                              fontSize: bodyPx * 1.7,
+                              color: const Color(0xF2FFFFFF),
                             ),
-                          ],
+                          ),
+                        ],
+                        SizedBox(height: m(0.25)),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            'fly there ›',
+                            style: TextStyle(
+                              fontFamily: PlazaStyle.fontText,
+                              fontSize: bodyPx * 1.7,
+                              fontWeight: FontWeight.w600,
+                              color: PlazaStyle.teal,
+                            ),
+                          ),
                         ),
                       ],
                     );

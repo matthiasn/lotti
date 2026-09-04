@@ -45,7 +45,7 @@ void main() {
         final along =
             (plaza.home.x - last.endX) * math.sin(last.headingRadians) +
             (plaza.home.z - last.endZ) * math.cos(last.headingRadians);
-        expect(along, closeTo(60, 1e-9));
+        expect(along, closeTo(68, 1e-9));
       },
     );
 
@@ -425,6 +425,24 @@ void main() {
         }
       },
     );
+
+    test('a tall landmark stands off farther than the live range', () {
+      final tall = plan.placements.values.reduce(
+        (a, b) => a.height >= b.height ? a : b,
+      );
+      final short = plan.placements.values.reduce(
+        (a, b) => a.height <= b.height ? a : b,
+      );
+      expect(taskStandOffFor(tall), greaterThan(26));
+      expect(taskStandOffFor(short), lessThan(taskStandOffFor(tall)));
+      final pose = taskPoseFor(tall);
+      final dx = pose.x - tall.x;
+      final dz = pose.z - tall.z;
+      expect(
+        math.sqrt(dx * dx + dz * dz),
+        closeTo(taskStandOffFor(tall) + tall.depth / 2, 1e-9),
+      );
+    });
 
     test('the gantry spans the street mouth facing home', () {
       final g = gantryTickerFor(plan, roadWidth: 18)!;

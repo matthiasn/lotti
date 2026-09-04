@@ -103,6 +103,7 @@ class PlazaBuilding {
     required this.facadeNormal,
     required this.facadeWorldWidth,
     required this.facadeWorldHeight,
+    required this.liveRange,
     required this.pxPerMeter,
   });
 
@@ -131,6 +132,10 @@ class PlazaBuilding {
 
   final double facadeWorldWidth;
   final double facadeWorldHeight;
+
+  /// The task pose's stand-off: standing there must earn the live wall,
+  /// however tall the building.
+  final double liveRange;
   final double pxPerMeter;
 
   /// Logical layout size for the facade widget subtree.
@@ -1186,6 +1191,7 @@ class PlazaSceneController {
       facadeNormal: normal,
       facadeWorldWidth: facadeW,
       facadeWorldHeight: facadeH,
+      liveRange: taskStandOffFor(placement) + 2,
       pxPerMeter: pxPerMeter,
     );
     buildings.add(building);
