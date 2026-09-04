@@ -10,6 +10,15 @@ linter:
     discarded_futures: false
     require_trailing_commas: false
     avoid_types_on_closure_parameters: false
+    # very_good_analysis 11 swapped unnecessary_await_in_return for its
+    # opposite; the codebase is written to the former and has no auto-fix
+    # for the ~500 sites the new rule flags.
+    async_return_with_no_await: false
+
+# very_good_analysis 11 switched its formatter default to `automate`, which
+# would reformat most of the codebase; keep the style the code is written in.
+formatter:
+  trailing_commas: preserve
 
 analyzer:
   exclude:

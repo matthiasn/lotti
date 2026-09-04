@@ -163,17 +163,17 @@ This file tells flatpak-flutter about plugins not in its built-in database.
 {
     "flutter_vodozemac": {
         "cargo_locks": [
-            ".pub-cache/hosted/pub.dev/flutter_vodozemac-0.7.1/rust"
+            ".pub-cache/hosted/pub.dev/flutter_vodozemac-0.8.1/rust"
         ],
         "extra_pubspecs": [
-            ".pub-cache/hosted/pub.dev/flutter_vodozemac-0.7.1/cargokit/build_tool"
+            ".pub-cache/hosted/pub.dev/flutter_vodozemac-0.8.1/cargokit/build_tool"
         ],
         "manifest": {
             "sources": [
                 {
                     "type": "patch",
                     "path": "cargokit/run_build_tool.sh.patch",
-                    "dest": ".pub-cache/hosted/pub.dev/flutter_vodozemac-0.7.1/cargokit"
+                    "dest": ".pub-cache/hosted/pub.dev/flutter_vodozemac-0.8.1/cargokit"
                 }
             ]
         }
@@ -227,8 +227,6 @@ Current version-specific native inputs and patches include:
 - `sqlite3 3.5.1`: preloads the hash-matched Linux library for each architecture
   into the package hook's shared cache. This version validates and reuses an
   existing matching library, so it needs no source patch.
-- `sqlite3_flutter_libs 0.5.42`: pins the SQLite archive hash so CMake uses the
-  source downloaded during Flatpak's network-enabled source phase.
 - `objectbox_flutter_libs 5.3.1` and `5.3.2`: pins the per-architecture
   ObjectBox archive hashes for the same offline build flow.
 - `flutter_lame 1.0.3`: raises bundled LAME's CMake compatibility floor from

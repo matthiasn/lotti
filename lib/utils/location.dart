@@ -160,24 +160,22 @@ class DeviceLocation {
           final longitude = locationData.longitude;
           final latitude = locationData.latitude;
 
-          if (longitude != null && latitude != null) {
-            nativeLocation = Geolocation(
-              createdAt: now,
-              timezone: now.timeZoneName,
-              utcOffset: now.timeZoneOffset.inMinutes,
+          nativeLocation = Geolocation(
+            createdAt: now,
+            timezone: now.timeZoneName,
+            utcOffset: now.timeZoneOffset.inMinutes,
+            latitude: latitude,
+            longitude: longitude,
+            altitude: locationData.altitude,
+            speed: locationData.speed,
+            accuracy: locationData.accuracy,
+            heading: locationData.heading,
+            speedAccuracy: locationData.speedAccuracy,
+            geohashString: getGeoHash(
               latitude: latitude,
               longitude: longitude,
-              altitude: locationData.altitude,
-              speed: locationData.speed,
-              accuracy: locationData.accuracy,
-              heading: locationData.heading,
-              speedAccuracy: locationData.speedAccuracy,
-              geohashString: getGeoHash(
-                latitude: latitude,
-                longitude: longitude,
-              ),
-            );
-          }
+            ),
+          );
         } catch (e) {
           getIt<DomainLogger>().error(
             LogDomain.location,

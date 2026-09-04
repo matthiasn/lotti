@@ -93,7 +93,6 @@ class ConnectionCheckFailedNetwork extends ConnectionCheckState {
 /// Kept as a one-method abstract class (rather than a typedef) so test
 /// fakes can extend it as named classes for clearer stack traces.
 @visibleForTesting
-// ignore: one_member_abstracts
 abstract class ConnectionProbe {
   Future<ConnectionCheckState> probe({
     required Uri baseUri,

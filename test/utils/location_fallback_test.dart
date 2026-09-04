@@ -248,35 +248,6 @@ void main() {
         expect(result.accuracy, 50000);
       });
 
-      test(
-        'falls back to IP when location data has null coordinates',
-        () async {
-          stubRecordLocationFlag(enabled: true);
-
-          when(
-            () => mockLocation.serviceEnabled(),
-          ).thenAnswer((_) async => true);
-
-          when(
-            () => mockLocation.hasPermission(),
-          ).thenAnswer((_) async => PermissionStatus.granted);
-
-          final mockLocationData = MockLocationData();
-          when(() => mockLocationData.latitude).thenReturn(null);
-          when(() => mockLocationData.longitude).thenReturn(null);
-
-          when(
-            () => mockLocation.getLocation(),
-          ).thenAnswer((_) async => mockLocationData);
-
-          // Should fall back to IP geolocation
-          final result = await deviceLocation.getCurrentGeoLocation();
-
-          // The actual result depends on the IP geolocation service
-          expect(result, anyOf(isNull, isA<Geolocation>()));
-        },
-      );
-
       test('handles service not enabled by falling back to IP', () async {
         // Skip on Linux: that platform uses the xdg-desktop-portal path, not the
         // location package mocked here.
