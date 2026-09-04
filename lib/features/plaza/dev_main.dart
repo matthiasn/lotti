@@ -202,9 +202,14 @@ class _PlazaHarnessState extends State<_PlazaHarness> {
     final home =
         _world.plaza?.home ??
         const CameraPose(x: 0, y: eyeHeight, z: -10, yaw: 0);
-    _camera = FlyCameraController(pose: home, collider: _world.collider)
-      ..onArrived = _onArrived
-      ..onMovement = _endWalk;
+    _camera =
+        FlyCameraController(
+            pose: home,
+            collider: _world.collider,
+            solids: _world.solids,
+          )
+          ..onArrived = _onArrived
+          ..onMovement = _endWalk;
     _camera.onFlightCancelled = () {
       _lod.suspended = false;
     };

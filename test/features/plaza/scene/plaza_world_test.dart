@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/plaza/domain/attention.dart';
+import 'package:lotti/features/plaza/domain/flight.dart';
 import 'package:lotti/features/plaza/domain/plaza_layout.dart';
 import 'package:lotti/features/plaza/domain/scenery.dart';
 import 'package:lotti/features/plaza/domain/street_layout.dart';
@@ -86,29 +87,128 @@ void main() {
     });
 
     test(
-      'the pylon footings, the gantry legs and the lamp posts are solid',
+      'the pylon posts, the gantry legs and the lamp posts are solid; the '
+      'signs and the beam hang above the walker, for the flights',
       () {
         final pylons = world.builtBillboardSlots.where((s) => s.onPylon);
         expect(pylons, isNotEmpty);
-        for (final f in pylonFootprintsFor(pylons)) {
-          expectSolid(f, 'pylon footing at ${f.x}, ${f.z}');
+        for (final s in pylonSolidsFor(pylons)) {
+          final f = s.footprint;
+          if (s.atWalkHeight) {
+            expectSolid(f, 'pylon post at ${f.x}, ${f.z}');
+          } else {
+            // Under the sign, between the posts, the walker stands; the
+            // sign itself is a solid the world knows.
+            expect(world.collider.resolve(f.x, f.z), (f.x, f.z));
+            expect(
+              world.solids.any(
+                (w) => w.contains(f.x, (s.bottom + s.top) / 2, f.z),
+              ),
+              isTrue,
+            );
+          }
         }
-        for (final f in gantryLegFootprintsFor(world.gantry!)) {
+        final gantry = gantrySolidsFor(world.gantry!);
+        for (final leg in gantry.take(2)) {
+          final f = leg.footprint;
           expectSolid(f, 'gantry leg at ${f.x}, ${f.z}');
         }
-        for (final f in lampPostFootprintsFor(world.lampPosts)) {
+        final beam = gantry.last.footprint;
+        expect(world.collider.resolve(beam.x, beam.z), (beam.x, beam.z));
+        expect(
+          world.solids.any(
+            (s) => s.contains(beam.x, world.gantry!.bottom + 1, beam.z),
+          ),
+          isTrue,
+        );
+        for (final s in lampPostSolidsFor(world.lampPosts)) {
+          final f = s.footprint;
           expectSolid(f, 'lamp post at ${f.x}, ${f.z}');
         }
         expect(
           world.solids.length,
           world.plan.placements.length +
-              world.scenery.boxes.length +
-              2 * pylons.length +
-              2 +
+              world.spires.length +
+              world.scenery.solids.length +
+              3 * pylons.length +
+              world.roofBillboards.length +
+              3 +
               world.lampPosts.length,
+        );
+        // In the air: the signs, the roof panels, the beam and the spires.
+        expect(
+          world.solids.where((s) => !s.atWalkHeight).length,
+          pylons.length +
+              world.roofBillboards.length +
+              1 +
+              world.spires.length +
+              world.scenery.heroTowers.length +
+              1,
         );
       },
     );
+  });
+
+  group('flights over the district', () {
+    /// Whether [f] enters any solid on its way, sampled finely.
+    bool passesThrough(Flight f) {
+      for (var t = 0.0; t <= 1.0001; t += 0.001) {
+        final p = f.poseAt(t);
+        if (world.solids.any((s) => s.contains(p.x, p.y, p.z))) return true;
+      }
+      return false;
+    }
+
+    test('every walk stop and beacon on the ground stands clear', () {
+      final poses = [
+        for (final stop in world.walkStops!) stop.pose,
+        for (final beacon in world.beacons) beacon.pose,
+      ];
+      expect(poses.where((p) => p.y == eyeHeight), hasLength(greaterThan(8)));
+      for (final pose in poses) {
+        if (pose.y > eyeHeight) continue;
+        expect(
+          world.collider.resolve(pose.x, pose.z),
+          (pose.x, pose.z),
+          reason: '$pose stands in a solid',
+        );
+      }
+    });
+
+    test('the morning walk flies over the district, never through it', () {
+      final stops = world.walkStops!;
+      expect(stops.length, greaterThanOrEqualTo(4));
+      var blind = 0;
+      for (var i = 1; i < stops.length; i++) {
+        final from = stops[i - 1].pose;
+        final to = stops[i].pose;
+        // Planned blind, the straight line runs through the block.
+        if (passesThrough(Flight.plan(from, to))) blind++;
+        expect(
+          passesThrough(Flight.plan(from, to, solids: world.solids)),
+          isFalse,
+          reason: '${stops[i - 1].label} → ${stops[i].label}',
+        );
+      }
+      expect(blind, greaterThan(0));
+    });
+
+    test('cycling the beacons flies over the district too', () {
+      final nav = world.beacons
+          .where((b) => b.kind != BeaconKind.attention)
+          .toList();
+      expect(nav.length, greaterThan(3));
+      for (var i = 0; i < nav.length; i++) {
+        final next = nav[(i + 1) % nav.length];
+        expect(
+          passesThrough(
+            Flight.plan(nav[i].pose, next.pose, solids: world.solids),
+          ),
+          isFalse,
+          reason: '${nav[i].label} → ${next.label}',
+        );
+      }
+    });
   });
 
   test('tickers: mounted screens, the gantry, and the hero rooflines', () {

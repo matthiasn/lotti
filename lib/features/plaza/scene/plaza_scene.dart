@@ -1030,9 +1030,11 @@ class PlazaSceneController {
   void _buildStreetFurniture() {
     for (final (x, z) in world.lampPosts) {
       final pole = Node(
-        localTransform: Matrix4.translation(Vector3(x, 2.6, z)),
+        localTransform: Matrix4.translation(
+          Vector3(x, lampPostHeight / 2, z),
+        ),
         mesh: Mesh(
-          CuboidGeometry(Vector3(lampPostSize, 5.2, lampPostSize)),
+          CuboidGeometry(Vector3(lampPostSize, lampPostHeight, lampPostSize)),
           UnlitMaterial()..baseColorFactor = _post,
         ),
       );
@@ -1106,7 +1108,7 @@ class PlazaSceneController {
         localTransform: Matrix4.translation(Vector3(gantry.x, 0, gantry.z))
           ..rotateY(gantry.facingRadians),
       );
-      final top = gantry.bottom + gantry.height + 0.4;
+      final top = gantryTopFor(gantry);
       for (final side in [-1.0, 1.0]) {
         root.add(
           Node(
@@ -1123,9 +1125,17 @@ class PlazaSceneController {
       root
         ..add(
           Node(
-            localTransform: Matrix4.translation(Vector3(0, top - 0.2, 0)),
+            localTransform: Matrix4.translation(
+              Vector3(0, top - gantryBeamThickness / 2, 0),
+            ),
             mesh: Mesh(
-              CuboidGeometry(Vector3(gantry.width + 0.5, 0.4, 0.5)),
+              CuboidGeometry(
+                Vector3(
+                  gantry.width + gantryLegSize,
+                  gantryBeamThickness,
+                  gantryBeamDepth,
+                ),
+              ),
               UnlitMaterial()..baseColorFactor = _post,
             ),
           ),
@@ -1268,17 +1278,27 @@ class PlazaSceneController {
       // The tower's own spire.
       final spire = Node(
         localTransform: Matrix4.translation(
-          Vector3(0, towerH + 5, -jumbotronTowerSetback),
+          Vector3(0, towerH + jumbotronSpireHeight / 2, -jumbotronTowerSetback),
         ),
         mesh: Mesh(
-          CuboidGeometry(Vector3(0.5, 10, 0.5)),
+          CuboidGeometry(
+            Vector3(
+              jumbotronSpireSize,
+              jumbotronSpireHeight,
+              jumbotronSpireSize,
+            ),
+          ),
           UnlitMaterial()..baseColorFactor = _post,
         ),
       );
       root.add(spire);
       final light = Node(
         localTransform: Matrix4.translation(
-          Vector3(0, towerH + 10.4, -jumbotronTowerSetback),
+          Vector3(
+            0,
+            towerH + jumbotronSpireHeight + 0.4,
+            -jumbotronTowerSetback,
+          ),
         ),
       );
       root.add(light);
@@ -1308,16 +1328,20 @@ class PlazaSceneController {
     for (final p in world.spires) {
       final root = Node(
         localTransform: Matrix4.translation(
-          Vector3(p.x, p.height + 4, p.z),
+          Vector3(p.x, p.height + plotSpireHeight / 2, p.z),
         ),
         mesh: Mesh(
-          CuboidGeometry(Vector3(0.4, 8, 0.4)),
+          CuboidGeometry(
+            Vector3(plotSpireSize, plotSpireHeight, plotSpireSize),
+          ),
           UnlitMaterial()..baseColorFactor = _post,
         ),
       );
       scene.add(root);
       final light = Node(
-        localTransform: Matrix4.translation(Vector3(p.x, p.height + 8.3, p.z)),
+        localTransform: Matrix4.translation(
+          Vector3(p.x, p.height + plotSpireHeight + 0.3, p.z),
+        ),
       );
       scene.add(light);
       spireAnchors.add(light);
@@ -2115,8 +2139,10 @@ class PlazaSceneController {
       final mx = (stableUnit(task.id, 'mx') - 0.5) * (w - 1);
       node.add(
         Node(
-          localTransform: Matrix4.translation(Vector3(mx, top + 2.2, 0)),
-          mesh: Mesh(CuboidGeometry(Vector3(0.12, 4.4, 0.12)), dark),
+          localTransform: Matrix4.translation(
+            Vector3(mx, top + roofKitHeight / 2, 0),
+          ),
+          mesh: Mesh(CuboidGeometry(Vector3(0.12, roofKitHeight, 0.12)), dark),
         ),
       );
     }
@@ -2273,15 +2299,21 @@ class PlazaSceneController {
         )
         ..add(
           Node(
-            localTransform: Matrix4.translation(Vector3(0, height + 7, 0)),
+            localTransform: Matrix4.translation(
+              Vector3(0, height + heroSpireHeight / 2, 0),
+            ),
             mesh: Mesh(
-              CuboidGeometry(Vector3(0.6, 14, 0.6)),
+              CuboidGeometry(
+                Vector3(heroSpireSize, heroSpireHeight, heroSpireSize),
+              ),
               UnlitMaterial()..baseColorFactor = _post,
             ),
           ),
         );
       final light = Node(
-        localTransform: Matrix4.translation(Vector3(0, height + 14.4, 0)),
+        localTransform: Matrix4.translation(
+          Vector3(0, height + heroSpireHeight + 0.4, 0),
+        ),
       );
       root.add(light);
       spireAnchors.add(light);

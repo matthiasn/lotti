@@ -1,6 +1,9 @@
+import 'dart:math' as math;
+
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
 import 'package:lotti/features/plaza/domain/street_layout.dart';
 
@@ -452,5 +455,89 @@ void main() {
       final plan = layout.plan(_dataset(count: 8));
       expect(plan.segments.where((s) => s.isConnector), isEmpty);
     });
+  });
+
+  group('footprintsOverlap', () {
+    const a = Footprint(x: 0, z: 0, facingRadians: 0, width: 10, depth: 4);
+
+    test('boxes that share ground overlap; boxes apart or touching do not', () {
+      expect(footprintsOverlap(a, a), isTrue);
+      const beside = Footprint(
+        x: 10,
+        z: 0,
+        facingRadians: 0,
+        width: 10,
+        depth: 4,
+      );
+      expect(footprintsOverlap(a, beside), isFalse); // edges touch at x = 5
+      const near = Footprint(
+        x: 9.9,
+        z: 0,
+        facingRadians: 0,
+        width: 10,
+        depth: 4,
+      );
+      expect(footprintsOverlap(a, near), isTrue);
+      const behind = Footprint(
+        x: 0,
+        z: 4.5,
+        facingRadians: 0,
+        width: 10,
+        depth: 4,
+      );
+      expect(footprintsOverlap(a, behind), isFalse);
+      // Turned a quarter: the 10 m width now runs along Z and reaches a.
+      const turned = Footprint(
+        x: 0,
+        z: 6,
+        facingRadians: math.pi / 2,
+        width: 10,
+        depth: 2,
+      );
+      expect(footprintsOverlap(a, turned), isTrue);
+      const turnedAway = Footprint(
+        x: 0,
+        z: 8,
+        facingRadians: math.pi / 2,
+        width: 10,
+        depth: 2,
+      );
+      expect(footprintsOverlap(a, turnedAway), isFalse);
+      // A diamond whose corner reaches in where an axis-aligned box's would not.
+      const diamond = Footprint(
+        x: 5 + 2.5,
+        z: 0,
+        facingRadians: math.pi / 4,
+        width: 4,
+        depth: 4,
+      );
+      expect(footprintsOverlap(a, diamond), isTrue);
+    });
+
+    glados.Glados3<double, double, double>(
+      glados.any.doubleInRange(-30, 30),
+      glados.any.doubleInRange(-30, 30),
+      glados.any.doubleInRange(-math.pi, math.pi),
+      glados.ExploreConfig(numRuns: 120),
+    ).test('is symmetric, and agrees with the point test on the centres', (
+      x,
+      z,
+      facing,
+    ) {
+      final b = Footprint(
+        x: x,
+        z: z,
+        facingRadians: facing,
+        width: 6,
+        depth: 3,
+      );
+      expect(footprintsOverlap(a, b), footprintsOverlap(b, a));
+      // A box whose centre is inside the other overlaps it; far apart, never.
+      final (u, v) = a.local(x, z);
+      if (u.abs() < 5 && v.abs() < 2) expect(footprintsOverlap(a, b), isTrue);
+      if (x.abs() > 5 + 3.5 || z.abs() > 2 + 3.5) {
+        expect(footprintsOverlap(a, b), isFalse, reason: '$x $z $facing');
+      }
+    }, tags: 'glados');
   });
 }

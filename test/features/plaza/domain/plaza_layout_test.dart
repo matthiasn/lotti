@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/plaza/domain/attention.dart';
 import 'package:lotti/features/plaza/domain/plaza_layout.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
+import 'package:lotti/features/plaza/domain/scenery.dart';
+import 'package:lotti/features/plaza/domain/solid.dart';
 import 'package:lotti/features/plaza/domain/street_layout.dart';
 
 import '../plaza_fixtures.dart';
@@ -302,10 +304,10 @@ void main() {
         height: height,
       );
       expect(taskPoseFor(place(4, 4)).z, closeTo(3 + 16, 1e-9));
-      expect(taskPoseFor(place(15, 4)).z, closeTo(3 + 15 * 1.2, 1e-9));
+      expect(taskPoseFor(place(13.5, 4)).z, closeTo(3 + 13.5 * 1.2, 1e-9));
       expect(
-        taskPoseFor(place(4, 16)).z,
-        closeTo(3 + (16 + roofSignageHeight + 3) * 0.9, 1e-9),
+        taskPoseFor(place(4, 8.5)).z,
+        closeTo(3 + (8.5 + roofSignageHeight + 3) * 0.9, 1e-9),
       );
       // A landmark is framed by pitching up, never from the next row.
       expect(taskPoseFor(place(4, 32)).z, closeTo(3 + maxTaskStandOff, 1e-9));
@@ -528,8 +530,16 @@ void main() {
       final tall = plan.placements.values.reduce(
         (a, b) => a.height >= b.height ? a : b,
       );
-      final short = plan.placements.values.reduce(
-        (a, b) => a.height <= b.height ? a : b,
+      const short = PlotPlacement(
+        taskId: 'short',
+        bucketIndex: 0,
+        side: PlotSide.left,
+        x: 0,
+        z: 0,
+        facingRadians: 0,
+        width: 6,
+        depth: 8,
+        height: 4,
       );
       // Unclamped, the landmark would want more than the street is wide.
       expect((tall.height + roofSignageHeight + 3) * 0.9, greaterThan(26));
@@ -542,6 +552,36 @@ void main() {
         math.sqrt(dx * dx + dz * dz),
         closeTo(taskStandOffFor(tall) + tall.depth / 2, 1e-9),
       );
+    });
+
+    test('the stand-off cap keeps every pose short of the far lamp line', () {
+      final p = plan.placements.values.first;
+      // From the facade to the crown, and from the crown to the lamp posts
+      // on the far pavement, with the default layout.
+      final facadeToCrown =
+          layout.roadWidth / 2 + layout.plotDepth / 2 - p.depth / 2;
+      final crownToLamps = layout.roadWidth / 2 - kerbFixtureInset;
+      expect(facadeToCrown, closeTo(10, 1e-9));
+      expect(crownToLamps, closeTo(7.4, 1e-9));
+      expect(
+        maxTaskStandOff + solidClearance + lampPostSize / 2,
+        lessThan(facadeToCrown + crownToLamps),
+      );
+      final solids = [
+        for (final o in plan.placements.values) plotSolidFor(o),
+        ...lampPostSolidsFor(lampPostsFor(plan, roadWidth: layout.roadWidth)),
+      ];
+      for (final o in plan.placements.values) {
+        final pose = taskPoseFor(o);
+        expect(
+          solids.any(
+            (s) =>
+                s.contains(pose.x, pose.y, pose.z, clearance: solidClearance),
+          ),
+          isFalse,
+          reason: '${o.taskId} at ${o.height.toStringAsFixed(1)} m',
+        );
+      }
     });
 
     test('the gantry spans the street mouth facing home', () {

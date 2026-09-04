@@ -73,6 +73,43 @@ class Footprint {
 
   /// Extent along local Z.
   final double depth;
+
+  /// The point in this footprint's frame: `u` along local X (the width),
+  /// `v` along local Z (the depth), both from the centre.
+  (double, double) local(double x, double z) {
+    final sinF = math.sin(facingRadians);
+    final cosF = math.cos(facingRadians);
+    final dx = x - this.x;
+    final dz = z - this.z;
+    return (dx * cosF - dz * sinF, dx * sinF + dz * cosF);
+  }
+
+  /// The interval this footprint covers along the world axis ([ax], [az]).
+  (double, double) _projection(double ax, double az) {
+    final sinF = math.sin(facingRadians);
+    final cosF = math.cos(facingRadians);
+    final centre = x * ax + z * az;
+    final half =
+        (ax * cosF - az * sinF).abs() * width / 2 +
+        (ax * sinF + az * cosF).abs() * depth / 2;
+    return (centre - half, centre + half);
+  }
+}
+
+/// Whether two footprints overlap on the ground: a separating-axis test on
+/// the four edge normals. Touching edges do not count.
+bool footprintsOverlap(Footprint a, Footprint b) {
+  for (final box in [a, b]) {
+    final sinF = math.sin(box.facingRadians);
+    final cosF = math.cos(box.facingRadians);
+    // The box's own axes: local X, then local Z.
+    for (final (ax, az) in [(cosF, -sinF), (sinF, cosF)]) {
+      final (aMin, aMax) = a._projection(ax, az);
+      final (bMin, bMax) = b._projection(ax, az);
+      if (aMax <= bMin || bMax <= aMin) return false;
+    }
+  }
+  return true;
 }
 
 /// Which side of the road a plot sits on.

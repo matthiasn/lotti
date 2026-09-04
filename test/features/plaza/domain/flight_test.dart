@@ -1,8 +1,40 @@
 import 'dart:math' as math;
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/plaza/domain/flight.dart';
 import 'package:lotti/features/plaza/domain/plaza_layout.dart';
+import 'package:lotti/features/plaza/domain/solid.dart';
+import 'package:lotti/features/plaza/domain/street_layout.dart';
+
+/// Whether [f] enters any of [solids] anywhere on its way, sampled finely.
+bool passesThrough(Flight f, List<Solid> solids) {
+  for (var t = 0.0; t <= 1.0001; t += 0.001) {
+    final p = f.poseAt(t);
+    if (solids.any((s) => s.contains(p.x, p.y, p.z))) return true;
+  }
+  return false;
+}
+
+Solid box({
+  required double x,
+  required double z,
+  double width = 10,
+  double depth = 10,
+  double top = 30,
+  double bottom = 0,
+  double facing = 0,
+}) => Solid(
+  footprint: Footprint(
+    x: x,
+    z: z,
+    facingRadians: facing,
+    width: width,
+    depth: depth,
+  ),
+  bottom: bottom,
+  top: top,
+);
 
 void main() {
   const a = CameraPose(x: 0, y: 2.2, z: 0, yaw: 0);
@@ -41,6 +73,14 @@ void main() {
     final long = Flight.plan(a, const CameraPose(x: 0, y: 2.2, z: 200, yaw: 0));
     expect(long.arc, closeTo(44, 1e-9));
     expect(long.poseAt(0.5).y, closeTo(2.2 + 44, 1e-9));
+    // A climb over the first 35 % of the way, a cruise, a descent over the
+    // last 35 %.
+    expect(long.rampStart, Flight.defaultRamp);
+    expect(long.rampEnd, Flight.defaultRamp);
+    expect(long.liftAt(0.175), closeTo(22, 1e-9));
+    expect(long.liftAt(0.35), closeTo(44, 1e-9));
+    expect(long.liftAt(0.65), closeTo(44, 1e-9));
+    expect(long.liftAt(0.825), closeTo(22, 1e-9));
     // Over the arc the camera looks down at what it crosses, then levels.
     expect(long.poseAt(0.5).pitch, lessThan(-0.5));
     expect(long.poseAt(1).pitch, closeTo(0, 1e-9));
@@ -160,5 +200,134 @@ void main() {
         expect(f.travelYaw, isNotNull);
       },
     );
+  });
+
+  group('over solids', () {
+    // Fifty metres along +Z at eye height.
+    const to = CameraPose(x: 0, y: 2.2, z: 50, yaw: 0);
+
+    test('a hop through a building lifts over it: up before, held past', () {
+      final building = box(x: 0, z: 25);
+      // The bug: planned blind, the line runs through the building.
+      expect(passesThrough(Flight.plan(a, to), [building]), isTrue);
+      final f = Flight.plan(a, to, solids: [building]);
+      expect(passesThrough(f, [building]), isFalse);
+      expect(f.arc, closeTo(30 + Flight.clearance - 2.2, 1e-9));
+      // The building spans 0.4 to 0.6 of the way: the climb is done at
+      // 0.85 of the way to it, the descent starts 0.85 of the way after.
+      expect(f.rampStart, closeTo(0.85 * 0.4, 1e-9));
+      expect(f.rampEnd, closeTo(0.85 * 0.4, 1e-9));
+      expect(f.liftAt(0), 0);
+      expect(f.liftAt(f.rampStart), closeTo(f.arc, 1e-9));
+      expect(f.liftAt(0.4), closeTo(f.arc, 1e-9));
+      expect(f.liftAt(0.6), closeTo(f.arc, 1e-9));
+      expect(f.liftAt(1), closeTo(0, 1e-9));
+      expect(f.poseAt(0.5).y, closeTo(30 + Flight.clearance, 1e-9));
+      // Looks down at what it crosses, levels out to land.
+      expect(f.poseAt(0.5).pitch, lessThan(-0.4));
+      expect(f.poseAt(1).pitch, closeTo(0, 1e-9));
+      expect(f.poseAt(1).y, closeTo(2.2, 1e-9));
+    });
+
+    test('beside a building, and under a beam, the line stays level', () {
+      final beside = box(x: 6, z: 25); // its near face at x = 1
+      final beam = box(
+        x: 0,
+        z: 25,
+        width: 22,
+        depth: 0.5,
+        bottom: 10.5,
+        top: 12.7,
+      );
+      final f = Flight.plan(a, to, solids: [beside, beam]);
+      expect(f.arc, 0);
+      expect(f.rampStart, Flight.defaultRamp);
+      expect(f.poseAt(0.5).y, 2.2);
+    });
+
+    test('from altitude, a roof already under the line asks for nothing', () {
+      const high = CameraPose(x: 0, y: 60, z: 0, yaw: 0);
+      const far = CameraPose(x: 0, y: 60, z: 50, yaw: 0);
+      final f = Flight.plan(high, far, solids: [box(x: 0, z: 25)]);
+      expect(f.arc, 0);
+    });
+
+    test('a lift that would raise the line into a beam clears the beam', () {
+      final beam = box(
+        x: 0,
+        z: 8.5,
+        width: 22,
+        depth: 0.5,
+        bottom: 10.5,
+        top: 12.7,
+      );
+      final tower = box(x: 0, z: 25, width: 4, depth: 4, top: 20);
+      // Over the tower alone, the climb runs up through the beam.
+      expect(
+        passesThrough(Flight.plan(a, to, solids: [tower]), [beam]),
+        isTrue,
+      );
+      final f = Flight.plan(a, to, solids: [beam, tower]);
+      expect(passesThrough(f, [beam, tower]), isFalse);
+      // The climb now ends before the beam, not before the tower.
+      expect(f.rampStart, closeTo(0.85 * (8.5 - 0.25) / 50, 1e-9));
+      expect(f.arc, closeTo(20 + Flight.clearance - 2.2, 1e-9));
+    });
+
+    test('a stop a step past the wall it came over drops beside it', () {
+      // From over the roof to the ground 0.6 m past the wall: the descent
+      // is short, the ask is what the roof needs, and the line never
+      // enters the box.
+      const over = CameraPose(x: 0, y: 60, z: 25, yaw: 0);
+      const beside = CameraPose(x: 0, y: 2.2, z: 30.6, yaw: 0);
+      final building = box(x: 0, z: 25);
+      final f = Flight.plan(over, beside, solids: [building]);
+      expect(passesThrough(f, [building]), isFalse);
+      expect(f.rampEnd, closeTo(0.85 * 0.6 / 5.6, 1e-9));
+      expect(f.arc, lessThan(30));
+    });
+
+    glados.Glados3<double, double, int>(
+      glados.any.doubleInRange(-60, 60),
+      glados.any.doubleInRange(-60, 60),
+      glados.any.intInRange(0, 1 << 20),
+      glados.ExploreConfig(numRuns: 60),
+    ).test('never passes through a solid, whatever stands on the way', (
+      fx,
+      fz,
+      seed,
+    ) {
+      final rng = math.Random(seed);
+      double pick(double lo, double hi) => lo + rng.nextDouble() * (hi - lo);
+      final solids = [
+        for (var i = 0; i < 5; i++)
+          box(
+            x: pick(-50, 50),
+            z: pick(-50, 50),
+            width: pick(3, 24),
+            depth: i < 3 ? pick(3, 24) : pick(0.5, 1),
+            facing: pick(-math.pi, math.pi),
+            bottom: i < 3 ? 0 : pick(4, 14),
+            top: pick(16, 70),
+          ),
+      ];
+      final from = CameraPose(x: fx, y: eyeHeight, z: fz, yaw: 0);
+      final to = CameraPose(
+        x: -fz,
+        y: rng.nextBool() ? eyeHeight : pick(eyeHeight, 140),
+        z: fx,
+        yaw: 1,
+      );
+      // A pose inside, under or over a solid is not the planner's to fix:
+      // the stop poses stand clear of every footprint.
+      for (final p in [from, to]) {
+        for (final s in solids) {
+          final mid = (s.bottom + s.top) / 2;
+          if (s.contains(p.x, mid, p.z, clearance: solidClearance)) return;
+        }
+      }
+      final f = Flight.plan(from, to, solids: solids);
+      expect(passesThrough(f, solids), isFalse, reason: '$from → $to');
+    }, tags: 'glados');
   });
 }

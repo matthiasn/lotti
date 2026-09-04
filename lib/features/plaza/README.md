@@ -62,11 +62,13 @@ lib/features/plaza/
     street_layout.dart   the merge-stable street with the fold
     plaza_layout.dart    plaza, billboards, furniture, beacons, task poses
     attention.dart       the attention score and lantern state
-    flight.dart          camera flights
+    flight.dart          camera flights, lifted over every solid on the line
     morning_walk.dart    the walk playlist
-    walk_collider.dart   keeps the walker out of every solid
+    solid.dart           a footprint with its height band
+    walk_collider.dart   keeps the walker out of every solid at walk height
     scenery.dart         the seeded fillers, towers and skyline, and the
-                         footprints of the pylons, the gantry and the lamps
+                         solids of the pylons, the gantry, the lamps, the
+                         roof panels and the spires
   scene/                 flutter_scene, needs a GPU context
     plaza_world.dart     everything derived from tasks and the clock (pure)
     plaza_scene.dart     the scene graph: sky, road, buildings, fillers, skyline

@@ -32,6 +32,10 @@ sources:
     resource: ../../lib/features/plaza/domain/walk_collider.dart
     title: The walker collider with merged footprints
     last_modified: 2026-09-04
+  - id: solid
+    resource: ../../lib/features/plaza/domain/solid.dart
+    title: A footprint with its height band, for the collider and the flights
+    last_modified: 2026-09-04
   - id: scenery
     resource: ../../lib/features/plaza/domain/scenery.dart
     title: The seeded scenery and the furniture footprints
@@ -108,9 +112,10 @@ flowchart LR
     World --> Overlays["mounts, roof billboards, banners, lamps,<br/>gantry, jumbotron, spires, week signs"]
     World --> Beacons["Beacons"]
     World --> Scenery["Scenery<br/>fillers, hero towers, jumbotron tower, skyline, plaza furniture"]
-    World --> Solids["solids<br/>plots, scenery boxes, pylon footings, gantry legs, lamp posts"]
+    World --> Solids["solids, each with a height band<br/>plots and roof kit, spires, scenery boxes, pylon posts and signs,<br/>roof panels, gantry legs and beam, lamp posts"]
     Scenery --> Solids
-    Solids --> Collider["WalkCollider"]
+    Solids -->|"at walk height"| Collider["WalkCollider"]
+    Solids -->|"all, for the sweep"| Flight["Flight.plan"]
   end
   subgraph scene ["Scene, needs a GPU context"]
     Plan --> Ctl["PlazaSceneController<br/>sky, fog, ground, road, plaza, buildings, fillers, skyline"]
@@ -131,15 +136,16 @@ flowchart LR
     Picker["PlazaPicker"] --> Cam
     Walk["MorningWalk"] --> Cam
     Collider --> Cam
+    Flight --> Cam
   end
 ```
 
 `PlazaWorld` is built once per scene from the task list, the clock, a project
 label, the category labels and a `StreetLayout`. Its constructor derives the
 plan, the plaza, the attention verdicts, the anomalies, the billboard
-candidates, the beacons, every piece of street furniture, the scenery and
-the collider over every solid, so the scene, the HUD, the search sheet and
-the tour all read from one object.
+candidates, the beacons, every piece of street furniture, the scenery, the
+solids and the collider over the ones at walk height, so the scene, the
+HUD, the search sheet, the flights and the tour all read from one object.
 It also composes the two ticker strings: `countsText` (project label,
 attention count, in-progress count, done of live, built-week count) for the
 gantry, and `tickerText` (the same with the top three anomaly headlines) for
@@ -389,20 +395,44 @@ first plans a **landing flight** to eye height rather than dropping in one
 frame. Pressed keys are reconciled with `HardwareKeyboard` every frame so a
 key-up lost to a focus change cannot latch the camera walking.
 
-A `Flight` is planned once from two poses:
+A `Flight` is planned once from two poses and the world's solids:
 
 - duration `clamp(0.32 × sqrt(distance), 0.8 s, 2.5 s)` divided by
   `timeScale`;
 - **smootherstep** easing (`6t^5 - 15t^4 + 10t^3`) along the straight line;
-- an **arc** for trips over `arcThreshold` (60 m): peak lift
-  `min(45, 0.22 × distance) × horizontalFraction`, applied as a sine over
-  the eased time, with the pitch dipping `-atan2(lift, 40) × 0.9` so the
-  camera looks down at what it crosses; a climb gets no arc;
+- a **lift** over the straight line: `arc × profile(s)` where `s` is the
+  eased fraction of the way and the profile is a smoothstep climb over the
+  first `rampStart` of the way, a cruise, and a smoothstep descent over the
+  last `rampEnd`. With nothing on the way the ramps are `defaultRamp`
+  (0.35) each and the arc is the **district arc** for trips over
+  `arcThreshold` (60 m): `min(45, 0.22 × distance) × horizontalFraction`; a
+  climb gets none;
+- a **sweep over the solids**: the line is clipped against every solid's
+  footprint (`_span`, a slab test in the footprint's frame) and any solid
+  whose band of height the line would enter, `clearance` (1.5 m) included,
+  is lifted over: the ramps shrink to `rampFit` (0.85) of the way to the
+  first such solid and from the last (never under `minRamp`), and the arc
+  becomes the largest `top + clearance − line height` over those spans.
+  Lifting can raise the line into a solid it passed under (the gantry
+  beam), so the lifted set grows until it holds. A solid the line already
+  passes over or under asks for nothing. The pitch dips
+  `-atan2(lift, 40) × 0.9` so the camera looks down at what it crosses;
 - **look-along**: when the ground distance is at least
   `lookAlongThreshold` (8 m) and the trip is at least 55 % horizontal, yaw
   turns into the travel heading during the first 35 % of the flight, holds
   it to 75 %, then settles onto the target yaw. Shorter or mostly vertical
   trips blend yaw directly, the short way round.
+
+The straight line is the only route: a flight goes *over* what stands on
+it, never round it, so two stops with a block between them are joined by a
+climb, a cruise above the roofs and a descent. A stop a step from a wall
+the line crosses gets a near-vertical drop beside that wall, which is the
+only path there is; the stop poses stand outside every solid by the
+walker's clearance (`maxTaskStandOff` keeps a task pose short of the far
+pavement's lamp line, tested against the layout), so a pose never asks for
+a lift the profile cannot give. The one shape the model cannot fix is a
+climb that starts *under* a solid in the air and rises into it; no stop
+stands under a sign or the beam.
 
 Every flight pushes the departure pose onto a back stack in the harness;
 Backspace flies the reverse without pushing. While flying, the LOD manager
@@ -433,17 +463,24 @@ whether Space will pause or resume.
 
 # The walk collider
 
-`WalkCollider` keeps the walker out of every `Footprint` (a rectangle on
-the ground: centre, rotation about +Y, width along local X, depth along
-local Z) with a 0.6 m margin: a point-versus-rotated-rectangle push through
-the nearest face. It is built from `PlazaWorld.solids`, which is
-**everything the scene stands on the ground**: the plots
-(`PlotPlacement.footprint`), every scenery box (`Scenery.boxes`: fillers,
-hero towers, the jumbotron tower, the skyline ring, the plaza furniture),
-the footings of the
-built pylons (`pylonFootprintsFor`), the gantry legs
-(`gantryLegFootprintsFor`) and the lamp posts (`lampPostFootprintsFor`).
-Two neighbours in a crowded week can stand closer than twice the margin,
+A `Solid` (`domain/solid.dart`) is a `Footprint` (a rectangle on the
+ground: centre, rotation about +Y, width along local X, depth along local
+Z) with the band of height it fills, `bottom` to `top`. `PlazaWorld.solids`
+is **everything the scene builds**: the plots up to their roof kit
+(`plotSolidFor`, `roofKitHeight`), the spires (`plotSpireSolidFor`, and the
+hero and jumbotron towers add their own through `SceneryBox.solids`),
+every scenery box (fillers, hero towers, the jumbotron tower, the skyline
+ring, the plaza furniture), the built pylons' posts and signs
+(`pylonSolidsFor`), the roof panels (`signSolidFor`), the gantry's legs and
+beam (`gantrySolidsFor`) and the lamp posts (`lampPostSolidsFor`). The
+scene reads the same constants (`lampPostHeight`, `gantryTopFor`, the spire
+sizes), so a box on screen and a box in the list are one thing.
+
+`WalkCollider` keeps the walker out of every solid `atWalkHeight` (bottom
+below eye level) with a `solidClearance` (0.6 m) margin: a
+point-versus-rotated-rectangle push through the nearest face. A solid in
+the air, a pylon's sign or the gantry's beam, is not in it: you walk under
+those, and only a flight has to clear them. Two neighbours in a crowded week can stand closer than twice the margin,
 and resolving them one after the other never settles, so **aligned
 footprints are merged** first (`_mergeAligned`): same facing, same row
 line, same depth, and clearances that overlap become one footprint,
@@ -465,8 +502,17 @@ task data.
   the tall layer behind the shops, with mid-rise landmarks so the roofline
   behind a row is jagged), alleys of 2 to 6 m, the near face `roadWidth /
   2 + plotDepth + 4` from the axis plus up to 4 m; nothing inside the plaza
-  plus 12 m. A filler's yaw is the road heading, so its `depth` is the
-  frontage.
+  plus 12 m, and **nothing in any street**: every segment has a corridor
+  (`streetCorridorFor`: the road with its plots, or the road alone on a gap
+  or a connector, plus `fillerCorridorMargin` of 2 m) and a block that
+  would overlap one (`footprintsOverlap`, a separating-axis test) has its
+  reach cut back a metre at a time, keeping its near face, until it fits
+  or falls under `fillerMinReach` (4 m) and is left out. With the default
+  fold (`connectorLength` 44 m) two rows' corridors leave 2 m between them,
+  so the sides of a row that face another row carry no fillers at all and
+  the fabric stands on the district's outside; a dropped block never
+  shifts its neighbours. A filler's yaw is the road heading, so its
+  `depth` is the frontage.
 - **Hero towers** (`heroTowersFor`): one per row that folds, 90 m past the
   row end on its axis, facing back down it, 26 to 34 m wide, 0.8 × as
   deep, 70 to 86 m tall.
@@ -803,10 +849,16 @@ is ignored entirely in tour and bench modes.
   in a dev harness, mapped to Lotti's dark semantics; it moves onto
   design-system tokens only if the prototype graduates.
 - **Every solid is placed in `domain/scenery.dart`, never in the scene.**
-  `PlazaWorld.solids` is what the collider knows; the scene builds its
-  fillers, towers, footings, legs and posts from the same records and
-  constants, so a box the scene invents on its own is a box you can walk
-  through. `PLAZA_HIDE` hides geometry, not its footprint.
+  `PlazaWorld.solids` is what the collider and the flight planner know; the
+  scene builds its fillers, towers, spires, posts, signs, legs and the beam
+  from the same records and constants, so a box the scene invents on its
+  own is a box you can walk or fly through. `PLAZA_HIDE` hides geometry,
+  not its footprint.
+- **A flight is a straight line with a lift, never a route.** It clears
+  what stands on the line by going over it; a stop pose that stands inside
+  a solid, or under one in the air with a climb ahead, is a pose the
+  planner cannot rescue. The tests hold every walk stop and beacon clear
+  of every solid and fly the whole walk against the fixture's solids.
 - **Fixtures are the demo world only.** The harness projects
   `ManualDemoWorld.penguinLogistics`; the synthetic generator lives in
   `test/features/plaza/plaza_fixtures.dart` for the tests and nowhere else.

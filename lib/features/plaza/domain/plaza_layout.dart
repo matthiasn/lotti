@@ -753,11 +753,14 @@ TickerSlot rooflineTickerFor(PlotPlacement hero, {required bool fast}) =>
 /// Roof signage above a building that the task pose must frame.
 const roofSignageHeight = 6.5;
 
-/// The task pose never stands farther from the facade than this: past it
-/// the camera leaves the street and lands among the next row's buildings,
-/// which then take the live slots. Inside the live range, so the wall you
-/// flew to is the one that goes live.
-const maxTaskStandOff = 24.0;
+/// The task pose never stands farther from the facade than this. With the
+/// default road (18 m) and plots (10 m deep, buildings 8 m) the facade is
+/// 10 m from the crown and the far pavement's lamp posts 7.4 m past it
+/// ([kerbFixtureInset]); the pose stays the walker's clearance short of
+/// that lamp line, on the far kerb, so no stop stands in a post or in the
+/// building opposite and no flight ends in a wall. Inside the live range,
+/// so the wall you flew to is the one that goes live.
+const maxTaskStandOff = 16.5;
 
 /// How far in front of the facade the task pose stands: the whole framed
 /// extent — wall plus roof signage plus a margin — at a 60° vertical field

@@ -1,17 +1,18 @@
 /// Set dressing placed by the street plan alone: the filler blocks behind
 /// the plots, a hero tower past every row that folds, the tower under the
-/// jumbotron and the skyline ring, plus the ground footprints of the
-/// pylon footings, the gantry legs and the lamp posts.
+/// jumbotron and the skyline ring, plus the solids of the pylons, the
+/// gantry, the lamp posts, the roof panels and the spires.
 ///
-/// Every solid the scene stands on the ground is placed here, in pure
-/// Dart, so the scene and the walker collider read one list and nothing
-/// can be walked through. Sizes and positions are seeded by id through
-/// [stableUnit], never by task data.
+/// Every solid the scene builds is placed here, in pure Dart, with its
+/// height, so the scene, the walker collider and the flight planner read
+/// one list and nothing can be walked or flown through. Sizes and
+/// positions are seeded by id through [stableUnit], never by task data.
 library;
 
 import 'dart:math' as math;
 
 import 'package:lotti/features/plaza/domain/plaza_layout.dart';
+import 'package:lotti/features/plaza/domain/solid.dart';
 import 'package:lotti/features/plaza/domain/street_layout.dart';
 
 /// A seeded box on the ground: [yawRadians] rotates it about +Y, its local
@@ -43,6 +44,24 @@ class SceneryBox {
     width: width,
     depth: depth,
   );
+
+  /// The box as the solid it is; a box with a spire adds the spire.
+  List<Solid> get solids => [Solid(footprint: footprint, top: height)];
+
+  /// A thin solid standing on the roof, [size] square and [spireHeight]
+  /// tall, at the box's centre.
+  Solid spireSolid({required double size, required double spireHeight}) =>
+      Solid(
+        footprint: Footprint(
+          x: x,
+          z: z,
+          facingRadians: yawRadians,
+          width: size,
+          depth: size,
+        ),
+        bottom: height,
+        top: height + spireHeight,
+      );
 }
 
 /// City fabric behind one week's plots. Its yaw is the road's heading, so
@@ -83,6 +102,31 @@ class HeroTower extends SceneryBox {
 
   /// The bucket of the row the tower closes.
   final int bucketIndex;
+
+  @override
+  List<Solid> get solids => [
+    ...super.solids,
+    spireSolid(size: heroSpireSize, spireHeight: heroSpireHeight),
+  ];
+}
+
+/// The tower the jumbotron hangs on, with its own spire.
+class JumbotronTower extends SceneryBox {
+  const JumbotronTower({
+    required super.id,
+    required super.x,
+    required super.z,
+    required super.yawRadians,
+    required super.width,
+    required super.depth,
+    required super.height,
+  });
+
+  @override
+  List<Solid> get solids => [
+    ...super.solids,
+    spireSolid(size: jumbotronSpireSize, spireHeight: jumbotronSpireHeight),
+  ];
 }
 
 /// A tower on the ring around the district; [index] runs round the ring.
@@ -133,11 +177,11 @@ class Scenery {
 
   final List<FillerBlock> fillers;
   final List<HeroTower> heroTowers;
-  final SceneryBox? jumbotronTower;
+  final JumbotronTower? jumbotronTower;
   final List<SkylineTower> skyline;
   final List<PlazaFurniture> furniture;
 
-  /// Every box, for the collider.
+  /// Every box.
   List<SceneryBox> get boxes => [
     ...fillers,
     ...heroTowers,
@@ -145,7 +189,40 @@ class Scenery {
     ...skyline,
     ...furniture,
   ];
+
+  /// Every box as solids, spires included.
+  List<Solid> get solids => [for (final box in boxes) ...box.solids];
 }
+
+/// Spires: on the two tallest plots, on every hero tower and on the
+/// jumbotron tower, each a square post with a blinking light on top.
+const plotSpireHeight = 8.0;
+const plotSpireSize = 0.4;
+const heroSpireHeight = 14.0;
+const heroSpireSize = 0.6;
+const jumbotronSpireHeight = 10.0;
+const jumbotronSpireSize = 0.5;
+
+/// The mast is the tallest piece of a task building's roof kit: a flight
+/// over a plot clears the building's height plus this.
+const roofKitHeight = 4.4;
+
+/// A task building with room for its roof kit above it.
+Solid plotSolidFor(PlotPlacement p) =>
+    Solid(footprint: p.footprint, top: p.height + roofKitHeight);
+
+/// The spire on one of the tallest plots (`spiresFor`).
+Solid plotSpireSolidFor(PlotPlacement p) => Solid(
+  footprint: Footprint(
+    x: p.x,
+    z: p.z,
+    facingRadians: p.facingRadians,
+    width: plotSpireSize,
+    depth: plotSpireSize,
+  ),
+  bottom: p.height,
+  top: p.height + plotSpireHeight,
+);
 
 /// Fillers stand this far past the plots' back line.
 const fillerSetback = 4.0;
@@ -153,9 +230,35 @@ const fillerSetback = 4.0;
 /// No filler stands on the plaza or within this margin of it.
 const fillerPlazaMargin = 12.0;
 
+/// A filler stops this short of another segment's street corridor, so the
+/// alley between them reads; and it needs at least this much reach to be
+/// worth standing at all.
+const fillerCorridorMargin = 2.0;
+const fillerMinReach = 4.0;
+
+/// The ground a segment's street takes, with [fillerCorridorMargin] round
+/// it: the road with its plots, or the road alone on a gap or a connector.
+Footprint streetCorridorFor(
+  RoadSegment segment, {
+  required double roadWidth,
+  required double plotDepth,
+}) => Footprint(
+  x: segment.startX + math.sin(segment.headingRadians) * segment.length / 2,
+  z: segment.startZ + math.cos(segment.headingRadians) * segment.length / 2,
+  facingRadians: segment.headingRadians,
+  width:
+      (segment.isGap ? roadWidth : roadWidth + 2 * plotDepth) +
+      2 * fillerCorridorMargin,
+  depth: segment.length + 2 * fillerCorridorMargin,
+);
+
 /// A second row of blocks behind the plots with alleys between, so the
 /// street has a back and the overview has texture between the plots and
-/// the skyline. Seeded per bucket, side and slot; nothing on the plaza.
+/// the skyline. Seeded per bucket, side and slot; nothing on the plaza,
+/// and nothing in any street: the folds bring the rows closer than a
+/// filler's reach, so a block that would stand in the next row's corridor
+/// is cut back to an alley short of it, or left out when too little of it
+/// is left. A dropped block never shifts its neighbours.
 List<FillerBlock> fillerBlocksFor(
   StreetPlan plan,
   FrontierPlaza? plaza, {
@@ -163,6 +266,10 @@ List<FillerBlock> fillerBlocksFor(
   required double plotDepth,
 }) {
   final lateralBase = roadWidth / 2 + plotDepth + fillerSetback;
+  final corridors = [
+    for (final segment in plan.segments)
+      streetCorridorFor(segment, roadWidth: roadWidth, plotDepth: plotDepth),
+  ];
   bool onPlaza(double x, double z) {
     if (plaza == null) return false;
     final dx = x - plaza.centerX;
@@ -189,7 +296,6 @@ List<FillerBlock> fillerBlocksFor(
         final id = 'filler-${segment.bucketIndex}-$side-$i';
         final frontage = 7 + stableUnit(id, 'w') * 9;
         if (along + frontage > segment.length - 1) break;
-        final reach = 8 + stableUnit(id, 'd') * 8;
         // The fabric behind the plots is the tall layer: the plots are
         // the shops, the city rises behind them; a quarter are mid-rise
         // landmarks so the roofline behind a row is jagged.
@@ -197,26 +303,31 @@ List<FillerBlock> fillerBlocksFor(
         final height = tall
             ? 40 + stableUnit(id, 'h') * 20
             : 12 + stableUnit(id, 'h') * 22;
-        final lateral =
-            side * (lateralBase + reach / 2 + stableUnit(id, 'l') * 4);
-        final cx =
-            segment.startX + sinH * (along + frontage / 2) + cosH * lateral;
-        final cz =
-            segment.startZ + cosH * (along + frontage / 2) - sinH * lateral;
-        if (!onPlaza(cx, cz)) {
-          blocks.add(
-            FillerBlock(
-              id: id,
-              bucketIndex: segment.bucketIndex,
-              side: side,
-              x: cx,
-              z: cz,
-              yawRadians: segment.headingRadians,
-              width: reach,
-              depth: frontage,
-              height: height,
-            ),
+        final inner = lateralBase + stableUnit(id, 'l') * 4;
+        FillerBlock at(double reach) {
+          final lateral = side * (inner + reach / 2);
+          return FillerBlock(
+            id: id,
+            bucketIndex: segment.bucketIndex,
+            side: side,
+            x: segment.startX + sinH * (along + frontage / 2) + cosH * lateral,
+            z: segment.startZ + cosH * (along + frontage / 2) - sinH * lateral,
+            yawRadians: segment.headingRadians,
+            width: reach,
+            depth: frontage,
+            height: height,
           );
+        }
+
+        var block = at(8 + stableUnit(id, 'd') * 8);
+        if (!onPlaza(block.x, block.z)) {
+          // Cut the reach back, a metre at a time, until the block stands
+          // in no street.
+          while (block.width >= fillerMinReach &&
+              corridors.any((c) => footprintsOverlap(block.footprint, c))) {
+            block = at(block.width - 1);
+          }
+          if (block.width >= fillerMinReach) blocks.add(block);
         }
         along += frontage + 2 + stableUnit(id, 'gap') * 4;
         i++;
@@ -265,11 +376,11 @@ const jumbotronTowerSetback = 3.5;
 const jumbotronTowerCrown = 14.0;
 
 /// The tower the jumbotron hangs on, behind the plaza.
-SceneryBox? jumbotronTowerFor(BillboardSlot? jumbotron) {
+JumbotronTower? jumbotronTowerFor(BillboardSlot? jumbotron) {
   if (jumbotron == null) return null;
   final sinF = math.sin(jumbotron.facingRadians);
   final cosF = math.cos(jumbotron.facingRadians);
-  return SceneryBox(
+  return JumbotronTower(
     id: 'jumbotron',
     x: jumbotron.x - sinF * jumbotronTowerSetback,
     z: jumbotron.z - cosF * jumbotronTowerSetback,
@@ -490,9 +601,14 @@ const pylonFootingSize = 1.6;
   return (x + lx * cosF + lz * sinF, z - lx * sinF + lz * cosF);
 }
 
-/// The footings of every pylon in [pylons], two per slot.
-List<Footprint> pylonFootprintsFor(Iterable<BillboardSlot> pylons) => [
-  for (final slot in pylons)
+/// A billboard's panel, backing and glow, front to back: the depth of a
+/// pylon's sign and of a roof panel as a solid.
+const signDepth = 0.8;
+
+/// The solids of every pylon in [pylons]: two posts on their footings,
+/// ground to the panel's bottom, and the sign itself in the air.
+List<Solid> pylonSolidsFor(Iterable<BillboardSlot> pylons) => [
+  for (final slot in pylons) ...[
     for (final side in [-1.0, 1.0])
       () {
         final (x, z) = _slotToWorld(
@@ -502,21 +618,48 @@ List<Footprint> pylonFootprintsFor(Iterable<BillboardSlot> pylons) => [
           side * slot.width * pylonPostSpread,
           -pylonPostSetback,
         );
-        return Footprint(
-          x: x,
-          z: z,
-          facingRadians: slot.facingRadians,
-          width: pylonFootingSize,
-          depth: pylonFootingSize,
+        return Solid(
+          footprint: Footprint(
+            x: x,
+            z: z,
+            facingRadians: slot.facingRadians,
+            width: pylonFootingSize,
+            depth: pylonFootingSize,
+          ),
+          top: slot.bottom,
         );
       }(),
+    signSolidFor(slot),
+  ],
 ];
 
-/// The gantry's legs are this square, at either end of its span.
-const gantryLegSize = 0.5;
+/// A billboard's sign as a solid: the panel's rectangle, [signDepth]
+/// thick, from its bottom edge to its top.
+Solid signSolidFor(BillboardSlot slot) => Solid(
+  footprint: Footprint(
+    x: slot.x,
+    z: slot.z,
+    facingRadians: slot.facingRadians,
+    width: slot.width,
+    depth: signDepth,
+  ),
+  bottom: slot.bottom,
+  top: slot.bottom + slot.height,
+);
 
-/// The two legs of the ticker gantry.
-List<Footprint> gantryLegFootprintsFor(TickerSlot gantry) => [
+/// The gantry's legs are this square, at either end of its span; the beam
+/// over the band is this thick, and this deep front to back.
+const gantryLegSize = 0.5;
+const gantryBeamThickness = 0.4;
+const gantryBeamDepth = 0.5;
+
+/// The top of the gantry: the beam sits on the band.
+double gantryTopFor(TickerSlot gantry) =>
+    gantry.bottom + gantry.height + gantryBeamThickness;
+
+/// The two legs of the ticker gantry, and the band with its beam spanning
+/// the street between them.
+List<Solid> gantrySolidsFor(TickerSlot gantry) => [
   for (final side in [-1.0, 1.0])
     () {
       final (x, z) = _slotToWorld(
@@ -526,27 +669,45 @@ List<Footprint> gantryLegFootprintsFor(TickerSlot gantry) => [
         side * gantry.width / 2,
         0,
       );
-      return Footprint(
-        x: x,
-        z: z,
-        facingRadians: gantry.facingRadians,
-        width: gantryLegSize,
-        depth: gantryLegSize,
+      return Solid(
+        footprint: Footprint(
+          x: x,
+          z: z,
+          facingRadians: gantry.facingRadians,
+          width: gantryLegSize,
+          depth: gantryLegSize,
+        ),
+        top: gantryTopFor(gantry),
       );
     }(),
+  Solid(
+    footprint: Footprint(
+      x: gantry.x,
+      z: gantry.z,
+      facingRadians: gantry.facingRadians,
+      width: gantry.width + gantryLegSize,
+      depth: gantryBeamDepth,
+    ),
+    bottom: gantry.bottom,
+    top: gantryTopFor(gantry),
+  ),
 ];
 
-/// A lamp post's pole is this square.
+/// A lamp post's pole is this square and this tall.
 const lampPostSize = 0.16;
+const lampPostHeight = 5.2;
 
-/// One footprint per lamp post.
-List<Footprint> lampPostFootprintsFor(Iterable<(double, double)> posts) => [
+/// One solid per lamp post.
+List<Solid> lampPostSolidsFor(Iterable<(double, double)> posts) => [
   for (final (x, z) in posts)
-    Footprint(
-      x: x,
-      z: z,
-      facingRadians: 0,
-      width: lampPostSize,
-      depth: lampPostSize,
+    Solid(
+      footprint: Footprint(
+        x: x,
+        z: z,
+        facingRadians: 0,
+        width: lampPostSize,
+        depth: lampPostSize,
+      ),
+      top: lampPostHeight,
     ),
 ];

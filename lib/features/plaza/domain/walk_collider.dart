@@ -8,10 +8,11 @@ library;
 
 import 'dart:math' as math;
 
+import 'package:lotti/features/plaza/domain/solid.dart';
 import 'package:lotti/features/plaza/domain/street_layout.dart';
 
 class WalkCollider {
-  WalkCollider(Iterable<Footprint> footprints, {this.margin = 0.6})
+  WalkCollider(Iterable<Footprint> footprints, {this.margin = solidClearance})
     : _footprints = _mergeAligned(footprints.toList(), margin);
 
   final List<Footprint> _footprints;
@@ -54,11 +55,8 @@ class WalkCollider {
     }
     final sinF = math.sin(a.facingRadians);
     final cosF = math.cos(a.facingRadians);
-    final dx = b.x - a.x;
-    final dz = b.z - a.z;
-    final v = dx * sinF + dz * cosF;
+    final (u, v) = a.local(b.x, b.z);
     if (v.abs() > eps) return null;
-    final u = dx * cosF - dz * sinF;
     if (u.abs() - (a.width + b.width) / 2 >= 2 * margin) return null;
     final left = math.min(-a.width / 2, u - b.width / 2);
     final right = math.max(a.width / 2, u + b.width / 2);
@@ -84,10 +82,7 @@ class WalkCollider {
       // `v` along its depth (local Z).
       final sinF = math.sin(p.facingRadians);
       final cosF = math.cos(p.facingRadians);
-      final dx = rx - p.x;
-      final dz = rz - p.z;
-      final v = dx * sinF + dz * cosF;
-      final u = dx * cosF - dz * sinF;
+      final (u, v) = p.local(rx, rz);
       final halfW = p.width / 2 + margin;
       final halfD = p.depth / 2 + margin;
       if (u.abs() >= halfW || v.abs() >= halfD) continue;

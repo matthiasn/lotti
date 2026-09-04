@@ -4,7 +4,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_scene/scene.dart'
     show PerspectiveCamera, PerspectiveProjection;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/plaza/domain/flight.dart';
 import 'package:lotti/features/plaza/domain/plaza_layout.dart';
+import 'package:lotti/features/plaza/domain/solid.dart';
 import 'package:lotti/features/plaza/domain/street_layout.dart';
 import 'package:lotti/features/plaza/domain/walk_collider.dart';
 import 'package:lotti/features/plaza/ui/fly_camera_controller.dart';
@@ -296,6 +298,56 @@ void main() {
         ..pose = _origin;
       expect(camera.flying, isFalse);
       expect(cancelled, 1);
+    });
+  });
+
+  group('over solids', () {
+    const building = Solid(
+      footprint: Footprint(x: 0, z: 25, facingRadians: 0, width: 10, depth: 10),
+      top: 30,
+    );
+
+    test('a flight lifts over a building on its line', () {
+      final camera = FlyCameraController(pose: _origin, solids: [building])
+        ..flyTo(const CameraPose(x: 0, y: eyeHeight, z: 50, yaw: 0));
+      var peak = 0.0;
+      while (camera.flying) {
+        camera.update(0.01);
+        final p = camera.pose;
+        expect(building.contains(p.x, p.y, p.z), isFalse, reason: '$p');
+        peak = math.max(peak, p.y);
+      }
+      expect(peak, closeTo(30 + Flight.clearance, 1e-6));
+      expect(camera.pose.z, 50);
+      expect(camera.pose.y, closeTo(eyeHeight, 1e-9));
+    });
+
+    testWidgets('a landing from over a roof comes down beside the wall', (
+      tester,
+    ) async {
+      final collider = WalkCollider([building.footprint]);
+      final camera = FlyCameraController(
+        pose: _origin,
+        collider: collider,
+        solids: const [building],
+      )..pose = const CameraPose(x: 0, y: 60, z: 25, yaw: 0);
+      await simulateKeyDownEvent(LogicalKeyboardKey.keyW);
+      camera.handleKeyEvent(
+        _down(LogicalKeyboardKey.keyW, PhysicalKeyboardKey.keyW),
+      );
+      await simulateKeyUpEvent(LogicalKeyboardKey.keyW);
+      expect(camera.flying, isTrue);
+      while (camera.flying) {
+        camera.update(0.01);
+        final p = camera.pose;
+        expect(building.contains(p.x, p.y, p.z), isFalse, reason: '$p');
+      }
+      final p = camera.pose;
+      expect(p.y, closeTo(eyeHeight, 1e-9));
+      expect(collider.resolve(p.x, p.z), (p.x, p.z));
+      // A margin past the wall, not on the roof and not in the building.
+      final (_, v) = building.footprint.local(p.x, p.z);
+      expect(v.abs(), closeTo(5 + solidClearance, 1e-9));
     });
   });
 }

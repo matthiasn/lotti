@@ -3,6 +3,7 @@ import 'package:lotti/features/plaza/domain/morning_walk.dart';
 import 'package:lotti/features/plaza/domain/plaza_layout.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
 import 'package:lotti/features/plaza/domain/scenery.dart';
+import 'package:lotti/features/plaza/domain/solid.dart';
 import 'package:lotti/features/plaza/domain/street_layout.dart';
 import 'package:lotti/features/plaza/domain/walk_collider.dart';
 
@@ -65,13 +66,18 @@ class PlazaWorld {
       plotDepth: layout.plotDepth,
     );
     solids = List.unmodifiable([
-      for (final p in plan.placements.values) p.footprint,
-      for (final box in scenery.boxes) box.footprint,
-      ...pylonFootprintsFor(builtBillboardSlots.where((s) => s.onPylon)),
-      if (gantry case final gantry?) ...gantryLegFootprintsFor(gantry),
-      ...lampPostFootprintsFor(lampPosts),
+      for (final p in plan.placements.values) plotSolidFor(p),
+      for (final p in spires) plotSpireSolidFor(p),
+      ...scenery.solids,
+      ...pylonSolidsFor(builtBillboardSlots.where((s) => s.onPylon)),
+      for (final panel in roofBillboards) signSolidFor(panel),
+      if (gantry case final gantry?) ...gantrySolidsFor(gantry),
+      ...lampPostSolidsFor(lampPosts),
     ]);
-    collider = WalkCollider(solids);
+    collider = WalkCollider([
+      for (final solid in solids)
+        if (solid.atWalkHeight) solid.footprint,
+    ]);
   }
 
   final List<PlazaTask> tasks;
@@ -128,12 +134,14 @@ class PlazaWorld {
   /// skyline ring.
   late final Scenery scenery;
 
-  /// Every rectangle on the ground the walker is kept out of: the plots,
-  /// the scenery boxes, the built pylons' footings, the gantry legs and
-  /// the lamp posts — all of it, so the scene has nothing solid the
-  /// collider does not know.
-  late final List<Footprint> solids;
+  /// Every solid the scene builds, with its height: the plots with their
+  /// roof kit, the spires, the scenery boxes, the built pylons' posts and
+  /// signs, the roof panels, the gantry's legs and beam, the lamp posts —
+  /// all of it, so the scene has nothing solid the collider and the flight
+  /// planner do not know.
+  late final List<Solid> solids;
 
+  /// Keeps the walker out of every solid that reaches down to eye level.
   late final WalkCollider collider;
   late final List<BillboardSlot> mountedScreens;
 

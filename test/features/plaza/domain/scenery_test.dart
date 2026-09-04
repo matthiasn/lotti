@@ -72,6 +72,78 @@ void main() {
       }
     });
 
+    test('stands in no street: the folds bring the rows within reach', () {
+      final corridors = [
+        for (final s in plan.segments)
+          streetCorridorFor(
+            s,
+            roadWidth: layout.roadWidth,
+            plotDepth: layout.plotDepth,
+          ),
+      ];
+      // A corridor is the road with its plots, or the road alone.
+      final row = plan.segments.firstWhere((s) => !s.isGap);
+      final link = plan.segments.firstWhere((s) => s.isConnector);
+      expect(
+        streetCorridorFor(row, roadWidth: 18, plotDepth: 10).width,
+        18 + 20 + 2 * fillerCorridorMargin,
+      );
+      expect(
+        streetCorridorFor(link, roadWidth: 18, plotDepth: 10).width,
+        18 + 2 * fillerCorridorMargin,
+      );
+      expect(
+        streetCorridorFor(row, roadWidth: 18, plotDepth: 10).depth,
+        row.length + 2 * fillerCorridorMargin,
+      );
+      for (final f in fillers) {
+        expect(f.width, greaterThanOrEqualTo(fillerMinReach), reason: f.id);
+        for (final c in corridors) {
+          expect(footprintsOverlap(f.footprint, c), isFalse, reason: f.id);
+        }
+      }
+      // With the default fold the rows leave no room at all: the sides
+      // facing another row carry nothing, the outer sides still do.
+      final sides = [
+        for (final s in segmentsByBucket.values)
+          for (final side in [-1.0, 1.0])
+            fillers.where(
+              (f) => f.bucketIndex == s.bucketIndex && f.side == side,
+            ),
+      ];
+      expect(sides.where((s) => s.isEmpty), isNotEmpty);
+      expect(sides.where((s) => s.isNotEmpty), isNotEmpty);
+    });
+
+    test('a wider fold leaves room: blocks are cut back, not dropped', () {
+      final wide = StreetLayout(projectSeed: 1337, connectorLength: 60);
+      final widePlan = wide.plan(tasks);
+      final cut = fillerBlocksFor(
+        widePlan,
+        null,
+        roadWidth: wide.roadWidth,
+        plotDepth: wide.plotDepth,
+      );
+      final corridors = [
+        for (final s in widePlan.segments)
+          streetCorridorFor(
+            s,
+            roadWidth: wide.roadWidth,
+            plotDepth: wide.plotDepth,
+          ),
+      ];
+      for (final f in cut) {
+        for (final c in corridors) {
+          expect(footprintsOverlap(f.footprint, c), isFalse, reason: f.id);
+        }
+      }
+      // Some blocks stand narrower than seeded, and none narrower than the
+      // minimum: cut to the alley short of the next row, not thrown away.
+      final seeded = {for (final f in cut) f.id: 8 + stableUnit(f.id, 'd') * 8};
+      expect(cut.where((f) => f.width < seeded[f.id]! - 1e-9), isNotEmpty);
+      expect(cut.every((f) => f.width >= fillerMinReach), isTrue);
+    });
+
     test('leaves an alley of at least two metres between neighbours', () {
       for (final segment in segmentsByBucket.values) {
         for (final side in [-1.0, 1.0]) {
@@ -432,27 +504,44 @@ void main() {
     expect(without.boxes, hasLength(skylineTowerCount));
   });
 
-  group('furniture footprints', () {
-    test('a pylon gets two footings behind its panel, either side', () {
-      const slot = BillboardSlot(
-        rank: 0,
-        x: 0,
-        z: 0,
-        facingRadians: 0,
-        width: 10,
-        height: 6,
-        bottom: 4,
-        mount: BillboardMount.pylon,
-      );
-      final footings = pylonFootprintsFor([slot]);
-      expect(footings, hasLength(2));
-      expect(footings.map((f) => f.x), [-4, 4]);
-      for (final f in footings) {
-        expect(f.z, -pylonPostSetback);
-        expect(f.width, pylonFootingSize);
-        expect(f.depth, pylonFootingSize);
-        expect(f.facingRadians, 0);
+  group('furniture solids', () {
+    const slot = BillboardSlot(
+      rank: 0,
+      x: 0,
+      z: 0,
+      facingRadians: 0,
+      width: 10,
+      height: 6,
+      bottom: 4,
+      mount: BillboardMount.pylon,
+    );
+
+    test('a pylon is two posts on footings behind the panel and the sign', () {
+      final solids = pylonSolidsFor([slot]);
+      expect(solids, hasLength(3));
+      final posts = solids.take(2).toList();
+      expect(posts.map((s) => s.footprint.x), [-4, 4]);
+      for (final post in posts) {
+        expect(post.footprint.z, -pylonPostSetback);
+        expect(post.footprint.width, pylonFootingSize);
+        expect(post.footprint.depth, pylonFootingSize);
+        expect(post.footprint.facingRadians, 0);
+        expect(post.bottom, 0);
+        expect(post.top, slot.bottom);
+        expect(post.atWalkHeight, isTrue);
       }
+      final sign = solids.last;
+      expect(sign.footprint.x, 0);
+      expect(sign.footprint.z, 0);
+      expect(sign.footprint.width, 10);
+      expect(sign.footprint.depth, signDepth);
+      expect(sign.bottom, 4);
+      expect(sign.top, 10);
+      // The walker passes under the sign between the posts; a flight
+      // cannot pass through it.
+      expect(sign.atWalkHeight, isFalse);
+      expect(sign.contains(0, eyeHeight, 0), isFalse);
+      expect(sign.contains(0, 7, 0), isTrue);
     });
 
     glados.Glados3<double, double, double>(
@@ -461,7 +550,7 @@ void main() {
       glados.any.doubleInRange(-math.pi, math.pi),
       glados.ExploreConfig(numRuns: 80),
     ).test(
-      'pylon footings and gantry legs turn with their slot',
+      'pylon posts, signs, gantry legs and beams turn with their slot',
       (x, z, facing) {
         final slot = BillboardSlot(
           rank: 0,
@@ -473,7 +562,7 @@ void main() {
           bottom: 4,
           mount: BillboardMount.pylon,
         );
-        final footings = pylonFootprintsFor([slot]);
+        final pylon = pylonSolidsFor([slot]);
         for (final (i, side) in [-1.0, 1.0].indexed) {
           final (fx, fz) = _fromSlot(
             x,
@@ -482,10 +571,14 @@ void main() {
             side * 12 * pylonPostSpread,
             -pylonPostSetback,
           );
-          expect(footings[i].x, closeTo(fx, 1e-6), reason: '$x $z $facing');
-          expect(footings[i].z, closeTo(fz, 1e-6), reason: '$x $z $facing');
-          expect(footings[i].facingRadians, facing);
+          final post = pylon[i].footprint;
+          expect(post.x, closeTo(fx, 1e-6), reason: '$x $z $facing');
+          expect(post.z, closeTo(fz, 1e-6), reason: '$x $z $facing');
+          expect(post.facingRadians, facing);
         }
+        expect(pylon[2].footprint.facingRadians, facing);
+        expect(pylon[2].footprint.x, x);
+        expect(pylon[2].footprint.z, z);
         final gantry = TickerSlot(
           x: x,
           z: z,
@@ -495,26 +588,145 @@ void main() {
           bottom: 10.5,
           speedMetersPerSecond: 4,
         );
-        final legs = gantryLegFootprintsFor(gantry);
-        expect(legs, hasLength(2));
+        final parts = gantrySolidsFor(gantry);
+        expect(parts, hasLength(3));
         for (final (i, side) in [-1.0, 1.0].indexed) {
           final (lx, lz) = _fromSlot(x, z, facing, side * 11, 0);
-          expect(legs[i].x, closeTo(lx, 1e-6), reason: '$x $z $facing');
-          expect(legs[i].z, closeTo(lz, 1e-6), reason: '$x $z $facing');
-          expect(legs[i].width, gantryLegSize);
-          expect(legs[i].depth, gantryLegSize);
+          final leg = parts[i];
+          expect(leg.footprint.x, closeTo(lx, 1e-6), reason: '$x $z $facing');
+          expect(leg.footprint.z, closeTo(lz, 1e-6), reason: '$x $z $facing');
+          expect(leg.footprint.width, gantryLegSize);
+          expect(leg.footprint.depth, gantryLegSize);
+          expect(leg.bottom, 0);
+          expect(leg.top, gantryTopFor(gantry));
         }
+        final beam = parts[2];
+        expect(beam.footprint.x, x);
+        expect(beam.footprint.z, z);
+        expect(beam.footprint.facingRadians, facing);
+        expect(beam.footprint.width, 22 + gantryLegSize);
+        expect(beam.footprint.depth, gantryBeamDepth);
+        expect(beam.bottom, 10.5);
+        expect(beam.top, gantryTopFor(gantry));
       },
       tags: 'glados',
     );
 
-    test('lamp posts are a small square each', () {
-      final posts = lampPostFootprintsFor([(1, 2), (3, 4)]);
-      expect(posts.map((p) => (p.x, p.z)), [(1, 2), (3, 4)]);
+    test('the gantry beam spans the street above the walker', () {
+      const gantry = TickerSlot(
+        x: 0,
+        z: 0,
+        facingRadians: 0,
+        width: 22,
+        height: 1.8,
+        bottom: 10.5,
+        speedMetersPerSecond: 4,
+      );
+      expect(gantryTopFor(gantry), closeTo(12.7, 1e-9));
+      final beam = gantrySolidsFor(gantry).last;
+      expect(beam.atWalkHeight, isFalse);
+      expect(beam.contains(5, eyeHeight, 0), isFalse);
+      expect(beam.contains(5, 11, 0), isTrue);
+      expect(beam.contains(11.5, 11, 0), isFalse);
+    });
+
+    test('lamp posts are a small square each, as tall as the pole', () {
+      final posts = lampPostSolidsFor([(1, 2), (3, 4)]);
+      expect(posts.map((p) => (p.footprint.x, p.footprint.z)), [
+        (1, 2),
+        (3, 4),
+      ]);
       for (final p in posts) {
-        expect(p.width, lampPostSize);
-        expect(p.depth, lampPostSize);
+        expect(p.footprint.width, lampPostSize);
+        expect(p.footprint.depth, lampPostSize);
+        expect(p.bottom, 0);
+        expect(p.top, lampPostHeight);
       }
+    });
+
+    test('a roof panel is a sign standing on the roof', () {
+      const panel = BillboardSlot(
+        rank: 0,
+        x: 3,
+        z: 4,
+        facingRadians: 1,
+        width: 9,
+        height: 4,
+        bottom: 30.5,
+        mount: BillboardMount.roof,
+      );
+      final sign = signSolidFor(panel);
+      expect(sign.footprint.x, 3);
+      expect(sign.footprint.z, 4);
+      expect(sign.footprint.facingRadians, 1);
+      expect(sign.footprint.width, 9);
+      expect(sign.footprint.depth, signDepth);
+      expect(sign.bottom, 30.5);
+      expect(sign.top, 34.5);
+      expect(sign.atWalkHeight, isFalse);
+    });
+  });
+
+  group('spires and the roof kit', () {
+    test('a plot is solid up to its roof kit, and may carry a spire', () {
+      const p = PlotPlacement(
+        taskId: 't',
+        bucketIndex: 0,
+        side: PlotSide.left,
+        x: 1,
+        z: 2,
+        facingRadians: 0.5,
+        width: 8,
+        depth: 8,
+        height: 30,
+      );
+      final solid = plotSolidFor(p);
+      expect(solid.footprint.x, 1);
+      expect(solid.footprint.z, 2);
+      expect(solid.footprint.width, 8);
+      expect(solid.bottom, 0);
+      expect(solid.top, 30 + roofKitHeight);
+      final spire = plotSpireSolidFor(p);
+      expect(spire.footprint.x, 1);
+      expect(spire.footprint.z, 2);
+      expect(spire.footprint.facingRadians, 0.5);
+      expect(spire.footprint.width, plotSpireSize);
+      expect(spire.footprint.depth, plotSpireSize);
+      expect(spire.bottom, 30);
+      expect(spire.top, 30 + plotSpireHeight);
+      expect(spire.atWalkHeight, isFalse);
+    });
+
+    test('hero towers and the jumbotron tower add spires; fillers do not', () {
+      const hero = HeroTower(
+        id: 'h',
+        bucketIndex: 0,
+        x: 0,
+        z: 0,
+        yawRadians: 0,
+        width: 20,
+        depth: 20,
+        height: 60,
+      );
+      expect(hero.solids, hasLength(2));
+      expect(hero.solids.first.top, 60);
+      expect(hero.solids.first.bottom, 0);
+      final spire = hero.solids.last;
+      expect(spire.bottom, 60);
+      expect(spire.top, 60 + heroSpireHeight);
+      expect(spire.footprint.width, heroSpireSize);
+      expect(spire.footprint.depth, heroSpireSize);
+      final tower = scenery.jumbotronTower!;
+      expect(tower.solids, hasLength(2));
+      expect(tower.solids.first.top, tower.height);
+      expect(tower.solids.last.bottom, tower.height);
+      expect(tower.solids.last.top, tower.height + jumbotronSpireHeight);
+      expect(tower.solids.last.footprint.depth, jumbotronSpireSize);
+      expect(scenery.fillers.first.solids, hasLength(1));
+      expect(
+        scenery.solids.length,
+        scenery.boxes.length + scenery.heroTowers.length + 1,
+      );
     });
   });
 }

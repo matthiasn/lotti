@@ -80,12 +80,15 @@ Implemented, by area (the mechanism behind each is in the concept):
   flight's destination. The faced building gets a focus ring; its
   checkboxes tick and its details button opens a side panel.
 - **Navigation.** Beacons (home, block per week, corner per fold, attention
-  per anomaly), flights with an arc and look-along, a back stack, a landing
-  flight when you step off the overview, Tab cycling, home and overview
-  keys, tap-to-fly on beacons, facades and billboards with a tap-versus-drag
-  threshold, a walker collider that knows every solid (plots, fillers,
-  towers, plaza benches, planters and kiosk, pylon footings, gantry legs,
-  lamp posts), and title search.
+  per anomaly), flights with look-along that are swept against every solid
+  and lift over whatever stands on their line (with a district arc on long
+  trips), a back stack, a landing flight when you step off the overview
+  that comes down beside a building rather than into it, Tab cycling, home
+  and overview keys, tap-to-fly on beacons, facades and billboards with a
+  tap-versus-drag threshold, a walker collider that knows every solid at
+  walk height (plots, fillers, towers, plaza benches, planters and kiosk,
+  pylon posts, gantry legs, lamp posts; the signs and the beam are in the
+  air, for the flights), and title search.
 - **Morning walk.** Overview, up to three anomalies, home; pausable, and
   abandoned by any movement.
 - **Harness modes.** The interactive session, a screenshot tour

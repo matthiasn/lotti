@@ -4,19 +4,26 @@ import 'package:flutter/services.dart';
 import 'package:flutter_scene/scene.dart';
 import 'package:lotti/features/plaza/domain/flight.dart';
 import 'package:lotti/features/plaza/domain/plaza_layout.dart';
+import 'package:lotti/features/plaza/domain/solid.dart';
 import 'package:lotti/features/plaza/domain/walk_collider.dart';
 import 'package:vector_math/vector_math.dart' show Vector3;
 
 /// First-person walk camera with flights.
 ///
 /// WASD/arrows walk (shift sprints), drag looks, and [flyTo] hands the pose
-/// to a [Flight]; any movement input cancels a flight in place. Walking
-/// happens at [eyeHeight] and stays out of buildings via the collider; a
-/// pose set elsewhere (the overview) keeps its height until the next step.
+/// to a [Flight] planned over the world's solids, so it lifts over
+/// whatever stands on its line; any movement input cancels a flight in
+/// place. Walking happens at [eyeHeight] and stays out of buildings via the
+/// collider; a pose set elsewhere (the overview) keeps its height until the
+/// next step, which lands beside a building, never inside one.
 class FlyCameraController {
-  FlyCameraController({required CameraPose pose, WalkCollider? collider})
-    : _pose = pose,
-      _collider = collider;
+  FlyCameraController({
+    required CameraPose pose,
+    WalkCollider? collider,
+    Iterable<Solid> solids = const [],
+  }) : _pose = pose,
+       _collider = collider,
+       _solids = List.unmodifiable(solids);
   // ignore_for_file: prefer_initializing_formals
 
   static const walkSpeed = 3.4;
@@ -33,6 +40,7 @@ class FlyCameraController {
 
   CameraPose _pose;
   final WalkCollider? _collider;
+  final List<Solid> _solids;
   final Set<LogicalKeyboardKey> _pressed = {};
   Flight? _flight;
 
@@ -74,9 +82,15 @@ class FlyCameraController {
   Flight? get flight => _flight;
   bool get flying => _flight != null;
 
-  /// Starts a flight to [target]; the current flight, if any, is replaced.
+  /// Starts a flight to [target], over every solid on the way; the current
+  /// flight, if any, is replaced.
   Flight flyTo(CameraPose target, {double timeScale = 1}) {
-    final flight = Flight.plan(_pose, target, timeScale: timeScale);
+    final flight = Flight.plan(
+      _pose,
+      target,
+      timeScale: timeScale,
+      solids: _solids,
+    );
     _flight = flight;
     return flight;
   }
@@ -131,10 +145,17 @@ class FlyCameraController {
     onMovement?.call();
   }
 
+  /// Lands on the nearest ground the walker may stand on: straight down
+  /// over a street, beside the wall when the camera is over a roof.
   void _land() {
+    var x = _pose.x;
+    var z = _pose.z;
+    final collider = _collider;
+    if (collider != null) (x, z) = collider.resolve(x, z);
     _flight = Flight.plan(
       _pose,
-      CameraPose(x: _pose.x, y: eyeHeight, z: _pose.z, yaw: _pose.yaw),
+      CameraPose(x: x, y: eyeHeight, z: z, yaw: _pose.yaw),
+      solids: _solids,
     );
   }
 
