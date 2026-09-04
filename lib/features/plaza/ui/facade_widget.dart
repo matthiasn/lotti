@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/theme/icon_tokens.dart';
 import 'package:lotti/features/plaza/domain/attention.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
 import 'package:lotti/features/plaza/ui/checklist_ticks.dart';
@@ -390,7 +391,11 @@ class _Item extends StatelessWidget {
                 borderRadius: BorderRadius.circular(fontPx * 0.12),
               ),
               child: ticked
-                  ? Icon(Icons.check, size: box * 0.8, color: PlazaStyle.panel)
+                  ? Icon(
+                      LottiIcons.confirm,
+                      size: box * 0.8,
+                      color: PlazaStyle.panel,
+                    )
                   : null,
             ),
             SizedBox(width: fontPx * 0.4),

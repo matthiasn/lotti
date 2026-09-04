@@ -92,6 +92,26 @@ void main() {
     }
   });
 
+  testWidgets('a finished task is a quiet, small sign', (tester) async {
+    double titlePx(PlazaTaskState state, FacadeVariant variant) {
+      final text = tester.widget<Text>(find.text('Negotiate sardine futures'));
+      return text.style!.fontSize!;
+    }
+
+    for (final variant in FacadeVariant.values) {
+      await tester.pumpWidget(
+        _host(_task(), variant: variant),
+      );
+      final open = titlePx(PlazaTaskState.open, variant);
+      await tester.pumpWidget(
+        _host(_task(state: PlazaTaskState.done), variant: variant),
+      );
+      final done = titlePx(PlazaTaskState.done, variant);
+      expect(done, closeTo(open * 0.55, 1e-6), reason: '$variant');
+      expect(tester.takeException(), isNull);
+    }
+  });
+
   testWidgets('live facade shows title, chip, meta and progress', (
     tester,
   ) async {

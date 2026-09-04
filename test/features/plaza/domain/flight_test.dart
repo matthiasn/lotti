@@ -77,10 +77,20 @@ void main() {
     expect((f.poseAt(1).yaw + 0.2).abs() % (2 * math.pi), closeTo(0, 1e-9));
   });
 
+  test('yaw takes the short way round the other way too', () {
+    final f = Flight.plan(
+      const CameraPose(x: 0, y: 0, z: 0, yaw: 2 * math.pi - 0.2),
+      const CameraPose(x: 0, y: 0, z: 0, yaw: 0.2),
+    );
+    // Half-way between -0.2 and 0.2: a full turn, not back through π.
+    expect(f.poseAt(0.5).yaw % (2 * math.pi), closeTo(0, 1e-9));
+  });
+
   test('advance accumulates time and clamps at the end', () {
     final f = Flight.plan(a, const CameraPose(x: 1, y: 2.2, z: 0, yaw: 0));
     expect(f.done, isFalse);
     f.advance(const Duration(milliseconds: 400));
+    expect(f.elapsed, const Duration(milliseconds: 400));
     expect(f.progress, closeTo(0.5, 1e-9));
     expect(f.done, isFalse);
     final end = f.advance(const Duration(seconds: 5));

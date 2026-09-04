@@ -353,6 +353,7 @@ void main() {
         expect(b.facingRadians, segment.headingRadians);
         expect(b.height, closeTo(p.height * 0.7, 1e-9));
         expect(b.bottom + b.height, lessThan(p.height));
+        expect(b.centerY, closeTo(b.bottom + b.height / 2, 1e-9));
         expect(b.width, lessThanOrEqualTo(1.8));
       }
       expect(bannersFor(plan, minHeight: 1000), isEmpty);

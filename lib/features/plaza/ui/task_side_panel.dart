@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/theme/icon_tokens.dart';
 import 'package:lotti/features/plaza/domain/attention.dart';
 import 'package:lotti/features/plaza/ui/checklist_ticks.dart';
 import 'package:lotti/features/plaza/ui/plaza_style.dart';
@@ -67,7 +68,10 @@ class TaskSidePanel extends StatelessWidget {
                     IconButton(
                       onPressed: onClose,
                       tooltip: 'Close',
-                      icon: const Icon(Icons.close, color: Color(0x99FFFFFF)),
+                      icon: const Icon(
+                        LottiIcons.close,
+                        color: Color(0x99FFFFFF),
+                      ),
                     ),
                   ],
                 ),
@@ -148,7 +152,7 @@ class TaskSidePanel extends StatelessWidget {
                             ),
                             child: ticks.isTicked(task.id, i)
                                 ? const Icon(
-                                    Icons.check,
+                                    LottiIcons.confirm,
                                     size: 13,
                                     color: PlazaStyle.panel,
                                   )

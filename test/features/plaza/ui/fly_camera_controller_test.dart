@@ -74,6 +74,8 @@ void main() {
 
     test('forward follows yaw and pitch', () {
       final c = _controller();
+      expect(c.yaw, _origin.yaw);
+      expect(c.pitch, 0);
       expect(c.forward.x, closeTo(math.sin(_origin.yaw), 1e-9));
       expect(c.forward.z, closeTo(math.cos(_origin.yaw), 1e-9));
       expect(c.forward.y, closeTo(0, 1e-9));
@@ -223,6 +225,7 @@ void main() {
       const target = CameraPose(x: 0, y: eyeHeight, z: 20, yaw: 1, pitch: 0.2);
       final flight = camera.flyTo(target);
       expect(camera.flying, isTrue);
+      expect(camera.flight, same(flight));
       camera.update(flight.duration.inMicroseconds / 2e6);
       expect(camera.pose.z, closeTo(10, 1e-6));
       expect(camera.flying, isTrue);
