@@ -90,6 +90,17 @@ void main() {
       taskId: 'missing',
     );
     expect(PlazaStyle.beaconColor(orphan, world), PlazaStyle.teal);
+    // The layout emits no overview beacon; the kind still has a colour.
+    final overview = Beacon(
+      id: 'overview',
+      kind: BeaconKind.overview,
+      label: 'map',
+      pose: world.plaza!.overview,
+      markerX: 0,
+      markerY: 0,
+      markerZ: 0,
+    );
+    expect(PlazaStyle.beaconColor(overview, world), PlazaStyle.teal);
   });
 
   test('category colours: the category itself, then two darker tints', () {
