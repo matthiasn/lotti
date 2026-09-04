@@ -252,6 +252,7 @@ class PlazaSceneController {
   /// Ground surfaces that take the asphalt grain.
   final List<UnlitMaterial> _grainMaterials = [];
   final List<UnlitMaterial> _pavingMaterials = [];
+  final List<UnlitMaterial> _shopfrontMaterials = [];
 
   /// Gives every windowed wall its texture once the tiles are uploaded,
   /// the pools their falloff and the ground its grain.
@@ -271,6 +272,11 @@ class PlazaSceneController {
     }
     for (final material in _pavingMaterials) {
       material.baseColorTexture = textures.paving;
+    }
+    for (final material in _shopfrontMaterials) {
+      material
+        ..baseColorTexture = textures.shopfront
+        ..baseColorFactor = Vector4(1, 1, 1, 1);
     }
   }
 
@@ -322,6 +328,67 @@ class PlazaSceneController {
         mesh: Mesh(
           tiledQuad(width, depth, uRepeat: width / 6, vRepeat: depth / 6),
           material,
+        ),
+      ),
+    );
+  }
+
+  /// Height of the shopfront band at the foot of every wall.
+  static const shopfrontHeight = 4.0;
+
+  /// A wall face: a shopfront band at the foot (glazing, a door, a lit
+  /// fascia) under the window grid of [state]'s lit ratio. The quad's face
+  /// is +Z before [yaw]; [dx], [dz] place it on the parent's box, whose
+  /// centre sits at half [height].
+  void _windowedWall(
+    Node parent, {
+    required double dx,
+    required double dz,
+    required double yaw,
+    required double width,
+    required double height,
+    required LanternState state,
+    required Vector4 tint,
+    required double uOffset,
+  }) {
+    final ground = math.min(shopfrontHeight, height * 0.45);
+    final shop = UnlitMaterial()..baseColorFactor = tint;
+    _shopfrontMaterials.add(shop);
+    parent.add(
+      Node(
+        localTransform: Matrix4.translation(
+          Vector3(dx, -height / 2 + ground / 2, dz),
+        )..rotateY(yaw),
+        mesh: Mesh(
+          tiledQuad(
+            width,
+            ground,
+            uRepeat: width / WallTextures.shopfrontWidth,
+            vRepeat: ground / WallTextures.shopfrontHeight,
+            uOffset: uOffset,
+          ),
+          shop,
+        ),
+      ),
+    );
+    final upper = height - ground;
+    if (upper <= 0.1) return;
+    final windows = UnlitMaterial()..baseColorFactor = tint;
+    _wallMaterials.putIfAbsent(state, () => []).add(windows);
+    parent.add(
+      Node(
+        localTransform: Matrix4.translation(
+          Vector3(dx, ground / 2, dz),
+        )..rotateY(yaw),
+        mesh: Mesh(
+          tiledQuad(
+            width,
+            upper,
+            uRepeat: width / WallTextures.tileWidth,
+            vRepeat: upper / WallTextures.tileHeight,
+            uOffset: uOffset,
+          ),
+          windows,
         ),
       ),
     );
@@ -821,22 +888,16 @@ class PlazaSceneController {
         (0.0, -d / 2 - 0.02, math.pi, w), // back, faces -Z
       ],
     ]) {
-      final material = UnlitMaterial()..baseColorFactor = wallTint;
-      _wallMaterials.putIfAbsent(attention.lantern, () => []).add(material);
-      node.add(
-        Node(
-          localTransform: Matrix4.translation(Vector3(dx, 0, dz))..rotateY(yaw),
-          mesh: Mesh(
-            tiledQuad(
-              width,
-              h,
-              uRepeat: width / WallTextures.tileWidth,
-              vRepeat: h / WallTextures.tileHeight,
-              uOffset: offset,
-            ),
-            material,
-          ),
-        ),
+      _windowedWall(
+        node,
+        dx: dx,
+        dz: dz,
+        yaw: yaw,
+        width: width,
+        height: h,
+        state: attention.lantern,
+        tint: wallTint,
+        uOffset: offset,
       );
     }
 
@@ -1395,25 +1456,16 @@ class PlazaSceneController {
             (0.0, bw / 2 + 0.02, 0.0, bd),
             (0.0, -bw / 2 - 0.02, math.pi, bd),
           ]) {
-            final material = UnlitMaterial()..baseColorFactor = _tower;
-            _wallMaterials
-                .putIfAbsent(LanternState.open, () => [])
-                .add(material);
-            node.add(
-              Node(
-                localTransform: Matrix4.translation(Vector3(dx, 0, dz))
-                  ..rotateY(yaw),
-                mesh: Mesh(
-                  tiledQuad(
-                    width,
-                    bh,
-                    uRepeat: width / WallTextures.tileWidth,
-                    vRepeat: bh / WallTextures.tileHeight,
-                    uOffset: _unit(id, 'tile$yaw') * 3,
-                  ),
-                  material,
-                ),
-              ),
+            _windowedWall(
+              node,
+              dx: dx,
+              dz: dz,
+              yaw: yaw,
+              width: width,
+              height: bh,
+              state: LanternState.open,
+              tint: _tower,
+              uOffset: _unit(id, 'tile$yaw') * 3,
             );
           }
           if (_unit(id, 'sign') < 0.34) {

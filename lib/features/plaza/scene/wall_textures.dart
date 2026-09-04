@@ -26,6 +26,11 @@ class WallTextures {
   /// slabs with a joint between.
   static const pavingMeters = 4.0;
 
+  /// The shopfront tile: four 3 m bays (three glazed, one door) under a
+  /// lit fascia, [shopfrontWidth] × [shopfrontHeight] metres.
+  static const shopfrontWidth = 12.0;
+  static const shopfrontHeight = 4.0;
+
   /// Lit-window ratio per state: busy buildings glow, finished ones sleep.
   static double litRatio(LanternState state) => switch (state) {
     LanternState.inProgress => 0.62,
@@ -55,7 +60,8 @@ class WallTextures {
     final textures = WallTextures._(map)
       ..pool = await Texture2D.fromImage(_paintPool())
       ..grain = await Texture2D.fromImage(_paintGrain())
-      ..paving = await Texture2D.fromImage(_paintPaving());
+      ..paving = await Texture2D.fromImage(_paintPaving())
+      ..shopfront = await Texture2D.fromImage(_paintShopfront());
     return textures;
   }
 
@@ -70,6 +76,125 @@ class WallTextures {
 
   /// Plaza paving: slab joints and a little wear, blended over the slab.
   late final Texture2D paving;
+
+  /// The ground floor: shopfront glazing, a doorway, a lit fascia.
+  late final Texture2D shopfront;
+
+  static ui.Image _paintShopfront() {
+    const w = 4 * 3 * _px; // four 3 m bays
+    const h = 4 * _px;
+    final recorder = ui.PictureRecorder();
+    final canvas = ui.Canvas(recorder)
+      ..drawRect(
+        ui.Rect.fromLTWH(0, 0, w.toDouble(), h.toDouble()),
+        ui.Paint()..color = const ui.Color(0xFF0B0A14),
+      );
+    final rng = math.Random(31337);
+    const fascia = 0.75 * _px;
+    const base = 0.4 * _px;
+    const bay = 3 * _px;
+    // Fascia: a dark board with a lit sign block per bay, in one of the
+    // signage warms, and a thin lit edge below it.
+    const signWarms = [
+      ui.Color(0xFFFFC46B),
+      ui.Color(0xFFFF8A5B),
+      ui.Color(0xFF9BE8FF),
+      ui.Color(0xFFFFE9B8),
+    ];
+    for (var b = 0; b < 4; b++) {
+      final left = b * bay;
+      final signW = bay * (0.45 + rng.nextDouble() * 0.4);
+      final signX = left + (bay - signW) / 2;
+      final colour = signWarms[rng.nextInt(signWarms.length)];
+      canvas
+        ..drawRect(
+          ui.Rect.fromLTWH(signX, 0.12 * _px, signW, fascia - 0.28 * _px),
+          ui.Paint()..color = colour.withValues(alpha: 0.85),
+        )
+        ..drawRect(
+          ui.Rect.fromLTWH(signX + 6, 0.2 * _px, signW - 12, 0.14 * _px),
+          ui.Paint()..color = const ui.Color(0x8C000000),
+        );
+    }
+    canvas.drawRect(
+      ui.Rect.fromLTWH(0, fascia - 4, w.toDouble(), 4),
+      ui.Paint()..color = const ui.Color(0xFFFFE2B8),
+    );
+    // Bays: glazing with a warm interior glow and dark shapes inside;
+    // the third bay is a doorway with a lit transom.
+    for (var b = 0; b < 4; b++) {
+      final left = b * bay + 0.15 * _px;
+      const width = bay - 0.3 * _px;
+      const top = fascia + 0.1 * _px;
+      const bottom = h - base;
+      if (b == 2) {
+        canvas
+          ..drawRect(
+            ui.Rect.fromLTWH(left, top, width, bottom - top),
+            ui.Paint()..color = const ui.Color(0xFF14121F),
+          )
+          ..drawRect(
+            ui.Rect.fromLTWH(
+              left + width * 0.3,
+              top + 0.05 * _px,
+              width * 0.4,
+              0.5 * _px,
+            ),
+            ui.Paint()..color = const ui.Color(0xFFFFD9A0),
+          )
+          ..drawRect(
+            ui.Rect.fromLTWH(
+              left + width * 0.32,
+              top + 0.7 * _px,
+              width * 0.36,
+              bottom - top - 0.7 * _px,
+            ),
+            ui.Paint()..color = const ui.Color(0xFF221D33),
+          );
+        continue;
+      }
+      final glow = 0.55 + rng.nextDouble() * 0.35;
+      final warm = rng.nextBool()
+          ? const ui.Color(0xFFFFD08A)
+          : const ui.Color(0xFF9BD8FF);
+      canvas.drawRect(
+        ui.Rect.fromLTWH(left, top, width, bottom - top),
+        ui.Paint()
+          ..shader = ui.Gradient.linear(
+            ui.Offset(left, top),
+            ui.Offset(left, bottom),
+            [warm.withValues(alpha: glow), warm.withValues(alpha: glow * 0.45)],
+          ),
+      );
+      // Shelving and figures: dark blocks against the glow.
+      for (var i = 0; i < 5; i++) {
+        final bw = width * (0.08 + rng.nextDouble() * 0.18);
+        final bh = (bottom - top) * (0.25 + rng.nextDouble() * 0.5);
+        canvas.drawRect(
+          ui.Rect.fromLTWH(
+            left + rng.nextDouble() * (width - bw),
+            bottom - bh,
+            bw,
+            bh,
+          ),
+          ui.Paint()..color = const ui.Color(0xA30B0A14),
+        );
+      }
+      // Mullions.
+      for (var m = 1; m < 3; m++) {
+        canvas.drawRect(
+          ui.Rect.fromLTWH(left + width * m / 3 - 2, top, 4, bottom - top),
+          ui.Paint()..color = const ui.Color(0xFF07060D),
+        );
+      }
+    }
+    // Base: the dark stall riser under the glass.
+    canvas.drawRect(
+      ui.Rect.fromLTWH(0, h - base, w.toDouble(), base),
+      ui.Paint()..color = const ui.Color(0xFF0A0910),
+    );
+    return recorder.endRecording().toImageSync(w, h);
+  }
 
   static ui.Image _paintPaving() {
     const size = 256;
