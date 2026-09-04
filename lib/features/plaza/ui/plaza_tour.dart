@@ -32,15 +32,7 @@ final List<TourStop> plazaTourStops = [
     name: 'home',
     pose: (w) => w.plaza?.home,
   ),
-  TourStop(
-    name: 'jumbotron',
-    pose: (w) {
-      final slot = w.jumbotron;
-      return slot == null
-          ? null
-          : PlazaSurfaces.facingPose(slot, distance: slot.width * 1.1);
-    },
-  ),
+  const TourStop(name: 'jumbotron', pose: jumbotronStopPose),
   TourStop(
     name: 'overview',
     pose: (w) => w.plaza?.overview,
@@ -60,14 +52,8 @@ final List<TourStop> plazaTourStops = [
   TourStop(
     name: 'attention-closeup',
     // The second anomaly when there is one: the billboard stop has just
-    // shown the first, and six stops should show a project, not a task.
-    pose: (w) {
-      final attention = w.beacons
-          .where((b) => b.kind == BeaconKind.attention)
-          .toList();
-      if (attention.isEmpty) return null;
-      return attention[attention.length > 1 ? 1 : 0].pose;
-    },
+    // shown the first, and seven stops should show a project, not a task.
+    pose: (w) => closeupBeacon(w)?.pose,
   ),
 ];
 
@@ -84,26 +70,89 @@ CameraPose? blockBeaconPose(PlazaWorld world, {required double fraction}) {
   return blocks[index].pose;
 }
 
+/// The jumbotron stop stands beside the plaza on the tower's side, this
+/// far outside its edge and this far short of its back, so the line to
+/// the screen runs outside the pylons; it may pitch up to this much,
+/// which keeps the paving in frame and the whole screen under the top
+/// edge from there.
+const jumbotronStopClearance = 8.0;
+const jumbotronStopBack = 12.0;
+const double jumbotronStopPitch = 22 * math.pi / 180;
+
+/// Eye level beside the plaza, looking up at the jumbotron's screen with
+/// no pylon in the way. Null without a plaza or a jumbotron.
+CameraPose? jumbotronStopPose(PlazaWorld world) {
+  final plaza = world.plaza;
+  final slot = world.jumbotron;
+  if (plaza == null || slot == null) return null;
+  final h = plaza.headingRadians;
+  final sinH = math.sin(h);
+  final cosH = math.cos(h);
+  // Which side of the plaza the tower stands on, in the plaza's frame.
+  final towerLateral =
+      (slot.x - plaza.centerX) * cosH - (slot.z - plaza.centerZ) * sinH;
+  final side = towerLateral.sign;
+  final lateral = side * (plaza.width / 2 + jumbotronStopClearance);
+  final along = plaza.depth / 2 - jumbotronStopBack;
+  final x = plaza.centerX + lateral * cosH + along * sinH;
+  final z = plaza.centerZ - lateral * sinH + along * cosH;
+  final dx = slot.x - x;
+  final dz = slot.z - z;
+  final d = math.sqrt(dx * dx + dz * dz);
+  return CameraPose(
+    x: x,
+    y: eyeHeight,
+    z: z,
+    yaw: math.atan2(dx, dz),
+    pitch: math.min(
+      math.atan2(slot.centerY - eyeHeight, d),
+      jumbotronStopPitch,
+    ),
+  );
+}
+
 /// The shopfront stop stands this far before the end wall and this far
 /// out from the facade plane, on the road, looking at the building's
 /// near corner: the parade on the end wall and the named facade in one
 /// frame.
-const shopfrontStandOff = 9.0;
+const shopfrontStandOff = 12.0;
 const shopfrontRoadOffset = 6.0;
+
+/// The tasks the other stops already show: the top billboard and the
+/// closeup's anomaly. The shopfront stop looks elsewhere, so the tour is
+/// a story about more than two problems.
+Set<String> _shownElsewhere(PlazaWorld world) => {
+  if (world.billboards.isNotEmpty) world.billboards.first.task.id,
+  ?closeupBeacon(world)?.taskId,
+};
+
+/// The attention beacon the closeup stands at: the second when there is
+/// one (the billboard stop has just shown the first), else the first.
+Beacon? closeupBeacon(PlazaWorld world) {
+  final attention = world.beacons
+      .where((b) => b.kind == BeaconKind.attention)
+      .toList();
+  if (attention.isEmpty) return null;
+  return attention[attention.length > 1 ? 1 : 0];
+}
 
 /// Eye level on the road at a built row's head, three-quarters on to the
 /// block-head building's near corner: the shopfront parade up its end
-/// wall, and the facade with the task's name beside it. Of the bare head
-/// walls (the plaza mounts carry a screen and a ticker instead), the one
-/// whose dressing says the most: on alarm first, then trading, then
-/// fitting out, then shuttered for the night; the oldest row on a tie.
-/// Null on a street with no bare head wall.
+/// wall, and the facade with the task's name beside it, pitched to the
+/// wall's middle but never past [PlazaSurfaces.maxFacingPitch]. Of the
+/// bare head walls (the plaza mounts carry a screen and a ticker instead)
+/// not shown by another stop, the one whose dressing says the most: on
+/// alarm first, then trading, then fitting out, then shuttered for the
+/// night; the oldest row on a tie. Null on a street with no such wall.
 CameraPose? shopfrontPose(PlazaWorld world) {
   final deleted = {
     for (final t in world.tasks)
       if (t.deleted) t.id,
   };
-  final mounted = {for (final p in plazaMounts(world.plan)) p.taskId};
+  final mounted = {
+    for (final p in plazaMounts(world.plan)) p.taskId,
+    ..._shownElsewhere(world),
+  };
   int rank(PlotPlacement p) => switch (world.attention[p.taskId]?.lantern) {
     LanternState.blocked || LanternState.overdue => 0,
     LanternState.inProgress => 1,
@@ -151,10 +200,17 @@ CameraPose? shopfrontPose(PlazaWorld world) {
   final ez = segment.startZ + cosH * eyeAlong - sinH * eyeLateral;
   final cx = segment.startX + sinH * cornerAlong + cosH * cornerLateral;
   final cz = segment.startZ + cosH * cornerAlong - sinH * cornerLateral;
+  final reach = math.sqrt(
+    math.pow(shopfrontStandOff, 2) + math.pow(shopfrontRoadOffset, 2),
+  );
   return CameraPose(
     x: ex,
     y: eyeHeight,
     z: ez,
     yaw: math.atan2(cx - ex, cz - ez),
+    pitch: math.min(
+      math.atan2(head.height / 2 - eyeHeight, reach),
+      PlazaSurfaces.maxFacingPitch,
+    ),
   );
 }

@@ -63,8 +63,11 @@ double _mean(Iterable<ui.Color> colors, double Function(ui.Color) f) =>
 double _sum(ui.Color c) => c.r + c.g + c.b;
 bool _isRed(ui.Color c) => c.r > 0.7 && c.g < 0.5 && c.b < 0.5;
 bool _isAmber(ui.Color c) => c.r > 0.7 && c.g > 0.45 && c.g < 0.85 && c.b < 0.4;
-bool _isPale(ui.Color c) =>
-    c.r > 0.6 && c.g > 0.55 && c.b > 0.45 && c.r - c.b < 0.25;
+
+/// Papered glass: a muted warm grey in the shutter register, never a
+/// lightbox.
+bool _isPaper(ui.Color c) =>
+    _sum(c) > 0.85 && _sum(c) < 1.4 && c.r > c.b && c.r - c.b < 0.15;
 
 /// A sign lit in a shop colour: bright and saturated. Grey state words
 /// on a dark box are not lit signs.
@@ -95,6 +98,78 @@ void main() {
       for (final state in LanternState.values) state: await _paint(state),
     };
   });
+
+  test(
+    'the three window-tile families differ in occupancy, not in state',
+    () async {
+      final tiles = <int, _Strip>{};
+      for (var f = 0; f < WallTextures.tileFamilies; f++) {
+        final image = WallTextures.paintWindows(LanternState.open, family: f);
+        final bytes = await image.toByteData();
+        tiles[f] = _Strip(image.width, image.height, bytes!);
+      }
+      // Every family is the same 12 x 12 m tile.
+      for (final t in tiles.values) {
+        expect(t.width / t.height, 2.5);
+      }
+      // Lit panes per floor, sampled at each pane's centre. The strip
+      // sampler works in shopfront metres, so convert through pixels.
+      List<int> litPerFloor(_Strip t) => [
+        for (var floor = 0; floor < WallTextures.floors; floor++)
+          () {
+            var n = 0;
+            for (var bay = 0; bay < WallTextures.bays; bay++) {
+              // Off the centre mullion, inside the pane.
+              final px = (bay + 0.4) * (t.width / WallTextures.bays);
+              // Below any part-drawn blind, inside the pane.
+              final py = (floor + 0.65) * (t.height / WallTextures.floors);
+              final c = t.at(
+                px / t.pxPerMeter,
+                py / t.pxPerMeter,
+              );
+              if (_sum(c) > 0.62) n++;
+            }
+            return n;
+          }(),
+      ];
+      // The residential family has one floor with no lit pane and one lit
+      // edge to edge; the mixed family has neither.
+      final mixed = litPerFloor(tiles[0]!);
+      final stack = litPerFloor(tiles[1]!);
+      expect(stack, contains(0));
+      expect(
+        stack.reduce(math.max),
+        greaterThanOrEqualTo(WallTextures.bays - 1),
+      );
+      expect(
+        mixed.where((n) => n == 0 || n >= WallTextures.bays - 1),
+        isEmpty,
+      );
+      // The office family is mostly the cool tint.
+      var cool = 0;
+      var warm = 0;
+      final office = tiles[2]!;
+      for (var bay = 0; bay < WallTextures.bays; bay++) {
+        for (var floor = 0; floor < WallTextures.floors; floor++) {
+          final c = office.at(
+            (bay + 0.4) *
+                (office.width / WallTextures.bays) /
+                office.pxPerMeter,
+            (floor + 0.65) *
+                (office.height / WallTextures.floors) /
+                office.pxPerMeter,
+          );
+          if (_sum(c) < 0.62) continue;
+          if (c.b > c.r) {
+            cool++;
+          } else {
+            warm++;
+          }
+        }
+      }
+      expect(cool, greaterThan(warm));
+    },
+  );
 
   test('every strip is the parade at 96 px per metre', () {
     for (final strip in strips.values) {
@@ -134,7 +209,7 @@ void main() {
           _count(strip.along(_signRow), _isLitSign),
           _count(strip.along(_glassRow), _isLitGlass),
           _count(strip.along(_tapeRow), _isRed),
-          _count(strip.along(_glassRow), _isPale),
+          _count(strip.along(_glassRow), _isPaper),
         ],
     };
     final distinct = signatures.values.map((s) => s.join(',')).toSet();
@@ -168,7 +243,14 @@ void main() {
 
   test('open is not open yet: papered glass and no lit sign', () {
     final strip = strips[LanternState.open]!;
-    expect(_count(strip.along(_glassRow), _isPale), greaterThan(150));
+    // At least a third of the strip is papered glass (the rest is doors,
+    // mullions, seams and the work light's wash).
+    expect(_count(strip.along(_glassRow), _isPaper), greaterThan(100));
+    // In the shutter register: nothing on the papered glass is bright.
+    expect(
+      _count(strip.along(_glassRow), (c) => _sum(c) > 1.6),
+      lessThan(20),
+    );
     expect(_count(strip.along(_signRow), _isLitSign), lessThan(5));
     expect(_count(strip.along(_tapeRow), _isRed), lessThan(5));
   });

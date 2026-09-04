@@ -1,5 +1,7 @@
 import 'dart:math' as math;
-import 'dart:ui' show Size;
+import 'dart:ui' show Color, Size;
+
+import 'package:flutter/foundation.dart' show ValueNotifier;
 
 import 'package:flutter_scene/scene.dart';
 import 'package:lotti/features/plaza/domain/plaza_layout.dart';
@@ -189,6 +191,10 @@ class PlazaSurfaces {
     }
   }
 
+  /// While true the jumbotron holds its project card: the tour and a
+  /// fly-to set it on arrival so the masthead is what you land on.
+  final pinJumbotron = ValueNotifier<bool>(false);
+
   void _attachJumbotron(Node? anchor) {
     final slot = world.jumbotron;
     if (anchor == null || slot == null) return;
@@ -199,6 +205,7 @@ class PlazaSurfaces {
         taskCount: world.liveTaskCount,
         attentionCount: world.anomalies.length,
         headlines: world.anomalies,
+        pinProjectCard: pinJumbotron,
         covers: [
           for (final a in world.billboards)
             if (a.task.coverImageUrl != null) a.task.coverImageUrl!,
@@ -249,6 +256,9 @@ class PlazaSurfaces {
           heightMeters: slot.height,
           pxPerMeter: pxPerMeter,
           pulseSeconds: slot.pulseSeconds,
+          // A roof panel sits over its own facade, which carries the
+          // title: the panel leads with the reason instead.
+          reasonFirst: slot.mount == BillboardMount.roof,
         ),
         size: Size(slot.width * pxPerMeter, slot.height * pxPerMeter),
         geometry: ccwQuad(slot.width, slot.height),
@@ -286,6 +296,36 @@ class PlazaSurfaces {
         bind: surface.bind,
       );
       anchor.addComponent(component);
+      // Housing: a dark track behind the band with a thin teal rim and
+      // end caps, so the ticker is a fixture on the wall and not a strip
+      // of type floating in front of it.
+      final rim = UnlitMaterial()
+        ..baseColorFactor = linearColor(PlazaStyle.teal, alpha: 0.8);
+      final track = UnlitMaterial()
+        ..baseColorFactor = linearColor(const Color(0xFF0B0D14));
+      anchor.add(
+        Node(
+          localTransform: Matrix4.translation(Vector3(0, 0, -0.22)),
+          mesh: Mesh(
+            CuboidGeometry(Vector3(slot.width + 0.6, slot.height + 0.5, 0.4)),
+            track,
+          ),
+        ),
+      );
+      const cap = 0.1;
+      for (final (dx, dy, sw, sh) in [
+        (0.0, slot.height / 2 + 0.2, slot.width + 0.6, cap),
+        (0.0, -slot.height / 2 - 0.2, slot.width + 0.6, cap),
+        (-slot.width / 2 - 0.25, 0.0, cap * 2, slot.height + 0.5),
+        (slot.width / 2 + 0.25, 0.0, cap * 2, slot.height + 0.5),
+      ]) {
+        anchor.add(
+          Node(
+            localTransform: Matrix4.translation(Vector3(dx, dy, -0.02)),
+            mesh: Mesh(CuboidGeometry(Vector3(sw, sh, 0.1)), rim),
+          ),
+        );
+      }
       scene.add(anchor);
       _tickerSurfaces.add((
         Vector3(slot.x, slot.bottom, slot.z),

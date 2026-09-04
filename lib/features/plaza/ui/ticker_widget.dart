@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:lotti/features/plaza/ui/plaza_style.dart';
 
@@ -40,7 +42,6 @@ class _TickerWidgetState extends State<TickerWidget>
   @override
   Widget build(BuildContext context) {
     final fontPx = widget.heightMeters * widget.pxPerMeter * 0.62;
-    final gap = fontPx * 4;
     final style = TextStyle(
       fontFamily: PlazaStyle.fontMono,
       fontSize: fontPx,
@@ -65,6 +66,9 @@ class _TickerWidgetState extends State<TickerWidget>
               textDirection: TextDirection.ltr,
               maxLines: 1,
             )..layout();
+            // A gap of at least half the band between copies, so a phrase
+            // is read whole before the next one arrives.
+            final gap = math.max(fontPx * 4, constraints.maxWidth * 0.5);
             final copyWidth = painter.width + gap;
             final pxPerSecond = widget.speedMetersPerSecond * widget.pxPerMeter;
             return AnimatedBuilder(

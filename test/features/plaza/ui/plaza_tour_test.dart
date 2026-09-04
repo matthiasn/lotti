@@ -5,6 +5,7 @@ import 'package:lotti/features/plaza/domain/attention.dart';
 import 'package:lotti/features/plaza/domain/plaza_layout.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
 import 'package:lotti/features/plaza/domain/street_layout.dart';
+import 'package:lotti/features/plaza/scene/plaza_surfaces.dart';
 import 'package:lotti/features/plaza/scene/plaza_world.dart';
 import 'package:lotti/features/plaza/ui/plaza_tour.dart';
 
@@ -47,6 +48,61 @@ void main() {
         'jumbotron',
       ]),
     );
+  });
+
+  group('jumbotronStopPose', () {
+    test('stands beside the plaza on the tower side, clear of the pylons', () {
+      final pose = jumbotronStopPose(large)!;
+      final plaza = large.plaza!;
+      final slot = large.jumbotron!;
+      final h = plaza.headingRadians;
+      double lateralOf(double x, double z) =>
+          (x - plaza.centerX) * math.cos(h) - (z - plaza.centerZ) * math.sin(h);
+      double alongOf(double x, double z) =>
+          (x - plaza.centerX) * math.sin(h) + (z - plaza.centerZ) * math.cos(h);
+      expect(pose.y, eyeHeight);
+      expect(lateralOf(pose.x, pose.z).sign, lateralOf(slot.x, slot.z).sign);
+      expect(
+        lateralOf(pose.x, pose.z).abs(),
+        closeTo(plaza.width / 2 + jumbotronStopClearance, 1e-9),
+      );
+      expect(
+        alongOf(pose.x, pose.z),
+        closeTo(plaza.depth / 2 - jumbotronStopBack, 1e-9),
+      );
+      expect(
+        pose.yaw,
+        closeTo(math.atan2(slot.x - pose.x, slot.z - pose.z), 1e-9),
+      );
+      expect(pose.pitch, greaterThan(0));
+      expect(pose.pitch, lessThanOrEqualTo(jumbotronStopPitch));
+      // The line of sight to the screen passes no pylon panel.
+      final dx = slot.x - pose.x;
+      final dz = slot.z - pose.z;
+      final len = math.sqrt(dx * dx + dz * dz);
+      for (final pylon in plaza.pylons) {
+        final px = pylon.x - pose.x;
+        final pz = pylon.z - pose.z;
+        final off = (px * dz - pz * dx).abs() / len;
+        final ahead = (px * dx + pz * dz) / len;
+        if (ahead <= 0 || ahead >= len) continue;
+        expect(
+          off,
+          greaterThan(pylon.width / 2 + 1),
+          reason: 'pylon ${pylon.rank}',
+        );
+      }
+    });
+
+    test('is null without a plaza', () {
+      final empty = PlazaWorld(
+        tasks: const [],
+        now: DateTime.utc(2026, 7, 17),
+        projectLabel: 'Empty',
+        layout: StreetLayout(projectSeed: 1337),
+      );
+      expect(jumbotronStopPose(empty), isNull);
+    });
   });
 
   group('shopfrontPose', () {
@@ -127,16 +183,10 @@ void main() {
       expect(shopfrontPose(world), isNull);
     });
 
-    test('prefers the head that is on alarm', () {
-      final alarmed = large.plan.placements.values.where(
-        (p) => switch (large.attention[p.taskId]!.lantern) {
-          LanternState.blocked || LanternState.overdue => true,
-          _ => false,
-        },
-      );
-      // The fixture has alarms; whether a head is one is data, so assert
-      // the rule on a world built to have exactly one alarmed head.
-      expect(alarmed, isNotEmpty);
+    test('skips the alarmed head another stop already shows', () {
+      // Four tasks in one week: the blocked one is the top billboard and
+      // the closeup's anomaly, so the shopfront stop looks at the other
+      // head rather than showing it a third time.
       final tasks = [
         for (var i = 0; i < 4; i++)
           PlazaTask(
@@ -151,8 +201,9 @@ void main() {
           ),
       ];
       final world = _world(tasks);
-      final head = world.plan.placements['t1']!;
-      expect(world.attention['t1']!.lantern, LanternState.blocked);
+      expect(world.billboards.first.task.id, 't1');
+      expect(closeupBeacon(world)!.taskId, 't1');
+      final head = world.plan.placements['t0']!;
       final pose = shopfrontPose(world)!;
       final segment = world.plan.segments.first;
       final lateral =
@@ -161,9 +212,14 @@ void main() {
       final headLateral =
           (head.x - segment.startX) * math.cos(segment.headingRadians) -
           (head.z - segment.startZ) * math.sin(segment.headingRadians);
-      // Same side of the road as the alarmed head, out toward the road.
       expect(lateral.sign, headLateral.sign);
       expect(lateral.abs(), lessThan(headLateral.abs()));
+    });
+
+    test("pitches to the wall's middle, never past the cap", () {
+      final pose = shopfrontPose(large)!;
+      expect(pose.pitch, greaterThan(0));
+      expect(pose.pitch, lessThanOrEqualTo(PlazaSurfaces.maxFacingPitch));
     });
 
     test('prefers a trading head over one shut for the night', () {

@@ -141,8 +141,13 @@ void main() {
       for (final f in fillers) {
         expect(f.depth, inInclusiveRange(7, 16));
         expect(f.width, inInclusiveRange(8, 16));
-        expect(f.height, inInclusiveRange(6, 22));
+        expect(f.height, inInclusiveRange(12, 60));
       }
+      // The fabric is the tall layer: a quarter are mid-rise landmarks
+      // above every plot, the rest still rise over the shops.
+      final landmarks = fillers.where((f) => f.height >= 40);
+      expect(landmarks.length, greaterThan(fillers.length ~/ 8));
+      expect(landmarks.length, lessThan(fillers.length ~/ 2));
       final again = fillerBlocksFor(
         plan,
         plaza,
@@ -297,7 +302,23 @@ void main() {
       expect(kiosks.single.yawRadians, plaza.headingRadians + math.pi / 2);
       expect(kiosks.single.height, kioskHeight);
 
-      final sides = furniture.where((f) => f.kind != FurnitureKind.kiosk);
+      // The foreground pair: a bench and a planter a few metres ahead of
+      // home, either side of the axis.
+      final near = furniture.where((f) => f.id.startsWith('plaza-near'));
+      expect(near, hasLength(2));
+      final homeAlong =
+          (plaza.home.x - plaza.centerX) * sinH +
+          (plaza.home.z - plaza.centerZ) * cosH;
+      for (final f in near) {
+        final (lateral, along) = local(f);
+        expect(lateral.abs(), closeTo(nearHomeLateral, 1e-9));
+        expect(along, closeTo(homeAlong - nearHomeAhead, 1e-9));
+      }
+      expect(near.map((f) => f.kind).toSet(), hasLength(2));
+
+      final sides = furniture.where(
+        (f) => f.kind != FurnitureKind.kiosk && !f.id.startsWith('plaza-near'),
+      );
       expect(sides.length, greaterThanOrEqualTo(8));
       for (final f in sides) {
         final (lateral, along) = local(f);
@@ -332,29 +353,32 @@ void main() {
       expect(furniture.map((f) => f.id).toSet(), hasLength(furniture.length));
     });
 
-    test('nothing on the home pose or between home and a pylon', () {
+    test('nothing on the home pose or in front of a pylon panel', () {
       final home = plaza.home;
       for (final f in scenery.furniture) {
-        final d = math.sqrt(
-          math.pow(f.x - home.x, 2) + math.pow(f.z - home.z, 2),
-        );
+        final dx = f.x - home.x;
+        final dz = f.z - home.z;
+        final d = math.sqrt(dx * dx + dz * dz);
         expect(d, greaterThan(4), reason: f.id);
+        // Seen from home, the top of every piece sits below the bottom
+        // edge of every pylon panel in the same direction, so nothing on
+        // the ground hides a billboard.
+        final top = math.atan2(f.height - home.y, d);
         for (final pylon in plaza.pylons) {
-          // Distance from the furniture centre to the home-to-pylon segment.
-          final vx = pylon.x - home.x;
-          final vz = pylon.z - home.z;
-          final len2 = vx * vx + vz * vz;
-          final t = (((f.x - home.x) * vx + (f.z - home.z) * vz) / len2).clamp(
-            0.0,
-            1.0,
-          );
-          final px = home.x + vx * t;
-          final pz = home.z + vz * t;
-          final off = math.sqrt(math.pow(f.x - px, 2) + math.pow(f.z - pz, 2));
+          final px = pylon.x - home.x;
+          final pz = pylon.z - home.z;
+          final pd = math.sqrt(px * px + pz * pz);
+          final bearingGap =
+              ((math.atan2(dx, dz) - math.atan2(px, pz)) + math.pi) %
+                  (2 * math.pi) -
+              math.pi;
+          final panelHalfAngle = math.atan2(pylon.width / 2, pd);
+          if (bearingGap.abs() > panelHalfAngle + 0.05) continue;
+          final panelBottom = math.atan2(pylon.bottom - home.y, pd);
           expect(
-            off,
-            greaterThan(math.max(f.width, f.depth)),
-            reason: '${f.id} vs pylon ${pylon.rank}',
+            top,
+            lessThan(panelBottom),
+            reason: '${f.id} hides pylon ${pylon.rank}',
           );
         }
       }

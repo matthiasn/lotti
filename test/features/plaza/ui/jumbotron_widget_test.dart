@@ -23,7 +23,10 @@ void main() {
     for (var i = 0; i < 4; i++) attentionFor(_task('$i', 'Headline $i'), now),
   ];
 
-  Widget host({List<String> covers = const []}) => makeTestableWidget2(
+  Widget host({
+    List<String> covers = const [],
+    ValueNotifier<bool>? pin,
+  }) => makeTestableWidget2(
     Center(
       child: SizedBox(
         width: 900,
@@ -36,10 +39,29 @@ void main() {
           covers: covers,
           widthMeters: 30,
           pxPerMeter: 30,
+          pinProjectCard: pin,
         ),
       ),
     ),
   );
+
+  testWidgets('pinned, the screen holds the project card through the cycle', (
+    tester,
+  ) async {
+    final pin = ValueNotifier<bool>(true);
+    addTearDown(pin.dispose);
+    await tester.pumpWidget(host(pin: pin));
+    expect(find.text('28 tasks · 7 need attention'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pump(const Duration(seconds: 5));
+    // Still the card, where an unpinned screen would show a headline.
+    expect(find.text('28 tasks · 7 need attention'), findsOneWidget);
+    expect(find.textContaining('Headline'), findsNothing);
+    // Release: the headlines come back on the next frame.
+    pin.value = false;
+    await tester.pump();
+    expect(find.textContaining('Headline'), findsOneWidget);
+  });
 
   testWidgets('a two-line headline with its reason fits the panel', (
     tester,

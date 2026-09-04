@@ -190,7 +190,13 @@ List<FillerBlock> fillerBlocksFor(
         final frontage = 7 + stableUnit(id, 'w') * 9;
         if (along + frontage > segment.length - 1) break;
         final reach = 8 + stableUnit(id, 'd') * 8;
-        final height = 6 + stableUnit(id, 'h') * 16;
+        // The fabric behind the plots is the tall layer: the plots are
+        // the shops, the city rises behind them; a quarter are mid-rise
+        // landmarks so the roofline behind a row is jagged.
+        final tall = stableUnit(id, 'tall') < 0.25;
+        final height = tall
+            ? 40 + stableUnit(id, 'h') * 20
+            : 12 + stableUnit(id, 'h') * 22;
         final lateral =
             side * (lateralBase + reach / 2 + stableUnit(id, 'l') * 4);
         final cx =
@@ -276,9 +282,9 @@ SceneryBox? jumbotronTowerFor(BillboardSlot? jumbotron) {
 
 /// Towers on the skyline ring, and how far beyond the district's radius
 /// the ring starts. The towers stand 24 to 78 m so their lit rooflines
-/// show over the hero towers from the street.
+/// show over the fillers from the street.
 const skylineTowerCount = 48;
-const skylineRingClearance = 95.0;
+const skylineRingClearance = 50.0;
 
 /// The centre of the plan: the mean of its segment starts, the origin for
 /// an empty street.
@@ -350,6 +356,12 @@ const kioskHeight = 3.2;
 const kioskLateral = -21.0;
 const kioskAlong = 20.0;
 
+/// A bench and a planter this far ahead of home and this far to either
+/// side of the axis: a foreground for the first frame, inside its edges,
+/// and too low to hide any pylon's panel from the eye at home.
+const nearHomeAhead = 8.0;
+const nearHomeLateral = 4.0;
+
 /// The furniture on [plaza]: benches and planters down both long sides and
 /// a kiosk. Nothing when there is no plaza.
 List<PlazaFurniture> plazaFurnitureFor(FrontierPlaza? plaza) {
@@ -383,6 +395,36 @@ List<PlazaFurniture> plazaFurnitureFor(FrontierPlaza? plaza) {
       );
       i++;
     }
+  }
+  // Home's along in the plaza frame, from its world pose.
+  final homeAlong =
+      (plaza.home.x - plaza.centerX) * math.sin(h) +
+      (plaza.home.z - plaza.centerZ) * math.cos(h);
+  for (final (side, kind) in [
+    (-1.0, FurnitureKind.bench),
+    (1.0, FurnitureKind.planter),
+  ]) {
+    final (nx, nz) = _slotToWorld(
+      plaza.centerX,
+      plaza.centerZ,
+      h,
+      side * nearHomeLateral,
+      homeAlong - nearHomeAhead,
+    );
+    final bench = kind == FurnitureKind.bench;
+    out.add(
+      PlazaFurniture(
+        id: 'plaza-near-${side < 0 ? 'l' : 'r'}',
+        kind: kind,
+        x: nx,
+        z: nz,
+        // The bench sits across the axis, facing the pylons.
+        yawRadians: bench ? h + math.pi / 2 : h,
+        width: bench ? benchWidth : planterSize,
+        depth: bench ? benchLength : planterSize,
+        height: bench ? benchHeight : planterHeight,
+      ),
+    );
   }
   final (kx, kz) = _slotToWorld(
     plaza.centerX,

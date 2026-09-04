@@ -274,11 +274,16 @@ class PlazaSprites {
         // A five-bulb head over a near-dark tail, so the chase reads in a
         // still frame and not only in motion; the head goes past white for
         // the bloom.
-        final alpha = behind < 5 ? 1 - behind * 0.18 : 0.12;
-        final boost = behind < 2 ? 1.5 : 1.0;
+        final alpha = behind < 5 ? 1 - behind * 0.2 : 0.05;
+        final boost = behind < 2 ? 1.6 : 1.0;
+        final size = behind < 1
+            ? 0.7
+            : behind < 2
+            ? 0.45
+            : 0.3;
         light.sprite
-          ..width = behind < 2 ? 0.36 : 0.3
-          ..height = behind < 2 ? 0.36 : 0.3
+          ..width = size
+          ..height = size
           ..color = Vector4(
             light.color.x * boost,
             light.color.y * boost,

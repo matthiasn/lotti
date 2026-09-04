@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/features/plaza/domain/attention.dart';
 import 'package:lotti/features/plaza/ui/plaza_style.dart';
@@ -15,8 +16,13 @@ class JumbotronWidget extends StatefulWidget {
     required this.widthMeters,
     required this.pxPerMeter,
     this.coverSeconds = 5,
+    this.pinProjectCard,
     super.key,
   });
+
+  /// While this reads true the screen holds the project card instead of
+  /// turning through the headlines: what a tour stop or a fly-to lands on.
+  final ValueListenable<bool>? pinProjectCard;
 
   final String projectLabel;
   final int taskCount;
@@ -55,14 +61,16 @@ class _JumbotronWidgetState extends State<JumbotronWidget>
     final titlePx = m(0.11 * w);
     final bodyPx = m(0.035 * w);
     final pad = m(0.04 * w);
+    final pin = widget.pinProjectCard;
     return AnimatedBuilder(
-      animation: _clock,
+      animation: pin == null ? _clock : Listenable.merge([_clock, pin]),
       builder: (context, _) {
         final covers = widget.covers;
         final cycle = _clock.lastElapsedDuration == null
             ? 0
             : _clock.lastElapsedDuration!.inMilliseconds ~/
                   (widget.coverSeconds * 1000);
+        final pinned = pin?.value ?? false;
         final cover = covers.isEmpty ? null : covers[cycle % covers.length];
         return Material(
           color: PlazaStyle.panel,
@@ -100,7 +108,7 @@ class _JumbotronWidgetState extends State<JumbotronWidget>
                     alignment: Alignment.bottomLeft,
                     child: SizedBox(
                       width: constraints.maxWidth,
-                      child: _slide(cycle, titlePx, bodyPx, m),
+                      child: _slide(pinned ? 0 : cycle, titlePx, bodyPx, m),
                     ),
                   ),
                 ),
@@ -177,14 +185,15 @@ class _JumbotronWidgetState extends State<JumbotronWidget>
           ),
         ),
         SizedBox(height: m(0.6)),
-        // One status glyph, one word: the glyph is the state's mark, so
-        // no disc beside it.
+        // One status glyph, one word, in the display voice: the state's
+        // mark, heavy, like the facade's marquee band.
         Text(
-          '${PlazaStyle.glyph(a)}  ${PlazaStyle.chip(a).label}',
+          '${PlazaStyle.glyph(a)} ${PlazaStyle.chip(a).label}',
           style: TextStyle(
-            fontFamily: PlazaStyle.fontMono,
+            fontFamily: PlazaStyle.fontText,
             fontSize: bodyPx * 1.8,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w800,
+            letterSpacing: bodyPx * 0.12,
             color: frame,
             shadows: [Shadow(color: frame, blurRadius: bodyPx * 0.6)],
           ),

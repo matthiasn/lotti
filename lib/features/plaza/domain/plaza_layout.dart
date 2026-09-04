@@ -228,12 +228,13 @@ class FrontierPlaza {
 /// Plaza dimensions, world meters. The plaza starts [plazaSetback] past the
 /// street end and is [plazaDepth] deep and [plazaWidth] wide.
 const plazaSetback = 7.0;
-const plazaDepth = 66.0;
+const plazaDepth = 72.0;
 const plazaWidth = 62.0;
 
-/// Home stands far enough back that all four pylons sit inside a 60°
-/// field of view at a 3:2 frame.
-const _homeAlong = 68.0;
+/// Home stands far enough back that all four pylons, turned toward the
+/// focal point, sit inside the frame at a 60° vertical field of view on
+/// a 3:2 window.
+const _homeAlong = 73.0;
 
 /// Pylon slots in plaza-local metres: (lateral, along, width, height,
 /// bottom). Rank order; every panel faces the point (0, 52) on the plaza
@@ -638,28 +639,41 @@ TickerSlot? gantryTickerFor(StreetPlan plan, {required double roadWidth}) {
   );
 }
 
-/// The jumbotron: a giant screen on a tower behind the plaza, facing the
-/// street, so it fills the view when you turn round at home and reads
-/// from the overview.
+/// The jumbotron's tower stands this far outside the plaza's edge, this
+/// far along from the street end (beside the mouth, on the district's
+/// outside), with the screen's bottom this high so it clears the near
+/// pylons from home.
+const jumbotronLateralClearance = 6.0;
+const jumbotronAlong = 6.0;
+const jumbotronBottom = 24.0;
+
+/// The jumbotron: a giant screen on a tower beside the plaza's mouth, on
+/// the district's outside, turned to face home, so the masthead sits over
+/// the billboards in the morning's first frame and marks the way out.
 BillboardSlot? jumbotronSlotFor(StreetPlan plan) {
   final last = plan.last;
   if (last == null) return null;
-  const along = plazaSetback + plazaDepth + 8;
-  final lateral = plazaLateralOffsetFor(plan);
+  final offset = plazaLateralOffsetFor(plan);
+  final side = offset == 0 ? -1.0 : offset.sign;
+  final frame = _Frame(
+    last.endX,
+    last.endZ,
+    last.headingRadians,
+    lateralOffset: offset,
+  );
+  final (x, z) = frame.toWorld(
+    side * (plazaWidth / 2 + jumbotronLateralClearance),
+    jumbotronAlong,
+  );
+  final (hx, hz) = frame.toWorld(0, _homeAlong);
   return BillboardSlot(
     rank: 0,
-    x:
-        last.endX +
-        math.sin(last.headingRadians) * along +
-        math.cos(last.headingRadians) * lateral,
-    z:
-        last.endZ +
-        math.cos(last.headingRadians) * along -
-        math.sin(last.headingRadians) * lateral,
-    facingRadians: last.headingRadians + math.pi,
+    x: x,
+    z: z,
+    facingRadians: math.atan2(hx - x, hz - z),
     width: 30,
     height: 16,
-    bottom: 5,
+    bottom: jumbotronBottom,
     mount: BillboardMount.jumbotron,
     pulseSeconds: 6,
   );
@@ -712,6 +726,11 @@ double taskStandOffFor(PlotPlacement p) {
   );
 }
 
+/// A task pose never pitches up more than this: the ground stays in the
+/// frame and verticals stay near vertical; a tall wall loses its roof
+/// signage rather than its street.
+const double maxTaskPitch = 14 * math.pi / 180;
+
 CameraPose taskPoseFor(PlotPlacement p) {
   final d = taskStandOffFor(p);
   final facing = p.facingRadians;
@@ -722,7 +741,10 @@ CameraPose taskPoseFor(PlotPlacement p) {
     y: eyeHeight,
     z: facadeZ + math.cos(facing) * d,
     yaw: facing + math.pi,
-    pitch: math.atan2((p.height + roofSignageHeight) / 2 - eyeHeight, d),
+    pitch: math.min(
+      math.atan2((p.height + roofSignageHeight) / 2 - eyeHeight, d),
+      maxTaskPitch,
+    ),
   );
 }
 
@@ -731,7 +753,10 @@ const _markerHeight = 1.6;
 
 /// Where a block's beacon stands: this far *before* the block starts, so
 /// its first pair of facades fits the frame with margin at a 60° field of
-/// view (a 32 m tall landmark at 14 m needs the distance).
+/// view (a 32 m tall landmark at 14 m needs the distance). On the road's
+/// crown: twenty metres before a block is beside the previous block's
+/// last buildings, and a kerb-line pose there stands two metres from a
+/// wall.
 const blockBeaconInset = -20.0;
 
 /// The navigation beacons: Home, one per built week (newest first), one per

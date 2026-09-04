@@ -162,10 +162,10 @@ LIVE stress switch.
 | Stop | Pose | What it shows |
 |---|---|---|
 | `home` | the plaza's home pose | the morning landing: pylons, mounted screens, gantry and the street behind them |
-| `jumbotron` | in front of the jumbotron, 1.1 × its width back | the giant screen with the project card, its tower and the plaza from behind home |
+| `jumbotron` | beside the plaza on the tower's side, 8 m outside its edge and 12 m short of its back, pitched up to 22°, the project card pinned | the giant screen beside the plaza mouth with no pylon in the way, its tower and the plaza's edge |
 | `overview` | the map pose behind the oldest edge | the whole district as lanterns, light pools and markers, the jumbotron as the far landmark |
 | `block` | the block beacon a quarter of the way from oldest to newest | a week of buildings at street range: sign facades, lanterns, lamps |
-| `shopfront` | eye level on the road at a row head, three-quarters on to the block-head building's near corner (alarmed first, then trading, never a plaza mount) | the shopfront parade up the end wall, dressed and worded for the task's state, with the named facade beside it |
+| `shopfront` | eye level on the road at a row head, three-quarters on to the block-head building's near corner (alarmed first, then trading; never a plaza mount nor a task another stop shows) | the shopfront parade up the end wall, dressed and worded for the task's state, with the named facade beside it |
 | `billboard` | before the first pylon at 1.25 × its width, pitch capped at 12° | the top-ranked billboard, its frame, chase lights, posts and pool |
 | `attention-closeup` | the second attention beacon (the first when there is only one) | a live facade of an anomaly with its roof billboard; the tour's last word |
 

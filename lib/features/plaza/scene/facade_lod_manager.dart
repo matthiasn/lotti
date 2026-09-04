@@ -176,7 +176,9 @@ class FacadeLodManager {
 
     if (focused != _focused) {
       _focused?.ring.visible = false;
+      _focused?.neon.visible = true;
       focused?.ring.visible = true;
+      focused?.neon.visible = false;
       _focused = focused;
     }
     _refreshStats();

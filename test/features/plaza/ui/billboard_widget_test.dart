@@ -30,6 +30,7 @@ Widget _host(
   PlazaTask task, {
   double pulseSeconds = 3,
   double heightMeters = 8.5,
+  bool reasonFirst = false,
 }) => makeTestableWidget2(
   Center(
     child: SizedBox(
@@ -41,12 +42,38 @@ Widget _host(
         heightMeters: heightMeters,
         pxPerMeter: 40,
         pulseSeconds: pulseSeconds,
+        reasonFirst: reasonFirst,
       ),
     ),
   ),
 );
 
 void main() {
+  testWidgets('a roof panel leads with the reason and has no fly-there', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _host(_task(state: PlazaTaskState.blocked), reasonFirst: true),
+    );
+    expect(find.text('fly there ›'), findsNothing);
+    final reason = tester.widget<Text>(find.text('blocked — needs a decision'));
+    final title = tester.widget<Text>(find.text('Fuel the shuttle'));
+    // The reason is the big line, in the state colour; the title is the
+    // small line under it.
+    expect(reason.style!.fontSize, greaterThan(title.style!.fontSize! * 1.5));
+    expect(reason.style!.color, PlazaStyle.lantern(LanternState.blocked));
+    expect(title.style!.color, PlazaStyle.text);
+  });
+
+  testWidgets('a roof panel with nothing to say keeps the title big', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_host(_task(), reasonFirst: true));
+    final title = tester.widget<Text>(find.text('Fuel the shuttle'));
+    expect(title.style!.color, PlazaStyle.text);
+    expect(find.text('fly there ›'), findsNothing);
+  });
+
   testWidgets('a blocked task: title, reason, chip, fly-there, red frame', (
     tester,
   ) async {

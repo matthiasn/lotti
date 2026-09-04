@@ -413,6 +413,7 @@ class _PlazaHarnessState extends State<_PlazaHarness> {
       final pose = stop.pose(_world);
       if (pose != null) {
         _camera.pose = pose;
+        _surfaces.pinJumbotron.value = stop.name == 'jumbotron';
         _lod.suspended = false;
         _tourStop = index;
         _tourClock = 0;

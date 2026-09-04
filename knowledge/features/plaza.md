@@ -268,11 +268,16 @@ the overview.
 the street end, `roadWidth + 4` wide, 1.8 m tall at 10.5 m, 4.5 m/s, facing
 home; it shows `countsText`.
 
-**Jumbotron** (`jumbotronSlotFor`): a 30 × 16 m screen (bottom 5 m) 73 m
-past the street end (with the plaza's lateral offset) facing back down the
-street, on a 35 m tower with its own spire. `JumbotronWidget` cycles the
-project card and the top three headlines every 5 s over the billboard tasks'
-cover art.
+**Jumbotron** (`jumbotronSlotFor`): a 30 × 16 m screen with its bottom at
+`jumbotronBottom` (18 m, above the near pylons' tops) on a tower beside the
+plaza's mouth: `jumbotronAlong` (6 m) past the street end and
+`jumbotronLateralClearance` (6 m) outside the plaza's edge on the district's
+outside (the side the plaza shifted toward; the left on a straight street),
+turned to face home, so the masthead sits over the billboards in the first
+frame and marks the way out. `JumbotronWidget` cycles the project card and
+the top three headlines every 5 s over the billboard tasks' cover art, and
+holds the project card while `PlazaSurfaces.pinJumbotron` is true (the
+tour's jumbotron stop pins it).
 
 **Spires** (`spiresFor`): the two tallest buildings carry a mast with a
 blinking warning light, as does the jumbotron tower, which is itself a
@@ -286,7 +291,9 @@ roofline (1.9 m tall, 4.2 or 3.4 m/s) showing `tickerText`.
 **Facing pose** (`PlazaSurfaces.facingPose`): before a billboard at
 `max(14 m, 1.25 × width)` unless a distance is given, pitched at the
 panel's centre but never more than 12°, so the posts and the paving stay
-in frame and verticals stay near vertical.
+in frame and verticals stay near vertical. The task pose caps its pitch at
+`maxTaskPitch` (14°) for the same reason: a landmark loses its roof
+signage before it loses its street.
 
 **Task pose** (`taskPoseFor`): on the road in front of a facade at eye
 height, `max(16, 1.2 × width, 0.9 × (height + roofSignageHeight + 3))`
@@ -441,8 +448,10 @@ task data.
 
 - **Fillers** (`fillerBlocksFor`): behind the plots of every built row,
   both sides, from 2 m along the row: frontage 7 to 16 m, reach 8 to 16 m,
-  height 6 to 22 m, alleys of 2 to 6 m, the near face `roadWidth / 2 +
-  plotDepth + 4` from the axis plus up to 4 m; nothing inside the plaza
+  height 12 to 34 m with a seeded quarter at 40 to 60 m (the fabric is
+  the tall layer behind the shops, with mid-rise landmarks so the roofline
+  behind a row is jagged), alleys of 2 to 6 m, the near face `roadWidth /
+  2 + plotDepth + 4` from the axis plus up to 4 m; nothing inside the plaza
   plus 12 m. A filler's yaw is the road heading, so its `depth` is the
   frontage.
 - **Hero towers** (`heroTowersFor`): one per row that folds, 90 m past the
@@ -451,15 +460,17 @@ task data.
 - **Jumbotron tower** (`jumbotronTowerFor`): 3.5 m behind the screen's
   plane, 2 m wider than the screen each side, 6 m deep, 14 m above the
   screen's top.
-- **Skyline** (`skylineFor`): 48 towers on a ring 95 m beyond the farthest
+- **Skyline** (`skylineFor`): 48 towers on a ring 50 m beyond the farthest
   plot from `planCenterOf` (or the plaza plus 60 m), spread up to 90 m
   further out, 16 to 42 m wide, 0.8 × as deep, 24 to 78 m tall, each
   turned to face the centre.
 - **Plaza furniture** (`plazaFurnitureFor`): benches (0.6 × 2 × 0.9 m) and
   planters (1.4 m square, 0.8 m) alternating every 12 m down both long
-  sides, 4 m in from the edge, and one kiosk (3 × 2.4 × 3.2 m) at
-  plaza-local (−21, 20) facing the axis: out of the home pose's frame and
-  off every line from home to a pylon. All solid.
+  sides, 4 m in from the edge, a bench and a planter `nearHomeAhead` (6 m)
+  ahead of home at `nearHomeLateral` (±7 m) as the first frame's
+  foreground, and one kiosk (3 × 2.4 × 3.2 m) at plaza-local (−21, 20)
+  facing the axis: out of the home pose's frame and off every line from
+  home to a pylon. All solid.
 - **Furniture footprints**: the pylon posts stand `pylonPostSetback` (0.6 m)
   behind the panel at `pylonPostSpread` (0.4) of its width either side on
   1.6 m footings; the gantry legs are 0.5 m square at the ends of its span;
@@ -513,6 +524,7 @@ fourteen metres away).
 | mounted, gantry and roofline tickers | `TickerWidget` | every 50 ms, hidden beyond the plaza range |
 | jumbotron | `JumbotronWidget` at 0.5 × px/m | every 1 s |
 | skyline screens | `BillboardWidget` at 0.35 × px/m | every 3 s |
+| ticker housing | a dark track and a teal rim with end caps behind every band (geometry, not a widget) | — |
 | block markers, week signs | `BlockMarkerWidget` | once |
 | banners | `BannerWidget` | once |
 | filler signs | `BannerWidget` at 0.6 × px/m | once |
@@ -560,11 +572,11 @@ until it lands.
 `PlazaSceneController` builds the `Scene` on construction:
 
 - **Post-processing**: real HDR **bloom** (`scene.postProcess.bloom`,
-  threshold `bloomThreshold` 0.9, intensity `bloomIntensity` 0.3, scatter
+  threshold `bloomThreshold` 1.0, intensity `bloomIntensity` 0.3, scatter
   0.6) and a soft **vignette** (0.32 at radius 0.82). Widget whites sit at
-  1.0 and bloom a little; neon strips, the skyline rooflines and the chase
-  heads are pushed past white by `emissiveColor` (`neonBoost` 1.6, chase
-  heads 1.5) so the bloom carries them. The glow quads stay as the
+  1.0 and stay sharp; only what `emissiveColor` pushes past white blooms:
+  neon strips, the skyline rooflines (`neonBoost` 1.6) and the chase heads
+  (1.6). The glow quads stay as the
   near-field halo the bloom's blur cannot give a thin strip.
 - **Shaded boxes**: every massing box (buildings, upper storeys, fillers,
   hero and skyline towers, the jumbotron tower, the kiosk, the planters)
@@ -599,7 +611,11 @@ until it lands.
   width at 0.07, jumbotron 1.2 × width at 0.05, hero screen 1.2 × screen
   width at 0.06) so the emitters connect to the ground. A blocked or
   overdue building spills its lantern colour in four pools round its
-  walls. `updateForCamera` fades
+  walls. **Washes** (`_addWash`, the pool texture over a rectangle): a
+  reflection streak on the paving before every pylon and the jumbotron, a
+  streak in the state colour before an alarmed facade, a warm strip under
+  every trading facade and along every filler's street side. The plaza
+  paving overlay fades with altitude like the pools. `updateForCamera` fades
   every pool and glow quad with the eye's altitude from `poolFadeStart`
   (12 m) to `poolFadeTop` (70 m) down to `poolFloor` (0.4), so the overview
   is carried by lanterns, not discs.
@@ -611,8 +627,10 @@ until it lands.
   0.46 × 0.5 of a 3 m cell so a window is visibly smaller than a shop
   door; lit ratio inProgress 0.62, blocked and overdue 0.5, open 0.36,
   off 0.2; a lit pane tops out at 0.8 alpha so screens and signs stay the
-  brightest thing on a wall). The upper wall is stacked in **whole
-  storeys** from the band up (`vRepeat = floors / 4`, `vOffset` so a
+  brightest thing on a wall; three **tile families** by `stableUnit(id,
+  'kit')`: mixed flats, a residential stack with one dark floor and one
+  lit edge to edge, a cool office grid with few blinds). The upper wall is
+  stacked in **whole storeys** from the band up (`vRepeat = floors / 4`, `vOffset` so a
   floor slab lands on the fascia) and the remainder is a dark **cornice**
   band at the top, so no cut row ever sits on the shops;
   per-wall tile offset), a plinth,
@@ -625,9 +643,11 @@ until it lands.
   their glow burn in the lantern colour and the roofline keeps the
   category at half power, a seeded **roof kit** (parapet, one or two plant boxes, a
   water tank on 40 % of buildings wider than 5 m, a mast on a third), the
-  hidden focus ring, the facade anchor and the lantern anchor. The light
-  bar runs on a full-width dark track, so the lit part reads as progress
-  along something.
+  hidden focus ring, the facade anchor and the lantern anchor. The neon
+  strips and their glow sit in one group that the LOD manager hides while
+  the focus ring shows, so a faced facade has one frame. The light bar
+  sits on the plinth on a full-width track a shade above the panel, so the
+  lit part reads as progress along something.
 - **Shopfronts** (`WallTextures.shopfront(state, variant)`): the band is
   one 33 × 4 m strip, a parade of six trades of different widths (café,
   record shop, bar, noodle bar, arcade, florist) plus one 3 m **vacant
@@ -652,7 +672,10 @@ until it lands.
 - **Billboards**: pylons get two braced posts on footings and a catwalk; roof
   panels get two struts; every panel gets a dark lightbox, a glow quad and
   chase-light points around the frame; the panel's own border (the widget's,
-  which breathes) is the one frame. The backing box is the pickable node.
+  which breathes) is the one frame. A roof panel sits over its own facade,
+  which carries the title, so it leads with the reason in the state colour
+  and drops its 'fly there' (`BillboardWidget.reasonFirst`). The backing
+  box is the pickable node.
 - **Fillers** (`Scenery.fillers`): dark blocks behind the plots, every
   face a trading shopfront parade under open-state windows; about a third
   carry a neon category sign named after one of the week's own tasks.

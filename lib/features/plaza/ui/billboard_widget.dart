@@ -17,8 +17,13 @@ class BillboardWidget extends StatefulWidget {
     required this.heightMeters,
     required this.pxPerMeter,
     this.pulseSeconds = 3,
+    this.reasonFirst = false,
     super.key,
   });
+
+  /// A panel over its own facade leads with the reason (the facade below
+  /// already carries the title) and drops its 'fly there'.
+  final bool reasonFirst;
 
   final TaskAttention attention;
   final double widthMeters;
@@ -65,6 +70,7 @@ class _BillboardWidgetState extends State<BillboardWidget>
           heightMeters: widget.heightMeters,
           pxPerMeter: widget.pxPerMeter,
           glow: widget.attention.anomalous ? 0.55 + 0.45 * phase : 1,
+          reasonFirst: widget.reasonFirst,
         );
       },
     );
@@ -78,6 +84,7 @@ class _BillboardFace extends StatelessWidget {
     required this.heightMeters,
     required this.pxPerMeter,
     required this.glow,
+    required this.reasonFirst,
   });
 
   final TaskAttention attention;
@@ -85,6 +92,7 @@ class _BillboardFace extends StatelessWidget {
   final double heightMeters;
   final double pxPerMeter;
   final double glow;
+  final bool reasonFirst;
 
   /// Aspect threshold: below [reasonAspect] the reason goes and the title
   /// gets one line. The cover always stays: it is the backdrop, and a
@@ -131,20 +139,26 @@ class _BillboardFace extends StatelessWidget {
           ),
         ),
         const Spacer(),
-        Text(
-          'fly there ›',
-          style: TextStyle(
-            fontFamily: PlazaStyle.fontText,
-            fontSize: chipPx,
-            fontWeight: FontWeight.w600,
-            color: PlazaStyle.teal,
+        if (!reasonFirst)
+          Text(
+            'fly there ›',
+            style: TextStyle(
+              fontFamily: PlazaStyle.fontText,
+              fontSize: chipPx,
+              fontWeight: FontWeight.w600,
+              color: PlazaStyle.teal,
+            ),
           ),
-        ),
       ],
     );
+    // A roof panel over its own facade leads with the reason: the big
+    // line is what is wrong, in the state colour, and the title is the
+    // small line under it.
+    final lead = reasonFirst && attention.reason.isNotEmpty;
     final title = Text(
-      task.title,
-      maxLines: aspect >= reasonAspect ? 2 : 1,
+      lead ? attention.reason : task.title,
+      // A reason is a sentence: it gets two lines even on a squat panel.
+      maxLines: lead || aspect >= reasonAspect ? 2 : 1,
       overflow: TextOverflow.ellipsis,
       style: TextStyle(
         fontFamily: PlazaStyle.fontText,
@@ -152,7 +166,7 @@ class _BillboardFace extends StatelessWidget {
         fontSize: titlePx,
         height: 1.05,
         letterSpacing: -titlePx * 0.02,
-        color: PlazaStyle.text,
+        color: lead ? frame : PlazaStyle.text,
         shadows: showCover
             ? [
                 Shadow(
@@ -163,7 +177,22 @@ class _BillboardFace extends StatelessWidget {
             : null,
       ),
     );
-    final reasonText = showReason
+    final reasonText = lead
+        ? Text(
+            task.title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontFamily: PlazaStyle.fontText,
+              fontWeight: FontWeight.w600,
+              fontSize: m(math.min(0.045 * w, 0.14 * heightMeters)),
+              color: PlazaStyle.text,
+              shadows: showCover
+                  ? [const Shadow(color: Color(0xCC000000), blurRadius: 6)]
+                  : null,
+            ),
+          )
+        : showReason
         ? Text(
             attention.reason,
             maxLines: 1,

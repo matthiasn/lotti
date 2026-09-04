@@ -13,7 +13,13 @@ import 'package:lotti/features/plaza/domain/attention.dart';
 class WallTextures {
   WallTextures._(this._byState);
 
-  final Map<LanternState, Texture2D> _byState;
+  final Map<(LanternState, int), Texture2D> _byState;
+
+  /// How many window-tile families there are: the same lit ratio in
+  /// three occupancies (mixed flats, a residential stack with dark floors
+  /// and one lit edge to edge, a cool office grid), so adjacent walls do
+  /// not share one wallpaper.
+  static const tileFamilies = 3;
 
   /// One tile is [floors] storeys tall and [bays] windows wide, in world
   /// metres [tileHeight] × [tileWidth].
@@ -63,10 +69,12 @@ class WallTextures {
   /// Paints and uploads the five window tiles, the five shopfront strips,
   /// the light-pool falloff, the asphalt grain and the plaza paving.
   static Future<WallTextures> load() async {
-    final map = <LanternState, Texture2D>{};
+    final map = <(LanternState, int), Texture2D>{};
     final shops = <(LanternState, int), Texture2D>{};
     for (final state in LanternState.values) {
-      map[state] = await Texture2D.fromImage(_paint(state));
+      for (var f = 0; f < tileFamilies; f++) {
+        map[(state, f)] = await Texture2D.fromImage(_paint(state, family: f));
+      }
       for (var v = 0; v < paradeVariants; v++) {
         shops[(state, v)] = await Texture2D.fromImage(
           paintShopfront(state, variant: v),
@@ -81,7 +89,9 @@ class WallTextures {
     return textures;
   }
 
-  Texture2D operator [](LanternState state) => _byState[state]!;
+  /// The window tile for [state] in tile [family].
+  Texture2D window(LanternState state, int family) =>
+      _byState[(state, family)]!;
 
   /// A radial falloff: hot core, long feathered skirt. White; the material
   /// colour tints it.
@@ -297,19 +307,20 @@ class WallTextures {
         );
       }
     } else {
-      // Fitting out: the fascia is blank but for a small builder's board.
+      // Fitting out: a builder's board where the sign will go, sign-sized
+      // so the words read from the road.
       final board = ui.Rect.fromLTWH(
-        left + width * 0.2,
-        _m(0.2),
-        width * 0.6,
-        _m(_fasciaM - 0.4),
+        left + width * 0.15,
+        _m(0.14),
+        width * 0.7,
+        _m(_fasciaM - 0.3),
       );
       canvas.drawRect(board, ui.Paint()..color = const ui.Color(0xFF2A2734));
       _paintWord(
         canvas,
         shop.trade == _Trade.vacant ? 'TO LET' : 'OPENING SOON',
-        board.deflate(_m(0.04)),
-        const ui.Color(0xFF8A8598),
+        board.deflate(_m(0.05)),
+        const ui.Color(0xFF9A94A8),
         sizePx: board.height * 0.5,
       );
     }
@@ -535,15 +546,17 @@ class WallTextures {
         ..drawRect(
           ui.Rect.fromLTWH(x, glass.top, sheet, glass.height),
           ui.Paint()
+            // Paper in the shutter register, not a lightbox: a dead unit
+            // is never the brightest thing in the parade.
             ..color = ui.Color.lerp(
-              const ui.Color(0xFFD8CBB2),
-              const ui.Color(0xFFC3B69B),
+              const ui.Color(0xFF6E6658),
+              const ui.Color(0xFF5E5749),
               rng.nextDouble(),
             )!.withValues(alpha: 0.94),
         )
         ..drawRect(
           ui.Rect.fromLTWH(x, glass.top, 2, glass.height),
-          ui.Paint()..color = const ui.Color(0xFFB3A48A),
+          ui.Paint()..color = const ui.Color(0xFF4A443A),
         );
       x += sheet;
     }
@@ -588,7 +601,7 @@ class WallTextures {
         ..drawRect(ui.Rect.fromLTWH(span.left, y + 3, span.width, 2), dark);
     }
     if (alarm) {
-      final band = ui.Rect.fromLTRB(span.left, _m(1.3), span.right, _m(1.6));
+      final band = ui.Rect.fromLTRB(span.left, _m(1.25), span.right, _m(1.65));
       canvas
         ..save()
         ..clipRect(band)
@@ -606,6 +619,22 @@ class WallTextures {
         );
       }
       canvas.restore();
+      // The words on the tape, where the eye lands.
+      final label = ui.Rect.fromLTWH(
+        span.center.dx - math.min(span.width * 0.42, _m(1.6)),
+        band.top - _m(0.02),
+        math.min(span.width * 0.84, _m(3.2)),
+        band.height + _m(0.04),
+      );
+      canvas.drawRect(label, ui.Paint()..color = const ui.Color(0xFF14121F));
+      _paintWord(
+        canvas,
+        'NEEDS A DECISION',
+        label.deflate(_m(0.03)),
+        _alarm,
+        sizePx: label.height * 0.6,
+        glow: _alarm.withValues(alpha: 0.5),
+      );
     }
     final lamp = ui.Offset(door.center.dx, _m(_glassTopM) + _m(0.14));
     if (alarm) {
@@ -625,24 +654,23 @@ class WallTextures {
             ..maskFilter = ui.MaskFilter.blur(ui.BlurStyle.normal, _m(0.08)),
         );
     }
-    // A notice on the shutter at eye height: why it is down.
-    final notice = ui.Rect.fromLTWH(
-      door.center.dx - _m(0.42),
-      _m(2),
-      _m(0.84),
-      _m(0.36),
-    );
-    canvas.drawRect(
-      notice,
-      ui.Paint()..color = alarm ? _alarm : const ui.Color(0xFFD9D2C2),
-    );
-    _paintWord(
-      canvas,
-      alarm ? 'NEEDS A DECISION' : 'CLOSED FOR THE NIGHT',
-      notice.deflate(_m(0.03)),
-      alarm ? const ui.Color(0xFF14121F) : const ui.Color(0xFF2A2734),
-      sizePx: notice.height * 0.45,
-    );
+    if (!alarm) {
+      // A notice on the shutter at eye height: why it is down.
+      final notice = ui.Rect.fromLTWH(
+        door.center.dx - _m(0.5),
+        _m(2),
+        _m(1),
+        _m(0.36),
+      );
+      canvas.drawRect(notice, ui.Paint()..color = const ui.Color(0xFFD9D2C2));
+      _paintWord(
+        canvas,
+        'CLOSED FOR THE NIGHT',
+        notice.deflate(_m(0.03)),
+        const ui.Color(0xFF2A2734),
+        sizePx: notice.height * 0.45,
+      );
+    }
     canvas.drawCircle(
       lamp,
       _m(0.05),
@@ -1126,7 +1154,13 @@ class WallTextures {
     return recorder.endRecording().toImageSync(size, size);
   }
 
-  static ui.Image _paint(LanternState state) {
+  /// Paints the window tile for [state] in tile [family]; public so the
+  /// occupancy contract can be checked without a GPU.
+  @visibleForTesting
+  static ui.Image paintWindows(LanternState state, {int family = 0}) =>
+      _paint(state, family: family);
+
+  static ui.Image _paint(LanternState state, {int family = 0}) {
     const w = bays * _px;
     const h = floors * _px;
     final recorder = ui.PictureRecorder();
@@ -1135,9 +1169,19 @@ class WallTextures {
         ui.Rect.fromLTWH(0, 0, w.toDouble(), h.toDouble()),
         ui.Paint()..color = const ui.Color(0xFF0B0A14),
       );
-    final rng = math.Random(state.index * 7919 + 17);
+    final rng = math.Random(state.index * 7919 + 17 + family * 101);
     final tint = _tints[state]!;
     final lit = litRatio(state);
+    // Family 1: a residential stack, one floor dark and one lit edge to
+    // edge, the rest as rolled. Family 2: an office grid, mostly the cool
+    // tint, fewer blinds.
+    final darkFloor = family == 1 ? rng.nextInt(floors) : -1;
+    var litFloor = family == 1 ? rng.nextInt(floors) : -1;
+    if (family == 1 && litFloor == darkFloor) {
+      litFloor = (litFloor + 1) % floors;
+    }
+    final coolShare = family == 2 ? 0.8 : 0.3;
+    final blindShare = family == 2 ? 0.15 : 0.4;
     for (var floor = 0; floor < floors; floor++) {
       for (var bay = 0; bay < bays; bay++) {
         // A pane clearly smaller than a shop door, so the storeys read
@@ -1145,10 +1189,11 @@ class WallTextures {
         final x = bay * _px + _px * 0.27;
         final y = floor * _px + _px * 0.3;
         final rect = ui.Rect.fromLTWH(x, y, _px * 0.46, _px * 0.5);
-        final on = rng.nextDouble() < lit;
+        final roll = rng.nextDouble() < lit;
+        final on = floor != darkFloor && (floor == litFloor || roll);
         // Two tints per state: most windows warm, a few the cooler one,
         // and a sill-to-lintel gradient so the pane has depth.
-        final cool = rng.nextDouble() < 0.3;
+        final cool = rng.nextDouble() < coolShare;
         final base = cool ? _coolTint : tint;
         // Lit panes top out below full white so screens and signs stay
         // the brightest things on a wall.
@@ -1188,7 +1233,7 @@ class WallTextures {
             ),
             mullion,
           );
-        if (on && rng.nextDouble() < 0.4) {
+        if (on && rng.nextDouble() < blindShare) {
           // A blind pulled part-way: breaks the grid's regularity.
           canvas.drawRect(
             ui.Rect.fromLTWH(

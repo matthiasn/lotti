@@ -45,7 +45,7 @@ void main() {
         final along =
             (plaza.home.x - last.endX) * math.sin(last.headingRadians) +
             (plaza.home.z - last.endZ) * math.cos(last.headingRadians);
-        expect(along, closeTo(68, 1e-9));
+        expect(along, closeTo(73, 1e-9));
       },
     );
 
@@ -190,9 +190,31 @@ void main() {
       expect(
         pose.pitch,
         closeTo(
-          math.atan2((p.height + roofSignageHeight) / 2 - eyeHeight, d),
+          math.min(
+            math.atan2((p.height + roofSignageHeight) / 2 - eyeHeight, d),
+            maxTaskPitch,
+          ),
           1e-9,
         ),
+      );
+    });
+
+    test('never pitches past the cap: a landmark keeps its street', () {
+      const tall = PlotPlacement(
+        taskId: 'x',
+        bucketIndex: 0,
+        side: PlotSide.left,
+        x: 0,
+        z: 0,
+        facingRadians: 0,
+        width: 6,
+        depth: 6,
+        height: 32,
+      );
+      expect(taskPoseFor(tall).pitch, closeTo(maxTaskPitch, 1e-9));
+      expect(
+        math.atan2((32 + roofSignageHeight) / 2 - eyeHeight, maxTaskStandOff),
+        greaterThan(maxTaskPitch),
       );
     });
 
@@ -463,19 +485,69 @@ void main() {
       expect(gantryTickerFor(layout.plan([]), roadWidth: 18), isNull);
     });
 
-    test('the jumbotron stands behind the plaza facing the street', () {
+    test('the jumbotron stands beside the mouth, outside, facing home', () {
       final j = jumbotronSlotFor(plan)!;
       expect(j.mount, BillboardMount.jumbotron);
+      // In the plaza's frame: just past the street end, clear of the
+      // plaza's edge on the district's outside (the side the plaza was
+      // shifted toward).
+      final offset = plaza.lateralOffset;
+      final sinH = math.sin(last.headingRadians);
+      final cosH = math.cos(last.headingRadians);
+      final along = (j.x - last.endX) * sinH + (j.z - last.endZ) * cosH;
+      final lateral =
+          (j.x - last.endX) * cosH - (j.z - last.endZ) * sinH - offset;
+      expect(along, closeTo(jumbotronAlong, 1e-9));
+      expect(
+        lateral,
+        closeTo(
+          offset.sign * (plazaWidth / 2 + jumbotronLateralClearance),
+          1e-9,
+        ),
+      );
+      expect(offset, isNot(0));
+      // Turned to face home, and high enough to clear the near pylons.
       expect(
         _norm(j.facingRadians),
-        closeTo(_norm(last.headingRadians + math.pi), 1e-9),
+        closeTo(
+          _norm(math.atan2(plaza.home.x - j.x, plaza.home.z - j.z)),
+          1e-9,
+        ),
       );
-      final along =
-          (j.x - last.endX) * math.sin(last.headingRadians) +
-          (j.z - last.endZ) * math.cos(last.headingRadians);
-      expect(along, greaterThan(plazaSetback + plazaDepth));
+      expect(j.bottom, jumbotronBottom);
+      expect(
+        j.bottom,
+        greaterThan(
+          plaza.pylons.map((p) => p.bottom + p.height).reduce(math.max),
+        ),
+      );
       expect(j.width, 30);
       expect(jumbotronSlotFor(layout.plan([])), isNull);
+    });
+
+    test('on a straight street the jumbotron takes the left side', () {
+      final straight = layout.plan([
+        for (var i = 0; i < 3; i++)
+          PlazaTask(
+            id: 's$i',
+            createdAt: DateTime.utc(2026, 3, 2).add(Duration(days: 7 * i)),
+            title: 'Task $i',
+            state: PlazaTaskState.open,
+            progress: 0,
+            checklistItems: 0,
+            linkedTaskIds: const [],
+            categoryColor: 0,
+          ),
+      ]);
+      final j = jumbotronSlotFor(straight)!;
+      final end = straight.last!;
+      final lateral =
+          (j.x - end.endX) * math.cos(end.headingRadians) -
+          (j.z - end.endZ) * math.sin(end.headingRadians);
+      expect(
+        lateral,
+        closeTo(-(plazaWidth / 2 + jumbotronLateralClearance), 1e-9),
+      );
     });
 
     test('spires go on the two tallest buildings, tallest first', () {

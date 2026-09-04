@@ -107,16 +107,19 @@ class FacadeWidget extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Container(
-                  height: m(0.4),
-                  color: quiet
-                      ? Color.lerp(
-                          PlazaStyle.categoryBright(task),
-                          const Color(0xFF07060B),
-                          0.6,
-                        )
-                      : PlazaStyle.categoryBright(task),
-                ),
+                // The category band belongs to the sign tier; a live wall
+                // has the state rim and the focus ring for its frame.
+                if (!_live)
+                  Container(
+                    height: m(0.4),
+                    color: quiet
+                        ? Color.lerp(
+                            PlazaStyle.categoryBright(task),
+                            const Color(0xFF07060B),
+                            0.6,
+                          )
+                        : PlazaStyle.categoryBright(task),
+                  ),
                 if (!_live)
                   // Street range: the state is a marquee band at the top,
                   // where the street cannot hide it, with its glyph.
@@ -181,18 +184,22 @@ class FacadeWidget extends StatelessWidget {
                                 ),
                               ),
                             ),
-                            if (_live && metaBits.isNotEmpty && !tight) ...[
+                            if (_live &&
+                                attention.reason.isNotEmpty &&
+                                !tight) ...[
                               SizedBox(height: gap),
+                              // The wall you fly to says what the billboard
+                              // said, as loudly: the reason leads, in the
+                              // state colour.
                               Text(
-                                metaBits.join('  ·  '),
+                                attention.reason,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
-                                  fontFamily: PlazaStyle.fontText,
-                                  fontSize: m(metaM),
-                                  color: quiet
-                                      ? PlazaStyle.textDim
-                                      : PlazaStyle.textMed,
+                                  fontFamily: PlazaStyle.fontMono,
+                                  fontSize: m(itemM),
+                                  fontWeight: FontWeight.w500,
+                                  color: PlazaStyle.lantern(attention.lantern),
                                 ),
                               ),
                             ],
@@ -257,21 +264,6 @@ class FacadeWidget extends StatelessWidget {
                               ),
                             ],
                             const Spacer(),
-                            if (_live && attention.reason.isNotEmpty) ...[
-                              // The wall you fly to says at least what the
-                              // billboard that sent you said.
-                              Text(
-                                attention.reason,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontFamily: PlazaStyle.fontMono,
-                                  fontSize: m(metaM),
-                                  color: PlazaStyle.textDim,
-                                ),
-                              ),
-                              SizedBox(height: gap),
-                            ],
                             if (_live)
                               Flexible(
                                 child: LayoutBuilder(
@@ -323,6 +315,24 @@ class FacadeWidget extends StatelessWidget {
                                                 fontFamily: PlazaStyle.fontMono,
                                                 fontSize: m(metaM),
                                                 color: PlazaStyle.textDim,
+                                              ),
+                                            ),
+                                          ],
+                                          if (metaBits.isNotEmpty) ...[
+                                            SizedBox(width: m(0.4)),
+                                            Flexible(
+                                              child: Text(
+                                                metaBits.join('  ·  '),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: TextStyle(
+                                                  fontFamily:
+                                                      PlazaStyle.fontMono,
+                                                  fontSize: m(metaM),
+                                                  color: quiet
+                                                      ? PlazaStyle.textDim
+                                                      : PlazaStyle.textMed,
+                                                ),
                                               ),
                                             ),
                                           ],
