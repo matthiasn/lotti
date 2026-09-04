@@ -40,9 +40,16 @@ void main() {
     expect(world.gantry, isNotNull);
     expect(world.tickers.length, 3 + world.heroes.length);
     expect(world.heroes.length, lessThanOrEqualTo(2));
+    // Heroes are the tallest buildings that carry no roof billboard, so a
+    // roofline ticker never covers a billboard.
+    final roofed = {
+      for (final s in world.roofBillboards) world.anomalies[s.rank].task.id,
+    };
     for (final hero in world.heroes) {
-      expect(hero.task.coverImageUrl, isNotNull);
+      expect(roofed, isNot(contains(hero.task.id)));
     }
+    expect(world.countsText, startsWith('Synthetic   ·   '));
+    expect(world.countsText, isNot(contains('—')));
   });
 
   test('labels and counts for the HUD', () {

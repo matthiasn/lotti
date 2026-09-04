@@ -14,7 +14,7 @@ class JumbotronWidget extends StatefulWidget {
     required this.covers,
     required this.widthMeters,
     required this.pxPerMeter,
-    this.coverSeconds = 6,
+    this.coverSeconds = 5,
     super.key,
   });
 
@@ -87,78 +87,112 @@ class _JumbotronWidgetState extends State<JumbotronWidget>
                   ),
                 ),
               ),
+              // One message at a time, headline scale: the project card,
+              // then each headline in turn.
               Padding(
                 padding: EdgeInsets.all(pad),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Spacer(),
-                    Text(
-                      widget.projectLabel,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontFamily: PlazaStyle.fontText,
-                        fontWeight: FontWeight.w700,
-                        fontSize: titlePx,
-                        height: 1,
-                        letterSpacing: -titlePx * 0.03,
-                        color: PlazaStyle.text,
-                        shadows: [
-                          Shadow(
-                            color: PlazaStyle.teal.withValues(alpha: 0.7),
-                            blurRadius: titlePx * 0.5,
+                child: Builder(
+                  builder: (context) {
+                    final slides = widget.headlines.take(3).length + 1;
+                    final slide = cycle % slides;
+                    if (slide == 0) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Text(
+                            widget.projectLabel,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontFamily: PlazaStyle.fontText,
+                              fontWeight: FontWeight.w700,
+                              fontSize: titlePx,
+                              height: 1,
+                              letterSpacing: -titlePx * 0.03,
+                              color: PlazaStyle.text,
+                              shadows: [
+                                Shadow(
+                                  color: PlazaStyle.teal.withValues(alpha: 0.7),
+                                  blurRadius: titlePx * 0.5,
+                                ),
+                              ],
+                            ),
+                          ),
+                          SizedBox(height: m(0.35)),
+                          Text(
+                            '${widget.taskCount} tasks · '
+                            '${widget.attentionCount} need attention',
+                            style: TextStyle(
+                              fontFamily: PlazaStyle.fontMono,
+                              fontSize: bodyPx * 2,
+                              color: PlazaStyle.teal,
+                            ),
                           ),
                         ],
-                      ),
-                    ),
-                    SizedBox(height: m(0.25)),
-                    Text(
-                      '${widget.taskCount} tasks · '
-                      '${widget.attentionCount} need attention',
-                      style: TextStyle(
-                        fontFamily: PlazaStyle.fontMono,
-                        fontSize: bodyPx * 1.3,
-                        color: PlazaStyle.teal,
-                      ),
-                    ),
-                    SizedBox(height: m(0.35)),
-                    for (final a in widget.headlines.take(3))
-                      Padding(
-                        padding: EdgeInsets.only(top: m(0.12)),
-                        child: Row(
+                      );
+                    }
+                    final a = widget.headlines[slide - 1];
+                    final frame = PlazaStyle.lantern(a.lantern);
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Row(
                           children: [
                             Container(
-                              width: bodyPx * 0.6,
-                              height: bodyPx * 0.6,
+                              width: bodyPx * 1.4,
+                              height: bodyPx * 1.4,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: PlazaStyle.lantern(a.lantern),
+                                color: frame,
                                 boxShadow: [
-                                  BoxShadow(
-                                    color: PlazaStyle.lantern(a.lantern),
-                                    blurRadius: bodyPx * 0.6,
-                                  ),
+                                  BoxShadow(color: frame, blurRadius: bodyPx),
                                 ],
                               ),
                             ),
-                            SizedBox(width: bodyPx * 0.6),
-                            Expanded(
-                              child: Text(
-                                '${a.task.title} — ${a.reason}',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontFamily: PlazaStyle.fontText,
-                                  fontSize: bodyPx,
-                                  color: const Color(0xE6FFFFFF),
-                                ),
+                            SizedBox(width: bodyPx),
+                            Text(
+                              '${PlazaStyle.glyph(a)}  ${PlazaStyle.chip(a).label}',
+                              style: TextStyle(
+                                fontFamily: PlazaStyle.fontMono,
+                                fontSize: bodyPx * 1.8,
+                                fontWeight: FontWeight.w500,
+                                color: frame,
                               ),
                             ),
                           ],
                         ),
-                      ),
-                  ],
+                        SizedBox(height: m(0.3)),
+                        Text(
+                          a.task.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontFamily: PlazaStyle.fontText,
+                            fontWeight: FontWeight.w700,
+                            fontSize: titlePx * 0.72,
+                            height: 1.05,
+                            letterSpacing: -titlePx * 0.02,
+                            color: PlazaStyle.text,
+                          ),
+                        ),
+                        if (a.reason.isNotEmpty) ...[
+                          SizedBox(height: m(0.3)),
+                          Text(
+                            a.reason,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontFamily: PlazaStyle.fontMono,
+                              fontSize: bodyPx * 1.7,
+                              color: const Color(0xF2FFFFFF),
+                            ),
+                          ),
+                        ],
+                      ],
+                    );
+                  },
                 ),
               ),
             ],

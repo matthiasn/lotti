@@ -41,17 +41,25 @@ void main() {
     ),
   );
 
-  testWidgets('project name, counts and the top three headlines', (
+  testWidgets('one message at a time: the project card, then each headline', (
     tester,
   ) async {
     await tester.pumpWidget(host());
     expect(find.text('Project Waddle'), findsOneWidget);
     expect(find.text('28 tasks · 7 need attention'), findsOneWidget);
-    for (var i = 0; i < 3; i++) {
-      expect(find.textContaining('Headline $i'), findsOneWidget);
-    }
-    expect(find.textContaining('Headline 3'), findsNothing);
+    expect(find.textContaining('Headline'), findsNothing);
     expect(find.byType(Image), findsNothing);
+    for (var i = 0; i < 3; i++) {
+      await tester.pump(const Duration(seconds: 5));
+      expect(find.text('Headline $i'), findsOneWidget);
+      expect(find.text('Project Waddle'), findsNothing);
+      expect(find.textContaining('BLOCKED'), findsOneWidget);
+      expect(find.text('blocked — needs a decision'), findsOneWidget);
+    }
+    // Only the top three, then back to the card.
+    await tester.pump(const Duration(seconds: 5));
+    expect(find.text('Project Waddle'), findsOneWidget);
+    expect(find.textContaining('Headline 3'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
@@ -61,9 +69,9 @@ void main() {
     );
     Image image() => tester.widget<Image>(find.byType(Image));
     expect((image().image as NetworkImage).url, endsWith('a.webp'));
-    await tester.pump(const Duration(seconds: 6));
+    await tester.pump(const Duration(seconds: 5));
     expect((image().image as NetworkImage).url, endsWith('b.webp'));
-    await tester.pump(const Duration(seconds: 6));
+    await tester.pump(const Duration(seconds: 5));
     expect((image().image as NetworkImage).url, endsWith('a.webp'));
   });
 }

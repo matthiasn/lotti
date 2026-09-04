@@ -20,7 +20,7 @@ class WallTextures {
   static const bays = 6;
   static const tileWidth = 12.0;
   static const tileHeight = 12.0;
-  static const _px = 32;
+  static const _px = 128;
 
   /// Lit-window ratio per state: busy buildings glow, finished ones sleep.
   static double litRatio(LanternState state) => switch (state) {
@@ -31,6 +31,8 @@ class WallTextures {
     LanternState.off => 0.07,
   };
 
+  static const _coolTint = ui.Color(0xFF8FB8FF);
+
   static const _tints = <LanternState, ui.Color>{
     LanternState.inProgress: ui.Color(0xFF9BD8FF),
     LanternState.blocked: ui.Color(0xFFFFB0A0),
@@ -39,16 +41,78 @@ class WallTextures {
     LanternState.off: ui.Color(0xFF6E7080),
   };
 
-  /// Paints and uploads the five tiles.
+  /// Paints and uploads the five tiles, the light-pool falloff and the
+  /// asphalt grain.
   static Future<WallTextures> load() async {
     final map = <LanternState, Texture2D>{};
     for (final state in LanternState.values) {
       map[state] = await Texture2D.fromImage(_paint(state));
     }
-    return WallTextures._(map);
+    final textures = WallTextures._(map)
+      ..pool = await Texture2D.fromImage(_paintPool())
+      ..grain = await Texture2D.fromImage(_paintGrain());
+    return textures;
   }
 
   Texture2D operator [](LanternState state) => _byState[state]!;
+
+  /// A radial falloff: hot core, long feathered skirt. White; the material
+  /// colour tints it.
+  late final Texture2D pool;
+
+  /// Asphalt grain: a near-black noise tile with faint lighter grit.
+  late final Texture2D grain;
+
+  static ui.Image _paintPool() {
+    const size = 256;
+    final recorder = ui.PictureRecorder();
+    ui.Canvas(recorder).drawCircle(
+      const ui.Offset(size / 2, size / 2),
+      size / 2,
+      ui.Paint()
+        ..shader = ui.Gradient.radial(
+          const ui.Offset(size / 2, size / 2),
+          size / 2,
+          const [
+            ui.Color(0xFFFFFFFF),
+            ui.Color(0xB3FFFFFF),
+            ui.Color(0x4DFFFFFF),
+            ui.Color(0x14FFFFFF),
+            ui.Color(0x00FFFFFF),
+          ],
+          const [0, 0.18, 0.45, 0.75, 1],
+        ),
+    );
+    return recorder.endRecording().toImageSync(size, size);
+  }
+
+  static ui.Image _paintGrain() {
+    const size = 128;
+    final recorder = ui.PictureRecorder();
+    final canvas = ui.Canvas(recorder)
+      ..drawRect(
+        ui.Rect.fromLTWH(0, 0, size.toDouble(), size.toDouble()),
+        ui.Paint()..color = const ui.Color(0x00000000),
+      );
+    final rng = math.Random(4242);
+    for (var i = 0; i < 2600; i++) {
+      final v = rng.nextDouble();
+      final light = v < 0.35;
+      canvas.drawRect(
+        ui.Rect.fromLTWH(
+          rng.nextDouble() * size,
+          rng.nextDouble() * size,
+          1 + rng.nextDouble() * 1.5,
+          1,
+        ),
+        ui.Paint()
+          ..color = light
+              ? ui.Color.fromARGB((40 + rng.nextInt(60)), 255, 240, 220)
+              : ui.Color.fromARGB((60 + rng.nextInt(90)), 0, 0, 0),
+      );
+    }
+    return recorder.endRecording().toImageSync(size, size);
+  }
 
   static ui.Image _paint(LanternState state) {
     const w = bays * _px;
@@ -64,35 +128,73 @@ class WallTextures {
     final lit = litRatio(state);
     for (var floor = 0; floor < floors; floor++) {
       for (var bay = 0; bay < bays; bay++) {
-        final x = bay * _px + _px * 0.22;
-        final y = floor * _px + _px * 0.28;
-        final rect = ui.Rect.fromLTWH(x, y, _px * 0.56, _px * 0.5);
+        final x = bay * _px + _px * 0.2;
+        final y = floor * _px + _px * 0.24;
+        final rect = ui.Rect.fromLTWH(x, y, _px * 0.6, _px * 0.56);
         final on = rng.nextDouble() < lit;
+        // Two tints per state: most windows warm, a few the cooler one,
+        // and a sill-to-lintel gradient so the pane has depth.
+        final cool = rng.nextDouble() < 0.3;
+        final base = cool ? _coolTint : tint;
         final glow = on
-            ? 0.55 + rng.nextDouble() * 0.45
-            : 0.06 + rng.nextDouble() * 0.06;
-        canvas.drawRect(
-          rect,
-          ui.Paint()..color = tint.withValues(alpha: glow),
-        );
-        if (on && rng.nextDouble() < 0.5) {
-          // A curtain or a shape inside: breaks the grid's regularity.
+            ? 0.5 + rng.nextDouble() * 0.5
+            : 0.05 + rng.nextDouble() * 0.05;
+        // Reveal: a dark frame around the pane; then the pane with a
+        // sill-to-lintel gradient; then mullion and transom.
+        final mullion = ui.Paint()..color = const ui.Color(0xFF07060D);
+        canvas
+          ..drawRect(
+            rect.inflate(_px * 0.03),
+            ui.Paint()..color = const ui.Color(0xFF050409),
+          )
+          ..drawRect(
+            rect,
+            ui.Paint()
+              ..shader = ui.Gradient.linear(
+                rect.topCenter,
+                rect.bottomCenter,
+                [
+                  base.withValues(alpha: glow),
+                  base.withValues(alpha: glow * 0.55),
+                ],
+              ),
+          )
+          ..drawRect(
+            ui.Rect.fromLTWH(rect.center.dx - 1.5, rect.top, 3, rect.height),
+            mullion,
+          )
+          ..drawRect(
+            ui.Rect.fromLTWH(
+              rect.left,
+              rect.top + rect.height * 0.32,
+              rect.width,
+              2.5,
+            ),
+            mullion,
+          );
+        if (on && rng.nextDouble() < 0.4) {
+          // A blind pulled part-way: breaks the grid's regularity.
           canvas.drawRect(
             ui.Rect.fromLTWH(
-              x,
-              y + rect.height * 0.55,
+              rect.left,
+              rect.top,
               rect.width,
-              rect.height * 0.45,
+              rect.height * (0.25 + rng.nextDouble() * 0.35),
             ),
-            ui.Paint()..color = const ui.Color(0x8C0B0A14),
+            ui.Paint()..color = const ui.Color(0xB30B0A14),
           );
         }
       }
-      // Floor slab line.
-      canvas.drawRect(
-        ui.Rect.fromLTWH(0, floor * _px.toDouble(), w.toDouble(), 2),
-        ui.Paint()..color = const ui.Color(0xFF07060D),
-      );
+      // Floor slab: a lit edge over a dark band, the relief of a storey.
+      canvas
+        ..drawRect(
+          ui.Rect.fromLTWH(0, floor * _px.toDouble(), w.toDouble(), 6),
+          ui.Paint()..color = const ui.Color(0xFF07060D),
+        )
+        ..drawRect(
+          ui.Rect.fromLTWH(0, floor * _px.toDouble() + 6, w.toDouble(), 3),
+          ui.Paint()..color = const ui.Color(0xFF1C1A2A),
+        );
     }
     return recorder.endRecording().toImageSync(w, h);
   }

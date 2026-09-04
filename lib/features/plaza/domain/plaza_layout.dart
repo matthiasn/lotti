@@ -171,8 +171,12 @@ class Beacon {
   /// The task an attention beacon points at.
   final String? taskId;
 
-  /// Attention beacons stay visible from farther away.
-  double get visibleRange => kind == BeaconKind.attention ? 400 : 140;
+  /// Every beacon reads from the overview; block and corner stops from a
+  /// little less far, so the street thins them out first.
+  double get visibleRange => switch (kind) {
+    BeaconKind.attention || BeaconKind.home => 450,
+    _ => 320,
+  };
 }
 
 /// The frontier plaza: the square at the newest end of the street.
@@ -219,10 +223,10 @@ const _homeAlong = 60.0;
 /// so they all read from the home pose, and they sit inside a 60° field of
 /// view from there.
 const _pylonSlots = <(double, double, double, double, double)>[
-  (-14, 20, 14, 8, 4),
-  (14, 22, 13, 7.5, 5.5),
-  (-19, 38, 11, 6.5, 3.5),
-  (19, 40, 11, 6.5, 6),
+  (-14, 20, 16, 9, 4.5),
+  (14, 23, 13, 7.5, 5.5),
+  (-19, 38, 11, 6.2, 3.5),
+  (19, 41, 9.5, 5.4, 5.5),
 ];
 const _pylonFocusAlong = 52.0;
 
@@ -302,13 +306,17 @@ CameraPose overviewPoseFor(StreetPlan plan) {
   final cx = (minX + maxX) / 2;
   final cz = (minZ + maxZ) / 2;
   final extent = math.max(maxX - minX, maxZ - minZ).clamp(120.0, 2000.0);
-  final back = 0.62 * extent;
-  final height = 0.88 * extent;
+  // Aim a little short of the centre (toward the near rows) and stand off
+  // by the extent, so the nearest row and the jumbotron both fit with
+  // headroom at a 60° field of view.
+  final back = 0.72 * extent;
+  final height = 1.05 * extent;
   final h = last.headingRadians;
+  final aimBack = 0.08 * extent;
   return CameraPose(
-    x: cx - math.sin(h) * back,
+    x: cx - math.sin(h) * (back + aimBack),
     y: height,
-    z: cz - math.cos(h) * back,
+    z: cz - math.cos(h) * (back + aimBack),
     yaw: h,
     pitch: -math.atan2(height, back),
   );
@@ -528,14 +536,14 @@ List<(int, double, double, double)> weekSignsFor(
 TickerSlot? gantryTickerFor(StreetPlan plan, {required double roadWidth}) {
   final last = plan.last;
   if (last == null) return null;
-  const along = 2.5;
+  const along = 6.0;
   return TickerSlot(
     x: last.endX + math.sin(last.headingRadians) * along,
     z: last.endZ + math.cos(last.headingRadians) * along,
     facingRadians: last.headingRadians,
     width: roadWidth + 4,
     height: 1.8,
-    bottom: 6.5,
+    bottom: 10.5,
     speedMetersPerSecond: 4.5,
   );
 }
@@ -585,13 +593,15 @@ TickerSlot rooflineTickerFor(PlotPlacement hero, {required bool fast}) =>
 /// The pose that looks straight at a building's facade from the road:
 /// far enough back to frame a wide or tall wall, tilted to keep the
 /// facade centre in view from eye height.
+/// Roof signage above a building that the task pose must frame.
+const roofSignageHeight = 6.5;
+
 CameraPose taskPoseFor(PlotPlacement p) {
-  // Far enough back that the wall, its roof signage and the street on
-  // either side all fit at a 60° field of view.
-  final d = math.max(
-    14,
-    math.max(p.width * 1.15, (p.height + 5 - eyeHeight) * 1.05),
-  );
+  // Frame the whole framed extent — wall plus roof signage plus a margin —
+  // at a 60° vertical field of view (half-angle 30°, so distance ≥ 0.87 ×
+  // the extent), and never closer than a wide wall needs.
+  final extent = p.height + roofSignageHeight + 3;
+  final d = math.max(16, math.max(p.width * 1.2, extent * 0.9));
   final facing = p.facingRadians;
   final facadeX = p.x + math.sin(facing) * (p.depth / 2);
   final facadeZ = p.z + math.cos(facing) * (p.depth / 2);
@@ -600,7 +610,7 @@ CameraPose taskPoseFor(PlotPlacement p) {
     y: eyeHeight,
     z: facadeZ + math.cos(facing) * d,
     yaw: facing + math.pi,
-    pitch: math.atan2(p.height * 0.55 - eyeHeight, d),
+    pitch: math.atan2((p.height + roofSignageHeight) / 2 - eyeHeight, d),
   );
 }
 
@@ -608,8 +618,9 @@ CameraPose taskPoseFor(PlotPlacement p) {
 const _markerHeight = 1.6;
 
 /// Where a block's beacon stands: this far *before* the block starts, so
-/// its first buildings are ahead, not beside the camera.
-const blockBeaconInset = -7.0;
+/// its first pair of facades fits the frame with margin at a 60° field of
+/// view (a 32 m tall landmark at 14 m needs the distance).
+const blockBeaconInset = -14.0;
 
 /// The navigation beacons: Home, one per built week (newest first), one per
 /// fold corner; then one attention beacon per anomaly.
@@ -671,6 +682,7 @@ List<Beacon> beaconsFor(
           y: eyeHeight,
           z: z,
           yaw: segment.headingRadians,
+          pitch: 0.05,
         ),
         markerX: x,
         markerY: _markerHeight,

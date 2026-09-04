@@ -429,6 +429,7 @@ class _PlazaHarnessState extends State<_PlazaHarness> {
     final eye = camera.position;
     _lod.update(eye);
     _surfaces.update(eye);
+    _sceneController.updateForCamera(eye);
     _sprites.update(camera, _viewSize, _elapsed);
 
     if (_toast != null && _elapsed > _toastUntil) {

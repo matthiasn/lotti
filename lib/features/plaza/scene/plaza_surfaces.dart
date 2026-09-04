@@ -179,9 +179,10 @@ class PlazaSurfaces {
           Vector3(slot.x, slot.bottom + slot.height / 2, slot.z),
         )..rotateY(slot.facingRadians),
       );
+      final isGantry = identical(slot, world.gantry);
       final component = WidgetComponent(
         child: TickerWidget(
-          text: world.tickerText,
+          text: isGantry ? world.countsText : world.tickerText,
           heightMeters: slot.height,
           pxPerMeter: pxPerMeter,
           speedMetersPerSecond: slot.speedMetersPerSecond,

@@ -31,6 +31,20 @@ abstract final class PlazaStyle {
   static const fontText = 'Inter';
   static const fontMono = 'Inconsolata';
 
+  /// A per-state glyph so state reads without hue: a cross for blocked, a
+  /// bang for overdue, a play mark for in progress, a ring for open, a
+  /// tick for done.
+  static String glyph(TaskAttention a) {
+    if (a.task.state == PlazaTaskState.blocked) return '✕';
+    if (a.overdue) return '!';
+    return switch (a.task.state) {
+      PlazaTaskState.inProgress => '▶',
+      PlazaTaskState.done => '✓',
+      PlazaTaskState.cancelled => '—',
+      PlazaTaskState.open || PlazaTaskState.blocked => '○',
+    };
+  }
+
   /// Chip fill and ink per state. Overdue overrides the state (an overdue
   /// open task reads OVERDUE), matching the design prototype.
   static ({Color fill, Color ink, String label}) chip(TaskAttention a) {

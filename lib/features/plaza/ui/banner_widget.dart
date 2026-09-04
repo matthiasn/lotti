@@ -42,20 +42,23 @@ class BannerWidget extends StatelessWidget {
         ),
         alignment: Alignment.topCenter,
         padding: EdgeInsets.symmetric(vertical: fontPx * 0.8),
-        child: RotatedBox(
-          quarterTurns: 1,
-          child: Text(
-            label.toUpperCase(),
-            maxLines: 1,
-            softWrap: false,
-            overflow: TextOverflow.fade,
-            style: TextStyle(
-              fontFamily: PlazaStyle.fontMono,
-              fontSize: fontPx,
-              fontWeight: FontWeight.w500,
-              letterSpacing: fontPx * 0.35,
-              color: color,
-              shadows: [Shadow(color: color, blurRadius: fontPx * 0.6)],
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.topCenter,
+          child: RotatedBox(
+            quarterTurns: 1,
+            child: Text(
+              label.toUpperCase(),
+              maxLines: 1,
+              softWrap: false,
+              style: TextStyle(
+                fontFamily: PlazaStyle.fontMono,
+                fontSize: fontPx,
+                fontWeight: FontWeight.w500,
+                letterSpacing: fontPx * 0.35,
+                color: color,
+                shadows: [Shadow(color: color, blurRadius: fontPx * 0.6)],
+              ),
             ),
           ),
         ),

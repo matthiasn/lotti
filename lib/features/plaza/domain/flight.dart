@@ -34,11 +34,11 @@ class Flight {
       from: from,
       to: to,
       duration: Duration(microseconds: (seconds * 1e6).round()),
-      arc: dist > arcThreshold ? math.min(55, dist * 0.2) * horizontal : 0,
+      arc: dist > arcThreshold ? math.min(45, dist * 0.22) * horizontal : 0,
     );
   }
 
-  static const arcThreshold = 120.0;
+  static const arcThreshold = 60.0;
 
   /// Flights shorter than this on the ground keep a direct yaw blend; the
   /// heading would swing too fast to be worth turning into.
@@ -97,24 +97,30 @@ class Flight {
   /// slides sideways or backwards through the street. Short hops blend yaw
   /// directly.
   CameraPose poseAt(double t) {
-    final s = t < 0.5 ? 2 * t * t : 1 - math.pow(-2 * t + 2, 2) / 2;
+    // Smootherstep: continuous acceleration, no kick at the midpoint.
+    final s = t * t * t * (t * (t * 6 - 15) + 10);
     final along = travelYaw;
     final double yaw;
     if (along == null) {
       yaw = _turn(from.yaw, to.yaw, s);
-    } else if (t < 0.2) {
-      yaw = _turn(from.yaw, along, _smooth(t / 0.2));
-    } else if (t < 0.8) {
+    } else if (t < 0.35) {
+      // Turn while the body is already moving, not before.
+      yaw = _turn(from.yaw, along, _smooth(t / 0.35));
+    } else if (t < 0.75) {
       yaw = along;
     } else {
-      yaw = _turn(along, to.yaw, _smooth((t - 0.8) / 0.2));
+      yaw = _turn(along, to.yaw, _smooth((t - 0.75) / 0.25));
     }
+    // Over an arc the camera looks down at the district it is crossing,
+    // then levels out to the destination's pitch.
+    final lift = arc * math.sin(math.pi * s);
+    final pitchDip = arc == 0 ? 0.0 : -math.atan2(lift, 40) * 0.9;
     return CameraPose(
       x: from.x + (to.x - from.x) * s,
-      y: from.y + (to.y - from.y) * s + arc * math.sin(math.pi * s),
+      y: from.y + (to.y - from.y) * s + lift,
       z: from.z + (to.z - from.z) * s,
       yaw: yaw,
-      pitch: from.pitch + (to.pitch - from.pitch) * s,
+      pitch: from.pitch + (to.pitch - from.pitch) * s + pitchDip,
     );
   }
 

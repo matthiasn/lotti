@@ -33,14 +33,17 @@ void main() {
   test('short flights stay level; long ones arc up and land level', () {
     final short = Flight.plan(
       a,
-      const CameraPose(x: 0, y: 2.2, z: 100, yaw: 0),
+      const CameraPose(x: 0, y: 2.2, z: 50, yaw: 0),
     );
     expect(short.arc, 0);
     expect(short.poseAt(0.5).y, 2.2);
 
     final long = Flight.plan(a, const CameraPose(x: 0, y: 2.2, z: 200, yaw: 0));
-    expect(long.arc, closeTo(40, 1e-9));
-    expect(long.poseAt(0.5).y, closeTo(2.2 + 40, 1e-9));
+    expect(long.arc, closeTo(44, 1e-9));
+    expect(long.poseAt(0.5).y, closeTo(2.2 + 44, 1e-9));
+    // Over the arc the camera looks down at what it crosses, then levels.
+    expect(long.poseAt(0.5).pitch, lessThan(-0.5));
+    expect(long.poseAt(1).pitch, closeTo(0, 1e-9));
     expect(long.poseAt(0).y, 2.2);
     expect(long.poseAt(1).y, closeTo(2.2, 1e-9));
 
@@ -48,7 +51,7 @@ void main() {
       a,
       const CameraPose(x: 0, y: 2.2, z: 2000, yaw: 0),
     );
-    expect(veryLong.arc, 55);
+    expect(veryLong.arc, 45);
   });
 
   test('eases in and out, ending exactly on the target', () {
@@ -94,7 +97,7 @@ void main() {
       final f = Flight.plan(from, to);
       expect(f.travelYaw, closeTo(math.pi / 2, 1e-9));
       expect(f.poseAt(0).yaw, 0);
-      expect(f.poseAt(0.1).yaw, inExclusiveRange(0, math.pi / 2));
+      expect(f.poseAt(0.15).yaw, inExclusiveRange(0, math.pi / 2));
       expect(f.poseAt(0.5).yaw, closeTo(math.pi / 2, 1e-9));
       expect(f.poseAt(0.9).yaw, inExclusiveRange(0, math.pi / 2));
       expect(f.poseAt(1).yaw, closeTo(0, 1e-9));
@@ -143,7 +146,7 @@ void main() {
         const to = CameraPose(x: 0, y: 60, z: 200, yaw: 0);
         final f = Flight.plan(from, to);
         final dist = from.distanceTo(to);
-        expect(f.arc, closeTo(math.min(55, dist * 0.2) * (200 / dist), 1e-9));
+        expect(f.arc, closeTo(math.min(45, dist * 0.22) * (200 / dist), 1e-9));
         expect(f.travelYaw, isNotNull);
       },
     );

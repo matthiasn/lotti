@@ -78,7 +78,7 @@ void main() {
       ),
     );
     expect(find.text('Negotiate sardine futures'), findsOneWidget);
-    expect(find.text('IN PROGRESS'), findsOneWidget);
+    expect(find.textContaining('IN PROGRESS'), findsOneWidget);
     expect(find.text('due Jul 17  ·  links 2'), findsOneWidget);
     expect(find.text('2/4'), findsOneWidget);
     expect(find.text('Check bay two'), findsOneWidget);
@@ -102,7 +102,7 @@ void main() {
       ),
     );
     expect(find.text('Negotiate sardine futures'), findsOneWidget);
-    expect(find.text('IN PROGRESS'), findsOneWidget);
+    expect(find.textContaining('IN PROGRESS'), findsOneWidget);
     expect(find.textContaining('due Jul 17'), findsNothing);
     expect(find.text('Check bay two'), findsNothing);
     expect(find.text('DETAILS ›'), findsNothing);
@@ -117,8 +117,8 @@ void main() {
 
   testWidgets('overdue overrides the chip', (tester) async {
     await tester.pumpWidget(_host(_task(due: DateTime.utc(2026, 7))));
-    expect(find.text('OVERDUE'), findsOneWidget);
-    expect(find.text('OPEN'), findsNothing);
+    expect(find.textContaining('OVERDUE'), findsOneWidget);
+    expect(find.textContaining('OPEN'), findsNothing);
   });
 
   testWidgets('the sign variant carries the state as a full-width band', (
@@ -127,10 +127,11 @@ void main() {
     await tester.pumpWidget(
       _host(_task(state: PlazaTaskState.blocked), variant: FacadeVariant.sign),
     );
-    final band = tester.widget<Text>(find.text('BLOCKED'));
+    final band = tester.widget<Text>(find.textContaining('BLOCKED'));
     expect(band.textAlign, TextAlign.center);
+    expect(band.data, startsWith('✕'));
     await tester.pumpWidget(_host(_task(state: PlazaTaskState.blocked)));
-    final chip = tester.widget<Text>(find.text('BLOCKED'));
+    final chip = tester.widget<Text>(find.textContaining('BLOCKED'));
     expect(band.style!.fontSize, greaterThan(chip.style!.fontSize!));
   });
 
@@ -229,7 +230,7 @@ void main() {
     await tester.pumpWidget(
       _host(_task(state: PlazaTaskState.blocked), onOpen: () {}),
     );
-    expect(find.text('BLOCKED'), findsOneWidget);
+    expect(find.textContaining('BLOCKED'), findsOneWidget);
     final open = tester.widget<Container>(
       find
           .ancestor(

@@ -160,8 +160,8 @@ class _BillboardFace extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontFamily: PlazaStyle.fontMono,
-                  fontSize: m(0.035 * w),
-                  color: frame.withValues(alpha: glow),
+                  fontSize: m(0.04 * w),
+                  color: const Color(0xF2FFFFFF),
                 ),
               ),
             ],
@@ -190,7 +190,7 @@ class _BillboardFace extends StatelessWidget {
                     borderRadius: BorderRadius.circular(chipPx * 0.35),
                   ),
                   child: Text(
-                    chip.label,
+                    '${PlazaStyle.glyph(attention)}  ${chip.label}',
                     style: TextStyle(
                       fontFamily: PlazaStyle.fontText,
                       fontSize: chipPx,

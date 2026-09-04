@@ -147,7 +147,7 @@ class StreetLayout {
     required this.projectSeed,
     this.roadWidth = 18,
     this.pxPerMeter = 90,
-    this.maxBuildingHeight = 24,
+    this.maxBuildingHeight = 32,
     this.groupLength = 40,
     this.gapLength = 4,
     this.plotDepth = 10,
@@ -203,12 +203,17 @@ class StreetLayout {
   /// Cap on building height, world meters.
   final double maxBuildingHeight;
 
+  /// Every week's heaviest task rises this much higher: one landmark per
+  /// block, so the skyline has a silhouette at every range.
+  static const landmarkFactor = 1.45;
+
   /// Weight-driven building height, world meters.
   ///
   /// `floor + priorityWeight × 4.2 × ln(1 + heft)`, capped at
   /// [maxBuildingHeight]: a heavy urgent task is a tower, a lone low-priority
   /// task is a bungalow, and a wordy title changes nothing. Still a pure
   /// function of merged task data, so it is identical on every device.
+  /// (The week's landmark is promoted by [landmarkFactor] in [plan].)
   double heightFor(PlazaTask task) {
     final weight = switch (task.priority) {
       <= 0 => 1.6,
@@ -356,6 +361,17 @@ class StreetLayout {
     final cosH = math.cos(heading);
     final usable = groupLength - 2 * sideMargin;
 
+    // The week's landmark: its heaviest task (ties by id) stands taller.
+    PlazaTask? landmark;
+    for (final t in weekTasks) {
+      if (landmark == null ||
+          heightFor(t) > heightFor(landmark) ||
+          (heightFor(t) == heightFor(landmark) &&
+              t.id.compareTo(landmark.id) < 0)) {
+        landmark = t;
+      }
+    }
+
     for (final side in PlotSide.values) {
       final sideTasks = <PlazaTask>[
         for (var i = 0; i < weekTasks.length; i++)
@@ -392,7 +408,12 @@ class StreetLayout {
               heading + (side == PlotSide.left ? math.pi / 2 : -math.pi / 2),
           width: buildingWidth,
           depth: plotDepth * 0.8,
-          height: heightFor(task),
+          height: task == landmark
+              ? math.min(
+                  maxBuildingHeight * 1.3,
+                  heightFor(task) * landmarkFactor,
+                )
+              : heightFor(task),
         );
         cursor += slot;
       }

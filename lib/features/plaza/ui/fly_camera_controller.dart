@@ -19,8 +19,8 @@ class FlyCameraController {
       _collider = collider;
   // ignore_for_file: prefer_initializing_formals
 
-  static const walkSpeed = 5.0;
-  static const _sprintFactor = 3.0;
+  static const walkSpeed = 3.4;
+  static const _sprintFactor = 2.5;
 
   /// Vertical field of view: a game camera, not a phone lens.
   static const double fovRadiansY = 60 * math.pi / 180;
@@ -95,12 +95,32 @@ class FlyCameraController {
     return true;
   }
 
+  /// Above this height a movement key lands the camera first.
+  static const double _landingAbove = eyeHeight + 1.5;
+
   void _movementInput() {
     if (_flight != null) {
+      final flight = _flight!;
       _flight = null;
       onFlightCancelled?.call();
+      // Cancelled mid-arc: come down before walking.
+      if (flight.arc > 0 && _pose.y > _landingAbove) {
+        _land();
+        onMovement?.call();
+        return;
+      }
+    } else if (_pose.y > _landingAbove) {
+      // From the overview: a short landing flight, not a one-frame drop.
+      _land();
     }
     onMovement?.call();
+  }
+
+  void _land() {
+    _flight = Flight.plan(
+      _pose,
+      CameraPose(x: _pose.x, y: eyeHeight, z: _pose.z, yaw: _pose.yaw),
+    );
   }
 
   /// Mouse-drag look, in logical pixels. Cancels a flight in place.

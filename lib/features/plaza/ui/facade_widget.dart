@@ -89,8 +89,11 @@ class FacadeWidget extends StatelessWidget {
       if (task.linkedTaskIds.isNotEmpty) 'links ${task.linkedTaskIds.length}',
     ];
 
+    // A finished shop is dark: everything on it steps down.
+    final quiet = attention.lantern == LanternState.off;
+    final ink = quiet ? PlazaStyle.textDim : PlazaStyle.text;
     return Material(
-      color: PlazaStyle.panel,
+      color: quiet ? const Color(0xFF07060B) : PlazaStyle.panel,
       child: Container(
         foregroundDecoration: focused
             ? BoxDecoration(
@@ -105,8 +108,32 @@ class FacadeWidget extends StatelessWidget {
               children: [
                 Container(
                   height: m(0.4),
-                  color: PlazaStyle.categoryBright(task),
+                  color: quiet
+                      ? Color.lerp(
+                          PlazaStyle.categoryBright(task),
+                          const Color(0xFF07060B),
+                          0.6,
+                        )
+                      : PlazaStyle.categoryBright(task),
                 ),
+                if (!_live)
+                  // Street range: the state is a marquee band at the top,
+                  // where the street cannot hide it, with its glyph.
+                  Container(
+                    padding: EdgeInsets.symmetric(vertical: m(chipM) * 0.4),
+                    color: chip.fill,
+                    child: Text(
+                      '${PlazaStyle.glyph(attention)}  ${chip.label}',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontFamily: PlazaStyle.fontText,
+                        fontSize: m(chipM * 1.5),
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: m(chipM) * 0.12,
+                        color: chip.ink,
+                      ),
+                    ),
+                  ),
                 Expanded(
                   child: Padding(
                     padding: EdgeInsets.all(pad),
@@ -115,7 +142,7 @@ class FacadeWidget extends StatelessWidget {
                       children: [
                         Text(
                           task.title,
-                          maxLines: _live && items.isNotEmpty ? 2 : 3,
+                          maxLines: 3,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontFamily: PlazaStyle.fontText,
@@ -123,7 +150,7 @@ class FacadeWidget extends StatelessWidget {
                             fontSize: m(titleM),
                             height: 1.14,
                             letterSpacing: -m(titleM) * 0.012,
-                            color: PlazaStyle.text,
+                            color: ink,
                           ),
                         ),
                         if (_live && metaBits.isNotEmpty) ...[
@@ -135,7 +162,9 @@ class FacadeWidget extends StatelessWidget {
                             style: TextStyle(
                               fontFamily: PlazaStyle.fontText,
                               fontSize: m(metaM),
-                              color: PlazaStyle.textMed,
+                              color: quiet
+                                  ? PlazaStyle.textDim
+                                  : PlazaStyle.textMed,
                             ),
                           ),
                         ],
@@ -185,31 +214,7 @@ class FacadeWidget extends StatelessWidget {
                           ),
                         ],
                         const Spacer(),
-                        if (!_live)
-                          // Street range: the state is a full-width marquee
-                          // band, not a sticker.
-                          Container(
-                            width: double.infinity,
-                            padding: EdgeInsets.symmetric(
-                              vertical: m(chipM) * 0.45,
-                            ),
-                            decoration: BoxDecoration(
-                              color: chip.fill,
-                              borderRadius: BorderRadius.circular(m(0.12)),
-                            ),
-                            child: Text(
-                              chip.label,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontFamily: PlazaStyle.fontText,
-                                fontSize: m(chipM * 1.6),
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: m(chipM) * 0.12,
-                                color: chip.ink,
-                              ),
-                            ),
-                          )
-                        else
+                        if (_live)
                           Row(
                             children: [
                               // Chips scale down together on a narrow
@@ -222,7 +227,9 @@ class FacadeWidget extends StatelessWidget {
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       _Chip(
-                                        label: chip.label,
+                                        label:
+                                            '${PlazaStyle.glyph(attention)} '
+                                            '${chip.label}',
                                         fill: chip.fill,
                                         ink: chip.ink,
                                         fontPx: m(chipM),

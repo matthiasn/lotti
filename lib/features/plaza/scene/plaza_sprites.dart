@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
+import 'dart:ui' show Color;
+
 import 'package:flutter_scene/scene.dart';
 import 'package:lotti/features/plaza/domain/attention.dart';
 import 'package:lotti/features/plaza/domain/plaza_layout.dart';
@@ -39,9 +41,9 @@ class PlazaSprites {
       _spireLights.add(sprite);
     }
     for (final entry in chaseLightPoints.entries) {
-      final color = linearColor(
-        PlazaStyle.lantern(entry.key.attention.lantern),
-      );
+      // Warm-white bulbs read against any bezel colour; the tail goes
+      // near-black so the chase is a chase.
+      final color = linearColor(const Color(0xFFFFF1C8));
       final run = <_ChaseLight>[];
       for (final point in entry.value) {
         final sprite = Sprite(color: color);
@@ -196,8 +198,8 @@ class PlazaSprites {
 
   /// Lamp halos fade out inside this distance so they never cover a
   /// facade the walker is reading.
-  static const lampHaloFadeStart = 6.0;
-  static const lampHaloFadeEnd = 16.0;
+  static const lampHaloFadeStart = 8.0;
+  static const lampHaloFadeEnd = 30.0;
 
   /// Per-frame update: sizes from distance, pulses from [elapsedSeconds].
   void update(Camera camera, ui.Size viewSize, double elapsedSeconds) {
@@ -239,13 +241,13 @@ class PlazaSprites {
       final haloAlpha =
           ((d - lampHaloFadeStart) / (lampHaloFadeEnd - lampHaloFadeStart))
               .clamp(0.0, 1.0) *
-          0.35;
+          0.22;
       l.bulb
-        ..width = 0.55
-        ..height = 0.55;
+        ..width = 0.5
+        ..height = 0.5;
       l.halo
-        ..width = 2.6
-        ..height = 2.6
+        ..width = 2
+        ..height = 2
         ..color = Vector4(
           l.halo.color.x,
           l.halo.color.y,
@@ -269,10 +271,10 @@ class PlazaSprites {
       final head = (elapsedSeconds / chase.periodSeconds * n) % n;
       for (final (i, light) in chase.lights.indexed) {
         final behind = (head - i + n) % n;
-        final alpha = behind < 3 ? 1 - behind * 0.28 : 0.18;
+        final alpha = behind < 3 ? 1 - behind * 0.3 : 0.06;
         light.sprite
-          ..width = 0.42
-          ..height = 0.42
+          ..width = 0.3
+          ..height = 0.3
           ..color = Vector4(light.color.x, light.color.y, light.color.z, alpha);
       }
     }

@@ -65,7 +65,7 @@ void main() {
           _down(LogicalKeyboardKey.shiftLeft, PhysicalKeyboardKey.shiftLeft),
         )
         ..update(1);
-      expect(sprinter.pose.z, closeTo(walker.pose.z * 3, 0.05));
+      expect(sprinter.pose.z, closeTo(walker.pose.z * 2.5, 0.05));
       await simulateKeyUpEvent(LogicalKeyboardKey.shiftLeft);
       await simulateKeyUpEvent(LogicalKeyboardKey.keyW);
     });
@@ -109,11 +109,11 @@ void main() {
       camera.handleKeyEvent(
         _down(LogicalKeyboardKey.keyW, PhysicalKeyboardKey.keyW),
       );
-      for (var i = 0; i < 10; i++) {
+      for (var i = 0; i < 30; i++) {
         camera.update(0.1);
       }
       await simulateKeyUpEvent(LogicalKeyboardKey.keyW);
-      // Five metres of walking would end inside the box; the collider
+      // Ten metres of walking would end inside the box; the collider
       // stops the walker at the facade plus the margin.
       expect(camera.pose.z, closeTo(8 - 3 - 0.6, 1e-6));
     });
@@ -134,18 +134,20 @@ void main() {
       expect(first, greaterThan(0));
       expect(first, lessThan(FlyCameraController.walkSpeed * 0.05 * 0.6));
       await simulateKeyUpEvent(LogicalKeyboardKey.keyW);
-      camera.handleKeyEvent(
-        _up(LogicalKeyboardKey.keyW, PhysicalKeyboardKey.keyW),
-      );
-      camera.update(0.05);
+      camera
+        ..handleKeyEvent(
+          _up(LogicalKeyboardKey.keyW, PhysicalKeyboardKey.keyW),
+        )
+        ..update(0.05);
       // Still moving right after the key-up, then settles.
       expect(camera.pose.z, greaterThan(first));
-      for (var i = 0; i < 40; i++) {
+      for (var i = 0; i < 41; i++) {
         camera.update(0.05);
       }
       final settled = camera.pose.z;
-      camera.update(0.05);
-      // ignore: cascade_invocations
+      for (var i = 0; i < 5; i++) {
+        camera.update(0.05);
+      }
       expect(camera.pose.z, settled);
     });
 
@@ -169,7 +171,7 @@ void main() {
       expect(camera.pitch, -1.25);
     });
 
-    testWidgets('a set pose keeps its height until the first step', (
+    testWidgets('a set pose keeps its height; the first step lands first', (
       tester,
     ) async {
       final camera = _controller()
@@ -187,7 +189,18 @@ void main() {
         )
         ..update(0.1);
       await simulateKeyUpEvent(LogicalKeyboardKey.keyW);
-      expect(camera.pose.y, eyeHeight); // Walking drops to the ground.
+      // Not a one-frame drop: a landing flight straight down, level.
+      expect(camera.flying, isTrue);
+      expect(camera.pose.y, lessThan(99));
+      expect(camera.pose.y, greaterThan(eyeHeight));
+      for (var i = 0; i < 40; i++) {
+        camera.update(0.1);
+      }
+      expect(camera.flying, isFalse);
+      expect(camera.pose.y, closeTo(eyeHeight, 1e-6));
+      expect(camera.pose.x, 10);
+      expect(camera.pose.z, -4);
+      expect(camera.pitch, 0);
     });
   });
 
@@ -219,8 +232,9 @@ void main() {
         ..onMovement = () {
           moved++;
         };
+      // A ground-level hop (no arc): cancelling stops the camera in place.
       final flight = camera.flyTo(
-        const CameraPose(x: 0, y: eyeHeight, z: 100, yaw: 0),
+        const CameraPose(x: 0, y: eyeHeight, z: 40, yaw: 0),
       );
       camera.update(flight.duration.inMicroseconds / 2e6);
       final midway = camera.pose.z;
@@ -232,6 +246,22 @@ void main() {
       expect(moved, 1);
       camera.update(1); // no hardware key → stands still
       expect(camera.pose.z, closeTo(midway, 1e-6));
+
+      // An arc flight cancelled aloft lands first instead of dropping.
+      final arc = camera.flyTo(
+        const CameraPose(x: 0, y: eyeHeight, z: 300, yaw: 0),
+      );
+      camera.update(arc.duration.inMicroseconds / 2e6);
+      expect(camera.pose.y, greaterThan(eyeHeight + 5));
+      camera.handleKeyEvent(
+        _down(LogicalKeyboardKey.keyW, PhysicalKeyboardKey.keyW),
+      );
+      expect(cancelled, 2);
+      expect(camera.flying, isTrue); // the landing
+      for (var i = 0; i < 40; i++) {
+        camera.update(0.1);
+      }
+      expect(camera.pose.y, closeTo(eyeHeight, 1e-6));
     });
 
     test('drag look cancels a flight too, and pose set clears it', () {

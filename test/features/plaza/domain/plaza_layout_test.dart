@@ -55,7 +55,7 @@ void main() {
         expect(o.y, again.y);
         expect(o.z, again.z);
         expect(o.y, greaterThan(100));
-        expect(o.pitch, closeTo(-math.atan2(0.88, 0.62), 1e-9)); // ~55° down
+        expect(o.pitch, closeTo(-math.atan2(1.05, 0.72), 1e-9)); // ~55° down
         expect(_norm(o.yaw), closeTo(_norm(last.headingRadians), 1e-9));
         // Behind the district relative to the plaza: farther from home than
         // any building is.
@@ -158,12 +158,15 @@ void main() {
       final d = math.sqrt(
         math.pow(pose.x - facadeX, 2) + math.pow(pose.z - facadeZ, 2),
       );
-      expect(d, greaterThanOrEqualTo(14));
+      expect(d, greaterThanOrEqualTo(16));
       expect(_norm(pose.yaw), closeTo(_norm(p.facingRadians + math.pi), 1e-9));
       expect(pose.y, eyeHeight);
       expect(
         pose.pitch,
-        closeTo(math.atan2(p.height * 0.55 - eyeHeight, d), 1e-9),
+        closeTo(
+          math.atan2((p.height + roofSignageHeight) / 2 - eyeHeight, d),
+          1e-9,
+        ),
       );
     });
 
@@ -179,11 +182,11 @@ void main() {
         depth: 6,
         height: height,
       );
-      expect(taskPoseFor(place(4, 4)).z, closeTo(3 + 14, 1e-9));
-      expect(taskPoseFor(place(15, 4)).z, closeTo(3 + 15 * 1.15, 1e-9));
+      expect(taskPoseFor(place(4, 4)).z, closeTo(3 + 16, 1e-9));
+      expect(taskPoseFor(place(15, 4)).z, closeTo(3 + 15 * 1.2, 1e-9));
       expect(
         taskPoseFor(place(4, 20)).z,
-        closeTo(3 + (20 + 5 - eyeHeight) * 1.05, 1e-9),
+        closeTo(3 + (20 + roofSignageHeight + 3) * 0.9, 1e-9),
       );
     });
   });
@@ -214,8 +217,8 @@ void main() {
           .where((b) => b.kind == BeaconKind.attention)
           .toList();
       expect(attention.map((b) => b.taskId), anomalyList.map((a) => a.task.id));
-      expect(attention.every((b) => b.visibleRange == 400), isTrue);
-      expect(blocks.every((b) => b.visibleRange == 140), isTrue);
+      expect(attention.every((b) => b.visibleRange == 450), isTrue);
+      expect(blocks.every((b) => b.visibleRange == 320), isTrue);
     });
 
     test('a block beacon stands at the block start looking down it', () {
@@ -399,8 +402,8 @@ void main() {
       final along =
           (g.x - last.endX) * math.sin(last.headingRadians) +
           (g.z - last.endZ) * math.cos(last.headingRadians);
-      expect(along, closeTo(2.5, 1e-9));
-      expect(g.bottom, greaterThan(6));
+      expect(along, closeTo(6, 1e-9));
+      expect(g.bottom, greaterThan(9));
       expect(gantryTickerFor(layout.plan([]), roadWidth: 18), isNull);
     });
 

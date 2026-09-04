@@ -53,7 +53,7 @@ void main() {
     await tester.pumpWidget(_host(_task(state: PlazaTaskState.blocked)));
     expect(find.text('Fuel the shuttle'), findsOneWidget);
     expect(find.text('blocked — needs a decision'), findsOneWidget);
-    expect(find.text('BLOCKED'), findsOneWidget);
+    expect(find.text('✕  BLOCKED'), findsOneWidget);
     expect(find.text('fly there ›'), findsOneWidget);
     final framed = tester
         .widgetList<Container>(find.byType(Container))

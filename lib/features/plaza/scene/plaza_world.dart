@@ -92,16 +92,23 @@ class PlazaWorld {
     for (final slot in roofBillboards) anomalies[slot.rank],
   ];
 
-  /// The two most urgent billboard tasks with cover art carry roofline
-  /// tickers.
-  List<TaskAttention> get heroes => billboards
-      .where(
-        (a) =>
-            a.task.coverImageUrl != null &&
-            plan.placements.containsKey(a.task.id),
-      )
-      .take(2)
-      .toList();
+  /// The two tallest buildings that carry no roof billboard take the
+  /// roofline tickers, so a ticker never covers a billboard.
+  List<TaskAttention> get heroes {
+    final roofed = {for (final s in roofBillboards) anomalies[s.rank].task.id};
+    final candidates =
+        plan.placements.values
+            .where(
+              (p) =>
+                  !roofed.contains(p.taskId) && attention.containsKey(p.taskId),
+            )
+            .toList()
+          ..sort((a, b) {
+            final byHeight = b.height.compareTo(a.height);
+            return byHeight != 0 ? byHeight : a.taskId.compareTo(b.taskId);
+          });
+    return [for (final p in candidates.take(2)) attention[p.taskId]!];
+  }
 
   /// The billboard slots in rank order: four pylons, then the mounted
   /// screens.
@@ -127,6 +134,22 @@ class PlazaWorld {
   int get builtWeeks => plan.segments.where((s) => !s.isGap).length;
 
   int get liveTaskCount => tasks.where((t) => !t.deleted).length;
+
+  /// The gantry's line: the project's numbers, no headlines (those are on
+  /// the pylons and the mounted screens already).
+  String get countsText {
+    final inProgress = tasks
+        .where((t) => t.state == PlazaTaskState.inProgress)
+        .length;
+    final done = tasks.where((t) => t.state == PlazaTaskState.done).length;
+    return [
+      projectLabel,
+      '${anomalies.length} need attention',
+      '$inProgress in progress',
+      '$done of $liveTaskCount done',
+      'W$builtWeeks',
+    ].join('   ·   ');
+  }
 
   /// The scrolling headline: project, attention count, the top three
   /// reasons, progress counts.
