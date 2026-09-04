@@ -60,6 +60,7 @@ what it does for a user; these describe how it runs.
 # Exploratory
 
 * [Knowledge-graph explorer](knowledge_graph.md) - a walkable ego-centric graph view.
+* [Project plaza](plaza.md) - the 3D walkable-project prototype: merge-stable street, facade LOD over live widgets, dev harness only.
 
 # Related
 

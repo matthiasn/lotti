@@ -1,6 +1,9 @@
+import 'dart:math' as math;
+
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
 import 'package:lotti/features/plaza/domain/street_layout.dart';
 
@@ -35,6 +38,9 @@ List<PlazaTask> _dataset({int count = 60, int seed = 7}) {
   ];
 }
 
+int _segmentIndexOf(StreetPlan plan, int bucketIndex) => plan.segments
+    .indexWhere((s) => s.bucketIndex == bucketIndex && !s.isConnector);
+
 Matcher _samePlacementAs(PlotPlacement expected) => predicate<PlotPlacement>(
   (actual) =>
       actual.taskId == expected.taskId &&
@@ -49,6 +55,43 @@ Matcher _samePlacementAs(PlotPlacement expected) => predicate<PlotPlacement>(
 );
 
 void main() {
+  group('stableUnit', () {
+    test('is deterministic, in 0..1, and salt-sensitive', () {
+      expect(stableUnit('a', 'w'), stableUnit('a', 'w'));
+      expect(stableUnit('a', 'w'), isNot(stableUnit('a', 'h')));
+      expect(stableUnit('a', 'w'), isNot(stableUnit('b', 'w')));
+      for (var i = 0; i < 200; i++) {
+        expect(stableUnit('id-$i', 's'), inInclusiveRange(0, 1));
+      }
+      // The exact value is part of the contract: a plot's massing and
+      // every seeded block would move if the hash changed.
+      expect(
+        stableUnit('a', 'w'),
+        (stableHash('a:w') & 0xFFFF) / 0xFFFF,
+      );
+    });
+  });
+
+  test('PlotPlacement.footprint is the plot rectangle', () {
+    const p = PlotPlacement(
+      taskId: 't',
+      bucketIndex: 2,
+      side: PlotSide.right,
+      x: 3,
+      z: -4,
+      facingRadians: 1.2,
+      width: 9,
+      depth: 8,
+      height: 20,
+    );
+    final f = p.footprint;
+    expect(f.x, 3);
+    expect(f.z, -4);
+    expect(f.facingRadians, 1.2);
+    expect(f.width, 9);
+    expect(f.depth, 8);
+  });
+
   final layout = StreetLayout(projectSeed: 1337);
 
   group('determinism', () {
@@ -154,7 +197,7 @@ void main() {
         }
       }
 
-      // The road itself is untouched: same segments, same bends.
+      // The road itself is untouched: same segments, same folds.
       expect(after.segments.length, before.segments.length);
       for (var i = 0; i < before.segments.length; i++) {
         expect(after.segments[i].startX, before.segments[i].startX);
@@ -248,24 +291,58 @@ void main() {
       expect(plan.placements, isEmpty);
     });
 
-    test('meta rows and cover art add height, checklist items stack more', () {
+    test('height is weight: links and open items add height, words do not', () {
       final bare = _task('t', DateTime.utc(2026, 3, 2, 9));
-      final withMeta = PlazaTask(
+      PlazaTask variant({
+        String title = 'Task t',
+        int priority = 2,
+        List<String> links = const [],
+        List<String> open = const [],
+      }) => PlazaTask(
         id: 't',
         createdAt: bare.createdAt,
-        title: bare.title,
+        title: title,
         state: bare.state,
         progress: 0,
-        checklistItems: 3,
-        openChecklistItems: const ['a', 'b', 'c'],
-        linkedTaskIds: const ['other'],
+        checklistItems: open.length,
+        openChecklistItems: open,
+        linkedTaskIds: links,
         categoryColor: 0xFF5C9DFF,
-        due: DateTime.utc(2026, 4, 2),
-        coverImageUrl: 'https://example.invalid/cover.webp',
+        priority: priority,
       );
-      final plain = layout.heightFor(bare, 8);
-      final loaded = layout.heightFor(withMeta, 8);
-      expect(loaded, greaterThan(plain));
+      final plain = layout.heightFor(bare);
+      expect(plain, layout.minBuildingHeight);
+      // A long title changes nothing.
+      expect(layout.heightFor(variant(title: 'x' * 400)), plain);
+      // Heft adds height, urgency multiplies it, the cap holds.
+      final heavy = layout.heightFor(
+        variant(links: const ['a', 'b', 'c'], open: const ['1', '2']),
+      );
+      expect(heavy, greaterThan(plain));
+      final urgent = layout.heightFor(
+        variant(
+          priority: 0,
+          links: const ['a', 'b', 'c'],
+          open: const ['1', '2'],
+        ),
+      );
+      expect(urgent, greaterThan(heavy));
+      final low = layout.heightFor(
+        variant(
+          priority: 3,
+          links: const ['a', 'b', 'c'],
+          open: const ['1', '2'],
+        ),
+      );
+      expect(low, lessThan(heavy));
+      final tower = layout.heightFor(
+        variant(
+          priority: 0,
+          links: List.filled(40, 'l'),
+          open: List.filled(8, 'o'),
+        ),
+      );
+      expect(tower, layout.maxBuildingHeight);
     });
 
     test('weekStart anchors to Monday 00:00 UTC', () {
@@ -283,5 +360,184 @@ void main() {
         DateTime.utc(2026, 8, 31),
       );
     });
+  });
+
+  group('the fold', () {
+    test('turns 90° after every foldEvery buckets, alternating sides', () {
+      final folded = StreetLayout(projectSeed: 1, foldEvery: 3);
+      expect(folded.foldAfter(0), 0);
+      expect(folded.foldAfter(1), 0);
+      expect(folded.foldAfter(2), closeTo(-pi / 2, 1e-12));
+      expect(folded.foldAfter(5), closeTo(pi / 2, 1e-12));
+      expect(folded.foldAfter(8), closeTo(-pi / 2, 1e-12));
+    });
+
+    test('rows run in alternating directions joined by connectors', () {
+      final folded = StreetLayout(projectSeed: 1, foldEvery: 3);
+      // Twelve consecutive built weeks → four rows.
+      final tasks = [
+        for (var w = 0; w < 12; w++)
+          _task('w$w', DateTime.utc(2026, 3, 2, 9).add(Duration(days: 7 * w))),
+      ];
+      final plan = folded.plan(tasks);
+      final connectors = plan.segments.where((s) => s.isConnector).toList();
+      expect(connectors, hasLength(3));
+      for (final c in connectors) {
+        expect(c.length, folded.connectorLength);
+        expect(c.isGap, isTrue);
+      }
+      // Row headings: 0, π, 0, π (mod 2π).
+      final rows = plan.segments.where((s) => !s.isConnector).toList();
+      double norm(double a) => ((a % (2 * pi)) + 2 * pi) % (2 * pi);
+      for (var i = 0; i < rows.length; i++) {
+        final expected = (i ~/ 3).isEven ? 0.0 : pi;
+        expect(
+          norm(rows[i].headingRadians),
+          closeTo(expected, 1e-9),
+          reason: 'row segment $i',
+        );
+      }
+      // The connector sits at the end of a row and is perpendicular to it.
+      expect(
+        norm(connectors.first.headingRadians),
+        closeTo(norm(rows[2].headingRadians - pi / 2), 1e-9),
+      );
+      // Rows are separated by the connector length, so plots never overlap
+      // across rows.
+      final row0z = rows[0].startZ;
+      final row1z = rows[3].startZ;
+      expect((row1z - row0z).abs(), closeTo(rows[0].length * 3, 1e-9));
+      expect(
+        (rows[3].startX - rows[0].startX).abs(),
+        closeTo(folded.connectorLength, 1e-9),
+      );
+      // Every connector carries no buildings.
+      for (final p in plan.placements.values) {
+        expect(
+          plan.segments[_segmentIndexOf(plan, p.bucketIndex)].isConnector,
+          isFalse,
+        );
+      }
+    });
+
+    test('the fold is a function of the bucket index, not of the tasks', () {
+      final folded = StreetLayout(projectSeed: 1, foldEvery: 3);
+      final base = [
+        for (var w = 0; w < 8; w++)
+          _task('w$w', DateTime.utc(2026, 3, 2, 9).add(Duration(days: 7 * w))),
+      ];
+      final before = folded.plan(base);
+      final grown = [
+        ...base,
+        for (var i = 0; i < 9; i++)
+          _task(
+            'extra$i',
+            DateTime.utc(
+              2026,
+              3,
+              3,
+              9,
+            ).add(Duration(days: 7 * (i % 8), hours: i)),
+          ),
+      ];
+      final after = folded.plan(grown, epoch: before.epoch);
+      expect(after.segments.length, before.segments.length);
+      for (var i = 0; i < before.segments.length; i++) {
+        expect(
+          after.segments[i].headingRadians,
+          before.segments[i].headingRadians,
+        );
+        expect(after.segments[i].isConnector, before.segments[i].isConnector);
+      }
+    });
+
+    test('a street shorter than one row never folds', () {
+      final plan = layout.plan(_dataset(count: 8));
+      expect(plan.segments.where((s) => s.isConnector), isEmpty);
+    });
+  });
+
+  group('footprintsOverlap', () {
+    const a = Footprint(x: 0, z: 0, facingRadians: 0, width: 10, depth: 4);
+
+    test('boxes that share ground overlap; boxes apart or touching do not', () {
+      expect(footprintsOverlap(a, a), isTrue);
+      const beside = Footprint(
+        x: 10,
+        z: 0,
+        facingRadians: 0,
+        width: 10,
+        depth: 4,
+      );
+      expect(footprintsOverlap(a, beside), isFalse); // edges touch at x = 5
+      const near = Footprint(
+        x: 9.9,
+        z: 0,
+        facingRadians: 0,
+        width: 10,
+        depth: 4,
+      );
+      expect(footprintsOverlap(a, near), isTrue);
+      const behind = Footprint(
+        x: 0,
+        z: 4.5,
+        facingRadians: 0,
+        width: 10,
+        depth: 4,
+      );
+      expect(footprintsOverlap(a, behind), isFalse);
+      // Turned a quarter: the 10 m width now runs along Z and reaches a.
+      const turned = Footprint(
+        x: 0,
+        z: 6,
+        facingRadians: math.pi / 2,
+        width: 10,
+        depth: 2,
+      );
+      expect(footprintsOverlap(a, turned), isTrue);
+      const turnedAway = Footprint(
+        x: 0,
+        z: 8,
+        facingRadians: math.pi / 2,
+        width: 10,
+        depth: 2,
+      );
+      expect(footprintsOverlap(a, turnedAway), isFalse);
+      // A diamond whose corner reaches in where an axis-aligned box's would not.
+      const diamond = Footprint(
+        x: 5 + 2.5,
+        z: 0,
+        facingRadians: math.pi / 4,
+        width: 4,
+        depth: 4,
+      );
+      expect(footprintsOverlap(a, diamond), isTrue);
+    });
+
+    glados.Glados3<double, double, double>(
+      glados.any.doubleInRange(-30, 30),
+      glados.any.doubleInRange(-30, 30),
+      glados.any.doubleInRange(-math.pi, math.pi),
+      glados.ExploreConfig(numRuns: 120),
+    ).test('is symmetric, and agrees with the point test on the centres', (
+      x,
+      z,
+      facing,
+    ) {
+      final b = Footprint(
+        x: x,
+        z: z,
+        facingRadians: facing,
+        width: 6,
+        depth: 3,
+      );
+      expect(footprintsOverlap(a, b), footprintsOverlap(b, a));
+      // A box whose centre is inside the other overlaps it; far apart, never.
+      final (u, v) = a.local(x, z);
+      if (u.abs() < 5 && v.abs() < 2) expect(footprintsOverlap(a, b), isTrue);
+      if (x.abs() > 5 + 3.5 || z.abs() > 2 + 3.5) {
+        expect(footprintsOverlap(a, b), isFalse, reason: '$x $z $facing');
+      }
+    }, tags: 'glados');
   });
 }

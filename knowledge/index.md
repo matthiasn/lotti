@@ -78,6 +78,7 @@ README, this is the way in:
 | [`lib/beamer/`](../lib/beamer) | [Navigation and app shell](architecture/navigation.md) | the whole tree |
 | [`lib/classes/`](../lib/classes) | [Domain concepts](domain/) | the entity unions; not every class |
 | [`lib/features/goals/`](../lib/features/goals) | [Goal agents — deterministic runtime](features/goals.md) | Phase A: signal reading, evaluation, registers, escalation; entities/vocabulary live in `lib/classes` |
+| [`lib/features/plaza/`](../lib/features/plaza) | [Project plaza](features/plaza.md) | the whole prototype: layout, attention, flights, scene, LOD, tour; a dev harness, not a route |
 | [`lib/l10n/`](../lib/l10n) | [Localization](conventions/localization.md) | the ARB workflow |
 | [`lib/logic/signals/`](../lib/logic/signals) | [Signals — shared journal series](architecture/signals.md) | the whole directory: day bucketing, `SignalReader`, `HabitRuleEvaluator` |
 | [`lib/widgets/day_indicators/`](../lib/widgets/day_indicators) | [Day indicators — shared day-mark model and cells](architecture/day-indicators.md) | `DayMark`/`DayMarkState`/`DayVerdict`, `DayMarkCell`, `DayMarkStrip`, `DayTrack` |

@@ -16,6 +16,17 @@ import 'package:lotti/features/plaza/domain/plaza_task.dart';
 /// Fallback category color when the demo category has none.
 const _fallbackColor = 0xFF5C9DFF;
 
+/// Category names keyed by the lower-case hex of their colour, for the
+/// side panel's category label (plaza tasks carry only the colour).
+Map<String, String> demoCategoryLabels({DateTime? now}) {
+  final world = ManualDemoWorld.penguinLogistics(now: now);
+  return {
+    for (final category in world.categories)
+      (_parseHexColor(category.color) ?? _fallbackColor).toRadixString(16):
+          category.name,
+  };
+}
+
 /// Builds the plaza task list from the Project Waddle demo world.
 List<PlazaTask> plazaTasksFromDemoWorld({DateTime? now}) {
   final world = ManualDemoWorld.penguinLogistics(now: now);
@@ -87,6 +98,8 @@ PlazaTask _project({
     linkedTaskIds: links.toList()..sort(),
     categoryColor: categoryColor,
     deleted: task.meta.deletedAt != null,
+    priority: task.data.priority.index,
+    lastActivityAt: task.meta.updatedAt,
   );
 }
 

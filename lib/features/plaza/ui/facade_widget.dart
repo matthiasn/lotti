@@ -1,264 +1,531 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/theme/icon_tokens.dart';
+import 'package:lotti/features/plaza/domain/attention.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
+import 'package:lotti/features/plaza/ui/checklist_ticks.dart';
+import 'package:lotti/features/plaza/ui/plaza_style.dart';
 
-/// Dev-harness palette for facade signage.
-///
-/// The plaza is 3D scene content rendered inside the prototype harness, not
-/// app chrome; like `knowledge_graph/ui/graph_style.dart` it keeps a local
-/// palette instead of design-system tokens. If the prototype graduates, this
-/// gets rebased onto the token pipeline.
-abstract final class FacadeStyle {
-  static const background = Color(0xFF14161C);
-  static const backgroundDone = Color(0xFF10201A);
-  static const text = Color(0xFFECEFF4);
-  static const textDim = Color(0xFF8B92A1);
+/// Which range a facade is drawn for.
+enum FacadeVariant {
+  /// Street range, captured: category bar, big title, cover art, state
+  /// chip, light bar. Nothing that cannot be read at 100 m.
+  sign,
 
-  static Color stateColor(PlazaTaskState state) => switch (state) {
-    PlazaTaskState.open => const Color(0xFF8B92A1),
-    PlazaTaskState.inProgress => const Color(0xFF5C9DFF),
-    PlazaTaskState.blocked => const Color(0xFFE87C6C),
-    PlazaTaskState.done => const Color(0xFF63C99A),
-    PlazaTaskState.cancelled => const Color(0xFF565B66),
-  };
-
-  static String stateLabel(PlazaTaskState state) => switch (state) {
-    PlazaTaskState.open => 'OPEN',
-    PlazaTaskState.inProgress => 'IN PROGRESS',
-    PlazaTaskState.blocked => 'BLOCKED',
-    PlazaTaskState.done => 'DONE',
-    PlazaTaskState.cancelled => 'CANCELLED',
-  };
+  /// Shopfront range, live: everything, with working checkboxes and OPEN.
+  live,
 }
 
-const _months = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', //
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-];
-
-String _shortDate(DateTime date) => '${_months[date.month - 1]} ${date.day}';
-
-/// The live signage on one building facade.
+/// The signage on one building's street-facing wall.
 ///
-/// Content-packed, no filler, ordered like a shopfront: the title reads
-/// high like a sign, the cover art hangs at mid-height near eye level, and
-/// the checklist and state chip sit at street level. The building's height
-/// is sized to this very layout (see `StreetLayout.heightFor`); a
-/// scale-down fit absorbs the estimate error rather than overflowing.
-///
-/// On the near tier the checklist checkboxes are live — the proof that
-/// interactive widgets on meshes matter (spec §11).
-class FacadeWidget extends StatefulWidget {
+/// Laid out in world metres scaled by [pxPerMeter], so the type reads the
+/// same on a 5 m shop and a 15 m tower: the title is roughly a tenth of the
+/// wall's width tall, the interactive strip sits at the bottom where a 2.2 m
+/// walker looks, and the progress light bar runs along the base.
+class FacadeWidget extends StatelessWidget {
   const FacadeWidget({
     required this.task,
-    required this.interactive,
+    required this.attention,
+    required this.variant,
+    required this.widthMeters,
+    required this.pxPerMeter,
+    this.ticks,
+    this.onOpen,
+    this.focused = false,
     super.key,
   });
 
   final PlazaTask task;
+  final TaskAttention attention;
+  final FacadeVariant variant;
 
-  /// Near-tier facades get live checkboxes; static captures stay passive.
-  final bool interactive;
+  /// Facade width in world metres; every size derives from it.
+  final double widthMeters;
+  final double pxPerMeter;
 
-  @override
-  State<FacadeWidget> createState() => _FacadeWidgetState();
-}
+  /// Shared tick state; required for the live variant to be interactive.
+  final ChecklistTicks? ticks;
+  final VoidCallback? onOpen;
 
-class _FacadeWidgetState extends State<FacadeWidget> {
-  final Set<int> _ticked = {};
+  /// Draws the teal focus ring (the faced building is the live one).
+  final bool focused;
 
-  static const _metaStyle = TextStyle(
-    color: FacadeStyle.textDim,
-    fontSize: 26,
-    fontWeight: FontWeight.w600,
-  );
+  bool get _live => variant == FacadeVariant.live;
 
   @override
   Widget build(BuildContext context) {
-    final task = widget.task;
-    final state = task.state;
-    final stateColor = FacadeStyle.stateColor(state);
-    final quiet =
-        state == PlazaTaskState.done || state == PlazaTaskState.cancelled;
-    final dimText = quiet ? FacadeStyle.textDim : FacadeStyle.text;
+    final t = ticks;
+    if (t == null) return _build(context, null);
+    return ListenableBuilder(
+      listenable: t,
+      builder: (context, _) => _build(context, t),
+    );
+  }
 
+  Widget _build(BuildContext context, ChecklistTicks? t) {
+    double m(double meters) => meters * pxPerMeter;
+    final w = widthMeters;
+    var titleM = (0.1 * w).clamp(0.9, 2.0) * (_live ? 1 : 1.35);
+    // Never break a word in the middle of a wall: shrink the title until
+    // its longest word fits the measure.
+    final innerPx = (w - 2 * 0.08 * w) * pxPerMeter;
+    final longest = task.title
+        .split(RegExp(r'\s+'))
+        .fold<int>(0, (n, word) => math.max(n, word.length));
+    while (titleM > 0.55 && longest * m(titleM) * 0.6 > innerPx) {
+      titleM *= 0.9;
+    }
+    final itemM = (0.22 * titleM).clamp(0.55, 1.2);
+    final metaM = (0.15 * titleM).clamp(0.45, 1.0);
+    final chipM = (0.14 * titleM).clamp(0.5, 1.1);
+    final pad = m(0.08 * w);
+    final chip = PlazaStyle.chip(attention);
+    final items = task.openChecklistItems;
+    final tickedCount = t?.tickedCount(task.id) ?? 0;
+    final total = task.checklistItems;
+    final done = task.checklistItems - items.length + tickedCount;
+    final metaBits = <String>[
+      if (task.due != null) 'due ${shortDate(task.due!)}',
+      if (task.linkedTaskIds.isNotEmpty) 'links ${task.linkedTaskIds.length}',
+    ];
+
+    // A finished shop is dark: everything on it steps down.
+    final quiet = attention.lantern == LanternState.off;
+    final ink = quiet ? PlazaStyle.textDim : PlazaStyle.text;
+    // A live wall is a lit screen, not a hole: the panel takes a little
+    // of the state colour; a finished shop is dark but not unrendered.
     return Material(
-      color: state == PlazaTaskState.done
-          ? FacadeStyle.backgroundDone
-          : FacadeStyle.background,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          // Progress reads as a filled portion of the whole facade.
-          if (task.checklistItems > 0)
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: FractionallySizedBox(
-                heightFactor: task.progress.clamp(0.0, 1.0),
-                widthFactor: 1,
-                child: ColoredBox(color: stateColor.withValues(alpha: 0.18)),
-              ),
-            ),
-          LayoutBuilder(
-            builder: (context, constraints) => FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.topCenter,
-              child: SizedBox(
-                width: constraints.maxWidth,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(height: 10, color: Color(task.categoryColor)),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 18),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            task.title,
-                            maxLines: 6,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: dimText,
-                              fontSize: 44,
-                              height: 1.15,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          if (task.due != null ||
-                              task.linkedTaskIds.isNotEmpty) ...[
-                            const SizedBox(height: 16),
-                            Row(
-                              children: [
-                                if (task.due != null)
-                                  Text(
-                                    'due ${_shortDate(task.due!)}',
-                                    style: _metaStyle,
-                                  ),
-                                const Spacer(),
-                                if (task.linkedTaskIds.isNotEmpty)
-                                  Text(
-                                    'links ${task.linkedTaskIds.length}',
-                                    style: _metaStyle,
-                                  ),
-                              ],
-                            ),
-                          ],
-                        ],
+      color: quiet
+          ? const Color(0xFF0E0D16)
+          : _live
+          ? Color.lerp(
+              PlazaStyle.panel,
+              PlazaStyle.lantern(attention.lantern),
+              0.12,
+            )!
+          : PlazaStyle.panel,
+      child: Container(
+        foregroundDecoration: focused
+            ? BoxDecoration(
+                border: Border.all(color: PlazaStyle.teal, width: m(0.12)),
+              )
+            : null,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // The category band belongs to the sign tier; a live wall
+                // has the state rim and the focus ring for its frame.
+                if (!_live)
+                  Container(
+                    height: m(0.4),
+                    color: quiet
+                        ? Color.lerp(
+                            PlazaStyle.categoryBright(task),
+                            const Color(0xFF07060B),
+                            0.6,
+                          )
+                        : PlazaStyle.categoryBright(task),
+                  ),
+                if (!_live)
+                  // Street range: the state is a marquee band at the top,
+                  // where the street cannot hide it, with its glyph.
+                  Container(
+                    padding: EdgeInsets.symmetric(vertical: m(chipM) * 0.4),
+                    color: chip.fill,
+                    child: Text(
+                      '${PlazaStyle.glyph(attention)}  ${chip.label}',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontFamily: PlazaStyle.fontText,
+                        fontSize: m(chipM * 1.5),
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: m(chipM) * 0.12,
+                        color: chip.ink,
                       ),
                     ),
-                    if (task.coverImageUrl != null)
-                      // Full-bleed 16:9 frame: the demo covers are 16:9,
-                      // so the whole image shows, edge to edge, uncropped
-                      // and undistorted — hung below the title so it sits
-                      // near eye level, not at the top of a tower.
-                      AspectRatio(
-                        aspectRatio: 16 / 9,
-                        child: Opacity(
-                          opacity: quiet ? 0.45 : 1,
-                          child: Image.network(
-                            task.coverImageUrl!,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, _, _) => const SizedBox(),
-                          ),
-                        ),
-                      ),
-                    Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          for (final (index, item)
-                              in task.openChecklistItems.take(8).indexed)
-                            SizedBox(
-                              height: 46,
-                              child: Row(
-                                children: [
-                                  SizedBox(
-                                    width: 40,
-                                    child: Checkbox(
-                                      value: _ticked.contains(index),
-                                      activeColor: stateColor,
-                                      onChanged: widget.interactive && !quiet
-                                          ? (v) => setState(() {
-                                              if (v ?? false) {
-                                                _ticked.add(index);
-                                              } else {
-                                                _ticked.remove(index);
-                                              }
-                                            })
-                                          : null,
+                  ),
+                Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.all(pad),
+                    child: LayoutBuilder(
+                      builder: (context, box) {
+                        // A squat wall keeps the title and the chips;
+                        // meta, cover and checklist yield. The title has
+                        // a bounded box and scales down inside it, so no
+                        // wall ever overflows.
+                        final tight = box.maxHeight < m(6);
+                        final gap = math.min(
+                          m(0.3 * titleM),
+                          box.maxHeight * 0.04,
+                        );
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // A finished task is a small sign: the wall-height
+                            // title is for what is live or wrong.
+                            // A live wall with a checklist gives the list
+                            // its row: the title scales down before the
+                            // list loses its last item.
+                            ConstrainedBox(
+                              constraints: BoxConstraints(
+                                maxHeight:
+                                    box.maxHeight *
+                                    (tight
+                                        ? 0.5
+                                        : _live && items.isNotEmpty
+                                        ? 0.4
+                                        : 0.6),
+                              ),
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.topLeft,
+                                child: SizedBox(
+                                  width: box.maxWidth,
+                                  child: Text(
+                                    task.title,
+                                    // A live wall with a list keeps the
+                                    // title to two lines; the list is what
+                                    // you flew here to tick.
+                                    maxLines:
+                                        quiet || (_live && items.isNotEmpty)
+                                        ? 2
+                                        : 3,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontFamily: PlazaStyle.fontText,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: m(
+                                        quiet ? titleM * 0.55 : titleM,
+                                      ),
+                                      height: 1.14,
+                                      letterSpacing: -m(titleM) * 0.012,
+                                      color: ink,
                                     ),
                                   ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Text(
-                                      item,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        color: _ticked.contains(index)
-                                            ? FacadeStyle.textDim
-                                            : dimText,
-                                        fontSize: 26,
-                                        decoration: _ticked.contains(index)
-                                            ? TextDecoration.lineThrough
-                                            : null,
+                                ),
+                              ),
+                            ),
+                            if (_live &&
+                                attention.reason.isNotEmpty &&
+                                !tight) ...[
+                              SizedBox(height: gap),
+                              // The wall you fly to says what the billboard
+                              // said, as loudly: the reason leads, in the
+                              // state colour.
+                              Text(
+                                attention.reason,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontFamily: PlazaStyle.fontMono,
+                                  fontSize: m(itemM),
+                                  fontWeight: FontWeight.w500,
+                                  color: PlazaStyle.lantern(attention.lantern),
+                                ),
+                              ),
+                            ],
+                            if (task.coverImageUrl != null && !tight) ...[
+                              SizedBox(height: gap),
+                              // The picture gets the biggest band the wall can
+                              // spare, edge to edge, but never more than a
+                              // third of a live wall: the checklist keeps
+                              // its rows.
+                              Flexible(
+                                flex: _live ? 5 : 10,
+                                child: ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    maxHeight: _live
+                                        ? box.maxHeight * 0.26
+                                        : double.infinity,
+                                  ),
+                                  child: SizedBox(
+                                    width: double.infinity,
+                                    child: _Cover(
+                                      url: task.coverImageUrl!,
+                                      quiet:
+                                          attention.lantern == LanternState.off,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                            if (_live && items.isNotEmpty && !tight) ...[
+                              SizedBox(height: gap),
+                              // Only as many items as the wall has room for:
+                              // a short building shows fewer, never overflows.
+                              // The list outranks the picture for space.
+                              Flexible(
+                                flex: 6,
+                                child: LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    // Box + padding + the line's own leading,
+                                    // counted generously: a row that would not
+                                    // fit is dropped, and the list is clipped
+                                    // as the backstop, so the wall never shows
+                                    // an overflow.
+                                    final rowPx = m(itemM) * 1.85;
+                                    final fit = (constraints.maxHeight / rowPx)
+                                        .floor()
+                                        .clamp(0, items.length);
+                                    return SingleChildScrollView(
+                                      physics:
+                                          const NeverScrollableScrollPhysics(),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.stretch,
+                                        children: [
+                                          for (final (i, label)
+                                              in items.take(fit).indexed)
+                                            _Item(
+                                              label: label,
+                                              ticked:
+                                                  t?.isTicked(task.id, i) ??
+                                                  false,
+                                              fontPx: m(itemM),
+                                              onTap: t == null
+                                                  ? null
+                                                  : () => t.toggle(task.id, i),
+                                            ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                            const Spacer(),
+                            if (_live)
+                              // A firm band, never squeezed: the checklist
+                              // above yields, the chips keep their size.
+                              SizedBox(
+                                height: m(chipM) * 2.4,
+                                child: LayoutBuilder(
+                                  builder: (context, row) => FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    alignment: Alignment.bottomLeft,
+                                    child: SizedBox(
+                                      width: row.maxWidth,
+                                      child: Row(
+                                        children: [
+                                          // Chips scale down together on a narrow
+                                          // wall rather than overflowing the row.
+                                          Flexible(
+                                            child: FittedBox(
+                                              fit: BoxFit.scaleDown,
+                                              alignment: Alignment.centerLeft,
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  _Chip(
+                                                    label:
+                                                        '${PlazaStyle.glyph(attention)} '
+                                                        '${chip.label}',
+                                                    fill: chip.fill,
+                                                    ink: chip.ink,
+                                                    fontPx: m(chipM),
+                                                  ),
+                                                  if (onOpen != null) ...[
+                                                    SizedBox(width: m(0.3)),
+                                                    _Chip(
+                                                      label: 'DETAILS ›',
+                                                      fill: PlazaStyle.teal,
+                                                      ink: const Color(
+                                                        0xFF0D0D0D,
+                                                      ),
+                                                      fontPx: m(chipM),
+                                                      onTap: onOpen,
+                                                    ),
+                                                  ],
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                          if (total > 0) ...[
+                                            SizedBox(width: m(0.3)),
+                                            Text(
+                                              '$done/$total',
+                                              style: TextStyle(
+                                                fontFamily: PlazaStyle.fontMono,
+                                                fontSize: m(metaM),
+                                                color: PlazaStyle.textDim,
+                                              ),
+                                            ),
+                                          ],
+                                          if (metaBits.isNotEmpty) ...[
+                                            SizedBox(width: m(0.4)),
+                                            Flexible(
+                                              child: Text(
+                                                metaBits.join('  ·  '),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: TextStyle(
+                                                  fontFamily:
+                                                      PlazaStyle.fontMono,
+                                                  fontSize: m(metaM),
+                                                  color: quiet
+                                                      ? PlazaStyle.textDim
+                                                      : PlazaStyle.textMed,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ],
                                       ),
                                     ),
                                   ),
-                                ],
-                              ),
-                            ),
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                  vertical: 8,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: stateColor.withValues(
-                                    alpha: quiet ? 0.25 : 1,
-                                  ),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  FacadeStyle.stateLabel(state),
-                                  style: TextStyle(
-                                    color: quiet ? stateColor : Colors.black,
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: 1.5,
-                                  ),
                                 ),
                               ),
-                              const Spacer(),
-                              if (task.checklistItems > 0)
-                                Text(
-                                  '${(task.progress * task.checklistItems).round()}'
-                                  '/${task.checklistItems}',
-                                  style: const TextStyle(
-                                    color: FacadeStyle.textDim,
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ],
-                      ),
+                          ],
+                        );
+                      },
                     ),
-                  ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Cover extends StatelessWidget {
+  const _Cover({required this.url, required this.quiet});
+
+  final String url;
+  final bool quiet;
+
+  @override
+  Widget build(BuildContext context) {
+    return Opacity(
+      opacity: quiet ? 0.45 : 1,
+      child: Image.network(
+        url,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => const SizedBox(),
+      ),
+    );
+  }
+}
+
+class _Item extends StatelessWidget {
+  const _Item({
+    required this.label,
+    required this.ticked,
+    required this.fontPx,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool ticked;
+  final double fontPx;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final box = fontPx * 1.05;
+    return InkWell(
+      onTap: onTap,
+      hoverColor: PlazaStyle.hoverWash,
+      borderRadius: BorderRadius.circular(fontPx * 0.25),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          vertical: fontPx * 0.18,
+          horizontal: fontPx * 0.15,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: box,
+              height: box,
+              decoration: BoxDecoration(
+                color: ticked ? const Color(0xD9FFFFFF) : Colors.transparent,
+                border: Border.all(
+                  color: const Color(0xBFFFFFFF),
+                  width: fontPx * 0.08,
+                ),
+                borderRadius: BorderRadius.circular(fontPx * 0.12),
+              ),
+              child: ticked
+                  ? Icon(
+                      LottiIcons.confirm,
+                      size: box * 0.8,
+                      color: PlazaStyle.panel,
+                    )
+                  : null,
+            ),
+            SizedBox(width: fontPx * 0.4),
+            Expanded(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontFamily: PlazaStyle.fontText,
+                  fontSize: fontPx,
+                  color: ticked ? PlazaStyle.textDim : const Color(0xD9FFFFFF),
+                  decoration: ticked ? TextDecoration.lineThrough : null,
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
+    );
+  }
+}
+
+/// A state chip (or the OPEN button when [onTap] is set).
+class _Chip extends StatelessWidget {
+  const _Chip({
+    required this.label,
+    required this.fill,
+    required this.ink,
+    required this.fontPx,
+    this.onTap,
+  });
+
+  final String label;
+  final Color fill;
+  final Color ink;
+  final double fontPx;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final child = Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: fontPx * 0.8,
+        vertical: fontPx * 0.25,
+      ),
+      decoration: BoxDecoration(
+        color: fill,
+        borderRadius: BorderRadius.circular(fontPx * 0.35),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontFamily: PlazaStyle.fontText,
+          fontSize: fontPx,
+          fontWeight: FontWeight.w700,
+          letterSpacing: fontPx * 0.05,
+          color: ink,
+        ),
+      ),
+    );
+    if (onTap == null) return child;
+    return InkWell(
+      onTap: onTap,
+      hoverColor: PlazaStyle.tealHover,
+      borderRadius: BorderRadius.circular(fontPx * 0.35),
+      child: child,
     );
   }
 }

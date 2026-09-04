@@ -16,8 +16,13 @@
 ///   (Known edge: a task syncing into a previously *empty* week widens that
 ///   gap into a plot group and shifts everything downstream. Accepted for
 ///   the prototype; the M2 invariant test documents it.)
-/// - The road's course (bends) is a function of the project seed and the
-///   bucket index alone, never of task data.
+/// - The road folds into a district: after every [StreetLayout.foldEvery]
+///   buckets it turns 90°, runs a connector, and turns 90° again, so rows
+///   alternate direction (a serpentine) and a long project becomes a
+///   compact block of rows instead of a kilometres-long line. The fold is a
+///   function of the bucket index alone, never of task data.
+/// - Building height is weight, not verbosity: priority times the log of
+///   how connected and how open the task is (see [StreetLayout.heightFor]).
 library;
 
 import 'dart:math' as math;
@@ -35,6 +40,76 @@ int stableHash(String input) {
     hash = (hash * 0x01000193) & 0xFFFFFFFF;
   }
   return hash;
+}
+
+/// Deterministic 0..1 from an [id] and a [salt]: seeded variation (massing,
+/// tile offsets, set dressing) that must never move under the user's feet.
+double stableUnit(String id, String salt) =>
+    (stableHash('$id:$salt') & 0xFFFF) / 0xFFFF;
+
+/// A solid's rectangle on the ground: centre, rotation about +Y, and the
+/// extents along its local X ([width]) and local Z ([depth]). Everything
+/// the scene builds on the ground has one, and the walker collider keeps
+/// the camera out of all of them.
+class Footprint {
+  const Footprint({
+    required this.x,
+    required this.z,
+    required this.facingRadians,
+    required this.width,
+    required this.depth,
+  });
+
+  final double x;
+  final double z;
+
+  /// Rotation about +Y: the local Z axis points along
+  /// `(sin facing, cos facing)` in the world, local X along
+  /// `(cos facing, -sin facing)`.
+  final double facingRadians;
+
+  /// Extent along local X.
+  final double width;
+
+  /// Extent along local Z.
+  final double depth;
+
+  /// The point in this footprint's frame: `u` along local X (the width),
+  /// `v` along local Z (the depth), both from the centre.
+  (double, double) local(double x, double z) {
+    final sinF = math.sin(facingRadians);
+    final cosF = math.cos(facingRadians);
+    final dx = x - this.x;
+    final dz = z - this.z;
+    return (dx * cosF - dz * sinF, dx * sinF + dz * cosF);
+  }
+
+  /// The interval this footprint covers along the world axis ([ax], [az]).
+  (double, double) _projection(double ax, double az) {
+    final sinF = math.sin(facingRadians);
+    final cosF = math.cos(facingRadians);
+    final centre = x * ax + z * az;
+    final half =
+        (ax * cosF - az * sinF).abs() * width / 2 +
+        (ax * sinF + az * cosF).abs() * depth / 2;
+    return (centre - half, centre + half);
+  }
+}
+
+/// Whether two footprints overlap on the ground: a separating-axis test on
+/// the four edge normals. Touching edges do not count.
+bool footprintsOverlap(Footprint a, Footprint b) {
+  for (final box in [a, b]) {
+    final sinF = math.sin(box.facingRadians);
+    final cosF = math.cos(box.facingRadians);
+    // The box's own axes: local X, then local Z.
+    for (final (ax, az) in [(cosF, -sinF), (sinF, cosF)]) {
+      final (aMin, aMax) = a._projection(ax, az);
+      final (bMin, bMax) = b._projection(ax, az);
+      if (aMax <= bMin || bMax <= aMin) return false;
+    }
+  }
+  return true;
 }
 
 /// Which side of the road a plot sits on.
@@ -74,12 +149,22 @@ class PlotPlacement {
   /// Building footprint away from the road.
   final double depth;
 
-  /// Building height. Content-driven: sized to the facade's cover art,
-  /// title and open checklist items (see [StreetLayout.heightFor]).
+  /// Building height, world meters: weight-driven (see
+  /// [StreetLayout.heightFor]).
   final double height;
+
+  /// The plot's rectangle on the ground.
+  Footprint get footprint => Footprint(
+    x: x,
+    z: z,
+    facingRadians: facingRadians,
+    width: width,
+    depth: depth,
+  );
 }
 
-/// One straight run of road: a plot group (week) or a collapsed gap.
+/// One straight run of road: a plot group (week), a collapsed gap, or a
+/// fold connector between two rows.
 class RoadSegment {
   const RoadSegment({
     required this.bucketIndex,
@@ -88,8 +173,10 @@ class RoadSegment {
     required this.headingRadians,
     required this.length,
     required this.isGap,
+    this.isConnector = false,
   });
 
+  /// The week bucket, or the bucket the connector follows.
   final int bucketIndex;
   final double startX;
   final double startZ;
@@ -100,6 +187,13 @@ class RoadSegment {
 
   /// True for a collapsed empty week.
   final bool isGap;
+
+  /// True for the road between two rows of the fold; carries no buildings.
+  final bool isConnector;
+
+  /// World position of the far end of the segment.
+  double get endX => startX + math.sin(headingRadians) * length;
+  double get endZ => startZ + math.cos(headingRadians) * length;
 }
 
 /// The output of [StreetLayout.plan].
@@ -113,8 +207,13 @@ class StreetPlan {
   /// Start of week zero.
   final DateTime epoch;
 
-  /// One segment per week bucket, in order, gaps included.
+  /// One segment per week bucket, in order, gaps and fold connectors
+  /// included.
   final List<RoadSegment> segments;
+
+  /// Where the street ends: the far end of the newest segment, and the
+  /// heading it was travelling. The frontier plaza opens here.
+  RoadSegment? get last => segments.isEmpty ? null : segments.last;
 
   /// One placement per (non-filtered) task, keyed by task id.
   final Map<String, PlotPlacement> placements;
@@ -125,17 +224,18 @@ class StreetPlan {
 class StreetLayout {
   StreetLayout({
     required this.projectSeed,
-    this.roadWidth = 25,
+    this.roadWidth = 18,
     this.pxPerMeter = 90,
-    this.maxBuildingHeight = 12,
-    this.groupLength = 46,
-    this.gapLength = 7,
-    this.plotDepth = 8,
-    this.sideMargin = 2,
+    this.maxBuildingHeight = 32,
+    this.groupLength = 40,
+    this.gapLength = 4,
+    this.plotDepth = 10,
+    this.sideMargin = 1.5,
     this.minBuildingWidth = 2.5,
-    this.maxBuildingWidth = 12,
-    this.bendEveryBuckets = 3,
-    this.maxBendRadians = math.pi / 5,
+    this.maxBuildingWidth = 18,
+    this.foldEvery = 4,
+    this.connectorLength = 44,
+    this.minBuildingHeight = 6,
   });
 
   final int projectSeed;
@@ -158,9 +258,16 @@ class StreetLayout {
   /// Nor wider than this, however quiet.
   final double maxBuildingWidth;
 
-  /// Roughly every Nth bucket boundary bends the road (hash-decided).
-  final int bendEveryBuckets;
-  final double maxBendRadians;
+  /// The street turns back on itself after this many buckets (built or
+  /// gap), so a district is rows of at most this many weeks.
+  final int foldEvery;
+
+  /// Road length of the connector between two rows; must clear both rows'
+  /// plots (road width plus a plot depth on each side).
+  final double connectorLength;
+
+  /// The shortest building: a task with nothing linked and nothing open.
+  final double minBuildingHeight;
 
   /// Deterministic relative width factor for a task id (0.5 .. 1.5).
   double widthFactorFor(String taskId) {
@@ -168,42 +275,33 @@ class StreetLayout {
     return 0.5 + t;
   }
 
-  /// Logical pixels per world meter on a facade texture — bigger means
-  /// shorter buildings for the same content. The scene layer sizes facade
-  /// widget subtrees with the same value.
+  /// Logical pixels per world meter on a facade texture. The scene layer
+  /// sizes facade widget subtrees with the same value.
   final double pxPerMeter;
 
-  /// Cap on content-driven building height, world meters.
+  /// Cap on building height, world meters.
   final double maxBuildingHeight;
 
-  /// Content-driven building height: the facade is sized to exactly fit
-  /// the cover art, the wrapped title, the meta rows and the open
-  /// checklist items — no filler. Mirrors the facade widget's layout
-  /// metrics; still a pure function of merged task data, so it stays
-  /// identical on every device.
-  double heightFor(PlazaTask task, double buildingWidth) {
-    final facadeWidthPx = buildingWidth * 0.92 * pxPerMeter;
-    final innerPx = facadeWidthPx - 48; // horizontal text padding
+  /// Every week's heaviest task rises this much higher: one landmark per
+  /// block, so the skyline has a silhouette at every range.
+  static const landmarkFactor = 1.3;
 
-    // Shopfront order: title block high, full-bleed cover at mid-height,
-    // checklist and state at street level (mirrors the facade widget).
-    var px = 10.0 + 24 + 18; // category bar + title-section padding
-    // Title wrap estimate at 44px w700 (~0.53em average advance).
-    final charsPerLine = (innerPx / (44 * 0.53)).floor().clamp(6, 200);
-    final lines = (task.title.length / charsPerLine).ceil().clamp(1, 6);
-    px += lines * 44 * 1.15;
-    if (task.due != null || task.linkedTaskIds.isNotEmpty) {
-      px += 16 + 43; // meta row
-    }
-    if (task.coverImageUrl != null) {
-      px += facadeWidthPx * 9 / 16; // full-bleed 16:9 cover
-    }
-    px += 48; // bottom-section padding
-    px += task.openChecklistItems.length.clamp(0, 8) * 46; // item rows
-    px += 44; // state row
-
-    final facadeHeight = px / pxPerMeter;
-    return (facadeHeight / 0.88).clamp(2.5, maxBuildingHeight);
+  /// Weight-driven building height, world meters.
+  ///
+  /// `floor + priorityWeight × 4.2 × ln(1 + heft)`, capped at
+  /// [maxBuildingHeight]: a heavy urgent task is a tower, a lone low-priority
+  /// task is a bungalow, and a wordy title changes nothing. Still a pure
+  /// function of merged task data, so it is identical on every device.
+  /// (The week's landmark is promoted by [landmarkFactor] in [plan].)
+  double heightFor(PlazaTask task) {
+    final weight = switch (task.priority) {
+      <= 0 => 1.6,
+      1 => 1.3,
+      2 => 1.0,
+      _ => 0.8,
+    };
+    final raw = minBuildingHeight + weight * 4.2 * math.log(1 + task.heft);
+    return raw.clamp(minBuildingHeight, maxBuildingHeight);
   }
 
   /// Start of the UTC week containing [time] (Monday 00:00 UTC).
@@ -217,13 +315,15 @@ class StreetLayout {
     return day.subtract(Duration(days: day.weekday - DateTime.monday));
   }
 
-  /// The signed bend applied *after* bucket [bucketIndex], purely from the
-  /// project seed and the bucket index.
-  double bendAfter(int bucketIndex) {
-    final roll = stableHash('$projectSeed:bend:$bucketIndex');
-    if (roll % bendEveryBuckets != 0) return 0;
-    final t = ((roll >> 8) & 0xFFFF) / 0xFFFF;
-    return (t * 2 - 1) * maxBendRadians;
+  /// The signed 90° turn applied *after* bucket [bucketIndex], or zero.
+  ///
+  /// Row `r` ends after bucket `(r + 1) × foldEvery − 1`; even rows turn
+  /// right, odd rows turn left, so the street snakes back and forth. Purely
+  /// a function of the bucket index.
+  double foldAfter(int bucketIndex) {
+    if ((bucketIndex + 1) % foldEvery != 0) return 0;
+    final row = (bucketIndex + 1) ~/ foldEvery - 1;
+    return row.isEven ? -math.pi / 2 : math.pi / 2;
   }
 
   /// Plans the street for [tasks].
@@ -300,7 +400,25 @@ class StreetLayout {
 
       x += math.sin(heading) * length;
       z += math.cos(heading) * length;
-      heading += bendAfter(bucket);
+
+      final turn = foldAfter(bucket);
+      if (turn != 0 && bucket < lastBucket) {
+        heading += turn;
+        segments.add(
+          RoadSegment(
+            bucketIndex: bucket,
+            startX: x,
+            startZ: z,
+            headingRadians: heading,
+            length: connectorLength,
+            isGap: true,
+            isConnector: true,
+          ),
+        );
+        x += math.sin(heading) * connectorLength;
+        z += math.cos(heading) * connectorLength;
+        heading += turn;
+      }
     }
 
     return StreetPlan(
@@ -322,6 +440,17 @@ class StreetLayout {
     final cosH = math.cos(heading);
     final usable = groupLength - 2 * sideMargin;
 
+    // The week's landmark: its heaviest task (ties by id) stands taller.
+    PlazaTask? landmark;
+    for (final t in weekTasks) {
+      if (landmark == null ||
+          heightFor(t) > heightFor(landmark) ||
+          (heightFor(t) == heightFor(landmark) &&
+              t.id.compareTo(landmark.id) < 0)) {
+        landmark = t;
+      }
+    }
+
     for (final side in PlotSide.values) {
       final sideTasks = <PlazaTask>[
         for (var i = 0; i < weekTasks.length; i++)
@@ -341,7 +470,7 @@ class StreetLayout {
         // width yields to the slot so neighbors cannot intersect.
         final buildingWidth = math.min(
           slot * 0.95,
-          (slot * 0.82).clamp(minBuildingWidth, maxBuildingWidth),
+          (slot * 0.9).clamp(minBuildingWidth, maxBuildingWidth),
         );
 
         final sideSign = side == PlotSide.left ? -1.0 : 1.0;
@@ -358,7 +487,12 @@ class StreetLayout {
               heading + (side == PlotSide.left ? math.pi / 2 : -math.pi / 2),
           width: buildingWidth,
           depth: plotDepth * 0.8,
-          height: heightFor(task, buildingWidth),
+          height: task == landmark
+              ? math.min(
+                  maxBuildingHeight * 1.3,
+                  heightFor(task) * landmarkFactor,
+                )
+              : heightFor(task),
         );
         cursor += slot;
       }

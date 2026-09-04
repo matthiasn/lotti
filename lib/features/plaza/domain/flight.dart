@@ -1,0 +1,567 @@
+/// Camera flights: the only way the camera moves other than walking.
+///
+/// Pure Dart. A flight is planned once, from two poses and the world's
+/// solids, as a chain of straight legs with one speed profile over the
+/// whole way: an S-curve that eases up to a cruise and eases down again.
+/// [Flight.plan] is the direct line, lifted over whatever stands on it;
+/// [Flight.route] follows the street between two stops on the ground.
+library;
+
+import 'dart:math' as math;
+
+import 'package:lotti/features/plaza/domain/plaza_layout.dart';
+import 'package:lotti/features/plaza/domain/solid.dart';
+
+/// A planned camera flight between two poses.
+class Flight {
+  Flight._({
+    required this.from,
+    required this.to,
+    required List<_Leg> legs,
+    required _Profile profile,
+    required this.routed,
+    // A private field cannot be a named initializing formal.
+    // ignore: prefer_initializing_formals
+  }) : _legs = legs,
+       _profile = profile,
+       duration = Duration(microseconds: (profile.duration * 1e6).round());
+
+  /// Plans the direct flight from [from] to [to]: one straight leg, swept
+  /// against [solids] and lifted over whatever it would pass through
+  /// ([clearance] above it), climbing before the first solid on the way
+  /// and descending after the last; trips over [arcThreshold] metres rise
+  /// into an arc proportional to distance regardless, so the route stays
+  /// legible. Cruises at [directSpeed]; [timeScale] speeds the whole
+  /// flight up.
+  factory Flight.plan(
+    CameraPose from,
+    CameraPose to, {
+    double timeScale = 1,
+    Iterable<Solid> solids = const [],
+  }) {
+    final leg = _Leg.plan(from, to, solids, districtArc: true);
+    return Flight._(
+      from: from,
+      to: to,
+      legs: [leg],
+      profile: _Profile(
+        length: leg.length,
+        cruise: directSpeed * timeScale,
+        ramp: rampSeconds / timeScale,
+      ),
+      routed: false,
+    );
+  }
+
+  /// Plans the flight from [from] to [to] along the street: through every
+  /// point of [via] in order at [streetFlightHeight], cruising at
+  /// [streetSpeed] and looking [lookAhead] metres down the way, so the
+  /// facades and the billboards pass by and a corner is turned, not cut.
+  /// Every leg is still swept against [solids].
+  factory Flight.route(
+    CameraPose from,
+    CameraPose to, {
+    required List<(double, double)> via,
+    double timeScale = 1,
+    Iterable<Solid> solids = const [],
+  }) {
+    final points = <CameraPose>[from];
+    for (final (x, z) in via) {
+      if (_apart(points.last, x, z) < viaMergeDistance) continue;
+      points.add(CameraPose(x: x, y: streetFlightHeight, z: z, yaw: 0));
+    }
+    // The stop itself, not a via point a step short of it.
+    if (points.length > 1 &&
+        _apart(points.last, to.x, to.z) < viaMergeDistance) {
+      points.removeLast();
+    }
+    points.add(to);
+    final legs = <_Leg>[
+      for (var i = 1; i < points.length; i++)
+        _Leg.plan(points[i - 1], points[i], solids, districtArc: false),
+    ];
+    var length = 0.0;
+    for (final leg in legs) {
+      length += leg.length;
+    }
+    return Flight._(
+      from: from,
+      to: to,
+      legs: legs,
+      profile: _Profile(
+        length: length,
+        cruise: streetSpeed * timeScale,
+        ramp: rampSeconds / timeScale,
+      ),
+      routed: true,
+    );
+  }
+
+  static double _apart(CameraPose p, double x, double z) {
+    final dx = x - p.x;
+    final dz = z - p.z;
+    return math.sqrt(dx * dx + dz * dz);
+  }
+
+  /// Cruise speeds, world metres per second: down a street, and on the
+  /// direct line (a climb to the overview, a dive back).
+  static const streetSpeed = 10.0;
+  static const directSpeed = 36.0;
+
+  /// The speed ramps up over this long and down over this long, on a
+  /// smoothstep, so acceleration starts and ends at zero; a short hop
+  /// shortens both ramps and never reaches the cruise.
+  static const rampSeconds = 1.6;
+
+  /// A street flight cruises this high above the road: over the parade,
+  /// level with the screens, under every sign and the gantry.
+  static const streetFlightHeight = 5.0;
+
+  /// A street flight looks at the point this far ahead along the way.
+  static const lookAhead = 12.0;
+
+  /// A via point this close to the previous point is dropped.
+  static const viaMergeDistance = 0.5;
+
+  static const arcThreshold = 60.0;
+
+  /// How far above a solid's top, or below its bottom, a leg must stay to
+  /// count as clearing it; the lift over a solid ends this high.
+  static const clearance = 1.5;
+
+  /// The lift profile of a leg: a climb over the first [rampStart] of it,
+  /// a cruise, a descent over the last [rampEnd]. The default ramps make
+  /// an arc of a district crossing; over solids the ramps shrink to
+  /// [rampFit] of the way to the first and from the last, so the cruise
+  /// height is reached before the first wall and held past the last one.
+  /// A stop a step from a wall the line crosses makes a ramp as short as
+  /// [minRamp]: a near-vertical climb or drop beside that wall, which is
+  /// the only path there is.
+  static const defaultRamp = 0.35;
+  static const minRamp = 0.005;
+  static const rampFit = 0.85;
+
+  /// A pose inside a solid would ask for an unbounded lift at a ramp's
+  /// foot; the profile is floored here, which bounds the ask. The stop
+  /// poses stand outside every solid, so they never reach it.
+  static const profileFloor = 0.3;
+
+  /// Flights shorter than this on the ground keep a direct yaw blend; the
+  /// heading would swing too fast to be worth turning into.
+  static const lookAlongThreshold = 8.0;
+
+  final CameraPose from;
+  final CameraPose to;
+  final Duration duration;
+
+  /// Whether the flight follows the street (see [Flight.route]).
+  final bool routed;
+
+  final List<_Leg> _legs;
+  final _Profile _profile;
+
+  /// The way, world metres, legs summed.
+  double get length => _profile.length;
+
+  /// How many straight legs the way has.
+  int get legCount => _legs.length;
+
+  /// The speed the flight cruises at once its ramp is done, and how long
+  /// each ramp takes; both shrink on a hop too short to reach the cruise.
+  double get cruiseSpeed => _profile.v;
+  double get rampTime => _profile.t;
+
+  /// Peak extra height over the straight line of any leg, world meters.
+  double get arc => _legs.fold(0, (m, leg) => math.max(m, leg.arc));
+
+  /// The first leg's ramps, as fractions of that leg.
+  double get rampStart => _legs.first.rampStart;
+  double get rampEnd => _legs.first.rampEnd;
+
+  /// Extra height over the straight line [s] of the way along (0..1).
+  double liftAt(double s) {
+    final (leg, f) = _locate(s.clamp(0.0, 1.0) * length);
+    return leg.liftAt(f);
+  }
+
+  /// Horizontal distance of the trip, end to end.
+  double get groundDistance {
+    final dx = to.x - from.x;
+    final dz = to.z - from.z;
+    return math.sqrt(dx * dx + dz * dz);
+  }
+
+  /// Fraction of the trip that is horizontal (0 = straight up/down).
+  double get horizontalFraction {
+    final total = from.distanceTo(to);
+    return total == 0 ? 1 : (groundDistance / total).clamp(0.0, 1.0);
+  }
+
+  /// The heading of a direct flight's travel, or null for a short hop or
+  /// a mostly vertical trip (a climb to the overview must not whip round
+  /// to face its path).
+  double? get travelYaw {
+    if (groundDistance < lookAlongThreshold) return null;
+    if (horizontalFraction < 0.55) return null;
+    final dx = to.x - from.x;
+    final dz = to.z - from.z;
+    return math.atan2(dx, dz);
+  }
+
+  Duration _elapsed = Duration.zero;
+
+  Duration get elapsed => _elapsed;
+  bool get done => _elapsed >= duration;
+
+  /// Advances the flight and returns the pose for this frame.
+  CameraPose advance(Duration dt) {
+    _elapsed += dt;
+    if (_elapsed > duration) _elapsed = duration;
+    return poseAt(progress);
+  }
+
+  /// Normalised progress, 0..1.
+  double get progress => duration == Duration.zero
+      ? 1
+      : (_elapsed.inMicroseconds / duration.inMicroseconds).clamp(0.0, 1.0);
+
+  /// How far along the way the flight is at [t] of its time (0..1).
+  double distanceAt(double t) =>
+      _profile.distanceAt(t.clamp(0.0, 1.0) * _profile.duration);
+
+  /// The leg [d] metres along the way is on, and the fraction of it.
+  (_Leg, double) _locate(double d) {
+    var start = 0.0;
+    for (final leg in _legs) {
+      if (d <= start + leg.length || identical(leg, _legs.last)) {
+        final f = leg.length == 0 ? 1.0 : ((d - start) / leg.length);
+        return (leg, f.clamp(0.0, 1.0));
+      }
+      start += leg.length;
+    }
+    return (_legs.last, 1);
+  }
+
+  /// The point [d] metres along the way, on the ground.
+  (double, double) _groundAt(double d) {
+    final (leg, f) = _locate(d);
+    return (
+      leg.from.x + (leg.to.x - leg.from.x) * f,
+      leg.from.z + (leg.to.z - leg.from.z) * f,
+    );
+  }
+
+  /// The pose at [t] of the flight's time (0..1): along the way on the
+  /// speed profile, the lift of the leg, and a yaw that turns into the
+  /// way during the first ramp, follows it, and settles onto the target
+  /// heading during the last; the pitch dips while lifted so the camera
+  /// looks down at what it crosses.
+  CameraPose poseAt(double t) {
+    final d = distanceAt(t);
+    final (leg, f) = _locate(d);
+    final x = leg.from.x + (leg.to.x - leg.from.x) * f;
+    final z = leg.from.z + (leg.to.z - leg.from.z) * f;
+    final lift = leg.liftAt(f);
+    final y = leg.from.y + (leg.to.y - leg.from.y) * f + lift;
+
+    final ramp = _profile.rampDistance;
+    final total = length;
+    // Where in the ramps: 0..1 up the first, 0..1 down the last.
+    final inRamp = ramp == 0 ? 1.0 : (d / ramp).clamp(0.0, 1.0);
+    final outRamp = ramp == 0
+        ? 1.0
+        : ((d - (total - ramp)) / ramp).clamp(0.0, 1.0);
+
+    final double yaw;
+    final along = routed ? _lookAheadYaw(d, x, z, leg) : travelYaw;
+    if (along == null) {
+      yaw = _turn(from.yaw, to.yaw, _smooth(t));
+    } else if (d < ramp) {
+      yaw = _turn(from.yaw, along, _smooth(inRamp));
+    } else if (d > total - ramp) {
+      yaw = _turn(along, to.yaw, _smooth(outRamp));
+    } else {
+      yaw = along;
+    }
+
+    final double pitch;
+    if (routed) {
+      // Level down the street; the stop's own pitch on arrival.
+      pitch = d < ramp
+          ? from.pitch * (1 - _smooth(inRamp))
+          : d > total - ramp
+          ? to.pitch * _smooth(outRamp)
+          : 0;
+    } else {
+      pitch = from.pitch + (to.pitch - from.pitch) * _smooth(t);
+    }
+    final pitchDip = lift == 0 ? 0.0 : -math.atan2(lift, 40) * 0.9;
+    return CameraPose(x: x, y: y, z: z, yaw: yaw, pitch: pitch + pitchDip);
+  }
+
+  /// The heading from ([x], [z]) to the point [lookAhead] metres further
+  /// along the way; the leg's own heading once the way runs out.
+  double _lookAheadYaw(double d, double x, double z, _Leg leg) {
+    final ahead = math.min(length, d + lookAhead);
+    final (ax, az) = _groundAt(ahead);
+    final dx = ax - x;
+    final dz = az - z;
+    if (dx * dx + dz * dz < 1e-6) {
+      return math.atan2(leg.to.x - leg.from.x, leg.to.z - leg.from.z);
+    }
+    return math.atan2(dx, dz);
+  }
+
+  static double _smooth(double t) => t * t * (3 - 2 * t);
+
+  /// Interpolates a heading the short way round.
+  static double _turn(double a, double b, double s) {
+    var d = b - a;
+    while (d > math.pi) {
+      d -= 2 * math.pi;
+    }
+    while (d < -math.pi) {
+      d += 2 * math.pi;
+    }
+    return a + d * s;
+  }
+}
+
+/// One straight leg of a flight, with the lift that keeps it out of the
+/// solids on its line.
+class _Leg {
+  const _Leg({
+    required this.from,
+    required this.to,
+    required this.length,
+    required this.arc,
+    required this.rampStart,
+    required this.rampEnd,
+  });
+
+  /// Sweeps the line from [from] to [to] against [solids]: whatever it
+  /// would pass through, the leg lifts over. With [districtArc], a leg
+  /// over [Flight.arcThreshold] metres rises into an arc regardless.
+  factory _Leg.plan(
+    CameraPose from,
+    CameraPose to,
+    Iterable<Solid> solids, {
+    required bool districtArc,
+  }) {
+    final dist = from.distanceTo(to);
+    final dx = to.x - from.x;
+    final dz = to.z - from.z;
+    final ground = math.sqrt(dx * dx + dz * dz);
+    // The arc is for crossing the district; a climb is already an arc.
+    final horizontal = dist == 0 ? 1.0 : (ground / dist).clamp(0.0, 1.0);
+    final baseArc = districtArc && dist > Flight.arcThreshold
+        ? math.min(45, dist * 0.22) * horizontal
+        : 0.0;
+
+    // Where the line enters and leaves each solid, seen from above;
+    // whether the height matters is decided below.
+    final spans = <_Span>[
+      for (final solid in solids) ?_span(from, to, solid),
+    ];
+    // Lifting over one solid can raise the line into another it would
+    // have passed under (a gantry beam), so the set grows until it holds.
+    final lifted = <_Span>{
+      for (final span in spans)
+        if (span.blocks(from, to, (_) => 0)) span,
+    };
+    var arc = baseArc;
+    var rampStart = Flight.defaultRamp;
+    var rampEnd = Flight.defaultRamp;
+    while (true) {
+      if (lifted.isNotEmpty) {
+        var first = 1.0;
+        var last = 0.0;
+        for (final span in lifted) {
+          first = math.min(first, span.sIn);
+          last = math.max(last, span.sOut);
+        }
+        rampStart = (Flight.rampFit * first).clamp(
+          Flight.minRamp,
+          Flight.defaultRamp,
+        );
+        rampEnd = (Flight.rampFit * (1 - last)).clamp(
+          Flight.minRamp,
+          Flight.defaultRamp,
+        );
+        arc = baseArc;
+        for (final span in lifted) {
+          for (final s in span.samples) {
+            final need = span.ceiling - _lerp(from.y, to.y, s);
+            if (need <= 0) continue;
+            final profile = math.max(
+              _profile(s, rampStart, rampEnd),
+              Flight.profileFloor,
+            );
+            arc = math.max(arc, need / profile);
+          }
+        }
+      }
+      final rs = rampStart;
+      final re = rampEnd;
+      final a = arc;
+      final grown = spans
+          .where((span) => !lifted.contains(span))
+          .where(
+            (span) => span.blocks(from, to, (s) => a * _profile(s, rs, re)),
+          )
+          .toList();
+      if (grown.isEmpty) break;
+      lifted.addAll(grown);
+    }
+    return _Leg(
+      from: from,
+      to: to,
+      length: dist,
+      arc: arc,
+      rampStart: rampStart,
+      rampEnd: rampEnd,
+    );
+  }
+
+  final CameraPose from;
+  final CameraPose to;
+
+  /// End to end, world metres, the lift not counted.
+  final double length;
+
+  /// Peak extra height over the straight line, world meters.
+  final double arc;
+
+  /// The fraction of the leg the climb takes, and the descent.
+  final double rampStart;
+  final double rampEnd;
+
+  /// Extra height over the straight line at [s] of the leg (0..1).
+  double liftAt(double s) => arc * _profile(s, rampStart, rampEnd);
+
+  /// The fraction of the way (0..1) the line spends over [solid]'s
+  /// footprint, or null when it misses.
+  static _Span? _span(CameraPose from, CameraPose to, Solid solid) {
+    final f = solid.footprint;
+    final (u0, v0) = f.local(from.x, from.z);
+    final (u1, v1) = f.local(to.x, to.z);
+    var sIn = 0.0;
+    var sOut = 1.0;
+    for (final (a, b, half) in [
+      (u0, u1, f.width / 2),
+      (v0, v1, f.depth / 2),
+    ]) {
+      final d = b - a;
+      if (d.abs() < 1e-9) {
+        if (a.abs() >= half) return null;
+        continue;
+      }
+      final t0 = (-half - a) / d;
+      final t1 = (half - a) / d;
+      sIn = math.max(sIn, math.min(t0, t1));
+      sOut = math.min(sOut, math.max(t0, t1));
+      if (sIn >= sOut) return null;
+    }
+    return _Span(
+      sIn: sIn,
+      sOut: sOut,
+      floor: solid.bottom - Flight.clearance,
+      ceiling: solid.top + Flight.clearance,
+    );
+  }
+
+  static double _lerp(double a, double b, double s) => a + (b - a) * s;
+
+  static double _profile(double s, double rampStart, double rampEnd) {
+    if (s < rampStart) return Flight._smooth(s / rampStart);
+    if (s > 1 - rampEnd) return Flight._smooth((1 - s) / rampEnd);
+    return 1;
+  }
+}
+
+/// The stretch of a leg's line over one solid's footprint, with the
+/// heights the line must stay above or below.
+class _Span {
+  const _Span({
+    required this.sIn,
+    required this.sOut,
+    required this.floor,
+    required this.ceiling,
+  });
+
+  final double sIn;
+  final double sOut;
+  final double floor;
+  final double ceiling;
+
+  static const sampleCount = 12;
+
+  /// Points along the stretch, both ends included.
+  Iterable<double> get samples sync* {
+    for (var k = 0; k <= sampleCount; k++) {
+      yield sIn + (sOut - sIn) * k / sampleCount;
+    }
+  }
+
+  /// Whether the line, raised by [lift] at each point, enters the solid's
+  /// band of height anywhere along the stretch.
+  bool blocks(CameraPose from, CameraPose to, double Function(double) lift) {
+    for (final s in samples) {
+      final y = from.y + (to.y - from.y) * s + lift(s);
+      if (y > floor && y < ceiling) return true;
+    }
+    return false;
+  }
+}
+
+/// The speed profile of a flight: an S-curve up to a cruise and down
+/// again. Speed follows a smoothstep over each ramp, so acceleration
+/// starts and ends at zero, and the ramps meet in the middle of a way too
+/// short to reach the cruise.
+class _Profile {
+  _Profile({required this.length, required double cruise, required double ramp})
+    : assert(length >= 0, 'a way has a length'),
+      assert(cruise > 0 && ramp > 0, 'a profile needs a speed and a ramp') {
+    if (length == 0) {
+      t = 0;
+      v = 0;
+      cruiseTime = 0;
+    } else if (length < cruise * ramp) {
+      // No cruise: the ramps take the whole way, shortened so a hop stays
+      // brisk (the peak speed scales with the square root of the way).
+      t = math.sqrt(length * ramp / cruise);
+      v = length / t;
+      cruiseTime = 0;
+    } else {
+      t = ramp;
+      v = cruise;
+      cruiseTime = (length - cruise * ramp) / cruise;
+    }
+  }
+
+  final double length;
+
+  /// The cruise speed and the ramp time, as flown.
+  late final double v;
+  late final double t;
+  late final double cruiseTime;
+
+  double get duration => 2 * t + cruiseTime;
+
+  /// The way covered by one ramp: half of what the cruise would cover.
+  double get rampDistance => v * t / 2;
+
+  /// The way covered [time] seconds in.
+  double distanceAt(double time) {
+    if (duration == 0) return length;
+    final s = time.clamp(0.0, duration);
+    if (s < t) return v * t * _rampWay(s / t);
+    if (s <= t + cruiseTime) return rampDistance + v * (s - t);
+    return length - v * t * _rampWay((duration - s) / t);
+  }
+
+  /// The way covered [tau] of a ramp in, as a fraction of `v × t`: the
+  /// integral of the smoothstep speed.
+  static double _rampWay(double tau) =>
+      tau * tau * tau - tau * tau * tau * tau / 2;
+}

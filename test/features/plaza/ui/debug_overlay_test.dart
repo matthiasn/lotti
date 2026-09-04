@@ -11,27 +11,25 @@ void main() {
   late PlazaLayoutKnobs knobs;
   late int configChanges;
   late int knobsApplied;
-  late int presetCycles;
-  late int overheadToggles;
 
   setUp(() {
     stats = PlazaHarnessStats()
       ..fps = 60
+      ..engineFps = 120
       ..avgFrameMs = 16.6
       ..worstFrameMs = 20
       ..buildings = 28
-      ..near = 9
-      ..mid = 13
-      ..far = 6
+      ..live = 1
+      ..sign = 13
+      ..far = 14
       ..captures = 42
+      ..surfaceCaptures = 7
       ..lastCaptureMs = 1.5
       ..promotions = 3;
     config = FacadeLodConfig();
     knobs = PlazaLayoutKnobs();
     configChanges = 0;
     knobsApplied = 0;
-    presetCycles = 0;
-    overheadToggles = 0;
   });
 
   Widget host() {
@@ -42,11 +40,9 @@ void main() {
             stats: stats,
             config: config,
             knobs: knobs,
-            presetLabel: 'waddle',
-            onCyclePreset: () => presetCycles++,
+            datasetLabel: 'demo',
             onConfigChanged: () => configChanges++,
             onKnobsApplied: () => knobsApplied++,
-            onToggleOverhead: () => overheadToggles++,
           ),
         ),
       ),
@@ -57,10 +53,11 @@ void main() {
   testWidgets('renders the frame and tier instrumentation', (tester) async {
     await tester.pumpWidget(host());
     expect(find.text('60 fps'), findsOneWidget);
-    expect(find.text('buildings 28   preset waddle'), findsOneWidget);
-    expect(find.text('live 9   static 13   far 6'), findsOneWidget);
+    expect(find.textContaining('engine 120 fps'), findsOneWidget);
+    expect(find.text('buildings 28   data demo'), findsOneWidget);
+    expect(find.text('live 1   sign 13   far 14'), findsOneWidget);
     expect(
-      find.text('captures 42   last 1.5 ms   promos 3'),
+      find.text('captures 42+7   last 1.5 ms   promos 3'),
       findsOneWidget,
     );
   });
@@ -75,47 +72,58 @@ void main() {
     expect(find.text('60 fps'), findsNothing);
   });
 
-  testWidgets('cap sliders mutate the LOD config', (tester) async {
+  testWidgets('budget sliders mutate the LOD config', (tester) async {
     await tester.pumpWidget(host());
     final sliders = find.byType(Slider);
     await tester.drag(sliders.at(0), const Offset(80, 0));
     await tester.pump();
-    expect(config.nearCap, isNot(12));
+    expect(config.liveCap, isNot(4));
     expect(configChanges, greaterThan(0));
-
     await tester.drag(sliders.at(1), const Offset(80, 0));
     await tester.pump();
-    expect(config.midCap, isNot(60));
+    expect(config.signCap, isNot(80));
+    await tester.drag(sliders.at(2), const Offset(80, 0));
+    await tester.pump();
+    expect(config.liveDistance, isNot(26));
+    await tester.drag(sliders.at(3), const Offset(80, 0));
+    await tester.pump();
+    expect(config.signDistance, isNot(140));
+    expect(knobsApplied, 0);
   });
 
   testWidgets('layout knob sliders apply on release', (tester) async {
     await tester.pumpWidget(host());
     final sliders = find.byType(Slider);
-    await tester.drag(sliders.at(2), const Offset(60, 0)); // px/m
+    await tester.drag(sliders.at(4), const Offset(60, 0)); // px/m
     await tester.pump();
     expect(knobs.pxPerMeter, isNot(90));
     expect(knobsApplied, greaterThan(0));
 
     final appliedSoFar = knobsApplied;
-    await tester.drag(sliders.at(3), const Offset(60, 0)); // road width
+    await tester.drag(sliders.at(5), const Offset(60, 0)); // road width
     await tester.pump();
     expect(knobs.roadWidth, isNot(25));
     expect(knobsApplied, greaterThan(appliedSoFar));
 
-    await tester.drag(sliders.at(4), const Offset(60, 0)); // max height
+    await tester.drag(sliders.at(6), const Offset(60, 0)); // max height
     await tester.pump();
-    expect(knobs.maxHeight, isNot(12));
+    expect(knobs.maxHeight, isNot(14));
   });
 
-  testWidgets('stress switch and buttons fire their callbacks', (tester) async {
+  testWidgets('stress switch flips forceAllLive', (tester) async {
     await tester.pumpWidget(host());
     await tester.tap(find.byType(Switch));
     await tester.pump();
     expect(config.forceAllLive, isTrue);
+    expect(configChanges, 1);
+  });
 
-    await tester.tap(find.text('preset'));
-    expect(presetCycles, 1);
-    await tester.tap(find.text('overhead'));
-    expect(overheadToggles, 1);
+  test('a cap for every setting: auto lets movement run at the display', () {
+    expect(PlazaFrameRate.sixty.capFor(moving: true), 60);
+    expect(PlazaFrameRate.sixty.capFor(moving: false), 60);
+    expect(PlazaFrameRate.thirty.capFor(moving: true), 30);
+    expect(PlazaFrameRate.auto.capFor(moving: true), isNull);
+    expect(PlazaFrameRate.auto.capFor(moving: false), 30);
+    expect(PlazaFrameRate.values.map((r) => r.label), ['auto', '60', '30']);
   });
 }

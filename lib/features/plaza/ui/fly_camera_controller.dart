@@ -2,87 +2,201 @@ import 'dart:math' as math;
 
 import 'package:flutter/services.dart';
 import 'package:flutter_scene/scene.dart';
+import 'package:lotti/features/plaza/domain/flight.dart';
+import 'package:lotti/features/plaza/domain/plaza_layout.dart';
+import 'package:lotti/features/plaza/domain/solid.dart';
+import 'package:lotti/features/plaza/domain/street_network.dart';
+import 'package:lotti/features/plaza/domain/walk_collider.dart';
 import 'package:vector_math/vector_math.dart' show Vector3;
 
-/// First-person walk camera with an animated overhead search mode.
+/// First-person walk camera with flights.
 ///
-/// WASD/arrows + drag-look on desktop; space toggles auto-walk. The
-/// overhead toggle blends smoothly — transitions are animated, never cut
-/// (spec §10).
+/// WASD/arrows walk (shift sprints), drag looks, and [flyTo] hands the pose
+/// to a [Flight]: between two stops on the ground it follows the street
+/// network; otherwise it is the direct line. Either way it is planned over
+/// the world's solids, so it lifts over whatever stands on its line; any
+/// movement input cancels a flight in place. Walking happens at
+/// [eyeHeight] and stays out of buildings via the collider; a pose set
+/// elsewhere (the overview) keeps its height until the next step, which
+/// lands beside a building, never inside one.
 class FlyCameraController {
   FlyCameraController({
-    required Vector3 position,
-    required this._yaw,
-  }) : _position = Vector3.copy(position);
+    required CameraPose pose,
+    WalkCollider? collider,
+    Iterable<Solid> solids = const [],
+    StreetNetwork? network,
+  }) : _pose = pose,
+       _collider = collider,
+       _solids = List.unmodifiable(solids),
+       _network = network;
+  // ignore_for_file: prefer_initializing_formals
 
-  // Slightly above head height so tall content-sized facades read well.
-  static const _eyeHeight = 5.0;
-  static const _walkSpeed = 12.0;
-  static const _sprintFactor = 3.0;
-  static const _overheadHeight = 90.0;
-  static const _overheadBack = 40.0;
+  static const walkSpeed = 3.4;
+  static const _sprintFactor = 2.5;
 
-  final Vector3 _position;
-  double _yaw;
-  double _pitch = 0;
+  /// Vertical field of view: a game camera, not a phone lens.
+  static const double fovRadiansY = 60 * math.pi / 180;
+
+  /// Velocity smoothing: reaches ~63% of the target in this many seconds.
+  static const _accelSeconds = 0.12;
+
+  double _vForward = 0;
+  double _vStrafe = 0;
+
+  CameraPose _pose;
+  final WalkCollider? _collider;
+  final List<Solid> _solids;
+  final StreetNetwork? _network;
+
+  /// A pose no higher than this above the ground counts as a stop on the
+  /// street, which a flight reaches along the network.
+  static const double groundCeiling = Flight.streetFlightHeight + 1;
   final Set<LogicalKeyboardKey> _pressed = {};
-
-  double _overheadBlend = 0;
-  bool _overhead = false;
+  Flight? _flight;
 
   /// Scripted forward input (benchmark mode): -1..1, applied when no key is
   /// pressed.
   double autoForward = 0;
 
-  Vector3 get position => _position;
-  bool get overhead => _overhead;
+  /// Called when a flight lands.
+  void Function()? onArrived;
+
+  /// Called when movement input cancels a flight.
+  void Function()? onFlightCancelled;
+
+  /// Called on any movement input (used to abandon the morning walk).
+  void Function()? onMovement;
+
+  CameraPose get pose => _pose;
+  set pose(CameraPose value) {
+    _pose = value;
+    _flight = null;
+    _vForward = 0;
+    _vStrafe = 0;
+  }
+
+  Vector3 get position => Vector3(_pose.x, _pose.y, _pose.z);
+
+  /// The unit view direction for the current yaw and pitch.
+  Vector3 get forward {
+    final cosP = math.cos(_pose.pitch);
+    return Vector3(
+      math.sin(_pose.yaw) * cosP,
+      math.sin(_pose.pitch),
+      math.cos(_pose.yaw) * cosP,
+    );
+  }
+
+  double get yaw => _pose.yaw;
+  double get pitch => _pose.pitch;
+  Flight? get flight => _flight;
+  bool get flying => _flight != null;
+
+  /// Whether the walker is under way: a movement key held, or still
+  /// coasting after one.
+  bool get moving =>
+      _vForward != 0 || _vStrafe != 0 || _pressed.any(_movementKeys.contains);
+
+  /// Starts a flight to [target]; the current flight, if any, is replaced.
+  /// From one stop on the ground to another the flight follows the street
+  /// network; a climb, a dive or a world without a street takes the direct
+  /// line. Both are swept over every solid on the way.
+  Flight flyTo(CameraPose target, {double timeScale = 1}) {
+    final network = _network;
+    final onGround = _pose.y <= groundCeiling && target.y <= groundCeiling;
+    final flight = network != null && onGround
+        ? Flight.route(
+            _pose,
+            target,
+            via: network.pathBetween(
+              (_pose.x, _pose.z),
+              (target.x, target.z),
+            ),
+            timeScale: timeScale,
+            solids: _solids,
+          )
+        : Flight.plan(_pose, target, timeScale: timeScale, solids: _solids);
+    _flight = flight;
+    return flight;
+  }
+
+  static final Set<LogicalKeyboardKey> _movementKeys = {
+    LogicalKeyboardKey.keyW,
+    LogicalKeyboardKey.keyA,
+    LogicalKeyboardKey.keyS,
+    LogicalKeyboardKey.keyD,
+    LogicalKeyboardKey.arrowUp,
+    LogicalKeyboardKey.arrowDown,
+    LogicalKeyboardKey.arrowLeft,
+    LogicalKeyboardKey.arrowRight,
+  };
+  static final Set<LogicalKeyboardKey> _trackedKeys = {
+    ..._movementKeys,
+    LogicalKeyboardKey.shiftLeft,
+    LogicalKeyboardKey.shiftRight,
+  };
 
   /// Feed key events from the harness. Returns true when handled.
   bool handleKeyEvent(KeyEvent event) {
     final key = event.logicalKey;
-    if (key == LogicalKeyboardKey.space) {
-      if (event is KeyDownEvent) {
-        // Stop/play: toggle auto-walk. Also clears any stuck movement key
-        // (a key-up lost to a focus change would otherwise walk forever).
-        autoForward = autoForward == 0 ? 1 : 0;
-        _pressed.clear();
-      }
-      return true;
-    }
-    final tracked = {
-      LogicalKeyboardKey.keyW,
-      LogicalKeyboardKey.keyA,
-      LogicalKeyboardKey.keyS,
-      LogicalKeyboardKey.keyD,
-      LogicalKeyboardKey.arrowUp,
-      LogicalKeyboardKey.arrowDown,
-      LogicalKeyboardKey.arrowLeft,
-      LogicalKeyboardKey.arrowRight,
-      LogicalKeyboardKey.shiftLeft,
-      LogicalKeyboardKey.shiftRight,
-    };
-    if (!tracked.contains(key)) return false;
+    if (!_trackedKeys.contains(key)) return false;
     if (event is KeyDownEvent || event is KeyRepeatEvent) {
       _pressed.add(key);
+      if (_movementKeys.contains(key)) _movementInput();
     } else if (event is KeyUpEvent) {
       _pressed.remove(key);
     }
     return true;
   }
 
-  /// Mouse-drag look, in logical pixels.
-  void addLookDelta(double dx, double dy) {
-    _yaw -= dx * 0.0035;
-    _pitch = (_pitch - dy * 0.0035).clamp(-1.35, 1.35);
+  /// Above this height a movement key lands the camera first.
+  static const double _landingAbove = eyeHeight + 1.5;
+
+  void _movementInput() {
+    if (_flight != null) {
+      final flight = _flight!;
+      _flight = null;
+      onFlightCancelled?.call();
+      // Cancelled mid-arc: come down before walking.
+      if (flight.arc > 0 && _pose.y > _landingAbove) {
+        _land();
+        onMovement?.call();
+        return;
+      }
+    } else if (_pose.y > _landingAbove) {
+      // From the overview: a short landing flight, not a one-frame drop.
+      _land();
+    }
+    onMovement?.call();
   }
 
-  void toggleOverhead() => _overhead = !_overhead;
+  /// Lands on the nearest ground the walker may stand on: straight down
+  /// over a street, beside the wall when the camera is over a roof.
+  void _land() {
+    var x = _pose.x;
+    var z = _pose.z;
+    final collider = _collider;
+    if (collider != null) (x, z) = collider.resolve(x, z);
+    _flight = Flight.plan(
+      _pose,
+      CameraPose(x: x, y: eyeHeight, z: z, yaw: _pose.yaw),
+      solids: _solids,
+    );
+  }
 
-  /// Jump to a pose (used on preset change / locator entry).
-  void reset({required Vector3 position, required double yaw}) {
-    _position.setFrom(position);
-    _yaw = yaw;
-    _pitch = 0;
+  /// Mouse-drag look, in logical pixels. Cancels a flight in place.
+  void addLookDelta(double dx, double dy) {
+    if (_flight != null) {
+      _flight = null;
+      onFlightCancelled?.call();
+    }
+    _pose = CameraPose(
+      x: _pose.x,
+      y: _pose.y,
+      z: _pose.z,
+      yaw: _pose.yaw - dx * 0.0032,
+      pitch: (_pose.pitch - dy * 0.0028).clamp(-1.25, 1.25),
+    );
   }
 
   bool _down(LogicalKeyboardKey a, LogicalKeyboardKey b) =>
@@ -90,6 +204,18 @@ class FlyCameraController {
 
   /// Advance one frame.
   void update(double dt) {
+    final flight = _flight;
+    if (flight != null) {
+      _pose = flight.advance(
+        Duration(microseconds: (dt * 1e6).round()),
+      );
+      if (flight.done) {
+        _flight = null;
+        onArrived?.call();
+      }
+      return;
+    }
+
     // A key-up lost to a focus change (clicking the overlay, panning)
     // would leave a movement key latched and the camera walking forever;
     // reconcile with the hardware's actual pressed set every frame.
@@ -113,62 +239,43 @@ class FlyCameraController {
             ? 1.0
             : 0.0);
 
-    if (forwardInput != 0 || strafeInput != 0) {
-      var speed = _walkSpeed;
-      if (_down(LogicalKeyboardKey.shiftLeft, LogicalKeyboardKey.shiftRight)) {
-        speed *= _sprintFactor;
-      }
-      // Overhead mode pans faster: it is the search mode.
-      speed *= 1 + _overheadBlend * 4;
-      final sinY = math.sin(_yaw);
-      final cosY = math.cos(_yaw);
-      _position
-        ..x += (sinY * forwardInput + cosY * strafeInput) * speed * dt
-        ..z += (cosY * forwardInput - sinY * strafeInput) * speed * dt;
+    var x = _pose.x;
+    var z = _pose.z;
+    var y = _pose.y;
+    var speed = walkSpeed;
+    if (_down(LogicalKeyboardKey.shiftLeft, LogicalKeyboardKey.shiftRight)) {
+      speed *= _sprintFactor;
     }
-    _position.y = _eyeHeight;
-
-    final target = _overhead ? 1.0 : 0.0;
-    final rate = dt * 2.2;
-    _overheadBlend =
-        _overheadBlend + (target - _overheadBlend).clamp(-rate, rate);
+    // Short acceleration and deceleration instead of an on/off switch.
+    final blend = dt <= 0 ? 1.0 : (1 - math.exp(-dt / _accelSeconds));
+    _vForward += (forwardInput * speed - _vForward) * blend;
+    _vStrafe += (strafeInput * speed - _vStrafe) * blend;
+    if (_vForward.abs() < 0.01) _vForward = 0;
+    if (_vStrafe.abs() < 0.01) _vStrafe = 0;
+    if (_vForward != 0 || _vStrafe != 0) {
+      // Walking happens at eye height; a pose set from the overview drops
+      // to the ground on the first step.
+      y = eyeHeight;
+      final sinY = math.sin(_pose.yaw);
+      final cosY = math.cos(_pose.yaw);
+      x += (sinY * _vForward + cosY * _vStrafe) * dt;
+      z += (cosY * _vForward - sinY * _vStrafe) * dt;
+      final collider = _collider;
+      if (collider != null) {
+        (x, z) = collider.resolve(x, z);
+      }
+    }
+    _pose = CameraPose(x: x, y: y, z: z, yaw: _pose.yaw, pitch: _pose.pitch);
   }
 
   /// The camera for this frame.
   Camera camera() {
-    final sinY = math.sin(_yaw);
-    final cosY = math.cos(_yaw);
-    final cosP = math.cos(_pitch);
-    final forward = Vector3(sinY * cosP, math.sin(_pitch), cosY * cosP);
-
-    // Smoothstep the blend so both ends ease.
-    final t = _overheadBlend * _overheadBlend * (3 - 2 * _overheadBlend);
-
-    final groundEye = _position;
-    final overheadEye = Vector3(
-      _position.x - sinY * _overheadBack,
-      _overheadHeight,
-      _position.z - cosY * _overheadBack,
-    );
-    final eye = Vector3(
-      groundEye.x + (overheadEye.x - groundEye.x) * t,
-      groundEye.y + (overheadEye.y - groundEye.y) * t,
-      groundEye.z + (overheadEye.z - groundEye.z) * t,
-    );
-
-    final groundTarget = groundEye + forward * 10;
-    // Overhead looks at the walker's spot, tracking the street.
-    final overheadTarget = Vector3(_position.x, 0, _position.z);
-    final lookAt = Vector3(
-      groundTarget.x + (overheadTarget.x - groundTarget.x) * t,
-      groundTarget.y + (overheadTarget.y - groundTarget.y) * t,
-      groundTarget.z + (overheadTarget.z - groundTarget.z) * t,
-    );
-
+    final eye = position;
     return PerspectiveCamera(
       position: eye,
-      target: lookAt,
-      fovFar: 2500,
+      target: eye + forward * 10,
+      fovRadiansY: fovRadiansY,
+      fovFar: 1400,
     );
   }
 }
