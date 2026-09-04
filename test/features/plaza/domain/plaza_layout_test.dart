@@ -377,12 +377,14 @@ void main() {
                 a <= segment.length &&
                 lateral(p.$1, p.$2).abs() < 9;
           });
-          // At least the block head on each side.
-          expect(
-            inBlock.length,
-            greaterThanOrEqualTo(2),
-            reason: 'bucket ${segment.bucketIndex}',
+          // The block-head post stands on the left kerb only: the right
+          // kerb is where roof billboards and pylons show from the block
+          // pose, and a post across a headline is worse than a dark kerb.
+          final heads = inBlock.where(
+            (p) => (along(p.$1, p.$2) - blockHeadAlong).abs() < 1e-9,
           );
+          expect(heads, hasLength(1), reason: 'bucket ${segment.bucketIndex}');
+          expect(lateral(heads.single.$1, heads.single.$2), lessThan(0));
           for (final (x, z) in inBlock) {
             expect(lateral(x, z).abs(), closeTo(9 - 1.6, 1e-9));
             final side = lateral(x, z) < 0 ? PlotSide.left : PlotSide.right;

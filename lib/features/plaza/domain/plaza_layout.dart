@@ -550,7 +550,10 @@ List<BannerSlot> bannersFor(StreetPlan plan, {double minHeight = 12}) {
 }
 
 /// Lamp posts on the pavement, in the gaps between buildings (never in
-/// front of a facade) plus the head of every built block, as (x, z) pairs.
+/// front of a facade) plus the head of every built block on the left kerb
+/// (the week sign hangs from it; the right kerb stays clear so no post
+/// crosses a roof billboard or a pylon from the block pose), as (x, z)
+/// pairs.
 List<(double, double)> lampPostsFor(
   StreetPlan plan, {
   required double roadWidth,
@@ -573,7 +576,7 @@ List<(double, double)> lampPostsFor(
               )
               .toList()
             ..sort((a, b) => along(a).compareTo(along(b)));
-      final spots = <double>[blockHeadAlong];
+      final spots = <double>[if (side == PlotSide.left) blockHeadAlong];
       for (var i = 0; i + 1 < plots.length; i++) {
         final gapStart = along(plots[i]) + plots[i].width / 2;
         final gapEnd = along(plots[i + 1]) - plots[i + 1].width / 2;

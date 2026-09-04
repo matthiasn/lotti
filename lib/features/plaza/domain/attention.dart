@@ -94,7 +94,7 @@ TaskAttention attentionFor(PlazaTask task, DateTime now) {
         overdue = true;
         score += (3 + late.inDays ~/ 7).clamp(3, 6);
         if (reason.isEmpty) {
-          reason = 'overdue since ${shortDate(due)}';
+          reason = 'overdue since ${shortDate(due)} — finish or move it';
         }
       } else if (-late.inDays <= dueSoonWindow.inDays) {
         dueSoon = true;
@@ -107,7 +107,7 @@ TaskAttention attentionFor(PlazaTask task, DateTime now) {
       score += 2;
       if (reason.isEmpty) {
         final days = today.difference(_day(task.activityAt)).inDays;
-        reason = 'quiet for $days days';
+        reason = 'quiet for $days days — pick it back up';
       }
     }
     if (task.priority <= 1 && task.state == PlazaTaskState.open) {
@@ -117,7 +117,7 @@ TaskAttention attentionFor(PlazaTask task, DateTime now) {
       score += 1;
     }
     if (reason.isEmpty && dueSoon && due != null) {
-      reason = 'due ${shortDate(due)}';
+      reason = 'due ${shortDate(due)} — finish it';
     }
   }
 

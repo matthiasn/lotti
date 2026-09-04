@@ -24,11 +24,21 @@ class TourStop {
   final CameraPose? Function(PlazaWorld world) pose;
 }
 
-/// The tour, in order. Names double as screenshot file names.
+/// The tour, in order: the landing, the project card on the jumbotron,
+/// the map, then the street. Names double as screenshot file names.
 final List<TourStop> plazaTourStops = [
   TourStop(
     name: 'home',
     pose: (w) => w.plaza?.home,
+  ),
+  TourStop(
+    name: 'jumbotron',
+    pose: (w) {
+      final slot = w.jumbotron;
+      return slot == null
+          ? null
+          : PlazaSurfaces.facingPose(slot, distance: slot.width * 1.1);
+    },
   ),
   TourStop(
     name: 'overview',
@@ -58,15 +68,6 @@ final List<TourStop> plazaTourStops = [
     },
   ),
   const TourStop(name: 'shopfront', pose: shopfrontPose),
-  TourStop(
-    name: 'jumbotron',
-    pose: (w) {
-      final slot = w.jumbotron;
-      return slot == null
-          ? null
-          : PlazaSurfaces.facingPose(slot, distance: slot.width * 1.1);
-    },
-  ),
 ];
 
 /// The block beacon [fraction] of the way from oldest to newest, or null

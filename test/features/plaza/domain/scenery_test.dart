@@ -257,7 +257,7 @@ void main() {
         expect(tower.yawRadians, closeTo(-slot - delta, 1e-9));
         expect(tower.width, inInclusiveRange(16, 42));
         expect(tower.depth, closeTo(tower.width * 0.8, 1e-9));
-        expect(tower.height, inInclusiveRange(18, 64));
+        expect(tower.height, inInclusiveRange(24, 78));
       }
     });
 
@@ -275,6 +275,93 @@ void main() {
           ),
         );
       }
+    });
+  });
+
+  group('plazaFurnitureFor', () {
+    test('benches and planters down both sides, a kiosk in a corner', () {
+      final furniture = scenery.furniture;
+      final sinH = math.sin(plaza.headingRadians);
+      final cosH = math.cos(plaza.headingRadians);
+      (double, double) local(PlazaFurniture f) {
+        final dx = f.x - plaza.centerX;
+        final dz = f.z - plaza.centerZ;
+        return (dx * cosH - dz * sinH, dx * sinH + dz * cosH);
+      }
+
+      final kiosks = furniture.where((f) => f.kind == FurnitureKind.kiosk);
+      expect(kiosks, hasLength(1));
+      final (kl, ka) = local(kiosks.single);
+      expect(kl, closeTo(kioskLateral, 1e-9));
+      expect(ka, closeTo(kioskAlong, 1e-9));
+      expect(kiosks.single.yawRadians, plaza.headingRadians + math.pi / 2);
+      expect(kiosks.single.height, kioskHeight);
+
+      final sides = furniture.where((f) => f.kind != FurnitureKind.kiosk);
+      expect(sides.length, greaterThanOrEqualTo(8));
+      for (final f in sides) {
+        final (lateral, along) = local(f);
+        expect(lateral.abs(), closeTo(plaza.width / 2 - furnitureInset, 1e-9));
+        expect(along.abs(), lessThan(plaza.depth / 2 - furnitureInset));
+        expect(f.yawRadians, plaza.headingRadians);
+        if (f.kind == FurnitureKind.bench) {
+          expect(
+            (f.width, f.depth, f.height),
+            (benchWidth, benchLength, benchHeight),
+          );
+        } else {
+          expect(
+            (f.width, f.depth, f.height),
+            (planterSize, planterSize, planterHeight),
+          );
+        }
+      }
+      // Alternating, and the same on both sides.
+      for (final side in [-1.0, 1.0]) {
+        final row = sides.where((f) => local(f).$1.sign == side).toList()
+          ..sort((a, b) => local(a).$2.compareTo(local(b).$2));
+        expect(row.length, greaterThanOrEqualTo(4));
+        for (var i = 0; i + 1 < row.length; i++) {
+          expect(row[i].kind, isNot(row[i + 1].kind));
+          expect(
+            local(row[i + 1]).$2 - local(row[i]).$2,
+            closeTo(furnitureSpacing, 1e-9),
+          );
+        }
+      }
+      expect(furniture.map((f) => f.id).toSet(), hasLength(furniture.length));
+    });
+
+    test('nothing on the home pose or between home and a pylon', () {
+      final home = plaza.home;
+      for (final f in scenery.furniture) {
+        final d = math.sqrt(
+          math.pow(f.x - home.x, 2) + math.pow(f.z - home.z, 2),
+        );
+        expect(d, greaterThan(4), reason: f.id);
+        for (final pylon in plaza.pylons) {
+          // Distance from the furniture centre to the home-to-pylon segment.
+          final vx = pylon.x - home.x;
+          final vz = pylon.z - home.z;
+          final len2 = vx * vx + vz * vz;
+          final t = (((f.x - home.x) * vx + (f.z - home.z) * vz) / len2).clamp(
+            0.0,
+            1.0,
+          );
+          final px = home.x + vx * t;
+          final pz = home.z + vz * t;
+          final off = math.sqrt(math.pow(f.x - px, 2) + math.pow(f.z - pz, 2));
+          expect(
+            off,
+            greaterThan(math.max(f.width, f.depth)),
+            reason: '${f.id} vs pylon ${pylon.rank}',
+          );
+        }
+      }
+    });
+
+    test('none without a plaza', () {
+      expect(plazaFurnitureFor(null), isEmpty);
     });
   });
 
@@ -297,7 +384,8 @@ void main() {
       scenery.fillers.length +
           scenery.heroTowers.length +
           1 +
-          scenery.skyline.length,
+          scenery.skyline.length +
+          scenery.furniture.length,
     );
     expect(
       scenery.boxes.map((b) => b.id).toSet(),
@@ -315,6 +403,7 @@ void main() {
       heroTowers: const [],
       jumbotronTower: null,
       skyline: scenery.skyline,
+      furniture: const [],
     );
     expect(without.boxes, hasLength(skylineTowerCount));
   });

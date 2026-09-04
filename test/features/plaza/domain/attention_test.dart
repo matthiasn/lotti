@@ -55,7 +55,7 @@ void main() {
       );
       expect(oneDay.score, 3);
       expect(oneDay.overdue, isTrue);
-      expect(oneDay.reason, 'overdue since Jul 14');
+      expect(oneDay.reason, 'overdue since Jul 14 — finish or move it');
       expect(oneDay.lantern, LanternState.overdue);
 
       final twoWeeks = attentionFor(
@@ -76,7 +76,7 @@ void main() {
       expect(today.score, 2);
       expect(today.dueSoon, isTrue);
       expect(today.overdue, isFalse);
-      expect(today.reason, 'due Jul 15');
+      expect(today.reason, 'due Jul 15 — finish it');
 
       final inThree = attentionFor(
         _task(due: _now.add(const Duration(days: 3))),
@@ -112,7 +112,7 @@ void main() {
       );
       expect(stale.score, 2);
       expect(stale.stale, isTrue);
-      expect(stale.reason, 'quiet for 14 days');
+      expect(stale.reason, 'quiet for 14 days — pick it back up');
 
       // With no activity recorded, creation counts as the last touch.
       final neverTouched = attentionFor(

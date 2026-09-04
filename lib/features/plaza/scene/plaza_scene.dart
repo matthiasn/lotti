@@ -211,6 +211,10 @@ class PlazaSceneController {
   static final Vector4 _plaza = linearColor(const Color(0xFF15131E));
   static final Vector4 _post = linearColor(const Color(0xFF14171F));
   static final Vector4 _tower = linearColor(const Color(0xFF0E0B18));
+
+  /// The skyline ring's body: a shade above the fillers so distant
+  /// silhouettes read against the sky instead of dissolving into it.
+  static final Vector4 _skyline = linearColor(const Color(0xFF161428));
   static final Vector4 _pavement = linearColor(const Color(0xFF232532));
   static final Vector4 _kerb = linearColor(const Color(0xFF4A4E60));
   static final Vector4 _centreLine = linearColor(const Color(0xFF7A7050));
@@ -568,6 +572,16 @@ class PlazaSceneController {
             ),
           ),
         );
+      // A soft warm pool under home, so the landing is a lit spot on a
+      // square rather than a ring on a car park.
+      _addPool(
+        Vector3(plaza.home.x, 0, plaza.home.z),
+        radius: 7,
+        color: const Color(0xFFFFE2B8),
+        alpha: 0.14,
+      );
+      _buildPlazaKerb(plaza);
+      _buildPlazaFurniture();
     }
 
     final byId = {for (final t in world.tasks) t.id: t};
@@ -590,6 +604,195 @@ class PlazaSceneController {
     }
     if (_shown('fillers')) _buildFillerBlocks();
     _buildStreetFurniture();
+  }
+
+  /// A raised kerb round the plaza's edge, open at the street mouth: a
+  /// square with an edge, not a slab. Low enough to step over, so it is
+  /// not a solid.
+  void _buildPlazaKerb(FrontierPlaza plaza) {
+    const kerbW = 0.35;
+    const kerbH = 0.16;
+    const mouth = 26.0;
+    final root = Node(
+      localTransform: Matrix4.translation(
+        Vector3(plaza.centerX, kerbH / 2, plaza.centerZ),
+      )..rotateY(plaza.headingRadians),
+    );
+    final material = UnlitMaterial()..baseColorFactor = _kerb;
+    final hw = plaza.width / 2;
+    final hd = plaza.depth / 2;
+    for (final (dx, dz, sx, sz) in [
+      (hw - kerbW / 2, 0.0, kerbW, plaza.depth),
+      (-hw + kerbW / 2, 0.0, kerbW, plaza.depth),
+      (0.0, hd - kerbW / 2, plaza.width, kerbW),
+      // The mouth side, in two runs either side of the opening.
+      ((hw + mouth / 2) / 2, -hd + kerbW / 2, hw - mouth / 2, kerbW),
+      (-(hw + mouth / 2) / 2, -hd + kerbW / 2, hw - mouth / 2, kerbW),
+    ]) {
+      root.add(
+        Node(
+          localTransform: Matrix4.translation(Vector3(dx, 0, dz)),
+          mesh: Mesh(CuboidGeometry(Vector3(sx, kerbH, sz)), material),
+        ),
+      );
+    }
+    scene.add(root);
+  }
+
+  /// Benches, planters and the kiosk from `Scenery.furniture`: the boxes
+  /// are the collider's, the dressing is here.
+  void _buildPlazaFurniture() {
+    final dark = UnlitMaterial()..baseColorFactor = _post;
+    final seat = UnlitMaterial()
+      ..baseColorFactor = linearColor(const Color(0xFF4A3A2E));
+    final soil = UnlitMaterial()
+      ..baseColorFactor = linearColor(const Color(0xFF1E1A1C));
+    final leaves = UnlitMaterial()
+      ..baseColorFactor = linearColor(const Color(0xFF2E5A3A));
+    for (final f in world.scenery.furniture) {
+      final root = Node(
+        localTransform: Matrix4.translation(Vector3(f.x, 0, f.z))
+          ..rotateY(f.yawRadians),
+      );
+      switch (f.kind) {
+        case FurnitureKind.bench:
+          root
+            ..add(
+              Node(
+                localTransform: Matrix4.translation(
+                  Vector3(0, f.height * 0.5, 0),
+                ),
+                mesh: Mesh(
+                  CuboidGeometry(Vector3(f.width, 0.08, f.depth)),
+                  seat,
+                ),
+              ),
+            )
+            ..add(
+              Node(
+                localTransform: Matrix4.translation(
+                  Vector3(-f.width * 0.55, f.height * 0.75, 0),
+                ),
+                mesh: Mesh(
+                  CuboidGeometry(Vector3(0.06, f.height * 0.5, f.depth)),
+                  seat,
+                ),
+              ),
+            );
+          for (final dz in [-f.depth * 0.4, f.depth * 0.4]) {
+            root.add(
+              Node(
+                localTransform: Matrix4.translation(
+                  Vector3(0, f.height * 0.25, dz),
+                ),
+                mesh: Mesh(
+                  CuboidGeometry(Vector3(f.width * 0.9, f.height * 0.5, 0.08)),
+                  dark,
+                ),
+              ),
+            );
+          }
+        case FurnitureKind.planter:
+          root
+            ..add(
+              Node(
+                localTransform: Matrix4.translation(
+                  Vector3(0, f.height / 2, 0),
+                ),
+                mesh: Mesh(
+                  CuboidGeometry(Vector3(f.width, f.height, f.depth)),
+                  dark,
+                ),
+              ),
+            )
+            ..add(
+              Node(
+                localTransform: Matrix4.translation(
+                  Vector3(0, f.height + 0.02, 0),
+                ),
+                mesh: Mesh(
+                  CuboidGeometry(Vector3(f.width - 0.2, 0.04, f.depth - 0.2)),
+                  soil,
+                ),
+              ),
+            )
+            ..add(
+              Node(
+                localTransform: Matrix4.translation(
+                  Vector3(0, f.height + 0.45, 0),
+                ),
+                mesh: Mesh(
+                  CuboidGeometry(Vector3(f.width * 0.7, 0.9, f.depth * 0.7)),
+                  leaves,
+                ),
+              ),
+            );
+        case FurnitureKind.kiosk:
+          final sign = UnlitMaterial()
+            ..baseColorFactor = linearColor(const Color(0xFFFFC46B));
+          final window = UnlitMaterial()
+            ..baseColorFactor = linearColor(
+              const Color(0xFFFFD08A),
+              alpha: 0.75,
+            )
+            ..alphaMode = AlphaMode.blend;
+          _pools.add((window, 0.75));
+          root
+            ..add(
+              Node(
+                localTransform: Matrix4.translation(
+                  Vector3(0, f.height / 2, 0),
+                ),
+                mesh: Mesh(
+                  CuboidGeometry(Vector3(f.width, f.height, f.depth)),
+                  UnlitMaterial()..baseColorFactor = _tower,
+                ),
+              ),
+            )
+            // The lit sign along the front's top edge, and the hatch.
+            ..add(
+              Node(
+                localTransform: Matrix4.translation(
+                  Vector3(0, f.height - 0.3, f.depth / 2 + 0.03),
+                ),
+                mesh: Mesh(
+                  CuboidGeometry(Vector3(f.width - 0.3, 0.4, 0.06)),
+                  sign,
+                ),
+              ),
+            )
+            ..add(
+              Node(
+                localTransform: Matrix4.translation(
+                  Vector3(0, f.height * 0.5, f.depth / 2 + 0.02),
+                ),
+                mesh: Mesh(ccwQuad(f.width - 0.8, f.height * 0.42), window),
+              ),
+            )
+            ..add(
+              Node(
+                localTransform: Matrix4.translation(
+                  Vector3(0, f.height + 0.05, 0),
+                ),
+                mesh: Mesh(
+                  CuboidGeometry(Vector3(f.width + 0.4, 0.1, f.depth + 0.4)),
+                  dark,
+                ),
+              ),
+            );
+          _addPool(
+            Vector3(
+              f.x + math.sin(f.yawRadians) * 2,
+              0,
+              f.z + math.cos(f.yawRadians) * 2,
+            ),
+            radius: 3,
+            color: const Color(0xFFFFD08A),
+            alpha: 0.16,
+          );
+      }
+      scene.add(root);
+    }
   }
 
   /// Lamp posts, the gantry over the street mouth, the jumbotron tower,
@@ -684,9 +887,9 @@ class PlazaSceneController {
       scene.add(root);
       _addPool(
         Vector3(gantry.x, 0, gantry.z),
-        radius: gantry.width * 0.4,
+        radius: gantry.width * 0.3,
         color: PlazaStyle.teal,
-        alpha: 0.06,
+        alpha: 0.05,
       );
     }
 
@@ -787,9 +990,9 @@ class PlazaSceneController {
       final jcos = math.cos(jumbotron.facingRadians);
       _addPool(
         Vector3(jumbotron.x + jsin * 9, 0, jumbotron.z + jcos * 9),
-        radius: jumbotron.width * 0.6,
+        radius: jumbotron.width * 0.3,
         color: PlazaStyle.teal,
-        alpha: 0.22,
+        alpha: 0.12,
       );
       // The tower's own spire.
       final spire = Node(
@@ -888,15 +1091,17 @@ class PlazaSceneController {
   void _buildSky() {
     scene.skybox = Skybox(
       GradientSkySource(
-        zenithColor: linearColor(const Color(0xFF04030A)).xyz,
-        horizonColor: linearColor(const Color(0xFF2E1A44)).xyz,
-        groundColor: linearColor(const Color(0xFF0A0712)).xyz,
+        zenithColor: linearColor(const Color(0xFF03030B)).xyz,
+        horizonColor: linearColor(const Color(0xFF1F1F3D)).xyz,
+        groundColor: linearColor(const Color(0xFF090A16)).xyz,
         sunColor: Vector3.zero(),
       ),
     );
     // Ground-hugging haze in the horizon's own colour: the street dissolves
     // into the sky instead of hitting a seam, and it thins with altitude
-    // so the overview still sees the district.
+    // so the overview still sees the district. The night is a desaturated
+    // indigo so amber signage sits warm against it; the magenta lives in
+    // the hero towers' domes alone.
     scene.fog
       ..enabled = true
       ..mode = FogMode.exponential
@@ -905,7 +1110,7 @@ class PlazaSceneController {
       ..height = 0
       ..heightFalloff = 0.028
       ..maxOpacity = fogOpacityLow
-      ..color = linearColor(const Color(0xFF261A44)).xyz;
+      ..color = linearColor(const Color(0xFF1B1C38)).xyz;
   }
 
   void _buildBuilding(PlazaTask task, PlotPlacement placement) {
@@ -1334,23 +1539,8 @@ class PlazaSceneController {
             Vector3(0, slot.centerY, -depth - 0.06),
           ),
       );
-    final rimMaterial = UnlitMaterial()..baseColorFactor = linearColor(frame);
-    const rim = 0.16;
-    for (final (dx, dy, sw, sh) in [
-      (0.0, slot.height / 2 + 0.18, slot.width + 0.5, rim),
-      (0.0, -slot.height / 2 - 0.18, slot.width + 0.5, rim),
-      (-slot.width / 2 - 0.18, 0.0, rim, slot.height + 0.5),
-      (slot.width / 2 + 0.18, 0.0, rim, slot.height + 0.5),
-    ]) {
-      root.add(
-        Node(
-          localTransform: Matrix4.translation(
-            Vector3(dx, slot.centerY + dy, 0.02),
-          ),
-          mesh: Mesh(CuboidGeometry(Vector3(sw, sh, rim)), rimMaterial),
-        ),
-      );
-    }
+    // The panel's own border is the one frame; the lightbox bezel and the
+    // chase lights sit behind it.
     final anchor = Node(
       localTransform: Matrix4.translation(Vector3(0, slot.centerY, 0.06)),
     );
@@ -1650,9 +1840,31 @@ class PlazaSceneController {
           ..rotateY(tower.yawRadians),
         mesh: Mesh(
           CuboidGeometry(Vector3(w, h, tower.depth)),
-          UnlitMaterial()..baseColorFactor = _tower,
+          UnlitMaterial()..baseColorFactor = _skyline,
         ),
       );
+      // A lit roofline along the district-facing edge, warm and teal by
+      // turns, so the ring is a glowing horizon and not a row of dots.
+      final roofline = i.isEven ? const Color(0xFFFFC46B) : PlazaStyle.teal;
+      node
+        ..add(
+          Node(
+            localTransform: Matrix4.translation(
+              Vector3(0, h / 2 + 0.1, tower.depth / 2 - 0.1),
+            ),
+            mesh: Mesh(
+              CuboidGeometry(Vector3(w + 0.2, 0.25, 0.25)),
+              UnlitMaterial()
+                ..baseColorFactor = linearColor(roofline, alpha: 0.95),
+            ),
+          ),
+        )
+        ..add(
+          _glowQuad(w + 4, 3, roofline, 0.16)
+            ..localTransform = Matrix4.translation(
+              Vector3(0, h / 2 + 0.6, tower.depth / 2 + 0.05),
+            ),
+        );
       // Every fourth tower carries a big screen on its district-facing
       // face: the hi-rises behind Times Square are where the screens are.
       if (i % 4 == 1 && world.anomalies.isNotEmpty) {

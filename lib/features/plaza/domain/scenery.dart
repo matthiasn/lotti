@@ -101,6 +101,26 @@ class SkylineTower extends SceneryBox {
   final int index;
 }
 
+/// What a piece of plaza furniture is.
+enum FurnitureKind { bench, planter, kiosk }
+
+/// A bench, a planter or a kiosk on the plaza: solid, so the walker goes
+/// round it.
+class PlazaFurniture extends SceneryBox {
+  const PlazaFurniture({
+    required super.id,
+    required this.kind,
+    required super.x,
+    required super.z,
+    required super.yawRadians,
+    required super.width,
+    required super.depth,
+    required super.height,
+  });
+
+  final FurnitureKind kind;
+}
+
 /// Everything seeded that stands around the street.
 class Scenery {
   const Scenery({
@@ -108,12 +128,14 @@ class Scenery {
     required this.heroTowers,
     required this.jumbotronTower,
     required this.skyline,
+    required this.furniture,
   });
 
   final List<FillerBlock> fillers;
   final List<HeroTower> heroTowers;
   final SceneryBox? jumbotronTower;
   final List<SkylineTower> skyline;
+  final List<PlazaFurniture> furniture;
 
   /// Every box, for the collider.
   List<SceneryBox> get boxes => [
@@ -121,6 +143,7 @@ class Scenery {
     ...heroTowers,
     ?jumbotronTower,
     ...skyline,
+    ...furniture,
   ];
 }
 
@@ -252,7 +275,8 @@ SceneryBox? jumbotronTowerFor(BillboardSlot? jumbotron) {
 }
 
 /// Towers on the skyline ring, and how far beyond the district's radius
-/// the ring starts.
+/// the ring starts. The towers stand 24 to 78 m so their lit rooflines
+/// show over the hero towers from the street.
 const skylineTowerCount = 48;
 const skylineRingClearance = 95.0;
 
@@ -302,11 +326,85 @@ List<SkylineTower> skylineFor(StreetPlan plan, FrontierPlaza? plaza) {
         yawRadians: -angle,
         width: width,
         depth: width * 0.8,
-        height: 18 + stableUnit(id, 'h') * 46,
+        height: 24 + stableUnit(id, 'h') * 54,
       ),
     );
   }
   return towers;
+}
+
+/// Plaza furniture, plaza-local metres: benches and planters this far in
+/// from the long sides, one every [furnitureSpacing] along, alternating;
+/// a kiosk in the back-left corner, out of the home pose's frame and off
+/// every line from home to a pylon.
+const furnitureInset = 4.0;
+const furnitureSpacing = 12.0;
+const benchWidth = 0.6;
+const benchLength = 2.0;
+const benchHeight = 0.9;
+const planterSize = 1.4;
+const planterHeight = 0.8;
+const kioskWidth = 3.0;
+const kioskDepth = 2.4;
+const kioskHeight = 3.2;
+const kioskLateral = -21.0;
+const kioskAlong = 20.0;
+
+/// The furniture on [plaza]: benches and planters down both long sides and
+/// a kiosk. Nothing when there is no plaza.
+List<PlazaFurniture> plazaFurnitureFor(FrontierPlaza? plaza) {
+  if (plaza == null) return const [];
+  final h = plaza.headingRadians;
+  final out = <PlazaFurniture>[];
+  final lateral = plaza.width / 2 - furnitureInset;
+  final reach = plaza.depth / 2 - furnitureInset - furnitureSpacing / 2;
+  for (final side in [-1.0, 1.0]) {
+    var i = 0;
+    for (var along = -reach; along <= reach + 1e-9; along += furnitureSpacing) {
+      final bench = i.isEven;
+      final (x, z) = _slotToWorld(
+        plaza.centerX,
+        plaza.centerZ,
+        h,
+        side * lateral,
+        along,
+      );
+      out.add(
+        PlazaFurniture(
+          id: 'plaza-${side < 0 ? 'l' : 'r'}-$i',
+          kind: bench ? FurnitureKind.bench : FurnitureKind.planter,
+          x: x,
+          z: z,
+          yawRadians: h,
+          width: bench ? benchWidth : planterSize,
+          depth: bench ? benchLength : planterSize,
+          height: bench ? benchHeight : planterHeight,
+        ),
+      );
+      i++;
+    }
+  }
+  final (kx, kz) = _slotToWorld(
+    plaza.centerX,
+    plaza.centerZ,
+    h,
+    kioskLateral,
+    kioskAlong,
+  );
+  out.add(
+    PlazaFurniture(
+      id: 'plaza-kiosk',
+      kind: FurnitureKind.kiosk,
+      x: kx,
+      z: kz,
+      // Its front faces the plaza's axis.
+      yawRadians: h + math.pi / 2,
+      width: kioskWidth,
+      depth: kioskDepth,
+      height: kioskHeight,
+    ),
+  );
+  return out;
 }
 
 /// All the seeded dressing for [plan].
@@ -326,6 +424,7 @@ Scenery sceneryFor(
   heroTowers: heroTowersFor(plan),
   jumbotronTower: jumbotronTowerFor(jumbotron),
   skyline: skylineFor(plan, plaza),
+  furniture: plazaFurnitureFor(plaza),
 );
 
 /// A pylon's two posts stand this far behind the panel's plane and this

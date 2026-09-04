@@ -932,14 +932,17 @@ class WallTextures {
         ..shader = ui.Gradient.radial(
           const ui.Offset(size / 2, size / 2),
           size / 2,
+          // A hot core and a short skirt: the ground goes dark again
+          // within the radius, so pools read as light on paving rather
+          // than a wash.
           const [
             ui.Color(0xFFFFFFFF),
-            ui.Color(0xB3FFFFFF),
-            ui.Color(0x4DFFFFFF),
-            ui.Color(0x14FFFFFF),
+            ui.Color(0x99FFFFFF),
+            ui.Color(0x33FFFFFF),
+            ui.Color(0x0DFFFFFF),
             ui.Color(0x00FFFFFF),
           ],
-          const [0, 0.18, 0.45, 0.75, 1],
+          const [0, 0.12, 0.38, 0.65, 1],
         ),
     );
     return recorder.endRecording().toImageSync(size, size);
@@ -995,8 +998,10 @@ class WallTextures {
         // and a sill-to-lintel gradient so the pane has depth.
         final cool = rng.nextDouble() < 0.3;
         final base = cool ? _coolTint : tint;
+        // Lit panes top out below full white so screens and signs stay
+        // the brightest things on a wall.
         final glow = on
-            ? 0.5 + rng.nextDouble() * 0.5
+            ? 0.4 + rng.nextDouble() * 0.4
             : 0.14 + rng.nextDouble() * 0.1;
         // Reveal: a dark frame around the pane; then the pane with a
         // sill-to-lintel gradient; then mullion and transom.

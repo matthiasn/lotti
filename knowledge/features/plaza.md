@@ -107,7 +107,7 @@ flowchart LR
     World --> Plaza["FrontierPlaza<br/>home, overview, pylons"]
     World --> Overlays["mounts, roof billboards, banners, lamps,<br/>gantry, jumbotron, spires, week signs"]
     World --> Beacons["Beacons"]
-    World --> Scenery["Scenery<br/>fillers, hero towers, jumbotron tower, skyline"]
+    World --> Scenery["Scenery<br/>fillers, hero towers, jumbotron tower, skyline, plaza furniture"]
     World --> Solids["solids<br/>plots, scenery boxes, pylon footings, gantry legs, lamp posts"]
     Scenery --> Solids
     Solids --> Collider["WalkCollider"]
@@ -250,8 +250,11 @@ neon banner (`min(1.8, 0.3 × depth)` wide, `0.7 × height` tall from
 `0.15 × height`) on the end wall facing along their row.
 
 **Lamp posts** (`lampPostsFor`): `roadWidth / 2 - kerbFixtureInset` (1.6 m)
-off the axis on both kerbs, `blockHeadAlong` (1.5 m) into every built block
-plus the middle of every gap between neighbours that is at least 2.5 m wide.
+off the axis, `blockHeadAlong` (1.5 m) into every built block on the left
+kerb only (the right kerb is where roof billboards and pylons show from the
+block pose, and a post across a headline is worse than a dark kerb) plus
+the middle of every gap between neighbours that is at least 2.5 m wide, on
+both kerbs.
 
 **Week signs** (`weekSignsFor`): a 5 × 1.4 m sign hung at 3.2 m from the
 left-hand block-head lamp post (same inset and along as the post, no post
@@ -309,8 +312,10 @@ tasks score zero. Otherwise it sums:
 | `heft >= 6` and created at least `oldAfter` (56 days) ago | 1 |
 
 The `reason` is the first that applies of blocked, overdue since a date,
-quiet for N days, due on a date; it is the headline on billboards, tickers
-and the jumbotron. Score at or above `anomalyThreshold` (3) makes an
+quiet for N days, due on a date, each in the same problem-then-action
+grammar (`blocked — needs a decision`, `overdue since Jul 14 — finish or
+move it`, `quiet for 14 days — pick it back up`, `due Jul 15 — finish
+it`); it is the headline on billboards, tickers and the jumbotron. Score at or above `anomalyThreshold` (3) makes an
 **anomaly**: attention beacon, pulsing lantern, roof billboard, billboard
 candidate. Score at or above `billboardThreshold` (2) may fill a spare
 plaza slot; `billboardCandidates` sorts by score then id and takes six.
@@ -407,7 +412,8 @@ local Z) with a 0.6 m margin: a point-versus-rotated-rectangle push through
 the nearest face. It is built from `PlazaWorld.solids`, which is
 **everything the scene stands on the ground**: the plots
 (`PlotPlacement.footprint`), every scenery box (`Scenery.boxes`: fillers,
-hero towers, the jumbotron tower, the skyline ring), the footings of the
+hero towers, the jumbotron tower, the skyline ring, the plaza furniture),
+the footings of the
 built pylons (`pylonFootprintsFor`), the gantry legs
 (`gantryLegFootprintsFor`) and the lamp posts (`lampPostFootprintsFor`).
 Two neighbours in a crowded week can stand closer than twice the margin,
@@ -440,8 +446,13 @@ task data.
   screen's top.
 - **Skyline** (`skylineFor`): 48 towers on a ring 95 m beyond the farthest
   plot from `planCenterOf` (or the plaza plus 60 m), spread up to 90 m
-  further out, 16 to 42 m wide, 0.8 × as deep, 18 to 64 m tall, each
+  further out, 16 to 42 m wide, 0.8 × as deep, 24 to 78 m tall, each
   turned to face the centre.
+- **Plaza furniture** (`plazaFurnitureFor`): benches (0.6 × 2 × 0.9 m) and
+  planters (1.4 m square, 0.8 m) alternating every 12 m down both long
+  sides, 4 m in from the edge, and one kiosk (3 × 2.4 × 3.2 m) at
+  plaza-local (−21, 20) facing the axis: out of the home pose's frame and
+  off every line from home to a pylon. All solid.
 - **Furniture footprints**: the pylon posts stand `pylonPostSetback` (0.6 m)
   behind the panel at `pylonPostSpread` (0.4) of its width either side on
   1.6 m footings; the gantry legs are 0.5 m square at the ends of its span;
@@ -541,9 +552,11 @@ until it lands.
 
 `PlazaSceneController` builds the `Scene` on construction:
 
-- **Sky**: a `GradientSkySource` (near-black zenith, purple horizon, no
-  sun). **Fog**: exponential, start 8 m, height 0 with falloff 0.028, in a
-  purple close to the horizon, so the street dissolves into the sky. It is
+- **Sky**: a `GradientSkySource` (near-black zenith, desaturated indigo
+  horizon, no sun): the night is cool so amber signage sits warm against
+  it, and the magenta lives in the hero towers' domes alone. **Fog**:
+  exponential, start 8 m, height 0 with falloff 0.028, in an indigo close
+  to the horizon, so the street dissolves into the sky. It is
   **camera-driven**: `updateForCamera` lerps the density from
   `fogDensityLow` (0.0055) to `fogDensityHigh` (0.002) and the max opacity
   from 0.92 to 0.6 as the eye climbs through the pool-fade range, so the
@@ -553,10 +566,15 @@ until it lands.
   both sides, a dashed centre line every 6 m on built segments, and an
   asphalt grain overlay. The plaza is a slab in the ground colour with the
   grain, a paving-joint overlay (`WallTextures.paving`, a 4 m tile of four
-  slabs) and a teal home ring.
-- **Light pools**: one `ccwQuad` with a radial falloff texture per lit
-  facade (radius 0.55 × facade width), lamp post (3 m), pylon
-  (`0.45 × max(width, 8)`), gantry and jumbotron. `updateForCamera` fades
+  slabs), a raised kerb round its edge open at the street mouth (0.16 m,
+  steppable, not a solid), a teal home ring with a soft warm pool under it,
+  and the benches, planters and kiosk from `Scenery.furniture` (the kiosk
+  has a lit sign, a warm hatch and its own pool).
+- **Light pools**: one `ccwQuad` with a radial falloff texture (a hot
+  core and a short skirt, dark again inside the radius) per lit facade
+  (radius 0.55 × facade width), lamp post (3 m), pylon
+  (`0.45 × max(width, 8)`), gantry (0.3 × width) and jumbotron (0.3 × width,
+  alpha 0.12), so the walker stands on dark paving. `updateForCamera` fades
   every pool and glow quad with the eye's altitude from `poolFadeStart`
   (12 m) to `poolFadeTop` (70 m) down to `poolFloor` (0.4), so the overview
   is carried by lanterns, not discs.
@@ -565,7 +583,9 @@ until it lands.
   walls built by `_windowedWall`: a **shopfront band** at the foot
   (`min(4 m, 0.45 × height)`) under tiled **window textures** by lantern
   state (`WallTextures`: a 12 × 12 m tile of 4 floors × 10 bays; lit ratio
-  inProgress 0.62, blocked and overdue 0.5, open 0.36, off 0.2;
+  inProgress 0.62, blocked and overdue 0.5, open 0.36, off 0.2; a lit pane
+  tops out at 0.8 alpha so screens and signs stay the brightest thing on a
+  wall;
   per-wall tile offset), a plinth,
   a stepped-back upper storey at 14 m and above, a roof slab and trim, the
   facade plate (the only pickable part of a building), a progress **light
@@ -593,14 +613,16 @@ until it lands.
   hero towers and the jumbotron tower always trade: they are the city,
   not tasks.
 - **Billboards**: pylons get two braced posts on footings and a catwalk; roof
-  panels get two struts; every panel gets a dark lightbox, a glow quad, a rim
-  in the lantern colour and chase-light points around the frame. The
-  backing box is the pickable node.
+  panels get two struts; every panel gets a dark lightbox, a glow quad and
+  chase-light points around the frame; the panel's own border (the widget's,
+  which breathes) is the one frame. The backing box is the pickable node.
 - **Fillers** (`Scenery.fillers`): dark blocks behind the plots, every
   face a trading shopfront parade under open-state windows; about a third
   carry a neon category sign named after one of the week's own tasks.
-- **Skyline** (`Scenery.skyline`): the ring of towers with two windowed
-  faces toward the district; every fourth carries a screen that shows the
+- **Skyline** (`Scenery.skyline`): the ring of towers, a shade lighter
+  than the fillers so they read against the sky, with two windowed faces
+  toward the district and a lit roofline (warm and teal by turns) along
+  the district-facing edge; every fourth carries a screen that shows the
   anomalies in rotation.
 - **Hero towers** (`Scenery.heroTowers`, built with the skyline): one past
   the far end of every row that folds, windowed on all four faces, with a teal
