@@ -439,7 +439,8 @@ class _PlazaHarnessState extends State<_PlazaHarness> {
         'live=${_lod.stats.live} sign=${_lod.stats.sign} '
         'focused=${focused?.task.title} '
         'd=${focused?.groundDistanceTo(eye).toStringAsFixed(1)} '
-        'range=${focused?.liveRange.toStringAsFixed(1)}',
+        'range=${focused?.liveRange.toStringAsFixed(1)} '
+        '[${_lod.describeNearest(eye)}]',
       );
     }
     if (_tourClock < _tourHoldSeconds) return;
@@ -457,7 +458,7 @@ class _PlazaHarnessState extends State<_PlazaHarness> {
     final camera = _camera.camera();
     _frameCamera = camera;
     final eye = camera.position;
-    _lod.update(eye);
+    _lod.update(eye, forward: (camera.target - eye).normalized());
     _surfaces.update(eye);
     _sceneController.updateForCamera(eye);
     _sprites.update(camera, _viewSize, _elapsed);

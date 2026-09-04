@@ -78,6 +78,26 @@ class FacadeLodManager {
   /// Sticky factor: a surface already at a tier ranks as if 15% closer.
   static const _hysteresis = 0.85;
 
+  /// The nearest [count] buildings with their tier, ground distance, live
+  /// range and whether the eye is on their street side: the tour prints
+  /// this so a capture can be explained without a debugger.
+  String describeNearest(Vector3 eye, {int count = 5}) {
+    final rows = [
+      for (final (i, b) in buildings.indexed)
+        (b.groundDistanceTo(eye), b, _surfaces[i].tier),
+    ]..sort((a, b) => a.$1.compareTo(b.$1));
+    return rows
+        .take(count)
+        .map(
+          (r) =>
+              '${r.$2.task.title.split(' ').take(3).join(' ')}: '
+              '${r.$3.name} d=${r.$1.toStringAsFixed(1)} '
+              'range=${r.$2.liveRange.toStringAsFixed(1)} '
+              'front=${r.$2.facesEye(eye)}',
+        )
+        .join(' | ');
+  }
+
   /// While true (during flights) no surface is created except the one
   /// pre-captured by [prepare].
   bool suspended = false;
@@ -93,7 +113,10 @@ class FacadeLodManager {
     if (_surfaces[i].tier == FacadeTier.far) _apply(i, FacadeTier.sign);
   }
 
-  void update(Vector3 eye) {
+  /// [forward] is the camera's view direction: a wall behind the walker
+  /// never takes a live slot, however near — standing 22 m from a landmark
+  /// puts the opposite row 3 m behind your back.
+  void update(Vector3 eye, {Vector3? forward}) {
     final n = buildings.length;
     final distances = List<double>.filled(n, 0);
     final order = List<int>.generate(n, (i) => i);
@@ -118,12 +141,15 @@ class FacadeLodManager {
       final building = buildings[i];
       final d = distances[i];
       final inFront = building.facesEye(eye);
+      final ahead =
+          forward == null || (building.facadeCenter - eye).dot(forward) > 0;
       FacadeTier target;
       if (config.forceAllLive) {
         target = FacadeTier.live;
       } else if (liveLeft > 0 &&
           d < math.max(config.liveDistance, building.liveRange) &&
-          inFront) {
+          inFront &&
+          ahead) {
         target = FacadeTier.live;
       } else if (signLeft > 0 && d < config.signDistance) {
         target = FacadeTier.sign;
