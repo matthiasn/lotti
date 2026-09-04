@@ -20,6 +20,7 @@ class Flight {
     required List<_Leg> legs,
     required _Profile profile,
     required this.routed,
+    this.arrival = false,
     // A private field cannot be a named initializing formal.
     // ignore: prefer_initializing_formals
   }) : _legs = legs,
@@ -70,10 +71,13 @@ class Flight {
       if (_apart(points.last, x, z) < viaMergeDistance) continue;
       points.add(CameraPose(x: x, y: streetFlightHeight, z: z, yaw: 0));
     }
-    // The stop itself, not a via point a step short of it.
+    // The stop itself, not a via point a step short of it; otherwise the
+    // last leg is the hop off the way to the stop.
+    var arrival = points.length > 1;
     if (points.length > 1 &&
         _apart(points.last, to.x, to.z) < viaMergeDistance) {
       points.removeLast();
+      arrival = false;
     }
     points.add(to);
     final legs = <_Leg>[
@@ -94,6 +98,7 @@ class Flight {
         ramp: rampSeconds / timeScale,
       ),
       routed: true,
+      arrival: arrival && legs.length > 1,
     );
   }
 
@@ -119,6 +124,10 @@ class Flight {
 
   /// A street flight looks at the point this far ahead along the way.
   static const lookAhead = 12.0;
+
+  /// A stop beside the road joins it, and leaves it, on a diagonal this
+  /// long along the way (see `StreetNetwork.pathBetween`).
+  static const joinDistance = 8.0;
 
   /// A via point this close to the previous point is dropped.
   static const viaMergeDistance = 0.5;
@@ -156,6 +165,12 @@ class Flight {
 
   /// Whether the flight follows the street (see [Flight.route]).
   final bool routed;
+
+  /// Whether the last leg is the hop off the way to a stop beside it: the
+  /// camera holds the road's heading through it and turns onto the stop's
+  /// own heading over the last ramp, instead of swinging toward the stop
+  /// and back.
+  final bool arrival;
 
   final List<_Leg> _legs;
   final _Profile _profile;
@@ -272,14 +287,22 @@ class Flight {
         ? 1.0
         : ((d - (total - ramp)) / ramp).clamp(0.0, 1.0);
 
+    // The ramps blend between two fixed headings (the way's heading where
+    // the ramp ends, and where it starts), so the side the camera turns to
+    // is settled for the whole ramp; between them the camera looks down
+    // the way.
     final double yaw;
     final along = routed ? _lookAheadYaw(d, x, z, leg) : travelYaw;
     if (along == null) {
-      yaw = _turn(from.yaw, to.yaw, _smooth(t));
+      yaw = _blendHeading(from.yaw, to.yaw, _smooth(t));
     } else if (d < ramp) {
-      yaw = _turn(from.yaw, along, _smooth(inRamp));
+      yaw = _blendHeading(from.yaw, _wayHeadingAt(ramp), _smooth(inRamp));
     } else if (d > total - ramp) {
-      yaw = _turn(along, to.yaw, _smooth(outRamp));
+      yaw = _blendHeading(
+        _wayHeadingAt(total - ramp),
+        to.yaw,
+        _smooth(outRamp),
+      );
     } else {
       yaw = along;
     }
@@ -299,22 +322,57 @@ class Flight {
     return CameraPose(x: x, y: y, z: z, yaw: yaw, pitch: pitch + pitchDip);
   }
 
+  /// The heading the camera looks in [d] metres along the way: the
+  /// look-ahead heading of a routed flight, the travel heading of a direct
+  /// one.
+  double _wayHeadingAt(double d) {
+    if (!routed) return travelYaw ?? to.yaw;
+    final (leg, f) = _locate(d);
+    final x = leg.from.x + (leg.to.x - leg.from.x) * f;
+    final z = leg.from.z + (leg.to.z - leg.from.z) * f;
+    return _lookAheadYaw(d, x, z, leg);
+  }
+
   /// The heading from ([x], [z]) to the point [lookAhead] metres further
-  /// along the way; the leg's own heading once the way runs out.
+  /// along the way, which ends where the way leaves the road when the
+  /// flight has an [arrival] hop; past that, the road's last heading.
   double _lookAheadYaw(double d, double x, double z, _Leg leg) {
-    final ahead = math.min(length, d + lookAhead);
+    final road = arrival ? _legs[_legs.length - 2] : _legs.last;
+    final wayEnd = arrival ? length - _legs.last.length : length;
+    final ahead = math.min(wayEnd, d + lookAhead);
+    if (ahead <= d + 1e-6) return _heading(road);
     final (ax, az) = _groundAt(ahead);
     final dx = ax - x;
     final dz = az - z;
-    if (dx * dx + dz * dz < 1e-6) {
-      return math.atan2(leg.to.x - leg.from.x, leg.to.z - leg.from.z);
-    }
+    if (dx * dx + dz * dz < 1e-6) return _heading(leg);
     return math.atan2(dx, dz);
   }
 
+  static double _heading(_Leg leg) =>
+      math.atan2(leg.to.x - leg.from.x, leg.to.z - leg.from.z);
+
   static double _smooth(double t) => t * t * (3 - 2 * t);
 
-  /// Interpolates a heading the short way round.
+  /// Interpolates a heading the short way round, as a turn of the
+  /// direction itself (a slerp of the two unit vectors), so a heading
+  /// that crosses the ±π seam of `atan2` between two frames turns the
+  /// camera by nothing, not by a full circle. Opposite headings, where the
+  /// short way is either way, turn through the angle.
+  static double _blendHeading(double a, double b, double s) {
+    final ax = math.sin(a);
+    final az = math.cos(a);
+    final bx = math.sin(b);
+    final bz = math.cos(b);
+    final dot = (ax * bx + az * bz).clamp(-1.0, 1.0);
+    final omega = math.acos(dot);
+    if (omega < 1e-4) return a;
+    if (omega > math.pi - 1e-3) return _turn(a, b, s);
+    final wa = math.sin((1 - s) * omega) / math.sin(omega);
+    final wb = math.sin(s * omega) / math.sin(omega);
+    return math.atan2(wa * ax + wb * bx, wa * az + wb * bz);
+  }
+
+  /// Interpolates a heading the short way round, by angle.
   static double _turn(double a, double b, double s) {
     var d = b - a;
     while (d > math.pi) {

@@ -152,7 +152,9 @@ void main() {
       const CameraPose(x: 0, y: 0, z: 0, yaw: 0.2),
     );
     // Half-way between -0.2 and 0.2: a full turn, not back through π.
-    expect(f.poseAt(0.5).yaw % (2 * math.pi), closeTo(0, 1e-9));
+    // Compared as a direction: the seam of atan2 is not a turn.
+    expect(math.sin(f.poseAt(0.5).yaw), closeTo(0, 1e-9));
+    expect(math.cos(f.poseAt(0.5).yaw), closeTo(1, 1e-9));
   });
 
   test('advance accumulates time and clamps at the end', () {
@@ -431,6 +433,64 @@ void main() {
         expect(f.poseAt(1).pitch, closeTo(0.1, 1e-9));
       },
     );
+
+    test(
+      'the arrival hop holds the road heading; no swing toward the stop',
+      () {
+        expect(f.arrival, isTrue);
+        // Eight metres before the way leaves the road (d = 103), the
+        // look-ahead would already point at the stop; the camera keeps
+        // looking north instead.
+        expect(f.poseAt(timeAt(f, 95)).yaw, closeTo(0, 1e-6));
+        // Through the last ramp the heading turns from north to the stop's
+        // own, one way, never past either.
+        var last = 0.0;
+        for (var d = 98.0; d <= f.length; d += 0.25) {
+          final yaw = f.poseAt(timeAt(f, d)).yaw;
+          expect(yaw, greaterThanOrEqualTo(last - 1e-9), reason: 'd $d');
+          expect(yaw, lessThanOrEqualTo(1 + 1e-9), reason: 'd $d');
+          last = yaw;
+        }
+        // Without the hop the way runs to the stop itself.
+        final onWay = Flight.route(
+          from,
+          const CameraPose(x: 50, y: 2.2, z: 50, yaw: 1),
+          via: via,
+        );
+        expect(onWay.arrival, isFalse);
+      },
+    );
+
+    test('a way down the -Z axis never spins across the atan2 seam', () {
+      // Facing +Z, the way goes straight back down -Z: a half turn at the
+      // start, then a quarter turn onto the stop at the end.
+      const from = CameraPose(x: 2, y: 2.2, z: 3, yaw: 0);
+      const to = CameraPose(x: 3, y: 2.2, z: -63, yaw: math.pi / 2);
+      final g = Flight.route(
+        from,
+        to,
+        via: const [(0.0, 0.0), (0.0, -60.0)],
+      );
+      var turned = 0.0;
+      var maxStep = 0.0;
+      var previous = g.poseAt(0).yaw;
+      for (var t = 0.001; t <= 1.0001; t += 0.001) {
+        final yaw = g.poseAt(t).yaw;
+        // The turn between two frames, as directions: the seam is no turn.
+        final step = math.acos(
+          (math.sin(previous) * math.sin(yaw) +
+                  math.cos(previous) * math.cos(yaw))
+              .clamp(-1.0, 1.0),
+        );
+        turned += step;
+        maxStep = math.max(maxStep, step);
+        previous = yaw;
+      }
+      expect(maxStep, lessThan(0.06));
+      // A half turn, a small swing onto the way, a quarter turn: not more.
+      expect(turned, lessThan(math.pi + math.pi / 2 + 0.3));
+      expect(turned, greaterThan(math.pi + math.pi / 2 - 0.3));
+    });
 
     test(
       'a via point on a stop is dropped, and a stop on the way needs none',
