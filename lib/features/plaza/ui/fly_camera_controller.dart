@@ -111,6 +111,7 @@ class FlyCameraController {
             via: network.pathBetween(
               (_pose.x, _pose.z),
               (target.x, target.z),
+              join: Flight.joinDistance,
             ),
             timeScale: timeScale,
             solids: _solids,

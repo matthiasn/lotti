@@ -117,15 +117,27 @@ class StreetNetwork {
     return (along: best.along, x: best.x, z: best.z, offset: bestOffset);
   }
 
-  /// The way along the network from [a] to [b]: the projection of [a],
-  /// every vertex between, and the projection of [b], in travel order.
-  /// A stop standing on the network contributes no projection of its own.
-  List<(double, double)> pathBetween((double, double) a, (double, double) b) {
+  /// The way along the network from [a] to [b]: where [a] joins it, every
+  /// vertex between, and where [b] leaves it, in travel order. With [join]
+  /// the joins slide [join] metres along the way (never past the next
+  /// vertex, never past each other), so a stop beside the road merges onto
+  /// it and pulls off it on a diagonal instead of a right-angled hop.
+  /// Coincident points are merged, so a stop on the way adds nothing.
+  List<(double, double)> pathBetween(
+    (double, double) a,
+    (double, double) b, {
+    double join = 0,
+  }) {
     final pa = project(a.$1, a.$2);
     final pb = project(b.$1, b.$2);
     final forward = pa.along <= pb.along;
-    final lo = math.min(pa.along, pb.along);
-    final hi = math.max(pa.along, pb.along);
+    final dir = forward ? 1.0 : -1.0;
+    final span = (pb.along - pa.along).abs();
+    final slide = math.min(join, span / 2);
+    final start = _slide(pa.along, dir * slide);
+    final end = _slide(pb.along, -dir * slide);
+    final lo = math.min(start, end);
+    final hi = math.max(start, end);
     final between = <(double, double)>[
       for (var i = 0; i < vertices.length; i++)
         if (_cumulative[i] > lo + mergeDistance &&
@@ -133,10 +145,25 @@ class StreetNetwork {
           vertices[i],
     ];
     final way = <(double, double)>[
-      if (pa.offset > mergeDistance) (pa.x, pa.z),
+      pointAt(start),
       ...forward ? between : between.reversed,
-      if (pb.offset > mergeDistance) (pb.x, pb.z),
+      pointAt(end),
     ];
     return _distinct(way);
+  }
+
+  /// [along] moved by [by] metres, stopped at the first vertex on the way:
+  /// a join slides along its own stretch, never round a corner.
+  double _slide(double along, double by) {
+    if (by == 0) return along;
+    var limit = by > 0 ? length : 0.0;
+    for (final c in _cumulative) {
+      if (by > 0 && c > along + mergeDistance) {
+        limit = math.min(limit, c);
+      } else if (by < 0 && c < along - mergeDistance) {
+        limit = math.max(limit, c);
+      }
+    }
+    return by > 0 ? math.min(along + by, limit) : math.max(along + by, limit);
   }
 }

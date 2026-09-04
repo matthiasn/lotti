@@ -446,10 +446,24 @@ A `Flight` is planned once, as a chain of straight **legs** with one
   ground and at least 55 % horizontal, yaw turns into the travel heading
   over the first ramp's distance, holds it, and settles onto the target
   yaw over the last ramp's distance; shorter or mostly vertical trips
-  blend yaw directly, the short way round. On a routed flight the yaw
-  looks at the point `lookAhead` (12 m) further along the way, which turns
-  a corner before reaching it, and settles onto the stop's yaw over the
-  last ramp; the pitch is level between the two stops' own pitches.
+  blend yaw directly. On a routed flight the yaw looks at the point
+  `lookAhead` (12 m) further along the way, which turns a corner before
+  reaching it. When the stop stands beside the road the last leg is the
+  **arrival** hop off the way: the look-ahead stops where the way leaves
+  the road and the camera holds the road's heading through the hop, then
+  turns onto the stop's own heading over the last ramp, instead of
+  swinging toward the stop and back. Each ramp blends between two *fixed*
+  headings (the way's heading where the ramp ends, or where it starts),
+  so the side the camera turns to is settled for the whole ramp, and a
+  blend is a slerp of the two direction vectors (`_blendHeading`), so a
+  heading that crosses the ±π seam of `atan2` between two frames is no
+  turn at all; only exactly opposite headings fall back to the angle
+  blend. The pitch is level between the two stops' own pitches.
+- **Joins.** A stop beside the road merges onto it and pulls off it on a
+  diagonal: `pathBetween(a, b, join:)` slides both projections
+  `joinDistance` (8 m) along the way, never past the next vertex and never
+  past each other, so the first and last legs are slants, not right-angled
+  hops.
 
 The street network (`domain/street_network.dart`) is the polyline of
 every segment, gaps and fold connectors included, continued through the

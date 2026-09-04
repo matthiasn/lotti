@@ -48,11 +48,33 @@ void main() {
       expect(out, [(10, 0), (50, 0), (50, 40)]);
       final back = corner.pathBetween((53, 40), (10, -3));
       expect(back, out.reversed.toList());
-      // A stop on the way contributes no projection: two on one stretch
-      // have nothing between them, and a flight joins them directly.
-      expect(corner.pathBetween((10, 0), (30, 0)), isEmpty);
+      // Two stops on one stretch: their own points, nothing between.
+      expect(corner.pathBetween((10, 0), (30, 0)), [(10, 0), (30, 0)]);
       expect(corner.pathBetween((10, -3), (30, -3)), [(10, 0), (30, 0)]);
     });
+
+    test(
+      'a join slides along the way, never round a corner or past the other',
+      () {
+        // Eight metres in from each stop's projection.
+        expect(
+          corner.pathBetween((10, -3), (53, 40), join: 8),
+          [(18, 0), (50, 0), (50, 32)],
+        );
+        expect(
+          corner.pathBetween((53, 40), (10, -3), join: 8),
+          [(50, 32), (50, 0), (18, 0)],
+        );
+        // A join five metres from the corner stops at the corner.
+        expect(corner.pathBetween((45, -3), (53, 40), join: 8), [
+          (50, 0),
+          (50, 32),
+        ]);
+        // Two stops six metres apart share the middle.
+        final close = corner.pathBetween((10, -3), (16, -3), join: 8);
+        expect(close, [(13, 0)]);
+      },
+    );
   });
 
   group('of a street plan', () {
@@ -93,11 +115,11 @@ void main() {
         (pose.x, pose.z),
         (plaza.home.x, plaza.home.z),
       );
-      // Starts at the pose's projection, ends at the mouth: home itself is
-      // on the network and needs no point.
+      // Starts at the pose's projection and ends at home, which is on the
+      // network: its own point.
       final start = network.project(pose.x, pose.z);
       expect(way.first, (start.x, start.z));
-      expect(way.last, network.vertices[network.vertices.length - 2]);
+      expect(way.last, (plaza.home.x, plaza.home.z));
       // Every point between is a vertex, in order of the way.
       for (var i = 1; i < way.length; i++) {
         expect(network.vertices, contains(way[i]));

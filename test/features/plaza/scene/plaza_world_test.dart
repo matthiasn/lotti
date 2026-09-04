@@ -204,7 +204,11 @@ void main() {
         final f = Flight.route(
           from,
           to,
-          via: network.pathBetween((from.x, from.z), (to.x, to.z)),
+          via: network.pathBetween(
+            (from.x, from.z),
+            (to.x, to.z),
+            join: Flight.joinDistance,
+          ),
           solids: world.solids,
         );
         routed++;
