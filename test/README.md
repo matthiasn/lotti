@@ -147,6 +147,22 @@ page tests and screenshot harnesses; do not replace them with test-only UI.
 
 For broader test conventions — centralized mocks/fallbacks (`test/mocks/mocks.dart`, `test/helpers/fallbacks.dart`), `setUpTestGetIt()` / `makeTestableWidget()`, the "every test must assert something meaningful" rule, and one-test-file-per-source-file — see the **Testing Guidelines** section of `AGENTS.md`.
 
+## flutter_scene needs a GPU; test the plaza's scheduling, not its geometry
+
+`Scene()`, every geometry (`ccwQuad`, `CuboidGeometry`, `MeshGeometry.fromArrays`)
+and `Sprite` (its `BillboardGeometry` wants the base shader bundle) throw under
+`flutter test`: there is no Impeller context, and flutter_scene's own suite
+`markTestSkipped`s without one. So `PlazaSurfaces`, `PlazaSprites` and any
+`FacadeLodManager` path that promotes a tier cannot be constructed headless.
+What can: `Node` (transforms included), `WidgetTextureController`, and the
+GPU-free scheduling in `lib/features/plaza/scene/surface_captures.dart`.
+`WidgetTextureController` is a plain subclassable class, so a test fake that
+overrides `requestCapture`, `captureCount` and `lastCaptureDuration` observes
+every request the scheduler makes and lands a capture on demand
+(`test/features/plaza/scene/surface_captures_test.dart`). The LOD manager is
+testable as long as nothing is promoted: buildings beyond `signDistance`, or a
+promotion that is wanted but withheld (`flying: true`, `promotionsPerFrame: 0`).
+
 ## Hover-divider tests: `test_utils/hover_divider_harness.dart`
 
 The settings lists that mix in `HoverDividerIndex` fade the hairlines

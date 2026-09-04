@@ -17,7 +17,8 @@ import 'package:vector_math/vector_math.dart' hide Colors;
 /// frame from their distance, so a lantern never shrinks below a few pixels
 /// from the overview pose and a beacon reads the same from across the
 /// district as from up close. Anomalous lanterns and attention beacons
-/// pulse on a fixed cycle.
+/// pulse on a fixed cycle. A sprite is only written when its size or
+/// colour actually moved: every [Sprite] setter re-commits its quad.
 class PlazaSprites {
   PlazaSprites({
     required this.scene,
@@ -28,15 +29,35 @@ class PlazaSprites {
     Map<PlazaBillboard, List<Vector3>> chaseLightPoints = const {},
   }) {
     for (final anchor in lampAnchors) {
-      final bulb = Sprite(color: linearColor(PlazaStyle.lamp));
-      final halo = Sprite(color: linearColor(PlazaStyle.lamp, alpha: 0.35));
+      final bulb = Sprite(
+        color: linearColor(PlazaStyle.lamp),
+        width: lampBulbSize,
+        height: lampBulbSize,
+      );
+      final halo = Sprite(
+        color: linearColor(PlazaStyle.lamp, alpha: 0.35),
+        width: lampHaloSize,
+        height: lampHaloSize,
+      );
       anchor
         ..add(Node(mesh: bulb.mesh)..raycastable = false)
         ..add(Node(mesh: halo.mesh)..raycastable = false);
-      _lamps.add(_Lamp(bulb: bulb, halo: halo, anchor: anchor));
+      // A lamp post never moves: its world position is read once, here,
+      // so the anchor must already stand in its final pose.
+      _lamps.add(
+        _Lamp(
+          bulb: bulb,
+          halo: halo,
+          worldPosition: anchor.globalTransform.getTranslation(),
+        ),
+      );
     }
     for (final anchor in spireAnchors) {
-      final sprite = Sprite(color: linearColor(PlazaStyle.warning));
+      final sprite = Sprite(
+        color: linearColor(PlazaStyle.warning),
+        width: spireLightSize,
+        height: spireLightSize,
+      );
       anchor.add(Node(mesh: sprite.mesh)..raycastable = false);
       _spireLights.add(sprite);
     }
@@ -51,7 +72,7 @@ class PlazaSprites {
           Node(localTransform: Matrix4.translation(point), mesh: sprite.mesh)
             ..raycastable = false,
         );
-        run.add(_ChaseLight(sprite: sprite, position: point, color: color));
+        run.add(_ChaseLight(sprite: sprite, color: color));
       }
       _chases.add(
         _Chase(
@@ -82,11 +103,10 @@ class PlazaSprites {
     }
     for (final beacon in world.beacons) {
       final teal = linearColor(PlazaStyle.beaconColor(beacon, world));
+      final position = Vector3(beacon.markerX, beacon.markerY, beacon.markerZ);
       final dot = Sprite(color: teal);
       final dotNode = Node(
-        localTransform: Matrix4.translation(
-          Vector3(beacon.markerX, beacon.markerY, beacon.markerZ),
-        ),
+        localTransform: Matrix4.translation(position),
         mesh: dot.mesh,
       )..raycastable = false;
       scene.add(dotNode);
@@ -95,9 +115,7 @@ class PlazaSprites {
       if (beacon.kind == BeaconKind.attention) {
         ring = Sprite(color: Vector4(teal.x, teal.y, teal.z, 0.8));
         ringNode = Node(
-          localTransform: Matrix4.translation(
-            Vector3(beacon.markerX, beacon.markerY, beacon.markerZ),
-          ),
+          localTransform: Matrix4.translation(position),
           mesh: ring.mesh,
         )..raycastable = false;
         scene.add(ringNode);
@@ -105,6 +123,7 @@ class PlazaSprites {
       _beacons.add(
         _BeaconSprite(
           beacon: beacon,
+          worldPosition: position,
           dot: dot,
           dotNode: dotNode,
           ring: ring,
@@ -201,7 +220,41 @@ class PlazaSprites {
   static const lampHaloFadeStart = 8.0;
   static const lampHaloFadeEnd = 30.0;
 
+  /// World sizes of the fixed dots, set once at construction.
+  static const lampBulbSize = 0.5;
+  static const lampHaloSize = 2.0;
+  static const spireLightSize = 2.4;
+
+  /// Below this a size or colour change is invisible and is not written:
+  /// every [Sprite] setter re-commits its quad, and at rest most frames
+  /// change nothing.
+  static const _epsilon = 1e-6;
+
+  /// Sets a square sprite's [size] when it moved.
+  static void _resize(Sprite sprite, double size) {
+    if ((sprite.width - size).abs() <= _epsilon &&
+        (sprite.height - size).abs() <= _epsilon) {
+      return;
+    }
+    sprite
+      ..width = size
+      ..height = size;
+  }
+
+  /// Sets a sprite's colour when a channel moved.
+  static void _tint(Sprite sprite, double r, double g, double b, double a) {
+    final c = sprite.color;
+    if ((c.x - r).abs() <= _epsilon &&
+        (c.y - g).abs() <= _epsilon &&
+        (c.z - b).abs() <= _epsilon &&
+        (c.w - a).abs() <= _epsilon) {
+      return;
+    }
+    sprite.color = Vector4(r, g, b, a);
+  }
+
   /// Per-frame update: sizes from distance, pulses from [elapsedSeconds].
+  /// Only what changed since the last frame is written to a sprite.
   void update(Camera camera, ui.Size viewSize, double elapsedSeconds) {
     final eye = camera.position;
     final fov = switch (camera.projection) {
@@ -214,54 +267,34 @@ class PlazaSprites {
     final lanternPulse =
         0.35 + 0.65 * (0.5 + 0.5 * math.sin(elapsedSeconds * 2 * math.pi / 3));
     for (final l in _lanterns) {
-      final d = (l.worldPosition - eye).length;
+      final d = eye.distanceTo(l.worldPosition);
       final px = (lanternNominalPx * 60 / math.max(d, 1)).clamp(
         lanternMinPx,
         lanternMaxPx,
       );
       final size = px * d * metersPerPxAtUnit * (l.lit ? 2.2 : 1.2);
-      l.sprite
-        ..width = size
-        ..height = size;
+      _resize(l.sprite, size);
       if (l.pulses) {
-        l.sprite.color = Vector4(
-          l.color.x,
-          l.color.y,
-          l.color.z,
-          lanternPulse,
-        );
+        _tint(l.sprite, l.color.x, l.color.y, l.color.z, lanternPulse);
       }
     }
 
-    // Lamps: a hard bulb that reads at every range, and a halo that fades
-    // away as the walker comes close so it never sits on a facade.
+    // Lamps: a hard bulb that reads at every range (its size is fixed),
+    // and a halo that fades away as the walker comes close so it never
+    // sits on a facade.
     for (final l in _lamps) {
-      final pos = l.anchor.globalTransform.getTranslation();
-      final d = (pos - eye).length;
+      final d = eye.distanceTo(l.worldPosition);
       final haloAlpha =
           ((d - lampHaloFadeStart) / (lampHaloFadeEnd - lampHaloFadeStart))
               .clamp(0.0, 1.0) *
           0.22;
-      l.bulb
-        ..width = 0.5
-        ..height = 0.5;
-      l.halo
-        ..width = 2
-        ..height = 2
-        ..color = Vector4(
-          l.halo.color.x,
-          l.halo.color.y,
-          l.halo.color.z,
-          haloAlpha,
-        );
+      final c = l.halo.color;
+      _tint(l.halo, c.x, c.y, c.z, haloAlpha);
     }
     // Spire lights blink: on for a third of a 1.6 s cycle.
     final blink = (elapsedSeconds % 1.6) < 0.55 ? 1.0 : 0.12;
     for (final l in _spireLights) {
-      l
-        ..width = 2.4
-        ..height = 2.4
-        ..color = Vector4(l.color.x, l.color.y, l.color.z, blink);
+      _tint(l, l.color.x, l.color.y, l.color.z, blink);
     }
     // Chase lights run round each billboard frame: a bright head with a
     // fading tail, faster for the more agitated panels.
@@ -284,21 +317,20 @@ class PlazaSprites {
             : behind < 2
             ? 0.36
             : 0.3;
-        light.sprite
-          ..width = size
-          ..height = size
-          ..color = Vector4(
-            light.color.x * boost,
-            light.color.y * boost,
-            light.color.z * boost,
-            alpha,
-          );
+        _resize(light.sprite, size);
+        _tint(
+          light.sprite,
+          light.color.x * boost,
+          light.color.y * boost,
+          light.color.z * boost,
+          alpha,
+        );
       }
     }
 
     final ringPhase = (elapsedSeconds % 2.2) / 2.2;
     for (final b in _beacons) {
-      final pos = Vector3(b.beacon.markerX, b.beacon.markerY, b.beacon.markerZ);
+      final pos = b.worldPosition;
       final dx = pos.x - eye.x;
       final dz = pos.z - eye.z;
       final ground = math.sqrt(dx * dx + dz * dz);
@@ -307,28 +339,25 @@ class PlazaSprites {
       b.dotNode.visible = visible;
       b.ringNode?.visible = visible;
       if (!visible) continue;
-      final d = (pos - eye).length;
+      final d = eye.distanceTo(pos);
       // Shrinks gently with distance so a row of stops reads as a sequence
       // rather than one blob at the vanishing point.
       final px = beaconPx * (1 - 0.5 * (d / range).clamp(0.0, 1.0));
       final size = px * d * metersPerPxAtUnit * 2.0;
       final alpha = 0.9 - 0.6 * (d / range).clamp(0.0, 1.0);
-      b.dot
-        ..width = size
-        ..height = size
-        ..color = Vector4(b.dot.color.x, b.dot.color.y, b.dot.color.z, alpha);
+      _resize(b.dot, size);
+      _tint(b.dot, b.dot.color.x, b.dot.color.y, b.dot.color.z, alpha);
       final ring = b.ring;
       if (ring != null) {
         final scale = 0.5 + 1.9 * ringPhase;
-        ring
-          ..width = size * scale
-          ..height = size * scale
-          ..color = Vector4(
-            ring.color.x,
-            ring.color.y,
-            ring.color.z,
-            0.8 * (1 - ringPhase),
-          );
+        _resize(ring, size * scale);
+        _tint(
+          ring,
+          ring.color.x,
+          ring.color.y,
+          ring.color.z,
+          0.8 * (1 - ringPhase),
+        );
       }
     }
   }
@@ -340,10 +369,7 @@ class PlazaSprites {
   ) sync* {
     for (final b in _beacons) {
       if (!b.dotNode.visible) continue;
-      final screen = camera.worldToScreen(
-        Vector3(b.beacon.markerX, b.beacon.markerY, b.beacon.markerZ),
-        viewSize,
-      );
+      final screen = camera.worldToScreen(b.worldPosition, viewSize);
       if (screen != null) yield (b.beacon, screen);
     }
   }
@@ -370,6 +396,7 @@ class _Lantern {
 class _BeaconSprite {
   _BeaconSprite({
     required this.beacon,
+    required this.worldPosition,
     required this.dot,
     required this.dotNode,
     required this.ring,
@@ -377,6 +404,7 @@ class _BeaconSprite {
   });
 
   final Beacon beacon;
+  final Vector3 worldPosition;
   final Sprite dot;
   final Node dotNode;
   final Sprite? ring;
@@ -384,22 +412,21 @@ class _BeaconSprite {
 }
 
 class _Lamp {
-  _Lamp({required this.bulb, required this.halo, required this.anchor});
+  _Lamp({
+    required this.bulb,
+    required this.halo,
+    required this.worldPosition,
+  });
 
   final Sprite bulb;
   final Sprite halo;
-  final Node anchor;
+  final Vector3 worldPosition;
 }
 
 class _ChaseLight {
-  _ChaseLight({
-    required this.sprite,
-    required this.position,
-    required this.color,
-  });
+  _ChaseLight({required this.sprite, required this.color});
 
   final Sprite sprite;
-  final Vector3 position;
   final Vector4 color;
 }
 

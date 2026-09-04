@@ -61,9 +61,6 @@ class FlyCameraController {
   /// Called when a flight lands.
   void Function()? onArrived;
 
-  /// Called when movement input cancels a flight.
-  void Function()? onFlightCancelled;
-
   /// Called on any movement input (used to abandon the morning walk).
   void Function()? onMovement;
 
@@ -153,20 +150,10 @@ class FlyCameraController {
   static const double _landingAbove = eyeHeight + 1.5;
 
   void _movementInput() {
-    if (_flight != null) {
-      final flight = _flight!;
-      _flight = null;
-      onFlightCancelled?.call();
-      // Cancelled mid-arc: come down before walking.
-      if (flight.arc > 0 && _pose.y > _landingAbove) {
-        _land();
-        onMovement?.call();
-        return;
-      }
-    } else if (_pose.y > _landingAbove) {
-      // From the overview: a short landing flight, not a one-frame drop.
-      _land();
-    }
+    _flight = null;
+    // Aloft — from the overview, or a flight cut short over the street or
+    // mid-arc — a short landing flight, not a one-frame drop.
+    if (_pose.y > _landingAbove) _land();
     onMovement?.call();
   }
 
@@ -186,10 +173,7 @@ class FlyCameraController {
 
   /// Mouse-drag look, in logical pixels. Cancels a flight in place.
   void addLookDelta(double dx, double dy) {
-    if (_flight != null) {
-      _flight = null;
-      onFlightCancelled?.call();
-    }
+    _flight = null;
     _pose = CameraPose(
       x: _pose.x,
       y: _pose.y,

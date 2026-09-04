@@ -73,10 +73,36 @@ class _PlazaHarness extends StatefulWidget {
   State<_PlazaHarness> createState() => _PlazaHarnessState();
 }
 
+/// What the harness is doing: driven by hand, stepping through the tour's
+/// screenshot poses, or running the benchmark. A scripted run takes no
+/// input and paints on every vsync.
+enum HarnessMode {
+  interactive,
+  tour,
+  bench;
+
+  /// `PLAZA_BENCH=1` wins over `PLAZA_TOUR=1`; neither is interactive.
+  static HarnessMode fromEnvironment(Map<String, String> env) {
+    if (env['PLAZA_BENCH'] == '1') return HarnessMode.bench;
+    if (env['PLAZA_TOUR'] == '1') return HarnessMode.tour;
+    return HarnessMode.interactive;
+  }
+
+  bool get scripted => this != HarnessMode.interactive;
+}
+
 class _PlazaHarnessState extends State<_PlazaHarness>
     with SingleTickerProviderStateMixin {
-  static final bool _tourMode = Platform.environment['PLAZA_TOUR'] == '1';
-  static final bool _benchMode = Platform.environment['PLAZA_BENCH'] == '1';
+  static final HarnessMode _mode = HarnessMode.fromEnvironment(
+    Platform.environment,
+  );
+
+  /// Dev-only: `PLAZA_HIDE=gantry,jumbotron,fillers,skyline,pylons,walls`
+  /// leaves those pieces out of the scene, to isolate what a screenshot
+  /// is showing.
+  static final Set<String> _hidden = {
+    ...?Platform.environment['PLAZA_HIDE']?.split(','),
+  };
 
   /// `PLAZA_TRACE=1` prints one line per frame: the frame time, whether a
   /// flight is under way, the pose, and how many solids contain the eye —
@@ -100,10 +126,6 @@ class _PlazaHarnessState extends State<_PlazaHarness>
     );
   }
 
-  /// Elapsed seconds, advanced once per painted frame: the one clock the
-  /// animated surfaces (tickers, billboard glows, the jumbotron's slides)
-  /// read, so between painted frames nothing in them runs.
-  final ValueNotifier<double> _clock = ValueNotifier(0);
   Duration? _lastPaint;
   final ValueNotifier<int> _frame = ValueNotifier(0);
 
@@ -117,7 +139,9 @@ class _PlazaHarnessState extends State<_PlazaHarness>
   /// anything besides the pacer keeps the engine running.
   int _engineFrames = 0;
   int _engineFramesSinceTrace = 0;
-  late final PlazaBench? _bench = _benchMode ? PlazaBench() : null;
+  late final PlazaBench? _bench = _mode == HarnessMode.bench
+      ? PlazaBench()
+      : null;
 
   late PlazaWorld _world;
   late PlazaSceneController _sceneController;
@@ -133,6 +157,9 @@ class _PlazaHarnessState extends State<_PlazaHarness>
 
   Camera? _frameCamera;
   Size _viewSize = const Size(1, 1);
+
+  /// Seconds since boot, advanced once per painted frame: the harness's
+  /// one time value, which the surfaces turn into their capture clocks.
   double _elapsed = 0;
 
   // HUD state.
@@ -178,13 +205,13 @@ class _PlazaHarnessState extends State<_PlazaHarness>
     _walls = await WallTextures.load();
     if (!mounted) return;
     _load();
-    if (_benchMode) {
-      _bench!.start(_config, _camera);
-    } else if (_tourMode) {
-      _applyTourStop(0);
-    } else {
-      _toast = 'Home — ${_world.projectLabel}';
-      _toastUntil = 3.2;
+    switch (_mode) {
+      case HarnessMode.bench:
+        _bench!.start(_config, _camera);
+      case HarnessMode.tour:
+        _applyTourStop(0);
+      case HarnessMode.interactive:
+        _showToast('Home — ${_world.projectLabel}');
     }
     setState(() => _ready = true);
     _pacer = createTicker(_onPace)..start();
@@ -198,15 +225,13 @@ class _PlazaHarnessState extends State<_PlazaHarness>
   void dispose() {
     _pacer?.dispose();
     _frame.dispose();
-    _clock.dispose();
     super.dispose();
   }
 
   /// Whether anything moves the camera: a flight, the walk, a held key or
   /// a drag; the tour and the benchmark always count as moving.
   bool get _moving =>
-      _benchMode ||
-      _tourMode ||
+      _mode.scripted ||
       _camera.flying ||
       _camera.moving ||
       _dragging ||
@@ -216,7 +241,7 @@ class _PlazaHarnessState extends State<_PlazaHarness>
     final last = _lastPaint;
     final seconds = elapsed.inMicroseconds / 1e6;
     if (_moving) _movingUntil = seconds + _movingHold;
-    final cap = _benchMode || _tourMode
+    final cap = _mode.scripted
         ? null
         : _frameRate.capFor(moving: seconds < _movingUntil);
     if (last != null && cap != null) {
@@ -252,7 +277,7 @@ class _PlazaHarnessState extends State<_PlazaHarness>
         maxBuildingHeight: _knobs.maxHeight,
       ),
     );
-    _sceneController = PlazaSceneController(world: _world);
+    _sceneController = PlazaSceneController(world: _world, hidden: _hidden);
     final walls = _walls;
     if (walls != null) _sceneController.attachWallTextures(walls);
     _lod = FacadeLodManager(
@@ -273,7 +298,6 @@ class _PlazaHarnessState extends State<_PlazaHarness>
     unawaited(_sprites.loadGlow());
     _surfaces = PlazaSurfaces(
       scene: _sceneController.scene,
-      clock: _clock,
       world: _world,
       markerAnchors: _sceneController.markerAnchors,
       billboards: _sceneController.billboards,
@@ -297,9 +321,6 @@ class _PlazaHarnessState extends State<_PlazaHarness>
           )
           ..onArrived = _onArrived
           ..onMovement = _endWalk;
-    _camera.onFlightCancelled = () {
-      _lod.suspended = false;
-    };
     _back.clear();
     _beaconCursor = -1;
     _walk = null;
@@ -310,7 +331,7 @@ class _PlazaHarnessState extends State<_PlazaHarness>
   void _applyKnobs() {
     _lod.dispose();
     setState(_load);
-    if (_benchMode) _bench!.resume(_camera);
+    _bench?.resume(_camera);
   }
 
   // ------------------------------------------------------------- flights
@@ -318,7 +339,6 @@ class _PlazaHarnessState extends State<_PlazaHarness>
   void _flyTo(CameraPose pose, String label, {bool push = true}) {
     if (push) _back.add(_camera.pose);
     _camera.flyTo(pose);
-    _lod.suspended = true;
     _showToast(label);
   }
 
@@ -334,10 +354,7 @@ class _PlazaHarnessState extends State<_PlazaHarness>
     if (building != null) _flyToBuilding(building);
   }
 
-  void _onArrived() {
-    _lod.suspended = false;
-    _walk?.arrived();
-  }
+  void _onArrived() => _walk?.arrived();
 
   void _goBack() {
     if (_back.isEmpty) return;
@@ -345,17 +362,15 @@ class _PlazaHarnessState extends State<_PlazaHarness>
     _flyTo(pose, 'Back', push: false);
   }
 
-  void _flyHome() {
+  /// Flies to one of the plaza's own poses, when there is a plaza.
+  void _flyToPlaza(CameraPose Function(FrontierPlaza) pose, String where) {
     final plaza = _world.plaza;
-    if (plaza != null) _flyTo(plaza.home, 'Home — ${_world.projectLabel}');
+    if (plaza != null) _flyTo(pose(plaza), '$where — ${_world.projectLabel}');
   }
 
-  void _flyOverview() {
-    final plaza = _world.plaza;
-    if (plaza != null) {
-      _flyTo(plaza.overview, 'Overview — ${_world.projectLabel}');
-    }
-  }
+  void _flyHome() => _flyToPlaza((p) => p.home, 'Home');
+
+  void _flyOverview() => _flyToPlaza((p) => p.overview, 'Overview');
 
   void _cycleBeacon(int direction) {
     final nav = _world.beacons
@@ -411,7 +426,7 @@ class _PlazaHarnessState extends State<_PlazaHarness>
 
   KeyEventResult _onKey(FocusNode node, KeyEvent event) {
     // A tour is a screenshot run: stray input must not move the camera.
-    if (_tourMode || _benchMode) return KeyEventResult.handled;
+    if (_mode.scripted) return KeyEventResult.handled;
     if (_searchOpen) return KeyEventResult.ignored;
     if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
       return _camera.handleKeyEvent(event)
@@ -444,7 +459,7 @@ class _PlazaHarnessState extends State<_PlazaHarness>
   }
 
   void _onPointerDown(PointerDownEvent event) {
-    if (_tourMode || _benchMode || event.buttons != kPrimaryButton) return;
+    if (_mode.scripted || event.buttons != kPrimaryButton) return;
     _pointerDown = event.localPosition;
     _pointerDownAt = _elapsed;
     _dragging = false;
@@ -505,8 +520,7 @@ class _PlazaHarnessState extends State<_PlazaHarness>
       final pose = stop.pose(_world);
       if (pose != null) {
         _camera.pose = pose;
-        _surfaces.pinJumbotron.value = stop.name == 'jumbotron';
-        _lod.suspended = false;
+        _surfaces.pinJumbotron.value = stop.pinJumbotron;
         _tourStop = index;
         _tourClock = 0;
         _tourAnnounced = false;
@@ -558,17 +572,28 @@ class _PlazaHarnessState extends State<_PlazaHarness>
 
   void _onTick(Duration elapsed, double dt) {
     _elapsed = elapsed.inMicroseconds / 1e6;
-    if (_benchMode) _bench!.tick(dt, _lod, _camera);
-    if (_tourMode && !_benchMode) _tourTick(dt);
+    switch (_mode) {
+      case HarnessMode.bench:
+        _bench!.tick(dt, _lod, _camera);
+      case HarnessMode.tour:
+        _tourTick(dt);
+      case HarnessMode.interactive:
+        break;
+    }
     _walkTick(dt);
     _camera.update(dt);
     if (_traceMode) _trace(dt);
     final camera = _camera.camera();
     _frameCamera = camera;
     final eye = camera.position;
-    _clock.value = _elapsed;
-    _lod.update(eye, forward: _camera.forward, seconds: _elapsed);
-    _surfaces.update(eye, _elapsed);
+    final forward = _camera.forward;
+    _lod.update(
+      eye,
+      forward: forward,
+      seconds: _elapsed,
+      flying: _camera.flying,
+    );
+    _surfaces.update(eye, _elapsed, forward: forward);
     _sceneController.updateForCamera(eye);
     _sprites.update(camera, _viewSize, _elapsed);
 

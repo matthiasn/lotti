@@ -18,10 +18,17 @@ import 'package:lotti/features/plaza/scene/plaza_world.dart';
 /// null when the world lacks the thing (no anomalies, no plaza); the
 /// harness skips those stops.
 class TourStop {
-  const TourStop({required this.name, required this.pose});
+  const TourStop({
+    required this.name,
+    required this.pose,
+    this.pinJumbotron = false,
+  });
 
   final String name;
   final CameraPose? Function(PlazaWorld world) pose;
+
+  /// Whether the jumbotron holds the project card at this stop.
+  final bool pinJumbotron;
 }
 
 /// The tour, in order: the landing, the project card on the jumbotron,
@@ -32,7 +39,11 @@ final List<TourStop> plazaTourStops = [
     name: 'home',
     pose: (w) => w.plaza?.home,
   ),
-  const TourStop(name: 'jumbotron', pose: jumbotronStopPose),
+  const TourStop(
+    name: 'jumbotron',
+    pose: jumbotronStopPose,
+    pinJumbotron: true,
+  ),
   TourStop(
     name: 'overview',
     pose: (w) => w.plaza?.overview,

@@ -1,5 +1,5 @@
 import 'dart:math' as math;
-import 'dart:ui' show Color, Size;
+import 'dart:ui' show Color;
 
 import 'package:flutter/foundation.dart' show ValueListenable, ValueNotifier;
 
@@ -7,6 +7,7 @@ import 'package:flutter_scene/scene.dart';
 import 'package:lotti/features/plaza/domain/plaza_layout.dart';
 import 'package:lotti/features/plaza/scene/plaza_scene.dart';
 import 'package:lotti/features/plaza/scene/plaza_world.dart';
+import 'package:lotti/features/plaza/scene/surface_captures.dart';
 import 'package:lotti/features/plaza/ui/banner_widget.dart';
 import 'package:lotti/features/plaza/ui/billboard_widget.dart';
 import 'package:lotti/features/plaza/ui/block_marker_widget.dart';
@@ -21,12 +22,15 @@ import 'package:vector_math/vector_math.dart' show Matrix4, Vector3;
 /// Budget (spec): billboards ≤ 6, captured at [nearInterval] within the
 /// plaza's range; tickers at [tickerInterval] within range and not at all
 /// beyond it; the jumbotron at [jumbotronInterval]; the skyline screens at
-/// [farInterval]; block markers, banners and signs captured once at build.
+/// [farInterval]; block markers, banners, signs and the billboards that do
+/// not animate captured once at build.
 ///
-/// Every capture is manual, requested from [update] on the harness clock:
-/// an interval policy would make flutter_scene pump an engine frame on
-/// every vsync, whatever the harness paints, and the widgets themselves
-/// read the same clock, so between painted frames nothing runs.
+/// Every capture is manual, requested from [update] on the harness clock
+/// through [SurfaceCaptures]: an interval policy would make flutter_scene
+/// pump an engine frame on every vsync, whatever the harness paints. Each
+/// cadence owns the clock its widgets read ([nearClock], [tickerClock],
+/// [farClock], [jumbotronClock]), advanced only when that cadence asks for
+/// a capture, so between captures nothing in them runs.
 class PlazaSurfaces {
   PlazaSurfaces({
     required this.scene,
@@ -34,15 +38,14 @@ class PlazaSurfaces {
     required this.markerAnchors,
     required this.billboards,
     required this.pxPerMeter,
-    required this.clock,
     Map<String, Node> bannerAnchors = const {},
     Node? jumbotronAnchor,
     Map<int, Node> weekSignAnchors = const {},
     List<(Node, double, double, int)> skylineScreens = const [],
     List<(Node, double, double, String)> fillerSigns = const [],
   }) {
-    _attachMarkers();
-    _attachWeekSigns(weekSignAnchors);
+    _attachLabels(markerAnchors, markerWidth, markerHeight);
+    _attachLabels(weekSignAnchors, signWidth, signHeight);
     _attachSkylineScreens(skylineScreens);
     _attachFillerSigns(fillerSigns);
     _attachBillboards();
@@ -57,20 +60,31 @@ class PlazaSurfaces {
   final List<PlazaBillboard> billboards;
   final double pxPerMeter;
 
-  /// Elapsed seconds, advanced by the harness once per painted frame;
-  /// the animated surfaces read it.
-  final ValueListenable<double> clock;
+  final SurfaceCaptures _captures = SurfaceCaptures();
+  final CaptureCadence _near = CaptureCadence(nearInterval);
+  final CaptureCadence _tickers = CaptureCadence(tickerInterval);
+  final CaptureCadence _far = CaptureCadence(farInterval);
+  final CaptureCadence _jumbotron = CaptureCadence(jumbotronInterval);
 
-  final List<WidgetComponent> _markers = [];
-  final List<WidgetComponent> _banners = [];
-  final List<WidgetComponent> _skylineScreens = [];
+  /// Elapsed harness seconds as of the billboards' last capture request:
+  /// the clock the anomaly billboards breathe by.
+  ValueListenable<double> get nearClock => _near.clock;
 
-  /// When each timed surface was last asked for a capture, seconds on the
-  /// harness clock.
-  final Map<WidgetComponent, double> _lastCapture = {};
-  WidgetComponent? _jumbotron;
-  final List<(Vector3, WidgetComponent, Node)> _billboardSurfaces = [];
-  final List<(Vector3, WidgetComponent, Node)> _tickerSurfaces = [];
+  /// Elapsed harness seconds as of the tickers' last capture request: the
+  /// clock the bands scroll by.
+  ValueListenable<double> get tickerClock => _tickers.clock;
+
+  /// Elapsed harness seconds as of the skyline screens' last capture
+  /// request.
+  ValueListenable<double> get farClock => _far.clock;
+
+  /// Elapsed harness seconds as of the jumbotron's last capture request:
+  /// the clock it turns its slides by.
+  ValueListenable<double> get jumbotronClock => _jumbotron.clock;
+
+  /// The plaza's animated surfaces, hidden beyond [plazaRange]: where each
+  /// stands and the node that hides it.
+  final List<(Vector3, Node)> _ranged = [];
 
   /// Beyond this distance the plaza's animated surfaces are hidden: far
   /// enough that the map shot still sees the pylons lit.
@@ -100,24 +114,29 @@ class PlazaSurfaces {
   static const signWidth = 5.0;
   static const signHeight = 1.4;
 
-  void _attachWeekSigns(Map<int, Node> anchors) {
-    for (final entry in anchors.entries) {
-      final surface = OpaqueSurface();
-      final component = WidgetComponent(
-        child: BlockMarkerWidget(
-          label: world.weekLabel(entry.key),
-          heightMeters: signHeight,
+  /// Hangs a capture-once [component] on [anchor].
+  void _once(Node anchor, WidgetComponent component) {
+    anchor.addComponent(component);
+    _captures.once(component.controller);
+  }
+
+  /// Week labels on the road ([markerWidth] × [markerHeight]) and the week
+  /// signs ([signWidth] × [signHeight]): a [BlockMarkerWidget] per bucket.
+  void _attachLabels(Map<int, Node> anchors, double width, double height) {
+    for (final MapEntry(key: bucket, value: anchor) in anchors.entries) {
+      _once(
+        anchor,
+        hostedSurface(
+          child: BlockMarkerWidget(
+            label: world.weekLabel(bucket),
+            heightMeters: height,
+            pxPerMeter: pxPerMeter,
+          ),
+          width: width,
+          height: height,
           pxPerMeter: pxPerMeter,
         ),
-        size: Size(signWidth * pxPerMeter, signHeight * pxPerMeter),
-        geometry: ccwQuad(signWidth, signHeight),
-        update: WidgetUpdatePolicy.manual,
-        input: WidgetInput.manual,
-        material: surface.material,
-        bind: surface.bind,
       );
-      entry.value.addComponent(component);
-      _markers.add(component);
     }
   }
 
@@ -126,25 +145,22 @@ class PlazaSurfaces {
   void _attachSkylineScreens(List<(Node, double, double, int)> screens) {
     for (final (anchor, w, h, rank) in screens) {
       if (rank >= world.anomalies.length) continue;
-      final surface = OpaqueSurface();
-      final component = WidgetComponent(
+      final component = hostedSurface(
         child: BillboardWidget(
           attention: world.anomalies[rank],
           widthMeters: w,
           heightMeters: h,
           pxPerMeter: pxPerMeter * 0.35,
           pulseSeconds: 4,
-          clock: clock,
+          clock: _far.clock,
         ),
-        size: Size(w * pxPerMeter * 0.35, h * pxPerMeter * 0.35),
-        geometry: ccwQuad(w, h),
-        update: WidgetUpdatePolicy.manual,
-        input: WidgetInput.manual,
-        material: surface.material,
-        bind: surface.bind,
+        width: w,
+        height: h,
+        pxPerMeter: pxPerMeter,
+        scale: 0.35,
       );
       anchor.addComponent(component);
-      _skylineScreens.add(component);
+      _captures.timed(_far, TimedSurface.posed(component.controller, anchor));
     }
   }
 
@@ -157,24 +173,22 @@ class PlazaSurfaces {
       final label = world.categoryLabels.isEmpty
           ? 'open late'
           : world.categoryLabelOf(task);
-      final surface = OpaqueSurface();
-      final component = WidgetComponent(
-        child: BannerWidget(
-          label: label,
-          color: PlazaStyle.neon(PlazaStyle.categoryBright(task)),
-          widthMeters: w,
-          heightMeters: h,
-          pxPerMeter: pxPerMeter * 0.6,
+      _once(
+        anchor,
+        hostedSurface(
+          child: BannerWidget(
+            label: label,
+            color: PlazaStyle.neon(PlazaStyle.categoryBright(task)),
+            widthMeters: w,
+            heightMeters: h,
+            pxPerMeter: pxPerMeter * 0.6,
+          ),
+          width: w,
+          height: h,
+          pxPerMeter: pxPerMeter,
+          scale: 0.6,
         ),
-        size: Size(w * pxPerMeter * 0.6, h * pxPerMeter * 0.6),
-        geometry: ccwQuad(w, h),
-        update: WidgetUpdatePolicy.manual,
-        input: WidgetInput.manual,
-        material: surface.material,
-        bind: surface.bind,
       );
-      anchor.addComponent(component);
-      _banners.add(component);
     }
   }
 
@@ -187,36 +201,32 @@ class PlazaSurfaces {
       final label = world.categoryLabels.isEmpty
           ? PlazaStyle.chip(world.attentionOf(task)).label
           : world.categoryLabelOf(task);
-      final surface = OpaqueSurface();
-      final component = WidgetComponent(
-        child: BannerWidget(
-          label: label,
-          color: PlazaStyle.neon(PlazaStyle.categoryBright(task)),
-          widthMeters: banner.width,
-          heightMeters: banner.height,
+      _once(
+        anchor,
+        hostedSurface(
+          child: BannerWidget(
+            label: label,
+            color: PlazaStyle.neon(PlazaStyle.categoryBright(task)),
+            widthMeters: banner.width,
+            heightMeters: banner.height,
+            pxPerMeter: pxPerMeter,
+          ),
+          width: banner.width,
+          height: banner.height,
           pxPerMeter: pxPerMeter,
         ),
-        size: Size(banner.width * pxPerMeter, banner.height * pxPerMeter),
-        geometry: ccwQuad(banner.width, banner.height),
-        update: WidgetUpdatePolicy.manual,
-        input: WidgetInput.manual,
-        material: surface.material,
-        bind: surface.bind,
       );
-      anchor.addComponent(component);
-      _banners.add(component);
     }
   }
 
-  /// While true the jumbotron holds its project card: the tour and a
-  /// fly-to set it on arrival so the masthead is what you land on.
+  /// While true the jumbotron holds its project card: the tour's
+  /// jumbotron stop sets it so the masthead is what the capture shows.
   final pinJumbotron = ValueNotifier<bool>(false);
 
   void _attachJumbotron(Node? anchor) {
     final slot = world.jumbotron;
     if (anchor == null || slot == null) return;
-    final surface = OpaqueSurface();
-    final component = WidgetComponent(
+    final component = hostedSurface(
       child: JumbotronWidget(
         projectLabel: world.projectLabel,
         taskCount: world.liveTaskCount,
@@ -229,45 +239,29 @@ class PlazaSurfaces {
         ],
         widthMeters: slot.width,
         pxPerMeter: pxPerMeter * 0.5,
-        clock: clock,
+        clock: _jumbotron.clock,
       ),
-      size: Size(slot.width * pxPerMeter * 0.5, slot.height * pxPerMeter * 0.5),
-      geometry: ccwQuad(slot.width, slot.height),
-      update: WidgetUpdatePolicy.manual,
-      input: WidgetInput.manual,
-      material: surface.material,
-      bind: surface.bind,
+      width: slot.width,
+      height: slot.height,
+      pxPerMeter: pxPerMeter,
+      scale: 0.5,
     );
     anchor.addComponent(component);
-    _jumbotron = component;
-  }
-
-  void _attachMarkers() {
-    for (final entry in markerAnchors.entries) {
-      final surface = OpaqueSurface();
-      final component = WidgetComponent(
-        child: BlockMarkerWidget(
-          label: world.weekLabel(entry.key),
-          heightMeters: markerHeight,
-          pxPerMeter: pxPerMeter,
-        ),
-        size: Size(markerWidth * pxPerMeter, markerHeight * pxPerMeter),
-        geometry: ccwQuad(markerWidth, markerHeight),
-        update: WidgetUpdatePolicy.manual,
-        input: WidgetInput.manual,
-        material: surface.material,
-        bind: surface.bind,
-      );
-      entry.value.addComponent(component);
-      _markers.add(component);
-    }
+    _captures.timed(
+      _jumbotron,
+      TimedSurface.facing(
+        controller: component.controller,
+        node: anchor,
+        center: Vector3(slot.x, slot.centerY, slot.z),
+        facingRadians: slot.facingRadians,
+      ),
+    );
   }
 
   void _attachBillboards() {
     for (final billboard in billboards) {
       final slot = billboard.slot;
-      final surface = OpaqueSurface();
-      final component = WidgetComponent(
+      final component = hostedSurface(
         child: BillboardWidget(
           attention: billboard.attention,
           widthMeters: slot.width,
@@ -277,17 +271,28 @@ class PlazaSurfaces {
           // A roof panel sits over its own facade, which carries the
           // title: the panel leads with the reason instead.
           reasonFirst: slot.mount == BillboardMount.roof,
-          clock: clock,
+          clock: _near.clock,
         ),
-        size: Size(slot.width * pxPerMeter, slot.height * pxPerMeter),
-        geometry: ccwQuad(slot.width, slot.height),
-        update: WidgetUpdatePolicy.manual,
-        input: WidgetInput.manual,
-        material: surface.material,
-        bind: surface.bind,
+        width: slot.width,
+        height: slot.height,
+        pxPerMeter: pxPerMeter,
       );
       billboard.anchor.addComponent(component);
-      _billboardSurfaces.add((billboard.center, component, billboard.anchor));
+      final center = billboard.center;
+      _ranged.add((center, billboard.anchor));
+      // Only an anomaly breathes ([BillboardWidget] renders a still face
+      // below the threshold): the rest take the far cadence, seldom
+      // enough to cost nothing and often enough that a cover image that
+      // decodes after the first capture still lands on the panel.
+      _captures.timed(
+        billboard.attention.anomalous ? _near : _far,
+        TimedSurface.facing(
+          controller: component.controller,
+          node: billboard.anchor,
+          center: center,
+          facingRadians: slot.facingRadians,
+        ),
+      );
     }
   }
 
@@ -298,21 +303,17 @@ class PlazaSurfaces {
           Vector3(slot.x, slot.bottom + slot.height / 2, slot.z),
         )..rotateY(slot.facingRadians),
       );
-      final surface = OpaqueSurface();
-      final component = WidgetComponent(
+      final component = hostedSurface(
         child: TickerWidget(
           text: world.tickerTexts[slot] ?? world.tickerText,
           heightMeters: slot.height,
           pxPerMeter: pxPerMeter,
           speedMetersPerSecond: slot.speedMetersPerSecond,
-          clock: clock,
+          clock: _tickers.clock,
         ),
-        size: Size(slot.width * pxPerMeter, slot.height * pxPerMeter),
-        geometry: ccwQuad(slot.width, slot.height),
-        update: WidgetUpdatePolicy.manual,
-        input: WidgetInput.manual,
-        material: surface.material,
-        bind: surface.bind,
+        width: slot.width,
+        height: slot.height,
+        pxPerMeter: pxPerMeter,
       );
       anchor.addComponent(component);
       // Housing: a dark track behind the band with a thin teal rim and
@@ -346,65 +347,42 @@ class PlazaSurfaces {
         );
       }
       scene.add(anchor);
-      _tickerSurfaces.add((
-        Vector3(slot.x, slot.bottom, slot.z),
-        component,
-        anchor,
-      ));
+      final origin = Vector3(slot.x, slot.bottom, slot.z);
+      _ranged.add((origin, anchor));
+      _captures.timed(
+        _tickers,
+        TimedSurface.facing(
+          controller: component.controller,
+          node: anchor,
+          center: origin,
+          facingRadians: slot.facingRadians,
+        ),
+      );
     }
   }
 
   /// Once per painted frame, at [seconds] on the harness clock: keeps
   /// asking for the one-off captures until they land, hides the plaza's
-  /// animated surfaces when they are out of range, and asks every timed
-  /// surface in range for a capture once its interval is up.
-  void update(Vector3 eye, double seconds) {
-    for (final once in [..._markers, ..._banners]) {
-      final controller = once.controller;
-      if (controller.texture == null) controller.requestCapture();
+  /// animated surfaces beyond [plazaRange], and asks every timed surface
+  /// in view for a capture once its interval is up, advancing that
+  /// cadence's clock first so its widgets rebuild in the same frame.
+  /// [forward] is the camera's view direction: with it a surface behind
+  /// the eye or facing away from it is not captured; without it nothing is
+  /// culled.
+  void update(Vector3 eye, double seconds, {Vector3? forward}) {
+    _captures.requestPending();
+    for (final (center, node) in _ranged) {
+      node.visible = eye.distanceTo(center) <= plazaRange;
     }
-    for (final (center, component, node) in _billboardSurfaces) {
-      node.visible = (center - eye).length <= plazaRange;
-      if (node.visible) _captureDue(component, seconds, nearInterval);
-    }
-    for (final (origin, component, node) in _tickerSurfaces) {
-      node.visible = (origin - eye).length <= plazaRange;
-      if (node.visible) _captureDue(component, seconds, tickerInterval);
-    }
-    for (final screen in _skylineScreens) {
-      _captureDue(screen, seconds, farInterval);
-    }
-    if (_jumbotron case final jumbotron?) {
-      _captureDue(jumbotron, seconds, jumbotronInterval);
-    }
-  }
-
-  /// Asks [component] for a capture when [interval] seconds have passed
-  /// since the last request (or none was ever made).
-  void _captureDue(WidgetComponent component, double seconds, double interval) {
-    final last = _lastCapture[component];
-    if (last != null && seconds - last < interval - 1e-6) return;
-    _lastCapture[component] = seconds;
-    component.controller.requestCapture();
+    _captures
+      ..requestDue(_near, eye, seconds, forward: forward)
+      ..requestDue(_tickers, eye, seconds, forward: forward)
+      ..requestDue(_far, eye, seconds, forward: forward)
+      ..requestDue(_jumbotron, eye, seconds, forward: forward);
   }
 
   /// Total captures across these surfaces, for the debug overlay.
-  int get captures {
-    var n = 0;
-    for (final m in _markers) {
-      n += m.controller.captureCount;
-    }
-    for (final (_, c, _) in _billboardSurfaces) {
-      n += c.controller.captureCount;
-    }
-    for (final (_, c, _) in _tickerSurfaces) {
-      n += c.controller.captureCount;
-    }
-    for (final b in [..._banners, ..._skylineScreens]) {
-      n += b.controller.captureCount;
-    }
-    return n + (_jumbotron?.controller.captureCount ?? 0);
-  }
+  int get captures => _captures.captures;
 
   /// The pose in front of a billboard, for the tour and for taps on it.
   static CameraPose facingPose(BillboardSlot slot, {double? distance}) {

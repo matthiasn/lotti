@@ -242,12 +242,8 @@ void main() {
     });
 
     test('movement input cancels a flight in place', () {
-      var cancelled = 0;
       var moved = 0;
       final camera = _controller()
-        ..onFlightCancelled = () {
-          cancelled++;
-        }
         ..onMovement = () {
           moved++;
         };
@@ -261,7 +257,6 @@ void main() {
         _down(LogicalKeyboardKey.keyW, PhysicalKeyboardKey.keyW),
       );
       expect(camera.flying, isFalse);
-      expect(cancelled, 1);
       expect(moved, 1);
       camera.update(1); // no hardware key → stands still
       expect(camera.pose.z, closeTo(midway, 1e-6));
@@ -275,7 +270,7 @@ void main() {
       camera.handleKeyEvent(
         _down(LogicalKeyboardKey.keyW, PhysicalKeyboardKey.keyW),
       );
-      expect(cancelled, 2);
+      expect(moved, 2);
       expect(camera.flying, isTrue); // the landing
       for (var i = 0; i < 40; i++) {
         camera.update(0.1);
@@ -283,23 +278,42 @@ void main() {
       expect(camera.pose.y, closeTo(eyeHeight, 1e-6));
     });
 
-    test('drag look cancels a flight too, and pose set clears it', () {
-      var cancelled = 0;
-      void onCancelled() {
-        cancelled++;
+    test('a street flight cut short comes down before walking', () {
+      // A routed flight cruises at street height with no arc at all; a
+      // key mid-street must still land the camera, not drop it.
+      final camera = FlyCameraController(
+        pose: const CameraPose(x: 0, y: eyeHeight, z: 10, yaw: 0),
+        network: StreetNetwork(const [(0, 0), (0, 200)]),
+      );
+      final flight = camera.flyTo(
+        const CameraPose(x: 0, y: eyeHeight, z: 120, yaw: 0),
+      );
+      expect(flight.routed, isTrue);
+      expect(flight.arc, 0);
+      camera.update(flight.duration.inMicroseconds / 2e6);
+      expect(camera.pose.y, closeTo(Flight.streetFlightHeight, 1e-6));
+      camera.handleKeyEvent(
+        _down(LogicalKeyboardKey.keyW, PhysicalKeyboardKey.keyW),
+      );
+      expect(camera.flying, isTrue); // the landing
+      camera.update(0.05);
+      expect(camera.pose.y, greaterThan(eyeHeight + 2));
+      for (var i = 0; i < 40; i++) {
+        camera.update(0.1);
       }
+      expect(camera.flying, isFalse);
+      expect(camera.pose.y, closeTo(eyeHeight, 1e-6));
+    });
 
+    test('drag look cancels a flight too, and pose set clears it', () {
       final camera = _controller()
-        ..onFlightCancelled = onCancelled
         ..flyTo(const CameraPose(x: 0, y: eyeHeight, z: 100, yaw: 0))
         ..addLookDelta(5, 0);
       expect(camera.flying, isFalse);
-      expect(cancelled, 1);
       camera
         ..flyTo(const CameraPose(x: 0, y: eyeHeight, z: 100, yaw: 0))
         ..pose = _origin;
       expect(camera.flying, isFalse);
-      expect(cancelled, 1);
     });
   });
 
