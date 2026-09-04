@@ -90,6 +90,7 @@ test_resources/test.aac.aes
 test_resources/test.png.aes
 
 screenshots
+screenshots_v2
 
 whisper.cpp/*.zip
 whisper.cpp/whisper.cpp-*/

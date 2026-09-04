@@ -8,13 +8,13 @@ client). Build the harness first:
 
 Then, from the repo root:
 
-    python3 tool/plaza/capture_tour.py docs/plaza/screenshots
+    python3 tool/plaza/capture_tour.py docs/plaza/screenshots_v2
 
 Optional: PLAZA_CLICK="<stop-name>:<x>,<y>" clicks that window-relative point
 after capturing the named stop and grabs a second frame as <stop>-ticked.png
 (used for the live-checkbox screenshot). Any other PLAZA_* variable is
 passed through to the harness. Output PNGs land in a directory named
-`screenshots`, which .gitignore keeps out of the repository.
+`screenshots_v2`, which .gitignore keeps out of the repository.
 
 The script keys on the `PLAZA_TOUR ready <i> <name>` lines the harness prints
 once a stop has settled, writes <out_dir>/<name>.png, and exits after
