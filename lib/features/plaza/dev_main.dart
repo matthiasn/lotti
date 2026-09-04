@@ -432,8 +432,14 @@ class _PlazaHarnessState extends State<_PlazaHarness> {
     _tourClock += dt;
     if (!_tourAnnounced && _tourClock >= _tourSettleSeconds) {
       _tourAnnounced = true;
+      final focused = _lod.focused;
+      final eye = _camera.position;
       debugPrint(
-        'PLAZA_TOUR ready $_tourStop ${plazaTourStops[_tourStop].name}',
+        'PLAZA_TOUR ready $_tourStop ${plazaTourStops[_tourStop].name} '
+        'live=${_lod.stats.live} sign=${_lod.stats.sign} '
+        'focused=${focused?.task.title} '
+        'd=${focused?.groundDistanceTo(eye).toStringAsFixed(1)} '
+        'range=${focused?.liveRange.toStringAsFixed(1)}',
       );
     }
     if (_tourClock < _tourHoldSeconds) return;

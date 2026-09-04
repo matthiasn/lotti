@@ -690,14 +690,23 @@ TickerSlot rooflineTickerFor(PlotPlacement hero, {required bool fast}) =>
 /// Roof signage above a building that the task pose must frame.
 const roofSignageHeight = 6.5;
 
+/// The task pose never stands farther from the facade than this: past it
+/// the camera leaves the street and lands among the next row's buildings,
+/// which then take the live slots. Inside the live range, so the wall you
+/// flew to is the one that goes live.
+const maxTaskStandOff = 24.0;
+
 /// How far in front of the facade the task pose stands: the whole framed
 /// extent — wall plus roof signage plus a margin — at a 60° vertical field
-/// of view (half-angle 30°, so distance ≥ 0.87 × the extent), and never
-/// closer than a wide wall needs. A tall landmark needs more than the live
-/// range, so the facade LOD extends its live range to this.
+/// of view (half-angle 30°, so distance ≥ 0.87 × the extent), never closer
+/// than a wide wall needs, and never past [maxTaskStandOff]; a tall
+/// landmark is framed by pitching up instead.
 double taskStandOffFor(PlotPlacement p) {
   final extent = p.height + roofSignageHeight + 3;
-  return math.max(16, math.max(p.width * 1.2, extent * 0.9));
+  return math.min(
+    maxTaskStandOff,
+    math.max(16, math.max(p.width * 1.2, extent * 0.9)),
+  );
 }
 
 CameraPose taskPoseFor(PlotPlacement p) {

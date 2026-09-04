@@ -211,9 +211,11 @@ void main() {
       expect(taskPoseFor(place(4, 4)).z, closeTo(3 + 16, 1e-9));
       expect(taskPoseFor(place(15, 4)).z, closeTo(3 + 15 * 1.2, 1e-9));
       expect(
-        taskPoseFor(place(4, 20)).z,
-        closeTo(3 + (20 + roofSignageHeight + 3) * 0.9, 1e-9),
+        taskPoseFor(place(4, 16)).z,
+        closeTo(3 + (16 + roofSignageHeight + 3) * 0.9, 1e-9),
       );
+      // A landmark is framed by pitching up, never from the next row.
+      expect(taskPoseFor(place(4, 32)).z, closeTo(3 + maxTaskStandOff, 1e-9));
     });
   });
 
@@ -426,14 +428,16 @@ void main() {
       },
     );
 
-    test('a tall landmark stands off farther than the live range', () {
+    test('a tall landmark stands off no farther than the street allows', () {
       final tall = plan.placements.values.reduce(
         (a, b) => a.height >= b.height ? a : b,
       );
       final short = plan.placements.values.reduce(
         (a, b) => a.height <= b.height ? a : b,
       );
-      expect(taskStandOffFor(tall), greaterThan(26));
+      // Unclamped, the landmark would want more than the street is wide.
+      expect((tall.height + roofSignageHeight + 3) * 0.9, greaterThan(26));
+      expect(taskStandOffFor(tall), maxTaskStandOff);
       expect(taskStandOffFor(short), lessThan(taskStandOffFor(tall)));
       final pose = taskPoseFor(tall);
       final dx = pose.x - tall.x;
