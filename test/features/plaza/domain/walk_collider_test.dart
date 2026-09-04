@@ -5,22 +5,18 @@ import 'package:lotti/features/plaza/domain/plaza_task.dart';
 import 'package:lotti/features/plaza/domain/street_layout.dart';
 import 'package:lotti/features/plaza/domain/walk_collider.dart';
 
-PlotPlacement _box({
+Footprint _box({
   double x = 0,
   double z = 0,
   double facing = 0,
   double width = 10,
   double depth = 6,
-}) => PlotPlacement(
-  taskId: 'b',
-  bucketIndex: 0,
-  side: PlotSide.left,
+}) => Footprint(
   x: x,
   z: z,
   facingRadians: facing,
   width: width,
   depth: depth,
-  height: 5,
 );
 
 void main() {
@@ -112,7 +108,7 @@ void main() {
     ];
     final plan = StreetLayout(projectSeed: 7).plan(tasks);
     final placements = plan.placements.values.toList();
-    final c = WalkCollider(placements);
+    final c = WalkCollider(placements.map((p) => p.footprint));
     expect(c.footprints.length, lessThan(placements.length));
 
     bool insideAny(double x, double z) => placements.any((p) {

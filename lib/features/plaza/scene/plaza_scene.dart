@@ -8,6 +8,7 @@ import 'package:flutter_scene/scene.dart';
 import 'package:lotti/features/plaza/domain/attention.dart';
 import 'package:lotti/features/plaza/domain/plaza_layout.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
+import 'package:lotti/features/plaza/domain/scenery.dart';
 import 'package:lotti/features/plaza/domain/street_layout.dart';
 import 'package:lotti/features/plaza/scene/plaza_world.dart';
 import 'package:lotti/features/plaza/scene/wall_textures.dart';
@@ -83,10 +84,6 @@ class OpaqueSurface {
     material.baseColorTexture = GpuTextureSource(texture);
   }
 }
-
-/// Deterministic 0..1 from a task id and a salt.
-double _unit(String id, String salt) =>
-    (stableHash('$id:$salt') & 0xFFFF) / 0xFFFF;
 
 /// One building in the plaza: geometry handles plus everything the facade
 /// LOD manager, the picker and the sprite layer need.
@@ -432,11 +429,11 @@ class PlazaSceneController {
   void _build() {
     _buildSky();
 
-    final center = _planCenter();
+    final (centerX, centerZ) = planCenterOf(plan);
     final buildSkyline = _shown('skyline');
     scene.add(
       Node(
-        localTransform: Matrix4.translation(Vector3(center.x, -0.06, center.z)),
+        localTransform: Matrix4.translation(Vector3(centerX, -0.06, centerZ)),
         mesh: Mesh(
           CuboidGeometry(Vector3(6000, 0.1, 6000)),
           UnlitMaterial()..baseColorFactor = _ground,
@@ -444,7 +441,7 @@ class PlazaSceneController {
       ),
     );
     if (buildSkyline) {
-      _buildSkyline(center);
+      _buildSkyline();
       _buildHeroTowers();
     }
 
@@ -579,8 +576,7 @@ class PlazaSceneController {
       }
     }
 
-    for (final (i, slot) in world.billboardSlots.indexed) {
-      if (i >= world.billboards.length) break;
+    for (final (i, slot) in world.builtBillboardSlots.indexed) {
       if (slot.onPylon && !_shown('pylons')) continue;
       _buildBillboard(slot, world.billboards[i]);
     }
@@ -599,7 +595,7 @@ class PlazaSceneController {
       final pole = Node(
         localTransform: Matrix4.translation(Vector3(x, 2.6, z)),
         mesh: Mesh(
-          CuboidGeometry(Vector3(0.16, 5.2, 0.16)),
+          CuboidGeometry(Vector3(lampPostSize, 5.2, lampPostSize)),
           UnlitMaterial()..baseColorFactor = _post,
         ),
       );
@@ -658,7 +654,7 @@ class PlazaSceneController {
               Vector3(side * gantry.width / 2, top / 2, 0),
             ),
             mesh: Mesh(
-              CuboidGeometry(Vector3(0.5, top, 0.5)),
+              CuboidGeometry(Vector3(gantryLegSize, top, gantryLegSize)),
               UnlitMaterial()..baseColorFactor = _post,
             ),
           ),
@@ -696,13 +692,17 @@ class PlazaSceneController {
           Vector3(jumbotron.x, 0, jumbotron.z),
         )..rotateY(jumbotron.facingRadians),
       );
-      final towerH = jumbotron.bottom + jumbotron.height + 14;
-      final towerW = jumbotron.width + 4;
-      const towerD = 6.0;
+      final box = world.scenery.jumbotronTower!;
+      final towerH = box.height;
+      final towerW = box.width;
+      final towerD = box.depth;
       // The tower is a building, not a slab: windowed on every face, a
-      // lit crown, neon on its front corners.
+      // lit crown, neon on its front corners. Its box is the scenery's,
+      // so the collider knows it.
       final tower = Node(
-        localTransform: Matrix4.translation(Vector3(0, towerH / 2, -3.5)),
+        localTransform: Matrix4.translation(
+          Vector3(0, towerH / 2, -jumbotronTowerSetback),
+        ),
         mesh: Mesh(
           CuboidGeometry(Vector3(towerW, towerH, towerD)),
           UnlitMaterial()..baseColorFactor = _tower,
@@ -723,7 +723,7 @@ class PlazaSceneController {
           height: towerH,
           state: LanternState.inProgress,
           tint: _tower,
-          uOffset: _unit('jumbotron', 'tile$yaw') * 3,
+          uOffset: stableUnit('jumbotron', 'tile$yaw') * 3,
         );
       }
       final corner = UnlitMaterial()
@@ -788,7 +788,9 @@ class PlazaSceneController {
       );
       // The tower's own spire.
       final spire = Node(
-        localTransform: Matrix4.translation(Vector3(0, towerH + 5, -3.5)),
+        localTransform: Matrix4.translation(
+          Vector3(0, towerH + 5, -jumbotronTowerSetback),
+        ),
         mesh: Mesh(
           CuboidGeometry(Vector3(0.5, 10, 0.5)),
           UnlitMaterial()..baseColorFactor = _post,
@@ -796,7 +798,9 @@ class PlazaSceneController {
       );
       root.add(spire);
       final light = Node(
-        localTransform: Matrix4.translation(Vector3(0, towerH + 10.4, -3.5)),
+        localTransform: Matrix4.translation(
+          Vector3(0, towerH + 10.4, -jumbotronTowerSetback),
+        ),
       );
       root.add(light);
       spireAnchors.add(light);
@@ -905,7 +909,7 @@ class PlazaSceneController {
     final h = placement.height;
     // Massing: plots vary in depth (hashed, never moving) and the box is
     // anchored to the street side, so the row is not a picket fence.
-    final d = placement.depth * (0.78 + 0.32 * _unit(task.id, 'depth'));
+    final d = placement.depth * (0.78 + 0.32 * stableUnit(task.id, 'depth'));
     final setback = (placement.depth - d) / 2;
     final facing = placement.facingRadians;
     final normal = Vector3(math.sin(facing), 0, math.cos(facing));
@@ -930,7 +934,7 @@ class PlazaSceneController {
     final wallTint = linearColor(
       Color.lerp(PlazaStyle.categoryWall(task), const Color(0xFF0B0A14), 0.5)!,
     );
-    final offset = _unit(task.id, 'tile') * 3;
+    final offset = stableUnit(task.id, 'tile') * 3;
     // A quad's face is +Z before rotation: rotateY(-π/2) turns it to -X
     // for the left wall, rotateY(π/2) to +X for the right, π for the back.
     for (final (dx, dz, yaw, width) in [
@@ -1240,14 +1244,17 @@ class PlazaSceneController {
       // Heavy steel: two braced posts on footings, a catwalk under the
       // panel.
       for (final side in [-1.0, 1.0]) {
+        final px = side * slot.width * pylonPostSpread;
         root
           ..add(
             Node(
               localTransform: Matrix4.translation(
-                Vector3(side * slot.width * 0.4, slot.bottom / 2, -0.6),
+                Vector3(px, slot.bottom / 2, -pylonPostSetback),
               ),
               mesh: Mesh(
-                CuboidGeometry(Vector3(0.6, slot.bottom, 0.6)),
+                CuboidGeometry(
+                  Vector3(pylonPostSize, slot.bottom, pylonPostSize),
+                ),
                 UnlitMaterial()..baseColorFactor = _post,
               ),
             ),
@@ -1255,10 +1262,12 @@ class PlazaSceneController {
           ..add(
             Node(
               localTransform: Matrix4.translation(
-                Vector3(side * slot.width * 0.4, 0.3, -0.6),
+                Vector3(px, 0.3, -pylonPostSetback),
               ),
               mesh: Mesh(
-                CuboidGeometry(Vector3(1.6, 0.6, 1.6)),
+                CuboidGeometry(
+                  Vector3(pylonFootingSize, 0.6, pylonFootingSize),
+                ),
                 UnlitMaterial()..baseColorFactor = _post,
               ),
             ),
@@ -1406,12 +1415,12 @@ class PlazaSceneController {
         ),
       );
     }
-    final plantCount = 1 + (_unit(task.id, 'plant') < 0.5 ? 1 : 0);
+    final plantCount = 1 + (stableUnit(task.id, 'plant') < 0.5 ? 1 : 0);
     for (var i = 0; i < plantCount; i++) {
       final bw = math.min(w * 0.3, 2.4);
       final bd = math.min<double>(d * 0.3, 2);
-      final bx = (_unit(task.id, 'px$i') - 0.5) * (w - bw - 1);
-      final bz = (_unit(task.id, 'pz$i') - 0.5) * (d - bd - 1);
+      final bx = (stableUnit(task.id, 'px$i') - 0.5) * (w - bw - 1);
+      final bz = (stableUnit(task.id, 'pz$i') - 0.5) * (d - bd - 1);
       node.add(
         Node(
           localTransform: Matrix4.translation(Vector3(bx, top + 0.7, bz)),
@@ -1419,9 +1428,9 @@ class PlazaSceneController {
         ),
       );
     }
-    if (_unit(task.id, 'tank') < 0.4 && w > 5) {
-      final tx = (_unit(task.id, 'tx') - 0.5) * (w - 3);
-      final tz = (_unit(task.id, 'tz') - 0.5) * (d - 3);
+    if (stableUnit(task.id, 'tank') < 0.4 && w > 5) {
+      final tx = (stableUnit(task.id, 'tx') - 0.5) * (w - 3);
+      final tz = (stableUnit(task.id, 'tz') - 0.5) * (d - 3);
       node.add(
         Node(
           localTransform: Matrix4.translation(Vector3(tx, top + 1.5, tz)),
@@ -1437,8 +1446,8 @@ class PlazaSceneController {
         ),
       );
     }
-    if (_unit(task.id, 'mast') < 0.33) {
-      final mx = (_unit(task.id, 'mx') - 0.5) * (w - 1);
+    if (stableUnit(task.id, 'mast') < 0.33) {
+      final mx = (stableUnit(task.id, 'mx') - 0.5) * (w - 1);
       node.add(
         Node(
           localTransform: Matrix4.translation(Vector3(mx, top + 2.2, 0)),
@@ -1448,170 +1457,111 @@ class PlazaSceneController {
     }
   }
 
-  /// City fabric behind the plots: a second row of dark windowed blocks
-  /// with alleys between them, so the street has a back and the overview
-  /// has texture between the plots and the skyline. Seeded per bucket.
+  /// City fabric behind the plots (`Scenery.fillers`): dark windowed
+  /// blocks with alleys between them, so the street has a back and the
+  /// overview has texture between the plots and the skyline.
   void _buildFillerBlocks() {
-    final lateralBase = layout.roadWidth / 2 + layout.plotDepth + 4;
-    final plaza = world.plaza;
-    // The plaza footprint (with a margin) in its own frame: no filler may
-    // stand on the square.
-    bool onPlaza(double x, double z) {
-      if (plaza == null) return false;
-      final dx = x - plaza.centerX;
-      final dz = z - plaza.centerZ;
-      final along =
-          dx * math.sin(plaza.headingRadians) +
-          dz * math.cos(plaza.headingRadians);
-      final lateral =
-          dx * math.cos(plaza.headingRadians) -
-          dz * math.sin(plaza.headingRadians);
-      return along.abs() < plaza.depth / 2 + 12 &&
-          lateral.abs() < plaza.width / 2 + 12;
-    }
-
-    for (final segment in plan.segments) {
-      if (segment.isGap) continue;
-      final sinH = math.sin(segment.headingRadians);
-      final cosH = math.cos(segment.headingRadians);
-      for (final side in [-1.0, 1.0]) {
-        var along = 2.0;
-        var i = 0;
-        while (along < segment.length - 4) {
-          final id = 'filler-${segment.bucketIndex}-$side-$i';
-          final bw = 7 + _unit(id, 'w') * 9;
-          if (along + bw > segment.length - 1) break;
-          final bd = 8 + _unit(id, 'd') * 8;
-          final bh = 6 + _unit(id, 'h') * 16;
-          final lateral = side * (lateralBase + bd / 2 + _unit(id, 'l') * 4);
-          final cx = segment.startX + sinH * (along + bw / 2) + cosH * lateral;
-          final cz = segment.startZ + cosH * (along + bw / 2) - sinH * lateral;
-          if (onPlaza(cx, cz)) {
-            along += bw + 2 + _unit(id, 'gap') * 4;
-            i++;
-            continue;
-          }
-          // Local x is lateral, local z runs along the road: the block is
-          // bw long along the street and bd deep away from it.
-          final node = Node(
-            localTransform: Matrix4.translation(Vector3(cx, bh / 2, cz))
-              ..rotateY(segment.headingRadians),
-            mesh: Mesh(
-              CuboidGeometry(Vector3(bd, bh, bw)),
-              UnlitMaterial()..baseColorFactor = _tower,
-            ),
+    for (final block in world.scenery.fillers) {
+      final id = block.id;
+      final side = block.side;
+      final bw = block.depth; // frontage along the road
+      final bd = block.width; // reach away from it
+      final bh = block.height;
+      // Local x is lateral, local z runs along the road: the block is
+      // bw long along the street and bd deep away from it.
+      final node = Node(
+        localTransform: Matrix4.translation(Vector3(block.x, bh / 2, block.z))
+          ..rotateY(block.yawRadians),
+        mesh: Mesh(
+          CuboidGeometry(Vector3(bd, bh, bw)),
+          UnlitMaterial()..baseColorFactor = _tower,
+        ),
+      );
+      // Windows on every face: a filler is seen from the street, from
+      // the plaza and from above.
+      for (final (dx, dz, yaw, width) in [
+        (bd / 2 + 0.02, 0.0, math.pi / 2, bw),
+        (-bd / 2 - 0.02, 0.0, -math.pi / 2, bw),
+        (0.0, bw / 2 + 0.02, 0.0, bd),
+        (0.0, -bw / 2 - 0.02, math.pi, bd),
+      ]) {
+        _windowedWall(
+          node,
+          dx: dx,
+          dz: dz,
+          yaw: yaw,
+          width: width,
+          height: bh,
+          state: LanternState.open,
+          tint: _tower,
+          uOffset: stableUnit(id, 'tile$yaw') * 3,
+        );
+      }
+      if (stableUnit(id, 'sign') < 0.34) {
+        // A neon sign down the street-facing corner, named after one
+        // of the week's own tasks' category.
+        final weekTasks =
+            plan.placements.values
+                .where((p) => p.bucketIndex == block.bucketIndex)
+                .map((p) => p.taskId)
+                .toList()
+              ..sort();
+        if (weekTasks.isNotEmpty) {
+          final pick = (stableUnit(id, 'pick') * weekTasks.length)
+              .floor()
+              .clamp(0, weekTasks.length - 1);
+          final anchor = Node(
+            localTransform: Matrix4.translation(
+              Vector3(-side * (bd / 2 + 0.08), bh * 0.15, -bw / 2 + 1.2),
+            )..rotateY(side < 0 ? math.pi / 2 : -math.pi / 2),
           );
-          // Windows on every face: a filler is seen from the street, from
-          // the plaza and from above.
-          for (final (dx, dz, yaw, width) in [
-            (bd / 2 + 0.02, 0.0, math.pi / 2, bw),
-            (-bd / 2 - 0.02, 0.0, -math.pi / 2, bw),
-            (0.0, bw / 2 + 0.02, 0.0, bd),
-            (0.0, -bw / 2 - 0.02, math.pi, bd),
-          ]) {
-            _windowedWall(
-              node,
-              dx: dx,
-              dz: dz,
-              yaw: yaw,
-              width: width,
-              height: bh,
-              state: LanternState.open,
-              tint: _tower,
-              uOffset: _unit(id, 'tile$yaw') * 3,
-            );
-          }
-          if (_unit(id, 'sign') < 0.34) {
-            // A neon sign down the street-facing corner, named after one
-            // of the week's own tasks' category.
-            final weekTasks =
-                plan.placements.values
-                    .where((p) => p.bucketIndex == segment.bucketIndex)
-                    .map((p) => p.taskId)
-                    .toList()
-                  ..sort();
-            if (weekTasks.isNotEmpty) {
-              final pick = (_unit(id, 'pick') * weekTasks.length).floor().clamp(
-                0,
-                weekTasks.length - 1,
-              );
-              final anchor = Node(
-                localTransform: Matrix4.translation(
-                  Vector3(-side * (bd / 2 + 0.08), bh * 0.15, -bw / 2 + 1.2),
-                )..rotateY(side < 0 ? math.pi / 2 : -math.pi / 2),
-              );
-              node.add(anchor);
-              fillerSigns.add((anchor, 1.6, bh * 0.6, weekTasks[pick]));
-            }
-          }
-          scene.add(node);
-          along += bw + 2 + _unit(id, 'gap') * 4;
-          i++;
+          node.add(anchor);
+          fillerSigns.add((anchor, 1.6, bh * 0.6, weekTasks[pick]));
         }
       }
+      scene.add(node);
     }
   }
 
-  /// A ring of dark towers around the district so the street dissolves
-  /// into a city instead of a black table. Seeded, never data.
-  /// One hero tower past the far end of every row that folds, on the
-  /// row's axis, with a screen toward the street and a warm light dome
-  /// behind it: the horizon a walker walks toward. The last row's far end
-  /// has the jumbotron instead.
+  /// One hero tower past the far end of every row that folds
+  /// (`Scenery.heroTowers`), on the row's axis, with a screen toward the
+  /// street and a warm light dome behind it: the horizon a walker walks
+  /// toward. The last row's far end has the jumbotron instead.
   void _buildHeroTowers() {
-    final segments = plan.segments;
-    for (var i = 1; i < segments.length; i++) {
-      if (!segments[i].isConnector) continue;
-      final row = segments[i - 1];
-      final h = row.headingRadians;
-      final sinH = math.sin(h);
-      final cosH = math.cos(h);
-      const standOff = 90.0;
-      final id = 'hero-${row.bucketIndex}';
-      final w = 26 + _unit(id, 'w') * 8;
-      final height = 70 + _unit(id, 'h') * 16;
-      final x = row.endX + sinH * standOff;
-      final z = row.endZ + cosH * standOff;
+    for (final tower in world.scenery.heroTowers) {
+      final id = tower.id;
+      final w = tower.width;
+      final bd = tower.depth;
+      final height = tower.height;
       // The root faces back down the row.
-      final root =
-          Node(
-            localTransform: Matrix4.translation(Vector3(x, 0, z))
-              ..rotateY(h + math.pi),
-          )..add(
-            Node(
-              localTransform: Matrix4.translation(Vector3(0, height / 2, 0)),
-              mesh: Mesh(
-                CuboidGeometry(Vector3(w, height, w * 0.8)),
-                UnlitMaterial()..baseColorFactor = _tower,
-              ),
-            ),
-          );
-      final bd = w * 0.8;
+      final root = Node(
+        localTransform: Matrix4.translation(Vector3(tower.x, 0, tower.z))
+          ..rotateY(tower.yawRadians),
+      );
+      final box = Node(
+        localTransform: Matrix4.translation(Vector3(0, height / 2, 0)),
+        mesh: Mesh(
+          CuboidGeometry(Vector3(w, height, bd)),
+          UnlitMaterial()..baseColorFactor = _tower,
+        ),
+      );
+      root.add(box);
       for (final (dx, dz, yaw, faceW) in [
         (0.0, bd / 2 + 0.02, 0.0, w),
         (0.0, -bd / 2 - 0.02, math.pi, w),
         (w / 2 + 0.02, 0.0, math.pi / 2, bd),
         (-w / 2 - 0.02, 0.0, -math.pi / 2, bd),
       ]) {
-        final material = UnlitMaterial()..baseColorFactor = _tower;
-        _wallMaterials
-            .putIfAbsent(LanternState.inProgress, () => [])
-            .add(material);
-        root.add(
-          Node(
-            localTransform: Matrix4.translation(Vector3(dx, height / 2, dz))
-              ..rotateY(yaw),
-            mesh: Mesh(
-              tiledQuad(
-                faceW,
-                height,
-                uRepeat: faceW / WallTextures.tileWidth,
-                vRepeat: height / WallTextures.tileHeight,
-                uOffset: _unit(id, 'tile$yaw') * 3,
-              ),
-              material,
-            ),
-          ),
+        _windowedWall(
+          box,
+          dx: dx,
+          dz: dz,
+          yaw: yaw,
+          width: faceW,
+          height: height,
+          state: LanternState.inProgress,
+          tint: _tower,
+          uOffset: stableUnit(id, 'tile$yaw') * 3,
         );
       }
       // Crown: a lit trim and a spire with a blinking light.
@@ -1679,34 +1629,20 @@ class PlazaSceneController {
     }
   }
 
-  void _buildSkyline(Vector3 center) {
-    final plaza = world.plaza;
-    var radius = 0.0;
-    for (final p in plan.placements.values) {
-      final dx = p.x - center.x;
-      final dz = p.z - center.z;
-      radius = math.max(radius, math.sqrt(dx * dx + dz * dz));
-    }
-    if (plaza != null) {
-      final dx = plaza.centerX - center.x;
-      final dz = plaza.centerZ - center.z;
-      radius = math.max(radius, math.sqrt(dx * dx + dz * dz) + 60);
-    }
-    radius += 95;
-    const towers = 48;
-    for (var i = 0; i < towers; i++) {
-      final id = 'skyline-$i';
-      final angle = i / towers * 2 * math.pi + _unit(id, 'a') * 0.1;
-      final r = radius + _unit(id, 'r') * 90;
-      final w = 16 + _unit(id, 'w') * 26;
-      final h = 18 + _unit(id, 'h') * 46;
-      final x = center.x + math.cos(angle) * r;
-      final z = center.z + math.sin(angle) * r;
+  /// A ring of dark towers around the district (`Scenery.skyline`) so the
+  /// street dissolves into a city instead of a black table. Seeded, never
+  /// data.
+  void _buildSkyline() {
+    for (final tower in world.scenery.skyline) {
+      final id = tower.id;
+      final i = tower.index;
+      final w = tower.width;
+      final h = tower.height;
       final node = Node(
-        localTransform: Matrix4.translation(Vector3(x, h / 2, z))
-          ..rotateY(-angle),
+        localTransform: Matrix4.translation(Vector3(tower.x, h / 2, tower.z))
+          ..rotateY(tower.yawRadians),
         mesh: Mesh(
-          CuboidGeometry(Vector3(w, h, w * 0.8)),
+          CuboidGeometry(Vector3(w, h, tower.depth)),
           UnlitMaterial()..baseColorFactor = _tower,
         ),
       );
@@ -1722,7 +1658,7 @@ class PlazaSceneController {
           ..add(
             Node(
               localTransform: Matrix4.translation(
-                Vector3(0, sy - h / 2, w * 0.4 + 0.3),
+                Vector3(0, sy - h / 2, tower.depth / 2 + 0.3),
               ),
               mesh: Mesh(
                 CuboidGeometry(Vector3(sw + 0.8, sh + 0.8, 0.6)),
@@ -1733,53 +1669,35 @@ class PlazaSceneController {
           ..add(
             _glowQuad(sw + 6, sh + 6, frame, 0.25)
               ..localTransform = Matrix4.translation(
-                Vector3(0, sy - h / 2, w * 0.4 + 0.2),
+                Vector3(0, sy - h / 2, tower.depth / 2 + 0.2),
               ),
           );
         final anchor = Node(
           localTransform: Matrix4.translation(
-            Vector3(0, sy - h / 2, w * 0.4 + 0.66),
+            Vector3(0, sy - h / 2, tower.depth / 2 + 0.66),
           ),
         );
         node.add(anchor);
         skylineScreens.add((anchor, sw, sh, rank));
       }
       // Two windowed faces toward the district.
-      for (final (dx, dz, yaw) in [
-        (0.0, w * 0.4 + 0.02, 0.0),
-        (-w / 2 - 0.02, 0.0, -math.pi / 2),
+      for (final (dx, dz, yaw, faceW) in [
+        (0.0, tower.depth / 2 + 0.02, 0.0, w),
+        (-w / 2 - 0.02, 0.0, -math.pi / 2, tower.depth),
       ]) {
-        final material = UnlitMaterial()..baseColorFactor = _tower;
-        _wallMaterials.putIfAbsent(LanternState.off, () => []).add(material);
-        node.add(
-          Node(
-            localTransform: Matrix4.translation(Vector3(dx, 0, dz))
-              ..rotateY(yaw),
-            mesh: Mesh(
-              tiledQuad(
-                w,
-                h,
-                uRepeat: w / WallTextures.tileWidth,
-                vRepeat: h / WallTextures.tileHeight,
-                uOffset: _unit(id, 'tile') * 3,
-              ),
-              material,
-            ),
-          ),
+        _windowedWall(
+          node,
+          dx: dx,
+          dz: dz,
+          yaw: yaw,
+          width: faceW,
+          height: h,
+          state: LanternState.off,
+          tint: _tower,
+          uOffset: stableUnit(id, 'tile') * 3,
         );
       }
       scene.add(node);
     }
-  }
-
-  Vector3 _planCenter() {
-    if (plan.segments.isEmpty) return Vector3.zero();
-    var sumX = 0.0;
-    var sumZ = 0.0;
-    for (final s in plan.segments) {
-      sumX += s.startX;
-      sumZ += s.startZ;
-    }
-    return Vector3(sumX / plan.segments.length, 0, sumZ / plan.segments.length);
   }
 }

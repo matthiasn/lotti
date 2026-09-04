@@ -2,6 +2,7 @@ import 'package:lotti/features/plaza/domain/attention.dart';
 import 'package:lotti/features/plaza/domain/morning_walk.dart';
 import 'package:lotti/features/plaza/domain/plaza_layout.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
+import 'package:lotti/features/plaza/domain/scenery.dart';
 import 'package:lotti/features/plaza/domain/street_layout.dart';
 import 'package:lotti/features/plaza/domain/walk_collider.dart';
 
@@ -30,7 +31,6 @@ class PlazaWorld {
       projectLabel: projectLabel,
       weekLabel: weekLabel,
     );
-    collider = WalkCollider(plan.placements.values);
     roofBillboards = roofBillboardsFor(plan, anomalies);
     banners = bannersFor(plan);
     lampPosts = lampPostsFor(plan, roadWidth: layout.roadWidth);
@@ -42,10 +42,25 @@ class PlazaWorld {
     mountedScreens = mounted.screens;
     tickers = [
       ...mounted.tickers,
-      ...?gantry == null ? null : [gantry!],
+      ?gantry,
       for (final (i, hero) in heroes.indexed)
         rooflineTickerFor(plan.placements[hero.task.id]!, fast: i.isEven),
     ];
+    scenery = sceneryFor(
+      plan,
+      plaza: plaza,
+      jumbotron: jumbotron,
+      roadWidth: layout.roadWidth,
+      plotDepth: layout.plotDepth,
+    );
+    solids = List.unmodifiable([
+      for (final p in plan.placements.values) p.footprint,
+      for (final box in scenery.boxes) box.footprint,
+      ...pylonFootprintsFor(builtBillboardSlots.where((s) => s.onPylon)),
+      if (gantry case final gantry?) ...gantryLegFootprintsFor(gantry),
+      ...lampPostFootprintsFor(lampPosts),
+    ]);
+    collider = WalkCollider(solids);
   }
 
   final List<PlazaTask> tasks;
@@ -62,6 +77,17 @@ class PlazaWorld {
   late final List<TaskAttention> anomalies;
   late final List<TaskAttention> billboards;
   late final List<Beacon> beacons;
+
+  /// The seeded dressing: fillers, hero towers, the jumbotron tower, the
+  /// skyline ring.
+  late final Scenery scenery;
+
+  /// Every rectangle on the ground the walker is kept out of: the plots,
+  /// the scenery boxes, the built pylons' footings, the gantry legs and
+  /// the lamp posts — all of it, so the scene has nothing solid the
+  /// collider does not know.
+  late final List<Footprint> solids;
+
   late final WalkCollider collider;
   late final List<BillboardSlot> mountedScreens;
 
@@ -116,6 +142,11 @@ class PlazaWorld {
     ...?plaza?.pylons,
     ...mountedScreens,
   ];
+
+  /// The slots that get a billboard: one per candidate, in rank order.
+  /// The rest stay empty and are not built.
+  List<BillboardSlot> get builtBillboardSlots =>
+      billboardSlots.take(billboards.length).toList();
 
   TaskAttention attentionOf(PlazaTask task) => attention[task.id]!;
 

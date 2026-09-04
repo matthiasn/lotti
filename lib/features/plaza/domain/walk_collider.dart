@@ -1,7 +1,9 @@
-/// Keeps the walker out of buildings: a point-versus-rotated-rectangle push
-/// against every placement, with a margin so the camera never clips a wall.
+/// Keeps the walker out of every solid: a point-versus-rotated-rectangle
+/// push against every footprint, with a margin so the camera never clips a
+/// wall.
 ///
-/// Pure Dart, O(buildings) per resolve — trivially cheap at prototype scale.
+/// Pure Dart, O(footprints) per resolve — trivially cheap at prototype
+/// scale.
 library;
 
 import 'dart:math' as math;
@@ -9,13 +11,13 @@ import 'dart:math' as math;
 import 'package:lotti/features/plaza/domain/street_layout.dart';
 
 class WalkCollider {
-  WalkCollider(Iterable<PlotPlacement> placements, {this.margin = 0.6})
-    : _placements = _mergeAligned(placements.toList(), margin);
+  WalkCollider(Iterable<Footprint> footprints, {this.margin = 0.6})
+    : _footprints = _mergeAligned(footprints.toList(), margin);
 
-  final List<PlotPlacement> _placements;
+  final List<Footprint> _footprints;
 
   /// The footprints the walker is kept out of, after merging.
-  List<PlotPlacement> get footprints => _placements;
+  List<Footprint> get footprints => _footprints;
 
   /// Two neighbours in a crowded week can stand closer than twice the
   /// margin. Resolved one after the other, the first pushes the walker into
@@ -24,10 +26,7 @@ class WalkCollider {
   /// whose clearances overlap are merged into one footprint, repeatedly, so
   /// the alley between them is solid and every footprint left is at least
   /// a clearance from the next.
-  static List<PlotPlacement> _mergeAligned(
-    List<PlotPlacement> input,
-    double margin,
-  ) {
+  static List<Footprint> _mergeAligned(List<Footprint> input, double margin) {
     final out = [...input];
     var merged = true;
     while (merged) {
@@ -47,11 +46,7 @@ class WalkCollider {
     return List.unmodifiable(out);
   }
 
-  static PlotPlacement? _union(
-    PlotPlacement a,
-    PlotPlacement b,
-    double margin,
-  ) {
+  static Footprint? _union(Footprint a, Footprint b, double margin) {
     const eps = 1e-3;
     if ((a.facingRadians - b.facingRadians).abs() > eps ||
         (a.depth - b.depth).abs() > eps) {
@@ -68,16 +63,12 @@ class WalkCollider {
     final left = math.min(-a.width / 2, u - b.width / 2);
     final right = math.max(a.width / 2, u + b.width / 2);
     final centre = (left + right) / 2;
-    return PlotPlacement(
-      taskId: a.taskId,
-      bucketIndex: a.bucketIndex,
-      side: a.side,
+    return Footprint(
       x: a.x + centre * cosF,
       z: a.z - centre * sinF,
       facingRadians: a.facingRadians,
       width: right - left,
       depth: a.depth,
-      height: math.max(a.height, b.height),
     );
   }
 
@@ -88,9 +79,9 @@ class WalkCollider {
   (double, double) resolve(double x, double z) {
     var rx = x;
     var rz = z;
-    for (final p in _placements) {
-      // Into the building's local frame: `u` along the road (width),
-      // `v` toward the road (depth), facing = +v.
+    for (final p in _footprints) {
+      // Into the footprint's local frame: `u` along its width (local X),
+      // `v` along its depth (local Z).
       final sinF = math.sin(p.facingRadians);
       final cosF = math.cos(p.facingRadians);
       final dx = rx - p.x;

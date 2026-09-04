@@ -42,6 +42,39 @@ int stableHash(String input) {
   return hash;
 }
 
+/// Deterministic 0..1 from an [id] and a [salt]: seeded variation (massing,
+/// tile offsets, set dressing) that must never move under the user's feet.
+double stableUnit(String id, String salt) =>
+    (stableHash('$id:$salt') & 0xFFFF) / 0xFFFF;
+
+/// A solid's rectangle on the ground: centre, rotation about +Y, and the
+/// extents along its local X ([width]) and local Z ([depth]). Everything
+/// the scene builds on the ground has one, and the walker collider keeps
+/// the camera out of all of them.
+class Footprint {
+  const Footprint({
+    required this.x,
+    required this.z,
+    required this.facingRadians,
+    required this.width,
+    required this.depth,
+  });
+
+  final double x;
+  final double z;
+
+  /// Rotation about +Y: the local Z axis points along
+  /// `(sin facing, cos facing)` in the world, local X along
+  /// `(cos facing, -sin facing)`.
+  final double facingRadians;
+
+  /// Extent along local X.
+  final double width;
+
+  /// Extent along local Z.
+  final double depth;
+}
+
 /// Which side of the road a plot sits on.
 enum PlotSide { left, right }
 
@@ -82,6 +115,15 @@ class PlotPlacement {
   /// Building height, world meters: weight-driven (see
   /// [StreetLayout.heightFor]).
   final double height;
+
+  /// The plot's rectangle on the ground.
+  Footprint get footprint => Footprint(
+    x: x,
+    z: z,
+    facingRadians: facingRadians,
+    width: width,
+    depth: depth,
+  );
 }
 
 /// One straight run of road: a plot group (week), a collapsed gap, or a

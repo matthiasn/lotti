@@ -81,7 +81,8 @@ Implemented, by area (the mechanism behind each is in the concept):
   per anomaly), flights with an arc and look-along, a back stack, a landing
   flight when you step off the overview, Tab cycling, home and overview
   keys, tap-to-fly on beacons, facades and billboards with a tap-versus-drag
-  threshold, a walker collider, and title search.
+  threshold, a walker collider that knows every solid (plots, fillers,
+  towers, pylon footings, gantry legs, lamp posts), and title search.
 - **Morning walk.** Overview, up to three anomalies, home; pausable, and
   abandoned by any movement.
 - **Harness modes.** The interactive session, a screenshot tour
@@ -186,13 +187,12 @@ The window is 1600x1000 unless `LOTTI_WINDOW_SIZE` says otherwise; any other
 textures come out as flat slabs on a virtual framebuffer, so capture on the
 real display.
 
-Current captures live in `docs/plaza/screenshots_v2/` locally. **Never
-commit them**: the repository policy is that no image is ever committed
+Current captures live in `docs/plaza/screenshots_v2/` locally, which
+`.gitignore` covers. **Never commit them**: the repository policy is that
+no image is ever committed
 (see [knowledge/conventions/screenshots.md](../../knowledge/conventions/screenshots.md)).
-Note that `.gitignore` only covers directories named `screenshots`, so
-`screenshots_v2/` shows up as untracked; leave it out of every `git add`
-until the ignore rule is widened. Durable copies go to the public R2 bucket
-with the usual PR-screenshot upload.
+Durable copies go to the public R2 bucket with the usual PR-screenshot
+upload.
 
 ### 4.2 M0 captures (historical)
 
@@ -243,9 +243,9 @@ useful relative to each other.
 
 One test file per pure source file, mirroring the path under
 `test/features/plaza/`: the domain (task model, street layout, plaza
-layout, attention, flight, morning walk, collider), the demo projection,
-`PlazaWorld`, and every widget under `ui/` including the tour poses. They
-run without a GPU on the synthetic fixture in
+layout, attention, flight, morning walk, collider, scenery), the demo
+projection, `PlazaWorld`, and every widget under `ui/` including the tour
+poses. They run without a GPU on the synthetic fixture in
 `test/features/plaza/plaza_fixtures.dart`. Run only the files for the
 sources you touched (repository rule), for example:
 
@@ -301,7 +301,6 @@ still open.
   camera returns to home.
 - Tour and bench modes swallow all input by design; there is no way to
   intervene in a run other than killing it.
-- `screenshots_v2/` is not covered by `.gitignore` (section 4.1).
 - Dependency caveats (`flutter_scene` and the `code_assets` override, the
   CW widget quad, the engine switch for built binaries) are in the concept's
   gotchas; re-read them on every `flutter_scene` bump.

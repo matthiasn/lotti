@@ -32,6 +32,10 @@ sources:
     resource: ../../lib/features/plaza/domain/walk_collider.dart
     title: The walker collider with merged footprints
     last_modified: 2026-09-04
+  - id: scenery
+    resource: ../../lib/features/plaza/domain/scenery.dart
+    title: The seeded scenery and the furniture footprints
+    last_modified: 2026-09-04
   - id: world
     resource: ../../lib/features/plaza/scene/plaza_world.dart
     title: PlazaWorld, everything derived once from tasks and the clock
@@ -103,10 +107,14 @@ flowchart LR
     World --> Plaza["FrontierPlaza<br/>home, overview, pylons"]
     World --> Overlays["mounts, roof billboards, banners, lamps,<br/>gantry, jumbotron, spires, week signs"]
     World --> Beacons["Beacons"]
-    World --> Collider["WalkCollider"]
+    World --> Scenery["Scenery<br/>fillers, hero towers, jumbotron tower, skyline"]
+    World --> Solids["solids<br/>plots, scenery boxes, pylon footings, gantry legs, lamp posts"]
+    Scenery --> Solids
+    Solids --> Collider["WalkCollider"]
   end
   subgraph scene ["Scene, needs a GPU context"]
     Plan --> Ctl["PlazaSceneController<br/>sky, fog, ground, road, plaza, buildings, fillers, skyline"]
+    Scenery --> Ctl
     Plaza --> Ctl
     Overlays --> Ctl
     Walls["WallTextures"] --> Ctl
@@ -129,8 +137,9 @@ flowchart LR
 `PlazaWorld` is built once per scene from the task list, the clock, a project
 label, the category labels and a `StreetLayout`. Its constructor derives the
 plan, the plaza, the attention verdicts, the anomalies, the billboard
-candidates, the beacons, the collider and every piece of street furniture, so
-the scene, the HUD, the search sheet and the tour all read from one object.
+candidates, the beacons, every piece of street furniture, the scenery and
+the collider over every solid, so the scene, the HUD, the search sheet and
+the tour all read from one object.
 It also composes the two ticker strings: `countsText` (project label,
 attention count, in-progress count, done of live, built-week count) for the
 gantry, and `tickerText` (the same with the top three anomaly headlines) for
@@ -336,7 +345,7 @@ stateDiagram-v2
   Flying --> Walking: flight lands, onArrived
   Flying --> Walking: drag look, or a movement key on a flight with no arc or below landing height, cancelled in place
   Flying --> Flying: movement key mid arc above landing height, replaced by a landing flight
-  Walking --> Walking: WASD and shift, the collider keeps the walker out of footprints
+  Walking --> Walking: WASD and shift, the collider keeps the walker out of every solid
 ```
 
 `FlyCameraController` walks at `walkSpeed` 3.4 m/s (shift × 2.5) with a
@@ -392,14 +401,52 @@ whether Space will pause or resume.
 
 # The walk collider
 
-`WalkCollider` keeps the walker out of every footprint with a 0.6 m margin:
-a point-versus-rotated-rectangle push through the nearest face, over all
-placements. Two neighbours in a crowded week can stand closer than twice
-the margin, and resolving them one after the other never settles, so
-**aligned footprints are merged** first (`_mergeAligned`): same facing, same
-row line, same depth, and clearances that overlap become one footprint,
+`WalkCollider` keeps the walker out of every `Footprint` (a rectangle on
+the ground: centre, rotation about +Y, width along local X, depth along
+local Z) with a 0.6 m margin: a point-versus-rotated-rectangle push through
+the nearest face. It is built from `PlazaWorld.solids`, which is
+**everything the scene stands on the ground**: the plots
+(`PlotPlacement.footprint`), every scenery box (`Scenery.boxes`: fillers,
+hero towers, the jumbotron tower, the skyline ring), the footings of the
+built pylons (`pylonFootprintsFor`), the gantry legs
+(`gantryLegFootprintsFor`) and the lamp posts (`lampPostFootprintsFor`).
+Two neighbours in a crowded week can stand closer than twice the margin,
+and resolving them one after the other never settles, so **aligned
+footprints are merged** first (`_mergeAligned`): same facing, same row
+line, same depth, and clearances that overlap become one footprint,
 repeatedly, so the alley between them is solid. `footprints` exposes the
 merged set for the tests.
+
+# The scenery
+
+`domain/scenery.dart` places every seeded solid, in pure Dart, and the
+scene only builds what it is handed: a position the scene invented on its
+own would be a box the collider cannot know, and a wall you walk through.
+Every box is a `SceneryBox` (id, centre, yaw, width along local X, depth
+along local Z, height); sizes come from `stableUnit(id, salt)`, never from
+task data.
+
+- **Fillers** (`fillerBlocksFor`): behind the plots of every built row,
+  both sides, from 2 m along the row: frontage 7 to 16 m, reach 8 to 16 m,
+  height 6 to 22 m, alleys of 2 to 6 m, the near face `roadWidth / 2 +
+  plotDepth + 4` from the axis plus up to 4 m; nothing inside the plaza
+  plus 12 m. A filler's yaw is the road heading, so its `depth` is the
+  frontage.
+- **Hero towers** (`heroTowersFor`): one per row that folds, 90 m past the
+  row end on its axis, facing back down it, 26 to 34 m wide, 0.8 × as
+  deep, 70 to 86 m tall.
+- **Jumbotron tower** (`jumbotronTowerFor`): 3.5 m behind the screen's
+  plane, 2 m wider than the screen each side, 6 m deep, 14 m above the
+  screen's top.
+- **Skyline** (`skylineFor`): 48 towers on a ring 95 m beyond the farthest
+  plot from `planCenterOf` (or the plaza plus 60 m), spread up to 90 m
+  further out, 16 to 42 m wide, 0.8 × as deep, 18 to 64 m tall, each
+  turned to face the centre.
+- **Furniture footprints**: the pylon posts stand `pylonPostSetback` (0.6 m)
+  behind the panel at `pylonPostSpread` (0.4) of its width either side on
+  1.6 m footings; the gantry legs are 0.5 m square at the ends of its span;
+  a lamp post is 0.16 m square. The scene builds the posts from the same
+  constants.
 
 # Facade tiers and the budget
 
@@ -535,18 +582,14 @@ until it lands.
   panels get two struts; every panel gets a dark lightbox, a glow quad, a rim
   in the lantern colour and chase-light points around the frame. The
   backing box is the pickable node.
-- **Fillers**: a seeded second row of dark blocks behind the plots (7 to
-  16 m long, 8 to 16 m deep, 6 to 22 m tall, alleys between), every face a
-  shopfront band under open-state windows, never on the plaza footprint
-  plus a 12 m margin; about a third carry a neon category sign named after
-  one of the week's own tasks.
-- **Skyline**: 48 seeded towers on a ring 95 m beyond the district's radius
-  (16 to 42 m wide, 18 to 64 m tall) with two windowed faces toward the
-  district; every fourth carries a screen that shows the anomalies in
-  rotation.
-- **Hero towers** (`_buildHeroTowers`, with the skyline): one past the far
-  end of every row that folds, 90 m beyond the row end on its axis, 26 to
-  34 m wide and 70 to 86 m tall, windowed on all four faces, with a teal
+- **Fillers** (`Scenery.fillers`): dark blocks behind the plots, every
+  face a shopfront band under open-state windows; about a third carry a
+  neon category sign named after one of the week's own tasks.
+- **Skyline** (`Scenery.skyline`): the ring of towers with two windowed
+  faces toward the district; every fourth carries a screen that shows the
+  anomalies in rotation.
+- **Hero towers** (`Scenery.heroTowers`, built with the skyline): one past
+  the far end of every row that folds, windowed on all four faces, with a teal
   crown, a 14 m spire with a blinking light, a screen across the upper
   face toward the street showing the top anomaly and a warm glow dome
   behind it, so every row has a lit horizon to walk toward. The last row's
@@ -627,6 +670,11 @@ is ignored entirely in tour and bench modes.
 - **The facade palette is local on purpose.** `PlazaStyle` is scene content
   in a dev harness, mapped to Lotti's dark semantics; it moves onto
   design-system tokens only if the prototype graduates.
+- **Every solid is placed in `domain/scenery.dart`, never in the scene.**
+  `PlazaWorld.solids` is what the collider knows; the scene builds its
+  fillers, towers, footings, legs and posts from the same records and
+  constants, so a box the scene invents on its own is a box you can walk
+  through. `PLAZA_HIDE` hides geometry, not its footprint.
 - **Fixtures are the demo world only.** The harness projects
   `ManualDemoWorld.penguinLogistics`; the synthetic generator lives in
   `test/features/plaza/plaza_fixtures.dart` for the tests and nowhere else.

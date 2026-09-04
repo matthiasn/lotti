@@ -40,8 +40,9 @@ All read at start-up; none is needed for an interactive session.
 ## What it owns and what it delegates
 
 Owns: the task projection model, the merge-stable street layout and its
-fold, the frontier plaza and street furniture, the attention score, beacons,
-flights, the morning walk, the walker collider, the scene graph, the facade
+fold, the frontier plaza and street furniture, the seeded scenery, the
+attention score, beacons, flights, the morning walk, the walker collider
+over every solid, the scene graph, the facade
 LOD, the widget surfaces, the sprites, the picker, the camera, the HUD, the
 search sheet, the side panel, the debug overlay, the tour and the bench.
 
@@ -63,7 +64,9 @@ lib/features/plaza/
     attention.dart       the attention score and lantern state
     flight.dart          camera flights
     morning_walk.dart    the walk playlist
-    walk_collider.dart   keeps the walker out of buildings
+    walk_collider.dart   keeps the walker out of every solid
+    scenery.dart         the seeded fillers, towers and skyline, and the
+                         footprints of the pylons, the gantry and the lamps
   scene/                 flutter_scene, needs a GPU context
     plaza_world.dart     everything derived from tasks and the clock (pure)
     plaza_scene.dart     the scene graph: sky, road, buildings, fillers, skyline

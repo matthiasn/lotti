@@ -118,7 +118,7 @@ void main() {
         depth: 6,
         height: 5,
       );
-      final camera = _controller(collider: WalkCollider([wall]));
+      final camera = _controller(collider: WalkCollider([wall.footprint]));
       await simulateKeyDownEvent(LogicalKeyboardKey.keyW);
       camera.handleKeyEvent(
         _down(LogicalKeyboardKey.keyW, PhysicalKeyboardKey.keyW),

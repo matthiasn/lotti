@@ -516,6 +516,10 @@ itself shows it. The values are in the concept.
   rather than 120 m and is suppressed for mostly vertical trips. A landing
   flight (not in the spec) brings the walker down when a movement key is
   pressed above eye height.
+- **Collision is with every solid, not with street edges**: the walker is
+  kept out of the buildings, the fillers, the towers, the pylon footings,
+  the gantry legs and the lamp posts, and slides along them; kerbs and the
+  plaza edge are open, so you can leave the road.
 - **Live range is 26 m, not 35 m**, and the shopfront and street ranges in
   section 1 follow the code.
 - **Sign facades are captured once, with no interval fallback**; sign

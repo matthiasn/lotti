@@ -52,6 +52,43 @@ Matcher _samePlacementAs(PlotPlacement expected) => predicate<PlotPlacement>(
 );
 
 void main() {
+  group('stableUnit', () {
+    test('is deterministic, in 0..1, and salt-sensitive', () {
+      expect(stableUnit('a', 'w'), stableUnit('a', 'w'));
+      expect(stableUnit('a', 'w'), isNot(stableUnit('a', 'h')));
+      expect(stableUnit('a', 'w'), isNot(stableUnit('b', 'w')));
+      for (var i = 0; i < 200; i++) {
+        expect(stableUnit('id-$i', 's'), inInclusiveRange(0, 1));
+      }
+      // The exact value is part of the contract: a plot's massing and
+      // every seeded block would move if the hash changed.
+      expect(
+        stableUnit('a', 'w'),
+        (stableHash('a:w') & 0xFFFF) / 0xFFFF,
+      );
+    });
+  });
+
+  test('PlotPlacement.footprint is the plot rectangle', () {
+    const p = PlotPlacement(
+      taskId: 't',
+      bucketIndex: 2,
+      side: PlotSide.right,
+      x: 3,
+      z: -4,
+      facingRadians: 1.2,
+      width: 9,
+      depth: 8,
+      height: 20,
+    );
+    final f = p.footprint;
+    expect(f.x, 3);
+    expect(f.z, -4);
+    expect(f.facingRadians, 1.2);
+    expect(f.width, 9);
+    expect(f.depth, 8);
+  });
+
   final layout = StreetLayout(projectSeed: 1337);
 
   group('determinism', () {
