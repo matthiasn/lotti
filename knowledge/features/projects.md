@@ -5,7 +5,7 @@ description: The middle layer between categories and tasks — a denormalized me
 resource: ../../lib/features/projects
 tags: [projects, grouping, health, agents]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T03:00:00Z }
+generated: { by: codex/gpt-5, at: 2026-09-04T21:30:00Z }
 stale_after: 2027-03-01
 sources:
   - id: src
@@ -69,11 +69,24 @@ the latest non-hidden `ProjectLink` on every link and entity write**, so the
 result is identical to the old join without its
 `USE TEMP B-TREE FOR ORDER BY` sort.
 
-## Membership is scoped to a category — from the task's side
+## Membership is scoped to category and privacy
 
-`linkTaskToProject` refuses a link whose two sides disagree on category, which
-covers the moment the link is created. But a category can move afterwards, and
-that write is nowhere near the link, so the rule has to be re-checked there too.
+`linkTaskToProject` re-reads both entities and refuses a link whose two sides
+disagree on category or privacy. The fresh privacy check closes the async gap
+between resolving a project for task creation and persisting its link: if sync
+changes project privacy in between, the link is rejected and the creation path
+soft-deletes the new task. Nullable privacy is normalized with `?? false`, so
+legacy `null` and explicit `false` are both public and remain link-compatible.
+`createTask` also rejects conflicting explicit-project and linked-entity privacy
+before writing anything; it does not silently downgrade either context. If an
+assignment race requires cleanup and that cleanup cannot be confirmed, creation
+throws instead of claiming success. The Tasks tab catches that failure, shows a
+localized error, and does not navigate to the failed task.
+Project-agent
+`create_task` calls pass the project's privacy into task creation before
+linking. A category can still move after linking, and that
+write is nowhere near the link, so the category rule has to be re-checked there
+too.
 
 **`EntryController.updateCategoryId` does that for the task side**: it drops the
 project link of every task it moves when the new category is not the project's
@@ -82,12 +95,12 @@ own.
 ```mermaid
 stateDiagram-v2
   [*] --> Unlinked
-  Unlinked --> Linked: linkTaskToProject (same category only)
+  Unlinked --> Linked: linkTaskToProject (same category and privacy)
   Linked --> Linked: task category re-picked unchanged
   Linked --> Unlinked: task category changed or cleared
-  Linked --> Mismatched: project moved to another category
-  note right of Mismatched
-    Not reconciled — see below
+  Linked --> Linked: project category change rejected
+  note right of Linked
+    Membership always resolves to one category
   end note
 ```
 
@@ -111,6 +124,13 @@ A task whose category write did not land is not swept. A failed write means the
 entity was not found — deleted since it was read, or never there — so it keeps
 the category it had, and its project is still correct for it.
 
+Privacy toggles follow the same invariant. After a task privacy write commits,
+`EntryController.togglePrivate` requests a conditional repository unlink. Its
+transaction rechecks the membership and both entries without the private gate;
+a concurrent replacement link or newly matching privacy is preserved.
+The cleanup does not run after a failed privacy write, so a task that stayed
+public cannot lose a still-valid public-project membership.
+
 The sweep covers the entries the same call re-categorized, not just the edited
 one. `getLinkedEntities` is **not filtered by link type**, so the propagation
 loop rewrites the category of linked *tasks* along with the timers and images it
@@ -121,12 +141,24 @@ Only the task detail header changes a task's category
 (`CategorySelectionIconButton` excludes tasks and events explicitly), so the
 controller is the single funnel this rule has to sit in.
 
-**The project side is not reconciled.** `ProjectDetailController.updateCategoryId`
-persists a project's new category through `ProjectRepository.updateProject`
-without touching its member tasks, so moving a *project* between categories
-leaves every linked task behind in the old one and reproduces exactly the
-mismatch the task side now prevents. Nothing repairs pre-existing mismatches
-either — only a subsequent task-side category change clears one.
+**Project category changes are guarded, not bulk migrations.**
+Both editors save through `ProjectRepository.updateProject`, which rejects a
+category change while any task remains linked or any live project agent exists.
+Updates share the per-project mutation coordinator with agent provisioning, so
+the cross-store guard cannot race a locally created agent.
+The task guard uses unfiltered denormalized membership, including hidden private
+tasks. Neither editor rewrites task categories, attachments, membership or
+agent permissions as a side effect of changing the project category.
+
+Synced category moves are reconciled through `ProjectActivityMonitor`.
+`ProjectAgentService.updateProjectAgentScopes` shares the provisioning/deletion
+coordinator, rechecks the current journal scope after waiting, and reads agent
+identities and assigned templates inside its transaction. Only global or
+matching-category templates retain their agents; missing, deleted, wrong-kind,
+or incompatible templates cause retirement without granting the new scope.
+Unchanged valid scopes produce no writes or notifications, and unrelated
+identity preferences are preserved. Reconciliation
+does not classify the remote edit as local activity or schedule a wake.
 
 # Two hot reads are shaped for bursts
 
@@ -176,6 +208,16 @@ the shared 960 pt detail
 measure with its one standard horizontal gutter, keeping report lines and cards
 readable when the list releases a wide canvas without double-insetting mobile
 content.
+
+# Editor persistence
+
+`ProjectDetailController` retains the persisted baseline and local draft.
+Reloads apply only locally changed fields to the latest project, preserving
+unrelated synced fields and rich-text payloads when plain text changes.
+A generation guard discards stale reload completions. A tombstone clears both
+baseline and draft before loading tasks, so saving cannot resurrect a deleted
+project. Repository writes verify ambiguous negative persistence results against
+the committed row before reporting failure.
 
 # Health is agent-authored
 

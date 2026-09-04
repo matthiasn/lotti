@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 import 'dart:math' as math;
 
 import 'package:clock/clock.dart';
@@ -19,6 +20,8 @@ import 'package:lotti/features/design_system/components/empty_states/design_syst
 import 'package:lotti/features/design_system/components/headers/tab_section_header.dart';
 import 'package:lotti/features/design_system/components/layout/detail_content_width.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_palette.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
@@ -1033,24 +1036,41 @@ Future<void> _defaultCreateTaskPressed(
 ) async {
   // Capture the service before the await to avoid using ref after disposal.
   final agentService = ref.read(taskAgentServiceProvider);
-  final task = await createTask(
-    categoryId: filterContext.categoryId,
-    projectId: filterContext.projectId,
-    labelIds: filterContext.labelIds.isEmpty
-        ? null
-        : filterContext.labelIds.toList(growable: false),
-    status: filterContext.status,
-  );
-  if (task != null) {
-    // Awaited, not fire-and-forget: the assignment decides what the task page
-    // paints. Navigating first meant a category with a default agent opened
-    // its new task as first-run (block, narrow measure), then flipped to the
-    // established layout the moment the agent landed — a full reflow one beat
-    // after the page appeared. It is a local write, and it is a no-op for a
-    // category with no default template.
-    await autoAssignCategoryAgentWith(agentService, task);
-    getIt<NavService>().beamToNamed('/tasks/${task.meta.id}');
+  final context = ref.context;
+  Task? task;
+  try {
+    task = await createTask(
+      categoryId: filterContext.categoryId,
+      projectId: filterContext.projectId,
+      labelIds: filterContext.labelIds.isEmpty
+          ? null
+          : filterContext.labelIds.toList(growable: false),
+      status: filterContext.status,
+    );
+  } catch (error, stackTrace) {
+    developer.log(
+      'Failed to create task',
+      name: 'TasksTabPage',
+      error: error,
+      stackTrace: stackTrace,
+    );
   }
+  if (task == null) {
+    if (!context.mounted) return;
+    context.showToast(
+      tone: DesignSystemToastTone.error,
+      title: context.messages.commonError,
+    );
+    return;
+  }
+  // Awaited, not fire-and-forget: the assignment decides what the task page
+  // paints. Navigating first meant a category with a default agent opened
+  // its new task as first-run (block, narrow measure), then flipped to the
+  // established layout the moment the agent landed — a full reflow one beat
+  // after the page appeared. It is a local write, and it is a no-op for a
+  // category with no default template.
+  await autoAssignCategoryAgentWith(agentService, task);
+  getIt<NavService>().beamToNamed('/tasks/${task.meta.id}');
 }
 
 /// End-aligned floating location that sits [bottomMargin] above the content

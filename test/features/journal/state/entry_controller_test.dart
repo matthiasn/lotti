@@ -746,6 +746,104 @@ void main() {
       verify(testFn).called(1);
     });
 
+    test('toggle private unlinks a task from a public project', () async {
+      reset(mockPersistenceLogic);
+      when(
+        () => mockPersistenceLogic.updateJournalEntity(
+          testTask,
+          testTask.meta.copyWith(private: true),
+        ),
+      ).thenAnswer((_) async => true);
+      when(
+        () => mockProjectRepository.getLinkedProjectForTask(testTask.id),
+      ).thenAnswer(
+        (_) async => makeTestProject(
+          id: 'project-public',
+          categoryId: testTask.meta.categoryId,
+        ),
+      );
+      when(
+        () => mockProjectRepository.unlinkTaskFromProject(
+          testTask.id,
+          onlyIfPrivacyMismatched: true,
+        ),
+      ).thenAnswer((_) async => true);
+      final container = makeProviderContainer();
+      final notifier = container.read(
+        entryControllerProvider(testTask.id).notifier,
+      );
+
+      await notifier.togglePrivate();
+
+      verify(
+        () => mockProjectRepository.unlinkTaskFromProject(
+          testTask.id,
+          onlyIfPrivacyMismatched: true,
+        ),
+      ).called(1);
+    });
+
+    test(
+      'privacy cleanup failure preserves the successful privacy write',
+      () async {
+        when(
+          () => mockPersistenceLogic.updateJournalEntity(
+            testTask,
+            testTask.meta.copyWith(private: true),
+          ),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockProjectRepository.unlinkTaskFromProject(
+            testTask.id,
+            onlyIfPrivacyMismatched: true,
+          ),
+        ).thenThrow(StateError('membership store unavailable'));
+        final container = makeProviderContainer();
+        final notifier = container.read(
+          entryControllerProvider(testTask.id).notifier,
+        );
+        await expectLater(notifier.togglePrivate(), completes);
+        verify(
+          () => mockPersistenceLogic.updateJournalEntity(
+            testTask,
+            testTask.meta.copyWith(private: true),
+          ),
+        ).called(1);
+        verify(
+          () => mockProjectRepository.unlinkTaskFromProject(
+            testTask.id,
+            onlyIfPrivacyMismatched: true,
+          ),
+        ).called(1);
+      },
+    );
+
+    test('failed privacy toggle keeps the existing project link', () async {
+      reset(mockPersistenceLogic);
+      when(
+        () => mockPersistenceLogic.updateJournalEntity(
+          testTask,
+          testTask.meta.copyWith(private: true),
+        ),
+      ).thenAnswer((_) async => false);
+      final container = makeProviderContainer();
+      final notifier = container.read(
+        entryControllerProvider(testTask.id).notifier,
+      );
+
+      await notifier.togglePrivate();
+
+      verifyNever(
+        () => mockProjectRepository.getLinkedProjectForTask(any()),
+      );
+      verifyNever(
+        () => mockProjectRepository.unlinkTaskFromProject(
+          any(),
+          onlyIfPrivacyMismatched: true,
+        ),
+      );
+    });
+
     test('toggle flagged', () async {
       reset(mockPersistenceLogic);
       final container = makeProviderContainer();

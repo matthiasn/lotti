@@ -3,7 +3,14 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/agents/database/agent_database.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/service/project_agent_mutation_coordinator.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
@@ -28,14 +35,19 @@ class ProjectRepository {
     required this._persistenceLogic,
     required this._updateNotifications,
     required this._vectorClockService,
+    this.projectHasActiveAgent,
+    ProjectAgentMutationCoordinator? mutationCoordinator,
     this.projectsOverviewRefetchDebounce = const Duration(milliseconds: 300),
-  });
+  }) : _mutationCoordinator =
+           mutationCoordinator ?? ProjectAgentMutationCoordinator();
 
+  final ProjectAgentMutationCoordinator _mutationCoordinator;
   final JournalDb _journalDb;
   final EntitiesCacheService _entitiesCacheService;
   final PersistenceLogic _persistenceLogic;
   final UpdateNotifications _updateNotifications;
   final VectorClockService _vectorClockService;
+  final Future<bool> Function(String projectId)? projectHasActiveAgent;
 
   /// Debounce window applied to notification-driven `watchProjectsOverview`
   /// refetches. Each refetch reruns the project rollup aggregate, so a burst
@@ -301,17 +313,74 @@ class ProjectRepository {
 
   /// Saves an updated project entity.
   ///
-  /// Bumps vector clock and enqueues sync via [PersistenceLogic].
-  Future<bool> updateProject(ProjectEntry project) async {
-    final updatedMeta = await _persistenceLogic.updateMetadata(project.meta);
-    final updated = project.copyWith(meta: updatedMeta);
-    final result = await _persistenceLogic.updateDbEntity(updated);
-    if (result ?? false) {
+  /// Bumps vector clock and enqueues sync via [PersistenceLogic]. A project
+  /// with linked tasks or an active project agent cannot change category
+  /// because both membership and agent permissions are category-scoped;
+  /// callers must unlink the tasks and retire the agent first.
+  ///
+  /// [PersistenceLogic.updateDbEntity] can report failure after the journal
+  /// row committed (for example when a later search-index update fails), so a
+  /// negative result is verified against the stored project before this method
+  /// reports failure.
+  Future<bool> updateProject(
+    ProjectEntry project,
+  ) => _mutationCoordinator.run(project.id, () async {
+    ProjectEntry? updated;
+    final committed = await _journalDb.transaction<bool>(() async {
+      final persistedRow = await _journalDb.entityById(project.id);
+      final persisted = persistedRow == null
+          ? null
+          : fromDbEntity(persistedRow);
+      if (persisted is! ProjectEntry) return false;
+      if (persisted.meta.categoryId != project.meta.categoryId) {
+        if ((await _journalDb.getTaskIdsForProjects({project.id})).isNotEmpty) {
+          return false;
+        }
+        final hasActiveAgent = projectHasActiveAgent;
+        if (hasActiveAgent != null && await hasActiveAgent(project.id)) {
+          return false;
+        }
+      }
+
+      final updatedMeta = await _persistenceLogic.updateMetadata(project.meta);
+      updated = project.copyWith(meta: updatedMeta);
+      final result = await _persistenceLogic.updateDbEntity(updated!);
+      if (result ?? false) return true;
+
+      final committedRow = await _journalDb.entityById(project.id);
+      final committedProject = committedRow == null
+          ? null
+          : fromDbEntity(committedRow);
+      return committedProject == updated;
+    });
+    if (committed) {
       _updateNotifications.notify({
-        projectEntityUpdateNotification(updated.id),
+        projectEntityUpdateNotification(updated!.id),
       });
     }
-    return result ?? false;
+    return committed;
+  });
+
+  /// Soft-deletes [project] and emits the same scoped notification as an
+  /// ordinary project update so list/detail providers reconcile immediately.
+  Future<bool> deleteProject(
+    ProjectEntry project, {
+    required DateTime deletedAt,
+  }) async {
+    final updatedMeta = await _persistenceLogic.updateMetadata(
+      project.meta,
+      deletedAt: deletedAt,
+    );
+    final deleted = project.copyWith(meta: updatedMeta);
+    final result = await _persistenceLogic.updateDbEntity(deleted);
+    final committed =
+        (result ?? false) || await getProjectById(project.id) == null;
+    if (committed) {
+      _updateNotifications.notify({
+        projectEntityUpdateNotification(deleted.id),
+      });
+    }
+    return committed;
   }
 
   // ── Linking ────────────────────────────────────────────────────────────────
@@ -327,23 +396,20 @@ class ProjectRepository {
     required String projectId,
     required String taskId,
   }) async {
-    // Validate same-category constraint (parallel fetch)
-    final results = await Future.wait([
-      getProjectById(projectId),
-      _journalDb.journalEntityById(taskId),
-    ]);
-    final project = results[0] as ProjectEntry?;
-    final task = results[1];
-    if (project == null || task is! Task) return false;
-    if (project.meta.categoryId != task.meta.categoryId) return false;
-
-    // Remove existing project link if the task is already in another project
+    // This read chooses the mutation shape and reserves the right number of
+    // vector clocks. Every branch re-reads both entities and this link inside
+    // the write transaction before it commits, so a sync update between this
+    // snapshot and the mutation can only reject the operation, never create a
+    // category/privacy-invalid link.
     final existingLink = await _journalDb.getProjectLinkForTask(taskId);
     if (existingLink != null) {
       if (existingLink.fromId == projectId) {
-        return true; // already linked to this project
+        return _existingProjectLinkIsStillValid(
+          existingLink: existingLink,
+          projectId: projectId,
+          taskId: taskId,
+        );
       }
-      // Atomically soft-delete old link + create new link
       return _relinkTask(
         oldLink: existingLink,
         projectId: projectId,
@@ -370,8 +436,19 @@ class ProjectRepository {
           vectorClock: await _vectorClockService.getNextVectorClock(),
         );
 
-        final res = await _journalDb.upsertEntryLink(link);
-        if (res == 0) return false;
+        final committed = await _journalDb.transaction(() async {
+          if (!await _projectLinkInputsAreValid(
+            projectId: projectId,
+            taskId: taskId,
+          )) {
+            return false;
+          }
+          if (await _journalDb.getProjectLinkForTask(taskId) != null) {
+            return false;
+          }
+          return await _journalDb.upsertEntryLink(link) != 0;
+        });
+        if (!committed) return false;
         await _recordLinkSequence(
           link,
           subDomain: 'linkTaskToProject.recordSent',
@@ -414,11 +491,18 @@ class ProjectRepository {
   /// Removes a task from its project.
   ///
   /// Soft-deletes the ProjectLink if one exists. Returns `true` if a link
-  /// was removed.
-  Future<bool> unlinkTaskFromProject(String taskId) async {
+  /// was removed. Privacy cleanup rechecks both entries and the membership
+  /// inside the deletion transaction so concurrent sync edits are preserved.
+  Future<bool> unlinkTaskFromProject(
+    String taskId, {
+    bool onlyIfPrivacyMismatched = false,
+  }) async {
     final existingLink = await _journalDb.getProjectLinkForTask(taskId);
     if (existingLink == null) return false;
-    return _softDeleteLink(existingLink);
+    return _softDeleteLink(
+      existingLink,
+      onlyIfPrivacyMismatched: onlyIfPrivacyMismatched,
+    );
   }
 
   /// Copies the project assignment from [sourceTaskId] to [newTaskId].
@@ -474,6 +558,41 @@ class ProjectRepository {
   // Private helpers behind the public link/unlink methods. (Previously the
   // `_ProjectLinkHelpers` part-file extension.)
 
+  /// Reads link invariants directly from the transaction's journal snapshot.
+  ///
+  /// The public `journalEntityById` read is intentionally microtask-coalesced;
+  /// using `entityById` here prevents this integrity check from joining a read
+  /// wave created outside the active write transaction.
+  Future<bool> _projectLinkInputsAreValid({
+    required String projectId,
+    required String taskId,
+  }) async {
+    final projectRow = await _journalDb.entityById(projectId);
+    final taskRow = await _journalDb.entityById(taskId);
+    final project = projectRow == null ? null : fromDbEntity(projectRow);
+    final task = taskRow == null ? null : fromDbEntity(taskRow);
+    if (project is! ProjectEntry || task is! Task) return false;
+    if (project.meta.categoryId != task.meta.categoryId) return false;
+    return (project.meta.private ?? false) == (task.meta.private ?? false);
+  }
+
+  Future<bool> _existingProjectLinkIsStillValid({
+    required EntryLink existingLink,
+    required String projectId,
+    required String taskId,
+  }) {
+    return _journalDb.transaction(() async {
+      if (!await _projectLinkInputsAreValid(
+        projectId: projectId,
+        taskId: taskId,
+      )) {
+        return false;
+      }
+      final currentLink = await _journalDb.getProjectLinkForTask(taskId);
+      return currentLink == existingLink;
+    });
+  }
+
   /// Atomically soft-deletes an old project link and creates a new one
   /// within a single DB transaction. Notifications and sync enqueuing are
   /// deferred until after the transaction commits.
@@ -499,13 +618,32 @@ class ProjectRepository {
           vectorClock: await _vectorClockService.getNextVectorClock(),
         );
 
-        // Both writes in one transaction — if either fails, both roll back.
-        final success = await _journalDb.transaction(() async {
-          final deleteRes = await _journalDb.upsertEntryLink(deletedLink);
-          if (deleteRes == 0) return false;
-          final insertRes = await _journalDb.upsertEntryLink(newLink);
-          return insertRes != 0;
-        });
+        // The final invariant reads and both writes share one transaction. If
+        // sync changed either entity or the old link after the shape-selection
+        // snapshot, reject instead of committing stale validation.
+        var success = false;
+        try {
+          success = await _journalDb.transaction(() async {
+            if (!await _projectLinkInputsAreValid(
+              projectId: projectId,
+              taskId: taskId,
+            )) {
+              return false;
+            }
+            final currentLink = await _journalDb.getProjectLinkForTask(taskId);
+            if (currentLink != oldLink) return false;
+            final deleteRes = await _journalDb.upsertEntryLink(deletedLink);
+            if (deleteRes == 0) return false;
+            final insertRes = await _journalDb.upsertEntryLink(newLink);
+            if (insertRes == 0) throw const _RelinkInsertFailed();
+            return true;
+          });
+        } on _RelinkInsertFailed {
+          // Throwing from the Drift transaction is what rolls the already-
+          // written tombstone back. Translate the private sentinel only after
+          // the transaction has restored the old link.
+          success = false;
+        }
 
         if (!success) return false;
         await _recordLinkSequence(
@@ -551,12 +689,33 @@ class ProjectRepository {
     );
   }
 
-  Future<bool> _softDeleteLink(EntryLink link) async {
+  Future<bool> _softDeleteLink(
+    EntryLink link, {
+    bool onlyIfPrivacyMismatched = false,
+  }) async {
     return _vectorClockService.withVcScope<bool>(
       () async {
         final now = DateTime.now();
         final deleted = await _prepareDeletedLink(link, now);
-        final res = await _journalDb.upsertEntryLink(deleted);
+        final res = await _journalDb.transaction(() async {
+          final currentLink = await _journalDb.getProjectLinkForTask(link.toId);
+          if (currentLink != link) return 0;
+          if (onlyIfPrivacyMismatched) {
+            final taskRow = await _journalDb.entityById(link.toId);
+            final projectRow = await _journalDb.entityById(link.fromId);
+            final task = taskRow == null ? null : fromDbEntity(taskRow);
+            final project = projectRow == null
+                ? null
+                : fromDbEntity(projectRow);
+            if (task is! Task ||
+                project is! ProjectEntry ||
+                (task.meta.private ?? false) ==
+                    (project.meta.private ?? false)) {
+              return 0;
+            }
+          }
+          return _journalDb.upsertEntryLink(deleted);
+        });
         if (res == 0) return false;
         await _recordLinkSequence(
           deleted,
@@ -614,6 +773,10 @@ class ProjectRepository {
   }
 }
 
+class _RelinkInsertFailed implements Exception {
+  const _RelinkInsertFailed();
+}
+
 const Set<String> _overviewNotificationTokens = {
   projectNotification,
   taskNotification,
@@ -635,5 +798,31 @@ ProjectRepository projectRepository(Ref ref) {
     persistenceLogic: getIt<PersistenceLogic>(),
     updateNotifications: getIt<UpdateNotifications>(),
     vectorClockService: getIt<VectorClockService>(),
+    projectHasActiveAgent: projectHasActiveAgent,
+    mutationCoordinator: ref.watch(projectAgentMutationCoordinatorProvider),
+  );
+}
+
+/// Returns whether [projectId] still owns a non-destroyed project agent.
+///
+/// Project and agent state live in separate databases, so the repository takes
+/// this as an injected integrity guard. The production provider resolves it
+/// directly from the agent store; tests can supply a deterministic callback.
+Future<bool> projectHasActiveAgent(String projectId) async {
+  if (!getIt.isRegistered<AgentDatabase>()) return false;
+  final repository = AgentRepository(getIt<AgentDatabase>());
+  final links = await repository.getLinksTo(
+    projectId,
+    type: AgentLinkTypes.agentProject,
+  );
+  if (links.isEmpty) return false;
+  final entities = await repository.getEntitiesByIds(
+    links.map((link) => link.fromId).toSet(),
+  );
+  return entities.values.any(
+    (entity) =>
+        entity is AgentIdentityEntity &&
+        entity.kind == AgentKinds.projectAgent &&
+        entity.lifecycle != AgentLifecycle.destroyed,
   );
 }

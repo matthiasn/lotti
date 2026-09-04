@@ -1576,6 +1576,8 @@ void main() {
             repository: mockAgentRepository,
             orchestrator: orchestrator,
             syncService: statefulSync,
+            projectScopeIsCurrent: (_, _) async => true,
+            mutationCoordinator: ProjectAgentMutationCoordinator(),
           );
 
           final wake = withClock(Clock.fixed(DateTime(2026, 3, 20, 10)), () {

@@ -34,6 +34,34 @@ import '../../helpers/path_provider.dart';
 import '../../mocks/mocks.dart';
 import '../../widget_test_utils.dart';
 
+class _RejectingTaskCleanupPersistenceLogic extends PersistenceLogic {
+  _RejectingTaskCleanupPersistenceLogic({this.commitBeforeFailure = false});
+
+  final bool commitBeforeFailure;
+  @override
+  Future<bool?> updateDbEntity(
+    JournalEntity journalEntity, {
+    String? linkedId,
+    bool enqueueSync = true,
+    bool overrideComparison = false,
+    Future<void> Function()? beforeNotify,
+  }) async {
+    if (journalEntity is Task && journalEntity.meta.deletedAt != null) {
+      if (commitBeforeFailure) {
+        await super.updateDbEntity(journalEntity);
+      }
+      return false;
+    }
+    return super.updateDbEntity(
+      journalEntity,
+      linkedId: linkedId,
+      enqueueSync: enqueueSync,
+      overrideComparison: overrideComparison,
+      beforeNotify: beforeNotify,
+    );
+  }
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setFakeDocumentsPath();
@@ -280,6 +308,76 @@ void main() {
       expect((persisted as Task).data.status, isA<TaskInProgress>());
     });
 
+    for (final projectPrivate in [false, true]) {
+      test('createTask rejects conflicting linked privacy before writing '
+          '(project private: $projectPrivate)', () async {
+        final project = TestProjectFactory.create(id: 'project');
+        final parent = TestTaskFactory.create(id: 'parent');
+        await getIt<PersistenceLogic>().createDbEntity(
+          project.copyWith(
+            meta: project.meta.copyWith(private: projectPrivate),
+          ),
+        );
+        await getIt<PersistenceLogic>().createDbEntity(
+          parent.copyWith(meta: parent.meta.copyWith(private: !projectPrivate)),
+        );
+        final before = await journalDb.select(journalDb.journal).get();
+
+        expect(
+          await createTask(projectId: 'project', linkedId: 'parent'),
+          isNull,
+        );
+
+        // Include tombstones: a create-and-clean-up cycle is not rejection
+        // before persistence and would still emit sync events.
+        final after = await journalDb.select(journalDb.journal).get();
+        expect(after.map((row) => row.id), before.map((row) => row.id));
+      });
+    }
+
+    for (final privacy in [false, true]) {
+      test('createTask accepts matching linked privacy: $privacy', () async {
+        final project = TestProjectFactory.create(id: 'project');
+        final parent = TestTaskFactory.create(id: 'parent');
+        await getIt<PersistenceLogic>().createDbEntity(
+          project.copyWith(meta: project.meta.copyWith(private: privacy)),
+        );
+        await getIt<PersistenceLogic>().createDbEntity(
+          parent.copyWith(meta: parent.meta.copyWith(private: privacy)),
+        );
+
+        final task = await createTask(projectId: 'project', linkedId: 'parent');
+        expect(task, isNotNull);
+        final stored = await journalDb.journalEntityById(task!.meta.id);
+        expect(stored?.meta.private, privacy);
+        expect(
+          (await journalDb.getProjectForTask(task.meta.id))?.meta.id,
+          'project',
+        );
+      });
+    }
+
+    test('createTask inherits privacy from its explicit project', () async {
+      const projectId = 'private-project';
+      final project = TestProjectFactory.create(
+        id: projectId,
+        categoryId: 'private-category',
+      );
+      await getIt<PersistenceLogic>().createDbEntity(
+        project.copyWith(meta: project.meta.copyWith(private: true)),
+      );
+
+      final task = await createTask(projectId: projectId);
+
+      expect(task, isNotNull);
+      final persisted = await journalDb.journalEntityById(task!.meta.id);
+      expect(persisted?.meta.private, isTrue);
+      expect(
+        (await journalDb.getProjectForTask(task.meta.id))?.meta.id,
+        projectId,
+      );
+    });
+
     test(
       'createTask rejects unresolved explicit projects before writing',
       () async {
@@ -361,6 +459,7 @@ void main() {
         ];
 
         for (final scenario in scenarios) {
+          String? createdTaskId;
           final project = TestProjectFactory.create(
             id: scenario.projectId,
             categoryId: 'project-category',
@@ -372,11 +471,13 @@ void main() {
             projectId: scenario.projectId,
             taskId: any(named: 'taskId'),
           );
-          if (scenario.throws) {
-            when(linkCall).thenThrow(StateError('project assignment failed'));
-          } else {
-            when(linkCall).thenAnswer((_) async => false);
-          }
+          when(linkCall).thenAnswer((invocation) async {
+            createdTaskId = invocation.namedArguments[#taskId]! as String;
+            if (scenario.throws) {
+              throw StateError('project assignment failed');
+            }
+            return false;
+          });
 
           expect(
             await createTask(projectId: scenario.projectId),
@@ -389,7 +490,102 @@ void main() {
               taskId: any(named: 'taskId'),
             ),
           ).called(1);
+          expect(createdTaskId, isNotNull);
+          expect(
+            await journalDb.journalEntityById(createdTaskId!),
+            isNull,
+            reason: 'a failed explicit link must not leave an orphaned task',
+          );
         }
+      },
+    );
+
+    test(
+      'createTask throws when failed project assignment cannot be cleaned up',
+      () async {
+        const projectId = 'cleanup-failure-project';
+        final projectRepository = MockProjectRepository();
+        final project = TestProjectFactory.create(
+          id: projectId,
+          categoryId: 'project-category',
+        );
+        getIt
+          ..registerSingleton<ProjectRepository>(projectRepository)
+          ..unregister<PersistenceLogic>()
+          ..registerSingleton<PersistenceLogic>(
+            _RejectingTaskCleanupPersistenceLogic(),
+          );
+        when(
+          () => projectRepository.getProjectById(projectId),
+        ).thenAnswer((_) async => project);
+        String? createdTaskId;
+        when(
+          () => projectRepository.linkTaskToProject(
+            projectId: projectId,
+            taskId: any(named: 'taskId'),
+          ),
+        ).thenAnswer((invocation) async {
+          createdTaskId = invocation.namedArguments[#taskId]! as String;
+          return false;
+        });
+
+        await expectLater(
+          createTask(projectId: projectId),
+          throwsA(
+            isA<StateError>().having(
+              (error) => error.message,
+              'message',
+              contains('could not be soft-deleted'),
+            ),
+          ),
+        );
+
+        expect(createdTaskId, isNotNull);
+        expect(
+          await journalDb.journalEntityById(createdTaskId!),
+          isA<Task>(),
+          reason: 'the cleanup failure must be observable, not reported gone',
+        );
+      },
+    );
+
+    test(
+      'createTask accepts cleanup committed before a late persistence failure',
+      () async {
+        const projectId = 'cleanup-failure-project';
+        final projectRepository = MockProjectRepository();
+        final project = TestProjectFactory.create(
+          id: projectId,
+          categoryId: 'project-category',
+        );
+        getIt
+          ..registerSingleton<ProjectRepository>(projectRepository)
+          ..unregister<PersistenceLogic>()
+          ..registerSingleton<PersistenceLogic>(
+            _RejectingTaskCleanupPersistenceLogic(commitBeforeFailure: true),
+          );
+        when(
+          () => projectRepository.getProjectById(projectId),
+        ).thenAnswer((_) async => project);
+        String? createdTaskId;
+        when(
+          () => projectRepository.linkTaskToProject(
+            projectId: projectId,
+            taskId: any(named: 'taskId'),
+          ),
+        ).thenAnswer((invocation) async {
+          createdTaskId = invocation.namedArguments[#taskId]! as String;
+          return false;
+        });
+
+        expect(await createTask(projectId: projectId), isNull);
+
+        expect(createdTaskId, isNotNull);
+        expect(
+          await journalDb.journalEntityById(createdTaskId!),
+          isNull,
+          reason: 'the committed tombstone must be recognized',
+        );
       },
     );
 

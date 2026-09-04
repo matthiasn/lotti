@@ -535,6 +535,50 @@ void main() {
     );
   });
 
+  for (final failure in ['exception', 'null', 'disposed']) {
+    testWidgets('default FAB handles creation failure: $failure', (
+      tester,
+    ) async {
+      final result = Completer<Task?>();
+      when(
+        () => mockPersistenceLogic.createTaskEntry(
+          data: any(named: 'data'),
+          entryText: any(named: 'entryText'),
+          categoryId: any(named: 'categoryId'),
+          labelIds: any(named: 'labelIds'),
+        ),
+      ).thenAnswer((_) => result.future);
+      await tester.pumpWidget(buildSubject(state: state()));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      final message = tester
+          .element(find.byType(TasksTabPage))
+          .messages
+          .commonError;
+      await tester.tap(find.byIcon(LottiIcons.add));
+      await tester.pump();
+      if (failure == 'disposed') {
+        await tester.pumpWidget(const SizedBox.shrink());
+      }
+      if (failure == 'null') {
+        result.complete();
+      } else {
+        result.completeError(StateError('Task cleanup failed'));
+      }
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(tester.takeException(), isNull);
+      verifyNever(
+        () => mockNavService.beamToNamed(any(), data: any(named: 'data')),
+      );
+      expect(
+        find.text(message),
+        failure == 'disposed' ? findsNothing : findsOneWidget,
+      );
+    });
+  }
+
   testWidgets('default FAB creates task and navigates', (tester) async {
     final createdTask = TestTaskFactory.create(
       id: 'new-task',
