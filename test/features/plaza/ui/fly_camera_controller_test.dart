@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/services.dart';
 import 'package:flutter_scene/scene.dart'
     show PerspectiveCamera, PerspectiveProjection;
@@ -68,6 +70,16 @@ void main() {
       expect(sprinter.pose.z, closeTo(walker.pose.z * 2.5, 0.05));
       await simulateKeyUpEvent(LogicalKeyboardKey.shiftLeft);
       await simulateKeyUpEvent(LogicalKeyboardKey.keyW);
+    });
+
+    test('forward follows yaw and pitch', () {
+      final c = _controller();
+      expect(c.forward.x, closeTo(math.sin(_origin.yaw), 1e-9));
+      expect(c.forward.z, closeTo(math.cos(_origin.yaw), 1e-9));
+      expect(c.forward.y, closeTo(0, 1e-9));
+      c.pose = const CameraPose(x: 0, y: 2.2, z: 0, yaw: 0, pitch: math.pi / 2);
+      expect(c.forward.y, closeTo(1, 1e-9));
+      expect(c.forward.length, closeTo(1, 1e-9));
     });
 
     test('a latched key without real hardware state stops the walk', () {

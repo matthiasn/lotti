@@ -58,6 +58,17 @@ class FlyCameraController {
   }
 
   Vector3 get position => Vector3(_pose.x, _pose.y, _pose.z);
+
+  /// The unit view direction for the current yaw and pitch.
+  Vector3 get forward {
+    final cosP = math.cos(_pose.pitch);
+    return Vector3(
+      math.sin(_pose.yaw) * cosP,
+      math.sin(_pose.pitch),
+      math.cos(_pose.yaw) * cosP,
+    );
+  }
+
   double get yaw => _pose.yaw;
   double get pitch => _pose.pitch;
   Flight? get flight => _flight;
@@ -213,10 +224,6 @@ class FlyCameraController {
 
   /// The camera for this frame.
   Camera camera() {
-    final sinY = math.sin(_pose.yaw);
-    final cosY = math.cos(_pose.yaw);
-    final cosP = math.cos(_pose.pitch);
-    final forward = Vector3(sinY * cosP, math.sin(_pose.pitch), cosY * cosP);
     final eye = position;
     return PerspectiveCamera(
       position: eye,
