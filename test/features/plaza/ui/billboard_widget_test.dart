@@ -56,13 +56,23 @@ void main() {
       _host(_task(state: PlazaTaskState.blocked), reasonFirst: true),
     );
     expect(find.text('fly there ›'), findsNothing);
+    // The reason sits on a solid band in the state colour, in the
+    // panel's own dark ink; the title is a small line on the scrim.
     final reason = tester.widget<Text>(find.text('blocked — needs a decision'));
+    expect(reason.style!.color, PlazaStyle.panel);
+    expect(reason.style!.fontWeight, FontWeight.w800);
+    final band = tester.widget<Container>(
+      find
+          .ancestor(
+            of: find.text('blocked — needs a decision'),
+            matching: find.byType(Container),
+          )
+          .first,
+    );
+    expect(band.color, PlazaStyle.lantern(LanternState.blocked));
     final title = tester.widget<Text>(find.text('Fuel the shuttle'));
-    // The reason is the big line, in the state colour; the title is the
-    // small line under it.
-    expect(reason.style!.fontSize, greaterThan(title.style!.fontSize! * 1.5));
-    expect(reason.style!.color, PlazaStyle.lantern(LanternState.blocked));
     expect(title.style!.color, PlazaStyle.text);
+    expect(title.style!.fontSize, lessThan(reason.style!.fontSize! * 1.5));
   });
 
   testWidgets('a roof panel with nothing to say keeps the title big', (

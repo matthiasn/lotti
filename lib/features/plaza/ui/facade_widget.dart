@@ -78,7 +78,7 @@ class FacadeWidget extends StatelessWidget {
     }
     final itemM = (0.22 * titleM).clamp(0.55, 1.2);
     final metaM = (0.15 * titleM).clamp(0.45, 1.0);
-    final chipM = (0.12 * titleM).clamp(0.4, 0.9);
+    final chipM = (0.14 * titleM).clamp(0.5, 1.1);
     final pad = m(0.08 * w);
     final chip = PlazaStyle.chip(attention);
     final items = task.openChecklistItems;
@@ -93,8 +93,18 @@ class FacadeWidget extends StatelessWidget {
     // A finished shop is dark: everything on it steps down.
     final quiet = attention.lantern == LanternState.off;
     final ink = quiet ? PlazaStyle.textDim : PlazaStyle.text;
+    // A live wall is a lit screen, not a hole: the panel takes a little
+    // of the state colour; a finished shop is dark but not unrendered.
     return Material(
-      color: quiet ? const Color(0xFF07060B) : PlazaStyle.panel,
+      color: quiet
+          ? const Color(0xFF0E0D16)
+          : _live
+          ? Color.lerp(
+              PlazaStyle.panel,
+              PlazaStyle.lantern(attention.lantern),
+              0.12,
+            )!
+          : PlazaStyle.panel,
       child: Container(
         foregroundDecoration: focused
             ? BoxDecoration(
@@ -157,9 +167,18 @@ class FacadeWidget extends StatelessWidget {
                           children: [
                             // A finished task is a small sign: the wall-height
                             // title is for what is live or wrong.
+                            // A live wall with a checklist gives the list
+                            // its row: the title scales down before the
+                            // list loses its last item.
                             ConstrainedBox(
                               constraints: BoxConstraints(
-                                maxHeight: box.maxHeight * (tight ? 0.5 : 0.6),
+                                maxHeight:
+                                    box.maxHeight *
+                                    (tight
+                                        ? 0.5
+                                        : _live && items.isNotEmpty
+                                        ? 0.45
+                                        : 0.6),
                               ),
                               child: FittedBox(
                                 fit: BoxFit.scaleDown,
@@ -265,7 +284,10 @@ class FacadeWidget extends StatelessWidget {
                             ],
                             const Spacer(),
                             if (_live)
-                              Flexible(
+                              // A firm band, never squeezed: the checklist
+                              // above yields, the chips keep their size.
+                              SizedBox(
+                                height: m(chipM) * 2.4,
                                 child: LayoutBuilder(
                                   builder: (context, row) => FittedBox(
                                     fit: BoxFit.scaleDown,

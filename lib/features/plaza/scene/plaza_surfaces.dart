@@ -279,11 +279,10 @@ class PlazaSurfaces {
           Vector3(slot.x, slot.bottom + slot.height / 2, slot.z),
         )..rotateY(slot.facingRadians),
       );
-      final isGantry = identical(slot, world.gantry);
       final surface = OpaqueSurface();
       final component = WidgetComponent(
         child: TickerWidget(
-          text: isGantry ? world.countsText : world.tickerText,
+          text: world.tickerTexts[slot] ?? world.tickerText,
           heightMeters: slot.height,
           pxPerMeter: pxPerMeter,
           speedMetersPerSecond: slot.speedMetersPerSecond,

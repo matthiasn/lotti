@@ -46,6 +46,17 @@ class PlazaWorld {
       for (final (i, hero) in heroes.indexed)
         rooflineTickerFor(plan.placements[hero.task.id]!, fast: i.isEven),
     ];
+    // A band on a building speaks for that building; the gantry counts
+    // the district; the hero rooflines carry the headlines.
+    final mountTasks = plazaMounts(plan);
+    tickerTexts = {
+      for (final (i, slot) in mounted.tickers.indexed)
+        slot: _ownTickerText(mountTasks[i].taskId),
+      ?gantry: countsText,
+      for (final hero in heroes)
+        tickers[tickers.length - heroes.length + heroes.indexOf(hero)]:
+            tickerText,
+    };
     scenery = sceneryFor(
       plan,
       plaza: plaza,
@@ -70,6 +81,41 @@ class PlazaWorld {
 
   /// Category names keyed by colour hex, for the side panel.
   final Map<String, String> categoryLabels;
+
+  /// What each ticker band scrolls.
+  late final Map<TickerSlot, String> tickerTexts;
+
+  /// A building's own band: its state word with the glyph, then the
+  /// reason or the due date — short, so a narrow band never cuts a word
+  /// nobody can finish.
+  String _ownTickerText(String taskId) {
+    final a = attention[taskId];
+    if (a == null) return countsText;
+    final parts = <String>[
+      '${_glyph(a.lantern)} ${_stateWord(a.lantern)}',
+      if (a.reason.isNotEmpty)
+        a.reason
+      else if (a.task.due != null)
+        'due ${shortDate(a.task.due!)}',
+    ];
+    return parts.join('   ·   ');
+  }
+
+  static String _glyph(LanternState state) => switch (state) {
+    LanternState.blocked => '✕',
+    LanternState.overdue => '!',
+    LanternState.inProgress => '▶',
+    LanternState.open => '○',
+    LanternState.off => '✓',
+  };
+
+  static String _stateWord(LanternState state) => switch (state) {
+    LanternState.blocked => 'blocked',
+    LanternState.overdue => 'overdue',
+    LanternState.inProgress => 'in progress',
+    LanternState.open => 'open',
+    LanternState.off => 'done',
+  };
 
   late final StreetPlan plan;
   late final FrontierPlaza? plaza;

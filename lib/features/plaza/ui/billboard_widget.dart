@@ -116,57 +116,84 @@ class _BillboardFace extends StatelessWidget {
     final titlePx = m(math.min(0.07 * w, 0.3 * heightMeters));
     final chipPx = m(math.min(0.036 * w, 0.12 * heightMeters));
 
+    // The state chip yields (scales down) before the row can overflow;
+    // the call to action keeps its size.
     final chipRow = Row(
       children: [
-        Container(
-          padding: EdgeInsets.symmetric(
-            horizontal: chipPx * 0.8,
-            vertical: chipPx * 0.25,
-          ),
-          decoration: BoxDecoration(
-            color: chip.fill,
-            borderRadius: BorderRadius.circular(chipPx * 0.35),
-          ),
-          child: Text(
-            '${PlazaStyle.glyph(attention)}  ${chip.label}',
-            style: TextStyle(
-              fontFamily: PlazaStyle.fontText,
-              fontSize: chipPx,
-              fontWeight: FontWeight.w700,
-              letterSpacing: chipPx * 0.05,
-              color: chip.ink,
+        Expanded(
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: chipPx * 0.8,
+                  vertical: chipPx * 0.25,
+                ),
+                decoration: BoxDecoration(
+                  color: chip.fill,
+                  borderRadius: BorderRadius.circular(chipPx * 0.35),
+                ),
+                child: Text(
+                  '${PlazaStyle.glyph(attention)}  ${chip.label}',
+                  style: TextStyle(
+                    fontFamily: PlazaStyle.fontText,
+                    fontSize: chipPx,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: chipPx * 0.05,
+                    color: chip.ink,
+                  ),
+                ),
+              ),
             ),
           ),
         ),
-        const Spacer(),
+        if (!reasonFirst) SizedBox(width: chipPx * 0.6),
         if (!reasonFirst)
-          Text(
-            'fly there ›',
-            style: TextStyle(
-              fontFamily: PlazaStyle.fontText,
-              fontSize: chipPx,
-              fontWeight: FontWeight.w600,
+          // The call to action is a chip like the state, not loose type.
+          Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: chipPx * 0.8,
+              vertical: chipPx * 0.25,
+            ),
+            decoration: BoxDecoration(
               color: PlazaStyle.teal,
+              borderRadius: BorderRadius.circular(chipPx * 0.35),
+            ),
+            child: Text(
+              'fly there ›',
+              style: TextStyle(
+                fontFamily: PlazaStyle.fontText,
+                fontSize: chipPx,
+                fontWeight: FontWeight.w700,
+                letterSpacing: chipPx * 0.05,
+                color: const Color(0xFF0D0D0D),
+              ),
             ),
           ),
       ],
     );
-    // A roof panel over its own facade leads with the reason: the big
-    // line is what is wrong, in the state colour, and the title is the
-    // small line under it.
+    // A roof panel over its own facade leads with the reason on a solid
+    // band across the top in the state colour, the way the sign-tier
+    // facade wears its marquee band; the title sits small on the scrim.
     final lead = reasonFirst && attention.reason.isNotEmpty;
+    final leadPx = m(math.min(0.05 * w, 0.16 * heightMeters));
     final title = Text(
-      lead ? attention.reason : task.title,
-      // A reason is a sentence: it gets two lines even on a squat panel.
-      maxLines: lead || aspect >= reasonAspect ? 2 : 1,
+      task.title,
+      maxLines: lead
+          ? 1
+          : aspect >= reasonAspect
+          ? 2
+          : 1,
       overflow: TextOverflow.ellipsis,
       style: TextStyle(
         fontFamily: PlazaStyle.fontText,
         fontWeight: FontWeight.w700,
-        fontSize: titlePx,
+        fontSize: lead ? leadPx * 1.1 : titlePx,
         height: 1.05,
         letterSpacing: -titlePx * 0.02,
-        color: lead ? frame : PlazaStyle.text,
+        color: PlazaStyle.text,
         shadows: showCover
             ? [
                 Shadow(
@@ -178,29 +205,19 @@ class _BillboardFace extends StatelessWidget {
       ),
     );
     final reasonText = lead
-        ? Text(
-            task.title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontFamily: PlazaStyle.fontText,
-              fontWeight: FontWeight.w600,
-              fontSize: m(math.min(0.045 * w, 0.14 * heightMeters)),
-              color: PlazaStyle.text,
-              shadows: showCover
-                  ? [const Shadow(color: Color(0xCC000000), blurRadius: 6)]
-                  : null,
-            ),
-          )
+        ? null
         : showReason
         ? Text(
             attention.reason,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
+            // One voice for the reason everywhere: the state colour,
+            // semibold, big enough to read from the paving.
             style: TextStyle(
               fontFamily: PlazaStyle.fontMono,
-              fontSize: m(math.min(0.04 * w, 0.12 * heightMeters)),
-              color: const Color(0xF2FFFFFF),
+              fontWeight: FontWeight.w600,
+              fontSize: m(math.min(0.05 * w, 0.14 * heightMeters)),
+              color: frame,
               shadows: showCover
                   ? [const Shadow(color: Color(0xCC000000), blurRadius: 6)]
                   : null,
@@ -250,6 +267,31 @@ class _BillboardFace extends StatelessWidget {
                       const Color(0x33000000),
                       PlazaStyle.panel.withValues(alpha: 0.85),
                     ],
+                  ),
+                ),
+              ),
+            if (lead)
+              Align(
+                alignment: Alignment.topCenter,
+                child: Container(
+                  width: double.infinity,
+                  color: frame,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: pad,
+                    vertical: leadPx * 0.35,
+                  ),
+                  child: Text(
+                    attention.reason,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: PlazaStyle.fontText,
+                      fontWeight: FontWeight.w800,
+                      fontSize: leadPx,
+                      letterSpacing: leadPx * 0.04,
+                      color: PlazaStyle.panel,
+                    ),
                   ),
                 ),
               ),

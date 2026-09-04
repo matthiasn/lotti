@@ -59,44 +59,60 @@ class _TickerWidgetState extends State<TickerWidget>
           border: Border(top: border, bottom: border),
         ),
         clipBehavior: Clip.hardEdge,
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final painter = TextPainter(
-              text: TextSpan(text: widget.text, style: style),
-              textDirection: TextDirection.ltr,
-              maxLines: 1,
-            )..layout();
-            // A gap of at least half the band between copies, so a phrase
-            // is read whole before the next one arrives.
-            final gap = math.max(fontPx * 4, constraints.maxWidth * 0.5);
-            final copyWidth = painter.width + gap;
-            final pxPerSecond = widget.speedMetersPerSecond * widget.pxPerMeter;
-            return AnimatedBuilder(
-              animation: _clock,
-              builder: (context, _) {
-                final elapsed = _clock.lastElapsedDuration?.inMicroseconds ?? 0;
-                final offset = (elapsed / 1e6 * pxPerSecond) % copyWidth;
-                return Stack(
-                  children: [
-                    for (var i = 0; i < 2; i++)
-                      Positioned(
-                        left: -offset + i * copyWidth,
-                        top: 0,
-                        bottom: 0,
-                        child: Center(
-                          child: Text(
-                            widget.text,
-                            maxLines: 1,
-                            softWrap: false,
-                            style: style,
+        // The type fades in and out at the housing's ends instead of
+        // being sliced mid-glyph.
+        child: ShaderMask(
+          shaderCallback: (bounds) => const LinearGradient(
+            colors: [
+              Color(0x00000000),
+              Color(0xFF000000),
+              Color(0xFF000000),
+              Color(0x00000000),
+            ],
+            stops: [0, 0.06, 0.94, 1],
+          ).createShader(bounds),
+          blendMode: BlendMode.dstIn,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final painter = TextPainter(
+                text: TextSpan(text: widget.text, style: style),
+                textDirection: TextDirection.ltr,
+                maxLines: 1,
+              )..layout();
+              // A gap of at least half the band between copies, so a phrase
+              // is read whole before the next one arrives.
+              final gap = math.max(fontPx * 4, constraints.maxWidth * 0.5);
+              final copyWidth = painter.width + gap;
+              final pxPerSecond =
+                  widget.speedMetersPerSecond * widget.pxPerMeter;
+              return AnimatedBuilder(
+                animation: _clock,
+                builder: (context, _) {
+                  final elapsed =
+                      _clock.lastElapsedDuration?.inMicroseconds ?? 0;
+                  final offset = (elapsed / 1e6 * pxPerSecond) % copyWidth;
+                  return Stack(
+                    children: [
+                      for (var i = 0; i < 2; i++)
+                        Positioned(
+                          left: -offset + i * copyWidth,
+                          top: 0,
+                          bottom: 0,
+                          child: Center(
+                            child: Text(
+                              widget.text,
+                              maxLines: 1,
+                              softWrap: false,
+                              style: style,
+                            ),
                           ),
                         ),
-                      ),
-                  ],
-                );
-              },
-            );
-          },
+                    ],
+                  );
+                },
+              );
+            },
+          ),
         ),
       ),
     );

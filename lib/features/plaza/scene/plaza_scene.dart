@@ -492,6 +492,10 @@ class PlazaSceneController {
   /// Height of the shopfront band at the foot of every wall.
   static const shopfrontHeight = 4.0;
 
+  /// A building at least this tall carries its screen above a street-level
+  /// parade on the street face; a shorter one is all sign.
+  static const paradeWallHeight = 12.0;
+
   /// A wall face: a shopfront band at the foot (the parade of shops,
   /// dressed for [shops], which defaults to [state]: trading, late,
   /// fitting out, shuttered, closed; [variant] picks the parade order;
@@ -1420,7 +1424,9 @@ class PlazaSceneController {
           ..baseColorFactor = linearColor(PlazaStyle.categoryWall(task)),
       ),
     );
-    final parade = stableUnit(task.id, 'parade') < 0.5 ? 0 : 1;
+    final parade = (stableUnit(task.id, 'parade') * WallTextures.paradeVariants)
+        .floor()
+        .clamp(0, WallTextures.paradeVariants - 1);
     final kit = (stableUnit(task.id, 'kit') * WallTextures.tileFamilies)
         .floor()
         .clamp(0, WallTextures.tileFamilies - 1);
@@ -1521,13 +1527,36 @@ class PlazaSceneController {
       );
     }
 
-    final facadeW = w * 0.92;
-    final facadeH = h * 0.9;
+    // A tall building's screen hangs above a street-level parade, a
+    // storey of windows either side of it, so the wall owns the screen
+    // instead of being one; a short one is all sign, as before.
+    final hasParade = h >= paradeWallHeight;
+    final facadeW = hasParade ? w * 0.8 : w * 0.92;
+    final facadeH = hasParade ? h - shopfrontHeight - 1 : h * 0.9;
+    final panelY = hasParade ? (shopfrontHeight + 0.4 - 0.6) / 2 : 0.0;
+    if (hasParade) {
+      _windowedWall(
+        node,
+        dx: 0,
+        dz: d / 2 + 0.015,
+        yaw: 0,
+        width: w,
+        height: h,
+        state: attention.lantern,
+        tint: wallTint,
+        uOffset: stableUnit(task.id, 'tilefront') * 3,
+        variant:
+            (stableUnit(task.id, 'paradefront') * WallTextures.paradeVariants)
+                .floor()
+                .clamp(0, WallTextures.paradeVariants - 1),
+        family: kit,
+      );
+    }
 
     // Far-tier surface: an always-present dark plate; the lantern carries
     // the state colour, the plate only says "there is a facade here".
     final plate = Node(
-      localTransform: Matrix4.translation(Vector3(0, 0, d / 2 + 0.02)),
+      localTransform: Matrix4.translation(Vector3(0, panelY, d / 2 + 0.03)),
       mesh: Mesh(
         CuboidGeometry(Vector3(facadeW, facadeH, 0.02)),
         UnlitMaterial()..baseColorFactor = _panelBack,
@@ -1658,7 +1687,9 @@ class PlazaSceneController {
     ]) {
       neon.add(
         Node(
-          localTransform: Matrix4.translation(Vector3(dx, dy, d / 2 + 0.04)),
+          localTransform: Matrix4.translation(
+            Vector3(dx, dy + panelY, d / 2 + 0.05),
+          ),
           mesh: Mesh(
             CuboidGeometry(Vector3(sw, sh, strip)),
             isRoofline ? roofline : vertical,
@@ -1674,7 +1705,7 @@ class PlazaSceneController {
               (alarm && isRoofline ? 0.08 : 0.16) * emissive,
             )
             ..localTransform = Matrix4.translation(
-              Vector3(dx, dy, d / 2 + 0.03),
+              Vector3(dx, dy + panelY, d / 2 + 0.04),
             ),
         );
       }
@@ -1735,10 +1766,15 @@ class PlazaSceneController {
     // Focus ring: four teal slats just outside the facade, hidden until
     // the walker faces this building.
     final ring = Node(
-      localTransform: Matrix4.translation(Vector3(0, 0, d / 2 + 0.06)),
+      localTransform: Matrix4.translation(Vector3(0, panelY, d / 2 + 0.07)),
     )..visible = false;
+    // The ring burns in the state's own colour: the faced building keeps
+    // the far-tier colour language on arrival.
     final ringMaterial = UnlitMaterial()
-      ..baseColorFactor = linearColor(PlazaStyle.teal);
+      ..baseColorFactor = emissiveColor(
+        PlazaStyle.lantern(attention.lantern),
+        neonBoost,
+      );
     const t = 0.12;
     const off = 0.25;
     for (final (dx, dy, sw, sh) in [
@@ -1758,7 +1794,7 @@ class PlazaSceneController {
 
     // Anchor for the live/sign widget surface, in front of the plate.
     final facadeAnchor = Node(
-      localTransform: Matrix4.translation(Vector3(0, 0, d / 2 + 0.09)),
+      localTransform: Matrix4.translation(Vector3(0, panelY, d / 2 + 0.1)),
     );
     node.add(facadeAnchor);
 
@@ -1780,7 +1816,7 @@ class PlazaSceneController {
       lanternAnchor: lanternAnchor,
       facadeCenter: Vector3(
         placement.x + normal.x * (d / 2),
-        h / 2,
+        h / 2 + panelY,
         placement.z + normal.z * (d / 2),
       ),
       facadeNormal: normal,
@@ -2106,7 +2142,9 @@ class PlazaSceneController {
           UnlitMaterial()..baseColorFactor = _tower,
         ),
       );
-      final parade = stableUnit(id, 'parade') < 0.5 ? 0 : 1;
+      final parade = (stableUnit(id, 'parade') * WallTextures.paradeVariants)
+          .floor()
+          .clamp(0, WallTextures.paradeVariants - 1);
       final kit = (stableUnit(id, 'kit') * WallTextures.tileFamilies)
           .floor()
           .clamp(0, WallTextures.tileFamilies - 1);
@@ -2198,7 +2236,9 @@ class PlazaSceneController {
           UnlitMaterial()..baseColorFactor = _tower,
         ),
       );
-      final parade = stableUnit(id, 'parade') < 0.5 ? 0 : 1;
+      final parade = (stableUnit(id, 'parade') * WallTextures.paradeVariants)
+          .floor()
+          .clamp(0, WallTextures.paradeVariants - 1);
       root.add(box);
       for (final (dx, dz, yaw, faceW) in [
         (0.0, bd / 2 + 0.02, 0.0, w),

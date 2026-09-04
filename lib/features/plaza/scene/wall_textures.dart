@@ -45,7 +45,7 @@ class WallTextures {
   static const shopfrontHeight = 4.0;
 
   /// How many parade orders there are; `_windowedWall` picks one per wall.
-  static const paradeVariants = 2;
+  static const paradeVariants = 3;
 
   /// Lit-window ratio per state: busy buildings glow, finished ones sleep.
   static double litRatio(LanternState state) => switch (state) {
@@ -1338,11 +1338,12 @@ const _vacant = _Shop(
   awning: false,
 );
 
-/// Two orders of the same seven units, 33 m each; a wall picks one by
+/// Three orders of the same seven units, 33 m each; a wall picks one by
 /// hash, so neighbours never show the same run in the same order.
 const _parades = <List<_Shop>>[
   [_cafe, _records, _bar, _vacant, _noodles, _arcade, _florist],
   [_florist, _noodles, _vacant, _cafe, _arcade, _records, _bar],
+  [_bar, _arcade, _cafe, _florist, _vacant, _records, _noodles],
 ];
 
 /// How the parade is dressed for a lantern state.

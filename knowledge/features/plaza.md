@@ -274,7 +274,11 @@ two overlap and none is cut.
 
 **Gantry** (`gantryTickerFor`): a ticker spanning the street mouth 3 m past
 the street end, `roadWidth + 4` wide, 1.8 m tall at 10.5 m, 4.5 m/s, facing
-home; it shows `countsText`.
+home; it shows `countsText`. `PlazaWorld.tickerTexts` gives every band its
+line: a band on a plaza-mount building speaks for that building (its
+state word with a glyph, then the reason or the due date, short enough
+for a narrow band), the gantry counts the district, the hero rooflines
+carry `tickerText`.
 
 **Jumbotron** (`jumbotronSlotFor`): a 30 × 16 m screen with its bottom at
 `jumbotronBottom` (35 m, above the raised rear pylon on its side as seen
@@ -533,7 +537,7 @@ fourteen metres away).
 | mounted, gantry and roofline tickers | `TickerWidget` | every 50 ms, hidden beyond the plaza range |
 | jumbotron | `JumbotronWidget` at 0.5 × px/m | every 1 s |
 | skyline screens | `BillboardWidget` at 0.35 × px/m | every 3 s |
-| ticker housing | a dark track and a teal rim with end caps behind every band (geometry, not a widget) | — |
+| ticker housing | a dark track and a teal rim with end caps behind every band (geometry, not a widget); the type fades in and out at the housing's ends | — |
 | block markers, week signs | `BlockMarkerWidget` | once |
 | banners | `BannerWidget` | once |
 | filler signs | `BannerWidget` at 0.6 × px/m | once |
@@ -653,7 +657,11 @@ until it lands.
   band at the top, so no cut row ever sits on the shops;
   per-wall tile offset), a plinth,
   a stepped-back upper storey at 14 m and above, a roof slab and trim, the
-  facade plate (the only pickable part of a building), a progress **light
+  facade plate (the only pickable part of a building; on a building at
+  least `paradeWallHeight` (12 m) tall it is 0.8 × the wall wide and hangs
+  `panelY` above a street-level parade on the street face, with a storey
+  of windows either side, so the wall owns its screen; a shorter building
+  is all sign), a progress **light
   bar** along the base (done fills it, a checklist fills its fraction, in
   progress without a checklist shows 0.35), **neon edge strips** with glow
   quads (emissive 0.22 off, 0.7 open, 1.0 otherwise) in the category's
@@ -661,7 +669,11 @@ until it lands.
   their glow burn in the lantern colour and the roofline keeps the
   category at half power, a seeded **roof kit** (parapet, one or two plant boxes, a
   water tank on 40 % of buildings wider than 5 m, a mast on a third), the
-  hidden focus ring, the facade anchor and the lantern anchor. The neon
+  hidden focus ring (in the lantern colour at `neonBoost`, so the faced
+  building keeps the far-tier colour language; a live wall's panel takes
+  12 % of the lantern colour so it reads as a lit screen, and a finished
+  one is dark but not unrendered), the facade anchor and the lantern
+  anchor. The neon
   strips and their glow sit in one group that the LOD manager hides while
   the focus ring shows, so a faced facade has one frame. The light bar
   sits on the plinth on a full-width track a shade above the panel with
@@ -674,7 +686,7 @@ until it lands.
   unit** (papered, TO LET, whatever the neighbours do), in a warm register
   (amber, coral, salmon, orange, gold) with the arcade's teal as the one
   cool accent; each shop has its own door side, window contents and, on
-  three of them, an awning. There are **two parade orders**
+  three of them, an awning. There are **three parade orders**
   (`paradeVariants`), a wall picks one by `stableUnit(id, 'parade')` and
   starts at its own offset, so neighbours never show the same run. The
   strip is painted once **per state and order**, so the ground floor says
@@ -693,9 +705,12 @@ until it lands.
   panels get two struts; every panel gets a dark lightbox, a glow quad and
   chase-light points around the frame; the panel's own border (the widget's,
   which breathes) is the one frame. A roof panel sits over its own facade,
-  which carries the title, so it leads with the reason in the state colour
-  and drops its 'fly there' (`BillboardWidget.reasonFirst`). The backing
-  box is the pickable node.
+  which carries the title, so it leads with the reason on a solid band in
+  the state colour across its top, panel-dark ink, the title small on the
+  scrim, and drops its 'fly there' (`BillboardWidget.reasonFirst`). On a
+  pylon the reason is one voice with the facade's (the state colour,
+  semibold) and 'fly there' is a teal chip beside the state chip. The
+  backing box is the pickable node.
 - **Fillers** (`Scenery.fillers`): dark blocks behind the plots, every
   face a trading shopfront parade under open-state windows; about a third
   carry a neon category sign named after one of the week's own tasks.
