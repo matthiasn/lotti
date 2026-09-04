@@ -250,11 +250,12 @@ neon banner (`min(1.8, 0.3 × depth)` wide, `0.7 × height` tall from
 `0.15 × height`) on the end wall facing along their row.
 
 **Lamp posts** (`lampPostsFor`): `roadWidth / 2 - kerbFixtureInset` (1.6 m)
-off the axis, `blockHeadAlong` (1.5 m) into every built block on the left
-kerb only (the right kerb is where roof billboards and pylons show from the
-block pose, and a post across a headline is worse than a dark kerb) plus
-the middle of every gap between neighbours that is at least 2.5 m wide, on
-both kerbs.
+off the axis on both kerbs at a `lampRhythm` (18 m) beat, each beat
+snapped into the nearest gap between buildings that is at least 2.5 m
+wide (never in front of a facade) and dropped when it would stand within
+a third of the beat of another post, plus `blockHeadAlong` (1.5 m) into
+every built block on the left kerb (the week sign hangs from it). Each
+post throws a 5 m pool.
 
 **Week signs** (`weekSignsFor`): a 5 × 1.4 m sign hung at 3.2 m from the
 left-hand block-head lamp post (same inset and along as the post, no post
@@ -264,12 +265,20 @@ that is where the plaza's pylons show past a block's mouth. The scene also lays 
 row's heading rather than the row's own so it reads the right way up from
 the overview.
 
+**Home** looks a little up (`homePitch`, 6°) so the masthead and the rear
+pylons sit in the upper frame and the paving stops filling the lower
+half. The rear pylon pair stands on 11.5 m legs so, seen from home, each
+panel clears the front pair's top edge and the masthead clears both; the
+layout test projects every panel's corners into the frame and asserts no
+two overlap and none is cut.
+
 **Gantry** (`gantryTickerFor`): a ticker spanning the street mouth 3 m past
 the street end, `roadWidth + 4` wide, 1.8 m tall at 10.5 m, 4.5 m/s, facing
 home; it shows `countsText`.
 
 **Jumbotron** (`jumbotronSlotFor`): a 30 × 16 m screen with its bottom at
-`jumbotronBottom` (18 m, above the near pylons' tops) on a tower beside the
+`jumbotronBottom` (35 m, above the raised rear pylon on its side as seen
+from home) on a tower beside the
 plaza's mouth: `jumbotronAlong` (6 m) past the street end and
 `jumbotronLateralClearance` (6 m) outside the plaza's edge on the district's
 outside (the side the plaza shifted toward; the left on a straight street),
@@ -583,6 +592,10 @@ until it lands.
   is a `shadedCuboid`: per-face vertex tints (top 1.0, front and back
   0.86, sides 0.7, bottom 0.5) multiplied into the unlit base colour, so a
   box keeps its silhouette from every camera height.
+- **Map layer**: from `poolFadeStart` up, a teal ribbon (`_ribbon`) shows
+  down the axis of every road segment, connectors included, and the week
+  markers appear; washes fade to nothing by `poolFadeTop` and pools to
+  `poolFloor` (0.15), so the overview reads as a route with lanterns.
 - **Sky**: a `GradientSkySource` (near-black zenith, desaturated indigo
   horizon, no sun): the night is cool so amber signage sits warm against
   it, and the magenta lives in the hero towers' domes alone. **Fog**:
@@ -593,15 +606,20 @@ until it lands.
   from 0.92 to 0.6 as the eye climbs through the pool-fade range, so the
   map shot sees a lit district instead of a wash.
 - **Ground**: a 6000 × 6000 m slab at the plan centre. Per segment a road
-  slab (`roadWidth` wide, darker for gaps), 3 m pavements with a kerb on
-  both sides, a dashed centre line every 6 m on built segments, and an
-  asphalt grain overlay (a 2 m tile of dim grit). Every plot stands on a
-  pavement apron 1.5 m wider than its box on each side. The plaza is a slab in the ground colour with the
+  slab (`roadWidth` wide, a step darker and bluer than the pavements,
+  darker again for gaps), 3 m pavements with a raised 0.35 × 0.18 m kerb
+  stone on both sides, a dashed centre line every 6 m on built segments,
+  and an asphalt grain overlay (a 2 m tile of dim grit). Every plot stands
+  on a pavement apron 1.5 m wider than its box on each side. The plaza's
+  kerb is open at the street mouth with a flush threshold band across the
+  opening. The plaza is a slab in the ground colour with the
   grain, a paving-joint overlay (`WallTextures.paving`, a 4 m tile of four
   slabs), a raised kerb round its edge open at the street mouth (0.16 m,
   steppable, not a solid), a teal home ring with a soft warm pool under it,
-  and the benches, planters and kiosk from `Scenery.furniture` (the kiosk
-  has a lit sign, a warm hatch and its own pool).
+  and the benches (three slats on a dark frame), planters (a low shaded
+  crown of leaves under a lit warm rim) and kiosk (a lit sign, a warm
+  hatch and its own pool) from `Scenery.furniture`. Every beacon dot
+  stands on a slim post over a small pool in its own colour.
 - **Light pools**: one `ccwQuad` with a radial falloff texture (a hot
   core and a short skirt, dark again inside the radius) per lit facade
   (radius 0.55 × facade width), lamp post (3 m), pylon
@@ -646,8 +664,10 @@ until it lands.
   hidden focus ring, the facade anchor and the lantern anchor. The neon
   strips and their glow sit in one group that the LOD manager hides while
   the focus ring shows, so a faced facade has one frame. The light bar
-  sits on the plinth on a full-width track a shade above the panel, so the
-  lit part reads as progress along something.
+  sits on the plinth on a full-width track a shade above the panel with
+  quarter ticks, filling from the walker's left (a +Z face's +X, where the
+  widget quads put their texture's left edge), so the lit part reads as
+  progress along a scale.
 - **Shopfronts** (`WallTextures.shopfront(state, variant)`): the band is
   one 33 × 4 m strip, a parade of six trades of different widths (café,
   record shop, bar, noodle bar, arcade, florist) plus one 3 m **vacant

@@ -274,12 +274,15 @@ class PlazaSprites {
         // A five-bulb head over a near-dark tail, so the chase reads in a
         // still frame and not only in motion; the head goes past white for
         // the bloom.
-        final alpha = behind < 5 ? 1 - behind * 0.2 : 0.05;
+        // A marquee, not a comet: every bulb stays lit at a third so the
+        // run reads as a string of lamps, and the head is capped so it
+        // never floats free of the bezel.
+        final alpha = behind < 5 ? 1 - behind * 0.14 : 0.3;
         final boost = behind < 2 ? 1.6 : 1.0;
         final size = behind < 1
-            ? 0.7
-            : behind < 2
             ? 0.45
+            : behind < 2
+            ? 0.36
             : 0.3;
         light.sprite
           ..width = size

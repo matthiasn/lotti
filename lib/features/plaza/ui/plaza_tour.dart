@@ -115,8 +115,12 @@ CameraPose? jumbotronStopPose(PlazaWorld world) {
 /// out from the facade plane, on the road, looking at the building's
 /// near corner: the parade on the end wall and the named facade in one
 /// frame.
-const shopfrontStandOff = 12.0;
+const shopfrontStandOff = 18.0;
 const shopfrontRoadOffset = 6.0;
+
+/// The shopfront stop pitches no more than this: the head facade stays
+/// close to square instead of keystoning.
+const double shopfrontPitch = 6 * math.pi / 180;
 
 /// The tasks the other stops already show: the top billboard and the
 /// closeup's anomaly. The shopfront stop looks elsewhere, so the tour is
@@ -208,9 +212,11 @@ CameraPose? shopfrontPose(PlazaWorld world) {
     y: eyeHeight,
     z: ez,
     yaw: math.atan2(cx - ex, cz - ez),
-    pitch: math.min(
-      math.atan2(head.height / 2 - eyeHeight, reach),
-      PlazaSurfaces.maxFacingPitch,
-    ),
+    pitch: math
+        .atan2(head.height / 3 - eyeHeight, reach)
+        .clamp(
+          0.0,
+          shopfrontPitch,
+        ),
   );
 }

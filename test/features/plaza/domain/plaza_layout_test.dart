@@ -76,6 +76,77 @@ void main() {
       },
     );
 
+    test('from home no pylon panel hides another, and the masthead clears '
+        'the rear pair', () {
+      // Project every panel's four corners from the home eye into yaw and
+      // pitch (a 60 degree vertical field of view at a 3:2 frame), then
+      // check the angular boxes: no two panels overlap, and the jumbotron
+      // screen overlaps none.
+      final home = plaza.home;
+      (double, double) angles(double x, double y, double z) {
+        final dx = x - home.x;
+        final dz = z - home.z;
+        final yaw = math.atan2(dx, dz) - home.yaw;
+        final wrapped = (yaw + math.pi) % (2 * math.pi) - math.pi;
+        final ground = math.sqrt(dx * dx + dz * dz);
+        return (wrapped, math.atan2(y - home.y, ground) - home.pitch);
+      }
+
+      (double, double, double, double) box(BillboardSlot s) {
+        final sinF = math.sin(s.facingRadians);
+        final cosF = math.cos(s.facingRadians);
+        var minYaw = double.infinity;
+        var maxYaw = -double.infinity;
+        var minPitch = double.infinity;
+        var maxPitch = -double.infinity;
+        for (final u in [-s.width / 2, s.width / 2]) {
+          for (final y in [s.bottom, s.bottom + s.height]) {
+            final (yaw, pitch) = angles(
+              s.x + cosF * u,
+              y,
+              s.z - sinF * u,
+            );
+            minYaw = math.min(minYaw, yaw);
+            maxYaw = math.max(maxYaw, yaw);
+            minPitch = math.min(minPitch, pitch);
+            maxPitch = math.max(maxPitch, pitch);
+          }
+        }
+        return (minYaw, maxYaw, minPitch, maxPitch);
+      }
+
+      bool overlaps(
+        (double, double, double, double) a,
+        (double, double, double, double) b,
+      ) => a.$1 < b.$2 && b.$1 < a.$2 && a.$3 < b.$4 && b.$3 < a.$4;
+
+      const halfV = 30 * math.pi / 180;
+      final halfH = math.atan(1.5 * math.tan(halfV));
+      final panels = [
+        for (final p in plaza.pylons) (p.rank, box(p)),
+        (99, box(jumbotronSlotFor(plan)!)),
+      ];
+      for (final (rank, b) in panels) {
+        expect(b.$1, greaterThan(-halfH), reason: 'panel $rank left edge');
+        expect(b.$2, lessThan(halfH), reason: 'panel $rank right edge');
+        // Two degrees of margin at the top: the HUD chrome sits there.
+        expect(
+          b.$4,
+          lessThan(halfV - 2 * math.pi / 180),
+          reason: 'panel $rank top edge',
+        );
+      }
+      for (var i = 0; i < panels.length; i++) {
+        for (var j = i + 1; j < panels.length; j++) {
+          expect(
+            overlaps(panels[i].$2, panels[j].$2),
+            isFalse,
+            reason: 'panels ${panels[i].$1} and ${panels[j].$1} overlap',
+          );
+        }
+      }
+    });
+
     test('four pylons in rank order, each facing the plaza focal point', () {
       expect(plaza.pylons.map((p) => p.rank), [0, 1, 2, 3]);
       for (final pylon in plaza.pylons) {

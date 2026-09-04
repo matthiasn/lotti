@@ -239,14 +239,21 @@ const _homeAlong = 73.0;
 /// Pylon slots in plaza-local metres: (lateral, along, width, height,
 /// bottom). Rank order; every panel faces the point (0, 52) on the plaza
 /// so they all read from the home pose, and they sit inside a 60° field of
-/// view from there.
+/// view from there. The rear pair stands on tall legs so, seen from home,
+/// each panel clears the front pair's top edge instead of cutting across
+/// it (`plaza_layout_test` projects the corners to check).
 const _pylonSlots = <(double, double, double, double, double)>[
   (-14, 20, 16, 9, 4.5),
   (14, 23, 13, 7.5, 5.5),
-  (-19, 38, 11, 6.2, 3.5),
-  (19, 41, 9.5, 5.4, 5.5),
+  (-19, 38, 11, 6.2, 11.5),
+  (19, 41, 9.5, 5.4, 11.5),
 ];
 const _pylonFocusAlong = 52.0;
+
+/// Home looks a little up: the masthead and the rear pylons sit in the
+/// upper frame, and the paving stops at the fourth metre instead of
+/// filling the lower half.
+const double homePitch = 6 * math.pi / 180;
 
 /// Clearance the plaza keeps from the last row's axis once the street has
 /// folded: half the plaza plus the road's half width, so the square sits
@@ -341,7 +348,13 @@ FrontierPlaza? frontierPlazaFor(StreetPlan plan) {
     width: plazaWidth,
     depth: plazaDepth,
     lateralOffset: lateralOffset,
-    home: CameraPose(x: hx, y: eyeHeight, z: hz, yaw: lookBack),
+    home: CameraPose(
+      x: hx,
+      y: eyeHeight,
+      z: hz,
+      yaw: lookBack,
+      pitch: homePitch,
+    ),
     overview: overviewPoseFor(plan),
     pylons: pylons,
   );
@@ -369,7 +382,7 @@ CameraPose overviewPoseFor(StreetPlan plan) {
     minZ = math.min(minZ, z);
     maxZ = math.max(maxZ, z);
   }
-  // Include the plaza and the jumbotron in the footprint.
+  // Include the plaza and the jumbotron tower in the footprint.
   const plazaFar = plazaSetback + plazaDepth + 20;
   final plazaLateral = plazaLateralOffsetFor(plan);
   final fx =
@@ -382,6 +395,13 @@ CameraPose overviewPoseFor(StreetPlan plan) {
       math.sin(last.headingRadians) * plazaLateral;
   minX = math.min(minX, fx);
   maxX = math.max(maxX, fx);
+  final jumbotron = jumbotronSlotFor(plan);
+  if (jumbotron != null) {
+    minX = math.min(minX, jumbotron.x);
+    maxX = math.max(maxX, jumbotron.x);
+    minZ = math.min(minZ, jumbotron.z);
+    maxZ = math.max(maxZ, jumbotron.z);
+  }
   minZ = math.min(minZ, fz);
   maxZ = math.max(maxZ, fz);
   final cx = (minX + maxX) / 2;
@@ -550,11 +570,14 @@ List<BannerSlot> bannersFor(StreetPlan plan, {double minHeight = 12}) {
   return slots;
 }
 
-/// Lamp posts on the pavement, in the gaps between buildings (never in
-/// front of a facade) plus the head of every built block on the left kerb
-/// (the week sign hangs from it; the right kerb stays clear so no post
-/// crosses a roof billboard or a pylon from the block pose), as (x, z)
-/// pairs.
+/// Lamp posts stand about this far apart along a kerb.
+const lampRhythm = 18.0;
+
+/// Lamp posts on the pavement of both kerbs at a [lampRhythm] beat, each
+/// beat snapped to the nearest gap between buildings (never in front of a
+/// facade), plus the head of every built block on the left kerb (the week
+/// sign hangs from it), as (x, z) pairs. Two posts never stand closer
+/// than a third of the beat.
 List<(double, double)> lampPostsFor(
   StreetPlan plan, {
   required double roadWidth,
@@ -577,11 +600,33 @@ List<(double, double)> lampPostsFor(
               )
               .toList()
             ..sort((a, b) => along(a).compareTo(along(b)));
+      // The gaps a post may stand in: before the first plot, between
+      // neighbours at least [minGap] apart, and after the last.
+      final gaps = <(double, double)>[];
+      var cursor = 0.0;
+      for (final p in plots) {
+        final start = along(p) - p.width / 2;
+        if (start - cursor >= minGap) gaps.add((cursor, start));
+        cursor = along(p) + p.width / 2;
+      }
+      if (segment.length - cursor >= minGap) gaps.add((cursor, segment.length));
       final spots = <double>[if (side == PlotSide.left) blockHeadAlong];
-      for (var i = 0; i + 1 < plots.length; i++) {
-        final gapStart = along(plots[i]) + plots[i].width / 2;
-        final gapEnd = along(plots[i + 1]) - plots[i + 1].width / 2;
-        if (gapEnd - gapStart >= minGap) spots.add((gapStart + gapEnd) / 2);
+      for (
+        var beat = lampRhythm / 2;
+        beat < segment.length;
+        beat += lampRhythm
+      ) {
+        // Snap the beat into the nearest gap.
+        double? best;
+        for (final (start, end) in gaps) {
+          final a = beat.clamp(start + 0.8, end - 0.8);
+          if (a < start || a > end) continue;
+          if (best == null || (a - beat).abs() < (best - beat).abs()) best = a;
+        }
+        if (best == null) continue;
+        if (spots.every((s) => (s - best!).abs() >= lampRhythm / 3)) {
+          spots.add(best);
+        }
       }
       for (final a in spots) {
         posts.add((
@@ -641,11 +686,12 @@ TickerSlot? gantryTickerFor(StreetPlan plan, {required double roadWidth}) {
 
 /// The jumbotron's tower stands this far outside the plaza's edge, this
 /// far along from the street end (beside the mouth, on the district's
-/// outside), with the screen's bottom this high so it clears the near
-/// pylons from home.
+/// outside), with the screen's bottom this high so it clears the raised
+/// rear pylon on its side from home and still fits under the frame's top
+/// edge at [homePitch].
 const jumbotronLateralClearance = 6.0;
 const jumbotronAlong = 6.0;
-const jumbotronBottom = 24.0;
+const jumbotronBottom = 35.0;
 
 /// The jumbotron: a giant screen on a tower beside the plaza's mouth, on
 /// the district's outside, turned to face home, so the masthead sits over

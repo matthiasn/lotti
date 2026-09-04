@@ -5,7 +5,6 @@ import 'package:lotti/features/plaza/domain/attention.dart';
 import 'package:lotti/features/plaza/domain/plaza_layout.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
 import 'package:lotti/features/plaza/domain/street_layout.dart';
-import 'package:lotti/features/plaza/scene/plaza_surfaces.dart';
 import 'package:lotti/features/plaza/scene/plaza_world.dart';
 import 'package:lotti/features/plaza/ui/plaza_tour.dart';
 
@@ -216,10 +215,10 @@ void main() {
       expect(lateral.abs(), lessThan(headLateral.abs()));
     });
 
-    test("pitches to the wall's middle, never past the cap", () {
+    test("pitches toward the wall's lower third, never past the cap", () {
       final pose = shopfrontPose(large)!;
-      expect(pose.pitch, greaterThan(0));
-      expect(pose.pitch, lessThanOrEqualTo(PlazaSurfaces.maxFacingPitch));
+      expect(pose.pitch, greaterThanOrEqualTo(0));
+      expect(pose.pitch, lessThanOrEqualTo(shopfrontPitch));
     });
 
     test('prefers a trading head over one shut for the night', () {
