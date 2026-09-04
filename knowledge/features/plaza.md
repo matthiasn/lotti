@@ -839,7 +839,12 @@ until it lands.
   is the one frame, and the glow quad behind the lightbox is what breathes:
   `PlazaSurfaces.update` writes its alpha once per frame from the slot's
   pulse (`BillboardSlot.glowAt`, floor 0.55) times the scene's `poolFade`,
-  and only when it moved, so a billboard costs no capture at rest. A roof
+  and only when it moved, so a billboard costs no capture at rest. A
+  pylon's or a roof panel's lightbox is translucent: its back is a
+  `backQuad` (the front's vertices and UVs wound the other way, so the
+  eye reads the picture mirrored) sharing the panel's capture through
+  `OpaqueSurface.shared`, dimmed to `PlazaBillboard.backTint`; a wall
+  screen and the jumbotron have no back to see. A roof
   panel sits over its own facade,
   which carries the title, so it leads with the reason on a solid band in
   the state colour across its top, panel-dark ink, the title small on the
@@ -934,6 +939,14 @@ for keyboard and scene navigation is ignored in tour and bench modes.
   washed out.
 - **Alpha-blended widget surfaces sort unreliably.** Use `OpaqueSurface` for
   every widget quad; keep `AlphaMode.blend` for pools and glow quads only.
+- **Layers centimetres apart fight in the depth buffer far out.** A
+  facade's window wall, far plate, neon glows and widget surface sit 1–3 cm
+  apart along the wall's normal; past ~200 m the depth buffer (near plane
+  0.3 m, far 1400 m) cannot separate them and they flicker as the camera
+  flies. Each layer carries a `Material.depthBias` (world metres toward
+  the eye: plate `plateDepthBias` 0.05, glows and ring `glowDepthBias`
+  0.1, every widget surface `widgetDepthBias` 0.15) so the order is fixed
+  at any distance. Raise the bias, not the spacing, when adding a layer.
 - **Sprites are skipped by the raycaster**, so the picker resolves beacons in
   screen space first.
 - **The harness clock is the demo fixture clock**, not `DateTime.now()`; the
