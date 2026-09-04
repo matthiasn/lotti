@@ -136,7 +136,7 @@ void main() {
     expect(fast, greaterThan(slow));
   });
 
-  testWidgets('a squat roof panel drops the cover, then the reason', (
+  testWidgets('a squat roof panel keeps the cover, then drops the reason', (
     tester,
   ) async {
     final task = _task(
@@ -144,7 +144,7 @@ void main() {
       cover: 'https://x.invalid/c.webp',
     );
     await tester.pumpWidget(_host(task, heightMeters: 6));
-    expect(find.byType(Image), findsNothing);
+    expect(find.byType(Image), findsOneWidget);
     expect(find.text('blocked — needs a decision'), findsOneWidget);
     expect(tester.takeException(), isNull);
 

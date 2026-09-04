@@ -86,9 +86,9 @@ class _BillboardFace extends StatelessWidget {
   final double pxPerMeter;
   final double glow;
 
-  /// Aspect thresholds: below [coverAspect] the cover goes, below
-  /// [reasonAspect] the reason goes too and the title gets one line.
-  static const coverAspect = 0.5;
+  /// Aspect threshold: below [reasonAspect] the reason goes and the title
+  /// gets one line. The cover always stays: it is the backdrop, and a
+  /// squat panel with art still reads as a billboard, a bare one as a sign.
   static const reasonAspect = 0.34;
 
   @override
@@ -99,7 +99,7 @@ class _BillboardFace extends StatelessWidget {
     final chip = PlazaStyle.chip(attention);
     final frame = PlazaStyle.lantern(attention.lantern);
     final aspect = heightMeters / w;
-    final showCover = task.coverImageUrl != null && aspect >= coverAspect;
+    final showCover = task.coverImageUrl != null;
     final showReason = attention.reason.isNotEmpty && aspect >= reasonAspect;
     // Squat panels scale by height instead of width so nothing overflows.
     final pad = m(math.min(0.06 * w, 0.1 * heightMeters));

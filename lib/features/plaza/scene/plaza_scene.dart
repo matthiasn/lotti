@@ -274,13 +274,16 @@ class PlazaSceneController {
   /// full at eye level, gone by [poolFadeTop] metres up.
   static const poolFadeStart = 12.0;
   static const poolFadeTop = 70.0;
+
+  /// What is left of a pool above [poolFadeTop]: enough that the map shot
+  /// still shows a lit street, not so much that the discs read as discs.
+  static const poolFloor = 0.4;
   void updateForCamera(Vector3 eye) {
-    final k =
-        1 -
-        ((eye.y - poolFadeStart) / (poolFadeTop - poolFadeStart)).clamp(
-          0.0,
-          1.0,
-        );
+    final t = ((eye.y - poolFadeStart) / (poolFadeTop - poolFadeStart)).clamp(
+      0.0,
+      1.0,
+    );
+    final k = 1 - (1 - poolFloor) * t;
     for (final (material, alpha) in _pools) {
       material.baseColorFactor = Vector4(
         material.baseColorFactor.x,
@@ -709,8 +712,8 @@ class PlazaSceneController {
     scene.skybox = Skybox(
       GradientSkySource(
         zenithColor: linearColor(const Color(0xFF04030A)).xyz,
-        horizonColor: linearColor(const Color(0xFF6B2A5E)).xyz,
-        groundColor: linearColor(const Color(0xFF120C1C)).xyz,
+        horizonColor: linearColor(const Color(0xFF4C1F4A)).xyz,
+        groundColor: linearColor(const Color(0xFF0D0814)).xyz,
         sunColor: Vector3.zero(),
       ),
     );
@@ -725,7 +728,7 @@ class PlazaSceneController {
       ..height = 0
       ..heightFalloff = 0.028
       ..maxOpacity = 0.92
-      ..color = linearColor(const Color(0xFF4A2250)).xyz;
+      ..color = linearColor(const Color(0xFF381A40)).xyz;
   }
 
   void _buildBuilding(PlazaTask task, PlotPlacement placement) {

@@ -10,9 +10,76 @@ import 'package:lotti/features/plaza/domain/street_layout.dart';
 
 class WalkCollider {
   WalkCollider(Iterable<PlotPlacement> placements, {this.margin = 0.6})
-    : _placements = placements.toList(growable: false);
+    : _placements = _mergeAligned(placements.toList(), margin);
 
   final List<PlotPlacement> _placements;
+
+  /// The footprints the walker is kept out of, after merging.
+  List<PlotPlacement> get footprints => _placements;
+
+  /// Two neighbours in a crowded week can stand closer than twice the
+  /// margin. Resolved one after the other, the first pushes the walker into
+  /// the second's clearance and the second pushes it back: the sweep never
+  /// settles. Aligned neighbours (same facing, same row line, same depth)
+  /// whose clearances overlap are merged into one footprint, repeatedly, so
+  /// the alley between them is solid and every footprint left is at least
+  /// a clearance from the next.
+  static List<PlotPlacement> _mergeAligned(
+    List<PlotPlacement> input,
+    double margin,
+  ) {
+    final out = [...input];
+    var merged = true;
+    while (merged) {
+      merged = false;
+      outer:
+      for (var i = 0; i < out.length; i++) {
+        for (var j = i + 1; j < out.length; j++) {
+          final union = _union(out[i], out[j], margin);
+          if (union == null) continue;
+          out[i] = union;
+          out.removeAt(j);
+          merged = true;
+          break outer;
+        }
+      }
+    }
+    return List.unmodifiable(out);
+  }
+
+  static PlotPlacement? _union(
+    PlotPlacement a,
+    PlotPlacement b,
+    double margin,
+  ) {
+    const eps = 1e-3;
+    if ((a.facingRadians - b.facingRadians).abs() > eps ||
+        (a.depth - b.depth).abs() > eps) {
+      return null;
+    }
+    final sinF = math.sin(a.facingRadians);
+    final cosF = math.cos(a.facingRadians);
+    final dx = b.x - a.x;
+    final dz = b.z - a.z;
+    final v = dx * sinF + dz * cosF;
+    if (v.abs() > eps) return null;
+    final u = dx * cosF - dz * sinF;
+    if (u.abs() - (a.width + b.width) / 2 >= 2 * margin) return null;
+    final left = math.min(-a.width / 2, u - b.width / 2);
+    final right = math.max(a.width / 2, u + b.width / 2);
+    final centre = (left + right) / 2;
+    return PlotPlacement(
+      taskId: a.taskId,
+      bucketIndex: a.bucketIndex,
+      side: a.side,
+      x: a.x + centre * cosF,
+      z: a.z - centre * sinF,
+      facingRadians: a.facingRadians,
+      width: right - left,
+      depth: a.depth,
+      height: math.max(a.height, b.height),
+    );
+  }
 
   /// Extra clearance around every footprint, world meters.
   final double margin;

@@ -63,13 +63,11 @@ class _PlazaSearchSheetState extends State<PlazaSearchSheet> {
       return KeyEventResult.ignored;
     }
     final key = event.logicalKey;
+    final last = _results.length - 1;
     if (key == LogicalKeyboardKey.arrowDown) {
-      setState(
-        () => _selected = (_selected + 1).clamp(0, _results.length - 1),
-      );
+      if (last >= 0) setState(() => _selected = (_selected + 1).clamp(0, last));
     } else if (key == LogicalKeyboardKey.arrowUp) {
-      setState(() => _selected = (_selected - 1).clamp(0, _results.length));
-      if (_selected < 0) _selected = 0;
+      if (last >= 0) setState(() => _selected = (_selected - 1).clamp(0, last));
     } else if (key == LogicalKeyboardKey.enter) {
       if (_selected < _results.length) widget.onPick(_results[_selected]);
     } else if (key == LogicalKeyboardKey.escape) {

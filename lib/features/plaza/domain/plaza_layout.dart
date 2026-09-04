@@ -346,7 +346,7 @@ FrontierPlaza? frontierPlazaFor(StreetPlan plan) {
 /// The map shot: high over the district, behind its oldest edge, looking
 /// toward the plaza so the jumbotron tower is the far landmark. Height and
 /// stand-off scale with the district's footprint so the whole thing fills
-/// the frame with headroom at a 55° pitch.
+/// the frame with a little headroom at a 56° pitch.
 CameraPose overviewPoseFor(StreetPlan plan) {
   final last = plan.last;
   if (last == null) return const CameraPose(x: 0, y: 120, z: -100, yaw: 0);
@@ -386,8 +386,8 @@ CameraPose overviewPoseFor(StreetPlan plan) {
   // Aim a little short of the centre (toward the near rows) and stand off
   // by the extent, so the nearest row and the jumbotron both fit with
   // headroom at a 60° field of view.
-  final back = 0.72 * extent;
-  final height = 1.05 * extent;
+  final back = 0.6 * extent;
+  final height = 0.88 * extent;
   final h = last.headingRadians;
   final aimBack = 0.08 * extent;
   return CameraPose(

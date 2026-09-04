@@ -57,7 +57,12 @@ class TaskAttention {
   bool get anomalous => score >= anomalyThreshold;
 }
 
-DateTime _day(DateTime t) => DateTime.utc(t.year, t.month, t.day);
+/// The UTC calendar day of an instant: the same score on every device,
+/// whatever zone the clock is in.
+DateTime _day(DateTime t) {
+  final u = t.toUtc();
+  return DateTime.utc(u.year, u.month, u.day);
+}
 
 /// Scores [task] against [now] (day granularity).
 ///

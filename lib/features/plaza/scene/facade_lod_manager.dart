@@ -103,7 +103,13 @@ class FacadeLodManager {
 
     var liveLeft = config.forceAllLive ? n : config.liveCap;
     var signLeft = config.forceAllLive ? 0 : config.signCap;
-    var promotionsLeft = suspended ? 0 : config.promotionsPerFrame;
+    // The stress switch wants the steady state, not a five-second ramp:
+    // it ignores the per-frame promotion budget.
+    var promotionsLeft = suspended
+        ? 0
+        : config.forceAllLive
+        ? n
+        : config.promotionsPerFrame;
     PlazaBuilding? focused;
 
     for (final i in order) {

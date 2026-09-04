@@ -81,6 +81,20 @@ void main() {
       expect(picked.map((t) => t.id), ['4']);
     });
 
+    testWidgets('arrows and enter are no-ops when nothing matches', (
+      tester,
+    ) async {
+      await tester.pumpWidget(host());
+      await tester.enterText(find.byType(TextField), 'zzz nothing');
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+      expect(picked, isEmpty);
+    });
+
     testWidgets('clicking a result picks it; escape closes', (tester) async {
       await tester.pumpWidget(host());
       await tester.tap(find.text('Seal the hatch gaskets'));

@@ -9,6 +9,8 @@ import 'package:lotti/features/plaza/domain/plaza_task.dart';
 ///
 /// Test-only: the harness shows the penguin demo world and nothing else.
 List<PlazaTask> syntheticPlazaTasks({int count = 120, int seed = 42}) {
+  assert(count >= 0, 'count must not be negative');
+  if (count == 0) return const [];
   final rng = math.Random(seed);
   final start = DateTime.utc(2026, 3, 2, 9);
   final hubs = <int>{};

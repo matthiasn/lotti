@@ -58,7 +58,7 @@ void main() {
         expect(o.y, again.y);
         expect(o.z, again.z);
         expect(o.y, greaterThan(100));
-        expect(o.pitch, closeTo(-math.atan2(1.05, 0.72), 1e-9)); // ~55° down
+        expect(o.pitch, closeTo(-math.atan2(0.88, 0.6), 1e-9)); // ~56° down
         expect(_norm(o.yaw), closeTo(_norm(last.headingRadians), 1e-9));
         // Behind the district relative to the plaza: farther from home than
         // any building is.
