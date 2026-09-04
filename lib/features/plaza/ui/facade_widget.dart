@@ -170,18 +170,15 @@ class FacadeWidget extends StatelessWidget {
                         ],
                         if (task.coverImageUrl != null) ...[
                           SizedBox(height: m(0.3 * titleM)),
-                          // The picture gets a real frame: as tall as the
-                          // wall allows, never thinner than 16:9.
+                          // The picture gets the biggest band the wall can
+                          // spare: it fills its share edge to edge.
                           Flexible(
-                            flex: _live ? 5 : 8,
-                            child: Align(
-                              alignment: Alignment.topCenter,
-                              child: AspectRatio(
-                                aspectRatio: 16 / 9,
-                                child: _Cover(
-                                  url: task.coverImageUrl!,
-                                  quiet: attention.lantern == LanternState.off,
-                                ),
+                            flex: _live ? 7 : 10,
+                            child: SizedBox(
+                              width: double.infinity,
+                              child: _Cover(
+                                url: task.coverImageUrl!,
+                                quiet: attention.lantern == LanternState.off,
                               ),
                             ),
                           ),

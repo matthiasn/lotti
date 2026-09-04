@@ -1269,6 +1269,23 @@ class PlazaSceneController {
   /// has texture between the plots and the skyline. Seeded per bucket.
   void _buildFillerBlocks() {
     final lateralBase = layout.roadWidth / 2 + layout.plotDepth + 4;
+    final plaza = world.plaza;
+    // The plaza footprint (with a margin) in its own frame: no filler may
+    // stand on the square.
+    bool onPlaza(double x, double z) {
+      if (plaza == null) return false;
+      final dx = x - plaza.centerX;
+      final dz = z - plaza.centerZ;
+      final along =
+          dx * math.sin(plaza.headingRadians) +
+          dz * math.cos(plaza.headingRadians);
+      final lateral =
+          dx * math.cos(plaza.headingRadians) -
+          dz * math.sin(plaza.headingRadians);
+      return along.abs() < plaza.depth / 2 + 12 &&
+          lateral.abs() < plaza.width / 2 + 12;
+    }
+
     for (final segment in plan.segments) {
       if (segment.isGap) continue;
       final sinH = math.sin(segment.headingRadians);
@@ -1285,6 +1302,11 @@ class PlazaSceneController {
           final lateral = side * (lateralBase + bd / 2 + _unit(id, 'l') * 4);
           final cx = segment.startX + sinH * (along + bw / 2) + cosH * lateral;
           final cz = segment.startZ + cosH * (along + bw / 2) - sinH * lateral;
+          if (onPlaza(cx, cz)) {
+            along += bw + 2 + _unit(id, 'gap') * 4;
+            i++;
+            continue;
+          }
           // Local x is lateral, local z runs along the road: the block is
           // bw long along the street and bd deep away from it.
           final node = Node(
@@ -1295,28 +1317,35 @@ class PlazaSceneController {
               UnlitMaterial()..baseColorFactor = _tower,
             ),
           );
-          // One windowed face toward the street (local -x for the left
-          // side's blocks is away from the road, so the street face is
-          // +x on the left and -x on the right).
-          final material = UnlitMaterial()..baseColorFactor = _tower;
-          _wallMaterials.putIfAbsent(LanternState.off, () => []).add(material);
-          node.add(
-            Node(
-              localTransform: Matrix4.translation(
-                Vector3(-side * (bd / 2 + 0.02), 0, 0),
-              )..rotateY(side < 0 ? math.pi / 2 : -math.pi / 2),
-              mesh: Mesh(
-                tiledQuad(
-                  bw,
-                  bh,
-                  uRepeat: bw / WallTextures.tileWidth,
-                  vRepeat: bh / WallTextures.tileHeight,
-                  uOffset: _unit(id, 'tile') * 3,
+          // Windows on every face: a filler is seen from the street, from
+          // the plaza and from above.
+          for (final (dx, dz, yaw, width) in [
+            (bd / 2 + 0.02, 0.0, math.pi / 2, bw),
+            (-bd / 2 - 0.02, 0.0, -math.pi / 2, bw),
+            (0.0, bw / 2 + 0.02, 0.0, bd),
+            (0.0, -bw / 2 - 0.02, math.pi, bd),
+          ]) {
+            final material = UnlitMaterial()..baseColorFactor = _tower;
+            _wallMaterials
+                .putIfAbsent(LanternState.open, () => [])
+                .add(material);
+            node.add(
+              Node(
+                localTransform: Matrix4.translation(Vector3(dx, 0, dz))
+                  ..rotateY(yaw),
+                mesh: Mesh(
+                  tiledQuad(
+                    width,
+                    bh,
+                    uRepeat: width / WallTextures.tileWidth,
+                    vRepeat: bh / WallTextures.tileHeight,
+                    uOffset: _unit(id, 'tile$yaw') * 3,
+                  ),
+                  material,
                 ),
-                material,
               ),
-            ),
-          );
+            );
+          }
           if (_unit(id, 'sign') < 0.34) {
             // A neon sign down the street-facing corner, named after one
             // of the week's own tasks' category.
