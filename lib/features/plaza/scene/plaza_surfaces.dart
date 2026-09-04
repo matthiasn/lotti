@@ -29,9 +29,13 @@ class PlazaSurfaces {
     Map<String, Node> bannerAnchors = const {},
     Node? jumbotronAnchor,
     Map<int, Node> weekSignAnchors = const {},
+    List<(Node, double, double, int)> skylineScreens = const [],
+    List<(Node, double, double, String)> fillerSigns = const [],
   }) {
     _attachMarkers();
     _attachWeekSigns(weekSignAnchors);
+    _attachSkylineScreens(skylineScreens);
+    _attachFillerSigns(fillerSigns);
     _attachBillboards();
     _attachTickers();
     _attachBanners(bannerAnchors);
@@ -65,6 +69,7 @@ class PlazaSurfaces {
 
   void _attachWeekSigns(Map<int, Node> anchors) {
     for (final entry in anchors.entries) {
+      final surface = OpaqueSurface();
       final component = WidgetComponent(
         child: BlockMarkerWidget(
           label: world.weekLabel(entry.key),
@@ -75,9 +80,67 @@ class PlazaSurfaces {
         geometry: ccwQuad(signWidth, signHeight),
         update: WidgetUpdatePolicy.manual,
         input: WidgetInput.manual,
+        material: surface.material,
+        bind: surface.bind,
       );
       entry.value.addComponent(component);
       _markers.add(component);
+    }
+  }
+
+  /// Big screens on the skyline: the anomalies again, at a slow capture
+  /// rate — they are far, and repetition is the Times Square idiom.
+  void _attachSkylineScreens(List<(Node, double, double, int)> screens) {
+    for (final (anchor, w, h, rank) in screens) {
+      if (rank >= world.anomalies.length) continue;
+      final surface = OpaqueSurface();
+      final component = WidgetComponent(
+        child: BillboardWidget(
+          attention: world.anomalies[rank],
+          widthMeters: w,
+          heightMeters: h,
+          pxPerMeter: pxPerMeter * 0.35,
+          pulseSeconds: 4,
+        ),
+        size: Size(w * pxPerMeter * 0.35, h * pxPerMeter * 0.35),
+        geometry: ccwQuad(w, h),
+        update: const WidgetUpdatePolicy.interval(farInterval),
+        input: WidgetInput.manual,
+        material: surface.material,
+        bind: surface.bind,
+      );
+      anchor.addComponent(component);
+      _banners.add(component);
+    }
+  }
+
+  /// Neon category signs on the filler blocks, captured once.
+  void _attachFillerSigns(List<(Node, double, double, String)> signs) {
+    final byId = {for (final t in world.tasks) t.id: t};
+    for (final (anchor, w, h, taskId) in signs) {
+      final task = byId[taskId];
+      if (task == null) continue;
+      final label = world.categoryLabels.isEmpty
+          ? 'open late'
+          : world.categoryLabelOf(task);
+      final surface = OpaqueSurface();
+      final component = WidgetComponent(
+        child: BannerWidget(
+          label: label,
+          color: PlazaStyle.neon(PlazaStyle.categoryBright(task)),
+          widthMeters: w,
+          heightMeters: h,
+          pxPerMeter: pxPerMeter * 0.6,
+        ),
+        size: Size(w * pxPerMeter * 0.6, h * pxPerMeter * 0.6),
+        geometry: ccwQuad(w, h),
+        update: WidgetUpdatePolicy.manual,
+        input: WidgetInput.manual,
+        material: surface.material,
+        bind: surface.bind,
+      );
+      anchor.addComponent(component);
+      _banners.add(component);
     }
   }
 
@@ -90,6 +153,7 @@ class PlazaSurfaces {
       final label = world.categoryLabels.isEmpty
           ? PlazaStyle.chip(world.attentionOf(task)).label
           : world.categoryLabelOf(task);
+      final surface = OpaqueSurface();
       final component = WidgetComponent(
         child: BannerWidget(
           label: label,
@@ -102,6 +166,8 @@ class PlazaSurfaces {
         geometry: ccwQuad(banner.width, banner.height),
         update: WidgetUpdatePolicy.manual,
         input: WidgetInput.manual,
+        material: surface.material,
+        bind: surface.bind,
       );
       anchor.addComponent(component);
       _banners.add(component);
@@ -111,6 +177,7 @@ class PlazaSurfaces {
   void _attachJumbotron(Node? anchor) {
     final slot = world.jumbotron;
     if (anchor == null || slot == null) return;
+    final surface = OpaqueSurface();
     final component = WidgetComponent(
       child: JumbotronWidget(
         projectLabel: world.projectLabel,
@@ -128,6 +195,8 @@ class PlazaSurfaces {
       geometry: ccwQuad(slot.width, slot.height),
       update: const WidgetUpdatePolicy.interval(jumbotronInterval),
       input: WidgetInput.manual,
+      material: surface.material,
+      bind: surface.bind,
     );
     anchor.addComponent(component);
     _jumbotron = component;
@@ -135,6 +204,7 @@ class PlazaSurfaces {
 
   void _attachMarkers() {
     for (final entry in markerAnchors.entries) {
+      final surface = OpaqueSurface();
       final component = WidgetComponent(
         child: BlockMarkerWidget(
           label: world.weekLabel(entry.key),
@@ -145,6 +215,8 @@ class PlazaSurfaces {
         geometry: ccwQuad(markerWidth, markerHeight),
         update: WidgetUpdatePolicy.manual,
         input: WidgetInput.manual,
+        material: surface.material,
+        bind: surface.bind,
       );
       entry.value.addComponent(component);
       _markers.add(component);
@@ -154,6 +226,7 @@ class PlazaSurfaces {
   void _attachBillboards() {
     for (final billboard in billboards) {
       final slot = billboard.slot;
+      final surface = OpaqueSurface();
       final component = WidgetComponent(
         child: BillboardWidget(
           attention: billboard.attention,
@@ -166,6 +239,8 @@ class PlazaSurfaces {
         geometry: ccwQuad(slot.width, slot.height),
         update: const WidgetUpdatePolicy.interval(nearInterval),
         input: WidgetInput.manual,
+        material: surface.material,
+        bind: surface.bind,
       );
       billboard.anchor.addComponent(component);
       _billboardSurfaces.add((billboard.center, component, billboard.anchor));
@@ -180,6 +255,7 @@ class PlazaSurfaces {
         )..rotateY(slot.facingRadians),
       );
       final isGantry = identical(slot, world.gantry);
+      final surface = OpaqueSurface();
       final component = WidgetComponent(
         child: TickerWidget(
           text: isGantry ? world.countsText : world.tickerText,
@@ -191,6 +267,8 @@ class PlazaSurfaces {
         geometry: ccwQuad(slot.width, slot.height),
         update: const WidgetUpdatePolicy.interval(tickerInterval),
         input: WidgetInput.manual,
+        material: surface.material,
+        bind: surface.bind,
       );
       anchor.addComponent(component);
       scene.add(anchor);

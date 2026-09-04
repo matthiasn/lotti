@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' show Color, Size;
 
+import 'package:flutter_scene/gpu.dart' as gpu;
 import 'package:flutter_scene/scene.dart';
 import 'package:lotti/features/plaza/domain/attention.dart';
 import 'package:lotti/features/plaza/domain/plaza_layout.dart';
@@ -65,6 +66,21 @@ Geometry tiledQuad(
     texCoords: Float32List.fromList([u0, vRepeat, u1, vRepeat, u1, 0, u0, 0]),
     indices: [3, 1, 0, 2, 1, 3],
   );
+}
+
+/// An opaque material for a widget surface plus the bind callback that
+/// hands it each capture. Widget content here is fully opaque, and an
+/// opaque surface depth-tests like geometry, whereas the default
+/// alpha-blended surface sorts unreliably against other surfaces (a banner
+/// sixty metres away drew over a pylon fourteen metres away).
+class OpaqueSurface {
+  OpaqueSurface() : material = UnlitMaterial()..alphaMode = AlphaMode.opaque;
+
+  final UnlitMaterial material;
+
+  void bind(gpu.Texture texture) {
+    material.baseColorTexture = GpuTextureSource(texture);
+  }
 }
 
 /// Deterministic 0..1 from a task id and a salt.
@@ -213,6 +229,14 @@ class PlazaSceneController {
   /// Anchors for the eye-level week signs, keyed by bucket index.
   final Map<int, Node> weekSignAnchors = {};
 
+  /// Big screens on the skyline towers facing the district: (anchor, width,
+  /// height, index into the anomalies to show).
+  final List<(Node, double, double, int)> skylineScreens = [];
+
+  /// Vertical neon signs on the filler blocks: (anchor, width, height,
+  /// task id whose category names the sign).
+  final List<(Node, double, double, String)> fillerSigns = [];
+
   /// Light pools: (material, full alpha). Their alpha fades with camera
   /// altitude so the overview is carried by lanterns, not discs.
   final List<(UnlitMaterial, double)> _pools = [];
@@ -262,7 +286,7 @@ class PlazaSceneController {
   /// A grain overlay on a ground slab: a blended tiled quad just above it.
   void _addGrain(Node parent, double width, double depth, double y) {
     final material = UnlitMaterial()
-      ..baseColorFactor = Vector4(1, 1, 1, 0.55)
+      ..baseColorFactor = Vector4(1, 1, 1, 0.4)
       ..alphaMode = AlphaMode.blend;
     _grainMaterials.add(material);
     parent.add(
@@ -520,9 +544,9 @@ class PlazaSceneController {
       scene.add(root);
       _addPool(
         Vector3(gantry.x, 0, gantry.z),
-        radius: gantry.width * 0.5,
+        radius: gantry.width * 0.4,
         color: PlazaStyle.teal,
-        alpha: 0.12,
+        alpha: 0.06,
       );
     }
 
@@ -576,10 +600,10 @@ class PlazaSceneController {
       final jsin = math.sin(jumbotron.facingRadians);
       final jcos = math.cos(jumbotron.facingRadians);
       _addPool(
-        Vector3(jumbotron.x + jsin * 12, 0, jumbotron.z + jcos * 12),
-        radius: jumbotron.width * 0.7,
+        Vector3(jumbotron.x + jsin * 10, 0, jumbotron.z + jcos * 10),
+        radius: jumbotron.width * 0.5,
         color: PlazaStyle.teal,
-        alpha: 0.2,
+        alpha: 0.07,
       );
       // The tower's own spire.
       final spire = Node(
@@ -1259,7 +1283,7 @@ class PlazaSceneController {
           );
           // One windowed face toward the street.
           final material = UnlitMaterial()..baseColorFactor = _tower;
-          _wallMaterials.putIfAbsent(LanternState.open, () => []).add(material);
+          _wallMaterials.putIfAbsent(LanternState.off, () => []).add(material);
           node.add(
             Node(
               localTransform: Matrix4.translation(
@@ -1277,6 +1301,29 @@ class PlazaSceneController {
               ),
             ),
           );
+          if (_unit(id, 'sign') < 0.34) {
+            // A neon sign down the street-facing corner, named after one
+            // of the week's own tasks' category.
+            final weekTasks =
+                plan.placements.values
+                    .where((p) => p.bucketIndex == segment.bucketIndex)
+                    .map((p) => p.taskId)
+                    .toList()
+                  ..sort();
+            if (weekTasks.isNotEmpty) {
+              final pick = (_unit(id, 'pick') * weekTasks.length).floor().clamp(
+                0,
+                weekTasks.length - 1,
+              );
+              final anchor = Node(
+                localTransform: Matrix4.translation(
+                  Vector3(-bw / 2 + 1.2, bh * 0.15, -side * (bd / 2 + 0.08)),
+                )..rotateY(side < 0 ? 0 : math.pi),
+              );
+              node.add(anchor);
+              fillerSigns.add((anchor, 1.6, bh * 0.6, weekTasks[pick]));
+            }
+          }
           scene.add(node);
           along += bw + 2 + _unit(id, 'gap') * 4;
           i++;
@@ -1300,14 +1347,14 @@ class PlazaSceneController {
       final dz = plaza.centerZ - center.z;
       radius = math.max(radius, math.sqrt(dx * dx + dz * dz) + 60);
     }
-    radius += 55;
-    const towers = 52;
+    radius += 95;
+    const towers = 48;
     for (var i = 0; i < towers; i++) {
       final id = 'skyline-$i';
       final angle = i / towers * 2 * math.pi + _unit(id, 'a') * 0.1;
       final r = radius + _unit(id, 'r') * 90;
       final w = 16 + _unit(id, 'w') * 26;
-      final h = 26 + _unit(id, 'h') * 80;
+      final h = 18 + _unit(id, 'h') * 46;
       final x = center.x + math.cos(angle) * r;
       final z = center.z + math.sin(angle) * r;
       final node = Node(
@@ -1318,13 +1365,47 @@ class PlazaSceneController {
           UnlitMaterial()..baseColorFactor = _tower,
         ),
       );
+      // Every fourth tower carries a big screen on its district-facing
+      // face: the hi-rises behind Times Square are where the screens are.
+      if (i % 4 == 1 && world.anomalies.isNotEmpty) {
+        final sw = w * 0.82;
+        final sh = sw * 0.5;
+        final sy = h * 0.55;
+        final rank = (i ~/ 4) % world.anomalies.length;
+        final frame = PlazaStyle.lantern(world.anomalies[rank].lantern);
+        node
+          ..add(
+            Node(
+              localTransform: Matrix4.translation(
+                Vector3(0, sy - h / 2, w * 0.4 + 0.3),
+              ),
+              mesh: Mesh(
+                CuboidGeometry(Vector3(sw + 0.8, sh + 0.8, 0.6)),
+                UnlitMaterial()..baseColorFactor = linearColor(frame),
+              ),
+            ),
+          )
+          ..add(
+            _glowQuad(sw + 6, sh + 6, frame, 0.25)
+              ..localTransform = Matrix4.translation(
+                Vector3(0, sy - h / 2, w * 0.4 + 0.2),
+              ),
+          );
+        final anchor = Node(
+          localTransform: Matrix4.translation(
+            Vector3(0, sy - h / 2, w * 0.4 + 0.66),
+          ),
+        );
+        node.add(anchor);
+        skylineScreens.add((anchor, sw, sh, rank));
+      }
       // Two windowed faces toward the district.
       for (final (dx, dz, yaw) in [
         (0.0, w * 0.4 + 0.02, 0.0),
         (-w / 2 - 0.02, 0.0, -math.pi / 2),
       ]) {
         final material = UnlitMaterial()..baseColorFactor = _tower;
-        _wallMaterials.putIfAbsent(LanternState.open, () => []).add(material);
+        _wallMaterials.putIfAbsent(LanternState.off, () => []).add(material);
         node.add(
           Node(
             localTransform: Matrix4.translation(Vector3(dx, 0, dz))

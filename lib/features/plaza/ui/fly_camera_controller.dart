@@ -36,6 +36,10 @@ class FlyCameraController {
   final Set<LogicalKeyboardKey> _pressed = {};
   Flight? _flight;
 
+  /// Scripted forward input (benchmark mode): -1..1, applied when no key is
+  /// pressed.
+  double autoForward = 0;
+
   /// Called when a flight lands.
   void Function()? onArrived;
 
@@ -162,13 +166,14 @@ class FlyCameraController {
       (key) => !HardwareKeyboard.instance.logicalKeysPressed.contains(key),
     );
 
-    final forwardInput =
+    var forwardInput =
         (_down(LogicalKeyboardKey.keyW, LogicalKeyboardKey.arrowUp)
             ? 1.0
             : 0.0) -
         (_down(LogicalKeyboardKey.keyS, LogicalKeyboardKey.arrowDown)
             ? 1.0
             : 0.0);
+    if (forwardInput == 0) forwardInput = autoForward;
     final strafeInput =
         (_down(LogicalKeyboardKey.keyD, LogicalKeyboardKey.arrowRight)
             ? 1.0

@@ -17,10 +17,10 @@ class WallTextures {
   /// One tile is [floors] storeys tall and [bays] windows wide, in world
   /// metres [tileHeight] × [tileWidth].
   static const floors = 4;
-  static const bays = 6;
+  static const bays = 10;
   static const tileWidth = 12.0;
   static const tileHeight = 12.0;
-  static const _px = 128;
+  static const _px = 96;
 
   /// Lit-window ratio per state: busy buildings glow, finished ones sleep.
   static double litRatio(LanternState state) => switch (state) {
@@ -28,7 +28,7 @@ class WallTextures {
     LanternState.blocked => 0.5,
     LanternState.overdue => 0.5,
     LanternState.open => 0.36,
-    LanternState.off => 0.07,
+    LanternState.off => 0.2,
   };
 
   static const _coolTint = ui.Color(0xFF8FB8FF);
@@ -94,10 +94,10 @@ class WallTextures {
         ui.Rect.fromLTWH(0, 0, size.toDouble(), size.toDouble()),
         ui.Paint()..color = const ui.Color(0x00000000),
       );
+    // Mostly dark grit with the odd faint fleck: asphalt, not snow.
     final rng = math.Random(4242);
-    for (var i = 0; i < 2600; i++) {
-      final v = rng.nextDouble();
-      final light = v < 0.35;
+    for (var i = 0; i < 2200; i++) {
+      final light = rng.nextDouble() < 0.12;
       canvas.drawRect(
         ui.Rect.fromLTWH(
           rng.nextDouble() * size,
@@ -107,8 +107,8 @@ class WallTextures {
         ),
         ui.Paint()
           ..color = light
-              ? ui.Color.fromARGB((40 + rng.nextInt(60)), 255, 240, 220)
-              : ui.Color.fromARGB((60 + rng.nextInt(90)), 0, 0, 0),
+              ? ui.Color.fromARGB(10 + rng.nextInt(14), 255, 240, 220)
+              : ui.Color.fromARGB(50 + rng.nextInt(80), 0, 0, 0),
       );
     }
     return recorder.endRecording().toImageSync(size, size);
@@ -138,7 +138,7 @@ class WallTextures {
         final base = cool ? _coolTint : tint;
         final glow = on
             ? 0.5 + rng.nextDouble() * 0.5
-            : 0.05 + rng.nextDouble() * 0.05;
+            : 0.14 + rng.nextDouble() * 0.1;
         // Reveal: a dark frame around the pane; then the pane with a
         // sill-to-lintel gradient; then mullion and transom.
         final mullion = ui.Paint()..color = const ui.Color(0xFF07060D);

@@ -205,7 +205,7 @@ class StreetLayout {
 
   /// Every week's heaviest task rises this much higher: one landmark per
   /// block, so the skyline has a silhouette at every range.
-  static const landmarkFactor = 1.45;
+  static const landmarkFactor = 1.3;
 
   /// Weight-driven building height, world meters.
   ///

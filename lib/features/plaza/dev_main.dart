@@ -10,6 +10,10 @@
 ///
 /// This is a developer harness only — it is not part of the shipping app.
 ///
+/// Benchmark mode: `PLAZA_BENCH=1` auto-walks the penguin street from home
+/// through a fixed set of LOD budgets, printing an fps table
+/// (`PLAZA_BENCH` lines) to stdout.
+///
 /// Tour mode: `PLAZA_TOUR=1` steps through the fixed poses in
 /// `ui/plaza_tour.dart` (the documentation screenshots), printing
 /// `PLAZA_TOUR ready <index> <name>` once each has settled.
@@ -30,6 +34,7 @@ import 'package:lotti/features/plaza/domain/plaza_layout.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
 import 'package:lotti/features/plaza/domain/street_layout.dart';
 import 'package:lotti/features/plaza/scene/facade_lod_manager.dart';
+import 'package:lotti/features/plaza/scene/plaza_bench.dart';
 import 'package:lotti/features/plaza/scene/plaza_picker.dart';
 import 'package:lotti/features/plaza/scene/plaza_scene.dart';
 import 'package:lotti/features/plaza/scene/plaza_sprites.dart';
@@ -68,6 +73,8 @@ class _PlazaHarness extends StatefulWidget {
 
 class _PlazaHarnessState extends State<_PlazaHarness> {
   static final bool _tourMode = Platform.environment['PLAZA_TOUR'] == '1';
+  static final bool _benchMode = Platform.environment['PLAZA_BENCH'] == '1';
+  late final PlazaBench? _bench = _benchMode ? PlazaBench() : null;
 
   late PlazaWorld _world;
   late PlazaSceneController _sceneController;
@@ -128,7 +135,9 @@ class _PlazaHarnessState extends State<_PlazaHarness> {
     _walls = await WallTextures.load();
     if (!mounted) return;
     _load();
-    if (_tourMode) {
+    if (_benchMode) {
+      _bench!.start(_config, _camera);
+    } else if (_tourMode) {
       _applyTourStop(0);
     } else {
       _toast = 'Home — ${_world.projectLabel}';
@@ -186,6 +195,8 @@ class _PlazaHarnessState extends State<_PlazaHarness> {
       bannerAnchors: _sceneController.bannerAnchors,
       jumbotronAnchor: _sceneController.jumbotronAnchor,
       weekSignAnchors: _sceneController.weekSignAnchors,
+      skylineScreens: _sceneController.skylineScreens,
+      fillerSigns: _sceneController.fillerSigns,
     );
     _picker = PlazaPicker(controller: _sceneController, sprites: _sprites);
     final home =
@@ -207,6 +218,7 @@ class _PlazaHarnessState extends State<_PlazaHarness> {
   void _applyKnobs() {
     _lod.dispose();
     setState(_load);
+    if (_benchMode) _bench!.resume(_camera);
   }
 
   // ------------------------------------------------------------- flights
@@ -307,7 +319,7 @@ class _PlazaHarnessState extends State<_PlazaHarness> {
 
   KeyEventResult _onKey(FocusNode node, KeyEvent event) {
     // A tour is a screenshot run: stray input must not move the camera.
-    if (_tourMode) return KeyEventResult.handled;
+    if (_tourMode || _benchMode) return KeyEventResult.handled;
     if (_searchOpen) return KeyEventResult.ignored;
     if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
       return _camera.handleKeyEvent(event)
@@ -340,7 +352,7 @@ class _PlazaHarnessState extends State<_PlazaHarness> {
   }
 
   void _onPointerDown(PointerDownEvent event) {
-    if (_tourMode || event.buttons != kPrimaryButton) return;
+    if (_tourMode || _benchMode || event.buttons != kPrimaryButton) return;
     _pointerDown = event.localPosition;
     _pointerDownAt = _elapsed;
     _dragging = false;
@@ -421,7 +433,8 @@ class _PlazaHarnessState extends State<_PlazaHarness> {
 
   void _onTick(Duration elapsed, double dt) {
     _elapsed = elapsed.inMicroseconds / 1e6;
-    if (_tourMode) _tourTick(dt);
+    if (_benchMode) _bench!.tick(dt, _lod, _camera);
+    if (_tourMode && !_benchMode) _tourTick(dt);
     _walkTick(dt);
     _camera.update(dt);
     final camera = _camera.camera();

@@ -402,7 +402,7 @@ void main() {
       final along =
           (g.x - last.endX) * math.sin(last.headingRadians) +
           (g.z - last.endZ) * math.cos(last.headingRadians);
-      expect(along, closeTo(6, 1e-9));
+      expect(along, closeTo(3, 1e-9));
       expect(g.bottom, greaterThan(9));
       expect(gantryTickerFor(layout.plan([]), roadWidth: 18), isNull);
     });

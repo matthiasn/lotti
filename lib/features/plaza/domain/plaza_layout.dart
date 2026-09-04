@@ -536,7 +536,7 @@ List<(int, double, double, double)> weekSignsFor(
 TickerSlot? gantryTickerFor(StreetPlan plan, {required double roadWidth}) {
   final last = plan.last;
   if (last == null) return null;
-  const along = 6.0;
+  const along = 3.0;
   return TickerSlot(
     x: last.endX + math.sin(last.headingRadians) * along,
     z: last.endZ + math.cos(last.headingRadians) * along,

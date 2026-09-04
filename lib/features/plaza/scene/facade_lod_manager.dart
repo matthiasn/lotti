@@ -173,6 +173,7 @@ class FacadeLodManager {
 
     if (target != FacadeTier.far) {
       final live = target == FacadeTier.live;
+      final surfaceMaterial = OpaqueSurface();
       final component = WidgetComponent(
         child: FacadeWidget(
           task: building.task,
@@ -192,6 +193,8 @@ class FacadeLodManager {
             ? WidgetUpdatePolicy.everyFrame
             : WidgetUpdatePolicy.manual,
         input: live ? WidgetInput.automatic : WidgetInput.manual,
+        material: surfaceMaterial.material,
+        bind: surfaceMaterial.bind,
       );
       building.facadeAnchor.addComponent(component);
       surface.component = component;
