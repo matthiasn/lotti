@@ -274,6 +274,10 @@ class FlyCameraController {
       position: eye,
       target: eye + forward * 10,
       fovRadiansY: fovRadiansY,
+      // The walker's clearance keeps every solid 0.6 m off; a near plane
+      // three times the default triples the depth precision far out,
+      // where a facade's layers are centimetres apart.
+      fovNear: 0.3,
       fovFar: 1400,
     );
   }

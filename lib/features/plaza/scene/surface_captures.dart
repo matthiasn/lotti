@@ -7,6 +7,10 @@ import 'package:flutter_scene/scene.dart';
 import 'package:lotti/features/plaza/scene/plaza_scene.dart';
 import 'package:vector_math/vector_math.dart' show Vector3;
 
+/// World metres a widget surface is pulled toward the eye in the depth
+/// test (see [hostedSurface]).
+const widgetDepthBias = 0.15;
+
 /// A widget surface for the plaza: [child] laid out at [pxPerMeter] ×
 /// [scale] logical pixels a metre on a [ccwQuad] of [width] × [height]
 /// metres (or the [geometry] given, when the texture is not the quad's
@@ -29,6 +33,11 @@ WidgetComponent hostedSurface({
   OpaqueSurface? surface,
 }) {
   surface ??= OpaqueSurface();
+  // Every widget surface hangs a few centimetres in front of something
+  // (a facade's plate, a lightbox, a ticker's track): biased toward the
+  // eye so it wins the depth test at any distance instead of fighting the
+  // backing frame by frame as the camera flies.
+  surface.material.depthBias = widgetDepthBias;
   return WidgetComponent(
     child: child,
     size: Size(width * pxPerMeter * scale, height * pxPerMeter * scale),

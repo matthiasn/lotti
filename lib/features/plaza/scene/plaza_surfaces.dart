@@ -257,6 +257,8 @@ class PlazaSurfaces {
         width: slot.width,
         height: slot.height,
         pxPerMeter: pxPerMeter,
+        // The lightbox's back shows the same capture, dimmed.
+        surface: OpaqueSurface(shared: [?billboard.back]),
       );
       billboard.anchor.addComponent(component);
       _ranged.add((billboard.center, billboard.anchor));

@@ -43,6 +43,24 @@ Geometry ccwQuad(double width, double height) {
   );
 }
 
+/// A [ccwQuad] wound the other way: the same vertices and texture
+/// coordinates facing -Z, so the picture on it is the front's seen from
+/// behind, mirrored — the back of a translucent lightbox.
+Geometry backQuad(double width, double height) {
+  final hw = width / 2;
+  final hh = height / 2;
+  return MeshGeometry.fromArrays(
+    positions: Float32List.fromList([
+      hw, -hh, 0, //
+      -hw, -hh, 0, //
+      -hw, hh, 0, //
+      hw, hh, 0, //
+    ]),
+    texCoords: Float32List.fromList([0, 1, 1, 1, 1, 0, 0, 0]),
+    indices: [0, 1, 3, 3, 1, 2],
+  );
+}
+
 /// A [ccwQuad] whose two ends, each [fade] of its width, darken to black
 /// through the vertex colour the unlit material multiplies in: a ticker
 /// band's type fades into its housing instead of being sliced mid-glyph.
@@ -220,12 +238,21 @@ Vector4 emissiveColor(Color color, double boost, {double? alpha}) {
 /// alpha-blended surface sorts unreliably against other surfaces (a banner
 /// sixty metres away drew over a pylon fourteen metres away).
 class OpaqueSurface {
-  OpaqueSurface() : material = UnlitMaterial()..alphaMode = AlphaMode.opaque;
+  OpaqueSurface({this.shared = const []})
+    : material = UnlitMaterial()..alphaMode = AlphaMode.opaque;
 
   final UnlitMaterial material;
 
+  /// Other materials that show the same capture: the darker, mirrored back
+  /// of a translucent lightbox.
+  final List<UnlitMaterial> shared;
+
   void bind(gpu.Texture texture) {
-    material.baseColorTexture = GpuTextureSource(texture);
+    final source = GpuTextureSource(texture);
+    material.baseColorTexture = source;
+    for (final other in shared) {
+      other.baseColorTexture = source;
+    }
   }
 }
 
@@ -308,12 +335,22 @@ class PlazaBillboard {
     required this.backing,
     required this.anchor,
     this.glow,
+    this.back,
   });
 
   final BillboardSlot slot;
   final TaskAttention attention;
   final Node backing;
   final Node anchor;
+
+  /// The lightbox's back, on a pylon or a roof: the panel's own capture,
+  /// mirrored by the view and dimmed to [backTint], as light through a
+  /// translucent box. Null on a wall or the jumbotron, which have no
+  /// back to see.
+  final UnlitMaterial? back;
+
+  /// How much of the picture comes through the back.
+  static const backTint = 0.42;
 
   /// The soft bloom behind the lightbox: an anomaly breathes by it. The
   /// jumbotron has none of its own here; its bloom is a pool of the scene.
@@ -1594,11 +1631,18 @@ class PlazaSceneController {
     );
     // Far-tier surface: an always-present dark plate; the lantern carries
     // the state colour, the plate only says "there is a facade here".
+    // The plate, the neon glows and the widget surface stand 1–3 cm apart
+    // along the wall's normal, which the depth buffer cannot separate a
+    // few hundred metres out; each layer is biased toward the eye a
+    // little more than the one behind it (`Material.depthBias`), so a
+    // facade never flickers between its layers during a flight.
     final plate = _box(
       node,
       Vector3(0, panelY, d / 2 + 0.03),
       Vector3(facadeW, facadeH, 0.02),
-      UnlitMaterial()..baseColorFactor = _panelBack,
+      UnlitMaterial()
+        ..baseColorFactor = _panelBack
+        ..depthBias = plateDepthBias,
     );
 
     // Progress light bar along the base, visible at every tier.
@@ -1700,6 +1744,7 @@ class PlazaSceneController {
               sh + 1.1,
               alarm && !isRoofline ? stateNeon : categoryNeon,
               (alarm && isRoofline ? 0.08 : 0.16) * emissive,
+              depthBias: glowDepthBias,
             )
             ..localTransform = Matrix4.translation(
               Vector3(dx, dy + panelY, d / 2 + 0.04),
@@ -1767,7 +1812,8 @@ class PlazaSceneController {
       ..baseColorFactor = emissiveColor(
         PlazaStyle.lantern(attention.lantern),
         neonBoost,
-      );
+      )
+      ..depthBias = glowDepthBias;
     const t = 0.12;
     const off = 0.25;
     for (final (dx, dy, sw, sh) in [
@@ -1921,6 +1967,29 @@ class PlazaSceneController {
       Vector3(slot.width + 0.5, slot.height + 0.5, depth),
       _towerMaterial,
     );
+    // A pylon's or a roof panel's back is open to the street: the same
+    // capture shows through, mirrored ([backQuad] keeps the front's UVs
+    // and faces the other way, so the eye reads them backwards) and
+    // dimmed, inside the box's rim.
+    UnlitMaterial? back;
+    if (slot.mount != BillboardMount.wall) {
+      back = UnlitMaterial()
+        ..baseColorFactor = Vector4(
+          PlazaBillboard.backTint,
+          PlazaBillboard.backTint,
+          PlazaBillboard.backTint,
+          1,
+        )
+        ..alphaMode = AlphaMode.opaque;
+      root.add(
+        Node(
+          localTransform: Matrix4.translation(
+            Vector3(0, slot.centerY, -depth - 0.03),
+          ),
+          mesh: Mesh(backQuad(slot.width, slot.height), back),
+        ),
+      );
+    }
     // Faux bloom: a wide soft glow behind the lightbox. Not a pool: the
     // surfaces breathe it and fade it with [poolFade] themselves.
     final glow = UnlitMaterial()
@@ -1947,6 +2016,7 @@ class PlazaSceneController {
       backing: backing,
       anchor: anchor,
       glow: glow,
+      back: back,
     );
     billboards.add(billboard);
     pickableBillboards[backing] = billboard;
@@ -2010,10 +2080,23 @@ class PlazaSceneController {
 
   /// A soft glow quad behind an emitter: the faux bloom that makes neon
   /// and lightboxes read as lit rather than painted.
-  Node _glowQuad(double width, double height, Color color, double alpha) {
+  /// Depth biases, world metres toward the eye, for the layers on a
+  /// facade: the plate over the window wall, the neon glows and the focus
+  /// ring over the plate; the widget surface (`widgetDepthBias`) over all.
+  static const plateDepthBias = 0.05;
+  static const glowDepthBias = 0.1;
+
+  Node _glowQuad(
+    double width,
+    double height,
+    Color color,
+    double alpha, {
+    double depthBias = 0,
+  }) {
     final material = UnlitMaterial()
       ..baseColorFactor = linearColor(color, alpha: alpha)
-      ..alphaMode = AlphaMode.blend;
+      ..alphaMode = AlphaMode.blend
+      ..depthBias = depthBias;
     _pools.add((material, alpha));
     return Node(mesh: Mesh(ccwQuad(width, height), material));
   }
