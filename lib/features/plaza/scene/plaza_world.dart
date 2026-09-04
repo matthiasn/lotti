@@ -5,6 +5,7 @@ import 'package:lotti/features/plaza/domain/plaza_task.dart';
 import 'package:lotti/features/plaza/domain/scenery.dart';
 import 'package:lotti/features/plaza/domain/solid.dart';
 import 'package:lotti/features/plaza/domain/street_layout.dart';
+import 'package:lotti/features/plaza/domain/street_network.dart';
 import 'package:lotti/features/plaza/domain/walk_collider.dart';
 
 /// Everything the scene and the HUD need about one project, derived once
@@ -78,6 +79,7 @@ class PlazaWorld {
       for (final solid in solids)
         if (solid.atWalkHeight) solid.footprint,
     ]);
+    network = StreetNetwork.of(plan, plaza);
   }
 
   final List<PlazaTask> tasks;
@@ -143,6 +145,10 @@ class PlazaWorld {
 
   /// Keeps the walker out of every solid that reaches down to eye level.
   late final WalkCollider collider;
+
+  /// The way a flight follows between two stops on the ground: the street,
+  /// the plaza's mouth and its axis to home. Null without a street.
+  late final StreetNetwork? network;
   late final List<BillboardSlot> mountedScreens;
 
   /// Panels above the anomalous buildings themselves, most urgent first.

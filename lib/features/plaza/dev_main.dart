@@ -25,6 +25,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/gestures.dart' show kPrimaryButton;
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart' show Ticker;
 import 'package:flutter/services.dart';
 import 'package:flutter_scene/scene.dart' hide FlyCameraController;
 import 'package:lotti/features/demo/seed/demo_world.dart' show manualDemoNow;
@@ -71,9 +72,30 @@ class _PlazaHarness extends StatefulWidget {
   State<_PlazaHarness> createState() => _PlazaHarnessState();
 }
 
-class _PlazaHarnessState extends State<_PlazaHarness> {
+class _PlazaHarnessState extends State<_PlazaHarness>
+    with SingleTickerProviderStateMixin {
   static final bool _tourMode = Platform.environment['PLAZA_TOUR'] == '1';
   static final bool _benchMode = Platform.environment['PLAZA_BENCH'] == '1';
+
+  /// `PLAZA_TRACE=1` prints one line per frame: the frame time, whether a
+  /// flight is under way, the pose, and how many solids contain the eye —
+  /// the ground truth for a stall, a missing flight or a wall flown
+  /// through, read off the running harness rather than a unit test.
+  static final bool _traceMode = Platform.environment['PLAZA_TRACE'] == '1';
+
+  /// The harness owns the frame pacing: the scene view does not tick on
+  /// its own, a ticker here paints at most [_frameRate] frames a second
+  /// (the benchmark and the tour paint on every vsync). Every painted
+  /// frame runs [_onTick] first.
+  PlazaFrameRate _frameRate = PlazaFrameRate.sixty;
+  Ticker? _pacer;
+  Duration? _lastPaint;
+  final ValueNotifier<int> _frame = ValueNotifier(0);
+
+  /// Movement keeps the display's rate on `auto` for this long after it
+  /// stops, so a coast to a halt is smooth.
+  static const _movingHold = 0.6;
+  double _movingUntil = 0;
   late final PlazaBench? _bench = _benchMode ? PlazaBench() : null;
 
   late PlazaWorld _world;
@@ -144,6 +166,43 @@ class _PlazaHarnessState extends State<_PlazaHarness> {
       _toastUntil = 3.2;
     }
     setState(() => _ready = true);
+    _pacer = createTicker(_onPace)..start();
+  }
+
+  @override
+  void dispose() {
+    _pacer?.dispose();
+    _frame.dispose();
+    super.dispose();
+  }
+
+  /// Whether anything moves the camera: a flight, the walk, a held key or
+  /// a drag; the tour and the benchmark always count as moving.
+  bool get _moving =>
+      _benchMode ||
+      _tourMode ||
+      _camera.flying ||
+      _camera.moving ||
+      _dragging ||
+      _walk != null;
+
+  void _onPace(Duration elapsed) {
+    final last = _lastPaint;
+    final seconds = elapsed.inMicroseconds / 1e6;
+    if (_moving) _movingUntil = seconds + _movingHold;
+    final cap = _benchMode || _tourMode
+        ? null
+        : _frameRate.capFor(moving: seconds < _movingUntil);
+    if (last != null && cap != null) {
+      // A hair under the interval: a 60 Hz cap on a 60 Hz display must
+      // not skip every other vsync to jitter.
+      final due = last + Duration(microseconds: (1e6 / cap * 0.9).round());
+      if (elapsed < due) return;
+    }
+    final dt = last == null ? 1 / 60 : (elapsed - last).inMicroseconds / 1e6;
+    _lastPaint = elapsed;
+    _onTick(elapsed, dt);
+    _frame.value++;
   }
 
   // ---------------------------------------------------------------- data
@@ -207,6 +266,7 @@ class _PlazaHarnessState extends State<_PlazaHarness> {
             pose: home,
             collider: _world.collider,
             solids: _world.solids,
+            network: _world.network,
           )
           ..onArrived = _onArrived
           ..onMovement = _endWalk;
@@ -455,12 +515,25 @@ class _PlazaHarnessState extends State<_PlazaHarness> {
 
   // -------------------------------------------------------------- frame
 
+  void _trace(double dt) {
+    final p = _camera.pose;
+    final inside = _world.solids.where((s) => s.contains(p.x, p.y, p.z)).length;
+    debugPrint(
+      'PLAZA_TRACE t=${_elapsed.toStringAsFixed(3)} '
+      'dt=${(dt * 1000).toStringAsFixed(1)} '
+      'flying=${_camera.flying} walk=${_walk?.index} '
+      'x=${p.x.toStringAsFixed(2)} y=${p.y.toStringAsFixed(2)} '
+      'z=${p.z.toStringAsFixed(2)} inside=$inside',
+    );
+  }
+
   void _onTick(Duration elapsed, double dt) {
     _elapsed = elapsed.inMicroseconds / 1e6;
     if (_benchMode) _bench!.tick(dt, _lod, _camera);
     if (_tourMode && !_benchMode) _tourTick(dt);
     _walkTick(dt);
     _camera.update(dt);
+    if (_traceMode) _trace(dt);
     final camera = _camera.camera();
     _frameCamera = camera;
     final eye = camera.position;
@@ -522,10 +595,15 @@ class _PlazaHarnessState extends State<_PlazaHarness> {
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     _viewSize = constraints.biggest;
-                    return SceneView(
-                      _sceneController.scene,
-                      cameraBuilder: (_) => _frameCamera ?? _camera.camera(),
-                      onTick: _onTick,
+                    // Rebuilt by the pacer: a rebuilt SceneView repaints
+                    // once, and it does not tick on its own.
+                    return ValueListenableBuilder<int>(
+                      valueListenable: _frame,
+                      builder: (context, _, _) => SceneView(
+                        _sceneController.scene,
+                        cameraBuilder: (_) => _frameCamera ?? _camera.camera(),
+                        autoTick: false,
+                      ),
                     );
                   },
                 ),
@@ -573,6 +651,9 @@ class _PlazaHarnessState extends State<_PlazaHarness> {
                       datasetLabel: 'waddle',
                       onConfigChanged: () => setState(() {}),
                       onKnobsApplied: _applyKnobs,
+                      frameRate: _frameRate,
+                      onFrameRateChanged: (rate) =>
+                          setState(() => _frameRate = rate),
                     ),
                   ),
                 ),

@@ -75,8 +75,12 @@ Keep the M0 walk camera, with four fixes:
 - **Collision with buildings and street edges.** You cannot walk through a
   facade; the walker slides along walls. Removes the disorientation of
   ending up inside a box. *Built:* the same list of solids, with heights,
-  is swept by every flight, which lifts over whatever stands on its line;
-  the morning walk and the beacon flights are tested never to enter one.
+  is swept by every flight leg, which lifts over whatever stands on its
+  line; the morning walk and the beacon flights are tested never to enter
+  one. *Deviation:* between two stops on the ground a flight follows the
+  street network at 5 m over the road rather than the direct line, so the
+  district passes by on the way, and every flight runs on an S-curve speed
+  profile instead of a fixed duration.
 - **Eye height 2.2 m, not 5 m.** Facades become taller and content sits at
   eye level (section 4.3), so the camera no longer needs to float.
 - **Auto-align.** Standing still for a moment near a facade gently yaws the

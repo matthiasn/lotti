@@ -11,6 +11,7 @@ void main() {
   late PlazaLayoutKnobs knobs;
   late int configChanges;
   late int knobsApplied;
+  late PlazaFrameRate frameRate;
 
   setUp(() {
     stats = PlazaHarnessStats()
@@ -29,6 +30,7 @@ void main() {
     knobs = PlazaLayoutKnobs();
     configChanges = 0;
     knobsApplied = 0;
+    frameRate = PlazaFrameRate.sixty;
   });
 
   Widget host() {
@@ -42,6 +44,8 @@ void main() {
             datasetLabel: 'demo',
             onConfigChanged: () => configChanges++,
             onKnobsApplied: () => knobsApplied++,
+            frameRate: frameRate,
+            onFrameRateChanged: (rate) => frameRate = rate,
           ),
         ),
       ),
@@ -114,5 +118,25 @@ void main() {
     await tester.pump();
     expect(config.forceAllLive, isTrue);
     expect(configChanges, 1);
+  });
+
+  testWidgets('frame rate chips pick a cap', (tester) async {
+    await tester.pumpWidget(host());
+    expect(find.text('60'), findsOneWidget);
+    await tester.tap(find.text('30'));
+    await tester.pump();
+    expect(frameRate, PlazaFrameRate.thirty);
+    await tester.tap(find.text('auto'));
+    await tester.pump();
+    expect(frameRate, PlazaFrameRate.auto);
+  });
+
+  test('a cap for every setting: auto lets movement run at the display', () {
+    expect(PlazaFrameRate.sixty.capFor(moving: true), 60);
+    expect(PlazaFrameRate.sixty.capFor(moving: false), 60);
+    expect(PlazaFrameRate.thirty.capFor(moving: true), 30);
+    expect(PlazaFrameRate.auto.capFor(moving: true), isNull);
+    expect(PlazaFrameRate.auto.capFor(moving: false), 30);
+    expect(PlazaFrameRate.values.map((r) => r.label), ['auto', '60', '30']);
   });
 }

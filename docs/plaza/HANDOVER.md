@@ -80,15 +80,21 @@ Implemented, by area (the mechanism behind each is in the concept):
   flight's destination. The faced building gets a focus ring; its
   checkboxes tick and its details button opens a side panel.
 - **Navigation.** Beacons (home, block per week, corner per fold, attention
-  per anomaly), flights with look-along that are swept against every solid
-  and lift over whatever stands on their line (with a district arc on long
-  trips), a back stack, a landing flight when you step off the overview
-  that comes down beside a building rather than into it, Tab cycling, home
-  and overview keys, tap-to-fly on beacons, facades and billboards with a
+  per anomaly), flights on an S-curve speed profile (a smooth ramp up to a
+  cruise and down again): between two stops on the ground they follow the
+  street network at 5 m over the road, looking down the way and round the
+  corners, at 10 m/s so the facades and billboards pass by; a climb to the
+  overview or a dive back takes the direct line with a district arc; every
+  leg is swept against every solid and lifts over whatever stands on it; a
+  back stack, a landing flight when you step off the overview that comes
+  down beside a building rather than into it, Tab cycling, home and
+  overview keys, tap-to-fly on beacons, facades and billboards with a
   tap-versus-drag threshold, a walker collider that knows every solid at
   walk height (plots, fillers, towers, plaza benches, planters and kiosk,
   pylon posts, gantry legs, lamp posts; the signs and the beam are in the
-  air, for the flights), and title search.
+  air, for the flights), and title search. The harness paces its own
+  frames: a frame-rate control in the debug overlay (backquote) offers
+  auto, 60 and 30, default 60.
 - **Morning walk.** Overview, up to three anomalies, home; pausable, and
   abandoned by any movement.
 - **Harness modes.** The interactive session, a screenshot tour

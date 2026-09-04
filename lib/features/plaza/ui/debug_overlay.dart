@@ -18,6 +18,30 @@ class PlazaHarnessStats extends ChangeNotifier {
   void publish() => notifyListeners();
 }
 
+/// How often the harness paints a frame. The scene is animated (tickers,
+/// chase lights, pulsing glows), so without a cap it paints on every
+/// vsync, 120 times a second on a ProMotion display, and re-encodes the
+/// whole district each time.
+enum PlazaFrameRate {
+  /// The display's rate while the camera moves, 30 Hz while it stands.
+  auto,
+  sixty,
+  thirty;
+
+  String get label => switch (this) {
+    PlazaFrameRate.auto => 'auto',
+    PlazaFrameRate.sixty => '60',
+    PlazaFrameRate.thirty => '30',
+  };
+
+  /// The cap, frames per second, or null for the display's rate.
+  double? capFor({required bool moving}) => switch (this) {
+    PlazaFrameRate.auto => moving ? null : 30,
+    PlazaFrameRate.sixty => 60,
+    PlazaFrameRate.thirty => 30,
+  };
+}
+
 /// World-scale tuning knobs. Changing one rebuilds the scene (they are
 /// layout inputs, not surface state), so sliders apply on release.
 class PlazaLayoutKnobs {
@@ -36,6 +60,8 @@ class PlazaDebugOverlay extends StatelessWidget {
     required this.datasetLabel,
     required this.onConfigChanged,
     required this.onKnobsApplied,
+    required this.frameRate,
+    required this.onFrameRateChanged,
     super.key,
   });
 
@@ -44,6 +70,10 @@ class PlazaDebugOverlay extends StatelessWidget {
   final PlazaLayoutKnobs knobs;
   final String datasetLabel;
   final VoidCallback onConfigChanged;
+
+  /// The frame-rate cap and its setter; applies at once, no rebuild.
+  final PlazaFrameRate frameRate;
+  final ValueChanged<PlazaFrameRate> onFrameRateChanged;
 
   /// Fired when a layout slider is released — the scene rebuilds.
   final VoidCallback onKnobsApplied;
@@ -105,6 +135,29 @@ class PlazaDebugOverlay extends StatelessWidget {
                   'captures ${stats.captures}+${stats.surfaceCaptures}   '
                   'last ${stats.lastCaptureMs.toStringAsFixed(1)} ms   '
                   'promos ${stats.promotions}',
+                ),
+                const Divider(color: Color(0xFF2A2E38)),
+                Row(
+                  children: [
+                    const SizedBox(width: 70, child: Text('frame rate')),
+                    Expanded(
+                      child: Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        children: [
+                          for (final rate in PlazaFrameRate.values)
+                            ChoiceChip(
+                              label: Text(rate.label),
+                              selected: rate == frameRate,
+                              visualDensity: VisualDensity.compact,
+                              materialTapTargetSize:
+                                  MaterialTapTargetSize.shrinkWrap,
+                              onSelected: (_) => onFrameRateChanged(rate),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
                 const Divider(color: Color(0xFF2A2E38)),
                 _slider(

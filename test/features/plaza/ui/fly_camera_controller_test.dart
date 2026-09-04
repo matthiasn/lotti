@@ -8,6 +8,7 @@ import 'package:lotti/features/plaza/domain/flight.dart';
 import 'package:lotti/features/plaza/domain/plaza_layout.dart';
 import 'package:lotti/features/plaza/domain/solid.dart';
 import 'package:lotti/features/plaza/domain/street_layout.dart';
+import 'package:lotti/features/plaza/domain/street_network.dart';
 import 'package:lotti/features/plaza/domain/walk_collider.dart';
 import 'package:lotti/features/plaza/ui/fly_camera_controller.dart';
 
@@ -209,7 +210,8 @@ void main() {
       expect(camera.flying, isTrue);
       expect(camera.pose.y, lessThan(99));
       expect(camera.pose.y, greaterThan(eyeHeight));
-      for (var i = 0; i < 40; i++) {
+      // A 97 m descent takes a shade over four seconds on the S-curve.
+      for (var i = 0; i < 80; i++) {
         camera.update(0.1);
       }
       expect(camera.flying, isFalse);
@@ -348,6 +350,76 @@ void main() {
       // A margin past the wall, not on the roof and not in the building.
       final (_, v) = building.footprint.local(p.x, p.z);
       expect(v.abs(), closeTo(5 + solidClearance, 1e-9));
+    });
+  });
+
+  group('routing', () {
+    final network = StreetNetwork(const [(0, 0), (60, 0), (60, 60)]);
+
+    test('between two stops on the ground the flight follows the street', () {
+      final camera = FlyCameraController(
+        pose: const CameraPose(x: 0, y: eyeHeight, z: -4, yaw: 0),
+        network: network,
+      );
+      final f = camera.flyTo(
+        const CameraPose(x: 64, y: eyeHeight, z: 60, yaw: 0),
+      );
+      expect(f.routed, isTrue);
+      expect(f.legCount, 4);
+      var turned = false;
+      while (camera.flying) {
+        camera.update(0.02);
+        final p = camera.pose;
+        if ((p.x - 60).abs() < 0.3 && (p.z - 0).abs() < 0.3) turned = true;
+        expect(p.y, lessThanOrEqualTo(Flight.streetFlightHeight + 1e-9));
+      }
+      expect(turned, isTrue);
+      expect(camera.pose.x, 64);
+      expect(camera.pose.z, 60);
+    });
+
+    test('a climb or a dive takes the direct line', () {
+      final camera = FlyCameraController(pose: _origin, network: network);
+      final up = camera.flyTo(const CameraPose(x: 0, y: 140, z: -60, yaw: 0));
+      expect(up.routed, isFalse);
+      expect(up.legCount, 1);
+      camera.pose = const CameraPose(x: 0, y: 140, z: -60, yaw: 0);
+      final down = camera.flyTo(
+        const CameraPose(x: 60, y: eyeHeight, z: 30, yaw: 0),
+      );
+      expect(down.routed, isFalse);
+    });
+
+    test('without a network every flight is direct', () {
+      final camera = FlyCameraController(pose: _origin);
+      expect(
+        camera
+            .flyTo(const CameraPose(x: 50, y: eyeHeight, z: 50, yaw: 0))
+            .routed,
+        isFalse,
+      );
+    });
+
+    testWidgets('moving: a held key, and the coast after it', (tester) async {
+      final camera = _controller();
+      expect(camera.moving, isFalse);
+      await simulateKeyDownEvent(LogicalKeyboardKey.keyW);
+      camera
+        ..handleKeyEvent(
+          _down(LogicalKeyboardKey.keyW, PhysicalKeyboardKey.keyW),
+        )
+        ..update(0.1);
+      expect(camera.moving, isTrue);
+      await simulateKeyUpEvent(LogicalKeyboardKey.keyW);
+      camera
+        ..handleKeyEvent(_up(LogicalKeyboardKey.keyW, PhysicalKeyboardKey.keyW))
+        ..update(0.05);
+      // Still coasting.
+      expect(camera.moving, isTrue);
+      for (var i = 0; i < 40; i++) {
+        camera.update(0.1);
+      }
+      expect(camera.moving, isFalse);
     });
   });
 }

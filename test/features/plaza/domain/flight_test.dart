@@ -39,26 +39,55 @@ Solid box({
 void main() {
   const a = CameraPose(x: 0, y: 2.2, z: 0, yaw: 0);
 
-  test('duration follows the square root of distance within 0.8–2.5 s', () {
+  double seconds(Flight f) => f.duration.inMicroseconds / 1e6;
+
+  test('a long flight ramps up, cruises at the direct speed, ramps down', () {
+    final f = Flight.plan(a, const CameraPose(x: 0, y: 2.2, z: 1000, yaw: 0));
+    expect(f.cruiseSpeed, Flight.directSpeed);
+    expect(f.rampTime, Flight.rampSeconds);
+    // Two ramps, each covering half a cruise-ramp, then the rest at cruise.
     expect(
-      Flight.plan(a, const CameraPose(x: 1, y: 2.2, z: 0, yaw: 0)).duration,
-      const Duration(milliseconds: 800),
+      seconds(f),
+      closeTo(2 * 1.6 + (1000 - 36 * 1.6) / 36, 1e-6),
     );
-    expect(
-      Flight.plan(a, const CameraPose(x: 0, y: 2.2, z: 36, yaw: 0)).duration,
-      const Duration(milliseconds: 1920),
+    expect(f.distanceAt(0), 0);
+    expect(f.distanceAt(1), closeTo(1000, 1e-9));
+    // Symmetric: as far in from one end as from the other.
+    for (final t in [0.05, 0.2, 0.4]) {
+      expect(f.distanceAt(t) + f.distanceAt(1 - t), closeTo(1000, 1e-6));
+    }
+    // Speed starts at zero and grows on a curve: the first hundredth of
+    // the time covers far less than a hundredth of the way.
+    expect(f.distanceAt(0.01), lessThan(1000 * 0.01 * 0.05));
+    // In the cruise, the way grows at the cruise speed.
+    final mid = seconds(f) / 2;
+    const dt = 0.1;
+    final before = f.distanceAt((mid - dt) / seconds(f));
+    final after = f.distanceAt((mid + dt) / seconds(f));
+    expect((after - before) / (2 * dt), closeTo(36, 1e-6));
+  });
+
+  test('a short hop never reaches the cruise: both ramps shrink to fit', () {
+    final hop = Flight.plan(a, const CameraPose(x: 1, y: 2.2, z: 0, yaw: 0));
+    final t = math.sqrt(1 * 1.6 / 36);
+    expect(hop.rampTime, closeTo(t, 1e-9));
+    expect(hop.cruiseSpeed, closeTo(1 / t, 1e-9));
+    expect(seconds(hop), closeTo(2 * t, 1e-6));
+    final edge = Flight.plan(
+      a,
+      const CameraPose(x: 0, y: 2.2, z: 36 * 1.6, yaw: 0),
     );
+    // Exactly one cruise-ramp long: the ramps meet, at full speed.
+    expect(edge.rampTime, closeTo(1.6, 1e-9));
+    expect(edge.cruiseSpeed, closeTo(36, 1e-9));
+    expect(seconds(edge), closeTo(3.2, 1e-6));
+  });
+
+  test('timeScale speeds the whole flight up', () {
+    const to = CameraPose(x: 0, y: 2.2, z: 36, yaw: 0);
     expect(
-      Flight.plan(a, const CameraPose(x: 0, y: 2.2, z: 1000, yaw: 0)).duration,
-      const Duration(milliseconds: 2500),
-    );
-    expect(
-      Flight.plan(
-        a,
-        const CameraPose(x: 0, y: 2.2, z: 36, yaw: 0),
-        timeScale: 2,
-      ).duration,
-      const Duration(milliseconds: 960),
+      seconds(Flight.plan(a, to, timeScale: 2)),
+      closeTo(seconds(Flight.plan(a, to)) / 2, 1e-6),
     );
   });
 
@@ -129,9 +158,10 @@ void main() {
   test('advance accumulates time and clamps at the end', () {
     final f = Flight.plan(a, const CameraPose(x: 1, y: 2.2, z: 0, yaw: 0));
     expect(f.done, isFalse);
-    f.advance(const Duration(milliseconds: 400));
-    expect(f.elapsed, const Duration(milliseconds: 400));
-    expect(f.progress, closeTo(0.5, 1e-9));
+    final half = Duration(microseconds: f.duration.inMicroseconds ~/ 2);
+    f.advance(half);
+    expect(f.elapsed, half);
+    expect(f.progress, closeTo(0.5, 1e-5));
     expect(f.done, isFalse);
     final end = f.advance(const Duration(seconds: 5));
     expect(f.done, isTrue);
@@ -329,5 +359,107 @@ void main() {
       final f = Flight.plan(from, to, solids: solids);
       expect(passesThrough(f, solids), isFalse, reason: '$from → $to');
     }, tags: 'glados');
+  });
+
+  group('routes', () {
+    // A street corner: 50 m east, then 50 m north; the stops stand 3 m
+    // off the road at either end.
+    const from = CameraPose(x: 0, y: 2.2, z: -3, yaw: 0, pitch: 0.2);
+    const to = CameraPose(x: 53, y: 2.2, z: 50, yaw: 1, pitch: 0.1);
+    const via = [(0.0, 0.0), (50.0, 0.0), (50.0, 50.0)];
+    final f = Flight.route(from, to, via: via);
+
+    /// The time at which the flight is [d] metres along its way.
+    double timeAt(Flight flight, double d) {
+      var lo = 0.0;
+      var hi = 1.0;
+      for (var i = 0; i < 60; i++) {
+        final mid = (lo + hi) / 2;
+        if (flight.distanceAt(mid) < d) {
+          lo = mid;
+        } else {
+          hi = mid;
+        }
+      }
+      return (lo + hi) / 2;
+    }
+
+    bool visits(Flight flight, double x, double z) {
+      for (var t = 0.0; t <= 1.0001; t += 0.0005) {
+        final p = flight.poseAt(t);
+        if ((p.x - x).abs() < 0.2 && (p.z - z).abs() < 0.2) return true;
+      }
+      return false;
+    }
+
+    test('runs the way through every point, at street height and speed', () {
+      expect(f.routed, isTrue);
+      expect(f.legCount, 4);
+      // The first and last legs climb to street height and drop again,
+      // and that climb is part of the way.
+      final hop = math.sqrt(3 * 3 + 2.8 * 2.8);
+      expect(f.length, closeTo(hop + 50 + 50 + hop, 1e-9));
+      expect(f.cruiseSpeed, Flight.streetSpeed);
+      expect(f.rampTime, Flight.rampSeconds);
+      expect(seconds(f), closeTo(f.length / 10 + 1.6, 1e-6));
+      for (final (x, z) in via) {
+        expect(visits(f, x, z), isTrue, reason: '$x, $z');
+      }
+      expect(f.poseAt(0).y, 2.2);
+      expect(f.poseAt(0.5).y, closeTo(Flight.streetFlightHeight, 1e-9));
+      expect(f.poseAt(1).y, closeTo(2.2, 1e-9));
+      expect(f.arc, 0);
+    });
+
+    test(
+      'looks down the way, turns before the corner, settles on the stop',
+      () {
+        // Cruising east down the first stretch: looking east.
+        expect(f.poseAt(timeAt(f, 25)).yaw, closeTo(math.pi / 2, 0.02));
+        // Six metres short of the corner the look-ahead point is already up
+        // the north stretch: the turn has begun.
+        final beforeCorner = f.poseAt(timeAt(f, 47)).yaw;
+        expect(beforeCorner, lessThan(math.pi / 2 - 0.3));
+        expect(beforeCorner, greaterThan(0));
+        // Up the north stretch: looking north.
+        expect(f.poseAt(timeAt(f, 80)).yaw, closeTo(0, 0.02));
+        // The ends are the stops' own headings and pitches; level between.
+        expect(f.poseAt(0).yaw, 0);
+        expect(f.poseAt(0).pitch, closeTo(0.2, 1e-9));
+        expect(f.poseAt(0.5).pitch, 0);
+        expect(f.poseAt(1).yaw, closeTo(1, 1e-9));
+        expect(f.poseAt(1).pitch, closeTo(0.1, 1e-9));
+      },
+    );
+
+    test(
+      'a via point on a stop is dropped, and a stop on the way needs none',
+      () {
+        final g = Flight.route(
+          from,
+          to,
+          via: const [
+            (0.0, -3.0),
+            (0.0, 0.0),
+            (50.0, 0.0),
+            (50.0, 50.0),
+            (53.0, 50.0),
+          ],
+        );
+        expect(g.legCount, 4);
+        expect(g.length, closeTo(f.length, 1e-9));
+      },
+    );
+
+    test('a leg through a building still lifts over it', () {
+      final tower = box(x: 25, z: 0, width: 4, depth: 4, top: 20);
+      final g = Flight.route(from, to, via: via, solids: [tower]);
+      expect(passesThrough(g, [tower]), isFalse);
+      expect(
+        g.arc,
+        closeTo(20 + Flight.clearance - Flight.streetFlightHeight, 1e-9),
+      );
+      expect(passesThrough(f, [tower]), isTrue); // planned blind
+    });
   });
 }

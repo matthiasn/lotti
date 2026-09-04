@@ -36,6 +36,10 @@ sources:
     resource: ../../lib/features/plaza/domain/solid.dart
     title: A footprint with its height band, for the collider and the flights
     last_modified: 2026-09-04
+  - id: network
+    resource: ../../lib/features/plaza/domain/street_network.dart
+    title: The street network a flight follows between two stops
+    last_modified: 2026-09-04
   - id: scenery
     resource: ../../lib/features/plaza/domain/scenery.dart
     title: The seeded scenery and the furniture footprints
@@ -115,7 +119,10 @@ flowchart LR
     World --> Solids["solids, each with a height band<br/>plots and roof kit, spires, scenery boxes, pylon posts and signs,<br/>roof panels, gantry legs and beam, lamp posts"]
     Scenery --> Solids
     Solids -->|"at walk height"| Collider["WalkCollider"]
-    Solids -->|"all, for the sweep"| Flight["Flight.plan"]
+    Solids -->|"all, for the sweep"| Flight["Flight.plan / Flight.route"]
+    Plan --> Network["StreetNetwork<br/>the street, the mouth, the axis to home"]
+    Plaza --> Network
+    Network --> Flight
   end
   subgraph scene ["Scene, needs a GPU context"]
     Plan --> Ctl["PlazaSceneController<br/>sky, fog, ground, road, plaza, buildings, fillers, skyline"]
@@ -395,44 +402,71 @@ first plans a **landing flight** to eye height rather than dropping in one
 frame. Pressed keys are reconciled with `HardwareKeyboard` every frame so a
 key-up lost to a focus change cannot latch the camera walking.
 
-A `Flight` is planned once from two poses and the world's solids:
+A `Flight` is planned once, as a chain of straight **legs** with one
+**speed profile** over the whole way, and is evaluated by normalised time:
 
-- duration `clamp(0.32 × sqrt(distance), 0.8 s, 2.5 s)` divided by
-  `timeScale`;
-- **smootherstep** easing (`6t^5 - 15t^4 + 10t^3`) along the straight line;
-- a **lift** over the straight line: `arc × profile(s)` where `s` is the
-  eased fraction of the way and the profile is a smoothstep climb over the
-  first `rampStart` of the way, a cruise, and a smoothstep descent over the
-  last `rampEnd`. With nothing on the way the ramps are `defaultRamp`
-  (0.35) each and the arc is the **district arc** for trips over
-  `arcThreshold` (60 m): `min(45, 0.22 × distance) × horizontalFraction`; a
-  climb gets none;
-- a **sweep over the solids**: the line is clipped against every solid's
-  footprint (`_span`, a slab test in the footprint's frame) and any solid
-  whose band of height the line would enter, `clearance` (1.5 m) included,
-  is lifted over: the ramps shrink to `rampFit` (0.85) of the way to the
-  first such solid and from the last (never under `minRamp`), and the arc
-  becomes the largest `top + clearance − line height` over those spans.
-  Lifting can raise the line into a solid it passed under (the gantry
-  beam), so the lifted set grows until it holds. A solid the line already
-  passes over or under asks for nothing. The pitch dips
-  `-atan2(lift, 40) × 0.9` so the camera looks down at what it crosses;
-- **look-along**: when the ground distance is at least
-  `lookAlongThreshold` (8 m) and the trip is at least 55 % horizontal, yaw
-  turns into the travel heading during the first 35 % of the flight, holds
-  it to 75 %, then settles onto the target yaw. Shorter or mostly vertical
-  trips blend yaw directly, the short way round.
+- **Two kinds.** `Flight.plan` is the direct line, one leg, cruising at
+  `directSpeed` (36 m/s): a climb to the overview, a dive back, or any
+  flight in a world without a street. `Flight.route` follows the street
+  between two stops on the ground: the controller asks the
+  `StreetNetwork` for the way (`pathBetween`), every point of it becomes a
+  via point at `streetFlightHeight` (5 m, over the parade and level with
+  the screens, under every sign and the gantry), and the flight cruises at
+  `streetSpeed` (10 m/s) so the facades and the billboards pass by. A
+  flight is routed when both ends are no higher than
+  `FlyCameraController.groundCeiling` (the street height plus a metre).
+- **The S-curve** (`_Profile`): speed ramps up over `rampSeconds` (1.6 s)
+  on a smoothstep, holds the cruise, and ramps down the same way, so
+  acceleration starts and ends at zero; a way shorter than one cruise-ramp
+  (`cruise × ramp`) shrinks both ramps to `sqrt(length × ramp / cruise)`
+  and never reaches the cruise. Duration is `2 × ramp + (length − cruise ×
+  ramp) / cruise`; `timeScale` multiplies the speed and divides the ramp.
+  `distanceAt(t)` is the way covered, `cruiseSpeed` and `rampTime` what
+  was flown.
+- **The lift of a leg**: `arc × profile(s)` over the leg's straight line,
+  where `s` is the fraction of the leg and the profile is a smoothstep
+  climb over the first `rampStart` of it, a cruise, and a smoothstep
+  descent over the last `rampEnd`. With nothing on the leg the ramps are
+  `defaultRamp` (0.35) each and, on a direct flight over `arcThreshold`
+  (60 m), the arc is the **district arc** `min(45, 0.22 × distance) ×
+  horizontalFraction`; a climb gets none, and a routed leg none.
+- **The sweep over the solids**, per leg: the line is clipped against
+  every solid's footprint (`_span`, a slab test in the footprint's frame)
+  and any solid whose band of height the line would enter, `clearance`
+  (1.5 m) included, is lifted over: the ramps shrink to `rampFit` (0.85)
+  of the way to the first such solid and from the last (never under
+  `minRamp`), and the arc becomes the largest `top + clearance − line
+  height` over those spans. Lifting can raise the line into a solid it
+  passed under (the gantry beam), so the lifted set grows until it holds.
+  A solid the line already passes over or under asks for nothing. The
+  pitch dips `-atan2(lift, 40) × 0.9` so the camera looks down at what it
+  crosses. Down a street nothing needs lifting; the test on the fixture
+  asserts every routed walk leg has `arc == 0`.
+- **Yaw.** On a direct flight with at least `lookAlongThreshold` (8 m) of
+  ground and at least 55 % horizontal, yaw turns into the travel heading
+  over the first ramp's distance, holds it, and settles onto the target
+  yaw over the last ramp's distance; shorter or mostly vertical trips
+  blend yaw directly, the short way round. On a routed flight the yaw
+  looks at the point `lookAhead` (12 m) further along the way, which turns
+  a corner before reaching it, and settles onto the stop's yaw over the
+  last ramp; the pitch is level between the two stops' own pitches.
 
-The straight line is the only route: a flight goes *over* what stands on
-it, never round it, so two stops with a block between them are joined by a
-climb, a cruise above the roofs and a descent. A stop a step from a wall
-the line crosses gets a near-vertical drop beside that wall, which is the
-only path there is; the stop poses stand outside every solid by the
-walker's clearance (`maxTaskStandOff` keeps a task pose short of the far
-pavement's lamp line, tested against the layout), so a pose never asks for
-a lift the profile cannot give. The one shape the model cannot fix is a
-climb that starts *under* a solid in the air and rises into it; no stop
-stands under a sign or the beam.
+The street network (`domain/street_network.dart`) is the polyline of
+every segment, gaps and fold connectors included, continued through the
+plaza's mouth (its front edge on its axis, which the fold offsets from the
+street's end) up the axis to home. `project` finds the nearest point and
+how far along it lies; `pathBetween` is both projections and every vertex
+between, in travel order, leaving out the projection of a stop already on
+the network. A stop off the network (every task pose stands a few metres
+off the crown) gets a short first or last leg to its projection. A direct
+flight goes *over* what stands on its line, never round it; a stop a step
+from a wall the line crosses gets a near-vertical drop beside that wall,
+which is the only path there is. The stop poses stand outside every solid
+by the walker's clearance (`maxTaskStandOff` keeps a task pose short of
+the far pavement's lamp line, tested against the layout), so a pose never
+asks for a lift the profile cannot give. The one shape the model cannot
+fix is a climb that starts *under* a solid in the air and rises into it;
+no stop stands under a sign or the beam.
 
 Every flight pushes the departure pose onto a back stack in the harness;
 Backspace flies the reverse without pushing. While flying, the LOD manager
@@ -854,11 +888,26 @@ is ignored entirely in tour and bench modes.
   from the same records and constants, so a box the scene invents on its
   own is a box you can walk or fly through. `PLAZA_HIDE` hides geometry,
   not its footprint.
-- **A flight is a straight line with a lift, never a route.** It clears
-  what stands on the line by going over it; a stop pose that stands inside
-  a solid, or under one in the air with a climb ahead, is a pose the
-  planner cannot rescue. The tests hold every walk stop and beacon clear
-  of every solid and fly the whole walk against the fixture's solids.
+- **A flight leg is a straight line with a lift.** Between two stops on
+  the ground the route is the street network, so the legs run down the
+  road; a direct flight clears what stands on its line by going over it.
+  A stop pose that stands inside a solid, or under one in the air with a
+  climb ahead, is a pose the planner cannot rescue. The tests hold every
+  walk stop and beacon clear of every solid, fly the whole walk against
+  the fixture's solids both ways, and expect no lift at all down the
+  streets.
+- **The harness paces its own frames.** `SceneView` is built with
+  `autoTick: false`; a `Ticker` in the harness runs `_onTick` and rebuilds
+  the view (which repaints it once) at most `PlazaFrameRate` frames a
+  second: `auto` is the display's rate while anything moves (a flight, the
+  walk, a held key, a drag, and 0.6 s after) and 30 Hz at rest, `60` and
+  `30` are caps; the default is 60, the benchmark and the tour are never
+  capped. The chips are in the debug overlay (backquote). The scene is
+  always animated (tickers, chase lights, pulsing glows), so without a cap
+  it paints on every vsync, 120 times a second on a ProMotion display, and
+  re-encodes the whole district each time; the cap is the first lever on
+  idle CPU, the ticker captures (20 Hz each) and the draw count per
+  building are the next two.
 - **Fixtures are the demo world only.** The harness projects
   `ManualDemoWorld.penguinLogistics`; the synthetic generator lives in
   `test/features/plaza/plaza_fixtures.dart` for the tests and nowhere else.

@@ -193,6 +193,37 @@ void main() {
       expect(blind, greaterThan(0));
     });
 
+    test('between two stops on the ground the walk follows the street', () {
+      final stops = world.walkStops!;
+      final network = world.network!;
+      var routed = 0;
+      for (var i = 1; i < stops.length; i++) {
+        final from = stops[i - 1].pose;
+        final to = stops[i].pose;
+        if (from.y > eyeHeight || to.y > eyeHeight) continue;
+        final f = Flight.route(
+          from,
+          to,
+          via: network.pathBetween((from.x, from.z), (to.x, to.z)),
+          solids: world.solids,
+        );
+        routed++;
+        final label = '${stops[i - 1].label} → ${stops[i].label}';
+        expect(f.legCount, greaterThan(1), reason: label);
+        // The street is clear at street height: nothing to lift over.
+        expect(f.arc, 0, reason: label);
+        expect(passesThrough(f), isFalse, reason: label);
+        for (var t = 0.0; t <= 1.0001; t += 0.01) {
+          expect(
+            f.poseAt(t).y,
+            lessThanOrEqualTo(Flight.streetFlightHeight + 1e-9),
+            reason: label,
+          );
+        }
+      }
+      expect(routed, greaterThanOrEqualTo(3));
+    });
+
     test('cycling the beacons flies over the district too', () {
       final nav = world.beacons
           .where((b) => b.kind != BeaconKind.attention)

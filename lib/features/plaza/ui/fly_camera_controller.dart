@@ -5,25 +5,30 @@ import 'package:flutter_scene/scene.dart';
 import 'package:lotti/features/plaza/domain/flight.dart';
 import 'package:lotti/features/plaza/domain/plaza_layout.dart';
 import 'package:lotti/features/plaza/domain/solid.dart';
+import 'package:lotti/features/plaza/domain/street_network.dart';
 import 'package:lotti/features/plaza/domain/walk_collider.dart';
 import 'package:vector_math/vector_math.dart' show Vector3;
 
 /// First-person walk camera with flights.
 ///
 /// WASD/arrows walk (shift sprints), drag looks, and [flyTo] hands the pose
-/// to a [Flight] planned over the world's solids, so it lifts over
-/// whatever stands on its line; any movement input cancels a flight in
-/// place. Walking happens at [eyeHeight] and stays out of buildings via the
-/// collider; a pose set elsewhere (the overview) keeps its height until the
-/// next step, which lands beside a building, never inside one.
+/// to a [Flight]: between two stops on the ground it follows the street
+/// network; otherwise it is the direct line. Either way it is planned over
+/// the world's solids, so it lifts over whatever stands on its line; any
+/// movement input cancels a flight in place. Walking happens at
+/// [eyeHeight] and stays out of buildings via the collider; a pose set
+/// elsewhere (the overview) keeps its height until the next step, which
+/// lands beside a building, never inside one.
 class FlyCameraController {
   FlyCameraController({
     required CameraPose pose,
     WalkCollider? collider,
     Iterable<Solid> solids = const [],
+    StreetNetwork? network,
   }) : _pose = pose,
        _collider = collider,
-       _solids = List.unmodifiable(solids);
+       _solids = List.unmodifiable(solids),
+       _network = network;
   // ignore_for_file: prefer_initializing_formals
 
   static const walkSpeed = 3.4;
@@ -41,6 +46,11 @@ class FlyCameraController {
   CameraPose _pose;
   final WalkCollider? _collider;
   final List<Solid> _solids;
+  final StreetNetwork? _network;
+
+  /// A pose no higher than this above the ground counts as a stop on the
+  /// street, which a flight reaches along the network.
+  static const double groundCeiling = Flight.streetFlightHeight + 1;
   final Set<LogicalKeyboardKey> _pressed = {};
   Flight? _flight;
 
@@ -82,15 +92,30 @@ class FlyCameraController {
   Flight? get flight => _flight;
   bool get flying => _flight != null;
 
-  /// Starts a flight to [target], over every solid on the way; the current
-  /// flight, if any, is replaced.
+  /// Whether the walker is under way: a movement key held, or still
+  /// coasting after one.
+  bool get moving =>
+      _vForward != 0 || _vStrafe != 0 || _pressed.any(_movementKeys.contains);
+
+  /// Starts a flight to [target]; the current flight, if any, is replaced.
+  /// From one stop on the ground to another the flight follows the street
+  /// network; a climb, a dive or a world without a street takes the direct
+  /// line. Both are swept over every solid on the way.
   Flight flyTo(CameraPose target, {double timeScale = 1}) {
-    final flight = Flight.plan(
-      _pose,
-      target,
-      timeScale: timeScale,
-      solids: _solids,
-    );
+    final network = _network;
+    final onGround = _pose.y <= groundCeiling && target.y <= groundCeiling;
+    final flight = network != null && onGround
+        ? Flight.route(
+            _pose,
+            target,
+            via: network.pathBetween(
+              (_pose.x, _pose.z),
+              (target.x, target.z),
+            ),
+            timeScale: timeScale,
+            solids: _solids,
+          )
+        : Flight.plan(_pose, target, timeScale: timeScale, solids: _solids);
     _flight = flight;
     return flight;
   }
