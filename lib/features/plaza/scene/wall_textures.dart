@@ -90,8 +90,8 @@ class WallTextures {
       );
     }
     // Joints: a dark line with a lit edge, the way wet paving catches light.
-    final joint = ui.Paint()..color = const ui.Color(0xB3000000);
-    final edge = ui.Paint()..color = const ui.Color(0x2EFFFFFF);
+    final joint = ui.Paint()..color = const ui.Color(0x66000000);
+    final edge = ui.Paint()..color = const ui.Color(0x14FFFFFF);
     for (final at in [0.0, half]) {
       canvas
         ..drawRect(ui.Rect.fromLTWH(at, 0, 3, size.toDouble()), joint)

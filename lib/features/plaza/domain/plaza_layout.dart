@@ -592,8 +592,9 @@ List<(double, double)> lampPostsFor(
 const blockHeadAlong = 1.5;
 const kerbFixtureInset = 1.6;
 
-/// A week sign at the head of each built block, hung from the right-hand
-/// block-head lamp post, facing whoever walks in: (bucketIndex, x, z,
+/// A week sign at the head of each built block, hung from the left-hand
+/// block-head lamp post (the right kerb is where the plaza's pylons show
+/// past a block's mouth), facing whoever walks in: (bucketIndex, x, z,
 /// facing).
 List<(int, double, double, double)> weekSignsFor(
   StreetPlan plan, {
@@ -604,7 +605,7 @@ List<(int, double, double, double)> weekSignsFor(
     if (segment.isGap) continue;
     final sinH = math.sin(segment.headingRadians);
     final cosH = math.cos(segment.headingRadians);
-    final lateral = roadWidth / 2 - kerbFixtureInset;
+    final lateral = -(roadWidth / 2 - kerbFixtureInset);
     signs.add((
       segment.bucketIndex,
       segment.startX + sinH * blockHeadAlong + cosH * lateral,

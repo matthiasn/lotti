@@ -330,7 +330,7 @@ class PlazaSceneController {
   /// Paving joints on the plaza: a blended tiled quad of slab outlines.
   void _addPaving(Node parent, double width, double depth, double y) {
     final material = UnlitMaterial()
-      ..baseColorFactor = Vector4(1, 1, 1, 0.55)
+      ..baseColorFactor = Vector4(1, 1, 1, 0.4)
       ..alphaMode = AlphaMode.blend;
     _pavingMaterials.add(material);
     parent.add(

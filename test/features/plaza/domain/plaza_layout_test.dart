@@ -399,7 +399,7 @@ void main() {
     );
 
     test(
-      'week signs hang at each block head on the right kerb, facing in',
+      'week signs hang at each block head on the left kerb, facing in',
       () {
         final signs = weekSignsFor(plan, roadWidth: 18);
         final built = plan.segments.where((s) => !s.isGap).toList();
@@ -417,6 +417,11 @@ void main() {
               dx * math.sin(segment.headingRadians) +
               dz * math.cos(segment.headingRadians);
           expect(along, closeTo(blockHeadAlong, 1e-9));
+          // Left kerb: the road's right-hand normal points the other way.
+          final lateral =
+              dx * math.cos(segment.headingRadians) -
+              dz * math.sin(segment.headingRadians);
+          expect(lateral, closeTo(-(9 - kerbFixtureInset), 1e-9));
         }
       },
     );
