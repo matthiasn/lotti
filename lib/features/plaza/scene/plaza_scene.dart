@@ -1,3 +1,4 @@
+import 'dart:io' show Platform;
 import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' show Color, Size;
@@ -177,6 +178,13 @@ class PlazaSceneController {
     _build();
   }
 
+  /// Dev-only: `PLAZA_HIDE=gantry,jumbotron,fillers,skyline,pylons,walls`
+  /// leaves those pieces out, to isolate what a screenshot is showing.
+  static final Set<String> _hidden = {
+    ...?Platform.environment['PLAZA_HIDE']?.split(','),
+  };
+  static bool _shown(String piece) => !_hidden.contains(piece);
+
   final PlazaWorld world;
   final double pxPerMeter;
   final Scene scene = Scene();
@@ -307,6 +315,7 @@ class PlazaSceneController {
     _buildSky();
 
     final center = _planCenter();
+    final buildSkyline = _shown('skyline');
     scene.add(
       Node(
         localTransform: Matrix4.translation(Vector3(center.x, -0.06, center.z)),
@@ -316,7 +325,7 @@ class PlazaSceneController {
         ),
       ),
     );
-    _buildSkyline(center);
+    if (buildSkyline) _buildSkyline(center);
 
     for (final segment in plan.segments) {
       final midAlong = segment.length / 2;
@@ -443,12 +452,13 @@ class PlazaSceneController {
 
     for (final (i, slot) in world.billboardSlots.indexed) {
       if (i >= world.billboards.length) break;
+      if (slot.onPylon && !_shown('pylons')) continue;
       _buildBillboard(slot, world.billboards[i]);
     }
     for (final (i, slot) in world.roofBillboards.indexed) {
       _buildBillboard(slot, world.roofBillboardTasks[i]);
     }
-    _buildFillerBlocks();
+    if (_shown('fillers')) _buildFillerBlocks();
     _buildStreetFurniture();
   }
 
@@ -506,7 +516,7 @@ class PlazaSceneController {
     }
 
     final gantry = world.gantry;
-    if (gantry != null) {
+    if (gantry != null && _shown('gantry')) {
       final root = Node(
         localTransform: Matrix4.translation(Vector3(gantry.x, 0, gantry.z))
           ..rotateY(gantry.facingRadians),
@@ -551,7 +561,7 @@ class PlazaSceneController {
     }
 
     final jumbotron = world.jumbotron;
-    if (jumbotron != null) {
+    if (jumbotron != null && _shown('jumbotron')) {
       final root = Node(
         localTransform: Matrix4.translation(
           Vector3(jumbotron.x, 0, jumbotron.z),
@@ -753,9 +763,11 @@ class PlazaSceneController {
     // A quad's face is +Z before rotation: rotateY(-π/2) turns it to -X
     // for the left wall, rotateY(π/2) to +X for the right, π for the back.
     for (final (dx, dz, yaw, width) in [
-      (-w / 2 - 0.02, 0.0, -math.pi / 2, d), // left side, faces -X
-      (w / 2 + 0.02, 0.0, math.pi / 2, d), // right side, faces +X
-      (0.0, -d / 2 - 0.02, math.pi, w), // back, faces -Z
+      if (_shown('walls')) ...[
+        (-w / 2 - 0.02, 0.0, -math.pi / 2, d), // left side, faces -X
+        (w / 2 + 0.02, 0.0, math.pi / 2, d), // right side, faces +X
+        (0.0, -d / 2 - 0.02, math.pi, w), // back, faces -Z
+      ],
     ]) {
       final material = UnlitMaterial()..baseColorFactor = wallTint;
       _wallMaterials.putIfAbsent(attention.lantern, () => []).add(material);
@@ -1273,22 +1285,26 @@ class PlazaSceneController {
           final lateral = side * (lateralBase + bd / 2 + _unit(id, 'l') * 4);
           final cx = segment.startX + sinH * (along + bw / 2) + cosH * lateral;
           final cz = segment.startZ + cosH * (along + bw / 2) - sinH * lateral;
+          // Local x is lateral, local z runs along the road: the block is
+          // bw long along the street and bd deep away from it.
           final node = Node(
             localTransform: Matrix4.translation(Vector3(cx, bh / 2, cz))
               ..rotateY(segment.headingRadians),
             mesh: Mesh(
-              CuboidGeometry(Vector3(bw, bh, bd)),
+              CuboidGeometry(Vector3(bd, bh, bw)),
               UnlitMaterial()..baseColorFactor = _tower,
             ),
           );
-          // One windowed face toward the street.
+          // One windowed face toward the street (local -x for the left
+          // side's blocks is away from the road, so the street face is
+          // +x on the left and -x on the right).
           final material = UnlitMaterial()..baseColorFactor = _tower;
           _wallMaterials.putIfAbsent(LanternState.off, () => []).add(material);
           node.add(
             Node(
               localTransform: Matrix4.translation(
-                Vector3(0, 0, -side * (bd / 2 + 0.02)),
-              )..rotateY(side < 0 ? 0 : math.pi),
+                Vector3(-side * (bd / 2 + 0.02), 0, 0),
+              )..rotateY(side < 0 ? math.pi / 2 : -math.pi / 2),
               mesh: Mesh(
                 tiledQuad(
                   bw,
@@ -1317,8 +1333,8 @@ class PlazaSceneController {
               );
               final anchor = Node(
                 localTransform: Matrix4.translation(
-                  Vector3(-bw / 2 + 1.2, bh * 0.15, -side * (bd / 2 + 0.08)),
-                )..rotateY(side < 0 ? 0 : math.pi),
+                  Vector3(-side * (bd / 2 + 0.08), bh * 0.15, -bw / 2 + 1.2),
+                )..rotateY(side < 0 ? math.pi / 2 : -math.pi / 2),
               );
               node.add(anchor);
               fillerSigns.add((anchor, 1.6, bh * 0.6, weekTasks[pick]));

@@ -106,6 +106,79 @@ class _BillboardFace extends StatelessWidget {
     final titlePx = m(math.min(0.07 * w, 0.24 * heightMeters));
     final chipPx = m(math.min(0.036 * w, 0.12 * heightMeters));
 
+    final chipRow = Row(
+      children: [
+        Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: chipPx * 0.8,
+            vertical: chipPx * 0.25,
+          ),
+          decoration: BoxDecoration(
+            color: chip.fill,
+            borderRadius: BorderRadius.circular(chipPx * 0.35),
+          ),
+          child: Text(
+            '${PlazaStyle.glyph(attention)}  ${chip.label}',
+            style: TextStyle(
+              fontFamily: PlazaStyle.fontText,
+              fontSize: chipPx,
+              fontWeight: FontWeight.w700,
+              letterSpacing: chipPx * 0.05,
+              color: chip.ink,
+            ),
+          ),
+        ),
+        const Spacer(),
+        Text(
+          'fly there ›',
+          style: TextStyle(
+            fontFamily: PlazaStyle.fontText,
+            fontSize: chipPx,
+            fontWeight: FontWeight.w600,
+            color: PlazaStyle.teal,
+          ),
+        ),
+      ],
+    );
+    final title = Text(
+      task.title,
+      maxLines: aspect >= reasonAspect ? 2 : 1,
+      overflow: TextOverflow.ellipsis,
+      style: TextStyle(
+        fontFamily: PlazaStyle.fontText,
+        fontWeight: FontWeight.w700,
+        fontSize: titlePx,
+        height: 1.05,
+        letterSpacing: -titlePx * 0.02,
+        color: PlazaStyle.text,
+        shadows: showCover
+            ? [
+                Shadow(
+                  color: const Color(0xCC000000),
+                  blurRadius: titlePx * 0.4,
+                ),
+              ]
+            : null,
+      ),
+    );
+    final reasonText = showReason
+        ? Text(
+            attention.reason,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontFamily: PlazaStyle.fontMono,
+              fontSize: m(0.04 * w),
+              color: const Color(0xF2FFFFFF),
+              shadows: showCover
+                  ? [const Shadow(color: Color(0xCC000000), blurRadius: 6)]
+                  : null,
+            ),
+          )
+        : null;
+
+    // Art first: the cover fills the panel, the words sit on a scrim at the
+    // bottom — the way a real billboard is laid out.
     return Material(
       color: PlazaStyle.panel,
       child: Container(
@@ -121,96 +194,59 @@ class _BillboardFace extends StatelessWidget {
             ),
           ],
         ),
-        padding: EdgeInsets.all(pad),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        clipBehavior: Clip.hardEdge,
+        child: Stack(
+          fit: StackFit.expand,
           children: [
-            // The title yields to the chip row and the gaps: on a squat
-            // panel it scales down instead of overflowing.
-            Flexible(
-              flex: 2,
-              child: LayoutBuilder(
-                builder: (context, constraints) => FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.topLeft,
-                  child: SizedBox(
-                    width: constraints.maxWidth,
-                    child: Text(
-                      task.title,
-                      maxLines: aspect >= reasonAspect ? 2 : 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontFamily: PlazaStyle.fontText,
-                        fontWeight: FontWeight.w700,
-                        fontSize: titlePx,
-                        height: 1.1,
-                        letterSpacing: -titlePx * 0.02,
-                        color: PlazaStyle.text,
+            if (showCover)
+              Image.network(
+                task.coverImageUrl!,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => const SizedBox(),
+              ),
+            if (showCover)
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    stops: const [0, 0.35, 1],
+                    colors: [
+                      const Color(0x00000000),
+                      const Color(0x33000000),
+                      frame.withValues(alpha: 0.9),
+                    ],
+                  ),
+                ),
+              ),
+            Padding(
+              padding: EdgeInsets.all(pad),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  if (!showCover) const Spacer(),
+                  // The title yields to the chip row on a squat panel.
+                  Flexible(
+                    child: LayoutBuilder(
+                      builder: (context, constraints) => FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.bottomLeft,
+                        child: SizedBox(
+                          width: constraints.maxWidth,
+                          child: title,
+                        ),
                       ),
                     ),
                   ),
-                ),
+                  if (reasonText != null) ...[
+                    SizedBox(height: m(0.25)),
+                    reasonText,
+                  ],
+                  SizedBox(height: m(0.35)),
+                  chipRow,
+                ],
               ),
-            ),
-            if (showReason) ...[
-              SizedBox(height: m(0.3)),
-              Text(
-                attention.reason,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontFamily: PlazaStyle.fontMono,
-                  fontSize: m(0.04 * w),
-                  color: const Color(0xF2FFFFFF),
-                ),
-              ),
-            ],
-            if (showCover) ...[
-              SizedBox(height: m(0.4)),
-              Expanded(
-                child: Image.network(
-                  task.coverImageUrl!,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => const SizedBox(),
-                ),
-              ),
-            ] else
-              const Spacer(),
-            SizedBox(height: m(0.4)),
-            Row(
-              children: [
-                Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: chipPx * 0.8,
-                    vertical: chipPx * 0.25,
-                  ),
-                  decoration: BoxDecoration(
-                    color: chip.fill,
-                    borderRadius: BorderRadius.circular(chipPx * 0.35),
-                  ),
-                  child: Text(
-                    '${PlazaStyle.glyph(attention)}  ${chip.label}',
-                    style: TextStyle(
-                      fontFamily: PlazaStyle.fontText,
-                      fontSize: chipPx,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: chipPx * 0.05,
-                      color: chip.ink,
-                    ),
-                  ),
-                ),
-                const Spacer(),
-                Text(
-                  'fly there ›',
-                  style: TextStyle(
-                    fontFamily: PlazaStyle.fontText,
-                    fontSize: chipPx,
-                    fontWeight: FontWeight.w600,
-                    color: PlazaStyle.teal,
-                  ),
-                ),
-              ],
             ),
           ],
         ),

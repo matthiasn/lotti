@@ -47,7 +47,7 @@ class CameraPose {
 
 /// A world-space point with the street's local frame at the frontier.
 class _Frame {
-  _Frame(this.originX, this.originZ, this.heading);
+  _Frame(this.originX, this.originZ, this.heading, {this.lateralOffset = 0});
 
   final double originX;
   final double originZ;
@@ -55,11 +55,19 @@ class _Frame {
   /// Direction of travel of the last segment.
   final double heading;
 
+  /// Sideways shift of the whole plaza frame, world metres along the
+  /// lateral axis (see [frontierPlazaFor]).
+  final double lateralOffset;
+
   /// Local (lateral, along) → world. Lateral is the road's right-hand
   /// normal; along is the heading.
   (double, double) toWorld(double lateral, double along) => (
-    originX + math.sin(heading) * along + math.cos(heading) * lateral,
-    originZ + math.cos(heading) * along - math.sin(heading) * lateral,
+    originX +
+        math.sin(heading) * along +
+        math.cos(heading) * (lateral + lateralOffset),
+    originZ +
+        math.cos(heading) * along -
+        math.sin(heading) * (lateral + lateralOffset),
   );
 }
 
@@ -190,6 +198,7 @@ class FrontierPlaza {
     required this.home,
     required this.overview,
     required this.pylons,
+    this.lateralOffset = 0,
   });
 
   final double centerX;
@@ -199,6 +208,11 @@ class FrontierPlaza {
   final double headingRadians;
   final double width;
   final double depth;
+
+  /// How far the plaza is shifted sideways off the last row's axis, world
+  /// metres along the road's right-hand normal: zero for a straight street,
+  /// otherwise enough to clear the previous row's plots and back streets.
+  final double lateralOffset;
 
   /// Where you land in the morning: in the plaza, looking back down the
   /// street.
@@ -230,11 +244,66 @@ const _pylonSlots = <(double, double, double, double, double)>[
 ];
 const _pylonFocusAlong = 52.0;
 
+/// Clearance the plaza keeps from the last row's axis once the street has
+/// folded: half the plaza plus the road's half width, so the square sits
+/// beside the row's mouth on the district's outside.
+const double plazaFoldClearance = plazaWidth / 2 + 11;
+
+/// The plaza's sideways shift for [plan]: zero for a straight street;
+/// on a folded one, [plazaFoldClearance] toward the district's outside
+/// (away from the centroid of every plot).
+double plazaLateralOffsetFor(StreetPlan plan) {
+  final last = plan.last;
+  if (last == null) return 0;
+  final folded = plan.segments.any((s) => s.isConnector);
+  if (!folded || plan.placements.isEmpty) return 0;
+  var cx = 0.0;
+  var cz = 0.0;
+  for (final p in plan.placements.values) {
+    cx += p.x;
+    cz += p.z;
+  }
+  cx /= plan.placements.length;
+  cz /= plan.placements.length;
+  // Lateral component of (centroid − street end) in the last row's frame.
+  final toCentroid =
+      (cx - last.endX) * math.cos(last.headingRadians) -
+      (cz - last.endZ) * math.sin(last.headingRadians);
+  return toCentroid >= 0 ? -plazaFoldClearance : plazaFoldClearance;
+}
+
 /// Builds the plaza at the end of [plan]. Returns null for an empty street.
+///
+/// On a folded street the last row runs back alongside an earlier one, so
+/// a plaza straight off its end would land on that row's plots. The plaza
+/// is then shifted sideways to the district's outside (away from the
+/// centroid of every plot) by [plazaFoldClearance].
 FrontierPlaza? frontierPlazaFor(StreetPlan plan) {
   final last = plan.last;
   if (last == null) return null;
-  final frame = _Frame(last.endX, last.endZ, last.headingRadians);
+  final folded = plan.segments.any((s) => s.isConnector);
+  var lateralOffset = 0.0;
+  if (folded && plan.placements.isNotEmpty) {
+    var cx = 0.0;
+    var cz = 0.0;
+    for (final p in plan.placements.values) {
+      cx += p.x;
+      cz += p.z;
+    }
+    cx /= plan.placements.length;
+    cz /= plan.placements.length;
+    // Lateral component of (centroid − street end) in the last row's frame.
+    final toCentroid =
+        (cx - last.endX) * math.cos(last.headingRadians) -
+        (cz - last.endZ) * math.sin(last.headingRadians);
+    lateralOffset = toCentroid >= 0 ? -plazaFoldClearance : plazaFoldClearance;
+  }
+  final frame = _Frame(
+    last.endX,
+    last.endZ,
+    last.headingRadians,
+    lateralOffset: lateralOffset,
+  );
   final lookBack = last.headingRadians + math.pi;
 
   final (cx, cz) = frame.toWorld(0, plazaSetback + plazaDepth / 2);
@@ -267,6 +336,7 @@ FrontierPlaza? frontierPlazaFor(StreetPlan plan) {
     headingRadians: last.headingRadians,
     width: plazaWidth,
     depth: plazaDepth,
+    lateralOffset: lateralOffset,
     home: CameraPose(x: hx, y: eyeHeight, z: hz, yaw: lookBack),
     overview: overviewPoseFor(plan),
     pylons: pylons,
@@ -297,8 +367,15 @@ CameraPose overviewPoseFor(StreetPlan plan) {
   }
   // Include the plaza and the jumbotron in the footprint.
   const plazaFar = plazaSetback + plazaDepth + 20;
-  final fx = last.endX + math.sin(last.headingRadians) * plazaFar;
-  final fz = last.endZ + math.cos(last.headingRadians) * plazaFar;
+  final plazaLateral = plazaLateralOffsetFor(plan);
+  final fx =
+      last.endX +
+      math.sin(last.headingRadians) * plazaFar +
+      math.cos(last.headingRadians) * plazaLateral;
+  final fz =
+      last.endZ +
+      math.cos(last.headingRadians) * plazaFar -
+      math.sin(last.headingRadians) * plazaLateral;
   minX = math.min(minX, fx);
   maxX = math.max(maxX, fx);
   minZ = math.min(minZ, fz);
@@ -555,10 +632,17 @@ BillboardSlot? jumbotronSlotFor(StreetPlan plan) {
   final last = plan.last;
   if (last == null) return null;
   const along = plazaSetback + plazaDepth + 8;
+  final lateral = plazaLateralOffsetFor(plan);
   return BillboardSlot(
     rank: 0,
-    x: last.endX + math.sin(last.headingRadians) * along,
-    z: last.endZ + math.cos(last.headingRadians) * along,
+    x:
+        last.endX +
+        math.sin(last.headingRadians) * along +
+        math.cos(last.headingRadians) * lateral,
+    z:
+        last.endZ +
+        math.cos(last.headingRadians) * along -
+        math.sin(last.headingRadians) * lateral,
     facingRadians: last.headingRadians + math.pi,
     width: 30,
     height: 16,

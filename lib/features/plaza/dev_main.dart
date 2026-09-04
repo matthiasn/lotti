@@ -395,10 +395,21 @@ class _PlazaHarnessState extends State<_PlazaHarness> {
 
   // -------------------------------------------------------------- tour
 
+  /// Dev-only: `PLAZA_TOUR_ONLY=home,block` restricts the tour to those
+  /// stops.
+  static final Set<String>? _tourOnly = Platform.environment['PLAZA_TOUR_ONLY']
+      ?.split(',')
+      .toSet();
+
   void _applyTourStop(int from) {
     var index = from;
     while (index < plazaTourStops.length) {
       final stop = plazaTourStops[index];
+      final only = _tourOnly;
+      if (only != null && !only.contains(stop.name)) {
+        index++;
+        continue;
+      }
       final pose = stop.pose(_world);
       if (pose != null) {
         _camera.pose = pose;

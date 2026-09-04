@@ -26,7 +26,10 @@ void main() {
           (plaza.centerX - last.endX) * math.cos(last.headingRadians) -
           (plaza.centerZ - last.endZ) * math.sin(last.headingRadians);
       expect(along, closeTo(plazaSetback + plazaDepth / 2, 1e-9));
-      expect(lateral, closeTo(0, 1e-9));
+      // The synthetic street folds, so the plaza steps off the row's axis
+      // to the district's outside.
+      expect(plaza.lateralOffset.abs(), plazaFoldClearance);
+      expect(lateral, closeTo(plaza.lateralOffset, 1e-9));
       expect(plaza.width, plazaWidth);
       expect(plaza.depth, plazaDepth);
     });
@@ -77,9 +80,15 @@ void main() {
       expect(plaza.pylons.map((p) => p.rank), [0, 1, 2, 3]);
       for (final pylon in plaza.pylons) {
         expect(pylon.onPylon, isTrue);
-        // The focal point (0, 52) in the plaza frame.
-        final fx = last.endX + math.sin(last.headingRadians) * 52;
-        final fz = last.endZ + math.cos(last.headingRadians) * 52;
+        // The focal point (0, 52) in the (shifted) plaza frame.
+        final fx =
+            last.endX +
+            math.sin(last.headingRadians) * 52 +
+            math.cos(last.headingRadians) * plaza.lateralOffset;
+        final fz =
+            last.endZ +
+            math.cos(last.headingRadians) * 52 -
+            math.sin(last.headingRadians) * plaza.lateralOffset;
         final toFocus = math.atan2(fx - pylon.x, fz - pylon.z);
         expect(_norm(pylon.facingRadians), closeTo(_norm(toFocus), 1e-9));
         expect(pylon.centerY, pylon.bottom + pylon.height / 2);
@@ -88,6 +97,23 @@ void main() {
 
     test('an empty street has no plaza', () {
       expect(frontierPlazaFor(layout.plan([])), isNull);
+    });
+
+    test('a straight street keeps its plaza on the axis', () {
+      final straight = layout.plan([
+        for (var i = 0; i < 3; i++)
+          PlazaTask(
+            id: 's$i',
+            createdAt: DateTime.utc(2026, 3, 2).add(Duration(days: 7 * i)),
+            title: 'Task $i',
+            state: PlazaTaskState.open,
+            progress: 0,
+            checklistItems: 0,
+            linkedTaskIds: const [],
+            categoryColor: 0,
+          ),
+      ]);
+      expect(frontierPlazaFor(straight)!.lateralOffset, 0);
     });
 
     test('appending a task to the newest week does not move the plaza', () {
