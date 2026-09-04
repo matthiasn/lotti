@@ -85,25 +85,19 @@ CameraPose? jumbotronStopPose(PlazaWorld world) {
   final plaza = world.plaza;
   final slot = world.jumbotron;
   if (plaza == null || slot == null) return null;
-  final h = plaza.headingRadians;
-  final sinH = math.sin(h);
-  final cosH = math.cos(h);
+  final ground = plaza.footprint;
   // Which side of the plaza the tower stands on, in the plaza's frame.
-  final towerLateral =
-      (slot.x - plaza.centerX) * cosH - (slot.z - plaza.centerZ) * sinH;
-  final side = towerLateral.sign;
-  final lateral = side * (plaza.width / 2 + jumbotronStopClearance);
-  final along = plaza.depth / 2 - jumbotronStopBack;
-  final x = plaza.centerX + lateral * cosH + along * sinH;
-  final z = plaza.centerZ - lateral * sinH + along * cosH;
-  final dx = slot.x - x;
-  final dz = slot.z - z;
-  final d = math.sqrt(dx * dx + dz * dz);
+  final (towerLateral, _) = ground.local(slot.x, slot.z);
+  final (x, z) = ground.toWorld(
+    towerLateral.sign * (plaza.width / 2 + jumbotronStopClearance),
+    plaza.depth / 2 - jumbotronStopBack,
+  );
+  final d = groundDistanceBetween(x, z, slot.x, slot.z);
   return CameraPose(
     x: x,
     y: eyeHeight,
     z: z,
-    yaw: math.atan2(dx, dz),
+    yaw: math.atan2(slot.x - x, slot.z - z),
     pitch: math.min(
       math.atan2(slot.centerY - eyeHeight, d),
       jumbotronStopPitch,
@@ -166,10 +160,13 @@ CameraPose? shopfrontPose(PlazaWorld world) {
   (PlotPlacement, RoadSegment)? best;
   for (final segment in world.plan.segments) {
     if (segment.isGap || segment.isConnector) continue;
-    final sinH = math.sin(segment.headingRadians);
-    final cosH = math.cos(segment.headingRadians);
-    double along(PlotPlacement p) =>
-        (p.x - segment.startX) * sinH + (p.z - segment.startZ) * cosH;
+    double along(PlotPlacement p) => worldToFrame(
+      segment.startX,
+      segment.startZ,
+      segment.headingRadians,
+      p.x,
+      p.z,
+    ).$2;
     for (final side in PlotSide.values) {
       final row =
           world.plan.placements.values
@@ -188,25 +185,34 @@ CameraPose? shopfrontPose(PlazaWorld world) {
   }
   if (best == null) return null;
   final (head, segment) = best;
-  final sinH = math.sin(segment.headingRadians);
-  final cosH = math.cos(segment.headingRadians);
-  final along =
-      (head.x - segment.startX) * sinH + (head.z - segment.startZ) * cosH;
-  final lateral =
-      (head.x - segment.startX) * cosH - (head.z - segment.startZ) * sinH;
+  final (lateral, along) = worldToFrame(
+    segment.startX,
+    segment.startZ,
+    segment.headingRadians,
+    head.x,
+    head.z,
+  );
   // The near corner: the end wall meets the facade on the road side.
   final toRoad = lateral < 0 ? 1.0 : -1.0;
   final cornerAlong = along - head.width / 2;
   final cornerLateral = lateral + toRoad * head.depth / 2;
   final eyeAlong = cornerAlong - shopfrontStandOff;
   final eyeLateral = cornerLateral + toRoad * shopfrontRoadOffset;
-  final ex = segment.startX + sinH * eyeAlong + cosH * eyeLateral;
-  final ez = segment.startZ + cosH * eyeAlong - sinH * eyeLateral;
-  final cx = segment.startX + sinH * cornerAlong + cosH * cornerLateral;
-  final cz = segment.startZ + cosH * cornerAlong - sinH * cornerLateral;
-  final reach = math.sqrt(
-    math.pow(shopfrontStandOff, 2) + math.pow(shopfrontRoadOffset, 2),
+  final (ex, ez) = frameToWorld(
+    segment.startX,
+    segment.startZ,
+    segment.headingRadians,
+    eyeLateral,
+    eyeAlong,
   );
+  final (cx, cz) = frameToWorld(
+    segment.startX,
+    segment.startZ,
+    segment.headingRadians,
+    cornerLateral,
+    cornerAlong,
+  );
+  final reach = groundDistanceBetween(ex, ez, cx, cz);
   return CameraPose(
     x: ex,
     y: eyeHeight,

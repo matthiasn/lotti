@@ -101,7 +101,7 @@ class FlyCameraController {
   /// From one stop on the ground to another the flight follows the street
   /// network; a climb, a dive or a world without a street takes the direct
   /// line. Both are swept over every solid on the way.
-  Flight flyTo(CameraPose target, {double timeScale = 1}) {
+  Flight flyTo(CameraPose target) {
     final network = _network;
     final onGround = _pose.y <= groundCeiling && target.y <= groundCeiling;
     final flight = network != null && onGround
@@ -113,10 +113,9 @@ class FlyCameraController {
               (target.x, target.z),
               join: Flight.joinDistance,
             ),
-            timeScale: timeScale,
             solids: _solids,
           )
-        : Flight.plan(_pose, target, timeScale: timeScale, solids: _solids);
+        : Flight.plan(_pose, target, solids: _solids);
     _flight = flight;
     return flight;
   }

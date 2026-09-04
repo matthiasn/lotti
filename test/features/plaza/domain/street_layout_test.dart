@@ -70,7 +70,77 @@ void main() {
         (stableHash('a:w') & 0xFFFF) / 0xFFFF,
       );
     });
+
+    test('stableIndex picks from the unit, never past the last choice', () {
+      for (var i = 0; i < 200; i++) {
+        final unit = stableUnit('id-$i', 'k');
+        final index = stableIndex('id-$i', 'k', 7);
+        expect(index, inInclusiveRange(0, 6));
+        expect(index, (unit * 7).floor().clamp(0, 6));
+      }
+      expect(stableIndex('a', 'w', 1), 0);
+    });
   });
+
+  group('the frame', () {
+    // A frame at (10, 20) facing +X: local Z runs along +X, local X along
+    // -Z (the right-hand normal of a road heading +X).
+    const h = math.pi / 2;
+
+    test('frameToWorld turns local axes onto the heading and its normal', () {
+      final (ax, az) = frameToWorld(10, 20, h, 0, 5);
+      expect(ax, closeTo(15, 1e-9));
+      expect(az, closeTo(20, 1e-9));
+      final (lx, lz) = frameToWorld(10, 20, h, 3, 0);
+      expect(lx, closeTo(10, 1e-9));
+      expect(lz, closeTo(17, 1e-9));
+      // Facing +Z the frame is the world.
+      expect(frameToWorld(1, 2, 0, 3, 4), (4, 6));
+    });
+
+    test('worldToFrame is the inverse of frameToWorld', () {
+      final (u, v) = worldToFrame(10, 20, h, 15, 17);
+      expect(u, closeTo(3, 1e-9));
+      expect(v, closeTo(5, 1e-9));
+      const f = Footprint(x: 10, z: 20, facingRadians: h, width: 4, depth: 8);
+      final (wx, wz) = f.toWorld(3, 5);
+      expect(f.local(wx, wz).$1, closeTo(3, 1e-9));
+      expect(f.local(wx, wz).$2, closeTo(5, 1e-9));
+    });
+
+    test('a footprint contains the points in its box, with clearance', () {
+      const f = Footprint(x: 10, z: 20, facingRadians: h, width: 4, depth: 8);
+      // Along +X the depth reaches 4 m: (13.9, 20) is in, (14.1, 20) out.
+      expect(f.contains(13.9, 20), isTrue);
+      expect(f.contains(14.1, 20), isFalse);
+      expect(f.contains(14.1, 20, clearance: 0.5), isTrue);
+      // Along Z the width reaches 2 m.
+      expect(f.contains(10, 21.9), isTrue);
+      expect(f.contains(10, 22.1), isFalse);
+    });
+
+    test('groundDistanceBetween ignores nothing but height', () {
+      expect(groundDistanceBetween(0, 0, 3, 4), 5);
+      expect(groundDistanceBetween(3, 4, 0, 0), 5);
+      expect(groundDistanceBetween(1, 1, 1, 1), 0);
+    });
+  });
+
+  glados.Glados2<double, double>(
+    glados.any.doubleInRange(-50, 50),
+    glados.any.doubleInRange(-math.pi, math.pi),
+    glados.ExploreConfig(),
+  ).test('every point survives the round trip through a frame', (d, facing) {
+    final (wx, wz) = frameToWorld(7, -3, facing, d, -d / 2);
+    final (u, v) = worldToFrame(7, -3, facing, wx, wz);
+    expect(u, closeTo(d, 1e-9));
+    expect(v, closeTo(-d / 2, 1e-9));
+    // The frame turns, never scales: distances are kept.
+    expect(
+      groundDistanceBetween(7, -3, wx, wz),
+      closeTo(d.abs() * math.sqrt(1.25), 1e-9),
+    );
+  }, tags: 'glados');
 
   test('PlotPlacement.footprint is the plot rectangle', () {
     const p = PlotPlacement(

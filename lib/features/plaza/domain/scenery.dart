@@ -51,14 +51,11 @@ class SceneryBox {
   /// A thin solid standing on the roof, [size] square and [spireHeight]
   /// tall, at the box's centre.
   Solid spireSolid({required double size, required double spireHeight}) =>
-      Solid(
-        footprint: Footprint(
-          x: x,
-          z: z,
-          facingRadians: yawRadians,
-          width: size,
-          depth: size,
-        ),
+      Solid.post(
+        x: x,
+        z: z,
+        facingRadians: yawRadians,
+        size: size,
         bottom: height,
         top: height + spireHeight,
       );
@@ -212,14 +209,11 @@ Solid plotSolidFor(PlotPlacement p) =>
     Solid(footprint: p.footprint, top: p.height + roofKitHeight);
 
 /// The spire on one of the tallest plots (`spiresFor`).
-Solid plotSpireSolidFor(PlotPlacement p) => Solid(
-  footprint: Footprint(
-    x: p.x,
-    z: p.z,
-    facingRadians: p.facingRadians,
-    width: plotSpireSize,
-    depth: plotSpireSize,
-  ),
+Solid plotSpireSolidFor(PlotPlacement p) => Solid.post(
+  x: p.x,
+  z: p.z,
+  facingRadians: p.facingRadians,
+  size: plotSpireSize,
   bottom: p.height,
   top: p.height + plotSpireHeight,
 );
@@ -242,15 +236,24 @@ Footprint streetCorridorFor(
   RoadSegment segment, {
   required double roadWidth,
   required double plotDepth,
-}) => Footprint(
-  x: segment.startX + math.sin(segment.headingRadians) * segment.length / 2,
-  z: segment.startZ + math.cos(segment.headingRadians) * segment.length / 2,
-  facingRadians: segment.headingRadians,
-  width:
-      (segment.isGap ? roadWidth : roadWidth + 2 * plotDepth) +
-      2 * fillerCorridorMargin,
-  depth: segment.length + 2 * fillerCorridorMargin,
-);
+}) {
+  final (x, z) = frameToWorld(
+    segment.startX,
+    segment.startZ,
+    segment.headingRadians,
+    0,
+    segment.length / 2,
+  );
+  return Footprint(
+    x: x,
+    z: z,
+    facingRadians: segment.headingRadians,
+    width:
+        (segment.isGap ? roadWidth : roadWidth + 2 * plotDepth) +
+        2 * fillerCorridorMargin,
+    depth: segment.length + 2 * fillerCorridorMargin,
+  );
+}
 
 /// A second row of blocks behind the plots with alleys between, so the
 /// street has a back and the overview has texture between the plots and
@@ -270,25 +273,14 @@ List<FillerBlock> fillerBlocksFor(
     for (final segment in plan.segments)
       streetCorridorFor(segment, roadWidth: roadWidth, plotDepth: plotDepth),
   ];
-  bool onPlaza(double x, double z) {
-    if (plaza == null) return false;
-    final dx = x - plaza.centerX;
-    final dz = z - plaza.centerZ;
-    final along =
-        dx * math.sin(plaza.headingRadians) +
-        dz * math.cos(plaza.headingRadians);
-    final lateral =
-        dx * math.cos(plaza.headingRadians) -
-        dz * math.sin(plaza.headingRadians);
-    return along.abs() < plaza.depth / 2 + fillerPlazaMargin &&
-        lateral.abs() < plaza.width / 2 + fillerPlazaMargin;
-  }
+  final plazaGround = plaza?.footprint;
+  bool onPlaza(double x, double z) =>
+      plazaGround != null &&
+      plazaGround.contains(x, z, clearance: fillerPlazaMargin);
 
   final blocks = <FillerBlock>[];
   for (final segment in plan.segments) {
     if (segment.isGap) continue;
-    final sinH = math.sin(segment.headingRadians);
-    final cosH = math.cos(segment.headingRadians);
     for (final side in [-1.0, 1.0]) {
       var along = 2.0;
       var i = 0;
@@ -305,13 +297,19 @@ List<FillerBlock> fillerBlocksFor(
             : 12 + stableUnit(id, 'h') * 22;
         final inner = lateralBase + stableUnit(id, 'l') * 4;
         FillerBlock at(double reach) {
-          final lateral = side * (inner + reach / 2);
+          final (x, z) = frameToWorld(
+            segment.startX,
+            segment.startZ,
+            segment.headingRadians,
+            side * (inner + reach / 2),
+            along + frontage / 2,
+          );
           return FillerBlock(
             id: id,
             bucketIndex: segment.bucketIndex,
             side: side,
-            x: segment.startX + sinH * (along + frontage / 2) + cosH * lateral,
-            z: segment.startZ + cosH * (along + frontage / 2) - sinH * lateral,
+            x: x,
+            z: z,
             yawRadians: segment.headingRadians,
             width: reach,
             depth: frontage,
@@ -351,12 +349,19 @@ List<HeroTower> heroTowersFor(StreetPlan plan) {
     final row = segments[i - 1];
     final id = 'hero-${row.bucketIndex}';
     final width = 26 + stableUnit(id, 'w') * 8;
+    final (x, z) = frameToWorld(
+      row.endX,
+      row.endZ,
+      row.headingRadians,
+      0,
+      heroTowerStandOff,
+    );
     towers.add(
       HeroTower(
         id: id,
         bucketIndex: row.bucketIndex,
-        x: row.endX + math.sin(row.headingRadians) * heroTowerStandOff,
-        z: row.endZ + math.cos(row.headingRadians) * heroTowerStandOff,
+        x: x,
+        z: z,
         yawRadians: row.headingRadians + math.pi,
         width: width,
         depth: width * 0.8,
@@ -378,12 +383,17 @@ const jumbotronTowerCrown = 14.0;
 /// The tower the jumbotron hangs on, behind the plaza.
 JumbotronTower? jumbotronTowerFor(BillboardSlot? jumbotron) {
   if (jumbotron == null) return null;
-  final sinF = math.sin(jumbotron.facingRadians);
-  final cosF = math.cos(jumbotron.facingRadians);
+  final (x, z) = frameToWorld(
+    jumbotron.x,
+    jumbotron.z,
+    jumbotron.facingRadians,
+    0,
+    -jumbotronTowerSetback,
+  );
   return JumbotronTower(
     id: 'jumbotron',
-    x: jumbotron.x - sinF * jumbotronTowerSetback,
-    z: jumbotron.z - cosF * jumbotronTowerSetback,
+    x: x,
+    z: z,
     yawRadians: jumbotron.facingRadians,
     width: jumbotron.width + 2 * jumbotronTowerMargin,
     depth: jumbotronTowerDepth,
@@ -417,14 +427,13 @@ List<SkylineTower> skylineFor(StreetPlan plan, FrontierPlaza? plaza) {
   final (cx, cz) = planCenterOf(plan);
   var radius = 0.0;
   for (final p in plan.placements.values) {
-    final dx = p.x - cx;
-    final dz = p.z - cz;
-    radius = math.max(radius, math.sqrt(dx * dx + dz * dz));
+    radius = math.max(radius, groundDistanceBetween(cx, cz, p.x, p.z));
   }
   if (plaza != null) {
-    final dx = plaza.centerX - cx;
-    final dz = plaza.centerZ - cz;
-    radius = math.max(radius, math.sqrt(dx * dx + dz * dz) + 60);
+    radius = math.max(
+      radius,
+      groundDistanceBetween(cx, cz, plaza.centerX, plaza.centerZ) + 60,
+    );
   }
   radius += skylineRingClearance;
   final towers = <SkylineTower>[];
@@ -478,6 +487,7 @@ const nearHomeLateral = 4.0;
 List<PlazaFurniture> plazaFurnitureFor(FrontierPlaza? plaza) {
   if (plaza == null) return const [];
   final h = plaza.headingRadians;
+  final ground = plaza.footprint;
   final out = <PlazaFurniture>[];
   final lateral = plaza.width / 2 - furnitureInset;
   final reach = plaza.depth / 2 - furnitureInset - furnitureSpacing / 2;
@@ -485,13 +495,7 @@ List<PlazaFurniture> plazaFurnitureFor(FrontierPlaza? plaza) {
     var i = 0;
     for (var along = -reach; along <= reach + 1e-9; along += furnitureSpacing) {
       final bench = i.isEven;
-      final (x, z) = _slotToWorld(
-        plaza.centerX,
-        plaza.centerZ,
-        h,
-        side * lateral,
-        along,
-      );
+      final (x, z) = ground.toWorld(side * lateral, along);
       out.add(
         PlazaFurniture(
           id: 'plaza-${side < 0 ? 'l' : 'r'}-$i',
@@ -508,17 +512,12 @@ List<PlazaFurniture> plazaFurnitureFor(FrontierPlaza? plaza) {
     }
   }
   // Home's along in the plaza frame, from its world pose.
-  final homeAlong =
-      (plaza.home.x - plaza.centerX) * math.sin(h) +
-      (plaza.home.z - plaza.centerZ) * math.cos(h);
+  final (_, homeAlong) = ground.local(plaza.home.x, plaza.home.z);
   for (final (side, kind) in [
     (-1.0, FurnitureKind.bench),
     (1.0, FurnitureKind.planter),
   ]) {
-    final (nx, nz) = _slotToWorld(
-      plaza.centerX,
-      plaza.centerZ,
-      h,
+    final (nx, nz) = ground.toWorld(
       side * nearHomeLateral,
       homeAlong - nearHomeAhead,
     );
@@ -537,13 +536,7 @@ List<PlazaFurniture> plazaFurnitureFor(FrontierPlaza? plaza) {
       ),
     );
   }
-  final (kx, kz) = _slotToWorld(
-    plaza.centerX,
-    plaza.centerZ,
-    h,
-    kioskLateral,
-    kioskAlong,
-  );
+  final (kx, kz) = ground.toWorld(kioskLateral, kioskAlong);
   out.add(
     PlazaFurniture(
       id: 'plaza-kiosk',
@@ -588,19 +581,6 @@ const pylonPostSpread = 0.4;
 const pylonPostSize = 0.6;
 const pylonFootingSize = 1.6;
 
-/// Local (x, z) in a slot's frame to the world.
-(double, double) _slotToWorld(
-  double x,
-  double z,
-  double facing,
-  double lx,
-  double lz,
-) {
-  final sinF = math.sin(facing);
-  final cosF = math.cos(facing);
-  return (x + lx * cosF + lz * sinF, z - lx * sinF + lz * cosF);
-}
-
 /// A billboard's panel, backing and glow, front to back: the depth of a
 /// pylon's sign and of a roof panel as a solid.
 const signDepth = 0.8;
@@ -609,29 +589,28 @@ const signDepth = 0.8;
 /// ground to the panel's bottom, and the sign itself in the air.
 List<Solid> pylonSolidsFor(Iterable<BillboardSlot> pylons) => [
   for (final slot in pylons) ...[
-    for (final side in [-1.0, 1.0])
-      () {
-        final (x, z) = _slotToWorld(
-          slot.x,
-          slot.z,
-          slot.facingRadians,
-          side * slot.width * pylonPostSpread,
-          -pylonPostSetback,
-        );
-        return Solid(
-          footprint: Footprint(
-            x: x,
-            z: z,
-            facingRadians: slot.facingRadians,
-            width: pylonFootingSize,
-            depth: pylonFootingSize,
-          ),
-          top: slot.bottom,
-        );
-      }(),
+    for (final side in [-1.0, 1.0]) _pylonPost(slot, side),
     signSolidFor(slot),
   ],
 ];
+
+/// One of a pylon's posts, on its footing, ground to the panel's bottom.
+Solid _pylonPost(BillboardSlot slot, double side) {
+  final (x, z) = frameToWorld(
+    slot.x,
+    slot.z,
+    slot.facingRadians,
+    side * slot.width * pylonPostSpread,
+    -pylonPostSetback,
+  );
+  return Solid.post(
+    x: x,
+    z: z,
+    facingRadians: slot.facingRadians,
+    size: pylonFootingSize,
+    top: slot.bottom,
+  );
+}
 
 /// A billboard's sign as a solid: the panel's rectangle, [signDepth]
 /// thick, from its bottom edge to its top.
@@ -660,26 +639,7 @@ double gantryTopFor(TickerSlot gantry) =>
 /// The two legs of the ticker gantry, and the band with its beam spanning
 /// the street between them.
 List<Solid> gantrySolidsFor(TickerSlot gantry) => [
-  for (final side in [-1.0, 1.0])
-    () {
-      final (x, z) = _slotToWorld(
-        gantry.x,
-        gantry.z,
-        gantry.facingRadians,
-        side * gantry.width / 2,
-        0,
-      );
-      return Solid(
-        footprint: Footprint(
-          x: x,
-          z: z,
-          facingRadians: gantry.facingRadians,
-          width: gantryLegSize,
-          depth: gantryLegSize,
-        ),
-        top: gantryTopFor(gantry),
-      );
-    }(),
+  for (final side in [-1.0, 1.0]) _gantryLeg(gantry, side),
   Solid(
     footprint: Footprint(
       x: gantry.x,
@@ -693,6 +653,24 @@ List<Solid> gantrySolidsFor(TickerSlot gantry) => [
   ),
 ];
 
+/// One leg of the gantry, at one end of its span.
+Solid _gantryLeg(TickerSlot gantry, double side) {
+  final (x, z) = frameToWorld(
+    gantry.x,
+    gantry.z,
+    gantry.facingRadians,
+    side * gantry.width / 2,
+    0,
+  );
+  return Solid.post(
+    x: x,
+    z: z,
+    facingRadians: gantry.facingRadians,
+    size: gantryLegSize,
+    top: gantryTopFor(gantry),
+  );
+}
+
 /// A lamp post's pole is this square and this tall.
 const lampPostSize = 0.16;
 const lampPostHeight = 5.2;
@@ -700,14 +678,5 @@ const lampPostHeight = 5.2;
 /// One solid per lamp post.
 List<Solid> lampPostSolidsFor(Iterable<(double, double)> posts) => [
   for (final (x, z) in posts)
-    Solid(
-      footprint: Footprint(
-        x: x,
-        z: z,
-        facingRadians: 0,
-        width: lampPostSize,
-        depth: lampPostSize,
-      ),
-      top: lampPostHeight,
-    ),
+    Solid.post(x: x, z: z, size: lampPostSize, top: lampPostHeight),
 ];

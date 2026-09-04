@@ -123,7 +123,6 @@ abstract final class PlazaStyle {
         return attention == null ? teal : lantern(attention.lantern);
       case BeaconKind.block:
       case BeaconKind.corner:
-      case BeaconKind.overview:
         return teal;
     }
   }

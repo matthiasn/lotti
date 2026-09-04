@@ -21,7 +21,9 @@ class StreetNetwork {
     assert(vertices.length >= 2, 'a network needs two points');
     final cumulative = <double>[0];
     for (var i = 1; i < vertices.length; i++) {
-      cumulative.add(cumulative.last + _distance(vertices[i - 1], vertices[i]));
+      final (ax, az) = vertices[i - 1];
+      final (bx, bz) = vertices[i];
+      cumulative.add(cumulative.last + groundDistanceBetween(ax, az, bx, bz));
     }
     _cumulative = List.unmodifiable(cumulative);
   }
@@ -60,15 +62,13 @@ class StreetNetwork {
   static List<(double, double)> _distinct(List<(double, double)> points) {
     final out = <(double, double)>[];
     for (final p in points) {
-      if (out.isEmpty || _distance(out.last, p) > mergeDistance) out.add(p);
+      if (out.isEmpty ||
+          groundDistanceBetween(out.last.$1, out.last.$2, p.$1, p.$2) >
+              mergeDistance) {
+        out.add(p);
+      }
     }
     return out;
-  }
-
-  static double _distance((double, double) a, (double, double) b) {
-    final dx = b.$1 - a.$1;
-    final dz = b.$2 - a.$2;
-    return math.sqrt(dx * dx + dz * dz);
   }
 
   /// The point [along] metres from the start, clamped to the ends.

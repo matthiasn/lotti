@@ -47,6 +47,51 @@ int stableHash(String input) {
 double stableUnit(String id, String salt) =>
     (stableHash('$id:$salt') & 0xFFFF) / 0xFFFF;
 
+/// A seeded pick from [count] choices: 0 to `count - 1`, from [stableUnit].
+int stableIndex(String id, String salt, int count) =>
+    (stableUnit(id, salt) * count).floor().clamp(0, count - 1);
+
+/// The world point [u] along the local X axis and [v] along the local Z
+/// axis of a frame at ([x], [z]) turned [facingRadians] about +Y. Local Z
+/// is `(sin facing, cos facing)`, the heading of a road facing that way;
+/// local X is `(cos facing, -sin facing)`, the road's right-hand normal.
+/// The inverse of [worldToFrame].
+(double, double) frameToWorld(
+  double x,
+  double z,
+  double facingRadians,
+  double u,
+  double v,
+) {
+  final sinF = math.sin(facingRadians);
+  final cosF = math.cos(facingRadians);
+  return (x + u * cosF + v * sinF, z - u * sinF + v * cosF);
+}
+
+/// The world point ([px], [pz]) in the frame at ([x], [z]) turned
+/// [facingRadians]: `u` along local X, `v` along local Z, both from the
+/// frame's origin. The inverse of [frameToWorld].
+(double, double) worldToFrame(
+  double x,
+  double z,
+  double facingRadians,
+  double px,
+  double pz,
+) {
+  final sinF = math.sin(facingRadians);
+  final cosF = math.cos(facingRadians);
+  final dx = px - x;
+  final dz = pz - z;
+  return (dx * cosF - dz * sinF, dx * sinF + dz * cosF);
+}
+
+/// The distance on the ground from ([ax], [az]) to ([bx], [bz]).
+double groundDistanceBetween(double ax, double az, double bx, double bz) {
+  final dx = bx - ax;
+  final dz = bz - az;
+  return math.sqrt(dx * dx + dz * dz);
+}
+
 /// A solid's rectangle on the ground: centre, rotation about +Y, and the
 /// extents along its local X ([width]) and local Z ([depth]). Everything
 /// the scene builds on the ground has one, and the walker collider keeps
@@ -76,12 +121,19 @@ class Footprint {
 
   /// The point in this footprint's frame: `u` along local X (the width),
   /// `v` along local Z (the depth), both from the centre.
-  (double, double) local(double x, double z) {
-    final sinF = math.sin(facingRadians);
-    final cosF = math.cos(facingRadians);
-    final dx = x - this.x;
-    final dz = z - this.z;
-    return (dx * cosF - dz * sinF, dx * sinF + dz * cosF);
+  (double, double) local(double x, double z) =>
+      worldToFrame(this.x, this.z, facingRadians, x, z);
+
+  /// The world point [u] along the width and [v] along the depth from the
+  /// centre.
+  (double, double) toWorld(double u, double v) =>
+      frameToWorld(x, z, facingRadians, u, v);
+
+  /// Whether ([x], [z]) lies inside, with [clearance] metres of margin on
+  /// every side.
+  bool contains(double x, double z, {double clearance = 0}) {
+    final (u, v) = local(x, z);
+    return u.abs() < width / 2 + clearance && v.abs() < depth / 2 + clearance;
   }
 
   /// The interval this footprint covers along the world axis ([ax], [az]).
@@ -436,8 +488,6 @@ class StreetLayout {
     required double heading,
     required Map<String, PlotPlacement> into,
   }) {
-    final sinH = math.sin(heading);
-    final cosH = math.cos(heading);
     final usable = groupLength - 2 * sideMargin;
 
     // The week's landmark: its heaviest task (ties by id) stands taller.
@@ -476,12 +526,19 @@ class StreetLayout {
         final sideSign = side == PlotSide.left ? -1.0 : 1.0;
         final lateral = sideSign * (roadWidth / 2 + plotDepth / 2);
         // Lateral axis is the road's right-hand normal.
+        final (x, z) = frameToWorld(
+          startX,
+          startZ,
+          heading,
+          lateral,
+          centerAlong,
+        );
         into[task.id] = PlotPlacement(
           taskId: task.id,
           bucketIndex: bucket,
           side: side,
-          x: startX + sinH * centerAlong + cosH * lateral,
-          z: startZ + cosH * centerAlong - sinH * lateral,
+          x: x,
+          z: z,
           // Facade faces the road.
           facingRadians:
               heading + (side == PlotSide.left ? math.pi / 2 : -math.pi / 2),

@@ -83,14 +83,6 @@ void main() {
     expect(seconds(edge), closeTo(3.2, 1e-6));
   });
 
-  test('timeScale speeds the whole flight up', () {
-    const to = CameraPose(x: 0, y: 2.2, z: 36, yaw: 0);
-    expect(
-      seconds(Flight.plan(a, to, timeScale: 2)),
-      closeTo(seconds(Flight.plan(a, to)) / 2, 1e-6),
-    );
-  });
-
   test('short flights stay level; long ones arc up and land level', () {
     final short = Flight.plan(
       a,

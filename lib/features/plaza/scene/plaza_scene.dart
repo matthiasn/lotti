@@ -1065,7 +1065,6 @@ class PlazaSceneController {
     // Every beacon dot stands on a slim post over a small pool in its own
     // colour, so a marker is a fixture in the street and not a stray orb.
     for (final beacon in world.beacons) {
-      if (beacon.kind == BeaconKind.overview) continue;
       final colour = PlazaStyle.beaconColor(beacon, world);
       scene.add(
         Node(

@@ -2,23 +2,28 @@
 /// push against every footprint, with a margin so the camera never clips a
 /// wall.
 ///
-/// Pure Dart, O(footprints) per resolve — trivially cheap at prototype
-/// scale.
+/// Pure Dart, O(footprints) per resolve; each footprint's frame is fixed
+/// once, and a footprint too far away to touch is rejected before it is
+/// rotated into.
 library;
 
 import 'dart:math' as math;
 
 import 'package:lotti/features/plaza/domain/solid.dart';
 import 'package:lotti/features/plaza/domain/street_layout.dart';
+import 'package:meta/meta.dart';
 
 class WalkCollider {
   WalkCollider(Iterable<Footprint> footprints, {this.margin = solidClearance})
-    : _footprints = _mergeAligned(footprints.toList(), margin);
-
-  final List<Footprint> _footprints;
+    : footprints = _mergeAligned(footprints.toList(), margin) {
+    _walls = [for (final p in this.footprints) _Wall(p, margin)];
+  }
 
   /// The footprints the walker is kept out of, after merging.
-  List<Footprint> get footprints => _footprints;
+  @visibleForTesting
+  final List<Footprint> footprints;
+
+  late final List<_Wall> _walls;
 
   /// Two neighbours in a crowded week can stand closer than twice the
   /// margin. Resolved one after the other, the first pushes the walker into
@@ -77,28 +82,52 @@ class WalkCollider {
   (double, double) resolve(double x, double z) {
     var rx = x;
     var rz = z;
-    for (final p in _footprints) {
+    for (final w in _walls) {
+      final dx = rx - w.x;
+      final dz = rz - w.z;
+      // Too far to touch: no point of the box is farther from its centre
+      // than its corner.
+      if (dx * dx + dz * dz >= w.cornerDistanceSquared) continue;
       // Into the footprint's local frame: `u` along its width (local X),
       // `v` along its depth (local Z).
-      final sinF = math.sin(p.facingRadians);
-      final cosF = math.cos(p.facingRadians);
-      final (u, v) = p.local(rx, rz);
-      final halfW = p.width / 2 + margin;
-      final halfD = p.depth / 2 + margin;
-      if (u.abs() >= halfW || v.abs() >= halfD) continue;
+      final u = dx * w.cosF - dz * w.sinF;
+      final v = dx * w.sinF + dz * w.cosF;
+      if (u.abs() >= w.halfW || v.abs() >= w.halfD) continue;
       // Push out through the nearest face.
-      final pushU = halfW - u.abs();
-      final pushV = halfD - v.abs();
+      final pushU = w.halfW - u.abs();
+      final pushV = w.halfD - v.abs();
       var nu = u;
       var nv = v;
       if (pushU < pushV) {
-        nu = u.isNegative ? -halfW : halfW;
+        nu = u.isNegative ? -w.halfW : w.halfW;
       } else {
-        nv = v.isNegative ? -halfD : halfD;
+        nv = v.isNegative ? -w.halfD : w.halfD;
       }
-      rx = p.x + nu * cosF + nv * sinF;
-      rz = p.z - nu * sinF + nv * cosF;
+      rx = w.x + nu * w.cosF + nv * w.sinF;
+      rz = w.z - nu * w.sinF + nv * w.cosF;
     }
     return (rx, rz);
   }
+}
+
+/// A footprint with its margin, its frame fixed once for the walk.
+class _Wall {
+  _Wall(Footprint p, double margin)
+    : x = p.x,
+      z = p.z,
+      sinF = math.sin(p.facingRadians),
+      cosF = math.cos(p.facingRadians),
+      halfW = p.width / 2 + margin,
+      halfD = p.depth / 2 + margin;
+
+  final double x;
+  final double z;
+  final double sinF;
+  final double cosF;
+  final double halfW;
+  final double halfD;
+
+  /// The corner is the box's farthest point from its centre: a point at
+  /// least this far (squared, so no root per footprint) is outside.
+  double get cornerDistanceSquared => halfW * halfW + halfD * halfD;
 }

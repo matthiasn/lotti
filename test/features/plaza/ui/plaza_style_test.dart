@@ -60,11 +60,7 @@ void main() {
       PlazaStyle.beaconColor(byKind[BeaconKind.home]!, world),
       const Color(0xFFF2FFFA),
     );
-    for (final kind in [
-      BeaconKind.block,
-      BeaconKind.corner,
-      BeaconKind.overview,
-    ]) {
+    for (final kind in [BeaconKind.block, BeaconKind.corner]) {
       final beacon = byKind[kind];
       if (beacon == null) continue;
       expect(
@@ -90,17 +86,6 @@ void main() {
       taskId: 'missing',
     );
     expect(PlazaStyle.beaconColor(orphan, world), PlazaStyle.teal);
-    // The layout emits no overview beacon; the kind still has a colour.
-    final overview = Beacon(
-      id: 'overview',
-      kind: BeaconKind.overview,
-      label: 'map',
-      pose: world.plaza!.overview,
-      markerX: 0,
-      markerY: 0,
-      markerZ: 0,
-    );
-    expect(PlazaStyle.beaconColor(overview, world), PlazaStyle.teal);
   });
 
   test('category colours: the category itself, then two darker tints', () {
