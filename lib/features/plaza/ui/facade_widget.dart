@@ -177,7 +177,7 @@ class FacadeWidget extends StatelessWidget {
                                     (tight
                                         ? 0.5
                                         : _live && items.isNotEmpty
-                                        ? 0.45
+                                        ? 0.4
                                         : 0.6),
                               ),
                               child: FittedBox(
@@ -187,7 +187,13 @@ class FacadeWidget extends StatelessWidget {
                                   width: box.maxWidth,
                                   child: Text(
                                     task.title,
-                                    maxLines: quiet ? 2 : 3,
+                                    // A live wall with a list keeps the
+                                    // title to two lines; the list is what
+                                    // you flew here to tick.
+                                    maxLines:
+                                        quiet || (_live && items.isNotEmpty)
+                                        ? 2
+                                        : 3,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
                                       fontFamily: PlazaStyle.fontText,
@@ -225,15 +231,24 @@ class FacadeWidget extends StatelessWidget {
                             if (task.coverImageUrl != null && !tight) ...[
                               SizedBox(height: gap),
                               // The picture gets the biggest band the wall can
-                              // spare: it fills its share edge to edge.
+                              // spare, edge to edge, but never more than a
+                              // third of a live wall: the checklist keeps
+                              // its rows.
                               Flexible(
-                                flex: _live ? 7 : 10,
-                                child: SizedBox(
-                                  width: double.infinity,
-                                  child: _Cover(
-                                    url: task.coverImageUrl!,
-                                    quiet:
-                                        attention.lantern == LanternState.off,
+                                flex: _live ? 5 : 10,
+                                child: ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    maxHeight: _live
+                                        ? box.maxHeight * 0.26
+                                        : double.infinity,
+                                  ),
+                                  child: SizedBox(
+                                    width: double.infinity,
+                                    child: _Cover(
+                                      url: task.coverImageUrl!,
+                                      quiet:
+                                          attention.lantern == LanternState.off,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -242,8 +257,9 @@ class FacadeWidget extends StatelessWidget {
                               SizedBox(height: gap),
                               // Only as many items as the wall has room for:
                               // a short building shows fewer, never overflows.
+                              // The list outranks the picture for space.
                               Flexible(
-                                flex: 4,
+                                flex: 6,
                                 child: LayoutBuilder(
                                   builder: (context, constraints) {
                                     // Box + padding + the line's own leading,

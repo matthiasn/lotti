@@ -320,6 +320,38 @@ void main() {
     expect(find.byType(RawImage), findsNothing);
   });
 
+  testWidgets('a live wall with cover art keeps its checklist rows', (
+    tester,
+  ) async {
+    // A 15 m panel on a 20 m wall: the cover must not eat the list.
+    final task = _task(
+      state: PlazaTaskState.blocked,
+      coverUrl: 'https://x.invalid/c.webp',
+      checklistItems: 4,
+      openItems: [for (var i = 0; i < 4; i++) 'Item $i'],
+    );
+    await tester.pumpWidget(
+      makeTestableWidget2(
+        Center(
+          child: SizedBox(
+            width: 540,
+            height: 675, // 15 m at 45 px/m
+            child: FacadeWidget(
+              task: task,
+              attention: attentionFor(task, _now),
+              variant: FacadeVariant.live,
+              widthMeters: 12,
+              pxPerMeter: 45,
+            ),
+          ),
+        ),
+      ),
+    );
+    expect(tester.takeException(), isNull);
+    expect(find.byType(Image), findsOneWidget);
+    expect(find.textContaining('Item '), findsAtLeast(2));
+  });
+
   testWidgets('a short wall shows only the items that fit, no overflow', (
     tester,
   ) async {
