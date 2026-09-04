@@ -136,8 +136,21 @@ class _JumbotronWidgetState extends State<JumbotronWidget>
                     final frame = PlazaStyle.lantern(a.lantern);
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.end,
                       children: [
+                        // Masthead: the project stays on screen while the
+                        // headlines turn.
+                        Text(
+                          '${widget.projectLabel}  ·  '
+                          '${widget.attentionCount} need attention',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontFamily: PlazaStyle.fontMono,
+                            fontSize: bodyPx * 1.3,
+                            color: PlazaStyle.teal,
+                          ),
+                        ),
+                        const Spacer(),
                         Row(
                           children: [
                             Container(
@@ -177,19 +190,35 @@ class _JumbotronWidgetState extends State<JumbotronWidget>
                             color: PlazaStyle.text,
                           ),
                         ),
-                        if (a.reason.isNotEmpty) ...[
-                          SizedBox(height: m(0.3)),
-                          Text(
-                            a.reason,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontFamily: PlazaStyle.fontMono,
-                              fontSize: bodyPx * 1.7,
-                              color: const Color(0xF2FFFFFF),
+                        SizedBox(height: m(0.3)),
+                        Row(
+                          children: [
+                            if (a.reason.isNotEmpty)
+                              Expanded(
+                                child: Text(
+                                  a.reason,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontFamily: PlazaStyle.fontMono,
+                                    fontSize: bodyPx * 1.7,
+                                    color: const Color(0xF2FFFFFF),
+                                  ),
+                                ),
+                              )
+                            else
+                              const Spacer(),
+                            Text(
+                              'fly there ›',
+                              style: TextStyle(
+                                fontFamily: PlazaStyle.fontText,
+                                fontSize: bodyPx * 1.7,
+                                fontWeight: FontWeight.w600,
+                                color: PlazaStyle.teal,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ],
                     );
                   },

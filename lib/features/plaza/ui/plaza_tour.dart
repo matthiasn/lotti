@@ -43,10 +43,15 @@ final List<TourStop> plazaTourStops = [
   ),
   TourStop(
     name: 'attention-closeup',
-    pose: (w) => w.beacons
-        .where((b) => b.kind == BeaconKind.attention)
-        .firstOrNull
-        ?.pose,
+    // The second anomaly when there is one: the billboard stop has just
+    // shown the first, and six stops should show a project, not a task.
+    pose: (w) {
+      final attention = w.beacons
+          .where((b) => b.kind == BeaconKind.attention)
+          .toList();
+      if (attention.isEmpty) return null;
+      return attention[attention.length > 1 ? 1 : 0].pose;
+    },
   ),
   TourStop(
     name: 'jumbotron',

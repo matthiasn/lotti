@@ -140,14 +140,16 @@ class FacadeWidget extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // A finished task is a small sign: the wall-height
+                        // title is for what is live or wrong.
                         Text(
                           task.title,
-                          maxLines: 3,
+                          maxLines: quiet ? 2 : 3,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontFamily: PlazaStyle.fontText,
                             fontWeight: FontWeight.w700,
-                            fontSize: m(titleM),
+                            fontSize: m(quiet ? titleM * 0.55 : titleM),
                             height: 1.14,
                             letterSpacing: -m(titleM) * 0.012,
                             color: ink,

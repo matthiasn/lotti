@@ -305,6 +305,11 @@ class PlazaSceneController {
     scene.fog
       ..density = fogDensityLow + (fogDensityHigh - fogDensityLow) * t
       ..maxOpacity = fogOpacityLow + (fogOpacityHigh - fogOpacityLow) * t;
+    // Road week markers are for the map: at street level the kerb sign
+    // owns the week, and a label under your feet reads backwards.
+    for (final anchor in markerAnchors.values) {
+      anchor.visible = eye.y >= poolFadeStart;
+    }
     for (final (material, alpha) in _pools) {
       material.baseColorFactor = Vector4(
         material.baseColorFactor.x,
@@ -508,7 +513,7 @@ class PlazaSceneController {
               Matrix4.translation(
                   Vector3(
                     segment.startX + math.sin(segment.headingRadians) * along,
-                    0.06,
+                    _groundTop + 0.02,
                     segment.startZ + math.cos(segment.headingRadians) * along,
                   ),
                 )
@@ -687,15 +692,57 @@ class PlazaSceneController {
         )..rotateY(jumbotron.facingRadians),
       );
       final towerH = jumbotron.bottom + jumbotron.height + 14;
-      root.add(
+      final towerW = jumbotron.width + 4;
+      const towerD = 6.0;
+      // The tower is a building, not a slab: windowed on every face, a
+      // lit crown, neon on its front corners.
+      final tower = Node(
+        localTransform: Matrix4.translation(Vector3(0, towerH / 2, -3.5)),
+        mesh: Mesh(
+          CuboidGeometry(Vector3(towerW, towerH, towerD)),
+          UnlitMaterial()..baseColorFactor = _tower,
+        ),
+      );
+      for (final (dx, dz, yaw, faceW) in [
+        (0.0, towerD / 2 + 0.02, 0.0, towerW),
+        (0.0, -towerD / 2 - 0.02, math.pi, towerW),
+        (towerW / 2 + 0.02, 0.0, math.pi / 2, towerD),
+        (-towerW / 2 - 0.02, 0.0, -math.pi / 2, towerD),
+      ]) {
+        _windowedWall(
+          tower,
+          dx: dx,
+          dz: dz,
+          yaw: yaw,
+          width: faceW,
+          height: towerH,
+          state: LanternState.inProgress,
+          tint: _tower,
+          uOffset: _unit('jumbotron', 'tile$yaw') * 3,
+        );
+      }
+      final corner = UnlitMaterial()
+        ..baseColorFactor = linearColor(PlazaStyle.teal);
+      for (final side in [-1.0, 1.0]) {
+        tower.add(
+          Node(
+            localTransform: Matrix4.translation(
+              Vector3(side * (towerW / 2 + 0.1), 0, towerD / 2 + 0.1),
+            ),
+            mesh: Mesh(CuboidGeometry(Vector3(0.25, towerH, 0.25)), corner),
+          ),
+        );
+      }
+      tower.add(
         Node(
-          localTransform: Matrix4.translation(Vector3(0, towerH / 2, -3.5)),
+          localTransform: Matrix4.translation(Vector3(0, towerH / 2 + 0.1, 0)),
           mesh: Mesh(
-            CuboidGeometry(Vector3(jumbotron.width + 4, towerH, 6)),
-            UnlitMaterial()..baseColorFactor = _tower,
+            CuboidGeometry(Vector3(towerW + 0.4, 0.22, towerD + 0.4)),
+            corner,
           ),
         ),
       );
+      root.add(tower);
       final backing = Node(
         localTransform: Matrix4.translation(
           Vector3(0, jumbotron.centerY, -0.2),
@@ -729,10 +776,10 @@ class PlazaSceneController {
       final jsin = math.sin(jumbotron.facingRadians);
       final jcos = math.cos(jumbotron.facingRadians);
       _addPool(
-        Vector3(jumbotron.x + jsin * 10, 0, jumbotron.z + jcos * 10),
-        radius: jumbotron.width * 0.5,
+        Vector3(jumbotron.x + jsin * 9, 0, jumbotron.z + jcos * 9),
+        radius: jumbotron.width * 0.6,
         color: PlazaStyle.teal,
-        alpha: 0.07,
+        alpha: 0.22,
       );
       // The tower's own spire.
       final spire = Node(
@@ -828,8 +875,8 @@ class PlazaSceneController {
     scene.skybox = Skybox(
       GradientSkySource(
         zenithColor: linearColor(const Color(0xFF04030A)).xyz,
-        horizonColor: linearColor(const Color(0xFF42224E)).xyz,
-        groundColor: linearColor(const Color(0xFF0D0814)).xyz,
+        horizonColor: linearColor(const Color(0xFF2E1A44)).xyz,
+        groundColor: linearColor(const Color(0xFF0A0712)).xyz,
         sunColor: Vector3.zero(),
       ),
     );
@@ -844,7 +891,7 @@ class PlazaSceneController {
       ..height = 0
       ..heightFalloff = 0.028
       ..maxOpacity = fogOpacityLow
-      ..color = linearColor(const Color(0xFF2C1C46)).xyz;
+      ..color = linearColor(const Color(0xFF261A44)).xyz;
   }
 
   void _buildBuilding(PlazaTask task, PlotPlacement placement) {
@@ -1513,7 +1560,7 @@ class PlazaSceneController {
       final h = row.headingRadians;
       final sinH = math.sin(h);
       final cosH = math.cos(h);
-      const standOff = 150.0;
+      const standOff = 90.0;
       final id = 'hero-${row.bucketIndex}';
       final w = 26 + _unit(id, 'w') * 8;
       final height = 70 + _unit(id, 'h') * 16;
@@ -1590,8 +1637,8 @@ class PlazaSceneController {
       // The screen, toward the street, and the dome of light behind the
       // tower that the row's vanishing point sits in.
       if (world.anomalies.isNotEmpty) {
-        final sw = w * 0.84;
-        final sh = sw * 0.5;
+        final sw = w * 0.9;
+        final sh = sw * 0.62;
         final sy = height * 0.62;
         final frame = PlazaStyle.lantern(world.anomalies.first.lantern);
         root

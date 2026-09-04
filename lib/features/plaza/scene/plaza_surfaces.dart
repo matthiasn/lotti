@@ -75,8 +75,8 @@ class PlazaSurfaces {
   static const tickerInterval = Duration(milliseconds: 50);
   static const farInterval = Duration(seconds: 3);
 
-  static const markerWidth = 20.0;
-  static const markerHeight = 6.5;
+  static const markerWidth = 16.0;
+  static const markerHeight = 5.2;
   static const jumbotronInterval = Duration(seconds: 1);
 
   static const signWidth = 5.0;
