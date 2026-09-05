@@ -55,13 +55,28 @@ class SlowQueryLogEntry {
     this.isSuperSlow = false,
     this.queryPlan,
     this.callerStack,
+    this.startedAt,
+    this.completedAt,
+    this.inFlightAtStart,
   });
 
   final String databaseName;
   final String operation;
   final String statement;
   final List<Object?> arguments;
+
+  /// Awaited executor duration, including scheduling and isolate transport.
+  /// This is not a measurement of native SQLite execution alone.
   final Duration elapsed;
+
+  /// Wall-clock bounds captured around the executor await, before EXPLAIN.
+  /// Optional for manually constructed and logging-disabled entries.
+  final DateTime? startedAt;
+  final DateTime? completedAt;
+
+  /// Calls awaiting this interceptor's executor when this call started,
+  /// including this call. This is observed concurrency, not a queue length.
+  final int? inFlightAtStart;
 
   /// True when the query exceeded the interceptor's super-slow threshold and
   /// should be replicated to the dedicated super-slow log file.
@@ -101,6 +116,7 @@ class SlowQueryInterceptor extends QueryInterceptor {
   final String databaseName;
   final Duration threshold;
   final SlowQueryReporter reporter;
+  int _inFlight = 0;
 
   /// Queries whose elapsed time crosses this threshold also have their
   /// `EXPLAIN QUERY PLAN` captured (selects only) and are duplicated to the
@@ -125,7 +141,11 @@ class SlowQueryInterceptor extends QueryInterceptor {
           '[${entry.databaseName}] ${entry.operation} '
           '${elapsedMs.toStringAsFixed(3)}ms '
           'args=${entry.arguments.length} '
-          '${entry.formattedStatement}';
+          '${entry.formattedStatement}'
+          '${entry.startedAt == null ? '' : '\n  TIMING: scope=executorAwait '
+                    'started=${entry.startedAt!.toIso8601String()} '
+                    'completed=${entry.completedAt?.toIso8601String()} '
+                    'inFlightAtStart=${entry.inFlightAtStart}'}';
       _SlowQueryFileSink.instance.append(logFile, line);
 
       if (entry.isSuperSlow) {
@@ -218,11 +238,15 @@ class SlowQueryInterceptor extends QueryInterceptor {
         SlowQueryLoggingGate.markStatementSeenAndIsFirst(statement)) {
       callerStack = StackTrace.current;
     }
+    final startedAt = SlowQueryLoggingGate.isEnabled ? clock.now() : null;
+    final inFlightAtStart = ++_inFlight;
     final stopwatch = Stopwatch()..start();
     try {
       return await run();
     } finally {
       stopwatch.stop();
+      final completedAt = startedAt == null ? null : clock.now();
+      _inFlight--;
       final elapsed = stopwatch.elapsed;
       if (SlowQueryLoggingGate.isEnabled && elapsed >= threshold) {
         final isSuperSlow = elapsed >= superSlowThreshold;
@@ -250,6 +274,9 @@ class SlowQueryInterceptor extends QueryInterceptor {
             isSuperSlow: isSuperSlow,
             queryPlan: queryPlan,
             callerStack: callerStack,
+            startedAt: startedAt,
+            completedAt: completedAt,
+            inFlightAtStart: inFlightAtStart,
           ),
         );
       }
