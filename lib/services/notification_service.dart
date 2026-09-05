@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -510,13 +511,30 @@ class NotificationService {
     );
 
     if (alertAtTime != null) {
-      final notifyAt = DateTime.now()
-          .add(Duration(days: daysToAdd))
-          .copyWith(
-            hour: alertAtTime.hour,
-            minute: alertAtTime.minute,
-            second: alertAtTime.second,
-          );
+      final location = _resolveLocation(await getLocalTimezone());
+      final now = TZDateTime.from(clock.now(), location);
+      // Construct a calendar date: adding 24 hours can skip or repeat a day
+      // when daylight saving time changes.
+      var notifyAt = TZDateTime(
+        location,
+        now.year,
+        now.month,
+        now.day + daysToAdd,
+        alertAtTime.hour,
+        alertAtTime.minute,
+        alertAtTime.second,
+      );
+      if (!notifyAt.isAfter(now)) {
+        notifyAt = TZDateTime(
+          location,
+          now.year,
+          now.month,
+          now.day + 1,
+          alertAtTime.hour,
+          alertAtTime.minute,
+          alertAtTime.second,
+        );
+      }
 
       await getIt<NotificationService>().scheduleNotification(
         title: habitDefinition.name,
@@ -529,6 +547,8 @@ class NotificationService {
     }
   }
 
+  /// Schedules the requested calendar date and wall-clock time in the device
+  /// zone. Use [scheduleNotificationAt] when [notifyAt] represents an instant.
   Future<void> scheduleNotification({
     required String title,
     required String body,
@@ -545,14 +565,13 @@ class NotificationService {
 
     await _requestPermissions();
     await flutterLocalNotificationsPlugin.cancel(id: notificationId);
-    final now = DateTime.now();
     final location = _resolveLocation(await getLocalTimezone());
 
     final scheduledDate = TZDateTime(
       location,
-      now.year,
-      now.month,
-      now.day,
+      notifyAt.year,
+      notifyAt.month,
+      notifyAt.day,
       notifyAt.hour,
       notifyAt.minute,
       notifyAt.second,

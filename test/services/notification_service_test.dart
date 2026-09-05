@@ -837,107 +837,77 @@ void main() {
       setNotificationsEnabled(enabled: true);
     });
 
-    test('schedules today at the requested wall-clock time', () async {
-      final service = await buildService();
-
-      // The fixed clock does not control the scheduled date — production builds
-      // that from `DateTime.now()`. It only relaxes the plugin's
-      // `validateDateIsInTheFuture`, which otherwise throws whenever the suite
-      // runs later in the day than the time under test. That throw is real in
-      // production too: `scheduleNotification` with `repeat: false` and a
-      // time-of-day already past raises `ArgumentError`.
-      await withClock(Clock.fixed(DateTime.utc(2000)), () async {
-        await service.scheduleNotification(
-          title: 'Meditate',
-          body: 'Daily meditation',
-          notifyAt: DateTime(2024, 3, 15, 7, 45, 12),
-          notificationId: 42,
-          showOnMobile: false,
-          showOnDesktop: true,
+    for (final now in [
+      DateTime(2024, 12, 31, 6),
+      DateTime(2024, 12, 31, 20),
+    ]) {
+      test('preserves tomorrow after completion at ${now.hour}:00', () async {
+        final service = await buildService();
+        channel.calls.clear();
+        await withClock(Clock.fixed(now), () async {
+          await service.scheduleNotification(
+            title: 'Meditate',
+            body: 'Daily meditation',
+            notifyAt: DateTime(2025, 1, 1, 7, 45, 12),
+            notificationId: 42,
+            showOnMobile: false,
+            showOnDesktop: true,
+          );
+        });
+        final args = channel.argsOf('zonedSchedule');
+        expect(args['id'], 42);
+        expect(args['scheduledDateTime'], '2025-01-01T07:45:12');
+        expect(args['matchDateTimeComponents'], isNull);
+        expect(channel.methods, [
+          'requestPermissions',
+          'cancel',
+          'zonedSchedule',
+        ]);
+        expect(
+          channel.calls.firstWhere((call) => call.method == 'cancel').arguments,
+          42,
         );
       });
+    }
 
-      // The date component is "today"; only the time of day comes from
-      // notifyAt, which is what makes this the daily-habit entry point.
-      final args = channel.argsOf('zonedSchedule');
-      expect(args['id'], 42);
-      expect(args['scheduledDateTime'], endsWith('T07:45:12'));
-      expect(args['matchDateTimeComponents'], isNull);
-      expect(channel.countOf('cancel'), 1);
-    });
-
-    test('builds the wall clock in the device zone, not in UTC', () async {
-      // The reported failure, at the point where it actually costs the user a
-      // reminder. Unlike `scheduleNotificationAt`, this path composes an
-      // *instant out of wall-clock components* in the resolved location, so
-      // the location is not cosmetic: build 07:45 in UTC for a device in
-      // Berlin and the habit reminder arrives at 09:45.
-      //
-      // `local` stood in for the device zone whenever `getLocalTimezone()`
-      // could only produce an abbreviation — and on macOS it always could,
-      // because the tzdata version directory in the resolved /etc/localtime
-      // path defeated the IANA lookup. `configureLocalTimezone()` then failed
-      // the same way and left `local` at the package's UTC default, so the
-      // fallback silently became the bug.
-      // Mirrors `scheduleHabitNotification`'s own call: mobile on, desktop
-      // off. `_alertDetails` hands a platform the caller did not opt into null
-      // details, so a habit reminder only ever presents on iOS and Android —
-      // which is where this mistiming was actually felt.
-      _usePlatform(TargetPlatform.iOS);
-      tz.setLocalLocation(tz.getLocation('Europe/Berlin'));
-      final service = await buildService();
-
-      await withClock(Clock.fixed(DateTime.utc(2000)), () async {
-        await service.scheduleNotification(
-          title: 'Meditate',
-          body: 'Daily meditation',
-          notifyAt: DateTime(2024, 3, 15, 7, 45),
-          notificationId: 42,
-          showOnMobile: true,
-          showOnDesktop: false,
+    for (final date in [
+      DateTime(2024, 3, 31, 7, 45),
+      DateTime(2024, 10, 27, 7, 45),
+    ]) {
+      test('preserves device wall clock across DST on $date', () async {
+        _usePlatform(TargetPlatform.iOS);
+        final berlin = tz.getLocation('Europe/Berlin');
+        tz.setLocalLocation(berlin);
+        final service = await buildService();
+        await withClock(Clock.fixed(DateTime.utc(2024)), () async {
+          await service.scheduleNotification(
+            title: 'Meditate',
+            body: 'Daily meditation',
+            notifyAt: date,
+            notificationId: 42,
+            showOnMobile: true,
+            showOnDesktop: false,
+          );
+        });
+        final args = channel.argsOf('zonedSchedule');
+        final scheduled = DateTime.parse(
+          args['scheduledDateTimeISO8601']! as String,
         );
+        final expected = tz.TZDateTime(
+          berlin,
+          date.year,
+          date.month,
+          date.day,
+          7,
+          45,
+        );
+        expect(
+          scheduled.toUtc().millisecondsSinceEpoch,
+          expected.millisecondsSinceEpoch,
+        );
+        expect(args['scheduledDateTime'], endsWith('T07:45:00'));
       });
-
-      final args = channel.argsOf('zonedSchedule');
-      final scheduled = DateTime.parse(
-        args['scheduledDateTimeISO8601']! as String,
-      );
-      final today = DateTime.now();
-
-      expect(
-        args['scheduledDateTime'],
-        endsWith('T07:45:00'),
-        reason: 'the wall clock the user set is what they must see',
-      );
-      final berlin = tz.getLocation('Europe/Berlin');
-      final expected = tz.TZDateTime(
-        berlin,
-        today.year,
-        today.month,
-        today.day,
-        7,
-        45,
-      );
-
-      // Compared as instants: TZDateTime and DateTime never test equal to each
-      // other, so `expect(a, b)` on the objects would fail even when the two
-      // name the same moment.
-      expect(
-        scheduled.toUtc().millisecondsSinceEpoch,
-        expected.millisecondsSinceEpoch,
-        reason:
-            '07:45 in Berlin, not 07:45 in UTC — the gap is the whole '
-            'offset the device is in, which is exactly how late the reminder '
-            'used to arrive',
-      );
-      expect(
-        expected.toUtc().hour,
-        isNot(7),
-        reason:
-            'guards the guard: if Berlin ever sat at UTC+0 this test would '
-            'pass without distinguishing the two',
-      );
-    });
+    }
 
     test('repeat asks the OS to match on time of day', () async {
       final service = await buildService();
@@ -1161,7 +1131,12 @@ void main() {
         );
 
         final service = await buildService();
-        await service.scheduleHabitNotification(definition, daysToAdd: 2);
+        await withClock(
+          Clock.fixed(DateTime(2024, 12, 30, 23, 59, 59, 999)),
+          () async {
+            await service.scheduleHabitNotification(definition, daysToAdd: 2);
+          },
+        );
 
         final captured = verify(
           () => delegate.scheduleNotification(
@@ -1176,11 +1151,71 @@ void main() {
 
         final notifyAt = captured.single as DateTime;
         // The time-of-day is copied from alertAtTime regardless of "now".
-        expect(notifyAt.hour, 7);
-        expect(notifyAt.minute, 45);
-        expect(notifyAt.second, 12);
+        expect(notifyAt.toUtc(), DateTime.utc(2025, 1, 1, 7, 45, 12));
       },
     );
+
+    for (final scenario in [
+      (
+        now: DateTime.utc(2024, 3, 30, 22, 30),
+        days: 1,
+        expected: DateTime.utc(2024, 3, 31, 5, 45),
+      ),
+      (
+        now: DateTime.utc(2024, 10, 26, 22, 30),
+        days: 1,
+        expected: DateTime.utc(2024, 10, 28, 6, 45),
+      ),
+      (
+        now: DateTime.utc(2024, 12, 31, 19),
+        days: 0,
+        expected: DateTime.utc(2025, 1, 1, 6, 45),
+      ),
+      (
+        now: DateTime.utc(2024, 12, 31, 6, 45),
+        days: 0,
+        expected: DateTime.utc(2025, 1, 1, 6, 45),
+      ),
+      (
+        now: DateTime.utc(2024, 12, 31, 5),
+        days: 0,
+        expected: DateTime.utc(2024, 12, 31, 6, 45),
+      ),
+    ]) {
+      test(
+        'next habit reminder from ${scenario.now} plus ${scenario.days} calendar days',
+        () async {
+          tz.setLocalLocation(tz.getLocation('Europe/Berlin'));
+          final service = await buildService();
+          final definition = habit(
+            schedule: HabitSchedule.daily(
+              requiredCompletions: 1,
+              alertAtTime: DateTime(2024, 1, 1, 7, 45),
+            ),
+          );
+          await withClock(
+            Clock.fixed(scenario.now),
+            () => service.scheduleHabitNotification(
+              definition,
+              daysToAdd: scenario.days,
+            ),
+          );
+          final captured =
+              verify(
+                    () => delegate.scheduleNotification(
+                      title: 'Meditate',
+                      body: 'Daily meditation',
+                      showOnMobile: true,
+                      showOnDesktop: false,
+                      notifyAt: captureAny(named: 'notifyAt'),
+                      notificationId: 'habit-1'.hashCode,
+                    ),
+                  ).captured.single
+                  as DateTime;
+          expect(captured.toUtc(), scenario.expected);
+        },
+      );
+    }
 
     test('daily schedule without alertAtTime does not delegate', () async {
       final definition = habit(
