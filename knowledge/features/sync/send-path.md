@@ -5,17 +5,17 @@ description: Outbox staging, the CAS claim that makes merges safe, dequeue-time 
 resource: ../../../lib/features/sync/outbox
 tags: [sync, outbox, bundling, retries]
 status: stable
-generated: { by: codex/gpt-5, at: 2026-08-06T00:30:48+02:00 }
+generated: { by: codex/gpt-6, at: 2026-09-05T15:44:17+00:00 }
 stale_after: 2026-11-02
 sources:
   - id: outbox
     resource: ../../../lib/features/sync/outbox
     title: Outbox service, processor, repository
-    last_modified: 2026-08-05
+    last_modified: 2026-09-05
   - id: payload-sender
     resource: ../../../lib/features/sync/matrix/matrix_payload_sender.dart
     title: MatrixPayloadSender — wire encoding
-    last_modified: 2026-08-06
+    last_modified: 2026-09-05
   - id: agent-payload-sender
     resource: ../../../lib/features/sync/matrix/matrix_payload_sender_notifications.dart
     title: Agent and notification payload encoding
@@ -23,15 +23,15 @@ sources:
   - id: media-repair
     resource: ../../../lib/features/sync/media
     title: Media self-healing — request and response
-    last_modified: 2026-07-28
+    last_modified: 2026-09-05
   - id: attachment-policy
     resource: ../../../lib/features/sync/model/sync_attachment_policy.dart
     title: shouldSendJournalAttachments — the media-send decision
-    last_modified: 2026-07-27
+    last_modified: 2026-07-28
   - id: tuning
     resource: ../../../lib/features/sync/tuning.dart
     title: SyncTuning
-    last_modified: 2026-05-30
+    last_modified: 2026-08-02
 ---
 
 # Staging
