@@ -456,10 +456,27 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
           );
         }
 
-        // Persist deferred change set (if any items were accumulated).
-        if (deferredItems.isNotEmpty) {
+        // Publish current next steps together with the successful report. A run
+        // with no steps retracts the previous list; failed runs never get here.
+        await ProjectRecommendationService(
+          syncService: syncService,
+        ).replaceForRun(
+          agentId: agentId,
+          projectId: projectId,
+          runKey: runKey,
+          runStartedAt: now,
+          deferredItems: deferredItems,
+        );
+        final mutations = deferredItems
+            .where(
+              (item) =>
+                  item['toolName'] != ProjectAgentToolNames.recommendNextSteps,
+            )
+            .toList();
+        // Only actual project mutations need deferred tool confirmation.
+        if (mutations.isNotEmpty) {
           final changeItems = buildDeferredChangeItems(
-            deferredItems,
+            mutations,
             ProjectAgentWorkflow._buildHumanSummary,
           );
 

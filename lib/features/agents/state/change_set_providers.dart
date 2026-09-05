@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
-import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
@@ -143,7 +142,7 @@ final eventChangeSetConfirmationServiceProvider =
     });
 
 /// Service that persists the project agent's "next steps" recommendations as
-/// durable [ProjectRecommendationEntity] rows once the user confirms them.
+/// durable [ProjectRecommendationEntity] rows with individual user actions.
 ///
 /// Falls back to a bare [UpdateNotifications] in tests where one isn't
 /// registered, so the service can always notify the project detail page.
@@ -157,6 +156,13 @@ final projectRecommendationServiceProvider =
           syncService: ref.watch(agentSyncServiceProvider),
           notifications: notifications,
           domainLogger: ref.watch(domainLoggerProvider),
+          taskDispatcher: (tool, args, projectId) => ProjectToolDispatcher(
+            projectRepository: ref.read(projectRepositoryProvider),
+            persistenceLogic: getIt<PersistenceLogic>(),
+            entitiesCacheService: getIt<EntitiesCacheService>(),
+            domainLogger: ref.read(domainLoggerProvider),
+            taskAgentService: ref.read(taskAgentServiceProvider),
+          ).dispatch(tool, args, projectId),
         );
       },
     );
@@ -171,28 +177,19 @@ projectRecommendationsProvider = FutureProvider.autoDispose
 
       ref.watch(agentUpdateStreamProvider(identity.agentId));
 
-      final repo = ref.watch(agentRepositoryProvider);
-      final entities = await repo.getEntitiesByAgentId(
+      final service = ref.read(projectRecommendationServiceProvider);
+      await service.migratePendingBatches(identity.agentId, projectId);
+      final recommendations = await service.currentRecommendations(
         identity.agentId,
-        type: AgentEntityTypes.projectRecommendation,
+        projectId,
       );
-
-      final recommendations =
-          entities
-              .whereType<ProjectRecommendationEntity>()
-              .where(
-                (recommendation) =>
-                    recommendation.projectId == projectId &&
-                    recommendation.status == ProjectRecommendationStatus.active,
-              )
-              .toList()
-            ..sort((a, b) {
-              final updatedAtOrder = b.updatedAt.compareTo(a.updatedAt);
-              if (updatedAtOrder != 0) {
-                return updatedAtOrder;
-              }
-              return a.position.compareTo(b.position);
-            });
+      recommendations.sort((a, b) {
+        final updatedAtOrder = b.updatedAt.compareTo(a.updatedAt);
+        if (updatedAtOrder != 0) {
+          return updatedAtOrder;
+        }
+        return a.position.compareTo(b.position);
+      });
 
       return recommendations;
     });

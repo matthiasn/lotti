@@ -8,6 +8,10 @@ status: stable
 generated: { by: codex/gpt-5, at: 2026-09-04T12:00:00Z }
 stale_after: 2026-10-12
 sources:
+  - id: project-next-steps
+    resource: ../../../lib/features/agents/service/project_recommendation_service.dart
+    title: Current next steps, legacy migration, and individual decisions
+    last_modified: 2026-09-05
   - id: project-workflow
     resource: ../../../lib/features/agents/workflow/project_agent_workflow.dart
     title: ProjectAgentWorkflow
@@ -320,12 +324,57 @@ rather than relegating internal navigation to the external Links block.
 
 Immediate local tools: `update_project_report`, `record_observations`.
 
-Deferred tools: `recommend_next_steps`, `update_project_status`, `create_task`.
+Deferred mutations: `update_project_status`, `create_task`.
 
-Confirmed `recommend_next_steps` decisions become `ProjectRecommendationEntity`
-rows via `ProjectRecommendationService`, which supersedes existing active
-recommendations for that project first. Recommendations then move through
-`active`, `resolved`, `dismissed` and `superseded`.
+The final `recommend_next_steps` call in a conversation replaces any earlier
+payloads in that run, then is published as
+individual `ProjectRecommendationEntity` rows by
+`ProjectRecommendationService.replaceForRun` inside the successful wake's
+transaction. Each run supplies a complete replacement, including an empty list;
+failed wakes retain the last list. Stable IDs derived from agent, project, run
+and position make replay idempotent without reviving user decisions.
+Each publication also persists an immutable `ProjectRecommendationRunEntity`
+with membership, even for an empty list. After sync the latest `(createdAt, id)`
+run wins. The timestamp is the wake start time, so a timed-out executor finishing
+after a newer wake cannot replace its result. Older completions make no writes.
+The provider durably supersedes known losing runs and displays only the winner.
+Rows whose run snapshot has not arrived remain hidden without being retracted,
+so out-of-order delivery cannot destroy the eventual winner. Actions recheck
+membership before consuming a suggestion.
+
+The recommendations provider upgrades legacy pending batches transactionally.
+It materializes only the newest pending run unless a newer recommendation list
+already exists, and retracts pending recommendation items across old change sets.
+A newer report without a corresponding batch also makes old batches stale.
+Other tools and previously decided items retain their state. Final retractions
+use the shared change-set resolution timestamp contract. This is a durable
+migration, not a display-only filter.
+
+Confirm and dismiss operate on individual active recommendations. Creating a
+task claims the recommendation before dispatching `create_task` through
+`ProjectToolDispatcher`, preserving title, rationale, priority and project scope.
+Known failures restore it for retry unless a newer run or report has superseded the
+step. Failed rollback and unexpected exceptions leave the claim consumed because
+task persistence may already have committed. Successful task
+creation remains consumed even if optional agent assignment returns a warning.
+Individual confirmation, dismissal, and successful task creation record a
+single-item resolved change set and user decision with the original summary and
+arguments, preserving the existing template-feedback extraction path. Failed
+creation does not emit acceptance feedback.
+
+```mermaid
+stateDiagram-v2
+  [*] --> active: successful analyst run
+  active --> resolved: confirm or claim for task creation
+  active --> dismissed: dismiss
+  active --> superseded: next successful analyst run
+  resolved --> active: task creation reports retryable failure
+  resolved --> superseded: failed creation after newer run or report
+```
+
+Legacy confirmed change-set decisions still use
+`recordConfirmedRecommendations`; newly generated next steps bypass that batch
+confirmation path.
 
 # Event agents
 

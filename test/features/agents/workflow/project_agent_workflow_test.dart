@@ -196,6 +196,25 @@ void main() {
       },
     );
 
+    when(() => mockSyncService.repository).thenReturn(mockAgentRepository);
+    when(
+      () => mockAgentRepository.getEntitiesByAgentId(
+        any(),
+        type: AgentEntityTypes.projectRecommendationRun,
+      ),
+    ).thenAnswer((_) async => []);
+    when(
+      () => mockAgentRepository.getEntitiesByAgentId(
+        any(),
+        type: AgentEntityTypes.projectRecommendation,
+      ),
+    ).thenAnswer((_) async => []);
+    when(
+      () => mockAgentRepository.getPendingChangeSets(
+        any(),
+        taskId: any(named: 'taskId'),
+      ),
+    ).thenAnswer((_) async => []);
     when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
     stubAppendMilestone(mockSyncService);
     stubReconciledAgentState(mockSyncService, mockAgentRepository);
@@ -2280,7 +2299,7 @@ void main() {
       );
 
       test(
-        'persists recommend_next_steps with correct human summary',
+        'publishes each next step directly without an opaque change set',
         () async {
           mockConversationRepository.sendMessageDelegate =
               ({
@@ -2348,12 +2367,17 @@ void main() {
             () => mockSyncService.upsertEntity(captureAny()),
           ).captured;
 
-          final changeSets = captured.whereType<ChangeSetEntity>().toList();
-          expect(changeSets, hasLength(1));
-          expect(changeSets.first.items.first.humanSummary, contains('2'));
+          expect(captured.whereType<ChangeSetEntity>(), isEmpty);
+          final steps = captured
+              .whereType<ProjectRecommendationEntity>()
+              .toList();
+          expect(steps.map((step) => step.title), [
+            'Prioritize API',
+            'Write tests',
+          ]);
           expect(
-            changeSets.first.items.first.humanSummary,
-            contains('next step'),
+            steps.map((step) => step.status),
+            everyElement(ProjectRecommendationStatus.active),
           );
         },
       );
@@ -3771,8 +3795,7 @@ void main() {
       );
 
       test(
-        'recommend_next_steps with empty steps list uses singular fallback '
-        'summary',
+        'empty next steps do not create a placeholder proposal',
         () async {
           mockConversationRepository.sendMessageDelegate =
               ({
@@ -3827,12 +3850,8 @@ void main() {
             () => mockSyncService.upsertEntity(captureAny()),
           ).captured;
 
-          final changeSets = captured.whereType<ChangeSetEntity>().toList();
-          expect(changeSets, hasLength(1));
-          expect(
-            changeSets.first.items.first.humanSummary,
-            'Recommend next steps',
-          );
+          expect(captured.whereType<ChangeSetEntity>(), isEmpty);
+          expect(captured.whereType<ProjectRecommendationEntity>(), isEmpty);
         },
       );
     });

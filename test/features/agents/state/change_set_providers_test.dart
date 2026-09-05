@@ -13,8 +13,10 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/event_agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
+import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
+import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -29,9 +31,17 @@ void main() {
   setUpAll(registerAllFallbackValues);
 
   late MockAgentRepository mockRepository;
+  late MockProjectRecommendationService recommendations;
 
   setUp(() {
     mockRepository = MockAgentRepository();
+    recommendations = MockProjectRecommendationService();
+    when(
+      () => recommendations.currentRecommendations(any(), any()),
+    ).thenAnswer((_) async => []);
+    when(
+      () => recommendations.migratePendingBatches(any(), any()),
+    ).thenAnswer((_) async {});
   });
 
   /// Builds the standard project-agent container: projectAgent override,
@@ -47,6 +57,7 @@ void main() {
     final container = ProviderContainer(
       overrides: [
         projectAgentProvider(projectId).overrideWith((ref) async => agent),
+        projectRecommendationServiceProvider.overrideWithValue(recommendations),
         agentRepositoryProvider.overrideWithValue(mockRepository),
         if (agent != null && updateController != null)
           agentUpdateStreamProvider(agent.agentId).overrideWith(
@@ -226,33 +237,12 @@ void main() {
           updatedAt: DateTime(2024, 3, 16, 9),
           priority: 'MEDIUM',
         );
-        final resolved = makeTestProjectRecommendation(
-          id: 'pr-resolved',
-          agentId: agent.agentId,
-          title: 'Resolved recommendation',
-          status: ProjectRecommendationStatus.resolved,
-        );
-        final otherProject = makeTestProjectRecommendation(
-          id: 'pr-other-project',
-          agentId: agent.agentId,
-          projectId: 'project-999',
-          title: 'Other project recommendation',
-        );
-
         when(
-          () => mockRepository.getEntitiesByAgentId(
+          () => recommendations.currentRecommendations(
             agent.agentId,
-            type: AgentEntityTypes.projectRecommendation,
+            'project-001',
           ),
-        ).thenAnswer(
-          (_) async => [
-            olderActive,
-            secondInBatch,
-            firstInBatch,
-            resolved,
-            otherProject,
-          ],
-        );
+        ).thenAnswer((_) async => [olderActive, secondInBatch, firstInBatch]);
 
         final container = createProjectAgentContainer(
           projectId: 'project-001',
@@ -274,6 +264,64 @@ void main() {
   });
 
   group('projectRecommendationServiceProvider', () {
+    test(
+      'task creation dispatches to the owning project and reports lookup failure',
+      () async {
+        final sync = MockAgentSyncService();
+        final projects = MockProjectRepository();
+        var row = makeTestProjectRecommendation(
+          id: 'step-1',
+          projectId: 'project-1',
+        );
+        when(() => sync.repository).thenReturn(mockRepository);
+        when(
+          () => mockRepository.getEntity('step-1'),
+        ).thenAnswer((_) async => row);
+        when(
+          () => mockRepository.getLatestReport(any(), any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockRepository.getEntitiesByAgentId(
+            any(),
+            type: AgentEntityTypes.projectRecommendationRun,
+          ),
+        ).thenAnswer((_) async => []);
+        when(() => sync.upsertEntity(any())).thenAnswer((call) async {
+          row = call.positionalArguments.first as ProjectRecommendationEntity;
+        });
+        when(
+          () => projects.getProjectById('project-1'),
+        ).thenAnswer((_) async => null);
+        await setUpTestGetIt(
+          additionalSetup: () {
+            getIt
+              ..registerSingleton<PersistenceLogic>(MockPersistenceLogic())
+              ..registerSingleton<EntitiesCacheService>(
+                MockEntitiesCacheService(),
+              );
+          },
+        );
+        addTearDown(tearDownTestGetIt);
+        final container = ProviderContainer(
+          overrides: [
+            agentSyncServiceProvider.overrideWithValue(sync),
+            projectRepositoryProvider.overrideWithValue(projects),
+            taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
+            domainLoggerProvider.overrideWithValue(MockDomainLogger()),
+            maybeUpdateNotificationsProvider.overrideWith((ref) => null),
+          ],
+        );
+        addTearDown(container.dispose);
+        final result = await container
+            .read(projectRecommendationServiceProvider)
+            .createTask('step-1');
+        expect(result.success, isFalse);
+        expect(result.errorMessage, 'Project lookup failed');
+        expect(row.status, ProjectRecommendationStatus.active);
+        verify(() => projects.getProjectById('project-1')).called(1);
+      },
+    );
+
     test('creates the service when optional notifications are absent', () {
       final mockSyncService = MockAgentSyncService();
       final mockLogger = MockDomainLogger();

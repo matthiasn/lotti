@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/model/agent_time_utils.dart';
 import 'package:lotti/features/agents/model/project_agent_report_contract.dart';
 import 'package:lotti/features/agents/service/agent_log_llm_summarizer.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
+import 'package:lotti/features/agents/service/project_recommendation_service.dart';
 import 'package:lotti/features/agents/service/soul_document_service.dart';
 import 'package:lotti/features/agents/sync/agent_input_capture_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
@@ -356,12 +357,6 @@ class ProjectAgentWorkflow with AgentErrorLogging {
     Map<String, dynamic> args,
   ) {
     switch (toolName) {
-      case ProjectAgentToolNames.recommendNextSteps:
-        final steps = args['steps'];
-        if (steps is List && steps.isNotEmpty) {
-          return 'Recommend ${steps.length} next step(s)';
-        }
-        return 'Recommend next steps';
       case ProjectAgentToolNames.updateProjectStatus:
         final status = args['status'] ?? 'unknown';
         return 'Update project status to $status';

@@ -1503,6 +1503,38 @@ const _$DecisionActorEnumMap = {
   DecisionActor.agent: 'agent',
 };
 
+ProjectRecommendationRunEntity _$ProjectRecommendationRunEntityFromJson(
+  Map<String, dynamic> json,
+) => ProjectRecommendationRunEntity(
+  id: json['id'] as String,
+  agentId: json['agentId'] as String,
+  projectId: json['projectId'] as String,
+  recommendationIds: (json['recommendationIds'] as List<dynamic>)
+      .map((e) => e as String)
+      .toList(),
+  createdAt: DateTime.parse(json['createdAt'] as String),
+  vectorClock: json['vectorClock'] == null
+      ? null
+      : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
+  deletedAt: json['deletedAt'] == null
+      ? null
+      : DateTime.parse(json['deletedAt'] as String),
+  $type: json['runtimeType'] as String?,
+);
+
+Map<String, dynamic> _$ProjectRecommendationRunEntityToJson(
+  ProjectRecommendationRunEntity instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'agentId': instance.agentId,
+  'projectId': instance.projectId,
+  'recommendationIds': instance.recommendationIds,
+  'createdAt': instance.createdAt.toIso8601String(),
+  'vectorClock': instance.vectorClock,
+  'deletedAt': instance.deletedAt?.toIso8601String(),
+  'runtimeType': instance.$type,
+};
+
 ProjectRecommendationEntity _$ProjectRecommendationEntityFromJson(
   Map<String, dynamic> json,
 ) => ProjectRecommendationEntity(
@@ -1517,6 +1549,7 @@ ProjectRecommendationEntity _$ProjectRecommendationEntityFromJson(
   vectorClock: json['vectorClock'] == null
       ? null
       : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
+  sourceRunId: json['sourceRunId'] as String?,
   sourceChangeSetId: json['sourceChangeSetId'] as String?,
   sourceDecisionId: json['sourceDecisionId'] as String?,
   rationale: json['rationale'] as String?,
@@ -1548,6 +1581,7 @@ Map<String, dynamic> _$ProjectRecommendationEntityToJson(
   'createdAt': instance.createdAt.toIso8601String(),
   'updatedAt': instance.updatedAt.toIso8601String(),
   'vectorClock': instance.vectorClock,
+  'sourceRunId': instance.sourceRunId,
   'sourceChangeSetId': instance.sourceChangeSetId,
   'sourceDecisionId': instance.sourceDecisionId,
   'rationale': instance.rationale,

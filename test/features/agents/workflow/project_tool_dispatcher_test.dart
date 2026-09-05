@@ -930,6 +930,7 @@ void main() {
       );
 
       expect(result.success, isFalse);
+      expect(result.nonRetryable, isTrue);
       expect(result.output, contains('Rollback failed'));
       expect(result.errorMessage, contains('rollback failed'));
       final captured = verify(

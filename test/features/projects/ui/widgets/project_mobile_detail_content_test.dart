@@ -87,6 +87,10 @@ void main() {
       );
       expect(card.actions, isA<Text>());
       expect(find.byType(AgentSummaryCardSurface), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.byType(ProjectAgentSummaryCard)).dy,
+        lessThan(tester.getTopLeft(find.text('Project Tasks')).dy),
+      );
     });
 
     testWidgets('uses a real overflow menu and forwards project actions', (
@@ -807,7 +811,7 @@ void main() {
       expect(find.text('Task 49'), findsOneWidget);
     });
 
-    testWidgets('shows health once inside the AI card after project work', (
+    testWidgets('shows health once inside the AI card before project work', (
       tester,
     ) async {
       final record = makeTestProjectRecord(
@@ -854,7 +858,7 @@ void main() {
       expect(categoryTop.dy, lessThan(titleTop.dy));
       expect(riskTop.dy, greaterThan(titleTop.dy));
       expect(riskTop.dy, greaterThan(categoryTop.dy));
-      expect(riskTop.dy, greaterThan(tasksTop.dy));
+      expect(riskTop.dy, lessThan(tasksTop.dy));
       expect(statusTop.dy, greaterThan(titleTop.dy));
     });
 
