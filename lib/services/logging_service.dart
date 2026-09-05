@@ -136,6 +136,21 @@ class LoggingService {
     await _slowQueryFlagSubscription?.cancel();
   }
 
+  /// Appends an already formatted domain or safe-error line to the shared sink.
+  ///
+  /// DomainLogger owns the domain gate. Errors bypass that gate and request an
+  /// immediate durable write; routine lines use the same batching as app logs.
+  /// All destinations participate in [flush] during orderly shutdown.
+  void captureFileLine(
+    String fileStem,
+    String line, {
+    bool forceFlush = false,
+  }) {
+    final future = _appendToNamedFile(fileStem, line, forceFlush: forceFlush);
+    _pendingWrites.add(future);
+    unawaited(future.whenComplete(() => _pendingWrites.remove(future)));
+  }
+
   // --- Text file sink -----------------------------------------------------
   Future<void> _appendToNamedFile(
     String fileStem,

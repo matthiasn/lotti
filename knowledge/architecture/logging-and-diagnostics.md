@@ -5,7 +5,7 @@ description: Twenty-four opt-in logging domains, where their lines land, and why
 resource: ../../lib/services/logging_domains.dart
 tags: [architecture, logging, diagnostics, observability]
 status: stable
-generated: { by: codex/gpt-5, at: 2026-08-01T16:29:35Z }
+generated: { by: codex/gpt-6, at: 2026-09-05T14:55:00Z }
 stale_after: 2027-01-11
 sources:
   - id: log-domains
@@ -15,11 +15,11 @@ sources:
   - id: logging-service
     resource: ../../lib/services/logging_service.dart
     title: LoggingService
-    last_modified: 2026-07-12
+    last_modified: 2026-09-05
   - id: domain-logging
     resource: ../../lib/services/domain_logging.dart
     title: DomainLogger
-    last_modified: 2026-08-01
+    last_modified: 2026-09-05
   - id: framework-errors
     resource: ../../lib/main.dart
     title: Flutter framework error handler
@@ -65,7 +65,7 @@ there is no separate registry to keep in step.
 flowchart TD
   Log["DomainLogger.log(domain, ...)"] --> Enabled{"domain flag enabled?"}
   Enabled -->|no| Drop["dropped"]
-  Enabled -->|yes| General["general app log for the day"]
+  Enabled -->|non-sync| General["general app log for the day"]
   Err["DomainLogger.error(...)"] --> General2["general app log + error-YYYY-MM-DD.log<br/>full text, force-flushed"]
   Err --> Safe["error-safe-YYYY-MM-DD.log<br/>no raw error, no stack trace<br/>message kept verbatim"]
   Enabled -->|yes| PerDomain
@@ -131,10 +131,22 @@ startup, so a toggle takes effect immediately rather than at next launch.
 
 # File writing is batched
 
-Log lines are buffered per file stem and flushed on a **500 ms** timer rather
-than written synchronously. Files are named `<stem>-<yyyy-MM-dd>.log`, so a day
-is one file and rotation is implicit. In the test environment file writing is
-skipped entirely — tests assert on the logger, not on disk.
+`LoggingService` owns the shared file sink for general, sync, per-domain and
+safe-error files. Routine lines are buffered per file stem and flushed on a
+**500 ms** timer or after **40 lines**. Domain logging no longer creates a
+synchronous, force-flushed disk write for every event. Error lines bypass the
+timer and request a durable flush; per-file drains serialize appends and
+`LoggingService.flush()` waits for every destination during orderly shutdown.
+
+Files are named `<stem>-<yyyy-MM-dd>.log`, using the date at write time. In the
+test environment `DomainLogger` skips its additional file destinations;
+`LoggingService` uses a synchronous sink for deterministic legacy file tests.
+File-sink integration tests exercise production buffering explicitly.
+
+Routine Matrix initialization logs readiness without account IDs, device IDs
+or device names. Recorder start/delete telemetry omits absolute paths while
+retaining recording configuration for diagnosis. Full exception diagnostics
+remain available locally under the error policy above.
 
 # Slow queries
 

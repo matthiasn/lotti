@@ -168,7 +168,7 @@ class AudioRecorderRepository {
 
       _loggingService.log(
         LogDomain.speech,
-        'Starting audio recording: path=$filePath, sampleRate=$sampleRate, autoGain=$autoGain, isLinux=${Platform.isLinux}, isFlatpak=${PortalService.shouldUsePortal}',
+        'Starting audio recording: sampleRate=$sampleRate, autoGain=$autoGain, isLinux=${Platform.isLinux}, isFlatpak=${PortalService.shouldUsePortal}',
         subDomain: AudioRecorderConstants.startRecordingSubdomain,
       );
 
@@ -236,7 +236,7 @@ class AudioRecorderRepository {
         await file.delete();
         _loggingService.log(
           LogDomain.speech,
-          'Deleted cancelled recording: $filePath',
+          'Deleted cancelled recording',
           subDomain: AudioRecorderConstants.deleteRecordingSubdomain,
         );
       }
