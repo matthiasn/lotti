@@ -81,7 +81,7 @@ migration work has to cover both, and embeddings are a third store again (below)
 
 | Database | File | Schema | Owns |
 |----------|------|--------|------|
-| `JournalDb` | `db.sqlite` | 47 | Journal entities, tasks, links, tags, config flags — the primary store |
+| `JournalDb` | `db.sqlite` | 48 | Journal entities, tasks, links, tags, config flags — the primary store |
 | `SyncDatabase` | `sync.sqlite` | 29 | Outbox, sequence log, host activity, inbound event queue, queue markers |
 | `AgentDatabase` | `agent.sqlite` | 19 | Agent state, reports, observations, change proposals, wake history |
 | `EditorDb` | `editor_drafts_db.sqlite` | 2 | Unsaved rich-text editor drafts |
@@ -224,13 +224,27 @@ histories. The journal strategy lives in `database_migration.dart` and
 
 1. `onUpgrade` takes a timestamped backup first — `backup/db.<ts>.sqlite` —
    unless the database is in-memory. A failed backup is logged, not fatal.
-2. Version steps run in order, adding tables, columns and partial indexes.
-   Current index definitions may reference columns absent in historical schemas:
-   the task priority index is created only after v29 adds priority columns, even
-   for a journal upgrading from before v25.
-3. Partial index DDL lives in top-level constants used by migrations. Callers
+2. **Every version step, and the index reconcile that ends them, runs in one
+   transaction.** Drift runs `onUpgrade` outside one, and SQLite's DDL is
+   transactional, so an interrupted upgrade rolls back to the version that
+   was running instead of leaving a half-applied schema at the old
+   `user_version` for the next launch to migrate again. That is why the
+   steps no longer probe for tables or columns before acting: on a database
+   that shipped, every column a step needs was added by an earlier step of
+   the same run, and a real schema bug should fail the upgrade loudly (the
+   history verifier catches it in development). The two probes that remain
+   are genuinely conditional on an install's history — `_ensureLabelTables`
+   for pre-release v26 installs and the v47 drop of the v20 `category_id`
+   column — and `_columnExists` propagates a failing PRAGMA rather than
+   reading it as "absent". Foreign-key enforcement is off during the upgrade
+   (it cannot change inside a transaction) and on from `beforeOpen` onward.
+3. Version steps run in order, adding tables, columns and partial indexes.
+   Current index definitions may reference columns absent in historical
+   schemas: the task priority index is created only after v29 adds priority
+   columns, even for a journal upgrading from before v25.
+4. Partial index DDL lives in top-level constants used by migrations. Callers
    can add `IF NOT EXISTS` with `replaceFirst` where needed.
-4. `beforeOpen` repairs the specific indexes named there; it does not rebuild
+5. `beforeOpen` repairs the specific indexes named there; it does not rebuild
    every index in the schema.
 
 Every migration test starts from a schema that shipped, seeded through

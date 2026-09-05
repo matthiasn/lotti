@@ -3,7 +3,6 @@ part of 'database.dart';
 /// Most-recent schema-upgrade steps (v41+) for [JournalDb], split from
 /// [_JournalDbMigration] for file size and invoked from its onUpgrade.
 mixin _JournalDbMigrationRecent on _$JournalDb {
-  Future<bool> _tableExists(String tableName);
   Future<bool> _columnExists(String table, String column);
 
   Future<void> _onUpgradeRecent(Migrator m, int from) async {
@@ -22,7 +21,6 @@ mixin _JournalDbMigrationRecent on _$JournalDb {
     // planner choose its own access path.
     if (from < 41) {
       await () async {
-        if (!await _tableExists('journal')) return;
         DevLogger.log(
           name: 'JournalDb',
           message:
@@ -30,14 +28,10 @@ mixin _JournalDbMigrationRecent on _$JournalDb {
               'recreating tasks-due partial index',
         );
 
-        // 1. Add the nullable column. Idempotent via column-existence
-        //    check (mirrors the project_id / task_priority_rank
-        //    migration shape).
-        if (!await _columnExists('journal', 'due_at')) {
-          await customStatement(
-            'ALTER TABLE journal ADD COLUMN due_at DATETIME',
-          );
-        }
+        // 1. Add the nullable column.
+        await customStatement(
+          'ALTER TABLE journal ADD COLUMN due_at DATETIME',
+        );
 
         // 2. Backfill from JSON for every task with a non-null
         //    `data.due`, regardless of status. `getTasksSortedByDueDate`
@@ -91,34 +85,27 @@ mixin _JournalDbMigrationRecent on _$JournalDb {
         // planner stream the tasks list even when the user has
         // selected many categories, instead of falling back to
         // `idx_journal_browse + USE TEMP B-TREE FOR ORDER BY`.
-        // Guarded on `journal` because minimal migration-test
-        // schemas omit it.
-        if (await _tableExists('journal')) {
-          await customStatement(
-            'CREATE INDEX IF NOT EXISTS '
-            'idx_journal_tasks_status_priority_date ON journal('
-            '  task_status COLLATE BINARY ASC, '
-            '  task_priority_rank COLLATE BINARY ASC, '
-            '  date_from COLLATE BINARY DESC) '
-            "WHERE type = 'Task' "
-            'AND task = 1 '
-            'AND deleted = FALSE',
-          );
-        }
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS '
+          'idx_journal_tasks_status_priority_date ON journal('
+          '  task_status COLLATE BINARY ASC, '
+          '  task_priority_rank COLLATE BINARY ASC, '
+          '  date_from COLLATE BINARY DESC) '
+          "WHERE type = 'Task' "
+          'AND task = 1 '
+          'AND deleted = FALSE',
+        );
         // Covering variant of the existing (from_id, hidden) index
         // so `getBulkLinkedTimeSpans` resolves `to_id` from the
         // index and the planner stops reversing the join shape.
-        // Same table-existence guard as above.
-        if (await _tableExists('linked_entries')) {
-          await customStatement(
-            'CREATE INDEX IF NOT EXISTS '
-            'idx_linked_entries_from_id_hidden_to_id '
-            'ON linked_entries('
-            '  from_id COLLATE BINARY ASC, '
-            '  hidden COLLATE BINARY ASC, '
-            '  to_id COLLATE BINARY ASC)',
-          );
-        }
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS '
+          'idx_linked_entries_from_id_hidden_to_id '
+          'ON linked_entries('
+          '  from_id COLLATE BINARY ASC, '
+          '  hidden COLLATE BINARY ASC, '
+          '  to_id COLLATE BINARY ASC)',
+        );
         // One-shot ANALYZE so the planner picks up the new
         // indexes immediately. This runs ONCE per device on the
         // upgrade boot — same trade as any heavy migration step:
@@ -146,32 +133,30 @@ mixin _JournalDbMigrationRecent on _$JournalDb {
         // the column is TEXT and the JSON value is the raw UUID.
         // Guarded on `journal` because minimal migration-test schemas
         // omit it.
-        if (await _tableExists('journal')) {
-          await customStatement(
-            'UPDATE journal '
-            r"SET category = json_extract(serialized, '$.meta.categoryId') "
-            "WHERE category = '' "
-            r"AND json_extract(serialized, '$.meta.categoryId') IS NOT NULL",
-          );
-          // Partial covering index for the Insights time-analysis
-          // query: only `date_from < :end` can be a seek bound (the
-          // `date_to > :start` overlap check is inherently residual),
-          // so the scan walks every JournalEntry before :end. Covering
-          // (date_from, date_to, category, private, id) turns that
-          // walk into an index-only scan — no row fetches — keeping
-          // cold-fetch cost flat as lifetime history grows.
-          await customStatement(
-            'CREATE INDEX IF NOT EXISTS idx_journal_insights_time '
-            'ON journal('
-            '  date_from COLLATE BINARY ASC, '
-            '  date_to COLLATE BINARY ASC, '
-            '  category COLLATE BINARY ASC, '
-            '  private COLLATE BINARY ASC, '
-            '  id COLLATE BINARY ASC) '
-            "WHERE type = 'JournalEntry' AND deleted = FALSE",
-          );
-          await customStatement('ANALYZE');
-        }
+        await customStatement(
+          'UPDATE journal '
+          r"SET category = json_extract(serialized, '$.meta.categoryId') "
+          "WHERE category = '' "
+          r"AND json_extract(serialized, '$.meta.categoryId') IS NOT NULL",
+        );
+        // Partial covering index for the Insights time-analysis
+        // query: only `date_from < :end` can be a seek bound (the
+        // `date_to > :start` overlap check is inherently residual),
+        // so the scan walks every JournalEntry before :end. Covering
+        // (date_from, date_to, category, private, id) turns that
+        // walk into an index-only scan — no row fetches — keeping
+        // cold-fetch cost flat as lifetime history grows.
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_journal_insights_time '
+          'ON journal('
+          '  date_from COLLATE BINARY ASC, '
+          '  date_to COLLATE BINARY ASC, '
+          '  category COLLATE BINARY ASC, '
+          '  private COLLATE BINARY ASC, '
+          '  id COLLATE BINARY ASC) '
+          "WHERE type = 'JournalEntry' AND deleted = FALSE",
+        );
+        await customStatement('ANALYZE');
       }();
     }
     if (from < 44) {
@@ -182,53 +167,40 @@ mixin _JournalDbMigrationRecent on _$JournalDb {
               'Adding indexes for broad task-list, import-flag, and '
               'label-definition reads',
         );
-        if (await _tableExists('journal') &&
-            await _columnExists('journal', 'task_priority_rank')) {
-          await customStatement(
-            _createIdxJournalTasksPriorityDateSql.replaceFirst(
-              'CREATE INDEX ',
-              'CREATE INDEX IF NOT EXISTS ',
-            ),
-          );
-        }
-        if (await _tableExists('journal') &&
-            await _columnExists('journal', 'flag')) {
-          await customStatement(
-            _createIdxJournalImportFlagDateSql.replaceFirst(
-              'CREATE INDEX ',
-              'CREATE INDEX IF NOT EXISTS ',
-            ),
-          );
-        }
-        if (await _tableExists('label_definitions')) {
-          await customStatement(
-            'CREATE INDEX IF NOT EXISTS '
-            'idx_label_definitions_deleted_name_nocase '
-            'ON label_definitions('
-            '  deleted COLLATE BINARY ASC, '
-            '  name COLLATE NOCASE ASC)',
-          );
-        }
+        await customStatement(
+          _createIdxJournalTasksPriorityDateSql.replaceFirst(
+            'CREATE INDEX ',
+            'CREATE INDEX IF NOT EXISTS ',
+          ),
+        );
+        await customStatement(
+          _createIdxJournalImportFlagDateSql.replaceFirst(
+            'CREATE INDEX ',
+            'CREATE INDEX IF NOT EXISTS ',
+          ),
+        );
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS '
+          'idx_label_definitions_deleted_name_nocase '
+          'ON label_definitions('
+          '  deleted COLLATE BINARY ASC, '
+          '  name COLLATE NOCASE ASC)',
+        );
         await customStatement('ANALYZE');
       }();
     }
     if (from < 45) {
       await () async {
-        if (!await _tableExists('journal')) return;
         DevLogger.log(
           name: 'JournalDb',
           message:
               'Adding indexed Daily OS day and recording-session lookup '
               'columns',
         );
-        if (!await _columnExists('journal', 'day_id')) {
-          await customStatement('ALTER TABLE journal ADD COLUMN day_id TEXT');
-        }
-        if (!await _columnExists('journal', 'recording_session_id')) {
-          await customStatement(
-            'ALTER TABLE journal ADD COLUMN recording_session_id TEXT',
-          );
-        }
+        await customStatement('ALTER TABLE journal ADD COLUMN day_id TEXT');
+        await customStatement(
+          'ALTER TABLE journal ADD COLUMN recording_session_id TEXT',
+        );
         await customStatement(r'''
 UPDATE journal
 SET day_id = json_extract(serialized, '$.data.dayContext.dayId'),
@@ -299,6 +271,34 @@ WHERE type = 'JournalAudio' AND deleted = FALSE
           await customStatement('DROP INDEX IF EXISTS idx_journal_category_id');
           await customStatement('ALTER TABLE journal DROP COLUMN category_id');
         }
+      }();
+    }
+    if (from < 48) {
+      await () async {
+        // config_flags carried UNIQUE on `description` — a display string,
+        // which made rewording a flag a constraint concern and forbade two
+        // flags sharing one — and a UNIQUE on `name` that only duplicated
+        // the primary key. SQLite cannot drop a table constraint in place,
+        // so rebuild the table in the shape database.drift declares.
+        DevLogger.log(
+          name: 'JournalDb',
+          message: 'Rebuilding config_flags without the UNIQUE(description)',
+        );
+        await customStatement('''
+CREATE TABLE config_flags_v48 (
+  name TEXT NOT NULL,
+  description TEXT NOT NULL,
+  status BOOLEAN NOT NULL DEFAULT FALSE,
+  PRIMARY KEY (name)
+)''');
+        await customStatement(
+          'INSERT INTO config_flags_v48 (name, description, status) '
+          'SELECT name, description, status FROM config_flags',
+        );
+        await customStatement('DROP TABLE config_flags');
+        await customStatement(
+          'ALTER TABLE config_flags_v48 RENAME TO config_flags',
+        );
       }();
     }
   }

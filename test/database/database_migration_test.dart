@@ -138,6 +138,48 @@ WHERE type = 'Task'
     );
 
     test(
+      'a step that fails rolls back everything the upgrade did before it',
+      () async {
+        final dbFile = File(p.join(testDirectory.path, 'atomic.db'));
+        final sqlite = sqlite3.open(dbFile.path);
+        createJournalSchema(sqlite, 46);
+        // A v20-era column with its index, plus a second index on the same
+        // column that the v47 step does not know about: the step drops the
+        // index it expects and then fails to drop the column, which SQLite
+        // refuses while another index still references it.
+        sqlite
+          ..execute('ALTER TABLE journal ADD COLUMN category_id TEXT')
+          ..execute(
+            'CREATE INDEX idx_journal_category_id ON journal(category_id)',
+          )
+          ..execute('CREATE INDEX idx_blocker ON journal(category_id)')
+          ..close();
+
+        final db = JournalDb(overriddenFilename: 'atomic.db');
+        await expectLater(
+          db.customSelect('PRAGMA user_version').get(),
+          throwsA(isA<Object>()),
+        );
+        await db.close();
+
+        // Without one transaction around the upgrade, the first DROP INDEX
+        // would have survived the failure that followed it.
+        final raw = sqlite3.open(dbFile.path);
+        addTearDown(raw.close);
+        final indexes = raw
+            .select(
+              "SELECT name FROM sqlite_master WHERE type = 'index' "
+              "AND tbl_name = 'journal'",
+            )
+            .map((row) => row['name'] as String)
+            .toSet();
+        expect(indexes, contains('idx_journal_category_id'));
+        expect(indexes, contains('idx_blocker'));
+        expect(raw.select('PRAGMA user_version').single['user_version'], 46);
+      },
+    );
+
+    test(
       'an install whose indexes already match is not rebuilt for spelling',
       () async {
         final dbFile = File(p.join(testDirectory.path, 'matching.db'));
