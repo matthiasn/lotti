@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:drift/drift.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_db_conversions.dart';
@@ -35,7 +36,7 @@ class AgentRepoLinks {
     }
 
     await _db.transaction(() async {
-      final now = DateTime.now();
+      final now = clock.now();
       // The SQL `deleted_at` / `updated_at` columns AND the
       // `serialized` JSON both need to carry the tombstone, otherwise
       // readers that decode the link from `serialized` (e.g. the

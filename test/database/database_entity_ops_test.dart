@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:clock/clock.dart';
 import 'package:drift/drift.dart' show Variable;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -616,6 +617,21 @@ void main() {
         expect(retrieved, isNotNull);
         expect(retrieved?.meta.id, entry.meta.id);
         expect(retrieved?.meta.dateFrom, isA<DateTime>());
+      });
+
+      test('updateJournalEntity stamps updated_at from clock.now()', () async {
+        // Drift stores DateTime columns as whole seconds, so a fixed instant
+        // with no sub-second part round-trips exactly.
+        final fixedNow = DateTime(2026, 9, 5, 10, 30);
+        final entry = createJournalEntry('Clock-driven write');
+
+        await withClock(
+          Clock.fixed(fixedNow),
+          () => db!.updateJournalEntity(entry),
+        );
+
+        final row = await db!.entityById(entry.meta.id);
+        expect(row?.updatedAt, fixedNow);
       });
 
       test(

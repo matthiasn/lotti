@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:clock/clock.dart';
 import 'package:drift/drift.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/services/dev_logger.dart';
@@ -115,12 +116,12 @@ class SlowQueryInterceptor extends QueryInterceptor {
     return (entry) {
       final elapsedMs =
           entry.elapsed.inMicroseconds / Duration.microsecondsPerMillisecond;
-      final date = DateFormat('yyyy-MM-dd').format(DateTime.now());
+      final date = DateFormat('yyyy-MM-dd').format(clock.now());
       final logFile = File(
         p.join(documentsDirectoryPath, 'logs', '$fileStem-$date.log'),
       );
       final line =
-          '${DateTime.now().toIso8601String()} '
+          '${clock.now().toIso8601String()} '
           '[${entry.databaseName}] ${entry.operation} '
           '${elapsedMs.toStringAsFixed(3)}ms '
           'args=${entry.arguments.length} '

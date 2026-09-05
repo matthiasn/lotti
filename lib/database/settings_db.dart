@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:clock/clock.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
 import 'package:lotti/database/common.dart';
@@ -81,7 +82,7 @@ class SettingsDb extends _$SettingsDb {
     final settingsItem = SettingsItem(
       configKey: configKey,
       value: value,
-      updatedAt: DateTime.now(),
+      updatedAt: clock.now(),
     );
 
     final result = await into(settings).insertOnConflictUpdate(settingsItem);

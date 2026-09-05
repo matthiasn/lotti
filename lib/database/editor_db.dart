@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:clock/clock.dart';
 import 'package:drift/drift.dart';
 import 'package:lotti/database/common.dart';
 import 'package:lotti/utils/file_utils.dart';
@@ -69,7 +70,7 @@ class EditorDb extends _$EditorDb {
   /// ```dart
   /// final id = await db.insertDraftState(
   ///   entryId: 'entry-123',
-  ///   lastSaved: DateTime.now(),
+  ///   lastSaved: clock.now(),
   ///   draftDeltaJson: '{"ops":[{"insert":"Hello"}]}',
   /// );
   /// ```
@@ -91,7 +92,7 @@ class EditorDb extends _$EditorDb {
       id: uuid.v1(),
       status: _draftStatusDraft,
       entryId: entryId,
-      createdAt: DateTime.now(),
+      createdAt: clock.now(),
       lastSaved: lastSaved,
       delta: draftDeltaJson,
     );

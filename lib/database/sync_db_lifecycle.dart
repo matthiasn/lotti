@@ -37,7 +37,7 @@ mixin _SyncDbSequenceLifecycle on _$SyncDatabase, _SyncDbSequenceWatermarks {
     int pageSize = 500,
   }) async {
     final unresolvable = SyncSequenceStatus.unresolvable.index;
-    final effectiveNow = now ?? DateTime.now();
+    final effectiveNow = now ?? clock.now();
     final cutoff = effectiveNow.subtract(grace);
 
     // `status IN (1, 2)` is inlined as a literal so the SQLite planner
@@ -112,7 +112,7 @@ mixin _SyncDbSequenceLifecycle on _$SyncDatabase, _SyncDbSequenceWatermarks {
     int pageSize = 500,
   }) async {
     final unresolvable = SyncSequenceStatus.unresolvable.index;
-    final effectiveNow = now ?? DateTime.now();
+    final effectiveNow = now ?? clock.now();
     final cutoff = effectiveNow.subtract(amnestyWindow);
 
     // Same `IN (1, 2)` literal trick as
@@ -222,7 +222,7 @@ mixin _SyncDbSequenceLifecycle on _$SyncDatabase, _SyncDbSequenceWatermarks {
         'WHERE status = ?',
         variables: [
           Variable.withInt(SyncSequenceStatus.missing.index),
-          Variable.withDateTime(DateTime.now()),
+          Variable.withDateTime(clock.now()),
           Variable.withInt(SyncSequenceStatus.unresolvable.index),
         ],
         updates: {syncSequenceLog},
@@ -249,7 +249,7 @@ mixin _SyncDbSequenceLifecycle on _$SyncDatabase, _SyncDbSequenceWatermarks {
         'WHERE status = ? AND entry_id IS NOT NULL',
         variables: [
           Variable.withInt(SyncSequenceStatus.missing.index),
-          Variable.withDateTime(DateTime.now()),
+          Variable.withDateTime(clock.now()),
           Variable.withInt(SyncSequenceStatus.unresolvable.index),
         ],
         updates: {syncSequenceLog},

@@ -91,10 +91,10 @@ class Outbox extends Table {
   IntColumn get id => integer().autoIncrement()();
 
   DateTimeColumn get createdAt =>
-      dateTime().named('created_at').withDefault(Constant(DateTime.now()))();
+      dateTime().named('created_at').withDefault(currentDateAndTime)();
 
   DateTimeColumn get updatedAt =>
-      dateTime().named('updated_at').withDefault(Constant(DateTime.now()))();
+      dateTime().named('updated_at').withDefault(currentDateAndTime)();
 
   IntColumn get status =>
       integer().withDefault(Constant(OutboxStatus.pending.index))();

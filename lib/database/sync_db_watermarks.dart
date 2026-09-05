@@ -52,7 +52,7 @@ mixin _SyncDbSequenceWatermarks on _$SyncDatabase {
       variables: [
         Variable.withString(hostId),
         Variable.withInt(lastCounter),
-        Variable.withInt(DateTime.now().millisecondsSinceEpoch ~/ 1000),
+        Variable.withInt(clock.now().millisecondsSinceEpoch ~/ 1000),
       ],
       updates: {syncSequenceLog},
     );

@@ -27,7 +27,7 @@ Future<void> migrateFromSingleEmbeddingStore({
     // No old store — write marker and return.
     await shardedBaseDir.create(recursive: true);
     await markerFile.writeAsString(
-      'Migrated at ${DateTime.now().toUtc().toIso8601String()}',
+      'Migrated at ${clock.now().toUtc().toIso8601String()}',
     );
     return;
   }
@@ -78,7 +78,7 @@ Future<void> migrateFromSingleEmbeddingStore({
 
     // Write marker only after successful migration.
     await markerFile.writeAsString(
-      'Migrated at ${DateTime.now().toUtc().toIso8601String()}',
+      'Migrated at ${clock.now().toUtc().toIso8601String()}',
     );
   } finally {
     oldOps.close();

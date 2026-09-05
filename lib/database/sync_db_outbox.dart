@@ -68,7 +68,7 @@ mixin _SyncDbOutbox on _$SyncDatabase {
     DateTime? now,
   }) async {
     if (maxSize <= 0) return const <OutboxItem>[];
-    final effectiveNow = now ?? DateTime.now();
+    final effectiveNow = now ?? clock.now();
     final reclaimWindow = effectiveNow.subtract(leaseDuration);
 
     return transaction(() async {
@@ -175,7 +175,7 @@ mixin _SyncDbOutbox on _$SyncDatabase {
     await (update(outbox)..where((t) => t.id.isIn(ids))).write(
       OutboxCompanion(
         status: Value(OutboxStatus.sent.index),
-        updatedAt: Value(now ?? DateTime.now()),
+        updatedAt: Value(now ?? clock.now()),
       ),
     );
   }

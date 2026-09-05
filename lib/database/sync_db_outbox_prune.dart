@@ -30,7 +30,7 @@ mixin _SyncDbOutboxPrune on _$SyncDatabase {
     required Duration retention,
     DateTime? now,
   }) {
-    final effectiveNow = now ?? DateTime.now();
+    final effectiveNow = now ?? clock.now();
     final cutoff = effectiveNow.subtract(retention);
     return customUpdate(
       'DELETE FROM outbox '
@@ -76,7 +76,7 @@ mixin _SyncDbOutboxPrune on _$SyncDatabase {
     // `pageSize <= 0` so a misconfigured caller cannot stall the
     // writer.
     if (chunkSize <= 0) return 0;
-    final effectiveNow = now ?? DateTime.now();
+    final effectiveNow = now ?? clock.now();
     final cutoff = effectiveNow.subtract(retention);
     var total = 0;
     while (true) {

@@ -31,7 +31,7 @@ class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxItem> {
     false,
     type: DriftSqlType.dateTime,
     requiredDuringInsert: false,
-    defaultValue: Constant(DateTime.now()),
+    defaultValue: currentDateAndTime,
   );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
@@ -43,7 +43,7 @@ class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxItem> {
     false,
     type: DriftSqlType.dateTime,
     requiredDuringInsert: false,
-    defaultValue: Constant(DateTime.now()),
+    defaultValue: currentDateAndTime,
   );
   static const VerificationMeta _statusMeta = const VerificationMeta('status');
   @override
