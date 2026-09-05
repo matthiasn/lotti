@@ -256,12 +256,26 @@ const _homeAlong = 73.0;
 /// view from there. The rear pair stands on tall legs so, seen from home,
 /// each panel clears the front pair's top edge instead of cutting across
 /// it (`plaza_layout_test` projects the corners to check).
-const _pylonSlots = <(double, double, double, double, double)>[
-  (-14, 20, 16, 9, 4.5),
-  (14, 23, 13, 7.5, 5.5),
-  (-19, 38, 11, 6.2, 11.5),
-  (19, 41, 9.5, 5.4, 11.5),
-];
+enum _PylonPreset {
+  frontLeft(-14, 20, 16, 9, 4.5),
+  frontRight(14, 23, 13, 7.5, 5.5),
+  backLeft(-19, 38, 11, 6.2, 11.5),
+  backRight(19, 41, 9.5, 5.4, 11.5);
+
+  const _PylonPreset(
+    this.lateral,
+    this.along,
+    this.width,
+    this.height,
+    this.bottom,
+  );
+  final double lateral;
+  final double along;
+  final double width;
+  final double height;
+  final double bottom;
+}
+
 const _pylonFocusAlong = 52.0;
 
 /// Home looks a little up: the masthead and the rear pylons sit in the
@@ -322,21 +336,22 @@ FrontierPlaza? frontierPlazaFor(StreetPlan plan) {
   final (hx, hz) = _plazaPoint(last, lateralOffset, 0, _homeAlong);
 
   final pylons = <BillboardSlot>[];
-  for (final (rank, slot) in _pylonSlots.indexed) {
-    final (lateral, along, width, height, bottom) = slot;
+  for (final slot in _PylonPreset.values) {
+    final lateral = slot.lateral;
+    final along = slot.along;
     final (px, pz) = _plazaPoint(last, lateralOffset, lateral, along);
     // Face the plaza's focal point, expressed in the local frame then
     // rotated into the world.
     final localFacing = math.atan2(0 - lateral, _pylonFocusAlong - along);
     pylons.add(
       BillboardSlot(
-        rank: rank,
+        rank: slot.index,
         x: px,
         z: pz,
         facingRadians: last.headingRadians + localFacing,
-        width: width,
-        height: height,
-        bottom: bottom,
+        width: slot.width,
+        height: slot.height,
+        bottom: slot.bottom,
         mount: BillboardMount.pylon,
       ),
     );
@@ -438,15 +453,19 @@ List<PlotPlacement> plazaMounts(StreetPlan plan) {
 
 /// Screen and ticker slots on the plaza-facing end walls of [plazaMounts].
 ///
-/// Returns the mounted billboard slots (ranks 4 and 5) and one ticker band
-/// under each, in the same order as [plazaMounts].
-({List<BillboardSlot> screens, List<TickerSlot> tickers}) mountedSlotsFor(
+/// Each mount carries its task, screen and ticker together.
+typedef MountedPanel = ({
+  String taskId,
+  BillboardSlot screen,
+  TickerSlot ticker,
+});
+
+List<MountedPanel> mountedSlotsFor(
   StreetPlan plan,
 ) {
   final last = plan.last;
-  final screens = <BillboardSlot>[];
-  final tickers = <TickerSlot>[];
-  if (last == null) return (screens: screens, tickers: tickers);
+  final panels = <MountedPanel>[];
+  if (last == null) return panels;
   for (final (i, mount) in plazaMounts(plan).indexed) {
     // The end wall faces along the street heading (toward the plaza).
     final facing = last.headingRadians;
@@ -457,31 +476,28 @@ List<PlotPlacement> plazaMounts(StreetPlan plan) {
       0,
       mount.width / 2 + 0.15,
     );
-    screens.add(
-      BillboardSlot(
-        rank: 4 + i,
-        x: endX,
-        z: endZ,
-        facingRadians: facing,
-        width: math.min(9.6, mount.depth * 1.2),
-        height: 7,
-        bottom: 2.6,
-        mount: BillboardMount.wall,
-      ),
+    final screen = BillboardSlot(
+      rank: 4 + i,
+      x: endX,
+      z: endZ,
+      facingRadians: facing,
+      width: math.min(9.6, mount.depth * 1.2),
+      height: 7,
+      bottom: 2.6,
+      mount: BillboardMount.wall,
     );
-    tickers.add(
-      TickerSlot(
-        x: endX,
-        z: endZ,
-        facingRadians: facing,
-        width: mount.depth * 1.1,
-        height: 1.3,
-        bottom: 1.2,
-        speedMetersPerSecond: i.isEven ? 3.5 : 2.8,
-      ),
+    final ticker = TickerSlot(
+      x: endX,
+      z: endZ,
+      facingRadians: facing,
+      width: mount.depth * 1.1,
+      height: 1.3,
+      bottom: 1.2,
+      speedMetersPerSecond: i.isEven ? 3.5 : 2.8,
     );
+    panels.add((taskId: mount.taskId, screen: screen, ticker: ticker));
   }
-  return (screens: screens, tickers: tickers);
+  return panels;
 }
 
 /// Roof billboards for the anomalies, most urgent first, at most [cap]:

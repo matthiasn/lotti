@@ -5,7 +5,7 @@ description: "The developer-only 3D project map: a merge-stable street folded in
 resource: ../../lib/features/plaza
 tags: [plaza, 3d, flutter-scene, flutter-gpu, tasks, visualization, prototype]
 status: draft
-generated: { by: codex/gpt-6, at: 2026-09-04T22:54:16Z }
+generated: { by: codex/gpt-6, at: 2026-09-05T00:00:08Z }
 stale_after: 2027-03-01
 sources:
   - id: street
@@ -15,7 +15,7 @@ sources:
   - id: plaza-layout
     resource: ../../lib/features/plaza/domain/plaza_layout.dart
     title: Frontier plaza, billboard slots, street furniture, beacons and task poses
-    last_modified: 2026-09-04
+    last_modified: 2026-09-05
   - id: attention
     resource: ../../lib/features/plaza/domain/attention.dart
     title: The attention score and the lantern state
@@ -43,35 +43,63 @@ sources:
   - id: scenery
     resource: ../../lib/features/plaza/domain/scenery.dart
     title: The seeded scenery and the furniture footprints
-    last_modified: 2026-09-04
+    last_modified: 2026-09-05
   - id: world
     resource: ../../lib/features/plaza/scene/plaza_world.dart
     title: PlazaWorld, everything derived once from tasks and the clock
-    last_modified: 2026-09-04
+    last_modified: 2026-09-05
   - id: lod
     resource: ../../lib/features/plaza/scene/facade_lod_manager.dart
     title: FacadeLodManager, tier assignment and promotion scheduling
-    last_modified: 2026-09-04
+    last_modified: 2026-09-05
   - id: scene
     resource: ../../lib/features/plaza/scene/plaza_scene.dart
     title: PlazaSceneController, the scene graph builder
-    last_modified: 2026-09-04
+    last_modified: 2026-09-05
   - id: boxes
     resource: ../../lib/features/plaza/scene/plaza_boxes.dart
     title: Shared unit geometry and immutable solid materials
     last_modified: 2026-09-05
+  - id: primitives
+    resource: ../../lib/features/plaza/scene/plaza_primitives.dart
+    title: Quad geometry and linear HDR colours
+    last_modified: 2026-09-05
+  - id: bindings
+    resource: ../../lib/features/plaza/scene/plaza_scene_records.dart
+    title: Scene records and shared layer bindings
+    last_modified: 2026-09-05
+  - id: static-batches
+    resource: ../../lib/features/plaza/scene/plaza_static_meshes.dart
+    title: Spatial opaque mesh baking
+    last_modified: 2026-09-05
+  - id: pacer
+    resource: ../../lib/features/plaza/ui/plaza_frame_pacer.dart
+    title: Idle frame scheduling and lifecycle
+    last_modified: 2026-09-05
+  - id: repaint
+    resource: ../../lib/features/plaza/ui/plaza_repaint.dart
+    title: Scene repaint without hosted widget rebuilds
+    last_modified: 2026-09-05
+  - id: frame-window
+    resource: ../../lib/features/plaza/ui/plaza_frame_window.dart
+    title: Bounded frame statistics
+    last_modified: 2026-09-05
+  - id: captures
+    resource: ../../lib/features/plaza/scene/surface_captures.dart
+    title: Manual capture acknowledgement and cadence
+    last_modified: 2026-09-05
   - id: surfaces
     resource: ../../lib/features/plaza/scene/plaza_surfaces.dart
     title: PlazaSurfaces, the non-facade widget surfaces and their capture intervals
-    last_modified: 2026-09-04
+    last_modified: 2026-09-05
   - id: sprites
     resource: ../../lib/features/plaza/scene/plaza_sprites.dart
     title: PlazaSprites, lanterns, beacons, lamps and chase lights
-    last_modified: 2026-09-04
+    last_modified: 2026-09-05
   - id: picker
     resource: ../../lib/features/plaza/scene/plaza_picker.dart
     title: PlazaPicker, tap resolution
-    last_modified: 2026-09-04
+    last_modified: 2026-09-05
   - id: camera
     resource: ../../lib/features/plaza/ui/fly_camera_controller.dart
     title: FlyCameraController, walking, flights and the landing flight
@@ -79,7 +107,7 @@ sources:
   - id: harness
     resource: ../../lib/features/plaza/dev_main.dart
     title: The dev harness, input, flights, walk, tour, bench
-    last_modified: 2026-09-04
+    last_modified: 2026-09-05
   - id: pointer
     resource: ../../lib/features/plaza/ui/plaza_pointer_controller.dart
     title: Tap, drag and pointer cancellation state
@@ -174,7 +202,9 @@ Every frame the harness advances the bench or the tour, the morning walk and
 the camera, hands the eye to the LOD manager, the surface layer and the scene
 controller (light-pool fade), hands the camera to the sprite layer, and
 publishes a rolling 120-frame window to the debug overlay four times a
-second.
+second. `PlazaFrameWindow` overwrites a fixed circular buffer and maintains
+a running sum; only publishing the HUD scans for the worst frame. The HUD
+keeps the manager's `FacadeLodStats` object instead of copying each of its fields.
 
 # The street: nothing ever moves
 
@@ -232,7 +262,7 @@ Everything beyond the street is derived from the `StreetPlan` (and, for
 attention, from task data plus the day). None of it moves a building.
 
 **Plaza geometry** (`frontierPlazaFor`): the square starts `plazaSetback`
-(7 m) past the end of the newest segment, is `plazaDepth` (66 m) deep and
+(7 m) past the end of the newest segment, is `plazaDepth` (72 m) deep and
 `plazaWidth` (62 m) wide, in the last segment's frame. On a folded street
 the last row runs back alongside an earlier one, so the whole plaza frame is
 shifted sideways by `plazaFoldClearance` (`plazaWidth / 2 + 11` = 42 m)
@@ -259,7 +289,11 @@ toward the district's outside, away from the centroid of every plot
   (`1.1 × depth` wide, 1.3 m tall, bottom 1.2 m, 3.5 or 2.8 m/s).
 - `PlazaWorld.billboardSlots` is the four pylons then the mounted screens,
   six in all (`billboardSlots`); slot i shows billboard candidate i, and a
-  slot with no candidate stays empty.
+  slot with no candidate stays empty. `builtBillboards` and `roofPanels`
+  pair each built slot with its attention record once. `MountedPanel` keeps
+  a task ID, screen and ticker together; sibling layers do not zip them by
+  index. Pylon presets, `FurnitureKind` and `SpireStyle` own their dimensions
+  so the renderers and collision footprints use the same values.
 
 **Roof billboards** (`roofBillboardsFor`): one panel above each anomalous
 building (most urgent first, at most 12), `0.95 × width` wide, `clamp(2.6 +
@@ -644,10 +678,32 @@ manager keeps requesting it until the texture lands, because the host
 attaches a frame after the component does. `FacadeWidget.onCoverChanged`
 invalidates that texture after its image has painted or failed, so a late
 network image reaches the sign without a tier change or continuous polling.
-`SurfaceCaptures.invalidate` tracks the next capture count; callbacks from
-a detached component are ignored. Widget subtrees are sized at the
-facade's world size × `pxPerMeter` (the plate is `0.92 × width` by
-`0.9 × height`).
+`SurfaceCaptures.invalidate` first primes a new recording, then waits for a
+capture requested on a subsequent painted frame. flutter_scene can drain an
+old pending layer on the first request; that acknowledgement must not settle
+the refreshed image. Callbacks from a detached component are ignored.
+Widget subtrees keep their full logical size: facade world size × `pxPerMeter`
+(the plate is `0.92 × width` by `0.9 × height`). Sign captures use pixel ratio
+0.5 and live captures use 1, quartering static texture pixels without changing
+text layout or pointer coordinates.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Pending: register new host and target next capture
+  Pending --> Settled: target capture lands
+  Settled --> Unprimed: content invalidates
+  Pending --> Unprimed: content invalidates
+  Unprimed --> Primed: request capture and fresh recording
+  Primed --> Pending: next frame targets a fresh capture
+  Pending --> [*]: forget surface
+  Settled --> [*]: forget surface
+  Unprimed --> [*]: forget surface
+  Primed --> [*]: forget surface
+```
+
+Each LOD surface keeps its building, distance, component and tier together.
+Ranking sorts references to these records; the seven-field budget has one
+construction path shared by normal and stress operation.
 
 # Widget surfaces and their capture intervals
 
@@ -723,11 +779,37 @@ on each draw without a bounds refit.
 
 The glow (soft halo) and bulb (hard disc) textures are painted with the
 Flutter canvas and uploaded once by `loadGlow`; sprites are square dots
-until it lands.
+until it lands. `PlazaSpriteView` caches the eye, viewport and field of view:
+lantern sizing, lamp distance fades and beacon visibility/size rerun only when
+those change. Pulses, rings, blinks and chase heads still animate. Surface
+range checks cache the eye, and map visibility updates only when its altitude
+threshold changes.
 
 # Scene composition
 
-`PlazaSceneController` builds the `Scene` on construction:
+`PlazaSceneController` owns scene resources and builds the `Scene` on
+construction. Primitives live in `plaza_primitives.dart`; records and the
+shared `PlazaSceneBindings` live in `plaza_scene_records.dart`. The controller,
+surfaces, sprites and picker share these bindings rather than forwarding
+thirteen independent collections. Fixture builders are library parts for
+walls, ground, furniture, buildings, billboards, lights and skyline.
+
+After wall textures and sibling layers attach, `bakeStaticMeshes` replaces
+compatible stationary opaque meshes with spatial batches. Vertices carry
+transformed positions, original UVs and effective linear HDR colour; texture,
+UV transform, depth bias and draw/picking flags partition the batches.
+Materials awaiting shared widget captures, such as billboard backs, are
+explicitly excluded and retain their later texture updates. Cells
+span two street groups, retaining useful culling. Picking anchors, component
+hosts and visibility groups keep their identity. Focus rings, neon groups and
+pickable backing subtrees can batch locally within their preserved anchor.
+Empty static branches are removed. Static walls remain raycastable, so they
+still occlude taps. Uploads finish before each group's source graph changes.
+Translucent pools, washes and glows retain individual depth ordering and their
+animated material references; merging these into global blended meshes would
+change which overlapping surface draws last.
+
+The builder creates:
 
 - **Shared box resources**: `PlazaBoxes` owns one plain unit cube and one
   face-tinted unit cube per scene. Every box has an unscaled logical anchor
@@ -833,6 +915,11 @@ until it lands.
   quarter ticks, filling from the walker's left (a +Z face's +X, where the
   widget quads put their texture's left edge), so the lit part reads as
   progress along a scale.
+- **Texture density**: fifteen window tiles are 480 × 192 px and fifteen
+  shopfront strips are 1584 × 192 px (`_px` 48). These thirty RGBA8 textures
+  occupy approximately 30 MiB including a full mip chain, versus 121 MiB at
+  twice the dimensions. This is a pixel-storage estimate, not a measurement
+  of process peak memory. Ground grain, paving and pool textures are separate.
 - **Shopfronts** (`WallTextures.shopfront(state, variant)`): the band is
   one 33 × 4 m strip, a parade of six trades of different widths (café,
   record shop, bar, noodle bar, arcade, florist) plus one 3 m **vacant
@@ -902,7 +989,10 @@ buttons clear the active pointer and drag flag. Unrelated pointers cannot
 end the gesture. Auto pacing can therefore settle back to its idle cap.
 `PlazaPicker.pick` resolves beacon dots first in screen space (within
 `beaconHitPx` 14), because sprites are skipped by the raycaster, then casts a
-ray up to `maxTapDistance` (160 m) and walks up from the hit node to a
+ray up to `maxTapDistance` (160 m). Navigation skips hosted widget quads
+(their live input is handled by `SceneView`) to reach the physical backing,
+while ordinary and batched walls still block the ray. It walks up from that
+hit node to a
 billboard backing or a facade plate. A beacon tap flies to its pose, a
 nearby building tap activates its facade, a distant building tap flies to
 its task pose, and a billboard tap flies to the task it shows. Only the primary button is used; input
@@ -927,7 +1017,9 @@ for keyboard and scene navigation is ignored in tour and bench modes.
   `PLAZA_*` variable through (dropping `PLAZA_BENCH`), grabs the window with
   `XGetImage` on each `ready` line, optionally clicks a `PLAZA_CLICK` point
   and grabs a second `-ticked` frame, and stops on `done` or a 240 s
-  watchdog.
+  watchdog. Tour mode ignores navigation and facade input; a scripted
+  `PLAZA_CLICK` screenshot does not verify live interaction. Exercise that
+  separately in interactive mode.
 
 # Gotchas
 
@@ -950,8 +1042,9 @@ for keyboard and scene navigation is ignored in tour and bench modes.
   on construction; the LOD manager, surfaces and sprites create GPU-backed
   components as they run. `codecov.yml` excludes `lib/features/plaza/scene/**`
   and `dev_main.dart`; `PlazaWorld` is the one scene-directory class that is
-  pure and tested, and `WallTextures.paintShopfront` is checked pixel by
-  pixel because the dressing is a contract.
+  pure domain projection. Capture scheduling, LOD, static mesh baking and
+  sprite buffers also have GPU-free test seams; texture painters are checked
+  pixel by pixel because the dressing is a contract.
 - **Xvfb cannot render the widget textures.** Under a virtual framebuffer the
   facades and billboards come out as flat slabs (observed in capture runs, not
   something the code checks); capture on a real X11 or XWayland display.
@@ -989,41 +1082,48 @@ for keyboard and scene navigation is ignored in tour and bench modes.
   walk stop and beacon clear of every solid, fly the whole walk against
   the fixture's solids both ways, and expect no lift at all down the
   streets.
-- **The harness paces its own frames.** `SceneView` is built with
-  `autoTick: false`; a `Ticker` in the harness runs `_onTick` and rebuilds
-  the view (which repaints it once) at most `PlazaFrameRate` frames a
-  second: `auto` is the display's rate while anything moves (a flight, the
-  walk, a held key, a drag, and 0.6 s after) and 30 Hz at rest, `60` and
-  `30` are caps; the default is `auto`, the benchmark and the tour are never
-  capped. The HUD carries the control (a design-system segmented toggle)
-  and a Debug box that shows the overlay; the backquote key toggles the
-  overlay too, where a keyboard sends it. The overlay reports two rates:
-  the frames the harness painted and the frames the engine produced
-  (`engineFps`, a persistent frame callback). They differ when something
-  besides the pacer keeps the engine running, and two things do:
-  flutter_scene's `WidgetTexture` schedules a frame on every paint for
-  any surface under an `everyFrame` or `interval` capture policy (its
-  frame pump; only `manual` does not), and an animation controller inside
-  a captured widget ticks on every vsync. So every surface is a **manual
-  capture requested from the pacer**: `PlazaSurfaces.update(eye, seconds,
-  forward:)` asks each timed surface in range, and in view, once its
-  interval is up (the jumbotron `jumbotronInterval` 1 s; tickers,
-  billboards, skyline screens, markers, banners and signs once, a cover
-  that lands later asking for one more; a ticker is one captured period
-  that the band's material scrolls by UV offset, its texture never wider
-  than `maxTickerTexturePx`), and
-  `FacadeLodManager.update(eye, forward:,
-  seconds:, flying:)` asks each live wall every `liveInterval` (0.05 s),
-  and re-ranks the tiers only when the eye, the view direction, the budget
-  or the flight state moved since a ranking that left nothing undone. And
-  the one animated widget left reads **its cadence's clock**, a
-  `ValueNotifier<double>` of harness seconds that `requestDue` advances
-  immediately before each capture request: `JumbotronWidget` turns its
-  slides by it; none of them owns an animation controller, so a clock notification rebuilds its listeners in the frame of the request.
-  These clocks are shared per cadence, so even a culled surface can rebuild
-  when another surface advances that clock; only its capture is culled.
-  The pacer's `Ticker` still wakes on every vsync even when `_onPace` skips
-  a scene frame, so `engineFps` need not equal the painted rate. `PLAZA_FPS=auto|60|30` picks the cap at start.
+- **The harness paces its own frames.** `SceneView(autoTick: false)` stays
+  mounted beneath `PlazaRepaint`. The frame listenable marks this render
+  boundary for paint without rebuilding the hosted Flutter subtrees.
+  `PlazaFramePacer` requests one scheduler callback at a time. Uncapped
+  movement requests the next vsync; capped rendering waits on a cancellable
+  timer before requesting another frame. Its deadline starts at the last
+  frame request, so engine delivery and frame preparation consume the same
+  interval instead of adding drift. Input cancels the wait and coalesces
+  into one immediate frame. There is no repeating idle `Ticker` waking the
+  engine on every skipped vsync. `auto` follows the display while moving
+  (flight, walk, held key, drag and 0.6 s afterwards) and caps rest at 30 Hz;
+  `60` and `30` are fixed caps. Tour and bench remain uncapped.
+  Hidden/inactive lifecycle states cancel both timer and pending callback;
+  resume excludes the hidden duration from the animation clock.
+- **Engine and painted rates are distinct.** The HUD reports harness paints
+  and engine frame timings (`addTimingsCallback`, removed on disposal).
+  Timings arrive in batches, so short HUD windows may differ even at rest.
+  Another widget's animation or capture request can also produce a frame.
+  All plaza surfaces therefore use manual capture policies: an upstream
+  `everyFrame` or `interval` policy would run its own engine frame pump.
+  `SurfaceCaptures` requests live walls every 50 ms and the jumbotron every
+  second when visible; static surfaces capture initially and on content
+  completion. Cadence clocks advance only on requests. Tickers scroll a
+  captured period through the material UV offset and own no animation
+  controller. One cadence notification may rebuild multiple listeners,
+  including a culled surface, but only visible surfaces are captured.
+  `PLAZA_FPS=auto|60|30` selects the initial cap; the HUD can change it.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Stopped
+  Stopped --> Scheduled: start or resume
+  Scheduled --> Painting: engine frame callback
+  Painting --> Scheduled: uncapped, overdue or input requests frame
+  Painting --> Waiting: capped
+  Waiting --> Scheduled: timer expires or input wakes
+  Waiting --> Stopped: hide or dispose
+  Scheduled --> Stopped: hide or dispose
+  Painting --> Stopped: stop during callback
+  Stopped --> [*]: dispose
+```
+
 - **Fixtures are the demo world only.** The harness projects
   `ManualDemoWorld.penguinLogistics`; the synthetic generator lives in
   `test/features/plaza/plaza_fixtures.dart` for the tests and nowhere else.

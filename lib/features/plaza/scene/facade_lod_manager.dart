@@ -1,10 +1,9 @@
 import 'dart:math' as math;
-import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/widgets.dart' show Widget;
 import 'package:flutter_scene/scene.dart';
-import 'package:lotti/features/plaza/scene/plaza_scene.dart';
+import 'package:lotti/features/plaza/scene/plaza_scene_records.dart';
 import 'package:lotti/features/plaza/scene/surface_captures.dart';
 import 'package:lotti/features/plaza/ui/checklist_ticks.dart';
 import 'package:lotti/features/plaza/ui/facade_widget.dart';
@@ -41,6 +40,17 @@ class FacadeLodConfig {
 
   /// Stress mode: every facade becomes live, caps ignored.
   bool forceAllLive;
+
+  /// One value captures every setting that can invalidate a tier ranking.
+  _Budget _budget(bool flying) => (
+    liveCap: liveCap,
+    signCap: signCap,
+    liveDistance: liveDistance,
+    signDistance: signDistance,
+    promotionsPerFrame: promotionsPerFrame,
+    forceAllLive: forceAllLive,
+    flying: flying,
+  );
 }
 
 /// Live counters for the debug overlay.
@@ -54,6 +64,9 @@ class FacadeLodStats {
 }
 
 class _Surface {
+  _Surface(this.building);
+  final PlazaBuilding building;
+  double distance = 0;
   WidgetComponent? component;
   FacadeTier tier = FacadeTier.far;
 }
@@ -79,6 +92,7 @@ typedef FacadeSurfaceBuilder =
       required double height,
       required double pxPerMeter,
       WidgetInput input,
+      double pixelRatio,
     });
 
 /// Assigns each facade a tier from camera distance with sticky
@@ -94,9 +108,7 @@ class FacadeLodManager {
     required this.ticks,
     required this.onOpen,
     this.surfaceBuilder = hostedSurface,
-  }) : _surfaces = [for (final _ in buildings) _Surface()],
-       _distances = Float64List(buildings.length),
-       _order = List<int>.generate(buildings.length, (i) => i);
+  }) : _surfaces = [for (final building in buildings) _Surface(building)];
 
   final List<PlazaBuilding> buildings;
   final FacadeLodConfig config;
@@ -109,10 +121,8 @@ class FacadeLodManager {
   final SurfaceCaptures _captures = SurfaceCaptures();
   final CaptureCadence _live = CaptureCadence(liveInterval);
 
-  /// Ranking scratch, allocated once: each building's sticky distance and
-  /// the building indices sorted by it.
-  final Float64List _distances;
-  final List<int> _order;
+  /// Ranking references travel with their building and surface state.
+  late final List<_Surface> _rankedSurfaces = List.of(_surfaces);
 
   /// What the last ranking was made for. It holds until the eye, the view
   /// direction, the budget or the suspension changes, or until it left
@@ -137,8 +147,12 @@ class FacadeLodManager {
   /// this so a capture can be explained without a debugger.
   String describeNearest(Vector3 eye, {int count = 5}) {
     final rows = [
-      for (final (i, b) in buildings.indexed)
-        (b.groundDistanceTo(eye), b, _surfaces[i].tier),
+      for (final surface in _surfaces)
+        (
+          surface.building.groundDistanceTo(eye),
+          surface.building,
+          surface.tier,
+        ),
     ]..sort((a, b) => a.$1.compareTo(b.$1));
     return rows
         .take(count)
@@ -178,10 +192,10 @@ class FacadeLodManager {
   /// Promotes [building] to the sign tier immediately, so the destination
   /// of a flight has a facade by the time the camera lands.
   void prepare(PlazaBuilding building) {
-    final i = buildings.indexOf(building);
-    if (i < 0) return;
-    if (_surfaces[i].tier == FacadeTier.far) {
-      _apply(i, FacadeTier.sign);
+    final surface = _surfaces.where((s) => s.building == building).firstOrNull;
+    if (surface == null) return;
+    if (surface.tier == FacadeTier.far) {
+      _apply(surface, FacadeTier.sign);
       _settled = false;
     }
   }
@@ -220,26 +234,17 @@ class FacadeLodManager {
     } else if (!_rankedWithForward || forward != _rankedForward) {
       return false;
     }
-    final b = _rankedBudget;
-    return b != null &&
-        b.liveCap == config.liveCap &&
-        b.signCap == config.signCap &&
-        b.liveDistance == config.liveDistance &&
-        b.signDistance == config.signDistance &&
-        b.promotionsPerFrame == config.promotionsPerFrame &&
-        b.forceAllLive == config.forceAllLive &&
-        b.flying == flying;
+    return _rankedBudget == config._budget(flying);
   }
 
   void _rank(Vector3 eye, Vector3? forward, bool flying) {
     _rankings++;
     final n = buildings.length;
-    for (var i = 0; i < n; i++) {
-      final d = buildings[i].groundDistanceTo(eye);
-      _distances[i] = _surfaces[i].tier == FacadeTier.far ? d : d * _hysteresis;
-      _order[i] = i;
+    for (final surface in _surfaces) {
+      final d = surface.building.groundDistanceTo(eye);
+      surface.distance = surface.tier == FacadeTier.far ? d : d * _hysteresis;
     }
-    _order.sort((a, b) => _distances[a].compareTo(_distances[b]));
+    _rankedSurfaces.sort((a, b) => a.distance.compareTo(b.distance));
 
     var liveLeft = config.forceAllLive ? n : config.liveCap;
     var signLeft = config.forceAllLive ? 0 : config.signCap;
@@ -254,9 +259,9 @@ class FacadeLodManager {
     var changed = false;
     var waiting = false;
 
-    for (final i in _order) {
-      final building = buildings[i];
-      final d = _distances[i];
+    for (final surface in _rankedSurfaces) {
+      final building = surface.building;
+      final d = surface.distance;
       FacadeTier target;
       if (config.forceAllLive) {
         target = FacadeTier.live;
@@ -276,19 +281,19 @@ class FacadeLodManager {
       }
       if (target == FacadeTier.sign) signLeft--;
 
-      final current = _surfaces[i].tier;
+      final current = surface.tier;
       if (target == current) continue;
       if (target.index > current.index) {
         // Promotion: rate-limited.
         if (promotionsLeft > 0) {
           promotionsLeft--;
-          _apply(i, target);
+          _apply(surface, target);
           changed = true;
         } else {
           waiting = true;
         }
       } else {
-        _apply(i, target);
+        _apply(surface, target);
         changed = true;
       }
     }
@@ -307,15 +312,7 @@ class FacadeLodManager {
     _rankedEye.setFrom(eye);
     _rankedWithForward = forward != null;
     if (forward != null) _rankedForward.setFrom(forward);
-    _rankedBudget = (
-      liveCap: config.liveCap,
-      signCap: config.signCap,
-      liveDistance: config.liveDistance,
-      signDistance: config.signDistance,
-      promotionsPerFrame: config.promotionsPerFrame,
-      forceAllLive: config.forceAllLive,
-      flying: flying,
-    );
+    _rankedBudget = config._budget(flying);
   }
 
   /// Whether the eye is on [building]'s street side and, given [forward],
@@ -331,9 +328,8 @@ class FacadeLodManager {
     return dx * forward.x + dy * forward.y + dz * forward.z < 0;
   }
 
-  void _apply(int index, FacadeTier target) {
-    final surface = _surfaces[index];
-    final building = buildings[index];
+  void _apply(_Surface surface, FacadeTier target) {
+    final building = surface.building;
     final existing = surface.component;
     if (existing != null) {
       building.facadeAnchor.removeComponent(existing);
@@ -358,6 +354,7 @@ class FacadeLodManager {
         width: building.facadeWorldWidth,
         height: building.facadeWorldHeight,
         pxPerMeter: building.pxPerMeter,
+        pixelRatio: live ? 1 : 0.5,
         // A live wall takes pointer input; a sign does not.
         input: live ? WidgetInput.automatic : WidgetInput.manual,
       );
@@ -405,12 +402,12 @@ class FacadeLodManager {
   /// Detaches every widget surface (used when tearing a scene down).
   void dispose() {
     _activated = null;
-    for (var i = 0; i < buildings.length; i++) {
-      final component = _surfaces[i].component;
+    for (final surface in _surfaces) {
+      final component = surface.component;
       if (component != null) {
-        buildings[i].facadeAnchor.removeComponent(component);
+        surface.building.facadeAnchor.removeComponent(component);
         _captures.forget(component.controller, cadence: _live);
-        _surfaces[i].component = null;
+        surface.component = null;
       }
     }
     _settled = false;

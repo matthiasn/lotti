@@ -1,13 +1,13 @@
 import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
-
 import 'dart:ui' show Color;
 
 import 'package:flutter_scene/scene.dart';
 import 'package:lotti/features/plaza/domain/attention.dart';
 import 'package:lotti/features/plaza/domain/plaza_layout.dart';
-import 'package:lotti/features/plaza/scene/plaza_scene.dart';
+import 'package:lotti/features/plaza/scene/plaza_primitives.dart';
+import 'package:lotti/features/plaza/scene/plaza_scene_records.dart';
 import 'package:lotti/features/plaza/scene/plaza_world.dart';
 import 'package:lotti/features/plaza/ui/plaza_style.dart';
 import 'package:vector_math/vector_math.dart' hide Colors;
@@ -25,12 +25,9 @@ class PlazaSprites {
   PlazaSprites({
     required this.scene,
     required this.world,
-    required List<PlazaBuilding> buildings,
-    List<Node> lampAnchors = const [],
-    List<Node> spireAnchors = const [],
-    Map<PlazaBillboard, List<Vector3>> chaseLightPoints = const {},
+    required PlazaSceneBindings bindings,
   }) {
-    for (final anchor in lampAnchors) {
+    for (final anchor in bindings.lampAnchors) {
       final bulb = Sprite(
         color: linearColor(PlazaStyle.lamp),
         width: lampBulbSize,
@@ -54,7 +51,7 @@ class PlazaSprites {
         ),
       );
     }
-    for (final anchor in spireAnchors) {
+    for (final anchor in bindings.spireAnchors) {
       final sprite = Sprite(
         color: linearColor(PlazaStyle.warning),
         width: spireLightSize,
@@ -63,7 +60,7 @@ class PlazaSprites {
       anchor.add(Node(mesh: sprite.mesh)..raycastable = false);
       _spireLights.add(sprite);
     }
-    for (final entry in chaseLightPoints.entries) {
+    for (final entry in bindings.chaseLightPoints.entries) {
       // Warm-white bulbs read against any bezel colour; the tail goes
       // near-black so the chase is a chase.
       final color = linearColor(const Color(0xFFFFF1C8));
@@ -86,7 +83,7 @@ class PlazaSprites {
         ),
       );
     }
-    for (final building in buildings) {
+    for (final building in bindings.buildings) {
       final color = PlazaStyle.lantern(building.attention.lantern);
       final sprite = Sprite(color: linearColor(color));
       final node = Node(mesh: sprite.mesh)..raycastable = false;
@@ -259,8 +256,10 @@ class PlazaSprites {
     sprite.color = Vector4(r, g, b, a);
   }
 
-  /// Per-frame update: sizes from distance, pulses from [elapsedSeconds].
-  /// Only what changed since the last frame is written to a sprite.
+  final _view = PlazaSpriteView();
+
+  /// Camera-dependent sizes and fades update only when the view changes;
+  /// time-dependent pulses continue at the rendered frame cadence.
   void update(Camera camera, ui.Size viewSize, double elapsedSeconds) {
     final eye = camera.position;
     final fov = switch (camera.projection) {
@@ -268,18 +267,21 @@ class PlazaSprites {
       _ => math.pi / 3,
     };
     // World metres per logical pixel at distance d.
-    final metersPerPxAtUnit = 2 * math.tan(fov / 2) / viewSize.height;
+    final viewChanged = _view.update(eye, viewSize, fov);
+    final metersPerPxAtUnit = _view.metersPerPixel;
 
     final lanternPulse =
         0.35 + 0.65 * (0.5 + 0.5 * math.sin(elapsedSeconds * 2 * math.pi / 3));
     for (final l in _lanterns) {
-      final d = eye.distanceTo(l.worldPosition);
-      final px = (lanternNominalPx * 60 / math.max(d, 1)).clamp(
-        lanternMinPx,
-        lanternMaxPx,
-      );
-      final size = px * d * metersPerPxAtUnit * (l.lit ? 2.2 : 1.2);
-      _resize(l.sprite, size);
+      if (viewChanged) {
+        final d = eye.distanceTo(l.worldPosition);
+        final px = (lanternNominalPx * 60 / math.max(d, 1)).clamp(
+          lanternMinPx,
+          lanternMaxPx,
+        );
+        final size = px * d * metersPerPxAtUnit * (l.lit ? 2.2 : 1.2);
+        _resize(l.sprite, size);
+      }
       if (l.pulses) {
         _tint(l.sprite, l.color.x, l.color.y, l.color.z, lanternPulse);
       }
@@ -288,14 +290,16 @@ class PlazaSprites {
     // Lamps: a hard bulb that reads at every range (its size is fixed),
     // and a halo that fades away as the walker comes close so it never
     // sits on a facade.
-    for (final l in _lamps) {
-      final d = eye.distanceTo(l.worldPosition);
-      final haloAlpha =
-          ((d - lampHaloFadeStart) / (lampHaloFadeEnd - lampHaloFadeStart))
-              .clamp(0.0, 1.0) *
-          0.22;
-      final c = l.halo.color;
-      _tint(l.halo, c.x, c.y, c.z, haloAlpha);
+    if (viewChanged) {
+      for (final l in _lamps) {
+        final d = eye.distanceTo(l.worldPosition);
+        final haloAlpha =
+            ((d - lampHaloFadeStart) / (lampHaloFadeEnd - lampHaloFadeStart))
+                .clamp(0.0, 1.0) *
+            0.22;
+        final c = l.halo.color;
+        _tint(l.halo, c.x, c.y, c.z, haloAlpha);
+      }
     }
     // Spire lights blink: on for a third of a 1.6 s cycle.
     final blink = (elapsedSeconds % 1.6) < 0.55 ? 1.0 : 0.12;
@@ -334,27 +338,29 @@ class PlazaSprites {
 
     final ringPhase = (elapsedSeconds % 2.2) / 2.2;
     for (final b in _beacons) {
-      final pos = b.worldPosition;
-      final dx = pos.x - eye.x;
-      final dz = pos.z - eye.z;
-      final ground = math.sqrt(dx * dx + dz * dz);
-      final range = b.beacon.visibleRange;
-      final visible = ground <= range;
-      b.dotNode.visible = visible;
-      b.ringNode?.visible = visible;
-      if (!visible) continue;
-      final d = eye.distanceTo(pos);
-      // Shrinks gently with distance so a row of stops reads as a sequence
-      // rather than one blob at the vanishing point.
-      final px = beaconPx * (1 - 0.5 * (d / range).clamp(0.0, 1.0));
-      final size = px * d * metersPerPxAtUnit * 2.0;
-      final alpha = 0.9 - 0.6 * (d / range).clamp(0.0, 1.0);
-      _resize(b.dot, size);
-      _tint(b.dot, b.dot.color.x, b.dot.color.y, b.dot.color.z, alpha);
+      if (viewChanged) {
+        final pos = b.worldPosition;
+        final dx = pos.x - eye.x;
+        final dz = pos.z - eye.z;
+        final ground = math.sqrt(dx * dx + dz * dz);
+        final range = b.beacon.visibleRange;
+        final visible = ground <= range;
+        b.dotNode.visible = visible;
+        b.ringNode?.visible = visible;
+        final d = eye.distanceTo(pos);
+        // Shrinks gently with distance so a row of stops reads as a sequence
+        // rather than one blob at the vanishing point.
+        final px = beaconPx * (1 - 0.5 * (d / range).clamp(0.0, 1.0));
+        b.size = px * d * metersPerPxAtUnit * 2.0;
+        final alpha = 0.9 - 0.6 * (d / range).clamp(0.0, 1.0);
+        _resize(b.dot, b.size);
+        _tint(b.dot, b.dot.color.x, b.dot.color.y, b.dot.color.z, alpha);
+      }
+      if (!b.dotNode.visible) continue;
       final ring = b.ring;
       if (ring != null) {
         final scale = 0.5 + 1.9 * ringPhase;
-        _resize(ring, size * scale);
+        _resize(ring, b.size * scale);
         _tint(
           ring,
           ring.color.x,
@@ -408,6 +414,7 @@ class _BeaconSprite {
   });
 
   final Beacon beacon;
+  double size = 0;
   final Vector3 worldPosition;
   final Sprite dot;
   final Node dotNode;
@@ -499,5 +506,23 @@ class PlazaLightBuffer {
     data[offset + 7] = color.y * boost;
     data[offset + 8] = color.z * boost;
     data[offset + 9] = alpha;
+  }
+}
+
+/// Last view used for sprite sizes: owns its eye copy so mutable cameras
+/// cannot silently change the cached state between frames.
+class PlazaSpriteView {
+  final _eye = Vector3.zero();
+  ui.Size? _size;
+  double? _fov;
+  double metersPerPixel = 0;
+
+  bool update(Vector3 eye, ui.Size size, double fov) {
+    if (_size == size && _fov == fov && _eye == eye) return false;
+    _eye.setFrom(eye);
+    _size = size;
+    _fov = fov;
+    metersPerPixel = 2 * math.tan(fov / 2) / size.height;
+    return true;
   }
 }

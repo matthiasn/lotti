@@ -207,6 +207,37 @@ void main() {
   });
 
   group('content invalidation', () {
+    test('an old recorded layer cannot acknowledge a decoded cover', () {
+      final captures = SurfaceCaptures();
+      final controller = FakeWidgetTextureController();
+      captures
+        ..once(controller)
+        ..requestPending();
+      controller.landed = 1;
+      captures.requestPending();
+      captures
+        ..invalidate(controller)
+        ..requestPending();
+      // The engine's first request may rasterize the OLD pending layer,
+      // while marking the host dirty to record the decoded image this frame.
+      controller.landed = 2;
+      captures.requestPending();
+      expect(
+        controller.requests,
+        3,
+        reason: 'the freshly recorded layer must still be requested',
+      );
+      controller.landed = 3;
+      captures
+        ..requestPending()
+        ..requestPending();
+      expect(
+        controller.requests,
+        3,
+        reason: 'fresh content settles without polling',
+      );
+    });
+
     test('recaptures a decoded cover after the initial texture landed', () {
       final captures = SurfaceCaptures();
       final controller = FakeWidgetTextureController();

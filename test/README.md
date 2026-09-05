@@ -147,9 +147,9 @@ page tests and screenshot harnesses; do not replace them with test-only UI.
 
 For broader test conventions — centralized mocks/fallbacks (`test/mocks/mocks.dart`, `test/helpers/fallbacks.dart`), `setUpTestGetIt()` / `makeTestableWidget()`, the "every test must assert something meaningful" rule, and one-test-file-per-source-file — see the **Testing Guidelines** section of `AGENTS.md`.
 
-## flutter_scene needs a GPU; test the plaza's scheduling, not its geometry
+## Testing plaza code without a GPU
 
-`Scene()`, every geometry (`ccwQuad`, `CuboidGeometry`, `MeshGeometry.fromArrays`)
+`Scene()`, GPU-backed geometry (`ccwQuad`, `CuboidGeometry`, `MeshGeometry.fromArrays`)
 and `Sprite` (its `BillboardGeometry` wants the base shader bundle) throw under
 `flutter test`: there is no Impeller context, and flutter_scene's own suite
 `markTestSkipped`s without one. So `PlazaSurfaces`, `PlazaSprites` and any
@@ -163,6 +163,13 @@ every request the scheduler makes and lands a capture on demand
 with a fake capture controller, so activation, promotions, demotions and
 cover invalidation can be tested without geometry. Capture controller fakes
 are shared in `test/features/plaza/scene/test_utils.dart`.
+`plaza_static_meshes_test.dart` injects CPU mesh readers/uploaders to verify
+transforms, HDR tints, UVs, grouping, picking flags and failed-upload behavior
+without allocating GPU buffers. Native harness captures remain necessary for
+rendering and texture-order checks. Capture invalidation tests must simulate
+an old recorded layer landing before the newly painted content: a capture
+counter increment alone does not prove that a decoded cover reached the GPU.
+
 An empty `UnskinnedGeometry` with explicit local bounds also needs no GPU
 upload: `plaza_boxes_test.dart` uses it to verify shared geometry and material
 identity and the placement of scaled meshes under unscaled anchors.

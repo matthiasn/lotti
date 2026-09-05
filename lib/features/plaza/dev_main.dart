@@ -22,9 +22,10 @@ library;
 import 'dart:async' show unawaited;
 import 'dart:io' show Platform;
 import 'dart:math' as math;
+import 'dart:ui' show FrameTiming;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart' show SchedulerBinding, Ticker;
+import 'package:flutter/scheduler.dart' show SchedulerBinding;
 import 'package:flutter/services.dart';
 import 'package:flutter_scene/scene.dart' hide FlyCameraController;
 import 'package:lotti/features/demo/seed/demo_world.dart' show manualDemoNow;
@@ -38,6 +39,7 @@ import 'package:lotti/features/plaza/scene/facade_lod_manager.dart';
 import 'package:lotti/features/plaza/scene/plaza_bench.dart';
 import 'package:lotti/features/plaza/scene/plaza_picker.dart';
 import 'package:lotti/features/plaza/scene/plaza_scene.dart';
+import 'package:lotti/features/plaza/scene/plaza_scene_records.dart';
 import 'package:lotti/features/plaza/scene/plaza_sprites.dart';
 import 'package:lotti/features/plaza/scene/plaza_surfaces.dart';
 import 'package:lotti/features/plaza/scene/plaza_world.dart';
@@ -45,8 +47,11 @@ import 'package:lotti/features/plaza/scene/wall_textures.dart';
 import 'package:lotti/features/plaza/ui/checklist_ticks.dart';
 import 'package:lotti/features/plaza/ui/debug_overlay.dart';
 import 'package:lotti/features/plaza/ui/fly_camera_controller.dart';
+import 'package:lotti/features/plaza/ui/plaza_frame_pacer.dart';
+import 'package:lotti/features/plaza/ui/plaza_frame_window.dart';
 import 'package:lotti/features/plaza/ui/plaza_hud.dart';
 import 'package:lotti/features/plaza/ui/plaza_pointer_controller.dart';
+import 'package:lotti/features/plaza/ui/plaza_repaint.dart';
 import 'package:lotti/features/plaza/ui/plaza_search_sheet.dart';
 import 'package:lotti/features/plaza/ui/plaza_tour.dart';
 import 'package:lotti/features/plaza/ui/task_side_panel.dart';
@@ -92,7 +97,7 @@ enum HarnessMode {
 }
 
 class _PlazaHarnessState extends State<_PlazaHarness>
-    with SingleTickerProviderStateMixin {
+    with WidgetsBindingObserver {
   static final HarnessMode _mode = HarnessMode.fromEnvironment(
     Platform.environment,
   );
@@ -118,7 +123,7 @@ class _PlazaHarnessState extends State<_PlazaHarness>
   PlazaFrameRate _frameRate = PlazaFrameRate.fromEnvironment(
     Platform.environment,
   );
-  Ticker? _pacer;
+  PlazaFramePacer? _pacer;
 
   Duration? _lastPaint;
   final ValueNotifier<int> _frame = ValueNotifier(0);
@@ -129,7 +134,7 @@ class _PlazaHarnessState extends State<_PlazaHarness>
   double _movingUntil = 0;
 
   /// Frames the engine produced since the stats were last published,
-  /// counted on a persistent frame callback: the number that shows whether
+  /// counted from engine frame timings: the number that shows whether
   /// anything besides the pacer keeps the engine running.
   int _engineFrames = 0;
   int _engineFramesSinceTrace = 0;
@@ -170,7 +175,7 @@ class _PlazaHarnessState extends State<_PlazaHarness>
   final _pointer = PlazaPointerController();
 
   // Rolling frame-time window.
-  final List<double> _frameMs = [];
+  final _frameMs = PlazaFrameWindow();
   double _statsAge = 0;
 
   // Tour mode.
@@ -189,6 +194,7 @@ class _PlazaHarnessState extends State<_PlazaHarness>
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     unawaited(_boot());
   }
 
@@ -206,16 +212,32 @@ class _PlazaHarnessState extends State<_PlazaHarness>
         _showToast('Home — ${_world.projectLabel}');
     }
     setState(() => _ready = true);
-    _pacer = createTicker(_onPace)..start();
-    SchedulerBinding.instance.addPersistentFrameCallback((_) {
-      _engineFrames++;
-      _engineFramesSinceTrace++;
-    });
+    _pacer = PlazaFramePacer(
+      onFrame: _onPace,
+      cap: () => _mode.scripted
+          ? null
+          : _frameRate.capFor(moving: _moving || _elapsed < _movingUntil),
+    );
+    if (WidgetsBinding.instance.lifecycleState == null ||
+        WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
+      _pacer!.start();
+    }
+    SchedulerBinding.instance.addTimingsCallback(_recordEngineFrames);
+  }
+
+  void _recordEngineFrames(List<FrameTiming> timings) {
+    _engineFrames += timings.length;
+    _engineFramesSinceTrace += timings.length;
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    SchedulerBinding.instance.removeTimingsCallback(_recordEngineFrames);
     _pacer?.dispose();
+    if (_ready) _lod.dispose();
+    _ticks.dispose();
+    _stats.dispose();
     _frame.dispose();
     super.dispose();
   }
@@ -233,19 +255,19 @@ class _PlazaHarnessState extends State<_PlazaHarness>
     final last = _lastPaint;
     final seconds = elapsed.inMicroseconds / 1e6;
     if (_moving) _movingUntil = seconds + _movingHold;
-    final cap = _mode.scripted
-        ? null
-        : _frameRate.capFor(moving: seconds < _movingUntil);
-    if (last != null && cap != null) {
-      // A hair under the interval: a 60 Hz cap on a 60 Hz display must
-      // not skip every other vsync to jitter.
-      final due = last + Duration(microseconds: (1e6 / cap * 0.9).round());
-      if (elapsed < due) return;
-    }
     final dt = last == null ? 1 / 60 : (elapsed - last).inMicroseconds / 1e6;
     _lastPaint = elapsed;
     _onTick(elapsed, dt);
     _frame.value++;
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _pacer?.start();
+    } else {
+      _pacer?.stop();
+    }
   }
 
   // ---------------------------------------------------------------- data
@@ -273,7 +295,7 @@ class _PlazaHarnessState extends State<_PlazaHarness>
     final walls = _walls;
     if (walls != null) _sceneController.attachWallTextures(walls);
     _lod = FacadeLodManager(
-      buildings: _sceneController.buildings,
+      buildings: _sceneController.bindings.buildings,
       config: _config,
       ticks: _ticks,
       onOpen: (b) => setState(() => _panel = b),
@@ -281,24 +303,19 @@ class _PlazaHarnessState extends State<_PlazaHarness>
     _sprites = PlazaSprites(
       scene: _sceneController.scene,
       world: _world,
-      buildings: _sceneController.buildings,
-      lampAnchors: _sceneController.lampAnchors,
-      spireAnchors: _sceneController.spireAnchors,
-      chaseLightPoints: _sceneController.chaseLightPoints,
+      bindings: _sceneController.bindings,
     );
     // Fire and forget: sprites are square dots until the glow lands.
     unawaited(_sprites.loadGlow());
     _surfaces = PlazaSurfaces(
+      bindings: _sceneController.bindings,
       scene: _sceneController.scene,
       world: _world,
-      markerAnchors: _sceneController.markerAnchors,
-      billboards: _sceneController.billboards,
       pxPerMeter: _sceneController.pxPerMeter,
-      bannerAnchors: _sceneController.bannerAnchors,
-      jumbotronAnchor: _sceneController.jumbotronAnchor,
-      weekSignAnchors: _sceneController.weekSignAnchors,
-      skylineScreens: _sceneController.skylineScreens,
-      fillerSigns: _sceneController.fillerSigns,
+    );
+    final batches = _sceneController.bakeStaticMeshes();
+    debugPrint(
+      'PLAZA_BATCHES meshes=${batches.meshes} batches=${batches.batches}',
     );
     _picker = PlazaPicker(controller: _sceneController, sprites: _sprites);
     final home =
@@ -331,6 +348,7 @@ class _PlazaHarnessState extends State<_PlazaHarness>
   void _flyTo(CameraPose pose, String label, {bool push = true}) {
     if (push) _back.add(_camera.pose);
     _camera.flyTo(pose);
+    _pacer?.requestFrame();
     _showToast(label);
   }
 
@@ -340,7 +358,7 @@ class _PlazaHarnessState extends State<_PlazaHarness>
   }
 
   void _flyToTask(PlazaTask task) {
-    final building = _sceneController.buildings
+    final building = _sceneController.bindings.buildings
         .where((b) => b.task.id == task.id)
         .firstOrNull;
     if (building != null) _flyToBuilding(building);
@@ -425,6 +443,7 @@ class _PlazaHarnessState extends State<_PlazaHarness>
           ? KeyEventResult.handled
           : KeyEventResult.ignored;
     }
+    _pacer?.requestFrame();
     final key = event.logicalKey;
     if (key == LogicalKeyboardKey.slash) {
       setState(() => _searchOpen = true);
@@ -453,11 +472,15 @@ class _PlazaHarnessState extends State<_PlazaHarness>
   void _onPointerDown(PointerDownEvent event) {
     if (_mode.scripted) return;
     _pointer.down(event, _elapsed);
+    _pacer?.requestFrame();
   }
 
   void _onPointerMove(PointerMoveEvent event) {
     final delta = _pointer.move(event);
-    if (delta != null) _camera.addLookDelta(delta.dx, delta.dy);
+    if (delta != null) {
+      _camera.addLookDelta(delta.dx, delta.dy);
+      _pacer?.requestFrame();
+    }
   }
 
   void _onPointerUp(PointerUpEvent event) {
@@ -599,28 +622,21 @@ class _PlazaHarnessState extends State<_PlazaHarness>
 
     if (dt > 0) {
       _frameMs.add(dt * 1000);
-      if (_frameMs.length > 120) _frameMs.removeAt(0);
     }
     _statsAge += dt;
-    if (_statsAge >= 0.25 && _frameMs.isNotEmpty) {
+    if (_statsAge >= 0.25 && _frameMs.count > 0) {
       final engineFps = _engineFrames / _statsAge;
       _engineFrames = 0;
       _statsAge = 0;
-      final sum = _frameMs.fold<double>(0, (a, b) => a + b);
-      final avg = sum / _frameMs.length;
+      final avg = _frameMs.average;
       _stats
         ..fps = 1000 / avg
         ..engineFps = engineFps
         ..avgFrameMs = avg
-        ..worstFrameMs = _frameMs.reduce((a, b) => a > b ? a : b)
-        ..buildings = _sceneController.buildings.length
-        ..live = _lod.stats.live
-        ..sign = _lod.stats.sign
-        ..far = _lod.stats.far
-        ..captures = _lod.stats.captures
+        ..worstFrameMs = _frameMs.worst
+        ..buildings = _sceneController.bindings.buildings.length
         ..surfaceCaptures = _surfaces.captures
-        ..lastCaptureMs = _lod.stats.lastCapture.inMicroseconds / 1000
-        ..promotions = _lod.stats.promotions
+        ..lod = _lod.stats
         ..publish();
     }
   }
@@ -650,11 +666,11 @@ class _PlazaHarnessState extends State<_PlazaHarness>
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     _viewSize = constraints.biggest;
-                    // Rebuilt by the pacer: a rebuilt SceneView repaints
-                    // once, and it does not tick on its own.
-                    return ValueListenableBuilder<int>(
-                      valueListenable: _frame,
-                      builder: (context, _, _) => SceneView(
+                    // The frame clock invalidates paint, leaving hosted
+                    // widget elements out of the per-frame build path.
+                    return PlazaRepaint(
+                      frames: _frame,
+                      child: SceneView(
                         _sceneController.scene,
                         cameraBuilder: (_) => _frameCamera ?? _camera.camera(),
                         autoTick: false,
@@ -673,7 +689,10 @@ class _PlazaHarnessState extends State<_PlazaHarness>
               onOverview: _flyOverview,
               onHome: _flyHome,
               frameRate: _frameRate,
-              onFrameRateChanged: (rate) => setState(() => _frameRate = rate),
+              onFrameRateChanged: (rate) {
+                setState(() => _frameRate = rate);
+                _pacer?.requestFrame();
+              },
               showDebug: _showDebug,
               onShowDebugChanged: (show) => setState(() => _showDebug = show),
               toast: _toast,

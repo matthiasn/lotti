@@ -4,7 +4,8 @@ import 'dart:ui' show Size;
 import 'package:flutter/foundation.dart' show ValueListenable, ValueNotifier;
 import 'package:flutter/widgets.dart' show Widget;
 import 'package:flutter_scene/scene.dart';
-import 'package:lotti/features/plaza/scene/plaza_scene.dart';
+import 'package:lotti/features/plaza/scene/plaza_primitives.dart';
+import 'package:lotti/features/plaza/scene/plaza_scene_records.dart';
 import 'package:vector_math/vector_math.dart' show Vector3;
 
 /// World metres a widget surface is pulled toward the eye in the depth
@@ -21,13 +22,15 @@ const widgetDepthBias = 0.15;
 /// interval policy would make flutter_scene pump an engine frame on every
 /// vsync, whatever the harness paints, so captures are requested from the
 /// harness clock through [SurfaceCaptures]. [input] is manual unless the
-/// surface takes pointer input (a live facade).
+/// surface takes pointer input (a live facade). [pixelRatio] controls capture
+/// density independently of logical layout and pointer coordinates.
 WidgetComponent hostedSurface({
   required Widget child,
   required double width,
   required double height,
   required double pxPerMeter,
   double scale = 1,
+  double pixelRatio = 1,
   WidgetInput input = WidgetInput.manual,
   Geometry? geometry,
   OpaqueSurface? surface,
@@ -41,6 +44,7 @@ WidgetComponent hostedSurface({
   return WidgetComponent(
     child: child,
     size: Size(width * pxPerMeter * scale, height * pxPerMeter * scale),
+    pixelRatio: pixelRatio,
     geometry: geometry ?? ccwQuad(width, height),
     update: WidgetUpdatePolicy.manual,
     input: input,
@@ -146,7 +150,7 @@ class CaptureCadence {
 /// until they land, cadenced captures throttled per surface and skipped
 /// while the camera cannot see them, and the counters the overlay shows.
 class SurfaceCaptures {
-  final Map<WidgetTextureController, int> _pendingOnce = {};
+  final Map<WidgetTextureController, _PendingCapture> _pendingOnce = {};
   final Set<WidgetTextureController> _tracked = {};
 
   /// A capture request is due once this much of the interval has passed:
@@ -158,14 +162,17 @@ class SurfaceCaptures {
   /// capture lands.
   void once(WidgetTextureController controller) {
     _tracked.add(controller);
-    invalidate(controller);
+    // A newly mounted host has no stale recorded layer yet.
+    _pendingOnce[controller] = _PendingCapture()
+      ..primed = true
+      ..target = controller.captureCount + 1;
   }
 
   /// Requests a fresh texture after content changes, even when the initial
   /// capture already landed. Forgotten surfaces ignore late image callbacks.
   void invalidate(WidgetTextureController controller) {
     if (!_tracked.contains(controller)) return;
-    _pendingOnce[controller] = controller.captureCount + 1;
+    _pendingOnce[controller] = _PendingCapture();
   }
 
   /// Registers [surface] on [cadence].
@@ -186,8 +193,17 @@ class SurfaceCaptures {
   /// asking for those that have, so the list empties after the first
   /// frames.
   void requestPending() {
-    _pendingOnce.removeWhere((controller, target) {
-      if (controller.captureCount >= target) return true;
+    _pendingOnce.removeWhere((controller, pending) {
+      if (!pending.primed) {
+        pending.primed = true;
+        controller.requestCapture();
+        return false;
+      }
+      // The engine may satisfy a request from its previously recorded layer.
+      // First prime the host's paint, then request the new layer on the next
+      // painted frame. An old in-flight capture cannot acknowledge this stage.
+      pending.target ??= controller.captureCount + 1;
+      if (controller.captureCount >= pending.target!) return true;
       controller.requestCapture();
       return false;
     });
@@ -234,4 +250,10 @@ class SurfaceCaptures {
     }
     return longest;
   }
+}
+
+/// A fresh recording must be requested after the priming frame has painted.
+class _PendingCapture {
+  bool primed = false;
+  int? target;
 }

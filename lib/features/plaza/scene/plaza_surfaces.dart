@@ -2,10 +2,10 @@ import 'dart:math' as math;
 import 'dart:ui' show Color;
 
 import 'package:flutter/foundation.dart' show ValueListenable, ValueNotifier;
-
 import 'package:flutter_scene/scene.dart';
 import 'package:lotti/features/plaza/domain/plaza_layout.dart';
-import 'package:lotti/features/plaza/scene/plaza_scene.dart';
+import 'package:lotti/features/plaza/scene/plaza_primitives.dart';
+import 'package:lotti/features/plaza/scene/plaza_scene_records.dart';
 import 'package:lotti/features/plaza/scene/plaza_world.dart';
 import 'package:lotti/features/plaza/scene/surface_captures.dart';
 import 'package:lotti/features/plaza/ui/banner_widget.dart';
@@ -35,29 +35,22 @@ class PlazaSurfaces {
   PlazaSurfaces({
     required this.scene,
     required this.world,
-    required this.markerAnchors,
-    required this.billboards,
+    required this.bindings,
     required this.pxPerMeter,
-    Map<String, Node> bannerAnchors = const {},
-    Node? jumbotronAnchor,
-    Map<int, Node> weekSignAnchors = const {},
-    List<(Node, double, double, int)> skylineScreens = const [],
-    List<(Node, double, double, String)> fillerSigns = const [],
   }) {
-    _attachLabels(markerAnchors, markerWidth, markerHeight);
-    _attachLabels(weekSignAnchors, signWidth, signHeight);
-    _attachSkylineScreens(skylineScreens);
-    _attachFillerSigns(fillerSigns);
+    _attachLabels(bindings.markerAnchors, markerWidth, markerHeight);
+    _attachLabels(bindings.weekSignAnchors, signWidth, signHeight);
+    _attachSkylineScreens(bindings.skylineScreens);
+    _attachFillerSigns(bindings.fillerSigns);
     _attachBillboards();
     _attachTickers();
-    _attachBanners(bannerAnchors);
-    _attachJumbotron(jumbotronAnchor);
+    _attachBanners(bindings.bannerAnchors);
+    _attachJumbotron(bindings.jumbotronAnchor);
   }
 
   final Scene scene;
   final PlazaWorld world;
-  final Map<int, Node> markerAnchors;
-  final List<PlazaBillboard> billboards;
+  final PlazaSceneBindings bindings;
   final double pxPerMeter;
 
   final SurfaceCaptures _captures = SurfaceCaptures();
@@ -70,6 +63,7 @@ class PlazaSurfaces {
   /// The plaza's animated surfaces, hidden beyond [plazaRange]: where each
   /// stands and the node that hides it.
   final List<(Vector3, Node)> _ranged = [];
+  Vector3? _rangedEye;
 
   /// Beyond this distance the plaza's animated surfaces are hidden: far
   /// enough that the map shot still sees the pylons lit.
@@ -240,7 +234,7 @@ class PlazaSurfaces {
   }
 
   void _attachBillboards() {
-    for (final billboard in billboards) {
+    for (final billboard in bindings.billboards) {
       final slot = billboard.slot;
       late final WidgetComponent component;
       component = hostedSurface(
@@ -366,13 +360,16 @@ class PlazaSurfaces {
     double glowFade = 1,
   }) {
     _captures.requestPending();
-    for (final (center, node) in _ranged) {
-      node.visible = eye.distanceTo(center) <= plazaRange;
+    if (_rangedEye != eye) {
+      (_rangedEye ??= Vector3.zero()).setFrom(eye);
+      for (final (center, node) in _ranged) {
+        node.visible = eye.distanceToSquared(center) <= plazaRange * plazaRange;
+      }
     }
     // An anomaly's bloom breathes on its slot's pulse; every bloom fades
     // with the camera's height like a pool. One material write per
     // billboard, and only when the alpha moved.
-    for (final billboard in billboards) {
+    for (final billboard in bindings.billboards) {
       final pulse = billboard.attention.anomalous
           ? billboard.slot.glowAt(seconds)
           : 1.0;
