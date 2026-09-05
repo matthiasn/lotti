@@ -39,8 +39,13 @@ class ProjectTasksSliverPanel extends StatefulWidget {
     super.key,
   });
 
-  /// Below this content width the header keeps only glyphs for its actions.
-  static const double compactWidth = 560;
+  /// Below this header width the header takes its compact form.
+  ///
+  /// Sits between a phone (a 430 pt screen leaves the header about 400 pt)
+  /// and the narrowest desktop pane that still fits the full header: the
+  /// list-and-detail showcase's 580 pt detail pane leaves it 516 pt, and the
+  /// full header needs roughly 380 pt at the default text scale.
+  static const double compactWidth = 480;
 
   /// From this text scale on the header takes its compact form at any width.
   static const double largeTextScale = 1.2;

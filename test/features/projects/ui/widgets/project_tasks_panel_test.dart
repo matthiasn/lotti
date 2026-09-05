@@ -551,6 +551,13 @@ void main() {
       expect(requests, 1);
       expect(find.text('3h 40m'), findsOneWidget);
 
+      // A narrowed desktop pane, as in the list-and-detail showcase, still
+      // fits the full header.
+      await tester.pumpWidget(wrapSliver(panel(), width: 548));
+      await tester.pump();
+      expect(find.text('Add task'), findsOneWidget);
+      expect(find.text('3h 40m'), findsOneWidget);
+
       await tester.pumpWidget(wrapSliver(panel()));
       await tester.pump();
       expect(find.text('Add task'), findsNothing);

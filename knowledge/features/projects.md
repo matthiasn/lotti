@@ -440,8 +440,9 @@ apply on tap through the controller. Read-only showcases pass no callback and
 show no control.
 
 The header survives what used to break it: the title truncates before
-anything overflows, and in its compact form — below 560 pt of content width (a
-phone, or a narrowed desktop pane) or at a text scale of 1.2× and above — the
+anything overflows, and in its compact form — below 480 pt of header width (a
+phone, or a desktop pane narrowed past what the full header needs) or at a
+text scale of 1.2× and above — the
 total estimate is dropped in favour of the per-group estimates and Add task
 turns into the glyph-only icon action. Group headers are ordinary rows rather than
 pinned slivers, the same trade-off the agents listing made to avoid the sliver
