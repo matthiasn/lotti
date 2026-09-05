@@ -504,13 +504,31 @@ rather than a read path.
 
 ## What is genuinely not filtered
 
-Not "by-id reads" as a class — `getLabelDefinitionById` and the id-**batch**
-journal reads (`getJournalEntitiesForIds` and friends) go through the helper.
-What does not filter is narrower:
+`test/architecture/private_visibility_gate_test.dart` is the enforcement. It
+parses every named query in `database.drift` and, with the analyzer, every
+Dart declaration under `lib/` that reads journal rows — raw SQL or
+`select(journal)` — and fails the build for any that neither references the
+`private` column, nor dispatches on the flag (`_queryWithPrivateFilter`,
+`_matchesAllPrivateStates`), nor sits in its allowlist with a reason. An
+allowlist entry that stops being an exception fails the build too. What the
+allowlist holds:
 
-- **`journalEntityById`** — the single-entity read behind every detail page.
-- `getDayAudioEntries`.
-- `countAllJournalEntries`, which counts deleted rows too.
+- **By-id reads.** `journalEntityById` / `entityById`, the id-batch variants
+  that resolve ids the caller already holds (checklist items, editor drafts,
+  coalesced by-id reads, tombstone lookups), task estimates and project-id
+  maps by id, the rating attached to an entry.
+- **Sync and maintenance.** Outbox bundles and historical re-sync (every
+  device holds every row), the sequence-log population stream, the purge walk,
+  the search reindex (hits resolve through the gated id-batch read), the demo
+  reseed inventory.
+- **Counts.** `countAllJournalEntries`, `countJournalEntries`,
+  `countImportFlagEntries` — numbers, not rows.
+- **Not gated today, listed rather than silently so.** `getDayAudioEntries`,
+  the calendar range read (`sortedCalenderEntriesInRange`) and the data series
+  by type behind dashboards and health charts (measurements, quantitative,
+  workouts, surveys, habit completions). Whether they should gate is a product
+  decision, tracked as lotti3-0qaz; until it is made the audit keeps them
+  explicit.
 
 So the shape is: **lists, searches and batches thin out private entries; fetching
 one entity you already have the id for does not.** That is coherent with what the
@@ -525,7 +543,8 @@ Two consequences worth holding on to:
 - **A new list or search query must gate deliberately**, by one of the three
   mechanisms above. Nothing in the type system obliges it, so a read that queries
   the journal tables directly simply returns private rows — and looks like a
-  working query.
+  working query. The audit test above is what turns that into a failing build
+  rather than a review comment.
 
 # Backups and maintenance
 
