@@ -426,6 +426,27 @@ void main() {
       expect(find.text('All 2 databases are sound.'), findsOneWidget);
     });
 
+    testWidgets('integrity check reads naturally for a single store', (
+      tester,
+    ) async {
+      when(getIt<Maintenance>().checkIntegrity).thenAnswer(
+        (_) async => const [(database: 'journal', problems: <String>[])],
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidget(_constrainedMaintenancePage()),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.tap(find.text('Check database integrity'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // The label is a plural, so one store is not "All 1 databases".
+      expect(find.text('The database is sound.'), findsOneWidget);
+    });
+
     testWidgets('integrity check names the damaged databases', (tester) async {
       when(getIt<Maintenance>().checkIntegrity).thenAnswer(
         (_) async => const [

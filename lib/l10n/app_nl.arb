@@ -3817,7 +3817,7 @@
   "maintenanceCheckIntegrity": "Database-integriteit controleren",
   "maintenanceCheckIntegrityDescription": "Controleer of de databasebestanden in orde zijn",
   "maintenanceCheckIntegrityFailed": "Problemen gevonden in: {databases}.",
-  "maintenanceCheckIntegrityOk": "Alle {count} databases zijn in orde.",
+  "maintenanceCheckIntegrityOk": "{count, plural, =1{De database is in orde.} other{Alle {count} databases zijn in orde.}}",
   "maintenanceDeleteAgentDb": "Database verwijderen",
   "maintenanceDeleteAgentDbDescription": "Database verwijderen en app herstarten",
   "maintenanceDeleteDatabaseConfirm": "Ja, database verwijderen",

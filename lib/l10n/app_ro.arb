@@ -3440,7 +3440,7 @@
   "maintenanceCheckIntegrity": "Verificați integritatea bazei de date",
   "maintenanceCheckIntegrityDescription": "Verificați dacă fișierele bazei de date sunt intacte",
   "maintenanceCheckIntegrityFailed": "Probleme găsite în: {databases}.",
-  "maintenanceCheckIntegrityOk": "Toate cele {count} baze de date sunt intacte.",
+  "maintenanceCheckIntegrityOk": "{count, plural, =1{Baza de date este intactă.} other{Toate cele {count} baze de date sunt intacte.}}",
   "maintenanceDeleteAgentDb": "Ștergeți baza de date a agenților",
   "maintenanceDeleteAgentDbDescription": "Ștergeți baza de date a agenților și reporniți aplicația",
   "maintenanceDeleteDatabaseConfirm": "Da, ștergeți baza de date",

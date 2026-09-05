@@ -9024,7 +9024,14 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String maintenanceCheckIntegrityOk(int count) {
-    return 'Všech $count databází je v pořádku.';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Všech $count databází je v pořádku.',
+      few: 'Všechny $count databáze jsou v pořádku.',
+      one: 'Databáze je v pořádku.',
+    );
+    return '$_temp0';
   }
 
   @override

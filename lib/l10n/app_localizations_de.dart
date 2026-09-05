@@ -8985,7 +8985,13 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String maintenanceCheckIntegrityOk(int count) {
-    return 'Alle $count Datenbanken sind intakt.';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Alle $count Datenbanken sind intakt.',
+      one: 'Die Datenbank ist intakt.',
+    );
+    return '$_temp0';
   }
 
   @override

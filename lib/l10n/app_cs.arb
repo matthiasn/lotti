@@ -3447,7 +3447,7 @@
   "maintenanceCheckIntegrity": "Zkontrolovat integritu databáze",
   "maintenanceCheckIntegrityDescription": "Ověř, že jsou soubory databáze v pořádku",
   "maintenanceCheckIntegrityFailed": "Nalezeny problémy v: {databases}.",
-  "maintenanceCheckIntegrityOk": "Všech {count} databází je v pořádku.",
+  "maintenanceCheckIntegrityOk": "{count, plural, =1{Databáze je v pořádku.} few{Všechny {count} databáze jsou v pořádku.} other{Všech {count} databází je v pořádku.}}",
   "maintenanceDeleteAgentDb": "Smazat databázi agentů",
   "maintenanceDeleteAgentDbDescription": "Smazat databázi agentů a restartovat aplikaci",
   "maintenanceDeleteDatabaseConfirm": "Ano, smazat databázi",

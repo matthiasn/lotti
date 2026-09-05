@@ -9099,7 +9099,13 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String maintenanceCheckIntegrityOk(int count) {
-    return 'Toate cele $count baze de date sunt intacte.';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Toate cele $count baze de date sunt intacte.',
+      one: 'Baza de date este intactă.',
+    );
+    return '$_temp0';
   }
 
   @override

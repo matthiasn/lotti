@@ -9001,11 +9001,11 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get maintenanceCheckIntegrity =>
-      'Verificar integridade da base de dados';
+      'Verificar integridade do banco de dados';
 
   @override
   String get maintenanceCheckIntegrityDescription =>
-      'Verifica se os ficheiros da base de dados estão íntegros';
+      'Verifica se os arquivos do banco de dados estão íntegros';
 
   @override
   String maintenanceCheckIntegrityFailed(String databases) {
@@ -9014,7 +9014,13 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String maintenanceCheckIntegrityOk(int count) {
-    return 'As $count bases de dados estão íntegras.';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Os $count bancos de dados estão íntegros.',
+      one: 'O banco de dados está íntegro.',
+    );
+    return '$_temp0';
   }
 
   @override

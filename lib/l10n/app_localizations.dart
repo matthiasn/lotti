@@ -15231,7 +15231,7 @@ abstract class AppLocalizations {
   /// No description provided for @maintenanceCheckIntegrityOk.
   ///
   /// In en, this message translates to:
-  /// **'All {count} databases are sound.'**
+  /// **'{count, plural, =1{The database is sound.} other{All {count} databases are sound.}}'**
   String maintenanceCheckIntegrityOk(int count);
 
   /// No description provided for @maintenanceDeleteAgentDb.

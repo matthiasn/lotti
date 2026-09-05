@@ -450,31 +450,33 @@ void main() {
       });
 
       test('names the database whose check fails, and keeps going', () async {
-        // A store whose check cannot run is reported against that store
-        // rather than aborting the sweep.
-        final failing = MockFts5Db();
+        // The journal is checked *first*, so a sweep that stopped at the
+        // first failure would never reach the search store — which is what
+        // makes the second assertion worth making.
+        final failing = MockJournalDb();
         when(() => failing.customSelect(any())).thenThrow(
           StateError('quick_check unavailable'),
         );
-        final real = getIt<Fts5Db>();
+        final real = getIt<JournalDb>();
         getIt
-          ..unregister<Fts5Db>()
-          ..registerSingleton<Fts5Db>(failing);
+          ..unregister<JournalDb>()
+          ..registerSingleton<JournalDb>(failing);
         addTearDown(() {
           getIt
-            ..unregister<Fts5Db>()
-            ..registerSingleton<Fts5Db>(real);
+            ..unregister<JournalDb>()
+            ..registerSingleton<JournalDb>(real);
         });
 
         final reports = await maintenance.checkIntegrity();
 
         expect(
           reports.singleWhere((r) => r.database == 'journal').problems,
-          isEmpty,
+          isNotEmpty,
         );
         expect(
           reports.singleWhere((r) => r.database == 'search').problems,
-          isNotEmpty,
+          isEmpty,
+          reason: 'the sweep must continue past a failing store',
         );
         expect(loggedExceptions, isNotEmpty);
       });

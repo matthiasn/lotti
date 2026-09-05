@@ -5215,7 +5215,7 @@
       }
     }
   },
-  "maintenanceCheckIntegrityOk": "All {count} databases are sound.",
+  "maintenanceCheckIntegrityOk": "{count, plural, =1{The database is sound.} other{All {count} databases are sound.}}",
   "@maintenanceCheckIntegrityOk": {
     "placeholders": {
       "count": {

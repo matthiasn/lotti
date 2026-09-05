@@ -3818,7 +3818,7 @@
   "maintenanceCheckIntegrity": "Tjek databasens integritet",
   "maintenanceCheckIntegrityDescription": "Kontrollér, at databasefilerne er intakte",
   "maintenanceCheckIntegrityFailed": "Problemer fundet i: {databases}.",
-  "maintenanceCheckIntegrityOk": "Alle {count} databaser er intakte.",
+  "maintenanceCheckIntegrityOk": "{count, plural, =1{Databasen er intakt.} other{Alle {count} databaser er intakte.}}",
   "maintenanceDeleteAgentDb": "Slet agentdatabase",
   "maintenanceDeleteAgentDbDescription": "Slet agenternes database og genstart appen",
   "maintenanceDeleteDatabaseConfirm": "Ja, slet databasen",

@@ -3440,7 +3440,7 @@
   "maintenanceCheckIntegrity": "Datenbank-Integrität prüfen",
   "maintenanceCheckIntegrityDescription": "Prüfen, ob die Datenbankdateien intakt sind",
   "maintenanceCheckIntegrityFailed": "Probleme gefunden in: {databases}.",
-  "maintenanceCheckIntegrityOk": "Alle {count} Datenbanken sind intakt.",
+  "maintenanceCheckIntegrityOk": "{count, plural, =1{Die Datenbank ist intakt.} other{Alle {count} Datenbanken sind intakt.}}",
   "maintenanceDeleteAgentDb": "Agenten-Datenbank löschen",
   "maintenanceDeleteAgentDbDescription": "Agenten-Datenbank löschen und App neu starten",
   "maintenanceDeleteDatabaseConfirm": "Ja, Datenbank löschen",

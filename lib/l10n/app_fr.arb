@@ -3440,7 +3440,7 @@
   "maintenanceCheckIntegrity": "Vérifier l'intégrité de la base de données",
   "maintenanceCheckIntegrityDescription": "Vérifie que les fichiers de la base de données sont intacts",
   "maintenanceCheckIntegrityFailed": "Problèmes trouvés dans : {databases}.",
-  "maintenanceCheckIntegrityOk": "Les {count} bases de données sont intactes.",
+  "maintenanceCheckIntegrityOk": "{count, plural, =1{La base de données est intacte.} other{Les {count} bases de données sont intactes.}}",
   "maintenanceDeleteAgentDb": "Supprimer la base de données des agents",
   "maintenanceDeleteAgentDbDescription": "Supprimer la base de données des agents et redémarrer l'app",
   "maintenanceDeleteDatabaseConfirm": "Oui, supprimer la base de données",
