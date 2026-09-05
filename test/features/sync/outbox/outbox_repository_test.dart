@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:clock/clock.dart';
 import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -634,6 +635,29 @@ void main() {
           final capped = await realDb.getOutboxItemById(cappedId);
           expect(capped?.retries, 2);
           expect(capped?.status, OutboxStatus.error.index);
+        },
+      );
+
+      test(
+        'markRetry and markRetryBatch stamp updated_at from clock.now()',
+        () async {
+          // Drift stores DateTime columns as whole seconds, so a fixed
+          // instant with no sub-second part round-trips exactly.
+          final fixedNow = DateTime(2026, 9, 5, 10, 30);
+          final id1 = await insertRow(status: OutboxStatus.sending);
+          final id2 = await insertRow(status: OutboxStatus.sending);
+          final item1 = (await realDb.getOutboxItemById(id1))!;
+          final item2 = (await realDb.getOutboxItemById(id2))!;
+
+          await withClock(Clock.fixed(fixedNow), () async {
+            await realRepo.markRetry(item1);
+            await realRepo.markRetryBatch([item2]);
+          });
+
+          for (final id in [id1, id2]) {
+            final refreshed = await realDb.getOutboxItemById(id);
+            expect(refreshed?.updatedAt, fixedNow);
+          }
         },
       );
 

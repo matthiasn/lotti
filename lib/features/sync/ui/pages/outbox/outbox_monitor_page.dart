@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -133,7 +134,7 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
             id: drift.Value(item.id),
             status: drift.Value(OutboxStatus.pending.index),
             retries: drift.Value(item.retries + 1),
-            updatedAt: drift.Value(DateTime.now()),
+            updatedAt: drift.Value(clock.now()),
           ),
         );
       } catch (error, stackTrace) {

@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:drift/drift.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
@@ -153,7 +154,7 @@ class DatabaseOutboxRepository implements OutboxRepository {
       OutboxCompanion(
         id: Value(item.id),
         status: Value(OutboxStatus.sent.index),
-        updatedAt: Value(DateTime.now()),
+        updatedAt: Value(clock.now()),
       ),
     );
   }
@@ -181,7 +182,7 @@ class DatabaseOutboxRepository implements OutboxRepository {
         id: Value(item.id),
         status: Value(newStatus),
         retries: Value(retries),
-        updatedAt: Value(DateTime.now()),
+        updatedAt: Value(clock.now()),
       ),
     );
   }
@@ -189,7 +190,7 @@ class DatabaseOutboxRepository implements OutboxRepository {
   @override
   Future<void> markRetryBatch(List<OutboxItem> items) async {
     if (items.isEmpty) return;
-    final now = DateTime.now();
+    final now = clock.now();
     // One batched statement set rather than one round trip per row.
     //
     // A failed bundle retries up to `SyncTuning.outboxBundleMaxSize` (50) rows

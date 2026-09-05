@@ -430,8 +430,8 @@ class MatrixOutboxService extends _OutboxServiceBase
       final commonFields = OutboxCompanion(
         status: Value(OutboxStatus.pending.index),
         message: Value(jsonString),
-        createdAt: Value(DateTime.now()),
-        updatedAt: Value(DateTime.now()),
+        createdAt: Value(clock.now()),
+        updatedAt: Value(clock.now()),
         payloadSize: Value(jsonByteLength),
         priority: Value(priority),
       );

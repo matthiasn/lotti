@@ -381,8 +381,9 @@ so affected screenshots do not disappear from existing journal entries.
 `JournalDb` migration and on demand from *Settings → Advanced → Maintenance*.
 Its timestamp comes from `package:clock`'s `clock.now()`, and so does every
 other instant the database layer stamps itself — the `updated_at` on a journal
-upsert, conflict rows, outbox leases and retries, sync watermarks, editor drafts
-and settings — so tests drive all of them with `withClock`. The one SQL-side
+upsert, conflict rows, outbox enqueue stamps, leases and retries, sync
+watermarks, editor drafts and settings — so tests drive all of them with
+`withClock`. The one SQL-side
 default, the outbox `created_at`/`updated_at` pair, is Drift's
 `currentDateAndTime`, which SQLite evaluates on each insert; a
 `Constant(DateTime.now())` default would bake the app-launch instant into the
