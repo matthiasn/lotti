@@ -427,14 +427,15 @@ final FutureProvider<List<NudgeBannerEntry>> activeGoalNudgesProvider =
       var disposed = false;
       ref.onDispose(() => disposed = true);
       final lifecycleListener = AppLifecycleListener(
-        onResume: ref.invalidateSelf,
+        onResume: () {
+          // Resume refreshes identities as well as time-sensitive banners.
+          ref
+            ..invalidate(activeGoalAgentsProvider)
+            ..invalidateSelf();
+        },
       );
-      ref
-        ..onDispose(lifecycleListener.dispose)
-        ..watch(agentUpdateStreamProvider(agentNotification));
-      final agents = await ref
-          .watch(agentServiceProvider)
-          .listAgents(lifecycle: AgentLifecycle.active);
+      ref.onDispose(lifecycleListener.dispose);
+      final agents = await ref.watch(activeGoalAgentsProvider.future);
       if (disposed) return const [];
       final repository = ref.watch(agentRepositoryProvider);
       final entries = <NudgeBannerEntry>[];
@@ -448,7 +449,6 @@ final FutureProvider<List<NudgeBannerEntry>> activeGoalNudgesProvider =
       }
 
       for (final identity in agents) {
-        if (identity.kind != AgentKinds.goalAgent) continue;
         ref.watch(agentUpdateStreamProvider(identity.agentId));
         // A banner created under a superseded spec can sync in AFTER the
         // revision sweep ran — its own provenance is the fence (Phase A
