@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/media/media_repair_service.dart';
@@ -90,21 +92,21 @@ void main() {
     });
   });
 
-  test('flushes pending misses without waiting for the debounce', () async {
-    final service = buildService();
-    addTearDown(service.dispose);
-
-    service
-      ..reportMissing(entryId: 'image-1', relativePath: '/images/1')
-      ..reportMissing(entryId: 'audio-1', relativePath: '/audio/1');
-
-    expect(requests, isEmpty);
-
-    await service.flushPendingForTesting();
-
-    expect(requests, hasLength(1));
-    expect(requests.single.entryIds, ['image-1', 'audio-1']);
-    expect(service.debugPending, isEmpty);
+  test('flushes pending misses without waiting for the debounce', () {
+    fakeAsync((async) {
+      final service = buildService();
+      addTearDown(service.dispose);
+      service
+        ..reportMissing(entryId: 'image-1', relativePath: '/images/1')
+        ..reportMissing(entryId: 'audio-1', relativePath: '/audio/1');
+      expect(requests, isEmpty);
+      unawaited(service.flushPendingForTesting());
+      async.flushMicrotasks();
+      expect(requests, hasLength(1));
+      expect(requests.single.entryIds, ['image-1', 'audio-1']);
+      expect(service.debugPending, isEmpty);
+      expect(async.pendingTimers, isEmpty);
+    });
   });
 
   test('splits a backlog across successive requests at the batch cap', () {
@@ -212,6 +214,43 @@ void main() {
 
       async.elapse(debounce * 2);
       expect(requests, isEmpty);
+    });
+  });
+
+  test('dispose during host lookup prevents sending and restoring state', () {
+    fakeAsync((async) {
+      final host = Completer<String?>();
+      when(() => vectorClockService.getHost()).thenAnswer((_) => host.future);
+      final service = buildService()
+        ..reportMissing(entryId: 'entry-1', relativePath: '/images/1');
+      async.elapse(debounce);
+      service.dispose();
+      host.complete('host-a');
+      async.flushMicrotasks();
+      expect(requests, isEmpty);
+      expect(service.debugPending, isEmpty);
+      expect(service.debugAttemptedEntryCount, 0);
+      expect(async.pendingTimers, isEmpty);
+    });
+  });
+
+  test('enqueue failure after dispose cannot restore retries or timers', () {
+    fakeAsync((async) {
+      final enqueue = Completer<void>();
+      when(
+        () => outboxService.enqueueMessage(any()),
+      ).thenAnswer((_) => enqueue.future);
+      final service = buildService()
+        ..reportMissing(entryId: 'entry-1', relativePath: '/images/1');
+      async.elapse(debounce);
+      expect(service.debugAttemptedEntryCount, 1);
+      service.dispose();
+      enqueue.completeError(StateError('synthetic outbox shutdown'));
+      async.flushMicrotasks();
+      expect(service.debugPending, isEmpty);
+      expect(service.debugAttemptedEntryCount, 0);
+      expect(async.pendingTimers, isEmpty);
+      verify(() => outboxService.enqueueMessage(any())).called(1);
     });
   });
 
