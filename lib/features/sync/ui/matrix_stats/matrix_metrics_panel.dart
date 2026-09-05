@@ -33,6 +33,8 @@ class MatrixSyncMetricsPanelState extends ConsumerState<MatrixSyncMetricsPanel>
   Timer? _pollTimer;
   bool _appActive = true;
   bool _inFlight = false;
+  bool _refreshPending = false;
+  bool _pendingForceTimestamp = false;
   String? _lastSignature;
 
   /// Cadence at which this panel polls `MatrixService.getSyncMetrics`
@@ -40,11 +42,10 @@ class MatrixSyncMetricsPanelState extends ConsumerState<MatrixSyncMetricsPanel>
   /// previous 2-second cadence drove the
   /// `SELECT … GROUP BY status, producer FROM inbound_event_queue`
   /// aggregate to 223 hits/day on the 2026-05-12 desktop slow_queries
-  /// log (each ~200-700 ms — plan is fine, cost is writer-lock
-  /// contention compounding at 30 polls/min). 5 s still feels live to
-  /// a user watching the panel and removes the 60% of polls that
-  /// were contributing nothing actionable. `_inFlight` continues to
-  /// guard against a slow probe overlapping itself.
+  /// log. Those timings include executor waiting and do not isolate SQL
+  /// execution or prove writer-lock contention. The 5-second interval
+  /// reduces periodic probe frequency by 60%. All panel probes share
+  /// `_inFlight`, including initial and manual refreshes.
   @visibleForTesting
   static const Duration pollInterval = Duration(seconds: 5);
 
@@ -58,28 +59,40 @@ class MatrixSyncMetricsPanelState extends ConsumerState<MatrixSyncMetricsPanel>
 
   void _startPolling() {
     _pollTimer?.cancel();
-    _pollTimer = Timer.periodic(pollInterval, (_) async {
+    _pollTimer = Timer.periodic(pollInterval, (_) {
       if (!_appActive || _inFlight) return;
-      _inFlight = true;
-      try {
-        final v2 = await ref.read(matrixServiceProvider).getSyncMetrics();
-        final map = v2?.toMap();
-        if (!mounted || map == null || map.isEmpty) return;
-        final signature = metricsMapSignature(map);
-        if (signature != _lastSignature) {
-          _applyMetricsUpdate(map);
-        }
-      } finally {
-        _inFlight = false;
-      }
+      unawaited(_refreshOnce());
     });
   }
 
+  /// Serializes initial, periodic, and manual probes. A manual action during
+  /// a probe schedules one trailing load so its post-action state is observed.
   Future<void> _refreshOnce({bool forceTimestamp = false}) async {
-    final m = await ref.read(matrixServiceProvider).getSyncMetrics();
-    final map = m?.toMap();
-    if (!mounted || map == null || map.isEmpty) return;
-    _applyMetricsUpdate(map, forceTimestamp: forceTimestamp);
+    if (_inFlight) {
+      _refreshPending = true;
+      _pendingForceTimestamp |= forceTimestamp;
+      return;
+    }
+    _inFlight = true;
+    var forceNextTimestamp = forceTimestamp;
+    try {
+      do {
+        _refreshPending = false;
+        _pendingForceTimestamp = false;
+        final m = await ref.read(matrixServiceProvider).getSyncMetrics();
+        final map = m?.toMap();
+        if (!mounted) return;
+        if (map != null && map.isNotEmpty) {
+          if (forceNextTimestamp ||
+              metricsMapSignature(map) != _lastSignature) {
+            _applyMetricsUpdate(map, forceTimestamp: forceNextTimestamp);
+          }
+        }
+        forceNextTimestamp = _pendingForceTimestamp;
+      } while (_refreshPending);
+    } finally {
+      _inFlight = false;
+    }
   }
 
   void _applyMetricsUpdate(
@@ -111,6 +124,7 @@ class MatrixSyncMetricsPanelState extends ConsumerState<MatrixSyncMetricsPanel>
   }
 
   void _refreshDiagnostics({bool forceTimestamp = false}) {
+    if (!mounted) return;
     ref
       ..invalidate(matrixSyncMetricsFutureProvider)
       ..invalidate(matrixDiagnosticsTextProvider);
