@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer' as developer;
+import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:clock/clock.dart';
 import 'package:http/http.dart' as http;
@@ -38,6 +40,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     CloudInferenceRequestHelpers? helpers,
     MeliousChatCompletionStreamFactory? chatCompletionStreamFactory,
     AudioToTemporaryMp3Encoder? audioToTemporaryMp3Encoder,
+    Stream<File> Function(Uint8List)? audioSegmentEncoder,
     TemporaryAudioFileReader? temporaryFileReader,
     TemporaryAudioFileDeleter? temporaryFileDeleter,
     Clock? clockSource,
@@ -46,6 +49,8 @@ class MeliousInferenceRepository extends TranscriptionRepository {
            chatCompletionStreamFactory ?? _createChatCompletionStream,
        _audioToTemporaryMp3Encoder =
            audioToTemporaryMp3Encoder ?? encodeAudioBytesToTemporaryMp3,
+       _audioSegmentEncoder =
+           audioSegmentEncoder ?? encodeAudioBytesToTemporaryMp3Segments,
        _temporaryFileReader =
            temporaryFileReader ?? ((file) => file.readAsBytes()),
        _temporaryFileDeleter =
@@ -131,6 +136,11 @@ class MeliousInferenceRepository extends TranscriptionRepository {
 
   final CloudInferenceRequestHelpers _helpers;
   final MeliousChatCompletionStreamFactory _chatCompletionStreamFactory;
+
+  /// Provider-documented multipart file limit, in bytes.
+  static const maxTranscriptionUploadBytes = 25000000;
+
+  final Stream<File> Function(Uint8List) _audioSegmentEncoder;
   final AudioToTemporaryMp3Encoder _audioToTemporaryMp3Encoder;
   final TemporaryAudioFileReader _temporaryFileReader;
   final TemporaryAudioFileDeleter _temporaryFileDeleter;
@@ -441,6 +451,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
         temperature: temperature,
         maxCompletionTokens: maxCompletionTokens,
         tools: tools,
+        toolChoice: toolChoice,
         impactCollector: impactCollector,
       );
     }
@@ -655,6 +666,10 @@ class MeliousInferenceRepository extends TranscriptionRepository {
   /// Transcribes audio through Melious' OpenAI-compatible
   /// `/audio/transcriptions` endpoint.
   ///
+  /// Recordings above the upload limit use consecutive temporary MP3 parts.
+  /// Only the complete combined transcript is emitted; cancellation stops
+  /// subsequent parts and aborts the current upload. Source bytes are preserved.
+  ///
   /// [contextBiasTerms] are speech-dictionary words/phrases forwarded as the
   /// OpenAI-standard `prompt` form field to bias recognition toward names and
   /// domain vocabulary — honored by context-aware models such as Voxtral and
@@ -690,10 +705,155 @@ class MeliousInferenceRepository extends TranscriptionRepository {
       throw ArgumentError('API key cannot be empty');
     }
 
+    return _transcribeAudioUploads(
+      model: model,
+      audioBase64: audioBase64,
+      baseUrl: normalizedBaseUrl,
+      apiKey: normalizedApiKey,
+      responseFormat: responseFormat,
+      contextBiasTerms: contextBiasTerms,
+      timeout: timeout,
+      impactCollector: impactCollector,
+    );
+  }
+
+  Stream<CreateChatCompletionStreamResponse> _transcribeAudioUploads({
+    required String model,
+    required String audioBase64,
+    required String baseUrl,
+    required String apiKey,
+    required String responseFormat,
+    List<String>? contextBiasTerms,
+    Duration? timeout,
+    InferenceImpactCollector? impactCollector,
+  }) {
+    var canceled = false;
+    final abortTrigger = Completer<void>();
+    final incurredImpact = impactCollector ?? InferenceImpactCollector();
+    var completedSegments = 0;
+    CompletionUsage? usage;
+    late final StreamController<CreateChatCompletionStreamResponse> controller;
+    Future<void> run() async {
+      try {
+        final bytes = base64Decode(audioBase64);
+        Future<CreateChatCompletionStreamResponse> upload(
+          Uint8List payload,
+          String filename,
+        ) async {
+          if (payload.length > maxTranscriptionUploadBytes) {
+            throw TranscriptionException(
+              'Prepared audio exceeds Melious’s 25 MB upload limit. Use a shorter recording or another transcription provider.',
+              provider: _providerName,
+              statusCode: 413,
+            );
+          }
+          return _transcribeAudioBytes(
+            model: model,
+            audioBytes: payload,
+            filename: filename,
+            normalizedBaseUrl: baseUrl,
+            normalizedApiKey: apiKey,
+            responseFormat: responseFormat,
+            contextBiasTerms: contextBiasTerms,
+            timeout: timeout,
+            impactCollector: incurredImpact,
+            abortTrigger: abortTrigger.future,
+          ).first;
+        }
+
+        if (bytes.length <= maxTranscriptionUploadBytes) {
+          final result = await upload(bytes, 'audio.m4a');
+          if (!canceled) controller.add(result);
+        } else {
+          final texts = <String>[];
+          CreateChatCompletionStreamResponse? last;
+          await for (final file in _audioSegmentEncoder(bytes)) {
+            if (canceled) break;
+            final payload = await _temporaryFileReader(file);
+            if (canceled) break;
+            final result = await upload(payload, 'audio.mp3');
+            completedSegments++;
+            texts.add(result.choices?.first.delta?.content ?? '');
+            usage = combineCompletionUsage(usage, result.usage);
+            last = result;
+            if (canceled) break;
+          }
+          if (!canceled) {
+            if (last == null) {
+              throw const FormatException(
+                'Audio preparation produced no segments',
+              );
+            }
+            controller.add(
+              last.copyWith(
+                choices: [
+                  ChatCompletionStreamResponseChoice(
+                    delta: ChatCompletionStreamResponseDelta(
+                      content: texts.join('\n\n'),
+                    ),
+                    index: 0,
+                  ),
+                ],
+                usage: usage,
+              ),
+            );
+          }
+        }
+      } catch (error, stackTrace) {
+        if (!canceled) {
+          final failure = error is TranscriptionException
+              ? error
+              : TranscriptionException(
+                  'Failed to prepare or transcribe audio. Try another transcription provider or a shorter recording.',
+                  provider: _providerName,
+                  originalError: error,
+                );
+          controller.addError(
+            completedSegments == 0
+                ? failure
+                : TranscriptionException(
+                    failure.message,
+                    provider: failure.provider,
+                    statusCode: failure.statusCode,
+                    originalError: failure.originalError ?? failure,
+                    completedSegments: completedSegments,
+                    partialUsage: usage,
+                    partialImpact: incurredImpact.impact,
+                  ),
+            stackTrace,
+          );
+        }
+      } finally {
+        unawaited(controller.close());
+      }
+    }
+
+    controller = StreamController<CreateChatCompletionStreamResponse>(
+      onListen: () => unawaited(run()),
+      onCancel: () {
+        canceled = true;
+        if (!abortTrigger.isCompleted) abortTrigger.complete();
+      },
+    );
+    return controller.stream;
+  }
+
+  Stream<CreateChatCompletionStreamResponse> _transcribeAudioBytes({
+    required String model,
+    required Uint8List audioBytes,
+    required String filename,
+    required Future<void> abortTrigger,
+    required String normalizedBaseUrl,
+    required String normalizedApiKey,
+    required String responseFormat,
+    List<String>? contextBiasTerms,
+    Duration? timeout,
+    InferenceImpactCollector? impactCollector,
+  }) {
     return executeTranscription(
       providerName: _providerName,
       responseIdPrefix: 'melious-transcription-',
-      audioLengthForLog: audioBase64.length,
+      audioLengthForLog: audioBytes.length,
       timeout: timeout,
       onSuccessResponse: impactCollector == null
           ? null
@@ -705,24 +865,34 @@ class MeliousInferenceRepository extends TranscriptionRepository {
                       response.body,
                     ),
               );
-              if (impact.hasData) impactCollector.impact = impact;
+              if (impact.hasData) {
+                impactCollector.impact = MeliousCallImpact.combine(
+                  impactCollector.impact,
+                  impact,
+                );
+              }
             },
       sendRequest: (requestTimeout, timeoutErrorMessage) async {
         final uri = _buildEndpointUri(
           normalizedBaseUrl,
           'audio/transcriptions',
         );
-        final request = http.MultipartRequest('POST', uri)
-          ..headers['Authorization'] = 'Bearer $normalizedApiKey'
-          ..files.add(
-            http.MultipartFile.fromBytes(
-              'file',
-              base64Decode(audioBase64),
-              filename: 'audio.m4a',
-            ),
-          )
-          ..fields['model'] = model
-          ..fields['response_format'] = responseFormat;
+        final request =
+            http.AbortableMultipartRequest(
+                'POST',
+                uri,
+                abortTrigger: abortTrigger,
+              )
+              ..headers['Authorization'] = 'Bearer $normalizedApiKey'
+              ..files.add(
+                http.MultipartFile.fromBytes(
+                  'file',
+                  audioBytes,
+                  filename: filename,
+                ),
+              )
+              ..fields['model'] = model
+              ..fields['response_format'] = responseFormat;
 
         final biasTerms = contextBiasTerms
             ?.map((term) => term.trim())
@@ -733,8 +903,9 @@ class MeliousInferenceRepository extends TranscriptionRepository {
           request.fields['prompt'] = biasTerms.join(', ');
         }
 
-        final streamedResponse = await httpClient
+        return httpClient
             .send(request)
+            .then(http.Response.fromStream)
             .timeout(
               requestTimeout,
               onTimeout: () {
@@ -745,8 +916,6 @@ class MeliousInferenceRepository extends TranscriptionRepository {
                 );
               },
             );
-
-        return http.Response.fromStream(streamedResponse);
       },
     );
   }

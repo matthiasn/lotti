@@ -22,6 +22,7 @@ import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/ai_consumption_mapping.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/repository/completion_usage_parser.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
 import 'package:lotti/features/ai/repository/tool_call_accumulator.dart';
@@ -49,7 +50,7 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
-import 'package:openai_dart/openai_dart.dart';
+import 'package:openai_dart/openai_dart.dart' hide Error;
 
 part 'skill_inference_runner_internals.dart';
 
@@ -253,7 +254,43 @@ class SkillInferenceRunner {
               );
 
         // 6. Collect streaming response.
-        final collected = await _collectStream(responseStream);
+        final collected = await _collectStream(responseStream)
+            .onError<TranscriptionException>((error, stackTrace) async {
+              if (error.completedSegments > 0) {
+                try {
+                  final failedAttribution = await _recordAttributedConsumption(
+                    attribution: attribution,
+                    entryId: audioEntryId,
+                    taskId: linkedTaskId,
+                    categoryId: entity.meta.categoryId,
+                    skillId: skill.id,
+                    provider: provider,
+                    modelId: modelId,
+                    responseType: skill.skillType.toResponseType,
+                    usage: error.partialUsage,
+                    impact: error.partialImpact,
+                    start: start,
+                    interactionKind: AiInteractionKind.audioTranscription,
+                    requestText:
+                        '${promptResult.systemMessage}\n${promptResult.userMessage}',
+                    responseText: '',
+                    status: AiWorkStatus.failed,
+                    errorCode: 'transcription_incomplete',
+                    errorSummary:
+                        'Transcription failed after completed audio segments.',
+                  );
+                  await _finalizeAttribution(failedAttribution);
+                } catch (accountingError, accountingStackTrace) {
+                  _loggingService.error(
+                    LogDomain.ai,
+                    accountingError,
+                    stackTrace: accountingStackTrace,
+                    subDomain: 'runTranscription.accounting',
+                  );
+                }
+              }
+              Error.throwWithStackTrace(error, stackTrace);
+            });
 
         // The Melious chat-audio adapter supplies provider-reported billing
         // and environmental impact through this collector; other providers
@@ -1490,22 +1527,7 @@ class SkillInferenceRunner {
   static MeliousCallImpact? _mergeImpact(
     MeliousCallImpact? a,
     MeliousCallImpact? b,
-  ) {
-    if (a == null) return b;
-    if (b == null) return a;
-    double? sum(double? x, double? y) =>
-        x == null && y == null ? null : (x ?? 0) + (y ?? 0);
-    return MeliousCallImpact(
-      energyKwh: sum(a.energyKwh, b.energyKwh),
-      carbonGCo2: sum(a.carbonGCo2, b.carbonGCo2),
-      waterLiters: sum(a.waterLiters, b.waterLiters),
-      costCredits: sum(a.costCredits, b.costCredits),
-      renewablePercent: a.renewablePercent ?? b.renewablePercent,
-      pue: a.pue ?? b.pue,
-      dataCenter: a.dataCenter ?? b.dataCenter,
-      providerId: a.providerId ?? b.providerId,
-    );
-  }
+  ) => MeliousCallImpact.combine(a, b);
 
   /// Sums the token usage of two attempts at the same logical call.
   ///
@@ -1514,39 +1536,8 @@ class SkillInferenceRunner {
   /// needed prompting twice — exactly the model whose cost the user most needs
   /// to see. Null operands pass through so a provider that reports usage on
   /// only one attempt still contributes what it did report.
-  static CompletionUsage? _mergeUsage(CompletionUsage? a, CompletionUsage? b) {
-    if (a == null) return b;
-    if (b == null) return a;
-    int? sum(int? x, int? y) =>
-        x == null && y == null ? null : (x ?? 0) + (y ?? 0);
-    final aDetails = a.completionTokensDetails;
-    final bDetails = b.completionTokensDetails;
-    final aPrompt = a.promptTokensDetails;
-    final bPrompt = b.promptTokensDetails;
-    return CompletionUsage(
-      promptTokens: sum(a.promptTokens, b.promptTokens),
-      completionTokens: sum(a.completionTokens, b.completionTokens),
-      totalTokens: sum(a.totalTokens, b.totalTokens),
-      completionTokensDetails: aDetails == null && bDetails == null
-          ? null
-          : CompletionTokensDetails(
-              reasoningTokens: sum(
-                aDetails?.reasoningTokens,
-                bDetails?.reasoningTokens,
-              ),
-              audioTokens: sum(aDetails?.audioTokens, bDetails?.audioTokens),
-            ),
-      // Carried for the same reason as the completion details: the
-      // consumption event reads `cachedTokens` off this, so dropping it would
-      // report null cached input on exactly the runs that retried.
-      promptTokensDetails: aPrompt == null && bPrompt == null
-          ? null
-          : PromptTokensDetails(
-              cachedTokens: sum(aPrompt?.cachedTokens, bPrompt?.cachedTokens),
-              audioTokens: sum(aPrompt?.audioTokens, bPrompt?.audioTokens),
-            ),
-    );
-  }
+  static CompletionUsage? _mergeUsage(CompletionUsage? a, CompletionUsage? b) =>
+      combineCompletionUsage(a, b);
 
   /// Marks every parent task of [sourceEntryId] stale after an
   /// [AiResponseEntry] was linked beneath it.
@@ -1690,6 +1681,9 @@ class SkillInferenceRunner {
     required AiInteractionKind interactionKind,
     required String requestText,
     required String responseText,
+    AiWorkStatus status = AiWorkStatus.succeeded,
+    String? errorCode,
+    String? errorSummary,
   }) async {
     if (attribution == null) {
       return null;
@@ -1723,6 +1717,9 @@ class SkillInferenceRunner {
     return getIt<AiAttributionService>().prepareCompletion(
       attributionId: attribution.id,
       outputs: attribution.intendedOutputs,
+      status: status,
+      errorCode: errorCode,
+      errorSummary: errorSummary,
     );
   }
 

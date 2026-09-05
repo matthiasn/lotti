@@ -45,8 +45,8 @@ class MistralTranscriptionRepository extends TranscriptionRepository {
   /// speaker labels (e.g., `[Speaker 1]`, `[Speaker 2]`).
   ///
   /// [contextBias] is a list of words/phrases (up to 100) that the model
-  /// should pay special attention to. Sent as comma-separated terms in the
-  /// `context_bias` multipart form field.
+  /// should pay special attention to. Each term is sent as a repeated
+  /// `context_bias` multipart text field, preserving phrase boundaries.
   Stream<CreateChatCompletionStreamResponse> transcribeAudio({
     required String model,
     required String audioBase64,
@@ -121,7 +121,11 @@ class MistralTranscriptionRepository extends TranscriptionRepository {
                 .take(100)
                 .toList();
             if (terms.isNotEmpty) {
-              request.fields['context_bias'] = terms.join(',');
+              request.files.addAll(
+                terms.map(
+                  (term) => http.MultipartFile.fromString('context_bias', term),
+                ),
+              );
             }
           }
 

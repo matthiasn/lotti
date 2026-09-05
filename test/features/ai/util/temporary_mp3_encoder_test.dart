@@ -126,6 +126,108 @@ void main() {
     expect(file.lengthSync(), lessThan(wavBytes.length ~/ 1000));
   });
 
+  test(
+    'segments preserve every PCM sample and clean files as consumed',
+    () async {
+      final samples = List.generate(20, (index) => index * 1000);
+      final encoders = <_RecordingMp3FrameEncoder>[];
+      final paths = <String>[];
+      await for (final file in encodeAudioBytesToTemporaryMp3Segments(
+        _pcm16Wav(sampleRate: 4, samples: samples),
+        temporaryDirectory: temporaryDirectory,
+        segmentDuration: const Duration(seconds: 2),
+        encoderFactory: _recordingEncoderFactory(encoders),
+      )) {
+        expect(paths.every((path) => !File(path).existsSync()), isTrue);
+        expect(file.readAsBytesSync().last, 0xFF);
+        paths.add(file.path);
+      }
+      expect(encoders, hasLength(3));
+      expect(
+        encoders.map(
+          (encoder) => encoder.leftChunks.expand((chunk) => chunk).length,
+        ),
+        [8, 8, 4],
+      );
+      expect(
+        encoders
+            .expand((encoder) => encoder.leftChunks)
+            .expand((chunk) => chunk),
+        samples.map((sample) => sample / 32768),
+      );
+      expect(encoders.every((encoder) => encoder.closed), isTrue);
+      expect(temporaryDirectory.listSync(), isEmpty);
+    },
+  );
+
+  test('canceling segment consumption cleans the current file', () async {
+    final encoders = <_RecordingMp3FrameEncoder>[];
+    await for (final file in encodeAudioBytesToTemporaryMp3Segments(
+      _pcm16Wav(sampleRate: 4, frameCount: 20),
+      temporaryDirectory: temporaryDirectory,
+      segmentDuration: const Duration(seconds: 2),
+      encoderFactory: _recordingEncoderFactory(encoders),
+    )) {
+      expect(file.existsSync(), isTrue);
+      break;
+    }
+    expect(encoders, hasLength(1));
+    expect(temporaryDirectory.listSync(), isEmpty);
+  });
+
+  for (final duration in [Duration.zero, const Duration(microseconds: 1)]) {
+    test(
+      'rejects a segment duration without complete frames: $duration',
+      () async {
+        await expectLater(
+          encodeAudioBytesToTemporaryMp3Segments(
+            _pcm16Wav(sampleRate: 4, frameCount: 8),
+            segmentDuration: duration,
+            temporaryDirectory: temporaryDirectory,
+          ).toList(),
+          throwsArgumentError,
+        );
+        expect(temporaryDirectory.listSync(), isEmpty);
+      },
+    );
+  }
+
+  test('rejects empty segmented audio before decoding', () async {
+    await expectLater(
+      encodeAudioBytesToTemporaryMp3Segments(Uint8List(0)).toList(),
+      throwsA(isA<TemporaryMp3EncodingException>()),
+    );
+  });
+
+  test(
+    'a later encoding failure removes all completed and partial segments',
+    () async {
+      final encoders = <_RecordingMp3FrameEncoder>[];
+      await expectLater(
+        encodeAudioBytesToTemporaryMp3Segments(
+          _pcm16Wav(sampleRate: 4, frameCount: 20),
+          temporaryDirectory: temporaryDirectory,
+          segmentDuration: const Duration(seconds: 2),
+          encoderFactory:
+              ({required sampleRate, required numChannels, required bitRate}) {
+                final encoder = _RecordingMp3FrameEncoder(
+                  sampleRate: sampleRate,
+                  numChannels: numChannels,
+                  bitRate: bitRate,
+                  failAtEncodeCall: encoders.isEmpty ? null : 1,
+                );
+                encoders.add(encoder);
+                return encoder;
+              },
+        ).drain<void>(),
+        throwsA(isA<TemporaryMp3EncodingException>()),
+      );
+      expect(encoders, hasLength(2));
+      expect(encoders.every((encoder) => encoder.closed), isTrue);
+      expect(temporaryDirectory.listSync(), isEmpty);
+    },
+  );
+
   test('removes a partial MP3 and closes LAME when encoding fails', () async {
     final wavBytes = _pcm16Wav(
       sampleRate: 2,

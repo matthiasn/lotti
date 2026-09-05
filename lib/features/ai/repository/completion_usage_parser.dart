@@ -73,3 +73,41 @@ int? _integerValue(Object? value) {
   if (value is String) return int.tryParse(value);
   return null;
 }
+
+/// Sums token usage across physical requests belonging to one logical call.
+CompletionUsage? combineCompletionUsage(
+  CompletionUsage? a,
+  CompletionUsage? b,
+) {
+  if (a == null) return b;
+  if (b == null) return a;
+  int? sum(int? x, int? y) =>
+      x == null && y == null ? null : (x ?? 0) + (y ?? 0);
+  final aDetails = a.completionTokensDetails;
+  final bDetails = b.completionTokensDetails;
+  final aPrompt = a.promptTokensDetails;
+  final bPrompt = b.promptTokensDetails;
+  return CompletionUsage(
+    promptTokens: sum(a.promptTokens, b.promptTokens),
+    completionTokens: sum(a.completionTokens, b.completionTokens),
+    totalTokens: sum(a.totalTokens, b.totalTokens),
+    completionTokensDetails: aDetails == null && bDetails == null
+        ? null
+        : CompletionTokensDetails(
+            reasoningTokens: sum(
+              aDetails?.reasoningTokens,
+              bDetails?.reasoningTokens,
+            ),
+            audioTokens: sum(aDetails?.audioTokens, bDetails?.audioTokens),
+          ),
+    // Carried for the same reason as the completion details: the
+    // consumption event reads `cachedTokens` off this, so dropping it would
+    // report null cached input on exactly the runs that retried.
+    promptTokensDetails: aPrompt == null && bPrompt == null
+        ? null
+        : PromptTokensDetails(
+            cachedTokens: sum(aPrompt?.cachedTokens, bPrompt?.cachedTokens),
+            audioTokens: sum(aPrompt?.audioTokens, bPrompt?.audioTokens),
+          ),
+  );
+}

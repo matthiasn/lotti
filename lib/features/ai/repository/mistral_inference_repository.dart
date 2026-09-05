@@ -43,9 +43,9 @@ class MistralInferenceRepository {
 
   /// Whether [model] supports Mistral's instruction-following chat-audio API.
   ///
-  /// Mistral currently documents the `latest` aliases and the 25.07 Mini and
-  /// Small releases for `/chat/completions`. Transcribe 2, realtime, and TTS
-  /// variants use their dedicated audio endpoints instead.
+  /// The Mini `latest` alias points to Transcribe 2 and requires the
+  /// transcription endpoint. The 25.07 Mini/Small releases and Small's
+  /// `latest` alias support chat audio; realtime and TTS do not.
   static bool isMistralChatAudioModel(String model) {
     final normalized = model.trim().toLowerCase();
     if (!normalized.startsWith('voxtral-mini-') &&
@@ -57,7 +57,7 @@ class MistralInferenceRepository {
         normalized.contains('-tts-')) {
       return false;
     }
-    return normalized.endsWith('-latest') || normalized.endsWith('-2507');
+    return normalized == 'voxtral-small-latest' || normalized.endsWith('-2507');
   }
 
   /// Safely log exception to LoggingService if available

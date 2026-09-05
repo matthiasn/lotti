@@ -40,7 +40,7 @@ void main() {
   group('MistralInferenceRepository', () {
     group('chat audio', () {
       final modelCases = <String, bool>{
-        'voxtral-mini-latest': true,
+        'voxtral-mini-latest': false,
         'voxtral-small-latest': true,
         'voxtral-mini-2507': true,
         'voxtral-small-2507': true,
@@ -89,7 +89,7 @@ void main() {
 
         final chunks = await chatRepository
             .transcribeChatAudio(
-              model: 'voxtral-mini-latest',
+              model: 'voxtral-small-latest',
               audioBase64: base64Encode([1, 2, 3]),
               baseUrl: 'https://api.mistral.ai/v1',
               apiKey: 'mistral-key',

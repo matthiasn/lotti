@@ -16,11 +16,26 @@ import 'package:lotti/features/ai/state/consts.dart';
 ({
   http.Client client,
   http.MultipartRequest Function() multipart,
+  List<String> Function() contextBias,
 })
 _stubStreamingOk() {
   http.BaseRequest? captured;
-  final client = MockClient.streaming((request, _) async {
+  var biasTerms = <String>[];
+  final client = MockClient.streaming((request, body) async {
     captured = request;
+    final boundary = request.headers['content-type']!.split('boundary=').last;
+    final wire = await body.bytesToString();
+    biasTerms = wire
+        .split('--$boundary')
+        .where(
+          (part) =>
+              part.split('\r\n\r\n').first.contains('name="context_bias"'),
+        )
+        .map((part) {
+          final value = part.substring(part.indexOf('\r\n\r\n') + 4);
+          return value.substring(0, value.length - 2);
+        })
+        .toList();
     return http.StreamedResponse(
       Stream.value(utf8.encode(jsonEncode({'text': 'transcribed text'}))),
       200,
@@ -29,6 +44,7 @@ _stubStreamingOk() {
   return (
     client: client,
     multipart: () => captured! as http.MultipartRequest,
+    contextBias: () => biasTerms,
   );
 }
 
@@ -136,10 +152,13 @@ void main() {
         final multipart = stub.multipart();
         expect(multipart.fields['model'], equals(testModel));
         expect(
-          multipart.fields['context_bias'],
-          equals('macOS,Flutter,Kirkjubæjarklaustur'),
+          stub.contextBias(),
+          equals(['macOS', 'Flutter', 'Kirkjubæjarklaustur']),
         );
-        expect(multipart.files, hasLength(1));
+        expect(
+          multipart.files.where((file) => file.field == 'file'),
+          hasLength(1),
+        );
         expect(multipart.files.first.field, equals('file'));
         expect(multipart.files.first.filename, equals('audio.m4a'));
       });
@@ -189,11 +208,10 @@ void main() {
             if (expected.length == 100) break;
           }
 
-          final field = stub.multipart().fields['context_bias'];
+          final sent = stub.contextBias();
           if (expected.isEmpty) {
-            expect(field, isNull, reason: 'raw: $rawTerms');
+            expect(sent, isEmpty, reason: 'raw: $rawTerms');
           } else {
-            final sent = field!.split(',');
             expect(sent, expected, reason: 'raw: $rawTerms');
             expect(sent.length, lessThanOrEqualTo(100));
             expect(sent.toSet().length, sent.length, reason: 'no duplicates');
@@ -212,14 +230,13 @@ void main() {
               audioBase64: testAudioBase64,
               baseUrl: testBaseUrl,
               apiKey: testApiKey,
-              contextBias: ['Claude Code', 'macOS', 'Nano Banana Pro'],
+              contextBias: ['Claude Code', 'Penguin, Jr.', 'Nano Banana Pro'],
             )
             .toList();
 
-        final multipart = stub.multipart();
         expect(
-          multipart.fields['context_bias'],
-          equals('Claude Code,macOS,Nano Banana Pro'),
+          stub.contextBias(),
+          equals(['Claude Code', 'Penguin, Jr.', 'Nano Banana Pro']),
         );
       });
 
@@ -237,8 +254,7 @@ void main() {
             )
             .toList();
 
-        final multipart = stub.multipart();
-        final terms = multipart.fields['context_bias']!.split(',');
+        final terms = stub.contextBias();
         expect(
           terms.where((t) => t == 'Gemini Pro').length,
           equals(1),
@@ -260,8 +276,7 @@ void main() {
             )
             .toList();
 
-        final multipart = stub.multipart();
-        final terms = multipart.fields['context_bias']!.split(',');
+        final terms = stub.contextBias();
         expect(terms, hasLength(100));
         expect(terms.first, 'Term0');
         expect(terms.last, 'Term99');
@@ -280,8 +295,7 @@ void main() {
             )
             .toList();
 
-        final multipart = stub.multipart();
-        expect(multipart.fields.containsKey('context_bias'), isFalse);
+        expect(stub.contextBias(), isEmpty);
       });
 
       test('does not include context_bias field when empty', () async {
@@ -298,8 +312,7 @@ void main() {
             )
             .toList();
 
-        final multipart = stub.multipart();
-        expect(multipart.fields.containsKey('context_bias'), isFalse);
+        expect(stub.contextBias(), isEmpty);
       });
 
       test('throws TranscriptionException on HTTP error', () async {

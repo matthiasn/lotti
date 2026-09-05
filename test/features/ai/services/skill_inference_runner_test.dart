@@ -26,6 +26,7 @@ import 'package:lotti/features/ai/state/image_generation_error_controller.dart';
 import 'package:lotti/features/ai/state/inference_error_controller.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/features/journal/service/image_path_migration_service.dart';
@@ -789,6 +790,87 @@ void main() {
         expect(updatedEntity.data.transcripts!.last.transcript, 'Hello World');
         expect(updatedEntity.data.transcripts!.last.model, 'whisper-1');
       });
+
+      for (final accountingFails in [false, true]) {
+        test(
+          'preserves transcription failure and incurred accounting (writeFails=$accountingFails)',
+          () async {
+            final attribution = _registerInteractionCapture();
+            if (accountingFails) {
+              when(
+                () => attribution.service.recordInteraction(
+                  attributionId: any(named: 'attributionId'),
+                  event: any(named: 'event'),
+                ),
+              ).thenThrow(StateError('Synthetic ledger failure'));
+            }
+            final entity = makeAudioEntity(categoryId: 'cat-audio');
+            await createStubAudioFile();
+            when(
+              () => mockAiInputRepo.getEntity('audio-1'),
+            ).thenAnswer((_) async => entity);
+            when(
+              () => mockPromptBuilderHelper.getSpeechDictionaryTerms(entity),
+            ).thenAnswer((_) async => []);
+            when(
+              () => mockTaskSummaryResolver.resolve(any()),
+            ).thenAnswer((_) async => null);
+            final failure = TranscriptionException(
+              'Upstream unavailable',
+              provider: 'Melious',
+              statusCode: 503,
+              completedSegments: 1,
+              partialUsage: const CompletionUsage(
+                promptTokens: 10,
+                completionTokens: 5,
+                totalTokens: 15,
+              ),
+              partialImpact: const MeliousCallImpact(
+                costCredits: 2,
+                energyKwh: 0.5,
+              ),
+            );
+            when(
+              () => mockCloudRepo.generateWithAudio(
+                any(),
+                model: any(named: 'model'),
+                audioBase64: any(named: 'audioBase64'),
+                baseUrl: any(named: 'baseUrl'),
+                apiKey: any(named: 'apiKey'),
+                provider: any(named: 'provider'),
+                systemMessage: any(named: 'systemMessage'),
+                speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+              ),
+            ).thenAnswer((_) => Stream.error(failure));
+            stubLoggingException();
+            Object? reported;
+            await runner.runTranscription(
+              audioEntryId: 'audio-1',
+              automationResult: makeTranscriptionResult(),
+              onError: (error) => reported = error,
+            );
+            final event = _capturedEvents(attribution).single;
+            expect(event.inputTokens, 10);
+            expect(event.outputTokens, 5);
+            expect(event.totalTokens, 15);
+            expect(event.credits, 2);
+            expect(event.energyKwh, 0.5);
+            if (accountingFails) {
+              verifyNever(() => attribution.service.finalize(any()));
+            } else {
+              final record =
+                  verify(
+                        () => attribution.service.finalize(captureAny()),
+                      ).captured.single
+                      as AiWorkAttribution;
+              expect(record.status, AiWorkStatus.failed);
+              expect(record.errorCode, 'transcription_incomplete');
+            }
+            expect(reported, same(failure));
+            verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+          },
+        );
+      }
 
       test(
         'records a consumption event with tokens from the response usage '

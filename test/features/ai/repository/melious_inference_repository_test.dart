@@ -12,6 +12,7 @@ import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
+import 'package:lotti/features/ai/skills/entry_summary_tool.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -939,6 +940,339 @@ void main() {
         expect(request.files.single.filename, 'audio.m4a');
       },
     );
+
+    test('transcription timeout includes a stalled response body', () {
+      fakeAsync((async) {
+        final body = StreamController<List<int>>();
+        final repository = MeliousInferenceRepository(
+          httpClient: MockClient.streaming(
+            (_, _) async => http.StreamedResponse(body.stream, 200),
+          ),
+        );
+        Object? failure;
+        final subscription = repository
+            .transcribeAudio(
+              model: 'whisper-large-v3',
+              audioBase64: base64Encode([1]),
+              baseUrl: baseUrl,
+              apiKey: apiKey,
+              timeout: const Duration(seconds: 1),
+            )
+            .listen(
+              (_) => fail('A stalled body must not yield a transcript'),
+              onError: (Object error) => failure = error,
+            );
+        async
+          ..flushMicrotasks()
+          ..elapse(const Duration(seconds: 1));
+        expect(
+          failure,
+          isA<TranscriptionException>().having(
+            (e) => e.statusCode,
+            'status',
+            408,
+          ),
+        );
+        unawaited(subscription.cancel());
+        unawaited(body.close());
+        async.flushMicrotasks();
+        repository.close();
+      });
+    });
+
+    group('oversized transcription', () {
+      late Directory directory;
+      late String audio;
+      var prepared = 0;
+      var cleaned = 0;
+
+      setUpAll(() {
+        audio = base64Encode(
+          Uint8List(MeliousInferenceRepository.maxTranscriptionUploadBytes + 1),
+        );
+      });
+      setUp(() {
+        directory = Directory.systemTemp.createTempSync(
+          'lotti_audio_segments_',
+        );
+        prepared = 0;
+        cleaned = 0;
+      });
+      tearDown(() => directory.deleteSync(recursive: true));
+
+      Stream<File> segments(Uint8List bytes) async* {
+        expect(
+          bytes.length,
+          MeliousInferenceRepository.maxTranscriptionUploadBytes + 1,
+        );
+        for (var index = 1; index <= 3; index++) {
+          final file = File('${directory.path}/$index.mp3')
+            ..writeAsBytesSync([index]);
+          prepared++;
+          try {
+            yield file;
+          } finally {
+            file.deleteSync();
+            cleaned++;
+          }
+        }
+      }
+
+      test(
+        'uploads sequential MP3 parts and combines text, usage and impact',
+        () async {
+          var calls = 0;
+          final collector = InferenceImpactCollector();
+          final repository = MeliousInferenceRepository(
+            audioSegmentEncoder: segments,
+            httpClient: MockClient.streaming((request, _) async {
+              calls++;
+              expect(prepared, calls);
+              expect(cleaned, calls - 1);
+              final multipart = request as http.MultipartRequest;
+              expect(multipart.files.single.filename, 'audio.mp3');
+              expect(multipart.files.single.length, 1);
+              expect(multipart.fields['prompt'], 'Penguin');
+              return http.StreamedResponse(
+                Stream.value(
+                  utf8.encode(
+                    jsonEncode({
+                      'text': 'Part $calls',
+                      'usage': {
+                        'prompt_tokens': calls,
+                        'completion_tokens': 2,
+                        'total_tokens': calls + 2,
+                      },
+                      'billing_cost': {'credits': calls},
+                      'environment_impact': {'energy_kwh': calls},
+                    }),
+                  ),
+                ),
+                200,
+              );
+            }),
+          );
+          addTearDown(repository.close);
+          final result = await repository
+              .transcribeAudio(
+                model: 'whisper-large-v3',
+                audioBase64: audio,
+                baseUrl: baseUrl,
+                apiKey: apiKey,
+                contextBiasTerms: ['Penguin'],
+                impactCollector: collector,
+              )
+              .single;
+          expect(
+            result.choices?.single.delta?.content,
+            'Part 1\n\nPart 2\n\nPart 3',
+          );
+          expect(result.usage?.promptTokens, 6);
+          expect(result.usage?.completionTokens, 6);
+          expect(result.usage?.totalTokens, 12);
+          expect(collector.impact?.costCredits, 6);
+          expect(collector.impact?.energyKwh, 6);
+          expect(collector.impact?.costCreditsDecimal, isNull);
+          expect(calls, 3);
+          expect(cleaned, 3);
+          expect(directory.listSync(), isEmpty);
+        },
+      );
+
+      test('rejects an oversized encoded part before uploading it', () async {
+        var calls = 0;
+        final repository = MeliousInferenceRepository(
+          audioSegmentEncoder: segments,
+          temporaryFileReader: (_) async => Uint8List(
+            MeliousInferenceRepository.maxTranscriptionUploadBytes + 1,
+          ),
+          httpClient: MockClient.streaming((request, _) async {
+            calls++;
+            throw StateError('Oversized audio must not be uploaded');
+          }),
+        );
+        addTearDown(repository.close);
+        await expectLater(
+          repository
+              .transcribeAudio(
+                model: 'whisper-large-v3',
+                audioBase64: audio,
+                baseUrl: baseUrl,
+                apiKey: apiKey,
+              )
+              .toList(),
+          throwsA(
+            isA<TranscriptionException>().having(
+              (e) => e.statusCode,
+              'status',
+              413,
+            ),
+          ),
+        );
+        expect(calls, 0);
+        expect(prepared, 1);
+        expect(cleaned, 1);
+        expect(directory.listSync(), isEmpty);
+      });
+
+      for (final empty in [true, false]) {
+        test('audio preparation failure is typed (empty=$empty)', () async {
+          final repository = MeliousInferenceRepository(
+            audioSegmentEncoder: (_) => empty
+                ? const Stream<File>.empty()
+                : Stream<File>.error(
+                    const FormatException('Synthetic decoder failure'),
+                  ),
+            httpClient: MockClient.streaming(
+              (_, _) async => throw StateError('No upload is possible'),
+            ),
+          );
+          addTearDown(repository.close);
+          await expectLater(
+            repository
+                .transcribeAudio(
+                  model: 'whisper-large-v3',
+                  audioBase64: audio,
+                  baseUrl: baseUrl,
+                  apiKey: apiKey,
+                )
+                .toList(),
+            throwsA(
+              isA<TranscriptionException>().having(
+                (e) => e.originalError,
+                'cause',
+                isA<FormatException>(),
+              ),
+            ),
+          );
+        });
+      }
+
+      test('canceling aborts the upload and cleans its segment', () async {
+        final started = Completer<void>();
+        final finished = Completer<void>();
+        final response = Completer<http.StreamedResponse>();
+        final aborted = Completer<void>();
+        Stream<File> cancelableSegments(Uint8List bytes) async* {
+          try {
+            yield* segments(bytes);
+          } finally {
+            finished.complete();
+          }
+        }
+
+        final repository = MeliousInferenceRepository(
+          audioSegmentEncoder: cancelableSegments,
+          httpClient: MockClient.streaming((request, _) async {
+            if (!started.isCompleted) started.complete();
+            unawaited(
+              (request as http.AbortableMultipartRequest).abortTrigger!.then((
+                _,
+              ) {
+                if (!aborted.isCompleted) aborted.complete();
+              }),
+            );
+            return response.future;
+          }),
+        );
+        addTearDown(repository.close);
+        final results = <CreateChatCompletionStreamResponse>[];
+        final subscription = repository
+            .transcribeAudio(
+              model: 'whisper-large-v3',
+              audioBase64: audio,
+              baseUrl: baseUrl,
+              apiKey: apiKey,
+            )
+            .listen(results.add);
+        await started.future;
+        await subscription.cancel();
+        await aborted.future;
+        // A transport may win the cancellation race and return success.
+        response.complete(
+          http.StreamedResponse(
+            Stream.value(utf8.encode('{"text":"Late result"}')),
+            200,
+          ),
+        );
+        await finished.future;
+        expect(prepared, 1);
+        expect(cleaned, 1);
+        expect(results, isEmpty);
+        expect(directory.listSync(), isEmpty);
+      });
+
+      test(
+        'a failed part cleans files and never returns a partial transcript',
+        () async {
+          var calls = 0;
+          final repository = MeliousInferenceRepository(
+            audioSegmentEncoder: segments,
+            httpClient: MockClient.streaming((request, _) async {
+              calls++;
+              return http.StreamedResponse(
+                Stream.value(
+                  utf8.encode(
+                    jsonEncode(
+                      calls == 1
+                          ? {
+                              'text': 'First part',
+                              'usage': {
+                                'prompt_tokens': 10,
+                                'completion_tokens': 5,
+                                'total_tokens': 15,
+                              },
+                              'billing_cost': {'credits': 2},
+                            }
+                          : {
+                              'error': {'message': 'Unavailable'},
+                            },
+                    ),
+                  ),
+                ),
+                calls == 1 ? 200 : 503,
+              );
+            }),
+          );
+          addTearDown(repository.close);
+          final received = <CreateChatCompletionStreamResponse>[];
+          await expectLater(
+            repository
+                .transcribeAudio(
+                  model: 'whisper-large-v3',
+                  audioBase64: audio,
+                  baseUrl: baseUrl,
+                  apiKey: apiKey,
+                )
+                .forEach(received.add),
+            throwsA(
+              isA<TranscriptionException>()
+                  .having(
+                    (e) => e.statusCode,
+                    'status',
+                    503,
+                  )
+                  .having((e) => e.completedSegments, 'completedSegments', 1)
+                  .having(
+                    (e) => e.partialUsage?.totalTokens,
+                    'partial tokens',
+                    15,
+                  )
+                  .having(
+                    (e) => e.partialImpact?.costCredits,
+                    'partial credits',
+                    2,
+                  ),
+            ),
+          );
+          expect(received, isEmpty);
+          expect(calls, 2);
+          expect(prepared, 2);
+          expect(cleaned, 2);
+          expect(directory.listSync(), isEmpty);
+        },
+      );
+    });
 
     test(
       'transcribeAudio captures Melious billing and impact data',
@@ -2544,12 +2878,18 @@ void main() {
               baseUrl: baseUrl,
               apiKey: apiKey,
               images: const ['abc123'],
+              tools: [entrySummaryTool],
+              toolChoice: entrySummaryToolChoice,
               impactCollector: InferenceImpactCollector(),
             )
             .toList();
 
         final body = jsonDecode(captured.body) as Map<String, dynamic>;
         expect(body['stream'], false);
+        expect(body['tool_choice'], {
+          'type': 'function',
+          'function': {'name': entrySummaryToolName},
+        });
         expect(captured.body, contains('data:image/jpeg;base64,abc123'));
         expect(contentOf(chunks), 'vision reply');
       },

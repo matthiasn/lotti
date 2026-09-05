@@ -3390,58 +3390,63 @@ void main() {
     });
 
     group('generateWithAudio with Mistral transcription models', () {
-      test(
-        'routes voxtral-mini-transcribe-2602 to Mistral transcription endpoint',
-        () async {
-          final mistralProvider = AiConfigInferenceProvider(
-            id: 'mistral-provider',
-            name: 'Mistral',
-            baseUrl: 'https://api.mistral.ai/v1',
-            apiKey: 'test-key',
-            createdAt: DateTime(2024),
-            inferenceProviderType: InferenceProviderType.mistral,
-          );
-
-          when(() => mockHttpClient.send(any())).thenAnswer((_) async {
-            return http.StreamedResponse(
-              Stream.value(
-                utf8.encode(jsonEncode({'text': 'Mistral transcribed text'})),
-              ),
-              200,
+      for (final model in [
+        'voxtral-mini-transcribe-2602',
+        'voxtral-mini-latest',
+      ]) {
+        test(
+          'routes $model to Mistral transcription endpoint',
+          () async {
+            final mistralProvider = AiConfigInferenceProvider(
+              id: 'mistral-provider',
+              name: 'Mistral',
+              baseUrl: 'https://api.mistral.ai/v1',
+              apiKey: 'test-key',
+              createdAt: DateTime(2024),
+              inferenceProviderType: InferenceProviderType.mistral,
             );
-          });
 
-          final stream = repository.generateWithAudio(
-            'Transcribe this audio',
-            model: 'voxtral-mini-transcribe-2602',
-            audioBase64: 'dGVzdC1hdWRpby1kYXRh',
-            baseUrl: 'https://api.mistral.ai/v1',
-            apiKey: 'test-key',
-            provider: mistralProvider,
-          );
+            when(() => mockHttpClient.send(any())).thenAnswer((_) async {
+              return http.StreamedResponse(
+                Stream.value(
+                  utf8.encode(jsonEncode({'text': 'Mistral transcribed text'})),
+                ),
+                200,
+              );
+            });
 
-          final response = await stream.first;
+            final stream = repository.generateWithAudio(
+              'Transcribe this audio',
+              model: model,
+              audioBase64: 'dGVzdC1hdWRpby1kYXRh',
+              baseUrl: 'https://api.mistral.ai/v1',
+              apiKey: 'test-key',
+              provider: mistralProvider,
+            );
 
-          expect(
-            response.choices?.first.delta?.content,
-            equals('Mistral transcribed text'),
-          );
+            final response = await stream.first;
 
-          final captured = verify(
-            () => mockHttpClient.send(captureAny()),
-          ).captured;
-          expect(captured, hasLength(1));
-          final request = captured.first as http.MultipartRequest;
-          expect(
-            request.url.toString(),
-            equals('https://api.mistral.ai/v1/audio/transcriptions'),
-          );
-          expect(
-            request.fields['model'],
-            equals('voxtral-mini-transcribe-2602'),
-          );
-        },
-      );
+            expect(
+              response.choices?.first.delta?.content,
+              equals('Mistral transcribed text'),
+            );
+
+            final captured = verify(
+              () => mockHttpClient.send(captureAny()),
+            ).captured;
+            expect(captured, hasLength(1));
+            final request = captured.first as http.MultipartRequest;
+            expect(
+              request.url.toString(),
+              equals('https://api.mistral.ai/v1/audio/transcriptions'),
+            );
+            expect(
+              request.fields['model'],
+              equals(model),
+            );
+          },
+        );
+      }
 
       test(
         'routes voxtral-mini-2602 to Mistral transcription endpoint',
@@ -3545,9 +3550,19 @@ void main() {
           ).captured;
           expect(captured, hasLength(1));
           final request = captured.first as http.MultipartRequest;
+          final biasFields = request.files
+              .where((file) => file.field == 'context_bias')
+              .toList();
+          expect(biasFields, hasLength(3));
           expect(
-            request.fields['context_bias'],
-            equals('macOS,Flutter,Dart'),
+            biasFields.map((field) => field.filename),
+            everyElement(isNull),
+          );
+          expect(
+            await Future.wait(
+              biasFields.map((field) => field.finalize().bytesToString()),
+            ),
+            ['macOS', 'Flutter', 'Dart'],
           );
         },
       );
