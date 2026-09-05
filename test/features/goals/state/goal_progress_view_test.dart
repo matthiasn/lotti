@@ -34,7 +34,7 @@ void main() {
 
   for (final fullyDispose in [false, true]) {
     for (final span in [false, true]) {
-      for (final stage in ['health', 'signals', 'definitions']) {
+      for (final stage in ['health', 'signals', 'definitions', 'captures']) {
         test(
           'disposed progress stops after pending $stage (span: $span, fully disposed: $fullyDispose)',
           () {
@@ -42,7 +42,19 @@ void main() {
               final pending = Completer<GoalAgentHealth>();
               final signals = Completer<List<JournalEntity>>();
               final definition = Completer<HabitDefinition?>();
+              final captures =
+                  Completer<Map<String, GoalMeasurableCaptureDecision>>();
               final db = MockJournalDb();
+              when(
+                () => db.getMeasurementsByType(
+                  type: any(named: 'type'),
+                  rangeStart: any(named: 'rangeStart'),
+                  rangeEnd: any(named: 'rangeEnd'),
+                ),
+              ).thenAnswer((_) async => []);
+              when(
+                () => db.getMeasurableDataTypeById('water'),
+              ).thenAnswer((_) async => null);
               when(
                 () => db.getHabitCompletionsByHabitId(
                   habitId: any(named: 'habitId'),
@@ -56,6 +68,9 @@ void main() {
               final container = ProviderContainer(
                 overrides: [
                   journalDbProvider.overrideWithValue(db),
+                  goalMeasurableCaptureDecisionsProvider(
+                    'goal-1',
+                  ).overrideWith((ref) => captures.future),
                   goalAgentHealthProvider(
                     'goal-1',
                   ).overrideWith((ref) => pending.future),
@@ -69,6 +84,10 @@ void main() {
                   : goalAgentProgressViewProvider('goal-1');
               final healthSubscription = container.listen(
                 goalAgentHealthProvider('goal-1'),
+                (_, _) {},
+              );
+              final capturesSubscription = container.listen(
+                goalMeasurableCaptureDecisionsProvider('goal-1'),
                 (_, _) {},
               );
               final probe = FutureProviderProbe(provider);
@@ -91,12 +110,20 @@ void main() {
                           authoredBy: 'user',
                           title: 'Floss',
                           statement: 'Floss consistently',
-                          criteria: const GoalCriterion.habit(
-                            criterionId: 'floss',
-                            habitId: 'floss',
-                            window: GoalWindow.rollingDays(count: 7),
-                            targetCount: 2,
-                          ),
+                          criteria: stage == 'captures'
+                              ? const GoalCriterion.measurable(
+                                  criterionId: 'water',
+                                  dataTypeId: 'water',
+                                  window: GoalWindow.rollingDays(count: 7),
+                                  aggregation: GoalAggregation.sum,
+                                  target: 2,
+                                )
+                              : const GoalCriterion.habit(
+                                  criterionId: 'floss',
+                                  habitId: 'floss',
+                                  window: GoalWindow.rollingDays(count: 7),
+                                  targetCount: 2,
+                                ),
                           createdAt: DateTime(2026),
                           vectorClock: null,
                         )
@@ -117,6 +144,7 @@ void main() {
               if (!pending.isCompleted) pending.complete(health);
               if (!signals.isCompleted) signals.complete([]);
               definition.complete(null);
+              captures.complete({});
               async
                 ..flushMicrotasks()
                 ..elapse(Duration.zero);
@@ -128,6 +156,7 @@ void main() {
                 reason:
                     'a disposed projection must not arm a midnight callback',
               );
+              capturesSubscription.close();
               healthSubscription.close();
               container.dispose();
             }, initialTime: DateTime(2026, 9, 5, 12));

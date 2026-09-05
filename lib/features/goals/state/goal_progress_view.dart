@@ -1138,6 +1138,7 @@ Future<GoalProgressView?> _progressView(
       : await ref.watch(
           goalMeasurableCaptureDecisionsProvider(agentId).future,
         );
+  if (disposed) return null;
   final agentRecordedMeasurementIds = {
     for (final decision in captureDecisions.values)
       if (decision.recorded) ...decision.entryIds,
