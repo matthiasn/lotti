@@ -140,6 +140,79 @@ void main() {
       await updateController.close();
     });
 
+    test('refreshes on surveyNotification (private toggle)', () async {
+      final updateController = StreamController<Set<String>>.broadcast();
+      when(
+        () => mocks.updateNotifications.updateStream,
+      ).thenAnswer((_) => updateController.stream);
+
+      final firstEntities = [
+        makeSurveyEntry(
+          dateFrom: DateTime(2024, 3, 12),
+          calculatedScores: {'Positive Affect Score': 35},
+        ),
+      ];
+      final secondEntities = [
+        makeSurveyEntry(
+          dateFrom: DateTime(2024, 3, 12),
+          calculatedScores: {'Positive Affect Score': 40},
+          id: 'updated',
+        ),
+      ];
+
+      var callCount = 0;
+      when(
+        () => mocks.journalDb.getSurveyCompletionsByType(
+          type: any(named: 'type'),
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer((_) async {
+        callCount++;
+        return callCount == 1 ? firstEntities : secondEntities;
+      });
+
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final provider = surveyChartDataControllerProvider((
+        surveyType: surveyType,
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+      ));
+
+      // Initial load
+      await container.read(provider.future);
+
+      // Listen for the refresh to complete
+      final refreshed = Completer<List<JournalEntity>>();
+      container.listen<AsyncValue<List<JournalEntity>>>(
+        provider,
+        (_, next) {
+          if (next is AsyncData<List<JournalEntity>> &&
+              !refreshed.isCompleted) {
+            refreshed.complete(next.value);
+          }
+        },
+      );
+
+      // Trigger survey notification
+      updateController.add({privateToggleNotification});
+
+      // Wait for the refresh to complete
+      await refreshed.future;
+
+      verify(
+        () => mocks.journalDb.getSurveyCompletionsByType(
+          type: surveyType,
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).called(2);
+
+      await updateController.close();
+    });
+
     test('does not refresh on unrelated notification', () async {
       final updateController = StreamController<Set<String>>.broadcast();
       when(

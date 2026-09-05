@@ -5,16 +5,19 @@ part of 'database.dart';
 /// range reads (also coalesced), and the vector-clock streams used by
 /// sync backfill.
 mixin _JournalDbJournalQueries on _$JournalDb, _JournalDbConfigFlags {
-  /// All live Daily OS audio entries for [dayId], served by the denormalized
-  /// `idx_journal_day_audio` index rather than scanning serialized rows.
+  /// All live Daily OS audio entries for [dayId] the private flag lets the
+  /// user see, served by the denormalized `idx_journal_day_audio` index
+  /// rather than scanning serialized rows.
   Future<List<JournalAudio>> getDayAudioEntries(String dayId) async {
+    final privateStatuses = await _visiblePrivateStatuses();
     final rows =
         await (select(journal)
               ..where(
                 (row) =>
                     row.type.equals('JournalAudio') &
                     row.deleted.equals(false) &
-                    row.dayId.equals(dayId),
+                    row.dayId.equals(dayId) &
+                    row.private.isIn(privateStatuses),
               )
               ..orderBy([
                 (row) => OrderingTerm.asc(row.dateFrom),

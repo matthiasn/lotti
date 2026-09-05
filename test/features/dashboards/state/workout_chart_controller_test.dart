@@ -126,6 +126,57 @@ void main() {
 
       await updateController.close();
     });
+
+    test('refreshes on workoutNotification (private toggle)', () async {
+      final updateController = StreamController<Set<String>>.broadcast();
+      when(
+        () => mocks.updateNotifications.updateStream,
+      ).thenAnswer((_) => updateController.stream);
+
+      when(
+        () => mocks.journalDb.getWorkouts(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer((_) async => []);
+
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final provider = workoutChartDataControllerProvider((
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+      ));
+
+      // Initial load
+      await container.read(provider.future);
+
+      // Listen for the refresh to complete
+      final refreshed = Completer<List<JournalEntity>>();
+      container.listen<AsyncValue<List<JournalEntity>>>(
+        provider,
+        (_, next) {
+          if (next is AsyncData<List<JournalEntity>> &&
+              !refreshed.isCompleted) {
+            refreshed.complete(next.value);
+          }
+        },
+      );
+
+      updateController.add({privateToggleNotification});
+
+      // Wait for the refresh to complete
+      await refreshed.future;
+
+      verify(
+        () => mocks.journalDb.getWorkouts(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).called(2);
+
+      await updateController.close();
+    });
   });
 
   group('WorkoutObservationsController', () {

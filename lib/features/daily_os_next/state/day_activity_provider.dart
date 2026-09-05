@@ -35,7 +35,9 @@ final dayActivityProvider = FutureProvider.autoDispose
     .family<List<DayActivityEntry>, DateTime>((ref, date) async {
       ref
         ..watch(dayProcessingOutboxChangesProvider)
-        ..watch(agentUpdateStreamProvider(audioNotification));
+        ..watch(agentUpdateStreamProvider(audioNotification))
+        // The day audio read gates on the private flag.
+        ..watch(agentUpdateStreamProvider(privateToggleNotification));
       final captures = await ref.watch(capturesForDateProvider(date).future);
       final planEntity = await ref.watch(
         draftedPlanForDateProvider(date).future,

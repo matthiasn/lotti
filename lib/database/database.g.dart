@@ -6051,9 +6051,9 @@ abstract class _$JournalDb extends GeneratedDatabase {
     DateTime rangeEnd,
   ) {
     return customSelect(
-      'SELECT * FROM journal WHERE type IN (\'JournalEntry\', \'WorkoutEntry\', \'JournalEvent\') AND deleted = FALSE AND date_from >= ?1 AND date_to <= ?2 ORDER BY date_from DESC',
+      'SELECT * FROM journal WHERE type IN (\'JournalEntry\', \'WorkoutEntry\', \'JournalEvent\') AND deleted = FALSE AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND date_from >= ?1 AND date_to <= ?2 ORDER BY date_from DESC',
       variables: [Variable<DateTime>(rangeStart), Variable<DateTime>(rangeEnd)],
-      readsFrom: {journal},
+      readsFrom: {journal, configFlags},
     ).asyncMap(journal.mapFromRow);
   }
 
@@ -6731,6 +6731,22 @@ abstract class _$JournalDb extends GeneratedDatabase {
     DateTime rangeEnd,
   ) {
     return customSelect(
+      'SELECT * FROM journal WHERE type = \'MeasurementEntry\' AND subtype = ?1 AND date_from >= ?2 AND date_to <= ?3 AND deleted = FALSE AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY date_from DESC',
+      variables: [
+        Variable<String>(subtype),
+        Variable<DateTime>(rangeStart),
+        Variable<DateTime>(rangeEnd),
+      ],
+      readsFrom: {journal, configFlags},
+    ).asyncMap(journal.mapFromRow);
+  }
+
+  Selectable<JournalDbEntity> measurementsByTypeAllPrivate(
+    String? subtype,
+    DateTime rangeStart,
+    DateTime rangeEnd,
+  ) {
+    return customSelect(
       'SELECT * FROM journal WHERE type = \'MeasurementEntry\' AND subtype = ?1 AND date_from >= ?2 AND date_to <= ?3 AND deleted = FALSE ORDER BY date_from DESC',
       variables: [
         Variable<String>(subtype),
@@ -6747,6 +6763,22 @@ abstract class _$JournalDb extends GeneratedDatabase {
     DateTime rangeEnd,
   ) {
     return customSelect(
+      'SELECT * FROM journal WHERE type = \'HabitCompletionEntry\' AND subtype = ?1 AND date_from >= ?2 AND date_to <= ?3 AND deleted = FALSE AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY date_from DESC',
+      variables: [
+        Variable<String>(habitId),
+        Variable<DateTime>(rangeStart),
+        Variable<DateTime>(rangeEnd),
+      ],
+      readsFrom: {journal, configFlags},
+    ).asyncMap(journal.mapFromRow);
+  }
+
+  Selectable<JournalDbEntity> habitCompletionsByHabitIdAllPrivate(
+    String? habitId,
+    DateTime rangeStart,
+    DateTime rangeEnd,
+  ) {
+    return customSelect(
       'SELECT * FROM journal WHERE type = \'HabitCompletionEntry\' AND subtype = ?1 AND date_from >= ?2 AND date_to <= ?3 AND deleted = FALSE ORDER BY date_from DESC',
       variables: [
         Variable<String>(habitId),
@@ -6758,6 +6790,22 @@ abstract class _$JournalDb extends GeneratedDatabase {
   }
 
   Selectable<JournalDbEntity> quantitativeByType(
+    String? subtype,
+    DateTime rangeStart,
+    DateTime rangeEnd,
+  ) {
+    return customSelect(
+      'SELECT * FROM journal WHERE type = \'QuantitativeEntry\' AND subtype = ?1 AND date_from >= ?2 AND date_to <= ?3 AND deleted = FALSE AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY date_from DESC',
+      variables: [
+        Variable<String>(subtype),
+        Variable<DateTime>(rangeStart),
+        Variable<DateTime>(rangeEnd),
+      ],
+      readsFrom: {journal, configFlags},
+    ).asyncMap(journal.mapFromRow);
+  }
+
+  Selectable<JournalDbEntity> quantitativeByTypeAllPrivate(
     String? subtype,
     DateTime rangeStart,
     DateTime rangeEnd,
@@ -6783,9 +6831,9 @@ abstract class _$JournalDb extends GeneratedDatabase {
 
   Selectable<JournalDbEntity> workouts(DateTime rangeStart, DateTime rangeEnd) {
     return customSelect(
-      'SELECT * FROM journal WHERE type = \'WorkoutEntry\' AND date_from >= ?1 AND date_to <= ?2 AND deleted = FALSE ORDER BY date_from DESC',
+      'SELECT * FROM journal WHERE type = \'WorkoutEntry\' AND date_from >= ?1 AND date_to <= ?2 AND deleted = FALSE AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY date_from DESC',
       variables: [Variable<DateTime>(rangeStart), Variable<DateTime>(rangeEnd)],
-      readsFrom: {journal},
+      readsFrom: {journal, configFlags},
     ).asyncMap(journal.mapFromRow);
   }
 
@@ -6803,21 +6851,21 @@ abstract class _$JournalDb extends GeneratedDatabase {
     DateTime rangeEnd,
   ) {
     return customSelect(
-      'SELECT * FROM journal WHERE type = \'WorkoutEntry\' AND subtype = ?1 AND date_from >= ?2 AND date_from < ?3 AND deleted = FALSE ORDER BY date_from DESC',
+      'SELECT * FROM journal WHERE type = \'WorkoutEntry\' AND subtype = ?1 AND date_from >= ?2 AND date_from < ?3 AND deleted = FALSE AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY date_from DESC',
       variables: [
         Variable<String>(workoutType),
         Variable<DateTime>(rangeStart),
         Variable<DateTime>(rangeEnd),
       ],
-      readsFrom: {journal},
+      readsFrom: {journal, configFlags},
     ).asyncMap(journal.mapFromRow);
   }
 
   Selectable<String?> workoutTypes() {
     return customSelect(
-      'SELECT DISTINCT subtype FROM journal WHERE type = \'WorkoutEntry\' AND subtype IS NOT NULL AND deleted = FALSE ORDER BY subtype ASC',
+      'SELECT DISTINCT subtype FROM journal WHERE type = \'WorkoutEntry\' AND subtype IS NOT NULL AND deleted = FALSE AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY subtype ASC',
       variables: [],
-      readsFrom: {journal},
+      readsFrom: {journal, configFlags},
     ).map((QueryRow row) => row.readNullable<String>('subtype'));
   }
 
@@ -6827,13 +6875,13 @@ abstract class _$JournalDb extends GeneratedDatabase {
     DateTime rangeEnd,
   ) {
     return customSelect(
-      'SELECT * FROM journal WHERE type = \'SurveyEntry\' AND subtype LIKE ?1 AND date_from >= ?2 AND date_to <= ?3 AND deleted = FALSE ORDER BY date_from DESC',
+      'SELECT * FROM journal WHERE type = \'SurveyEntry\' AND subtype LIKE ?1 AND date_from >= ?2 AND date_to <= ?3 AND deleted = FALSE AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY date_from DESC',
       variables: [
         Variable<String>(subtype),
         Variable<DateTime>(rangeStart),
         Variable<DateTime>(rangeEnd),
       ],
-      readsFrom: {journal},
+      readsFrom: {journal, configFlags},
     ).asyncMap(journal.mapFromRow);
   }
 
@@ -6847,9 +6895,9 @@ abstract class _$JournalDb extends GeneratedDatabase {
 
   Selectable<int> countImportFlagEntries() {
     return customSelect(
-      'SELECT COUNT(*) AS _c0 FROM journal WHERE deleted = FALSE AND flag = 1',
+      'SELECT COUNT(*) AS _c0 FROM journal WHERE deleted = FALSE AND flag = 1 AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\'))',
       variables: [],
-      readsFrom: {journal},
+      readsFrom: {journal, configFlags},
     ).map((QueryRow row) => row.read<int>('_c0'));
   }
 

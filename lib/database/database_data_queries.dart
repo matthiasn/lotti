@@ -12,6 +12,24 @@ mixin _JournalDbDataQueries on _$JournalDb, _JournalDbConfigFlags {
     return res.map(fromDbEntity).toList();
   }
 
+  /// Every measurement of [type] in the window, private ones included.
+  ///
+  /// For the search reindex that follows a definition edit, not for display:
+  /// the private flag is a display preference, and an index rebuilt from the
+  /// visible rows only would leave the hidden ones searchable by stale text.
+  Future<List<JournalEntity>> getMeasurementsByTypeIncludingPrivate({
+    required String type,
+    required DateTime rangeStart,
+    required DateTime rangeEnd,
+  }) async {
+    final res = await measurementsByTypeAllPrivate(
+      type,
+      rangeStart,
+      rangeEnd,
+    ).get();
+    return res.map(fromDbEntity).toList();
+  }
+
   /// Returns habit completions for [habitId] in the inclusive
   /// [rangeStart]/[rangeEnd] window.
   ///
@@ -24,6 +42,24 @@ mixin _JournalDbDataQueries on _$JournalDb, _JournalDbConfigFlags {
     required DateTime rangeEnd,
   }) async {
     final res = await habitCompletionsByHabitId(
+      habitId,
+      rangeStart,
+      rangeEnd,
+    ).get();
+    return latestHabitCompletionsByDay(res.map(fromDbEntity));
+  }
+
+  /// [getHabitCompletionsByHabitId] with private completions included.
+  ///
+  /// For the auto-completion engine's "anything already recorded wins"
+  /// guard, not for display: a private skip must still stop an automatic
+  /// success from being written over it while private entries are hidden.
+  Future<List<JournalEntity>> getHabitCompletionsByHabitIdIncludingPrivate({
+    required String habitId,
+    required DateTime rangeStart,
+    required DateTime rangeEnd,
+  }) async {
+    final res = await habitCompletionsByHabitIdAllPrivate(
       habitId,
       rangeStart,
       rangeEnd,
@@ -176,6 +212,27 @@ mixin _JournalDbDataQueries on _$JournalDb, _JournalDbConfigFlags {
     return res.map(fromDbEntity).toList();
   }
 
+  /// Every quantitative entry of [type] in the window, private ones included.
+  ///
+  /// For the sleep repair sweep, not for display: a repair that walks only
+  /// the visible rows leaves the hidden ones unrepaired.
+  Future<List<JournalEntity>> getQuantitativeByTypeIncludingPrivate({
+    required String type,
+    required DateTime rangeStart,
+    required DateTime rangeEnd,
+  }) async {
+    final res = await quantitativeByTypeAllPrivate(
+      type,
+      rangeStart,
+      rangeEnd,
+    ).get();
+    return res.map(fromDbEntity).toList();
+  }
+
+  /// The newest stored entry of [type], private ones included: the health
+  /// import's checkpoint for its next delta, never shown to the user. Gating
+  /// it on the private flag would re-import up to the default window whenever
+  /// the newest sample happens to be private.
   Future<QuantitativeEntry?> latestQuantitativeByType(String type) async {
     final dbEntities = await latestQuantByType(type).get();
     if (dbEntities.isEmpty) {
@@ -188,6 +245,8 @@ mixin _JournalDbDataQueries on _$JournalDb, _JournalDbConfigFlags {
     return fromDbEntity(dbEntities.first) as QuantitativeEntry;
   }
 
+  /// The newest stored workout, private ones included: the health import's
+  /// checkpoint for its next workout delta, never shown to the user.
   Future<WorkoutEntry?> latestWorkout() async {
     final dbEntities = await findLatestWorkout().get();
     if (dbEntities.isEmpty) {

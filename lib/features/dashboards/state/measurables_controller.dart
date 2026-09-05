@@ -146,7 +146,10 @@ class MeasurableChartDataController extends AsyncNotifier<List<JournalEntity>> {
     _updateSubscription = _updateNotifications.updateStream.listen((
       affectedIds,
     ) async {
-      if (affectedIds.contains(measurableDataTypeId)) {
+      // The private toggle changes which rows the gated read returns, so it
+      // must refetch like a data change would.
+      if (affectedIds.contains(measurableDataTypeId) ||
+          affectedIds.contains(privateToggleNotification)) {
         final latest = await _fetch();
         if (ref.mounted && latest != state.value) {
           state = AsyncData(latest);

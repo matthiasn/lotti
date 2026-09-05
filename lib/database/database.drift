@@ -466,6 +466,7 @@ sortedCalenderEntriesInRange:
 SELECT * FROM journal
   WHERE type in ('JournalEntry', 'WorkoutEntry', 'JournalEvent') AND
   deleted = false
+  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
   AND date_from >= :rangeStart
   AND date_to <= :rangeEnd
   ORDER BY date_from DESC;
@@ -813,6 +814,18 @@ SELECT * FROM journal
   AND date_from >= :rangeStart
   AND date_to <= :rangeEnd
   AND deleted = false
+  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  ORDER BY date_from DESC;
+
+-- The unfiltered twin of measurementsByType: for reindexing, repair and automation
+-- guards, which must see every row. Display reads use the gated one.
+measurementsByTypeAllPrivate:
+SELECT * FROM journal
+  WHERE type = 'MeasurementEntry'
+  AND subtype = :subtype
+  AND date_from >= :rangeStart
+  AND date_to <= :rangeEnd
+  AND deleted = false
   ORDER BY date_from DESC;
 
 habitCompletionsByHabitId:
@@ -822,9 +835,33 @@ SELECT * FROM journal
   AND date_from >= :rangeStart
   AND date_to <= :rangeEnd
   AND deleted = false
+  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  ORDER BY date_from DESC;
+
+-- The unfiltered twin of habitCompletionsByHabitId: for reindexing, repair and automation
+-- guards, which must see every row. Display reads use the gated one.
+habitCompletionsByHabitIdAllPrivate:
+SELECT * FROM journal
+  WHERE type = 'HabitCompletionEntry'
+  AND subtype = :habitId
+  AND date_from >= :rangeStart
+  AND date_to <= :rangeEnd
+  AND deleted = false
   ORDER BY date_from DESC;
 
 quantitativeByType:
+SELECT * FROM journal
+  WHERE type = 'QuantitativeEntry'
+  AND subtype = :subtype
+  AND date_from >= :rangeStart
+  AND date_to <= :rangeEnd
+  AND deleted = false
+  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  ORDER BY date_from DESC;
+
+-- The unfiltered twin of quantitativeByType: for reindexing, repair and automation
+-- guards, which must see every row. Display reads use the gated one.
+quantitativeByTypeAllPrivate:
 SELECT * FROM journal
   WHERE type = 'QuantitativeEntry'
   AND subtype = :subtype
@@ -847,6 +884,7 @@ SELECT * FROM journal
   AND date_from >= :rangeStart
   AND date_to <= :rangeEnd
   AND deleted = false
+  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
   ORDER BY date_from DESC;
 
 findLatestWorkout:
@@ -865,6 +903,7 @@ SELECT * FROM journal
   AND date_from >= :rangeStart
   AND date_from < :rangeEnd
   AND deleted = false
+  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
   ORDER BY date_from DESC;
 
 workoutTypes:
@@ -872,6 +911,7 @@ SELECT DISTINCT subtype FROM journal
   WHERE type = 'WorkoutEntry'
   AND subtype IS NOT NULL
   AND deleted = false
+  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
   ORDER BY subtype ASC;
 
 surveysByType:
@@ -881,6 +921,7 @@ SELECT * FROM journal
   AND date_from >= :rangeStart
   AND date_to <= :rangeEnd
   AND deleted = false
+  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
   ORDER BY date_from DESC;
 
 countJournalEntries:
@@ -889,7 +930,8 @@ SELECT COUNT(*) FROM journal
 
 countImportFlagEntries:
 SELECT COUNT(*) FROM journal
-  WHERE deleted = false AND flag = 1;
+  WHERE deleted = false AND flag = 1
+  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'));
 
 countInProgressTasks:
 SELECT COUNT(*) FROM journal

@@ -35,21 +35,20 @@ const _ungatedNamedQueries = <String, String>{
   'orderedJournalInterval': 'historical re-sync walks every row for peers',
   // No rows at all.
   'emptyJournalSelection': 'WHERE 1 = 0: the placeholder for an empty filter',
+  // Health-import checkpoints: the newest stored sample decides the next
+  // delta window and is never shown.
+  'latestQuantByType': 'health-import checkpoint, never displayed',
+  'findLatestWorkout': 'health-import checkpoint, never displayed',
+  // The unfiltered twins behind the *IncludingPrivate reads: reindexing,
+  // repair and automation guards must see every row.
+  'measurementsByTypeAllPrivate':
+      'the search reindex after a definition edit must cover hidden rows',
+  'habitCompletionsByHabitIdAllPrivate':
+      'the auto-completion guard must see a private skip or it writes over it',
+  'quantitativeByTypeAllPrivate':
+      'the sleep repair sweep must cover hidden rows',
   // Numbers, not rows.
   'countJournalEntries': 'a count for maintenance progress',
-  'countImportFlagEntries': 'a count for the import badge',
-  // Not gated today. Listed here rather than silently so; whether they
-  // should gate is the product decision tracked in lotti3-0qaz.
-  'sortedCalenderEntriesInRange': 'not gated today: the calendar range read',
-  'measurementsByType': 'not gated today: dashboard measurement series',
-  'habitCompletionsByHabitId': 'not gated today: habit completion series',
-  'quantitativeByType': 'not gated today: health quantitative series',
-  'latestQuantByType': 'not gated today: latest health quantitative value',
-  'workouts': 'not gated today: workout series',
-  'findLatestWorkout': 'not gated today: latest workout',
-  'workoutsByType': 'not gated today: workout series by type',
-  'workoutTypes': 'not gated today: distinct workout types',
-  'surveysByType': 'not gated today: survey completion series',
 };
 
 /// Dart declarations (`lib/…/file.dart:name`) that read journal rows —
@@ -97,9 +96,6 @@ const _ungatedDeclarations = <String, String>{
   // Numbers, not rows.
   'lib/database/database_journal_queries.dart:countAllJournalEntries':
       'a count for progress reporting, deleted rows included',
-  // Not gated today (lotti3-0qaz).
-  'lib/database/database_journal_queries.dart:getDayAudioEntries':
-      'not gated today: the Daily OS audio entries of a day',
 };
 
 /// Files whose journal SQL is not a read path at all.

@@ -60,7 +60,7 @@ void main() {
     );
 
     when(
-      () => journalDb.getQuantitativeByType(
+      () => journalDb.getQuantitativeByTypeIncludingPrivate(
         type: any(named: 'type'),
         rangeStart: any(named: 'rangeStart'),
         rangeEnd: any(named: 'rangeEnd'),
@@ -90,7 +90,7 @@ void main() {
     String dataType = 'HealthDataType.SLEEP_LIGHT',
   }) {
     when(
-      () => journalDb.getQuantitativeByType(
+      () => journalDb.getQuantitativeByTypeIncludingPrivate(
         type: dataType,
         rangeStart: DateTime(year),
         rangeEnd: any(named: 'rangeEnd'),
@@ -159,7 +159,7 @@ void main() {
       await service.backfill(now: now);
 
       final types = verify(
-        () => journalDb.getQuantitativeByType(
+        () => journalDb.getQuantitativeByTypeIncludingPrivate(
           type: captureAny(named: 'type'),
           rangeStart: any(named: 'rangeStart'),
           rangeEnd: any(named: 'rangeEnd'),
@@ -177,7 +177,7 @@ void main() {
 
     test('keeps going after a window that throws', () async {
       when(
-        () => journalDb.getQuantitativeByType(
+        () => journalDb.getQuantitativeByTypeIncludingPrivate(
           type: 'HealthDataType.SLEEP_LIGHT',
           rangeStart: DateTime(2015),
           rangeEnd: any(named: 'rangeEnd'),

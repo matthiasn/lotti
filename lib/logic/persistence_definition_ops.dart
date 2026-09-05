@@ -109,7 +109,7 @@ class PersistenceDefinitionOps extends PersistenceCollaboratorBase {
 
   Future<void> _reindexMeasurements(MeasurableDataType dataType) async {
     try {
-      final entries = await journalDb.getMeasurementsByType(
+      final entries = await journalDb.getMeasurementsByTypeIncludingPrivate(
         type: dataType.id,
         rangeStart: DateTime(1),
         rangeEnd: DateTime(9999, 12, 31, 23, 59, 59, 999),

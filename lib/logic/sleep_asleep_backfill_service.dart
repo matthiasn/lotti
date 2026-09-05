@@ -94,11 +94,12 @@ class SleepAsleepBackfillService {
     for (final stageType in sleepStagesDuplicatedAsAsleep) {
       for (var year = _firstYear; year <= lastYear; year++) {
         try {
-          final entities = await journalDb.getQuantitativeByType(
-            type: stageType,
-            rangeStart: DateTime(year),
-            rangeEnd: DateTime(year + 1).add(_windowOverhang),
-          );
+          final entities = await journalDb
+              .getQuantitativeByTypeIncludingPrivate(
+                type: stageType,
+                rangeStart: DateTime(year),
+                rangeEnd: DateTime(year + 1).add(_windowOverhang),
+              );
           for (final entity in entities.whereType<QuantitativeEntry>()) {
             if (!visited.add(entity.id)) continue;
             outcomes.add(await _restoreCopy(entity));

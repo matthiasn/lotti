@@ -214,12 +214,16 @@ class HabitAutoCompletionService {
     final dayStart = DateTime(day.year, day.month, day.day);
     final dayEnd = DateTime(day.year, day.month, day.day + 1);
     // Anything already recorded for the day — manual, skip, or an earlier
-    // auto completion — wins; the engine only fills empty days.
-    final existing = await _journalDb.getHabitCompletionsByHabitId(
-      habitId: habit.id,
-      rangeStart: dayStart,
-      rangeEnd: dayEnd,
-    );
+    // auto completion — wins; the engine only fills empty days. Private
+    // completions count too: the private flag hides them from view, and a
+    // guard that could not see them would write a second completion over a
+    // deliberate skip.
+    final existing = await _journalDb
+        .getHabitCompletionsByHabitIdIncludingPrivate(
+          habitId: habit.id,
+          rangeStart: dayStart,
+          rangeEnd: dayEnd,
+        );
     if (existing.isNotEmpty || _disposed) return;
 
     // A past day is evaluated at its last instant so nothing of it is

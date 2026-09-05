@@ -85,7 +85,7 @@ void main() {
     );
     when(() => entitiesCache.getHabitById(any())).thenReturn(null);
     when(
-      () => journalDb.getHabitCompletionsByHabitId(
+      () => journalDb.getHabitCompletionsByHabitIdIncludingPrivate(
         habitId: any(named: 'habitId'),
         rangeStart: any(named: 'rangeStart'),
         rangeEnd: any(named: 'rangeEnd'),
