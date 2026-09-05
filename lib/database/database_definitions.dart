@@ -20,10 +20,20 @@ mixin _JournalDbDefinitions on _$JournalDb, _JournalDbConfigFlags {
       // always tolerated; anything else now propagates so addLabeled's
       // transaction rolls back instead of committing a partial reconcile.
       // Drift can wrap SqliteException when running through an isolate, so
-      // match the printed form as well as the type.
+      // match the complete printed code as well as the type. Remote errors
+      // print extended codes (e.g. 787 for FOREIGN KEY); SQLite stores the
+      // primary result code in the low byte. Anchor at the exception header
+      // so SQL text or parameters cannot masquerade as a constraint error.
+      final resultCode = ex is SqliteException
+          ? ex.resultCode
+          : int.tryParse(
+              RegExp(
+                    r'^SqliteException\((\d+)\)',
+                  ).firstMatch(ex.toString())?.group(1) ??
+                  '',
+            );
       final isConstraintViolation =
-          (ex is SqliteException && ex.resultCode == 19) ||
-          ex.toString().contains('SqliteException(19');
+          resultCode != null && (resultCode & 0xff) == 19;
       if (!isConstraintViolation) rethrow;
       DevLogger.error(
         name: 'JournalDb',

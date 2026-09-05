@@ -370,11 +370,20 @@ class BackfillResponseHandler {
     // DIFFERENT entity and its payload does not carry whatever the burnt
     // write would have mutated. Attributing that payload to the burnt
     // counter silently mis-maps state on the requester's side. For own-host
-    // misses we therefore send `unresolvable` immediately — our sequence
-    // log is authoritative for our own counters, so any miss is
-    // definitively a burn.
+    // misses outside an outstanding reservation, retain the legacy
+    // unresolvable response. A reserved row is not proof of a burn: the local
+    // write may still be in flight, or have committed before a crash prevented
+    // its sequence binding. Startup recovery preserves these rows too.
     final myHost = await _vectorClockService.getHost();
     final isOwnHost = myHost != null && hostId == myHost;
+
+    if (isOwnHost && logEntry?.status == SyncSequenceStatus.reserved.index) {
+      _trace(
+        'deferring own-host reservation until payload binding or release',
+        subDomain: 'backfill.reserved',
+      );
+      return false;
+    }
 
     if (logEntry != null && logEntry.entryId != null) {
       final payloadType = SyncSequencePayloadType.values.elementAt(
@@ -437,8 +446,8 @@ class BackfillResponseHandler {
         // so no write ever carried it. Covering by a later (necessarily
         // different) entity would misattribute unrelated state to this
         // counter on the requester's side — always wrong for own-host
-        // burns. Send unresolvable so the requester marks `status=5` and
-        // skips the covering lookup entirely.
+        // burns. The reserved case was deferred above. Send the authoritative
+        // unresolvable marker so peers mark it burned, without covering.
         _trace(
           'own-host miss → unresolvable (no covering attempted) '
           'hostId=$hostId counter=$counter payloadType=$payloadType',

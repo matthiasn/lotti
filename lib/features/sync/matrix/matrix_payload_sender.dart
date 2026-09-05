@@ -148,6 +148,40 @@ class MatrixPayloadSender {
     }
   }
 
+  /// Reads the sidecar snapshot, or reconstructs a missing file's payload from
+  /// the authoritative database without recreating it on disk. Only a version
+  /// covering every queued clock can replace that missing snapshot; otherwise
+  /// the outbox must retain the send for retry/recovery.
+  Future<Uint8List> _readJournalPayload(
+    SyncJournalEntity message,
+    String fullPath,
+  ) async {
+    try {
+      return await File(fullPath).readAsBytes();
+    } on PathNotFoundException {
+      final entities = await journalDb.journalEntityMapForIdsIncludingDeleted(
+        [message.id],
+      );
+      final entity = entities[message.id];
+      if (entity == null) rethrow;
+      final recoveredClock = entity.meta.vectorClock;
+      for (final queuedClock in [
+        message.vectorClock,
+        ...?message.coveredVectorClocks,
+      ]) {
+        if (queuedClock == null) continue;
+        if (recoveredClock == null ||
+            !{
+              VclockStatus.equal,
+              VclockStatus.a_gt_b,
+            }.contains(VectorClock.compare(recoveredClock, queuedClock))) {
+          throw StateError('Database payload does not cover queued version');
+        }
+      }
+      return Uint8List.fromList(utf8.encode(jsonEncode(entity.toJson())));
+    }
+  }
+
   Future<SyncJournalEntity?> sendJournalEntityPayload({
     required Room room,
     required SyncJournalEntity message,
@@ -159,7 +193,7 @@ class MatrixPayloadSender {
 
     late final Uint8List jsonBytes;
     try {
-      jsonBytes = await File(jsonFullPath).readAsBytes();
+      jsonBytes = await _readJournalPayload(message, jsonFullPath);
     } catch (error, stackTrace) {
       _trace(
         'EXCEPTION readJsonFile path=$jsonFullPath '

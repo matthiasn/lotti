@@ -103,6 +103,12 @@ Embeddings are the exception to "everything is Drift". Vector search uses
 because it provides on-device approximate nearest-neighbour search that SQLite
 does not.
 
+Label assignment tolerates SQLite constraint errors for duplicate assignments
+and label definitions that have not arrived through sync. The classifier uses
+the primary code's low byte, including extended codes transported through a
+background isolate. Other SQL errors propagate so reconciliation transactions
+roll back instead of committing a partial label set.
+
 # Opening a connection
 
 Every database goes through `openDbConnection()`, so they share one set of

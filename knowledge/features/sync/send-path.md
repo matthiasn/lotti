@@ -186,6 +186,13 @@ versions remain sendable. Journal and notification senders already snapshot
 their file bytes before upload and reconcile the envelope against that same
 snapshot; outbox bundles use a fresh UUID path and stamp the manifest upload id.
 
+When a standalone journal sidecar is missing, the sender reads the canonical
+journal row, including deletion tombstones. That replacement must cover the
+queued vector clock and every merged covered clock before upload. Recovery
+serializes the row in memory and leaves the reclaimed sidecar absent. An absent
+row, an older or concurrent clock, or another filesystem error keeps the outbox
+item retryable; none acknowledges an unsent generation.
+
 # Item lifecycle
 
 ```mermaid
