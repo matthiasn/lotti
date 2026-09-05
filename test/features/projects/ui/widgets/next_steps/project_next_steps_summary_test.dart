@@ -62,7 +62,7 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Confirm the escort'), findsNothing);
-    await tester.tap(find.text('Show'));
+    await tester.tap(find.text('Show history'));
     expect(toggles, 1);
   });
 
@@ -81,7 +81,7 @@ void main() {
       ),
     );
 
-    expect(find.text('Hide'), findsOneWidget);
+    expect(find.text('Hide history'), findsOneWidget);
     for (final title in [
       'Confirm the escort',
       'Split the first wave',
@@ -94,6 +94,26 @@ void main() {
     expect(find.text('Done'), findsOneWidget);
     expect(find.text('Dismissed'), findsOneWidget);
     expect(find.textContaining('5 h ago'), findsOneWidget);
+  });
+
+  testWidgets('an open step in the history reads as pending', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidget2(
+        ProjectNextStepsSummary(
+          steps: [
+            ...steps,
+            makeTestProjectRecommendation(id: 'open', title: 'Still open'),
+          ],
+          runCreatedAt: now,
+          now: now,
+          historyOpen: true,
+          onToggleHistory: () {},
+        ),
+      ),
+    );
+
+    expect(find.text('Still open'), findsOneWidget);
+    expect(find.text('1 pending'), findsOneWidget);
   });
 
   testWidgets('a legacy run without a snapshot dates itself by its newest '

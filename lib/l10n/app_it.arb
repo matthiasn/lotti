@@ -4465,7 +4465,7 @@
   },
   "projectNextStepsDismissAll": "Ignora tutti",
   "projectNextStepsEmpty": "Nessun suggerimento aperto.",
-  "projectNextStepsHideHistory": "Nascondi",
+  "projectNextStepsHideHistory": "Nascondi cronologia",
   "projectNextStepsLastLooked": "Ultimo controllo {ago}.",
   "@projectNextStepsLastLooked": {
     "placeholders": {
@@ -4485,7 +4485,7 @@
       }
     }
   },
-  "projectNextStepsShowHistory": "Mostra",
+  "projectNextStepsShowHistory": "Mostra cronologia",
   "projectNextStepsShowMore": "Mostra altri {count}",
   "@projectNextStepsShowMore": {
     "placeholders": {

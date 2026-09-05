@@ -3934,8 +3934,8 @@
   "projectNextStepAdded": "Hinzugefügt",
   "projectNextStepCreateFailed": "Die Aufgabe konnte nicht erstellt werden. Aktualisiere jetzt, um die aktuelle Liste zu laden, oder versuche es erneut.",
   "projectNextStepCreating": "Aufgabe wird erstellt…",
-  "projectNextStepDismiss": "Verwerfen",
-  "projectNextStepDismissed": "Verworfen",
+  "projectNextStepDismiss": "Übergehen",
+  "projectNextStepDismissed": "Übergangen",
   "projectNextStepDone": "Erledigt",
   "projectNextStepOpenTask": "Aufgabe öffnen",
   "projectNextStepRetry": "Erneut versuchen",
@@ -3973,7 +3973,7 @@
       }
     }
   },
-  "projectNextStepsCountDismissed": "{count, plural, =1{1 verworfen} other{{count} verworfen}}",
+  "projectNextStepsCountDismissed": "{count, plural, =1{1 übergangen} other{{count} übergangen}}",
   "@projectNextStepsCountDismissed": {
     "placeholders": {
       "count": {
@@ -3989,9 +3989,9 @@
       }
     }
   },
-  "projectNextStepsDismissAll": "Alle verwerfen",
+  "projectNextStepsDismissAll": "Alle übergehen",
   "projectNextStepsEmpty": "Keine offenen Vorschläge.",
-  "projectNextStepsHideHistory": "Ausblenden",
+  "projectNextStepsHideHistory": "Verlauf ausblenden",
   "projectNextStepsLastLooked": "Zuletzt geprüft {ago}.",
   "@projectNextStepsLastLooked": {
     "placeholders": {
@@ -4011,7 +4011,7 @@
       }
     }
   },
-  "projectNextStepsShowHistory": "Anzeigen",
+  "projectNextStepsShowHistory": "Verlauf anzeigen",
   "projectNextStepsShowMore": "{count} weitere anzeigen",
   "@projectNextStepsShowMore": {
     "placeholders": {

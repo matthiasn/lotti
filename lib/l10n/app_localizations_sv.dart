@@ -10263,7 +10263,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get projectManageTooltip => 'Hantera projekt';
 
   @override
-  String get projectNextStepAdded => 'Tillagd';
+  String get projectNextStepAdded => 'Tillagt';
 
   @override
   String get projectNextStepCreateFailed =>
@@ -10276,10 +10276,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get projectNextStepDismiss => 'Avfärda';
 
   @override
-  String get projectNextStepDismissed => 'Avfärdad';
+  String get projectNextStepDismissed => 'Avfärdat';
 
   @override
-  String get projectNextStepDone => 'Klar';
+  String get projectNextStepDone => 'Klart';
 
   @override
   String get projectNextStepOpenTask => 'Öppna uppgift';
@@ -10332,7 +10332,7 @@ class AppLocalizationsSv extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count tillagda',
-      one: '1 tillagd',
+      one: '1 tillagt',
     );
     return '$_temp0';
   }
@@ -10343,7 +10343,7 @@ class AppLocalizationsSv extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count avfärdade',
-      one: '1 avfärdad',
+      one: '1 avfärdat',
     );
     return '$_temp0';
   }
@@ -10354,7 +10354,7 @@ class AppLocalizationsSv extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count klara',
-      one: '1 klar',
+      one: '1 klart',
     );
     return '$_temp0';
   }
@@ -10366,7 +10366,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get projectNextStepsEmpty => 'Inga öppna förslag.';
 
   @override
-  String get projectNextStepsHideHistory => 'Dölj';
+  String get projectNextStepsHideHistory => 'Dölj historik';
 
   @override
   String projectNextStepsLastLooked(String ago) {
@@ -10379,7 +10379,7 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get projectNextStepsShowHistory => 'Visa';
+  String get projectNextStepsShowHistory => 'Visa historik';
 
   @override
   String projectNextStepsShowMore(int count) {

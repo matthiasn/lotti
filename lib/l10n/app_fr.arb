@@ -3931,12 +3931,12 @@
   },
   "projectLinkedTasks": "Tâches liées",
   "projectManageTooltip": "Gérer les projets",
-  "projectNextStepAdded": "Ajouté",
+  "projectNextStepAdded": "Ajoutée",
   "projectNextStepCreateFailed": "Impossible de créer la tâche. Mets à jour maintenant pour charger la liste actuelle, ou réessaie.",
   "projectNextStepCreating": "Création de la tâche…",
   "projectNextStepDismiss": "Ignorer",
-  "projectNextStepDismissed": "Ignoré",
-  "projectNextStepDone": "Fait",
+  "projectNextStepDismissed": "Ignorée",
+  "projectNextStepDone": "Faite",
   "projectNextStepOpenTask": "Ouvrir la tâche",
   "projectNextStepRetry": "Réessayer",
   "projectNextStepsAddAll": "Tout ajouter comme tâches",
@@ -3965,7 +3965,7 @@
       }
     }
   },
-  "projectNextStepsCountAdded": "{count, plural, =1{1 ajouté} other{{count} ajoutés}}",
+  "projectNextStepsCountAdded": "{count, plural, =1{1 ajoutée} other{{count} ajoutées}}",
   "@projectNextStepsCountAdded": {
     "placeholders": {
       "count": {
@@ -3973,7 +3973,7 @@
       }
     }
   },
-  "projectNextStepsCountDismissed": "{count, plural, =1{1 ignoré} other{{count} ignorés}}",
+  "projectNextStepsCountDismissed": "{count, plural, =1{1 ignorée} other{{count} ignorées}}",
   "@projectNextStepsCountDismissed": {
     "placeholders": {
       "count": {
@@ -3981,7 +3981,7 @@
       }
     }
   },
-  "projectNextStepsCountDone": "{count, plural, =1{1 fait} other{{count} faits}}",
+  "projectNextStepsCountDone": "{count, plural, =1{1 faite} other{{count} faites}}",
   "@projectNextStepsCountDone": {
     "placeholders": {
       "count": {
@@ -3991,7 +3991,7 @@
   },
   "projectNextStepsDismissAll": "Tout ignorer",
   "projectNextStepsEmpty": "Aucune suggestion ouverte.",
-  "projectNextStepsHideHistory": "Masquer",
+  "projectNextStepsHideHistory": "Masquer l'historique",
   "projectNextStepsLastLooked": "Dernière vérification {ago}.",
   "@projectNextStepsLastLooked": {
     "placeholders": {
@@ -4011,7 +4011,7 @@
       }
     }
   },
-  "projectNextStepsShowHistory": "Afficher",
+  "projectNextStepsShowHistory": "Afficher l'historique",
   "projectNextStepsShowMore": "Afficher {count} de plus",
   "@projectNextStepsShowMore": {
     "placeholders": {

@@ -10392,10 +10392,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get projectNextStepCreating => 'Vytvářím úkol…';
 
   @override
-  String get projectNextStepDismiss => 'Zamítnout';
+  String get projectNextStepDismiss => 'Zahodit';
 
   @override
-  String get projectNextStepDismissed => 'Zamítnuto';
+  String get projectNextStepDismissed => 'Zahozeno';
 
   @override
   String get projectNextStepDone => 'Hotovo';
@@ -10450,9 +10450,10 @@ class AppLocalizationsCs extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count přidáno',
-      few: '$count přidány',
-      one: '1 přidán',
+      other: '$count přidaných',
+      many: '$count přidaných',
+      few: '$count přidané',
+      one: '1 přidaný',
     );
     return '$_temp0';
   }
@@ -10462,9 +10463,10 @@ class AppLocalizationsCs extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count zamítnuto',
-      few: '$count zamítnuty',
-      one: '1 zamítnut',
+      other: '$count zahozených',
+      many: '$count zahozených',
+      few: '$count zahozené',
+      one: '1 zahozený',
     );
     return '$_temp0';
   }
@@ -10474,21 +10476,22 @@ class AppLocalizationsCs extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count hotovo',
-      few: '$count hotovy',
-      one: '1 hotov',
+      other: '$count hotových',
+      many: '$count hotových',
+      few: '$count hotové',
+      one: '1 hotový',
     );
     return '$_temp0';
   }
 
   @override
-  String get projectNextStepsDismissAll => 'Zamítnout vše';
+  String get projectNextStepsDismissAll => 'Zahodit vše';
 
   @override
   String get projectNextStepsEmpty => 'Žádné otevřené návrhy.';
 
   @override
-  String get projectNextStepsHideHistory => 'Skrýt';
+  String get projectNextStepsHideHistory => 'Skrýt historii';
 
   @override
   String projectNextStepsLastLooked(String ago) {
@@ -10501,11 +10504,19 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get projectNextStepsShowHistory => 'Zobrazit';
+  String get projectNextStepsShowHistory => 'Zobrazit historii';
 
   @override
   String projectNextStepsShowMore(int count) {
-    return 'Zobrazit $count dalších';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Zobrazit $count dalších',
+      many: 'Zobrazit $count dalších',
+      few: 'Zobrazit $count další',
+      one: 'Zobrazit 1 další',
+    );
+    return '$_temp0';
   }
 
   @override

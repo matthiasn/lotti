@@ -10278,10 +10278,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get projectNextStepCreating => 'Taak wordt aangemaakt…';
 
   @override
-  String get projectNextStepDismiss => 'Afwijzen';
+  String get projectNextStepDismiss => 'Negeren';
 
   @override
-  String get projectNextStepDismissed => 'Afgewezen';
+  String get projectNextStepDismissed => 'Genegeerd';
 
   @override
   String get projectNextStepDone => 'Klaar';
@@ -10347,8 +10347,8 @@ class AppLocalizationsNl extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count afgewezen',
-      one: '1 afgewezen',
+      other: '$count genegeerd',
+      one: '1 genegeerd',
     );
     return '$_temp0';
   }
@@ -10365,13 +10365,13 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get projectNextStepsDismissAll => 'Alles afwijzen';
+  String get projectNextStepsDismissAll => 'Alles negeren';
 
   @override
   String get projectNextStepsEmpty => 'Geen open suggesties.';
 
   @override
-  String get projectNextStepsHideHistory => 'Verbergen';
+  String get projectNextStepsHideHistory => 'Geschiedenis verbergen';
 
   @override
   String projectNextStepsLastLooked(String ago) {
@@ -10384,7 +10384,7 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get projectNextStepsShowHistory => 'Tonen';
+  String get projectNextStepsShowHistory => 'Geschiedenis tonen';
 
   @override
   String projectNextStepsShowMore(int count) {

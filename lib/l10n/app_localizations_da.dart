@@ -10353,7 +10353,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get projectNextStepsEmpty => 'Ingen åbne forslag.';
 
   @override
-  String get projectNextStepsHideHistory => 'Skjul';
+  String get projectNextStepsHideHistory => 'Skjul historik';
 
   @override
   String projectNextStepsLastLooked(String ago) {
@@ -10366,7 +10366,7 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
-  String get projectNextStepsShowHistory => 'Vis';
+  String get projectNextStepsShowHistory => 'Vis historik';
 
   @override
   String projectNextStepsShowMore(int count) {

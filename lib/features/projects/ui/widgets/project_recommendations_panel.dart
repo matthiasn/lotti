@@ -63,7 +63,11 @@ class ProjectRecommendationsPanel extends ConsumerStatefulWidget {
 class _ProjectRecommendationsPanelState
     extends ConsumerState<ProjectRecommendationsPanel> {
   final _busySteps = <String>{};
-  final _failedSteps = <String>{};
+
+  /// Steps whose last attempt failed: whether a retry can help, and the
+  /// message to show when it cannot (the step was consumed and a task may
+  /// need cleaning up).
+  final _failures = <String, ({bool retryable, String? message})>{};
 
   /// Row states the user just produced, shown until the snapshot catches up
   /// so a decided row never flickers back through "pending".
@@ -103,7 +107,7 @@ class _ProjectRecommendationsPanelState
 
   ProjectNextStepRowState _rowState(ProjectRecommendationEntity step) {
     if (_busySteps.contains(step.id)) return ProjectNextStepRowState.busy;
-    if (_failedSteps.contains(step.id)) return ProjectNextStepRowState.failed;
+    if (_failures.containsKey(step.id)) return ProjectNextStepRowState.failed;
     final durable = switch (projectNextStepOutcome(step)) {
       ProjectNextStepOutcome.pending => ProjectNextStepRowState.pending,
       ProjectNextStepOutcome.added => ProjectNextStepRowState.added,
@@ -146,7 +150,7 @@ class _ProjectRecommendationsPanelState
     if (_busySteps.contains(step.id)) return;
     setState(() {
       _busySteps.add(step.id);
-      _failedSteps.remove(step.id);
+      _failures.remove(step.id);
     });
     try {
       final result = await ref
@@ -167,7 +171,12 @@ class _ProjectRecommendationsPanelState
           );
         }
       } else {
-        _failedSteps.add(step.id);
+        // A consumed claim (task created, link and rollback both failed)
+        // cannot be retried: every retry would report "no longer active".
+        _failures[step.id] = (
+          retryable: !result.nonRetryable,
+          message: result.nonRetryable ? result.errorMessage : null,
+        );
       }
     } catch (error, stackTrace) {
       _log(
@@ -176,7 +185,7 @@ class _ProjectRecommendationsPanelState
         stackTrace,
       );
       if (!mounted) return;
-      _failedSteps.add(step.id);
+      _failures[step.id] = (retryable: true, message: null);
     } finally {
       if (mounted) setState(() => _busySteps.remove(step.id));
     }
@@ -193,15 +202,19 @@ class _ProjectRecommendationsPanelState
   }
 
   Future<void> _undo(ProjectRecommendationEntity step) async {
-    _undoTimers.remove(step.id)?.cancel();
-    _undoDeadlines.remove(step.id);
-    _createdTasks.remove(step.id);
     await _transition(
       step,
       () => ref
           .read(projectRecommendationServiceProvider)
           .restoreRecommendation(step.id),
       settled: ProjectNextStepRowState.pending,
+      // Only a successful restore forfeits the undo window and the task
+      // link; a refused undo leaves the row exactly as it was.
+      onSuccess: () {
+        _undoTimers.remove(step.id)?.cancel();
+        _undoDeadlines.remove(step.id);
+        _createdTasks.remove(step.id);
+      },
     );
   }
 
@@ -209,11 +222,12 @@ class _ProjectRecommendationsPanelState
     ProjectRecommendationEntity step,
     Future<bool> Function() run, {
     required ProjectNextStepRowState settled,
+    VoidCallback? onSuccess,
   }) async {
     if (_busySteps.contains(step.id)) return;
     setState(() {
       _busySteps.add(step.id);
-      _failedSteps.remove(step.id);
+      _failures.remove(step.id);
     });
     var succeeded = false;
     try {
@@ -224,7 +238,10 @@ class _ProjectRecommendationsPanelState
     if (!mounted) return;
     setState(() {
       _busySteps.remove(step.id);
-      if (succeeded) _optimistic[step.id] = settled;
+      if (succeeded) {
+        _optimistic[step.id] = settled;
+        onSuccess?.call();
+      }
     });
     if (!succeeded) {
       context.showToast(
@@ -318,7 +335,6 @@ class _ProjectRecommendationsPanelState
     if (snapshot == null && proposals.isEmpty) return const SizedBox.shrink();
 
     final tokens = context.designTokens;
-    final ai = tokens.colors.aiCard;
     final messages = context.messages;
     final now = ref.watch(projectDetailNowProvider)();
     // Counted from the rows' effective state, so a step added or dismissed a
@@ -372,21 +388,15 @@ class _ProjectRecommendationsPanelState
                           busy: _busyProposals.contains(
                             _proposalKey(set, index),
                           ),
-                          onConfirm: () => widget.enabled
-                              ? _decideProposal(set, index, confirm: true)
-                              : Future<void>.value(),
-                          onReject: () => widget.enabled
-                              ? _decideProposal(set, index, confirm: false)
-                              : Future<void>.value(),
+                          enabled: widget.enabled && !_bulkBusy,
+                          onConfirm: () =>
+                              _decideProposal(set, index, confirm: true),
+                          onReject: () =>
+                              _decideProposal(set, index, confirm: false),
                         ),
                       ),
                   ],
                 ),
-              ),
-            if (snapshot == null && proposals.isNotEmpty)
-              SizedBox(
-                height: tokens.spacing.step1,
-                child: ColoredBox(color: ai.background),
               ),
           ],
         ),
@@ -394,8 +404,9 @@ class _ProjectRecommendationsPanelState
     );
   }
 
-  /// Every proposal row to show: the live sets' items in order, plus rows
-  /// decided this session whose set the pending read no longer returns.
+  /// Every proposal row to show: the live sets' open items in order, plus
+  /// rows decided this session — whether their set still comes back from the
+  /// pending read or not. Items decided in an earlier session stay out.
   List<(ChangeSetEntity, int)> _proposalRows(List<AgentDomainEntity> sets) {
     final rows = <(ChangeSetEntity, int)>[];
     final seen = <String>{};
@@ -403,13 +414,16 @@ class _ProjectRecommendationsPanelState
       for (final (index, item) in set.items.indexed) {
         if (item.toolName == ProjectAgentToolNames.recommendNextSteps) continue;
         final key = _proposalKey(set, index);
-        seen.add(key);
         final decided = _decidedProposals[key];
-        rows.add(
-          item.status == ChangeItemStatus.pending && decided != null
-              ? decided
-              : (set, index),
-        );
+        if (decided != null) {
+          seen.add(key);
+          rows.add(decided);
+          continue;
+        }
+        // A sibling decided in an earlier session is history, not a row.
+        if (item.status != ChangeItemStatus.pending) continue;
+        seen.add(key);
+        rows.add((set, index));
       }
     }
     for (final entry in _decidedProposals.entries) {
@@ -474,12 +488,16 @@ class _ProjectRecommendationsPanelState
                 final state = _rowState(step);
                 final taskId = step.createdTaskId ?? _createdTasks[step.id];
                 final openTask = widget.onOpenTask;
+                final failure = _failures[step.id];
                 return ProjectNextStepRow(
                   step: step,
                   state: state,
-                  enabled: widget.enabled,
+                  enabled: widget.enabled && !_bulkBusy,
                   canUndo: _canUndo(step, state),
-                  onAddTask: () => unawaited(_addTask(step)),
+                  failureMessage: failure?.message,
+                  onAddTask: failure?.retryable == false
+                      ? null
+                      : () => unawaited(_addTask(step)),
                   onDismiss: () => unawaited(_dismiss(step)),
                   onUndo: () => unawaited(_undo(step)),
                   onOpenTask: taskId == null || openTask == null

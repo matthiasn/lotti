@@ -21,6 +21,7 @@ class ProjectProposalRow extends StatelessWidget {
     required this.busy,
     required this.onConfirm,
     required this.onReject,
+    this.enabled = true,
     super.key,
   });
 
@@ -32,6 +33,9 @@ class ProjectProposalRow extends StatelessWidget {
   final bool busy;
   final Future<void> Function() onConfirm;
   final Future<void> Function() onReject;
+
+  /// `false` keeps the rail visible but inert.
+  final bool enabled;
 
   ChangeItem get item => changeSet.items[itemIndex];
 
@@ -74,6 +78,7 @@ class ProjectProposalRow extends StatelessWidget {
             else
               RowActions(
                 busy: busy,
+                enabled: enabled,
                 onReject: onReject,
                 onConfirm: onConfirm,
               ),

@@ -4464,7 +4464,7 @@
   },
   "projectNextStepsDismissAll": "Descartar todos",
   "projectNextStepsEmpty": "Nenhuma sugestão aberta.",
-  "projectNextStepsHideHistory": "Ocultar",
+  "projectNextStepsHideHistory": "Ocultar histórico",
   "projectNextStepsLastLooked": "Última verificação {ago}.",
   "@projectNextStepsLastLooked": {
     "placeholders": {
@@ -4484,7 +4484,7 @@
       }
     }
   },
-  "projectNextStepsShowHistory": "Mostrar",
+  "projectNextStepsShowHistory": "Mostrar histórico",
   "projectNextStepsShowMore": "Mostrar mais {count}",
   "@projectNextStepsShowMore": {
     "placeholders": {

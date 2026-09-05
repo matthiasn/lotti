@@ -10521,8 +10521,8 @@ class AppLocalizationsRo extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count de adăugate',
-      few: '$count adăugate',
+      other: '$count de adăugați',
+      few: '$count adăugați',
       one: '1 adăugat',
     );
     return '$_temp0';
@@ -10533,8 +10533,8 @@ class AppLocalizationsRo extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count de respinse',
-      few: '$count respinse',
+      other: '$count de respinși',
+      few: '$count respinși',
       one: '1 respins',
     );
     return '$_temp0';
@@ -10545,8 +10545,8 @@ class AppLocalizationsRo extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count de finalizate',
-      few: '$count finalizate',
+      other: '$count de finalizați',
+      few: '$count finalizați',
       one: '1 finalizat',
     );
     return '$_temp0';
@@ -10559,7 +10559,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get projectNextStepsEmpty => 'Nicio sugestie deschisă.';
 
   @override
-  String get projectNextStepsHideHistory => 'Ascundeți';
+  String get projectNextStepsHideHistory => 'Ascundeți istoricul';
 
   @override
   String projectNextStepsLastLooked(String ago) {
@@ -10572,7 +10572,7 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get projectNextStepsShowHistory => 'Afișați';
+  String get projectNextStepsShowHistory => 'Afișați istoricul';
 
   @override
   String projectNextStepsShowMore(int count) {

@@ -5916,7 +5916,7 @@
   },
   "projectNextStepsDismissAll": "Dismiss all",
   "projectNextStepsEmpty": "No open suggestions.",
-  "projectNextStepsHideHistory": "Hide",
+  "projectNextStepsHideHistory": "Hide history",
   "projectNextStepsLastLooked": "Last looked {ago}.",
   "@projectNextStepsLastLooked": {
     "placeholders": {
@@ -5936,7 +5936,7 @@
       }
     }
   },
-  "projectNextStepsShowHistory": "Show",
+  "projectNextStepsShowHistory": "Show history",
   "projectNextStepsShowMore": "Show {count} more",
   "@projectNextStepsShowMore": {
     "placeholders": {

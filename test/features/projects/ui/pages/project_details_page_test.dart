@@ -1185,6 +1185,11 @@ void main() {
                 .enabled,
             isFalse,
           );
+          final opened = <String>[];
+          beamToNamedOverride = opened.add;
+          addTearDown(() => beamToNamedOverride = null);
+          panel.onOpenTask!('task-42');
+          expect(opened, ['/tasks/task-42']);
 
           // Invoking the wired callbacks must dispatch to the project
           // agent service for the resolved agent ID, with the cancel path

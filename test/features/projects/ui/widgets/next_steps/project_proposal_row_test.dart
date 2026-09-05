@@ -63,6 +63,56 @@ void main() {
     expect(find.byType(ResolvedTag), findsNothing);
   });
 
+  testWidgets('a disabled proposal keeps its rail inert', (tester) async {
+    var decided = 0;
+    await tester.pumpWidget(
+      subject(
+        ProjectProposalRow(
+          changeSet: changeSet,
+          itemIndex: 0,
+          busy: false,
+          enabled: false,
+          onConfirm: () async => decided++,
+          onReject: () async => decided++,
+        ),
+      ),
+    );
+
+    expect(tester.widget<RowActions>(find.byType(RowActions)).enabled, isFalse);
+    await tester.tap(find.byTooltip('Confirm'));
+    await tester.tap(find.byTooltip('Reject'));
+    expect(decided, 0);
+  });
+
+  testWidgets('an unknown tool falls back to the persisted summary', (
+    tester,
+  ) async {
+    final exotic = makeTestChangeSet(
+      id: 'set-2',
+      taskId: 'project-1',
+      items: const [
+        ChangeItem(
+          toolName: 'rename_project',
+          args: {'title': 'Waddle II'},
+          humanSummary: 'Rename the project to Waddle II',
+        ),
+      ],
+    );
+    await tester.pumpWidget(
+      subject(
+        ProjectProposalRow(
+          changeSet: exotic,
+          itemIndex: 0,
+          busy: false,
+          onConfirm: () async {},
+          onReject: () async {},
+        ),
+      ),
+    );
+
+    expect(find.text('Rename the project to Waddle II'), findsOneWidget);
+  });
+
   testWidgets('a busy proposal shows the rail spinner instead of buttons', (
     tester,
   ) async {

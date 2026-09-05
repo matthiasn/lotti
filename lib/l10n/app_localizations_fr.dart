@@ -10430,7 +10430,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get projectManageTooltip => 'Gérer les projets';
 
   @override
-  String get projectNextStepAdded => 'Ajouté';
+  String get projectNextStepAdded => 'Ajoutée';
 
   @override
   String get projectNextStepCreateFailed =>
@@ -10443,10 +10443,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get projectNextStepDismiss => 'Ignorer';
 
   @override
-  String get projectNextStepDismissed => 'Ignoré';
+  String get projectNextStepDismissed => 'Ignorée';
 
   @override
-  String get projectNextStepDone => 'Fait';
+  String get projectNextStepDone => 'Faite';
 
   @override
   String get projectNextStepOpenTask => 'Ouvrir la tâche';
@@ -10498,8 +10498,8 @@ class AppLocalizationsFr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count ajoutés',
-      one: '1 ajouté',
+      other: '$count ajoutées',
+      one: '1 ajoutée',
     );
     return '$_temp0';
   }
@@ -10509,8 +10509,8 @@ class AppLocalizationsFr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count ignorés',
-      one: '1 ignoré',
+      other: '$count ignorées',
+      one: '1 ignorée',
     );
     return '$_temp0';
   }
@@ -10520,8 +10520,8 @@ class AppLocalizationsFr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count faits',
-      one: '1 fait',
+      other: '$count faites',
+      one: '1 faite',
     );
     return '$_temp0';
   }
@@ -10533,7 +10533,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get projectNextStepsEmpty => 'Aucune suggestion ouverte.';
 
   @override
-  String get projectNextStepsHideHistory => 'Masquer';
+  String get projectNextStepsHideHistory => 'Masquer l\'historique';
 
   @override
   String projectNextStepsLastLooked(String ago) {
@@ -10546,7 +10546,7 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get projectNextStepsShowHistory => 'Afficher';
+  String get projectNextStepsShowHistory => 'Afficher l\'historique';
 
   @override
   String projectNextStepsShowMore(int count) {

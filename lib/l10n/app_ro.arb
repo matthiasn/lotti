@@ -3965,7 +3965,7 @@
       }
     }
   },
-  "projectNextStepsCountAdded": "{count, plural, =1{1 adăugat} few{{count} adăugate} other{{count} de adăugate}}",
+  "projectNextStepsCountAdded": "{count, plural, =1{1 adăugat} few{{count} adăugați} other{{count} de adăugați}}",
   "@projectNextStepsCountAdded": {
     "placeholders": {
       "count": {
@@ -3973,7 +3973,7 @@
       }
     }
   },
-  "projectNextStepsCountDismissed": "{count, plural, =1{1 respins} few{{count} respinse} other{{count} de respinse}}",
+  "projectNextStepsCountDismissed": "{count, plural, =1{1 respins} few{{count} respinși} other{{count} de respinși}}",
   "@projectNextStepsCountDismissed": {
     "placeholders": {
       "count": {
@@ -3981,7 +3981,7 @@
       }
     }
   },
-  "projectNextStepsCountDone": "{count, plural, =1{1 finalizat} few{{count} finalizate} other{{count} de finalizate}}",
+  "projectNextStepsCountDone": "{count, plural, =1{1 finalizat} few{{count} finalizați} other{{count} de finalizați}}",
   "@projectNextStepsCountDone": {
     "placeholders": {
       "count": {
@@ -3991,7 +3991,7 @@
   },
   "projectNextStepsDismissAll": "Respingeți toate",
   "projectNextStepsEmpty": "Nicio sugestie deschisă.",
-  "projectNextStepsHideHistory": "Ascundeți",
+  "projectNextStepsHideHistory": "Ascundeți istoricul",
   "projectNextStepsLastLooked": "Ultima verificare {ago}.",
   "@projectNextStepsLastLooked": {
     "placeholders": {
@@ -4011,7 +4011,7 @@
       }
     }
   },
-  "projectNextStepsShowHistory": "Afișați",
+  "projectNextStepsShowHistory": "Afișați istoricul",
   "projectNextStepsShowMore": "Afișați încă {count}",
   "@projectNextStepsShowMore": {
     "placeholders": {

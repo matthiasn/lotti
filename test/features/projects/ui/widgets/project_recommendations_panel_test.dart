@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/service/project_recommendation_service.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_widgets_part.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/projects/state/project_detail_record_provider.dart';
 import 'package:lotti/features/projects/ui/widgets/project_recommendations_panel.dart';
@@ -429,7 +430,7 @@ void main() {
 
     await pumpSubject(tester, subject(width: 1000));
     expect(find.text('Tag the pathfinders'), findsOneWidget);
-    expect(find.textContaining('Show'), findsNothing);
+    expect(find.textContaining('Show '), findsNothing);
   });
 
   testWidgets(
@@ -463,11 +464,11 @@ void main() {
       expect(find.text('Confirm the escort'), findsNothing);
       expect(find.textContaining('pending'), findsNothing);
 
-      await tester.tap(find.text('Show'));
+      await tester.tap(find.text('Show history'));
       await tester.pump();
       expect(find.text('Confirm the escort'), findsOneWidget);
       expect(find.text('Split the first wave'), findsOneWidget);
-      expect(find.text('Hide'), findsOneWidget);
+      expect(find.text('Hide history'), findsOneWidget);
     },
   );
 
@@ -596,9 +597,167 @@ void main() {
       findsNothing,
       reason: 'Nothing is undoable while disabled.',
     );
+    expect(
+      tester.widget<RowActions>(find.byType(RowActions)).enabled,
+      isFalse,
+      reason: 'The proposal rail is inert, not a no-op.',
+    );
     await tester.tap(find.byTooltip('Confirm'));
     await tester.pump();
     verifyNever(() => confirmation.confirmItem(any(), any()));
+  });
+
+  testWidgets('bulk work disables the other rows until it finishes', (
+    tester,
+  ) async {
+    final first = Completer<ToolExecutionResult>();
+    when(() => service.createTask('s1')).thenAnswer((_) => first.future);
+    when(() => service.createTask('s2')).thenAnswer(
+      (_) async => const ToolExecutionResult(
+        success: true,
+        output: '',
+        mutatedEntityId: 'task-2',
+      ),
+    );
+    await pumpSubject(
+      tester,
+      subject(width: 1000, items: steps.sublist(0, 2), sets: [proposals]),
+    );
+
+    await tester.tap(find.text('Add all as tasks'));
+    await tester.pump();
+
+    expect(find.text('Creating task…'), findsOneWidget);
+    final buttons = tester.widgetList<DesignSystemButton>(
+      find.byType(DesignSystemButton),
+    );
+    expect(buttons.map((b) => b.onPressed), everyElement(isNull));
+    expect(
+      tester.widget<RowActions>(find.byType(RowActions)).enabled,
+      isFalse,
+    );
+
+    first.complete(
+      const ToolExecutionResult(
+        success: true,
+        output: '',
+        mutatedEntityId: 'task-1',
+      ),
+    );
+    await settle(tester);
+    await settle(tester);
+    expect(find.text('Added'), findsNWidgets(2));
+    expect(
+      tester.widget<RowActions>(find.byType(RowActions)).enabled,
+      isTrue,
+    );
+  });
+
+  testWidgets('a consumed creation failure shows its message without Retry', (
+    tester,
+  ) async {
+    when(() => service.createTask('s1')).thenAnswer(
+      (_) async => const ToolExecutionResult(
+        success: false,
+        output: 'rollback failed',
+        errorMessage: 'Failed to link the new task; rollback failed for t-9',
+        nonRetryable: true,
+      ),
+    );
+    await pumpSubject(tester, subject(items: steps.sublist(0, 1)));
+
+    await tester.tap(find.text('Add task'));
+    await settle(tester);
+
+    expect(
+      find.text('Failed to link the new task; rollback failed for t-9'),
+      findsOneWidget,
+    );
+    expect(find.text('Retry'), findsNothing);
+    expect(find.text('Dismiss'), findsOneWidget);
+  });
+
+  testWidgets('a refused Undo of an addition keeps the window and the link', (
+    tester,
+  ) async {
+    when(() => service.createTask('s1')).thenAnswer(
+      (_) async => const ToolExecutionResult(
+        success: true,
+        output: '',
+        mutatedEntityId: 'task-1',
+      ),
+    );
+    when(
+      () => service.restoreRecommendation('s1'),
+    ).thenAnswer((_) async => false);
+    final opened = <String>[];
+    await pumpSubject(
+      tester,
+      subject(items: steps.sublist(0, 1), onOpenTask: opened.add),
+    );
+    await tester.tap(find.text('Add task'));
+    await settle(tester);
+
+    await tester.tap(find.text('Undo'));
+    await settle(tester);
+
+    expect(find.text('Added'), findsOneWidget);
+    expect(find.text('Undo'), findsOneWidget);
+    await tester.tap(find.text('Open task'));
+    expect(opened, ['task-1']);
+    expect(find.text(updateError), findsOneWidget);
+  });
+
+  testWidgets('proposals decided in an earlier session stay out of the band', (
+    tester,
+  ) async {
+    final mixed = makeTestChangeSet(
+      id: 'set-2',
+      agentId: 'agent-1',
+      taskId: projectId,
+      items: const [
+        ChangeItem(
+          toolName: 'create_task',
+          args: {'title': 'Old decision'},
+          humanSummary: 'Create task',
+          status: ChangeItemStatus.confirmed,
+        ),
+        ChangeItem(
+          toolName: 'create_task',
+          args: {'title': 'Still open'},
+          humanSummary: 'Create task',
+        ),
+      ],
+    );
+    await pumpSubject(tester, subject(items: const [], sets: [mixed]));
+
+    expect(find.text('Create task: Still open'), findsOneWidget);
+    expect(find.text('Create task: Old decision'), findsNothing);
+    expect(find.text('1 pending'), findsOneWidget);
+  });
+
+  testWidgets('thrown service calls are reported without a crash', (
+    tester,
+  ) async {
+    when(() => service.createTask('s1')).thenThrow(StateError('offline'));
+    when(
+      () => confirmation.confirmItem(any(), any()),
+    ).thenThrow(StateError('offline'));
+    await pumpSubject(
+      tester,
+      subject(width: 1000, items: steps.sublist(0, 1), sets: [proposals]),
+    );
+
+    await tester.tap(find.text('Add task'));
+    await settle(tester);
+    expect(tester.takeException(), isNull);
+    expect(find.text('Retry'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Confirm'));
+    await settle(tester);
+    expect(tester.takeException(), isNull);
+    expect(find.byTooltip('Confirm'), findsOneWidget);
+    expect(find.text(updateError), findsOneWidget);
   });
 
   testWidgets(

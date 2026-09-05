@@ -10451,7 +10451,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get projectNextStepsEmpty => 'Nenhuma sugestão aberta.';
 
   @override
-  String get projectNextStepsHideHistory => 'Ocultar';
+  String get projectNextStepsHideHistory => 'Ocultar histórico';
 
   @override
   String projectNextStepsLastLooked(String ago) {
@@ -10464,7 +10464,7 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get projectNextStepsShowHistory => 'Mostrar';
+  String get projectNextStepsShowHistory => 'Mostrar histórico';
 
   @override
   String projectNextStepsShowMore(int count) {

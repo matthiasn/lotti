@@ -4465,7 +4465,7 @@
   },
   "projectNextStepsDismissAll": "Afvis alle",
   "projectNextStepsEmpty": "Ingen åbne forslag.",
-  "projectNextStepsHideHistory": "Skjul",
+  "projectNextStepsHideHistory": "Skjul historik",
   "projectNextStepsLastLooked": "Sidst kigget {ago}.",
   "@projectNextStepsLastLooked": {
     "placeholders": {
@@ -4485,7 +4485,7 @@
       }
     }
   },
-  "projectNextStepsShowHistory": "Vis",
+  "projectNextStepsShowHistory": "Vis historik",
   "projectNextStepsShowMore": "Vis {count} mere",
   "@projectNextStepsShowMore": {
     "placeholders": {

@@ -4405,12 +4405,12 @@
   },
   "projectLinkedTasks": "Länkade uppgifter",
   "projectManageTooltip": "Hantera projekt",
-  "projectNextStepAdded": "Tillagd",
+  "projectNextStepAdded": "Tillagt",
   "projectNextStepCreateFailed": "Uppgiften kunde inte skapas. Uppdatera nu för att läsa in den aktuella listan, eller försök igen.",
   "projectNextStepCreating": "Skapar uppgift…",
   "projectNextStepDismiss": "Avfärda",
-  "projectNextStepDismissed": "Avfärdad",
-  "projectNextStepDone": "Klar",
+  "projectNextStepDismissed": "Avfärdat",
+  "projectNextStepDone": "Klart",
   "projectNextStepOpenTask": "Öppna uppgift",
   "projectNextStepRetry": "Försök igen",
   "projectNextStepsAddAll": "Lägg till alla som uppgifter",
@@ -4439,7 +4439,7 @@
       }
     }
   },
-  "projectNextStepsCountAdded": "{count, plural, =1{1 tillagd} other{{count} tillagda}}",
+  "projectNextStepsCountAdded": "{count, plural, =1{1 tillagt} other{{count} tillagda}}",
   "@projectNextStepsCountAdded": {
     "placeholders": {
       "count": {
@@ -4447,7 +4447,7 @@
       }
     }
   },
-  "projectNextStepsCountDismissed": "{count, plural, =1{1 avfärdad} other{{count} avfärdade}}",
+  "projectNextStepsCountDismissed": "{count, plural, =1{1 avfärdat} other{{count} avfärdade}}",
   "@projectNextStepsCountDismissed": {
     "placeholders": {
       "count": {
@@ -4455,7 +4455,7 @@
       }
     }
   },
-  "projectNextStepsCountDone": "{count, plural, =1{1 klar} other{{count} klara}}",
+  "projectNextStepsCountDone": "{count, plural, =1{1 klart} other{{count} klara}}",
   "@projectNextStepsCountDone": {
     "placeholders": {
       "count": {
@@ -4465,7 +4465,7 @@
   },
   "projectNextStepsDismissAll": "Avfärda alla",
   "projectNextStepsEmpty": "Inga öppna förslag.",
-  "projectNextStepsHideHistory": "Dölj",
+  "projectNextStepsHideHistory": "Dölj historik",
   "projectNextStepsLastLooked": "Senast kontrollerat {ago}.",
   "@projectNextStepsLastLooked": {
     "placeholders": {
@@ -4485,7 +4485,7 @@
       }
     }
   },
-  "projectNextStepsShowHistory": "Visa",
+  "projectNextStepsShowHistory": "Visa historik",
   "projectNextStepsShowMore": "Visa {count} till",
   "@projectNextStepsShowMore": {
     "placeholders": {

@@ -10331,10 +10331,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get projectNextStepCreating => 'Aufgabe wird erstellt…';
 
   @override
-  String get projectNextStepDismiss => 'Verwerfen';
+  String get projectNextStepDismiss => 'Übergehen';
 
   @override
-  String get projectNextStepDismissed => 'Verworfen';
+  String get projectNextStepDismissed => 'Übergangen';
 
   @override
   String get projectNextStepDone => 'Erledigt';
@@ -10400,8 +10400,8 @@ class AppLocalizationsDe extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count verworfen',
-      one: '1 verworfen',
+      other: '$count übergangen',
+      one: '1 übergangen',
     );
     return '$_temp0';
   }
@@ -10418,13 +10418,13 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get projectNextStepsDismissAll => 'Alle verwerfen';
+  String get projectNextStepsDismissAll => 'Alle übergehen';
 
   @override
   String get projectNextStepsEmpty => 'Keine offenen Vorschläge.';
 
   @override
-  String get projectNextStepsHideHistory => 'Ausblenden';
+  String get projectNextStepsHideHistory => 'Verlauf ausblenden';
 
   @override
   String projectNextStepsLastLooked(String ago) {
@@ -10437,7 +10437,7 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get projectNextStepsShowHistory => 'Anzeigen';
+  String get projectNextStepsShowHistory => 'Verlauf anzeigen';
 
   @override
   String projectNextStepsShowMore(int count) {

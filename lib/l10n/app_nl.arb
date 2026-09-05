@@ -4407,8 +4407,8 @@
   "projectNextStepAdded": "Toegevoegd",
   "projectNextStepCreateFailed": "De taak kon niet worden aangemaakt. Werk nu bij om de actuele lijst te laden, of probeer het opnieuw.",
   "projectNextStepCreating": "Taak wordt aangemaakt…",
-  "projectNextStepDismiss": "Afwijzen",
-  "projectNextStepDismissed": "Afgewezen",
+  "projectNextStepDismiss": "Negeren",
+  "projectNextStepDismissed": "Genegeerd",
   "projectNextStepDone": "Klaar",
   "projectNextStepOpenTask": "Taak openen",
   "projectNextStepRetry": "Opnieuw proberen",
@@ -4446,7 +4446,7 @@
       }
     }
   },
-  "projectNextStepsCountDismissed": "{count, plural, =1{1 afgewezen} other{{count} afgewezen}}",
+  "projectNextStepsCountDismissed": "{count, plural, =1{1 genegeerd} other{{count} genegeerd}}",
   "@projectNextStepsCountDismissed": {
     "placeholders": {
       "count": {
@@ -4462,9 +4462,9 @@
       }
     }
   },
-  "projectNextStepsDismissAll": "Alles afwijzen",
+  "projectNextStepsDismissAll": "Alles negeren",
   "projectNextStepsEmpty": "Geen open suggesties.",
-  "projectNextStepsHideHistory": "Verbergen",
+  "projectNextStepsHideHistory": "Geschiedenis verbergen",
   "projectNextStepsLastLooked": "Laatst bekeken {ago}.",
   "@projectNextStepsLastLooked": {
     "placeholders": {
@@ -4484,7 +4484,7 @@
       }
     }
   },
-  "projectNextStepsShowHistory": "Tonen",
+  "projectNextStepsShowHistory": "Geschiedenis tonen",
   "projectNextStepsShowMore": "Nog {count} tonen",
   "@projectNextStepsShowMore": {
     "placeholders": {

@@ -3941,8 +3941,8 @@
   "projectNextStepAdded": "Přidáno",
   "projectNextStepCreateFailed": "Úkol se nepodařilo vytvořit. Aktualizuj teď, aby se načetl aktuální seznam, nebo to zkus znovu.",
   "projectNextStepCreating": "Vytvářím úkol…",
-  "projectNextStepDismiss": "Zamítnout",
-  "projectNextStepDismissed": "Zamítnuto",
+  "projectNextStepDismiss": "Zahodit",
+  "projectNextStepDismissed": "Zahozeno",
   "projectNextStepDone": "Hotovo",
   "projectNextStepOpenTask": "Otevřít úkol",
   "projectNextStepRetry": "Zkusit znovu",
@@ -3972,7 +3972,7 @@
       }
     }
   },
-  "projectNextStepsCountAdded": "{count, plural, =1{1 přidán} few{{count} přidány} other{{count} přidáno}}",
+  "projectNextStepsCountAdded": "{count, plural, =1{1 přidaný} few{{count} přidané} many{{count} přidaných} other{{count} přidaných}}",
   "@projectNextStepsCountAdded": {
     "placeholders": {
       "count": {
@@ -3980,7 +3980,7 @@
       }
     }
   },
-  "projectNextStepsCountDismissed": "{count, plural, =1{1 zamítnut} few{{count} zamítnuty} other{{count} zamítnuto}}",
+  "projectNextStepsCountDismissed": "{count, plural, =1{1 zahozený} few{{count} zahozené} many{{count} zahozených} other{{count} zahozených}}",
   "@projectNextStepsCountDismissed": {
     "placeholders": {
       "count": {
@@ -3988,7 +3988,7 @@
       }
     }
   },
-  "projectNextStepsCountDone": "{count, plural, =1{1 hotov} few{{count} hotovy} other{{count} hotovo}}",
+  "projectNextStepsCountDone": "{count, plural, =1{1 hotový} few{{count} hotové} many{{count} hotových} other{{count} hotových}}",
   "@projectNextStepsCountDone": {
     "placeholders": {
       "count": {
@@ -3996,9 +3996,9 @@
       }
     }
   },
-  "projectNextStepsDismissAll": "Zamítnout vše",
+  "projectNextStepsDismissAll": "Zahodit vše",
   "projectNextStepsEmpty": "Žádné otevřené návrhy.",
-  "projectNextStepsHideHistory": "Skrýt",
+  "projectNextStepsHideHistory": "Skrýt historii",
   "projectNextStepsLastLooked": "Naposledy zkontrolováno {ago}.",
   "@projectNextStepsLastLooked": {
     "placeholders": {
@@ -4018,8 +4018,8 @@
       }
     }
   },
-  "projectNextStepsShowHistory": "Zobrazit",
-  "projectNextStepsShowMore": "Zobrazit {count} dalších",
+  "projectNextStepsShowHistory": "Zobrazit historii",
+  "projectNextStepsShowMore": "{count, plural, =1{Zobrazit 1 další} few{Zobrazit {count} další} many{Zobrazit {count} dalších} other{Zobrazit {count} dalších}}",
   "@projectNextStepsShowMore": {
     "placeholders": {
       "count": {

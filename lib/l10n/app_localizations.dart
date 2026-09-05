@@ -17506,7 +17506,7 @@ abstract class AppLocalizations {
   /// No description provided for @projectNextStepsHideHistory.
   ///
   /// In en, this message translates to:
-  /// **'Hide'**
+  /// **'Hide history'**
   String get projectNextStepsHideHistory;
 
   /// No description provided for @projectNextStepsLastLooked.
@@ -17524,7 +17524,7 @@ abstract class AppLocalizations {
   /// No description provided for @projectNextStepsShowHistory.
   ///
   /// In en, this message translates to:
-  /// **'Show'**
+  /// **'Show history'**
   String get projectNextStepsShowHistory;
 
   /// No description provided for @projectNextStepsShowMore.

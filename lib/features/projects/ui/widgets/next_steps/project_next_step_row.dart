@@ -57,7 +57,8 @@ class ProjectNextStepRow extends StatelessWidget {
   /// falls back to the generic creation failure copy.
   final String? failureMessage;
 
-  /// Add task, and Retry after a failure.
+  /// Add task, and Retry after a failure. Null in the failed state means the
+  /// failure is final — the step was consumed — so no Retry is offered.
   final VoidCallback? onAddTask;
   final VoidCallback? onDismiss;
   final VoidCallback? onUndo;
@@ -220,7 +221,8 @@ class _ActionStrip extends StatelessWidget {
         dismiss,
       ],
       ProjectNextStepRowState.failed => [
-        addButton(messages.projectNextStepRetry, LottiIcons.refresh),
+        if (row.onAddTask != null)
+          addButton(messages.projectNextStepRetry, LottiIcons.refresh),
         dismiss,
       ],
       ProjectNextStepRowState.busy => [

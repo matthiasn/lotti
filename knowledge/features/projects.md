@@ -349,9 +349,16 @@ after each write, `projectNextStepsProvider` re-reads, and the row changes
 state where it stands; per-row busy and failure state plus an optimistic
 overlay cover the gap until the snapshot catches up, so a row never flickers
 through "pending". A proposal decision refreshes only
-`projectPendingChangeSetsProvider`. The card keeps the bands mounted while the
-page mutates and hands the panel `enabled: false` instead, so an in-flight
-decision keeps its row state.
+`projectPendingChangeSetsProvider`; the proposal band shows the live sets'
+open items plus the rows decided in this session, never siblings decided in
+an earlier one. The card keeps the bands mounted while the page mutates and
+hands the panel `enabled: false` instead, so an in-flight decision keeps its
+row state; a disabled rail is inert with disabled semantics, not a no-op.
+While a bulk action runs every other row is disabled too, so a manual tap
+cannot race the sweep. A creation the service reports as consumed
+(`nonRetryable`: the task exists but linking and rollback both failed) keeps
+the row with the service's message and no Retry. A refused Undo leaves the
+row, its undo window and its task link exactly as they were.
 
 ```mermaid
 stateDiagram-v2

@@ -208,10 +208,17 @@ void main() {
           step: step,
           state: ProjectNextStepRowState.failed,
           failureMessage: 'Project lookup failed',
+          onDismiss: () {},
         ),
       ),
     );
     expect(find.text('Project lookup failed'), findsOneWidget);
+    expect(
+      find.text('Retry'),
+      findsNothing,
+      reason: 'A final failure offers no Retry, only Dismiss.',
+    );
+    expect(find.text('Dismiss'), findsOneWidget);
   });
 
   testWidgets('priority reads the way the created task would carry it', (
