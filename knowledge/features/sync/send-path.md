@@ -153,6 +153,19 @@ burst of misses becomes one request, a batch cap so a backlog drains across
 successive requests, an attempt cap so a blob no peer holds is eventually
 abandoned, and a tracking cap so the pending set cannot grow without limit.
 
+Media repair disposal cancels its debounce and clears pending ids and attempt
+counts. A host lookup completing after disposal cannot enqueue a request; a
+pending enqueue failure cannot restore cleared state or arm another retry.
+Failures while the service remains active still restore the batch and its
+attempt budget for the normal debounced retry.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Active
+  Active --> Disposed: dispose cancels debounce and clears state
+  Disposed --> [*]
+```
+
 # The CAS claim is load-bearing
 
 `claimNextBatch` is a per-row compare-and-set from `pending` to `sending`. That

@@ -76,6 +76,10 @@ class MediaRepairService {
   /// Entry ids currently waiting for their next request — test seam.
   Set<String> get debugPending => Set.unmodifiable(_pending);
 
+  /// Number of retained attempt counters — lifecycle test seam.
+  @visibleForTesting
+  int get debugAttemptedEntryCount => _attempts.length;
+
   /// Cancels the debounce and sends the currently pending batch.
   ///
   /// Integration tests use this seam after observing the expected missing
@@ -127,11 +131,13 @@ class MediaRepairService {
   /// Sends the pending ids as one request, up to the batch cap. Surplus ids
   /// stay pending and a fresh debounce window is armed for them, so a large
   /// backlog drains in successive requests instead of one oversized envelope.
+  /// Disposal during an await must not send or restore cleared retry state.
   Future<void> _flush() async {
     if (_disposed || _pending.isEmpty) return;
 
     final batch = _pending.take(_maxBatchSize).toList();
     final requesterId = await _vectorClock.getHost();
+    if (_disposed) return;
     if (requesterId == null) {
       // No host id yet (first run, before the vector clock is initialised).
       // Keep the ids pending and try again on the next miss rather than
@@ -160,6 +166,7 @@ class MediaRepairService {
         subDomain: 'mediaRepair.send',
       );
     } catch (error, stackTrace) {
+      if (_disposed) return;
       // Put the batch back so a transient enqueue failure does not burn the
       // entries' attempt budget for nothing.
       _pending.addAll(batch);
